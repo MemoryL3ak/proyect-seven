@@ -63,7 +63,8 @@ export class TransportsService {
 
   async create(createTransportDto: CreateTransportDto) {
     const { data, error } = await this.supabase
-      .from('transport.vehicles')
+      .schema('transport')
+      .from('vehicles')
       .insert(this.toRow(createTransportDto))
       .select('*')
       .single();
@@ -79,7 +80,8 @@ export class TransportsService {
 
   async findAll() {
     const { data, error } = await this.supabase
-      .from('transport.vehicles')
+      .schema('transport')
+      .from('vehicles')
       .select('*')
       .order('created_at', { ascending: false });
 
@@ -94,7 +96,8 @@ export class TransportsService {
 
   async findOne(id: string) {
     const { data, error } = await this.supabase
-      .from('transport.vehicles')
+      .schema('transport')
+      .from('vehicles')
       .select('*')
       .eq('id', id)
       .maybeSingle();
@@ -114,7 +117,8 @@ export class TransportsService {
 
   async update(id: string, updateTransportDto: UpdateTransportDto) {
     const { data, error } = await this.supabase
-      .from('transport.vehicles')
+      .schema('transport')
+      .from('vehicles')
       .update(this.toRow(updateTransportDto))
       .eq('id', id)
       .select('*')
@@ -135,7 +139,8 @@ export class TransportsService {
 
   async remove(id: string) {
     const { data, error } = await this.supabase
-      .from('transport.vehicles')
+      .schema('transport')
+      .from('vehicles')
       .delete()
       .eq('id', id)
       .select('*')
