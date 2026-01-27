@@ -7,6 +7,7 @@ import { TransportsModule } from './transports/transports.module';
 import { TripsModule } from './trips/trips.module';
 import { DriversModule } from './drivers/drivers.module';
 import { FlightsModule } from './flights/flights.module';
+import { AccommodationsModule } from './accommodations/accommodations.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 @Module({
@@ -30,6 +31,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
     TripsModule,
     DriversModule,
     FlightsModule,
+    AccommodationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
