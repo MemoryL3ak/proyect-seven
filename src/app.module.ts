@@ -4,6 +4,9 @@ import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { TransportsModule } from './transports/transports.module';
+import { TripsModule } from './trips/trips.module';
+import { DriversModule } from './drivers/drivers.module';
+import { FlightsModule } from './flights/flights.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 @Module({
@@ -24,9 +27,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
     }),
     AuthModule,
     TransportsModule,
+    TripsModule,
+    DriversModule,
+    FlightsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule {}
-
