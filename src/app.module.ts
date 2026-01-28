@@ -8,6 +8,9 @@ import { TripsModule } from './trips/trips.module';
 import { DriversModule } from './drivers/drivers.module';
 import { FlightsModule } from './flights/flights.module';
 import { AccommodationsModule } from './accommodations/accommodations.module';
+import { EventsModule } from './events/events.module';
+import { DelegationsModule } from './delegations/delegations.module';
+import { VehiclePositionsModule } from './vehicle-positions/vehicle-positions.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 @Module({
@@ -32,6 +35,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
     DriversModule,
     FlightsModule,
     AccommodationsModule,
+    EventsModule,
+    DelegationsModule,
+    VehiclePositionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
