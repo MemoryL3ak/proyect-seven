@@ -1,4 +1,4 @@
-import {
+﻿import {
   Column,
   CreateDateColumn,
   Entity,
@@ -20,6 +20,18 @@ export class Trip {
   @Column({ name: 'vehicle_id', type: 'uuid' })
   vehicleId: string;
 
+  @Column({ length: 150, nullable: true })
+  destination?: string | null;
+
+  @Column({ length: 150, nullable: true })
+  origin?: string | null;
+
+  @Column({ name: 'trip_type', length: 50, nullable: true })
+  tripType?: string | null;
+
+  @Column({ name: 'client_type', length: 50, nullable: true })
+  clientType?: string | null;
+
   @Column({ length: 32, default: 'SCHEDULED' })
   status: string;
 
@@ -40,6 +52,10 @@ export class Trip {
 
   @Column({ name: 'completed_at', type: 'timestamptz', nullable: true })
   completedAt?: Date | null;
+
+  athleteIds?: string[];
+
+  athleteNames?: string[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -11,6 +11,9 @@ import { AccommodationsModule } from './accommodations/accommodations.module';
 import { EventsModule } from './events/events.module';
 import { DelegationsModule } from './delegations/delegations.module';
 import { VehiclePositionsModule } from './vehicle-positions/vehicle-positions.module';
+import { AthletesModule } from './athletes/athletes.module';
+import { DisciplinesModule } from './disciplines/disciplines.module';
+import { ProvidersModule } from './providers/providers.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 @Module({
@@ -38,6 +41,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
     EventsModule,
     DelegationsModule,
     VehiclePositionsModule,
+    AthletesModule,
+    DisciplinesModule,
+    ProvidersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

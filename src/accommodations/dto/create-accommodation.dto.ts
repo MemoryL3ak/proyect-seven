@@ -9,6 +9,10 @@ export class CreateAccommodationDto {
   @IsNotEmpty()
   name: string;
 
+  @IsString()
+  @IsOptional()
+  address?: string;
+
   @IsObject()
   @IsOptional()
   geoLocation?: Record<string, unknown>;
@@ -17,4 +21,12 @@ export class CreateAccommodationDto {
   @Min(0)
   @IsOptional()
   totalCapacity?: number;
+
+  @IsObject()
+  @IsOptional()
+  roomInventory?: Record<string, number>;
+
+  @IsObject()
+  @IsOptional()
+  bedInventory?: Record<string, number>;
 }

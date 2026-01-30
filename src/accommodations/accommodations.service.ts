@@ -13,8 +13,11 @@ type AccommodationRow = {
   id: string;
   event_id: string;
   name: string;
+  address: string | null;
   geo_location: unknown | null;
   total_capacity: number;
+  room_inventory: Record<string, number> | null;
+  bed_inventory: Record<string, number> | null;
   created_at: string;
   updated_at: string;
 };
@@ -34,11 +37,20 @@ export class AccommodationsService {
     if (dto.name !== undefined) {
       row.name = dto.name;
     }
+    if (dto.address !== undefined) {
+      row.address = dto.address ?? null;
+    }
     if (dto.geoLocation !== undefined) {
       row.geo_location = dto.geoLocation ?? null;
     }
     if (dto.totalCapacity !== undefined) {
       row.total_capacity = dto.totalCapacity;
+    }
+    if (dto.roomInventory !== undefined) {
+      row.room_inventory = dto.roomInventory ?? {};
+    }
+    if (dto.bedInventory !== undefined) {
+      row.bed_inventory = dto.bedInventory ?? {};
     }
 
     return row;
@@ -49,8 +61,11 @@ export class AccommodationsService {
       id: row.id,
       eventId: row.event_id,
       name: row.name,
+      address: row.address,
       geoLocation: row.geo_location,
       totalCapacity: row.total_capacity,
+      roomInventory: row.room_inventory ?? {},
+      bedInventory: row.bed_inventory ?? {},
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
     };

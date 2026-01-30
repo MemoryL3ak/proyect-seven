@@ -1,4 +1,4 @@
-import {
+﻿import {
   Column,
   CreateDateColumn,
   Entity,
@@ -19,6 +19,10 @@ export class Delegation {
 
   @Column({ type: 'jsonb', default: () => "'{}'::jsonb" })
   metadata: Record<string, unknown>;
+
+  disciplineIds?: string[];
+
+  disciplineNames?: string[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

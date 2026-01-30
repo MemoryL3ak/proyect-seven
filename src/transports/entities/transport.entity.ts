@@ -20,6 +20,12 @@ export class Transport {
   @Column({ length: 60 })
   type: string;
 
+  @Column({ length: 60, nullable: true })
+  brand?: string | null;
+
+  @Column({ length: 60, nullable: true })
+  model?: string | null;
+
   @Column({ type: 'int', default: 0 })
   capacity: number;
 

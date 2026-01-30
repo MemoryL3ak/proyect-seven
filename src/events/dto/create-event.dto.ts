@@ -1,13 +1,22 @@
-import { IsNotEmpty, IsObject, IsOptional, IsString } from 'class-validator';
+﻿import { IsArray, IsISO8601, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateEventDto {
   @IsString()
   @IsNotEmpty()
   name: string;
 
-  @IsObject()
+  @IsISO8601()
   @IsOptional()
-  config?: Record<string, unknown>;
+  startDate?: string;
+
+  @IsISO8601()
+  @IsOptional()
+  endDate?: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  disciplineIds?: string[];
 
   @IsString()
   @IsOptional()

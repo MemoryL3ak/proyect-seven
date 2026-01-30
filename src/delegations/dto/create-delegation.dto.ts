@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsObject, IsOptional, IsString, Length } from 'class-validator';
+﻿import { IsArray, IsNotEmpty, IsObject, IsOptional, IsString, Length } from 'class-validator';
 
 export class CreateDelegationDto {
   @IsString()
@@ -9,6 +9,11 @@ export class CreateDelegationDto {
   @IsNotEmpty()
   @Length(3, 3)
   countryCode: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  disciplineIds?: string[];
 
   @IsObject()
   @IsOptional()

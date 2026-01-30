@@ -16,6 +16,14 @@ export class CreateTransportDto {
 
   @IsString()
   @IsOptional()
+  brand?: string;
+
+  @IsString()
+  @IsOptional()
+  model?: string;
+
+  @IsString()
+  @IsOptional()
   status?: string;
 
   @IsString()

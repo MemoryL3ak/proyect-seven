@@ -1,4 +1,4 @@
-import { IsISO8601, IsNotEmpty, IsObject, IsOptional, IsString } from 'class-validator';
+﻿import { IsArray, IsISO8601, IsNotEmpty, IsObject, IsOptional, IsString } from 'class-validator';
 
 export class CreateTripDto {
   @IsString()
@@ -12,6 +12,27 @@ export class CreateTripDto {
   @IsString()
   @IsNotEmpty()
   vehicleId: string;
+
+  @IsString()
+  @IsOptional()
+  destination?: string;
+
+  @IsString()
+  @IsOptional()
+  origin?: string;
+
+  @IsString()
+  @IsOptional()
+  tripType?: string;
+
+  @IsString()
+  @IsOptional()
+  clientType?: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  athleteIds?: string[];
 
   @IsString()
   @IsOptional()

@@ -17,6 +17,9 @@ export class Accommodation {
   @Column({ length: 150 })
   name: string;
 
+  @Column({ length: 200, nullable: true })
+  address?: string | null;
+
   @Column({
     name: 'geo_location',
     type: 'geometry',
@@ -28,6 +31,12 @@ export class Accommodation {
 
   @Column({ name: 'total_capacity', type: 'int', default: 0 })
   totalCapacity: number;
+
+  @Column({ name: 'room_inventory', type: 'jsonb', default: () => "'{}'::jsonb" })
+  roomInventory: Record<string, number>;
+
+  @Column({ name: 'bed_inventory', type: 'jsonb', default: () => "'{}'::jsonb" })
+  bedInventory: Record<string, number>;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

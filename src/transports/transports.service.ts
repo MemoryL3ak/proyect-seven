@@ -14,6 +14,8 @@ type TransportRow = {
   event_id: string;
   plate: string;
   type: string;
+  brand: string | null;
+  model: string | null;
   capacity: number;
   status: string;
   created_at: string;
@@ -38,6 +40,12 @@ export class TransportsService {
     if (dto.type !== undefined) {
       row.type = dto.type;
     }
+    if (dto.brand !== undefined) {
+      row.brand = dto.brand ?? null;
+    }
+    if (dto.model !== undefined) {
+      row.model = dto.model ?? null;
+    }
     if (dto.capacity !== undefined) {
       row.capacity = dto.capacity;
     }
@@ -54,6 +62,8 @@ export class TransportsService {
       eventId: row.event_id,
       plate: row.plate,
       type: row.type,
+      brand: row.brand,
+      model: row.model,
       capacity: row.capacity,
       status: row.status,
       createdAt: new Date(row.created_at),

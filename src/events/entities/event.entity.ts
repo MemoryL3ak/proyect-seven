@@ -1,4 +1,4 @@
-import {
+﻿import {
   Column,
   CreateDateColumn,
   Entity,
@@ -13,6 +13,16 @@ export class Event {
 
   @Column({ length: 150 })
   name: string;
+
+  @Column({ name: 'start_date', type: 'timestamptz', nullable: true })
+  startDate?: Date | null;
+
+  @Column({ name: 'end_date', type: 'timestamptz', nullable: true })
+  endDate?: Date | null;
+
+  disciplineIds?: string[];
+
+  disciplineNames?: string[];
 
   @Column({ type: 'jsonb', default: () => "'{}'::jsonb" })
   config: Record<string, unknown>;
