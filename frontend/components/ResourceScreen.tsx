@@ -552,7 +552,7 @@ export default function ResourceScreen({ config }: { config: ResourceConfig }) {
       if (config.endpoint === "/accommodations" && field.key === "totalCapacity") {
         const bedInventory = item.bedInventory ?? {};
         const totalCapacity = Object.values(bedInventory).reduce(
-          (sum: number, value: number) => sum + value,
+          (sum, value) => sum + Number(value ?? 0),
           0
         );
         next[field.key] = String(totalCapacity);
