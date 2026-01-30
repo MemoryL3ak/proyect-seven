@@ -53,23 +53,24 @@ function parseValue(field: FieldDef, value: string | string[]) {
     return value ? [value] : [];
   }
   const normalized = Array.isArray(value) ? value[0] ?? "" : value;
-  if (normalized === "") return undefined;
+  const normalizedText = String(normalized ?? "");
+  if (normalizedText === "") return undefined;
   if (field.key === "isDelegationLead") {
-    return normalized === "true";
+    return normalizedText === "true";
   }
   switch (field.type) {
     case "number":
-      return Number(normalized);
+      return Number(normalizedText);
     case "date":
-      return normalized as string;
+      return normalizedText;
     case "datetime":
-      return new Date(normalized).toISOString();
+      return new Date(normalizedText).toISOString();
     case "json":
-      return JSON.parse(normalized as string);
+      return JSON.parse(normalizedText);
     case "file":
-      return normalized as string;
+      return normalizedText;
     default:
-      return normalized;
+      return normalizedText;
   }
 }
 
