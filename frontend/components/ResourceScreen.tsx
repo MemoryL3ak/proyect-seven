@@ -1726,7 +1726,7 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
                 (form.participantCountryCode as string | undefined) ?? "";
               const showRut = participantCountry === "CHL";
               const showPassport = participantCountry !== "CHL";
-              const shouldRender = (field: FieldConfig) => {
+              const shouldRender = (field: FieldDef) => {
                 if (field.key === "participantRut") {
                   return showRut;
                 }
