@@ -19,11 +19,14 @@ export type FieldDef = {
     | "events"
     | "disciplines"
     | "delegations"
+    | "providers"
     | "accommodations"
     | "vehicles"
     | "drivers"
     | "driverUsers"
-    | "athletes";
+    | "athletes"
+    | "hotelRooms"
+    | "hotelBeds";
   transient?: boolean;
   formHidden?: boolean;
   readOnly?: boolean;
