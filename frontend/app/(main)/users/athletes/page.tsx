@@ -1,4 +1,4 @@
-﻿import ResourceScreen from "@/components/ResourceScreen";
+import ResourceScreen from "@/components/ResourceScreen";
 import { resources } from "@/lib/resources";
 
 export default function AthletesPage() {
