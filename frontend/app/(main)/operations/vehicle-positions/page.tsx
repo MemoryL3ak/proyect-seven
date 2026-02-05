@@ -69,8 +69,19 @@ const countryLabels: Record<string, string> = {
   GBR: "Reino Unido"
 };
 
+const tripTypeLabels: Record<string, string> = {
+  TRANSFER_IN_OUT: "Transfer In Out",
+  DISPOSICION_12H: "Disposición 12 horas",
+  IDA_VUELTA: "Viaje Ida-Vuelta"
+};
+
 const formatDate = (value?: string | null) =>
   value ? new Date(value).toLocaleString("es-CL") : "-";
+
+const formatTripType = (value?: string | null) => {
+  if (!value) return "-";
+  return tripTypeLabels[value] ?? value;
+};
 
 export default function VehiclePositionsPage() {
   const { t } = useI18n();
@@ -84,6 +95,11 @@ export default function VehiclePositionsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [mapPreview, setMapPreview] = useState<{
+    lat: number;
+    lng: number;
+    title: string;
+  } | null>(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -196,6 +212,10 @@ export default function VehiclePositionsPage() {
   };
 
   const buildMapEmbed = (lat: number, lng: number) => {
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    if (apiKey) {
+      return `https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${lat},${lng}&zoom=16`;
+    }
     const delta = 0.01;
     const left = lng - delta;
     const right = lng + delta;
@@ -203,6 +223,9 @@ export default function VehiclePositionsPage() {
     const bottom = lat - delta;
     return `https://www.openstreetmap.org/export/embed.html?bbox=${left}%2C${bottom}%2C${right}%2C${top}&layer=mapnik&marker=${lat}%2C${lng}`;
   };
+
+  const buildGoogleMapsLink = (lat: number, lng: number) =>
+    `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
 
   return (
     <div className="space-y-6">
@@ -269,19 +292,39 @@ export default function VehiclePositionsPage() {
                       </td>
                       <td>
                         {position ? (
-                          <div className="w-44 h-28 rounded-xl overflow-hidden border border-slate-200">
-                            <iframe
-                              title={`map-${trip.id}`}
-                              src={buildMapEmbed(position.lat, position.lng)}
-                              className="w-full h-full"
-                              loading="lazy"
-                            />
+                          <div className="flex flex-col gap-2">
+                            <button
+                              type="button"
+                              className="w-56 h-36 rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md transition"
+                              onClick={() =>
+                                setMapPreview({
+                                  lat: position.lat,
+                                  lng: position.lng,
+                                  title: vehicle?.plate || trip.vehicleId
+                                })
+                              }
+                            >
+                              <iframe
+                                title={`map-${trip.id}`}
+                                src={buildMapEmbed(position.lat, position.lng)}
+                                className="w-full h-full"
+                                loading="lazy"
+                              />
+                            </button>
+                            <a
+                              className="text-xs font-semibold text-emerald-700 hover:underline"
+                              href={buildGoogleMapsLink(position.lat, position.lng)}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              {t("Ver en Google Maps")}
+                            </a>
                           </div>
                         ) : (
                           "-"
                         )}
                       </td>
-                      <td>{trip.tripType || "-"}</td>
+                      <td>{formatTripType(trip.tripType)}</td>
                       <td>{trip.clientType || "-"}</td>
                       <td>{trip.origin || "-"}</td>
                       <td>{trip.destination || "-"}</td>
@@ -299,6 +342,46 @@ export default function VehiclePositionsPage() {
           </div>
         )}
       </section>
+
+      {mapPreview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4">
+          <div className="surface w-full max-w-4xl rounded-3xl p-4 shadow-2xl">
+            <div className="flex items-center justify-between px-2 pb-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                  {t("Tracking de viajes")}
+                </p>
+                <h3 className="font-display text-xl text-ink">{mapPreview.title}</h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <a
+                  className="btn btn-ghost"
+                  href={buildGoogleMapsLink(mapPreview.lat, mapPreview.lng)}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {t("Ver en Google Maps")}
+                </a>
+                <button
+                  className="btn btn-primary"
+                  type="button"
+                  onClick={() => setMapPreview(null)}
+                >
+                  {t("Cerrar")}
+                </button>
+              </div>
+            </div>
+            <div className="aspect-[16/9] w-full overflow-hidden rounded-2xl border border-slate-200">
+              <iframe
+                title="map-preview"
+                src={buildMapEmbed(mapPreview.lat, mapPreview.lng)}
+                className="h-full w-full"
+                loading="lazy"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

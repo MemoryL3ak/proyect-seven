@@ -62,6 +62,18 @@ export class CreateAthleteDto {
   @IsOptional()
   arrivalFlightId?: string;
 
+  @IsString()
+  @IsOptional()
+  flightNumber?: string;
+
+  @IsString()
+  @IsOptional()
+  airline?: string;
+
+  @IsString()
+  @IsOptional()
+  origin?: string;
+
   @IsISO8601()
   @IsOptional()
   arrivalTime?: string;

@@ -143,9 +143,17 @@ export default function DriverPortalPage() {
         apiFetch<ProviderItem[]>("/providers")
       ]);
 
-      const driverMatch = (driversData || []).find(
-        (driver) => driver.userId === driverId || driver.id === driverId
-      );
+      const normalizedInput = driverId.trim();
+      const driverMatch = (driversData || []).find((driver) => {
+        const id = driver.id ?? "";
+        const userId = driver.userId ?? "";
+        const last6 = id.slice(-6);
+        const last6User = userId.slice(-6);
+        return (
+          normalizedInput === last6 ||
+          normalizedInput === last6User
+        );
+      });
       setDriverProfile(driverMatch ?? null);
       if (!driverMatch) {
         setIdError(t("El ID ingresado no corresponde a un conductor registrado."));
@@ -154,7 +162,7 @@ export default function DriverPortalPage() {
       }
 
       const driverKeys = new Set(
-        [driverId, driverMatch?.id, driverMatch?.userId].filter(
+        [driverMatch?.id, driverMatch?.userId].filter(
           (value): value is string => Boolean(value)
         )
       );
@@ -461,12 +469,12 @@ export default function DriverPortalPage() {
           </div>
 
           <label className="flex flex-col gap-2 text-sm text-slate-600">
-            {t("Tu ID de conductor")}
+            {t("Tu código de acceso")}
             <input
               className="input"
               value={driverId}
               onChange={(event) => setDriverId(event.target.value)}
-              placeholder="UUID"
+              placeholder={t("Ingresa código")}
             />
           </label>
           <button className="btn btn-primary w-fit" onClick={loadTrips} disabled={loading}>

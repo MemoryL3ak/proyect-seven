@@ -498,8 +498,9 @@ export class DriversService {
     }
 
     const fullName = data.full_name ?? 'Conductor';
+    const accessCode = data.id.slice(-6);
     const subject = 'Tu código de acceso';
-    const text = `Hola ${fullName},\n\nTu ID de conductor para ingresar al portal es:\n${data.id}\n\nGuárdalo en un lugar seguro.\n`;
+    const text = `Hola ${fullName},\n\nTu código de acceso para ingresar al portal es:\n${accessCode}\n\nGuárdalo en un lugar seguro.\n`;
     const html = `<!doctype html>
 <html>
   <head>
@@ -522,10 +523,10 @@ export class DriversService {
               <td style="padding:4px 32px 24px 32px;">
                 <p style="margin:0;font-size:14px;color:#475569;">Hola ${fullName},</p>
                 <p style="margin:14px 0 0 0;font-size:14px;color:#475569;">
-                  Tu ID de conductor para ingresar al portal es:
+                  Tu código de acceso para ingresar al portal es:
                 </p>
                 <div style="margin:16px 0;padding:14px 16px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc;font-size:16px;letter-spacing:0.02em;color:#0f172a;">
-                  ${data.id}
+                  ${accessCode}
                 </div>
                 <p style="margin:0;font-size:13px;color:#64748b;">
                   Guardalo en un lugar seguro.

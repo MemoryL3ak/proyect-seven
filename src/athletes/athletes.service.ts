@@ -26,6 +26,9 @@ type AthleteRow = {
   luggage_notes: string | null;
   user_type: string | null;
   arrival_flight_id: string | null;
+  flight_number: string | null;
+  airline: string | null;
+  origin: string | null;
   arrival_time: string | null;
   departure_time: string | null;
   departure_gate: string | null;
@@ -93,6 +96,15 @@ export class AthletesService {
     }
     if (dto.arrivalFlightId !== undefined) {
       row.arrival_flight_id = dto.arrivalFlightId ?? null;
+    }
+    if (dto.flightNumber !== undefined) {
+      row.flight_number = dto.flightNumber ?? null;
+    }
+    if (dto.airline !== undefined) {
+      row.airline = dto.airline ?? null;
+    }
+    if (dto.origin !== undefined) {
+      row.origin = dto.origin ?? null;
     }
     if (dto.arrivalTime !== undefined) {
       row.arrival_time = dto.arrivalTime ?? null;
@@ -162,6 +174,9 @@ export class AthletesService {
       luggageNotes: row.luggage_notes,
       userType: row.user_type,
       arrivalFlightId: row.arrival_flight_id,
+      flightNumber: row.flight_number,
+      airline: row.airline,
+      origin: row.origin,
       arrivalTime: row.arrival_time ? new Date(row.arrival_time) : null,
       departureTime: row.departure_time ? new Date(row.departure_time) : null,
       departureGate: row.departure_gate,
@@ -482,8 +497,9 @@ export class AthletesService {
     }
 
     const fullName = data.full_name ?? 'Encargado';
+    const accessCode = data.id.slice(-6);
     const subject = 'Tu código de acceso';
-    const text = `Hola ${fullName},\n\nTu ID de usuario para ingresar al portal es:\n${data.id}\n\nGuárdalo en un lugar seguro.\n`;
+    const text = `Hola ${fullName},\n\nTu código de acceso para ingresar al portal es:\n${accessCode}\n\nGuárdalo en un lugar seguro.\n`;
     const html = `<!doctype html>
 <html>
   <head>
@@ -506,10 +522,10 @@ export class AthletesService {
               <td style="padding:4px 32px 24px 32px;">
                 <p style="margin:0;font-size:14px;color:#475569;">Hola ${fullName},</p>
                 <p style="margin:14px 0 0 0;font-size:14px;color:#475569;">
-                  Tu ID de usuario para ingresar al portal es:
+                  Tu código de acceso para ingresar al portal es:
                 </p>
                 <div style="margin:16px 0;padding:14px 16px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc;font-size:16px;letter-spacing:0.02em;color:#0f172a;">
-                  ${data.id}
+                  ${accessCode}
                 </div>
                 <p style="margin:0;font-size:13px;color:#64748b;">
                   Guardalo en un lugar seguro.

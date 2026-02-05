@@ -50,6 +50,15 @@ export class Athlete {
   @Column({ name: 'arrival_flight_id', type: 'uuid', nullable: true })
   arrivalFlightId?: string | null;
 
+  @Column({ name: 'flight_number', type: 'text', nullable: true })
+  flightNumber?: string | null;
+
+  @Column({ name: 'airline', type: 'text', nullable: true })
+  airline?: string | null;
+
+  @Column({ name: 'origin', type: 'text', nullable: true })
+  origin?: string | null;
+
   @Column({ name: 'arrival_time', type: 'timestamptz', nullable: true })
   arrivalTime?: Date | null;
 

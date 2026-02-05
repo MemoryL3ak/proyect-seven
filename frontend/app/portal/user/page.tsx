@@ -13,6 +13,9 @@ type Athlete = {
   eventId?: string | null;
   delegationId?: string | null;
   arrivalFlightId?: string | null;
+  flightNumber?: string | null;
+  airline?: string | null;
+  origin?: string | null;
   arrivalTime?: string | null;
   airportCheckinAt?: string | null;
   hotelAccommodationId?: string | null;
@@ -36,6 +39,27 @@ type Flight = {
 type Hotel = {
   id: string;
   name: string;
+};
+
+type HotelAssignment = {
+  id: string;
+  participantId: string;
+  hotelId: string;
+  roomId?: string | null;
+  bedId?: string | null;
+  checkinAt?: string | null;
+  checkoutAt?: string | null;
+};
+
+type HotelRoom = {
+  id: string;
+  roomNumber: string;
+  roomType: string;
+};
+
+type HotelBed = {
+  id: string;
+  bedType: string;
 };
 
 type Vehicle = {
@@ -104,6 +128,9 @@ export default function AthletePortalPage() {
   const [trip, setTrip] = useState<Trip | null>(null);
   const [event, setEvent] = useState<Event | null>(null);
   const [delegation, setDelegation] = useState<Delegation | null>(null);
+  const [hotelAssignment, setHotelAssignment] = useState<HotelAssignment | null>(null);
+  const [hotelRoom, setHotelRoom] = useState<HotelRoom | null>(null);
+  const [hotelBed, setHotelBed] = useState<HotelBed | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [requestEmail, setRequestEmail] = useState("");
@@ -116,10 +143,30 @@ export default function AthletePortalPage() {
     setLoading(true);
     setError(null);
     try {
-      const data = await apiFetch<Athlete>(`/athletes/${athleteId}`);
+      const normalizedInput = athleteId.trim();
+      if (normalizedInput.length < 6) {
+        setError(t("El código ingresado no es válido."));
+        return;
+      }
+      const list = await apiFetch<Athlete[]>(`/athletes`);
+      const match = (list || []).find((athlete) => athlete.id?.slice(-6) === normalizedInput);
+      if (!match) {
+        setError(t("El código ingresado no corresponde a un usuario registrado."));
+        return;
+      }
+      const data = await apiFetch<Athlete>(`/athletes/${match.id}`);
       setAthlete(data);
 
-      const [flightData, hotelData, vehicleData, tripData, tripsList, eventData, delegationData] =
+      const [
+        flightData,
+        hotelData,
+        vehicleData,
+        tripData,
+        tripsList,
+        eventData,
+        delegationData,
+        hotelAssignments
+      ] =
         await Promise.all([
           data.arrivalFlightId
             ? apiFetch<Flight>(`/flights/${data.arrivalFlightId}`)
@@ -137,13 +184,27 @@ export default function AthletePortalPage() {
           data.eventId ? apiFetch<Event>(`/events/${data.eventId}`) : Promise.resolve(null),
           data.delegationId
             ? apiFetch<Delegation>(`/delegations/${data.delegationId}`)
-            : Promise.resolve(null)
+            : Promise.resolve(null),
+          apiFetch<HotelAssignment[]>(`/hotel-assignments`)
         ]);
 
+      const assignment =
+        (hotelAssignments || []).find((item) => item.participantId === data.id) ?? null;
+
       setFlight(flightData);
-      setHotel(hotelData);
+      setHotelAssignment(assignment);
       setEvent(eventData);
       setDelegation(delegationData);
+
+      let resolvedHotel = hotelData;
+      if (assignment?.hotelId && (!resolvedHotel || resolvedHotel.id !== assignment.hotelId)) {
+        try {
+          resolvedHotel = await apiFetch<Hotel>(`/accommodations/${assignment.hotelId}`);
+        } catch {
+          resolvedHotel = resolvedHotel ?? null;
+        }
+      }
+      setHotel(resolvedHotel);
 
       const inferredTrip =
         tripData ??
@@ -185,6 +246,28 @@ export default function AthletePortalPage() {
         }
       }
       setDriver(resolvedDriver);
+
+      if (assignment?.roomId) {
+        try {
+          const room = await apiFetch<HotelRoom>(`/hotel-rooms/${assignment.roomId}`);
+          setHotelRoom(room);
+        } catch {
+          setHotelRoom(null);
+        }
+      } else {
+        setHotelRoom(null);
+      }
+
+      if (assignment?.bedId) {
+        try {
+          const bed = await apiFetch<HotelBed>(`/hotel-beds/${assignment.bedId}`);
+          setHotelBed(bed);
+        } catch {
+          setHotelBed(null);
+        }
+      } else {
+        setHotelBed(null);
+      }
     } catch (err) {
       let message = err instanceof Error ? err.message : "";
       try {
@@ -203,6 +286,9 @@ export default function AthletePortalPage() {
       setTrip(null);
       setEvent(null);
       setDelegation(null);
+      setHotelAssignment(null);
+      setHotelRoom(null);
+      setHotelBed(null);
     } finally {
       setLoading(false);
     }
@@ -299,12 +385,12 @@ export default function AthletePortalPage() {
           </div>
 
           <label className="flex flex-col gap-2 text-sm text-slate-600">
-            {t("Tu ID de usuario")}
+            {t("Tu código de acceso")}
             <input
               className="input"
               value={athleteId}
               onChange={(event) => setAthleteId(event.target.value)}
-              placeholder="UUID"
+              placeholder={t("Ingresa código")}
             />
           </label>
           <button className="btn btn-primary w-fit" onClick={loadAthlete} disabled={loading}>
@@ -347,7 +433,11 @@ export default function AthletePortalPage() {
             <div className="glass rounded-2xl p-4">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t("Vuelo")}</p>
               <p className="text-sm text-slate-600">
-                {flight ? `${flight.airline} · ${flight.flightNumber}` : "-"}
+                {flight
+                  ? `${flight.airline} · ${flight.flightNumber}`
+                  : athlete.airline || athlete.flightNumber
+                  ? `${athlete.airline || t("Aerolínea")} · ${athlete.flightNumber || "-"}`
+                  : "-"}
               </p>
               <p className="text-sm text-slate-500">
                 {t("Arribo")}: {formatDate(athlete.arrivalTime || flight?.arrivalTime)}
@@ -356,9 +446,12 @@ export default function AthletePortalPage() {
             <div className="glass rounded-2xl p-4">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t("Hotel")}</p>
               <p className="text-sm text-slate-600">{hotel?.name || "-"}</p>
-              <p className="text-sm text-slate-500">{t("Habitación")}: {athlete.roomNumber || "-"}</p>
               <p className="text-sm text-slate-500">
-                {t("Tipo de habitación")}: {athlete.roomType || "-"} · {t("Cama")}: {athlete.bedType || "-"}
+                {t("Habitación")}: {hotelRoom?.roomNumber || athlete.roomNumber || "-"}
+              </p>
+              <p className="text-sm text-slate-500">
+                {t("Tipo de habitación")}: {hotelRoom?.roomType || athlete.roomType || "-"} · {t("Cama")}:{" "}
+                {hotelBed?.bedType || athlete.bedType || "-"}
               </p>
               <p className="text-sm text-slate-500">{t("Equipaje")}: {athlete.luggageType || "-"}</p>
             </div>
@@ -372,8 +465,12 @@ export default function AthletePortalPage() {
             <div className="glass rounded-2xl p-4">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t("Check-ins")}</p>
               <p className="text-sm text-slate-500">{t("Aeropuerto")}: {formatDate(athlete.airportCheckinAt)}</p>
-              <p className="text-sm text-slate-500">{t("Hotel")}: {formatDate(athlete.hotelCheckinAt)}</p>
-              <p className="text-sm text-slate-500">{t("Check-out")}: {formatDate(athlete.hotelCheckoutAt)}</p>
+              <p className="text-sm text-slate-500">
+                {t("Hotel")}: {formatDate(hotelAssignment?.checkinAt || athlete.hotelCheckinAt)}
+              </p>
+              <p className="text-sm text-slate-500">
+                {t("Check-out")}: {formatDate(hotelAssignment?.checkoutAt || athlete.hotelCheckoutAt)}
+              </p>
             </div>
           </div>
 

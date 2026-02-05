@@ -272,6 +272,9 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
             ? disciplineById[athlete.disciplineId]
             : null;
 
+          const toDateTimeLocal = (value?: string | null) =>
+            value ? new Date(value).toISOString().slice(0, 16) : "";
+
           return {
             id: athlete.id,
             delegationId: athlete.delegationId,
@@ -287,8 +290,8 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
             participantBirthDate: athlete.birthDate ?? "",
             participantLuggageType: athlete.luggageType ?? "",
             participantLuggageNotes: athlete.luggageNotes ?? "",
-            participantArrivalTime: athlete.arrivalTime ?? "",
-            participantDepartureTime: athlete.departureTime ?? "",
+            participantArrivalTime: toDateTimeLocal(athlete.arrivalTime),
+            participantDepartureTime: toDateTimeLocal(athlete.departureTime),
             participantDepartureGate: athlete.departureGate ?? "",
             participantArrivalBaggage: athlete.arrivalBaggage ?? "",
             participantFlightNumber: athlete.flightNumber ?? "",
@@ -637,9 +640,13 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
       ? "participantArrivalBaggage"
       : "arrivalBaggage";
     const raw = form[flightKey] as string | undefined;
-    const value = raw?.trim();
+    const value = raw?.trim().toUpperCase();
     if (!value) return;
     if (lastFlightLookupRef.current === value) return;
+    const hasDigits = /\d/.test(value);
+    const looksValid =
+      /^[A-Z]{2,3}\d+$/.test(value) || (hasDigits && value.replace(/\D/g, "").length >= 2);
+    if (!looksValid) return;
 
     if (flightLookupTimerRef.current) {
       window.clearTimeout(flightLookupTimerRef.current);
@@ -697,6 +704,27 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
         origin: prev.origin || flight.origin || ""
       }));
     }
+  }, [config.endpoint, editingId, form.arrivalFlightId, flightLookup]);
+
+  useEffect(() => {
+    if (config.endpoint !== "/athletes") return;
+    if (!editingId) return;
+    const flightId = form.arrivalFlightId as string | undefined;
+    if (!flightId) return;
+    if (flightLookup[flightId]) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const flight = await apiFetch<Record<string, any>>(`/flights/${flightId}`);
+        if (cancelled) return;
+        setFlightLookup((prev) => ({ ...prev, [flightId]: flight }));
+      } catch {
+        // ignore missing flight
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [config.endpoint, editingId, form.arrivalFlightId, flightLookup]);
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -922,14 +950,26 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(flightPayload),
             });
-            finalPayload = { ...payload, arrivalFlightId: existingFlightId };
+            finalPayload = {
+              ...payload,
+              arrivalFlightId: existingFlightId,
+              flightNumber,
+              airline,
+              origin
+            };
           } else {
             const flight = await apiFetch<{ id: string }>("/flights", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(flightPayload),
             });
-            finalPayload = { ...payload, arrivalFlightId: flight.id };
+            finalPayload = {
+              ...payload,
+              arrivalFlightId: flight.id,
+              flightNumber,
+              airline,
+              origin
+            };
           }
         }
       }
@@ -1524,6 +1564,23 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
                             setForm({ ...form, roomId: nextValue, bedId: "" });
                             return;
                           }
+                        }
+                        if (config.endpoint === "/drivers" && field.key === "vehicleType") {
+                          const capacityByType: Record<string, number> = {
+                            SEDAN: 4,
+                            VAN: 8,
+                            MINI_BUS: 16,
+                            BUS: 40
+                          };
+                          setForm({
+                            ...form,
+                            vehicleType: nextValue,
+                            vehicleCapacity:
+                              capacityByType[nextValue] !== undefined
+                                ? String(capacityByType[nextValue])
+                                : (form.vehicleCapacity as string) || ""
+                          });
+                          return;
                         }
                         if (config.endpoint === "/hotel-rooms" && field.key === "roomType") {
                           const capacityByType: Record<string, number> = {
