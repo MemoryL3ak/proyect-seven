@@ -1128,6 +1128,7 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
   };
 
   const getOptionsForField = (field: FieldDef): Option[] => {
+    const source = field.optionsSource as string | undefined;
     if (field.optionsSource === "providers") {
       return providerOptions;
     }
@@ -1258,15 +1259,15 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
     }
 
     if (field.options) return field.options;
-    if (field.optionsSource === "events") return eventOptions;
-    if (field.optionsSource === "disciplines") return disciplineOptions;
-    if (field.optionsSource === "delegations") return delegationOptions;
-    if (field.optionsSource === "accommodations") return accommodationOptions;
-    if (field.optionsSource === "vehicles") return vehicleOptions;
-    if (field.optionsSource === "drivers") return driverOptions;
-    if (field.optionsSource === "driverUsers") return driverUserOptions;
-    if (field.optionsSource === "hotelRooms") return hotelRoomOptions;
-    if (field.optionsSource === "hotelBeds") return hotelBedOptions;
+    if (source === "events") return eventOptions;
+    if (source === "disciplines") return disciplineOptions;
+    if (source === "delegations") return delegationOptions;
+    if (source === "accommodations") return accommodationOptions;
+    if (source === "vehicles") return vehicleOptions;
+    if (source === "drivers") return driverOptions;
+    if (source === "driverUsers") return driverUserOptions;
+    if (source === "hotelRooms") return hotelRoomOptions;
+    if (source === "hotelBeds") return hotelBedOptions;
     if (field.optionsSource === "athletes") {
       if (config.endpoint === "/trips") {
         const delegationId = form.delegationId as string | undefined;
