@@ -370,7 +370,7 @@ export default function BulkImportPanel({ type }: { type: ImportType }) {
         let hotel = accommodationByKey.get(hotelKey);
         if (!hotel) {
           try {
-            hotel = await apiFetch("/accommodations", {
+            const createdHotel = await apiFetch<Record<string, any>>("/accommodations", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -379,7 +379,8 @@ export default function BulkImportPanel({ type }: { type: ImportType }) {
                 address: row.hotel_address || undefined
               })
             });
-            accommodationByKey.set(hotelKey, hotel);
+            accommodationByKey.set(hotelKey, createdHotel);
+            hotel = createdHotel;
           } catch (error) {
             rowErrors.push({
               row: rowNumber,
