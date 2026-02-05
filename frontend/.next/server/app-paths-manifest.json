@@ -1,0 +1,8 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/portal/conductor/page": "app/portal/conductor/page.js",
+  "/(main)/operations/vehicle-positions/page": "app/(main)/operations/vehicle-positions/page.js",
+  "/(main)/operations/trips/page": "app/(main)/operations/trips/page.js",
+  "/(main)/users/drivers/page": "app/(main)/users/drivers/page.js",
+  "/(main)/operations/hotel-tracking/page": "app/(main)/operations/hotel-tracking/page.js"
+}

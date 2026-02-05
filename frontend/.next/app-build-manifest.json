@@ -1,0 +1,105 @@
+{
+  "pages": {
+    "/(main)/layout": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(main)/layout.js"
+    ],
+    "/layout": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/css/app/layout.css",
+      "static/chunks/app/layout.js"
+    ],
+    "/(main)/masters/events/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(main)/masters/events/page.js"
+    ],
+    "/(main)/masters/disciplines/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(main)/masters/disciplines/page.js"
+    ],
+    "/(main)/masters/providers/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(main)/masters/providers/page.js"
+    ],
+    "/(main)/masters/delegations/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(main)/masters/delegations/page.js"
+    ],
+    "/(main)/users/athletes/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(main)/users/athletes/page.js"
+    ],
+    "/(main)/users/drivers/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(main)/users/drivers/page.js"
+    ],
+    "/(main)/masters/accommodations/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(main)/masters/accommodations/page.js"
+    ],
+    "/(main)/masters/hotel-rooms/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(main)/masters/hotel-rooms/page.js"
+    ],
+    "/(main)/masters/hotel-beds/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(main)/masters/hotel-beds/page.js"
+    ],
+    "/(main)/operations/hotel-assignments/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(main)/operations/hotel-assignments/page.js"
+    ],
+    "/(main)/operations/hotel-tracking/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(main)/operations/hotel-tracking/page.js"
+    ],
+    "/(main)/operations/vehicle-positions/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(main)/operations/vehicle-positions/page.js"
+    ],
+    "/(main)/operations/trips/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(main)/operations/trips/page.js"
+    ],
+    "/(main)/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(main)/page.js"
+    ],
+    "/portal/user/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/portal/user/page.js"
+    ],
+    "/portal/layout": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/portal/layout.js"
+    ],
+    "/portal/conductor/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/portal/conductor/page.js"
+    ],
+    "/_not-found/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/_not-found/page.js"
+    ]
+  }
+}
