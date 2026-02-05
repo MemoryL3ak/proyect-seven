@@ -77,7 +77,7 @@ const toDateOnly = (value: string) => {
 };
 
 const downloadTemplate = (headers: readonly string[], fileName: string) => {
-  const worksheet = XLSX.utils.aoa_to_sheet([headers]);
+  const worksheet = XLSX.utils.aoa_to_sheet([Array.from(headers)]);
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Template");
   XLSX.writeFile(workbook, fileName);
