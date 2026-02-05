@@ -17,7 +17,6 @@ export type FieldDef = {
   options?: { label: string; value: string }[];
   optionsSource?:
     | "events"
-    | "disciplines"
     | "delegations"
     | "providers"
     | "accommodations"
@@ -26,7 +25,8 @@ export type FieldDef = {
     | "driverUsers"
     | "athletes"
     | "hotelRooms"
-    | "hotelBeds";
+    | "hotelBeds"
+    | "disciplines";
   transient?: boolean;
   formHidden?: boolean;
   readOnly?: boolean;
