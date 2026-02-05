@@ -114,6 +114,14 @@ const countryLabels: Record<string, string> = {
   GBR: "Reino Unido"
 };
 
+const luggageLabels: Record<string, string> = {
+  BAG: "Bolso",
+  SUITCASE_8: "Maleta 8",
+  SUITCASE_15: "Maleta 15",
+  SUITCASE_23: "Maleta 23",
+  EXTRA_BAGGAGE: "Sobreequipaje"
+};
+
 const formatDate = (value?: string | null) =>
   value ? new Date(value).toLocaleString() : "-";
 
@@ -453,7 +461,9 @@ export default function AthletePortalPage() {
                 {t("Tipo de habitación")}: {hotelRoom?.roomType || athlete.roomType || "-"} · {t("Cama")}:{" "}
                 {hotelBed?.bedType || athlete.bedType || "-"}
               </p>
-              <p className="text-sm text-slate-500">{t("Equipaje")}: {athlete.luggageType || "-"}</p>
+              <p className="text-sm text-slate-500">
+                {t("Equipaje")}: {luggageLabels[athlete.luggageType ?? ""] || athlete.luggageType || "-"}
+              </p>
             </div>
             <div className="glass rounded-2xl p-4">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t("Transporte")}</p>
