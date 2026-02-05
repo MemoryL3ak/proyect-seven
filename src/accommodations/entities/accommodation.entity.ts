@@ -1,0 +1,46 @@
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+
+@Entity({ name: 'accommodations', schema: 'logistics' })
+export class Accommodation {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ name: 'event_id', type: 'uuid' })
+  eventId: string;
+
+  @Column({ length: 150 })
+  name: string;
+
+  @Column({ length: 200, type: 'varchar', nullable: true })
+  address?: string | null;
+
+  @Column({
+    name: 'geo_location',
+    type: 'geometry',
+    nullable: true,
+    spatialFeatureType: 'Point',
+    srid: 4326,
+  })
+  geoLocation?: unknown | null;
+
+  @Column({ name: 'total_capacity', type: 'int', default: 0 })
+  totalCapacity: number;
+
+  @Column({ name: 'room_inventory', type: 'jsonb', default: () => "'{}'::jsonb" })
+  roomInventory: Record<string, number>;
+
+  @Column({ name: 'bed_inventory', type: 'jsonb', default: () => "'{}'::jsonb" })
+  bedInventory: Record<string, number>;
+
+  @CreateDateColumn({ name: 'created_at' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ name: 'updated_at' })
+  updatedAt: Date;
+}
