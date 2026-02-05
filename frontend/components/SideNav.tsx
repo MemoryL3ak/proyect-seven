@@ -39,11 +39,11 @@ const navSections: NavSection[] = [
     title: "Hotelería",
     icon: "hotel",
     items: [
+      { href: "/operations/hotel-tracking", label: "Tracking hotelería", icon: "hotel" },
       { href: "/masters/accommodations", label: "Hoteles", icon: "hotel" },
       { href: "/masters/hotel-rooms", label: "Habitaciones", icon: "hotel" },
       { href: "/masters/hotel-beds", label: "Camas", icon: "hotel" },
-      { href: "/operations/hotel-assignments", label: "Asignaciones hotel", icon: "hotel" },
-      { href: "/operations/hotel-tracking", label: "Tracking hotelería", icon: "hotel" }
+      { href: "/operations/hotel-assignments", label: "Asignaciones hotel", icon: "hotel" }
     ]
   },
   {
