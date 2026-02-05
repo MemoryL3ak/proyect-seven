@@ -396,7 +396,7 @@ export default function BulkImportPanel({ type }: { type: ImportType }) {
           const countKey = `${row.event_id}::${row.hotel_name}::${row.room_number}`;
           const bedsCapacity = roomCounts.get(countKey) ?? 1;
           try {
-            room = await apiFetch("/hotel-rooms", {
+            const createdRoom = await apiFetch<Record<string, any>>("/hotel-rooms", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -406,7 +406,8 @@ export default function BulkImportPanel({ type }: { type: ImportType }) {
                 bedsCapacity
               })
             });
-            roomByKey.set(roomKey, room);
+            roomByKey.set(roomKey, createdRoom);
+            room = createdRoom;
           } catch (error) {
             rowErrors.push({
               row: rowNumber,
