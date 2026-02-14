@@ -12,6 +12,8 @@ import { Event } from './entities/event.entity';
 type EventRow = {
   id: string;
   name: string;
+  country: string | null;
+  city: string | null;
   start_date: string | null;
   end_date: string | null;
   config: Record<string, unknown>;
@@ -48,6 +50,12 @@ export class EventsService {
     if (dto.endDate !== undefined) {
       row.end_date = dto.endDate ?? null;
     }
+    if (dto.country !== undefined) {
+      row.country = dto.country ?? null;
+    }
+    if (dto.city !== undefined) {
+      row.city = dto.city ?? null;
+    }
     if (dto.status !== undefined) {
       row.status = dto.status;
     }
@@ -59,6 +67,8 @@ export class EventsService {
     return {
       id: row.id,
       name: row.name,
+      country: row.country ?? null,
+      city: row.city ?? null,
       startDate: row.start_date ? new Date(row.start_date) : null,
       endDate: row.end_date ? new Date(row.end_date) : null,
       config: row.config,

@@ -184,8 +184,8 @@ export const resources: Record<string, ResourceConfig> = {
         type: "select",
         transient: true,
         options: [
-          { label: "Hombres", value: "M" },
-          { label: "Mujeres", value: "F" }
+          { label: "Hombres", value: "MALE" },
+          { label: "Mujeres", value: "FEMALE" }
         ]
       },
       { key: "participantFullName", label: "Nombre completo", type: "text", transient: true },

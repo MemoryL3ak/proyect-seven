@@ -23,6 +23,32 @@ export class DisciplinesService {
     @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
   ) {}
 
+  private normalizeGender(value?: string | null) {
+    const normalized = String(value ?? '')
+      .trim()
+      .toUpperCase();
+    if (!normalized) return null;
+    if (normalized === 'M' || normalized === 'MASCULINO' || normalized === 'HOMBRES') {
+      return 'MALE';
+    }
+    if (normalized === 'F' || normalized === 'FEMENINO' || normalized === 'MUJERES') {
+      return 'FEMALE';
+    }
+    return normalized;
+  }
+
+  private normalizeCategory(value?: string | null) {
+    const normalized = String(value ?? '')
+      .trim()
+      .toUpperCase();
+    if (!normalized) return null;
+    if (normalized === 'CONVENCIONAL') return 'CONVENTIONAL';
+    if (normalized === 'PARALIMPICA' || normalized === 'PARALÍMPICA') {
+      return 'PARALYMPIC';
+    }
+    return normalized;
+  }
+
   private toRow(dto: CreateDisciplineDto | UpdateDisciplineDto) {
     const row: Record<string, unknown> = {};
     if (dto.name !== undefined) {
@@ -32,10 +58,10 @@ export class DisciplinesService {
       row.event_id = dto.eventId;
     }
     if (dto.category !== undefined) {
-      row.category = dto.category;
+      row.category = this.normalizeCategory(dto.category);
     }
     if (dto.gender !== undefined) {
-      row.gender = dto.gender;
+      row.gender = this.normalizeGender(dto.gender);
     }
     return row;
   }
@@ -45,8 +71,8 @@ export class DisciplinesService {
       id: row.id,
       name: row.name,
       eventId: row.event_id ?? null,
-      category: row.category ?? null,
-      gender: row.gender ?? null,
+      category: this.normalizeCategory(row.category),
+      gender: this.normalizeGender(row.gender),
     };
   }
 

@@ -1169,15 +1169,40 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
 
   const getOptionsForField = (field: FieldDef): Option[] => {
     const source = field.optionsSource as string | undefined;
+    const normalizeGender = (value: unknown) => {
+      const normalized = String(value ?? "")
+        .trim()
+        .toUpperCase();
+      if (!normalized) return "";
+      if (normalized === "M") return "MALE";
+      if (normalized === "F") return "FEMALE";
+      if (normalized === "MASCULINO") return "MALE";
+      if (normalized === "FEMENINO") return "FEMALE";
+      if (normalized === "HOMBRES") return "MALE";
+      if (normalized === "MUJERES") return "FEMALE";
+      return normalized;
+    };
+    const normalizeCategory = (value: unknown) => {
+      const normalized = String(value ?? "")
+        .trim()
+        .toUpperCase();
+      if (!normalized) return "";
+      if (normalized === "CONVENCIONAL") return "CONVENTIONAL";
+      if (normalized === "PARALIMPICA") return "PARALYMPIC";
+      if (normalized === "PARALÍMPICA") return "PARALYMPIC";
+      return normalized;
+    };
     if (field.optionsSource === "providers") {
       return providerOptions;
     }
     if (field.optionsSource === "disciplines") {
-      const category = form.disciplineCategory as string | undefined;
-      const gender = form.disciplineGender as string | undefined;
+      const category = normalizeCategory(form.disciplineCategory);
+      const gender = normalizeGender(form.disciplineGender);
       const base = (disciplineOptions as any[]).filter((option) => {
-        if (category && option.category !== category) return false;
-        if (gender && option.gender !== gender) return false;
+        const optionCategory = normalizeCategory(option.category);
+        const optionGender = normalizeGender(option.gender);
+        if (category && optionCategory !== category) return false;
+        if (gender && optionGender !== gender) return false;
         return true;
       });
       if (field.key === "disciplineIds") {
