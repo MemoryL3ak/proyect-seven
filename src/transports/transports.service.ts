@@ -30,21 +30,23 @@ export class TransportsService {
   ) {}
 
   async lookupPlate(plate: string) {
-    const apiKey = process.env.GETAPI_KEY;
+    const apiKey = process.env.BOOSTR_API_KEY ?? process.env.GETAPI_KEY;
     if (!apiKey) {
-      throw new InternalServerErrorException('GETAPI_KEY not configured');
+      throw new InternalServerErrorException(
+        'BOOSTR_API_KEY not configured',
+      );
     }
     const normalized = plate.trim().toUpperCase().replace(/\s+/g, '');
     if (!normalized) {
       throw new BadRequestException('Plate is required');
     }
 
-    const url = `https://chile.getapi.cl/v1/vehicles/plate/${encodeURIComponent(
+    const url = `https://api.boostr.cl/vehicle/${encodeURIComponent(
       normalized,
-    )}`;
+    )}.json`;
     const response = await fetch(url, {
       headers: {
-        'x-api-key': apiKey,
+        'X-API-KEY': apiKey,
         Accept: 'application/json',
       },
     });
@@ -52,13 +54,15 @@ export class TransportsService {
     if (!response.ok) {
       const text = await response.text().catch(() => '');
       throw new InternalServerErrorException(
-        `GetAPI error: ${response.status} ${text}`.trim(),
+        `Boostr API error: ${response.status} ${text}`.trim(),
       );
     }
 
     const data = await response.json().catch(() => ({}));
     const payload = data?.data ?? data ?? {};
     const brand =
+      payload?.make ??
+      payload?.manufacturer ??
       payload?.model?.brand?.name ??
       payload?.brand?.name ??
       payload?.brand?.nombre ??
@@ -69,14 +73,22 @@ export class TransportsService {
       null;
     const model =
       payload?.model?.name ??
+      payload?.model_name ??
+      payload?.vehicle_model ??
       payload?.modelo ??
       payload?.model ??
       null;
+    const yearRaw = payload?.year ?? payload?.vehicle_year ?? null;
+    const year =
+      yearRaw === null || yearRaw === undefined || yearRaw === ''
+        ? null
+        : Number(yearRaw);
 
     return {
       plate: normalized,
       brand,
       model,
+      year: Number.isFinite(year as number) ? (year as number) : null,
       raw: data ?? null,
     };
   }

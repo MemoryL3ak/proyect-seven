@@ -1724,9 +1724,9 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
                           const normalized = rawValue
                             .trim()
                             .toUpperCase()
-                            .replace(/\s+/g, "");
+                            .replace(/[^A-Z0-9]/g, "");
                           setForm({ ...form, [field.key]: rawValue });
-                          if (normalized.length !== 6) return;
+                          if (normalized.length < 5) return;
                           if (lastPlateLookupRef.current === normalized) return;
                           if (plateLookupTimerRef.current) {
                             window.clearTimeout(plateLookupTimerRef.current);
@@ -1737,17 +1737,29 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
                               const data = await apiFetch<{
                                 brand?: string | null;
                                 model?: string | null;
+                                year?: number | null;
                               }>(`/transports/lookup-plate/${encodeURIComponent(normalized)}`);
                               setForm((prev) => {
                                 const currentPlate = String(prev.vehiclePlate ?? "")
                                   .trim()
                                   .toUpperCase()
-                                  .replace(/\s+/g, "");
+                                  .replace(/[^A-Z0-9]/g, "");
                                 if (currentPlate !== normalized) return prev;
+                                const modelParts = [
+                                  data?.model ?? "",
+                                  data?.year !== undefined && data?.year !== null
+                                    ? String(data.year)
+                                    : ""
+                                ]
+                                  .map((part) => String(part).trim())
+                                  .filter(Boolean);
                                 return {
                                   ...prev,
                                   vehicleBrand: data?.brand ?? prev.vehicleBrand ?? "",
-                                  vehicleModel: data?.model ?? prev.vehicleModel ?? ""
+                                  vehicleModel:
+                                    modelParts.length > 0
+                                      ? modelParts.join(" ")
+                                      : (prev.vehicleModel as string) ?? ""
                                 };
                               });
                             } catch {
