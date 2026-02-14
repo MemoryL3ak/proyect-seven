@@ -17,6 +17,11 @@ export class HotelAssignmentsController {
     return this.hotelAssignmentsService.findAll();
   }
 
+  @Get('by-participant/:participantId')
+  findByParticipant(@Param('participantId') participantId: string) {
+    return this.hotelAssignmentsService.findByParticipant(participantId);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.hotelAssignmentsService.findOne(id);

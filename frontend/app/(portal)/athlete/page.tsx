@@ -44,6 +44,20 @@ type Vehicle = {
   type: string;
 };
 
+type HotelAssignment = {
+  id: string;
+  participantId?: string;
+  participant_id?: string;
+  checkinAt?: string | null;
+  checkin_at?: string | null;
+  checkoutAt?: string | null;
+  checkout_at?: string | null;
+  createdAt?: string;
+  created_at?: string;
+  updatedAt?: string;
+  updated_at?: string;
+};
+
 type Trip = {
   id: string;
   driverId: string;
@@ -87,7 +101,27 @@ const countryLabels: Record<string, string> = {
 };
 
 const formatDate = (value?: string | null) =>
-  value ? new Date(value).toLocaleString() : "-";
+  value &&
+  value !== "null" &&
+  value !== "undefined" &&
+  !Number.isNaN(new Date(value).getTime())
+    ? new Date(value).toLocaleString()
+    : "-";
+
+const normalizeHotelAssignment = (item: HotelAssignment) => ({
+  id: item.id,
+  participantId: item.participantId ?? item.participant_id ?? "",
+  checkinAt:
+    item.checkinAt === "null" || item.checkin_at === "null"
+      ? null
+      : (item.checkinAt ?? item.checkin_at ?? null),
+  checkoutAt:
+    item.checkoutAt === "null" || item.checkout_at === "null"
+      ? null
+      : (item.checkoutAt ?? item.checkout_at ?? null),
+  createdAt: item.createdAt ?? item.created_at ?? "",
+  updatedAt: item.updatedAt ?? item.updated_at ?? "",
+});
 
 export default function AthletePortalPage() {
   const { t } = useI18n();
@@ -99,6 +133,10 @@ export default function AthletePortalPage() {
   const [driver, setDriver] = useState<Driver | null>(null);
   const [event, setEvent] = useState<Event | null>(null);
   const [delegation, setDelegation] = useState<Delegation | null>(null);
+  const [hotelAssignment, setHotelAssignment] = useState<{
+    checkinAt?: string | null;
+    checkoutAt?: string | null;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -110,7 +148,15 @@ export default function AthletePortalPage() {
       const data = await apiFetch<Athlete>(`/athletes/${athleteId}`);
       setAthlete(data);
 
-      const [flightData, hotelData, vehicleData, tripData, eventData, delegationData] = await Promise.all([
+      const [
+        flightData,
+        hotelData,
+        vehicleData,
+        tripData,
+        eventData,
+        delegationData,
+        hotelAssignments
+      ] = await Promise.all([
         data.arrivalFlightId
           ? apiFetch<Flight>(`/flights/${data.arrivalFlightId}`)
           : Promise.resolve(null),
@@ -126,7 +172,8 @@ export default function AthletePortalPage() {
         data.eventId ? apiFetch<Event>(`/events/${data.eventId}`) : Promise.resolve(null),
         data.delegationId
           ? apiFetch<Delegation>(`/delegations/${data.delegationId}`)
-          : Promise.resolve(null)
+          : Promise.resolve(null),
+        apiFetch<HotelAssignment[]>(`/hotel-assignments`)
       ]);
 
       setFlight(flightData);
@@ -134,6 +181,16 @@ export default function AthletePortalPage() {
       setVehicle(vehicleData);
       setEvent(eventData);
       setDelegation(delegationData);
+      const assignmentCandidates = (hotelAssignments || [])
+        .map((item) => normalizeHotelAssignment(item))
+        .filter((item) => item.participantId === data.id)
+        .sort(
+          (a, b) =>
+            new Date(b.updatedAt || b.createdAt || 0).getTime() -
+            new Date(a.updatedAt || a.createdAt || 0).getTime()
+        );
+      const assignment = assignmentCandidates[0] ?? null;
+      setHotelAssignment(assignment);
 
       if (tripData?.driverId) {
         const driverData = await apiFetch<Driver>(`/drivers/${tripData.driverId}`);
@@ -149,6 +206,7 @@ export default function AthletePortalPage() {
       setDriver(null);
       setEvent(null);
       setDelegation(null);
+      setHotelAssignment(null);
     } finally {
       setLoading(false);
     }
@@ -242,8 +300,8 @@ export default function AthletePortalPage() {
             <div className="glass rounded-2xl p-4">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t("Check-ins")}</p>
               <p className="text-sm text-slate-500">{t("Aeropuerto")}: {formatDate(athlete.airportCheckinAt)}</p>
-              <p className="text-sm text-slate-500">{t("Hotel")}: {formatDate(athlete.hotelCheckinAt)}</p>
-              <p className="text-sm text-slate-500">{t("Check-out")}: {formatDate(athlete.hotelCheckoutAt)}</p>
+              <p className="text-sm text-slate-500">{t("Hotel")}: {formatDate(hotelAssignment?.checkinAt)}</p>
+              <p className="text-sm text-slate-500">{t("Check-out")}: {formatDate(hotelAssignment?.checkoutAt)}</p>
             </div>
           </div>
 

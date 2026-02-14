@@ -144,6 +144,27 @@ export class HotelAssignmentsService {
     return this.toEntity(data as HotelAssignmentRow);
   }
 
+  async findByParticipant(participantId: string) {
+    const { data, error } = await this.supabase
+      .schema('logistics')
+      .from('hotel_assignments')
+      .select('*')
+      .eq('participant_id', participantId)
+      .order('updated_at', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (error) {
+      throw new InternalServerErrorException(
+        error.message || 'Error fetching hotel assignment by participant',
+      );
+    }
+
+    const first = (data ?? [])[0];
+    if (!first) return null;
+    return this.toEntity(first as HotelAssignmentRow);
+  }
+
   async update(id: string, dto: UpdateHotelAssignmentDto) {
     const { data: existing } = await this.supabase
       .schema('logistics')

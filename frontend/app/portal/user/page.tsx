@@ -43,12 +43,22 @@ type Hotel = {
 
 type HotelAssignment = {
   id: string;
-  participantId: string;
-  hotelId: string;
+  participantId?: string;
+  participant_id?: string;
+  hotelId?: string;
+  hotel_id?: string;
   roomId?: string | null;
+  room_id?: string | null;
   bedId?: string | null;
+  bed_id?: string | null;
   checkinAt?: string | null;
+  checkin_at?: string | null;
   checkoutAt?: string | null;
+  checkout_at?: string | null;
+  createdAt?: string;
+  created_at?: string;
+  updatedAt?: string;
+  updated_at?: string;
 };
 
 type HotelRoom = {
@@ -123,7 +133,30 @@ const luggageLabels: Record<string, string> = {
 };
 
 const formatDate = (value?: string | null) =>
-  value ? new Date(value).toLocaleString() : "-";
+  value &&
+  value !== "null" &&
+  value !== "undefined" &&
+  !Number.isNaN(new Date(value).getTime())
+    ? new Date(value).toLocaleString()
+    : "-";
+
+const normalizeHotelAssignment = (item: HotelAssignment) => ({
+  id: item.id,
+  participantId: item.participantId ?? item.participant_id ?? "",
+  hotelId: item.hotelId ?? item.hotel_id ?? "",
+  roomId: item.roomId ?? item.room_id ?? null,
+  bedId: item.bedId ?? item.bed_id ?? null,
+  checkinAt:
+    item.checkinAt === "null" || item.checkin_at === "null"
+      ? null
+      : (item.checkinAt ?? item.checkin_at ?? null),
+  checkoutAt:
+    item.checkoutAt === "null" || item.checkout_at === "null"
+      ? null
+      : (item.checkoutAt ?? item.checkout_at ?? null),
+  createdAt: item.createdAt ?? item.created_at ?? "",
+  updatedAt: item.updatedAt ?? item.updated_at ?? ""
+});
 
 export default function AthletePortalPage() {
   const { t } = useI18n();
@@ -173,7 +206,7 @@ export default function AthletePortalPage() {
         tripsList,
         eventData,
         delegationData,
-        hotelAssignments
+        assignmentData
       ] =
         await Promise.all([
           data.arrivalFlightId
@@ -193,11 +226,13 @@ export default function AthletePortalPage() {
           data.delegationId
             ? apiFetch<Delegation>(`/delegations/${data.delegationId}`)
             : Promise.resolve(null),
-          apiFetch<HotelAssignment[]>(`/hotel-assignments`)
+          apiFetch<HotelAssignment | null>(
+            `/hotel-assignments/by-participant/${data.id}`
+          )
         ]);
-
-      const assignment =
-        (hotelAssignments || []).find((item) => item.participantId === data.id) ?? null;
+      const assignment = assignmentData
+        ? normalizeHotelAssignment(assignmentData)
+        : null;
 
       setFlight(flightData);
       setHotelAssignment(assignment);
@@ -238,19 +273,15 @@ export default function AthletePortalPage() {
       let resolvedDriver: Driver | null = null;
       if (inferredTrip?.driverId) {
         try {
-          resolvedDriver = await apiFetch<Driver>(
-            `/drivers/${inferredTrip.driverId}`
-          );
+          const drivers = await apiFetch<Driver[]>(`/drivers`);
+          resolvedDriver =
+            (drivers || []).find(
+              (driver) =>
+                driver.id === inferredTrip.driverId ||
+                driver.userId === inferredTrip.driverId
+            ) ?? null;
         } catch {
-          try {
-            const drivers = await apiFetch<Driver[]>(`/drivers`);
-            resolvedDriver =
-              (drivers || []).find(
-                (driver) => driver.userId === inferredTrip.driverId
-              ) ?? null;
-          } catch {
-            resolvedDriver = null;
-          }
+          resolvedDriver = null;
         }
       }
       setDriver(resolvedDriver);
@@ -309,13 +340,40 @@ export default function AthletePortalPage() {
     setLoading(true);
     setError(null);
     try {
-      const payload = { [field]: new Date().toISOString() };
+      const now = new Date().toISOString();
+      const payload = { [field]: now };
       const updated = await apiFetch<Athlete>(`/athletes/${athlete.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
       setAthlete(updated);
+
+      if (hotelAssignment?.id && (field === "hotelCheckinAt" || field === "hotelCheckoutAt")) {
+        const assignmentPayload =
+          field === "hotelCheckinAt"
+            ? { checkinAt: now }
+            : { checkoutAt: now };
+
+        try {
+          await apiFetch(`/hotel-assignments/${hotelAssignment.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(assignmentPayload)
+          });
+        } catch {
+          // keep athlete update even if hotel-assignment sync fails
+        }
+
+        setHotelAssignment((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            ...(field === "hotelCheckinAt" ? { checkinAt: now } : {}),
+            ...(field === "hotelCheckoutAt" ? { checkoutAt: now } : {})
+          };
+        });
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : t("No se pudo actualizar"));
     } finally {
@@ -476,10 +534,10 @@ export default function AthletePortalPage() {
               <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t("Check-ins")}</p>
               <p className="text-sm text-slate-500">{t("Aeropuerto")}: {formatDate(athlete.airportCheckinAt)}</p>
               <p className="text-sm text-slate-500">
-                {t("Hotel")}: {formatDate(hotelAssignment?.checkinAt || athlete.hotelCheckinAt)}
+                {t("Hotel")}: {formatDate(athlete.hotelCheckinAt)}
               </p>
               <p className="text-sm text-slate-500">
-                {t("Check-out")}: {formatDate(hotelAssignment?.checkoutAt || athlete.hotelCheckoutAt)}
+                {t("Check-out")}: {formatDate(athlete.hotelCheckoutAt)}
               </p>
             </div>
           </div>
