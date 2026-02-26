@@ -101,6 +101,31 @@ export class Athlete {
   @Column({ name: 'hotel_checkout_at', type: 'timestamptz', nullable: true })
   hotelCheckoutAt?: Date | null;
 
+  @Column({ name: 'accreditation_status', type: 'text', default: 'PENDING' })
+  accreditationStatus: string;
+
+  @Column({
+    name: 'accreditation_validated_at',
+    type: 'timestamptz',
+    nullable: true,
+  })
+  accreditationValidatedAt?: Date | null;
+
+  @Column({ name: 'accreditation_validated_by', type: 'text', nullable: true })
+  accreditationValidatedBy?: string | null;
+
+  @Column({ name: 'accreditation_notes', type: 'text', nullable: true })
+  accreditationNotes?: string | null;
+
+  @Column({ name: 'credential_code', type: 'text', nullable: true })
+  credentialCode?: string | null;
+
+  @Column({ name: 'credential_issued_at', type: 'timestamptz', nullable: true })
+  credentialIssuedAt?: Date | null;
+
+  @Column({ name: 'credential_issued_by', type: 'text', nullable: true })
+  credentialIssuedBy?: string | null;
+
   @Column({ length: 32, default: 'REGISTERED' })
   status: string;
 

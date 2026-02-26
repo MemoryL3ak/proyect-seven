@@ -24,6 +24,13 @@ type DriverRow = {
   phone: string | null;
   vehicle_id: string | null;
   photo_url: string | null;
+  accreditation_status: string;
+  accreditation_validated_at: string | null;
+  accreditation_validated_by: string | null;
+  accreditation_notes: string | null;
+  credential_code: string | null;
+  credential_issued_at: string | null;
+  credential_issued_by: string | null;
   status: string;
   metadata: Record<string, unknown>;
   created_at: string;
@@ -87,6 +94,27 @@ export class DriversService {
     if (dto.photoUrl !== undefined) {
       row.photo_url = dto.photoUrl ?? null;
     }
+    if (dto.accreditationStatus !== undefined) {
+      row.accreditation_status = dto.accreditationStatus;
+    }
+    if (dto.accreditationValidatedAt !== undefined) {
+      row.accreditation_validated_at = dto.accreditationValidatedAt ?? null;
+    }
+    if (dto.accreditationValidatedBy !== undefined) {
+      row.accreditation_validated_by = dto.accreditationValidatedBy ?? null;
+    }
+    if (dto.accreditationNotes !== undefined) {
+      row.accreditation_notes = dto.accreditationNotes ?? null;
+    }
+    if (dto.credentialCode !== undefined) {
+      row.credential_code = dto.credentialCode ?? null;
+    }
+    if (dto.credentialIssuedAt !== undefined) {
+      row.credential_issued_at = dto.credentialIssuedAt ?? null;
+    }
+    if (dto.credentialIssuedBy !== undefined) {
+      row.credential_issued_by = dto.credentialIssuedBy ?? null;
+    }
     if (dto.status !== undefined) {
       row.status = dto.status;
     }
@@ -110,6 +138,17 @@ export class DriversService {
       phone: row.phone,
       vehicleId: row.vehicle_id,
       photoUrl: row.photo_url,
+      accreditationStatus: row.accreditation_status,
+      accreditationValidatedAt: row.accreditation_validated_at
+        ? new Date(row.accreditation_validated_at)
+        : null,
+      accreditationValidatedBy: row.accreditation_validated_by,
+      accreditationNotes: row.accreditation_notes,
+      credentialCode: row.credential_code,
+      credentialIssuedAt: row.credential_issued_at
+        ? new Date(row.credential_issued_at)
+        : null,
+      credentialIssuedBy: row.credential_issued_by,
       status: row.status,
       metadata: row.metadata,
       createdAt: new Date(row.created_at),

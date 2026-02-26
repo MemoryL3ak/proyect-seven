@@ -19,6 +19,8 @@ import { SofiaModule } from './sofia/sofia.module';
 import { HotelRoomsModule } from './hotel-rooms/hotel-rooms.module';
 import { HotelBedsModule } from './hotel-beds/hotel-beds.module';
 import { HotelAssignmentsModule } from './hotel-assignments/hotel-assignments.module';
+import { SportsCalendarModule } from './sports-calendar/sports-calendar.module';
+import { AccreditationsModule } from './accreditations/accreditations.module';
 
 @Module({
   imports: [
@@ -52,6 +54,8 @@ import { HotelAssignmentsModule } from './hotel-assignments/hotel-assignments.mo
     HotelRoomsModule,
     HotelBedsModule,
     HotelAssignmentsModule,
+    SportsCalendarModule,
+    AccreditationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
