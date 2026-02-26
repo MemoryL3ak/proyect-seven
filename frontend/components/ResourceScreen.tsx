@@ -15,6 +15,8 @@ type DisciplineOption = Option;
 type ColumnDef = { key: string; label: string };
 
 type FormState = Record<string, string | string[]>;
+type EventCapacityTotals = Record<string, string>;
+type EventCapacityMatrix = Record<string, Record<string, string>>;
 
 const emptyValue = (type: FieldDef["type"]) => {
   if (type === "json") return "";
@@ -91,6 +93,52 @@ function parseCurrencyToNumber(value: string) {
   return digits ? Number(digits) : undefined;
 }
 
+function readEventAndConfig(configValue: unknown) {
+  const raw =
+    typeof configValue === "string"
+      ? (() => {
+          try {
+            return configValue.trim() ? JSON.parse(configValue) : {};
+          } catch {
+            return {};
+          }
+        })()
+      : typeof configValue === "object" && configValue !== null
+        ? (configValue as Record<string, unknown>)
+        : {};
+
+  const totals: EventCapacityTotals = {};
+  const matrix: EventCapacityMatrix = {};
+
+  const byDiscipline = raw.andExpectedByDiscipline;
+  if (byDiscipline && typeof byDiscipline === "object" && !Array.isArray(byDiscipline)) {
+    Object.entries(byDiscipline as Record<string, unknown>).forEach(([disciplineId, value]) => {
+      const n = typeof value === "number" ? value : Number(value);
+      if (Number.isFinite(n) && n >= 0) totals[disciplineId] = String(n);
+    });
+  }
+
+  const byDisciplineDelegation = raw.andExpectedByDisciplineDelegation;
+  if (
+    byDisciplineDelegation &&
+    typeof byDisciplineDelegation === "object" &&
+    !Array.isArray(byDisciplineDelegation)
+  ) {
+    Object.entries(byDisciplineDelegation as Record<string, unknown>).forEach(
+      ([disciplineId, rowValue]) => {
+        if (!rowValue || typeof rowValue !== "object" || Array.isArray(rowValue)) return;
+        matrix[disciplineId] = {};
+        Object.entries(rowValue as Record<string, unknown>).forEach(([delegationId, value]) => {
+          const n = typeof value === "number" ? value : Number(value);
+          if (Number.isFinite(n) && n >= 0) matrix[disciplineId][delegationId] = String(n);
+        });
+      },
+    );
+  }
+
+  return { raw, totals, matrix };
+}
+
 export default function ResourceScreen({ config }: { config?: ResourceConfig }) {
   const { t } = useI18n();
   if (!config) {
@@ -126,12 +174,16 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
   const [hotelBeds, setHotelBeds] = useState<Record<string, any>[]>([]);
   const [hotelBedOptions, setHotelBedOptions] = useState<Option[]>([]);
   const [driverLookup, setDriverLookup] = useState<Record<string, any>>({});
+  const [eventCapacityTotals, setEventCapacityTotals] = useState<EventCapacityTotals>({});
+  const [eventCapacityMatrix, setEventCapacityMatrix] = useState<EventCapacityMatrix>({});
+  const [eventPlannerDisciplineId, setEventPlannerDisciplineId] = useState<string>("");
   const flightLookupTimerRef = useRef<number | null>(null);
   const lastFlightLookupRef = useRef<string>("");
   const plateLookupTimerRef = useRef<number | null>(null);
   const lastPlateLookupRef = useRef<string>("");
   const isAccommodation = config.endpoint === "/accommodations";
   const isTrips = config.endpoint === "/trips";
+  const isEventsEndpoint = config.endpoint === "/events";
 
   useEffect(() => {
     if (config.endpoint !== "/accommodations") return;
@@ -189,8 +241,10 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
     [config.fields]
   );
   const needsDelegations = useMemo(
-    () => config.fields.some((field) => field.optionsSource === "delegations"),
-    [config.fields]
+    () =>
+      config.fields.some((field) => field.optionsSource === "delegations") ||
+      config.endpoint === "/events",
+    [config.fields, config.endpoint]
   );
   const needsProviders = useMemo(
     () => config.fields.some((field) => field.optionsSource === "providers"),
@@ -302,6 +356,12 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
             participantBedType: athlete.bedType ?? "",
             participantRoomNumber: athlete.roomNumber ?? "",
             participantPassportNumber: athlete.passportNumber ?? "",
+            participantMetadata:
+              athlete.metadata && typeof athlete.metadata === "object" ? athlete.metadata : {},
+            participantVisaType:
+              (athlete.metadata && typeof athlete.metadata === "object"
+                ? (athlete.metadata as Record<string, unknown>).visaType
+                : "") ?? "",
             participantRut:
               athlete.countryCode === "CHL" && athlete.passportNumber
                 ? athlete.passportNumber
@@ -314,6 +374,24 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
       }
 
       const data = await apiFetch<Record<string, any>[]>(config.endpoint);
+      if (config.endpoint === "/events") {
+        const mapped = (Array.isArray(data) ? data : []).map((item) => {
+          const parsed = readEventAndConfig(item.config);
+          return {
+            ...item,
+            disciplineCategory:
+              item.disciplineCategory ??
+              (parsed.raw.disciplineCategory as string | undefined) ??
+              "",
+            disciplineGender:
+              item.disciplineGender ??
+              (parsed.raw.disciplineGender as string | undefined) ??
+              "",
+          };
+        });
+        setItems(mapped);
+        return;
+      }
       setItems(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("No se pudo cargar"));
@@ -355,7 +433,8 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
       const data = await apiFetch<Record<string, any>[]>("/delegations");
       const options = (data || []).map((delegation) => ({
         label: delegation.countryCode ?? delegation.id,
-        value: delegation.id
+        value: delegation.id,
+        eventId: delegation.eventId
       }));
       setDelegationOptions(options);
     } catch (err) {
@@ -521,6 +600,42 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
       loadDelegations();
     }
   }, [needsDelegations]);
+
+  useEffect(() => {
+    if (!isEventsEndpoint) return;
+    const selectedDisciplineIds = ((form.disciplineIds as string[]) || []).filter(Boolean);
+    const eventDelegationIds = (editingId
+      ? (delegationOptions as any[])
+          .filter((option) => option.eventId === editingId)
+          .map((option) => option.value)
+      : []) as string[];
+
+    setEventCapacityTotals((prev) => {
+      const next: EventCapacityTotals = {};
+      selectedDisciplineIds.forEach((id) => {
+        next[id] = prev[id] ?? "";
+      });
+      return JSON.stringify(next) === JSON.stringify(prev) ? prev : next;
+    });
+
+    setEventCapacityMatrix((prev) => {
+      const next: EventCapacityMatrix = {};
+      selectedDisciplineIds.forEach((disciplineId) => {
+        const row = prev[disciplineId] ?? {};
+        const nextRow: Record<string, string> = {};
+        eventDelegationIds.forEach((delegationId) => {
+          nextRow[delegationId] = row[delegationId] ?? "";
+        });
+        next[disciplineId] = nextRow;
+      });
+      return JSON.stringify(next) === JSON.stringify(prev) ? prev : next;
+    });
+
+    setEventPlannerDisciplineId((prev) => {
+      if (prev && selectedDisciplineIds.includes(prev)) return prev;
+      return selectedDisciplineIds[0] ?? "";
+    });
+  }, [isEventsEndpoint, form.disciplineIds, editingId, delegationOptions]);
 
   useEffect(() => {
     if (needsProviders) {
@@ -855,7 +970,22 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
             hotelAccommodationId: form.participantHotelAccommodationId || undefined,
             roomType: form.participantRoomType || undefined,
             bedType: form.participantBedType || undefined,
-            roomNumber: form.participantRoomNumber || undefined
+            roomNumber: form.participantRoomNumber || undefined,
+            metadata: (() => {
+              const existing =
+                form.participantMetadata &&
+                typeof form.participantMetadata === "object" &&
+                !Array.isArray(form.participantMetadata)
+                  ? { ...(form.participantMetadata as Record<string, unknown>) }
+                  : {};
+              const visaType = (form.participantVisaType as string | undefined)?.trim();
+              if (visaType) {
+                existing.visaType = visaType;
+              } else {
+                delete existing.visaType;
+              }
+              return existing;
+            })()
           };
 
           if (participantCountry === "CHL") {
@@ -897,6 +1027,50 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
       }
 
       let finalPayload = { ...payload };
+      if (config.endpoint === "/events") {
+        const previousConfig = readEventAndConfig((payload as any).config).raw;
+        const andExpectedByDiscipline: Record<string, number> = {};
+        Object.entries(eventCapacityTotals).forEach(([disciplineId, raw]) => {
+          const n = Number(raw);
+          if (Number.isFinite(n) && n >= 0) andExpectedByDiscipline[disciplineId] = n;
+        });
+        const andExpectedByDisciplineDelegation: Record<string, Record<string, number>> = {};
+        Object.entries(eventCapacityMatrix).forEach(([disciplineId, row]) => {
+          const nextRow: Record<string, number> = {};
+          Object.entries(row || {}).forEach(([delegationId, raw]) => {
+            const n = Number(raw);
+            if (Number.isFinite(n) && n >= 0) nextRow[delegationId] = n;
+          });
+          if (Object.keys(nextRow).length > 0) {
+            andExpectedByDisciplineDelegation[disciplineId] = nextRow;
+          }
+        });
+
+        const disciplineCategory = String(form.disciplineCategory ?? "").trim();
+        const disciplineGender = String(form.disciplineGender ?? "").trim();
+
+        finalPayload = {
+          ...finalPayload,
+          config: {
+            ...previousConfig,
+            ...(disciplineCategory
+              ? { disciplineCategory }
+              : { disciplineCategory: undefined }),
+            ...(disciplineGender
+              ? { disciplineGender }
+              : { disciplineGender: undefined }),
+            andExpectedByDiscipline,
+            andExpectedByDisciplineDelegation
+          }
+        };
+        if (finalPayload.config && typeof finalPayload.config === "object") {
+          Object.keys(finalPayload.config as Record<string, unknown>).forEach((key) => {
+            if ((finalPayload.config as Record<string, unknown>)[key] === undefined) {
+              delete (finalPayload.config as Record<string, unknown>)[key];
+            }
+          });
+        }
+      }
       if (config.endpoint === "/accommodations") {
         const roomInventory: Record<string, number> = {};
 
@@ -1012,6 +1186,11 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
 
       setForm(buildInitial(config.fields));
       setEditingId(null);
+      if (config.endpoint === "/events") {
+        setEventCapacityTotals({});
+        setEventCapacityMatrix({});
+        setEventPlannerDisciplineId("");
+      }
       loadItems();
     } catch (err) {
       setError(err instanceof Error ? err.message : t("Error al guardar"));
@@ -1047,6 +1226,11 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
       next.participantBedType = item.participantBedType ?? "";
       next.participantRoomNumber = item.participantRoomNumber ?? "";
       next.participantPassportNumber = item.participantPassportNumber ?? "";
+      next.participantMetadata =
+        item.participantMetadata && typeof item.participantMetadata === "object"
+          ? item.participantMetadata
+          : {};
+      next.participantVisaType = item.participantVisaType ?? "";
       next.participantRut = item.participantRut ?? "";
       setForm(next);
       return;
@@ -1134,6 +1318,19 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
       }
       next[field.key] = String(value);
     });
+    if (config.endpoint === "/events") {
+      const parsedConfig = readEventAndConfig(item.config);
+      setEventCapacityTotals(parsedConfig.totals);
+      setEventCapacityMatrix(parsedConfig.matrix);
+      const itemDisciplineIds = Array.isArray(item.disciplineIds) ? item.disciplineIds : [];
+      setEventPlannerDisciplineId(itemDisciplineIds[0] ?? "");
+      if (!next.disciplineCategory) {
+        next.disciplineCategory = String(parsedConfig.raw.disciplineCategory ?? "");
+      }
+      if (!next.disciplineGender) {
+        next.disciplineGender = String(parsedConfig.raw.disciplineGender ?? "");
+      }
+    }
     setForm(next);
     setEditingId(item.id ?? null);
   };
@@ -1475,6 +1672,11 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
               onClick={() => {
                 setEditingId(null);
                 setForm(buildInitial(config.fields));
+                if (config.endpoint === "/events") {
+                  setEventCapacityTotals({});
+                  setEventCapacityMatrix({});
+                  setEventPlannerDisciplineId("");
+                }
               }}
             >
               {t("Cancelar edición")}
@@ -1844,6 +2046,7 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
                 "participantCountryCode",
                 "participantRut",
                 "participantPassportNumber",
+                "participantVisaType",
                 "participantBirthDate"
               ]);
               const flightKeys = new Set([
@@ -2020,6 +2223,133 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
                     </div>
                     <div className="grid gap-4 md:grid-cols-2">
                       {hotelFields.map((field) => renderField(field))}
+                    </div>
+                  </section>
+                </>
+              );
+            }
+            if (config.endpoint === "/events") {
+              const byKey = new Map(fields.map((field) => [field.key, field]));
+              const renderKeys = (keys: string[]) =>
+                keys.map((key) => {
+                  const field = byKey.get(key);
+                  return field ? renderField(field) : null;
+                });
+
+              const selectedDisciplineIds = ((form.disciplineIds as string[]) || []).filter(Boolean);
+              const selectedDisciplineOptions = (disciplineOptions as any[])
+                .filter((option) => selectedDisciplineIds.includes(option.value))
+                .sort((a, b) => String(a.label || a.value).localeCompare(String(b.label || b.value)));
+              const totalExpected = selectedDisciplineOptions.reduce((sum, option) => {
+                const n = Number(eventCapacityTotals[option.value] || 0);
+                return Number.isFinite(n) ? sum + n : sum;
+              }, 0);
+
+              return (
+                <>
+                  <section className="md:col-span-2 rounded-2xl border border-slate-200 bg-white p-5">
+                    <div className="mb-4">
+                      <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                        {t("Datos generales")}
+                      </p>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {renderKeys(["name", "country", "city", "startDate", "endDate"])}
+                    </div>
+                  </section>
+
+                  <section className="md:col-span-2 rounded-2xl border border-slate-200 bg-white p-5">
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                          {t("Configuración deportiva")}
+                        </p>
+                        <p className="mt-1 text-sm text-slate-500">
+                          {t("Define disciplinas del evento y su capacidad esperada de registro AND.")}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-600">
+                          {selectedDisciplineIds.length} disciplinas
+                        </span>
+                        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
+                          Total esperado {totalExpected}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {renderKeys(["disciplineCategory", "disciplineGender"])}
+                    </div>
+
+                    <div className="mt-4 grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+                      <div className="rounded-xl border border-slate-200 bg-white p-4">
+                        <div className="mb-3 flex items-center justify-between gap-2">
+                          <div>
+                            <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
+                              {t("Disciplinas del evento")}
+                            </p>
+                            <p className="text-sm text-slate-500">
+                              {t("Selecciona las disciplinas que participarán en este evento.")}
+                            </p>
+                          </div>
+                        </div>
+                        {renderKeys(["disciplineIds"])}
+                      </div>
+
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                          <div>
+                            <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Planificación AND</p>
+                            <p className="text-sm font-semibold text-slate-900">Capacidad esperada por disciplina</p>
+                          </div>
+                          <div className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600">
+                            {selectedDisciplineIds.length} / {selectedDisciplineOptions.length} activas
+                          </div>
+                        </div>
+
+                        {selectedDisciplineIds.length === 0 ? (
+                          <div className="rounded-lg border border-dashed border-slate-300 bg-white p-4">
+                            <p className="text-xs text-slate-500">
+                              {t("Selecciona disciplinas para definir la capacidad esperada AND.")}
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {selectedDisciplineOptions.map((option) => (
+                              <div
+                                key={option.value}
+                                className="grid items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 sm:grid-cols-[1fr_120px]"
+                              >
+                                <div className="min-w-0">
+                                  <p className="truncate text-sm font-medium text-slate-900">
+                                    {String(option.label || option.value)}
+                                  </p>
+                                  <p className="text-xs text-slate-500">
+                                    {t("Objetivo esperado de registro AND")}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    className="input h-10 text-right"
+                                    type="number"
+                                    min={0}
+                                    step={1}
+                                    value={eventCapacityTotals[option.value] ?? ""}
+                                    onChange={(e) =>
+                                      setEventCapacityTotals((prev) => ({
+                                        ...prev,
+                                        [option.value]: e.target.value,
+                                      }))
+                                    }
+                                    placeholder="0"
+                                  />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </section>
                 </>

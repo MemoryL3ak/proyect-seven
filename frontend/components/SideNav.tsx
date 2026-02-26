@@ -31,6 +31,7 @@ const navSections: NavSection[] = [
     items: [
       { href: "/masters/events", label: "Eventos", icon: "calendar" },
       { href: "/masters/delegations", label: "AND", icon: "users" },
+      { href: "/masters/and-compliance", label: "Cumplimiento AND", icon: "shield" },
       { href: "/masters/disciplines", label: "Disciplinas", icon: "trophy" },
       { href: "/masters/providers", label: "Proveedores", icon: "users" },
       { href: "/masters/drivers", label: "Conductores", icon: "driver" }

@@ -120,6 +120,7 @@ export const resources: Record<string, ResourceConfig> = {
       "disciplineGender",
       "participantFullName",
       "participantEmail",
+      "participantVisaType",
       "participantDisciplineId",
       "participantIsDelegationLead",
       "participantCountryCode"
@@ -236,6 +237,7 @@ export const resources: Record<string, ResourceConfig> = {
       },
       { key: "participantRut", label: "RUT", type: "text", transient: true },
       { key: "participantPassportNumber", label: "Pasaporte", type: "text", transient: true },
+      { key: "participantVisaType", label: "Tipo de visa", type: "text", transient: true },
       { key: "participantBirthDate", label: "Fecha nacimiento", type: "date", transient: true },
       {
         key: "participantLuggageType",

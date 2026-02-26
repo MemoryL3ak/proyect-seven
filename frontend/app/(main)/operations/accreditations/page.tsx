@@ -5,12 +5,14 @@ import { apiFetch } from "@/lib/api";
 import { buildCredentialHtml } from "@/lib/credential-template";
 
 type EventItem = { id: string; name?: string | null };
+type DisciplineItem = { id: string; name?: string | null };
 type ProviderItem = { id: string; name?: string | null };
 type DelegationItem = { id: string; countryCode?: string | null; eventId?: string | null };
 type AthleteItem = {
   id: string;
   eventId?: string | null;
   delegationId?: string | null;
+  disciplineId?: string | null;
   fullName?: string | null;
   email?: string | null;
   countryCode?: string | null;
@@ -92,6 +94,7 @@ function initials(name?: string | null) {
 
 export default function AccreditationsPage() {
   const [events, setEvents] = useState<EventItem[]>([]);
+  const [disciplines, setDisciplines] = useState<DisciplineItem[]>([]);
   const [providers, setProviders] = useState<ProviderItem[]>([]);
   const [delegations, setDelegations] = useState<DelegationItem[]>([]);
   const [athletes, setAthletes] = useState<AthleteItem[]>([]);
@@ -111,11 +114,13 @@ export default function AccreditationsPage() {
 
   const [newSubjectType, setNewSubjectType] = useState<"PARTICIPANT" | "DRIVER">("PARTICIPANT");
   const [selectedDelegationId, setSelectedDelegationId] = useState("");
+  const [andKpiDelegationId, setAndKpiDelegationId] = useState("");
   const [subjectSearch, setSubjectSearch] = useState("");
   const [newAthleteId, setNewAthleteId] = useState("");
   const [newDriverId, setNewDriverId] = useState("");
 
   const eventMap = useMemo(() => events.reduce<Record<string, EventItem>>((acc, item) => ({ ...acc, [item.id]: item }), {}), [events]);
+  const disciplineMap = useMemo(() => disciplines.reduce<Record<string, string>>((acc, item) => ({ ...acc, [item.id]: item.name || item.id }), {}), [disciplines]);
   const providerMap = useMemo(() => providers.reduce<Record<string, ProviderItem>>((acc, item) => ({ ...acc, [item.id]: item }), {}), [providers]);
   const delegationMap = useMemo(() => delegations.reduce<Record<string, DelegationItem>>((acc, item) => ({ ...acc, [item.id]: item }), {}), [delegations]);
   const athleteMap = useMemo(() => athletes.reduce<Record<string, AthleteItem>>((acc, item) => ({ ...acc, [item.id]: item }), {}), [athletes]);
@@ -133,8 +138,9 @@ export default function AccreditationsPage() {
     setLoading(true);
     setError(null);
     try {
-      const [eventData, providerData, delegationData, athleteData, driverData, accreditationData] = await Promise.all([
+      const [eventData, disciplineData, providerData, delegationData, athleteData, driverData, accreditationData] = await Promise.all([
         apiFetch<EventItem[]>("/events"),
+        apiFetch<DisciplineItem[]>("/disciplines"),
         apiFetch<ProviderItem[]>("/providers"),
         apiFetch<DelegationItem[]>("/delegations"),
         apiFetch<AthleteItem[]>("/athletes"),
@@ -142,6 +148,7 @@ export default function AccreditationsPage() {
         apiFetch<Accreditation[]>("/accreditations"),
       ]);
       setEvents(Array.isArray(eventData) ? eventData : []);
+      setDisciplines(Array.isArray(disciplineData) ? disciplineData : []);
       setProviders(Array.isArray(providerData) ? providerData : []);
       setDelegations(Array.isArray(delegationData) ? delegationData : []);
       setAthletes(Array.isArray(athleteData) ? athleteData : []);
@@ -165,6 +172,47 @@ export default function AccreditationsPage() {
   const eventAthletes = useMemo(() => athletes.filter((item) => (selectedEventId ? item.eventId === selectedEventId : true)), [athletes, selectedEventId]);
   const eventDrivers = useMemo(() => drivers.filter((item) => (selectedEventId ? item.eventId === selectedEventId : true)), [drivers, selectedEventId]);
   const eventDelegations = useMemo(() => delegations.filter((item) => (selectedEventId ? item.eventId === selectedEventId : true)), [delegations, selectedEventId]);
+  const andKpiRows = useMemo(() => {
+    const scopedAthletes = eventAthletes.filter((item) => (andKpiDelegationId ? item.delegationId === andKpiDelegationId : true));
+    const registeredByDiscipline = new Map<string, number>();
+    const accreditedByDiscipline = new Map<string, number>();
+
+    scopedAthletes.forEach((item) => {
+      const disciplineKey = item.disciplineId || "SIN_DISCIPLINA";
+      registeredByDiscipline.set(disciplineKey, (registeredByDiscipline.get(disciplineKey) ?? 0) + 1);
+      const acc = accByAthlete[item.id];
+      if (isAccredited(acc?.status)) {
+        accreditedByDiscipline.set(disciplineKey, (accreditedByDiscipline.get(disciplineKey) ?? 0) + 1);
+      }
+    });
+
+    const disciplineIds = new Set<string>([
+      ...Array.from(registeredByDiscipline.keys()),
+      ...Array.from(accreditedByDiscipline.keys()),
+    ]);
+
+    return Array.from(disciplineIds)
+      .map((disciplineId) => {
+        const registered = registeredByDiscipline.get(disciplineId) ?? 0;
+        const accredited = accreditedByDiscipline.get(disciplineId) ?? 0;
+        const pct = registered > 0 ? Math.round((accredited / registered) * 100) : 0;
+        return {
+          disciplineId,
+          disciplineName: disciplineId === "SIN_DISCIPLINA" ? "Sin disciplina" : (disciplineMap[disciplineId] || disciplineId),
+          registered,
+          accredited,
+          variance: accredited - registered,
+          pct,
+        };
+      })
+      .sort((a, b) => a.disciplineName.localeCompare(b.disciplineName));
+  }, [eventAthletes, andKpiDelegationId, accByAthlete, disciplineMap]);
+  const andKpiTotals = useMemo(() => {
+    const registered = andKpiRows.reduce((sum, row) => sum + row.registered, 0);
+    const accredited = andKpiRows.reduce((sum, row) => sum + row.accredited, 0);
+    const pct = registered > 0 ? Math.round((accredited / registered) * 100) : 0;
+    return { registered, accredited, pct, variance: accredited - registered };
+  }, [andKpiRows]);
   const kpiPool = useMemo(() => {
     const includeParticipants = subjectFilter === "ALL" || subjectFilter === "PARTICIPANT";
     const includeDrivers = subjectFilter === "ALL" || subjectFilter === "DRIVER";
@@ -390,6 +438,94 @@ export default function AccreditationsPage() {
         <div className="surface rounded-2xl p-4"><p className="text-xs uppercase tracking-[0.2em] text-slate-400">No acreditados</p><p className="text-2xl font-semibold text-slate-700">{overview.notAccredited}</p></div>
         <div className="surface rounded-2xl p-4"><p className="text-xs uppercase tracking-[0.2em] text-slate-400">Con credencial</p><p className="text-2xl font-semibold text-cyan-700">{overview.withCredential}</p></div>
         <div className="surface rounded-2xl p-4"><p className="text-xs uppercase tracking-[0.2em] text-slate-400">Acreditados sin credencial</p><p className="text-2xl font-semibold text-amber-700">{overview.accreditedWithoutCredential}</p></div>
+      </section>
+
+      <section className="surface rounded-3xl border border-slate-200 p-5 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-xs uppercase tracking-[0.22em] text-slate-500">AND / Acreditacion</p>
+            <h2 className="mt-1 text-2xl font-semibold text-slate-900">Cumplimiento de acreditacion sobre registro AND</h2>
+            <p className="mt-1 text-sm text-slate-500">Compara participantes registrados en AND vs participantes acreditados por disciplina.</p>
+          </div>
+          <button className="btn btn-ghost" type="button" onClick={loadData} disabled={loading}>
+            {loading ? "Actualizando..." : "Refrescar KPI"}
+          </button>
+        </div>
+
+        <div className="mt-4 grid gap-3 lg:grid-cols-[2fr_2fr_1fr_1fr]">
+          <select className="input" value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)}>
+            <option value="">Selecciona evento</option>
+            {events.map((item) => <option key={item.id} value={item.id}>{item.name || item.id}</option>)}
+          </select>
+          <select className="input" value={andKpiDelegationId} onChange={(e) => setAndKpiDelegationId(e.target.value)}>
+            <option value="">Todas las delegaciones</option>
+            {eventDelegations.map((item) => <option key={item.id} value={item.id}>{item.countryCode || item.id}</option>)}
+          </select>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+            <div className="text-xs text-slate-500">Registrado AND</div>
+            <div className="text-lg font-semibold text-slate-900">{andKpiTotals.registered}</div>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+            <div className="text-xs text-slate-500">Acreditado</div>
+            <div className="text-lg font-semibold text-slate-900">{andKpiTotals.accredited}</div>
+          </div>
+        </div>
+
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Cumplimiento total</p>
+            <div className="mt-2 flex items-end gap-2">
+              <p className="text-3xl font-semibold text-emerald-700">{andKpiTotals.pct}%</p>
+              <p className="pb-1 text-sm text-slate-500">AND registrado vs acreditado</p>
+            </div>
+            <div className="mt-3 h-2 rounded-full bg-slate-200">
+              <div className="h-2 rounded-full bg-emerald-500" style={{ width: `${Math.min(andKpiTotals.pct, 100)}%` }} />
+            </div>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Brecha neta</p>
+            <p className={`mt-2 text-3xl font-semibold ${andKpiTotals.variance < 0 ? "text-rose-700" : "text-emerald-700"}`}>{andKpiTotals.variance}</p>
+            <p className="mt-1 text-sm text-slate-500">Acreditados respecto al registro AND</p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Vista activa</p>
+            <p className="mt-2 text-xl font-semibold text-slate-900">{andKpiDelegationId ? (delegationMap[andKpiDelegationId]?.countryCode || andKpiDelegationId) : "Consolidado del evento"}</p>
+            <p className="mt-1 text-sm text-slate-500">{andKpiDelegationId ? "Filtro por delegacion aplicado" : "Todas las delegaciones del evento"}</p>
+          </div>
+        </div>
+
+        <div className="mt-5 overflow-x-auto">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Disciplina</th>
+                <th>Registrado AND</th>
+                <th>Acreditado</th>
+                <th>Brecha</th>
+                <th>Cumplimiento</th>
+              </tr>
+            </thead>
+            <tbody>
+              {andKpiRows.map((row) => (
+                <tr key={row.disciplineId}>
+                  <td>{row.disciplineName}</td>
+                  <td>{row.registered}</td>
+                  <td>{row.accredited}</td>
+                  <td className={row.variance < 0 ? "text-rose-600" : "text-emerald-700"}>{row.variance}</td>
+                  <td>
+                    <div className="flex items-center gap-3">
+                      <div className="h-2 w-36 rounded-full bg-slate-200">
+                        <div className="h-2 rounded-full bg-cyan-500" style={{ width: `${Math.min(row.pct, 100)}%` }} />
+                      </div>
+                      <span className="text-sm font-semibold text-slate-700">{row.pct}%</span>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {andKpiRows.length === 0 ? <p className="mt-3 text-sm text-slate-500">No hay participantes AND para mostrar cumplimiento en este filtro.</p> : null}
+        </div>
       </section>
 
       <section className="surface rounded-2xl p-5">

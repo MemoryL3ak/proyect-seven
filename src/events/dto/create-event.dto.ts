@@ -1,4 +1,11 @@
-﻿import { IsArray, IsISO8601, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsISO8601,
+  IsNotEmpty,
+  IsObject,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class CreateEventDto {
   @IsString()
@@ -29,4 +36,8 @@ export class CreateEventDto {
   @IsString()
   @IsOptional()
   status?: string;
+
+  @IsObject()
+  @IsOptional()
+  config?: Record<string, unknown>;
 }

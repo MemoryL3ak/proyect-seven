@@ -21,6 +21,7 @@ export default function TopBar() {
     drivers: "Conductores",
     masters: isHotelMaster ? "Hotelería" : "Maestros",
     accommodations: "Hoteles",
+    "and-compliance": "Cumplimiento AND",
     "hotel-rooms": "Habitaciones",
     "hotel-beds": "Camas",
     "hotel-assignments": "Asignaciones hotel",

@@ -4,6 +4,23 @@ import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "re
 import { apiFetch } from "@/lib/api";
 
 type EventOption = { id: string; name: string };
+type DisciplineOption = {
+  id: string;
+  name?: string | null;
+  eventId?: string | null;
+  category?: string | null;
+  gender?: string | null;
+};
+type DelegationOption = { id: string; countryCode?: string | null; eventId?: string | null };
+type AthleteAndItem = {
+  id: string;
+  eventId?: string | null;
+  delegationId?: string | null;
+  disciplineId?: string | null;
+  arrivalTime?: string | null;
+  departureTime?: string | null;
+};
+type ScheduleType = "ARRIVAL" | "TRAINING" | "COMPETITION" | "DEPARTURE";
 
 type SportsEvent = {
   id: string;
@@ -36,8 +53,59 @@ type CreateSportsEventPayload = {
 
 const STATUSES = ["ALL", "SCHEDULED", "LIVE", "FINISHED", "POSTPONED", "CANCELLED"];
 const WEEK_LABELS = ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB", "DOM"];
+const SCHEDULE_TYPE_OPTIONS: Array<{ value: ScheduleType; label: string }> = [
+  { value: "ARRIVAL", label: "Fecha de llegada" },
+  { value: "TRAINING", label: "Fechas de entrenamiento" },
+  { value: "COMPETITION", label: "Fechas de pruebas" },
+  { value: "DEPARTURE", label: "Fecha de retiro" },
+];
+const MANUAL_SCHEDULE_TYPE_OPTIONS: Array<{ value: ScheduleType; label: string }> = SCHEDULE_TYPE_OPTIONS.filter(
+  (option) => option.value === "TRAINING" || option.value === "COMPETITION",
+);
+const DISCIPLINE_CATEGORY_OPTIONS = [
+  { value: "CONVENTIONAL", label: "Convencional" },
+  { value: "PARALYMPIC", label: "Paralímpica" },
+];
+const DISCIPLINE_GENDER_OPTIONS = [
+  { value: "MALE", label: "Masculino" },
+  { value: "FEMALE", label: "Femenino" },
+];
 const CSV_HEADERS =
-  "eventId,sport,league,season,title,competitorA,competitorB,venue,startAtUtc,status,source";
+  "eventId,sport,league,season,title,competitorA,competitorB,venue,startAtUtc,status,source,scheduleType,delegationId,generalQuota,delegationQuota";
+
+function getMetaString(metadata: Record<string, unknown> | undefined, key: string) {
+  const value = metadata?.[key];
+  if (typeof value === "string") return value;
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  return "";
+}
+
+function scheduleTypeLabel(value?: string | null) {
+  const found = SCHEDULE_TYPE_OPTIONS.find((option) => option.value === value);
+  return found?.label ?? "Sin tipo";
+}
+
+function scheduleTypeBadgeClass(value?: string | null) {
+  if (value === "ARRIVAL") return "bg-sky-100 text-sky-800";
+  if (value === "TRAINING") return "bg-amber-100 text-amber-800";
+  if (value === "COMPETITION") return "bg-emerald-100 text-emerald-800";
+  if (value === "DEPARTURE") return "bg-rose-100 text-rose-800";
+  return "bg-slate-100 text-slate-700";
+}
+
+function scheduleTypeCalendarCardClass(value?: string | null) {
+  if (value === "ARRIVAL") return "border border-sky-200 bg-sky-50";
+  if (value === "TRAINING") return "border border-amber-200 bg-amber-50";
+  if (value === "COMPETITION") return "border border-emerald-200 bg-emerald-50";
+  if (value === "DEPARTURE") return "border border-rose-200 bg-rose-50";
+  return "border border-slate-200 bg-slate-50";
+}
+
+function delegationLabelById(options: DelegationOption[], id?: string | null) {
+  if (!id) return "";
+  const item = options.find((option) => option.id === id);
+  return item?.countryCode || id;
+}
 
 function startOfMonth(date: Date) {
   const d = new Date(date);
@@ -108,6 +176,12 @@ function parseCsv(csv: string): CreateSportsEventPayload[] {
     const title = get("title");
     const competitorA = get("competitorA") || get("homeTeam");
     const competitorB = get("competitorB") || get("awayTeam");
+    const metadata: Record<string, unknown> = {};
+    if (title) metadata.title = title;
+    if (get("scheduleType")) metadata.scheduleType = get("scheduleType");
+    if (get("delegationId")) metadata.delegationId = get("delegationId");
+    if (get("generalQuota")) metadata.generalQuota = Number(get("generalQuota"));
+    if (get("delegationQuota")) metadata.delegationQuota = Number(get("delegationQuota"));
 
     return {
       eventId: get("eventId") || undefined,
@@ -120,7 +194,7 @@ function parseCsv(csv: string): CreateSportsEventPayload[] {
       startAtUtc: get("startAtUtc"),
       status: get("status") || "SCHEDULED",
       source: get("source") || "csv",
-      metadata: title ? { title } : undefined,
+      metadata: Object.keys(metadata).length ? metadata : undefined,
     };
   });
 }
@@ -144,6 +218,48 @@ function formatTime(value: string) {
   const hours = `${date.getHours()}`.padStart(2, "0");
   const minutes = `${date.getMinutes()}`.padStart(2, "0");
   return `${hours}:${minutes}`;
+}
+
+function formatDateTime(value?: string | null) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return new Intl.DateTimeFormat("es-CL", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function formatDateShort(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("es-CL", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function normalizeKey(value?: string | null) {
+  return (value ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
+
+function entryFormTitle(scheduleType?: string | null, editing = false) {
+  const base =
+    scheduleType === "TRAINING"
+      ? "entrenamiento"
+      : scheduleType === "COMPETITION"
+        ? "prueba"
+        : "actividad";
+  return editing ? `Editar ${base}` : `Programar ${base}`;
 }
 
 function titleFromEvent(event: SportsEvent) {
@@ -178,7 +294,11 @@ export default function SportsCalendarPage() {
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [entries, setEntries] = useState<SportsEvent[]>([]);
   const [eventOptions, setEventOptions] = useState<EventOption[]>([]);
+  const [disciplineOptions, setDisciplineOptions] = useState<DisciplineOption[]>([]);
+  const [delegationOptions, setDelegationOptions] = useState<DelegationOption[]>([]);
+  const [athletes, setAthletes] = useState<AthleteAndItem[]>([]);
   const [selectedEventId, setSelectedEventId] = useState("");
+  const [selectedDelegationId, setSelectedDelegationId] = useState("");
   const [monthCursor, setMonthCursor] = useState(() => startOfMonth(new Date()));
   const [selectedDay, setSelectedDay] = useState(() => new Date());
   const [sportFilter, setSportFilter] = useState("");
@@ -210,6 +330,33 @@ export default function SportsCalendarPage() {
     }
   };
 
+  const loadDelegations = async () => {
+    try {
+      const data = await apiFetch<DelegationOption[]>("/delegations");
+      setDelegationOptions(Array.isArray(data) ? data : []);
+    } catch {
+      setDelegationOptions([]);
+    }
+  };
+
+  const loadDisciplines = async () => {
+    try {
+      const data = await apiFetch<DisciplineOption[]>("/disciplines");
+      setDisciplineOptions(Array.isArray(data) ? data : []);
+    } catch {
+      setDisciplineOptions([]);
+    }
+  };
+
+  const loadAthletes = async () => {
+    try {
+      const data = await apiFetch<AthleteAndItem[]>("/athletes");
+      setAthletes(Array.isArray(data) ? data : []);
+    } catch {
+      setAthletes([]);
+    }
+  };
+
   const loadEntries = async () => {
     const grid = buildMonthGrid(monthCursor);
     const from = new Date(grid[0]);
@@ -229,7 +376,14 @@ export default function SportsCalendarPage() {
     setLoading(true);
     try {
       const data = await apiFetch<SportsEvent[]>(`/sports-calendar/events?${params.toString()}`);
-      setEntries(Array.isArray(data) ? data : []);
+      const source = Array.isArray(data) ? data : [];
+      setEntries(
+        selectedDelegationId
+          ? source.filter(
+              (item) => getMetaString(item.metadata, "delegationId") === selectedDelegationId,
+            )
+          : source,
+      );
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "No se pudo cargar calendario.");
     } finally {
@@ -239,29 +393,214 @@ export default function SportsCalendarPage() {
 
   useEffect(() => {
     loadEventOptions();
+    loadDisciplines();
+    loadDelegations();
+    loadAthletes();
   }, []);
 
   useEffect(() => {
     loadEntries();
-  }, [monthCursor, selectedEventId, sportFilter, phaseFilter, personFilter, statusFilter]);
+  }, [monthCursor, selectedEventId, selectedDelegationId, sportFilter, phaseFilter, personFilter, statusFilter]);
+
+  const filteredDelegationOptions = useMemo(
+    () =>
+      delegationOptions.filter((item) =>
+        selectedEventId ? item.eventId === selectedEventId : true,
+      ),
+    [delegationOptions, selectedEventId],
+  );
+  const filteredDisciplineOptions = useMemo(
+    () => {
+      const selectedCategory = getMetaString(newEntry.metadata, "disciplineCategory");
+      const selectedGender = getMetaString(newEntry.metadata, "disciplineGender");
+      return disciplineOptions.filter((item) => {
+        if (selectedEventId && item.eventId !== selectedEventId) return false;
+        if (selectedCategory && item.category && item.category !== selectedCategory) return false;
+        if (selectedGender && item.gender && item.gender !== selectedGender) return false;
+        return true;
+      });
+    },
+    [disciplineOptions, selectedEventId, newEntry.metadata],
+  );
+  const disciplineNameMap = useMemo(
+    () =>
+      disciplineOptions.reduce<Record<string, string>>((acc, item) => {
+        acc[item.id] = item.name || item.id;
+        return acc;
+      }, {}),
+    [disciplineOptions],
+  );
+  const disciplineNameToIdMap = useMemo(
+    () =>
+      disciplineOptions.reduce<Record<string, string>>((acc, item) => {
+        const key = normalizeKey(item.name || item.id);
+        if (key) acc[key] = item.id;
+        return acc;
+      }, {}),
+    [disciplineOptions],
+  );
 
   const monthGrid = useMemo(() => buildMonthGrid(monthCursor), [monthCursor]);
   const todayKey = isoDayKey(new Date());
   const selectedDayKey = isoDayKey(selectedDay);
+  const selectedManualScheduleType = getMetaString(newEntry.metadata, "scheduleType");
+  const isCompetitionActivity = selectedManualScheduleType === "COMPETITION";
+  const isTrainingActivity = selectedManualScheduleType === "TRAINING";
+  const liveCount = entries.filter((entry) => (entry.status ?? "").toUpperCase() === "LIVE").length;
+  const scopedAthletes = useMemo(
+    () =>
+      athletes.filter((item) => {
+        if (selectedEventId && item.eventId !== selectedEventId) return false;
+        if (selectedDelegationId && item.delegationId !== selectedDelegationId) return false;
+        return true;
+      }),
+    [athletes, selectedEventId, selectedDelegationId],
+  );
+  const andDisciplineScheduleRows = useMemo(() => {
+    type Row = {
+      delegationId: string;
+      delegationLabel: string;
+      disciplineId: string;
+      disciplineName: string;
+      arrivalAt?: string;
+      departureAt?: string;
+      trainingDates: string[];
+      competitionDates: string[];
+    };
 
+    const rows = new Map<string, Row>();
+    const getRow = (delegationId: string, disciplineId: string, disciplineName: string) => {
+      const key = `${delegationId}::${disciplineId}`;
+      const existing = rows.get(key);
+      if (existing) return existing;
+      const created: Row = {
+        delegationId,
+        delegationLabel: delegationLabelById(delegationOptions, delegationId) || delegationId,
+        disciplineId,
+        disciplineName,
+        trainingDates: [],
+        competitionDates: [],
+      };
+      rows.set(key, created);
+      return created;
+    };
+
+    scopedAthletes.forEach((athlete) => {
+      if (!athlete.delegationId) return;
+      const disciplineId = athlete.disciplineId || "SIN_DISCIPLINA";
+      const disciplineName =
+        disciplineId === "SIN_DISCIPLINA" ? "Sin disciplina" : disciplineNameMap[disciplineId] || disciplineId;
+      const row = getRow(athlete.delegationId, disciplineId, disciplineName);
+      if (athlete.arrivalTime) {
+        if (!row.arrivalAt || new Date(athlete.arrivalTime) < new Date(row.arrivalAt)) {
+          row.arrivalAt = athlete.arrivalTime;
+        }
+      }
+      if (athlete.departureTime) {
+        if (!row.departureAt || new Date(athlete.departureTime) > new Date(row.departureAt)) {
+          row.departureAt = athlete.departureTime;
+        }
+      }
+    });
+
+    entries.forEach((entry) => {
+      const scheduleType = getMetaString(entry.metadata, "scheduleType");
+      if (scheduleType !== "TRAINING" && scheduleType !== "COMPETITION") return;
+      const delegationId = getMetaString(entry.metadata, "delegationId");
+      if (!delegationId) return;
+      if (selectedDelegationId && delegationId !== selectedDelegationId) return;
+      const disciplineId = getMetaString(entry.metadata, "disciplineId")
+        || disciplineNameToIdMap[normalizeKey(entry.sport)]
+        || `SPORT_NAME::${entry.sport}`;
+      const disciplineName =
+        disciplineId.startsWith("SPORT_NAME::")
+          ? entry.sport
+          : (disciplineNameMap[disciplineId] || entry.sport || disciplineId);
+      const row = getRow(delegationId, disciplineId, disciplineName);
+      const target = scheduleType === "TRAINING" ? row.trainingDates : row.competitionDates;
+      if (!target.includes(entry.startAtUtc)) target.push(entry.startAtUtc);
+    });
+
+    return Array.from(rows.values())
+      .map((row) => ({
+        ...row,
+        trainingDates: [...row.trainingDates].sort(),
+        competitionDates: [...row.competitionDates].sort(),
+      }))
+      .sort((a, b) => {
+        const del = a.delegationLabel.localeCompare(b.delegationLabel);
+        return del !== 0 ? del : a.disciplineName.localeCompare(b.disciplineName);
+      });
+  }, [
+    scopedAthletes,
+    entries,
+    delegationOptions,
+    selectedDelegationId,
+    disciplineNameMap,
+    disciplineNameToIdMap,
+  ]);
+  const derivedAndCalendarEntries = useMemo(() => {
+    const result: SportsEvent[] = [];
+    andDisciplineScheduleRows.forEach((row) => {
+      if (row.arrivalAt) {
+        result.push({
+          id: `and-arrival-${row.delegationId}-${row.disciplineId}-${row.arrivalAt}`,
+          eventId: selectedEventId || undefined,
+          sport: row.disciplineName,
+          league: "Llegada AND",
+          venue: "AND",
+          startAtUtc: row.arrivalAt,
+          status: "SCHEDULED",
+          source: "and-derived",
+          metadata: {
+            title: `Llegada ${row.delegationLabel}`,
+            scheduleType: "ARRIVAL",
+            delegationId: row.delegationId,
+            disciplineId: row.disciplineId,
+            derivedFrom: "AND",
+          },
+        });
+      }
+      if (row.departureAt) {
+        result.push({
+          id: `and-departure-${row.delegationId}-${row.disciplineId}-${row.departureAt}`,
+          eventId: selectedEventId || undefined,
+          sport: row.disciplineName,
+          league: "Retiro AND",
+          venue: "AND",
+          startAtUtc: row.departureAt,
+          status: "SCHEDULED",
+          source: "and-derived",
+          metadata: {
+            title: `Retiro ${row.delegationLabel}`,
+            scheduleType: "DEPARTURE",
+            delegationId: row.delegationId,
+            disciplineId: row.disciplineId,
+            derivedFrom: "AND",
+          },
+        });
+      }
+    });
+    return result;
+  }, [andDisciplineScheduleRows, selectedEventId]);
+  const calendarDisplayEntries = useMemo(
+    () =>
+      [...entries, ...derivedAndCalendarEntries].sort(
+        (a, b) => new Date(a.startAtUtc).getTime() - new Date(b.startAtUtc).getTime(),
+      ),
+    [entries, derivedAndCalendarEntries],
+  );
   const groupedByDay = useMemo(() => {
     const map = new Map<string, SportsEvent[]>();
-    entries.forEach((entry) => {
+    calendarDisplayEntries.forEach((entry) => {
       const key = isoDayKey(entry.startAtUtc);
       const current = map.get(key) ?? [];
       current.push(entry);
       map.set(key, current);
     });
     return map;
-  }, [entries]);
-
+  }, [calendarDisplayEntries]);
   const selectedDayEntries = groupedByDay.get(selectedDayKey) ?? [];
-  const liveCount = entries.filter((entry) => (entry.status ?? "").toUpperCase() === "LIVE").length;
 
   const createEntry = async (e: FormEvent) => {
     e.preventDefault();
@@ -277,6 +616,10 @@ export default function SportsCalendarPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             ...newEntry,
+            league:
+              selectedManualScheduleType === "COMPETITION"
+                ? (newEntry.league || "Prueba")
+                : newEntry.league,
             eventId: selectedEventId || undefined,
             metadata:
               newEntry.metadata && Object.keys(newEntry.metadata).length > 0
@@ -285,7 +628,7 @@ export default function SportsCalendarPage() {
           }),
         },
       );
-      setMessage(editingEntryId ? "Prueba actualizada." : "Prueba creada en calendario.");
+      setMessage(editingEntryId ? "Actividad actualizada." : "Actividad creada en calendario.");
       setEditingEntryId(null);
       setNewEntry((prev) => ({
         sport: prev.sport,
@@ -303,8 +646,8 @@ export default function SportsCalendarPage() {
         err instanceof Error
           ? err.message
           : editingEntryId
-            ? "No se pudo actualizar la prueba."
-            : "No se pudo crear la prueba.",
+            ? "No se pudo actualizar la actividad."
+            : "No se pudo crear la actividad.",
       );
     } finally {
       setSaving(false);
@@ -368,7 +711,7 @@ export default function SportsCalendarPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ events: payload }),
         });
-        setMessage(`Carga masiva completada: ${result.inserted} pruebas.`);
+        setMessage(`Carga masiva completada: ${result.inserted} actividades.`);
         await loadEntries();
       } catch (err) {
         setMessage(err instanceof Error ? err.message : "No se pudo importar CSV.");
@@ -382,7 +725,7 @@ export default function SportsCalendarPage() {
   const downloadTemplate = () => {
     const example =
       `${CSV_HEADERS}\n` +
-      `${selectedEventId || ""},Atletismo,100m Semifinal,2026,Semifinal 100m varones,,,Estadio Nacional,2026-02-20T14:00:00.000Z,SCHEDULED,csv`;
+      `${selectedEventId || ""},Atletismo,100m Semifinal,2026,Semifinal 100m varones,,,Estadio Nacional,2026-02-20T14:00:00.000Z,SCHEDULED,csv,COMPETITION,,40,4`;
     const blob = new Blob([example], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -400,10 +743,10 @@ export default function SportsCalendarPage() {
       if (editingEntryId === id) {
         cancelEdit();
       }
-      setMessage("Prueba eliminada.");
+      setMessage("Actividad eliminada.");
       await loadEntries();
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "No se pudo eliminar la prueba.");
+      setMessage(err instanceof Error ? err.message : "No se pudo eliminar la actividad.");
     } finally {
       setSaving(false);
     }
@@ -418,13 +761,13 @@ export default function SportsCalendarPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-[0.24em] text-white/85">Calendario deportivo</p>
-            <h1 className="mt-1 text-2xl font-semibold">Planificacion por disciplinas y pruebas</h1>
+            <h1 className="mt-1 text-2xl font-semibold">Planificacion por disciplinas, entrenamientos y pruebas</h1>
             <p className="mt-1 text-sm text-white/85">
-              Compatible con pruebas individuales y deportes de equipo en sede neutral.
+              Registro operativo de entrenamientos y pruebas por delegacion, con llegadas y retiros integrados desde AND.
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <span className="rounded-full bg-slate-700 px-3 py-1 text-xs">{entries.length} pruebas</span>
+            <span className="rounded-full bg-slate-700 px-3 py-1 text-xs">{entries.length} actividades</span>
             <span className="rounded-full bg-rose-700 px-3 py-1 text-xs">{liveCount} en vivo</span>
           </div>
         </div>
@@ -438,8 +781,14 @@ export default function SportsCalendarPage() {
               <option key={item.id} value={item.id}>{item.name}</option>
             ))}
           </select>
+          <select className="input lg:col-span-2" value={selectedDelegationId} onChange={(e) => setSelectedDelegationId(e.target.value)}>
+            <option value="">Todas las delegaciones</option>
+            {filteredDelegationOptions.map((item) => (
+              <option key={item.id} value={item.id}>{item.countryCode || item.id}</option>
+            ))}
+          </select>
           <input className="input lg:col-span-2" placeholder="Disciplina" value={sportFilter} onChange={(e) => setSportFilter(e.target.value)} />
-          <input className="input lg:col-span-2" placeholder="Fase/Categoria" value={phaseFilter} onChange={(e) => setPhaseFilter(e.target.value)} />
+          <input className="input lg:col-span-1" placeholder="Fase/Categoria" value={phaseFilter} onChange={(e) => setPhaseFilter(e.target.value)} />
           <input className="input lg:col-span-2" placeholder="Competidor o delegacion" value={personFilter} onChange={(e) => setPersonFilter(e.target.value)} />
           <select className="input lg:col-span-1" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             {STATUSES.map((status) => (
@@ -454,6 +803,79 @@ export default function SportsCalendarPage() {
         </div>
       </section>
 
+      <section className="surface rounded-2xl p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Agenda AND por delegacion</p>
+            <h2 className="mt-1 text-lg font-semibold text-slate-900">
+              Fechas por disciplina y delegacion
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Llegada y retiro se obtienen desde AND. Entrenamientos y pruebas se completan en este calendario.
+            </p>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+            {selectedDelegationId ? "Vista filtrada por delegacion" : "Vista consolidada (todas las delegaciones)"}
+          </div>
+        </div>
+
+        <div className="mt-4 overflow-x-auto">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Delegacion</th>
+                <th>Disciplina</th>
+                <th>Fecha de llegada (AND)</th>
+                <th>Fechas de entrenamiento</th>
+                <th>Fechas de pruebas</th>
+                <th>Fecha de retiro (AND)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {andDisciplineScheduleRows.map((row) => (
+                <tr key={`${row.delegationId}-${row.disciplineId}`}>
+                  <td>{row.delegationLabel}</td>
+                  <td>{row.disciplineName}</td>
+                  <td>{formatDateTime(row.arrivalAt)}</td>
+                  <td>
+                    {row.trainingDates.length ? (
+                      <div className="flex flex-wrap gap-1">
+                        {row.trainingDates.map((value) => (
+                          <span key={value} className="inline-flex rounded-full bg-amber-100 px-2 py-1 text-[10px] font-semibold text-amber-800">
+                            {formatDateShort(value)}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-slate-400">Sin programar</span>
+                    )}
+                  </td>
+                  <td>
+                    {row.competitionDates.length ? (
+                      <div className="flex flex-wrap gap-1">
+                        {row.competitionDates.map((value) => (
+                          <span key={value} className="inline-flex rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-semibold text-emerald-800">
+                            {formatDateShort(value)}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-slate-400">Sin programar</span>
+                    )}
+                  </td>
+                  <td>{formatDateTime(row.departureAt)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {andDisciplineScheduleRows.length === 0 ? (
+            <p className="mt-3 text-sm text-slate-500">
+              No hay datos para construir la agenda por delegacion y disciplina con los filtros actuales.
+            </p>
+          ) : null}
+        </div>
+      </section>
+
       <section className="grid gap-4 xl:grid-cols-[2fr_1fr]">
         <div className="surface rounded-2xl p-4">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -463,6 +885,16 @@ export default function SportsCalendarPage() {
               <button className="btn btn-ghost" type="button" onClick={() => setMonthCursor((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}>Mes siguiente</button>
             </div>
             <h2 className="text-lg font-semibold capitalize text-slate-900">{monthLabel(monthCursor)}</h2>
+          </div>
+          <div className="mb-3 flex flex-wrap gap-2">
+            {SCHEDULE_TYPE_OPTIONS.map((item) => (
+              <span
+                key={item.value}
+                className={`inline-flex rounded-full px-2 py-1 text-[10px] font-semibold ${scheduleTypeBadgeClass(item.value)}`}
+              >
+                {item.label}
+              </span>
+            ))}
           </div>
 
           <div className="grid grid-cols-7 gap-2 text-center text-xs uppercase tracking-[0.14em] text-slate-500">
@@ -498,9 +930,15 @@ export default function SportsCalendarPage() {
                   <p className="text-xs font-semibold">{day.getDate()}</p>
                   <div className="mt-1 space-y-1">
                     {dayEntries.slice(0, 3).map((entry) => (
-                      <div key={entry.id} className="rounded bg-slate-100 px-1 py-0.5">
+                      <div
+                        key={entry.id}
+                        className={`rounded px-1 py-0.5 ${scheduleTypeCalendarCardClass(getMetaString(entry.metadata, "scheduleType"))}`}
+                      >
                         <p className="truncate text-[10px] font-semibold text-slate-700">
                           {titleFromEvent(entry)}
+                        </p>
+                        <p className="truncate text-[10px] text-slate-500">
+                          {scheduleTypeLabel(getMetaString(entry.metadata, "scheduleType"))}
                         </p>
                         <p className="truncate text-[10px] text-slate-500">
                           {formatTime(entry.startAtUtc)} {entry.venue ? `- ${entry.venue}` : ""}
@@ -520,15 +958,153 @@ export default function SportsCalendarPage() {
         <div className="space-y-4">
           <form onSubmit={createEntry} className="surface rounded-2xl p-4">
             <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
-              {editingEntryId ? "Editar prueba" : "Programar prueba"}
+              {entryFormTitle(getMetaString(newEntry.metadata, "scheduleType"), Boolean(editingEntryId))}
             </h3>
             <p className="mt-1 text-xs text-slate-500">{dayLabel(selectedDay)}</p>
             <div className="mt-3 grid gap-2">
-              <input className="input" placeholder="Disciplina" value={newEntry.sport} onChange={(e) => setNewEntry({ ...newEntry, sport: e.target.value })} required />
-              <input className="input" placeholder="Fase/Categoria" value={newEntry.league} onChange={(e) => setNewEntry({ ...newEntry, league: e.target.value })} required />
-              <input className="input" placeholder="Descripcion" value={String(newEntry.metadata?.title ?? "")} onChange={(e) => setNewEntry({ ...newEntry, metadata: { ...newEntry.metadata, title: e.target.value } })} />
-              <input className="input" placeholder="Competidor/Delegacion A" value={newEntry.competitorA ?? ""} onChange={(e) => setNewEntry({ ...newEntry, competitorA: e.target.value })} />
-              <input className="input" placeholder="Competidor/Delegacion B" value={newEntry.competitorB ?? ""} onChange={(e) => setNewEntry({ ...newEntry, competitorB: e.target.value })} />
+              <select
+                className="input"
+                value={selectedManualScheduleType}
+                onChange={(e) =>
+                  setNewEntry({
+                    ...newEntry,
+                    league:
+                      e.target.value === "COMPETITION"
+                        ? (newEntry.league || "Prueba")
+                        : newEntry.league,
+                    competitorA: e.target.value === "TRAINING" ? "" : newEntry.competitorA,
+                    competitorB: e.target.value === "TRAINING" ? "" : newEntry.competitorB,
+                    metadata: {
+                      ...newEntry.metadata,
+                      scheduleType: e.target.value || undefined,
+                    },
+                  })
+                }
+              >
+                <option value="">Tipo de fecha</option>
+                {MANUAL_SCHEDULE_TYPE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+              <p className="text-xs text-slate-500">
+                Llegada y retiro se calculan automaticamente desde AND (no se cargan manualmente aqui).
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <select
+                  className="input"
+                  value={getMetaString(newEntry.metadata, "disciplineCategory")}
+                  onChange={(e) =>
+                    setNewEntry({
+                      ...newEntry,
+                      metadata: {
+                        ...newEntry.metadata,
+                        disciplineCategory: e.target.value || undefined,
+                        disciplineId: undefined,
+                      },
+                    })
+                  }
+                >
+                  <option value="">Categoria de disciplina</option>
+                  {DISCIPLINE_CATEGORY_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+                <select
+                  className="input"
+                  value={getMetaString(newEntry.metadata, "disciplineGender")}
+                  onChange={(e) =>
+                    setNewEntry({
+                      ...newEntry,
+                      metadata: {
+                        ...newEntry.metadata,
+                        disciplineGender: e.target.value || undefined,
+                        disciplineId: undefined,
+                      },
+                    })
+                  }
+                >
+                  <option value="">Genero de disciplina</option>
+                  {DISCIPLINE_GENDER_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </div>
+              <select
+                className="input"
+                value={getMetaString(newEntry.metadata, "disciplineId")}
+                onChange={(e) => {
+                  const disciplineId = e.target.value;
+                  const found = filteredDisciplineOptions.find((item) => item.id === disciplineId);
+                    setNewEntry({
+                      ...newEntry,
+                      sport: found?.name || "",
+                      metadata: {
+                        ...newEntry.metadata,
+                        disciplineId: disciplineId || undefined,
+                      disciplineCategory: found?.category || getMetaString(newEntry.metadata, "disciplineCategory") || undefined,
+                      disciplineGender: found?.gender || getMetaString(newEntry.metadata, "disciplineGender") || undefined,
+                    },
+                  });
+                }}
+              >
+                <option value="">Disciplina vinculada (opcional)</option>
+                {filteredDisciplineOptions.map((item) => (
+                  <option key={item.id} value={item.id}>{item.name || item.id}</option>
+                ))}
+              </select>
+              <select
+                className="input"
+                value={getMetaString(newEntry.metadata, "delegationId")}
+                onChange={(e) =>
+                  setNewEntry({
+                    ...newEntry,
+                    metadata: { ...newEntry.metadata, delegationId: e.target.value || undefined },
+                  })
+                }
+              >
+                <option value="">Todas / sin delegacion</option>
+                {filteredDelegationOptions.map((item) => (
+                  <option key={item.id} value={item.id}>{item.countryCode || item.id}</option>
+                ))}
+              </select>
+              {isTrainingActivity ? (
+                <>
+                  <input
+                    className="input"
+                    placeholder="Descripcion del entrenamiento"
+                    value={String(newEntry.metadata?.title ?? "")}
+                    onChange={(e) =>
+                      setNewEntry({ ...newEntry, metadata: { ...newEntry.metadata, title: e.target.value } })
+                    }
+                  />
+                  <input
+                    className="input"
+                    placeholder="Bloque / sesion"
+                    value={newEntry.league}
+                    onChange={(e) => setNewEntry({ ...newEntry, league: e.target.value })}
+                    required
+                  />
+                </>
+              ) : null}
+              {isCompetitionActivity ? (
+                <>
+                  <input
+                    className="input"
+                    placeholder="Descripcion de la prueba"
+                    value={String(newEntry.metadata?.title ?? "")}
+                    onChange={(e) =>
+                      setNewEntry({ ...newEntry, metadata: { ...newEntry.metadata, title: e.target.value } })
+                    }
+                  />
+                  <input
+                    className="input"
+                    placeholder="Fase / categoria"
+                    value={newEntry.league}
+                    onChange={(e) => setNewEntry({ ...newEntry, league: e.target.value })}
+                    required
+                  />
+                </>
+              ) : null}
               <input
                 className="input"
                 type="datetime-local"
@@ -543,8 +1119,8 @@ export default function SportsCalendarPage() {
               />
               <input className="input" placeholder="Sede" value={newEntry.venue ?? ""} onChange={(e) => setNewEntry({ ...newEntry, venue: e.target.value })} />
               <div className="flex gap-2">
-                <button className="btn btn-primary flex-1" type="submit" disabled={saving || !selectedEventId}>
-                  {selectedEventId ? (saving ? "Guardando..." : editingEntryId ? "Guardar cambios" : "Crear prueba") : "Selecciona evento principal"}
+                <button className="btn btn-primary flex-1" type="submit" disabled={saving || !selectedEventId || !selectedManualScheduleType || !getMetaString(newEntry.metadata, "disciplineId")}>
+                  {selectedEventId ? (saving ? "Guardando..." : editingEntryId ? "Guardar cambios" : "Crear actividad") : "Selecciona evento principal"}
                 </button>
                 {editingEntryId ? (
                   <button className="btn btn-ghost" type="button" onClick={cancelEdit}>
@@ -556,28 +1132,42 @@ export default function SportsCalendarPage() {
           </form>
 
           <div className="surface rounded-2xl p-4">
-            <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Pruebas del dia</h3>
+            <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Actividades del dia</h3>
             {loading ? <p className="mt-2 text-sm text-slate-500">Cargando...</p> : null}
-            {!loading && selectedDayEntries.length === 0 ? <p className="mt-2 text-sm text-slate-500">Sin pruebas en esta fecha.</p> : null}
+            {!loading && selectedDayEntries.length === 0 ? <p className="mt-2 text-sm text-slate-500">Sin actividades en esta fecha.</p> : null}
             <div className="mt-2 space-y-2">
               {selectedDayEntries.map((entry) => (
                 <div key={entry.id} className="rounded-lg border border-slate-200 bg-slate-50 p-2">
                   <p className="text-xs text-slate-500">{formatTime(entry.startAtUtc)} - {entry.sport} / {entry.league}</p>
                   <p className="text-sm font-semibold text-slate-900">{titleFromEvent(entry)}</p>
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    <span className={`inline-flex rounded-full px-2 py-1 text-[10px] font-semibold ${scheduleTypeBadgeClass(getMetaString(entry.metadata, "scheduleType"))}`}>
+                      {scheduleTypeLabel(getMetaString(entry.metadata, "scheduleType"))}
+                    </span>
+                    {getMetaString(entry.metadata, "delegationId") ? (
+                      <span className="inline-flex rounded-full bg-indigo-100 px-2 py-1 text-[10px] font-semibold text-indigo-800">
+                        {delegationLabelById(delegationOptions, getMetaString(entry.metadata, "delegationId"))}
+                      </span>
+                    ) : null}
+                  </div>
                   <p className="text-xs text-slate-600">{entry.venue ?? "Sede por confirmar"} - {entry.status ?? "SCHEDULED"}</p>
                   <div className="mt-2">
-                    <div className="flex gap-2">
-                      <button className="btn btn-ghost" type="button" onClick={() => onEditEntry(entry)}>
-                        Editar
-                      </button>
-                      <button
-                        className="btn btn-ghost"
-                        type="button"
-                        onClick={() => setPendingDeleteEntryId(entry.id)}
-                      >
-                        Eliminar
-                      </button>
-                    </div>
+                    {entry.source === "and-derived" ? (
+                      <p className="text-xs font-medium text-sky-700">Hito AND (solo lectura)</p>
+                    ) : (
+                      <div className="flex gap-2">
+                        <button className="btn btn-ghost" type="button" onClick={() => onEditEntry(entry)}>
+                          Editar
+                        </button>
+                        <button
+                          className="btn btn-ghost"
+                          type="button"
+                          onClick={() => setPendingDeleteEntryId(entry.id)}
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -591,9 +1181,9 @@ export default function SportsCalendarPage() {
       {pendingDeleteEntryId ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
           <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl">
-            <h4 className="text-base font-semibold text-slate-900">Eliminar prueba</h4>
+            <h4 className="text-base font-semibold text-slate-900">Eliminar actividad</h4>
             <p className="mt-2 text-sm text-slate-600">
-              Esta accion eliminara la prueba del calendario. ¿Deseas continuar?
+              Esta accion eliminara la actividad del calendario. ¿Deseas continuar?
             </p>
             <div className="mt-5 flex justify-end gap-2">
               <button

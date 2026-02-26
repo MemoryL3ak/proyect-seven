@@ -59,6 +59,9 @@ export class EventsService {
     if (dto.status !== undefined) {
       row.status = dto.status;
     }
+    if (dto.config !== undefined) {
+      row.config = dto.config ?? {};
+    }
 
     return row;
   }
