@@ -1,5 +1,6 @@
 import {
   IsEmail,
+  IsISO8601,
   IsInt,
   IsNotEmpty,
   IsObject,
@@ -71,6 +72,34 @@ export class CreateDriverDto {
   @IsString()
   @IsOptional()
   photoUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  accreditationStatus?: string;
+
+  @IsISO8601()
+  @IsOptional()
+  accreditationValidatedAt?: string;
+
+  @IsString()
+  @IsOptional()
+  accreditationValidatedBy?: string;
+
+  @IsString()
+  @IsOptional()
+  accreditationNotes?: string;
+
+  @IsString()
+  @IsOptional()
+  credentialCode?: string;
+
+  @IsISO8601()
+  @IsOptional()
+  credentialIssuedAt?: string;
+
+  @IsString()
+  @IsOptional()
+  credentialIssuedBy?: string;
 
   @IsString()
   @IsOptional()
