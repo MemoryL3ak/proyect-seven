@@ -132,6 +132,34 @@ export class CreateAthleteDto {
 
   @IsString()
   @IsOptional()
+  accreditationStatus?: string;
+
+  @IsISO8601()
+  @IsOptional()
+  accreditationValidatedAt?: string;
+
+  @IsString()
+  @IsOptional()
+  accreditationValidatedBy?: string;
+
+  @IsString()
+  @IsOptional()
+  accreditationNotes?: string;
+
+  @IsString()
+  @IsOptional()
+  credentialCode?: string;
+
+  @IsISO8601()
+  @IsOptional()
+  credentialIssuedAt?: string;
+
+  @IsString()
+  @IsOptional()
+  credentialIssuedBy?: string;
+
+  @IsString()
+  @IsOptional()
   status?: string;
 
   @IsObject()

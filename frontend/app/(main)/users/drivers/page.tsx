@@ -1,6 +1,5 @@
-﻿import ResourceScreen from "@/components/ResourceScreen";
-import { resources } from "@/lib/resources";
+import { redirect } from "next/navigation";
 
 export default function DriversUsersPage() {
-  return <ResourceScreen config={resources.drivers} />;
+  redirect("/masters/drivers");
 }

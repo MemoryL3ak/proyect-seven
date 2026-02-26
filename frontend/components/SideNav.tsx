@@ -16,6 +16,7 @@ type NavSection = {
   title: string;
   icon: string;
   items: NavItem[];
+  href?: string;
 };
 
 const navSections: NavSection[] = [
@@ -32,8 +33,14 @@ const navSections: NavSection[] = [
       { href: "/masters/delegations", label: "AND", icon: "users" },
       { href: "/masters/disciplines", label: "Disciplinas", icon: "trophy" },
       { href: "/masters/providers", label: "Proveedores", icon: "users" },
-      { href: "/users/drivers", label: "Conductores", icon: "driver" }
+      { href: "/masters/drivers", label: "Conductores", icon: "driver" }
     ]
+  },
+  {
+    title: "Calendario deportivo",
+    icon: "calendar",
+    href: "/sports-calendar",
+    items: []
   },
   {
     title: "Hotelería",
@@ -51,7 +58,8 @@ const navSections: NavSection[] = [
     icon: "route",
     items: [
       { href: "/operations/trips", label: "Viajes", icon: "route" },
-      { href: "/operations/vehicle-positions", label: "Tracking de viajes", icon: "pin" }
+      { href: "/operations/vehicle-positions", label: "Tracking de viajes", icon: "pin" },
+      { href: "/operations/accreditations", label: "Acreditaciones", icon: "shield" }
     ]
   },
   {
@@ -233,6 +241,24 @@ export default function SideNav() {
 
         <nav className="space-y-5 flex-1">
         {navSections.map((section) => {
+          if (section.href) {
+            const isActive = pathname === section.href;
+            return (
+              <div key={section.title}>
+                <Link
+                  href={section.href}
+                  className="flex w-full items-center justify-between text-xs uppercase tracking-[0.2em] text-slate-400 mb-8"
+                >
+                  <span className="flex items-center gap-2 whitespace-nowrap">
+                    <Icon name={section.icon} className={isActive ? "text-slate-500" : "text-slate-400"} />
+                    <span className={isActive ? "text-slate-700" : ""}>{t(section.title)}</span>
+                  </span>
+                  <span className="w-3" />
+                </Link>
+              </div>
+            );
+          }
+
           const isOpen = openSections[section.title];
           return (
             <div key={section.title}>
