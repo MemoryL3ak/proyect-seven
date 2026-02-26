@@ -4,7 +4,7 @@ import { useId, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
 import { apiFetch } from "@/lib/api";
 
-type ImportType = "athletes" | "hospitality";
+type ImportType = "athletes" | "drivers" | "hospitality";
 
 type ImportError = {
   row: number;
@@ -48,6 +48,23 @@ const hospitalityHeaders = [
   "bed_status"
 ] as const;
 
+const driverHeaders = [
+  "event_id",
+  "provider_id",
+  "full_name",
+  "rut",
+  "email",
+  "license_number",
+  "phone",
+  "vehicle_plate",
+  "vehicle_type",
+  "vehicle_brand",
+  "vehicle_model",
+  "vehicle_capacity",
+  "vehicle_status",
+  "status"
+] as const;
+
 const luggageLabels: Record<string, string> = {
   BAG: "Bolso",
   SUITCASE_8: "Maleta 8",
@@ -59,6 +76,7 @@ const luggageLabels: Record<string, string> = {
 const luggageTypes = new Set(Object.keys(luggageLabels));
 const roomTypes = new Set(["SINGLE", "DOUBLE", "TRIPLE", "SUITE"]);
 const bedStatuses = new Set(["AVAILABLE", "OCCUPIED"]);
+const vehicleTypes = new Set(["SEDAN", "VAN", "MINI_BUS", "BUS"]);
 
 const normalizeHeader = (value: string) =>
   value.trim().toLowerCase().replace(/\s+/g, "_");
@@ -114,7 +132,12 @@ export default function BulkImportPanel({ type }: { type: ImportType }) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
 
-  const headers = type === "athletes" ? athleteHeaders : hospitalityHeaders;
+  const headers =
+    type === "athletes"
+      ? athleteHeaders
+      : type === "drivers"
+        ? driverHeaders
+        : hospitalityHeaders;
 
   const normalizedRows = useMemo(() => {
     return rows.map((row) => {
@@ -191,6 +214,30 @@ export default function BulkImportPanel({ type }: { type: ImportType }) {
             row: rowNumber,
             field: "departure_time",
             message: "Fecha/hora inválida (YYYY-MM-DD HH:mm)"
+          });
+        }
+      } else if (type === "drivers") {
+        if (!row.full_name) {
+          nextErrors.push({ row: rowNumber, field: "full_name", message: "Requerido" });
+        }
+        if (!row.rut) {
+          nextErrors.push({ row: rowNumber, field: "rut", message: "Requerido" });
+        }
+        if (row.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email)) {
+          nextErrors.push({ row: rowNumber, field: "email", message: "Correo inválido" });
+        }
+        if (row.vehicle_type && !vehicleTypes.has(row.vehicle_type)) {
+          nextErrors.push({
+            row: rowNumber,
+            field: "vehicle_type",
+            message: "Tipo de vehículo inválido"
+          });
+        }
+        if (row.vehicle_capacity && Number.isNaN(Number(row.vehicle_capacity))) {
+          nextErrors.push({
+            row: rowNumber,
+            field: "vehicle_capacity",
+            message: "Debe ser numérico"
           });
         }
       } else {
@@ -449,11 +496,118 @@ export default function BulkImportPanel({ type }: { type: ImportType }) {
     }
   };
 
+  const importDrivers = async () => {
+    setLoading(true);
+    setResult(null);
+    try {
+      const drivers = await apiFetch<Record<string, any>[]>("/drivers");
+
+      const driverByRut = new Map(
+        (drivers || [])
+          .filter((item) => item.rut)
+          .map((item) => [String(item.rut).toLowerCase(), item])
+      );
+
+      const driverByEmail = new Map(
+        (drivers || [])
+          .filter((item) => item.email)
+          .map((item) => [String(item.email).toLowerCase(), item])
+      );
+
+      let created = 0;
+      let updated = 0;
+      const rowErrors: ImportError[] = [];
+
+      for (let index = 0; index < normalizedRows.length; index += 1) {
+        const row = normalizedRows[index];
+        const rowNumber = index + 2;
+
+        const vehicleCapacity = row.vehicle_capacity
+          ? Number(row.vehicle_capacity)
+          : undefined;
+
+        const payload: Record<string, any> = {
+          eventId: row.event_id || undefined,
+          providerId: row.provider_id || undefined,
+          fullName: row.full_name || undefined,
+          rut: row.rut || undefined,
+          email: row.email || undefined,
+          licenseNumber: row.license_number || undefined,
+          phone: row.phone || undefined,
+          vehiclePlate: row.vehicle_plate || undefined,
+          vehicleType: row.vehicle_type || undefined,
+          vehicleBrand: row.vehicle_brand || undefined,
+          vehicleModel: row.vehicle_model || undefined,
+          vehicleCapacity,
+          vehicleStatus: row.vehicle_status || undefined,
+          status: row.status || undefined
+        };
+
+        if (!payload.eventId || !payload.fullName || !payload.rut) {
+          rowErrors.push({ row: rowNumber, message: "Faltan campos requeridos" });
+          continue;
+        }
+
+        if (row.vehicle_capacity && Number.isNaN(vehicleCapacity)) {
+          rowErrors.push({
+            row: rowNumber,
+            field: "vehicle_capacity",
+            message: "Capacidad de vehículo inválida"
+          });
+          continue;
+        }
+
+        const rutKey = payload.rut ? String(payload.rut).toLowerCase() : "";
+        const emailKey = payload.email ? String(payload.email).toLowerCase() : "";
+        const existing =
+          (rutKey ? driverByRut.get(rutKey) : null) ??
+          (emailKey ? driverByEmail.get(emailKey) : null);
+
+        try {
+          if (existing?.id) {
+            await apiFetch(`/drivers/${existing.id}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload)
+            });
+            updated += 1;
+          } else {
+            const createdDriver = await apiFetch<Record<string, any>>("/drivers", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload)
+            });
+            created += 1;
+
+            if (payload.rut) {
+              driverByRut.set(String(payload.rut).toLowerCase(), createdDriver);
+            }
+            if (payload.email) {
+              driverByEmail.set(String(payload.email).toLowerCase(), createdDriver);
+            }
+          }
+        } catch (error) {
+          rowErrors.push({
+            row: rowNumber,
+            message: error instanceof Error ? error.message : "Error al importar"
+          });
+        }
+      }
+
+      setErrors(rowErrors);
+      setResult(`Importados: ${created} creados, ${updated} actualizados.`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleImport = async () => {
     const ok = validate();
     if (!ok) return;
     if (type === "athletes") {
       await importAthletes();
+    } else if (type === "drivers") {
+      await importDrivers();
     } else {
       await importHospitality();
     }
@@ -467,7 +621,7 @@ export default function BulkImportPanel({ type }: { type: ImportType }) {
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Carga masiva</p>
           <h2 className="font-display text-2xl text-ink">
-            {type === "athletes" ? "Participantes" : "Hotelería"}
+            {type === "athletes" ? "Participantes" : type === "drivers" ? "Conductores" : "Hotelería"}
           </h2>
           <p className="text-sm text-slate-500">
             Subir XLSX, revisar vista previa y cargar.
@@ -479,7 +633,11 @@ export default function BulkImportPanel({ type }: { type: ImportType }) {
           onClick={() =>
             downloadTemplate(
               headers,
-              type === "athletes" ? "template-participantes.xlsx" : "template-hoteleria.xlsx"
+              type === "athletes"
+                ? "template-participantes.xlsx"
+                : type === "drivers"
+                  ? "template-conductores.xlsx"
+                  : "template-hoteleria.xlsx"
             )
           }
         >
