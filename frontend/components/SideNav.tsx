@@ -67,7 +67,7 @@ const navSections: NavSection[] = [
       { href: "/operations/trips", label: "Viajes", icon: "route" },
       { href: "/operations/vehicle-positions", label: "Tracking de viajes", icon: "pin" },
       { href: "/operations/accreditations", label: "Acreditaciones", icon: "shield" },
-      { href: "/operations/scanner", label: "Escáner QR", icon: "scan" }
+      { href: "/scanner", label: "Escáner QR", icon: "scan" }
     ]
   },
   {
