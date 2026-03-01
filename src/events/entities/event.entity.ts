@@ -30,6 +30,12 @@ export class Event {
 
   disciplineNames?: string[];
 
+  expectedCapacities?: Array<{
+    disciplineId: string;
+    delegationCode: string;
+    expectedCount: number;
+  }>;
+
   @Column({ type: 'jsonb', default: () => "'{}'::jsonb" })
   config: Record<string, unknown>;
 

@@ -40,4 +40,12 @@ export class CreateEventDto {
   @IsObject()
   @IsOptional()
   config?: Record<string, unknown>;
+
+  @IsArray()
+  @IsOptional()
+  expectedCapacities?: Array<{
+    disciplineId: string;
+    delegationCode: string;
+    expectedCount: number;
+  }>;
 }

@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import QRCode from "qrcode";
 import { apiFetch } from "@/lib/api";
 import { buildCredentialHtml } from "@/lib/credential-template";
 
@@ -28,6 +29,7 @@ type DriverItem = {
   email?: string | null;
   phone?: string | null;
   licenseNumber?: string | null;
+  accessTypes?: string[] | null;
   photoUrl?: string | null;
   metadata?: Record<string, unknown> | null;
 };
@@ -381,6 +383,31 @@ export default function AccreditationsPage() {
       const driver = subjectType === "DRIVER" ? driverMap[subjectId] : null;
       const fullName = athlete?.fullName || driver?.fullName || "Sin nombre";
       const photoUrl = subjectType === "PARTICIPANT" ? photoFromMetadata(athlete?.metadata) : driver?.photoUrl || photoFromMetadata(driver?.metadata);
+      const countryTag = subjectType === "PARTICIPANT" ? (athlete?.countryCode || (athlete?.delegationId ? delegationMap[athlete.delegationId]?.countryCode : "") || "LOC") : "LOC";
+      const accessTypes = subjectType === "DRIVER" ? (driver?.accessTypes ?? []) : [];
+      const delegationLabel =
+        subjectType === "PARTICIPANT"
+          ? (athlete?.delegationId ? delegationMap[athlete.delegationId]?.countryCode || athlete.delegationId : "Sin delegacion")
+          : "No aplica";
+      const disciplineLabel =
+        subjectType === "PARTICIPANT"
+          ? (athlete?.disciplineId ? disciplineMap[athlete.disciplineId] || athlete.disciplineId : "Sin disciplina")
+          : "No aplica";
+      const providerLabel =
+        subjectType === "DRIVER"
+          ? (driver?.providerId ? providerMap[driver.providerId]?.name || driver.providerId : "No asignado")
+          : "No aplica";
+      const scanUrl = new URL("/scan/accreditation", window.location.origin);
+      scanUrl.searchParams.set("name", fullName);
+      scanUrl.searchParams.set("delegation", delegationLabel);
+      scanUrl.searchParams.set("discipline", disciplineLabel);
+      scanUrl.searchParams.set("subjectType", subjectType);
+      scanUrl.searchParams.set("event", eventMap[acc.eventId]?.name || "Evento");
+      const qrDataUrl = await QRCode.toDataURL(scanUrl.toString(), {
+        width: 240,
+        margin: 1,
+        color: { dark: "#0f172a", light: "#ffffff" },
+      });
       const html = buildCredentialHtml({
         eventName: eventMap[acc.eventId]?.name || "Evento",
         fullName,
@@ -390,8 +417,12 @@ export default function AccreditationsPage() {
         issuedAtLabel: new Date().toLocaleString("es-CL"),
         issuerLabel: "Operador",
         subjectId,
+        providerLabel,
+        countryTag,
+        accessTypes,
         photoUrl,
         organization: "Seven - Control de Acreditaciones",
+        qrDataUrl,
       });
 
       const popup = window.open("about:blank", "_blank");

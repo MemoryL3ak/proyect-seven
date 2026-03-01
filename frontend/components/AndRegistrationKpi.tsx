@@ -8,6 +8,11 @@ type EventItem = {
   name?: string | null;
   disciplineIds?: string[];
   config?: Record<string, unknown> | null;
+  expectedCapacities?: Array<{
+    disciplineId?: string | null;
+    delegationCode?: string | null;
+    expectedCount?: number | string | null;
+  }> | null;
 };
 
 type DisciplineItem = { id: string; name?: string | null };
@@ -42,6 +47,34 @@ function formatCount(value: number | null | undefined) {
   return String(value);
 }
 
+function normalizeDelegationKey(value?: string | null) {
+  return String(value ?? "").trim().toUpperCase();
+}
+
+function readDelegationExpected(
+  row: Record<string, number> | undefined,
+  delegationId?: string | null,
+  delegationCountryCode?: string | null,
+) {
+  if (!row) return undefined;
+  const candidates = [
+    delegationId,
+    delegationCountryCode,
+    normalizeDelegationKey(delegationId),
+    normalizeDelegationKey(delegationCountryCode),
+  ].filter(Boolean) as string[];
+
+  for (const candidate of candidates) {
+    if (row[candidate] !== undefined) return row[candidate];
+    const normalizedMatch = Object.entries(row).find(
+      ([key]) => normalizeDelegationKey(key) === normalizeDelegationKey(candidate),
+    );
+    if (normalizedMatch) return normalizedMatch[1];
+  }
+
+  return undefined;
+}
+
 function readExpectedByDiscipline(config?: Record<string, unknown> | null) {
   const raw = config?.andExpectedByDiscipline;
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {} as Record<string, number>;
@@ -67,6 +100,22 @@ function readExpectedByDisciplineDelegation(config?: Record<string, unknown> | n
     result[disciplineId] = row;
   });
   return result;
+}
+
+function readExpectedFromRows(event?: EventItem | null) {
+  const totals: Record<string, number> = {};
+  const matrix: Record<string, Record<string, number>> = {};
+  const rows = Array.isArray(event?.expectedCapacities) ? event?.expectedCapacities : [];
+  rows.forEach((row) => {
+    const disciplineId = String(row?.disciplineId ?? "").trim();
+    const delegationCode = String(row?.delegationCode ?? "").trim().toUpperCase();
+    const n = typeof row?.expectedCount === "number" ? row.expectedCount : Number(row?.expectedCount);
+    if (!disciplineId || !delegationCode || !Number.isFinite(n) || n < 0) return;
+    matrix[disciplineId] = matrix[disciplineId] || {};
+    matrix[disciplineId][delegationCode] = n;
+    totals[disciplineId] = (totals[disciplineId] ?? 0) + n;
+  });
+  return { totals, matrix };
 }
 
 export default function AndRegistrationKpi({
@@ -124,6 +173,13 @@ export default function AndRegistrationKpi({
     () => delegations.filter((item) => (selectedEventId ? item.eventId === selectedEventId : true)),
     [delegations, selectedEventId],
   );
+  const selectedDelegationCountryCode = useMemo(
+    () =>
+      selectedDelegationId
+        ? filteredDelegations.find((item) => item.id === selectedDelegationId)?.countryCode || ""
+        : "",
+    [filteredDelegations, selectedDelegationId],
+  );
 
   const rows = useMemo(() => {
     if (!selectedEvent) return [] as Array<{
@@ -137,8 +193,15 @@ export default function AndRegistrationKpi({
       hasDelegationExpected: boolean;
     }>;
 
-    const expectedByDiscipline = readExpectedByDiscipline(selectedEvent.config);
-    const expectedByDisciplineDelegation = readExpectedByDisciplineDelegation(selectedEvent.config);
+    const expectedFromRows = readExpectedFromRows(selectedEvent);
+    const expectedByDiscipline =
+      Object.keys(expectedFromRows.totals).length > 0
+        ? expectedFromRows.totals
+        : readExpectedByDiscipline(selectedEvent.config);
+    const expectedByDisciplineDelegation =
+      Object.keys(expectedFromRows.matrix).length > 0
+        ? expectedFromRows.matrix
+        : readExpectedByDisciplineDelegation(selectedEvent.config);
 
     const eventAthletes = athletes.filter((a) => a.eventId === selectedEvent.id);
     const scopedAthletes = selectedDelegationId
@@ -160,8 +223,13 @@ export default function AndRegistrationKpi({
 
     return Array.from(allIds)
       .map((disciplineId) => {
-        const delegationSpecificExpected =
-          selectedDelegationId ? expectedByDisciplineDelegation[disciplineId]?.[selectedDelegationId] : undefined;
+        const delegationSpecificExpected = selectedDelegationId
+          ? readDelegationExpected(
+              expectedByDisciplineDelegation[disciplineId],
+              selectedDelegationId,
+              selectedDelegationCountryCode,
+            )
+          : undefined;
         const totalExpectedByDiscipline =
           expectedByDiscipline[disciplineId] ??
           Object.values(expectedByDisciplineDelegation[disciplineId] ?? {}).reduce((s, n) => s + n, 0);
@@ -185,7 +253,7 @@ export default function AndRegistrationKpi({
         };
       })
       .sort((a, b) => a.disciplineName.localeCompare(b.disciplineName));
-  }, [selectedEvent, athletes, selectedDelegationId, disciplineMap]);
+  }, [selectedEvent, athletes, selectedDelegationId, selectedDelegationCountryCode, disciplineMap]);
 
   const totals = useMemo(() => {
     const comparableRows = selectedDelegationId ? rows.filter((row) => row.hasDelegationExpected) : rows;

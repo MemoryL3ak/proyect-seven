@@ -376,7 +376,7 @@ export const resources: Record<string, ResourceConfig> = {
       "photoUrl",
       "status"
     ],
-    tableOrder: ["fullName", "rut", "eventId", "email", "phone"],
+    tableOrder: ["fullName", "rut", "eventId", "email", "phone", "accessTypes"],
     fields: [
       { key: "providerId", label: "Proveedor", type: "select", required: true, optionsSource: "providers" },
       { key: "eventId", label: "Evento", type: "select", required: true, optionsSource: "events" },
@@ -395,6 +395,19 @@ export const resources: Record<string, ResourceConfig> = {
           { label: "Clase A3", value: "A3" },
           { label: "Clase A4", value: "A4" },
           { label: "Clase A5", value: "A5" }
+        ]
+      },
+      {
+        key: "accessTypes",
+        label: "Accesos",
+        type: "multiselect",
+        options: [
+          { label: "C - Cancha", value: "C" },
+          { label: "TR - Transporte", value: "TR" },
+          { label: "H - Hotel", value: "H" },
+          { label: "R - Reuniones", value: "R" },
+          { label: "A - Alimentación", value: "A" },
+          { label: "RD - Recintos Deportivos", value: "RD" }
         ]
       },
       { key: "phone", label: "Teléfono", type: "text" },

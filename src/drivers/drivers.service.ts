@@ -24,6 +24,7 @@ type DriverRow = {
   phone: string | null;
   vehicle_id: string | null;
   photo_url: string | null;
+  access_types: string[] | null;
   accreditation_status: string;
   accreditation_validated_at: string | null;
   accreditation_validated_by: string | null;
@@ -94,6 +95,11 @@ export class DriversService {
     if (dto.photoUrl !== undefined) {
       row.photo_url = dto.photoUrl ?? null;
     }
+    if (dto.accessTypes !== undefined) {
+      row.access_types = (dto.accessTypes ?? [])
+        .map((item) => String(item || '').toUpperCase())
+        .filter((item) => ['C', 'TR', 'H', 'R', 'A', 'RD'].includes(item));
+    }
     if (dto.accreditationStatus !== undefined) {
       row.accreditation_status = dto.accreditationStatus;
     }
@@ -138,6 +144,7 @@ export class DriversService {
       phone: row.phone,
       vehicleId: row.vehicle_id,
       photoUrl: row.photo_url,
+      accessTypes: row.access_types ?? [],
       accreditationStatus: row.accreditation_status,
       accreditationValidatedAt: row.accreditation_validated_at
         ? new Date(row.accreditation_validated_at)

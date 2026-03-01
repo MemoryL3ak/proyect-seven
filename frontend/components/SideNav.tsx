@@ -44,6 +44,12 @@ const navSections: NavSection[] = [
     items: []
   },
   {
+    title: "Salud",
+    icon: "health-cross",
+    href: "/health",
+    items: []
+  },
+  {
     title: "Hotelería",
     icon: "hotel",
     items: [
@@ -60,7 +66,8 @@ const navSections: NavSection[] = [
     items: [
       { href: "/operations/trips", label: "Viajes", icon: "route" },
       { href: "/operations/vehicle-positions", label: "Tracking de viajes", icon: "pin" },
-      { href: "/operations/accreditations", label: "Acreditaciones", icon: "shield" }
+      { href: "/operations/accreditations", label: "Acreditaciones", icon: "shield" },
+      { href: "/operations/scanner", label: "Escáner QR", icon: "scan" }
     ]
   },
   {
@@ -170,6 +177,24 @@ function Icon({ name, className }: { name: string; className?: string }) {
       return (
         <svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
           <path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7l8-4z" />
+        </svg>
+      );
+    case "health-cross":
+      return (
+        <svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+          <rect x="3" y="3" width="18" height="18" rx="4" />
+          <path d="M12 7v10M7 12h10" />
+        </svg>
+      );
+    case "scan":
+      return (
+        <svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+          <path d="M4 8V5a1 1 0 0 1 1-1h3" />
+          <path d="M20 8V5a1 1 0 0 0-1-1h-3" />
+          <path d="M4 16v3a1 1 0 0 0 1 1h3" />
+          <path d="M20 16v3a1 1 0 0 1-1 1h-3" />
+          <path d="M7 12h10" />
+          <path d="M12 7v10" />
         </svg>
       );
     case "stack":

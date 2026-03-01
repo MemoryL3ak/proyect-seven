@@ -17,6 +17,27 @@ type ColumnDef = { key: string; label: string };
 type FormState = Record<string, string | string[]>;
 type EventCapacityTotals = Record<string, string>;
 type EventCapacityMatrix = Record<string, Record<string, string>>;
+const DELEGATION_COUNTRY_OPTIONS: Option[] = [
+  { label: "Argentina", value: "ARG" },
+  { label: "Bolivia", value: "BOL" },
+  { label: "Brasil", value: "BRA" },
+  { label: "Chile", value: "CHL" },
+  { label: "Colombia", value: "COL" },
+  { label: "Ecuador", value: "ECU" },
+  { label: "Paraguay", value: "PRY" },
+  { label: "Perú", value: "PER" },
+  { label: "Uruguay", value: "URY" },
+  { label: "Venezuela", value: "VEN" },
+  { label: "México", value: "MEX" },
+  { label: "Estados Unidos", value: "USA" },
+  { label: "Canadá", value: "CAN" },
+  { label: "España", value: "ESP" },
+  { label: "Francia", value: "FRA" },
+  { label: "Alemania", value: "DEU" },
+  { label: "Italia", value: "ITA" },
+  { label: "Portugal", value: "PRT" },
+  { label: "Reino Unido", value: "GBR" },
+];
 
 const emptyValue = (type: FieldDef["type"]) => {
   if (type === "json") return "";
@@ -136,6 +157,16 @@ function readEventAndConfig(configValue: unknown) {
     );
   }
 
+  if (Object.keys(totals).length === 0 && Object.keys(matrix).length > 0) {
+    Object.entries(matrix).forEach(([disciplineId, row]) => {
+      const sum = Object.values(row).reduce((acc, raw) => {
+        const n = Number(raw);
+        return Number.isFinite(n) ? acc + n : acc;
+      }, 0);
+      totals[disciplineId] = String(sum);
+    });
+  }
+
   return { raw, totals, matrix };
 }
 
@@ -177,6 +208,10 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
   const [eventCapacityTotals, setEventCapacityTotals] = useState<EventCapacityTotals>({});
   const [eventCapacityMatrix, setEventCapacityMatrix] = useState<EventCapacityMatrix>({});
   const [eventPlannerDisciplineId, setEventPlannerDisciplineId] = useState<string>("");
+  const [eventPlannerDelegationCode, setEventPlannerDelegationCode] = useState<string>(
+    DELEGATION_COUNTRY_OPTIONS[0]?.value ?? "",
+  );
+  const [eventPlannerExpectedValue, setEventPlannerExpectedValue] = useState<string>("");
   const flightLookupTimerRef = useRef<number | null>(null);
   const lastFlightLookupRef = useRef<string>("");
   const plateLookupTimerRef = useRef<number | null>(null);
@@ -604,11 +639,6 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
   useEffect(() => {
     if (!isEventsEndpoint) return;
     const selectedDisciplineIds = ((form.disciplineIds as string[]) || []).filter(Boolean);
-    const eventDelegationIds = (editingId
-      ? (delegationOptions as any[])
-          .filter((option) => option.eventId === editingId)
-          .map((option) => option.value)
-      : []) as string[];
 
     setEventCapacityTotals((prev) => {
       const next: EventCapacityTotals = {};
@@ -621,12 +651,7 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
     setEventCapacityMatrix((prev) => {
       const next: EventCapacityMatrix = {};
       selectedDisciplineIds.forEach((disciplineId) => {
-        const row = prev[disciplineId] ?? {};
-        const nextRow: Record<string, string> = {};
-        eventDelegationIds.forEach((delegationId) => {
-          nextRow[delegationId] = row[delegationId] ?? "";
-        });
-        next[disciplineId] = nextRow;
+        next[disciplineId] = prev[disciplineId] ?? {};
       });
       return JSON.stringify(next) === JSON.stringify(prev) ? prev : next;
     });
@@ -635,7 +660,7 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
       if (prev && selectedDisciplineIds.includes(prev)) return prev;
       return selectedDisciplineIds[0] ?? "";
     });
-  }, [isEventsEndpoint, form.disciplineIds, editingId, delegationOptions]);
+  }, [isEventsEndpoint, form.disciplineIds]);
 
   useEffect(() => {
     if (needsProviders) {
@@ -1029,11 +1054,6 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
       let finalPayload = { ...payload };
       if (config.endpoint === "/events") {
         const previousConfig = readEventAndConfig((payload as any).config).raw;
-        const andExpectedByDiscipline: Record<string, number> = {};
-        Object.entries(eventCapacityTotals).forEach(([disciplineId, raw]) => {
-          const n = Number(raw);
-          if (Number.isFinite(n) && n >= 0) andExpectedByDiscipline[disciplineId] = n;
-        });
         const andExpectedByDisciplineDelegation: Record<string, Record<string, number>> = {};
         Object.entries(eventCapacityMatrix).forEach(([disciplineId, row]) => {
           const nextRow: Record<string, number> = {};
@@ -1045,12 +1065,30 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
             andExpectedByDisciplineDelegation[disciplineId] = nextRow;
           }
         });
+        const andExpectedByDiscipline: Record<string, number> = {};
+        Object.entries(andExpectedByDisciplineDelegation).forEach(([disciplineId, row]) => {
+          const total = Object.values(row).reduce((sum, n) => sum + Number(n || 0), 0);
+          if (Number.isFinite(total) && total >= 0) andExpectedByDiscipline[disciplineId] = total;
+        });
+        Object.entries(eventCapacityTotals).forEach(([disciplineId, raw]) => {
+          if (andExpectedByDiscipline[disciplineId] !== undefined) return;
+          const n = Number(raw);
+          if (Number.isFinite(n) && n >= 0) andExpectedByDiscipline[disciplineId] = n;
+        });
 
         const disciplineCategory = String(form.disciplineCategory ?? "").trim();
         const disciplineGender = String(form.disciplineGender ?? "").trim();
 
         finalPayload = {
           ...finalPayload,
+          expectedCapacities: Object.entries(andExpectedByDisciplineDelegation).flatMap(
+            ([disciplineId, row]) =>
+              Object.entries(row).map(([delegationCode, expectedCount]) => ({
+                disciplineId,
+                delegationCode: String(delegationCode).trim().toUpperCase(),
+                expectedCount: Number(expectedCount) || 0,
+              })),
+          ),
           config: {
             ...previousConfig,
             ...(disciplineCategory
@@ -1190,6 +1228,8 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
         setEventCapacityTotals({});
         setEventCapacityMatrix({});
         setEventPlannerDisciplineId("");
+        setEventPlannerDelegationCode(DELEGATION_COUNTRY_OPTIONS[0]?.value ?? "");
+        setEventPlannerExpectedValue("");
       }
       loadItems();
     } catch (err) {
@@ -1324,6 +1364,8 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
       setEventCapacityMatrix(parsedConfig.matrix);
       const itemDisciplineIds = Array.isArray(item.disciplineIds) ? item.disciplineIds : [];
       setEventPlannerDisciplineId(itemDisciplineIds[0] ?? "");
+      setEventPlannerDelegationCode(DELEGATION_COUNTRY_OPTIONS[0]?.value ?? "");
+      setEventPlannerExpectedValue("");
       if (!next.disciplineCategory) {
         next.disciplineCategory = String(parsedConfig.raw.disciplineCategory ?? "");
       }
@@ -2240,10 +2282,29 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
               const selectedDisciplineOptions = (disciplineOptions as any[])
                 .filter((option) => selectedDisciplineIds.includes(option.value))
                 .sort((a, b) => String(a.label || a.value).localeCompare(String(b.label || b.value)));
+              const expectedByDisciplineFromMatrix = selectedDisciplineOptions.reduce<Record<string, number>>(
+                (acc, option) => {
+                  const row = eventCapacityMatrix[option.value] || {};
+                  const subtotal = Object.values(row).reduce((sum, raw) => {
+                    const n = Number(raw || 0);
+                    return Number.isFinite(n) ? sum + n : sum;
+                  }, 0);
+                  acc[option.value] = subtotal;
+                  return acc;
+                },
+                {},
+              );
               const totalExpected = selectedDisciplineOptions.reduce((sum, option) => {
-                const n = Number(eventCapacityTotals[option.value] || 0);
+                const n = Number(expectedByDisciplineFromMatrix[option.value] || eventCapacityTotals[option.value] || 0);
                 return Number.isFinite(n) ? sum + n : sum;
               }, 0);
+              const plannerDisciplineId = eventPlannerDisciplineId || selectedDisciplineIds[0] || "";
+              const plannerDisciplineOption = selectedDisciplineOptions.find(
+                (option) => option.value === plannerDisciplineId,
+              );
+              const plannerRow = plannerDisciplineOption
+                ? (eventCapacityMatrix[plannerDisciplineOption.value] || {})
+                : {};
 
               return (
                 <>
@@ -2301,10 +2362,10 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
                         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                           <div>
                             <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Planificación AND</p>
-                            <p className="text-sm font-semibold text-slate-900">Capacidad esperada por disciplina</p>
+                            <p className="text-sm font-semibold text-slate-900">Capacidad esperada por delegación y disciplina</p>
                           </div>
                           <div className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600">
-                            {selectedDisciplineIds.length} / {selectedDisciplineOptions.length} activas
+                            Total esperado {totalExpected}
                           </div>
                         </div>
 
@@ -2315,38 +2376,99 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
                             </p>
                           </div>
                         ) : (
-                          <div className="space-y-2">
-                            {selectedDisciplineOptions.map((option) => (
-                              <div
-                                key={option.value}
-                                className="grid items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 sm:grid-cols-[1fr_120px]"
+                          <div className="space-y-3">
+                            <div className="grid gap-2 md:grid-cols-[1fr_1fr_140px_auto]">
+                              <select
+                                className="input"
+                                value={plannerDisciplineId}
+                                onChange={(e) => setEventPlannerDisciplineId(e.target.value)}
                               >
-                                <div className="min-w-0">
-                                  <p className="truncate text-sm font-medium text-slate-900">
+                                <option value="">{t("Selecciona disciplina")}</option>
+                                {selectedDisciplineOptions.map((option) => (
+                                  <option key={option.value} value={option.value}>
                                     {String(option.label || option.value)}
-                                  </p>
-                                  <p className="text-xs text-slate-500">
-                                    {t("Objetivo esperado de registro AND")}
-                                  </p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <input
-                                    className="input h-10 text-right"
-                                    type="number"
-                                    min={0}
-                                    step={1}
-                                    value={eventCapacityTotals[option.value] ?? ""}
-                                    onChange={(e) =>
-                                      setEventCapacityTotals((prev) => ({
-                                        ...prev,
-                                        [option.value]: e.target.value,
-                                      }))
-                                    }
-                                    placeholder="0"
-                                  />
+                                  </option>
+                                ))}
+                              </select>
+                              <select
+                                className="input"
+                                value={eventPlannerDelegationCode}
+                                onChange={(e) => setEventPlannerDelegationCode(e.target.value)}
+                              >
+                                {DELEGATION_COUNTRY_OPTIONS.map((option) => (
+                                  <option key={option.value} value={option.value}>
+                                    {option.value} · {option.label}
+                                  </option>
+                                ))}
+                              </select>
+                              <input
+                                className="input text-right"
+                                type="number"
+                                min={0}
+                                step={1}
+                                placeholder="Capacidad"
+                                value={eventPlannerExpectedValue}
+                                onChange={(e) => setEventPlannerExpectedValue(e.target.value)}
+                              />
+                              <button
+                                type="button"
+                                className="btn btn-primary"
+                                onClick={() => {
+                                  if (!plannerDisciplineOption) return;
+                                  const normalized = eventPlannerExpectedValue.trim();
+                                  const n = Number(normalized);
+                                  if (!normalized || !Number.isFinite(n) || n < 0) return;
+                                  setEventCapacityMatrix((prev) => ({
+                                    ...prev,
+                                    [plannerDisciplineOption.value]: {
+                                      ...(prev[plannerDisciplineOption.value] || {}),
+                                      [eventPlannerDelegationCode]: String(Math.round(n)),
+                                    },
+                                  }));
+                                  setEventPlannerExpectedValue("");
+                                }}
+                                disabled={!plannerDisciplineOption}
+                              >
+                                {t("Asignar")}
+                              </button>
+                            </div>
+
+                            {plannerDisciplineOption ? (
+                              <div className="rounded-xl border border-slate-200 bg-white p-3">
+                                <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
+                                  {t("Detalle disciplina")} · {String(plannerDisciplineOption.label || plannerDisciplineOption.value)}
+                                </p>
+                                <div className="mt-2 max-h-52 overflow-auto space-y-1.5">
+                                  {DELEGATION_COUNTRY_OPTIONS.map((country) => {
+                                    const value = plannerRow[country.value];
+                                    if (value === undefined || value === "") return null;
+                                    return (
+                                      <div key={`${plannerDisciplineOption.value}-${country.value}`} className="flex items-center justify-between rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm">
+                                        <span className="text-slate-700">{country.value} · {country.label}</span>
+                                        <span className="font-semibold text-slate-900">{value}</span>
+                                      </div>
+                                    );
+                                  })}
+                                  {Object.keys(plannerRow).length === 0 ? (
+                                    <p className="text-xs text-slate-500">{t("Sin capacidad asignada para esta disciplina.")}</p>
+                                  ) : null}
                                 </div>
                               </div>
-                            ))}
+                            ) : null}
+
+                            <div className="rounded-xl border border-slate-200 bg-white p-3">
+                              <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{t("Resumen por disciplina")}</p>
+                              <div className="mt-2 space-y-1.5">
+                                {selectedDisciplineOptions.map((option) => (
+                                  <div key={`sum-${option.value}`} className="flex items-center justify-between text-sm">
+                                    <span className="text-slate-700">{String(option.label || option.value)}</span>
+                                    <span className="font-semibold text-slate-900">
+                                      {expectedByDisciplineFromMatrix[option.value] ?? 0}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
                           </div>
                         )}
                       </div>

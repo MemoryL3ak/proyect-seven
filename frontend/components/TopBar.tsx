@@ -26,6 +26,7 @@ export default function TopBar() {
     "hotel-beds": "Camas",
     "hotel-assignments": "Asignaciones hotel",
     operations: "Operaciones",
+    health: "Salud",
     trips: "Viajes",
     "sports-calendar": "Calendario deportivo",
     "vehicle-positions": "Tracking de viajes",

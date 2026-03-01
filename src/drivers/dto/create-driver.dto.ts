@@ -1,5 +1,7 @@
 import {
+  IsArray,
   IsEmail,
+  IsIn,
   IsISO8601,
   IsInt,
   IsNotEmpty,
@@ -72,6 +74,11 @@ export class CreateDriverDto {
   @IsString()
   @IsOptional()
   photoUrl?: string;
+
+  @IsArray()
+  @IsOptional()
+  @IsIn(['C', 'TR', 'H', 'R', 'A', 'RD'], { each: true })
+  accessTypes?: string[];
 
   @IsString()
   @IsOptional()

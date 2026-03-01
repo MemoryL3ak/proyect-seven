@@ -32,6 +32,19 @@ type DisciplineRow = {
   name: string;
 };
 
+type EventExpectedCapacityRow = {
+  event_id: string;
+  discipline_id: string;
+  delegation_code: string;
+  expected_count: number;
+};
+
+type EventExpectedCapacityInput = {
+  disciplineId: string;
+  delegationCode: string;
+  expectedCount: number;
+};
+
 @Injectable()
 export class EventsService {
   constructor(
@@ -180,6 +193,92 @@ export class EventsService {
     }
   }
 
+  private async setEventExpectedCapacities(
+    eventId: string,
+    capacities: EventExpectedCapacityInput[],
+  ) {
+    const { error: deleteError } = await this.supabase
+      .schema('core')
+      .from('event_expected_capacities')
+      .delete()
+      .eq('event_id', eventId);
+
+    if (deleteError) {
+      throw new InternalServerErrorException(
+        deleteError.message || 'Error clearing expected capacities',
+      );
+    }
+
+    if (!capacities || capacities.length === 0) return;
+
+    const payload = capacities
+      .filter(
+        (item) =>
+          item?.disciplineId &&
+          item?.delegationCode &&
+          Number.isFinite(Number(item.expectedCount)) &&
+          Number(item.expectedCount) >= 0,
+      )
+      .map((item) => ({
+        event_id: eventId,
+        discipline_id: item.disciplineId,
+        delegation_code: item.delegationCode.trim().toUpperCase(),
+        expected_count: Math.floor(Number(item.expectedCount)),
+      }));
+
+    if (payload.length === 0) return;
+
+    const { error: insertError } = await this.supabase
+      .schema('core')
+      .from('event_expected_capacities')
+      .upsert(payload, {
+        onConflict: 'event_id,discipline_id,delegation_code',
+      });
+
+    if (insertError) {
+      throw new InternalServerErrorException(
+        insertError.message || 'Error saving expected capacities',
+      );
+    }
+  }
+
+  private async attachExpectedCapacities(events: Event[]) {
+    if (events.length === 0) return events;
+
+    const eventIds = events.map((item) => item.id);
+    const { data, error } = await this.supabase
+      .schema('core')
+      .from('event_expected_capacities')
+      .select('event_id, discipline_id, delegation_code, expected_count')
+      .in('event_id', eventIds);
+
+    if (error) {
+      throw new InternalServerErrorException(
+        error.message || 'Error fetching expected capacities',
+      );
+    }
+
+    const byEvent = new Map<
+      string,
+      Array<{ disciplineId: string; delegationCode: string; expectedCount: number }>
+    >();
+    (data ?? []).forEach((row) => {
+      const r = row as EventExpectedCapacityRow;
+      const current = byEvent.get(r.event_id) ?? [];
+      current.push({
+        disciplineId: r.discipline_id,
+        delegationCode: r.delegation_code,
+        expectedCount: Number(r.expected_count ?? 0),
+      });
+      byEvent.set(r.event_id, current);
+    });
+
+    return events.map((event) => ({
+      ...event,
+      expectedCapacities: byEvent.get(event.id) ?? [],
+    }));
+  }
+
   async create(createEventDto: CreateEventDto) {
     const { data, error } = await this.supabase
       .schema('core')
@@ -200,6 +299,12 @@ export class EventsService {
         createEventDto.disciplineIds,
       );
     }
+    if (createEventDto.expectedCapacities !== undefined) {
+      await this.setEventExpectedCapacities(
+        (data as EventRow).id,
+        createEventDto.expectedCapacities,
+      );
+    }
 
     return this.findOne((data as EventRow).id);
   }
@@ -218,7 +323,8 @@ export class EventsService {
     }
 
     const events = (data ?? []).map((row) => this.toEntity(row as EventRow));
-    return this.attachDisciplines(events);
+    const withDisciplines = await this.attachDisciplines(events);
+    return this.attachExpectedCapacities(withDisciplines);
   }
 
   async findOne(id: string) {
@@ -241,7 +347,10 @@ export class EventsService {
 
     const event = this.toEntity(data as EventRow);
     const [withDisciplines] = await this.attachDisciplines([event]);
-    return withDisciplines;
+    const [withExpectedCapacities] = await this.attachExpectedCapacities([
+      withDisciplines,
+    ]);
+    return withExpectedCapacities;
   }
 
   async update(id: string, updateEventDto: UpdateEventDto) {
@@ -265,6 +374,9 @@ export class EventsService {
 
     if (updateEventDto.disciplineIds) {
       await this.setEventDisciplines(id, updateEventDto.disciplineIds);
+    }
+    if (updateEventDto.expectedCapacities !== undefined) {
+      await this.setEventExpectedCapacities(id, updateEventDto.expectedCapacities);
     }
 
     return this.findOne(id);

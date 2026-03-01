@@ -41,6 +41,9 @@ export class Driver {
   @Column({ name: 'photo_url', type: 'text', nullable: true })
   photoUrl?: string | null;
 
+  @Column({ name: 'access_types', type: 'text', array: true, default: () => "'{}'::text[]" })
+  accessTypes: string[];
+
   @Column({ name: 'accreditation_status', type: 'text', default: 'PENDING' })
   accreditationStatus: string;
 

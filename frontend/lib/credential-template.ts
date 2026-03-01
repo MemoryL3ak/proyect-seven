@@ -7,8 +7,12 @@ type CredentialTemplateInput = {
   issuedAtLabel: string;
   issuerLabel: string;
   subjectId: string;
+  providerLabel?: string;
+  countryTag?: string;
+  accessTypes?: string[];
   photoUrl?: string | null;
   organization?: string;
+  qrDataUrl?: string | null;
 };
 
 function escapeHtml(value: string) {
@@ -22,9 +26,48 @@ function escapeHtml(value: string) {
 
 export function buildCredentialHtml(input: CredentialTemplateInput) {
   const organization = input.organization ?? "Seven Logistic Core";
+  const providerLabel = input.providerLabel ?? "No aplica";
+  const countryTag = (input.countryTag ?? "LOC").toUpperCase().slice(0, 3);
+  const activeAccess = new Set((input.accessTypes ?? []).map((value) => value.toUpperCase()));
+  const accessCatalog = [
+    { code: "C", label: "Cancha" },
+    { code: "TR", label: "Transporte" },
+    { code: "H", label: "Hotel" },
+    { code: "R", label: "Reuniones" },
+    { code: "A", label: "Alimentacion" },
+    { code: "RD", label: "Recintos Deportivos" },
+  ];
+
   const photoBlock = input.photoUrl
     ? `<img src="${escapeHtml(input.photoUrl)}" alt="Foto acreditado" class="photo" />`
     : `<div class="photo photo-fallback">SIN FOTO</div>`;
+
+  const accessPillsFront = accessCatalog
+    .map((item) => {
+      const active = activeAccess.has(item.code);
+      return `<span class="access-pill ${active ? "is-active" : ""}">${escapeHtml(item.code)}</span>`;
+    })
+    .join("");
+
+  const accessLegend = accessCatalog
+    .map((item) => {
+      const active = activeAccess.has(item.code);
+      return `<div class="legend-item">
+        <span class="legend-code ${active ? "is-active" : ""}">${escapeHtml(item.code)}</span>
+        <span>${escapeHtml(item.label)}</span>
+      </div>`;
+    })
+    .join("");
+
+  const qrBlock = input.qrDataUrl
+    ? `<div class="qr-panel">
+        <img src="${escapeHtml(input.qrDataUrl)}" alt="QR de validacion" class="qr-image" />
+        <div class="qr-label">Escanear para ver datos del acceso</div>
+      </div>`
+    : `<div class="qr-panel">
+        <div class="qr-empty">SIN QR</div>
+        <div class="qr-label">QR no disponible</div>
+      </div>`;
 
   return `<!doctype html>
 <html lang="es">
@@ -36,206 +79,304 @@ export function buildCredentialHtml(input: CredentialTemplateInput) {
       * { box-sizing: border-box; }
       body {
         margin: 0;
-        background: radial-gradient(circle at 20% 20%, #e0f2fe 0%, #f8fafc 48%, #e2e8f0 100%);
+        background: #ecf1f7;
         font-family: "Segoe UI", "Inter", "Arial", sans-serif;
         color: #0f172a;
-        padding: 32px;
+        padding: 28px;
       }
       .sheet {
-        max-width: 920px;
+        max-width: 1060px;
         margin: 0 auto;
-        background: #ffffff;
-        border-radius: 24px;
-        box-shadow: 0 30px 80px rgba(15, 23, 42, 0.25);
-        overflow: hidden;
-        border: 1px solid rgba(148, 163, 184, 0.3);
-      }
-      .top {
-        position: relative;
-        padding: 28px 34px;
-        background: linear-gradient(135deg, #0f172a 0%, #0f766e 70%, #14b8a6 100%);
-        color: #f8fafc;
-      }
-      .top:after {
-        content: "";
-        position: absolute;
-        right: -110px;
-        top: -60px;
-        width: 280px;
-        height: 280px;
-        border-radius: 999px;
-        background: rgba(255, 255, 255, 0.14);
-      }
-      .eyebrow {
-        font-size: 11px;
-        text-transform: uppercase;
-        letter-spacing: 0.34em;
-        opacity: 0.88;
-      }
-      .title {
-        margin: 8px 0 0;
-        font-size: 30px;
-        line-height: 1.2;
-        font-weight: 800;
-      }
-      .subtitle {
-        margin-top: 6px;
-        font-size: 14px;
-        opacity: 0.9;
-      }
-      .body {
         display: grid;
-        grid-template-columns: 260px 1fr;
-        gap: 28px;
-        padding: 30px 34px 34px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
       }
-      .left {
+      .card {
+        position: relative;
+        min-height: 640px;
+        background: #ffffff;
+        border: 1px solid #c7d2e2;
+        border-radius: 18px;
+        overflow: hidden;
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.14);
+      }
+      .left-strip {
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 132px;
+        background: linear-gradient(180deg, #6b82c6 0%, #6c86cf 100%);
+        color: #fff;
         display: flex;
         flex-direction: column;
-        gap: 14px;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 0 18px;
+      }
+      .country {
+        font-size: 58px;
+        line-height: 0.9;
+        font-weight: 900;
+        letter-spacing: 0.03em;
+      }
+      .vertical {
+        writing-mode: vertical-rl;
+        transform: rotate(180deg);
+        letter-spacing: 0.03em;
+        font-size: 46px;
+        font-weight: 800;
+        line-height: 0.94;
+      }
+      .front,
+      .back {
+        padding: 22px 22px 20px 150px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+      .front-header,
+      .back-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 8px;
+      }
+      .top-right-logo {
+        width: 128px;
+        height: 50px;
+        object-fit: contain;
+      }
+      .gov-logo {
+        width: 120px;
+        height: 50px;
+        object-fit: contain;
       }
       .photo {
-        width: 100%;
-        aspect-ratio: 3/4;
-        border-radius: 18px;
+        width: 260px;
+        height: 300px;
+        border-radius: 10px;
         object-fit: cover;
-        border: 1px solid rgba(15, 23, 42, 0.18);
-        box-shadow: 0 16px 34px rgba(15, 23, 42, 0.2);
+        border: 1px solid rgba(15, 23, 42, 0.14);
+        margin: 10px auto 14px;
       }
       .photo-fallback {
         display: grid;
         place-items: center;
-        background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+        background: linear-gradient(135deg, #e2e8f0, #dbe4ef);
         color: #334155;
         font-weight: 800;
-        letter-spacing: 0.16em;
+        letter-spacing: 0.14em;
         font-size: 13px;
       }
-      .chip {
-        display: inline-flex;
-        width: fit-content;
-        align-items: center;
-        border-radius: 999px;
-        background: #ecfeff;
-        color: #0f766e;
-        padding: 8px 14px;
-        font-size: 12px;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        border: 1px solid #99f6e4;
-      }
-      .right h1 {
+      .name {
         margin: 0;
-        font-size: 34px;
+        font-size: 44px;
         font-weight: 800;
+        line-height: 1.08;
+        text-align: center;
         letter-spacing: 0.01em;
       }
       .role {
-        margin-top: 4px;
-        font-size: 16px;
-        color: #0f766e;
+        margin: 8px auto 0;
+        font-size: 20px;
         font-weight: 700;
+        text-align: center;
+        max-width: 84%;
       }
-      .grid {
-        margin-top: 18px;
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
+      .meta {
+        margin: 14px auto 0;
+        width: 88%;
+        font-size: 15px;
+        line-height: 1.5;
       }
-      .cell {
-        border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        padding: 11px 12px;
-        background: #f8fafc;
-      }
-      .label {
-        font-size: 11px;
-        letter-spacing: 0.16em;
-        text-transform: uppercase;
-        color: #64748b;
-      }
-      .value {
-        margin-top: 4px;
-        font-size: 14px;
-        font-weight: 700;
-        color: #0f172a;
-        word-break: break-word;
-      }
-      .footer {
-        margin-top: 16px;
-        padding-top: 14px;
-        border-top: 1px dashed #cbd5e1;
+      .front-qr-wrap {
+        margin: 18px auto 10px;
+        width: 88%;
         display: flex;
-        justify-content: space-between;
-        align-items: end;
-        gap: 10px;
+        justify-content: center;
       }
-      .code {
-        font-family: ui-monospace, "Cascadia Code", "SFMono-Regular", Menlo, monospace;
+      .access-row {
+        margin-top: auto;
+        display: flex;
+        justify-content: center;
+        gap: 7px;
+        flex-wrap: wrap;
+      }
+      .access-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 42px;
+        height: 34px;
+        padding: 0 10px;
+        border-radius: 10px;
+        background: #dfe8ff;
+        color: #6b7dab;
         font-size: 24px;
         font-weight: 800;
-        letter-spacing: 0.09em;
       }
-      .barcode {
+      .access-pill.is-active {
+        background: #6d85ca;
+        color: #fff;
+      }
+      .sponsors {
+        margin-top: 12px;
+        text-align: center;
+        font-size: 12px;
+      }
+      .legend-grid {
+        margin: auto 0 18px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px 24px;
+      }
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        font-size: 16px;
+        color: #6b7280;
+      }
+      .legend-item span:last-child {
+        line-height: 1.25;
+      }
+      .legend-code {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 52px;
+        height: 36px;
+        padding: 0 10px;
+        border-radius: 11px;
+        background: #dfe8ff;
+        color: #6b7dab;
+        font-size: 24px;
+        font-weight: 700;
+      }
+      .legend-code.is-active {
+        background: #6d85ca;
+        color: #fff;
+      }
+      .qr-panel {
+        border: 1px solid #d9e2f0;
+        border-radius: 18px;
+        padding: 12px;
+        background: linear-gradient(180deg, #f8fbff 0%, #eef4fd 100%);
+        text-align: center;
+      }
+      .qr-image {
+        width: 100%;
+        aspect-ratio: 1;
+        object-fit: contain;
+        display: block;
+        background: #fff;
+        border-radius: 12px;
+        padding: 8px;
+      }
+      .qr-label {
         margin-top: 8px;
-        width: 290px;
-        height: 46px;
-        border-radius: 8px;
-        background:
-          repeating-linear-gradient(
-            90deg,
-            #0f172a 0 3px,
-            transparent 3px 5px,
-            #0f172a 5px 9px,
-            transparent 9px 12px
-          );
-        border: 1px solid #cbd5e1;
+        font-size: 13px;
+        line-height: 1.35;
+        color: #4f5f82;
+        font-weight: 700;
       }
-      .organization {
-        margin-top: 18px;
-        font-size: 11px;
+      .qr-empty {
+        display: grid;
+        place-items: center;
+        min-height: 156px;
+        border-radius: 12px;
+        background: #fff;
+        color: #94a3b8;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+      }
+      .notice {
+        border-top: 2px solid #d8e6cb;
+        border-bottom: 2px solid #d8e6cb;
+        padding: 16px 6px;
+        margin-bottom: 18px;
+        color: #818ea5;
+        font-size: 33px;
+        line-height: 1.34;
+        font-style: italic;
+      }
+      .social {
+        margin-top: auto;
+        text-align: center;
+        color: #6b82c6;
+        font-size: 26px;
+        font-weight: 700;
+      }
+      .social .small {
+        display: block;
+        margin-top: 4px;
+        font-size: 24px;
+      }
+      .muted {
         color: #64748b;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
       }
       @media print {
         body { padding: 0; background: #fff; }
-        .sheet { box-shadow: none; border-radius: 0; border: none; }
+        .sheet { box-shadow: none; border-radius: 0; border: none; max-width: none; gap: 0; grid-template-columns: 1fr; }
+        .card { border: none; border-radius: 0; min-height: 100vh; box-shadow: none; page-break-after: always; }
+        .card:last-child { page-break-after: auto; }
+      }
+      @media (max-width: 980px) {
+        .sheet { grid-template-columns: 1fr; }
       }
     </style>
   </head>
   <body>
-    <article class="sheet">
-      <header class="top">
-        <div class="eyebrow">Credencial Oficial</div>
-        <h2 class="title">${escapeHtml(input.eventName)}</h2>
-        <p class="subtitle">${escapeHtml(organization)}</p>
-      </header>
-      <section class="body">
-        <aside class="left">
-          ${photoBlock}
-          <span class="chip">${escapeHtml(input.statusLabel)}</span>
+    <section class="sheet">
+      <article class="card">
+        <aside class="left-strip">
+          <div class="country">${escapeHtml(countryTag)}</div>
+          <div class="vertical">COMITE OPERATIVO LOCAL</div>
         </aside>
-        <main class="right">
-          <h1>${escapeHtml(input.fullName)}</h1>
+        <div class="front">
+          <div class="front-header">
+            <img src="/branding/fupd-left-logo.png" class="gov-logo" alt="Logo Ministerio del Deporte" />
+            <img src="/branding/fupd-right-logo.png" class="top-right-logo" alt="Logo JDE" />
+          </div>
+          ${photoBlock}
+          <h1 class="name">${escapeHtml(input.fullName)}</h1>
           <p class="role">${escapeHtml(input.roleLabel)}</p>
-          <div class="grid">
-            <div class="cell"><div class="label">ID Sujeto</div><div class="value">${escapeHtml(input.subjectId)}</div></div>
-            <div class="cell"><div class="label">Código Credencial</div><div class="value">${escapeHtml(input.credentialCode)}</div></div>
-            <div class="cell"><div class="label">Emitida</div><div class="value">${escapeHtml(input.issuedAtLabel)}</div></div>
-            <div class="cell"><div class="label">Operador</div><div class="value">${escapeHtml(input.issuerLabel)}</div></div>
+          <div class="meta">
+            <div><strong>Emitida:</strong> ${escapeHtml(input.issuedAtLabel)}</div>
+            <div><strong>Proveedor:</strong> ${escapeHtml(providerLabel)}</div>
+            <div><strong>Evento:</strong> ${escapeHtml(organization)}</div>
           </div>
-          <div class="footer">
-            <div>
-              <div class="code">${escapeHtml(input.credentialCode)}</div>
-              <div class="barcode" aria-hidden="true"></div>
-            </div>
-            <div class="organization">${escapeHtml(organization)}</div>
+          <div class="front-qr-wrap">
+            ${qrBlock}
           </div>
-        </main>
-      </section>
-    </article>
+          <div class="access-row">${accessPillsFront}</div>
+          <div class="sponsors muted">${escapeHtml(input.eventName)}</div>
+        </div>
+      </article>
+      <article class="card">
+        <aside class="left-strip">
+          <div class="country">${escapeHtml(countryTag)}</div>
+          <div class="vertical">COMITE OPERATIVO LOCAL</div>
+        </aside>
+        <div class="back">
+          <div class="back-header">
+            <img src="/branding/fupd-left-logo.png" class="gov-logo" alt="Logo Ministerio del Deporte" />
+            <img src="/branding/fupd-right-logo.png" class="top-right-logo" alt="Logo JDE" />
+          </div>
+          <div class="legend-grid">
+            ${accessLegend}
+          </div>
+          <div class="notice">
+            Esta credencial es personal e intransferible.<br/>
+            Debe portarse en forma permanente y visible durante el evento.<br/>
+            En caso de perdida, favor devolverla a la organizacion.
+          </div>
+          <div class="social">
+            @indchile <span class="small">www.ind.cl</span>
+          </div>
+        </div>
+      </article>
+    </section>
     <script>
       window.onload = () => {
         window.focus();
@@ -244,4 +385,3 @@ export function buildCredentialHtml(input: CredentialTemplateInput) {
   </body>
 </html>`;
 }
-
