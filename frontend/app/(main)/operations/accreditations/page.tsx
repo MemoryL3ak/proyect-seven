@@ -44,11 +44,20 @@ type Accreditation = {
   credentialIssuedAt?: string | null;
   credentialIssuedBy?: string | null;
   validatedBy?: string | null;
+  accessTypes?: string[] | null;
   updatedAt: string;
 };
 
 const STATUS_OPTIONS = ["ALL", "ACCREDITED", "NOT_ACCREDITED", "WITH_CREDENTIAL", "WITHOUT_CREDENTIAL"] as const;
 type StatusFilter = (typeof STATUS_OPTIONS)[number];
+const ACCESS_OPTIONS = [
+  { code: "C", label: "Cancha" },
+  { code: "TR", label: "Transporte" },
+  { code: "H", label: "Hotel" },
+  { code: "R", label: "Reuniones" },
+  { code: "A", label: "Alimentacion" },
+  { code: "RD", label: "Recintos Deportivos" },
+] as const;
 
 function isAccredited(status?: Accreditation["status"]) {
   return status === "APPROVED" || status === "CREDENTIAL_ISSUED";
@@ -76,6 +85,10 @@ function hasCredential(acc?: Accreditation) {
 
 function credentialLabel(acc?: Accreditation) {
   return hasCredential(acc) ? "Generada" : "Sin generar";
+}
+
+function normalizeAccessTypes(values?: string[] | null) {
+  return Array.from(new Set((values ?? []).map((value) => value.toUpperCase().trim()).filter(Boolean)));
 }
 
 function photoFromMetadata(metadata?: Record<string, unknown> | null) {
@@ -120,6 +133,7 @@ export default function AccreditationsPage() {
   const [subjectSearch, setSubjectSearch] = useState("");
   const [newAthleteId, setNewAthleteId] = useState("");
   const [newDriverId, setNewDriverId] = useState("");
+  const [draftAccessTypes, setDraftAccessTypes] = useState<string[]>([]);
 
   const eventMap = useMemo(() => events.reduce<Record<string, EventItem>>((acc, item) => ({ ...acc, [item.id]: item }), {}), [events]);
   const disciplineMap = useMemo(() => disciplines.reduce<Record<string, string>>((acc, item) => ({ ...acc, [item.id]: item.name || item.id }), {}), [disciplines]);
@@ -135,6 +149,10 @@ export default function AccreditationsPage() {
   const selectedAthlete = newAthleteId ? athleteMap[newAthleteId] : null;
   const selectedDriver = newDriverId ? driverMap[newDriverId] : null;
   const selectedPhotoUrl = newSubjectType === "PARTICIPANT" ? photoFromMetadata(selectedAthlete?.metadata) : selectedDriver?.photoUrl || photoFromMetadata(selectedDriver?.metadata);
+  const selectedAccreditation =
+    newSubjectType === "PARTICIPANT"
+      ? (newAthleteId ? accByAthlete[newAthleteId] : undefined)
+      : (newDriverId ? accByDriver[newDriverId] : undefined);
 
   const loadData = async () => {
     setLoading(true);
@@ -170,6 +188,14 @@ export default function AccreditationsPage() {
     const timer = setInterval(loadData, 15000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (newSubjectType === "PARTICIPANT") {
+      setDraftAccessTypes(normalizeAccessTypes(selectedAccreditation?.accessTypes));
+      return;
+    }
+    setDraftAccessTypes(normalizeAccessTypes(selectedAccreditation?.accessTypes ?? selectedDriver?.accessTypes));
+  }, [newSubjectType, newAthleteId, newDriverId, selectedAccreditation, selectedDriver]);
 
   const eventAthletes = useMemo(() => athletes.filter((item) => (selectedEventId ? item.eventId === selectedEventId : true)), [athletes, selectedEventId]);
   const eventDrivers = useMemo(() => drivers.filter((item) => (selectedEventId ? item.eventId === selectedEventId : true)), [drivers, selectedEventId]);
@@ -303,14 +329,25 @@ export default function AccreditationsPage() {
     });
   }, [eventDrivers, query, accByDriver, statusFilter]);
 
-  const ensureAccreditation = async (subjectType: "PARTICIPANT" | "DRIVER", subjectId: string) => {
+  const ensureAccreditation = async (subjectType: "PARTICIPANT" | "DRIVER", subjectId: string, accessTypes: string[]) => {
     const existing = accreditations.find((item) => {
       if (item.eventId !== selectedEventId || item.subjectType !== subjectType) return false;
       return subjectType === "PARTICIPANT" ? item.athleteId === subjectId : item.driverId === subjectId;
     });
-    if (existing) return existing;
+    if (existing) {
+      if (JSON.stringify(normalizeAccessTypes(existing.accessTypes)) !== JSON.stringify(normalizeAccessTypes(accessTypes))) {
+        return apiFetch<Accreditation>(`/accreditations/${existing.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ accessTypes }),
+        });
+      }
+      return existing;
+    }
 
-    const payload = subjectType === "PARTICIPANT" ? { eventId: selectedEventId, subjectType: "PARTICIPANT", athleteId: subjectId } : { eventId: selectedEventId, subjectType: "DRIVER", driverId: subjectId };
+    const payload = subjectType === "PARTICIPANT"
+      ? { eventId: selectedEventId, subjectType: "PARTICIPANT", athleteId: subjectId, accessTypes }
+      : { eventId: selectedEventId, subjectType: "DRIVER", driverId: subjectId, accessTypes };
     return apiFetch<Accreditation>("/accreditations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
   };
 
@@ -320,12 +357,18 @@ export default function AccreditationsPage() {
     setError(null);
     try {
       if (!selectedEventId) throw new Error("Selecciona un evento para acreditar.");
-      const acc = await ensureAccreditation(subjectType, subjectId);
-      await apiFetch(`/accreditations/${acc.id}/approve`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ validatedBy: "Operador" }) });
-      setMessage("Sujeto acreditado correctamente.");
+      const accessTypes = normalizeAccessTypes(draftAccessTypes);
+      const acc = await ensureAccreditation(subjectType, subjectId, accessTypes);
+      if (!isAccredited(acc.status)) {
+        await apiFetch(`/accreditations/${acc.id}/approve`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ validatedBy: "Operador" }) });
+        setMessage("Sujeto acreditado correctamente.");
+      } else {
+        setMessage("Accesos actualizados correctamente.");
+      }
       setNewAthleteId("");
       setNewDriverId("");
       setSubjectSearch("");
+      setDraftAccessTypes([]);
       await loadData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo acreditar.");
@@ -366,25 +409,26 @@ export default function AccreditationsPage() {
   const generateCredential = async (subjectType: "PARTICIPANT" | "DRIVER", subjectId: string) => {
     setError(null);
     setMessage(null);
-    const acc = subjectType === "PARTICIPANT" ? accByAthlete[subjectId] : accByDriver[subjectId];
-    if (!acc || !isAccredited(acc.status)) return setError("Solo puedes generar credencial para sujetos acreditados.");
+    const currentAcc = subjectType === "PARTICIPANT" ? accByAthlete[subjectId] : accByDriver[subjectId];
+    if (!currentAcc || !isAccredited(currentAcc.status)) return setError("Solo puedes generar credencial para sujetos acreditados.");
 
     try {
-      const code = acc.credentialCode || `ACC-${acc.id.slice(0, 8).toUpperCase()}`;
-      if (!acc.credentialCode) {
-        await apiFetch(`/accreditations/${acc.id}/issue-credential`, {
+      const code = currentAcc.credentialCode || `ACC-${currentAcc.id.slice(0, 8).toUpperCase()}`;
+      if (!currentAcc.credentialCode) {
+        await apiFetch(`/accreditations/${currentAcc.id}/issue-credential`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ credentialCode: code, credentialIssuedBy: "Operador" }),
         });
       }
+      const acc = await apiFetch<Accreditation>(`/accreditations/${currentAcc.id}`);
 
       const athlete = subjectType === "PARTICIPANT" ? athleteMap[subjectId] : null;
       const driver = subjectType === "DRIVER" ? driverMap[subjectId] : null;
       const fullName = athlete?.fullName || driver?.fullName || "Sin nombre";
       const photoUrl = subjectType === "PARTICIPANT" ? photoFromMetadata(athlete?.metadata) : driver?.photoUrl || photoFromMetadata(driver?.metadata);
       const countryTag = subjectType === "PARTICIPANT" ? (athlete?.countryCode || (athlete?.delegationId ? delegationMap[athlete.delegationId]?.countryCode : "") || "LOC") : "LOC";
-      const accessTypes = subjectType === "DRIVER" ? (driver?.accessTypes ?? []) : [];
+      const accessTypes = normalizeAccessTypes(acc.accessTypes ?? (subjectType === "DRIVER" ? driver?.accessTypes : []));
       const delegationLabel =
         subjectType === "PARTICIPANT"
           ? (athlete?.delegationId ? delegationMap[athlete.delegationId]?.countryCode || athlete.delegationId : "Sin delegacion")
@@ -397,11 +441,11 @@ export default function AccreditationsPage() {
         subjectType === "DRIVER"
           ? (driver?.providerId ? providerMap[driver.providerId]?.name || driver.providerId : "No asignado")
           : "No aplica";
-      const scanUrl = new URL("/scan/accreditation", window.location.origin);
-      scanUrl.searchParams.set("name", fullName);
-      scanUrl.searchParams.set("delegation", delegationLabel);
-      scanUrl.searchParams.set("discipline", disciplineLabel);
-      scanUrl.searchParams.set("subjectType", subjectType);
+        const scanUrl = new URL("/scan/accreditation", window.location.origin);
+        scanUrl.searchParams.set("name", fullName);
+        scanUrl.searchParams.set("delegation", delegationLabel);
+        scanUrl.searchParams.set("discipline", disciplineLabel);
+        scanUrl.searchParams.set("subjectType", subjectType);
       scanUrl.searchParams.set("event", eventMap[acc.eventId]?.name || "Evento");
       const qrDataUrl = await QRCode.toDataURL(scanUrl.toString(), {
         width: 240,
@@ -463,14 +507,6 @@ export default function AccreditationsPage() {
         </div>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <div className="surface rounded-2xl p-4"><p className="text-xs uppercase tracking-[0.2em] text-slate-400">Total registrados</p><p className="text-2xl font-semibold text-slate-900">{overview.total}</p></div>
-        <div className="surface rounded-2xl p-4"><p className="text-xs uppercase tracking-[0.2em] text-slate-400">Acreditados</p><p className="text-2xl font-semibold text-emerald-700">{overview.accredited}</p></div>
-        <div className="surface rounded-2xl p-4"><p className="text-xs uppercase tracking-[0.2em] text-slate-400">No acreditados</p><p className="text-2xl font-semibold text-slate-700">{overview.notAccredited}</p></div>
-        <div className="surface rounded-2xl p-4"><p className="text-xs uppercase tracking-[0.2em] text-slate-400">Con credencial</p><p className="text-2xl font-semibold text-cyan-700">{overview.withCredential}</p></div>
-        <div className="surface rounded-2xl p-4"><p className="text-xs uppercase tracking-[0.2em] text-slate-400">Acreditados sin credencial</p><p className="text-2xl font-semibold text-amber-700">{overview.accreditedWithoutCredential}</p></div>
-      </section>
-
       <section className="surface rounded-3xl border border-slate-200 p-5 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -483,45 +519,55 @@ export default function AccreditationsPage() {
           </button>
         </div>
 
-        <div className="mt-4 grid gap-3 lg:grid-cols-[2fr_2fr_1fr_1fr]">
-          <select className="input" value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)}>
-            <option value="">Selecciona evento</option>
-            {events.map((item) => <option key={item.id} value={item.id}>{item.name || item.id}</option>)}
-          </select>
-          <select className="input" value={andKpiDelegationId} onChange={(e) => setAndKpiDelegationId(e.target.value)}>
-            <option value="">Todas las delegaciones</option>
-            {eventDelegations.map((item) => <option key={item.id} value={item.id}>{item.countryCode || item.id}</option>)}
-          </select>
-          <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-            <div className="text-xs text-slate-500">Registrado AND</div>
-            <div className="text-lg font-semibold text-slate-900">{andKpiTotals.registered}</div>
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-            <div className="text-xs text-slate-500">Acreditado</div>
-            <div className="text-lg font-semibold text-slate-900">{andKpiTotals.accredited}</div>
+        <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+          <div className="grid gap-3 xl:grid-cols-[1.25fr_1.25fr_0.9fr]">
+            <div>
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Evento</p>
+              <select className="input bg-white" value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)}>
+                <option value="">Selecciona evento</option>
+                {events.map((item) => <option key={item.id} value={item.id}>{item.name || item.id}</option>)}
+              </select>
+            </div>
+            <div>
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Delegacion AND</p>
+              <select className="input bg-white" value={andKpiDelegationId} onChange={(e) => setAndKpiDelegationId(e.target.value)}>
+                <option value="">Todas las delegaciones</option>
+                {eventDelegations.map((item) => <option key={item.id} value={item.id}>{item.countryCode || item.id}</option>)}
+              </select>
+            </div>
+            <div className="rounded-2xl border border-cyan-100 bg-white px-4 py-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-700">Vista activa</p>
+              <p className="mt-2 text-lg font-semibold text-slate-900">{andKpiDelegationId ? (delegationMap[andKpiDelegationId]?.countryCode || andKpiDelegationId) : "Consolidado"}</p>
+              <p className="mt-1 text-sm text-slate-500">{andKpiDelegationId ? "Filtro por delegacion" : "Todo el evento"}</p>
+            </div>
           </div>
         </div>
 
-        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Cumplimiento total</p>
-            <div className="mt-2 flex items-end gap-2">
-              <p className="text-3xl font-semibold text-emerald-700">{andKpiTotals.pct}%</p>
-              <p className="pb-1 text-sm text-slate-500">AND registrado vs acreditado</p>
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Registrado AND</p>
+            <p className="mt-3 text-4xl font-semibold text-slate-900">{andKpiTotals.registered}</p>
+            <p className="mt-2 text-sm text-slate-500">Base declarada por AND</p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Acreditado</p>
+            <p className="mt-3 text-4xl font-semibold text-slate-900">{andKpiTotals.accredited}</p>
+            <p className="mt-2 text-sm text-slate-500">Casos aprobados en acreditacion</p>
+          </div>
+          <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 shadow-sm">
+            <p className="text-xs uppercase tracking-[0.18em] text-emerald-700">Cumplimiento total</p>
+            <div className="mt-3 flex items-end gap-2">
+              <p className="text-4xl font-semibold text-emerald-700">{andKpiTotals.pct}%</p>
+              <p className="pb-1 text-sm text-emerald-800/80">sobre AND</p>
             </div>
-            <div className="mt-3 h-2 rounded-full bg-slate-200">
-              <div className="h-2 rounded-full bg-emerald-500" style={{ width: `${Math.min(andKpiTotals.pct, 100)}%` }} />
+            <div className="mt-3 h-2.5 rounded-full bg-emerald-100">
+              <div className="h-2.5 rounded-full bg-emerald-500" style={{ width: `${Math.min(andKpiTotals.pct, 100)}%` }} />
             </div>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Brecha neta</p>
-            <p className={`mt-2 text-3xl font-semibold ${andKpiTotals.variance < 0 ? "text-rose-700" : "text-emerald-700"}`}>{andKpiTotals.variance}</p>
-            <p className="mt-1 text-sm text-slate-500">Acreditados respecto al registro AND</p>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Vista activa</p>
-            <p className="mt-2 text-xl font-semibold text-slate-900">{andKpiDelegationId ? (delegationMap[andKpiDelegationId]?.countryCode || andKpiDelegationId) : "Consolidado del evento"}</p>
-            <p className="mt-1 text-sm text-slate-500">{andKpiDelegationId ? "Filtro por delegacion aplicado" : "Todas las delegaciones del evento"}</p>
+          <div className="rounded-2xl border border-rose-100 bg-rose-50/70 p-4 shadow-sm">
+            <p className="text-xs uppercase tracking-[0.18em] text-rose-700">Brecha neta</p>
+            <p className={`mt-3 text-4xl font-semibold ${andKpiTotals.variance < 0 ? "text-rose-700" : "text-emerald-700"}`}>{andKpiTotals.variance}</p>
+            <p className="mt-2 text-sm text-slate-500">Diferencia contra el registro AND</p>
           </div>
         </div>
 
@@ -631,10 +677,35 @@ export default function AccreditationsPage() {
                     {newSubjectType === "DRIVER" && selectedDriver ? <><p><span className="font-semibold">Nombre:</span> {selectedDriver.fullName || "-"}</p><p><span className="font-semibold">RUT:</span> {selectedDriver.rut || "-"}</p><p><span className="font-semibold">Email:</span> {selectedDriver.email || "-"}</p><p><span className="font-semibold">Telefono:</span> {selectedDriver.phone || "-"}</p><p><span className="font-semibold">Licencia:</span> {selectedDriver.licenseNumber || "-"}</p><p><span className="font-semibold">Proveedor:</span> {selectedDriver.providerId ? providerMap[selectedDriver.providerId]?.name || selectedDriver.providerId : "-"}</p></> : null}
                   </div>
                 </div>
+                <div className="mt-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Asignacion de accesos</p>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                    {ACCESS_OPTIONS.map((option) => {
+                      const checked = draftAccessTypes.includes(option.code);
+                      return (
+                        <label key={option.code} className={`flex items-center gap-3 rounded-xl border px-3 py-2 text-sm transition ${checked ? "border-cyan-300 bg-cyan-50 text-cyan-900" : "border-slate-200 bg-white text-slate-700"}`}>
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={(e) =>
+                              setDraftAccessTypes((current) =>
+                                e.target.checked
+                                  ? normalizeAccessTypes([...current, option.code])
+                                  : current.filter((item) => item !== option.code)
+                              )
+                            }
+                          />
+                          <span className="inline-flex min-w-10 items-center justify-center rounded-lg bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">{option.code}</span>
+                          <span>{option.label}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             ) : null}
 
-            <div className="flex justify-end pt-1"><button className="btn btn-primary px-10" type="submit" disabled={saving || !selectedEventId}>{saving ? "Guardando..." : "Acreditar"}</button></div>
+            <div className="flex justify-end pt-1"><button className="btn btn-primary px-10" type="submit" disabled={saving || !selectedEventId}>{saving ? "Guardando..." : (selectedAccreditation ? (isAccredited(selectedAccreditation.status) ? "Guardar accesos" : "Guardar y acreditar") : "Acreditar")}</button></div>
           </div>
         </form>
         <div className="surface rounded-2xl p-5 xl:order-2">
@@ -643,20 +714,26 @@ export default function AccreditationsPage() {
               <h4 className="text-xs uppercase tracking-[0.16em] text-slate-500">Participantes registrados</h4>
               <div className="overflow-x-auto mt-2">
                 <table className="table">
-                  <thead><tr><th>Nombre</th><th>Delegacion</th><th>Pais</th><th>Pasaporte</th><th>Estado</th><th>Credencial</th><th>Acciones</th></tr></thead>
+                  <thead><tr><th>Nombre</th><th>Delegacion</th><th>Pais</th><th>Pasaporte</th><th>Accesos</th><th>Estado</th><th>Credencial</th><th>Acciones</th></tr></thead>
                   <tbody>
                     {participantRows.map((item) => {
                       const acc = accByAthlete[item.id];
                       const accredited = isAccredited(acc?.status);
+                      const accessTypes = normalizeAccessTypes(acc?.accessTypes);
                       return (
                         <tr key={item.id}>
                           <td><p className="font-medium text-slate-900">{item.fullName || item.id}</p><p className="text-xs text-slate-500">{item.id}</p></td>
                           <td>{item.delegationId ? delegationMap[item.delegationId]?.countryCode || item.delegationId : "-"}</td>
                           <td>{item.countryCode || "-"}</td>
                           <td>{item.passportNumber || "-"}</td>
+                          <td>
+                            <div className="flex flex-wrap gap-1">
+                              {accessTypes.length ? accessTypes.map((code) => <span key={code} className="rounded-full bg-cyan-50 px-2 py-1 text-xs font-semibold text-cyan-800">{code}</span>) : <span className="text-xs text-slate-400">Sin accesos</span>}
+                            </div>
+                          </td>
                           <td><span className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${rowStatusClass(acc?.status)}`}>{rowStatusLabel(acc?.status)}</span></td>
                           <td>{credentialLabel(acc)}</td>
-                          <td><div className="flex flex-wrap gap-2"><button className="btn btn-ghost" type="button" disabled={!acc || !accredited || saving} onClick={() => acc && setNotAccredited(acc)}>Modificar acreditacion</button><button className="btn btn-primary" type="button" disabled={!accredited} onClick={() => generateCredential("PARTICIPANT", item.id)}>Generar credencial</button></div></td>
+                          <td><div className="flex flex-wrap gap-2"><button className="btn btn-ghost" type="button" onClick={() => { setNewSubjectType("PARTICIPANT"); setSelectedDelegationId(item.delegationId || ""); setSubjectSearch(item.fullName || ""); setNewAthleteId(item.id); setNewDriverId(""); }}>Editar accesos</button><button className="btn btn-ghost" type="button" disabled={!acc || !accredited || saving} onClick={() => acc && setNotAccredited(acc)}>Modificar acreditacion</button><button className="btn btn-primary" type="button" disabled={!accredited} onClick={() => generateCredential("PARTICIPANT", item.id)}>Generar credencial</button></div></td>
                         </tr>
                       );
                     })}
@@ -670,20 +747,26 @@ export default function AccreditationsPage() {
               <h4 className="text-xs uppercase tracking-[0.16em] text-slate-500">Conductores registrados</h4>
               <div className="overflow-x-auto mt-2">
                 <table className="table">
-                  <thead><tr><th>Nombre</th><th>RUT</th><th>Proveedor</th><th>Telefono</th><th>Estado</th><th>Credencial</th><th>Acciones</th></tr></thead>
+                  <thead><tr><th>Nombre</th><th>RUT</th><th>Proveedor</th><th>Telefono</th><th>Accesos</th><th>Estado</th><th>Credencial</th><th>Acciones</th></tr></thead>
                   <tbody>
                     {driverRows.map((item) => {
                       const acc = accByDriver[item.id];
                       const accredited = isAccredited(acc?.status);
+                      const accessTypes = normalizeAccessTypes(acc?.accessTypes ?? item.accessTypes);
                       return (
                         <tr key={item.id}>
                           <td><p className="font-medium text-slate-900">{item.fullName || item.id}</p><p className="text-xs text-slate-500">{item.id}</p></td>
                           <td>{item.rut || "-"}</td>
                           <td>{item.providerId ? providerMap[item.providerId]?.name || item.providerId : "-"}</td>
                           <td>{item.phone || "-"}</td>
+                          <td>
+                            <div className="flex flex-wrap gap-1">
+                              {accessTypes.length ? accessTypes.map((code) => <span key={code} className="rounded-full bg-cyan-50 px-2 py-1 text-xs font-semibold text-cyan-800">{code}</span>) : <span className="text-xs text-slate-400">Sin accesos</span>}
+                            </div>
+                          </td>
                           <td><span className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${rowStatusClass(acc?.status)}`}>{rowStatusLabel(acc?.status)}</span></td>
                           <td>{credentialLabel(acc)}</td>
-                          <td><div className="flex flex-wrap gap-2"><button className="btn btn-ghost" type="button" disabled={!acc || !accredited || saving} onClick={() => acc && setNotAccredited(acc)}>Modificar acreditacion</button><button className="btn btn-primary" type="button" disabled={!accredited} onClick={() => generateCredential("DRIVER", item.id)}>Generar credencial</button></div></td>
+                          <td><div className="flex flex-wrap gap-2"><button className="btn btn-ghost" type="button" onClick={() => { setNewSubjectType("DRIVER"); setSubjectSearch(item.fullName || ""); setNewAthleteId(""); setNewDriverId(item.id); }}>Editar accesos</button><button className="btn btn-ghost" type="button" disabled={!acc || !accredited || saving} onClick={() => acc && setNotAccredited(acc)}>Modificar acreditacion</button><button className="btn btn-primary" type="button" disabled={!accredited} onClick={() => generateCredential("DRIVER", item.id)}>Generar credencial</button></div></td>
                         </tr>
                       );
                     })}

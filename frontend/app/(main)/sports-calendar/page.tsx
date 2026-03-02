@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
 
@@ -78,6 +79,12 @@ function getMetaString(metadata: Record<string, unknown> | undefined, key: strin
   if (typeof value === "string") return value;
   if (typeof value === "number" && Number.isFinite(value)) return String(value);
   return "";
+}
+
+function getMetaStringArray(metadata: Record<string, unknown> | undefined, key: string) {
+  const value = metadata?.[key];
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
 }
 
 function scheduleTypeLabel(value?: string | null) {
@@ -456,28 +463,28 @@ export default function SportsCalendarPage() {
       }),
     [athletes, selectedEventId, selectedDelegationId],
   );
-  const andDisciplineScheduleRows = useMemo(() => {
+  const andDelegationScheduleRows = useMemo(() => {
     type Row = {
       delegationId: string;
       delegationLabel: string;
-      disciplineId: string;
-      disciplineName: string;
       arrivalAt?: string;
       departureAt?: string;
+      peopleCount: number;
+      disciplines: Map<string, { disciplineId: string; disciplineName: string; athleteCount: number }>;
       trainingDates: string[];
       competitionDates: string[];
     };
 
     const rows = new Map<string, Row>();
-    const getRow = (delegationId: string, disciplineId: string, disciplineName: string) => {
-      const key = `${delegationId}::${disciplineId}`;
+    const getRow = (delegationId: string) => {
+      const key = delegationId;
       const existing = rows.get(key);
       if (existing) return existing;
       const created: Row = {
         delegationId,
         delegationLabel: delegationLabelById(delegationOptions, delegationId) || delegationId,
-        disciplineId,
-        disciplineName,
+        peopleCount: 0,
+        disciplines: new Map(),
         trainingDates: [],
         competitionDates: [],
       };
@@ -490,7 +497,15 @@ export default function SportsCalendarPage() {
       const disciplineId = athlete.disciplineId || "SIN_DISCIPLINA";
       const disciplineName =
         disciplineId === "SIN_DISCIPLINA" ? "Sin disciplina" : disciplineNameMap[disciplineId] || disciplineId;
-      const row = getRow(athlete.delegationId, disciplineId, disciplineName);
+      const row = getRow(athlete.delegationId);
+      row.peopleCount += 1;
+      const currentDiscipline = row.disciplines.get(disciplineId) ?? {
+        disciplineId,
+        disciplineName,
+        athleteCount: 0,
+      };
+      currentDiscipline.athleteCount += 1;
+      row.disciplines.set(disciplineId, currentDiscipline);
       if (athlete.arrivalTime) {
         if (!row.arrivalAt || new Date(athlete.arrivalTime) < new Date(row.arrivalAt)) {
           row.arrivalAt = athlete.arrivalTime;
@@ -509,14 +524,7 @@ export default function SportsCalendarPage() {
       const delegationId = getMetaString(entry.metadata, "delegationId");
       if (!delegationId) return;
       if (selectedDelegationId && delegationId !== selectedDelegationId) return;
-      const disciplineId = getMetaString(entry.metadata, "disciplineId")
-        || disciplineNameToIdMap[normalizeKey(entry.sport)]
-        || `SPORT_NAME::${entry.sport}`;
-      const disciplineName =
-        disciplineId.startsWith("SPORT_NAME::")
-          ? entry.sport
-          : (disciplineNameMap[disciplineId] || entry.sport || disciplineId);
-      const row = getRow(delegationId, disciplineId, disciplineName);
+      const row = getRow(delegationId);
       const target = scheduleType === "TRAINING" ? row.trainingDates : row.competitionDates;
       if (!target.includes(entry.startAtUtc)) target.push(entry.startAtUtc);
     });
@@ -524,29 +532,27 @@ export default function SportsCalendarPage() {
     return Array.from(rows.values())
       .map((row) => ({
         ...row,
+        disciplines: Array.from(row.disciplines.values()).sort((a, b) => a.disciplineName.localeCompare(b.disciplineName)),
         trainingDates: [...row.trainingDates].sort(),
         competitionDates: [...row.competitionDates].sort(),
       }))
-      .sort((a, b) => {
-        const del = a.delegationLabel.localeCompare(b.delegationLabel);
-        return del !== 0 ? del : a.disciplineName.localeCompare(b.disciplineName);
-      });
+      .sort((a, b) => a.delegationLabel.localeCompare(b.delegationLabel));
   }, [
     scopedAthletes,
     entries,
     delegationOptions,
     selectedDelegationId,
     disciplineNameMap,
-    disciplineNameToIdMap,
   ]);
   const derivedAndCalendarEntries = useMemo(() => {
     const result: SportsEvent[] = [];
-    andDisciplineScheduleRows.forEach((row) => {
+    andDelegationScheduleRows.forEach((row) => {
+      const disciplineNames = row.disciplines.map((item) => item.disciplineName);
       if (row.arrivalAt) {
         result.push({
-          id: `and-arrival-${row.delegationId}-${row.disciplineId}-${row.arrivalAt}`,
+          id: `and-arrival-${row.delegationId}-${row.arrivalAt}`,
           eventId: selectedEventId || undefined,
-          sport: row.disciplineName,
+          sport: "Llegada delegacion",
           league: "Llegada AND",
           venue: "AND",
           startAtUtc: row.arrivalAt,
@@ -556,16 +562,18 @@ export default function SportsCalendarPage() {
             title: `Llegada ${row.delegationLabel}`,
             scheduleType: "ARRIVAL",
             delegationId: row.delegationId,
-            disciplineId: row.disciplineId,
+            peopleCount: row.peopleCount,
+            disciplineCount: row.disciplines.length,
+            disciplineNames,
             derivedFrom: "AND",
           },
         });
       }
       if (row.departureAt) {
         result.push({
-          id: `and-departure-${row.delegationId}-${row.disciplineId}-${row.departureAt}`,
+          id: `and-departure-${row.delegationId}-${row.departureAt}`,
           eventId: selectedEventId || undefined,
-          sport: row.disciplineName,
+          sport: "Retiro delegacion",
           league: "Retiro AND",
           venue: "AND",
           startAtUtc: row.departureAt,
@@ -575,14 +583,16 @@ export default function SportsCalendarPage() {
             title: `Retiro ${row.delegationLabel}`,
             scheduleType: "DEPARTURE",
             delegationId: row.delegationId,
-            disciplineId: row.disciplineId,
+            peopleCount: row.peopleCount,
+            disciplineCount: row.disciplines.length,
+            disciplineNames,
             derivedFrom: "AND",
           },
         });
       }
     });
     return result;
-  }, [andDisciplineScheduleRows, selectedEventId]);
+  }, [andDelegationScheduleRows, selectedEventId]);
   const calendarDisplayEntries = useMemo(
     () =>
       [...entries, ...derivedAndCalendarEntries].sort(
@@ -824,7 +834,8 @@ export default function SportsCalendarPage() {
             <thead>
               <tr>
                 <th>Delegacion</th>
-                <th>Disciplina</th>
+                <th>Personas</th>
+                <th>Disciplinas</th>
                 <th>Fecha de llegada (AND)</th>
                 <th>Fechas de entrenamiento</th>
                 <th>Fechas de pruebas</th>
@@ -832,10 +843,23 @@ export default function SportsCalendarPage() {
               </tr>
             </thead>
             <tbody>
-              {andDisciplineScheduleRows.map((row) => (
-                <tr key={`${row.delegationId}-${row.disciplineId}`}>
+              {andDelegationScheduleRows.map((row) => (
+                <tr key={row.delegationId}>
                   <td>{row.delegationLabel}</td>
-                  <td>{row.disciplineName}</td>
+                  <td>{row.peopleCount}</td>
+                  <td>
+                    {row.disciplines.length ? (
+                      <div className="flex flex-wrap gap-1">
+                        {row.disciplines.map((discipline) => (
+                          <span key={discipline.disciplineId} className="inline-flex rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold text-slate-700">
+                            {discipline.disciplineName} · {discipline.athleteCount}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-slate-400">Sin detalle</span>
+                    )}
+                  </td>
                   <td>{formatDateTime(row.arrivalAt)}</td>
                   <td>
                     {row.trainingDates.length ? (
@@ -868,9 +892,9 @@ export default function SportsCalendarPage() {
               ))}
             </tbody>
           </table>
-          {andDisciplineScheduleRows.length === 0 ? (
+          {andDelegationScheduleRows.length === 0 ? (
             <p className="mt-3 text-sm text-slate-500">
-              No hay datos para construir la agenda por delegacion y disciplina con los filtros actuales.
+              No hay datos para construir la agenda por delegacion con los filtros actuales.
             </p>
           ) : null}
         </div>
@@ -1132,7 +1156,18 @@ export default function SportsCalendarPage() {
           </form>
 
           <div className="surface rounded-2xl p-4">
-            <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Actividades del dia</h3>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Actividades del dia</h3>
+                <p className="mt-1 text-xs text-slate-500">{dayLabel(selectedDay)}</p>
+              </div>
+              <Link
+                href={`/sports-calendar/day/${selectedDayKey}?eventId=${encodeURIComponent(selectedEventId || "")}&delegationId=${encodeURIComponent(selectedDelegationId || "")}`}
+                className="btn btn-primary"
+              >
+                Ver detalle del dia
+              </Link>
+            </div>
             {loading ? <p className="mt-2 text-sm text-slate-500">Cargando...</p> : null}
             {!loading && selectedDayEntries.length === 0 ? <p className="mt-2 text-sm text-slate-500">Sin actividades en esta fecha.</p> : null}
             <div className="mt-2 space-y-2">
@@ -1149,8 +1184,30 @@ export default function SportsCalendarPage() {
                         {delegationLabelById(delegationOptions, getMetaString(entry.metadata, "delegationId"))}
                       </span>
                     ) : null}
+                    {entry.source === "and-derived" && getMetaString(entry.metadata, "peopleCount") ? (
+                      <span className="inline-flex rounded-full bg-slate-200 px-2 py-1 text-[10px] font-semibold text-slate-700">
+                        {getMetaString(entry.metadata, "peopleCount")} personas
+                      </span>
+                    ) : null}
+                    {entry.source === "and-derived" && getMetaString(entry.metadata, "disciplineCount") ? (
+                      <span className="inline-flex rounded-full bg-violet-100 px-2 py-1 text-[10px] font-semibold text-violet-800">
+                        {getMetaString(entry.metadata, "disciplineCount")} disciplinas
+                      </span>
+                    ) : null}
                   </div>
                   <p className="text-xs text-slate-600">{entry.venue ?? "Sede por confirmar"} - {entry.status ?? "SCHEDULED"}</p>
+                  {entry.source === "and-derived" && getMetaStringArray(entry.metadata, "disciplineNames").length ? (
+                    <div className="mt-2">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Detalle</p>
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {getMetaStringArray(entry.metadata, "disciplineNames").map((discipline) => (
+                          <span key={discipline} className="inline-flex rounded-full bg-white px-2 py-1 text-[10px] font-semibold text-slate-700">
+                            {discipline}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
                   <div className="mt-2">
                     {entry.source === "and-derived" ? (
                       <p className="text-xs font-medium text-sky-700">Hito AND (solo lectura)</p>

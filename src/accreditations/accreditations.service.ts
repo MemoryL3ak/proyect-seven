@@ -27,6 +27,7 @@ type AccreditationRow = {
   credential_code: string | null;
   credential_issued_at: string | null;
   credential_issued_by: string | null;
+  access_types: string[] | null;
   metadata: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
@@ -37,6 +38,40 @@ export class AccreditationsService {
   constructor(
     @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
   ) {}
+
+  private normalizeAccessTypes(values?: string[] | null) {
+    return Array.from(
+      new Set(
+        (values ?? [])
+          .map((value) => value.toUpperCase().trim())
+          .filter(Boolean),
+      ),
+    );
+  }
+
+  private isMissingAccessTypesColumn(error?: { message?: string | null } | null) {
+    return Boolean(
+      error?.message?.includes("'access_types' column of 'accreditations'"),
+    );
+  }
+
+  private moveAccessTypesToMetadata(payload: Record<string, unknown>) {
+    if (!('access_types' in payload)) return payload;
+
+    const accessTypes = this.normalizeAccessTypes(
+      Array.isArray(payload.access_types) ? (payload.access_types as string[]) : [],
+    );
+    const metadata =
+      payload.metadata && typeof payload.metadata === 'object' && !Array.isArray(payload.metadata)
+        ? { ...(payload.metadata as Record<string, unknown>) }
+        : {};
+
+    metadata.accessTypes = accessTypes;
+
+    const fallback: Record<string, unknown> = { ...payload, metadata };
+    delete fallback.access_types;
+    return fallback;
+  }
 
   private validateSubjectReferences(
     subjectType: 'PARTICIPANT' | 'DRIVER',
@@ -81,7 +116,19 @@ export class AccreditationsService {
     if (dto.credentialIssuedBy !== undefined) {
       row.credential_issued_by = dto.credentialIssuedBy ?? null;
     }
-    if (dto.metadata !== undefined) row.metadata = dto.metadata ?? {};
+    if (dto.accessTypes !== undefined) {
+      const accessTypes = this.normalizeAccessTypes(dto.accessTypes ?? []);
+      row.access_types = accessTypes;
+      const metadata =
+        row.metadata && typeof row.metadata === 'object' && !Array.isArray(row.metadata)
+          ? { ...(row.metadata as Record<string, unknown>) }
+          : {};
+      metadata.accessTypes = accessTypes;
+      row.metadata = metadata;
+    }
+    if (dto.metadata !== undefined && dto.accessTypes === undefined) {
+      row.metadata = dto.metadata ?? {};
+    }
 
     return row;
   }
@@ -102,6 +149,10 @@ export class AccreditationsService {
         ? new Date(row.credential_issued_at)
         : null,
       credentialIssuedBy: row.credential_issued_by,
+      accessTypes: this.normalizeAccessTypes(
+        row.access_types ??
+          ((row.metadata?.accessTypes as string[] | undefined) ?? []),
+      ),
       metadata: row.metadata ?? {},
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
@@ -138,7 +189,10 @@ export class AccreditationsService {
       const { error } = await this.supabase
         .schema('transport')
         .from('drivers')
-        .update(payload)
+        .update({
+          ...payload,
+          access_types: accreditation.accessTypes ?? [],
+        })
         .eq('id', accreditation.driverId);
 
       if (error) {
@@ -154,13 +208,26 @@ export class AccreditationsService {
     payload: Record<string, unknown>,
     errorMessage: string,
   ) {
-    const { data, error } = await this.supabase
+    let { data, error } = await this.supabase
       .schema('core')
       .from('accreditations')
       .update(payload)
       .eq('id', id)
       .select('*')
       .maybeSingle();
+
+    if (this.isMissingAccessTypesColumn(error)) {
+      const fallbackPayload = this.moveAccessTypesToMetadata(payload);
+      const retry = await this.supabase
+        .schema('core')
+        .from('accreditations')
+        .update(fallbackPayload)
+        .eq('id', id)
+        .select('*')
+        .maybeSingle();
+      data = retry.data;
+      error = retry.error;
+    }
 
     if (error) {
       throw new InternalServerErrorException(error.message || errorMessage);
@@ -177,12 +244,25 @@ export class AccreditationsService {
   async create(dto: CreateAccreditationDto) {
     this.validateSubjectReferences(dto.subjectType, dto.athleteId, dto.driverId);
 
-    const { data, error } = await this.supabase
+    let payload = this.toRow(dto);
+    let { data, error } = await this.supabase
       .schema('core')
       .from('accreditations')
-      .insert(this.toRow(dto))
+      .insert(payload)
       .select('*')
       .single();
+
+    if (this.isMissingAccessTypesColumn(error)) {
+      payload = this.moveAccessTypesToMetadata(payload);
+      const retry = await this.supabase
+        .schema('core')
+        .from('accreditations')
+        .insert(payload)
+        .select('*')
+        .single();
+      data = retry.data;
+      error = retry.error;
+    }
 
     if (error || !data) {
       throw new InternalServerErrorException(

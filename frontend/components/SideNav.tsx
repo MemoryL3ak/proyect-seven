@@ -50,6 +50,12 @@ const navSections: NavSection[] = [
     items: []
   },
   {
+    title: "Acreditaciones",
+    icon: "shield",
+    href: "/accreditations",
+    items: []
+  },
+  {
     title: "Hotelería",
     icon: "hotel",
     items: [
@@ -66,7 +72,6 @@ const navSections: NavSection[] = [
     items: [
       { href: "/operations/trips", label: "Viajes", icon: "route" },
       { href: "/operations/vehicle-positions", label: "Tracking de viajes", icon: "pin" },
-      { href: "/operations/accreditations", label: "Acreditaciones", icon: "shield" },
       { href: "/scanner", label: "Escáner QR", icon: "scan" }
     ]
   },

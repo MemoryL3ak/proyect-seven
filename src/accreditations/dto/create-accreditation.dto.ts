@@ -1,10 +1,12 @@
 import {
+  ArrayUnique,
   IsIn,
   IsISO8601,
   IsNotEmpty,
   IsObject,
   IsOptional,
   IsString,
+  IsArray,
 } from 'class-validator';
 
 export class CreateAccreditationDto {
@@ -52,6 +54,12 @@ export class CreateAccreditationDto {
   @IsString()
   @IsOptional()
   credentialIssuedBy?: string;
+
+  @IsArray()
+  @ArrayUnique()
+  @IsIn(['C', 'TR', 'H', 'R', 'A', 'RD'], { each: true })
+  @IsOptional()
+  accessTypes?: string[];
 
   @IsObject()
   @IsOptional()
