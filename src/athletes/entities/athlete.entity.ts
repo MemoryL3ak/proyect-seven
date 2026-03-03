@@ -26,6 +26,9 @@ export class Athlete {
   @Column({ name: 'email', type: 'text', nullable: true })
   email?: string | null;
 
+  @Column({ name: 'phone', type: 'text', nullable: true })
+  phone?: string | null;
+
   @Column({ name: 'country_code', type: 'char', length: 3, nullable: true })
   countryCode?: string | null;
 
@@ -44,8 +47,35 @@ export class Athlete {
   @Column({ name: 'luggage_notes', type: 'text', nullable: true })
   luggageNotes?: string | null;
 
+  @Column({ name: 'bolso_count', type: 'int', default: 0 })
+  bolsoCount: number;
+
+  @Column({ name: 'bag_8_count', type: 'int', default: 0 })
+  bag8Count: number;
+
+  @Column({ name: 'suitcase_10_count', type: 'int', default: 0 })
+  suitcase10Count: number;
+
+  @Column({ name: 'suitcase_15_count', type: 'int', default: 0 })
+  suitcase15Count: number;
+
+  @Column({ name: 'suitcase_23_count', type: 'int', default: 0 })
+  suitcase23Count: number;
+
+  @Column({ name: 'oversize_text', type: 'text', nullable: true })
+  oversizeText?: string | null;
+
+  @Column({ name: 'luggage_volume', type: 'text', nullable: true })
+  luggageVolume?: string | null;
+
   @Column({ name: 'user_type', type: 'text', nullable: true })
   userType?: string | null;
+
+  @Column({ name: 'visa_required', type: 'boolean', nullable: true })
+  visaRequired?: boolean | null;
+
+  @Column({ name: 'trip_type', type: 'text', nullable: true })
+  tripType?: string | null;
 
   @Column({ name: 'arrival_flight_id', type: 'uuid', nullable: true })
   arrivalFlightId?: string | null;
@@ -82,6 +112,24 @@ export class Athlete {
 
   @Column({ name: 'bed_type', type: 'text', nullable: true })
   bedType?: string | null;
+
+  @Column({ name: 'wheelchair_user', type: 'boolean', default: false })
+  wheelchairUser: boolean;
+
+  @Column({ name: 'wheelchair_standard_count', type: 'int', default: 0 })
+  wheelchairStandardCount: number;
+
+  @Column({ name: 'wheelchair_sport_count', type: 'int', default: 0 })
+  wheelchairSportCount: number;
+
+  @Column({ name: 'sports_equipment', type: 'text', nullable: true })
+  sportsEquipment?: string | null;
+
+  @Column({ name: 'requires_assistance', type: 'boolean', default: false })
+  requiresAssistance: boolean;
+
+  @Column({ name: 'observations', type: 'text', nullable: true })
+  observations?: string | null;
 
   @Column({ name: 'is_delegation_lead', type: 'boolean', default: false })
   isDelegationLead: boolean;

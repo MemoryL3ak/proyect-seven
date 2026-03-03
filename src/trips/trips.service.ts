@@ -12,8 +12,14 @@ import { Trip } from './entities/trip.entity';
 type TripRow = {
   id: string;
   event_id: string;
-  driver_id: string;
-  vehicle_id: string;
+  driver_id: string | null;
+  vehicle_id: string | null;
+  requester_athlete_id: string | null;
+  destination_venue_id: string | null;
+  requested_vehicle_type: string | null;
+  passenger_count: number | null;
+  notes: string | null;
+  requested_at: string | null;
   origin: string | null;
   destination: string | null;
   trip_type: string | null;
@@ -56,6 +62,21 @@ export class TripsService {
     if (dto.vehicleId !== undefined) {
       row.vehicle_id = dto.vehicleId;
     }
+    if (dto.requesterAthleteId !== undefined) {
+      row.requester_athlete_id = dto.requesterAthleteId ?? null;
+    }
+    if (dto.destinationVenueId !== undefined) {
+      row.destination_venue_id = dto.destinationVenueId ?? null;
+    }
+    if (dto.requestedVehicleType !== undefined) {
+      row.requested_vehicle_type = dto.requestedVehicleType ?? null;
+    }
+    if (dto.passengerCount !== undefined) {
+      row.passenger_count = dto.passengerCount ?? null;
+    }
+    if (dto.notes !== undefined) {
+      row.notes = dto.notes ?? null;
+    }
     if (dto.origin !== undefined) {
       row.origin = dto.origin ?? null;
     }
@@ -86,8 +107,54 @@ export class TripsService {
     if (dto.completedAt !== undefined) {
       row.completed_at = dto.completedAt ?? null;
     }
+    if (dto.requestedAt !== undefined) {
+      row.requested_at = dto.requestedAt ?? null;
+    }
 
     return row;
+  }
+
+  private inferStatus(
+    dto: CreateTripDto | UpdateTripDto,
+    currentStatus?: string | null,
+  ) {
+    const hasAssignedResources =
+      (dto.driverId !== undefined && Boolean(dto.driverId)) ||
+      (dto.vehicleId !== undefined && Boolean(dto.vehicleId));
+
+    if (hasAssignedResources) {
+      if (
+        dto.status === 'REQUESTED' ||
+        !dto.status && (!currentStatus || currentStatus === 'REQUESTED')
+      ) {
+        return 'SCHEDULED';
+      }
+      if (dto.status !== undefined) {
+        return dto.status;
+      }
+      return currentStatus;
+    }
+
+    if (dto.status !== undefined) {
+      return dto.status;
+    }
+
+    if (!currentStatus && dto.tripType === 'PORTAL_REQUEST') {
+      return 'REQUESTED';
+    }
+
+    return currentStatus;
+  }
+
+  private isMissingPassengerCountColumn(error: { message?: string } | null | undefined) {
+    const message = error?.message ?? '';
+    return message.includes("Could not find the 'passenger_count' column");
+  }
+
+  private withoutPassengerCount(row: Record<string, unknown>) {
+    const next = { ...row };
+    delete next.passenger_count;
+    return next;
   }
 
   private toEntity(row: TripRow): Trip {
@@ -96,6 +163,12 @@ export class TripsService {
       eventId: row.event_id,
       driverId: row.driver_id,
       vehicleId: row.vehicle_id,
+      requesterAthleteId: row.requester_athlete_id,
+      destinationVenueId: row.destination_venue_id,
+      requestedVehicleType: row.requested_vehicle_type,
+      passengerCount: row.passenger_count,
+      notes: row.notes,
+      requestedAt: row.requested_at ? new Date(row.requested_at) : null,
       origin: row.origin,
       destination: row.destination,
       tripType: row.trip_type,
@@ -211,12 +284,27 @@ export class TripsService {
   }
 
   async create(createTripDto: CreateTripDto) {
-    const { data, error } = await this.supabase
+    const row = this.toRow(createTripDto);
+    const inferredStatus = this.inferStatus(createTripDto, null);
+    if (inferredStatus) {
+      row.status = inferredStatus;
+    }
+
+    let { data, error } = await this.supabase
       .schema('transport')
       .from('trips')
-      .insert(this.toRow(createTripDto))
+      .insert(row)
       .select('*')
       .single();
+
+    if (this.isMissingPassengerCountColumn(error)) {
+      ({ data, error } = await this.supabase
+        .schema('transport')
+        .from('trips')
+        .insert(this.withoutPassengerCount(row))
+        .select('*')
+        .single());
+    }
 
     if (error || !data) {
       throw new InternalServerErrorException(
@@ -275,13 +363,30 @@ export class TripsService {
   }
 
   async update(id: string, updateTripDto: UpdateTripDto) {
-    const { data, error } = await this.supabase
+    const currentTrip = await this.findOne(id);
+    const row = this.toRow(updateTripDto);
+    const inferredStatus = this.inferStatus(updateTripDto, currentTrip.status);
+    if (inferredStatus !== undefined) {
+      row.status = inferredStatus;
+    }
+
+    let { data, error } = await this.supabase
       .schema('transport')
       .from('trips')
-      .update(this.toRow(updateTripDto))
+      .update(row)
       .eq('id', id)
       .select('*')
       .maybeSingle();
+
+    if (this.isMissingPassengerCountColumn(error)) {
+      ({ data, error } = await this.supabase
+        .schema('transport')
+        .from('trips')
+        .update(this.withoutPassengerCount(row))
+        .eq('id', id)
+        .select('*')
+        .maybeSingle());
+    }
 
     if (error) {
       throw new InternalServerErrorException(

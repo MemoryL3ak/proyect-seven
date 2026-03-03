@@ -53,6 +53,22 @@ function buildInitial(fields: FieldDef[]) {
   }, {});
 }
 
+function readRecord(value: unknown) {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function boolToFormValue(value: unknown) {
+  return value === true ? "true" : value === false ? "false" : "";
+}
+
+function numberToFormValue(value: unknown) {
+  if (value === null || value === undefined || value === "") return "";
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? String(parsed) : "";
+}
+
 function formatValue(value: unknown) {
   if (value === null || value === undefined) return "-";
   if (Array.isArray(value)) {
@@ -61,6 +77,18 @@ function formatValue(value: unknown) {
   if (typeof value === "object") {
     return JSON.stringify(value);
   }
+  if (typeof value === "string" && /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(value)) {
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toLocaleString("es-CL", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    }
+  }
   if (typeof value === "string" && /\d{4}-\d{2}-\d{2}/.test(value)) {
     const parsed = new Date(value);
     if (!Number.isNaN(parsed.getTime())) {
@@ -68,6 +96,18 @@ function formatValue(value: unknown) {
     }
   }
   return String(value);
+}
+
+function toDateTimeLocalInput(value?: string | Date | null) {
+  if (!value) return "";
+  const parsed = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "";
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const day = String(parsed.getDate()).padStart(2, "0");
+  const hours = String(parsed.getHours()).padStart(2, "0");
+  const minutes = String(parsed.getMinutes()).padStart(2, "0");
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
 function parseValue(field: FieldDef, value: string | string[]) {
@@ -170,7 +210,15 @@ function readEventAndConfig(configValue: unknown) {
   return { raw, totals, matrix };
 }
 
-export default function ResourceScreen({ config }: { config?: ResourceConfig }) {
+export default function ResourceScreen({
+  config,
+  externalEditingId,
+  refreshKey
+}: {
+  config?: ResourceConfig;
+  externalEditingId?: string | null;
+  refreshKey?: number;
+}) {
   const { t } = useI18n();
   if (!config) {
     return (
@@ -194,6 +242,7 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
   const [delegationOptions, setDelegationOptions] = useState<Option[]>([]);
   const [providerOptions, setProviderOptions] = useState<Option[]>([]);
   const [accommodationOptions, setAccommodationOptions] = useState<Option[]>([]);
+  const [venueOptions, setVenueOptions] = useState<Option[]>([]);
   const [vehicleOptions, setVehicleOptions] = useState<Option[]>([]);
   const [vehicleLookup, setVehicleLookup] = useState<Record<string, any>>({});
   const [flightLookup, setFlightLookup] = useState<Record<string, any>>({});
@@ -289,6 +338,10 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
     () => config.fields.some((field) => field.optionsSource === "accommodations"),
     [config.fields]
   );
+  const needsVenues = useMemo(
+    () => config.fields.some((field) => field.optionsSource === "venues"),
+    [config.fields]
+  );
   const needsVehicles = useMemo(
     () =>
       config.fields.some((field) => field.optionsSource === "vehicles") ||
@@ -360,9 +413,36 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
           const discipline = athlete.disciplineId
             ? disciplineById[athlete.disciplineId]
             : null;
+          const metadata = readRecord(athlete.metadata);
+          const luggage = readRecord(metadata.luggage);
+          const arrival = readRecord(metadata.arrival);
+          const departure = readRecord(metadata.departure);
+          const arrivalLuggage = readRecord(arrival.luggage);
+          const departureLuggage = readRecord(departure.luggage);
+          const mobility = readRecord(metadata.mobility);
+          const inferredTripType =
+            athlete.tripType ??
+            metadata.tripType ??
+            (athlete.arrivalTime || arrival.time
+              ? "ARRIVAL"
+              : athlete.departureTime || departure.time
+                ? "DEPARTURE"
+                : "");
+          const primaryLuggage =
+            inferredTripType === "DEPARTURE" ? departureLuggage : arrivalLuggage;
+          const primaryFlightNumber =
+            athlete.flightNumber ??
+            (inferredTripType === "DEPARTURE"
+              ? String(departure.flightNumber ?? "")
+              : String(arrival.flightNumber ?? ""));
+          const primaryAirline =
+            athlete.airline ??
+            (inferredTripType === "DEPARTURE"
+              ? String(departure.airline ?? "")
+              : String(arrival.airline ?? ""));
 
           const toDateTimeLocal = (value?: string | null) =>
-            value ? new Date(value).toISOString().slice(0, 16) : "";
+            toDateTimeLocalInput(value);
 
           return {
             id: athlete.id,
@@ -376,27 +456,74 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
             participantDisciplineId: athlete.disciplineId,
             participantIsDelegationLead: athlete.isDelegationLead ? "true" : "false",
             participantCountryCode: athlete.countryCode,
-            participantBirthDate: athlete.birthDate ?? "",
-            participantLuggageType: athlete.luggageType ?? "",
-            participantLuggageNotes: athlete.luggageNotes ?? "",
-            participantArrivalTime: toDateTimeLocal(athlete.arrivalTime),
-            participantDepartureTime: toDateTimeLocal(athlete.departureTime),
-            participantDepartureGate: athlete.departureGate ?? "",
-            participantArrivalBaggage: athlete.arrivalBaggage ?? "",
-            participantFlightNumber: athlete.flightNumber ?? "",
-            participantAirline: athlete.airline ?? "",
+            participantBirthDate: athlete.dateOfBirth
+              ? new Date(athlete.dateOfBirth).toISOString().slice(0, 10)
+              : typeof metadata.dateOfBirth === "string"
+                ? String(metadata.dateOfBirth)
+              : "",
+            participantUserType: athlete.userType ?? String(metadata.userType ?? ""),
+            participantPhone: athlete.phone ?? String(metadata.phone ?? ""),
+            participantVisaRequired:
+              boolToFormValue(
+                athlete.visaRequired ??
+                  metadata.visaRequired ??
+                  (typeof metadata.visaType === "string"
+                    ? String(metadata.visaType).trim().toLowerCase() === "si"
+                    : undefined),
+              ),
+            participantTripType: String(inferredTripType),
+            participantArrivalTime: toDateTimeLocal(athlete.arrivalTime ?? String(arrival.time ?? "")),
+            participantDepartureTime: toDateTimeLocal(athlete.departureTime ?? String(departure.time ?? "")),
+            participantDepartureGate: athlete.departureGate ?? String(departure.gate ?? ""),
+            participantArrivalBaggage: athlete.arrivalBaggage ?? String(arrival.baggageClaim ?? ""),
+            participantFlightNumber: primaryFlightNumber,
+            participantAirline: primaryAirline,
             participantOrigin: athlete.origin ?? "",
+            participantBolsoCount: numberToFormValue(
+              athlete.bolsoCount ?? primaryLuggage.bolsoCount ?? luggage.bolsoCount,
+            ),
+            participantBag8Count: numberToFormValue(
+              athlete.bag8Count ?? primaryLuggage.bag8Count ?? luggage.bag8Count,
+            ),
+            participantSuitcase10Count: numberToFormValue(
+              athlete.suitcase10Count ?? primaryLuggage.suitcase10Count ?? luggage.suitcase10Count,
+            ),
+            participantSuitcase15Count: numberToFormValue(
+              athlete.suitcase15Count ?? primaryLuggage.suitcase15Count ?? luggage.suitcase15Count,
+            ),
+            participantSuitcase23Count: numberToFormValue(
+              athlete.suitcase23Count ?? primaryLuggage.suitcase23Count ?? luggage.suitcase23Count,
+            ),
+            participantOversizeText: String(
+              athlete.oversizeText ?? primaryLuggage.oversizeText ?? luggage.oversizeText ?? "",
+            ),
+            participantVolume: String(
+              athlete.luggageVolume ?? primaryLuggage.volume ?? luggage.volume ?? ""
+            ),
+            participantWheelchairUser: boolToFormValue(
+              athlete.wheelchairUser ?? mobility.wheelchairUser,
+            ),
+            participantWheelchairStandardCount: numberToFormValue(
+              athlete.wheelchairStandardCount ?? mobility.wheelchairStandardCount,
+            ),
+            participantWheelchairSportCount: numberToFormValue(
+              athlete.wheelchairSportCount ?? mobility.wheelchairSportCount,
+            ),
+            participantSportsEquipment: String(
+              athlete.sportsEquipment ?? metadata.sportsEquipment ?? "",
+            ),
+            participantRequiresAssistance: boolToFormValue(
+              athlete.requiresAssistance ?? metadata.requiresAssistance,
+            ),
+            participantObservations: String(
+              athlete.observations ?? metadata.observations ?? "",
+            ),
             participantHotelAccommodationId: athlete.hotelAccommodationId ?? "",
             participantRoomType: athlete.roomType ?? "",
             participantBedType: athlete.bedType ?? "",
             participantRoomNumber: athlete.roomNumber ?? "",
             participantPassportNumber: athlete.passportNumber ?? "",
-            participantMetadata:
-              athlete.metadata && typeof athlete.metadata === "object" ? athlete.metadata : {},
-            participantVisaType:
-              (athlete.metadata && typeof athlete.metadata === "object"
-                ? (athlete.metadata as Record<string, unknown>).visaType
-                : "") ?? "",
+            participantMetadata: metadata,
             participantRut:
               athlete.countryCode === "CHL" && athlete.passportNumber
                 ? athlete.passportNumber
@@ -616,7 +743,7 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
 
   useEffect(() => {
     loadItems();
-  }, []);
+  }, [refreshKey]);
 
   useEffect(() => {
     if (needsEvents) {
@@ -673,6 +800,12 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
       loadAccommodations();
     }
   }, [needsAccommodations]);
+
+  useEffect(() => {
+    if (needsVenues) {
+      loadVenues();
+    }
+  }, [needsVenues]);
 
   useEffect(() => {
     if (needsVehicles) {
@@ -971,6 +1104,90 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
           const participantCountry =
             (form.participantCountryCode as string | undefined) ||
             (payload.countryCode as string | undefined);
+          const participantMetadata = (() => {
+            const existing = { ...readRecord(form.participantMetadata) };
+            const luggage = {
+              bolsoCount: Number(form.participantBolsoCount || 0),
+              bag8Count: Number(form.participantBag8Count || 0),
+              suitcase10Count: Number(form.participantSuitcase10Count || 0),
+              suitcase15Count: Number(form.participantSuitcase15Count || 0),
+              suitcase23Count: Number(form.participantSuitcase23Count || 0),
+              oversizeText:
+                (form.participantOversizeText as string | undefined)?.trim() || null,
+              volume: (form.participantVolume as string | undefined)?.trim() || null,
+            };
+            const mobility = {
+              wheelchairUser: form.participantWheelchairUser === "true",
+              wheelchairStandardCount: Number(
+                form.participantWheelchairStandardCount || 0,
+              ),
+              wheelchairSportCount: Number(
+                form.participantWheelchairSportCount || 0,
+              ),
+            };
+            const phone = (form.participantPhone as string | undefined)?.trim();
+            const tripType = (form.participantTripType as string | undefined)?.trim();
+            const sportsEquipment = (
+              form.participantSportsEquipment as string | undefined
+            )?.trim();
+            const observations = (
+              form.participantObservations as string | undefined
+            )?.trim();
+            if (form.participantVisaRequired === "true") {
+              existing.visaRequired = true;
+            } else if (form.participantVisaRequired === "false") {
+              existing.visaRequired = false;
+            } else {
+              delete existing.visaRequired;
+            }
+            if (phone) {
+              existing.phone = phone;
+            } else {
+              delete existing.phone;
+            }
+            if (tripType) {
+              existing.tripType = tripType;
+            } else {
+              delete existing.tripType;
+            }
+            if (sportsEquipment) {
+              existing.sportsEquipment = sportsEquipment;
+            } else {
+              delete existing.sportsEquipment;
+            }
+            if (form.participantRequiresAssistance === "true") {
+              existing.requiresAssistance = true;
+            } else if (form.participantRequiresAssistance === "false") {
+              existing.requiresAssistance = false;
+            } else {
+              delete existing.requiresAssistance;
+            }
+            if (observations) {
+              existing.observations = observations;
+            } else {
+              delete existing.observations;
+            }
+            existing.luggage = luggage;
+            existing.mobility = mobility;
+            return existing;
+          })();
+          const luggageSummary = (() => {
+            const bolsoCount = Number(form.participantBolsoCount || 0);
+            const bag8Count = Number(form.participantBag8Count || 0);
+            const suitcase10Count = Number(form.participantSuitcase10Count || 0);
+            const suitcase15Count = Number(form.participantSuitcase15Count || 0);
+            const suitcase23Count = Number(form.participantSuitcase23Count || 0);
+            return [
+              bolsoCount ? `${bolsoCount} bolso` : "",
+              bag8Count ? `${bag8Count} maleta 8` : "",
+              suitcase10Count ? `${suitcase10Count} maleta 10` : "",
+              suitcase15Count ? `${suitcase15Count} maleta 15` : "",
+              suitcase23Count ? `${suitcase23Count} maleta 23` : "",
+              (form.participantOversizeText as string | undefined)?.trim() || "",
+            ]
+              .filter(Boolean)
+              .join(", ");
+          })();
           const participantPayload: Record<string, unknown> = {
             eventId: payload.eventId,
             delegationId,
@@ -981,10 +1198,26 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
                 : true,
             fullName: form.participantFullName,
             email: form.participantEmail || undefined,
+            phone: (form.participantPhone as string | undefined) || undefined,
             countryCode: participantCountry,
-            birthDate: form.participantBirthDate || undefined,
-            luggageType: form.participantLuggageType || undefined,
-            luggageNotes: form.participantLuggageNotes || undefined,
+            dateOfBirth: form.participantBirthDate || undefined,
+            userType: form.participantUserType || undefined,
+            visaRequired:
+              form.participantVisaRequired === "true"
+                ? true
+                : form.participantVisaRequired === "false"
+                  ? false
+                  : undefined,
+            tripType: form.participantTripType || undefined,
+            luggageNotes: luggageSummary || undefined,
+            bolsoCount: Number(form.participantBolsoCount || 0),
+            bag8Count: Number(form.participantBag8Count || 0),
+            suitcase10Count: Number(form.participantSuitcase10Count || 0),
+            suitcase15Count: Number(form.participantSuitcase15Count || 0),
+            suitcase23Count: Number(form.participantSuitcase23Count || 0),
+            oversizeText:
+              (form.participantOversizeText as string | undefined) || undefined,
+            luggageVolume: (form.participantVolume as string | undefined) || undefined,
             arrivalTime: form.participantArrivalTime || undefined,
             departureTime: form.participantDepartureTime || undefined,
             departureGate: form.participantDepartureGate || undefined,
@@ -996,21 +1229,29 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
             roomType: form.participantRoomType || undefined,
             bedType: form.participantBedType || undefined,
             roomNumber: form.participantRoomNumber || undefined,
-            metadata: (() => {
-              const existing =
-                form.participantMetadata &&
-                typeof form.participantMetadata === "object" &&
-                !Array.isArray(form.participantMetadata)
-                  ? { ...(form.participantMetadata as Record<string, unknown>) }
-                  : {};
-              const visaType = (form.participantVisaType as string | undefined)?.trim();
-              if (visaType) {
-                existing.visaType = visaType;
-              } else {
-                delete existing.visaType;
-              }
-              return existing;
-            })()
+            wheelchairUser:
+              form.participantWheelchairUser === "true"
+                ? true
+                : form.participantWheelchairUser === "false"
+                  ? false
+                  : undefined,
+            wheelchairStandardCount: Number(
+              form.participantWheelchairStandardCount || 0,
+            ),
+            wheelchairSportCount: Number(
+              form.participantWheelchairSportCount || 0,
+            ),
+            sportsEquipment:
+              (form.participantSportsEquipment as string | undefined) || undefined,
+            requiresAssistance:
+              form.participantRequiresAssistance === "true"
+                ? true
+                : form.participantRequiresAssistance === "false"
+                  ? false
+                  : undefined,
+            observations:
+              (form.participantObservations as string | undefined) || undefined,
+            metadata: participantMetadata
           };
 
           if (participantCountry === "CHL") {
@@ -1252,8 +1493,10 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
       next.participantIsDelegationLead = item.participantIsDelegationLead ?? "false";
       next.participantCountryCode = item.participantCountryCode ?? "";
       next.participantBirthDate = item.participantBirthDate ?? "";
-      next.participantLuggageType = item.participantLuggageType ?? "";
-      next.participantLuggageNotes = item.participantLuggageNotes ?? "";
+      next.participantUserType = item.participantUserType ?? "";
+      next.participantPhone = item.participantPhone ?? "";
+      next.participantVisaRequired = item.participantVisaRequired ?? "";
+      next.participantTripType = item.participantTripType ?? "";
       next.participantArrivalTime = item.participantArrivalTime ?? "";
       next.participantDepartureTime = item.participantDepartureTime ?? "";
       next.participantDepartureGate = item.participantDepartureGate ?? "";
@@ -1261,6 +1504,21 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
       next.participantFlightNumber = item.participantFlightNumber ?? "";
       next.participantAirline = item.participantAirline ?? "";
       next.participantOrigin = item.participantOrigin ?? "";
+      next.participantBolsoCount = item.participantBolsoCount ?? "";
+      next.participantBag8Count = item.participantBag8Count ?? "";
+      next.participantSuitcase10Count = item.participantSuitcase10Count ?? "";
+      next.participantSuitcase15Count = item.participantSuitcase15Count ?? "";
+      next.participantSuitcase23Count = item.participantSuitcase23Count ?? "";
+      next.participantOversizeText = item.participantOversizeText ?? "";
+      next.participantVolume = item.participantVolume ?? "";
+      next.participantWheelchairUser = item.participantWheelchairUser ?? "";
+      next.participantWheelchairStandardCount =
+        item.participantWheelchairStandardCount ?? "";
+      next.participantWheelchairSportCount =
+        item.participantWheelchairSportCount ?? "";
+      next.participantSportsEquipment = item.participantSportsEquipment ?? "";
+      next.participantRequiresAssistance = item.participantRequiresAssistance ?? "";
+      next.participantObservations = item.participantObservations ?? "";
       next.participantHotelAccommodationId = item.participantHotelAccommodationId ?? "";
       next.participantRoomType = item.participantRoomType ?? "";
       next.participantBedType = item.participantBedType ?? "";
@@ -1270,7 +1528,6 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
         item.participantMetadata && typeof item.participantMetadata === "object"
           ? item.participantMetadata
           : {};
-      next.participantVisaType = item.participantVisaType ?? "";
       next.participantRut = item.participantRut ?? "";
       setForm(next);
       return;
@@ -1342,7 +1599,7 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
         return;
       }
       if (field.type === "datetime") {
-        next[field.key] = new Date(value).toISOString().slice(0, 16);
+        next[field.key] = toDateTimeLocalInput(value);
         return;
       }
       if (field.type === "date") {
@@ -1377,6 +1634,19 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
     setEditingId(item.id ?? null);
   };
 
+  const loadVenues = async () => {
+    try {
+      const data = await apiFetch<Record<string, any>[]>("/venues");
+      const options = (data || []).map((venue) => ({
+        label: venue.name ? `${venue.name}${venue.address ? ` · ${venue.address}` : ""}` : venue.id,
+        value: venue.id
+      }));
+      setVenueOptions(options);
+    } catch (err) {
+      setVenueOptions([]);
+    }
+  };
+
   useEffect(() => {
     if (!isTrips) return;
     if (!editingId) return;
@@ -1390,6 +1660,31 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
       setForm((prev) => ({ ...prev, delegationId: first.delegationId }));
     }
   }, [isTrips, editingId, form.delegationId, form.athleteIds, athleteOptions]);
+
+  useEffect(() => {
+    if (!externalEditingId || externalEditingId === editingId) return;
+
+    const localItem = items.find((item) => item.id === externalEditingId);
+    if (localItem) {
+      handleEdit(localItem);
+      return;
+    }
+
+    let cancelled = false;
+    apiFetch<Record<string, any>>(`${config.endpoint}/${externalEditingId}`)
+      .then((item) => {
+        if (cancelled || !item) return;
+        handleEdit(item);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : t("No se pudo cargar"));
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [config.endpoint, editingId, externalEditingId, items, t]);
 
   const handleDelete = async (id: string) => {
     setError(null);
@@ -1567,6 +1862,7 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
     if (source === "disciplines") return disciplineOptions;
     if (source === "delegations") return delegationOptions;
     if (source === "accommodations") return accommodationOptions;
+    if (source === "venues") return venueOptions;
     if (source === "vehicles") return vehicleOptions;
     if (source === "drivers") return driverOptions;
     if (source === "driverUsers") return driverUserOptions;
@@ -1760,9 +2056,27 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
                 }
               }
               if (config.endpoint === "/delegations") {
+                const tripType = (form.participantTripType as string | undefined) ?? "";
+                const wheelchairUser =
+                  (form.participantWheelchairUser as string | undefined) === "true";
                 if (
-                  field.key === "participantLuggageNotes" &&
-                  (form.participantLuggageType as string | undefined) !== "EXTRA_BAGGAGE"
+                  tripType === "ARRIVAL" &&
+                  ["participantDepartureTime", "participantDepartureGate"].includes(field.key)
+                ) {
+                  return null;
+                }
+                if (
+                  tripType === "DEPARTURE" &&
+                  ["participantArrivalBaggage"].includes(field.key)
+                ) {
+                  return null;
+                }
+                if (
+                  !wheelchairUser &&
+                  [
+                    "participantWheelchairStandardCount",
+                    "participantWheelchairSportCount",
+                  ].includes(field.key)
                 ) {
                   return null;
                 }
@@ -2082,24 +2396,43 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
               ]);
               const personalKeys = new Set([
                 "participantFullName",
+                "participantUserType",
+                "participantPhone",
                 "participantEmail",
                 "participantDisciplineId",
                 "participantIsDelegationLead",
                 "participantCountryCode",
                 "participantRut",
                 "participantPassportNumber",
-                "participantVisaType",
+                "participantVisaRequired",
                 "participantBirthDate"
               ]);
-              const flightKeys = new Set([
+              const tripKeys = new Set([
+                "participantTripType",
                 "participantFlightNumber",
                 "participantAirline",
                 "participantOrigin",
                 "participantArrivalTime",
                 "participantDepartureTime",
                 "participantDepartureGate",
-                "participantLuggageType",
-                "participantLuggageNotes"
+                "participantArrivalBaggage"
+              ]);
+              const luggageKeys = new Set([
+                "participantBolsoCount",
+                "participantBag8Count",
+                "participantSuitcase10Count",
+                "participantSuitcase15Count",
+                "participantSuitcase23Count",
+                "participantOversizeText",
+                "participantVolume"
+              ]);
+              const assistanceKeys = new Set([
+                "participantWheelchairUser",
+                "participantWheelchairStandardCount",
+                "participantWheelchairSportCount",
+                "participantSportsEquipment",
+                "participantRequiresAssistance",
+                "participantObservations"
               ]);
               const hotelKeys = new Set([
                 "participantHotelAccommodationId",
@@ -2114,16 +2447,16 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
               const personalFields = fields.filter(
                 (field) => personalKeys.has(field.key) && shouldRender(field)
               );
-              const luggageType =
-                (form.participantLuggageType as string | undefined) ?? "";
-              const showLuggageNotes = luggageType === "EXTRA_BAGGAGE";
-              const flightFields = fields.filter((field) => {
-                if (!flightKeys.has(field.key)) return false;
-                if (field.key === "participantLuggageNotes") {
-                  return showLuggageNotes;
-                }
-                return shouldRender(field);
-              });
+              const tripType = (form.participantTripType as string | undefined) ?? "";
+              const tripFields = fields.filter(
+                (field) => tripKeys.has(field.key) && shouldRender(field)
+              );
+              const luggageFields = fields.filter(
+                (field) => luggageKeys.has(field.key) && shouldRender(field)
+              );
+              const assistanceFields = fields.filter(
+                (field) => assistanceKeys.has(field.key) && shouldRender(field)
+              );
               const hotelFields = fields.filter(
                 (field) => hotelKeys.has(field.key) && shouldRender(field)
               );
@@ -2153,11 +2486,38 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
                   <section className="md:col-span-2 rounded-2xl border border-slate-200 bg-white p-5">
                     <div className="mb-4">
                       <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-                        {t("Información de vuelo")}
+                        {t("Itinerario")}
                       </p>
                     </div>
                     <div className="grid gap-4 md:grid-cols-2">
-                      {flightFields.map((field) => renderField(field))}
+                      {tripFields.map((field) => renderField(field))}
+                    </div>
+                    {tripType ? (
+                      <p className="mt-3 text-xs text-slate-500">
+                        {tripType === "ARRIVAL"
+                          ? t("Se muestran los campos operativos de llegada.")
+                          : t("Se muestran los campos operativos de salida.")}
+                      </p>
+                    ) : null}
+                  </section>
+                  <section className="md:col-span-2 rounded-2xl border border-slate-200 bg-white p-5">
+                    <div className="mb-4">
+                      <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                        {t("Equipaje")}
+                      </p>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                      {luggageFields.map((field) => renderField(field))}
+                    </div>
+                  </section>
+                  <section className="md:col-span-2 rounded-2xl border border-slate-200 bg-white p-5">
+                    <div className="mb-4">
+                      <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                        {t("Movilidad y asistencia")}
+                      </p>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {assistanceFields.map((field) => renderField(field))}
                     </div>
                   </section>
                   <section className="md:col-span-2 rounded-2xl border border-slate-200 bg-white p-5">
@@ -2527,14 +2887,16 @@ export default function ResourceScreen({ config }: { config?: ResourceConfig }) 
         {items.length === 0 ? (
           <div className="text-sm text-slate-500">{t("Sin registros aún.")}</div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="max-h-[70vh] overflow-auto rounded-2xl border border-slate-200">
             <table className="table">
               <thead>
                 <tr>
                   {columns.map((col) => (
-                    <th key={col.key}>{col.label}</th>
+                    <th key={col.key} className="sticky top-0 z-10 bg-white">
+                      {col.label}
+                    </th>
                   ))}
-                  <th>{t("Acciones")}</th>
+                  <th className="sticky top-0 z-10 bg-white">{t("Acciones")}</th>
                 </tr>
               </thead>
               <tbody>

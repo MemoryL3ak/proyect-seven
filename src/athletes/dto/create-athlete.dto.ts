@@ -30,6 +30,10 @@ export class CreateAthleteDto {
   email?: string;
 
   @IsString()
+  @IsOptional()
+  phone?: string;
+
+  @IsString()
   @Length(3, 3)
   @IsOptional()
   countryCode?: string;
@@ -54,9 +58,40 @@ export class CreateAthleteDto {
   @IsOptional()
   luggageNotes?: string;
 
+  @IsOptional()
+  bolsoCount?: number;
+
+  @IsOptional()
+  bag8Count?: number;
+
+  @IsOptional()
+  suitcase10Count?: number;
+
+  @IsOptional()
+  suitcase15Count?: number;
+
+  @IsOptional()
+  suitcase23Count?: number;
+
+  @IsString()
+  @IsOptional()
+  oversizeText?: string;
+
+  @IsString()
+  @IsOptional()
+  luggageVolume?: string;
+
   @IsString()
   @IsOptional()
   userType?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  visaRequired?: boolean;
+
+  @IsString()
+  @IsOptional()
+  tripType?: string;
 
   @IsString()
   @IsOptional()
@@ -105,6 +140,28 @@ export class CreateAthleteDto {
   @IsString()
   @IsOptional()
   bedType?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  wheelchairUser?: boolean;
+
+  @IsOptional()
+  wheelchairStandardCount?: number;
+
+  @IsOptional()
+  wheelchairSportCount?: number;
+
+  @IsString()
+  @IsOptional()
+  sportsEquipment?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  requiresAssistance?: boolean;
+
+  @IsString()
+  @IsOptional()
+  observations?: string;
 
   @IsBoolean()
   @IsOptional()

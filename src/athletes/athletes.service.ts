@@ -18,13 +18,23 @@ type AthleteRow = {
   discipline_id: string | null;
   full_name: string;
   email: string | null;
+  phone: string | null;
   country_code: string | null;
   passport_number: string | null;
   date_of_birth: string | null;
   dietary_needs: string | null;
   luggage_type: string | null;
   luggage_notes: string | null;
+  bolso_count: number | null;
+  bag_8_count: number | null;
+  suitcase_10_count: number | null;
+  suitcase_15_count: number | null;
+  suitcase_23_count: number | null;
+  oversize_text: string | null;
+  luggage_volume: string | null;
   user_type: string | null;
+  visa_required: boolean | null;
+  trip_type: string | null;
   arrival_flight_id: string | null;
   flight_number: string | null;
   airline: string | null;
@@ -37,6 +47,12 @@ type AthleteRow = {
   room_number: string | null;
   room_type: string | null;
   bed_type: string | null;
+  wheelchair_user: boolean | null;
+  wheelchair_standard_count: number | null;
+  wheelchair_sport_count: number | null;
+  sports_equipment: string | null;
+  requires_assistance: boolean | null;
+  observations: string | null;
   is_delegation_lead: boolean | null;
   transport_trip_id: string | null;
   transport_vehicle_id: string | null;
@@ -80,6 +96,9 @@ export class AthletesService {
     if (dto.email !== undefined) {
       row.email = dto.email ?? null;
     }
+    if (dto.phone !== undefined) {
+      row.phone = dto.phone ?? null;
+    }
     if (dto.countryCode !== undefined) {
       row.country_code = dto.countryCode ?? null;
     }
@@ -98,8 +117,35 @@ export class AthletesService {
     if (dto.luggageNotes !== undefined) {
       row.luggage_notes = dto.luggageNotes ?? null;
     }
+    if (dto.bolsoCount !== undefined) {
+      row.bolso_count = dto.bolsoCount ?? 0;
+    }
+    if (dto.bag8Count !== undefined) {
+      row.bag_8_count = dto.bag8Count ?? 0;
+    }
+    if (dto.suitcase10Count !== undefined) {
+      row.suitcase_10_count = dto.suitcase10Count ?? 0;
+    }
+    if (dto.suitcase15Count !== undefined) {
+      row.suitcase_15_count = dto.suitcase15Count ?? 0;
+    }
+    if (dto.suitcase23Count !== undefined) {
+      row.suitcase_23_count = dto.suitcase23Count ?? 0;
+    }
+    if (dto.oversizeText !== undefined) {
+      row.oversize_text = dto.oversizeText ?? null;
+    }
+    if (dto.luggageVolume !== undefined) {
+      row.luggage_volume = dto.luggageVolume ?? null;
+    }
     if (dto.userType !== undefined) {
       row.user_type = dto.userType ?? null;
+    }
+    if (dto.visaRequired !== undefined) {
+      row.visa_required = dto.visaRequired ?? null;
+    }
+    if (dto.tripType !== undefined) {
+      row.trip_type = dto.tripType ?? null;
     }
     if (dto.arrivalFlightId !== undefined) {
       row.arrival_flight_id = dto.arrivalFlightId ?? null;
@@ -136,6 +182,24 @@ export class AthletesService {
     }
     if (dto.bedType !== undefined) {
       row.bed_type = dto.bedType ?? null;
+    }
+    if (dto.wheelchairUser !== undefined) {
+      row.wheelchair_user = dto.wheelchairUser ?? false;
+    }
+    if (dto.wheelchairStandardCount !== undefined) {
+      row.wheelchair_standard_count = dto.wheelchairStandardCount ?? 0;
+    }
+    if (dto.wheelchairSportCount !== undefined) {
+      row.wheelchair_sport_count = dto.wheelchairSportCount ?? 0;
+    }
+    if (dto.sportsEquipment !== undefined) {
+      row.sports_equipment = dto.sportsEquipment ?? null;
+    }
+    if (dto.requiresAssistance !== undefined) {
+      row.requires_assistance = dto.requiresAssistance ?? false;
+    }
+    if (dto.observations !== undefined) {
+      row.observations = dto.observations ?? null;
     }
     if (dto.isDelegationLead !== undefined) {
       row.is_delegation_lead = dto.isDelegationLead ?? false;
@@ -194,13 +258,23 @@ export class AthletesService {
       disciplineId: row.discipline_id,
       fullName: row.full_name,
       email: row.email,
+      phone: row.phone,
       countryCode: row.country_code,
       passportNumber: row.passport_number,
       dateOfBirth: row.date_of_birth ? new Date(row.date_of_birth) : null,
       dietaryNeeds: row.dietary_needs,
       luggageType: row.luggage_type,
       luggageNotes: row.luggage_notes,
+      bolsoCount: row.bolso_count ?? 0,
+      bag8Count: row.bag_8_count ?? 0,
+      suitcase10Count: row.suitcase_10_count ?? 0,
+      suitcase15Count: row.suitcase_15_count ?? 0,
+      suitcase23Count: row.suitcase_23_count ?? 0,
+      oversizeText: row.oversize_text,
+      luggageVolume: row.luggage_volume,
       userType: row.user_type,
+      visaRequired: row.visa_required,
+      tripType: row.trip_type,
       arrivalFlightId: row.arrival_flight_id,
       flightNumber: row.flight_number,
       airline: row.airline,
@@ -213,6 +287,12 @@ export class AthletesService {
       roomNumber: row.room_number,
       roomType: row.room_type,
       bedType: row.bed_type,
+      wheelchairUser: row.wheelchair_user ?? false,
+      wheelchairStandardCount: row.wheelchair_standard_count ?? 0,
+      wheelchairSportCount: row.wheelchair_sport_count ?? 0,
+      sportsEquipment: row.sports_equipment,
+      requiresAssistance: row.requires_assistance ?? false,
+      observations: row.observations,
       isDelegationLead: row.is_delegation_lead ?? false,
       transportTripId: row.transport_trip_id,
       transportVehicleId: row.transport_vehicle_id,

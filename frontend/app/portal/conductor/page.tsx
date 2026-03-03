@@ -9,6 +9,7 @@ type Trip = {
   driverId: string;
   eventId?: string | null;
   vehicleId: string;
+  requesterAthleteId?: string | null;
   origin?: string | null;
   destination?: string | null;
   tripType?: string | null;
@@ -56,9 +57,9 @@ type ProviderItem = {
 const statusLabel: Record<string, string> = {
   SCHEDULED: "Programado",
   EN_ROUTE: "En ruta a recoger",
-  PICKED_UP: "Recogido",
+  PICKED_UP: "En curso",
   DROPPED_OFF: "Dejado en hotel",
-  COMPLETED: "Completado"
+  COMPLETED: "Viaje completado"
 };
 
 const countryLabels: Record<string, string> = {
@@ -215,10 +216,7 @@ export default function DriverPortalPage() {
     setError(null);
     try {
       const payload: Record<string, string> = { status };
-      if (status === "EN_ROUTE") {
-        payload.startedAt = new Date().toISOString();
-      }
-      if (status === "PICKED_UP" && !payload.startedAt) {
+      if (status === "PICKED_UP") {
         payload.startedAt = new Date().toISOString();
       }
       if (status === "DROPPED_OFF" || status === "COMPLETED") {
@@ -245,8 +243,12 @@ export default function DriverPortalPage() {
 
   const getPickupCandidates = (trip: Trip) => {
     const candidates = new Set<string>();
+    if (trip.requesterAthleteId) {
+      const requesterSuffix = trip.requesterAthleteId.slice(-6);
+      if (requesterSuffix) candidates.add(requesterSuffix);
+    }
     (trip.athleteIds || []).forEach((athleteId) => {
-      const suffix = athleteId.slice(-4);
+      const suffix = athleteId.slice(-6);
       if (suffix) candidates.add(suffix);
     });
     const delegationIds = (trip.athleteIds || [])
@@ -258,12 +260,14 @@ export default function DriverPortalPage() {
         (athlete) => athlete.delegationId === delegationId && athlete.isDelegationLead
       );
       if (lead?.id) {
-        const suffix = lead.id.slice(-4);
+        const suffix = lead.id.slice(-6);
         if (suffix) candidates.add(suffix);
       }
     });
     return candidates;
   };
+
+  const isPortalRequest = (trip: Trip) => trip.tripType === "PORTAL_REQUEST";
 
   const confirmPickup = (trip: Trip) => {
     setPickupTrip(trip);
@@ -274,14 +278,14 @@ export default function DriverPortalPage() {
   const submitPickupCode = async () => {
     if (!pickupTrip) return;
     const normalized = pickupCode.trim();
-    if (normalized.length < 4) {
-      setPickupError(t("El código ingresado no es válido."));
+    if (normalized.length < 6) {
+      setPickupError(t("El código de usuario ingresado no es válido."));
       return;
     }
-    const last4 = normalized.slice(-4);
+    const last6 = normalized.slice(-6);
     const candidates = getPickupCandidates(pickupTrip);
-    if (!candidates.has(last4)) {
-      setPickupError(t("El código no coincide con el ID del encargado o participante."));
+    if (!candidates.has(last6)) {
+      setPickupError(t("El código no coincide con el usuario del viaje."));
       return;
     }
     setPickupError(null);
@@ -670,9 +674,9 @@ export default function DriverPortalPage() {
                         {t("En ruta a recoger")}
                       </button>
                       <button className="btn btn-primary" onClick={() => confirmPickup(trip)}>
-                        {t("Recogido")}
+                        {isPortalRequest(trip) ? t("En curso") : t("Recogido")}
                       </button>
-                      {trip.tripType !== "SERVICE" && (
+                      {!isPortalRequest(trip) && trip.tripType !== "SERVICE" && (
                         <button className="btn btn-primary" onClick={() => updateTrip(trip.id, "DROPPED_OFF")}>
                           {t("Dejado en hotel")}
                         </button>
@@ -696,20 +700,22 @@ export default function DriverPortalPage() {
               <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
                 {t("Código de verificación")}
               </p>
-              <h3 className="font-display text-2xl text-ink">{t("Recogido")}</h3>
+              <h3 className="font-display text-2xl text-ink">
+                {pickupTrip && isPortalRequest(pickupTrip) ? t("En curso") : t("Recogido")}
+              </h3>
               <p className="text-sm text-slate-500">
-                {t("Ingresa los últimos 4 dígitos del ID del encargado o participante.")}
+                {t("Ingresa el código de usuario del pasajero para iniciar el viaje.")}
               </p>
             </div>
             <label className="flex flex-col gap-2 text-sm text-slate-600 mt-4">
-              {t("Últimos 4 dígitos")}
+              {t("Código de usuario")}
               <input
                 className="input"
                 value={pickupCode}
                 onChange={(event) => setPickupCode(event.target.value)}
-                placeholder="0000"
+                placeholder="000000"
                 inputMode="numeric"
-                maxLength={8}
+                maxLength={12}
               />
             </label>
             {pickupError && <p className="text-sm text-rose-600 mt-2">{pickupError}</p>}

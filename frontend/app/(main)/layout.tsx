@@ -11,9 +11,9 @@ export default function MainLayout({
     <div className="min-h-screen bg-mesh">
       <div className="flex">
         <SideNav />
-        <main className="flex-1 px-6 py-6">
+        <main className="min-w-0 flex-1 overflow-x-hidden px-6 py-6">
           <TopBar />
-          <div className="mt-6">{children}</div>
+          <div className="mt-6 min-w-0 overflow-x-hidden">{children}</div>
         </main>
       </div>
       <SofiaWidget />

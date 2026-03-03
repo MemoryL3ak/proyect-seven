@@ -6,12 +6,32 @@ export class CreateTripDto {
   eventId: string;
 
   @IsString()
-  @IsNotEmpty()
-  driverId: string;
+  @IsOptional()
+  driverId?: string;
 
   @IsString()
-  @IsNotEmpty()
-  vehicleId: string;
+  @IsOptional()
+  vehicleId?: string;
+
+  @IsString()
+  @IsOptional()
+  requesterAthleteId?: string;
+
+  @IsString()
+  @IsOptional()
+  destinationVenueId?: string;
+
+  @IsString()
+  @IsOptional()
+  requestedVehicleType?: string;
+
+  @IsNumber()
+  @IsOptional()
+  passengerCount?: number;
+
+  @IsString()
+  @IsOptional()
+  notes?: string;
 
   @IsString()
   @IsOptional()
@@ -57,4 +77,8 @@ export class CreateTripDto {
   @IsISO8601()
   @IsOptional()
   completedAt?: string;
+
+  @IsISO8601()
+  @IsOptional()
+  requestedAt?: string;
 }

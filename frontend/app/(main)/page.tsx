@@ -13,7 +13,6 @@ type Trip = {
 type HotelAssignment = {
   id: string;
   bedId?: string | null;
-  roomId?: string | null;
   status?: string | null;
 };
 
@@ -104,9 +103,7 @@ export default function Page() {
   const [accommodationsCount, setAccommodationsCount] = useState(0);
   const [hotelRooms, setHotelRooms] = useState<HotelRoom[]>([]);
   const [hotelBeds, setHotelBeds] = useState<HotelBed[]>([]);
-  const [hotelAssignments, setHotelAssignments] = useState<HotelAssignment[]>(
-    []
-  );
+  const [hotelAssignments, setHotelAssignments] = useState<HotelAssignment[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -116,23 +113,16 @@ export default function Page() {
       setError(null);
 
       try {
-        const [
-          events,
-          athletes,
-          tripsList,
-          accommodations,
-          rooms,
-          beds,
-          assignments,
-        ] = await Promise.all([
-          apiFetch("/events"),
-          apiFetch("/athletes"),
-          apiFetch("/trips"),
-          apiFetch("/accommodations"),
-          apiFetch("/hotel-rooms").catch(() => []),
-          apiFetch("/hotel-beds").catch(() => []),
-          apiFetch("/hotel-assignments").catch(() => []),
-        ]);
+        const [events, athletes, tripsList, accommodations, rooms, beds, assignments] =
+          await Promise.all([
+            apiFetch("/events"),
+            apiFetch("/athletes"),
+            apiFetch("/trips"),
+            apiFetch("/accommodations"),
+            apiFetch("/hotel-rooms").catch(() => []),
+            apiFetch("/hotel-beds").catch(() => []),
+            apiFetch("/hotel-assignments").catch(() => []),
+          ]);
 
         if (cancelled) return;
 
@@ -179,14 +169,14 @@ export default function Page() {
       (assignment) =>
         assignment.bedId &&
         !["CHECKOUT", "CHECKED_OUT", "FINISHED", "CANCELLED"].includes(
-          normalizeStatus(assignment.status)
-        )
+          normalizeStatus(assignment.status),
+        ),
     ).length;
 
     const available = hotelBeds.filter(
       (bed) =>
         ["AVAILABLE", "DISPONIBLE", ""].includes(normalizeStatus(bed.status)) ||
-        !bed.status
+        !bed.status,
     ).length;
 
     return {
@@ -200,7 +190,7 @@ export default function Page() {
     const available = hotelRooms.filter(
       (room) =>
         ["AVAILABLE", "DISPONIBLE", ""].includes(normalizeStatus(room.status)) ||
-        !room.status
+        !room.status,
     ).length;
 
     return {
@@ -212,8 +202,8 @@ export default function Page() {
   const headline = loading
     ? t("Cargando datos...")
     : error
-    ? t("Sin datos disponibles")
-    : t("Panel operativo en vivo");
+      ? t("Sin datos disponibles")
+      : t("Panel operativo en vivo");
 
   return (
     <div className="relative space-y-10">
@@ -279,15 +269,15 @@ export default function Page() {
           <StatCard
             label={t("Viajes completados")}
             value={formatNumber(tripStats.completed)}
-            helper={t("Histórico")}
+            helper={t("Historico")}
           />
         </div>
       </section>
 
       <section className="space-y-4">
         <SectionHeader
-          label={t("Hotelería")}
-          title={t("Capacidad y ocupación")}
+          label={t("Hoteleria")}
+          title={t("Capacidad y ocupacion")}
           subtitle={t("Asignaciones y disponibilidad en tiempo real")}
         />
         <div className="grid gap-4 lg:grid-cols-4">

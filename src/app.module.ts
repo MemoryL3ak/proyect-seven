@@ -21,6 +21,7 @@ import { HotelBedsModule } from './hotel-beds/hotel-beds.module';
 import { HotelAssignmentsModule } from './hotel-assignments/hotel-assignments.module';
 import { SportsCalendarModule } from './sports-calendar/sports-calendar.module';
 import { AccreditationsModule } from './accreditations/accreditations.module';
+import { VenuesModule } from './venues/venues.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { AccreditationsModule } from './accreditations/accreditations.module';
     HotelAssignmentsModule,
     SportsCalendarModule,
     AccreditationsModule,
+    VenuesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

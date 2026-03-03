@@ -20,6 +20,7 @@ export type FieldDef = {
     | "delegations"
     | "providers"
     | "accommodations"
+    | "venues"
     | "vehicles"
     | "drivers"
     | "driverUsers"
@@ -119,8 +120,11 @@ export const resources: Record<string, ResourceConfig> = {
       "disciplineCategory",
       "disciplineGender",
       "participantFullName",
+      "participantUserType",
+      "participantPhone",
+      "participantTripType",
       "participantEmail",
-      "participantVisaType",
+      "participantVisaRequired",
       "participantDisciplineId",
       "participantIsDelegationLead",
       "participantCountryCode"
@@ -129,12 +133,23 @@ export const resources: Record<string, ResourceConfig> = {
       "participantRut",
       "participantPassportNumber",
       "participantBirthDate",
-      "participantLuggageType",
       "participantFlightNumber",
       "participantAirline",
       "participantOrigin",
       "participantDepartureGate",
       "participantArrivalBaggage",
+      "participantBag8Count",
+      "participantSuitcase10Count",
+      "participantSuitcase15Count",
+      "participantSuitcase23Count",
+      "participantOversizeText",
+      "participantVolume",
+      "participantWheelchairUser",
+      "participantWheelchairStandardCount",
+      "participantWheelchairSportCount",
+      "participantSportsEquipment",
+      "participantRequiresAssistance",
+      "participantObservations",
       "participantHotelAccommodationId",
       "participantRoomType",
       "participantBedType",
@@ -185,11 +200,13 @@ export const resources: Record<string, ResourceConfig> = {
         type: "select",
         transient: true,
         options: [
-          { label: "Hombres", value: "MALE" },
-          { label: "Mujeres", value: "FEMALE" }
+          { label: "Masculino", value: "MALE" },
+          { label: "Femenino", value: "FEMALE" }
         ]
       },
       { key: "participantFullName", label: "Nombre completo", type: "text", transient: true },
+      { key: "participantUserType", label: "Tipo de cliente", type: "text", transient: true },
+      { key: "participantPhone", label: "Teléfono", type: "text", transient: true },
       { key: "participantEmail", label: "Correo electrónico", type: "text", transient: true },
       {
         key: "participantDisciplineId",
@@ -237,26 +254,26 @@ export const resources: Record<string, ResourceConfig> = {
       },
       { key: "participantRut", label: "RUT", type: "text", transient: true },
       { key: "participantPassportNumber", label: "Pasaporte", type: "text", transient: true },
-      { key: "participantVisaType", label: "Tipo de visa", type: "text", transient: true },
+      {
+        key: "participantVisaRequired",
+        label: "Visa",
+        type: "select",
+        transient: true,
+        options: [
+          { label: "Sí", value: "true" },
+          { label: "No", value: "false" }
+        ]
+      },
       { key: "participantBirthDate", label: "Fecha nacimiento", type: "date", transient: true },
       {
-        key: "participantLuggageType",
-        label: "Tipo de equipaje",
+        key: "participantTripType",
+        label: "Tipo de viaje",
         type: "select",
+        transient: true,
         options: [
-          { label: "Bolso", value: "BAG" },
-          { label: "Maleta 8", value: "SUITCASE_8" },
-          { label: "Maleta 15", value: "SUITCASE_15" },
-          { label: "Maleta 23", value: "SUITCASE_23" },
-          { label: "Sobreequipaje", value: "EXTRA_BAGGAGE" }
-        ],
-        transient: true
-      },
-      {
-        key: "participantLuggageNotes",
-        label: "Observaciones de equipaje",
-        type: "text",
-        transient: true
+          { label: "Llegada", value: "ARRIVAL" },
+          { label: "Salida", value: "DEPARTURE" }
+        ]
       },
       {
         key: "participantArrivalTime",
@@ -281,10 +298,51 @@ export const resources: Record<string, ResourceConfig> = {
       },
       {
         key: "participantArrivalBaggage",
-        label: "Puerta de retiro",
+        label: "Puerta de embarque",
         type: "text",
         transient: true
       },
+      { key: "participantBolsoCount", label: "Bolso", type: "number", transient: true },
+      { key: "participantBag8Count", label: "Maleta de 8", type: "number", transient: true },
+      { key: "participantSuitcase10Count", label: "Maleta de 10", type: "number", transient: true },
+      { key: "participantSuitcase15Count", label: "Maleta de 15", type: "number", transient: true },
+      { key: "participantSuitcase23Count", label: "Maleta de 23", type: "number", transient: true },
+      { key: "participantOversizeText", label: "Sobreequipaje", type: "text", transient: true },
+      { key: "participantVolume", label: "Volumen", type: "text", transient: true },
+      {
+        key: "participantWheelchairUser",
+        label: "Usuario en silla de ruedas",
+        type: "select",
+        transient: true,
+        options: [
+          { label: "Sí", value: "true" },
+          { label: "No", value: "false" }
+        ]
+      },
+      {
+        key: "participantWheelchairStandardCount",
+        label: "Silla de ruedas convencional",
+        type: "number",
+        transient: true
+      },
+      {
+        key: "participantWheelchairSportCount",
+        label: "Silla de ruedas deportiva",
+        type: "number",
+        transient: true
+      },
+      { key: "participantSportsEquipment", label: "Equipamiento deportivo", type: "text", transient: true },
+      {
+        key: "participantRequiresAssistance",
+        label: "Requiere asistencia",
+        type: "select",
+        transient: true,
+        options: [
+          { label: "Sí", value: "true" },
+          { label: "No", value: "false" }
+        ]
+      },
+      { key: "participantObservations", label: "Observaciones", type: "text", transient: true },
       { key: "participantHotelAccommodationId", label: "Hotel", type: "select", optionsSource: "accommodations", transient: true },
       {
         key: "participantRoomType",
@@ -455,6 +513,18 @@ export const resources: Record<string, ResourceConfig> = {
       { key: "rut", label: "RUT", type: "text" }
     ]
   },
+  venues: {
+    name: "Sedes",
+    description: "Registro maestro de sedes y recintos operativos.",
+    endpoint: "/venues",
+    fields: [
+      { key: "eventId", label: "Evento", type: "select", required: true, optionsSource: "events" },
+      { key: "name", label: "Sede", type: "text", required: true },
+      { key: "address", label: "Dirección", type: "text", required: true },
+      { key: "region", label: "Región", type: "text" },
+      { key: "commune", label: "Comuna", type: "text" }
+    ]
+  },
   athletes: {
     name: "Participantes",
     description: "Registro de participantes, arribos y asignaciones.",
@@ -555,7 +625,7 @@ export const resources: Record<string, ResourceConfig> = {
       { key: "origin", label: "Origen", type: "text", transient: true },
       { key: "departureGate", label: "Puerta de embarque", type: "text" },
       { key: "arrivalTime", label: "Arribo", type: "datetime" },
-      { key: "arrivalBaggage", label: "Puerta de retiro", type: "text" },
+      { key: "arrivalBaggage", label: "Puerta de embarque", type: "text" },
       { key: "hotelAccommodationId", label: "Hotel", type: "select", optionsSource: "accommodations" },
       { key: "roomNumber", label: "Habitación", type: "text" },
       {
@@ -721,6 +791,10 @@ export const resources: Record<string, ResourceConfig> = {
     endpoint: "/trips",
     tableOrder: [
       "eventId",
+      "requesterAthleteId",
+      "destinationVenueId",
+      "requestedVehicleType",
+      "passengerCount",
       "driverId",
       "vehicleId",
       "tripType",
@@ -736,17 +810,33 @@ export const resources: Record<string, ResourceConfig> = {
       "startedAt",
       "completedAt",
       "delegationId",
-      "athleteIds"
+      "athleteIds",
+      "requestedAt"
     ],
     fields: [
       { key: "eventId", label: "Evento", type: "select", required: true, optionsSource: "events" },
-      { key: "driverId", label: "Conductor", type: "select", required: true, optionsSource: "driverUsers" },
-      { key: "vehicleId", label: "Vehículo", type: "select", required: true, optionsSource: "vehicles", readOnly: true },
+      { key: "requesterAthleteId", label: "Solicitante", type: "select", optionsSource: "athletes" },
+      { key: "destinationVenueId", label: "Sede destino", type: "select", optionsSource: "venues" },
+      {
+        key: "requestedVehicleType",
+        label: "Vehículo solicitado",
+        type: "select",
+        options: [
+          { label: "Sedan / SUV", value: "SEDAN" },
+          { label: "Van", value: "VAN" },
+          { label: "Mini Bus", value: "MINI_BUS" },
+          { label: "Bus", value: "BUS" }
+        ]
+      },
+      { key: "passengerCount", label: "Cantidad de personas", type: "number" },
+      { key: "driverId", label: "Conductor", type: "select", optionsSource: "driverUsers" },
+      { key: "vehicleId", label: "Vehículo", type: "select", optionsSource: "vehicles", readOnly: true },
       {
         key: "tripType",
         label: "Tipo de viaje",
         type: "select",
         options: [
+          { label: "Solicitud portal", value: "PORTAL_REQUEST" },
           { label: "Transfer In Out", value: "TRANSFER_IN_OUT" },
           { label: "Disposición 12 horas", value: "DISPOSICION_12H" },
           { label: "Viaje Ida-Vuelta", value: "IDA_VUELTA" }
@@ -755,18 +845,21 @@ export const resources: Record<string, ResourceConfig> = {
       { key: "clientType", label: "Tipo de cliente", type: "text" },
       { key: "origin", label: "Origen", type: "text" },
       { key: "destination", label: "Destino", type: "text" },
+      { key: "notes", label: "Observaciones", type: "text" },
       {
         key: "status",
         label: "Estado",
         type: "select",
-        formHidden: true,
         options: [
+          { label: "Solicitado", value: "REQUESTED" },
           { label: "Programado", value: "SCHEDULED" },
+          { label: "En ruta", value: "EN_ROUTE" },
           { label: "Recogido", value: "PICKED_UP" },
           { label: "Dejado en hotel", value: "DROPPED_OFF" },
           { label: "Completado", value: "COMPLETED" }
         ]
       },
+      { key: "requestedAt", label: "Fecha solicitud", type: "datetime", formHidden: true },
       { key: "scheduledAt", label: "Fecha programación", type: "datetime" },
       { key: "startedAt", label: "Inicio", type: "datetime", formHidden: true },
       { key: "completedAt", label: "Cierre", type: "datetime", formHidden: true },

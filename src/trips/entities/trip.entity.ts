@@ -14,11 +14,29 @@ export class Trip {
   @Column({ name: 'event_id', type: 'uuid' })
   eventId: string;
 
-  @Column({ name: 'driver_id', type: 'uuid' })
-  driverId: string;
+  @Column({ name: 'driver_id', type: 'uuid', nullable: true })
+  driverId?: string | null;
 
-  @Column({ name: 'vehicle_id', type: 'uuid' })
-  vehicleId: string;
+  @Column({ name: 'vehicle_id', type: 'uuid', nullable: true })
+  vehicleId?: string | null;
+
+  @Column({ name: 'requester_athlete_id', type: 'uuid', nullable: true })
+  requesterAthleteId?: string | null;
+
+  @Column({ name: 'destination_venue_id', type: 'uuid', nullable: true })
+  destinationVenueId?: string | null;
+
+  @Column({ name: 'requested_vehicle_type', length: 60, type: 'varchar', nullable: true })
+  requestedVehicleType?: string | null;
+
+  @Column({ name: 'passenger_count', type: 'int', nullable: true })
+  passengerCount?: number | null;
+
+  @Column({ type: 'text', nullable: true })
+  notes?: string | null;
+
+  @Column({ name: 'requested_at', type: 'timestamptz', nullable: true })
+  requestedAt?: Date | null;
 
   @Column({ length: 150, type: 'varchar', nullable: true })
   destination?: string | null;

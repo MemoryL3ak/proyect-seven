@@ -23,7 +23,10 @@ const navSections: NavSection[] = [
   {
     title: "Overview",
     icon: "dashboard",
-    items: [{ href: "/", label: "Dashboard", icon: "dashboard" }]
+    items: [
+      { href: "/", label: "Dashboard general", icon: "dashboard" },
+      { href: "/commercial", label: "Dashboard comercial", icon: "dashboard" }
+    ]
   },
   {
     title: "Maestros",
@@ -34,7 +37,8 @@ const navSections: NavSection[] = [
       { href: "/masters/and-compliance", label: "Cumplimiento AND", icon: "shield" },
       { href: "/masters/disciplines", label: "Disciplinas", icon: "trophy" },
       { href: "/masters/providers", label: "Proveedores", icon: "users" },
-      { href: "/masters/drivers", label: "Conductores", icon: "driver" }
+      { href: "/masters/drivers", label: "Conductores", icon: "driver" },
+      { href: "/masters/venues", label: "Sedes", icon: "pin" }
     ]
   },
   {
@@ -80,7 +84,8 @@ const navSections: NavSection[] = [
     icon: "portal",
     items: [
       { href: "/portal/user", label: "Portal de usuario", icon: "athlete" },
-      { href: "/portal/conductor", label: "Portal Conductor", icon: "driver" }
+      { href: "/portal/conductor", label: "Portal Conductor", icon: "driver" },
+      { href: "/portal/vehicle-request", label: "Solicitud de vehículo", icon: "route" }
     ]
   }
 ];
