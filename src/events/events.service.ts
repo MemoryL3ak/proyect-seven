@@ -1,10 +1,12 @@
-﻿import {
+import {
   Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { DataSource, Repository } from 'typeorm';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { Event } from './entities/event.entity';
@@ -49,6 +51,9 @@ type EventExpectedCapacityInput = {
 export class EventsService {
   constructor(
     @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
+    @InjectRepository(Event)
+    private readonly eventRepository: Repository<Event>,
+    private readonly dataSource: DataSource,
   ) {}
 
   private toRow(dto: CreateEventDto | UpdateEventDto) {
@@ -98,19 +103,15 @@ export class EventsService {
     if (events.length === 0) return events;
     const eventIds = events.map((item) => item.id);
 
-    const { data: links, error: linksError } = await this.supabase
-      .schema('core')
-      .from('event_disciplines')
-      .select('event_id, discipline_id')
-      .in('event_id', eventIds);
+    const safeLinks = (await this.dataSource.query(
+      `
+        select event_id, discipline_id
+        from core.event_disciplines
+        where event_id = any($1::uuid[])
+      `,
+      [eventIds],
+    )) as EventDisciplineRow[];
 
-    if (linksError) {
-      throw new InternalServerErrorException(
-        linksError.message || 'Error fetching event disciplines',
-      );
-    }
-
-    const safeLinks = (links ?? []) as EventDisciplineRow[];
     if (safeLinks.length === 0) {
       return events.map((event) => ({
         ...event,
@@ -123,22 +124,18 @@ export class EventsService {
       new Set(safeLinks.map((link) => link.discipline_id)),
     );
 
-    const { data: disciplines, error: disciplinesError } = await this.supabase
-      .schema('core')
-      .from('disciplines')
-      .select('id, name')
-      .in('id', disciplineIds);
-
-    if (disciplinesError) {
-      throw new InternalServerErrorException(
-        disciplinesError.message || 'Error fetching disciplines',
-      );
-    }
+    const disciplines = (await this.dataSource.query(
+      `
+        select id, name
+        from core.disciplines
+        where id = any($1::uuid[])
+      `,
+      [disciplineIds],
+    )) as DisciplineRow[];
 
     const disciplineMap = new Map<string, string>();
-    (disciplines ?? []).forEach((discipline) => {
-      const row = discipline as DisciplineRow;
-      disciplineMap.set(row.id, row.name);
+    disciplines.forEach((discipline) => {
+      disciplineMap.set(discipline.id, discipline.name);
     });
 
     const byEvent = new Map<string, string[]>();
@@ -151,7 +148,7 @@ export class EventsService {
     return events.map((event) => {
       const ids = byEvent.get(event.id) ?? [];
       const names = ids
-        .map((id) => disciplineMap.get(id))
+        .map((disciplineId) => disciplineMap.get(disciplineId))
         .filter((name): name is string => Boolean(name));
       return {
         ...event,
@@ -226,12 +223,21 @@ export class EventsService {
         expected_count: Math.floor(Number(item.expectedCount)),
       }));
 
-    if (payload.length === 0) return;
+    const dedupedPayload = Array.from(
+      new Map(
+        payload.map((item) => [
+          `${item.event_id}::${item.discipline_id}::${item.delegation_code}`,
+          item,
+        ]),
+      ).values(),
+    );
+
+    if (dedupedPayload.length === 0) return;
 
     const { error: insertError } = await this.supabase
       .schema('core')
       .from('event_expected_capacities')
-      .upsert(payload, {
+      .upsert(dedupedPayload, {
         onConflict: 'event_id,discipline_id,delegation_code',
       });
 
@@ -246,31 +252,27 @@ export class EventsService {
     if (events.length === 0) return events;
 
     const eventIds = events.map((item) => item.id);
-    const { data, error } = await this.supabase
-      .schema('core')
-      .from('event_expected_capacities')
-      .select('event_id, discipline_id, delegation_code, expected_count')
-      .in('event_id', eventIds);
-
-    if (error) {
-      throw new InternalServerErrorException(
-        error.message || 'Error fetching expected capacities',
-      );
-    }
+    const data = (await this.dataSource.query(
+      `
+        select event_id, discipline_id, delegation_code, expected_count
+        from core.event_expected_capacities
+        where event_id = any($1::uuid[])
+      `,
+      [eventIds],
+    )) as EventExpectedCapacityRow[];
 
     const byEvent = new Map<
       string,
       Array<{ disciplineId: string; delegationCode: string; expectedCount: number }>
     >();
-    (data ?? []).forEach((row) => {
-      const r = row as EventExpectedCapacityRow;
-      const current = byEvent.get(r.event_id) ?? [];
+    data.forEach((row) => {
+      const current = byEvent.get(row.event_id) ?? [];
       current.push({
-        disciplineId: r.discipline_id,
-        delegationCode: r.delegation_code,
-        expectedCount: Number(r.expected_count ?? 0),
+        disciplineId: row.discipline_id,
+        delegationCode: row.delegation_code,
+        expectedCount: Number(row.expected_count ?? 0),
       });
-      byEvent.set(r.event_id, current);
+      byEvent.set(row.event_id, current);
     });
 
     return events.map((event) => ({
@@ -310,42 +312,33 @@ export class EventsService {
   }
 
   async findAll() {
-    const { data, error } = await this.supabase
-      .schema('core')
-      .from('events')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
+    try {
+      const events = await this.eventRepository.find({
+        order: { createdAt: 'DESC' },
+      });
+      const withDisciplines = await this.attachDisciplines(events);
+      return await this.attachExpectedCapacities(withDisciplines);
+    } catch (error) {
       throw new InternalServerErrorException(
-        error.message || 'Error fetching events',
+        error instanceof Error ? error.message : 'Error fetching events',
       );
     }
-
-    const events = (data ?? []).map((row) => this.toEntity(row as EventRow));
-    const withDisciplines = await this.attachDisciplines(events);
-    return this.attachExpectedCapacities(withDisciplines);
   }
 
   async findOne(id: string) {
-    const { data, error } = await this.supabase
-      .schema('core')
-      .from('events')
-      .select('*')
-      .eq('id', id)
-      .maybeSingle();
-
-    if (error) {
+    let event: Event | null;
+    try {
+      event = await this.eventRepository.findOne({ where: { id } });
+    } catch (error) {
       throw new InternalServerErrorException(
-        error.message || 'Error fetching event',
+        error instanceof Error ? error.message : 'Error fetching event',
       );
     }
 
-    if (!data) {
+    if (!event) {
       throw new NotFoundException(`Event with id ${id} not found`);
     }
 
-    const event = this.toEntity(data as EventRow);
     const [withDisciplines] = await this.attachDisciplines([event]);
     const [withExpectedCapacities] = await this.attachExpectedCapacities([
       withDisciplines,

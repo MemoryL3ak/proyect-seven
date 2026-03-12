@@ -1,10 +1,12 @@
-﻿import {
+import {
   Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { DataSource, Repository } from 'typeorm';
 import { CreateDelegationDto } from './dto/create-delegation.dto';
 import { UpdateDelegationDto } from './dto/update-delegation.dto';
 import { Delegation } from './entities/delegation.entity';
@@ -32,6 +34,9 @@ type DisciplineRow = {
 export class DelegationsService {
   constructor(
     @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
+    @InjectRepository(Delegation)
+    private readonly delegationRepository: Repository<Delegation>,
+    private readonly dataSource: DataSource,
   ) {}
 
   private toRow(dto: CreateDelegationDto | UpdateDelegationDto) {
@@ -65,19 +70,15 @@ export class DelegationsService {
     if (delegations.length === 0) return delegations;
     const delegationIds = delegations.map((item) => item.id);
 
-    const { data: links, error: linksError } = await this.supabase
-      .schema('core')
-      .from('delegation_disciplines')
-      .select('delegation_id, discipline_id')
-      .in('delegation_id', delegationIds);
+    const safeLinks = (await this.dataSource.query(
+      `
+        select delegation_id, discipline_id
+        from core.delegation_disciplines
+        where delegation_id = any($1::uuid[])
+      `,
+      [delegationIds],
+    )) as DelegationDisciplineRow[];
 
-    if (linksError) {
-      throw new InternalServerErrorException(
-        linksError.message || 'Error fetching delegation disciplines',
-      );
-    }
-
-    const safeLinks = (links ?? []) as DelegationDisciplineRow[];
     if (safeLinks.length === 0) {
       return delegations.map((delegation) => ({
         ...delegation,
@@ -90,22 +91,18 @@ export class DelegationsService {
       new Set(safeLinks.map((link) => link.discipline_id)),
     );
 
-    const { data: disciplines, error: disciplinesError } = await this.supabase
-      .schema('core')
-      .from('disciplines')
-      .select('id, name')
-      .in('id', disciplineIds);
-
-    if (disciplinesError) {
-      throw new InternalServerErrorException(
-        disciplinesError.message || 'Error fetching disciplines',
-      );
-    }
+    const disciplines = (await this.dataSource.query(
+      `
+        select id, name
+        from core.disciplines
+        where id = any($1::uuid[])
+      `,
+      [disciplineIds],
+    )) as DisciplineRow[];
 
     const disciplineMap = new Map<string, string>();
-    (disciplines ?? []).forEach((discipline) => {
-      const row = discipline as DisciplineRow;
-      disciplineMap.set(row.id, row.name);
+    disciplines.forEach((discipline) => {
+      disciplineMap.set(discipline.id, discipline.name);
     });
 
     const byDelegation = new Map<string, string[]>();
@@ -118,7 +115,7 @@ export class DelegationsService {
     return delegations.map((delegation) => {
       const ids = byDelegation.get(delegation.id) ?? [];
       const names = ids
-        .map((id) => disciplineMap.get(id))
+        .map((disciplineId) => disciplineMap.get(disciplineId))
         .filter((name): name is string => Boolean(name));
       return {
         ...delegation,
@@ -189,41 +186,32 @@ export class DelegationsService {
   }
 
   async findAll() {
-    const { data, error } = await this.supabase
-      .schema('core')
-      .from('delegations')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
+    try {
+      const delegations = await this.delegationRepository.find({
+        order: { createdAt: 'DESC' },
+      });
+      return await this.attachDisciplines(delegations);
+    } catch (error) {
       throw new InternalServerErrorException(
-        error.message || 'Error fetching delegations',
+        error instanceof Error ? error.message : 'Error fetching delegations',
       );
     }
-
-    const delegations = (data ?? []).map((row) => this.toEntity(row as DelegationRow));
-    return this.attachDisciplines(delegations);
   }
 
   async findOne(id: string) {
-    const { data, error } = await this.supabase
-      .schema('core')
-      .from('delegations')
-      .select('*')
-      .eq('id', id)
-      .maybeSingle();
-
-    if (error) {
+    let delegation: Delegation | null;
+    try {
+      delegation = await this.delegationRepository.findOne({ where: { id } });
+    } catch (error) {
       throw new InternalServerErrorException(
-        error.message || 'Error fetching delegation',
+        error instanceof Error ? error.message : 'Error fetching delegation',
       );
     }
 
-    if (!data) {
+    if (!delegation) {
       throw new NotFoundException(`Delegation with id ${id} not found`);
     }
 
-    const delegation = this.toEntity(data as DelegationRow);
     const [withDisciplines] = await this.attachDisciplines([delegation]);
     return withDisciplines;
   }

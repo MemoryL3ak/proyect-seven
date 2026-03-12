@@ -22,6 +22,7 @@ import { HotelAssignmentsModule } from './hotel-assignments/hotel-assignments.mo
 import { SportsCalendarModule } from './sports-calendar/sports-calendar.module';
 import { AccreditationsModule } from './accreditations/accreditations.module';
 import { VenuesModule } from './venues/venues.module';
+import { HotelKeysModule } from './hotel-keys/hotel-keys.module';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { VenuesModule } from './venues/venues.module';
     HotelRoomsModule,
     HotelBedsModule,
     HotelAssignmentsModule,
+    HotelKeysModule,
     SportsCalendarModule,
     AccreditationsModule,
     VenuesModule,

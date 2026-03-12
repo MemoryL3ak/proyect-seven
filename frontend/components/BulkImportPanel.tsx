@@ -160,6 +160,36 @@ const buildIsoDate = (year: number, month: number, day: number) => {
   return `${year}-${pad(month)}-${pad(day)}`;
 };
 
+const buildIsoDateTime = (
+  year: number,
+  month: number,
+  day: number,
+  hour: number,
+  minute: number,
+  second: number,
+) => {
+  const dateOnly = buildIsoDate(year, month, day);
+  if (!dateOnly) return null;
+  if (
+    !Number.isInteger(hour) ||
+    !Number.isInteger(minute) ||
+    !Number.isInteger(second) ||
+    hour < 0 ||
+    hour > 23 ||
+    minute < 0 ||
+    minute > 59 ||
+    second < 0 ||
+    second > 59
+  ) {
+    return null;
+  }
+  const parsed = new Date(
+    `${dateOnly}T${pad(hour)}:${pad(minute)}:${pad(second)}`,
+  );
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString();
+};
+
 const excelSerialToDateOnly = (value: unknown) => {
   const numeric = typeof value === "number" ? value : Number(value);
   if (!Number.isFinite(numeric) || numeric <= 0) return null;
@@ -178,6 +208,14 @@ const excelSerialToTimeOnly = (value: unknown) => {
   const hours = Math.floor(minutes / 60) % 24;
   const mins = minutes % 60;
   return `${pad(hours)}:${pad(mins)}`;
+};
+
+const excelSerialToDateTime = (value: unknown) => {
+  const numeric = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(numeric) || numeric <= 0) return null;
+  const parsed = new Date(excelEpochUtc + numeric * 86400000);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString();
 };
 
 const toDateOnly = (value: unknown) => {
@@ -227,45 +265,28 @@ const toDateOnly = (value: unknown) => {
 };
 
 const toDateTime = (value: unknown) => {
-  const text = String(value ?? "").trim();
+  const excelDateTime = excelSerialToDateTime(value);
+  if (excelDateTime) return excelDateTime;
+
+  const text = String(value ?? "")
+    .trim()
+    .replace(/\s+/g, " ");
   if (!text) return null;
-  const shortDateTimeSlashMatch = text.match(
-    /^(\d{1,2})\/(\d{1,2})\/(\d{2})[ T](\d{1,2})[:.-](\d{2})(?:[:.-](\d{2}))?$/
+  const genericMatch = text.match(
+    /^(\d{1,2})([/-])(\d{1,2})\2(\d{2}|\d{4})(?:\s+|T)(\d{1,2})[:.-](\d{2})(?:[:.-](\d{2}))?$/,
   );
-  if (shortDateTimeSlashMatch) {
-    const [, day, month, year, hour, minute, second] = shortDateTimeSlashMatch;
-    const normalizedYear = normalizeTwoDigitYear(Number(year));
-    return new Date(
-      `${normalizedYear}-${pad(Number(month))}-${pad(Number(day))}T${pad(Number(hour))}:${minute}:${second ?? "00"}`
-    ).toISOString();
-  }
-  const shortDateTimeMatch = text.match(
-    /^(\d{1,2})-(\d{1,2})-(\d{2})[ T](\d{1,2})[:.-](\d{2})(?:[:.-](\d{2}))?$/
-  );
-  if (shortDateTimeMatch) {
-    const [, day, month, year, hour, minute, second] = shortDateTimeMatch;
-    const normalizedYear = normalizeTwoDigitYear(Number(year));
-    return new Date(
-      `${normalizedYear}-${pad(Number(month))}-${pad(Number(day))}T${pad(Number(hour))}:${minute}:${second ?? "00"}`
-    ).toISOString();
-  }
-  const longDateTimeSlashMatch = text.match(
-    /^(\d{1,2})\/(\d{1,2})\/(\d{4})[ T](\d{1,2})[:.-](\d{2})(?:[:.-](\d{2}))?$/
-  );
-  if (longDateTimeSlashMatch) {
-    const [, day, month, year, hour, minute, second] = longDateTimeSlashMatch;
-    return new Date(
-      `${year}-${pad(Number(month))}-${pad(Number(day))}T${pad(Number(hour))}:${minute}:${second ?? "00"}`
-    ).toISOString();
-  }
-  const longDateTimeMatch = text.match(
-    /^(\d{1,2})-(\d{1,2})-(\d{4})[ T](\d{1,2})[:.-](\d{2})(?:[:.-](\d{2}))?$/
-  );
-  if (longDateTimeMatch) {
-    const [, day, month, year, hour, minute, second] = longDateTimeMatch;
-    return new Date(
-      `${year}-${pad(Number(month))}-${pad(Number(day))}T${pad(Number(hour))}:${minute}:${second ?? "00"}`
-    ).toISOString();
+  if (genericMatch) {
+    const [, day, , month, year, hour, minute, second] = genericMatch;
+    const normalizedYear =
+      year.length === 2 ? normalizeTwoDigitYear(Number(year)) : Number(year);
+    return buildIsoDateTime(
+      normalizedYear,
+      Number(month),
+      Number(day),
+      Number(hour),
+      Number(minute),
+      Number(second ?? "00"),
+    );
   }
   const normalized = text.includes("T") ? text : text.replace(" ", "T");
   const parsed = new Date(normalized);

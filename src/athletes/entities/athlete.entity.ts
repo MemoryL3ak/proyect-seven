@@ -1,4 +1,4 @@
-﻿import {
+import {
   Column,
   CreateDateColumn,
   Entity,
@@ -44,7 +44,7 @@ export class Athlete {
   @Column({ name: 'luggage_type', type: 'text', nullable: true })
   luggageType?: string | null;
 
-  @Column({ name: 'luggage_notes', type: 'text', nullable: true })
+  // Derived in the service for frontend compatibility until the migration is applied.
   luggageNotes?: string | null;
 
   @Column({ name: 'bolso_count', type: 'int', default: 0 })

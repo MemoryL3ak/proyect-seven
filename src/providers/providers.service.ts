@@ -4,7 +4,9 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { Repository } from 'typeorm';
 import { CreateProviderDto } from './dto/create-provider.dto';
 import { UpdateProviderDto } from './dto/update-provider.dto';
 import { Provider } from './entities/provider.entity';
@@ -23,6 +25,8 @@ type ProviderRow = {
 export class ProvidersService {
   constructor(
     @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
+    @InjectRepository(Provider)
+    private readonly providerRepository: Repository<Provider>,
   ) {}
 
   private toRow(dto: CreateProviderDto | UpdateProviderDto) {
@@ -74,19 +78,15 @@ export class ProvidersService {
   }
 
   async findAll() {
-    const { data, error } = await this.supabase
-      .schema('core')
-      .from('providers')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
+    try {
+      return await this.providerRepository.find({
+        order: { createdAt: 'DESC' },
+      });
+    } catch (error) {
       throw new InternalServerErrorException(
-        error.message || 'Error fetching providers',
+        error instanceof Error ? error.message : 'Error fetching providers',
       );
     }
-
-    return (data ?? []).map((row) => this.toEntity(row as ProviderRow));
   }
 
   async findOne(id: string) {

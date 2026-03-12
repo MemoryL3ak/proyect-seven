@@ -1,10 +1,12 @@
-﻿import {
+import {
   Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { Repository } from 'typeorm';
 import { CreateDisciplineDto } from './dto/create-discipline.dto';
 import { UpdateDisciplineDto } from './dto/update-discipline.dto';
 import { Discipline } from './entities/discipline.entity';
@@ -21,6 +23,8 @@ type DisciplineRow = {
 export class DisciplinesService {
   constructor(
     @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
+    @InjectRepository(Discipline)
+    private readonly disciplineRepository: Repository<Discipline>,
   ) {}
 
   private normalizeGender(value?: string | null) {
@@ -94,32 +98,24 @@ export class DisciplinesService {
   }
 
   async findAll() {
-    const { data, error } = await this.supabase
-      .schema('core')
-      .from('disciplines')
-      .select('*')
-      .order('name', { ascending: true });
-
-    if (error) {
+    try {
+      return await this.disciplineRepository.find({
+        order: { name: 'ASC' },
+      });
+    } catch (error) {
       throw new InternalServerErrorException(
-        error.message || 'Error fetching disciplines',
+        error instanceof Error ? error.message : 'Error fetching disciplines',
       );
     }
-
-    return (data ?? []).map((row) => this.toEntity(row as DisciplineRow));
   }
 
   async findOne(id: string) {
-    const { data, error } = await this.supabase
-      .schema('core')
-      .from('disciplines')
-      .select('*')
-      .eq('id', id)
-      .maybeSingle();
-
-    if (error) {
+    let data: Discipline | null;
+    try {
+      data = await this.disciplineRepository.findOne({ where: { id } });
+    } catch (error) {
       throw new InternalServerErrorException(
-        error.message || 'Error fetching discipline',
+        error instanceof Error ? error.message : 'Error fetching discipline',
       );
     }
 
@@ -127,7 +123,7 @@ export class DisciplinesService {
       throw new NotFoundException(`Discipline with id ${id} not found`);
     }
 
-    return this.toEntity(data as DisciplineRow);
+    return data;
   }
 
   async update(id: string, updateDisciplineDto: UpdateDisciplineDto) {

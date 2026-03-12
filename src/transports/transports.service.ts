@@ -5,10 +5,12 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import { CreateTransportDto } from './dto/create-transport.dto';
 import { UpdateTransportDto } from './dto/update-transport.dto';
 import { Transport } from './entities/transport.entity';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { Repository } from 'typeorm';
 
 type TransportRow = {
   id: string;
@@ -27,6 +29,8 @@ type TransportRow = {
 export class TransportsService {
   constructor(
     @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
+    @InjectRepository(Transport)
+    private readonly transportRepository: Repository<Transport>,
   ) {}
 
   async lookupPlate(plate: string) {
@@ -154,19 +158,15 @@ export class TransportsService {
   }
 
   async findAll() {
-    const { data, error } = await this.supabase
-      .schema('transport')
-      .from('vehicles')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
+    try {
+      return await this.transportRepository.find({
+        order: { createdAt: 'DESC' },
+      });
+    } catch (error) {
       throw new InternalServerErrorException(
-        error.message || 'Error fetching transports',
+        error instanceof Error ? error.message : 'Error fetching transports',
       );
     }
-
-    return (data ?? []).map((row) => this.toEntity(row as TransportRow));
   }
 
   async findOne(id: string) {

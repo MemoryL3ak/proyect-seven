@@ -571,7 +571,18 @@ export const resources: Record<string, ResourceConfig> = {
         ]
       },
       { key: "fullName", label: "Nombre completo", type: "text", required: true },
-      { key: "userType", label: "Tipo de usuario", type: "text", formHidden: true },
+      {
+        key: "userType",
+        label: "Tipo de cliente",
+        type: "select",
+        options: [
+          { label: "Atleta", value: "ATHLETE" },
+          { label: "Staff", value: "STAFF" },
+          { label: "Entrenador", value: "COACH" },
+          { label: "Delegación", value: "DELEGATION" },
+          { label: "Otro", value: "OTHER" }
+        ]
+      },
       { key: "email", label: "Correo electrónico", type: "text" },
       {
         key: "countryCode",
@@ -601,7 +612,19 @@ export const resources: Record<string, ResourceConfig> = {
       },
       { key: "passportNumber", label: "Pasaporte", type: "text" },
       { key: "dateOfBirth", label: "Fecha nacimiento", type: "date" },
-      { key: "dietaryNeeds", label: "Dieta", type: "text", formHidden: true },
+      {
+        key: "dietaryNeeds",
+        label: "Tipo de alimentación",
+        type: "select",
+        options: [
+          { label: "Sin restricción", value: "STANDARD" },
+          { label: "Vegetariana", value: "VEGETARIAN" },
+          { label: "Vegana", value: "VEGAN" },
+          { label: "Sin gluten", value: "GLUTEN_FREE" },
+          { label: "Diabética", value: "DIABETIC" },
+          { label: "Otra", value: "OTHER" }
+        ]
+      },
       {
         key: "luggageType",
         label: "Tipo de equipaje",

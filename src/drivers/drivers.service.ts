@@ -5,9 +5,11 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
 import * as https from 'https';
 import { ConfigService } from '@nestjs/config';
+import { Repository } from 'typeorm';
 import { CreateDriverDto } from './dto/create-driver.dto';
 import { UpdateDriverDto } from './dto/update-driver.dto';
 import { Driver } from './entities/driver.entity';
@@ -47,6 +49,8 @@ export class DriversService {
   constructor(
     @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
     private readonly configService: ConfigService,
+    @InjectRepository(Driver)
+    private readonly driverRepository: Repository<Driver>,
   ) {}
 
   private getAdminClient() {
@@ -295,19 +299,15 @@ export class DriversService {
   }
 
   async findAll() {
-    const { data, error } = await this.supabase
-      .schema('transport')
-      .from('drivers')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
+    try {
+      return await this.driverRepository.find({
+        order: { createdAt: 'DESC' },
+      });
+    } catch (error) {
       throw new InternalServerErrorException(
-        error.message || 'Error fetching drivers',
+        error instanceof Error ? error.message : 'Error fetching drivers',
       );
     }
-
-    return (data ?? []).map((row) => this.toEntity(row as DriverRow));
   }
 
   async findOne(id: string) {

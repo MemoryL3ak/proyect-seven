@@ -4,7 +4,9 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { Repository } from 'typeorm';
 import { CreateVehiclePositionDto } from './dto/create-vehicle-position.dto';
 import { UpdateVehiclePositionDto } from './dto/update-vehicle-position.dto';
 import { VehiclePosition } from './entities/vehicle-position.entity';
@@ -24,6 +26,8 @@ type VehiclePositionRow = {
 export class VehiclePositionsService {
   constructor(
     @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
+    @InjectRepository(VehiclePosition)
+    private readonly vehiclePositionRepository: Repository<VehiclePosition>,
   ) {}
 
   private toRow(dto: CreateVehiclePositionDto | UpdateVehiclePositionDto) {
@@ -82,19 +86,17 @@ export class VehiclePositionsService {
   }
 
   async findAll() {
-    const { data, error } = await this.supabase
-      .schema('telemetry')
-      .from('vehicle_positions')
-      .select('*')
-      .order('timestamp', { ascending: false });
-
-    if (error) {
+    try {
+      return await this.vehiclePositionRepository.find({
+        order: { timestamp: 'DESC' },
+      });
+    } catch (error) {
       throw new InternalServerErrorException(
-        error.message || 'Error fetching vehicle positions',
+        error instanceof Error
+          ? error.message
+          : 'Error fetching vehicle positions',
       );
     }
-
-    return (data ?? []).map((row) => this.toEntity(row as VehiclePositionRow));
   }
 
   async findOne(id: string) {

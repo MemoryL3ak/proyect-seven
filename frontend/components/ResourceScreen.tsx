@@ -1324,11 +1324,24 @@ export default function ResourceScreen({
           ...finalPayload,
           expectedCapacities: Object.entries(andExpectedByDisciplineDelegation).flatMap(
             ([disciplineId, row]) =>
-              Object.entries(row).map(([delegationCode, expectedCount]) => ({
-                disciplineId,
-                delegationCode: String(delegationCode).trim().toUpperCase(),
-                expectedCount: Number(expectedCount) || 0,
-              })),
+              Object.entries(row)
+                .map(([delegationKey, expectedCount]) => {
+                  const delegationOption = delegationOptions.find(
+                    (option) => String(option.value) === String(delegationKey),
+                  );
+                  const resolvedDelegationCode = String(
+                    delegationOption?.label ?? delegationKey,
+                  )
+                    .trim()
+                    .toUpperCase();
+
+                  return {
+                    disciplineId,
+                    delegationCode: resolvedDelegationCode,
+                    expectedCount: Number(expectedCount) || 0,
+                  };
+                })
+                .filter((item) => item.delegationCode.length === 3),
           ),
           config: {
             ...previousConfig,

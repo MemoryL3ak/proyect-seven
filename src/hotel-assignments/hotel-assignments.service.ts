@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { DataSource } from 'typeorm';
 import { CreateHotelAssignmentDto } from './dto/create-hotel-assignment.dto';
 import { UpdateHotelAssignmentDto } from './dto/update-hotel-assignment.dto';
 import { HotelAssignment } from './entities/hotel-assignment.entity';
@@ -26,6 +27,7 @@ type HotelAssignmentRow = {
 export class HotelAssignmentsService {
   constructor(
     @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
+    private readonly dataSource: DataSource,
   ) {}
 
   private toRow(dto: CreateHotelAssignmentDto | UpdateHotelAssignmentDto) {
@@ -106,21 +108,20 @@ export class HotelAssignmentsService {
   }
 
   async findAll() {
-    const { data, error } = await this.supabase
-      .schema('logistics')
-      .from('hotel_assignments')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
+    try {
+      const rows = (await this.dataSource.query(`
+        select *
+        from logistics.hotel_assignments
+        order by created_at desc
+      `)) as HotelAssignmentRow[];
+      return rows.map((row) => this.toEntity(row));
+    } catch (error) {
       throw new InternalServerErrorException(
-        error.message || 'Error fetching hotel assignments',
+        error instanceof Error
+          ? error.message
+          : 'Error fetching hotel assignments',
       );
     }
-
-    return (data ?? []).map((row) =>
-      this.toEntity(row as HotelAssignmentRow),
-    );
   }
 
   async findOne(id: string) {

@@ -5,8 +5,10 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import * as https from 'https';
+import { InjectRepository } from '@nestjs/typeorm';
 import { SupabaseClient } from '@supabase/supabase-js';
+import * as https from 'https';
+import { Repository } from 'typeorm';
 import { CreateAthleteDto } from './dto/create-athlete.dto';
 import { UpdateAthleteDto } from './dto/update-athlete.dto';
 import { Athlete } from './entities/athlete.entity';
@@ -76,178 +78,77 @@ type AthleteRow = {
 export class AthletesService {
   constructor(
     @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
+    @InjectRepository(Athlete)
+    private readonly athleteRepository: Repository<Athlete>,
   ) {}
 
   private toRow(dto: CreateAthleteDto | UpdateAthleteDto) {
     const row: Record<string, unknown> = {};
 
-    if (dto.eventId !== undefined) {
-      row.event_id = dto.eventId;
-    }
-    if (dto.delegationId !== undefined) {
-      row.delegation_id = dto.delegationId ?? null;
-    }
-    if (dto.disciplineId !== undefined) {
-      row.discipline_id = dto.disciplineId ?? null;
-    }
-    if (dto.fullName !== undefined) {
-      row.full_name = dto.fullName;
-    }
-    if (dto.email !== undefined) {
-      row.email = dto.email ?? null;
-    }
-    if (dto.phone !== undefined) {
-      row.phone = dto.phone ?? null;
-    }
-    if (dto.countryCode !== undefined) {
-      row.country_code = dto.countryCode ?? null;
-    }
-    if (dto.passportNumber !== undefined) {
-      row.passport_number = dto.passportNumber ?? null;
-    }
-    if (dto.dateOfBirth !== undefined) {
-      row.date_of_birth = dto.dateOfBirth ?? null;
-    }
-    if (dto.dietaryNeeds !== undefined) {
-      row.dietary_needs = dto.dietaryNeeds ?? null;
-    }
-    if (dto.luggageType !== undefined) {
-      row.luggage_type = dto.luggageType ?? null;
-    }
-    if (dto.luggageNotes !== undefined) {
-      row.luggage_notes = dto.luggageNotes ?? null;
-    }
-    if (dto.bolsoCount !== undefined) {
-      row.bolso_count = dto.bolsoCount ?? 0;
-    }
-    if (dto.bag8Count !== undefined) {
-      row.bag_8_count = dto.bag8Count ?? 0;
-    }
-    if (dto.suitcase10Count !== undefined) {
-      row.suitcase_10_count = dto.suitcase10Count ?? 0;
-    }
-    if (dto.suitcase15Count !== undefined) {
-      row.suitcase_15_count = dto.suitcase15Count ?? 0;
-    }
-    if (dto.suitcase23Count !== undefined) {
-      row.suitcase_23_count = dto.suitcase23Count ?? 0;
-    }
-    if (dto.oversizeText !== undefined) {
-      row.oversize_text = dto.oversizeText ?? null;
-    }
-    if (dto.luggageVolume !== undefined) {
-      row.luggage_volume = dto.luggageVolume ?? null;
-    }
-    if (dto.userType !== undefined) {
-      row.user_type = dto.userType ?? null;
-    }
-    if (dto.visaRequired !== undefined) {
-      row.visa_required = dto.visaRequired ?? null;
-    }
-    if (dto.tripType !== undefined) {
-      row.trip_type = dto.tripType ?? null;
-    }
-    if (dto.arrivalFlightId !== undefined) {
-      row.arrival_flight_id = dto.arrivalFlightId ?? null;
-    }
-    if (dto.flightNumber !== undefined) {
-      row.flight_number = dto.flightNumber ?? null;
-    }
-    if (dto.airline !== undefined) {
-      row.airline = dto.airline ?? null;
-    }
-    if (dto.origin !== undefined) {
-      row.origin = dto.origin ?? null;
-    }
-    if (dto.arrivalTime !== undefined) {
-      row.arrival_time = dto.arrivalTime ?? null;
-    }
-    if (dto.departureTime !== undefined) {
-      row.departure_time = dto.departureTime ?? null;
-    }
-    if (dto.departureGate !== undefined) {
-      row.departure_gate = dto.departureGate ?? null;
-    }
-    if (dto.arrivalBaggage !== undefined) {
-      row.arrival_baggage = dto.arrivalBaggage ?? null;
-    }
-    if (dto.hotelAccommodationId !== undefined) {
-      row.hotel_accommodation_id = dto.hotelAccommodationId ?? null;
-    }
-    if (dto.roomNumber !== undefined) {
-      row.room_number = dto.roomNumber ?? null;
-    }
-    if (dto.roomType !== undefined) {
-      row.room_type = dto.roomType ?? null;
-    }
-    if (dto.bedType !== undefined) {
-      row.bed_type = dto.bedType ?? null;
-    }
-    if (dto.wheelchairUser !== undefined) {
-      row.wheelchair_user = dto.wheelchairUser ?? false;
-    }
-    if (dto.wheelchairStandardCount !== undefined) {
-      row.wheelchair_standard_count = dto.wheelchairStandardCount ?? 0;
-    }
-    if (dto.wheelchairSportCount !== undefined) {
-      row.wheelchair_sport_count = dto.wheelchairSportCount ?? 0;
-    }
-    if (dto.sportsEquipment !== undefined) {
-      row.sports_equipment = dto.sportsEquipment ?? null;
-    }
-    if (dto.requiresAssistance !== undefined) {
-      row.requires_assistance = dto.requiresAssistance ?? false;
-    }
-    if (dto.observations !== undefined) {
-      row.observations = dto.observations ?? null;
-    }
-    if (dto.isDelegationLead !== undefined) {
-      row.is_delegation_lead = dto.isDelegationLead ?? false;
-    }
-    if (dto.transportTripId !== undefined) {
-      row.transport_trip_id = dto.transportTripId ?? null;
-    }
-    if (dto.transportVehicleId !== undefined) {
-      row.transport_vehicle_id = dto.transportVehicleId ?? null;
-    }
-    if (dto.airportCheckinAt !== undefined) {
-      row.airport_checkin_at = dto.airportCheckinAt ?? null;
-    }
-    if (dto.hotelCheckinAt !== undefined) {
-      row.hotel_checkin_at = dto.hotelCheckinAt ?? null;
-    }
-    if (dto.hotelCheckoutAt !== undefined) {
-      row.hotel_checkout_at = dto.hotelCheckoutAt ?? null;
-    }
-    if (dto.accreditationStatus !== undefined) {
-      row.accreditation_status = dto.accreditationStatus;
-    }
-    if (dto.accreditationValidatedAt !== undefined) {
-      row.accreditation_validated_at = dto.accreditationValidatedAt ?? null;
-    }
-    if (dto.accreditationValidatedBy !== undefined) {
-      row.accreditation_validated_by = dto.accreditationValidatedBy ?? null;
-    }
-    if (dto.accreditationNotes !== undefined) {
-      row.accreditation_notes = dto.accreditationNotes ?? null;
-    }
-    if (dto.credentialCode !== undefined) {
-      row.credential_code = dto.credentialCode ?? null;
-    }
-    if (dto.credentialIssuedAt !== undefined) {
-      row.credential_issued_at = dto.credentialIssuedAt ?? null;
-    }
-    if (dto.credentialIssuedBy !== undefined) {
-      row.credential_issued_by = dto.credentialIssuedBy ?? null;
-    }
-    if (dto.status !== undefined) {
-      row.status = dto.status;
-    }
-    if (dto.metadata !== undefined) {
-      row.metadata = dto.metadata ?? {};
-    }
+    if (dto.eventId !== undefined) row.event_id = dto.eventId;
+    if (dto.delegationId !== undefined) row.delegation_id = dto.delegationId ?? null;
+    if (dto.disciplineId !== undefined) row.discipline_id = dto.disciplineId ?? null;
+    if (dto.fullName !== undefined) row.full_name = dto.fullName;
+    if (dto.email !== undefined) row.email = dto.email ?? null;
+    if (dto.phone !== undefined) row.phone = dto.phone ?? null;
+    if (dto.countryCode !== undefined) row.country_code = dto.countryCode ?? null;
+    if (dto.passportNumber !== undefined) row.passport_number = dto.passportNumber ?? null;
+    if (dto.dateOfBirth !== undefined) row.date_of_birth = dto.dateOfBirth ?? null;
+    if (dto.dietaryNeeds !== undefined) row.dietary_needs = dto.dietaryNeeds ?? null;
+    if (dto.luggageType !== undefined) row.luggage_type = dto.luggageType ?? null;
+    if (dto.luggageNotes !== undefined) row.luggage_notes = dto.luggageNotes ?? null;
+    if (dto.bolsoCount !== undefined) row.bolso_count = dto.bolsoCount ?? 0;
+    if (dto.bag8Count !== undefined) row.bag_8_count = dto.bag8Count ?? 0;
+    if (dto.suitcase10Count !== undefined) row.suitcase_10_count = dto.suitcase10Count ?? 0;
+    if (dto.suitcase15Count !== undefined) row.suitcase_15_count = dto.suitcase15Count ?? 0;
+    if (dto.suitcase23Count !== undefined) row.suitcase_23_count = dto.suitcase23Count ?? 0;
+    if (dto.oversizeText !== undefined) row.oversize_text = dto.oversizeText ?? null;
+    if (dto.luggageVolume !== undefined) row.luggage_volume = dto.luggageVolume ?? null;
+    if (dto.userType !== undefined) row.user_type = dto.userType ?? null;
+    if (dto.visaRequired !== undefined) row.visa_required = dto.visaRequired ?? null;
+    if (dto.tripType !== undefined) row.trip_type = dto.tripType ?? null;
+    if (dto.arrivalFlightId !== undefined) row.arrival_flight_id = dto.arrivalFlightId ?? null;
+    if (dto.flightNumber !== undefined) row.flight_number = dto.flightNumber ?? null;
+    if (dto.airline !== undefined) row.airline = dto.airline ?? null;
+    if (dto.origin !== undefined) row.origin = dto.origin ?? null;
+    if (dto.arrivalTime !== undefined) row.arrival_time = dto.arrivalTime ?? null;
+    if (dto.departureTime !== undefined) row.departure_time = dto.departureTime ?? null;
+    if (dto.departureGate !== undefined) row.departure_gate = dto.departureGate ?? null;
+    if (dto.arrivalBaggage !== undefined) row.arrival_baggage = dto.arrivalBaggage ?? null;
+    if (dto.hotelAccommodationId !== undefined) row.hotel_accommodation_id = dto.hotelAccommodationId ?? null;
+    if (dto.roomNumber !== undefined) row.room_number = dto.roomNumber ?? null;
+    if (dto.roomType !== undefined) row.room_type = dto.roomType ?? null;
+    if (dto.bedType !== undefined) row.bed_type = dto.bedType ?? null;
+    if (dto.wheelchairUser !== undefined) row.wheelchair_user = dto.wheelchairUser ?? false;
+    if (dto.wheelchairStandardCount !== undefined) row.wheelchair_standard_count = dto.wheelchairStandardCount ?? 0;
+    if (dto.wheelchairSportCount !== undefined) row.wheelchair_sport_count = dto.wheelchairSportCount ?? 0;
+    if (dto.sportsEquipment !== undefined) row.sports_equipment = dto.sportsEquipment ?? null;
+    if (dto.requiresAssistance !== undefined) row.requires_assistance = dto.requiresAssistance ?? false;
+    if (dto.observations !== undefined) row.observations = dto.observations ?? null;
+    if (dto.isDelegationLead !== undefined) row.is_delegation_lead = dto.isDelegationLead ?? false;
+    if (dto.transportTripId !== undefined) row.transport_trip_id = dto.transportTripId ?? null;
+    if (dto.transportVehicleId !== undefined) row.transport_vehicle_id = dto.transportVehicleId ?? null;
+    if (dto.airportCheckinAt !== undefined) row.airport_checkin_at = dto.airportCheckinAt ?? null;
+    if (dto.hotelCheckinAt !== undefined) row.hotel_checkin_at = dto.hotelCheckinAt ?? null;
+    if (dto.hotelCheckoutAt !== undefined) row.hotel_checkout_at = dto.hotelCheckoutAt ?? null;
+    if (dto.accreditationStatus !== undefined) row.accreditation_status = dto.accreditationStatus;
+    if (dto.accreditationValidatedAt !== undefined) row.accreditation_validated_at = dto.accreditationValidatedAt ?? null;
+    if (dto.accreditationValidatedBy !== undefined) row.accreditation_validated_by = dto.accreditationValidatedBy ?? null;
+    if (dto.accreditationNotes !== undefined) row.accreditation_notes = dto.accreditationNotes ?? null;
+    if (dto.credentialCode !== undefined) row.credential_code = dto.credentialCode ?? null;
+    if (dto.credentialIssuedAt !== undefined) row.credential_issued_at = dto.credentialIssuedAt ?? null;
+    if (dto.credentialIssuedBy !== undefined) row.credential_issued_by = dto.credentialIssuedBy ?? null;
+    if (dto.status !== undefined) row.status = dto.status;
+    if (dto.metadata !== undefined) row.metadata = dto.metadata ?? {};
 
     return row;
+  }
+
+  private withDerivedFields(athlete: Athlete): Athlete {
+    return {
+      ...athlete,
+      luggageNotes: athlete.luggageNotes ?? athlete.oversizeText ?? null,
+    };
   }
 
   private toEntity(row: AthleteRow): Athlete {
@@ -296,23 +197,15 @@ export class AthletesService {
       isDelegationLead: row.is_delegation_lead ?? false,
       transportTripId: row.transport_trip_id,
       transportVehicleId: row.transport_vehicle_id,
-      airportCheckinAt: row.airport_checkin_at
-        ? new Date(row.airport_checkin_at)
-        : null,
+      airportCheckinAt: row.airport_checkin_at ? new Date(row.airport_checkin_at) : null,
       hotelCheckinAt: row.hotel_checkin_at ? new Date(row.hotel_checkin_at) : null,
-      hotelCheckoutAt: row.hotel_checkout_at
-        ? new Date(row.hotel_checkout_at)
-        : null,
+      hotelCheckoutAt: row.hotel_checkout_at ? new Date(row.hotel_checkout_at) : null,
       accreditationStatus: row.accreditation_status,
-      accreditationValidatedAt: row.accreditation_validated_at
-        ? new Date(row.accreditation_validated_at)
-        : null,
+      accreditationValidatedAt: row.accreditation_validated_at ? new Date(row.accreditation_validated_at) : null,
       accreditationValidatedBy: row.accreditation_validated_by,
       accreditationNotes: row.accreditation_notes,
       credentialCode: row.credential_code,
-      credentialIssuedAt: row.credential_issued_at
-        ? new Date(row.credential_issued_at)
-        : null,
+      credentialIssuedAt: row.credential_issued_at ? new Date(row.credential_issued_at) : null,
       credentialIssuedBy: row.credential_issued_by,
       status: row.status,
       metadata: row.metadata ?? {},
@@ -362,9 +255,7 @@ export class AthletesService {
       return;
     }
 
-    if (!hotelAccommodationId) {
-      return;
-    }
+    if (!hotelAccommodationId) return;
 
     let roomId: string | null = null;
     if (roomNumber) {
@@ -422,9 +313,7 @@ export class AthletesService {
         );
       }
 
-      const availableBed = (beds ?? []).find(
-        (bed) => !occupied.has(bed.id),
-      );
+      const availableBed = (beds ?? []).find((bed) => !occupied.has(bed.id));
       bedId = availableBed?.id ?? null;
 
       if (!bedId) {
@@ -497,32 +386,25 @@ export class AthletesService {
   }
 
   async findAll() {
-    const { data, error } = await this.supabase
-      .schema('core')
-      .from('athletes')
-      .select('*')
-      .order('full_name', { ascending: true });
-
-    if (error) {
+    try {
+      const athletes = await this.athleteRepository.find({
+        order: { fullName: 'ASC' },
+      });
+      return athletes.map((athlete) => this.withDerivedFields(athlete));
+    } catch (error) {
       throw new InternalServerErrorException(
-        error.message || 'Error fetching athletes',
+        error instanceof Error ? error.message : 'Error fetching athletes',
       );
     }
-
-    return (data ?? []).map((row) => this.toEntity(row as AthleteRow));
   }
 
   async findOne(id: string) {
-    const { data, error } = await this.supabase
-      .schema('core')
-      .from('athletes')
-      .select('*')
-      .eq('id', id)
-      .maybeSingle();
-
-    if (error) {
+    let data: Athlete | null;
+    try {
+      data = await this.athleteRepository.findOne({ where: { id } });
+    } catch (error) {
       throw new InternalServerErrorException(
-        error.message || 'Error fetching athlete',
+        error instanceof Error ? error.message : 'Error fetching athlete',
       );
     }
 
@@ -530,7 +412,7 @@ export class AthletesService {
       throw new NotFoundException(`Athlete with id ${id} not found`);
     }
 
-    return this.toEntity(data as AthleteRow);
+    return this.withDerivedFields(data);
   }
 
   async update(id: string, updateAthleteDto: UpdateAthleteDto) {
@@ -610,9 +492,7 @@ export class AthletesService {
     const from = process.env.RESEND_FROM;
 
     if (!apiKey || !from) {
-      throw new InternalServerErrorException(
-        'Email provider not configured',
-      );
+      throw new InternalServerErrorException('Email provider not configured');
     }
 
     const fullName = data.full_name ?? 'Encargado';
@@ -674,36 +554,35 @@ export class AthletesService {
       html,
     });
 
-    const { status, body } = await new Promise<{
-      status: number;
-      body: string;
-    }>((resolve, reject) => {
-      const request = https.request(
-        {
-          method: 'POST',
-          hostname: 'api.resend.com',
-          path: '/emails',
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            'Content-Type': 'application/json',
-            'Content-Length': Buffer.byteLength(payload),
+    const { status, body } = await new Promise<{ status: number; body: string }>(
+      (resolve, reject) => {
+        const request = https.request(
+          {
+            method: 'POST',
+            hostname: 'api.resend.com',
+            path: '/emails',
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              'Content-Type': 'application/json',
+              'Content-Length': Buffer.byteLength(payload),
+            },
           },
-        },
-        (response) => {
-          let data = '';
-          response.on('data', (chunk) => {
-            data += chunk;
-          });
-          response.on('end', () => {
-            resolve({ status: response.statusCode ?? 0, body: data });
-          });
-        },
-      );
+          (response) => {
+            let responseBody = '';
+            response.on('data', (chunk) => {
+              responseBody += chunk;
+            });
+            response.on('end', () => {
+              resolve({ status: response.statusCode ?? 0, body: responseBody });
+            });
+          },
+        );
 
-      request.on('error', (err) => reject(err));
-      request.write(payload);
-      request.end();
-    });
+        request.on('error', (err) => reject(err));
+        request.write(payload);
+        request.end();
+      },
+    );
 
     if (status < 200 || status >= 300) {
       throw new InternalServerErrorException(

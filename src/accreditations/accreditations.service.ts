@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { DataSource } from 'typeorm';
 import { CreateAccreditationDto } from './dto/create-accreditation.dto';
 import { IssueCredentialDto } from './dto/issue-credential.dto';
 import { QueryAccreditationsDto } from './dto/query-accreditations.dto';
@@ -37,6 +38,7 @@ type AccreditationRow = {
 export class AccreditationsService {
   constructor(
     @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
+    private readonly dataSource: DataSource,
   ) {}
 
   private normalizeAccessTypes(values?: string[] | null) {
@@ -276,26 +278,38 @@ export class AccreditationsService {
   }
 
   async findAll(filters: QueryAccreditationsDto) {
-    let query = this.supabase.schema('core').from('accreditations').select('*');
+    const where: string[] = [];
+    const params: unknown[] = [];
+    const pushParam = (value: unknown) => {
+      params.push(value);
+      return `$${params.length}`;
+    };
 
-    if (filters.eventId) query = query.eq('event_id', filters.eventId);
-    if (filters.subjectType) query = query.eq('subject_type', filters.subjectType);
-    if (filters.status) query = query.eq('status', filters.status);
-    if (filters.athleteId) query = query.eq('athlete_id', filters.athleteId);
-    if (filters.driverId) query = query.eq('driver_id', filters.driverId);
-    if (filters.credentialCode) {
-      query = query.eq('credential_code', filters.credentialCode);
-    }
+    if (filters.eventId) where.push(`event_id = ${pushParam(filters.eventId)}::uuid`);
+    if (filters.subjectType) where.push(`subject_type = ${pushParam(filters.subjectType)}`);
+    if (filters.status) where.push(`status = ${pushParam(filters.status)}`);
+    if (filters.athleteId) where.push(`athlete_id = ${pushParam(filters.athleteId)}::uuid`);
+    if (filters.driverId) where.push(`driver_id = ${pushParam(filters.driverId)}::uuid`);
+    if (filters.credentialCode) where.push(`credential_code = ${pushParam(filters.credentialCode)}`);
 
-    const { data, error } = await query.order('created_at', { ascending: false });
+    const whereSql = where.length ? `where ${where.join(' and ')}` : '';
 
-    if (error) {
+    try {
+      const rows = (await this.dataSource.query(
+        `
+          select *
+          from core.accreditations
+          ${whereSql}
+          order by created_at desc
+        `,
+        params,
+      )) as AccreditationRow[];
+      return rows.map((row) => this.toEntity(row));
+    } catch (error) {
       throw new InternalServerErrorException(
-        error.message || 'Error fetching accreditations',
+        error instanceof Error ? error.message : 'Error fetching accreditations',
       );
     }
-
-    return (data ?? []).map((row) => this.toEntity(row as AccreditationRow));
   }
 
   async findOne(id: string) {

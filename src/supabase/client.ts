@@ -3,10 +3,14 @@ import { ConfigService } from '@nestjs/config';
 
 export const SupabaseClient = (configService: ConfigService) => {
   const supabaseUrl = configService.get('SUPABASE_URL');
-  const supabaseKey = configService.get('SUPABASE_KEY');
+  const supabaseServiceRoleKey = configService.get('SUPABASE_SERVICE_ROLE_KEY');
+  const supabaseKey =
+    supabaseServiceRoleKey || configService.get('SUPABASE_KEY');
 
   if (!supabaseUrl || !supabaseKey) {
-    throw new Error('SUPABASE_URL and SUPABASE_KEY must be set');
+    throw new Error(
+      'SUPABASE_URL and (SUPABASE_SERVICE_ROLE_KEY or SUPABASE_KEY) must be set',
+    );
   }
 
   return createClient(supabaseUrl, supabaseKey);

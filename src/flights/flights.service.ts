@@ -4,7 +4,9 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { Repository } from 'typeorm';
 import { CreateFlightDto } from './dto/create-flight.dto';
 import { UpdateFlightDto } from './dto/update-flight.dto';
 import { Flight } from './entities/flight.entity';
@@ -25,6 +27,8 @@ type FlightRow = {
 export class FlightsService {
   constructor(
     @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
+    @InjectRepository(Flight)
+    private readonly flightRepository: Repository<Flight>,
   ) {}
 
   async lookupAirline(flightNumber: string) {
@@ -166,19 +170,15 @@ export class FlightsService {
   }
 
   async findAll() {
-    const { data, error } = await this.supabase
-      .schema('logistics')
-      .from('flights')
-      .select('*')
-      .order('arrival_time', { ascending: true });
-
-    if (error) {
+    try {
+      return await this.flightRepository.find({
+        order: { arrivalTime: 'ASC' },
+      });
+    } catch (error) {
       throw new InternalServerErrorException(
-        error.message || 'Error fetching flights',
+        error instanceof Error ? error.message : 'Error fetching flights',
       );
     }
-
-    return (data ?? []).map((row) => this.toEntity(row as FlightRow));
   }
 
   async findOne(id: string) {

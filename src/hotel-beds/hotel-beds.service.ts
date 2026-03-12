@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { DataSource } from 'typeorm';
 import { CreateHotelBedDto } from './dto/create-hotel-bed.dto';
 import { UpdateHotelBedDto } from './dto/update-hotel-bed.dto';
 import { HotelBed } from './entities/hotel-bed.entity';
@@ -22,6 +23,7 @@ type HotelBedRow = {
 export class HotelBedsService {
   constructor(
     @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
+    private readonly dataSource: DataSource,
   ) {}
 
   private toRow(dto: CreateHotelBedDto | UpdateHotelBedDto) {
@@ -61,43 +63,37 @@ export class HotelBedsService {
   }
 
   async findAll() {
-    const { data, error } = await this.supabase
-      .schema('logistics')
-      .from('hotel_beds')
-      .select('*')
-      .order('created_at', { ascending: false });
+    try {
+      const beds = (await this.dataSource.query(`
+        select *
+        from logistics.hotel_beds
+        order by created_at desc
+      `)) as HotelBedRow[];
 
-    if (error) {
+      const assignments = (await this.dataSource.query(`
+        select bed_id
+        from logistics.hotel_assignments
+        where bed_id is not null
+      `)) as Array<{ bed_id: string | null }>;
+
+      const occupiedBeds = new Set(
+        assignments
+          .map((row) => row.bed_id)
+          .filter((bedId): bedId is string => typeof bedId === 'string'),
+      );
+
+      return beds.map((row) => {
+        const entity = this.toEntity(row);
+        return {
+          ...entity,
+          status: occupiedBeds.has(entity.id) ? 'OCCUPIED' : 'AVAILABLE',
+        };
+      });
+    } catch (error) {
       throw new InternalServerErrorException(
-        error.message || 'Error fetching hotel beds',
+        error instanceof Error ? error.message : 'Error fetching hotel beds',
       );
     }
-
-    const { data: assignments, error: assignmentError } = await this.supabase
-      .schema('logistics')
-      .from('hotel_assignments')
-      .select('bed_id')
-      .not('bed_id', 'is', null);
-
-    if (assignmentError) {
-      throw new InternalServerErrorException(
-        assignmentError.message || 'Error fetching hotel assignments',
-      );
-    }
-
-    const occupiedBeds = new Set(
-      (assignments ?? [])
-        .map((row) => row.bed_id as string | null)
-        .filter((bedId): bedId is string => typeof bedId === 'string'),
-    );
-
-    return (data ?? []).map((row) => {
-      const entity = this.toEntity(row as HotelBedRow);
-      return {
-        ...entity,
-        status: occupiedBeds.has(entity.id) ? 'OCCUPIED' : 'AVAILABLE',
-      };
-    });
   }
 
   async findOne(id: string) {

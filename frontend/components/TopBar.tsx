@@ -16,6 +16,21 @@ export default function TopBar() {
     pathname.startsWith("/masters/hotel-beds");
 
   const labelMap: Record<string, string> = {
+    dashboard: "Dashboard",
+    comercial: "Dashboard Comercial",
+    operacional: "Dashboard Operacional",
+    registro: "Registro",
+    inscripcion: "Inscripción",
+    participantes: "Participantes",
+    operacion: "Operación",
+    cumplimiento: "Cumplimiento",
+    clientes: "Clientes",
+    deportes: "Deportes",
+    sede: "Sede",
+    food: "Alimentación",
+    cenas: "Cenas",
+    almuerzos: "Almuerzos",
+    lugares: "Lugares de comida",
     users: "Usuarios",
     athletes: "Participantes",
     drivers: "Conductores",

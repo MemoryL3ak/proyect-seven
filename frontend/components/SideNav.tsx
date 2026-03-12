@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -12,72 +12,107 @@ type NavItem = {
   icon: string;
 };
 
-type NavSection = {
+type NavGroup = {
   title: string;
   icon: string;
   items: NavItem[];
+};
+
+type NavSection = {
+  title: string;
+  icon: string;
+  items?: NavItem[];
+  groups?: NavGroup[];
   href?: string;
 };
 
 const navSections: NavSection[] = [
   {
-    title: "Overview",
+    title: "Dashboard",
     icon: "dashboard",
     items: [
-      { href: "/", label: "Dashboard general", icon: "dashboard" },
-      { href: "/commercial", label: "Dashboard comercial", icon: "dashboard" }
+      { href: "/dashboard/comercial", label: "Dashboard Comercial", icon: "dashboard" },
+      { href: "/dashboard/operacional", label: "Dashboard Operacional", icon: "dashboard" }
     ]
   },
   {
-    title: "Maestros",
+    title: "Registro",
     icon: "stack",
     items: [
-      { href: "/masters/events", label: "Eventos", icon: "calendar" },
-      { href: "/masters/delegations", label: "AND", icon: "users" },
-      { href: "/masters/and-compliance", label: "Cumplimiento AND", icon: "shield" },
-      { href: "/masters/disciplines", label: "Disciplinas", icon: "trophy" },
-      { href: "/masters/providers", label: "Proveedores", icon: "users" },
-      { href: "/masters/drivers", label: "Conductores", icon: "driver" },
-      { href: "/masters/venues", label: "Sedes", icon: "pin" }
+      { href: "/registro/eventos", label: "Registro Evento", icon: "calendar" },
+      { href: "/registro/participantes", label: "Inscripción Participantes", icon: "users" }
     ]
   },
   {
-    title: "Calendario deportivo",
-    icon: "calendar",
-    href: "/sports-calendar",
-    items: []
-  },
-  {
-    title: "Salud",
-    icon: "health-cross",
-    href: "/health",
-    items: []
-  },
-  {
-    title: "Acreditaciones",
-    icon: "shield",
-    href: "/accreditations",
-    items: []
-  },
-  {
-    title: "Hotelería",
-    icon: "hotel",
-    items: [
-      { href: "/operations/hotel-tracking", label: "Tracking hotelería", icon: "hotel" },
-      { href: "/masters/accommodations", label: "Hoteles", icon: "hotel" },
-      { href: "/masters/hotel-rooms", label: "Habitaciones", icon: "hotel" },
-      { href: "/masters/hotel-beds", label: "Camas", icon: "hotel" },
-      { href: "/operations/hotel-assignments", label: "Asignaciones hotel", icon: "hotel" }
-    ]
-  },
-  {
-    title: "Operaciones",
+    title: "Operación",
     icon: "route",
     items: [
-      { href: "/operations/trips", label: "Viajes", icon: "route" },
-      { href: "/operations/vehicle-positions", label: "Tracking de viajes", icon: "pin" },
-      { href: "/scanner", label: "Escáner QR", icon: "scan" }
+      { href: "/operacion/and", label: "AND", icon: "users" },
+      { href: "/operacion/cumplimiento-and", label: "Cumplimiento AND", icon: "shield" }
+    ],
+    groups: [
+      {
+        title: "Transporte",
+        icon: "route",
+        items: [
+          { href: "/operations/vehicle-positions", label: "Tracking de Viajes", icon: "pin" },
+          { href: "/operations/trips", label: "Viajes", icon: "route" },
+          { href: "/scanner", label: "Escáner QR", icon: "scan" }
+        ]
+      },
+      {
+        title: "Hotelería",
+        icon: "hotel",
+        items: [
+          { href: "/operations/hotel-tracking", label: "Tracking Hotelería", icon: "hotel" },
+          { href: "/masters/accommodations", label: "Hoteles", icon: "hotel" },
+          { href: "/masters/hotel-rooms", label: "Habitaciones", icon: "hotel" },
+          { href: "/masters/hotel-beds", label: "Camas", icon: "hotel" },
+          { href: "/operations/hotel-assignments", label: "Asignaciones Hotel", icon: "hotel" },
+          { href: "/operations/hotel-keys", label: "Gestión de llaves", icon: "hotel" }
+        ]
+      },
+      {
+        title: "Alimentación",
+        icon: "food",
+        items: [
+          { href: "/operations/food", label: "Alimentación", icon: "food" },
+          { href: "/operations/food/cenas", label: "Cenas", icon: "food" },
+          { href: "/operations/food/almuerzos", label: "Almuerzos", icon: "food" },
+          { href: "/operations/food/lugares", label: "Lugares de comida", icon: "pin" }
+        ]
+      },
+      {
+        title: "Salud",
+        icon: "health-cross",
+        items: [{ href: "/health", label: "Salud", icon: "health-cross" }]
+      }
     ]
+  },
+  {
+    title: "Clientes",
+    icon: "users",
+    href: "/clientes"
+  },
+  {
+    title: "Deportes",
+    icon: "sports-rings",
+    href: "/deportes"
+  },
+  {
+    title: "Sede",
+    icon: "pin",
+    href: "/sede"
+  },
+  {
+    title: "Calendario Deportivo",
+    icon: "calendar",
+    href: "/sports-calendar"
+  },
+  {
+    title: "Acreditación",
+    icon: "shield",
+    href: "/accreditations"
   },
   {
     title: "Portales",
@@ -118,22 +153,6 @@ function Icon({ name, className }: { name: string; className?: string }) {
           <path d="M14 20c0-2 1.5-3.5 3.5-3.5S21 18 21 20" />
         </svg>
       );
-    case "plane":
-      return (
-        <svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-          <path d="M2 16l20-6-20-6 5 6-5 6z" />
-          <path d="M7 10h7" />
-        </svg>
-      );
-    case "truck":
-      return (
-        <svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-          <rect x="2" y="7" width="12" height="8" rx="1.5" />
-          <path d="M14 10h4l3 3v2h-7" />
-          <circle cx="6" cy="17" r="2" />
-          <circle cx="18" cy="17" r="2" />
-        </svg>
-      );
     case "hotel":
       return (
         <svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
@@ -169,20 +188,6 @@ function Icon({ name, className }: { name: string; className?: string }) {
           <circle cx="12" cy="11" r="2" />
         </svg>
       );
-    case "alert":
-      return (
-        <svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-          <path d="M12 3l9 16H3L12 3z" />
-          <path d="M12 9v4M12 17h.01" />
-        </svg>
-      );
-    case "file":
-      return (
-        <svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-          <path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" />
-          <path d="M14 3v6h6" />
-        </svg>
-      );
     case "shield":
       return (
         <svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
@@ -194,6 +199,14 @@ function Icon({ name, className }: { name: string; className?: string }) {
         <svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
           <rect x="3" y="3" width="18" height="18" rx="4" />
           <path d="M12 7v10M7 12h10" />
+        </svg>
+      );
+    case "food":
+      return (
+        <svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+          <path d="M6 3v8M9 3v8M7.5 11v10" />
+          <path d="M16 3c-2 2-2.5 4.5-2.5 7.5V21" />
+          <path d="M16 3c2 2 2.5 4.5 2.5 7.5" />
         </svg>
       );
     case "scan":
@@ -232,20 +245,36 @@ function Icon({ name, className }: { name: string; className?: string }) {
           <path d="M9 16h6" />
         </svg>
       );
+    case "sports-rings":
+      return (
+        <svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="6.2" cy="9.2" r="3.1" />
+          <circle cx="12" cy="9.2" r="3.1" />
+          <circle cx="17.8" cy="9.2" r="3.1" />
+          <circle cx="9.1" cy="14.8" r="3.1" />
+          <circle cx="14.9" cy="14.8" r="3.1" />
+        </svg>
+      );
     default:
       return null;
   }
+}
+
+function sectionHasActivePath(section: NavSection, pathname: string) {
+  if (section.href && pathname === section.href) return true;
+  if (section.items?.some((item) => pathname === item.href)) return true;
+  if (section.groups?.some((group) => group.items.some((item) => pathname === item.href))) return true;
+  return false;
 }
 
 export default function SideNav() {
   const pathname = usePathname();
   const { locale, setLocale, t } = useI18n();
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    const activeSection = navSections.find((section) =>
-      section.items.some((item) => item.href === pathname)
-    );
+    const activeSection = navSections.find((section) => sectionHasActivePath(section, pathname));
     if (!activeSection) return;
 
     setOpenSections((prev) => {
@@ -255,105 +284,177 @@ export default function SideNav() {
       });
       return { ...prev, ...next };
     });
+
+    if (activeSection.groups) {
+      const activeGroup = activeSection.groups.find((group) =>
+        group.items.some((item) => item.href === pathname)
+      );
+      if (activeGroup) {
+        const key = `${activeSection.title}::${activeGroup.title}`;
+        setOpenGroups((prev) => ({ ...prev, [key]: true }));
+      }
+    }
   }, [pathname]);
 
   useEffect(() => {
     setOpenSections((prev) => {
       if (Object.keys(prev).length > 0) return prev;
       return navSections.reduce<Record<string, boolean>>((acc, section) => {
-        acc[section.title] = section.title === "Overview";
+        acc[section.title] = section.title === "Dashboard";
         return acc;
       }, {});
     });
   }, []);
 
   return (
-    <aside className="w-full max-w-[270px] bg-white border-r border-slate-200 px-5 py-6 h-screen sticky top-0">
+    <aside className="w-full max-w-[290px] bg-white border-r border-slate-200 px-5 py-6 h-screen sticky top-0">
       <div className="flex h-full flex-col">
         <div className="mb-8">
           <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Seven</p>
           <h1 className="text-xl font-semibold text-ink">Logistic Core</h1>
         </div>
 
-        <nav className="space-y-5 flex-1">
-        {navSections.map((section) => {
-          if (section.href) {
-            const isActive = pathname === section.href;
+        <nav className="space-y-5 flex-1 overflow-y-auto pr-1">
+          {navSections.map((section) => {
+            if (section.href) {
+              const isActive = pathname === section.href;
+              return (
+                <div key={section.title}>
+                  <Link
+                    href={section.href}
+                    className="flex w-full items-center justify-between text-xs uppercase tracking-[0.2em] text-slate-400 mb-6"
+                  >
+                    <span className="flex items-center gap-2 whitespace-nowrap">
+                      <Icon name={section.icon} className={isActive ? "text-slate-500" : "text-slate-400"} />
+                      <span className={isActive ? "text-slate-700" : ""}>{t(section.title)}</span>
+                    </span>
+                    <span className="w-3" />
+                  </Link>
+                </div>
+              );
+            }
+
+            const isOpen = openSections[section.title];
             return (
               <div key={section.title}>
-                <Link
-                  href={section.href}
-                  className="flex w-full items-center justify-between text-xs uppercase tracking-[0.2em] text-slate-400 mb-8"
+                <button
+                  type="button"
+                  onClick={() =>
+                    setOpenSections((prev) =>
+                      navSections.reduce<Record<string, boolean>>((acc, current) => {
+                        acc[current.title] =
+                          current.title === section.title ? !prev[section.title] : false;
+                        return acc;
+                      }, {})
+                    )
+                  }
+                  className="flex w-full items-center justify-between text-xs uppercase tracking-[0.2em] text-slate-400 mb-2"
                 >
-                  <span className="flex items-center gap-2 whitespace-nowrap">
-                    <Icon name={section.icon} className={isActive ? "text-slate-500" : "text-slate-400"} />
-                    <span className={isActive ? "text-slate-700" : ""}>{t(section.title)}</span>
+                  <span className="flex items-center gap-2">
+                    <Icon name={section.icon} className="text-slate-400" />
+                    {t(section.title)}
                   </span>
-                  <span className="w-3" />
-                </Link>
-              </div>
-            );
-          }
+                  <span
+                    className={clsx(
+                      "transition-transform duration-200 ease-out",
+                      isOpen ? "rotate-180" : "rotate-0"
+                    )}
+                  >
+                    ▾
+                  </span>
+                </button>
 
-          const isOpen = openSections[section.title];
-          return (
-            <div key={section.title}>
-              <button
-                type="button"
-                onClick={() =>
-                  setOpenSections((prev) =>
-                    navSections.reduce<Record<string, boolean>>((acc, current) => {
-                      acc[current.title] =
-                        current.title === section.title ? !prev[section.title] : false;
-                      return acc;
-                    }, {})
-                  )
-                }
-                className="flex w-full items-center justify-between text-xs uppercase tracking-[0.2em] text-slate-400 mb-2"
-              >
-                <span className="flex items-center gap-2">
-                  <Icon name={section.icon} className="text-slate-400" />
-                  {t(section.title)}
-                </span>
-                <span
+                <div
                   className={clsx(
-                    "transition-transform duration-200 ease-out",
-                    isOpen ? "rotate-180" : "rotate-0"
+                    "space-y-2 overflow-hidden transition-all duration-200 ease-out",
+                    isOpen ? "max-h-[1200px] opacity-100" : "max-h-0 opacity-0"
                   )}
                 >
-                  ▾
-                </span>
-              </button>
-              <div
-                className={clsx(
-                  "space-y-1 overflow-hidden transition-all duration-200 ease-out",
-                  isOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
-                )}
-              >
-                {section.items.map((item, index) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={clsx(
-                      "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ease-out",
-                      pathname === item.href
-                        ? "bg-slate-100 text-slate-900"
-                        : "text-slate-600 hover:bg-slate-50"
-                    )}
-                    style={{
-                      transitionDelay: isOpen ? `${index * 40}ms` : "0ms",
-                      opacity: isOpen ? 1 : 0,
-                      transform: isOpen ? "translateY(0)" : "translateY(-4px)"
-                    }}
-                  >
-                    <Icon name={item.icon} className="text-slate-500" />
-                    {t(item.label)}
-                  </Link>
-                ))}
+                  {section.items?.map((item, index) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={clsx(
+                        "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ease-out",
+                        pathname === item.href
+                          ? "bg-slate-100 text-slate-900"
+                          : "text-slate-600 hover:bg-slate-50"
+                      )}
+                      style={{
+                        transitionDelay: isOpen ? `${index * 35}ms` : "0ms",
+                        opacity: isOpen ? 1 : 0,
+                        transform: isOpen ? "translateY(0)" : "translateY(-4px)"
+                      }}
+                    >
+                      <Icon name={item.icon} className="text-slate-500" />
+                      {t(item.label)}
+                    </Link>
+                  ))}
+
+                  {section.groups?.map((group) => {
+                    const groupKey = `${section.title}::${group.title}`;
+                    const groupIsOpen = !!openGroups[groupKey];
+                    const groupHasActiveItem = group.items.some((item) => pathname === item.href);
+
+                    return (
+                      <div key={group.title}>
+                        <button
+                          type="button"
+                          className={clsx(
+                            "flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-medium transition-all duration-200 ease-out",
+                            groupHasActiveItem
+                              ? "bg-slate-100 text-slate-900"
+                              : "text-slate-600 hover:bg-slate-50"
+                          )}
+                          onClick={() =>
+                            setOpenGroups((prev) => ({
+                              ...prev,
+                              [groupKey]: !prev[groupKey]
+                            }))
+                          }
+                          >
+                          <span className="flex items-center gap-2">
+                            <Icon name={group.icon} className="text-slate-500" />
+                            {t(group.title)}
+                          </span>
+                          <span
+                            className={clsx(
+                              "text-xs transition-transform duration-200",
+                              groupIsOpen ? "rotate-180" : "rotate-0"
+                            )}
+                          >
+                            ▾
+                          </span>
+                        </button>
+                        <div
+                          className={clsx(
+                            "space-y-1 overflow-hidden transition-all duration-200 ease-out",
+                            groupIsOpen ? "max-h-80 opacity-100 pt-1 pl-3" : "max-h-0 opacity-0"
+                          )}
+                        >
+                          {group.items.map((item) => (
+                            <Link
+                              key={item.href}
+                              href={item.href}
+                              className={clsx(
+                                "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ease-out",
+                                pathname === item.href
+                                  ? "bg-white text-slate-900 ring-1 ring-slate-200"
+                                  : "text-slate-600 hover:bg-white"
+                              )}
+                            >
+                              <Icon name={item.icon} className="text-slate-500" />
+                              {t(item.label)}
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
         </nav>
 
         <div className="pt-6 border-t border-slate-200">

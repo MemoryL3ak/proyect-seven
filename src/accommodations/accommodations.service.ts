@@ -4,7 +4,9 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { Repository } from 'typeorm';
 import { CreateAccommodationDto } from './dto/create-accommodation.dto';
 import { UpdateAccommodationDto } from './dto/update-accommodation.dto';
 import { Accommodation } from './entities/accommodation.entity';
@@ -26,6 +28,8 @@ type AccommodationRow = {
 export class AccommodationsService {
   constructor(
     @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
+    @InjectRepository(Accommodation)
+    private readonly accommodationRepository: Repository<Accommodation>,
   ) {}
 
   private toRow(dto: CreateAccommodationDto | UpdateAccommodationDto) {
@@ -89,32 +93,24 @@ export class AccommodationsService {
   }
 
   async findAll() {
-    const { data, error } = await this.supabase
-      .schema('logistics')
-      .from('accommodations')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
+    try {
+      return await this.accommodationRepository.find({
+        order: { createdAt: 'DESC' },
+      });
+    } catch (error) {
       throw new InternalServerErrorException(
-        error.message || 'Error fetching accommodations',
+        error instanceof Error ? error.message : 'Error fetching accommodations',
       );
     }
-
-    return (data ?? []).map((row) => this.toEntity(row as AccommodationRow));
   }
 
   async findOne(id: string) {
-    const { data, error } = await this.supabase
-      .schema('logistics')
-      .from('accommodations')
-      .select('*')
-      .eq('id', id)
-      .maybeSingle();
-
-    if (error) {
+    let data: Accommodation | null;
+    try {
+      data = await this.accommodationRepository.findOne({ where: { id } });
+    } catch (error) {
       throw new InternalServerErrorException(
-        error.message || 'Error fetching accommodation',
+        error instanceof Error ? error.message : 'Error fetching accommodation',
       );
     }
 
@@ -122,7 +118,7 @@ export class AccommodationsService {
       throw new NotFoundException(`Accommodation with id ${id} not found`);
     }
 
-    return this.toEntity(data as AccommodationRow);
+    return data;
   }
 
   async update(id: string, updateAccommodationDto: UpdateAccommodationDto) {

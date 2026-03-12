@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { DataSource } from 'typeorm';
 import { CreateHotelRoomDto } from './dto/create-hotel-room.dto';
 import { UpdateHotelRoomDto } from './dto/update-hotel-room.dto';
 import { HotelRoom } from './entities/hotel-room.entity';
@@ -26,6 +27,7 @@ type HotelRoomRow = {
 export class HotelRoomsService {
   constructor(
     @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
+    private readonly dataSource: DataSource,
   ) {}
 
   private async syncBeds(room: HotelRoomRow, dto: CreateHotelRoomDto | UpdateHotelRoomDto) {
@@ -131,19 +133,18 @@ export class HotelRoomsService {
   }
 
   async findAll() {
-    const { data, error } = await this.supabase
-      .schema('logistics')
-      .from('hotel_rooms')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
+    try {
+      const rows = (await this.dataSource.query(`
+        select *
+        from logistics.hotel_rooms
+        order by created_at desc
+      `)) as HotelRoomRow[];
+      return rows.map((row) => this.toEntity(row));
+    } catch (error) {
       throw new InternalServerErrorException(
-        error.message || 'Error fetching hotel rooms',
+        error instanceof Error ? error.message : 'Error fetching hotel rooms',
       );
     }
-
-    return (data ?? []).map((row) => this.toEntity(row as HotelRoomRow));
   }
 
   async findOne(id: string) {

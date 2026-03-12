@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { DataSource } from 'typeorm';
 import { CreateSportsCalendarEventDto } from './dto/create-sports-calendar-event.dto';
 import { QuerySportsCalendarEventsDto } from './dto/query-sports-calendar-events.dto';
 import { UpdateSportsCalendarEventDto } from './dto/update-sports-calendar-event.dto';
@@ -34,6 +35,7 @@ type SportsCalendarEventRow = {
 export class SportsCalendarService {
   constructor(
     @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
+    private readonly dataSource: DataSource,
   ) {}
 
   private toRow(
@@ -125,36 +127,46 @@ export class SportsCalendarService {
   }
 
   async findAll(filters: QuerySportsCalendarEventsDto) {
-    let query = this.supabase
-      .schema('core')
-      .from('sports_calendar_events')
-      .select('*');
+    const where: string[] = [];
+    const params: unknown[] = [];
+    const pushParam = (value: unknown) => {
+      params.push(value);
+      return `$${params.length}`;
+    };
 
-    if (filters.from) query = query.gte('start_at_utc', filters.from);
-    if (filters.to) query = query.lte('start_at_utc', filters.to);
-    if (filters.eventId) query = query.eq('event_id', filters.eventId);
-    if (filters.sport) query = query.eq('sport', filters.sport);
-    if (filters.league) query = query.eq('league', filters.league);
-    if (filters.status) query = query.eq('status', filters.status);
-    if (filters.source) query = query.eq('source', filters.source);
+    if (filters.from) where.push(`start_at_utc >= ${pushParam(filters.from)}`);
+    if (filters.to) where.push(`start_at_utc <= ${pushParam(filters.to)}`);
+    if (filters.eventId) where.push(`event_id = ${pushParam(filters.eventId)}::uuid`);
+    if (filters.sport) where.push(`sport = ${pushParam(filters.sport)}`);
+    if (filters.league) where.push(`league = ${pushParam(filters.league)}`);
+    if (filters.status) where.push(`status = ${pushParam(filters.status)}`);
+    if (filters.source) where.push(`source = ${pushParam(filters.source)}`);
     if (filters.team) {
-      const teamLike = `%${filters.team}%`;
-      query = query.or(`home_team.ilike.${teamLike},away_team.ilike.${teamLike}`);
+      const p = pushParam(`%${filters.team}%`);
+      where.push(`(home_team ilike ${p} or away_team ilike ${p})`);
     }
 
-    const { data, error } = await query.order('start_at_utc', {
-      ascending: true,
-    });
+    const whereSql = where.length ? `where ${where.join(' and ')}` : '';
 
-    if (error) {
+    try {
+      const rows = (await this.dataSource.query(
+        `
+          select *
+          from core.sports_calendar_events
+          ${whereSql}
+          order by start_at_utc asc
+        `,
+        params,
+      )) as SportsCalendarEventRow[];
+
+      return rows.map((row) => this.toEntity(row));
+    } catch (error) {
       throw new InternalServerErrorException(
-        error.message || 'Error fetching sports calendar events',
+        error instanceof Error
+          ? error.message
+          : 'Error fetching sports calendar events',
       );
     }
-
-    return (data ?? []).map((row) =>
-      this.toEntity(row as SportsCalendarEventRow),
-    );
   }
 
   async findOne(id: string) {

@@ -1,10 +1,12 @@
-﻿import {
+import {
   Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
 import { Trip } from './entities/trip.entity';
@@ -48,6 +50,8 @@ type AthleteRow = {
 export class TripsService {
   constructor(
     @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
+    @InjectRepository(Trip)
+    private readonly tripRepository: Repository<Trip>,
   ) {}
 
   private toRow(dto: CreateTripDto | UpdateTripDto) {
@@ -323,20 +327,20 @@ export class TripsService {
   }
 
   async findAll() {
-    const { data, error } = await this.supabase
-      .schema('transport')
-      .from('trips')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
+    try {
+      const trips = await this.tripRepository.find({
+        order: { createdAt: 'DESC' },
+      });
+      return trips.map((trip) => ({
+        ...trip,
+        athleteIds: [],
+        athleteNames: [],
+      }));
+    } catch (error) {
       throw new InternalServerErrorException(
-        error.message || 'Error fetching trips',
+        error instanceof Error ? error.message : 'Error fetching trips',
       );
     }
-
-    const trips = (data ?? []).map((row) => this.toEntity(row as TripRow));
-    return this.attachAthletes(trips);
   }
 
   async findOne(id: string) {
