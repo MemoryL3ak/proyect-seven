@@ -932,6 +932,7 @@ export default function SportsCalendarPage() {
               const inMonth = day.getMonth() === monthCursor.getMonth();
               const isToday = key === todayKey;
               const isSelected = key === selectedDayKey;
+              const isPast = !isToday && key < todayKey;
               const dayEntries = groupedByDay.get(key) ?? [];
 
               return (
@@ -945,33 +946,56 @@ export default function SportsCalendarPage() {
                       startAtUtc: fromLocalDateTimeInput(`${key}T12:00`),
                     }));
                   }}
-                  className={[
-                    "min-h-[110px] rounded-xl border p-2 text-left transition",
-                    inMonth ? "border-white/10 bg-white/4" : "border-white/5 bg-white/2 text-white/40",
-                    isToday ? "ring-2 ring-emerald-500/50" : "",
-                    isSelected ? "border-emerald-500/40 bg-emerald-500/10" : "",
-                  ].join(" ")}
+                  style={{
+                    minHeight: "110px",
+                    borderRadius: "12px",
+                    padding: "8px",
+                    textAlign: "left",
+                    transition: "all 150ms ease",
+                    background: !inMonth
+                      ? "#f1f4f9"
+                      : isPast
+                        ? "#e8ecf4"
+                        : isSelected
+                          ? "#dbeafe"
+                          : isToday
+                            ? "#eff6ff"
+                            : "#ffffff",
+                    border: isSelected
+                      ? "2px solid #1e4ed8"
+                      : isToday
+                        ? "2px solid #93c5fd"
+                        : "1px solid #e2e8f0",
+                    opacity: !inMonth ? 0.5 : 1,
+                    outline: "none",
+                    cursor: "pointer",
+                    boxShadow: isPast || !inMonth ? "none" : "0 1px 4px rgba(15,23,42,0.06)"
+                  }}
                 >
-                  <p className="text-xs font-semibold">{day.getDate()}</p>
+                  <p style={{
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    color: !inMonth ? "#94a3b8" : isPast ? "#94a3b8" : isToday ? "#1e4ed8" : "#0f172a"
+                  }}>{day.getDate()}</p>
                   <div className="mt-1 space-y-1">
                     {dayEntries.slice(0, 3).map((entry) => (
                       <div
                         key={entry.id}
                         className={`rounded px-1 py-0.5 ${scheduleTypeCalendarCardClass(getMetaString(entry.metadata, "scheduleType"))}`}
                       >
-                        <p className="truncate text-[10px] font-semibold text-white/90">
+                        <p className="truncate text-[10px] font-semibold" style={{ color: "#0f172a" }}>
                           {titleFromEvent(entry)}
                         </p>
-                        <p className="truncate text-[10px] text-white/50">
+                        <p className="truncate text-[10px]" style={{ color: "#64748b" }}>
                           {scheduleTypeLabel(getMetaString(entry.metadata, "scheduleType"))}
                         </p>
-                        <p className="truncate text-[10px] text-white/50">
+                        <p className="truncate text-[10px]" style={{ color: "#64748b" }}>
                           {formatTime(entry.startAtUtc)} {entry.venue ? `- ${entry.venue}` : ""}
                         </p>
                       </div>
                     ))}
                     {dayEntries.length > 3 ? (
-                      <p className="text-[10px] text-white/50">+{dayEntries.length - 3} mas</p>
+                      <p className="text-[10px]" style={{ color: "#94a3b8" }}>+{dayEntries.length - 3} mas</p>
                     ) : null}
                   </div>
                 </button>
