@@ -334,7 +334,7 @@ export default function SideNav() {
       {/* Logo — no container borders, seamless */}
       <div
         className="flex items-center justify-center shrink-0"
-        style={{ padding: "4px 16px 0px", position: "relative", zIndex: 1 }}
+        style={{ height: "170px", overflow: "hidden", position: "relative", zIndex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}
       >
         <img
           src="/branding/LOGO-SEVEN.png"
@@ -342,6 +342,8 @@ export default function SideNav() {
           style={{
             width: "100%",
             height: "auto",
+            transform: "scale(2.2)",
+            transformOrigin: "center center",
             height: "auto",
             objectFit: "contain",
             filter: "drop-shadow(0 0 28px rgba(201,168,76,0.55)) drop-shadow(0 6px 18px rgba(0,0,0,0.9))"
