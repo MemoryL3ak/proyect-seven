@@ -310,21 +310,21 @@ export default function SideNav() {
       className="h-screen sticky top-0 flex flex-col shrink-0"
       style={{
         width: "240px",
-        background: "var(--sidebar)",
-        borderRight: "1px solid var(--border-muted)"
+        background: "var(--surface)",
+        borderRight: "1px solid var(--border)"
       }}
     >
       {/* Logo */}
-      <div className="flex items-center gap-3 px-4 pt-5 pb-4 shrink-0">
+      <div className="flex items-center px-5 pt-5 pb-4 shrink-0">
         <img
           src="/branding/LOGO-SEVEN.png"
           alt="Seven Arena"
-          style={{ height: 36, width: "auto", objectFit: "contain" }}
+          style={{ height: 38, width: "auto", objectFit: "contain" }}
         />
       </div>
 
       {/* Divider */}
-      <div className="mx-4 shrink-0" style={{ height: 1, background: "var(--border-muted)" }} />
+      <div className="mx-4 shrink-0" style={{ height: 1, background: "var(--border)" }} />
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto px-3 py-3" style={{ scrollbarWidth: "none", display: "flex", flexDirection: "column", gap: "1px" }}>
@@ -337,8 +337,8 @@ export default function SideNav() {
                 href={section.href}
                 className="flex items-center gap-2.5 rounded-md px-3 py-2 text-[13px] font-medium transition-all duration-100"
                 style={{
-                  color: isActive ? "var(--gold)" : "var(--text-muted)",
-                  background: isActive ? "var(--elevated)" : "transparent",
+                  color: isActive ? "var(--brand)" : "var(--text-muted)",
+                  background: isActive ? "var(--brand-dim)" : "transparent",
                 }}
               >
                 <Icon name={section.icon} className={isActive ? "text-[var(--gold)]" : ""} />
@@ -364,8 +364,8 @@ export default function SideNav() {
                 }
                 className="flex w-full items-center justify-between rounded-md px-3 py-2 text-[13px] font-medium transition-all duration-100"
                 style={{
-                  color: sectionActive ? "var(--gold)" : "var(--text-muted)",
-                  background: sectionActive && !isOpen ? "var(--elevated)" : "transparent",
+                  color: sectionActive ? "var(--brand)" : "var(--text-muted)",
+                  background: sectionActive && !isOpen ? "var(--brand-dim)" : "transparent",
                   border: "none",
                   cursor: "pointer"
                 }}
@@ -397,8 +397,8 @@ export default function SideNav() {
                       href={item.href}
                       className="flex items-center gap-2.5 rounded-md px-3 py-1.5 text-[12px] transition-all duration-100"
                       style={{
-                        color: active ? "var(--gold)" : "var(--text-muted)",
-                        background: active ? "var(--elevated)" : "transparent",
+                        color: active ? "var(--brand)" : "var(--text-muted)",
+                        background: active ? "var(--brand-dim)" : "transparent",
                         fontWeight: active ? 600 : 400
                       }}
                     >
@@ -420,8 +420,8 @@ export default function SideNav() {
                         onClick={() => setOpenGroups((prev) => ({ ...prev, [groupKey]: !prev[groupKey] }))}
                         className="flex w-full items-center justify-between rounded-md px-3 py-1.5 text-[12px] transition-all duration-100"
                         style={{
-                          color: groupActive ? "var(--gold)" : "var(--text-muted)",
-                          background: groupActive ? "var(--elevated)" : "transparent",
+                          color: groupActive ? "var(--brand)" : "var(--text-muted)",
+                          background: groupActive ? "var(--brand-dim)" : "transparent",
                           fontWeight: groupActive ? 600 : 400,
                           border: "none",
                           cursor: "pointer"
@@ -454,8 +454,8 @@ export default function SideNav() {
                               href={item.href}
                               className="flex items-center gap-2.5 rounded-md px-3 py-1.5 text-[12px] transition-all duration-100"
                               style={{
-                                color: active ? "var(--gold)" : "var(--text-faint)",
-                                background: active ? "var(--elevated)" : "transparent",
+                                color: active ? "var(--brand)" : "var(--text-faint)",
+                                background: active ? "var(--brand-dim)" : "transparent",
                                 fontWeight: active ? 600 : 400
                               }}
                             >
@@ -491,9 +491,9 @@ export default function SideNav() {
                 onClick={() => setLocale(option.key as "es" | "en" | "pt")}
                 className="flex items-center justify-center gap-1 rounded-md px-2 py-1.5 text-[11px] font-semibold transition-all"
                 style={{
-                  background: active ? "var(--gold-dim)" : "var(--elevated)",
-                  color: active ? "var(--gold)" : "var(--text-faint)",
-                  border: `1px solid ${active ? "var(--gold-glow)" : "var(--border-muted)"}`
+                  background: active ? "var(--brand-dim)" : "var(--elevated)",
+                  color: active ? "var(--brand)" : "var(--text-muted)",
+                  border: `1px solid ${active ? "var(--info-border)" : "var(--border)"}`
                 }}
                 title={t(option.label)}
               >

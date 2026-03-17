@@ -9,25 +9,26 @@ const config: Config = {
         display: ["var(--font-sans)"]
       },
       colors: {
-        bg:          "#0d1117",
-        surface:     "#161b22",
-        elevated:    "#21262d",
-        sidebar:     "#010409",
-        gold:        "#d4a843",
+        bg:          "#f8fafc",
+        surface:     "#ffffff",
+        elevated:    "#f1f5f9",
+        brand:       "#1e3a8a",
+        "brand-dim": "#eff6ff",
+        gold:        "#c9a84c",
         "gold-light":"#e8c96a",
-        border:      "#30363d",
-        "text-main": "#e6edf3",
-        "text-muted":"#8b949e",
-        success:     "#3fb950",
-        warning:     "#d29922",
-        danger:      "#f85149",
-        info:        "#58a6ff"
+        border:      "#e2e8f0",
+        "text-main": "#0f172a",
+        "text-muted":"#64748b",
+        success:     "#16a34a",
+        warning:     "#d97706",
+        danger:      "#dc2626",
+        info:        "#2563eb"
       },
       boxShadow: {
-        card: "0 1px 3px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.3)",
-        glow: "0 0 20px rgba(212,168,67,0.25)",
-        gold: "0 0 12px rgba(212,168,67,0.3)",
-        soft: "0 8px 24px rgba(0,0,0,0.4)"
+        card: "0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04)",
+        glow: "0 0 16px rgba(201,168,76,0.2)",
+        gold: "0 4px 10px rgba(201,168,76,0.3)",
+        soft: "0 4px 16px rgba(15,23,42,0.08)"
       },
       animation: {
         "fade-up":  "fadeUp 0.3s ease both",

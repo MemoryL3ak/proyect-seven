@@ -61,10 +61,10 @@ export default function TopBar() {
       style={{ borderBottom: "1px solid var(--border-muted)" }}
     >
       <div>
-        <p className="section-label mb-1.5">Seven Arena</p>
+        <p className="section-label mb-1.5">Seven Arena · Operations</p>
         <h2
           className="font-bold"
-          style={{ fontSize: "1.4rem", letterSpacing: "-0.02em", lineHeight: 1.2, color: "var(--text)" }}
+          style={{ fontSize: "1.3rem", letterSpacing: "-0.02em", lineHeight: 1.2, color: "var(--text)" }}
         >
           {title}
         </h2>

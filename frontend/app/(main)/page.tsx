@@ -224,7 +224,7 @@ export default function Page() {
       <section className="animate-fade-up stagger-2">
         <div className="flex items-center justify-between mb-3">
           <SectionTitle label="Movilidad · Transporte" />
-          <Link href="/operations/trips" className="text-xs font-semibold transition-colors" style={{ color: "var(--gold)" }}>
+          <Link href="/operations/trips" className="text-xs font-semibold transition-colors" style={{ color: "var(--brand)" }}>
             Ver todos →
           </Link>
         </div>
@@ -243,7 +243,7 @@ export default function Page() {
       <section className="animate-fade-up stagger-3">
         <div className="flex items-center justify-between mb-3">
           <SectionTitle label="Hotelería · Ocupación" />
-          <Link href="/operations/hotel-tracking" className="text-xs font-semibold transition-colors" style={{ color: "var(--gold)" }}>
+          <Link href="/operations/hotel-tracking" className="text-xs font-semibold transition-colors" style={{ color: "var(--brand)" }}>
             Ver tracking →
           </Link>
         </div>
