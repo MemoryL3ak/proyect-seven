@@ -412,22 +412,13 @@ export default function HotelKeysPage() {
         }
       />
 
-      <section
-        className="overflow-hidden rounded-[30px] p-6"
-       
-      >
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="mt-2 text-sm" style={{ color: "var(--text-muted)" }}>
-              Cada llave y copia queda trazada con responsable, timestamps y bitácora operativa.
-            </p>
-          </div>
-          <div className="rounded-2xl px-4 py-3 text-sm" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
-            <p className="text-[10px] uppercase tracking-[0.24em]" style={{ color: "var(--text-muted)" }}>Última sincronización</p>
-            <p className="mt-1 font-semibold" style={{ color: "var(--text)" }}>{lastUpdated ? formatDateTime(lastUpdated.toISOString()) : "-"}</p>
-          </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>Cada llave y copia queda trazada con responsable, timestamps y bitácora operativa.</p>
+        <div className="rounded-lg px-3 py-1.5" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+          <p className="text-[10px] uppercase tracking-[0.2em]" style={{ color: "var(--text-muted)" }}>Última sync</p>
+          <p className="text-xs font-semibold" style={{ color: "var(--text)" }}>{lastUpdated ? formatDateTime(lastUpdated.toISOString()) : "-"}</p>
         </div>
-      </section>
+      </div>
 
       <section className="surface rounded-[26px] p-5">
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">

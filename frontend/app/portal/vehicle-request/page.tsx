@@ -508,25 +508,19 @@ export default function VehicleRequestPortalPage() {
   return (
     <div className="min-h-screen px-4 py-8 sm:px-6 lg:px-8" style={{ background: "var(--elevated)" }}>
       <div className="mx-auto max-w-6xl space-y-6">
-        <section className="overflow-hidden rounded-[32px] px-6 py-7 shadow-[0_24px_80px_rgba(15,23,42,0.08)] sm:px-8">
-          <div className="flex flex-wrap items-end justify-between gap-5">
-            <div className="max-w-3xl">
-              <p className="mt-3 max-w-2xl text-sm leading-6 sm:text-base" style={{ color: "var(--text-muted)" }}>
-                Ingresa con tu codigo de usuario, solicita un vehiculo hacia una sede y sigue en tiempo real el estado de asignacion.
-              </p>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>Ingresa con tu codigo de usuario, solicita un vehiculo hacia una sede y sigue en tiempo real el estado de asignacion.</p>
+          <div className="flex gap-2">
+            <div className="rounded-lg px-3 py-1.5" style={{ border: "1px solid var(--border)", background: "var(--surface)" }}>
+              <div className="text-[10px] uppercase tracking-[0.2em]" style={{ color: "var(--text-muted)" }}>Portal</div>
+              <div className="text-xs font-semibold" style={{ color: "var(--text)" }}>{athlete ? "Sesion activa" : "Acceso privado"}</div>
             </div>
-            <div className="grid min-w-[260px] gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl px-4 py-3" style={{ border: "1px solid var(--banner-border)", background: "var(--surface)" }}>
-                <div className="text-[11px] uppercase tracking-[0.24em]" style={{ color: "var(--text-muted)" }}>Portal</div>
-                <div className="mt-2 text-xl font-semibold" style={{ color: "var(--text)" }}>{athlete ? "Sesion activa" : "Acceso privado"}</div>
-              </div>
-              <div className="rounded-2xl px-4 py-3" style={{ border: "1px solid var(--banner-border)", background: "var(--surface)" }}>
-                <div className="text-[11px] uppercase tracking-[0.24em]" style={{ color: "var(--text-muted)" }}>Solicitudes</div>
-                <div className="mt-2 text-xl font-semibold" style={{ color: "var(--text)" }}>{trips.length}</div>
-              </div>
+            <div className="rounded-lg px-3 py-1.5" style={{ border: "1px solid var(--border)", background: "var(--surface)" }}>
+              <div className="text-[10px] uppercase tracking-[0.2em]" style={{ color: "var(--text-muted)" }}>Solicitudes</div>
+              <div className="text-xs font-semibold" style={{ color: "var(--text)" }}>{trips.length}</div>
             </div>
           </div>
-        </section>
+        </div>
 
         {!athlete ? (
           <section className="grid gap-6 lg:grid-cols-[0.96fr_1.04fr]">

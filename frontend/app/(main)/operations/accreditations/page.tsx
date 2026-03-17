@@ -538,19 +538,12 @@ export default function AccreditationsPage() {
   };
   return (
     <div className="space-y-6">
-      <section
-        className="rounded-3xl p-6 shadow-xl"
-       
-      >
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>Panel para validar identidad, acreditar y generar credenciales.</p>
-          </div>
-          <div className="rounded-2xl px-4 py-3 text-sm" style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text-muted)" }}>
-            Ultima actualizacion: {lastUpdated ? lastUpdated.toLocaleTimeString("es-CL") : "-"}
-          </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>Panel para validar identidad, acreditar y generar credenciales.</p>
+        <div className="rounded-lg px-3 py-1.5 text-xs" style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text-muted)" }}>
+          Última actualización: <span className="font-semibold" style={{ color: "var(--text)" }}>{lastUpdated ? lastUpdated.toLocaleTimeString("es-CL") : "-"}</span>
         </div>
-      </section>
+      </div>
 
       <section className="surface rounded-3xl p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">

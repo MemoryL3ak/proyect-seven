@@ -765,22 +765,13 @@ export default function SportsCalendarPage() {
 
   return (
     <div className="space-y-5">
-      <section
-        className="rounded-3xl p-5"
-       
-      >
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-              Registro operativo de entrenamientos y pruebas por delegacion, con llegadas y retiros integrados desde AND.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="rounded-full px-3 py-1 text-xs" style={{ background: "var(--elevated)", border: "1px solid var(--border)", color: "var(--text-muted)" }}>{entries.length} actividades</span>
-            <span className="rounded-full bg-rose-700 px-3 py-1 text-xs">{liveCount} en vivo</span>
-          </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>Registro operativo de entrenamientos y pruebas por delegacion, con llegadas y retiros integrados desde AND.</p>
+        <div className="flex items-center gap-2">
+          <span className="rounded-full px-3 py-1 text-xs" style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text-muted)" }}>{entries.length} actividades</span>
+          <span className="rounded-full bg-rose-700 px-3 py-1 text-xs text-white">{liveCount} en vivo</span>
         </div>
-      </section>
+      </div>
 
       <section className="surface rounded-2xl p-4">
         <div className="grid gap-2 lg:grid-cols-12">

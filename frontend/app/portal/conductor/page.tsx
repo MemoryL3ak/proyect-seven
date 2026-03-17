@@ -440,9 +440,7 @@ export default function DriverPortalPage() {
 
   return (
     <div className="space-y-6">
-      <section className="surface rounded-3xl p-6">
-        <p className="text-sm mt-2" style={{ color: "var(--text-muted)" }}>{t("Revisa tus viajes y reporta cada etapa del traslado.")}</p>
-      </section>
+      <p className="text-sm mb-2" style={{ color: "var(--text-muted)" }}>{t("Revisa tus viajes y reporta cada etapa del traslado.")}</p>
 
       {!driverProfile && (
         <section className="surface rounded-3xl p-6 space-y-4">

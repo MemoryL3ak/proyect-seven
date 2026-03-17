@@ -517,30 +517,19 @@ export default function TripsPage() {
         }
       />
 
-      <section
-        className="overflow-hidden rounded-[32px] px-6 py-7"
-       
-      >
-        <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
-          <div className="max-w-3xl">
-            <p className="mt-3 max-w-2xl text-sm" style={{ color: "var(--text-muted)" }}>
-              Vista operativa para revisar solicitudes, programar servicios y monitorear viajes activos.
-            </p>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>Vista operativa para revisar solicitudes, programar servicios y monitorear viajes activos.</p>
+        <div className="flex flex-wrap gap-2">
+          <div className="rounded-lg px-3 py-1.5" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+            <p className="text-[10px] uppercase tracking-[0.2em]" style={{ color: "var(--text-muted)" }}>Última sync</p>
+            <p className="text-xs font-semibold" style={{ color: "var(--text)" }}>{lastUpdated ? formatDateTime(lastUpdated.toISOString()) : "-"}</p>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 xl:min-w-[420px]">
-            <div className="rounded-2xl px-4 py-3" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
-              <p className="text-[10px] uppercase tracking-[0.28em]" style={{ color: "var(--text-muted)" }}>Ultima sincronizacion</p>
-              <p className="mt-2 text-lg font-semibold" style={{ color: "var(--text)" }}>
-                {lastUpdated ? formatDateTime(lastUpdated.toISOString()) : "-"}
-              </p>
-            </div>
-            <div className="rounded-2xl px-4 py-3" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
-              <p className="text-[10px] uppercase tracking-[0.28em]" style={{ color: "var(--text-muted)" }}>Monitor</p>
-              <p className="mt-2 text-lg font-semibold" style={{ color: "var(--text)" }}>Auto refresh cada 8 segundos</p>
-            </div>
+          <div className="rounded-lg px-3 py-1.5" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+            <p className="text-[10px] uppercase tracking-[0.2em]" style={{ color: "var(--text-muted)" }}>Monitor</p>
+            <p className="text-xs font-semibold" style={{ color: "var(--text)" }}>Auto refresh 8s</p>
           </div>
         </div>
-      </section>
+      </div>
 
       {freshRequestIds.length > 0 && (
         <section className="rounded-[28px] border border-emerald-500/20 bg-emerald-500/10 px-5 py-4 shadow-sm">

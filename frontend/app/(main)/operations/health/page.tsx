@@ -1041,19 +1041,12 @@ export default function HealthPage() {
 
   return (
     <div className="space-y-6">
-      <section
-        className="rounded-3xl p-6 shadow-xl"
-       
-      >
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>Registro clínico-administrativo completo por participante.</p>
-          </div>
-          <div className="rounded-2xl px-4 py-3 text-sm" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
-            {activeSubsection === "record" ? <>Avance ficha: <span className="font-semibold">{completion}%</span></> : <>Subsección: <span className="font-semibold">{HEALTH_SUBSECTIONS.find((item) => item.id === activeSubsection)?.label}</span></>}
-          </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>Registro clínico-administrativo completo por participante.</p>
+        <div className="rounded-lg px-3 py-1.5 text-sm" style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text-muted)" }}>
+          {activeSubsection === "record" ? <>Avance ficha: <span className="font-semibold" style={{ color: "var(--text)" }}>{completion}%</span></> : <>Subsección: <span className="font-semibold" style={{ color: "var(--text)" }}>{HEALTH_SUBSECTIONS.find((item) => item.id === activeSubsection)?.label}</span></>}
         </div>
-      </section>
+      </div>
 
       <section className="surface rounded-2xl p-5">
         <div className="grid gap-3 lg:grid-cols-12">

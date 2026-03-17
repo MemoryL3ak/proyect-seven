@@ -417,11 +417,7 @@ export default function AthletePortalPage() {
 
   return (
     <div className="space-y-6">
-      <section className="surface rounded-3xl p-6">
-        <p className="text-sm mt-2" style={{ color: "var(--text-muted)" }}>
-          {t("Consulta tu itinerario y confirma cada etapa del viaje.")}
-        </p>
-      </section>
+      <p className="text-sm mb-2" style={{ color: "var(--text-muted)" }}>{t("Consulta tu itinerario y confirma cada etapa del viaje.")}</p>
 
       {!athlete && (
         <section className="surface rounded-3xl p-6 space-y-4">

@@ -401,29 +401,23 @@ export default function SportsCalendarDayDetailPage() {
 
   return (
     <div className="space-y-6">
-      <section
-        className="rounded-[28px] p-6 shadow-xl"
-       
-      >
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="max-w-3xl">
-            <h1 className="text-xl font-semibold" style={{ color: "var(--text)" }}>{formatDateLong(`${dayKey}T12:00:00`)}</h1>
-            <p className="mt-2 text-sm" style={{ color: "var(--text-muted)" }}>
-              Vista ejecutiva del dia con llegadas, retiros, vuelos y agenda operativa por delegacion.
-            </p>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+        <div>
+          <h1 className="text-lg font-semibold" style={{ color: "var(--text)" }}>{formatDateLong(`${dayKey}T12:00:00`)}</h1>
+          <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>Vista ejecutiva del dia con llegadas, retiros, vuelos y agenda operativa por delegacion.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <div className="rounded-lg px-3 py-1.5 text-sm" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+            <div className="text-[10px] uppercase tracking-[0.18em]" style={{ color: "var(--text-muted)" }}>Evento</div>
+            <div className="text-xs font-semibold" style={{ color: "var(--text)" }}>{selectedEvent?.name || "Todos"}</div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <div className="rounded-2xl px-4 py-3 text-sm" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
-              <div className="text-[11px] uppercase tracking-[0.18em]" style={{ color: "var(--text-muted)" }}>Evento</div>
-              <div className="mt-1 font-semibold" style={{ color: "var(--text)" }}>{selectedEvent?.name || "Todos"}</div>
-            </div>
-            <div className="rounded-2xl px-4 py-3 text-sm" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
-              <div className="text-[11px] uppercase tracking-[0.18em]" style={{ color: "var(--text-muted)" }}>Delegacion</div>
-              <div className="mt-1 font-semibold" style={{ color: "var(--text)" }}>{delegationId ? delegationLabel(delegations, delegationId) : "Todas"}</div>
-            </div>
+          <div className="rounded-lg px-3 py-1.5 text-sm" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+            <div className="text-[10px] uppercase tracking-[0.18em]" style={{ color: "var(--text-muted)" }}>Delegacion</div>
+            <div className="text-xs font-semibold" style={{ color: "var(--text)" }}>{delegationId ? delegationLabel(delegations, delegationId) : "Todas"}</div>
           </div>
         </div>
-        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-2xl p-4" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
             <div className="text-[11px] uppercase tracking-[0.18em]" style={{ color: "var(--text-muted)" }}>Llegadas</div>
             <div className="mt-2 text-4xl font-semibold" style={{ color: "var(--text)" }}>{kpis.arrivals}</div>
@@ -441,7 +435,7 @@ export default function SportsCalendarDayDetailPage() {
             <div className="mt-2 text-4xl font-semibold" style={{ color: "var(--text)" }}>{kpis.activeDelegations}</div>
           </div>
         </div>
-      </section>
+      </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
