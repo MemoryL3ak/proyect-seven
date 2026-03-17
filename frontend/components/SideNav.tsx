@@ -329,7 +329,7 @@ export default function SideNav() {
           src="/branding/LOGO-SEVEN.png"
           alt="Seven Arena"
           style={{
-            height: 320,
+            height: 600,
             width: "auto",
             objectFit: "contain",
             filter: "drop-shadow(0 2px 12px rgba(0,0,0,0.4)) brightness(1.15) contrast(0.9) saturate(0.4) invert(1)"
