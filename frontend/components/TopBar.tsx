@@ -77,7 +77,7 @@ export default function TopBar() {
         <div
           className="flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold"
           style={{
-            background: "var(--success-dim)",
+            background: "rgba(22,163,74,0.1)",
             border: "1px solid rgba(63,185,80,0.2)",
             color: "var(--success)"
           }}
@@ -91,6 +91,7 @@ export default function TopBar() {
 
         <button
           className="btn btn-ghost text-sm"
+          style={{ color: "#475569", borderColor: "#cbd5e1" }}
           onClick={() => { clearTokens(); router.push("/login"); }}
         >
           Cerrar sesión

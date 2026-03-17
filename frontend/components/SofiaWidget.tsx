@@ -81,60 +81,78 @@ export default function SofiaWidget() {
 
   return (
     <>
-      {/* FAB button */}
+      {/* FAB */}
       <button
         type="button"
-        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl"
-        style={{
-          background: "var(--gold)",
-          color: "var(--gold-btn-text)",
-          boxShadow: "0 4px 16px rgba(201,168,76,0.4)",
-        }}
         onClick={() => setOpen(!open)}
+        style={{
+          position: "fixed", bottom: "24px", right: "24px", zIndex: 40,
+          width: "52px", height: "52px", borderRadius: "50%",
+          background: "linear-gradient(135deg, #1e3a8a 0%, #0d1b3e 100%)",
+          border: "1.5px solid rgba(212,168,67,0.5)",
+          boxShadow: "0 4px 20px rgba(13,27,62,0.5), 0 0 0 0 rgba(212,168,67,0.3)",
+          cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          transition: "all 150ms ease"
+        }}
       >
-        <span
-          className="h-2 w-2 rounded-full"
-          style={{ background: "rgba(26,20,0,0.4)" }}
-        />
-        <span className="font-bold tracking-wide">Sof IA</span>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="rgba(212,168,67,0.15)" stroke="#d4a843" strokeWidth="1.5"/>
+          <path d="M8 10h8M8 13h5" stroke="#d4a843" strokeWidth="1.5" strokeLinecap="round"/>
+          <circle cx="17" cy="7" r="3" fill="#d4a843"/>
+          <text x="15.5" y="9" fontSize="4" fill="#07101f" fontWeight="bold" textAnchor="middle">AI</text>
+        </svg>
       </button>
 
-      {/* Panel — no overlay, floats above content */}
+      {/* Panel */}
       {open && (
         <div
-          className="fixed bottom-20 right-6 z-50 w-[380px] overflow-hidden rounded-xl shadow-2xl"
           style={{
-            background: "var(--surface)",
-            border: "1px solid var(--border-strong)",
-            boxShadow: "0 20px 60px rgba(15,23,42,0.15), 0 4px 16px rgba(15,23,42,0.08)"
+            position: "fixed", bottom: "88px", right: "24px", zIndex: 50,
+            width: "380px", borderRadius: "16px", overflow: "hidden",
+            background: "#0d1b3e",
+            border: "1px solid rgba(212,168,67,0.2)",
+            boxShadow: "0 24px 60px rgba(7,16,31,0.7), 0 0 0 1px rgba(255,255,255,0.05)"
           }}
         >
           {/* Header */}
-          <div
-            className="flex items-center justify-between px-5 py-4"
-            style={{ borderBottom: "1px solid var(--border)" }}
-          >
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.15em]" style={{ color: "var(--gold)" }}>
-                Sof IA
-              </p>
-              <h4 className="font-bold text-base" style={{ color: "var(--text)" }}>
-                {t("Asistente inteligente")}
-              </h4>
+          <div style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            padding: "16px 20px",
+            borderBottom: "1px solid rgba(255,255,255,0.07)",
+            background: "linear-gradient(135deg, #1a2e5a 0%, #0d1b3e 100%)"
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <div style={{
+                width: "32px", height: "32px", borderRadius: "50%",
+                background: "rgba(212,168,67,0.15)",
+                border: "1px solid rgba(212,168,67,0.4)",
+                display: "flex", alignItems: "center", justifyContent: "center"
+              }}>
+                <span style={{ color: "#d4a843", fontSize: "11px", fontWeight: 700 }}>AI</span>
+              </div>
+              <div>
+                <p style={{ color: "#d4a843", fontSize: "10px", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase" }}>Sof IA</p>
+                <p style={{ color: "rgba(255,255,255,0.85)", fontSize: "14px", fontWeight: 600 }}>{t("Asistente inteligente")}</p>
+              </div>
             </div>
             <button
               type="button"
-              className="btn btn-ghost text-sm px-3 py-1.5"
               onClick={() => setOpen(false)}
+              style={{
+                background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: "8px", padding: "6px 12px", color: "rgba(255,255,255,0.6)",
+                fontSize: "12px", cursor: "pointer"
+              }}
             >
               {t("Cerrar")}
             </button>
           </div>
 
           {/* Messages */}
-          <div className="max-h-[45vh] space-y-3 overflow-y-auto px-5 py-4">
+          <div style={{ maxHeight: "45vh", overflowY: "auto", padding: "16px 20px", display: "flex", flexDirection: "column", gap: "10px" }}>
             {messages.length === 0 && (
-              <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+              <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "13px", lineHeight: 1.6 }}>
                 {t("Haz una pregunta sobre viajes, participantes, delegaciones, hoteles o transporte.")}
               </p>
             )}
@@ -142,22 +160,16 @@ export default function SofiaWidget() {
               if (message.role === "assistant") {
                 const formatted = formatAssistant(message.content);
                 return (
-                  <div
-                    key={`${message.role}-${index}`}
-                    className="rounded-lg px-4 py-3 text-sm"
-                    style={{
-                      background: "var(--elevated)",
-                      border: "1px solid var(--border)"
-                    }}
-                  >
-                    <p className="font-semibold text-sm" style={{ color: "var(--text)" }}>
-                      {formatted.title}
-                    </p>
+                  <div key={`${message.role}-${index}`} style={{
+                    background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)",
+                    borderRadius: "10px", padding: "12px 14px"
+                  }}>
+                    <p style={{ color: "#ffffff", fontSize: "13px", fontWeight: 600 }}>{formatted.title}</p>
                     {formatted.bullets.length > 0 && (
-                      <ul className="mt-2 space-y-1">
+                      <ul style={{ marginTop: "8px", display: "flex", flexDirection: "column", gap: "4px" }}>
                         {formatted.bullets.map((item, idx) => (
-                          <li key={`${index}-${idx}`} className="flex gap-2 text-sm" style={{ color: "var(--text-muted)" }}>
-                            <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ background: "var(--success)" }} />
+                          <li key={`${index}-${idx}`} style={{ display: "flex", gap: "8px", color: "rgba(255,255,255,0.65)", fontSize: "12px" }}>
+                            <span style={{ marginTop: "5px", width: "5px", height: "5px", borderRadius: "50%", background: "#d4a843", flexShrink: 0 }} />
                             <span>{item}</span>
                           </li>
                         ))}
@@ -166,52 +178,48 @@ export default function SofiaWidget() {
                   </div>
                 );
               }
-
               return (
-                <div
-                  key={`${message.role}-${index}`}
-                  className="rounded-lg px-4 py-3 text-sm ml-8"
-                  style={{
-                    background: "var(--brand-dim)",
-                    border: "1px solid var(--info-border)",
-                    color: "var(--brand)"
-                  }}
-                >
+                <div key={`${message.role}-${index}`} style={{
+                  background: "rgba(212,168,67,0.1)", border: "1px solid rgba(212,168,67,0.2)",
+                  borderRadius: "10px", padding: "10px 14px", marginLeft: "24px",
+                  color: "#e8c96a", fontSize: "13px"
+                }}>
                   {message.content}
                 </div>
               );
             })}
             {loading && (
-              <p className="text-sm" style={{ color: "var(--text-faint)" }}>
-                {t("Preparando respuesta...")}
-              </p>
+              <p style={{ color: "rgba(255,255,255,0.3)", fontSize: "12px" }}>{t("Preparando respuesta...")}</p>
             )}
             {error && (
-              <p className="text-sm" style={{ color: "var(--danger)" }}>
-                {error}
-              </p>
+              <p style={{ color: "#fca5a5", fontSize: "12px" }}>{error}</p>
             )}
           </div>
 
           {/* Input */}
-          <div
-            className="px-5 py-4"
-            style={{ borderTop: "1px solid var(--border)" }}
-          >
-            <div className="flex gap-2">
+          <div style={{ padding: "12px 16px 16px", borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+            <div style={{ display: "flex", gap: "8px" }}>
               <input
-                className="input flex-1"
+                style={{
+                  flex: 1, padding: "10px 14px", borderRadius: "10px",
+                  background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)",
+                  color: "#ffffff", fontSize: "13px", outline: "none"
+                }}
                 placeholder={t("Escribe tu pregunta")}
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    sendMessage();
-                  }
-                }}
+                onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); sendMessage(); } }}
               />
-              <button className="btn btn-primary" onClick={sendMessage} disabled={loading}>
+              <button
+                onClick={sendMessage}
+                disabled={loading}
+                style={{
+                  padding: "10px 16px", borderRadius: "10px",
+                  background: loading ? "rgba(212,168,67,0.3)" : "linear-gradient(135deg, #d4a843, #c9a84c)",
+                  color: "#07101f", fontWeight: 700, fontSize: "13px",
+                  border: "none", cursor: loading ? "not-allowed" : "pointer"
+                }}
+              >
                 {loading ? t("...") : t("Enviar")}
               </button>
             </div>
