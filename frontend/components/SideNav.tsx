@@ -309,25 +309,22 @@ export default function SideNav() {
     <aside
       className="h-screen sticky top-0 flex flex-col shrink-0"
       style={{
-        width: "240px",
-        background: "#0f172a",
-        borderRight: "1px solid rgba(255,255,255,0.07)"
+        width: "256px",
+        background: "#0b1120",
+        borderRight: "1px solid rgba(255,255,255,0.06)"
       }}
     >
       {/* Logo */}
-      <div className="flex items-center justify-center px-4 pt-6 pb-5 shrink-0">
+      <div className="flex flex-col items-center justify-center pt-7 pb-5 shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
         <img
           src="/branding/LOGO-SEVEN.png"
           alt="Seven Arena"
-          style={{ height: 72, width: "auto", objectFit: "contain", filter: "brightness(0) invert(1)" }}
+          style={{ height: 96, width: "auto", objectFit: "contain", filter: "brightness(0) invert(1)" }}
         />
       </div>
 
-      {/* Divider */}
-      <div className="mx-4 shrink-0" style={{ height: 1, background: "rgba(255,255,255,0.08)" }} />
-
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto px-3 py-3" style={{ scrollbarWidth: "none", display: "flex", flexDirection: "column", gap: "1px" }}>
+      <nav className="flex-1 overflow-y-auto py-4" style={{ scrollbarWidth: "none" }}>
         {navSections.map((section) => {
           if (section.href) {
             const isActive = pathname === section.href || pathname.startsWith(section.href + "/");
@@ -335,13 +332,16 @@ export default function SideNav() {
               <Link
                 key={section.title}
                 href={section.href}
-                className="flex items-center gap-2.5 rounded-md px-3 py-2 text-[13px] font-medium transition-all duration-100"
+                className="flex items-center gap-3 mx-2 px-3 py-2.5 text-[13.5px] font-medium transition-all duration-150 relative"
                 style={{
-                  color: isActive ? "#c9a84c" : "rgba(255,255,255,0.55)",
+                  color: isActive ? "#c9a84c" : "rgba(255,255,255,0.6)",
                   background: isActive ? "rgba(201,168,76,0.1)" : "transparent",
+                  borderRadius: "8px",
+                  borderLeft: isActive ? "3px solid #c9a84c" : "3px solid transparent",
+                  marginBottom: "1px"
                 }}
               >
-                <Icon name={section.icon} className={isActive ? "text-[var(--gold)]" : ""} />
+                <Icon name={section.icon} />
                 <span>{t(section.title)}</span>
               </Link>
             );
@@ -351,7 +351,7 @@ export default function SideNav() {
           const sectionActive = sectionHasActivePath(section, pathname);
 
           return (
-            <div key={section.title}>
+            <div key={section.title} style={{ marginBottom: "1px" }}>
               <button
                 type="button"
                 onClick={() =>
@@ -362,19 +362,26 @@ export default function SideNav() {
                     }, {})
                   )
                 }
-                className="flex w-full items-center justify-between rounded-md px-3 py-2 text-[13px] font-medium transition-all duration-100"
+                className="flex w-full items-center justify-between mx-0 px-5 py-2.5 text-[13.5px] font-semibold transition-all duration-150"
                 style={{
-                  color: sectionActive ? "#c9a84c" : "rgba(255,255,255,0.55)",
-                  background: sectionActive && !isOpen ? "rgba(201,168,76,0.1)" : "transparent",
+                  color: sectionActive ? "#c9a84c" : "rgba(255,255,255,0.7)",
+                  background: "transparent",
                   border: "none",
-                  cursor: "pointer"
+                  cursor: "pointer",
+                  letterSpacing: "0.01em"
                 }}
               >
-                <span className="flex items-center gap-2.5">
-                  <Icon name={section.icon} className={sectionActive ? "text-[var(--gold)]" : ""} />
+                <span className="flex items-center gap-3">
+                  <Icon name={section.icon} />
                   {t(section.title)}
                 </span>
-                <span style={{ fontSize: 9, color: "rgba(255,255,255,0.25)", transition: "transform 200ms ease", transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", display: "inline-block" }}>▼</span>
+                <span style={{
+                  fontSize: 8,
+                  color: "rgba(255,255,255,0.2)",
+                  transition: "transform 200ms ease",
+                  transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+                  display: "inline-block"
+                }}>▼</span>
               </button>
 
               <div
@@ -382,92 +389,75 @@ export default function SideNav() {
                   overflow: "hidden",
                   maxHeight: isOpen ? "800px" : "0px",
                   opacity: isOpen ? 1 : 0,
-                  transition: "max-height 250ms ease, opacity 200ms ease",
-                  paddingLeft: "10px",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "1px"
+                  transition: "max-height 280ms ease, opacity 200ms ease",
                 }}
               >
-                {section.items?.map((item) => {
-                  const active = pathname === item.href;
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className="flex items-center gap-2.5 rounded-md px-3 py-1.5 text-[12px] transition-all duration-100"
-                      style={{
-                        color: active ? "#ffffff" : "rgba(255,255,255,0.45)",
-                        background: active ? "rgba(255,255,255,0.1)" : "transparent",
-                        fontWeight: active ? 600 : 400
-                      }}
-                    >
-                      <Icon name={item.icon} />
-                      {t(item.label)}
-                    </Link>
-                  );
-                })}
-
-                {section.groups?.map((group) => {
-                  const groupKey = `${section.title}::${group.title}`;
-                  const groupIsOpen = !!openGroups[groupKey];
-                  const groupActive = group.items.some((i) => pathname === i.href);
-
-                  return (
-                    <div key={group.title}>
-                      <button
-                        type="button"
-                        onClick={() => setOpenGroups((prev) => ({ ...prev, [groupKey]: !prev[groupKey] }))}
-                        className="flex w-full items-center justify-between rounded-md px-3 py-1.5 text-[12px] transition-all duration-100"
+                <div style={{ paddingLeft: "8px", paddingRight: "8px", paddingBottom: "4px", display: "flex", flexDirection: "column", gap: "1px" }}>
+                  {section.items?.map((item) => {
+                    const active = pathname === item.href;
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className="flex items-center gap-3 px-3 py-2 text-[12.5px] transition-all duration-150"
                         style={{
-                          color: groupActive ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.4)",
-                          background: groupActive ? "rgba(255,255,255,0.06)" : "transparent",
-                          fontWeight: groupActive ? 600 : 400,
-                          border: "none",
-                          cursor: "pointer"
+                          color: active ? "#ffffff" : "rgba(255,255,255,0.45)",
+                          background: active ? "rgba(255,255,255,0.08)" : "transparent",
+                          fontWeight: active ? 600 : 400,
+                          borderRadius: "7px",
+                          borderLeft: active ? "2px solid #c9a84c" : "2px solid transparent",
                         }}
                       >
-                        <span className="flex items-center gap-2.5">
-                          <Icon name={group.icon} />
+                        <Icon name={item.icon} />
+                        {t(item.label)}
+                      </Link>
+                    );
+                  })}
+
+                  {section.groups?.map((group) => {
+                    const groupKey = `${section.title}::${group.title}`;
+                    const groupIsOpen = !!openGroups[groupKey];
+                    const groupActive = group.items.some((i) => pathname === i.href);
+
+                    return (
+                      <div key={group.title}>
+                        <p style={{
+                          fontSize: "9.5px",
+                          fontWeight: 700,
+                          letterSpacing: "0.15em",
+                          textTransform: "uppercase",
+                          color: "rgba(255,255,255,0.22)",
+                          padding: "10px 12px 4px"
+                        }}>
                           {t(group.title)}
-                        </span>
-                        <span style={{ fontSize: 9, color: "rgba(255,255,255,0.25)", transition: "transform 200ms ease", transform: groupIsOpen ? "rotate(180deg)" : "rotate(0deg)", display: "inline-block" }}>▼</span>
-                      </button>
+                        </p>
 
-                      <div
-                        style={{
-                          overflow: "hidden",
-                          maxHeight: groupIsOpen ? "400px" : "0px",
-                          opacity: groupIsOpen ? 1 : 0,
-                          transition: "max-height 250ms ease, opacity 200ms ease",
-                          paddingLeft: "12px",
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "1px"
-                        }}
-                      >
-                        {group.items.map((item) => {
-                          const active = pathname === item.href;
-                          return (
-                            <Link
-                              key={item.href}
-                              href={item.href}
-                              className="flex items-center gap-2.5 rounded-md px-3 py-1.5 text-[12px] transition-all duration-100"
-                              style={{
-                                color: active ? "#ffffff" : "rgba(255,255,255,0.38)",
-                                background: active ? "rgba(255,255,255,0.1)" : "transparent",
-                                fontWeight: active ? 600 : 400
-                              }}
-                            >
-                              <Icon name={item.icon} />
-                              {t(item.label)}
-                            </Link>
-                          );
-                        })}
+                        <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
+                          {group.items.map((item) => {
+                            const active = pathname === item.href;
+                            return (
+                              <Link
+                                key={item.href}
+                                href={item.href}
+                                className="flex items-center gap-3 px-3 py-2 text-[12.5px] transition-all duration-150"
+                                style={{
+                                  color: active ? "#ffffff" : "rgba(255,255,255,0.38)",
+                                  background: active ? "rgba(255,255,255,0.08)" : "transparent",
+                                  fontWeight: active ? 600 : 400,
+                                  borderRadius: "7px",
+                                  borderLeft: active ? "2px solid #c9a84c" : "2px solid transparent",
+                                }}
+                              >
+                                <Icon name={item.icon} />
+                                {t(item.label)}
+                              </Link>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             </div>
           );
