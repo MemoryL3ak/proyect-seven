@@ -330,7 +330,7 @@ export default function SideNav() {
             height: 90,
             width: "auto",
             objectFit: "contain",
-            filter: "brightness(1.4) contrast(1.1) drop-shadow(0 2px 16px rgba(0,0,0,0.5))"
+            filter: "drop-shadow(0 2px 12px rgba(0,0,0,0.4)) brightness(1.15) contrast(0.9) saturate(0.4) invert(1)"
           }}
         />
       </div>
