@@ -310,8 +310,8 @@ export default function SideNav() {
       className="h-screen sticky top-0 flex flex-col shrink-0"
       style={{
         width: "240px",
-        background: "var(--surface)",
-        borderRight: "1px solid var(--border)"
+        background: "#0f172a",
+        borderRight: "1px solid rgba(255,255,255,0.07)"
       }}
     >
       {/* Logo */}
@@ -324,7 +324,7 @@ export default function SideNav() {
       </div>
 
       {/* Divider */}
-      <div className="mx-4 shrink-0" style={{ height: 1, background: "var(--border)" }} />
+      <div className="mx-4 shrink-0" style={{ height: 1, background: "rgba(255,255,255,0.08)" }} />
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto px-3 py-3" style={{ scrollbarWidth: "none", display: "flex", flexDirection: "column", gap: "1px" }}>
@@ -337,8 +337,8 @@ export default function SideNav() {
                 href={section.href}
                 className="flex items-center gap-2.5 rounded-md px-3 py-2 text-[13px] font-medium transition-all duration-100"
                 style={{
-                  color: isActive ? "var(--brand)" : "var(--text-muted)",
-                  background: isActive ? "var(--brand-dim)" : "transparent",
+                  color: isActive ? "#c9a84c" : "rgba(255,255,255,0.55)",
+                  background: isActive ? "rgba(201,168,76,0.1)" : "transparent",
                 }}
               >
                 <Icon name={section.icon} className={isActive ? "text-[var(--gold)]" : ""} />
@@ -364,8 +364,8 @@ export default function SideNav() {
                 }
                 className="flex w-full items-center justify-between rounded-md px-3 py-2 text-[13px] font-medium transition-all duration-100"
                 style={{
-                  color: sectionActive ? "var(--brand)" : "var(--text-muted)",
-                  background: sectionActive && !isOpen ? "var(--brand-dim)" : "transparent",
+                  color: sectionActive ? "#c9a84c" : "rgba(255,255,255,0.55)",
+                  background: sectionActive && !isOpen ? "rgba(201,168,76,0.1)" : "transparent",
                   border: "none",
                   cursor: "pointer"
                 }}
@@ -374,7 +374,7 @@ export default function SideNav() {
                   <Icon name={section.icon} className={sectionActive ? "text-[var(--gold)]" : ""} />
                   {t(section.title)}
                 </span>
-                <span style={{ fontSize: 9, color: "var(--text-faint)", transition: "transform 200ms ease", transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", display: "inline-block" }}>▼</span>
+                <span style={{ fontSize: 9, color: "rgba(255,255,255,0.25)", transition: "transform 200ms ease", transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", display: "inline-block" }}>▼</span>
               </button>
 
               <div
@@ -397,8 +397,8 @@ export default function SideNav() {
                       href={item.href}
                       className="flex items-center gap-2.5 rounded-md px-3 py-1.5 text-[12px] transition-all duration-100"
                       style={{
-                        color: active ? "var(--brand)" : "var(--text-muted)",
-                        background: active ? "var(--brand-dim)" : "transparent",
+                        color: active ? "#ffffff" : "rgba(255,255,255,0.45)",
+                        background: active ? "rgba(255,255,255,0.1)" : "transparent",
                         fontWeight: active ? 600 : 400
                       }}
                     >
@@ -420,8 +420,8 @@ export default function SideNav() {
                         onClick={() => setOpenGroups((prev) => ({ ...prev, [groupKey]: !prev[groupKey] }))}
                         className="flex w-full items-center justify-between rounded-md px-3 py-1.5 text-[12px] transition-all duration-100"
                         style={{
-                          color: groupActive ? "var(--brand)" : "var(--text-muted)",
-                          background: groupActive ? "var(--brand-dim)" : "transparent",
+                          color: groupActive ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.4)",
+                          background: groupActive ? "rgba(255,255,255,0.06)" : "transparent",
                           fontWeight: groupActive ? 600 : 400,
                           border: "none",
                           cursor: "pointer"
@@ -431,7 +431,7 @@ export default function SideNav() {
                           <Icon name={group.icon} />
                           {t(group.title)}
                         </span>
-                        <span style={{ fontSize: 9, color: "var(--text-faint)", transition: "transform 200ms ease", transform: groupIsOpen ? "rotate(180deg)" : "rotate(0deg)", display: "inline-block" }}>▼</span>
+                        <span style={{ fontSize: 9, color: "rgba(255,255,255,0.25)", transition: "transform 200ms ease", transform: groupIsOpen ? "rotate(180deg)" : "rotate(0deg)", display: "inline-block" }}>▼</span>
                       </button>
 
                       <div
@@ -454,8 +454,8 @@ export default function SideNav() {
                               href={item.href}
                               className="flex items-center gap-2.5 rounded-md px-3 py-1.5 text-[12px] transition-all duration-100"
                               style={{
-                                color: active ? "var(--brand)" : "var(--text-faint)",
-                                background: active ? "var(--brand-dim)" : "transparent",
+                                color: active ? "#ffffff" : "rgba(255,255,255,0.38)",
+                                background: active ? "rgba(255,255,255,0.1)" : "transparent",
                                 fontWeight: active ? 600 : 400
                               }}
                             >
@@ -475,8 +475,8 @@ export default function SideNav() {
       </nav>
 
       {/* Language switcher */}
-      <div className="px-3 py-3 shrink-0" style={{ borderTop: "1px solid var(--border-muted)" }}>
-        <p className="text-[10px] uppercase tracking-[0.18em] mb-2 px-1" style={{ color: "var(--text-faint)" }}>{t("Idioma")}</p>
+      <div className="px-3 py-3 shrink-0" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+        <p className="text-[10px] uppercase tracking-[0.18em] mb-2 px-1" style={{ color: "rgba(255,255,255,0.3)" }}>{t("Idioma")}</p>
         <div className="grid grid-cols-3 gap-1">
           {[
             { key: "es", label: "Español", short: "ES", flag: "🇨🇱" },
@@ -491,9 +491,9 @@ export default function SideNav() {
                 onClick={() => setLocale(option.key as "es" | "en" | "pt")}
                 className="flex items-center justify-center gap-1 rounded-md px-2 py-1.5 text-[11px] font-semibold transition-all"
                 style={{
-                  background: active ? "var(--brand-dim)" : "var(--elevated)",
-                  color: active ? "var(--brand)" : "var(--text-muted)",
-                  border: `1px solid ${active ? "var(--info-border)" : "var(--border)"}`
+                  background: active ? "rgba(201,168,76,0.15)" : "rgba(255,255,255,0.05)",
+                  color: active ? "#c9a84c" : "rgba(255,255,255,0.4)",
+                  border: `1px solid ${active ? "rgba(201,168,76,0.4)" : "rgba(255,255,255,0.1)"}`
                 }}
                 title={t(option.label)}
               >
