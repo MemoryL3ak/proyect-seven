@@ -310,23 +310,24 @@ export default function SideNav() {
       className="h-screen sticky top-0 flex flex-col shrink-0"
       style={{
         width: "256px",
-        background: "linear-gradient(180deg, #0d1526 0%, #0b1120 100%)",
+        background: "#0b1120",
         borderRight: "1px solid rgba(255,255,255,0.06)",
-        boxShadow: "4px 0 24px rgba(0,0,0,0.25)"
+        boxShadow: "4px 0 24px rgba(0,0,0,0.3)"
       }}
     >
-      {/* Logo */}
-      <div className="flex items-center px-5 py-4 shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+      {/* Logo zone — light background so original colors show */}
+      <div
+        className="flex items-center justify-center shrink-0"
+        style={{
+          background: "#f8fafc",
+          padding: "20px 24px",
+          borderBottom: "2px solid #c9a84c"
+        }}
+      >
         <img
           src="/branding/LOGO-SEVEN.png"
           alt="Seven Arena"
-          style={{
-            height: 36,
-            width: "auto",
-            objectFit: "contain",
-            filter: "brightness(0) invert(1)",
-            opacity: 0.92
-          }}
+          style={{ height: 56, width: "auto", objectFit: "contain" }}
         />
       </div>
 
