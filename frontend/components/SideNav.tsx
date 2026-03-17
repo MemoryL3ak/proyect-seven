@@ -312,10 +312,10 @@ export default function SideNav() {
     <aside
       className="h-screen sticky top-0 flex flex-col shrink-0"
       style={{
-        width: "260px",
+        width: isDark ? "260px" : "240px",
         background: isDark ? "#07101f" : "#ffffff",
-        borderRight: isDark ? "1px solid rgba(255,255,255,0.05)" : "1px solid #e2e8f0",
-        boxShadow: isDark ? "4px 0 40px rgba(0,0,0,0.7)" : "2px 0 12px rgba(15,23,42,0.06)",
+        borderRight: isDark ? "1px solid rgba(255,255,255,0.05)" : "none",
+        boxShadow: "none",
         position: "relative",
         overflow: "hidden"
       }}
@@ -359,12 +359,18 @@ export default function SideNav() {
       ) : (
         <div
           className="flex items-center justify-center shrink-0"
-          style={{ padding: "20px 24px 16px", borderBottom: "1px solid #e2e8f0" }}
+          style={{ height: "170px", overflow: "hidden", position: "relative", zIndex: 1, display: "flex", alignItems: "center", justifyContent: "center", borderBottom: "1px solid #e8edf5" }}
         >
           <img
             src="/branding/LOGO-SEVEN.png"
             alt="Seven Arena"
-            style={{ height: 56, width: "auto", objectFit: "contain" }}
+            style={{
+              width: "100%",
+              height: "auto",
+              transform: "scale(1.9)",
+              transformOrigin: "center center",
+              filter: "drop-shadow(0 4px 12px rgba(15,23,42,0.15))"
+            }}
           />
         </div>
       )}
@@ -387,10 +393,10 @@ export default function SideNav() {
                     ? (isDark ? "rgba(201,168,76,0.12)" : "#eff3ff")
                     : "transparent",
                   borderRadius: "8px",
-                  borderLeft: isActive
-                    ? (isDark ? "3px solid #c9a84c" : "3px solid #1e4ed8")
-                    : "3px solid transparent",
-                  marginBottom: "1px"
+                  borderLeft: isDark ? (isActive ? "3px solid #c9a84c" : "3px solid transparent") : "none",
+                  borderRadius: isDark ? "8px" : "10px",
+                  marginBottom: isDark ? "1px" : "2px",
+                  fontWeight: isActive ? 600 : 400,
                 }}
               >
                 <Icon name={section.icon} />
@@ -419,7 +425,10 @@ export default function SideNav() {
                   color: sectionActive
                     ? (isDark ? "#e8c96a" : "#1e4ed8")
                     : (isDark ? "rgba(255,255,255,0.85)" : "#374151"),
-                  background: "transparent",
+                  background: (!isDark && sectionActive && !isOpen) ? "#eff3ff" : "transparent",
+                  borderRadius: !isDark ? "10px" : "0",
+                  margin: !isDark ? "0 8px" : "0",
+                  width: !isDark ? "calc(100% - 16px)" : "100%",
                   border: "none",
                   cursor: "pointer",
                   letterSpacing: "0.01em"
@@ -458,8 +467,8 @@ export default function SideNav() {
                           color: active ? (isDark ? "#e8c96a" : "#1e4ed8") : (isDark ? "rgba(255,255,255,0.65)" : "#64748b"),
                           background: active ? (isDark ? "rgba(201,168,76,0.1)" : "#eff3ff") : "transparent",
                           fontWeight: active ? 600 : 400,
-                          borderRadius: "7px",
-                          borderLeft: active ? (isDark ? "2px solid #c9a84c" : "2px solid #1e4ed8") : "2px solid transparent",
+                          borderRadius: isDark ? "7px" : "10px",
+                          borderLeft: isDark ? (active ? "2px solid #c9a84c" : "2px solid transparent") : "none",
                         }}
                       >
                         <Icon name={item.icon} />
@@ -498,8 +507,8 @@ export default function SideNav() {
                                   color: active ? (isDark ? "#e8c96a" : "#1e4ed8") : (isDark ? "rgba(255,255,255,0.6)" : "#64748b"),
                                   background: active ? (isDark ? "rgba(201,168,76,0.1)" : "#eff3ff") : "transparent",
                                   fontWeight: active ? 600 : 400,
-                                  borderRadius: "7px",
-                                  borderLeft: active ? (isDark ? "2px solid #c9a84c" : "2px solid #1e4ed8") : "2px solid transparent",
+                                  borderRadius: isDark ? "7px" : "10px",
+                                  borderLeft: isDark ? (active ? "2px solid #c9a84c" : "2px solid transparent") : "none",
                                 }}
                               >
                                 <Icon name={item.icon} />
