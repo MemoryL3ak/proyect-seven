@@ -310,20 +310,20 @@ export default function SideNav() {
       className="h-screen sticky top-0 flex flex-col shrink-0"
       style={{
         width: "260px",
-        background: "linear-gradient(180deg, #0d1b3e 0%, #091528 60%, #060e1c 100%)",
-        borderRight: "1px solid rgba(255,255,255,0.07)",
+        background: "linear-gradient(180deg, #0c1635 0%, #1a2d5a 20%, #0d1b3e 60%, #080f20 100%)",
+        borderRight: "1px solid rgba(201,168,76,0.15)",
         boxShadow: "4px 0 32px rgba(0,0,0,0.5)"
       }}
     >
       {/* Logo */}
       <div
-        className="flex items-center justify-center shrink-0 relative"
+        className="flex items-center justify-center shrink-0"
         style={{
-          padding: "0px 20px",
-          height: "110px",
+          padding: "0px 16px",
+          height: "130px",
           overflow: "hidden",
-          borderBottom: "1px solid rgba(201,168,76,0.25)",
-          background: "radial-gradient(ellipse 80% 120% at 50% 50%, #2a4a9a 0%, #162550 45%, transparent 100%)"
+          borderBottom: "1px solid rgba(201,168,76,0.2)",
+          background: "radial-gradient(ellipse 100% 150% at 50% 50%, rgba(26,60,120,0.6) 0%, transparent 100%)"
         }}
       >
         <img
@@ -335,7 +335,7 @@ export default function SideNav() {
             objectFit: "cover",
             transform: "scale(1.4)",
             transformOrigin: "center center",
-            filter: "drop-shadow(0 0 16px rgba(201,168,76,0.5)) brightness(1.3) contrast(1.1) saturate(1.2)"
+            filter: "drop-shadow(0 0 20px rgba(201,168,76,0.5)) drop-shadow(0 4px 12px rgba(0,0,0,0.5))"
           }}
         />
       </div>

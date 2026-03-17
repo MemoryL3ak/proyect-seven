@@ -26,112 +26,126 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="animate-scale-in">
+    <div className="animate-scale-in flex flex-col items-center">
       {/* Logo */}
-      <div className="flex justify-center mb-8">
+      <div className="flex justify-center mb-10">
         <img
           src="/branding/LOGO-SEVEN.png"
           alt="Seven Arena"
-          style={{ height: 56, width: "auto", objectFit: "contain" }}
+          style={{
+            height: 180,
+            width: "auto",
+            objectFit: "contain",
+            filter: "drop-shadow(0 0 32px rgba(201,168,76,0.4)) drop-shadow(0 8px 24px rgba(0,0,0,0.6))"
+          }}
         />
       </div>
 
-      {/* Card */}
-      <div
-        className="rounded-xl overflow-hidden"
-        style={{
-          background: "var(--surface)",
-          border: "1px solid var(--border)",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.5)"
-        }}
-      >
-        {/* Header */}
-        <div
-          className="px-7 pt-7 pb-6"
-          style={{ borderBottom: "1px solid var(--border-muted)" }}
+      {/* Form */}
+      <div className="w-full space-y-4">
+        {/* Email */}
+        <div style={{ position: "relative" }}>
+          <span style={{
+            position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)",
+            color: "rgba(255,255,255,0.3)", pointerEvents: "none"
+          }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <rect x="2" y="4" width="20" height="16" rx="3"/>
+              <path d="m2 7 10 7 10-7"/>
+            </svg>
+          </span>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Email"
+            required
+            style={{
+              width: "100%",
+              padding: "16px 16px 16px 48px",
+              borderRadius: "14px",
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "rgba(255,255,255,0.92)",
+              color: "#0d1b3e",
+              fontSize: "15px",
+              outline: "none",
+              fontWeight: 500
+            }}
+          />
+        </div>
+
+        {/* Password */}
+        <div style={{ position: "relative" }}>
+          <span style={{
+            position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)",
+            color: "rgba(255,255,255,0.3)", pointerEvents: "none"
+          }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <rect x="3" y="11" width="18" height="11" rx="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </span>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Password"
+            required
+            style={{
+              width: "100%",
+              padding: "16px 16px 16px 48px",
+              borderRadius: "14px",
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "rgba(255,255,255,0.92)",
+              color: "#0d1b3e",
+              fontSize: "15px",
+              outline: "none",
+              fontWeight: 500
+            }}
+          />
+        </div>
+
+        {error && (
+          <p style={{ color: "#fca5a5", fontSize: "13px", textAlign: "center" }}>{error}</p>
+        )}
+
+        {/* Login button */}
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={loading}
+          style={{
+            width: "100%",
+            padding: "17px",
+            borderRadius: "14px",
+            border: "none",
+            background: "linear-gradient(135deg, #d4a843 0%, #c9a84c 50%, #b8933a 100%)",
+            color: "#0d1b3e",
+            fontSize: "16px",
+            fontWeight: 700,
+            cursor: loading ? "not-allowed" : "pointer",
+            opacity: loading ? 0.7 : 1,
+            letterSpacing: "0.03em",
+            boxShadow: "0 4px 20px rgba(201,168,76,0.4)",
+            transition: "all 150ms ease"
+          }}
         >
-          <h1
-            className="font-bold"
-            style={{ fontSize: "1.3rem", letterSpacing: "-0.02em", color: "var(--text)" }}
-          >
-            Acceso Operativo
-          </h1>
-          <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-            Ingresa tus credenciales para continuar.
-          </p>
-        </div>
+          {loading ? "Ingresando..." : "Log In"}
+        </button>
 
-        {/* Form */}
-        <div className="px-7 py-6">
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <label className="flex flex-col gap-1.5">
-              <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--text-muted)" }}>
-                Email
-              </span>
-              <input
-                className="input"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="operador@seven.com"
-                required
-              />
-            </label>
-
-            <label className="flex flex-col gap-1.5">
-              <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--text-muted)" }}>
-                Contraseña
-              </span>
-              <input
-                className="input"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-              />
-            </label>
-
-            {error && (
-              <div
-                className="rounded-lg px-4 py-3 text-sm"
-                style={{
-                  background: "var(--danger-dim)",
-                  border: "1px solid rgba(248,81,73,0.25)",
-                  color: "var(--danger)"
-                }}
-              >
-                {error}
-              </div>
-            )}
-
-            <button
-              className="btn btn-primary w-full mt-2"
-              type="submit"
-              disabled={loading}
-              style={{ padding: "0.65rem 1rem", fontSize: "0.9rem" }}
-            >
-              {loading ? (
-                <span className="flex items-center gap-2">
-                  <span
-                    className="w-4 h-4 rounded-full border-2"
-                    style={{
-                      borderColor: "rgba(13,17,23,0.3)",
-                      borderTopColor: "#0d1117",
-                      animation: "spin 0.7s linear infinite"
-                    }}
-                  />
-                  Ingresando...
-                </span>
-              ) : "Ingresar"}
-            </button>
-          </form>
-        </div>
+        <p style={{ textAlign: "center", color: "rgba(255,255,255,0.4)", fontSize: "13px", marginTop: "4px" }}>
+          Forgot password?
+        </p>
       </div>
 
-      <p className="mt-5 text-center text-[11px]" style={{ color: "var(--text-faint)" }}>
-        Seven Arena · The Event Platform
-      </p>
+      <div style={{ marginTop: "48px", textAlign: "center" }}>
+        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "13px" }}>
+          Don't have an account?
+        </p>
+        <p style={{ color: "#c9a84c", fontSize: "14px", fontWeight: 600, marginTop: "4px" }}>
+          Sign Up
+        </p>
+      </div>
     </div>
   );
 }
