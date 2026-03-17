@@ -334,14 +334,15 @@ export default function SideNav() {
       {/* Logo — no container borders, seamless */}
       <div
         className="flex items-center justify-center shrink-0"
-        style={{ padding: "0px 0px", position: "relative", zIndex: 1, overflow: "hidden", maxHeight: "140px" }}
+        style={{ padding: "0", position: "relative", zIndex: 1, overflow: "hidden", height: "100px" }}
       >
         <img
           src="/branding/LOGO-SEVEN.png"
           alt="Seven Arena"
           style={{
-            width: "130%",
-            marginLeft: "-15%",
+            width: "180%",
+            marginLeft: "-40%",
+            marginTop: "-18%",
             height: "auto",
             objectFit: "contain",
             filter: "drop-shadow(0 0 28px rgba(201,168,76,0.55)) drop-shadow(0 6px 18px rgba(0,0,0,0.9))"
