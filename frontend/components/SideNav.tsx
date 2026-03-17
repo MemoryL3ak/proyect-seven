@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import clsx from "clsx";
 import { useI18n } from "@/lib/i18n";
+import { useTheme } from "@/lib/theme";
 
 type NavItem = {
   href: string;
@@ -269,6 +270,8 @@ function sectionHasActivePath(section: NavSection, pathname: string) {
 export default function SideNav() {
   const pathname = usePathname();
   const { locale, setLocale, t } = useI18n();
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
@@ -310,46 +313,61 @@ export default function SideNav() {
       className="h-screen sticky top-0 flex flex-col shrink-0"
       style={{
         width: "260px",
-        background: "#07101f",
-        borderRight: "1px solid rgba(255,255,255,0.05)",
-        boxShadow: "4px 0 40px rgba(0,0,0,0.7)",
+        background: isDark ? "#07101f" : "#ffffff",
+        borderRight: isDark ? "1px solid rgba(255,255,255,0.05)" : "1px solid #e2e8f0",
+        boxShadow: isDark ? "4px 0 40px rgba(0,0,0,0.7)" : "2px 0 12px rgba(15,23,42,0.06)",
         position: "relative",
         overflow: "hidden"
       }}
     >
-      {/* Texture overlay */}
-      <div style={{
-        position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0,
-        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E")`,
-        backgroundRepeat: "repeat", backgroundSize: "200px"
-      }} />
-      {/* Radial glow top */}
-      <div style={{
-        position: "absolute", top: "-60px", left: "50%", transform: "translateX(-50%)",
-        width: "320px", height: "320px", borderRadius: "50%",
-        background: "radial-gradient(ellipse, rgba(30,58,138,0.55) 0%, transparent 70%)",
-        pointerEvents: "none", zIndex: 0
-      }} />
+      {/* Texture overlay — dark mode only */}
+      {isDark && (
+        <>
+          <div style={{
+            position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0,
+            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E")`,
+            backgroundRepeat: "repeat", backgroundSize: "200px"
+          }} />
+          {/* Radial glow top */}
+          <div style={{
+            position: "absolute", top: "-60px", left: "50%", transform: "translateX(-50%)",
+            width: "320px", height: "320px", borderRadius: "50%",
+            background: "radial-gradient(ellipse, rgba(30,58,138,0.55) 0%, transparent 70%)",
+            pointerEvents: "none", zIndex: 0
+          }} />
+        </>
+      )}
 
-      {/* Logo — no container borders, seamless */}
-      <div
-        className="flex items-center justify-center shrink-0"
-        style={{ height: "170px", overflow: "hidden", position: "relative", zIndex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}
-      >
-        <img
-          src="/branding/LOGO-SEVEN.png"
-          alt="Seven Arena"
-          style={{
-            width: "100%",
-            height: "auto",
-            transform: "scale(1.9)",
-            transformOrigin: "center center",
-            height: "auto",
-            objectFit: "contain",
-            filter: "drop-shadow(0 0 28px rgba(201,168,76,0.55)) drop-shadow(0 6px 18px rgba(0,0,0,0.9))"
-          }}
-        />
-      </div>
+      {/* Logo */}
+      {isDark ? (
+        <div
+          className="flex items-center justify-center shrink-0"
+          style={{ height: "170px", overflow: "hidden", position: "relative", zIndex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}
+        >
+          <img
+            src="/branding/LOGO-SEVEN.png"
+            alt="Seven Arena"
+            style={{
+              width: "100%",
+              height: "auto",
+              transform: "scale(1.9)",
+              transformOrigin: "center center",
+              filter: "drop-shadow(0 0 28px rgba(201,168,76,0.55)) drop-shadow(0 6px 18px rgba(0,0,0,0.9))"
+            }}
+          />
+        </div>
+      ) : (
+        <div
+          className="flex items-center justify-center shrink-0"
+          style={{ padding: "20px 24px 16px", borderBottom: "1px solid #e2e8f0" }}
+        >
+          <img
+            src="/branding/LOGO-SEVEN.png"
+            alt="Seven Arena"
+            style={{ height: 56, width: "auto", objectFit: "contain" }}
+          />
+        </div>
+      )}
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-2" style={{ scrollbarWidth: "none", position: "relative", zIndex: 1 }}>
@@ -362,10 +380,16 @@ export default function SideNav() {
                 href={section.href}
                 className="flex items-center gap-3 mx-2 px-3 py-2.5 text-[13.5px] font-medium transition-all duration-150 relative"
                 style={{
-                  color: isActive ? "#e8c96a" : "rgba(255,255,255,0.82)",
-                  background: isActive ? "rgba(201,168,76,0.12)" : "transparent",
+                  color: isActive
+                    ? (isDark ? "#e8c96a" : "#1e4ed8")
+                    : (isDark ? "rgba(255,255,255,0.82)" : "#475569"),
+                  background: isActive
+                    ? (isDark ? "rgba(201,168,76,0.12)" : "#eff3ff")
+                    : "transparent",
                   borderRadius: "8px",
-                  borderLeft: isActive ? "3px solid #c9a84c" : "3px solid transparent",
+                  borderLeft: isActive
+                    ? (isDark ? "3px solid #c9a84c" : "3px solid #1e4ed8")
+                    : "3px solid transparent",
                   marginBottom: "1px"
                 }}
               >
@@ -392,7 +416,9 @@ export default function SideNav() {
                 }
                 className="flex w-full items-center justify-between mx-0 px-5 py-2.5 text-[13.5px] font-semibold transition-all duration-150"
                 style={{
-                  color: sectionActive ? "#e8c96a" : "rgba(255,255,255,0.85)",
+                  color: sectionActive
+                    ? (isDark ? "#e8c96a" : "#1e4ed8")
+                    : (isDark ? "rgba(255,255,255,0.85)" : "#374151"),
                   background: "transparent",
                   border: "none",
                   cursor: "pointer",
@@ -405,7 +431,7 @@ export default function SideNav() {
                 </span>
                 <span style={{
                   fontSize: 8,
-                  color: "rgba(255,255,255,0.2)",
+                  color: isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.25)",
                   transition: "transform 200ms ease",
                   transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
                   display: "inline-block"
@@ -429,11 +455,11 @@ export default function SideNav() {
                         href={item.href}
                         className="flex items-center gap-3 px-3 py-2 text-[12.5px] transition-all duration-150"
                         style={{
-                          color: active ? "#e8c96a" : "rgba(255,255,255,0.65)",
-                          background: active ? "rgba(201,168,76,0.1)" : "transparent",
+                          color: active ? (isDark ? "#e8c96a" : "#1e4ed8") : (isDark ? "rgba(255,255,255,0.65)" : "#64748b"),
+                          background: active ? (isDark ? "rgba(201,168,76,0.1)" : "#eff3ff") : "transparent",
                           fontWeight: active ? 600 : 400,
                           borderRadius: "7px",
-                          borderLeft: active ? "2px solid #c9a84c" : "2px solid transparent",
+                          borderLeft: active ? (isDark ? "2px solid #c9a84c" : "2px solid #1e4ed8") : "2px solid transparent",
                         }}
                       >
                         <Icon name={item.icon} />
@@ -454,7 +480,7 @@ export default function SideNav() {
                           fontWeight: 700,
                           letterSpacing: "0.15em",
                           textTransform: "uppercase",
-                          color: "rgba(255,255,255,0.22)",
+                          color: isDark ? "rgba(255,255,255,0.22)" : "rgba(0,0,0,0.35)",
                           padding: "10px 12px 4px"
                         }}>
                           {t(group.title)}
@@ -469,11 +495,11 @@ export default function SideNav() {
                                 href={item.href}
                                 className="flex items-center gap-3 px-3 py-2 text-[12.5px] transition-all duration-150"
                                 style={{
-                                  color: active ? "#e8c96a" : "rgba(255,255,255,0.6)",
-                                  background: active ? "rgba(201,168,76,0.1)" : "transparent",
+                                  color: active ? (isDark ? "#e8c96a" : "#1e4ed8") : (isDark ? "rgba(255,255,255,0.6)" : "#64748b"),
+                                  background: active ? (isDark ? "rgba(201,168,76,0.1)" : "#eff3ff") : "transparent",
                                   fontWeight: active ? 600 : 400,
                                   borderRadius: "7px",
-                                  borderLeft: active ? "2px solid #c9a84c" : "2px solid transparent",
+                                  borderLeft: active ? (isDark ? "2px solid #c9a84c" : "2px solid #1e4ed8") : "2px solid transparent",
                                 }}
                               >
                                 <Icon name={item.icon} />
@@ -493,8 +519,8 @@ export default function SideNav() {
       </nav>
 
       {/* Language switcher */}
-      <div className="px-3 py-3 shrink-0" style={{ borderTop: "1px solid rgba(255,255,255,0.06)", position: "relative", zIndex: 1 }}>
-        <p className="text-[10px] uppercase tracking-[0.18em] mb-2 px-1" style={{ color: "rgba(255,255,255,0.3)" }}>{t("Idioma")}</p>
+      <div className="px-3 py-3 shrink-0" style={{ borderTop: isDark ? "1px solid rgba(255,255,255,0.06)" : "1px solid #e2e8f0", position: "relative", zIndex: 1 }}>
+        <p className="text-[10px] uppercase tracking-[0.18em] mb-2 px-1" style={{ color: isDark ? "rgba(255,255,255,0.3)" : "#94a3b8" }}>{t("Idioma")}</p>
         <div className="grid grid-cols-3 gap-1">
           {[
             { key: "es", label: "Español", short: "ES", flag: "🇨🇱" },
@@ -509,9 +535,9 @@ export default function SideNav() {
                 onClick={() => setLocale(option.key as "es" | "en" | "pt")}
                 className="flex items-center justify-center gap-1 rounded-md px-2 py-1.5 text-[11px] font-semibold transition-all"
                 style={{
-                  background: active ? "rgba(201,168,76,0.15)" : "rgba(255,255,255,0.05)",
-                  color: active ? "#c9a84c" : "rgba(255,255,255,0.4)",
-                  border: `1px solid ${active ? "rgba(201,168,76,0.4)" : "rgba(255,255,255,0.1)"}`
+                  background: active ? (isDark ? "rgba(201,168,76,0.15)" : "#eff3ff") : (isDark ? "rgba(255,255,255,0.05)" : "#f4f6fb"),
+                  color: active ? (isDark ? "#c9a84c" : "#1e4ed8") : (isDark ? "rgba(255,255,255,0.4)" : "#64748b"),
+                  border: `1px solid ${active ? (isDark ? "rgba(201,168,76,0.4)" : "#bfdbfe") : (isDark ? "rgba(255,255,255,0.1)" : "#e2e8f0")}`
                 }}
                 title={t(option.label)}
               >

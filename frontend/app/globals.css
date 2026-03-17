@@ -477,3 +477,22 @@ label > *:first-child {
 .from-white       { --tw-gradient-from: #ffffff !important; }
 .backdrop-blur    { backdrop-filter: blur(12px) saturate(150%); }
 .bg-white.shadow-xl { background: var(--surface) !important; border: 1px solid var(--border) !important; }
+
+/* ─────────────────────────────────────────────────────────────
+   LIGHT THEME — [data-theme="light"]
+   Clean SaaS style: white sidebar, light bg, blue accents
+───────────────────────────────────────────────────────────── */
+[data-theme="light"] {
+  --bg:           #f0f2f7;
+  --surface:      #ffffff;
+  --elevated:     #f4f6fb;
+  --border:       #e2e8f0;
+  --border-muted: #eef1f7;
+  --border-strong:#cbd5e1;
+  --brand:        #1e4ed8;
+  --brand-dim:    #eff3ff;
+  --gold:         #d4a843;
+  --text:         #0f172a;
+  --text-muted:   #64748b;
+  --text-faint:   #94a3b8;
+}
