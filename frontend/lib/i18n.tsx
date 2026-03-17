@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
@@ -29,7 +29,6 @@ const translations: Record<Locale, Record<string, string>> = {
     "Hotelería": "Hospitality",
     "Proveedores": "Providers",
     "Participantes": "Participants",
-    "Encargado de delegación": "Delegation lead",
     "Sí": "Yes",
     "No": "No",
     "Conductores": "Drivers",
@@ -204,7 +203,7 @@ const translations: Record<Locale, Record<string, string>> = {
     "Habitaciones": "Rooms",
     "Camas": "Beds",
     "Foto conductor": "Driver photo",
-    "Encargado de delegaciÃ³n": "Delegation lead",
+    "Encargado de delegación": "Delegation lead",
     "En ruta a recoger": "En route to pickup",
     "Todos": "All",
     "Filtrar por destino": "Filter by destination",
@@ -401,7 +400,6 @@ const translations: Record<Locale, Record<string, string>> = {
     "Habitaciones": "Quartos",
     "Camas": "Camas",
     "Foto conductor": "Foto do motorista",
-    "Encargado de delegaciÃ³n": "ResponsÃ¡vel pela delegaÃ§Ã£o",
     "En ruta a recoger": "A caminho da coleta",
     "Todos": "Todos",
     "Filtrar por destino": "Filtrar por destino"

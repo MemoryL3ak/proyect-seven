@@ -526,155 +526,61 @@ export const resources: Record<string, ResourceConfig> = {
     ]
   },
   athletes: {
-    name: "Participantes",
-    description: "Registro de participantes, arribos y asignaciones.",
+    name: "Inscripción de participantes",
+    description: "Registro largo de participantes previo a validación AND.",
     endpoint: "/athletes",
     tableHiddenKeys: [
       "id",
-      "userType",
-      "isDelegationLead",
-      "passportNumber",
-      "dateOfBirth",
-      "dietaryNeeds",
-      "luggageType",
-      "flightNumber",
-      "airline",
-      "origin",
-      "arrivalTime",
-      "departureGate",
-      "arrivalBaggage",
-      "hotelAccommodationId",
-      "roomNumber",
-      "roomType",
-      "bedType",
-      "transportVehicleId",
-      "status"
+      "metadata"
     ],
     tableOrder: [
       "fullName",
-      "email",
       "eventId",
       "delegationId",
-      "countryCode"
+      "disciplineId",
+      "countryCode",
+      "passportNumber",
+      "dateOfBirth",
+      "phone",
+      "email",
+      "userType",
+      "visaRequired",
+      "status"
     ],
     fields: [
       { key: "eventId", label: "Evento", type: "select", required: true, optionsSource: "events" },
       { key: "delegationId", label: "Delegación", type: "select", optionsSource: "delegations" },
       { key: "disciplineId", label: "Disciplina", type: "select", optionsSource: "disciplines" },
-      {
-        key: "isDelegationLead",
-        label: "Encargado de delegación",
-        type: "select",
-        options: [
-          { label: "Sí", value: "true" },
-          { label: "No", value: "false" }
-        ]
-      },
       { key: "fullName", label: "Nombre completo", type: "text", required: true },
       {
         key: "userType",
         label: "Tipo de cliente",
         type: "select",
         options: [
-          { label: "Atleta", value: "ATHLETE" },
-          { label: "Staff", value: "STAFF" },
-          { label: "Entrenador", value: "COACH" },
-          { label: "Delegación", value: "DELEGATION" },
-          { label: "Otro", value: "OTHER" }
+          { label: "VIP", value: "VIP" },
+          { label: "Familia Parapan", value: "FAMILIA_PARAPAN" },
+          { label: "TA (Deportista)", value: "TA" },
+          { label: "TF (Oficiales Técnicos)", value: "TF" },
+          { label: "TM (Prensa)", value: "TM" },
+          { label: "Comité Organizador", value: "COMITE_ORGANIZADOR" },
+          { label: "Proveedores", value: "PROVEEDORES" }
         ]
       },
-      { key: "email", label: "Correo electrónico", type: "text" },
-      {
-        key: "countryCode",
-        label: "País",
-        type: "select",
-        options: [
-          { label: "Argentina", value: "ARG" },
-          { label: "Bolivia", value: "BOL" },
-          { label: "Brasil", value: "BRA" },
-          { label: "Chile", value: "CHL" },
-          { label: "Colombia", value: "COL" },
-          { label: "Ecuador", value: "ECU" },
-          { label: "Paraguay", value: "PRY" },
-          { label: "Perú", value: "PER" },
-          { label: "Uruguay", value: "URY" },
-          { label: "Venezuela", value: "VEN" },
-          { label: "México", value: "MEX" },
-          { label: "Estados Unidos", value: "USA" },
-          { label: "Canadá", value: "CAN" },
-          { label: "España", value: "ESP" },
-          { label: "Francia", value: "FRA" },
-          { label: "Alemania", value: "DEU" },
-          { label: "Italia", value: "ITA" },
-          { label: "Portugal", value: "PRT" },
-          { label: "Reino Unido", value: "GBR" }
-        ]
-      },
+      { key: "countryCode", label: "País", type: "text" },
       { key: "passportNumber", label: "Pasaporte", type: "text" },
       { key: "dateOfBirth", label: "Fecha nacimiento", type: "date" },
+      { key: "phone", label: "Teléfono", type: "text" },
+      { key: "email", label: "Correo electrónico", type: "text" },
       {
-        key: "dietaryNeeds",
-        label: "Tipo de alimentación",
+        key: "visaRequired",
+        label: "Visa requerida",
         type: "select",
         options: [
-          { label: "Sin restricción", value: "STANDARD" },
-          { label: "Vegetariana", value: "VEGETARIAN" },
-          { label: "Vegana", value: "VEGAN" },
-          { label: "Sin gluten", value: "GLUTEN_FREE" },
-          { label: "Diabética", value: "DIABETIC" },
-          { label: "Otra", value: "OTHER" }
+          { label: "Sí", value: "true" },
+          { label: "No", value: "false" }
         ]
       },
-      {
-        key: "luggageType",
-        label: "Tipo de equipaje",
-        type: "select",
-        options: [
-          { label: "Bolso", value: "BAG" },
-          { label: "Maleta 8", value: "SUITCASE_8" },
-          { label: "Maleta 15", value: "SUITCASE_15" },
-          { label: "Maleta 23", value: "SUITCASE_23" },
-          { label: "Sobreequipaje", value: "EXTRA_BAGGAGE" }
-        ]
-      },
-      {
-        key: "luggageNotes",
-        label: "Observaciones de equipaje",
-        type: "text"
-      },
-      { key: "departureTime", label: "Fecha y hora de salida", type: "datetime" },
-      { key: "flightNumber", label: "Número de vuelo", type: "text", transient: true },
-      { key: "airline", label: "Aerolínea", type: "text", transient: true },
-      { key: "origin", label: "Origen", type: "text", transient: true },
-      { key: "departureGate", label: "Puerta de embarque", type: "text" },
-      { key: "arrivalTime", label: "Arribo", type: "datetime" },
-      { key: "arrivalBaggage", label: "Puerta de embarque", type: "text" },
-      { key: "hotelAccommodationId", label: "Hotel", type: "select", optionsSource: "accommodations" },
-      { key: "roomNumber", label: "Habitación", type: "text" },
-      {
-        key: "roomType",
-        label: "Tipo de habitación",
-        type: "select",
-        options: [
-          { label: "Single", value: "SINGLE" },
-          { label: "Double", value: "DOUBLE" },
-          { label: "Triple", value: "TRIPLE" },
-          { label: "Suite", value: "SUITE" }
-        ]
-      },
-      {
-        key: "bedType",
-        label: "Tipo de cama",
-        type: "select",
-        options: [
-          { label: "Single", value: "SINGLE" },
-          { label: "Double", value: "DOUBLE" },
-          { label: "Queen", value: "QUEEN" },
-          { label: "King", value: "KING" }
-        ]
-      },
-      { key: "transportVehicleId", label: "Vehículo", type: "select", optionsSource: "vehicles", formHidden: true },
-      { key: "status", label: "Estado", type: "select", formHidden: true }
+      { key: "status", label: "Estado", type: "text", readOnly: true }
     ]
   },
   hotelRooms: {
@@ -695,18 +601,7 @@ export const resources: Record<string, ResourceConfig> = {
           { label: "Suite", value: "SUITE" }
         ]
       },
-      { key: "bedsCapacity", label: "Capacidad de camas", type: "number" },
-      {
-        key: "baseBedType",
-        label: "Tipo de cama base",
-        type: "select",
-        options: [
-          { label: "Single", value: "SINGLE" },
-          { label: "Double", value: "DOUBLE" },
-          { label: "Queen", value: "QUEEN" },
-          { label: "King", value: "KING" }
-        ]
-      },
+      { key: "bedsCapacity", label: "Capacidad (plazas)", type: "number" },
       {
         key: "status",
         label: "Estado",
@@ -751,13 +646,12 @@ export const resources: Record<string, ResourceConfig> = {
   },
   hotelAssignments: {
     name: "Asignaciones hotel",
-    description: "Asignación de habitaciones y camas.",
+    description: "Asignación de participantes a hotel y habitación.",
     endpoint: "/hotel-assignments",
     fields: [
       { key: "participantId", label: "Participante", type: "select", required: true, optionsSource: "athletes" },
       { key: "hotelId", label: "Hotel", type: "select", required: true, optionsSource: "accommodations" },
       { key: "roomId", label: "Habitación", type: "select", optionsSource: "hotelRooms" },
-      { key: "bedId", label: "Cama", type: "select", optionsSource: "hotelBeds" },
       { key: "checkinAt", label: "Check-in", type: "datetime" },
       { key: "checkoutAt", label: "Check-out", type: "datetime" },
       {
@@ -774,7 +668,7 @@ export const resources: Record<string, ResourceConfig> = {
   },
   accommodations: {
     name: "Hotelería",
-    description: "Inventario de hoteles y capacidad.",
+    description: "Inventario de hoteles y habitaciones por tipo.",
     endpoint: "/accommodations",
     tableOrder: [
       "eventId",
@@ -787,10 +681,6 @@ export const resources: Record<string, ResourceConfig> = {
     ],
     tableHiddenKeys: [
       "id",
-      "bedSingle",
-      "bedDouble",
-      "bedQueen",
-      "bedKing",
       "totalCapacity"
     ],
     fields: [
@@ -801,10 +691,6 @@ export const resources: Record<string, ResourceConfig> = {
       { key: "roomDouble", label: "Habitaciones Double", type: "number", transient: true },
       { key: "roomTriple", label: "Habitaciones Triple", type: "number", transient: true },
       { key: "roomSuite", label: "Habitaciones Suite", type: "number", transient: true },
-      { key: "bedSingle", label: "Camas Single", type: "number", transient: true },
-      { key: "bedDouble", label: "Camas Double", type: "number", transient: true },
-      { key: "bedQueen", label: "Camas Queen", type: "number", transient: true },
-      { key: "bedKing", label: "Camas King", type: "number", transient: true },
       { key: "totalCapacity", label: "Capacidad total", type: "number", readOnly: true }
     ]
   },
@@ -865,7 +751,20 @@ export const resources: Record<string, ResourceConfig> = {
           { label: "Viaje Ida-Vuelta", value: "IDA_VUELTA" }
         ]
       },
-      { key: "clientType", label: "Tipo de cliente", type: "text" },
+      {
+        key: "clientType",
+        label: "Tipo de cliente",
+        type: "select",
+        options: [
+          { label: "VIP", value: "VIP" },
+          { label: "Familia Parapan", value: "FAMILIA_PARAPAN" },
+          { label: "TA (Deportista)", value: "TA" },
+          { label: "TF (Oficiales Técnicos)", value: "TF" },
+          { label: "TM (Prensa)", value: "TM" },
+          { label: "Comité Organizador", value: "COMITE_ORGANIZADOR" },
+          { label: "Proveedores", value: "PROVEEDORES" }
+        ]
+      },
       { key: "origin", label: "Origen", type: "text" },
       { key: "destination", label: "Destino", type: "text" },
       { key: "notes", label: "Observaciones", type: "text" },

@@ -6,6 +6,7 @@ import { apiFetch } from "@/lib/api";
 
 type ImportType = "athletes" | "drivers" | "hospitality";
 type ParseMode = "template" | "and-itinerary";
+type AthleteMode = "registration" | "and";
 
 type ImportError = {
   row: number;
@@ -65,6 +66,19 @@ const athleteHeaders = [
   "room_number",
   "bed_type",
   "status"
+] as const;
+
+const athleteRegistrationHeaders = [
+  "event_name",
+  "country_code",
+  "full_name",
+  "passport_number",
+  "email",
+  "phone",
+  "date_of_birth",
+  "user_type",
+  "discipline_name",
+  "visa_required"
 ] as const;
 
 const hospitalityHeaders = [
@@ -478,10 +492,12 @@ const parseSheet = (file: File, type: ImportType) =>
 
 export default function BulkImportPanel({
   type,
-  onImported
+  onImported,
+  athleteMode = "and",
 }: {
   type: ImportType;
   onImported?: () => void;
+  athleteMode?: AthleteMode;
 }) {
   const inputId = useId();
   const [fileName, setFileName] = useState<string | null>(null);
@@ -496,7 +512,9 @@ export default function BulkImportPanel({
 
   const headers =
     type === "athletes"
-      ? athleteHeaders
+      ? athleteMode === "registration"
+        ? athleteRegistrationHeaders
+        : athleteHeaders
       : type === "drivers"
         ? driverHeaders
         : hospitalityHeaders;
@@ -1064,11 +1082,17 @@ export default function BulkImportPanel({
     <section className="surface max-w-full min-w-0 overflow-hidden rounded-3xl p-6 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Carga masiva</p>
-          <h2 className="font-display text-2xl text-ink">
-            {type === "athletes" ? "Participantes AND" : type === "drivers" ? "Conductores" : "Hoteleria"}
+          <p className="text-xs uppercase tracking-[0.2em] text-white/40">Carga masiva</p>
+          <h2 className="font-sans font-bold text-2xl text-white">
+            {type === "athletes"
+              ? athleteMode === "registration"
+                ? "Inscripción de participantes"
+                : "Participantes AND"
+              : type === "drivers"
+                ? "Conductores"
+                : "Hoteleria"}
           </h2>
-          <p className="text-sm text-slate-500">Sube XLSX, revisa la vista previa y luego importa.</p>
+          <p className="text-sm text-white/50">Sube XLSX, revisa la vista previa y luego importa.</p>
         </div>
         <button
           className="btn btn-ghost"
@@ -1077,7 +1101,9 @@ export default function BulkImportPanel({
             downloadTemplate(
               headers,
               type === "athletes"
-                ? "template-and-vacio.xlsx"
+                ? athleteMode === "registration"
+                  ? "template-inscripcion-participantes.xlsx"
+                  : "template-and-vacio.xlsx"
                 : type === "drivers"
                   ? "template-conductores.xlsx"
                   : "template-hoteleria.xlsx"
@@ -1088,10 +1114,10 @@ export default function BulkImportPanel({
         </button>
       </div>
 
-      {type === "athletes" && (
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      {type === "athletes" && athleteMode === "and" && (
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
           <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
-            <label className="flex flex-col gap-2 text-sm text-slate-600">
+            <label className="flex flex-col gap-2 text-sm text-white/65">
               Evento para la carga
               <select className="input" value={selectedEventId} onChange={(event) => setSelectedEventId(event.target.value)}>
                 <option value="">Selecciona un evento</option>
@@ -1102,11 +1128,11 @@ export default function BulkImportPanel({
                 ))}
               </select>
             </label>
-            <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
-              Formato detectado: <span className="font-semibold text-slate-900">{parseMode === "and-itinerary" ? "Itinerario AND real" : "Plantilla normalizada"}</span>
+            <div className="rounded-xl border border-white/10 bg-white/4 px-4 py-3 text-sm text-white/65">
+              Formato detectado: <span className="font-semibold text-white">{parseMode === "and-itinerary" ? "Itinerario AND real" : "Plantilla normalizada"}</span>
             </div>
           </div>
-          <p className="mt-3 text-xs text-slate-500">
+          <p className="mt-3 text-xs text-white/50">
             La plantilla acepta <code>event_name</code>. Si el archivo no trae evento, se usara el evento seleccionado aqui.
             Para fechas usa <code>dd-mm-yy</code> y para fecha/hora <code>dd-mm-yy hh:mm</code> o <code>dd-mm-yy hh-mm</code>.
           </p>
@@ -1114,12 +1140,12 @@ export default function BulkImportPanel({
       )}
 
       <div className="flex flex-wrap items-end gap-3">
-        <div className="flex flex-col gap-2 text-sm text-slate-600">
+        <div className="flex flex-col gap-2 text-sm text-white/65">
           <span>Archivo XLSX</span>
           <div className="flex flex-wrap items-center gap-3">
             <input id={inputId} className="sr-only" type="file" accept=".xlsx" onChange={(event) => handleFile(event.target.files?.[0] ?? null)} />
             <label htmlFor={inputId} className="btn btn-ghost cursor-pointer">Seleccionar archivo</label>
-            <span className="text-xs text-slate-500">{fileName ? `Archivo: ${fileName}` : "Sin archivo seleccionado"}</span>
+            <span className="text-xs text-white/50">{fileName ? `Archivo: ${fileName}` : "Sin archivo seleccionado"}</span>
           </div>
         </div>
         <button className="btn btn-ghost" type="button" onClick={() => void validate()} disabled={!rows.length || loading}>Validar</button>
@@ -1127,20 +1153,20 @@ export default function BulkImportPanel({
       </div>
 
       {previewRows.length > 0 && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-4">
+        <div className="rounded-2xl border border-white/10 bg-white/4 p-4">
           <div className="mb-3">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Vista previa</p>
-            <p className="text-sm text-slate-600">Mostrando {previewRows.length} de {normalizedRows.length} fila(s).</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-white/40">Vista previa</p>
+            <p className="text-sm text-white/65">Mostrando {previewRows.length} de {normalizedRows.length} fila(s).</p>
           </div>
-          <div className="max-w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+          <div className="max-w-full overflow-hidden rounded-2xl border border-white/10 bg-white/5">
             <div className="max-w-full overflow-x-auto overscroll-x-contain">
-              <table className="w-max min-w-full text-left text-xs text-slate-700">
+              <table className="w-max min-w-full text-left text-xs text-white/65">
               <thead>
                 <tr>
                   {headers.map((header) => (
                     <th
                       key={header}
-                      className="whitespace-nowrap border-b border-slate-200 bg-slate-100 px-3 py-2 font-semibold uppercase tracking-[0.14em] text-slate-500"
+                      className="whitespace-nowrap border-b border-white/10 bg-white/8 px-3 py-2 font-semibold uppercase tracking-[0.14em] text-white/50"
                     >
                       {header}
                     </th>
@@ -1153,7 +1179,7 @@ export default function BulkImportPanel({
                     {headers.map((header) => (
                       <td
                         key={header}
-                        className="max-w-[160px] whitespace-nowrap border-b border-slate-100 px-3 py-2 align-top text-slate-700"
+                        className="max-w-[160px] whitespace-nowrap border-b border-white/8 px-3 py-2 align-top text-white/65"
                         title={row[header] || "-"}
                       >
                         <span className="block overflow-hidden text-ellipsis">
@@ -1167,14 +1193,14 @@ export default function BulkImportPanel({
               </table>
             </div>
           </div>
-          <p className="mt-3 text-xs text-slate-500">
+          <p className="mt-3 text-xs text-white/50">
             Desplaza horizontalmente para revisar todas las columnas antes de cargar.
           </p>
         </div>
       )}
 
       {errors.length > 0 && (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+        <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-400">
           <p className="font-semibold">Errores encontrados</p>
           <ul className="list-disc pl-5">
             {errors.slice(0, 20).map((error, index) => (
@@ -1188,7 +1214,7 @@ export default function BulkImportPanel({
       )}
 
       {result && (
-        <p className={`text-sm ${validationStatus === "error" ? "text-rose-600" : "text-emerald-600"}`}>
+        <p className={`text-sm ${validationStatus === "error" ? "text-rose-400" : "text-emerald-400"}`}>
           {result}
         </p>
       )}

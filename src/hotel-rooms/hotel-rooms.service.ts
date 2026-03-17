@@ -1,10 +1,8 @@
-import {
-  Inject,
+﻿import {
   Injectable,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { SupabaseClient } from '@supabase/supabase-js';
 import { DataSource } from 'typeorm';
 import { CreateHotelRoomDto } from './dto/create-hotel-room.dto';
 import { UpdateHotelRoomDto } from './dto/update-hotel-room.dto';
@@ -25,66 +23,7 @@ type HotelRoomRow = {
 
 @Injectable()
 export class HotelRoomsService {
-  constructor(
-    @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
-    private readonly dataSource: DataSource,
-  ) {}
-
-  private async syncBeds(room: HotelRoomRow, dto: CreateHotelRoomDto | UpdateHotelRoomDto) {
-    if (!room.base_bed_type || !room.beds_capacity || room.beds_capacity <= 0) {
-      return;
-    }
-
-    const { data: existingBeds, error: existingError } = await this.supabase
-      .schema('logistics')
-      .from('hotel_beds')
-      .select('id')
-      .eq('room_id', room.id);
-
-    if (existingError) {
-      throw new InternalServerErrorException(
-        existingError.message || 'Error fetching hotel beds',
-      );
-    }
-
-    const existingCount = (existingBeds ?? []).length;
-
-    if (dto.defaultBedType !== undefined && existingCount > 0) {
-      const { error: updateError } = await this.supabase
-        .schema('logistics')
-        .from('hotel_beds')
-        .update({ bed_type: room.base_bed_type })
-        .eq('room_id', room.id);
-
-      if (updateError) {
-        throw new InternalServerErrorException(
-          updateError.message || 'Error updating hotel bed type',
-        );
-      }
-    }
-
-    if (existingCount >= room.beds_capacity) {
-      return;
-    }
-
-    const toCreate = room.beds_capacity - existingCount;
-    const inserts = Array.from({ length: toCreate }).map(() => ({
-      room_id: room.id,
-      bed_type: room.base_bed_type,
-      status: 'AVAILABLE',
-    }));
-
-    const { error: insertError } = await this.supabase
-      .schema('logistics')
-      .from('hotel_beds')
-      .insert(inserts);
-
-    if (insertError) {
-      throw new InternalServerErrorException(
-        insertError.message || 'Error creating hotel beds',
-      );
-    }
-  }
+  constructor(private readonly dataSource: DataSource) {}
 
   private toRow(dto: CreateHotelRoomDto | UpdateHotelRoomDto) {
     const row: Record<string, unknown> = {};
@@ -115,21 +54,37 @@ export class HotelRoomsService {
   }
 
   async create(dto: CreateHotelRoomDto) {
-    const { data, error } = await this.supabase
-      .schema('logistics')
-      .from('hotel_rooms')
-      .insert(this.toRow(dto))
-      .select('*')
-      .single();
+    try {
+      const rows = (await this.dataSource.query(
+        `
+        insert into logistics.hotel_rooms (
+          hotel_id,
+          room_number,
+          room_type,
+          beds_capacity,
+          base_bed_type,
+          status,
+          notes
+        ) values ($1, $2, $3, $4, $5, $6, $7)
+        returning *
+      `,
+        [
+          dto.hotelId,
+          dto.roomNumber,
+          dto.roomType ?? null,
+          dto.bedsCapacity ?? 0,
+          dto.defaultBedType ?? null,
+          dto.status ?? 'AVAILABLE',
+          dto.notes ?? null,
+        ],
+      )) as HotelRoomRow[];
 
-    if (error || !data) {
+      return this.toEntity(rows[0]);
+    } catch (error) {
       throw new InternalServerErrorException(
-        error?.message || 'Error creating hotel room',
+        error instanceof Error ? error.message : 'Error creating hotel room',
       );
     }
-
-    await this.syncBeds(data as HotelRoomRow, dto);
-    return this.toEntity(data as HotelRoomRow);
   }
 
   async findAll() {
@@ -148,68 +103,74 @@ export class HotelRoomsService {
   }
 
   async findOne(id: string) {
-    const { data, error } = await this.supabase
-      .schema('logistics')
-      .from('hotel_rooms')
-      .select('*')
-      .eq('id', id)
-      .maybeSingle();
+    try {
+      const rows = (await this.dataSource.query(
+        `
+        select *
+        from logistics.hotel_rooms
+        where id = $1
+        limit 1
+      `,
+        [id],
+      )) as HotelRoomRow[];
 
-    if (error) {
+      if (!rows[0]) throw new NotFoundException(`Hotel room with id ${id} not found`);
+      return this.toEntity(rows[0]);
+    } catch (error) {
+      if (error instanceof NotFoundException) throw error;
       throw new InternalServerErrorException(
-        error.message || 'Error fetching hotel room',
+        error instanceof Error ? error.message : 'Error fetching hotel room',
       );
     }
-
-    if (!data) {
-      throw new NotFoundException(`Hotel room with id ${id} not found`);
-    }
-
-    return this.toEntity(data as HotelRoomRow);
   }
 
   async update(id: string, dto: UpdateHotelRoomDto) {
-    const { data, error } = await this.supabase
-      .schema('logistics')
-      .from('hotel_rooms')
-      .update(this.toRow(dto))
-      .eq('id', id)
-      .select('*')
-      .maybeSingle();
+    const row = this.toRow(dto);
+    const keys = Object.keys(row);
+    if (keys.length === 0) return this.findOne(id);
 
-    if (error) {
+    const setSql = keys.map((key, index) => `${key} = $${index + 2}`).join(', ');
+    const values = keys.map((key) => row[key]);
+
+    try {
+      const rows = (await this.dataSource.query(
+        `
+        update logistics.hotel_rooms
+        set ${setSql}, updated_at = now()
+        where id = $1
+        returning *
+      `,
+        [id, ...values],
+      )) as HotelRoomRow[];
+
+      if (!rows[0]) throw new NotFoundException(`Hotel room with id ${id} not found`);
+      return this.toEntity(rows[0]);
+    } catch (error) {
+      if (error instanceof NotFoundException) throw error;
       throw new InternalServerErrorException(
-        error.message || 'Error updating hotel room',
+        error instanceof Error ? error.message : 'Error updating hotel room',
       );
     }
-
-    if (!data) {
-      throw new NotFoundException(`Hotel room with id ${id} not found`);
-    }
-
-    await this.syncBeds(data as HotelRoomRow, dto);
-    return this.toEntity(data as HotelRoomRow);
   }
 
   async remove(id: string) {
-    const { data, error } = await this.supabase
-      .schema('logistics')
-      .from('hotel_rooms')
-      .delete()
-      .eq('id', id)
-      .select('*')
-      .maybeSingle();
+    try {
+      const rows = (await this.dataSource.query(
+        `
+        delete from logistics.hotel_rooms
+        where id = $1
+        returning *
+      `,
+        [id],
+      )) as HotelRoomRow[];
 
-    if (error) {
+      if (!rows[0]) throw new NotFoundException(`Hotel room with id ${id} not found`);
+      return this.toEntity(rows[0]);
+    } catch (error) {
+      if (error instanceof NotFoundException) throw error;
       throw new InternalServerErrorException(
-        error.message || 'Error deleting hotel room',
+        error instanceof Error ? error.message : 'Error deleting hotel room',
       );
     }
-
-    if (!data) {
-      throw new NotFoundException(`Hotel room with id ${id} not found`);
-    }
-
-    return this.toEntity(data as HotelRoomRow);
   }
 }

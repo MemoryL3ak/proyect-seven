@@ -8,7 +8,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { SupabaseClient } from '@supabase/supabase-js';
 import * as https from 'https';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { CreateAthleteDto } from './dto/create-athlete.dto';
 import { UpdateAthleteDto } from './dto/update-athlete.dto';
 import { Athlete } from './entities/athlete.entity';
@@ -80,6 +80,7 @@ export class AthletesService {
     @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
     @InjectRepository(Athlete)
     private readonly athleteRepository: Repository<Athlete>,
+    private readonly dataSource: DataSource,
   ) {}
 
   private toRow(dto: CreateAthleteDto | UpdateAthleteDto) {
@@ -214,7 +215,7 @@ export class AthletesService {
     };
   }
 
-  private async syncHotelAssignment(
+    private async syncHotelAssignment(
     athlete: Athlete,
     dto: CreateAthleteDto | UpdateAthleteDto,
   ) {
@@ -224,34 +225,15 @@ export class AthletesService {
         : athlete.hotelAccommodationId;
     const roomNumber =
       dto.roomNumber !== undefined ? dto.roomNumber : athlete.roomNumber;
-    const bedType = dto.bedType !== undefined ? dto.bedType : athlete.bedType;
-
-    const { data: existingAssignment } = await this.supabase
-      .schema('logistics')
-      .from('hotel_assignments')
-      .select('id, bed_id')
-      .eq('participant_id', athlete.id)
-      .maybeSingle();
 
     if (dto.hotelAccommodationId === null) {
-      if (existingAssignment?.bed_id) {
-        await this.supabase
-          .schema('logistics')
-          .from('hotel_beds')
-          .update({ status: 'AVAILABLE' })
-          .eq('id', existingAssignment.bed_id);
-      }
-      const { error } = await this.supabase
-        .schema('logistics')
-        .from('hotel_assignments')
-        .delete()
-        .eq('participant_id', athlete.id);
-
-      if (error) {
-        throw new InternalServerErrorException(
-          error.message || 'Error clearing hotel assignment',
-        );
-      }
+      await this.dataSource.query(
+        `
+        delete from logistics.hotel_assignments
+        where participant_id = $1
+      `,
+        [athlete.id],
+      );
       return;
     }
 
@@ -259,132 +241,63 @@ export class AthletesService {
 
     let roomId: string | null = null;
     if (roomNumber) {
-      const { data: room, error: roomError } = await this.supabase
-        .schema('logistics')
-        .from('hotel_rooms')
-        .select('id')
-        .eq('hotel_id', hotelAccommodationId)
-        .eq('room_number', roomNumber)
-        .order('created_at', { ascending: true })
-        .limit(1)
-        .maybeSingle();
-
-      if (roomError) {
-        throw new InternalServerErrorException(
-          roomError.message || 'Error fetching hotel room',
-        );
-      }
-      roomId = room?.id ?? null;
+      const rooms = (await this.dataSource.query(
+        `
+        select id
+        from logistics.hotel_rooms
+        where hotel_id = $1
+          and room_number = $2
+        order by created_at asc
+        limit 1
+      `,
+        [hotelAccommodationId, roomNumber],
+      )) as Array<{ id: string }>;
+      roomId = rooms[0]?.id ?? null;
     }
 
-    let bedId: string | null = null;
-    if (bedType && roomId) {
-      const { data: assignedBeds, error: assignedBedsError } =
-        await this.supabase
-          .schema('logistics')
-          .from('hotel_assignments')
-          .select('bed_id')
-          .eq('room_id', roomId)
-          .not('bed_id', 'is', null);
-
-      if (assignedBedsError) {
-        throw new InternalServerErrorException(
-          assignedBedsError.message || 'Error fetching assigned beds',
-        );
-      }
-
-      const occupied = new Set(
-        (assignedBeds ?? [])
-          .map((row) => row.bed_id as string | null)
-          .filter((id): id is string => typeof id === 'string'),
-      );
-
-      const { data: beds, error: bedsError } = await this.supabase
-        .schema('logistics')
-        .from('hotel_beds')
-        .select('id, status')
-        .eq('room_id', roomId)
-        .eq('bed_type', bedType)
-        .order('created_at', { ascending: true });
-
-      if (bedsError) {
-        throw new InternalServerErrorException(
-          bedsError.message || 'Error fetching hotel beds',
-        );
-      }
-
-      const availableBed = (beds ?? []).find((bed) => !occupied.has(bed.id));
-      bedId = availableBed?.id ?? null;
-
-      if (!bedId) {
-        throw new BadRequestException(
-          'No hay camas disponibles para esa habitación',
-        );
-      }
-    }
-
-    if (existingAssignment?.bed_id && existingAssignment.bed_id !== bedId) {
-      await this.supabase
-        .schema('logistics')
-        .from('hotel_beds')
-        .update({ status: 'AVAILABLE' })
-        .eq('id', existingAssignment.bed_id);
-    }
-
-    const { error } = await this.supabase
-      .schema('logistics')
-      .from('hotel_assignments')
-      .upsert(
-        {
-          participant_id: athlete.id,
-          hotel_id: hotelAccommodationId,
-          room_id: roomId,
-          bed_id: bedId,
-          status: 'ASSIGNED',
-        },
-        { onConflict: 'participant_id' },
-      );
-
-    if (error) {
-      throw new InternalServerErrorException(
-        error.message || 'Error saving hotel assignment',
-      );
-    }
-
-    if (bedId) {
-      const { error: bedStatusError } = await this.supabase
-        .schema('logistics')
-        .from('hotel_beds')
-        .update({ status: 'OCCUPIED' })
-        .eq('id', bedId);
-
-      if (bedStatusError) {
-        throw new InternalServerErrorException(
-          bedStatusError.message || 'Error updating bed status',
-        );
-      }
-    }
+    await this.dataSource.query(
+      `
+      insert into logistics.hotel_assignments (
+        participant_id,
+        hotel_id,
+        room_id,
+        status
+      ) values ($1, $2, $3, 'ASSIGNED')
+      on conflict (participant_id)
+      do update
+      set
+        hotel_id = excluded.hotel_id,
+        room_id = excluded.room_id,
+        status = excluded.status,
+        updated_at = now()
+    `,
+      [athlete.id, hotelAccommodationId, roomId],
+    );
   }
+    async create(createAthleteDto: CreateAthleteDto) {
+    const row = this.toRow(createAthleteDto);
+    const keys = Object.keys(row);
+    const columns = keys.join(', ');
+    const placeholders = keys.map((_, index) => `$${index + 1}`).join(', ');
+    const values = keys.map((key) => row[key]);
 
-  async create(createAthleteDto: CreateAthleteDto) {
-    const { data, error } = await this.supabase
-      .schema('core')
-      .from('athletes')
-      .insert(this.toRow(createAthleteDto))
-      .select('*')
-      .single();
+    const rows = (await this.dataSource.query(
+      `
+      insert into core.athletes (${columns})
+      values (${placeholders})
+      returning *
+    `,
+      values,
+    )) as AthleteRow[];
 
-    if (error || !data) {
-      throw new InternalServerErrorException(
-        error?.message || 'Error creating athlete',
-      );
+    if (!rows[0]) {
+      throw new InternalServerErrorException('Error creating athlete');
     }
 
-    const athlete = this.toEntity(data as AthleteRow);
+    const athlete = this.toEntity(rows[0]);
     await this.syncHotelAssignment(athlete, createAthleteDto);
     return athlete;
   }
-
   async findAll() {
     try {
       const athletes = await this.athleteRepository.find({
@@ -415,58 +328,54 @@ export class AthletesService {
     return this.withDerivedFields(data);
   }
 
-  async update(id: string, updateAthleteDto: UpdateAthleteDto) {
-    const { data, error } = await this.supabase
-      .schema('core')
-      .from('athletes')
-      .update(this.toRow(updateAthleteDto))
-      .eq('id', id)
-      .select('*')
-      .maybeSingle();
+    async update(id: string, updateAthleteDto: UpdateAthleteDto) {
+    const row = this.toRow(updateAthleteDto);
+    const keys = Object.keys(row);
+    if (keys.length === 0) return this.findOne(id);
 
-    if (error) {
-      throw new InternalServerErrorException(
-        error.message || 'Error updating athlete',
-      );
-    }
+    const setSql = keys.map((key, index) => `${key} = $${index + 2}`).join(', ');
+    const values = keys.map((key) => row[key]);
 
-    if (!data) {
+    const rows = (await this.dataSource.query(
+      `
+      update core.athletes
+      set ${setSql}, updated_at = now()
+      where id = $1
+      returning *
+    `,
+      [id, ...values],
+    )) as AthleteRow[];
+
+    if (!rows[0]) {
       throw new NotFoundException(`Athlete with id ${id} not found`);
     }
 
-    const athlete = this.toEntity(data as AthleteRow);
+    const athlete = this.toEntity(rows[0]);
     const shouldSyncHotel =
       updateAthleteDto.hotelAccommodationId !== undefined ||
       updateAthleteDto.roomNumber !== undefined ||
-      updateAthleteDto.bedType !== undefined;
+      updateAthleteDto.roomType !== undefined;
     if (shouldSyncHotel) {
       await this.syncHotelAssignment(athlete, updateAthleteDto);
     }
     return athlete;
   }
+    async remove(id: string) {
+    const rows = (await this.dataSource.query(
+      `
+      delete from core.athletes
+      where id = $1
+      returning *
+    `,
+      [id],
+    )) as AthleteRow[];
 
-  async remove(id: string) {
-    const { data, error } = await this.supabase
-      .schema('core')
-      .from('athletes')
-      .delete()
-      .eq('id', id)
-      .select('*')
-      .maybeSingle();
-
-    if (error) {
-      throw new InternalServerErrorException(
-        error.message || 'Error deleting athlete',
-      );
-    }
-
-    if (!data) {
+    if (!rows[0]) {
       throw new NotFoundException(`Athlete with id ${id} not found`);
     }
 
-    return this.toEntity(data as AthleteRow);
+    return this.toEntity(rows[0]);
   }
-
   async requestAccess(email: string) {
     const normalizedEmail = email.trim().toLowerCase();
     const { data, error } = await this.supabase
@@ -593,3 +502,6 @@ export class AthletesService {
     return { message: 'Código enviado al correo' };
   }
 }
+
+
+

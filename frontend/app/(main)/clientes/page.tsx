@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import { apiFetch } from "@/lib/api";
+import { filterValidatedAthletes } from "@/lib/athletes";
 
 type Athlete = {
   id: string;
@@ -47,7 +48,7 @@ export default function ClientesPage() {
           apiFetch<Discipline[]>("/disciplines")
         ]);
 
-        setAthletes(athleteData || []);
+        setAthletes(filterValidatedAthletes(athleteData || []));
         setEvents(
           (eventData || []).reduce<Record<string, EventItem>>((acc, item) => {
             acc[item.id] = item;
@@ -152,16 +153,16 @@ export default function ClientesPage() {
 
       <section className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
         <article className="surface rounded-2xl p-4">
-          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Total clientes</p>
-          <p className="mt-2 text-3xl font-display text-ink">{filtered.length}</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-white/40">Total clientes</p>
+          <p className="mt-2 text-3xl font-sans font-bold text-white">{filtered.length}</p>
         </article>
         {Object.entries(typeCounts)
           .sort((a, b) => b[1] - a[1])
           .slice(0, 4)
           .map(([type, count]) => (
             <article key={type} className="surface rounded-2xl p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{type}</p>
-              <p className="mt-2 text-3xl font-display text-ink">{count}</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-white/40">{type}</p>
+              <p className="mt-2 text-3xl font-sans font-bold text-white">{count}</p>
             </article>
           ))}
       </section>
@@ -195,10 +196,12 @@ export default function ClientesPage() {
             </tbody>
           </table>
           {!loading && filtered.length === 0 ? (
-            <p className="mt-4 text-sm text-slate-500">No hay participantes para este filtro.</p>
+            <p className="mt-4 text-sm text-white/50">No hay participantes para este filtro.</p>
           ) : null}
         </div>
       </section>
     </div>
   );
 }
+
+

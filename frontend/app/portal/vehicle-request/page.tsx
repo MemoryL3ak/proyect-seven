@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { filterValidatedAthletes } from "@/lib/athletes";
 
 type Athlete = {
   id: string;
@@ -80,33 +81,33 @@ const VEHICLE_TYPES = [
 const statusMeta: Record<string, { label: string; tone: string; panel: string }> = {
   REQUESTED: {
     label: "Solicitado",
-    tone: "border-amber-200 bg-amber-50 text-amber-800",
-    panel: "from-amber-50 to-white",
+    tone: "border-amber-400/30 bg-amber-400/10 text-amber-300",
+    panel: "from-amber-400/5 to-transparent",
   },
   SCHEDULED: {
     label: "Programado",
-    tone: "border-sky-200 bg-sky-50 text-sky-800",
-    panel: "from-sky-50 to-white",
+    tone: "border-sky-400/30 bg-sky-400/10 text-sky-300",
+    panel: "from-sky-400/5 to-transparent",
   },
   EN_ROUTE: {
     label: "En ruta a recoger",
-    tone: "border-indigo-200 bg-indigo-50 text-indigo-800",
-    panel: "from-indigo-50 to-white",
+    tone: "border-indigo-400/30 bg-indigo-400/10 text-indigo-300",
+    panel: "from-indigo-400/5 to-transparent",
   },
   PICKED_UP: {
     label: "En curso",
-    tone: "border-violet-200 bg-violet-50 text-violet-800",
-    panel: "from-violet-50 to-white",
+    tone: "border-violet-400/30 bg-violet-400/10 text-violet-300",
+    panel: "from-violet-400/5 to-transparent",
   },
   DROPPED_OFF: {
     label: "Finalizado en destino",
-    tone: "border-cyan-200 bg-cyan-50 text-cyan-800",
-    panel: "from-cyan-50 to-white",
+    tone: "border-cyan-400/30 bg-cyan-400/10 text-cyan-300",
+    panel: "from-cyan-400/5 to-transparent",
   },
   COMPLETED: {
     label: "Viaje completado",
-    tone: "border-emerald-200 bg-emerald-50 text-emerald-800",
-    panel: "from-emerald-50 to-white",
+    tone: "border-emerald-400/30 bg-emerald-400/10 text-emerald-300",
+    panel: "from-emerald-400/5 to-transparent",
   },
 };
 
@@ -287,7 +288,8 @@ export default function VehicleRequestPortalPage() {
     setMessage(null);
     try {
       const athleteList = await apiFetch<Athlete[]>("/athletes");
-      const match = (athleteList || []).find((item) => item.id?.slice(-6) === normalized);
+      const validatedAthletes = filterValidatedAthletes(athleteList || []);
+      const match = validatedAthletes.find((item) => item.id?.slice(-6) === normalized);
       if (!match) {
         setError("No encontramos un usuario con ese codigo.");
         setAthlete(null);
@@ -504,9 +506,9 @@ export default function VehicleRequestPortalPage() {
   }, [activeTab, athlete?.id]);
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#eef2ff_0%,#f8fafc_22%,#f8fafc_100%)] px-4 py-8 text-slate-900 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[linear-gradient(160deg,#0b1628_0%,#081020_50%,#0d1a2e_100%)] px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl space-y-6">
-        <section className="overflow-hidden rounded-[32px] border border-slate-200 bg-[linear-gradient(135deg,#08152d_0%,#0b4161_52%,#0f766e_100%)] px-6 py-7 text-white shadow-[0_24px_80px_rgba(15,23,42,0.16)] sm:px-8">
+        <section className="overflow-hidden rounded-[32px] border border-white/10 bg-[linear-gradient(135deg,#08152d_0%,#0b4161_52%,#0f766e_100%)] px-6 py-7 text-white shadow-[0_24px_80px_rgba(15,23,42,0.16)] sm:px-8">
           <div className="flex flex-wrap items-end justify-between gap-5">
             <div className="max-w-3xl">
               <p className="text-[11px] uppercase tracking-[0.36em] text-cyan-100/80">Movilidad operativa</p>
@@ -530,16 +532,16 @@ export default function VehicleRequestPortalPage() {
 
         {!athlete ? (
           <section className="grid gap-6 lg:grid-cols-[0.96fr_1.04fr]">
-            <article className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/70">
-              <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Acceso</p>
-              <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Ingresa con tu codigo</h2>
-              <p className="mt-3 max-w-md text-sm leading-6 text-slate-600">
+            <article className="rounded-[30px] border border-white/10 bg-white/5 p-6 shadow-xl shadow-black/40">
+              <p className="text-xs uppercase tracking-[0.24em] text-white/50">Acceso</p>
+              <h2 className="mt-2 text-3xl font-semibold tracking-tight text-white">Ingresa con tu codigo</h2>
+              <p className="mt-3 max-w-md text-sm leading-6 text-white/65">
                 Usa el mismo codigo corto del portal de usuario para abrir tu panel de movilidad y gestionar solicitudes de vehiculo.
               </p>
 
               <div className="mt-6 space-y-4">
                 <label className="block space-y-2">
-                  <span className="text-sm font-medium text-slate-700">Codigo de usuario</span>
+                  <span className="text-sm font-medium text-white/85">Codigo de usuario</span>
                   <input
                     className="input h-12 text-base"
                     value={userCode}
@@ -550,25 +552,25 @@ export default function VehicleRequestPortalPage() {
                 <button type="button" className="btn btn-primary h-12 w-full text-base" onClick={login} disabled={loading}>
                   {loading ? "Ingresando..." : "Abrir portal"}
                 </button>
-                {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+                {error ? <p className="text-sm text-rose-400">{error}</p> : null}
               </div>
             </article>
 
-            <article className="rounded-[30px] border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-6 shadow-xl shadow-slate-200/70">
+            <article className="rounded-[30px] border border-white/10 bg-white/5 p-6 shadow-xl shadow-black/40">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Recuperacion de acceso</p>
-                  <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Solicita tu codigo</h2>
+                  <p className="text-xs uppercase tracking-[0.24em] text-white/50">Recuperacion de acceso</p>
+                  <h2 className="mt-2 text-3xl font-semibold tracking-tight text-white">Solicita tu codigo</h2>
                 </div>
-                <span className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-700">Portal seguro</span>
+                <span className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-300">Portal seguro</span>
               </div>
-              <p className="mt-3 max-w-lg text-sm leading-6 text-slate-600">
+              <p className="mt-3 max-w-lg text-sm leading-6 text-white/65">
                 Si no tienes tu codigo, solicita el acceso con tu correo registrado y luego vuelve para revisar el estado de tus solicitudes.
               </p>
 
               <div className="mt-6 grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
                 <label className="block space-y-2">
-                  <span className="text-sm font-medium text-slate-700">Correo electronico</span>
+                  <span className="text-sm font-medium text-white/85">Correo electronico</span>
                   <input
                     className="input h-12 text-base"
                     value={requestEmail}
@@ -586,37 +588,37 @@ export default function VehicleRequestPortalPage() {
                   {requestAccessLoading ? "Enviando..." : "Solicitar codigo"}
                 </button>
               </div>
-              {accessRequestStatus ? <p className="mt-4 text-sm text-emerald-700">{accessRequestStatus}</p> : null}
-              {accessRequestError ? <p className="mt-4 text-sm text-rose-600">{accessRequestError}</p> : null}
+              {accessRequestStatus ? <p className="mt-4 text-sm text-emerald-400">{accessRequestStatus}</p> : null}
+              {accessRequestError ? <p className="mt-4 text-sm text-rose-400">{accessRequestError}</p> : null}
 
               <div className="mt-8 grid gap-3 sm:grid-cols-3">
-                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
-                  <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Paso 1</div>
-                  <p className="mt-2 text-sm font-medium text-slate-900">Solicita tu codigo</p>
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+                  <div className="text-xs uppercase tracking-[0.22em] text-white/50">Paso 1</div>
+                  <p className="mt-2 text-sm font-medium text-white">Solicita tu codigo</p>
                 </div>
-                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
-                  <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Paso 2</div>
-                  <p className="mt-2 text-sm font-medium text-slate-900">Ingresa al portal</p>
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+                  <div className="text-xs uppercase tracking-[0.22em] text-white/50">Paso 2</div>
+                  <p className="mt-2 text-sm font-medium text-white">Ingresa al portal</p>
                 </div>
-                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4">
-                  <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Paso 3</div>
-                  <p className="mt-2 text-sm font-medium text-slate-900">Sigue el estado del viaje</p>
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+                  <div className="text-xs uppercase tracking-[0.22em] text-white/50">Paso 3</div>
+                  <p className="mt-2 text-sm font-medium text-white">Sigue el estado del viaje</p>
                 </div>
               </div>
             </article>
           </section>
         ) : (
           <section className="space-y-6">
-            <article className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/70">
+            <article className="rounded-[30px] border border-white/10 bg-white/5 p-6 shadow-xl shadow-black/40">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Sesion activa</p>
-                  <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">{athlete.fullName || athlete.id}</h2>
-                  <div className="mt-3 flex flex-wrap gap-3 text-sm text-slate-600">
-                    <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700">
+                  <p className="text-xs uppercase tracking-[0.24em] text-white/50">Sesion activa</p>
+                  <h2 className="mt-2 text-3xl font-semibold tracking-tight text-white">{athlete.fullName || athlete.id}</h2>
+                  <div className="mt-3 flex flex-wrap gap-3 text-sm text-white/65">
+                    <span className="rounded-full bg-white/10 px-3 py-1 font-medium text-white/85">
                       Evento: {events[athlete.eventId || ""]?.name || athlete.eventId || "-"}
                     </span>
-                    <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700">
+                    <span className="rounded-full bg-white/10 px-3 py-1 font-medium text-white/85">
                       Delegacion: {delegations[athlete.delegationId || ""]?.countryCode || athlete.delegationId || "-"}
                     </span>
                   </div>
@@ -627,39 +629,39 @@ export default function VehicleRequestPortalPage() {
               </div>
 
               <div className="mt-6 grid gap-4 md:grid-cols-4">
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-                  <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Solicitadas</div>
-                  <div className="mt-2 text-3xl font-semibold text-slate-950">{requestStats.requested}</div>
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+                  <div className="text-xs uppercase tracking-[0.22em] text-white/50">Solicitadas</div>
+                  <div className="mt-2 text-3xl font-semibold text-white">{requestStats.requested}</div>
                 </div>
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-                  <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Programadas</div>
-                  <div className="mt-2 text-3xl font-semibold text-sky-700">{requestStats.scheduled}</div>
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+                  <div className="text-xs uppercase tracking-[0.22em] text-white/50">Programadas</div>
+                  <div className="mt-2 text-3xl font-semibold text-sky-400">{requestStats.scheduled}</div>
                 </div>
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-                  <div className="text-xs uppercase tracking-[0.22em] text-slate-500">En curso</div>
-                  <div className="mt-2 text-3xl font-semibold text-indigo-700">{requestStats.active}</div>
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+                  <div className="text-xs uppercase tracking-[0.22em] text-white/50">En curso</div>
+                  <div className="mt-2 text-3xl font-semibold text-indigo-400">{requestStats.active}</div>
                 </div>
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-                  <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Cerradas</div>
-                  <div className="mt-2 text-3xl font-semibold text-emerald-700">{requestStats.completed}</div>
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+                  <div className="text-xs uppercase tracking-[0.22em] text-white/50">Cerradas</div>
+                  <div className="mt-2 text-3xl font-semibold text-emerald-400">{requestStats.completed}</div>
                 </div>
               </div>
             </article>
 
-            <article className="rounded-[30px] border border-slate-200 bg-white p-3 shadow-xl shadow-slate-200/70 sm:p-4">
+            <article className="rounded-[30px] border border-white/10 bg-white/5 p-3 shadow-xl shadow-black/40 sm:p-4">
               <div className="grid gap-3 md:grid-cols-2">
                 <button
                   type="button"
                   className={`rounded-[22px] px-5 py-4 text-left transition ${
                     activeTab === "request"
                       ? "bg-[linear-gradient(135deg,#0b4161_0%,#0f766e_100%)] text-white shadow-lg"
-                      : "border border-slate-200 bg-slate-50 text-slate-700"
+                      : "border border-white/10 bg-white/5 text-white/70"
                   }`}
                   onClick={() => setActiveTab("request")}
                 >
-                  <div className={`text-xs uppercase tracking-[0.22em] ${activeTab === "request" ? "text-white/70" : "text-slate-500"}`}>Nueva solicitud</div>
+                  <div className={`text-xs uppercase tracking-[0.22em] ${activeTab === "request" ? "text-white/70" : "text-white/50"}`}>Nueva solicitud</div>
                   <div className="mt-2 text-xl font-semibold">Solicitar vehiculo</div>
-                  <p className={`mt-2 text-sm leading-6 ${activeTab === "request" ? "text-cyan-50/90" : "text-slate-500"}`}>
+                  <p className={`mt-2 text-sm leading-6 ${activeTab === "request" ? "text-cyan-50/90" : "text-white/50"}`}>
                     Registra un nuevo requerimiento operativo hacia una sede.
                   </p>
                 </button>
@@ -668,41 +670,41 @@ export default function VehicleRequestPortalPage() {
                   className={`rounded-[22px] px-5 py-4 text-left transition ${
                     activeTab === "status"
                       ? "bg-[linear-gradient(135deg,#0b4161_0%,#0f766e_100%)] text-white shadow-lg"
-                      : "border border-slate-200 bg-slate-50 text-slate-700"
+                      : "border border-white/10 bg-white/5 text-white/70"
                   }`}
                   onClick={() => setActiveTab("status")}
                 >
-                  <div className={`text-xs uppercase tracking-[0.22em] ${activeTab === "status" ? "text-white/70" : "text-slate-500"}`}>Estado de servicio</div>
+                  <div className={`text-xs uppercase tracking-[0.22em] ${activeTab === "status" ? "text-white/70" : "text-white/50"}`}>Estado de servicio</div>
                   <div className="mt-2 text-xl font-semibold">Solicitudes de vehiculo</div>
-                  <p className={`mt-2 text-sm leading-6 ${activeTab === "status" ? "text-cyan-50/90" : "text-slate-500"}`}>
+                  <p className={`mt-2 text-sm leading-6 ${activeTab === "status" ? "text-cyan-50/90" : "text-white/50"}`}>
                     Revisa asignacion, chofer, vehiculo, patente y programacion.
                   </p>
                 </button>
               </div>
             </article>
 
-            {message ? <p className="text-sm text-emerald-700">{message}</p> : null}
-            {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+            {message ? <p className="text-sm text-emerald-400">{message}</p> : null}
+            {error ? <p className="text-sm text-rose-400">{error}</p> : null}
 
             {activeTab === "request" ? (
               <section className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-                <article className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/70">
-                  <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Nueva solicitud</p>
-                  <h3 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
+                <article className="rounded-[30px] border border-white/10 bg-white/5 p-6 shadow-xl shadow-black/40">
+                  <p className="text-xs uppercase tracking-[0.24em] text-white/50">Nueva solicitud</p>
+                  <h3 className="mt-2 text-3xl font-semibold tracking-tight text-white">
                     {editingTripId ? "Modificar solicitud" : "Pedir vehiculo"}
                   </h3>
-                  <p className="mt-3 text-sm leading-6 text-slate-600">
+                  <p className="mt-3 text-sm leading-6 text-white/65">
                     Selecciona el tipo de vehiculo, la sede, la hora y la cantidad de personas. Puedes modificar la solicitud hasta 2 horas antes del viaje.
                   </p>
                   {editingTrip ? (
-                    <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    <div className="mt-4 rounded-2xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-300">
                       Editable hasta las <strong>{formatDateTime(getEditDeadline(editingTrip)?.toISOString() || null)}</strong>.
                     </div>
                   ) : null}
 
                   <form className="mt-6 space-y-4" onSubmit={submitRequest}>
                     <label className="block space-y-2">
-                      <span className="text-sm font-medium text-slate-700">Tipo de vehiculo</span>
+                      <span className="text-sm font-medium text-white/85">Tipo de vehiculo</span>
                       <select className="input h-12 text-base" value={selectedVehicleType} onChange={(e) => setSelectedVehicleType(e.target.value)}>
                         {VEHICLE_TYPES.map((item) => (
                           <option key={item.value} value={item.value}>
@@ -712,7 +714,7 @@ export default function VehicleRequestPortalPage() {
                       </select>
                     </label>
                     <label className="block space-y-2">
-                      <span className="text-sm font-medium text-slate-700">Direccion de origen</span>
+                      <span className="text-sm font-medium text-white/85">Direccion de origen</span>
                       <input
                         className="input h-12 text-base"
                         type="text"
@@ -720,12 +722,12 @@ export default function VehicleRequestPortalPage() {
                         onChange={(e) => setOriginAddress(e.target.value)}
                         placeholder="Ej: Avenida Grecia 1851, Ñuñoa"
                       />
-                      <span className="text-xs text-slate-500">
+                      <span className="text-xs text-white/50">
                         Ingresa la direccion exacta donde debe recogerte el conductor.
                       </span>
                     </label>
                     <label className="block space-y-2">
-                      <span className="text-sm font-medium text-slate-700">Sede destino</span>
+                      <span className="text-sm font-medium text-white/85">Sede destino</span>
                       <select className="input h-12 text-base" value={selectedVenueId} onChange={(e) => setSelectedVenueId(e.target.value)}>
                         <option value="">Selecciona una sede</option>
                         {venues.map((venue) => (
@@ -736,7 +738,7 @@ export default function VehicleRequestPortalPage() {
                       </select>
                     </label>
                     <label className="block space-y-2">
-                      <span className="text-sm font-medium text-slate-700">Hora del servicio</span>
+                      <span className="text-sm font-medium text-white/85">Hora del servicio</span>
                       <input
                         className="input h-12 w-full text-base"
                         type="datetime-local"
@@ -745,7 +747,7 @@ export default function VehicleRequestPortalPage() {
                       />
                     </label>
                     <label className="block max-w-[220px] space-y-2">
-                      <span className="text-sm font-medium text-slate-700">Cantidad de personas</span>
+                      <span className="text-sm font-medium text-white/85">Cantidad de personas</span>
                       <input
                         className="input h-12 text-base"
                         type="number"
@@ -756,7 +758,7 @@ export default function VehicleRequestPortalPage() {
                       />
                     </label>
                     <label className="block space-y-2">
-                      <span className="text-sm font-medium text-slate-700">Observaciones operativas</span>
+                      <span className="text-sm font-medium text-white/85">Observaciones operativas</span>
                       <textarea
                         className="input min-h-[132px] resize-none text-base"
                         value={notes}
@@ -781,36 +783,36 @@ export default function VehicleRequestPortalPage() {
                   </form>
                 </article>
 
-                <article className="rounded-[30px] border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-6 shadow-xl shadow-slate-200/70">
-                  <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Vista previa</p>
-                  <h3 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Resumen del servicio</h3>
+                <article className="rounded-[30px] border border-white/10 bg-white/5 p-6 shadow-xl shadow-black/40">
+                  <p className="text-xs uppercase tracking-[0.24em] text-white/50">Vista previa</p>
+                  <h3 className="mt-2 text-3xl font-semibold tracking-tight text-white">Resumen del servicio</h3>
                   <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                      <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Solicitante</div>
-                      <div className="mt-2 text-lg font-semibold text-slate-950">{athlete.fullName || athlete.id}</div>
+                    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                      <div className="text-xs uppercase tracking-[0.22em] text-white/50">Solicitante</div>
+                      <div className="mt-2 text-lg font-semibold text-white">{athlete.fullName || athlete.id}</div>
                     </div>
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                      <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Tipo requerido</div>
-                      <div className="mt-2 text-lg font-semibold text-slate-950">{vehicleTypeLabel(selectedVehicleType)}</div>
+                    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                      <div className="text-xs uppercase tracking-[0.22em] text-white/50">Tipo requerido</div>
+                      <div className="mt-2 text-lg font-semibold text-white">{vehicleTypeLabel(selectedVehicleType)}</div>
                     </div>
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                      <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Programacion</div>
-                      <div className="mt-2 text-lg font-semibold text-slate-950">
+                    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                      <div className="text-xs uppercase tracking-[0.22em] text-white/50">Programacion</div>
+                      <div className="mt-2 text-lg font-semibold text-white">
                         {requestedTime ? formatDateTime(new Date(requestedTime).toISOString()) : "Selecciona hora"}
                       </div>
                     </div>
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                      <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Personas</div>
-                      <div className="mt-2 text-lg font-semibold text-slate-950">{passengerCount || "1"}</div>
+                    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                      <div className="text-xs uppercase tracking-[0.22em] text-white/50">Personas</div>
+                      <div className="mt-2 text-lg font-semibold text-white">{passengerCount || "1"}</div>
                     </div>
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:col-span-2">
-                      <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Origen</div>
-                      <div className="mt-2 text-lg font-semibold text-slate-950">{originAddress || "Ingresa direccion de origen"}</div>
+                    <div className="rounded-2xl border border-white/10 bg-white/5 p-4 sm:col-span-2">
+                      <div className="text-xs uppercase tracking-[0.22em] text-white/50">Origen</div>
+                      <div className="mt-2 text-lg font-semibold text-white">{originAddress || "Ingresa direccion de origen"}</div>
                     </div>
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:col-span-2">
-                      <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Sede</div>
-                      <div className="mt-2 text-lg font-semibold text-slate-950">{selectedVenue?.name || "Selecciona una sede"}</div>
-                      <p className="mt-2 text-sm leading-6 text-slate-600">{venueSummary(selectedVenue)}</p>
+                    <div className="rounded-2xl border border-white/10 bg-white/5 p-4 sm:col-span-2">
+                      <div className="text-xs uppercase tracking-[0.22em] text-white/50">Sede</div>
+                      <div className="mt-2 text-lg font-semibold text-white">{selectedVenue?.name || "Selecciona una sede"}</div>
+                      <p className="mt-2 text-sm leading-6 text-white/65">{venueSummary(selectedVenue)}</p>
                     </div>
                   </div>
                 </article>
@@ -818,10 +820,10 @@ export default function VehicleRequestPortalPage() {
             ) : (
               <section className="space-y-5">
                 {trips.length === 0 ? (
-                  <article className="rounded-[30px] border border-dashed border-slate-300 bg-white p-12 text-center shadow-sm">
-                    <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Estado de servicio</p>
-                    <h3 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">Aun no tienes solicitudes</h3>
-                    <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-slate-600">
+                  <article className="rounded-[30px] border border-dashed border-white/20 bg-white/5 p-12 text-center shadow-sm">
+                    <p className="text-xs uppercase tracking-[0.24em] text-white/50">Estado de servicio</p>
+                    <h3 className="mt-3 text-3xl font-semibold tracking-tight text-white">Aun no tienes solicitudes</h3>
+                    <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-white/65">
                       Cuando registres una solicitud de vehiculo, aqui veras su estado, la asignacion del chofer y los datos del vehiculo programado.
                     </p>
                   </article>
@@ -839,15 +841,15 @@ export default function VehicleRequestPortalPage() {
                     return (
                       <article
                         key={trip.id}
-                        className={`rounded-[30px] border border-slate-200 bg-gradient-to-br ${status.panel} p-6 shadow-xl shadow-slate-200/50`}
+                        className={`rounded-[30px] border border-white/10 bg-gradient-to-br ${status.panel} bg-white/5 p-6 shadow-xl shadow-black/40`}
                       >
                         <div className="flex flex-wrap items-start justify-between gap-4">
                           <div>
-                            <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Solicitud {trip.id.slice(0, 8)}</p>
-                            <h3 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
+                            <p className="text-xs uppercase tracking-[0.24em] text-white/50">Solicitud {trip.id.slice(0, 8)}</p>
+                            <h3 className="mt-2 text-3xl font-semibold tracking-tight text-white">
                               {venue?.name || trip.destination || "Destino solicitado"}
                             </h3>
-                            <p className="mt-2 text-sm leading-6 text-slate-600">
+                            <p className="mt-2 text-sm leading-6 text-white/65">
                               {vehicleTypeLabel(trip.requestedVehicleType)} solicitado el {formatDateTime(trip.requestedAt || trip.createdAt)}
                             </p>
                           </div>
@@ -859,7 +861,7 @@ export default function VehicleRequestPortalPage() {
                               </button>
                             ) : null}
                             {editable ? (
-                              <button className="btn btn-ghost h-10 px-4 text-sm text-rose-700" type="button" onClick={() => cancelTrip(trip)}>
+                              <button className="btn btn-ghost h-10 px-4 text-sm text-rose-400" type="button" onClick={() => cancelTrip(trip)}>
                                 Cancelar solicitud
                               </button>
                             ) : null}
@@ -868,42 +870,42 @@ export default function VehicleRequestPortalPage() {
 
                         <div className="mt-6 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
                           <div className="grid gap-4 sm:grid-cols-2">
-                            <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                              <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Sede destino</div>
-                              <div className="mt-2 text-lg font-semibold text-slate-950">{venue?.name || "Pendiente"}</div>
-                              <p className="mt-2 text-sm leading-6 text-slate-600">{venueSummary(venue)}</p>
+                            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                              <div className="text-xs uppercase tracking-[0.22em] text-white/50">Sede destino</div>
+                              <div className="mt-2 text-lg font-semibold text-white">{venue?.name || "Pendiente"}</div>
+                              <p className="mt-2 text-sm leading-6 text-white/65">{venueSummary(venue)}</p>
                             </div>
-                            <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                              <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Programacion</div>
-                              <div className="mt-2 text-lg font-semibold text-slate-950">{formatDateTime(trip.scheduledAt)}</div>
-                              <p className="mt-2 text-sm leading-6 text-slate-600">Origen: {trip.origin || "Pendiente"}</p>
+                            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                              <div className="text-xs uppercase tracking-[0.22em] text-white/50">Programacion</div>
+                              <div className="mt-2 text-lg font-semibold text-white">{formatDateTime(trip.scheduledAt)}</div>
+                              <p className="mt-2 text-sm leading-6 text-white/65">Origen: {trip.origin || "Pendiente"}</p>
                             </div>
-                            <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                              <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Personas</div>
-                              <div className="mt-2 text-lg font-semibold text-slate-950">{trip.passengerCount || "-"}</div>
-                              <p className="mt-2 text-sm leading-6 text-slate-600">Capacidad requerida para el servicio</p>
+                            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                              <div className="text-xs uppercase tracking-[0.22em] text-white/50">Personas</div>
+                              <div className="mt-2 text-lg font-semibold text-white">{trip.passengerCount || "-"}</div>
+                              <p className="mt-2 text-sm leading-6 text-white/65">Capacidad requerida para el servicio</p>
                             </div>
-                            <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                              <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Chofer asignado</div>
-                              <div className="mt-2 text-lg font-semibold text-slate-950">{driver?.fullName || "Pendiente de asignacion"}</div>
-                              <p className="mt-2 text-sm leading-6 text-slate-600">{driver?.phone || "Telefono aun no disponible"}</p>
+                            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                              <div className="text-xs uppercase tracking-[0.22em] text-white/50">Chofer asignado</div>
+                              <div className="mt-2 text-lg font-semibold text-white">{driver?.fullName || "Pendiente de asignacion"}</div>
+                              <p className="mt-2 text-sm leading-6 text-white/65">{driver?.phone || "Telefono aun no disponible"}</p>
                             </div>
-                            <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                              <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Vehiculo</div>
-                              <div className="mt-2 text-lg font-semibold text-slate-950">{vehicle?.plate || "Pendiente"}</div>
-                              <p className="mt-2 text-sm leading-6 text-slate-600">
+                            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                              <div className="text-xs uppercase tracking-[0.22em] text-white/50">Vehiculo</div>
+                              <div className="mt-2 text-lg font-semibold text-white">{vehicle?.plate || "Pendiente"}</div>
+                              <p className="mt-2 text-sm leading-6 text-white/65">
                                 {[vehicle?.type, vehicle?.brand, vehicle?.model].filter(Boolean).join(" · ") || "Aun sin datos de unidad"}
                               </p>
                             </div>
                             {trip.status === "EN_ROUTE" || trip.status === "PICKED_UP" ? (
-                              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4 sm:col-span-2">
+                              <div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/10 p-4 sm:col-span-2">
                                 <div className="flex flex-wrap items-center justify-between gap-3">
                                   <div>
-                                    <div className="text-xs uppercase tracking-[0.22em] text-emerald-700">Seguimiento en vivo</div>
-                                    <div className="mt-2 text-lg font-semibold text-slate-950">
+                                    <div className="text-xs uppercase tracking-[0.22em] text-emerald-400">Seguimiento en vivo</div>
+                                    <div className="mt-2 text-lg font-semibold text-white">
                                       {trip.status === "PICKED_UP" ? "Tu viaje esta en curso" : "Tu conductor va en camino"}
                                     </div>
-                                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                                    <p className="mt-2 text-sm leading-6 text-white/65">
                                       {coords
                                         ? `Ultima actualizacion ${formatDateTime(livePosition?.timestamp)}`
                                         : "Esperando posicion en tiempo real del vehiculo."}
@@ -920,7 +922,7 @@ export default function VehicleRequestPortalPage() {
                                     </a>
                                   ) : null}
                                 </div>
-                                <div className="mt-4 overflow-hidden rounded-2xl border border-emerald-200 bg-white">
+                                <div className="mt-4 overflow-hidden rounded-2xl border border-emerald-400/30 bg-white/5">
                                   {coords && mapEmbedUrl ? (
                                     <iframe
                                       title={`live-map-${trip.id}`}
@@ -929,11 +931,11 @@ export default function VehicleRequestPortalPage() {
                                       loading="lazy"
                                     />
                                   ) : coords ? (
-                                    <div className="flex h-64 items-center justify-center bg-[radial-gradient(circle_at_top,#dcfce7,transparent_58%),linear-gradient(135deg,#f8fafc,#ecfeff)] px-6 text-center text-sm text-slate-600">
-                                      Falta configurar <code className="mx-1 rounded bg-slate-100 px-1.5 py-0.5">NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> para mostrar el mapa en tiempo real.
+                                    <div className="flex h-64 items-center justify-center bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.1),transparent_58%),linear-gradient(135deg,#0b1628,#0d1a2e)] px-6 text-center text-sm text-white/65">
+                                      Falta configurar <code className="mx-1 rounded bg-white/10 px-1.5 py-0.5">NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> para mostrar el mapa en tiempo real.
                                     </div>
                                   ) : (
-                                    <div className="flex h-64 items-center justify-center bg-[radial-gradient(circle_at_top,#dcfce7,transparent_58%),linear-gradient(135deg,#f8fafc,#ecfeff)] px-6 text-center text-sm text-slate-600">
+                                    <div className="flex h-64 items-center justify-center bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.1),transparent_58%),linear-gradient(135deg,#0b1628,#0d1a2e)] px-6 text-center text-sm text-white/65">
                                       El mapa aparecera apenas el conductor comparta su posicion desde el portal.
                                     </div>
                                   )}
@@ -942,26 +944,26 @@ export default function VehicleRequestPortalPage() {
                             ) : null}
                           </div>
 
-                          <div className="rounded-[26px] border border-slate-200 bg-white p-5">
-                            <div className="text-xs uppercase tracking-[0.22em] text-slate-500">Trazabilidad</div>
+                          <div className="rounded-[26px] border border-white/10 bg-white/5 p-5">
+                            <div className="text-xs uppercase tracking-[0.22em] text-white/50">Trazabilidad</div>
                             <div className="mt-4 space-y-3">
-                              <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                              <div className="rounded-2xl bg-white/5 px-4 py-3 text-sm text-white/80">
                                 <strong>Estado actual:</strong> {status.label}
                               </div>
-                              <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                              <div className="rounded-2xl bg-white/5 px-4 py-3 text-sm text-white/80">
                                 <strong>Creada:</strong> {formatDateTime(trip.requestedAt || trip.createdAt)}
                               </div>
-                              <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                              <div className="rounded-2xl bg-white/5 px-4 py-3 text-sm text-white/80">
                                 <strong>Destino final:</strong> {trip.destination || venue?.name || "Pendiente"}
                               </div>
-                              <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                              <div className="rounded-2xl bg-white/5 px-4 py-3 text-sm text-white/80">
                                 <strong>Observaciones:</strong> {trip.notes || "Sin observaciones registradas."}
                               </div>
-                              <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                              <div className="rounded-2xl bg-white/5 px-4 py-3 text-sm text-white/80">
                                 <strong>Editable hasta:</strong>{" "}
                                 {editDeadline ? formatDateTime(editDeadline.toISOString()) : "-"}
                               </div>
-                              <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                              <div className="rounded-2xl bg-white/5 px-4 py-3 text-sm text-white/80">
                                 <strong>Ventana de cambios:</strong>{" "}
                                 {editable
                                   ? "Activa para edicion y cancelacion."
@@ -976,8 +978,8 @@ export default function VehicleRequestPortalPage() {
                 )}
 
                 {trips.length > 0 ? (
-                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-[24px] border border-slate-200 bg-white px-5 py-4 shadow-sm">
-                    <p className="text-sm text-slate-600">
+                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-[24px] border border-white/10 bg-white/5 px-5 py-4 shadow-sm">
+                    <p className="text-sm text-white/65">
                       Mostrando <strong>{Math.min(visibleTripsCount, trips.length)}</strong> de{" "}
                       <strong>{trips.length}</strong> solicitud(es).
                     </p>
@@ -1011,3 +1013,5 @@ export default function VehicleRequestPortalPage() {
     </div>
   );
 }
+
+

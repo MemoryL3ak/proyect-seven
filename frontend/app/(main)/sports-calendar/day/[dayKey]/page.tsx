@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { filterValidatedAthletes } from "@/lib/athletes";
 
 type SportsEvent = {
   id: string;
@@ -107,11 +108,11 @@ function scheduleTypeLabel(value?: string | null) {
 }
 
 function scheduleTypeBadgeClass(value?: string | null) {
-  if (value === "ARRIVAL") return "bg-sky-100 text-sky-800";
-  if (value === "TRAINING") return "bg-amber-100 text-amber-800";
-  if (value === "COMPETITION") return "bg-emerald-100 text-emerald-800";
-  if (value === "DEPARTURE") return "bg-rose-100 text-rose-800";
-  return "bg-slate-100 text-slate-700";
+  if (value === "ARRIVAL") return "bg-blue-500/10 text-blue-400";
+  if (value === "TRAINING") return "bg-amber-500/10 text-amber-400";
+  if (value === "COMPETITION") return "bg-emerald-500/10 text-emerald-400";
+  if (value === "DEPARTURE") return "bg-rose-500/10 text-rose-400";
+  return "bg-white/8 text-white/90";
 }
 
 function tripStatusLabel(value?: string | null) {
@@ -124,10 +125,10 @@ function tripStatusLabel(value?: string | null) {
 }
 
 function tripStatusClass(value?: string | null) {
-  if (value === "COMPLETED") return "bg-emerald-100 text-emerald-800";
-  if (value === "EN_ROUTE" || value === "PICKED_UP") return "bg-amber-100 text-amber-800";
-  if (value === "DROPPED_OFF") return "bg-sky-100 text-sky-800";
-  return "bg-slate-100 text-slate-700";
+  if (value === "COMPLETED") return "bg-emerald-500/10 text-emerald-400";
+  if (value === "EN_ROUTE" || value === "PICKED_UP") return "bg-amber-500/10 text-amber-400";
+  if (value === "DROPPED_OFF") return "bg-blue-500/10 text-blue-400";
+  return "bg-white/8 text-white/90";
 }
 
 function tripTypeLabel(value?: string | null) {
@@ -223,7 +224,7 @@ export default function SportsCalendarDayDetailPage() {
         setEvents(Array.isArray(eventData) ? eventData : []);
         setDelegations(Array.isArray(delegationData) ? delegationData : []);
         setDisciplines(Array.isArray(disciplineData) ? disciplineData : []);
-        setAthletes(Array.isArray(athleteData) ? athleteData : []);
+        setAthletes(filterValidatedAthletes(Array.isArray(athleteData) ? athleteData : []));
         setFlights(Array.isArray(flightData) ? flightData : []);
         setTrips(Array.isArray(tripData) ? tripData : []);
         setDrivers(Array.isArray(driverData) ? driverData : []);
@@ -400,7 +401,7 @@ export default function SportsCalendarDayDetailPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[28px] border border-slate-200 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.34),_transparent_34%),linear-gradient(120deg,_#0f172a_0%,_#164e63_48%,_#0f766e_100%)] p-6 text-white shadow-xl">
+      <section className="rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.08),_transparent_34%),linear-gradient(120deg,_#0b1628_0%,_#164e63_48%,_#0f766e_100%)] p-6 text-white shadow-xl">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-3xl">
             <p className="text-xs uppercase tracking-[0.28em] text-white/70">Jornada operativa</p>
@@ -450,7 +451,7 @@ export default function SportsCalendarDayDetailPage() {
         {error ? <p className="text-sm text-rose-600">{error}</p> : null}
       </div>
 
-      {loading ? <div className="surface rounded-3xl p-8 text-sm text-slate-500">Cargando detalle del dia...</div> : null}
+      {loading ? <div className="surface rounded-3xl p-8 text-sm text-white/50">Cargando detalle del dia...</div> : null}
 
       {!loading ? (
         <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
@@ -458,23 +459,23 @@ export default function SportsCalendarDayDetailPage() {
             <div className="surface rounded-3xl p-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Llegadas por delegacion</p>
-                  <h2 className="mt-1 text-2xl font-semibold text-slate-900">Recepcion del dia</h2>
+                  <p className="text-xs uppercase tracking-[0.18em] text-white/50">Llegadas por delegacion</p>
+                  <h2 className="mt-1 text-2xl font-semibold text-white">Recepcion del dia</h2>
                 </div>
-                <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-800">{arrivals.length} personas</span>
+                <span className="rounded-full bg-blue-500/10 px-3 py-1 text-xs font-semibold text-blue-400">{arrivals.length} personas</span>
               </div>
               <div className="mt-4 space-y-3">
-                {arrivalsByDelegation.length === 0 ? <p className="text-sm text-slate-500">No hay llegadas programadas para esta fecha.</p> : null}
+                {arrivalsByDelegation.length === 0 ? <p className="text-sm text-white/50">No hay llegadas programadas para esta fecha.</p> : null}
                 {arrivalsByDelegation.map((group) => (
-                  <div key={group.delegationId} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div key={group.delegationId} className="rounded-2xl border border-white/10 bg-white/5 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="text-lg font-semibold text-slate-900">{group.delegationLabel}</p>
-                        <p className="text-sm text-slate-500">{group.people.length} personas arribando</p>
+                        <p className="text-lg font-semibold text-white">{group.delegationLabel}</p>
+                        <p className="text-sm text-white/50">{group.people.length} personas arribando</p>
                       </div>
                       <div className="flex flex-wrap gap-1">
                         {Array.from(new Set(group.people.map((item) => item.disciplineId ? (disciplineMap[item.disciplineId] || item.disciplineId) : "Sin disciplina"))).map((discipline) => (
-                          <span key={discipline} className="rounded-full bg-white px-2 py-1 text-[10px] font-semibold text-slate-700">{discipline}</span>
+                          <span key={discipline} className="rounded-full bg-white/10 px-2 py-1 text-[10px] font-semibold text-white/90">{discipline}</span>
                         ))}
                       </div>
                     </div>
@@ -482,12 +483,12 @@ export default function SportsCalendarDayDetailPage() {
                       {group.people.map((athlete) => {
                         const flight = athlete.arrivalFlightId ? flightMap[athlete.arrivalFlightId] : undefined;
                         return (
-                          <div key={athlete.id} className="rounded-xl border border-white bg-white p-3">
-                            <p className="text-sm font-semibold text-slate-900">{athlete.fullName || athlete.id}</p>
-                            <p className="mt-1 text-xs text-slate-500">
+                          <div key={athlete.id} className="rounded-xl border border-white/10 bg-white/5 p-3">
+                            <p className="text-sm font-semibold text-white">{athlete.fullName || athlete.id}</p>
+                            <p className="mt-1 text-xs text-white/50">
                               {athlete.disciplineId ? (disciplineMap[athlete.disciplineId] || athlete.disciplineId) : "Sin disciplina"}
                             </p>
-                            <div className="mt-2 space-y-1 text-xs text-slate-600">
+                            <div className="mt-2 space-y-1 text-xs text-white/65">
                               <p><strong>Arribo:</strong> {formatDateTime(athlete.arrivalTime)}</p>
                               <p><strong>Vuelo:</strong> {flight?.airline || athlete.airline || "-"} · {flight?.flightNumber || athlete.flightNumber || "-"}</p>
                               <p><strong>Origen:</strong> {flight?.origin || athlete.origin || "-"}</p>
@@ -503,16 +504,16 @@ export default function SportsCalendarDayDetailPage() {
             </div>
 
             <div className="surface rounded-3xl p-5">
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Agenda operativa</p>
-              <h2 className="mt-1 text-2xl font-semibold text-slate-900">Cronograma del dia</h2>
+              <p className="text-xs uppercase tracking-[0.18em] text-white/50">Agenda operativa</p>
+              <h2 className="mt-1 text-2xl font-semibold text-white">Cronograma del dia</h2>
               <div className="mt-4 space-y-3">
-                {dayEntries.length === 0 ? <p className="text-sm text-slate-500">No hay actividades registradas para este dia.</p> : null}
+                {dayEntries.length === 0 ? <p className="text-sm text-white/50">No hay actividades registradas para este dia.</p> : null}
                 {dayEntries.map((entry) => (
-                  <article key={entry.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <article key={entry.id} className="surface rounded-2xl p-4">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
-                        <p className="text-xs text-slate-500">{formatDateTime(entry.startAtUtc)} · {entry.sport} / {entry.league}</p>
-                        <h3 className="mt-1 text-lg font-semibold text-slate-900">{titleFromEvent(entry)}</h3>
+                        <p className="text-xs text-white/50">{formatDateTime(entry.startAtUtc)} · {entry.sport} / {entry.league}</p>
+                        <h3 className="mt-1 text-lg font-semibold text-white">{titleFromEvent(entry)}</h3>
                       </div>
                       <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold ${scheduleTypeBadgeClass(getMetaString(entry.metadata, "scheduleType"))}`}>
                         {scheduleTypeLabel(getMetaString(entry.metadata, "scheduleType"))}
@@ -520,32 +521,32 @@ export default function SportsCalendarDayDetailPage() {
                     </div>
                     <div className="mt-3 flex flex-wrap gap-2 text-xs">
                       {getMetaString(entry.metadata, "delegationId") ? (
-                        <span className="rounded-full bg-indigo-100 px-2 py-1 font-semibold text-indigo-800">
+                        <span className="rounded-full bg-indigo-500/10 px-2 py-1 font-semibold text-indigo-300">
                           {delegationLabel(delegations, getMetaString(entry.metadata, "delegationId"))}
                         </span>
                       ) : null}
-                      <span className="rounded-full bg-slate-100 px-2 py-1 font-semibold text-slate-700">
+                      <span className="rounded-full bg-white/10 px-2 py-1 font-semibold text-white/90">
                         {entry.venue || "Sede por confirmar"}
                       </span>
-                      <span className="rounded-full bg-slate-100 px-2 py-1 font-semibold text-slate-700">
+                      <span className="rounded-full bg-white/10 px-2 py-1 font-semibold text-white/90">
                         {entry.status || "SCHEDULED"}
                       </span>
                     </div>
                     {entry.source === "and-derived" ? (
-                      <div className="mt-3 rounded-xl border border-sky-100 bg-sky-50 p-3">
-                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-sky-700">Resumen AND</p>
+                      <div className="mt-3 rounded-xl border border-blue-500/20 bg-blue-500/10 p-3">
+                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-blue-400">Resumen AND</p>
                         <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                          <span className="rounded-full bg-white px-2 py-1 font-semibold text-slate-700">
+                          <span className="rounded-full bg-white/10 px-2 py-1 font-semibold text-white/90">
                             {getMetaString(entry.metadata, "peopleCount") || "0"} personas
                           </span>
-                          <span className="rounded-full bg-white px-2 py-1 font-semibold text-slate-700">
+                          <span className="rounded-full bg-white/10 px-2 py-1 font-semibold text-white/90">
                             {getMetaString(entry.metadata, "disciplineCount") || "0"} disciplinas
                           </span>
                         </div>
                         {getMetaStringArray(entry.metadata, "disciplineNames").length ? (
                           <div className="mt-2 flex flex-wrap gap-1">
                             {getMetaStringArray(entry.metadata, "disciplineNames").map((discipline) => (
-                              <span key={discipline} className="rounded-full bg-white px-2 py-1 text-[10px] font-semibold text-slate-700">
+                              <span key={discipline} className="rounded-full bg-white/10 px-2 py-1 text-[10px] font-semibold text-white/90">
                                 {discipline}
                               </span>
                             ))}
@@ -561,22 +562,22 @@ export default function SportsCalendarDayDetailPage() {
 
           <div className="space-y-4">
             <div className="surface rounded-3xl p-5">
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Operacion terrestre</p>
-              <h2 className="mt-1 text-2xl font-semibold text-slate-900">Transportes asignados</h2>
+              <p className="text-xs uppercase tracking-[0.18em] text-white/50">Operacion terrestre</p>
+              <h2 className="mt-1 text-2xl font-semibold text-white">Transportes asignados</h2>
               <div className="mt-4 space-y-3">
-                {transportAssignments.length === 0 ? <p className="text-sm text-slate-500">No hay transportes asociados a las delegaciones del dia.</p> : null}
+                {transportAssignments.length === 0 ? <p className="text-sm text-white/50">No hay transportes asociados a las delegaciones del dia.</p> : null}
                 {transportAssignments.map((trip) => (
-                  <div key={trip.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div key={trip.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="text-lg font-semibold text-slate-900">{tripTypeLabel(trip.tripType)}</p>
-                        <p className="text-sm text-slate-500">{trip.origin || "Origen por confirmar"} {" -> "} {trip.destination || "Destino por confirmar"}</p>
+                        <p className="text-lg font-semibold text-white">{tripTypeLabel(trip.tripType)}</p>
+                        <p className="text-sm text-white/50">{trip.origin || "Origen por confirmar"} {" -> "} {trip.destination || "Destino por confirmar"}</p>
                       </div>
                       <span className={`rounded-full px-3 py-1 text-[11px] font-semibold ${tripStatusClass(trip.status)}`}>
                         {tripStatusLabel(trip.status)}
                       </span>
                     </div>
-                    <div className="mt-3 grid gap-2 text-sm text-slate-700 sm:grid-cols-2">
+                    <div className="mt-3 grid gap-2 text-sm text-white/90 sm:grid-cols-2">
                       <p><strong>Hora:</strong> {trip.timeLabel}</p>
                       <p><strong>Chofer:</strong> {trip.driverName}</p>
                       <p><strong>Vehiculo:</strong> {trip.vehicleLabel}</p>
@@ -584,17 +585,17 @@ export default function SportsCalendarDayDetailPage() {
                     </div>
                     <div className="mt-3 flex flex-wrap gap-1">
                       {trip.linkedDelegations.map((item) => (
-                        <span key={`${trip.id}-${item}`} className="rounded-full bg-indigo-100 px-2 py-1 text-[10px] font-semibold text-indigo-800">
+                        <span key={`${trip.id}-${item}`} className="rounded-full bg-indigo-500/10 px-2 py-1 text-[10px] font-semibold text-indigo-300">
                           {delegationLabel(delegations, item)}
                         </span>
                       ))}
                     </div>
                     {trip.linkedAthletes.length ? (
-                      <div className="mt-3 border-t border-slate-200 pt-3">
-                        <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Pasajeros asociados</p>
+                      <div className="mt-3 border-t border-white/10 pt-3">
+                        <p className="text-[11px] uppercase tracking-[0.16em] text-white/50">Pasajeros asociados</p>
                         <div className="mt-2 flex flex-wrap gap-1.5">
                           {trip.linkedAthletes.map((athlete) => (
-                            <span key={`${trip.id}-${athlete.id}`} className="rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700">
+                            <span key={`${trip.id}-${athlete.id}`} className="rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-medium text-white/90">
                               {athlete.fullName || athlete.id}
                             </span>
                           ))}
@@ -607,25 +608,25 @@ export default function SportsCalendarDayDetailPage() {
             </div>
 
             <div className="surface rounded-3xl p-5">
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Operación aérea</p>
-              <h2 className="mt-1 text-2xl font-semibold text-slate-900">Vuelos del dia</h2>
+              <p className="text-xs uppercase tracking-[0.18em] text-white/50">Operación aérea</p>
+              <h2 className="mt-1 text-2xl font-semibold text-white">Vuelos del dia</h2>
               <div className="mt-4 space-y-3">
-                {flightsOfDay.length === 0 ? <p className="text-sm text-slate-500">No hay vuelos asociados a llegadas en esta fecha.</p> : null}
+                {flightsOfDay.length === 0 ? <p className="text-sm text-white/50">No hay vuelos asociados a llegadas en esta fecha.</p> : null}
                 {flightsOfDay.map((flight) => (
-                  <div key={flight.key} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div key={flight.key} className="rounded-2xl border border-white/10 bg-white/5 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="text-lg font-semibold text-slate-900">{flight.flightLabel}</p>
-                        <p className="text-sm text-slate-500">{flight.airline} · {flight.origin}</p>
+                        <p className="text-lg font-semibold text-white">{flight.flightLabel}</p>
+                        <p className="text-sm text-white/50">{flight.airline} · {flight.origin}</p>
                       </div>
-                      <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700">{flight.people.length} personas</span>
+                      <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/90">{flight.people.length} personas</span>
                     </div>
-                    <div className="mt-2 text-xs text-slate-600">
+                    <div className="mt-2 text-xs text-white/65">
                       <p><strong>Terminal:</strong> {flight.terminal}</p>
                     </div>
                     <div className="mt-3 flex flex-wrap gap-1">
                       {Array.from(new Set(flight.people.map((person) => delegationLabel(delegations, person.delegationId)))).map((delegation) => (
-                        <span key={delegation} className="rounded-full bg-indigo-100 px-2 py-1 text-[10px] font-semibold text-indigo-800">
+                        <span key={delegation} className="rounded-full bg-indigo-500/10 px-2 py-1 text-[10px] font-semibold text-indigo-300">
                           {delegation}
                         </span>
                       ))}
@@ -636,20 +637,20 @@ export default function SportsCalendarDayDetailPage() {
             </div>
 
             <div className="surface rounded-3xl p-5">
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Retiros</p>
-              <h2 className="mt-1 text-2xl font-semibold text-slate-900">Salidas del dia</h2>
+              <p className="text-xs uppercase tracking-[0.18em] text-white/50">Retiros</p>
+              <h2 className="mt-1 text-2xl font-semibold text-white">Salidas del dia</h2>
               <div className="mt-4 space-y-2">
-                {departures.length === 0 ? <p className="text-sm text-slate-500">No hay retiros programados para esta fecha.</p> : null}
+                {departures.length === 0 ? <p className="text-sm text-white/50">No hay retiros programados para esta fecha.</p> : null}
                 {departures.map((athlete) => (
-                  <div key={athlete.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                  <div key={athlete.id} className="rounded-2xl border border-white/10 bg-white/5 p-3">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="font-semibold text-slate-900">{athlete.fullName || athlete.id}</p>
-                        <p className="text-sm text-slate-500">
+                        <p className="font-semibold text-white">{athlete.fullName || athlete.id}</p>
+                        <p className="text-sm text-white/50">
                           {delegationLabel(delegations, athlete.delegationId)} · {athlete.disciplineId ? (disciplineMap[athlete.disciplineId] || athlete.disciplineId) : "Sin disciplina"}
                         </p>
                       </div>
-                      <span className="rounded-full bg-rose-100 px-2 py-1 text-[10px] font-semibold text-rose-800">
+                      <span className="rounded-full bg-rose-500/10 px-2 py-1 text-[10px] font-semibold text-rose-400">
                         {formatDateTime(athlete.departureTime)}
                       </span>
                     </div>
@@ -663,3 +664,4 @@ export default function SportsCalendarDayDetailPage() {
     </div>
   );
 }
+

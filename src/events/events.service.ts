@@ -1,11 +1,9 @@
 import {
-  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { SupabaseClient } from '@supabase/supabase-js';
 import { DataSource, Repository } from 'typeorm';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
@@ -50,7 +48,6 @@ type EventExpectedCapacityInput = {
 @Injectable()
 export class EventsService {
   constructor(
-    @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
     @InjectRepository(Event)
     private readonly eventRepository: Repository<Event>,
     private readonly dataSource: DataSource,
@@ -159,33 +156,22 @@ export class EventsService {
   }
 
   private async setEventDisciplines(eventId: string, disciplineIds: string[]) {
-    const { error: deleteError } = await this.supabase
-      .schema('core')
-      .from('event_disciplines')
-      .delete()
-      .eq('event_id', eventId);
-
-    if (deleteError) {
-      throw new InternalServerErrorException(
-        deleteError.message || 'Error clearing event disciplines',
-      );
-    }
+    await this.dataSource.query(
+      `
+      delete from core.event_disciplines
+      where event_id = $1
+    `,
+      [eventId],
+    );
 
     if (disciplineIds.length === 0) return;
-
-    const payload = disciplineIds.map((disciplineId) => ({
-      event_id: eventId,
-      discipline_id: disciplineId,
-    }));
-
-    const { error: insertError } = await this.supabase
-      .schema('core')
-      .from('event_disciplines')
-      .insert(payload);
-
-    if (insertError) {
-      throw new InternalServerErrorException(
-        insertError.message || 'Error assigning event disciplines',
+    for (const disciplineId of disciplineIds) {
+      await this.dataSource.query(
+        `
+        insert into core.event_disciplines (event_id, discipline_id)
+        values ($1, $2)
+      `,
+        [eventId, disciplineId],
       );
     }
   }
@@ -194,17 +180,13 @@ export class EventsService {
     eventId: string,
     capacities: EventExpectedCapacityInput[],
   ) {
-    const { error: deleteError } = await this.supabase
-      .schema('core')
-      .from('event_expected_capacities')
-      .delete()
-      .eq('event_id', eventId);
-
-    if (deleteError) {
-      throw new InternalServerErrorException(
-        deleteError.message || 'Error clearing expected capacities',
-      );
-    }
+    await this.dataSource.query(
+      `
+      delete from core.event_expected_capacities
+      where event_id = $1
+    `,
+      [eventId],
+    );
 
     if (!capacities || capacities.length === 0) return;
 
@@ -233,17 +215,24 @@ export class EventsService {
     );
 
     if (dedupedPayload.length === 0) return;
-
-    const { error: insertError } = await this.supabase
-      .schema('core')
-      .from('event_expected_capacities')
-      .upsert(dedupedPayload, {
-        onConflict: 'event_id,discipline_id,delegation_code',
-      });
-
-    if (insertError) {
-      throw new InternalServerErrorException(
-        insertError.message || 'Error saving expected capacities',
+    for (const item of dedupedPayload) {
+      await this.dataSource.query(
+        `
+        insert into core.event_expected_capacities (
+          event_id,
+          discipline_id,
+          delegation_code,
+          expected_count
+        ) values ($1, $2, $3, $4)
+        on conflict (event_id, discipline_id, delegation_code)
+        do update set expected_count = excluded.expected_count
+      `,
+        [
+          item.event_id,
+          item.discipline_id,
+          item.delegation_code,
+          item.expected_count,
+        ],
       );
     }
   }
@@ -282,33 +271,39 @@ export class EventsService {
   }
 
   async create(createEventDto: CreateEventDto) {
-    const { data, error } = await this.supabase
-      .schema('core')
-      .from('events')
-      .insert(this.toRow(createEventDto))
-      .select('*')
-      .single();
+    const row = this.toRow(createEventDto);
+    const keys = Object.keys(row);
+    const columns = keys.join(', ');
+    const placeholders = keys.map((_, index) => `$${index + 1}`).join(', ');
+    const values = keys.map((key) => row[key]);
 
-    if (error || !data) {
-      throw new InternalServerErrorException(
-        error?.message || 'Error creating event',
-      );
+    const rows = (await this.dataSource.query(
+      `
+      insert into core.events (${columns})
+      values (${placeholders})
+      returning *
+    `,
+      values,
+    )) as EventRow[];
+
+    if (!rows[0]) {
+      throw new InternalServerErrorException('Error creating event');
     }
 
     if (createEventDto.disciplineIds) {
       await this.setEventDisciplines(
-        (data as EventRow).id,
+        rows[0].id,
         createEventDto.disciplineIds,
       );
     }
     if (createEventDto.expectedCapacities !== undefined) {
       await this.setEventExpectedCapacities(
-        (data as EventRow).id,
+        rows[0].id,
         createEventDto.expectedCapacities,
       );
     }
 
-    return this.findOne((data as EventRow).id);
+    return this.findOne(rows[0].id);
   }
 
   async findAll() {
@@ -347,22 +342,23 @@ export class EventsService {
   }
 
   async update(id: string, updateEventDto: UpdateEventDto) {
-    const { data, error } = await this.supabase
-      .schema('core')
-      .from('events')
-      .update(this.toRow(updateEventDto))
-      .eq('id', id)
-      .select('*')
-      .maybeSingle();
-
-    if (error) {
-      throw new InternalServerErrorException(
-        error.message || 'Error updating event',
-      );
-    }
-
-    if (!data) {
-      throw new NotFoundException(`Event with id ${id} not found`);
+    const row = this.toRow(updateEventDto);
+    const keys = Object.keys(row);
+    if (keys.length > 0) {
+      const setSql = keys.map((key, index) => `${key} = $${index + 2}`).join(', ');
+      const values = keys.map((key) => row[key]);
+      const rows = (await this.dataSource.query(
+        `
+        update core.events
+        set ${setSql}, updated_at = now()
+        where id = $1
+        returning id
+      `,
+        [id, ...values],
+      )) as Array<{ id: string }>;
+      if (!rows[0]) {
+        throw new NotFoundException(`Event with id ${id} not found`);
+      }
     }
 
     if (updateEventDto.disciplineIds) {
@@ -376,24 +372,19 @@ export class EventsService {
   }
 
   async remove(id: string) {
-    const { data, error } = await this.supabase
-      .schema('core')
-      .from('events')
-      .delete()
-      .eq('id', id)
-      .select('*')
-      .maybeSingle();
+    const rows = (await this.dataSource.query(
+      `
+      delete from core.events
+      where id = $1
+      returning *
+    `,
+      [id],
+    )) as EventRow[];
 
-    if (error) {
-      throw new InternalServerErrorException(
-        error.message || 'Error deleting event',
-      );
-    }
-
-    if (!data) {
+    if (!rows[0]) {
       throw new NotFoundException(`Event with id ${id} not found`);
     }
 
-    return this.toEntity(data as EventRow);
+    return this.toEntity(rows[0]);
   }
 }

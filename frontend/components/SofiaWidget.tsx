@@ -85,20 +85,27 @@ export default function SofiaWidget() {
     <>
       <button
         type="button"
-        className="fixed bottom-6 right-6 z-40 flex items-center gap-3 rounded-full bg-emerald-600 px-6 py-4 text-sm font-semibold text-white shadow-xl shadow-emerald-600/35 transition hover:-translate-y-0.5 hover:bg-emerald-700 hover:shadow-emerald-600/40"
+        className="fixed bottom-6 right-6 z-40 flex items-center gap-3 rounded-full px-6 py-4 text-sm font-semibold text-white shadow-xl transition hover:-translate-y-0.5"
+        style={{
+          background: "linear-gradient(135deg, #c9a84c 0%, #a8892e 100%)",
+          boxShadow: "0 8px 32px rgba(201,168,76,0.35)",
+        }}
         onClick={() => setOpen(true)}
       >
-        <span className="h-2 w-2 rounded-full bg-emerald-200" />
+        <span className="h-2 w-2 rounded-full bg-white/60" />
         <span className="text-base font-semibold tracking-[0em]">Sof IA</span>
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-end justify-end bg-slate-900/30 p-6 pointer-events-none">
-          <div className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl pointer-events-auto">
-            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+        <div className="fixed inset-0 z-50 flex items-end justify-end bg-black/50 p-6 pointer-events-none backdrop-blur-sm">
+          <div
+            className="w-full max-w-md overflow-hidden rounded-3xl pointer-events-auto shadow-[0_32px_80px_rgba(0,0,0,0.6)]"
+            style={{ background: "#0f1d35", border: "1px solid rgba(255,255,255,0.10)" }}
+          >
+            <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
               <div>
-                <p className="text-sm font-semibold tracking-[0em] text-slate-500">Sof IA</p>
-                <h4 className="font-display text-xl text-ink">{t("Asistente inteligente")}</h4>
+                <p className="text-sm font-semibold tracking-[0em] text-white/50">Sof IA</p>
+                <h4 className="font-sans font-bold text-xl text-white">{t("Asistente inteligente")}</h4>
               </div>
               <button
                 type="button"
@@ -111,7 +118,7 @@ export default function SofiaWidget() {
 
             <div className="max-h-[55vh] space-y-3 overflow-y-auto px-5 py-4">
               {messages.length === 0 && (
-                <div className="text-sm text-slate-500">
+                <div className="text-sm text-white/50">
                   {t("Haz una pregunta sobre viajes, participantes, delegaciones, hoteles o transporte.")}
                 </div>
               )}
@@ -121,14 +128,14 @@ export default function SofiaWidget() {
                   return (
                     <div
                       key={`${message.role}-${index}`}
-                      className="rounded-2xl border border-slate-100 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm"
+                      className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/85"
                     >
-                      <p className="text-sm font-semibold text-ink">{formatted.title}</p>
+                      <p className="text-sm font-semibold text-white">{formatted.title}</p>
                       {formatted.bullets.length > 0 && (
-                        <ul className="mt-2 space-y-1 text-sm text-slate-600">
+                        <ul className="mt-2 space-y-1 text-sm text-white/65">
                           {formatted.bullets.map((item, idx) => (
                             <li key={`${index}-${idx}`} className="flex gap-2">
-                              <span className="mt-2 h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                              <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-emerald-400" />
                               <span>{item}</span>
                             </li>
                           ))}
@@ -141,17 +148,18 @@ export default function SofiaWidget() {
                 return (
                   <div
                     key={`${message.role}-${index}`}
-                    className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-900"
+                    className="rounded-2xl px-4 py-3 text-sm text-white ml-6"
+                    style={{ background: "linear-gradient(135deg, rgba(201,168,76,0.20) 0%, rgba(11,22,40,0.80) 100%)", border: "1px solid rgba(201,168,76,0.25)" }}
                   >
                     {message.content}
                   </div>
                 );
               })}
-              {loading && <div className="text-sm text-slate-400">{t("Preparando respuesta...")}</div>}
-              {error && <div className="text-sm text-rose-600">{error}</div>}
+              {loading && <div className="text-sm text-white/40">{t("Preparando respuesta...")}</div>}
+              {error && <div className="text-sm text-rose-400">{error}</div>}
             </div>
 
-            <div className="border-t border-slate-100 px-5 py-4">
+            <div className="border-t border-white/10 px-5 py-4">
               <div className="flex flex-wrap gap-2">
                 <input
                   className="input flex-1"

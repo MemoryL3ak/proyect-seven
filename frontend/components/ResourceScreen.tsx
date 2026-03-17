@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import { apiFetch } from "@/lib/api";
+import { isAthletePersonalDataValidated } from "@/lib/athletes";
 import type { FieldDef, ResourceConfig } from "@/lib/resources";
 import { useI18n } from "@/lib/i18n";
 
@@ -213,17 +214,25 @@ function readEventAndConfig(configValue: unknown) {
 export default function ResourceScreen({
   config,
   externalEditingId,
-  refreshKey
+  refreshKey,
+  onDataChanged,
+  onEditRequested,
+  viewMode = "both",
+  athleteScope = "validated",
 }: {
   config?: ResourceConfig;
   externalEditingId?: string | null;
   refreshKey?: number;
+  onDataChanged?: () => void;
+  onEditRequested?: (id: string) => void;
+  viewMode?: "both" | "form" | "table";
+  athleteScope?: "all" | "validated";
 }) {
   const { t } = useI18n();
   if (!config) {
     return (
-      <section className="surface rounded-3xl p-6">
-        <p className="text-sm text-rose-600">
+      <section className="surface p-6">
+        <p className="text-sm text-rose-400">
           {t("No se pudo cargar la configuraci\u00f3n de este m\u00f3dulo.")}
         </p>
       </section>
@@ -268,17 +277,29 @@ export default function ResourceScreen({
   const isAccommodation = config.endpoint === "/accommodations";
   const isTrips = config.endpoint === "/trips";
   const isEventsEndpoint = config.endpoint === "/events";
+  const roomCapacityByType: Record<string, number> = {
+    SINGLE: 1,
+    DOUBLE: 2,
+    TRIPLE: 3,
+    SUITE: 2
+  };
 
   useEffect(() => {
     if (config.endpoint !== "/accommodations") return;
-    const roomKeys = ["roomSingle", "roomDouble", "roomTriple", "roomSuite"];
-    const totalRooms = roomKeys.reduce((sum, key) => {
+    const roomMap: Record<string, string> = {
+      roomSingle: "SINGLE",
+      roomDouble: "DOUBLE",
+      roomTriple: "TRIPLE",
+      roomSuite: "SUITE"
+    };
+    const totalCapacity = Object.entries(roomMap).reduce((sum, [key, type]) => {
       const raw = form[key];
       const count = typeof raw === "string" && raw !== "" ? Number(raw) : 0;
-      return Number.isNaN(count) ? sum : sum + count;
+      if (Number.isNaN(count) || count <= 0) return sum;
+      return sum + count * (roomCapacityByType[type] ?? 1);
     }, 0);
-    if (form.totalCapacity !== String(totalRooms)) {
-      setForm((prev) => ({ ...prev, totalCapacity: String(totalRooms) }));
+    if (form.totalCapacity !== String(totalCapacity)) {
+      setForm((prev) => ({ ...prev, totalCapacity: String(totalCapacity) }));
     }
   }, [
     config.endpoint,
@@ -552,6 +573,15 @@ export default function ResourceScreen({
           };
         });
         setItems(mapped);
+        return;
+      }
+      if (config.endpoint === "/athletes") {
+        const safe = Array.isArray(data) ? data : [];
+        setItems(
+          athleteScope === "all"
+            ? safe
+            : safe.filter((item) => isAthletePersonalDataValidated(item)),
+        );
         return;
       }
       setItems(Array.isArray(data) ? data : []);
@@ -1019,8 +1049,13 @@ export default function ResourceScreen({
       }
 
       if (config.endpoint === "/accommodations") {
-        const roomKeys = ["roomSingle", "roomDouble", "roomTriple", "roomSuite"];
-        const totalRooms = roomKeys.reduce((sum, key) => {
+        const roomMap: Record<string, string> = {
+          roomSingle: "SINGLE",
+          roomDouble: "DOUBLE",
+          roomTriple: "TRIPLE",
+          roomSuite: "SUITE"
+        };
+        const totalRooms = Object.keys(roomMap).reduce((sum, key) => {
           const raw = form[key];
           const count = typeof raw === "string" && raw !== "" ? Number(raw) : 0;
           return Number.isNaN(count) ? sum : sum + count;
@@ -1029,9 +1064,15 @@ export default function ResourceScreen({
           setError(t("Debes ingresar al menos una habitación."));
           return;
         }
+        const totalCapacity = Object.entries(roomMap).reduce((sum, [key, type]) => {
+          const raw = form[key];
+          const count = typeof raw === "string" && raw !== "" ? Number(raw) : 0;
+          if (Number.isNaN(count) || count <= 0) return sum;
+          return sum + count * (roomCapacityByType[type] ?? 1);
+        }, 0);
         setForm((prev) => ({
           ...prev,
-          totalCapacity: String(totalRooms)
+          totalCapacity: String(totalCapacity)
         }));
       }
 
@@ -1381,10 +1422,9 @@ export default function ResourceScreen({
           }
         });
 
-        const totalCapacity = Object.values(roomInventory).reduce(
-          (sum, count) => sum + count,
-          0
-        );
+        const totalCapacity = Object.entries(roomInventory).reduce((sum, [type, count]) => {
+          return sum + Number(count || 0) * (roomCapacityByType[type] ?? 1);
+        }, 0);
 
         finalPayload = {
           ...finalPayload,
@@ -1456,6 +1496,19 @@ export default function ResourceScreen({
         });
       }
 
+      if (config.endpoint === "/accommodations") {
+        const accommodationId = (editingId ?? result?.id) as string | undefined;
+        const roomInventory =
+          (finalPayload as { roomInventory?: Record<string, number> }).roomInventory ?? {};
+        if (accommodationId) {
+          await apiFetch<Record<string, any>>(`/accommodations/${accommodationId}/sync-rooms`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ roomInventory })
+          });
+        }
+      }
+
       if (config.endpoint === "/athletes" && payload.isDelegationLead) {
         const delegationId = payload.delegationId as string | undefined;
         const athleteId = result?.id;
@@ -1486,6 +1539,7 @@ export default function ResourceScreen({
         setEventPlannerExpectedValue("");
       }
       loadItems();
+      onDataChanged?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : t("Error al guardar"));
     }
@@ -1705,13 +1759,62 @@ export default function ResourceScreen({
       if (config.endpoint === "/delegations") {
         await apiFetch(`/athletes/${id}`, { method: "DELETE" });
         loadItems();
+        onDataChanged?.();
         return;
       }
       await apiFetch(`${config.endpoint}/${id}`, { method: "DELETE" });
       loadItems();
+      onDataChanged?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : t("Error al eliminar"));
     }
+  };
+
+  const missingAthleteValidationFields = (item: Record<string, any>) => {
+    const required = [
+      { key: "eventId", label: "Evento" },
+      { key: "fullName", label: "Nombre completo" },
+      { key: "countryCode", label: "País" },
+      { key: "dateOfBirth", label: "Fecha nacimiento" },
+      { key: "userType", label: "Tipo de cliente" },
+      { key: "disciplineId", label: "Disciplina" },
+      { key: "passportNumber", label: "Pasaporte" },
+    ];
+
+    return required.filter((field) => {
+      const value = item[field.key];
+      if (value === null || value === undefined) return true;
+      if (typeof value === "string" && value.trim() === "") return true;
+      return false;
+    });
+  };
+
+  const handleValidateAthlete = async (item: Record<string, any>) => {
+    const missing = missingAthleteValidationFields(item);
+    if (missing.length > 0) {
+      setError(`Pendiente (${missing.length}): ${missing.map((field) => field.label).join(", ")}`);
+      return;
+    }
+
+    const metadata =
+      item.metadata && typeof item.metadata === "object"
+        ? { ...item.metadata }
+        : {};
+
+    await apiFetch(`/athletes/${item.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        status: "PERSONAL_DATA_VALIDATED",
+        metadata: {
+          ...metadata,
+          personalDataValidated: true,
+        },
+      }),
+    });
+
+    await loadItems();
+    onDataChanged?.();
   };
 
   const getOptionsForField = (field: FieldDef): Option[] => {
@@ -2012,9 +2115,10 @@ export default function ResourceScreen({
     <div className="space-y-6">
       <PageHeader title={config.name} description={config.description} />
 
-      <section className="surface rounded-2xl p-6">
+      {viewMode !== "table" ? (
+      <section className="surface p-6">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-          <h4 className="font-display text-xl text-ink">
+          <h4 className="font-bold text-white text-xl">
             {editingId ? t("Editar registro") : t("Nuevo registro")}
           </h4>
           {editingId && (
@@ -2044,9 +2148,9 @@ export default function ResourceScreen({
                 !form.delegationId
               ) {
                 return (
-                  <div key={field.key} className="flex flex-col gap-2 text-sm text-slate-500">
+                  <div key={field.key} className="flex flex-col gap-2 text-sm">
                   {t("Participantes")}
-                    <div className="input bg-slate-50 text-slate-400">
+                    <div className="input opacity-50">
                       {t("Selecciona una delegación para cargar participantes.")}
                     </div>
                   </div>
@@ -2096,7 +2200,7 @@ export default function ResourceScreen({
               }
 
               return (
-                <label key={field.key} className="flex flex-col gap-2 text-sm text-slate-600">
+                <label key={field.key} className="flex flex-col gap-2 text-sm">
                   {t(field.label)}
                   {field.type === "json" ? (
                     <textarea
@@ -2241,8 +2345,8 @@ export default function ResourceScreen({
                             key={option.value}
                             className={`flex items-center gap-2 text-sm ${
                               isLead
-                                ? "rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-amber-900"
-                                : "text-slate-600"
+                                ? "rounded-lg px-2 py-1 badge badge-amber"
+                                : ""
                             }`}
                           >
                             <input
@@ -2303,7 +2407,7 @@ export default function ResourceScreen({
                     />
                   ) : (
                     <input
-                      className={`input ${field.readOnly ? "bg-slate-50 text-slate-500" : ""}`}
+                      className={`input ${field.readOnly ? "opacity-60" : ""}`}
                       type={
                         field.type === "datetime"
                           ? "datetime-local"
@@ -2377,7 +2481,7 @@ export default function ResourceScreen({
                     />
                   )}
                   {isAccommodation && field.key === "totalCapacity" && (
-                    <span className="text-xs text-slate-400">
+                    <span className="text-xs" style={{color:"rgba(255,255,255,0.4)"}}>
                       {t("Calculado automáticamente desde habitaciones")}
                     </span>
                   )}
@@ -2476,9 +2580,9 @@ export default function ResourceScreen({
 
               return (
                 <>
-                  <section className="md:col-span-2 rounded-2xl border border-slate-200 bg-white p-5">
+                  <section className="surface md:col-span-2 p-5">
                     <div className="mb-4">
-                      <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                      <p className="section-label">
                         {t("Información general")}
                       </p>
                     </div>
@@ -2486,9 +2590,9 @@ export default function ResourceScreen({
                       {generalFields.map((field) => renderField(field))}
                     </div>
                   </section>
-                  <section className="md:col-span-2 rounded-2xl border border-slate-200 bg-white p-5">
+                  <section className="surface md:col-span-2 p-5">
                     <div className="mb-4">
-                      <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                      <p className="section-label">
                         {t("Información personal")}
                       </p>
                     </div>
@@ -2496,9 +2600,9 @@ export default function ResourceScreen({
                       {personalFields.map((field) => renderField(field))}
                     </div>
                   </section>
-                  <section className="md:col-span-2 rounded-2xl border border-slate-200 bg-white p-5">
+                  <section className="surface md:col-span-2 p-5">
                     <div className="mb-4">
-                      <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                      <p className="section-label">
                         {t("Itinerario")}
                       </p>
                     </div>
@@ -2506,16 +2610,16 @@ export default function ResourceScreen({
                       {tripFields.map((field) => renderField(field))}
                     </div>
                     {tripType ? (
-                      <p className="mt-3 text-xs text-slate-500">
+                      <p className="mt-3 text-xs" style={{color:"rgba(255,255,255,0.55)"}}>
                         {tripType === "ARRIVAL"
                           ? t("Se muestran los campos operativos de llegada.")
                           : t("Se muestran los campos operativos de salida.")}
                       </p>
                     ) : null}
                   </section>
-                  <section className="md:col-span-2 rounded-2xl border border-slate-200 bg-white p-5">
+                  <section className="surface md:col-span-2 p-5">
                     <div className="mb-4">
-                      <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                      <p className="section-label">
                         {t("Equipaje")}
                       </p>
                     </div>
@@ -2523,9 +2627,9 @@ export default function ResourceScreen({
                       {luggageFields.map((field) => renderField(field))}
                     </div>
                   </section>
-                  <section className="md:col-span-2 rounded-2xl border border-slate-200 bg-white p-5">
+                  <section className="surface md:col-span-2 p-5">
                     <div className="mb-4">
-                      <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                      <p className="section-label">
                         {t("Movilidad y asistencia")}
                       </p>
                     </div>
@@ -2533,9 +2637,9 @@ export default function ResourceScreen({
                       {assistanceFields.map((field) => renderField(field))}
                     </div>
                   </section>
-                  <section className="md:col-span-2 rounded-2xl border border-slate-200 bg-white p-5">
+                  <section className="surface md:col-span-2 p-5">
                     <div className="mb-4">
-                      <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                      <p className="section-label">
                         {t("Hotelería")}
                       </p>
                     </div>
@@ -2610,9 +2714,9 @@ export default function ResourceScreen({
                   <div className="grid gap-4 md:grid-cols-2">
                     {otherFields.map((field) => renderField(field))}
                   </div>
-                  <section className="md:col-span-2 rounded-2xl border border-slate-200 bg-white p-5">
+                  <section className="surface md:col-span-2 p-5">
                     <div className="mb-4">
-                      <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                      <p className="section-label">
                         {t("Información personal")}
                       </p>
                     </div>
@@ -2620,9 +2724,9 @@ export default function ResourceScreen({
                       {personalFields.map((field) => renderField(field))}
                     </div>
                   </section>
-                  <section className="md:col-span-2 rounded-2xl border border-slate-200 bg-white p-5">
+                  <section className="surface md:col-span-2 p-5">
                     <div className="mb-4">
-                      <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                      <p className="section-label">
                         {t("Vuelo")}
                       </p>
                     </div>
@@ -2630,9 +2734,9 @@ export default function ResourceScreen({
                       {flightFields.map((field) => renderField(field))}
                     </div>
                   </section>
-                  <section className="md:col-span-2 rounded-2xl border border-slate-200 bg-white p-5">
+                  <section className="surface md:col-span-2 p-5">
                     <div className="mb-4">
-                      <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                      <p className="section-label">
                         {t("Hotelería")}
                       </p>
                     </div>
@@ -2681,9 +2785,9 @@ export default function ResourceScreen({
 
               return (
                 <>
-                  <section className="md:col-span-2 rounded-2xl border border-slate-200 bg-white p-5">
+                  <section className="surface md:col-span-2 p-5">
                     <div className="mb-4">
-                      <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                      <p className="section-label">
                         {t("Datos generales")}
                       </p>
                     </div>
@@ -2692,21 +2796,21 @@ export default function ResourceScreen({
                     </div>
                   </section>
 
-                  <section className="md:col-span-2 rounded-2xl border border-slate-200 bg-white p-5">
+                  <section className="surface md:col-span-2 p-5">
                     <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                       <div>
-                        <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                        <p className="section-label">
                           {t("Configuración deportiva")}
                         </p>
-                        <p className="mt-1 text-sm text-slate-500">
+                        <p className="mt-1 text-sm" style={{color:"rgba(255,255,255,0.55)"}}>
                           {t("Define disciplinas del evento y su capacidad esperada de registro AND.")}
                         </p>
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-600">
+                        <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs" style={{color:"rgba(255,255,255,0.65)"}}>
                           {selectedDisciplineIds.length} disciplinas
                         </span>
-                        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
+                        <span className="rounded-full border border-emerald-200/30 bg-emerald-900/30 px-3 py-1 text-xs font-medium text-emerald-400">
                           Total esperado {totalExpected}
                         </span>
                       </div>
@@ -2717,13 +2821,13 @@ export default function ResourceScreen({
                     </div>
 
                     <div className="mt-4 grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-                      <div className="rounded-xl border border-slate-200 bg-white p-4">
+                      <div className="rounded-xl border border-white/10 bg-white/5 p-4">
                         <div className="mb-3 flex items-center justify-between gap-2">
                           <div>
-                            <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
+                            <p className="text-xs uppercase tracking-[0.16em]" style={{color:"rgba(255,255,255,0.55)"}}>
                               {t("Disciplinas del evento")}
                             </p>
-                            <p className="text-sm text-slate-500">
+                            <p className="text-sm" style={{color:"rgba(255,255,255,0.55)"}}>
                               {t("Selecciona las disciplinas que participarán en este evento.")}
                             </p>
                           </div>
@@ -2731,20 +2835,20 @@ export default function ResourceScreen({
                         {renderKeys(["disciplineIds"])}
                       </div>
 
-                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                      <div className="rounded-xl border border-white/10 bg-white/5 p-4">
                         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                           <div>
-                            <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Planificación AND</p>
-                            <p className="text-sm font-semibold text-slate-900">Capacidad esperada por delegación y disciplina</p>
+                            <p className="text-xs uppercase tracking-[0.16em]" style={{color:"rgba(255,255,255,0.55)"}}>Planificación AND</p>
+                            <p className="text-sm font-semibold text-white">Capacidad esperada por delegación y disciplina</p>
                           </div>
-                          <div className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600">
+                          <div className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs" style={{color:"rgba(255,255,255,0.65)"}}>
                             Total esperado {totalExpected}
                           </div>
                         </div>
 
                         {selectedDisciplineIds.length === 0 ? (
-                          <div className="rounded-lg border border-dashed border-slate-300 bg-white p-4">
-                            <p className="text-xs text-slate-500">
+                          <div className="rounded-lg border border-dashed border-white/20 bg-white/5 p-4">
+                            <p className="text-xs" style={{color:"rgba(255,255,255,0.55)"}}>
                               {t("Selecciona disciplinas para definir la capacidad esperada AND.")}
                             </p>
                           </div>
@@ -2807,8 +2911,8 @@ export default function ResourceScreen({
                             </div>
 
                             {plannerDisciplineOption ? (
-                              <div className="rounded-xl border border-slate-200 bg-white p-3">
-                                <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
+                              <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                                <p className="text-xs uppercase tracking-[0.16em]" style={{color:"rgba(255,255,255,0.55)"}}>
                                   {t("Detalle disciplina")} · {String(plannerDisciplineOption.label || plannerDisciplineOption.value)}
                                 </p>
                                 <div className="mt-2 max-h-52 overflow-auto space-y-1.5">
@@ -2816,26 +2920,26 @@ export default function ResourceScreen({
                                     const value = plannerRow[country.value];
                                     if (value === undefined || value === "") return null;
                                     return (
-                                      <div key={`${plannerDisciplineOption.value}-${country.value}`} className="flex items-center justify-between rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm">
-                                        <span className="text-slate-700">{country.value} · {country.label}</span>
-                                        <span className="font-semibold text-slate-900">{value}</span>
+                                      <div key={`${plannerDisciplineOption.value}-${country.value}`} className="flex items-center justify-between rounded-lg border border-white/10 px-2.5 py-1.5 text-sm">
+                                        <span style={{color:"rgba(255,255,255,0.75)"}}>{country.value} · {country.label}</span>
+                                        <span className="font-semibold text-white">{value}</span>
                                       </div>
                                     );
                                   })}
                                   {Object.keys(plannerRow).length === 0 ? (
-                                    <p className="text-xs text-slate-500">{t("Sin capacidad asignada para esta disciplina.")}</p>
+                                    <p className="text-xs" style={{color:"rgba(255,255,255,0.55)"}}>{t("Sin capacidad asignada para esta disciplina.")}</p>
                                   ) : null}
                                 </div>
                               </div>
                             ) : null}
 
-                            <div className="rounded-xl border border-slate-200 bg-white p-3">
-                              <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{t("Resumen por disciplina")}</p>
+                            <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                              <p className="text-xs uppercase tracking-[0.16em]" style={{color:"rgba(255,255,255,0.55)"}}>{t("Resumen por disciplina")}</p>
                               <div className="mt-2 space-y-1.5">
                                 {selectedDisciplineOptions.map((option) => (
                                   <div key={`sum-${option.value}`} className="flex items-center justify-between text-sm">
-                                    <span className="text-slate-700">{String(option.label || option.value)}</span>
-                                    <span className="font-semibold text-slate-900">
+                                    <span style={{color:"rgba(255,255,255,0.75)"}}>{String(option.label || option.value)}</span>
+                                    <span className="font-semibold text-white">
                                       {expectedByDisciplineFromMatrix[option.value] ?? 0}
                                     </span>
                                   </div>
@@ -2864,7 +2968,7 @@ export default function ResourceScreen({
                 })}
 
                 <div className="md:col-span-2 pt-2">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                  <p className="section-label">
                     {t("Inventario de habitaciones")}
                   </p>
                 </div>
@@ -2887,29 +2991,31 @@ export default function ResourceScreen({
             </button>
           </div>
         </form>
-        {error && <p className="text-sm text-rose-600 mt-3">{error}</p>}
+        {error && <p className="text-sm text-rose-400 mt-3">{error}</p>}
       </section>
+      ) : null}
 
-      <section className="surface rounded-2xl p-6">
+      {viewMode !== "form" ? (
+      <section className="surface p-6">
         <div className="flex items-center justify-between mb-4">
-          <h4 className="font-display text-xl text-ink">{t("Registros")}</h4>
+          <h4 className="font-bold text-white text-xl">{t("Registros")}</h4>
           <button className="btn btn-ghost" onClick={loadItems} disabled={loading}>
             {loading ? t("Actualizando...") : t("Refrescar")}
           </button>
         </div>
         {items.length === 0 ? (
-          <div className="text-sm text-slate-500">{t("Sin registros aún.")}</div>
+          <div className="text-sm" style={{color:"rgba(255,255,255,0.55)"}}>{t("Sin registros aún.")}</div>
         ) : (
-          <div className="max-h-[70vh] overflow-auto rounded-2xl border border-slate-200">
+          <div className="max-h-[70vh] overflow-auto rounded-2xl border border-white/10">
             <table className="table">
               <thead>
                 <tr>
                   {columns.map((col) => (
-                    <th key={col.key} className="sticky top-0 z-10 bg-white">
+                    <th key={col.key} className="sticky top-0 z-10 bg-[#0b1628]">
                       {col.label}
                     </th>
                   ))}
-                  <th className="sticky top-0 z-10 bg-white">{t("Acciones")}</th>
+                  <th className="sticky top-0 z-10 bg-[#0b1628]">{t("Acciones")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -2919,9 +3025,24 @@ export default function ResourceScreen({
                       <td key={col.key}>{resolveDisplayValue(col.key, item)}</td>
                     ))}
                     <td className="flex gap-2">
-                      <button className="btn btn-ghost" onClick={() => handleEdit(item)}>
+                      <button
+                        className="btn btn-ghost"
+                        onClick={() => {
+                          handleEdit(item);
+                          if (item.id) onEditRequested?.(item.id);
+                        }}
+                      >
                         {t("Editar")}
                       </button>
+                      {config.endpoint === "/athletes" ? (
+                        <button
+                          className="btn btn-ghost"
+                          onClick={() => handleValidateAthlete(item)}
+                          disabled={isAthletePersonalDataValidated(item)}
+                        >
+                          {isAthletePersonalDataValidated(item) ? "Validado" : "Validar datos"}
+                        </button>
+                      ) : null}
                       {item.id && (
                         <button className="btn btn-ghost" onClick={() => handleDelete(item.id)}>
                           {t("Eliminar")}
@@ -2934,8 +3055,9 @@ export default function ResourceScreen({
             </table>
           </div>
         )}
-        {error && <p className="text-sm text-rose-600 mt-3">{error}</p>}
+        {error && <p className="text-sm text-rose-400 mt-3">{error}</p>}
       </section>
+      ) : null}
     </div>
   );
 }

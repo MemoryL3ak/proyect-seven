@@ -6,6 +6,7 @@ import Link from "next/link";
 import PageHeader from "@/components/PageHeader";
 import ResourceScreen from "@/components/ResourceScreen";
 import { apiFetch } from "@/lib/api";
+import { filterValidatedAthletes } from "@/lib/athletes";
 import { resources } from "@/lib/resources";
 import { useI18n } from "@/lib/i18n";
 
@@ -76,33 +77,38 @@ type StatusTone = {
 const STATUS_TONES: Record<string, StatusTone> = {
   REQUESTED: {
     label: "Solicitado",
-    chip: "bg-amber-100 text-amber-800 ring-1 ring-amber-200",
-    panel: "from-amber-50 via-white to-white border-amber-200"
+    chip: "bg-amber-500/15 text-amber-300 ring-1 ring-amber-500/25",
+    panel: "from-amber-500/8 border-amber-500/20"
   },
   SCHEDULED: {
     label: "Programado",
-    chip: "bg-sky-100 text-sky-800 ring-1 ring-sky-200",
-    panel: "from-sky-50 via-white to-white border-sky-200"
+    chip: "bg-blue-500/15 text-blue-300 ring-1 ring-blue-500/25",
+    panel: "from-blue-500/8 border-blue-500/20"
   },
   EN_ROUTE: {
     label: "En ruta a recoger",
-    chip: "bg-indigo-100 text-indigo-800 ring-1 ring-indigo-200",
-    panel: "from-indigo-50 via-white to-white border-indigo-200"
+    chip: "bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/25",
+    panel: "from-emerald-500/8 border-emerald-500/20"
   },
   PICKED_UP: {
     label: "En curso",
-    chip: "bg-violet-100 text-violet-800 ring-1 ring-violet-200",
-    panel: "from-violet-50 via-white to-white border-violet-200"
+    chip: "bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/25",
+    panel: "from-emerald-500/8 border-emerald-500/20"
   },
   DROPPED_OFF: {
     label: "Dejado en hotel",
-    chip: "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200",
-    panel: "from-emerald-50 via-white to-white border-emerald-200"
+    chip: "bg-teal-500/15 text-teal-300 ring-1 ring-teal-500/25",
+    panel: "from-teal-500/8 border-teal-500/20"
   },
   COMPLETED: {
     label: "Completado",
-    chip: "bg-slate-200 text-slate-700 ring-1 ring-slate-300",
-    panel: "from-slate-50 via-white to-white border-slate-200"
+    chip: "bg-slate-500/15 text-slate-300 ring-1 ring-slate-500/25",
+    panel: "from-slate-500/8 border-slate-500/20"
+  },
+  CANCELLED: {
+    label: "Cancelado",
+    chip: "bg-rose-500/15 text-rose-300 ring-1 ring-rose-500/25",
+    panel: "from-rose-500/8 border-rose-500/20"
   }
 };
 
@@ -201,7 +207,7 @@ export default function TripsPage() {
         }, {})
       );
       setAthletes(
-        (athleteData || []).reduce<Record<string, AthleteItem>>((acc, item) => {
+        (filterValidatedAthletes(athleteData || [])).reduce<Record<string, AthleteItem>>((acc, item) => {
           acc[item.id] = item;
           return acc;
         }, {})
@@ -383,11 +389,11 @@ export default function TripsPage() {
   const statusTone = (status?: string | null) => STATUS_TONES[status || ""] || STATUS_TONES.SCHEDULED;
 
   const summaryCards = [
-    { label: "Solicitudes en cola", value: kpis.requested, accent: "text-amber-700" },
-    { label: "Programados", value: kpis.scheduled, accent: "text-sky-700" },
-    { label: "Viajes activos", value: kpis.active, accent: "text-indigo-700" },
-    { label: "Personas movilizadas", value: kpis.passengers, accent: "text-emerald-700" },
-    { label: "Portal de solicitudes", value: kpis.portalTrips, accent: "text-slate-700" }
+    { label: "Solicitudes en cola", value: kpis.requested, accent: "text-amber-400" },
+    { label: "Programados", value: kpis.scheduled, accent: "text-blue-400" },
+    { label: "Viajes activos", value: kpis.active, accent: "text-indigo-400" },
+    { label: "Personas movilizadas", value: kpis.passengers, accent: "text-emerald-400" },
+    { label: "Portal de solicitudes", value: kpis.portalTrips, accent: "text-white/50" }
   ];
 
   const tabs = [
@@ -417,44 +423,44 @@ export default function TripsPage() {
                 {tone.label}
               </span>
               {isFresh && (
-                <span className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
+                <span className="inline-flex items-center gap-2 rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-300 ring-1 ring-emerald-500/25">
                   <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                   Nueva entrada
                 </span>
               )}
             </div>
-            <h3 className="mt-3 font-display text-2xl text-ink">
+            <h3 className="mt-3 font-sans font-bold text-2xl text-white">
               {venue?.name || trip.destination || "Solicitud sin destino"}
             </h3>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-white/50">
               {resolveRequestedVehicleType(trip)} · {resolveRequester(trip)} · {resolveDelegation(trip)}
             </p>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-right shadow-sm">
-            <p className="text-[10px] uppercase tracking-[0.28em] text-slate-400">Programacion</p>
-            <p className="mt-1 text-lg font-semibold text-ink">{formatClock(trip.scheduledAt)}</p>
-            <p className="text-xs text-slate-500">{formatDateTime(trip.scheduledAt)}</p>
+          <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-right shadow-sm">
+            <p className="text-[10px] uppercase tracking-[0.28em] text-white/40">Programacion</p>
+            <p className="mt-1 text-lg font-semibold text-white">{formatClock(trip.scheduledAt)}</p>
+            <p className="text-xs text-white/50">{formatDateTime(trip.scheduledAt)}</p>
           </div>
         </div>
 
         <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-2xl border border-slate-200 bg-white/80 p-4">
-            <p className="text-[10px] uppercase tracking-[0.28em] text-slate-400">Origen</p>
-            <p className="mt-2 text-sm font-medium text-ink">{safeText(trip.origin)}</p>
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <p className="text-[10px] uppercase tracking-[0.28em] text-white/40">Origen</p>
+            <p className="mt-2 text-sm font-medium text-white">{safeText(trip.origin)}</p>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white/80 p-4">
-            <p className="text-[10px] uppercase tracking-[0.28em] text-slate-400">Sede destino</p>
-            <p className="mt-2 text-sm font-medium text-ink">{buildVenueAddress(venue)}</p>
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <p className="text-[10px] uppercase tracking-[0.28em] text-white/40">Sede destino</p>
+            <p className="mt-2 text-sm font-medium text-white">{buildVenueAddress(venue)}</p>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white/80 p-4">
-            <p className="text-[10px] uppercase tracking-[0.28em] text-slate-400">Despacho</p>
-            <p className="mt-2 text-sm font-medium text-ink">{resolveDriver(trip)}</p>
-            <p className="text-xs text-slate-500">{resolveVehicle(trip)}</p>
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <p className="text-[10px] uppercase tracking-[0.28em] text-white/40">Despacho</p>
+            <p className="mt-2 text-sm font-medium text-white">{resolveDriver(trip)}</p>
+            <p className="text-xs text-white/50">{resolveVehicle(trip)}</p>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white/80 p-4">
-            <p className="text-[10px] uppercase tracking-[0.28em] text-slate-400">Servicio</p>
-            <p className="mt-2 text-sm font-medium text-ink">{trip.passengerCount || 0} persona(s)</p>
-            <p className="text-xs text-slate-500">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <p className="text-[10px] uppercase tracking-[0.28em] text-white/40">Servicio</p>
+            <p className="mt-2 text-sm font-medium text-white">{trip.passengerCount || 0} persona(s)</p>
+            <p className="text-xs text-white/50">
               Solicitado {formatDateTime(trip.requestedAt)}
               {etaMinutes !== null
                 ? ` · ${
@@ -466,8 +472,8 @@ export default function TripsPage() {
         </div>
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm">
-          <p className="max-w-3xl text-slate-600">
-            <span className="font-semibold text-slate-800">Observaciones:</span>{" "}
+          <p className="max-w-3xl text-white/65">
+            <span className="font-semibold text-white/90">Observaciones:</span>{" "}
             {safeText(trip.notes, "Sin observaciones operativas.")}
           </p>
           <div className="flex items-center gap-2">
@@ -482,14 +488,14 @@ export default function TripsPage() {
                     window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
                   }
                 }}
-                className="inline-flex items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:border-emerald-300 hover:text-emerald-700"
+                className="inline-flex items-center rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white/70 hover:border-emerald-500/50 hover:text-emerald-400"
               >
                 Gestionar solicitud
               </button>
             )}
             <Link
               href="/portal/vehicle-request"
-              className="inline-flex items-center rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+              className="inline-flex items-center rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/15"
             >
               Abrir portal usuario
             </Link>
@@ -515,7 +521,7 @@ export default function TripsPage() {
         <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
           <div className="max-w-3xl">
             <p className="text-xs uppercase tracking-[0.34em] text-white/65">Control de viajes</p>
-            <h2 className="mt-3 font-display text-4xl leading-tight">Solicitudes, asignación y seguimiento</h2>
+            <h2 className="mt-3 font-sans font-bold text-4xl leading-tight">Solicitudes, asignación y seguimiento</h2>
             <p className="mt-3 max-w-2xl text-sm text-white/75">
               Vista operativa para revisar solicitudes, programar servicios y monitorear viajes activos.
             </p>
@@ -536,22 +542,22 @@ export default function TripsPage() {
       </section>
 
       {freshRequestIds.length > 0 && (
-        <section className="rounded-[28px] border border-emerald-200 bg-emerald-50 px-5 py-4 shadow-sm">
+        <section className="rounded-[28px] border border-emerald-500/20 bg-emerald-500/10 px-5 py-4 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <span className="inline-flex h-3 w-3 rounded-full bg-emerald-500 animate-pulse" />
               <div>
-                <p className="text-sm font-semibold text-emerald-900">
+                <p className="text-sm font-semibold text-emerald-300">
                   Entraron {freshRequestIds.length} solicitud(es) nuevas desde el portal.
                 </p>
-                <p className="text-sm text-emerald-700">
+                <p className="text-sm text-emerald-300/70">
                   La cola de despacho ya se actualizo y queda lista para asignacion.
                 </p>
               </div>
             </div>
             <button
               type="button"
-              className="inline-flex items-center rounded-full border border-emerald-300 px-4 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-100"
+              className="inline-flex items-center rounded-full border border-emerald-500/30 px-4 py-2 text-sm font-semibold text-emerald-300 hover:bg-emerald-500/15"
               onClick={() => setFreshRequestIds([])}
             >
               Marcar visto
@@ -562,17 +568,17 @@ export default function TripsPage() {
       <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {summaryCards.map((card) => (
-            <article key={card.label} className="surface rounded-[28px] border border-slate-200/80 p-5 shadow-sm">
-              <p className="text-[11px] uppercase tracking-[0.28em] text-slate-400">{card.label}</p>
-              <p className={`mt-3 text-4xl font-display ${card.accent}`}>{card.value}</p>
+            <article key={card.label} className="surface rounded-[28px] p-5 shadow-sm">
+              <p className="text-[11px] uppercase tracking-[0.28em] text-white/40">{card.label}</p>
+              <p className={`mt-3 text-4xl font-sans font-bold ${card.accent}`}>{card.value}</p>
             </article>
           ))}
         </div>
-        <article className="surface rounded-[28px] border border-slate-200/80 p-5 shadow-sm">
+        <article className="surface rounded-[28px] p-5 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-[11px] uppercase tracking-[0.28em] text-slate-400">Filtro operativo</p>
-              <h3 className="mt-2 font-display text-2xl text-ink">Vista de asignación</h3>
+              <p className="text-[11px] uppercase tracking-[0.28em] text-white/40">Filtro operativo</p>
+              <h3 className="mt-2 font-sans font-bold text-2xl text-white">Vista de asignación</h3>
             </div>
             <button
               type="button"
@@ -580,14 +586,14 @@ export default function TripsPage() {
                 setShowAdminEditor((value) => !value);
                 setActiveTab("editor");
               }}
-              className="inline-flex items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:border-emerald-300 hover:text-emerald-700"
+              className="inline-flex items-center rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white/70 hover:border-emerald-500/50 hover:text-emerald-400"
             >
               {showAdminEditor ? "Ocultar editor" : "Abrir editor manual"}
             </button>
           </div>
           <div className="mt-5 grid gap-3 md:grid-cols-2">
             <div>
-              <label className="mb-2 block text-[11px] uppercase tracking-[0.28em] text-slate-400">Evento</label>
+              <label className="mb-2 block text-[11px] uppercase tracking-[0.28em] text-white/40">Evento</label>
               <select
                 className="input h-12 w-full rounded-2xl"
                 value={selectedEventId}
@@ -602,7 +608,7 @@ export default function TripsPage() {
               </select>
             </div>
             <div>
-              <label className="mb-2 block text-[11px] uppercase tracking-[0.28em] text-slate-400">Buscar</label>
+              <label className="mb-2 block text-[11px] uppercase tracking-[0.28em] text-white/40">Buscar</label>
               <input
                 className="input h-12 w-full rounded-2xl"
                 placeholder="Solicitante, delegacion, sede, conductor o patente"
@@ -615,8 +621,8 @@ export default function TripsPage() {
         </article>
       </section>
 
-      <section className="surface rounded-[32px] border border-slate-200/80 p-6 shadow-sm">
-        <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-2">
+      <section className="surface rounded-[32px] p-6 shadow-sm">
+        <div className="rounded-[28px] border border-white/8 bg-white/5 p-2">
           <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
           {tabs.map((tab) => {
             const selected = activeTab === tab.key;
@@ -637,24 +643,24 @@ export default function TripsPage() {
                 className={`flex items-center justify-between gap-3 rounded-[20px] px-4 py-3 text-left transition ${
                   selected
                     ? "bg-emerald-600 text-white shadow-sm shadow-emerald-900/15"
-                    : "border border-transparent bg-white text-slate-700 hover:border-slate-200 hover:bg-slate-100"
+                    : "border border-transparent bg-white/5 text-white/70 hover:border-white/10 hover:bg-white/8"
                 }`}
               >
                 <div className="min-w-0">
                   <p
                     className={`text-[10px] uppercase tracking-[0.24em] ${
-                      selected ? "text-emerald-50/80" : "text-slate-400"
+                      selected ? "text-emerald-50/80" : "text-white/40"
                     }`}
                   >
                     Vista
                   </p>
-                  <p className={`mt-1 truncate text-sm font-semibold ${selected ? "text-white" : "text-slate-900"}`}>
+                  <p className={`mt-1 truncate text-sm font-semibold ${selected ? "text-white" : "text-white/90"}`}>
                     {tab.label}
                   </p>
                 </div>
                 <span
                   className={`inline-flex min-w-9 items-center justify-center rounded-full px-2.5 py-1 text-xs font-semibold ${
-                    selected ? "bg-white text-emerald-700" : "bg-slate-200 text-slate-700"
+                    selected ? "bg-white text-emerald-700" : "bg-white/15 text-white/70"
                   }`}
                 >
                   {tab.count}
@@ -670,15 +676,15 @@ export default function TripsPage() {
             <section className="space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.28em] text-slate-400">Ingresos desde portal</p>
-                  <h3 className="mt-2 font-display text-3xl text-ink">Solicitudes por asignar</h3>
+                  <p className="text-[11px] uppercase tracking-[0.28em] text-white/40">Ingresos desde portal</p>
+                  <h3 className="mt-2 font-sans font-bold text-3xl text-white">Solicitudes por asignar</h3>
                 </div>
-                <span className="inline-flex items-center rounded-full bg-amber-100 px-4 py-2 text-sm font-semibold text-amber-800">
+                <span className="inline-flex items-center rounded-full bg-amber-500/15 px-4 py-2 text-sm font-semibold text-amber-300">
                   {incomingRequests.length} en cola
                 </span>
               </div>
               {incomingRequests.length === 0 ? (
-                <div className="rounded-[28px] border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center text-slate-500">
+                <div className="rounded-[28px] border border-dashed border-white/15 bg-white/5 px-6 py-10 text-center text-white/50">
                   No hay solicitudes nuevas en espera. El panel seguira escuchando entradas del portal.
                 </div>
               ) : (
@@ -689,15 +695,15 @@ export default function TripsPage() {
             <section className="space-y-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.28em] text-slate-400">Programacion</p>
-                  <h3 className="mt-2 font-display text-3xl text-ink">Servicios asignados</h3>
+                  <p className="text-[11px] uppercase tracking-[0.28em] text-white/40">Programacion</p>
+                  <h3 className="mt-2 font-sans font-bold text-3xl text-white">Servicios asignados</h3>
                 </div>
-                <span className="inline-flex items-center rounded-full bg-sky-100 px-4 py-2 text-sm font-semibold text-sky-800">
+                <span className="inline-flex items-center rounded-full bg-blue-500/15 px-4 py-2 text-sm font-semibold text-blue-300">
                   {scheduledQueue.length} viajes
                 </span>
               </div>
               {scheduledQueue.length === 0 ? (
-                <div className="rounded-[28px] border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center text-slate-500">
+                <div className="rounded-[28px] border border-dashed border-white/15 bg-white/5 px-6 py-10 text-center text-white/50">
                   No hay viajes programados pendientes de salida.
                 </div>
               ) : (
@@ -711,18 +717,18 @@ export default function TripsPage() {
           <div className="mt-6 space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-[11px] uppercase tracking-[0.28em] text-slate-400">Viajes activos</p>
-                <h3 className="mt-2 font-display text-3xl text-ink">Seguimiento de servicio en curso</h3>
+                <p className="text-[11px] uppercase tracking-[0.28em] text-white/40">Viajes activos</p>
+                <h3 className="mt-2 font-sans font-bold text-3xl text-white">Seguimiento de servicio en curso</h3>
               </div>
               <Link
                 href="/operations/vehicle-positions"
-                className="inline-flex items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:border-sky-300 hover:text-sky-700"
+                className="inline-flex items-center rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white/70 hover:border-blue-500/50 hover:text-blue-400"
               >
                 Abrir tracking completo
               </Link>
             </div>
             {activeTrips.length === 0 ? (
-              <div className="rounded-[28px] border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center text-slate-500">
+              <div className="rounded-[28px] border border-dashed border-white/15 bg-white/5 px-6 py-10 text-center text-white/50">
                 No hay viajes activos en este momento.
               </div>
             ) : (
@@ -736,16 +742,16 @@ export default function TripsPage() {
             <section>
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.28em] text-slate-400">Bitacora reciente</p>
-                  <h3 className="mt-2 font-display text-3xl text-ink">Ultimos cierres</h3>
+                  <p className="text-[11px] uppercase tracking-[0.28em] text-white/40">Bitacora reciente</p>
+                  <h3 className="mt-2 font-sans font-bold text-3xl text-white">Ultimos cierres</h3>
                 </div>
               </div>
               {completedTrips.length === 0 ? (
-                <div className="mt-5 rounded-[28px] border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center text-slate-500">
+                <div className="mt-5 rounded-[28px] border border-dashed border-white/15 bg-white/5 px-6 py-10 text-center text-white/50">
                   Sin viajes completados recientes.
                 </div>
               ) : (
-                <div className="mt-5 overflow-hidden rounded-[28px] border border-slate-200">
+                <div className="mt-5 overflow-hidden rounded-[28px] border border-white/10">
                   <table className="table">
                     <thead>
                       <tr>
@@ -783,8 +789,8 @@ export default function TripsPage() {
             <section>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.28em] text-slate-400">Timeline operativa</p>
-                  <h3 className="mt-2 font-display text-3xl text-ink">Estado general de viajes</h3>
+                  <p className="text-[11px] uppercase tracking-[0.28em] text-white/40">Timeline operativa</p>
+                  <h3 className="mt-2 font-sans font-bold text-3xl text-white">Estado general de viajes</h3>
                 </div>
               </div>
               <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
@@ -792,26 +798,26 @@ export default function TripsPage() {
                   const tone = statusTone(status);
                   const items = filteredTrips.filter((trip) => trip.status === status);
                   return (
-                    <div key={status} className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-4">
+                    <div key={status} className="rounded-[28px] border border-white/8 bg-white/5 p-4">
                       <div className="flex items-center justify-between gap-2">
                         <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${tone.chip}`}>
                           {tone.label}
                         </span>
-                        <span className="text-sm font-semibold text-slate-700">{items.length}</span>
+                        <span className="text-sm font-semibold text-white/70">{items.length}</span>
                       </div>
                       <div className="mt-4 space-y-3">
                         {items.slice(0, 4).map((trip) => (
-                          <div key={trip.id} className="rounded-2xl border border-white bg-white p-3 shadow-sm">
-                            <p className="text-sm font-semibold text-ink">{resolveRequester(trip)}</p>
-                            <p className="mt-1 text-xs text-slate-500">{trip.origin || "Origen pendiente"}</p>
-                            <p className="text-xs text-slate-500">
+                          <div key={trip.id} className="rounded-2xl border border-white/10 bg-white/5 p-3 shadow-sm">
+                            <p className="text-sm font-semibold text-white">{resolveRequester(trip)}</p>
+                            <p className="mt-1 text-xs text-white/50">{trip.origin || "Origen pendiente"}</p>
+                            <p className="text-xs text-white/50">
                               {trip.destinationVenueId
                                 ? venues[trip.destinationVenueId]?.name
                                 : trip.destination || "Destino pendiente"}
                             </p>
                           </div>
                         ))}
-                        {items.length === 0 && <p className="text-sm text-slate-400">Sin viajes.</p>}
+                        {items.length === 0 && <p className="text-sm text-white/40">Sin viajes.</p>}
                       </div>
                     </div>
                   );
@@ -823,12 +829,12 @@ export default function TripsPage() {
       </section>
 
       {showAdminEditor && activeTab === "editor" && (
-        <section className="surface rounded-[32px] border border-slate-200/80 p-6 shadow-sm">
+        <section className="surface rounded-[32px] p-6 shadow-sm">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-[11px] uppercase tracking-[0.28em] text-slate-400">Gestion manual</p>
-              <h3 className="mt-2 font-display text-3xl text-ink">Gestión manual de viajes</h3>
-              <p className="mt-2 max-w-2xl text-sm text-slate-500">
+              <p className="text-[11px] uppercase tracking-[0.28em] text-white/40">Gestion manual</p>
+              <h3 className="mt-2 font-sans font-bold text-3xl text-white">Gestión manual de viajes</h3>
+              <p className="mt-2 max-w-2xl text-sm text-white/50">
                 Mantiene el CRUD completo para reasignar chofer, vehiculo, estados y datos del viaje
                 sin ensuciar la vista principal.
               </p>
@@ -836,7 +842,7 @@ export default function TripsPage() {
             <button
               type="button"
               onClick={() => { setShowAdminEditor(false); setSelectedTripId(null); }}
-              className="inline-flex items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-400"
+              className="inline-flex items-center rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white/70 hover:border-white/30"
             >
               Cerrar editor
             </button>
@@ -847,3 +853,5 @@ export default function TripsPage() {
     </div>
   );
 }
+
+

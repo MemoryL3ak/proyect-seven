@@ -3,10 +3,11 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 import { apiFetch } from "@/lib/api";
+import { filterValidatedAthletes } from "@/lib/athletes";
 import { buildCredentialHtml } from "@/lib/credential-template";
 
 type EventItem = { id: string; name?: string | null };
-type DisciplineItem = { id: string; name?: string | null };
+type DisciplineItem = { id: string; name?: string | null; category?: string | null; gender?: string | null };
 type ProviderItem = { id: string; name?: string | null };
 type DelegationItem = { id: string; countryCode?: string | null; eventId?: string | null };
 type AthleteItem = {
@@ -76,7 +77,24 @@ function rowStatusLabel(status?: Accreditation["status"]) {
 }
 
 function rowStatusClass(status?: Accreditation["status"]) {
-  return isAccredited(status) ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-700";
+  return isAccredited(status) ? "bg-emerald-500/10 text-emerald-400" : "bg-white/8 text-white/90";
+}
+
+function categoryLabel(value?: string | null) {
+  if (!value) return "-";
+  const normalized = value.trim().toUpperCase();
+  if (normalized === "CONVENTIONAL") return "Convencional";
+  if (normalized === "PARALYMPIC") return "Paralímpica";
+  return value;
+}
+
+function genderLabel(value?: string | null) {
+  if (!value) return "-";
+  const normalized = value.trim().toUpperCase();
+  if (normalized === "MALE" || normalized === "M") return "Masculino";
+  if (normalized === "FEMALE" || normalized === "F") return "Femenino";
+  if (normalized === "MIXED" || normalized === "X") return "Mixto";
+  return value;
 }
 
 function hasCredential(acc?: Accreditation) {
@@ -137,6 +155,14 @@ export default function AccreditationsPage() {
 
   const eventMap = useMemo(() => events.reduce<Record<string, EventItem>>((acc, item) => ({ ...acc, [item.id]: item }), {}), [events]);
   const disciplineMap = useMemo(() => disciplines.reduce<Record<string, string>>((acc, item) => ({ ...acc, [item.id]: item.name || item.id }), {}), [disciplines]);
+  const disciplineMetaMap = useMemo(
+    () =>
+      disciplines.reduce<Record<string, { category: string; gender: string }>>((acc, item) => {
+        acc[item.id] = { category: categoryLabel(item.category), gender: genderLabel(item.gender) };
+        return acc;
+      }, {}),
+    [disciplines],
+  );
   const providerMap = useMemo(() => providers.reduce<Record<string, ProviderItem>>((acc, item) => ({ ...acc, [item.id]: item }), {}), [providers]);
   const delegationMap = useMemo(() => delegations.reduce<Record<string, DelegationItem>>((acc, item) => ({ ...acc, [item.id]: item }), {}), [delegations]);
   const athleteMap = useMemo(() => athletes.reduce<Record<string, AthleteItem>>((acc, item) => ({ ...acc, [item.id]: item }), {}), [athletes]);
@@ -171,7 +197,7 @@ export default function AccreditationsPage() {
       setDisciplines(Array.isArray(disciplineData) ? disciplineData : []);
       setProviders(Array.isArray(providerData) ? providerData : []);
       setDelegations(Array.isArray(delegationData) ? delegationData : []);
-      setAthletes(Array.isArray(athleteData) ? athleteData : []);
+      setAthletes(filterValidatedAthletes(Array.isArray(athleteData) ? athleteData : []));
       setDrivers(Array.isArray(driverData) ? driverData : []);
       setAccreditations(Array.isArray(accreditationData) ? accreditationData : []);
       if (!selectedEventId && eventData?.length) setSelectedEventId(eventData[0].id);
@@ -197,44 +223,65 @@ export default function AccreditationsPage() {
     setDraftAccessTypes(normalizeAccessTypes(selectedAccreditation?.accessTypes ?? selectedDriver?.accessTypes));
   }, [newSubjectType, newAthleteId, newDriverId, selectedAccreditation, selectedDriver]);
 
-  const eventAthletes = useMemo(() => athletes.filter((item) => (selectedEventId ? item.eventId === selectedEventId : true)), [athletes, selectedEventId]);
+  const eventAthletes = useMemo(() => filterValidatedAthletes(athletes).filter((item) => (selectedEventId ? item.eventId === selectedEventId : true)), [athletes, selectedEventId]);
   const eventDrivers = useMemo(() => drivers.filter((item) => (selectedEventId ? item.eventId === selectedEventId : true)), [drivers, selectedEventId]);
   const eventDelegations = useMemo(() => delegations.filter((item) => (selectedEventId ? item.eventId === selectedEventId : true)), [delegations, selectedEventId]);
   const andKpiRows = useMemo(() => {
     const scopedAthletes = eventAthletes.filter((item) => (andKpiDelegationId ? item.delegationId === andKpiDelegationId : true));
-    const registeredByDiscipline = new Map<string, number>();
-    const accreditedByDiscipline = new Map<string, number>();
+    const rowsByKey = new Map<
+      string,
+      {
+        key: string;
+        delegationCode: string;
+        disciplineId: string;
+        disciplineName: string;
+        disciplineCategory: string;
+        disciplineGender: string;
+        registered: number;
+        accredited: number;
+      }
+    >();
 
     scopedAthletes.forEach((item) => {
       const disciplineKey = item.disciplineId || "SIN_DISCIPLINA";
-      registeredByDiscipline.set(disciplineKey, (registeredByDiscipline.get(disciplineKey) ?? 0) + 1);
-      const acc = accByAthlete[item.id];
-      if (isAccredited(acc?.status)) {
-        accreditedByDiscipline.set(disciplineKey, (accreditedByDiscipline.get(disciplineKey) ?? 0) + 1);
-      }
+      const delegationCode = item.delegationId
+        ? (delegationMap[item.delegationId]?.countryCode || item.delegationId)
+        : "SIN_DELEGACION";
+      const key = `${delegationCode}::${disciplineKey}`;
+      const existing = rowsByKey.get(key);
+      const nextRegistered = (existing?.registered ?? 0) + 1;
+      const nextAccredited = (existing?.accredited ?? 0) + (isAccredited(accByAthlete[item.id]?.status) ? 1 : 0);
+      rowsByKey.set(key, {
+        key,
+        delegationCode,
+        disciplineId: disciplineKey,
+        disciplineName: disciplineKey === "SIN_DISCIPLINA" ? "Sin disciplina" : (disciplineMap[disciplineKey] || disciplineKey),
+        disciplineCategory: disciplineKey === "SIN_DISCIPLINA" ? "-" : (disciplineMetaMap[disciplineKey]?.category || "-"),
+        disciplineGender: disciplineKey === "SIN_DISCIPLINA" ? "-" : (disciplineMetaMap[disciplineKey]?.gender || "-"),
+        registered: nextRegistered,
+        accredited: nextAccredited,
+      });
     });
 
-    const disciplineIds = new Set<string>([
-      ...Array.from(registeredByDiscipline.keys()),
-      ...Array.from(accreditedByDiscipline.keys()),
-    ]);
-
-    return Array.from(disciplineIds)
-      .map((disciplineId) => {
-        const registered = registeredByDiscipline.get(disciplineId) ?? 0;
-        const accredited = accreditedByDiscipline.get(disciplineId) ?? 0;
+    return Array.from(rowsByKey.values())
+      .map((row) => {
+        const registered = row.registered;
+        const accredited = row.accredited;
         const pct = registered > 0 ? Math.round((accredited / registered) * 100) : 0;
         return {
-          disciplineId,
-          disciplineName: disciplineId === "SIN_DISCIPLINA" ? "Sin disciplina" : (disciplineMap[disciplineId] || disciplineId),
+          ...row,
           registered,
           accredited,
           variance: accredited - registered,
           pct,
         };
       })
-      .sort((a, b) => a.disciplineName.localeCompare(b.disciplineName));
-  }, [eventAthletes, andKpiDelegationId, accByAthlete, disciplineMap]);
+      .sort((a, b) => {
+        const byDelegation = a.delegationCode.localeCompare(b.delegationCode);
+        if (byDelegation !== 0) return byDelegation;
+        return a.disciplineName.localeCompare(b.disciplineName);
+      });
+  }, [eventAthletes, andKpiDelegationId, accByAthlete, disciplineMap, disciplineMetaMap, delegationMap]);
   const andKpiTotals = useMemo(() => {
     const registered = andKpiRows.reduce((sum, row) => sum + row.registered, 0);
     const accredited = andKpiRows.reduce((sum, row) => sum + row.accredited, 0);
@@ -492,8 +539,8 @@ export default function AccreditationsPage() {
   return (
     <div className="space-y-6">
       <section
-        className="rounded-3xl border border-slate-300 p-6 text-white shadow-xl"
-        style={{ background: "linear-gradient(110deg, #0f172a 0%, #0f766e 58%, #0ea5a0 100%)" }}
+        className="rounded-3xl border border-white/10 p-6 text-white shadow-xl"
+        style={{ background: "linear-gradient(110deg, #0b1628 0%, #0f766e 58%, #0ea5a0 100%)" }}
       >
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -507,67 +554,67 @@ export default function AccreditationsPage() {
         </div>
       </section>
 
-      <section className="surface rounded-3xl border border-slate-200 p-5 shadow-sm">
+      <section className="surface rounded-3xl p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.22em] text-slate-500">AND / Acreditacion</p>
-            <h2 className="mt-1 text-2xl font-semibold text-slate-900">Cumplimiento de acreditacion sobre registro AND</h2>
-            <p className="mt-1 text-sm text-slate-500">Compara participantes registrados en AND vs participantes acreditados por disciplina.</p>
+            <p className="text-xs uppercase tracking-[0.22em] text-white/50">AND / Acreditacion</p>
+            <h2 className="mt-1 text-2xl font-semibold text-white">Cumplimiento de acreditacion sobre registro AND</h2>
+            <p className="mt-1 text-sm text-white/50">Compara participantes registrados en AND vs participantes acreditados por disciplina.</p>
           </div>
           <button className="btn btn-ghost" type="button" onClick={loadData} disabled={loading}>
             {loading ? "Actualizando..." : "Refrescar KPI"}
           </button>
         </div>
 
-        <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+        <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
           <div className="grid gap-3 xl:grid-cols-[1.25fr_1.25fr_0.9fr]">
             <div>
-              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Evento</p>
-              <select className="input bg-white" value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)}>
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/50">Evento</p>
+              <select className="input" value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)}>
                 <option value="">Selecciona evento</option>
                 {events.map((item) => <option key={item.id} value={item.id}>{item.name || item.id}</option>)}
               </select>
             </div>
             <div>
-              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Delegacion AND</p>
-              <select className="input bg-white" value={andKpiDelegationId} onChange={(e) => setAndKpiDelegationId(e.target.value)}>
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/50">Delegacion AND</p>
+              <select className="input" value={andKpiDelegationId} onChange={(e) => setAndKpiDelegationId(e.target.value)}>
                 <option value="">Todas las delegaciones</option>
                 {eventDelegations.map((item) => <option key={item.id} value={item.id}>{item.countryCode || item.id}</option>)}
               </select>
             </div>
-            <div className="rounded-2xl border border-cyan-100 bg-white px-4 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-700">Vista activa</p>
-              <p className="mt-2 text-lg font-semibold text-slate-900">{andKpiDelegationId ? (delegationMap[andKpiDelegationId]?.countryCode || andKpiDelegationId) : "Consolidado"}</p>
-              <p className="mt-1 text-sm text-slate-500">{andKpiDelegationId ? "Filtro por delegacion" : "Todo el evento"}</p>
+            <div className="rounded-2xl border border-blue-500/20 bg-blue-500/10 px-4 py-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-400">Vista activa</p>
+              <p className="mt-2 text-lg font-semibold text-white">{andKpiDelegationId ? (delegationMap[andKpiDelegationId]?.countryCode || andKpiDelegationId) : "Consolidado"}</p>
+              <p className="mt-1 text-sm text-white/50">{andKpiDelegationId ? "Filtro por delegacion" : "Todo el evento"}</p>
             </div>
           </div>
         </div>
 
         <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Registrado AND</p>
-            <p className="mt-3 text-4xl font-semibold text-slate-900">{andKpiTotals.registered}</p>
-            <p className="mt-2 text-sm text-slate-500">Base declarada por AND</p>
+          <div className="surface rounded-2xl p-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-white/50">Registrado AND</p>
+            <p className="mt-3 text-4xl font-semibold text-white">{andKpiTotals.registered}</p>
+            <p className="mt-2 text-sm text-white/50">Base declarada por AND</p>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Acreditado</p>
-            <p className="mt-3 text-4xl font-semibold text-slate-900">{andKpiTotals.accredited}</p>
-            <p className="mt-2 text-sm text-slate-500">Casos aprobados en acreditacion</p>
+          <div className="surface rounded-2xl p-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-white/50">Acreditado</p>
+            <p className="mt-3 text-4xl font-semibold text-white">{andKpiTotals.accredited}</p>
+            <p className="mt-2 text-sm text-white/50">Casos aprobados en acreditacion</p>
           </div>
-          <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 shadow-sm">
-            <p className="text-xs uppercase tracking-[0.18em] text-emerald-700">Cumplimiento total</p>
+          <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-emerald-400">Cumplimiento total</p>
             <div className="mt-3 flex items-end gap-2">
-              <p className="text-4xl font-semibold text-emerald-700">{andKpiTotals.pct}%</p>
-              <p className="pb-1 text-sm text-emerald-800/80">sobre AND</p>
+              <p className="text-4xl font-semibold text-emerald-400">{andKpiTotals.pct}%</p>
+              <p className="pb-1 text-sm text-emerald-400/80">sobre AND</p>
             </div>
-            <div className="mt-3 h-2.5 rounded-full bg-emerald-100">
+            <div className="mt-3 h-2.5 rounded-full bg-emerald-500/20">
               <div className="h-2.5 rounded-full bg-emerald-500" style={{ width: `${Math.min(andKpiTotals.pct, 100)}%` }} />
             </div>
           </div>
-          <div className="rounded-2xl border border-rose-100 bg-rose-50/70 p-4 shadow-sm">
-            <p className="text-xs uppercase tracking-[0.18em] text-rose-700">Brecha neta</p>
-            <p className={`mt-3 text-4xl font-semibold ${andKpiTotals.variance < 0 ? "text-rose-700" : "text-emerald-700"}`}>{andKpiTotals.variance}</p>
-            <p className="mt-2 text-sm text-slate-500">Diferencia contra el registro AND</p>
+          <div className="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-rose-400">Brecha neta</p>
+            <p className={`mt-3 text-4xl font-semibold ${andKpiTotals.variance < 0 ? "text-rose-400" : "text-emerald-400"}`}>{andKpiTotals.variance}</p>
+            <p className="mt-2 text-sm text-white/50">Diferencia contra el registro AND</p>
           </div>
         </div>
 
@@ -575,7 +622,10 @@ export default function AccreditationsPage() {
           <table className="table">
             <thead>
               <tr>
+                <th>Delegación</th>
                 <th>Disciplina</th>
+                <th>Tipo</th>
+                <th>Género</th>
                 <th>Registrado AND</th>
                 <th>Acreditado</th>
                 <th>Brecha</th>
@@ -584,24 +634,27 @@ export default function AccreditationsPage() {
             </thead>
             <tbody>
               {andKpiRows.map((row) => (
-                <tr key={row.disciplineId}>
+                <tr key={row.key}>
+                  <td>{row.delegationCode}</td>
                   <td>{row.disciplineName}</td>
+                  <td>{row.disciplineCategory}</td>
+                  <td>{row.disciplineGender}</td>
                   <td>{row.registered}</td>
                   <td>{row.accredited}</td>
-                  <td className={row.variance < 0 ? "text-rose-600" : "text-emerald-700"}>{row.variance}</td>
+                  <td className={row.variance < 0 ? "text-rose-400" : "text-emerald-400"}>{row.variance}</td>
                   <td>
                     <div className="flex items-center gap-3">
-                      <div className="h-2 w-36 rounded-full bg-slate-200">
+                      <div className="h-2 w-36 rounded-full bg-white/10">
                         <div className="h-2 rounded-full bg-cyan-500" style={{ width: `${Math.min(row.pct, 100)}%` }} />
                       </div>
-                      <span className="text-sm font-semibold text-slate-700">{row.pct}%</span>
+                      <span className="text-sm font-semibold text-white/90">{row.pct}%</span>
                     </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {andKpiRows.length === 0 ? <p className="mt-3 text-sm text-slate-500">No hay participantes AND para mostrar cumplimiento en este filtro.</p> : null}
+          {andKpiRows.length === 0 ? <p className="mt-3 text-sm text-white/50">No hay participantes AND para mostrar cumplimiento en este filtro.</p> : null}
         </div>
       </section>
 
@@ -625,14 +678,14 @@ export default function AccreditationsPage() {
         {(error || message) ? (
           <div className="mt-3 space-y-1">
             {error ? <p className="text-sm text-rose-600">{error}</p> : null}
-            {message ? <p className="text-sm text-emerald-700">{message}</p> : null}
+            {message ? <p className="text-sm text-emerald-400">{message}</p> : null}
           </div>
         ) : null}
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1.35fr_1fr]">
         <form onSubmit={createAccreditation} className="surface rounded-2xl p-5 xl:order-1">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Nueva acreditacion</h3>
+          <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-white/50">Nueva acreditacion</h3>
           <div className="mt-3 space-y-3">
             <select className="input" value={newSubjectType} onChange={(e) => {
               const type = e.target.value as "PARTICIPANT" | "DRIVER";
@@ -668,22 +721,22 @@ export default function AccreditationsPage() {
             )}
 
             {(selectedAthlete || selectedDriver) ? (
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Ficha de validacion</p>
+              <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                <p className="text-xs uppercase tracking-[0.16em] text-white/50">Ficha de validacion</p>
                 <div className="mt-2 flex gap-3">
-                  {selectedPhotoUrl ? <img src={selectedPhotoUrl} alt="Foto sujeto" className="h-24 w-20 rounded-lg border border-slate-200 object-cover" /> : <div className="grid h-24 w-20 place-items-center rounded-lg border border-slate-200 bg-slate-200 text-sm font-bold text-slate-700">{initials(selectedAthlete?.fullName || selectedDriver?.fullName)}</div>}
-                  <div className="grid flex-1 gap-1 text-xs text-slate-700">
+                  {selectedPhotoUrl ? <img src={selectedPhotoUrl} alt="Foto sujeto" className="h-24 w-20 rounded-lg border border-white/10 object-cover" /> : <div className="grid h-24 w-20 place-items-center rounded-lg border border-white/10 bg-white/10 text-sm font-bold text-white/90">{initials(selectedAthlete?.fullName || selectedDriver?.fullName)}</div>}
+                  <div className="grid flex-1 gap-1 text-xs text-white/90">
                     {newSubjectType === "PARTICIPANT" && selectedAthlete ? <><p><span className="font-semibold">Nombre:</span> {selectedAthlete.fullName || "-"}</p><p><span className="font-semibold">Email:</span> {selectedAthlete.email || "-"}</p><p><span className="font-semibold">Pais:</span> {selectedAthlete.countryCode || "-"}</p><p><span className="font-semibold">Pasaporte:</span> {selectedAthlete.passportNumber || "-"}</p><p><span className="font-semibold">Delegacion:</span> {selectedAthlete.delegationId ? delegationMap[selectedAthlete.delegationId]?.countryCode || selectedAthlete.delegationId : "-"}</p></> : null}
                     {newSubjectType === "DRIVER" && selectedDriver ? <><p><span className="font-semibold">Nombre:</span> {selectedDriver.fullName || "-"}</p><p><span className="font-semibold">RUT:</span> {selectedDriver.rut || "-"}</p><p><span className="font-semibold">Email:</span> {selectedDriver.email || "-"}</p><p><span className="font-semibold">Telefono:</span> {selectedDriver.phone || "-"}</p><p><span className="font-semibold">Licencia:</span> {selectedDriver.licenseNumber || "-"}</p><p><span className="font-semibold">Proveedor:</span> {selectedDriver.providerId ? providerMap[selectedDriver.providerId]?.name || selectedDriver.providerId : "-"}</p></> : null}
                   </div>
                 </div>
                 <div className="mt-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Asignacion de accesos</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/50">Asignacion de accesos</p>
                   <div className="mt-2 grid gap-2 sm:grid-cols-2">
                     {ACCESS_OPTIONS.map((option) => {
                       const checked = draftAccessTypes.includes(option.code);
                       return (
-                        <label key={option.code} className={`flex items-center gap-3 rounded-xl border px-3 py-2 text-sm transition ${checked ? "border-cyan-300 bg-cyan-50 text-cyan-900" : "border-slate-200 bg-white text-slate-700"}`}>
+                        <label key={option.code} className={`flex items-center gap-3 rounded-xl border px-3 py-2 text-sm transition ${checked ? "border-cyan-500/40 bg-cyan-500/10 text-cyan-300" : "border-white/10 bg-white/5 text-white/90"}`}>
                           <input
                             type="checkbox"
                             checked={checked}
@@ -695,7 +748,7 @@ export default function AccreditationsPage() {
                               )
                             }
                           />
-                          <span className="inline-flex min-w-10 items-center justify-center rounded-lg bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">{option.code}</span>
+                          <span className="inline-flex min-w-10 items-center justify-center rounded-lg bg-white/10 px-2 py-1 text-xs font-semibold text-white/90">{option.code}</span>
                           <span>{option.label}</span>
                         </label>
                       );
@@ -711,7 +764,7 @@ export default function AccreditationsPage() {
         <div className="surface rounded-2xl p-5 xl:order-2">
           {newSubjectType === "PARTICIPANT" ? (
             <>
-              <h4 className="text-xs uppercase tracking-[0.16em] text-slate-500">Participantes registrados</h4>
+              <h4 className="text-xs uppercase tracking-[0.16em] text-white/50">Participantes registrados</h4>
               <div className="overflow-x-auto mt-2">
                 <table className="table">
                   <thead><tr><th>Nombre</th><th>Delegacion</th><th>Pais</th><th>Pasaporte</th><th>Accesos</th><th>Estado</th><th>Credencial</th><th>Acciones</th></tr></thead>
@@ -722,13 +775,13 @@ export default function AccreditationsPage() {
                       const accessTypes = normalizeAccessTypes(acc?.accessTypes);
                       return (
                         <tr key={item.id}>
-                          <td><p className="font-medium text-slate-900">{item.fullName || item.id}</p><p className="text-xs text-slate-500">{item.id}</p></td>
+                          <td><p className="font-medium text-white">{item.fullName || item.id}</p><p className="text-xs text-white/50">{item.id}</p></td>
                           <td>{item.delegationId ? delegationMap[item.delegationId]?.countryCode || item.delegationId : "-"}</td>
                           <td>{item.countryCode || "-"}</td>
                           <td>{item.passportNumber || "-"}</td>
                           <td>
                             <div className="flex flex-wrap gap-1">
-                              {accessTypes.length ? accessTypes.map((code) => <span key={code} className="rounded-full bg-cyan-50 px-2 py-1 text-xs font-semibold text-cyan-800">{code}</span>) : <span className="text-xs text-slate-400">Sin accesos</span>}
+                              {accessTypes.length ? accessTypes.map((code) => <span key={code} className="rounded-full bg-cyan-500/10 px-2 py-1 text-xs font-semibold text-cyan-300">{code}</span>) : <span className="text-xs text-white/40">Sin accesos</span>}
                             </div>
                           </td>
                           <td><span className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${rowStatusClass(acc?.status)}`}>{rowStatusLabel(acc?.status)}</span></td>
@@ -740,11 +793,11 @@ export default function AccreditationsPage() {
                   </tbody>
                 </table>
               </div>
-              {participantRows.length === 0 ? <p className="mt-3 text-sm text-slate-500">No hay participantes para ese filtro.</p> : null}
+              {participantRows.length === 0 ? <p className="mt-3 text-sm text-white/50">No hay participantes para ese filtro.</p> : null}
             </>
           ) : (
             <>
-              <h4 className="text-xs uppercase tracking-[0.16em] text-slate-500">Conductores registrados</h4>
+              <h4 className="text-xs uppercase tracking-[0.16em] text-white/50">Conductores registrados</h4>
               <div className="overflow-x-auto mt-2">
                 <table className="table">
                   <thead><tr><th>Nombre</th><th>RUT</th><th>Proveedor</th><th>Telefono</th><th>Accesos</th><th>Estado</th><th>Credencial</th><th>Acciones</th></tr></thead>
@@ -755,13 +808,13 @@ export default function AccreditationsPage() {
                       const accessTypes = normalizeAccessTypes(acc?.accessTypes ?? item.accessTypes);
                       return (
                         <tr key={item.id}>
-                          <td><p className="font-medium text-slate-900">{item.fullName || item.id}</p><p className="text-xs text-slate-500">{item.id}</p></td>
+                          <td><p className="font-medium text-white">{item.fullName || item.id}</p><p className="text-xs text-white/50">{item.id}</p></td>
                           <td>{item.rut || "-"}</td>
                           <td>{item.providerId ? providerMap[item.providerId]?.name || item.providerId : "-"}</td>
                           <td>{item.phone || "-"}</td>
                           <td>
                             <div className="flex flex-wrap gap-1">
-                              {accessTypes.length ? accessTypes.map((code) => <span key={code} className="rounded-full bg-cyan-50 px-2 py-1 text-xs font-semibold text-cyan-800">{code}</span>) : <span className="text-xs text-slate-400">Sin accesos</span>}
+                              {accessTypes.length ? accessTypes.map((code) => <span key={code} className="rounded-full bg-cyan-500/10 px-2 py-1 text-xs font-semibold text-cyan-300">{code}</span>) : <span className="text-xs text-white/40">Sin accesos</span>}
                             </div>
                           </td>
                           <td><span className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${rowStatusClass(acc?.status)}`}>{rowStatusLabel(acc?.status)}</span></td>
@@ -773,7 +826,7 @@ export default function AccreditationsPage() {
                   </tbody>
                 </table>
               </div>
-              {driverRows.length === 0 ? <p className="mt-3 text-sm text-slate-500">No hay conductores para ese filtro.</p> : null}
+              {driverRows.length === 0 ? <p className="mt-3 text-sm text-white/50">No hay conductores para ese filtro.</p> : null}
             </>
           )}
         </div>

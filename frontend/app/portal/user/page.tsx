@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { filterValidatedAthletes } from "@/lib/athletes";
 import { useI18n } from "@/lib/i18n";
 
 type Athlete = {
@@ -190,7 +191,8 @@ export default function AthletePortalPage() {
         return;
       }
       const list = await apiFetch<Athlete[]>(`/athletes`);
-      const match = (list || []).find((athlete) => athlete.id?.slice(-6) === normalizedInput);
+      const validatedAthletes = filterValidatedAthletes(list || []);
+      const match = validatedAthletes.find((athlete) => athlete.id?.slice(-6) === normalizedInput);
       if (!match) {
         setError(t("El código ingresado no corresponde a un usuario registrado."));
         return;
@@ -416,9 +418,9 @@ export default function AthletePortalPage() {
   return (
     <div className="space-y-6">
       <section className="glass rounded-3xl p-6">
-        <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Seven</p>
-        <h1 className="font-display text-3xl text-ink">{t("Portal de usuario")}</h1>
-        <p className="text-sm text-slate-500 mt-2">
+        <p className="text-xs uppercase tracking-[0.3em] text-white/40">Seven</p>
+        <h1 className="font-sans font-bold text-3xl text-white">{t("Portal de usuario")}</h1>
+        <p className="text-sm text-white/50 mt-2">
           {t("Consulta tu itinerario y confirma cada etapa del viaje.")}
         </p>
       </section>
@@ -426,10 +428,10 @@ export default function AthletePortalPage() {
       {!athlete && (
         <section className="surface rounded-3xl p-6 space-y-4">
           <div className="space-y-3">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+            <p className="text-xs uppercase tracking-[0.2em] text-white/40">
               {t("Solicita tu código")}
             </p>
-            <label className="flex flex-col gap-2 text-sm text-slate-600">
+            <label className="flex flex-col gap-2 text-sm text-white/65">
               {t("Correo electrónico")}
               <input
                 className="input"
@@ -446,11 +448,11 @@ export default function AthletePortalPage() {
             >
               {requestLoading ? t("Enviando...") : t("Solicita tu código")}
             </button>
-            {requestStatus && <p className="text-sm text-emerald-600">{requestStatus}</p>}
-            {requestError && <p className="text-sm text-rose-600">{requestError}</p>}
+            {requestStatus && <p className="text-sm text-emerald-400">{requestStatus}</p>}
+            {requestError && <p className="text-sm text-rose-400">{requestError}</p>}
           </div>
 
-          <label className="flex flex-col gap-2 text-sm text-slate-600">
+          <label className="flex flex-col gap-2 text-sm text-white/65">
             {t("Tu código de acceso")}
             <input
               className="input"
@@ -462,7 +464,7 @@ export default function AthletePortalPage() {
           <button className="btn btn-primary w-fit" onClick={loadAthlete} disabled={loading}>
             {loading ? t("Cargando...") : t("Ver mi información")}
           </button>
-          {error && <p className="text-sm text-rose-600">{error}</p>}
+          {error && <p className="text-sm text-rose-400">{error}</p>}
         </section>
       )}
 
@@ -470,14 +472,14 @@ export default function AthletePortalPage() {
         <section className="surface rounded-3xl p-6 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t("Perfil")}</p>
-              <h2 className="font-display text-2xl text-ink">{athlete.fullName}</h2>
-              <p className="text-sm text-slate-500">{athlete.countryCode || ""}</p>
-              <p className="text-sm text-slate-500">
+              <p className="text-xs uppercase tracking-[0.2em] text-white/40">{t("Perfil")}</p>
+              <h2 className="font-sans font-bold text-2xl text-white">{athlete.fullName}</h2>
+              <p className="text-sm text-white/50">{athlete.countryCode || ""}</p>
+              <p className="text-sm text-white/50">
                 {t("Tipo de usuario")}: {trip?.clientType || athlete.userType || "-"}
               </p>
-              <p className="text-sm text-slate-500">{t("Evento")}: {event?.name || "-"}</p>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-white/50">{t("Evento")}: {event?.name || "-"}</p>
+              <p className="text-sm text-white/50">
                 {t("Delegación")}: {delegation ? countryLabels[delegation.countryCode] || delegation.countryCode : "-"}
               </p>
             </div>
@@ -497,46 +499,46 @@ export default function AthletePortalPage() {
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="glass rounded-2xl p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t("Vuelo")}</p>
-              <p className="text-sm text-slate-600">
+              <p className="text-xs uppercase tracking-[0.2em] text-white/40">{t("Vuelo")}</p>
+              <p className="text-sm text-white/65">
                 {flight
                   ? `${flight.airline} · ${flight.flightNumber}`
                   : athlete.airline || athlete.flightNumber
                   ? `${athlete.airline || t("Aerolínea")} · ${athlete.flightNumber || "-"}`
                   : "-"}
               </p>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-white/50">
                 {t("Arribo")}: {formatDate(athlete.arrivalTime || flight?.arrivalTime)}
               </p>
             </div>
             <div className="glass rounded-2xl p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t("Hotel")}</p>
-              <p className="text-sm text-slate-600">{hotel?.name || "-"}</p>
-              <p className="text-sm text-slate-500">
+              <p className="text-xs uppercase tracking-[0.2em] text-white/40">{t("Hotel")}</p>
+              <p className="text-sm text-white/65">{hotel?.name || "-"}</p>
+              <p className="text-sm text-white/50">
                 {t("Habitación")}: {hotelRoom?.roomNumber || athlete.roomNumber || "-"}
               </p>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-white/50">
                 {t("Tipo de habitación")}: {hotelRoom?.roomType || athlete.roomType || "-"} · {t("Cama")}:{" "}
                 {hotelBed?.bedType || athlete.bedType || "-"}
               </p>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-white/50">
                 {t("Equipaje")}: {luggageLabels[athlete.luggageType ?? ""] || athlete.luggageType || "-"}
               </p>
             </div>
             <div className="glass rounded-2xl p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t("Transporte")}</p>
-              <p className="text-sm text-slate-600">{t("Conductor")}: {driver?.fullName || "-"}</p>
-              <p className="text-sm text-slate-500">
+              <p className="text-xs uppercase tracking-[0.2em] text-white/40">{t("Transporte")}</p>
+              <p className="text-sm text-white/65">{t("Conductor")}: {driver?.fullName || "-"}</p>
+              <p className="text-sm text-white/50">
                 {t("Vehículo")}: {vehicle ? `${vehicle.type} · ${vehicle.plate}` : "-"}
               </p>
             </div>
             <div className="glass rounded-2xl p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t("Check-ins")}</p>
-              <p className="text-sm text-slate-500">{t("Aeropuerto")}: {formatDate(athlete.airportCheckinAt)}</p>
-              <p className="text-sm text-slate-500">
+              <p className="text-xs uppercase tracking-[0.2em] text-white/40">{t("Check-ins")}</p>
+              <p className="text-sm text-white/50">{t("Aeropuerto")}: {formatDate(athlete.airportCheckinAt)}</p>
+              <p className="text-sm text-white/50">
                 {t("Hotel")}: {formatDate(athlete.hotelCheckinAt)}
               </p>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-white/50">
                 {t("Check-out")}: {formatDate(athlete.hotelCheckoutAt)}
               </p>
             </div>
@@ -558,3 +560,5 @@ export default function AthletePortalPage() {
     </div>
   );
 }
+
+

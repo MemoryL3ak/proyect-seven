@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import { apiFetch } from "@/lib/api";
+import { filterValidatedAthletes } from "@/lib/athletes";
 
 type HotelKeyStatus = "AVAILABLE" | "ASSIGNED" | "LOST" | "MAINTENANCE" | string;
 
@@ -69,15 +70,15 @@ type ReturnForm = {
 const statusBadge = (status?: string | null) => {
   switch (status) {
     case "AVAILABLE":
-      return "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200";
+      return "bg-emerald-400/15 text-emerald-400 ring-1 ring-emerald-400/30";
     case "ASSIGNED":
-      return "bg-sky-100 text-sky-800 ring-1 ring-sky-200";
+      return "bg-sky-400/15 text-sky-400 ring-1 ring-sky-400/30";
     case "LOST":
-      return "bg-rose-100 text-rose-800 ring-1 ring-rose-200";
+      return "bg-rose-400/15 text-rose-400 ring-1 ring-rose-400/30";
     case "MAINTENANCE":
-      return "bg-amber-100 text-amber-800 ring-1 ring-amber-200";
+      return "bg-amber-400/15 text-amber-400 ring-1 ring-amber-400/30";
     default:
-      return "bg-slate-200 text-slate-700 ring-1 ring-slate-300";
+      return "bg-white/10 text-white/60 ring-1 ring-white/20";
   }
 };
 
@@ -156,7 +157,7 @@ export default function HotelKeysPage() {
       setHotels(hotelData || []);
       setRooms(roomData || []);
       setBeds(bedData || []);
-      setAthletes(athleteData || []);
+      setAthletes(filterValidatedAthletes(athleteData || []));
 
       if (!selectedEventId && (eventData || []).length > 0) {
         setSelectedEventId((eventData || [])[0].id);
@@ -415,7 +416,7 @@ export default function HotelKeysPage() {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-xs uppercase tracking-[0.32em] text-white/70">Hotelería</p>
-            <h2 className="mt-2 font-display text-4xl leading-tight">Control centralizado de llaves</h2>
+            <h2 className="mt-2 font-sans font-bold text-4xl leading-tight">Control centralizado de llaves</h2>
             <p className="mt-2 text-sm text-white/80">
               Cada llave y copia queda trazada con responsable, timestamps y bitácora operativa.
             </p>
@@ -474,40 +475,40 @@ export default function HotelKeysPage() {
             onChange={(event) => setSearch(event.target.value)}
           />
         </div>
-        {error && <p className="mt-3 text-sm text-rose-600">{error}</p>}
+        {error && <p className="mt-3 text-sm text-rose-400">{error}</p>}
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <article className="surface rounded-2xl p-4">
-          <p className="text-[11px] uppercase tracking-[0.24em] text-slate-400">Total</p>
-          <p className="mt-2 text-3xl font-display text-slate-900">{stats.total}</p>
+          <p className="text-[11px] uppercase tracking-[0.24em] text-white/40">Total</p>
+          <p className="mt-2 text-3xl font-sans font-bold text-white">{stats.total}</p>
         </article>
         <article className="surface rounded-2xl p-4">
-          <p className="text-[11px] uppercase tracking-[0.24em] text-slate-400">Disponibles</p>
-          <p className="mt-2 text-3xl font-display text-emerald-700">{stats.available}</p>
+          <p className="text-[11px] uppercase tracking-[0.24em] text-white/40">Disponibles</p>
+          <p className="mt-2 text-3xl font-sans font-bold text-emerald-400">{stats.available}</p>
         </article>
         <article className="surface rounded-2xl p-4">
-          <p className="text-[11px] uppercase tracking-[0.24em] text-slate-400">Entregadas</p>
-          <p className="mt-2 text-3xl font-display text-sky-700">{stats.assigned}</p>
+          <p className="text-[11px] uppercase tracking-[0.24em] text-white/40">Entregadas</p>
+          <p className="mt-2 text-3xl font-sans font-bold text-sky-400">{stats.assigned}</p>
         </article>
         <article className="surface rounded-2xl p-4">
-          <p className="text-[11px] uppercase tracking-[0.24em] text-slate-400">Mantenimiento</p>
-          <p className="mt-2 text-3xl font-display text-amber-700">{stats.maintenance}</p>
+          <p className="text-[11px] uppercase tracking-[0.24em] text-white/40">Mantenimiento</p>
+          <p className="mt-2 text-3xl font-sans font-bold text-amber-400">{stats.maintenance}</p>
         </article>
         <article className="surface rounded-2xl p-4">
-          <p className="text-[11px] uppercase tracking-[0.24em] text-slate-400">Perdidas</p>
-          <p className="mt-2 text-3xl font-display text-rose-700">{stats.lost}</p>
+          <p className="text-[11px] uppercase tracking-[0.24em] text-white/40">Perdidas</p>
+          <p className="mt-2 text-3xl font-sans font-bold text-rose-400">{stats.lost}</p>
         </article>
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
         <div className="space-y-4">
           <article className="surface rounded-[26px] p-5">
-            <h3 className="font-display text-2xl text-ink">Inventario de llaves</h3>
-            <p className="mt-1 text-sm text-slate-500">Selecciona una llave para ver su bitácora y operar entrega/devolución.</p>
+            <h3 className="font-sans font-bold text-2xl text-white">Inventario de llaves</h3>
+            <p className="mt-1 text-sm text-white/50">Selecciona una llave para ver su bitácora y operar entrega/devolución.</p>
             <div className="mt-4 space-y-3">
               {enrichedKeys.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
+                <div className="rounded-2xl border border-dashed border-white/20 bg-white/5 px-4 py-8 text-center text-sm text-white/50">
                   Sin llaves registradas para este filtro.
                 </div>
               ) : (
@@ -516,8 +517,8 @@ export default function HotelKeysPage() {
                     key={key.id}
                     className={`rounded-2xl border p-4 transition ${
                       selectedKeyId === key.id
-                        ? "border-emerald-300 bg-emerald-50/50 shadow-sm"
-                        : "border-slate-200 bg-white hover:border-slate-300"
+                        ? "border-emerald-400/40 bg-emerald-400/10 shadow-sm"
+                        : "border-white/10 bg-white/5 hover:border-white/20"
                     }`}
                   >
                     <div className="flex flex-wrap items-start justify-between gap-3">
@@ -528,22 +529,22 @@ export default function HotelKeysPage() {
                           </span>
                           <button
                             type="button"
-                            className="text-xs font-semibold text-slate-500 hover:text-slate-800"
+                            className="text-xs font-semibold text-white/50 hover:text-white/80"
                             onClick={() => setSelectedKeyId(key.id)}
                           >
                             Ver bitácora
                           </button>
                         </div>
-                        <h4 className="mt-2 font-display text-2xl text-slate-900">
+                        <h4 className="mt-2 font-sans font-bold text-2xl text-white">
                           {key.keyNumber} · Copia {key.copyNumber || 1}
                         </h4>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-white/50">
                           {key.hotelName} · Habitación {key.roomNumber} · Cama {key.bedLabel}
                         </p>
-                        <p className="mt-1 text-sm text-slate-600">
-                          Responsable: <span className="font-semibold text-slate-800">{key.holderText}</span>
+                        <p className="mt-1 text-sm text-white/65">
+                          Responsable: <span className="font-semibold text-white">{key.holderText}</span>
                         </p>
-                        <p className="mt-1 text-xs text-slate-500">
+                        <p className="mt-1 text-xs text-white/50">
                           Entrega: {formatDateTime(key.issuedAt)} · Devolución: {formatDateTime(key.returnedAt)}
                         </p>
                       </div>
@@ -581,14 +582,14 @@ export default function HotelKeysPage() {
                         )}
                         <button
                           type="button"
-                          className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-100"
+                          className="inline-flex items-center rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-xs font-semibold text-amber-400 hover:bg-amber-400/20"
                           onClick={() => changeStatus(key.id, "MAINTENANCE")}
                         >
                           Mantenimiento
                         </button>
                         <button
                           type="button"
-                          className="inline-flex items-center rounded-full border border-rose-300 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-800 hover:bg-rose-100"
+                          className="inline-flex items-center rounded-full border border-rose-400/30 bg-rose-400/10 px-3 py-2 text-xs font-semibold text-rose-400 hover:bg-rose-400/20"
                           onClick={() => changeStatus(key.id, "LOST")}
                         >
                           Marcar perdida
@@ -596,7 +597,7 @@ export default function HotelKeysPage() {
                         {key.status !== "AVAILABLE" && (
                           <button
                             type="button"
-                            className="inline-flex items-center rounded-full border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-100"
+                            className="inline-flex items-center rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-xs font-semibold text-emerald-400 hover:bg-emerald-400/20"
                             onClick={() => changeStatus(key.id, "AVAILABLE")}
                           >
                             Marcar disponible
@@ -613,7 +614,7 @@ export default function HotelKeysPage() {
 
         <div className="space-y-4">
           <article className="surface rounded-[26px] p-5">
-            <h3 className="font-display text-2xl text-ink">Alta de llave</h3>
+            <h3 className="font-sans font-bold text-2xl text-white">Alta de llave</h3>
             <form className="mt-4 space-y-3" onSubmit={submitCreate}>
               <select
                 className="input rounded-2xl"
@@ -704,7 +705,7 @@ export default function HotelKeysPage() {
 
           {issueKeyId && (
             <article className="surface rounded-[26px] p-5">
-              <h3 className="font-display text-2xl text-ink">Entrega de llave</h3>
+              <h3 className="font-sans font-bold text-2xl text-white">Entrega de llave</h3>
               <form className="mt-4 space-y-3" onSubmit={submitIssue}>
                 <select
                   className="input rounded-2xl"
@@ -771,7 +772,7 @@ export default function HotelKeysPage() {
 
           {returnKeyId && (
             <article className="surface rounded-[26px] p-5">
-              <h3 className="font-display text-2xl text-ink">Devolución de llave</h3>
+              <h3 className="font-sans font-bold text-2xl text-white">Devolución de llave</h3>
               <form className="mt-4 space-y-3" onSubmit={submitReturn}>
                 <input
                   className="input rounded-2xl"
@@ -805,36 +806,36 @@ export default function HotelKeysPage() {
           )}
 
           <article className="surface rounded-[26px] p-5">
-            <h3 className="font-display text-2xl text-ink">Bitácora</h3>
+            <h3 className="font-sans font-bold text-2xl text-white">Bitácora</h3>
             {!selectedKey ? (
-              <p className="mt-3 text-sm text-slate-500">Selecciona una llave para ver su historial.</p>
+              <p className="mt-3 text-sm text-white/50">Selecciona una llave para ver su historial.</p>
             ) : (
               <>
-                <p className="mt-2 text-sm text-slate-500">
-                  Llave <span className="font-semibold text-slate-900">{selectedKey.keyNumber}</span> · Habitación{" "}
-                  <span className="font-semibold text-slate-900">{selectedKey.roomNumber}</span>
+                <p className="mt-2 text-sm text-white/50">
+                  Llave <span className="font-semibold text-white">{selectedKey.keyNumber}</span> · Habitación{" "}
+                  <span className="font-semibold text-white">{selectedKey.roomNumber}</span>
                 </p>
                 <div className="mt-4 max-h-[360px] space-y-2 overflow-auto pr-1">
                   {loadingMovements ? (
-                    <p className="text-sm text-slate-500">Cargando movimientos...</p>
+                    <p className="text-sm text-white/50">Cargando movimientos...</p>
                   ) : selectedMovements.length === 0 ? (
-                    <p className="text-sm text-slate-500">Sin movimientos registrados.</p>
+                    <p className="text-sm text-white/50">Sin movimientos registrados.</p>
                   ) : (
                     selectedMovements.map((movement) => (
-                      <div key={movement.id} className="rounded-xl border border-slate-200 bg-white p-3">
+                      <div key={movement.id} className="rounded-xl border border-white/10 bg-white/5 p-3">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-white/40">
                             {movement.action}
                           </span>
-                          <span className="text-xs text-slate-500">
+                          <span className="text-xs text-white/50">
                             {formatDateTime(movement.happenedAt || movement.createdAt)}
                           </span>
                         </div>
-                        <p className="mt-1 text-sm text-slate-700">
+                        <p className="mt-1 text-sm text-white/85">
                           {movement.holderName || movement.actorName || "Sin responsable informado"}
                         </p>
                         {movement.notes ? (
-                          <p className="mt-1 text-xs text-slate-500">{movement.notes}</p>
+                          <p className="mt-1 text-xs text-white/50">{movement.notes}</p>
                         ) : null}
                       </div>
                     ))
@@ -848,3 +849,5 @@ export default function HotelKeysPage() {
     </div>
   );
 }
+
+

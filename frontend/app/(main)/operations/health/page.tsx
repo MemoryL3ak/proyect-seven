@@ -3,6 +3,7 @@
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
 import { apiFetch } from "@/lib/api";
+import { filterValidatedAthletes } from "@/lib/athletes";
 
 type EventItem = { id: string; name?: string | null };
 type DelegationItem = { id: string; eventId?: string | null; countryCode?: string | null };
@@ -520,7 +521,7 @@ export default function HealthPage() {
       const safeEvents = Array.isArray(eventData) ? eventData : [];
       const safeDelegations = Array.isArray(delegationData) ? delegationData : [];
       const safeDisciplines = Array.isArray(disciplineData) ? disciplineData : [];
-      const safeAthletes = Array.isArray(athleteData) ? athleteData : [];
+      const safeAthletes = filterValidatedAthletes(Array.isArray(athleteData) ? athleteData : []);
       setEvents(safeEvents);
       setDelegations(safeDelegations);
       setDisciplines(safeDisciplines);
@@ -1029,7 +1030,7 @@ export default function HealthPage() {
 
   const yesNo = (label: string, value: YesNo, onChange: (value: YesNo) => void) => (
     <label className="space-y-1">
-      <span className="text-sm font-medium text-slate-700">{label}</span>
+      <span className="text-sm font-medium text-white/80">{label}</span>
       <select className="input" value={value} onChange={(e) => onChange(e.target.value as YesNo)}>
         <option value="">Selecciona</option>
         <option value="SI">Sí</option>
@@ -1041,7 +1042,7 @@ export default function HealthPage() {
   return (
     <div className="space-y-6">
       <section
-        className="rounded-3xl border border-slate-300 p-6 text-white shadow-xl"
+        className="rounded-3xl border border-white/15 p-6 text-white shadow-xl"
         style={{ background: "linear-gradient(110deg, #0f172a 0%, #075985 58%, #0ea5a0 100%)" }}
       >
         <div className="flex flex-wrap items-end justify-between gap-4">
@@ -1089,7 +1090,7 @@ export default function HealthPage() {
             />
             <button
               type="button"
-              className="absolute inset-y-0 right-2 text-slate-500"
+              className="absolute inset-y-0 right-2 text-white/50"
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => setAthletePickerOpen((prev) => !prev)}
               aria-label="Mostrar participantes"
@@ -1097,15 +1098,15 @@ export default function HealthPage() {
               v
             </button>
             {athletePickerOpen ? (
-              <div className="absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-slate-200 bg-white p-1 shadow-xl">
+              <div className="absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded-xl p-1 shadow-xl" style={{background:"#0f1e35",border:"1px solid rgba(255,255,255,0.1)"}}>
                 {searchableAthletes.length === 0 ? (
-                  <div className="px-3 py-2 text-sm text-slate-500">Sin resultados</div>
+                  <div className="px-3 py-2 text-sm text-white/50">Sin resultados</div>
                 ) : (
                   searchableAthletes.slice(0, 60).map((item) => (
                     <button
                       key={item.id}
                       type="button"
-                      className="block w-full rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100"
+                      className="block w-full rounded-lg px-3 py-2 text-left text-sm text-white/80 hover:bg-white/10"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => onPickAthlete(item.id)}
                     >
@@ -1117,18 +1118,19 @@ export default function HealthPage() {
             ) : null}
           </div>
         </div>
-        {loading ? <p className="mt-3 text-sm text-slate-500">Cargando...</p> : null}
+        {loading ? <p className="mt-3 text-sm text-white/50">Cargando...</p> : null}
       </section>
 
       <section className="surface rounded-2xl p-3">
-        <div className="inline-flex flex-wrap rounded-2xl border border-slate-200 bg-slate-100 p-1">
+        <div className="inline-flex flex-wrap rounded-2xl border border-white/8 bg-white/5 p-1">
           {HEALTH_SUBSECTIONS.map((item) => {
             const active = item.id === activeSubsection;
             return (
               <button
                 key={item.id}
                 type="button"
-                className={`min-w-[132px] rounded-xl px-4 py-2.5 text-sm font-semibold transition ${active ? "bg-teal-700 text-white shadow-sm" : "bg-transparent text-slate-700 hover:bg-white hover:text-slate-900"}`}
+                className="min-w-[132px] rounded-xl px-4 py-2.5 text-sm font-semibold transition"
+                style={active ? {background:"rgba(201,168,76,0.2)",color:"#c9a84c",border:"1px solid rgba(201,168,76,0.3)"} : {background:"transparent",color:"rgba(255,255,255,0.6)"}}
                 onClick={() => setActiveSubsection(item.id)}
               >
                 <span className="block text-center">{item.label}</span>
@@ -1141,94 +1143,94 @@ export default function HealthPage() {
       {activeSubsection === "dashboard" ? <section className="surface rounded-3xl p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Subsección Salud / Dashboard</p>
-            <h2 className="mt-1 text-2xl font-semibold text-slate-900">Inteligencia de salud</h2>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="text-xs uppercase tracking-[0.2em] text-white/50">Subsección Salud / Dashboard</p>
+            <h2 className="mt-1 text-2xl font-semibold text-white">Inteligencia de salud</h2>
+            <p className="mt-1 text-sm text-white/50">
               Métricas calculadas sobre las fichas del filtro actual para detectar dietas, alergias y condiciones relevantes.
             </p>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-            Universo analizado: <span className="font-semibold text-slate-900">{healthDashboard.totalAthletes}</span> participantes
+          <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/65">
+            Universo analizado: <span className="font-semibold text-white">{healthDashboard.totalAthletes}</span> participantes
           </div>
         </div>
 
         <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-emerald-700">Fichas cargadas</p>
-            <p className="mt-2 text-3xl font-semibold text-emerald-900">{healthDashboard.savedRecords}</p>
-            <p className="mt-1 text-sm text-emerald-800">Con información de salud registrada</p>
+          <div className="rounded-2xl p-4" style={{background:"rgba(16,185,129,0.08)",border:"1px solid rgba(16,185,129,0.2)"}}>
+            <p className="text-xs uppercase tracking-[0.18em] text-emerald-400">Fichas cargadas</p>
+            <p className="mt-2 text-3xl font-semibold text-emerald-400">{healthDashboard.savedRecords}</p>
+            <p className="mt-1 text-sm text-emerald-400/70">Con información de salud registrada</p>
           </div>
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-amber-700">Alimentación especial</p>
-            <p className="mt-2 text-3xl font-semibold text-amber-900">{healthDashboard.specialDietCount}</p>
-            <p className="mt-1 text-sm text-amber-800">Casos con requerimiento dietario declarado</p>
+          <div className="rounded-2xl p-4" style={{background:"rgba(245,158,11,0.08)",border:"1px solid rgba(245,158,11,0.2)"}}>
+            <p className="text-xs uppercase tracking-[0.18em] text-amber-400">Alimentación especial</p>
+            <p className="mt-2 text-3xl font-semibold text-amber-400">{healthDashboard.specialDietCount}</p>
+            <p className="mt-1 text-sm text-amber-400/70">Casos con requerimiento dietario declarado</p>
           </div>
-          <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-rose-700">Alergias</p>
-            <p className="mt-2 text-3xl font-semibold text-rose-900">{healthDashboard.allergicCount}</p>
-            <p className="mt-1 text-sm text-rose-800">Participantes con alergias activas</p>
+          <div className="rounded-2xl border border-rose-500/20 bg-rose-500/8 p-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-rose-400">Alergias</p>
+            <p className="mt-2 text-3xl font-semibold text-rose-400">{healthDashboard.allergicCount}</p>
+            <p className="mt-1 text-sm text-rose-400/70">Participantes con alergias activas</p>
           </div>
-          <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-sky-700">Enfermedad crónica</p>
-            <p className="mt-2 text-3xl font-semibold text-sky-900">{healthDashboard.chronicCount}</p>
-            <p className="mt-1 text-sm text-sky-800">Casos con patología crónica declarada</p>
+          <div className="rounded-2xl p-4" style={{background:"rgba(59,130,246,0.08)",border:"1px solid rgba(59,130,246,0.2)"}}>
+            <p className="text-xs uppercase tracking-[0.18em] text-blue-400">Enfermedad crónica</p>
+            <p className="mt-2 text-3xl font-semibold text-blue-400">{healthDashboard.chronicCount}</p>
+            <p className="mt-1 text-sm text-blue-400/70">Casos con patología crónica declarada</p>
           </div>
         </div>
 
         <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Celíacos</p>
-            <p className="mt-2 text-2xl font-semibold text-slate-900">{healthDashboard.celiacCount}</p>
+          <div className="rounded-2xl border border-white/8 bg-white/5 p-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-white/50">Celíacos</p>
+            <p className="mt-2 text-2xl font-semibold text-white">{healthDashboard.celiacCount}</p>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Veganos</p>
-            <p className="mt-2 text-2xl font-semibold text-slate-900">{healthDashboard.veganCount}</p>
+          <div className="rounded-2xl border border-white/8 bg-white/5 p-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-white/50">Veganos</p>
+            <p className="mt-2 text-2xl font-semibold text-white">{healthDashboard.veganCount}</p>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Vegetarianos</p>
-            <p className="mt-2 text-2xl font-semibold text-slate-900">{healthDashboard.vegetarianCount}</p>
+          <div className="rounded-2xl border border-white/8 bg-white/5 p-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-white/50">Vegetarianos</p>
+            <p className="mt-2 text-2xl font-semibold text-white">{healthDashboard.vegetarianCount}</p>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Con medicación</p>
-            <p className="mt-2 text-2xl font-semibold text-slate-900">{healthDashboard.medicationsCount}</p>
+          <div className="rounded-2xl border border-white/8 bg-white/5 p-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-white/50">Con medicación</p>
+            <p className="mt-2 text-2xl font-semibold text-white">{healthDashboard.medicationsCount}</p>
           </div>
         </div>
 
         <div className="mt-5 grid gap-4 xl:grid-cols-3">
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Top condiciones</p>
+          <div className="rounded-2xl border border-white/8 bg-white/5 p-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-white/50">Top condiciones</p>
             <div className="mt-3 space-y-2">
-              {healthDashboard.topConditions.length === 0 ? <p className="text-sm text-slate-500">Sin enfermedades crónicas detalladas.</p> : null}
+              {healthDashboard.topConditions.length === 0 ? <p className="text-sm text-white/50">Sin enfermedades crónicas detalladas.</p> : null}
               {healthDashboard.topConditions.map((item) => (
-                <div key={item.label} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2">
-                  <span className="text-sm font-medium text-slate-700">{item.label}</span>
-                  <span className="rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-800">{item.count}</span>
+                <div key={item.label} className="flex items-center justify-between rounded-xl bg-white/5 px-3 py-2">
+                  <span className="text-sm font-medium text-white/80">{item.label}</span>
+                  <span className="rounded-full bg-white/15 px-2.5 py-1 text-xs font-semibold text-white/80">{item.count}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Top alergias</p>
+          <div className="rounded-2xl border border-white/8 bg-white/5 p-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-white/50">Top alergias</p>
             <div className="mt-3 space-y-2">
-              {healthDashboard.topAllergies.length === 0 ? <p className="text-sm text-slate-500">Sin alergias detalladas.</p> : null}
+              {healthDashboard.topAllergies.length === 0 ? <p className="text-sm text-white/50">Sin alergias detalladas.</p> : null}
               {healthDashboard.topAllergies.map((item) => (
-                <div key={item.label} className="flex items-center justify-between rounded-xl bg-rose-50 px-3 py-2">
-                  <span className="text-sm font-medium text-slate-700">{item.label}</span>
-                  <span className="rounded-full bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-800">{item.count}</span>
+                <div key={item.label} className="flex items-center justify-between rounded-xl bg-rose-500/10 px-3 py-2">
+                  <span className="text-sm font-medium text-white/80">{item.label}</span>
+                  <span className="rounded-full bg-rose-500/20 px-2.5 py-1 text-xs font-semibold text-rose-300">{item.count}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Top dietas y restricciones</p>
+          <div className="rounded-2xl border border-white/8 bg-white/5 p-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-white/50">Top dietas y restricciones</p>
             <div className="mt-3 space-y-2">
-              {healthDashboard.topDiets.length === 0 ? <p className="text-sm text-slate-500">Sin alimentación especial detallada.</p> : null}
+              {healthDashboard.topDiets.length === 0 ? <p className="text-sm text-white/50">Sin alimentación especial detallada.</p> : null}
               {healthDashboard.topDiets.map((item) => (
-                <div key={item.label} className="flex items-center justify-between rounded-xl bg-amber-50 px-3 py-2">
-                  <span className="text-sm font-medium text-slate-700">{item.label}</span>
-                  <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">{item.count}</span>
+                <div key={item.label} className="flex items-center justify-between rounded-xl bg-amber-500/10 px-3 py-2">
+                  <span className="text-sm font-medium text-white/80">{item.label}</span>
+                  <span className="rounded-full bg-amber-500/20 px-2.5 py-1 text-xs font-semibold text-amber-300">{item.count}</span>
                 </div>
               ))}
             </div>
@@ -1240,9 +1242,9 @@ export default function HealthPage() {
         <section className="surface rounded-3xl p-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Subsección Salud / Carga masiva</p>
-              <h2 className="mt-1 text-2xl font-semibold text-slate-900">Importar fichas de salud</h2>
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="text-xs uppercase tracking-[0.2em] text-white/50">Subsección Salud / Carga masiva</p>
+              <h2 className="mt-1 text-2xl font-semibold text-white">Importar fichas de salud</h2>
+              <p className="mt-1 text-sm text-white/50">
                 Actualiza fichas por lote usando `athlete_id` o `passport_number`, respetando el filtro actual.
               </p>
             </div>
@@ -1252,12 +1254,12 @@ export default function HealthPage() {
           </div>
 
           <div className="mt-5 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div className="rounded-2xl border border-white/8 bg-white/5 p-4">
               <label className="block">
-                <span className="text-sm font-medium text-slate-700">Archivo Excel</span>
+                <span className="text-sm font-medium text-white/80">Archivo Excel</span>
                 <input className="input mt-2" type="file" accept=".xlsx,.xls" onChange={onBulkFileChange} />
               </label>
-              <div className="mt-3 space-y-2 text-sm text-slate-600">
+              <div className="mt-3 space-y-2 text-sm text-white/65">
                 <p><strong>Archivo:</strong> {bulkFileName || "-"}</p>
                 <p><strong>Filas detectadas:</strong> {bulkRows.length}</p>
                 <p><strong>Evento filtrado:</strong> {events.find((item) => item.id === selectedEventId)?.name || "Sin filtro"}</p>
@@ -1270,13 +1272,13 @@ export default function HealthPage() {
                   Limpiar
                 </button>
               </div>
-              {bulkResult ? <p className="mt-3 text-sm font-medium text-emerald-700">{bulkResult}</p> : null}
+              {bulkResult ? <p className="mt-3 text-sm font-medium text-emerald-400">{bulkResult}</p> : null}
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Vista previa</p>
+            <div className="rounded-2xl border border-white/8 bg-white/5 p-4">
+              <p className="text-xs uppercase tracking-[0.18em] text-white/50">Vista previa</p>
               {bulkPreview.length === 0 ? (
-                <p className="mt-3 text-sm text-slate-500">Aún no hay archivo cargado.</p>
+                <p className="mt-3 text-sm text-white/50">Aún no hay archivo cargado.</p>
               ) : (
                 <div className="mt-3 overflow-x-auto">
                   <table className="table">
@@ -1306,9 +1308,9 @@ export default function HealthPage() {
                 </div>
               )}
               {bulkErrors.length ? (
-                <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-4">
-                  <p className="text-sm font-semibold text-rose-800">Errores detectados</p>
-                  <div className="mt-2 space-y-1 text-sm text-rose-700">
+                <div className="mt-4 rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4">
+                  <p className="text-sm font-semibold text-rose-300">Errores detectados</p>
+                  <div className="mt-2 space-y-1 text-sm text-rose-300/80">
                     {bulkErrors.slice(0, 12).map((item, index) => (
                       <p key={`${item.row}-${item.field}-${index}`}>
                         {item.row > 0 ? `Fila ${item.row}` : "Sistema"}{item.field ? ` · ${item.field}` : ""}: {item.message}
@@ -1324,10 +1326,10 @@ export default function HealthPage() {
 
       {activeSubsection === "record" ? <form onSubmit={save} className="space-y-4">
         <section className="surface rounded-2xl p-5">
-          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Antecedentes personales</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-white/50">Antecedentes personales</p>
           <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             <label className="space-y-1">
-              <span className="text-sm font-medium text-slate-700">Deporte</span>
+              <span className="text-sm font-medium text-white/80">Deporte</span>
               <select
                 className="input"
                 value={record.sport}
@@ -1341,78 +1343,78 @@ export default function HealthPage() {
                 ))}
               </select>
             </label>
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">Nombre completo</span><input className="input" value={record.personal.fullName} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, fullName: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">Nombre social</span><input className="input" value={record.personal.socialName} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, socialName: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">Género con que te identificas</span><input className="input" value={record.personal.genderIdentity} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, genderIdentity: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">Género cédula</span><input className="input" value={record.personal.idCardGender} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, idCardGender: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">RUT</span><input className="input" value={record.personal.rut} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, rut: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">Estatura</span><input className="input" value={record.personal.height} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, height: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">Peso corporal</span><input className="input" value={record.personal.weight} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, weight: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">Fecha nacimiento</span><input className="input" type="date" value={record.personal.birthDate} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, birthDate: e.target.value } }))} /></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Nombre completo</span><input className="input" value={record.personal.fullName} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, fullName: e.target.value } }))} /></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Nombre social</span><input className="input" value={record.personal.socialName} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, socialName: e.target.value } }))} /></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Género con que te identificas</span><input className="input" value={record.personal.genderIdentity} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, genderIdentity: e.target.value } }))} /></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Género cédula</span><input className="input" value={record.personal.idCardGender} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, idCardGender: e.target.value } }))} /></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">RUT</span><input className="input" value={record.personal.rut} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, rut: e.target.value } }))} /></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Estatura</span><input className="input" value={record.personal.height} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, height: e.target.value } }))} /></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Peso corporal</span><input className="input" value={record.personal.weight} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, weight: e.target.value } }))} /></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Fecha nacimiento</span><input className="input" type="date" value={record.personal.birthDate} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, birthDate: e.target.value } }))} /></label>
             {yesNo("Alérgico", record.personal.allergic, (value) => setRecord((p) => ({ ...p, personal: { ...p.personal, allergic: value } })))}
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">Alérgico a</span><input className="input" value={record.personal.allergicTo} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, allergicTo: e.target.value } }))} /></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Alérgico a</span><input className="input" value={record.personal.allergicTo} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, allergicTo: e.target.value } }))} /></label>
             {yesNo("Enfermedades crónicas", record.personal.chronicDiseases, (value) => setRecord((p) => ({ ...p, personal: { ...p.personal, chronicDiseases: value } })))}
-            <label className="space-y-1 md:col-span-2"><span className="text-sm font-medium text-slate-700">Detalle crónico / medicamentos</span><input className="input" value={record.personal.chronicDetail} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, chronicDetail: e.target.value } }))} /></label>
+            <label className="space-y-1 md:col-span-2"><span className="text-sm font-medium text-white/80">Detalle crónico / medicamentos</span><input className="input" value={record.personal.chronicDetail} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, chronicDetail: e.target.value } }))} /></label>
             {yesNo("Tratamiento psiquiátrico", record.personal.psychiatricTreatment, (value) => setRecord((p) => ({ ...p, personal: { ...p.personal, psychiatricTreatment: value } })))}
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">Detalle tratamiento</span><input className="input" value={record.personal.psychiatricDetail} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, psychiatricDetail: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">Diagnóstico psiquiátrico</span><input className="input" value={record.personal.psychiatricDiagnosis} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, psychiatricDiagnosis: e.target.value } }))} /></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Detalle tratamiento</span><input className="input" value={record.personal.psychiatricDetail} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, psychiatricDetail: e.target.value } }))} /></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Diagnóstico psiquiátrico</span><input className="input" value={record.personal.psychiatricDiagnosis} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, psychiatricDiagnosis: e.target.value } }))} /></label>
             {yesNo("Medicamentos psiquiátricos", record.personal.psychiatricMedications, (value) => setRecord((p) => ({ ...p, personal: { ...p.personal, psychiatricMedications: value } })))}
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">Dosis y horarios</span><input className="input" value={record.personal.psychiatricDoseSchedule} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, psychiatricDoseSchedule: e.target.value } }))} /></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Dosis y horarios</span><input className="input" value={record.personal.psychiatricDoseSchedule} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, psychiatricDoseSchedule: e.target.value } }))} /></label>
             {yesNo("Alimentación especial", record.personal.specialDiet, (value) => setRecord((p) => ({ ...p, personal: { ...p.personal, specialDiet: value } })))}
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">¿Cuál?</span><input className="input" value={record.personal.specialDietDetail} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, specialDietDetail: e.target.value } }))} /></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">¿Cuál?</span><input className="input" value={record.personal.specialDietDetail} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, specialDietDetail: e.target.value } }))} /></label>
           </div>
         </section>
 
         <section className="surface rounded-2xl p-5">
-          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Contacto, representación y emergencia</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-white/50">Contacto, representación y emergencia</p>
           <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            <label className="space-y-1 md:col-span-2"><span className="text-sm font-medium text-slate-700">Dirección</span><input className="input" value={record.contact.address} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, address: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">Comuna</span><input className="input" value={record.contact.commune} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, commune: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">Ciudad</span><input className="input" value={record.contact.city} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, city: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">Región</span><input className="input" value={record.contact.region} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, region: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">Fono</span><input className="input" value={record.contact.phone} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, phone: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">Email</span><input className="input" value={record.contact.email} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, email: e.target.value } }))} /></label>
+            <label className="space-y-1 md:col-span-2"><span className="text-sm font-medium text-white/80">Dirección</span><input className="input" value={record.contact.address} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, address: e.target.value } }))} /></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Comuna</span><input className="input" value={record.contact.commune} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, commune: e.target.value } }))} /></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Ciudad</span><input className="input" value={record.contact.city} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, city: e.target.value } }))} /></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Región</span><input className="input" value={record.contact.region} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, region: e.target.value } }))} /></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Fono</span><input className="input" value={record.contact.phone} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, phone: e.target.value } }))} /></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Email</span><input className="input" value={record.contact.email} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, email: e.target.value } }))} /></label>
             {yesNo("Pueblo originario", record.contact.indigenous, (value) => setRecord((p) => ({ ...p, contact: { ...p.contact, indigenous: value } })))}
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">¿Cuál?</span><input className="input" value={record.contact.indigenousDetail} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, indigenousDetail: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">Talla ropa</span><select className="input" value={record.contact.shirtSize} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, shirtSize: e.target.value } }))}><option value="">Selecciona</option>{SHIRT_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}</select></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">Dependencia establecimiento</span><select className="input" value={record.representation.dependencyType} onChange={(e) => setRecord((p) => ({ ...p, representation: { ...p.representation, dependencyType: e.target.value } }))}><option value="">Selecciona</option>{DEPENDENCY_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
-            <label className="space-y-1 md:col-span-2"><span className="text-sm font-medium text-slate-700">Institución que representa</span><input className="input" value={record.representation.institutionName} onChange={(e) => setRecord((p) => ({ ...p, representation: { ...p.representation, institutionName: e.target.value } }))} /></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">¿Cuál?</span><input className="input" value={record.contact.indigenousDetail} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, indigenousDetail: e.target.value } }))} /></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Talla ropa</span><select className="input" value={record.contact.shirtSize} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, shirtSize: e.target.value } }))}><option value="">Selecciona</option>{SHIRT_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}</select></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Dependencia establecimiento</span><select className="input" value={record.representation.dependencyType} onChange={(e) => setRecord((p) => ({ ...p, representation: { ...p.representation, dependencyType: e.target.value } }))}><option value="">Selecciona</option>{DEPENDENCY_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
+            <label className="space-y-1 md:col-span-2"><span className="text-sm font-medium text-white/80">Institución que representa</span><input className="input" value={record.representation.institutionName} onChange={(e) => setRecord((p) => ({ ...p, representation: { ...p.representation, institutionName: e.target.value } }))} /></label>
             {yesNo("Inscrito en club", record.representation.enrolledClub, (value) => setRecord((p) => ({ ...p, representation: { ...p.representation, enrolledClub: value } })))}
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">Nombre del club</span><input className="input" value={record.representation.clubName} onChange={(e) => setRecord((p) => ({ ...p, representation: { ...p.representation, clubName: e.target.value } }))} /></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Nombre del club</span><input className="input" value={record.representation.clubName} onChange={(e) => setRecord((p) => ({ ...p, representation: { ...p.representation, clubName: e.target.value } }))} /></label>
             {yesNo("Promesas Chile", record.representation.promesasChile, (value) => setRecord((p) => ({ ...p, representation: { ...p.representation, promesasChile: value } })))}
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">Emergencia: nombre</span><input className="input" value={record.emergency.name} onChange={(e) => setRecord((p) => ({ ...p, emergency: { ...p.emergency, name: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">Emergencia: teléfono</span><input className="input" value={record.emergency.phone} onChange={(e) => setRecord((p) => ({ ...p, emergency: { ...p.emergency, phone: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">Emergencia: email</span><input className="input" value={record.emergency.email} onChange={(e) => setRecord((p) => ({ ...p, emergency: { ...p.emergency, email: e.target.value } }))} /></label>
-            <label className="space-y-1 md:col-span-2"><span className="text-sm font-medium text-slate-700">Emergencia: dirección</span><input className="input" value={record.emergency.address} onChange={(e) => setRecord((p) => ({ ...p, emergency: { ...p.emergency, address: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">Parentesco/Relación</span><input className="input" value={record.emergency.relation} onChange={(e) => setRecord((p) => ({ ...p, emergency: { ...p.emergency, relation: e.target.value } }))} /></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Emergencia: nombre</span><input className="input" value={record.emergency.name} onChange={(e) => setRecord((p) => ({ ...p, emergency: { ...p.emergency, name: e.target.value } }))} /></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Emergencia: teléfono</span><input className="input" value={record.emergency.phone} onChange={(e) => setRecord((p) => ({ ...p, emergency: { ...p.emergency, phone: e.target.value } }))} /></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Emergencia: email</span><input className="input" value={record.emergency.email} onChange={(e) => setRecord((p) => ({ ...p, emergency: { ...p.emergency, email: e.target.value } }))} /></label>
+            <label className="space-y-1 md:col-span-2"><span className="text-sm font-medium text-white/80">Emergencia: dirección</span><input className="input" value={record.emergency.address} onChange={(e) => setRecord((p) => ({ ...p, emergency: { ...p.emergency, address: e.target.value } }))} /></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Parentesco/Relación</span><input className="input" value={record.emergency.relation} onChange={(e) => setRecord((p) => ({ ...p, emergency: { ...p.emergency, relation: e.target.value } }))} /></label>
           </div>
         </section>
 
         <section className="surface rounded-2xl p-5">
-          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Certificados y autorizaciones</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-white/50">Certificados y autorizaciones</p>
           <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">Cert. salud: nombre deportista</span><input className="input" value={record.healthCertificate.athleteName} onChange={(e) => setRecord((p) => ({ ...p, healthCertificate: { ...p.healthCertificate, athleteName: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">Aptitud física</span><select className="input" value={record.healthCertificate.fitness} onChange={(e) => setRecord((p) => ({ ...p, healthCertificate: { ...p.healthCertificate, fitness: e.target.value as "" | "APTO" | "NO_APTO" } }))}><option value="">Selecciona</option><option value="APTO">Apto(a)</option><option value="NO_APTO">No apto(a)</option></select></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">Médico: nombre</span><input className="input" value={record.healthCertificate.doctorName} onChange={(e) => setRecord((p) => ({ ...p, healthCertificate: { ...p.healthCertificate, doctorName: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">Médico: RUT</span><input className="input" value={record.healthCertificate.doctorRut} onChange={(e) => setRecord((p) => ({ ...p, healthCertificate: { ...p.healthCertificate, doctorRut: e.target.value } }))} /></label>
-            <label className="space-y-1 md:col-span-2"><span className="text-sm font-medium text-slate-700">Firma y timbre médico</span><input className="input" value={record.healthCertificate.signatureStamp} onChange={(e) => setRecord((p) => ({ ...p, healthCertificate: { ...p.healthCertificate, signatureStamp: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">Apoderado(a): nombre</span><input className="input" value={record.guardianAuthorization.guardianName} onChange={(e) => setRecord((p) => ({ ...p, guardianAuthorization: { ...p.guardianAuthorization, guardianName: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">Apoderado(a): RUT</span><input className="input" value={record.guardianAuthorization.guardianRut} onChange={(e) => setRecord((p) => ({ ...p, guardianAuthorization: { ...p.guardianAuthorization, guardianRut: e.target.value } }))} /></label>
-            <label className="space-y-1 md:col-span-2"><span className="text-sm font-medium text-slate-700">Firma apoderado(a)</span><input className="input" value={record.guardianAuthorization.guardianSignature} onChange={(e) => setRecord((p) => ({ ...p, guardianAuthorization: { ...p.guardianAuthorization, guardianSignature: e.target.value } }))} /></label>
-            <label className="space-y-1 md:col-span-2"><span className="text-sm font-medium text-slate-700">Cert. escolar: establecimiento</span><input className="input" value={record.schoolCertificate.establishmentName} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, establishmentName: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">Alumno(a)</span><input className="input" value={record.schoolCertificate.studentName} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, studentName: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">RUT alumno(a)</span><input className="input" value={record.schoolCertificate.studentRut} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, studentRut: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">Director(a): nombre</span><input className="input" value={record.schoolCertificate.directorName} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, directorName: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">Director(a): RUT</span><input className="input" value={record.schoolCertificate.directorRut} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, directorRut: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">Firma director(a)</span><input className="input" value={record.schoolCertificate.directorSignature} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, directorSignature: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">Timbre director(a)</span><input className="input" value={record.schoolCertificate.directorStamp} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, directorStamp: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-slate-700">Fecha certificado</span><input className="input" type="date" value={record.schoolCertificate.certificateDate} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, certificateDate: e.target.value } }))} /></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Cert. salud: nombre deportista</span><input className="input" value={record.healthCertificate.athleteName} onChange={(e) => setRecord((p) => ({ ...p, healthCertificate: { ...p.healthCertificate, athleteName: e.target.value } }))} /></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Aptitud física</span><select className="input" value={record.healthCertificate.fitness} onChange={(e) => setRecord((p) => ({ ...p, healthCertificate: { ...p.healthCertificate, fitness: e.target.value as "" | "APTO" | "NO_APTO" } }))}><option value="">Selecciona</option><option value="APTO">Apto(a)</option><option value="NO_APTO">No apto(a)</option></select></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Médico: nombre</span><input className="input" value={record.healthCertificate.doctorName} onChange={(e) => setRecord((p) => ({ ...p, healthCertificate: { ...p.healthCertificate, doctorName: e.target.value } }))} /></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Médico: RUT</span><input className="input" value={record.healthCertificate.doctorRut} onChange={(e) => setRecord((p) => ({ ...p, healthCertificate: { ...p.healthCertificate, doctorRut: e.target.value } }))} /></label>
+            <label className="space-y-1 md:col-span-2"><span className="text-sm font-medium text-white/80">Firma y timbre médico</span><input className="input" value={record.healthCertificate.signatureStamp} onChange={(e) => setRecord((p) => ({ ...p, healthCertificate: { ...p.healthCertificate, signatureStamp: e.target.value } }))} /></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Apoderado(a): nombre</span><input className="input" value={record.guardianAuthorization.guardianName} onChange={(e) => setRecord((p) => ({ ...p, guardianAuthorization: { ...p.guardianAuthorization, guardianName: e.target.value } }))} /></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Apoderado(a): RUT</span><input className="input" value={record.guardianAuthorization.guardianRut} onChange={(e) => setRecord((p) => ({ ...p, guardianAuthorization: { ...p.guardianAuthorization, guardianRut: e.target.value } }))} /></label>
+            <label className="space-y-1 md:col-span-2"><span className="text-sm font-medium text-white/80">Firma apoderado(a)</span><input className="input" value={record.guardianAuthorization.guardianSignature} onChange={(e) => setRecord((p) => ({ ...p, guardianAuthorization: { ...p.guardianAuthorization, guardianSignature: e.target.value } }))} /></label>
+            <label className="space-y-1 md:col-span-2"><span className="text-sm font-medium text-white/80">Cert. escolar: establecimiento</span><input className="input" value={record.schoolCertificate.establishmentName} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, establishmentName: e.target.value } }))} /></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Alumno(a)</span><input className="input" value={record.schoolCertificate.studentName} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, studentName: e.target.value } }))} /></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">RUT alumno(a)</span><input className="input" value={record.schoolCertificate.studentRut} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, studentRut: e.target.value } }))} /></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Director(a): nombre</span><input className="input" value={record.schoolCertificate.directorName} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, directorName: e.target.value } }))} /></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Director(a): RUT</span><input className="input" value={record.schoolCertificate.directorRut} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, directorRut: e.target.value } }))} /></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Firma director(a)</span><input className="input" value={record.schoolCertificate.directorSignature} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, directorSignature: e.target.value } }))} /></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Timbre director(a)</span><input className="input" value={record.schoolCertificate.directorStamp} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, directorStamp: e.target.value } }))} /></label>
+            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Fecha certificado</span><input className="input" type="date" value={record.schoolCertificate.certificateDate} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, certificateDate: e.target.value } }))} /></label>
           </div>
         </section>
 
         <section className="surface rounded-2xl p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="text-sm text-slate-600">
+            <div className="text-sm text-white/65">
               {selectedAthlete ? `Participante seleccionado: ${selectedAthlete.fullName || selectedAthlete.id}` : "Selecciona un participante para guardar la ficha."}
             </div>
             <button className="btn btn-primary px-8" type="submit" disabled={!selectedAthleteId || saving}>
@@ -1423,9 +1425,11 @@ export default function HealthPage() {
             </button>
           </div>
           {error ? <p className="mt-3 text-sm text-rose-600">{error}</p> : null}
-          {message ? <p className="mt-3 text-sm text-emerald-700">{message}</p> : null}
+          {message ? <p className="mt-3 text-sm text-emerald-400">{message}</p> : null}
         </section>
       </form> : null}
     </div>
   );
 }
+
+

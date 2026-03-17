@@ -8,14 +8,12 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-mesh">
-      <div className="flex">
-        <SideNav />
-        <main className="min-w-0 flex-1 overflow-x-hidden px-6 py-6">
-          <TopBar />
-          <div className="mt-6 min-w-0 overflow-x-hidden">{children}</div>
-        </main>
-      </div>
+    <div className="bg-mesh min-h-screen flex">
+      <SideNav />
+      <main className="flex-1 min-w-0 overflow-x-hidden px-7 py-7">
+        <TopBar />
+        <div className="min-w-0">{children}</div>
+      </main>
       <SofiaWidget />
     </div>
   );

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { filterValidatedAthletes } from "@/lib/athletes";
 
 type EventItem = {
   id: string;
@@ -146,7 +147,7 @@ export default function AndRegistrationKpi({
       setEvents(safeEvents);
       setDisciplines(Array.isArray(disciplineData) ? disciplineData : []);
       setDelegations(Array.isArray(delegationData) ? delegationData : []);
-      setAthletes(Array.isArray(athleteData) ? athleteData : []);
+      setAthletes(filterValidatedAthletes(Array.isArray(athleteData) ? athleteData : []));
       if (!selectedEventId && safeEvents.length) setSelectedEventId(safeEvents[0].id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo cargar KPI AND.");
@@ -203,7 +204,7 @@ export default function AndRegistrationKpi({
         ? expectedFromRows.matrix
         : readExpectedByDisciplineDelegation(selectedEvent.config);
 
-    const eventAthletes = athletes.filter((a) => a.eventId === selectedEvent.id);
+    const eventAthletes = filterValidatedAthletes(athletes).filter((a) => a.eventId === selectedEvent.id);
     const scopedAthletes = selectedDelegationId
       ? eventAthletes.filter((a) => a.delegationId === selectedDelegationId)
       : eventAthletes;
@@ -266,12 +267,12 @@ export default function AndRegistrationKpi({
   }, [rows, selectedDelegationId]);
 
   return (
-    <section className="surface rounded-3xl border border-slate-200 p-5 shadow-sm">
+    <section className="surface rounded-3xl border border-white/10 p-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.22em] text-slate-500">{eyebrow}</p>
-          <h2 className="mt-1 text-2xl font-semibold text-slate-900">{title}</h2>
-          <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
+          <p className="text-xs uppercase tracking-[0.22em] text-white/50">{eyebrow}</p>
+          <h2 className="mt-1 text-2xl font-semibold text-white">{title}</h2>
+          <p className="mt-1 text-sm text-white/50">{subtitle}</p>
         </div>
         <button className="btn btn-ghost" type="button" onClick={load} disabled={loading}>
           {loading ? "Actualizando..." : "Refrescar KPI"}
@@ -291,60 +292,60 @@ export default function AndRegistrationKpi({
             <option key={delegation.id} value={delegation.id}>{delegation.countryCode || delegation.id}</option>
           ))}
         </select>
-        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-          <div className="text-xs text-slate-500">Esperado</div>
-          <div className="text-lg font-semibold text-slate-900">
+        <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+          <div className="text-xs text-white/50">Esperado</div>
+          <div className="text-lg font-semibold text-white">
             {selectedDelegationId && !totals.hasComparableExpected ? "-" : totals.expected}
           </div>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-          <div className="text-xs text-slate-500">Registrado</div>
-          <div className="text-lg font-semibold text-slate-900">{totals.registered}</div>
+        <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+          <div className="text-xs text-white/50">Registrado</div>
+          <div className="text-lg font-semibold text-white">{totals.registered}</div>
         </div>
       </div>
 
       <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200 bg-white p-4">
-          <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Cumplimiento total</p>
+        <div className="rounded-2xl border border-white/10 bg-white/4 p-4">
+          <p className="text-xs uppercase tracking-[0.18em] text-white/50">Cumplimiento total</p>
           <div className="mt-2 flex items-end gap-2">
-            <p className="text-3xl font-semibold text-emerald-700">
+            <p className="text-3xl font-semibold text-emerald-400">
               {totals.pct === null ? "N/D" : formatPercent(totals.pct)}
             </p>
-            <p className="pb-1 text-sm text-slate-500">esperado vs registrado</p>
+            <p className="pb-1 text-sm text-white/50">esperado vs registrado</p>
           </div>
-          <div className="mt-3 h-2 rounded-full bg-slate-200">
+          <div className="mt-3 h-2 rounded-full bg-white/10">
             <div className="h-2 rounded-full bg-emerald-500" style={{ width: `${Math.min(totals.pct ?? 0, 100)}%` }} />
           </div>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-4">
-          <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Brecha neta</p>
+        <div className="rounded-2xl border border-white/10 bg-white/4 p-4">
+          <p className="text-xs uppercase tracking-[0.18em] text-white/50">Brecha neta</p>
           <p
             className={`mt-2 text-3xl font-semibold ${
               totals.variance === null
-                ? "text-slate-500"
+                ? "text-white/50"
                 : totals.variance < 0
-                  ? "text-rose-700"
+                  ? "text-rose-400"
                   : totals.variance > 0
-                    ? "text-amber-700"
-                    : "text-emerald-700"
+                    ? "text-amber-400"
+                    : "text-emerald-400"
             }`}
           >
             {totals.variance === null ? "-" : totals.variance > 0 ? `+${totals.variance}` : totals.variance}
           </p>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-white/50">
             {totals.variance === null
               ? "Sin meta por delegacion configurada"
               : "Participantes respecto del objetivo definido"}
           </p>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-4">
-          <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Vista activa</p>
-          <p className="mt-2 text-base font-semibold text-slate-900">
+        <div className="rounded-2xl border border-white/10 bg-white/4 p-4">
+          <p className="text-xs uppercase tracking-[0.18em] text-white/50">Vista activa</p>
+          <p className="mt-2 text-base font-semibold text-white">
             {selectedDelegationId
               ? `Delegacion ${filteredDelegations.find((d) => d.id === selectedDelegationId)?.countryCode || selectedDelegationId}`
               : "Consolidado del evento"}
           </p>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-white/50">
             {selectedDelegationId
               ? totals.hasComparableExpected
                 ? "Usa capacidad por disciplina + delegacion"
@@ -354,7 +355,7 @@ export default function AndRegistrationKpi({
         </div>
       </div>
 
-      {error ? <p className="mt-3 text-sm text-rose-600">{error}</p> : null}
+      {error ? <p className="mt-3 text-sm text-rose-400">{error}</p> : null}
 
       <div className="mt-4 overflow-x-auto">
         <table className="table">
@@ -370,21 +371,21 @@ export default function AndRegistrationKpi({
           <tbody>
             {rows.map((row) => (
               <tr key={row.disciplineId}>
-                <td className="font-medium text-slate-900">{row.disciplineName}</td>
+                <td className="font-medium text-white">{row.disciplineName}</td>
                 <td>{row.hasDelegationExpected ? row.expected : "-"}</td>
                 <td>{row.registered}</td>
-                <td className={row.variance === null ? "text-slate-400" : row.variance < 0 ? "text-rose-600" : row.variance > 0 ? "text-amber-700" : "text-emerald-700"}>
+                <td className={row.variance === null ? "text-white/40" : row.variance < 0 ? "text-rose-400" : row.variance > 0 ? "text-amber-400" : "text-emerald-400"}>
                   {row.variance === null ? "-" : row.variance > 0 ? `+${row.variance}` : row.variance}
                 </td>
                 <td>
                   <div className="flex min-w-[220px] items-center gap-2">
-                    <div className="h-2 flex-1 rounded-full bg-slate-200">
+                    <div className="h-2 flex-1 rounded-full bg-white/10">
                       <div
                         className={`h-2 rounded-full ${row.statusTone === "good" ? "bg-emerald-500" : row.statusTone === "over" ? "bg-amber-500" : "bg-cyan-500"}`}
                         style={{ width: `${Math.min(row.pct ?? 0, 100)}%` }}
                       />
                     </div>
-                    <span className="min-w-[52px] text-right text-xs font-semibold text-slate-700">
+                    <span className="min-w-[52px] text-right text-xs font-semibold text-white/85">
                       {row.pct === null ? "N/D" : formatPercent(row.pct)}
                     </span>
                   </div>
@@ -396,7 +397,7 @@ export default function AndRegistrationKpi({
       </div>
 
       {!loading && rows.length === 0 ? (
-        <p className="mt-3 text-sm text-slate-500">
+        <p className="mt-3 text-sm text-white/50">
           Define primero la planificacion AND en Eventos (capacidad por disciplina y por delegacion) para ver este KPI.
         </p>
       ) : null}

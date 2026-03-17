@@ -132,13 +132,13 @@ export default function ScannerPortal() {
   };
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,#e0f2fe_0%,#eef4ff_38%,#f8fafc_100%)] text-slate-950">
+    <main className="min-h-screen bg-[#0b1628] text-white">
       <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-4 sm:px-6 sm:py-6">
-        <section className="overflow-hidden rounded-[32px] border border-white/60 bg-[linear-gradient(135deg,#0f172a_0%,#1d4ed8_48%,#0f766e_100%)] shadow-[0_30px_90px_rgba(15,23,42,0.22)]">
+        <section className="overflow-hidden rounded-[32px] border border-white/10 bg-[linear-gradient(135deg,#0f172a_0%,#1d4ed8_48%,#0f766e_100%)] shadow-[0_30px_90px_rgba(0,0,0,0.45)]">
           <div className="flex flex-col gap-5 px-5 py-6 sm:px-8 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-2xl rounded-[24px] bg-slate-950/14 px-1 py-1" style={{ color: "#ffffff" }}>
+            <div className="max-w-2xl rounded-[24px] px-1 py-1" style={{ color: "#ffffff" }}>
               <div
-                className="inline-flex items-center rounded-full border border-white/35 bg-slate-950/18 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.3em] backdrop-blur"
+                className="inline-flex items-center rounded-full border border-white/35 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.3em] backdrop-blur"
                 style={{ color: "#ffffff", textShadow: "0 1px 2px rgba(0,0,0,0.28)" }}
               >
                 Control de acceso
@@ -151,7 +151,7 @@ export default function ScannerPortal() {
               </h1>
               <p
                 className="mt-3 max-w-lg text-sm font-medium leading-6 sm:text-[15px]"
-                style={{ color: "rgba(255,255,255,0.92)", textShadow: "0 1px 2px rgba(0,0,0,0.22)" }}
+                style={{ color: "rgba(255,255,255,0.85)", textShadow: "0 1px 2px rgba(0,0,0,0.22)" }}
               >
                 Selecciona el lugar y escanea la credencial desde una vista optimizada para telefono.
               </p>
@@ -167,11 +167,11 @@ export default function ScannerPortal() {
                     onClick={() => setSelectedLocation(item.value)}
                     className={`rounded-2xl border px-4 py-3 text-left transition ${
                       active
-                        ? "border-white/70 bg-white text-slate-950 shadow-lg shadow-slate-950/20"
-                        : "border-white/26 bg-white/10 text-white hover:bg-white/16"
+                        ? "border-white/70 bg-white/20 text-white shadow-lg shadow-black/20 backdrop-blur"
+                        : "border-white/20 bg-white/8 text-white hover:bg-white/15"
                     }`}
                   >
-                    <div className={`text-[10px] uppercase tracking-[0.24em] ${active ? "text-slate-500" : "text-white/76"}`}>Lugar</div>
+                    <div className={`text-[10px] uppercase tracking-[0.24em] ${active ? "text-white/60" : "text-white/50"}`}>Lugar</div>
                     <div className="mt-1 text-sm font-semibold sm:text-base">{item.label}</div>
                   </button>
                 );
@@ -181,12 +181,12 @@ export default function ScannerPortal() {
         </section>
 
         <section className="mt-5 grid flex-1 gap-5 xl:grid-cols-[1.08fr_0.92fr]">
-          <div className="overflow-hidden rounded-[30px] border border-slate-200/80 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.12)]">
-            <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-4 sm:px-6">
+          <div className="overflow-hidden rounded-[30px] border border-white/10 bg-white/4 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
+            <div className="border-b border-white/10 bg-white/4 px-5 py-4 sm:px-6">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Camara activa</p>
-                  <p className="mt-1 text-lg font-semibold text-slate-950">Escaneo en {selectedLocationMeta.label}</p>
+                  <p className="text-xs uppercase tracking-[0.24em] text-white/40">Camara activa</p>
+                  <p className="mt-1 text-lg font-semibold text-white">Escaneo en {selectedLocationMeta.label}</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <button className="btn btn-primary" type="button" disabled={!scannerReady || scanning} onClick={() => void startScanner()}>
@@ -201,12 +201,12 @@ export default function ScannerPortal() {
 
             <div className="p-4 sm:p-6">
               <div
-                className="rounded-[28px] border border-slate-200 bg-[linear-gradient(180deg,#020617_0%,#111827_100%)] p-3 sm:p-4"
+                className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,#020617_0%,#111827_100%)] p-3 sm:p-4"
                 style={{ boxShadow: `inset 0 0 0 1px ${selectedLocationMeta.accent}22` }}
               >
-                <div className="mb-3 flex items-center justify-between px-2 text-[11px] uppercase tracking-[0.24em] text-slate-400">
+                <div className="mb-3 flex items-center justify-between px-2 text-[11px] uppercase tracking-[0.24em] text-white/40">
                   <span>Camara posterior</span>
-                  <span className={scanning ? "text-emerald-400" : "text-slate-500"}>{scanning ? "Activa" : "En espera"}</span>
+                  <span className={scanning ? "text-emerald-400" : "text-white/40"}>{scanning ? "Activa" : "En espera"}</span>
                 </div>
                 <div
                   id={regionId}
@@ -215,7 +215,7 @@ export default function ScannerPortal() {
               </div>
 
               {error ? (
-                <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                <div className="mt-4 rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-400">
                   {error}
                 </div>
               ) : null}
@@ -223,80 +223,80 @@ export default function ScannerPortal() {
           </div>
 
           <div className="flex flex-col gap-5">
-            <section className="overflow-hidden rounded-[30px] border border-slate-200/80 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.12)]">
-              <div className="border-b border-slate-200 bg-white px-5 py-4 sm:px-6">
-                <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Ultimo escaneo</p>
-                <p className="mt-1 text-lg font-semibold text-slate-950">Resultado de validacion</p>
+            <section className="overflow-hidden rounded-[30px] border border-white/10 bg-white/4 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
+              <div className="border-b border-white/10 bg-white/4 px-5 py-4 sm:px-6">
+                <p className="text-xs uppercase tracking-[0.24em] text-white/40">Ultimo escaneo</p>
+                <p className="mt-1 text-lg font-semibold text-white">Resultado de validacion</p>
               </div>
               <div className="p-4 sm:p-6">
                 {currentScan ? (
                   <div className="space-y-4">
                     <div
-                      className="rounded-[26px] border px-4 py-4 text-white sm:px-5"
+                      className="rounded-[26px] border border-white/10 px-4 py-4 text-white sm:px-5"
                       style={{ background: `linear-gradient(135deg, ${selectedLocationMeta.accent} 0%, #0f172a 100%)` }}
                     >
-                      <p className="text-[11px] uppercase tracking-[0.24em] text-white/72">Punto de acceso</p>
+                      <p className="text-[11px] uppercase tracking-[0.24em] text-white/60">Punto de acceso</p>
                       <p className="mt-2 text-2xl font-semibold">{selectedLocationMeta.label}</p>
-                      <p className="mt-2 text-sm text-white/80">{currentScan.scannedAt}</p>
+                      <p className="mt-2 text-sm text-white/70">{currentScan.scannedAt}</p>
                     </div>
 
                     <div className="grid gap-3 sm:grid-cols-2">
-                      <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 sm:col-span-2">
-                        <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Nombre</p>
-                        <p className="mt-2 text-2xl font-semibold text-slate-950">{currentScan.fullName}</p>
+                      <div className="rounded-3xl border border-white/10 bg-white/5 p-4 sm:col-span-2">
+                        <p className="text-xs uppercase tracking-[0.22em] text-white/40">Nombre</p>
+                        <p className="mt-2 text-2xl font-semibold text-white">{currentScan.fullName}</p>
                       </div>
-                      <div className="rounded-3xl border border-slate-200 bg-white p-4">
-                        <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Delegacion</p>
-                        <p className="mt-2 text-lg font-semibold text-slate-950">{currentScan.delegation}</p>
+                      <div className="rounded-3xl border border-white/10 bg-white/4 p-4">
+                        <p className="text-xs uppercase tracking-[0.22em] text-white/40">Delegacion</p>
+                        <p className="mt-2 text-lg font-semibold text-white">{currentScan.delegation}</p>
                       </div>
-                      <div className="rounded-3xl border border-slate-200 bg-white p-4">
-                        <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Disciplina</p>
-                        <p className="mt-2 text-lg font-semibold text-slate-950">{currentScan.discipline}</p>
+                      <div className="rounded-3xl border border-white/10 bg-white/4 p-4">
+                        <p className="text-xs uppercase tracking-[0.22em] text-white/40">Disciplina</p>
+                        <p className="mt-2 text-lg font-semibold text-white">{currentScan.discipline}</p>
                       </div>
-                      <div className="rounded-3xl border border-slate-200 bg-white p-4">
-                        <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Tipo</p>
-                        <p className="mt-2 text-lg font-semibold text-slate-950">{currentScan.subjectType === "DRIVER" ? "Conductor" : "Participante"}</p>
+                      <div className="rounded-3xl border border-white/10 bg-white/4 p-4">
+                        <p className="text-xs uppercase tracking-[0.22em] text-white/40">Tipo</p>
+                        <p className="mt-2 text-lg font-semibold text-white">{currentScan.subjectType === "DRIVER" ? "Conductor" : "Participante"}</p>
                       </div>
-                      <div className="rounded-3xl border border-slate-200 bg-white p-4">
-                        <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Evento</p>
-                        <p className="mt-2 text-lg font-semibold text-slate-950">{currentScan.eventName}</p>
+                      <div className="rounded-3xl border border-white/10 bg-white/4 p-4">
+                        <p className="text-xs uppercase tracking-[0.22em] text-white/40">Evento</p>
+                        <p className="mt-2 text-lg font-semibold text-white">{currentScan.eventName}</p>
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="rounded-[26px] border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-slate-500 sm:p-10">
+                  <div className="rounded-[26px] border border-dashed border-white/15 bg-white/4 p-8 text-center text-white/50 sm:p-10">
                     Aun no hay lecturas. Selecciona el lugar y escanea una credencial.
                   </div>
                 )}
               </div>
             </section>
 
-            <section className="overflow-hidden rounded-[30px] border border-slate-200/80 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.12)]">
-              <div className="border-b border-slate-200 bg-white px-5 py-4 sm:px-6">
-                <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Historial</p>
-                <p className="mt-1 text-lg font-semibold text-slate-950">Ultimas validaciones</p>
+            <section className="overflow-hidden rounded-[30px] border border-white/10 bg-white/4 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
+              <div className="border-b border-white/10 bg-white/4 px-5 py-4 sm:px-6">
+                <p className="text-xs uppercase tracking-[0.24em] text-white/40">Historial</p>
+                <p className="mt-1 text-lg font-semibold text-white">Ultimas validaciones</p>
               </div>
               <div className="p-4 sm:p-6">
                 <div className="space-y-3">
                   {history.length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                    <div className="rounded-2xl border border-dashed border-white/15 bg-white/4 px-4 py-6 text-center text-sm text-white/50">
                       Sin escaneos registrados en esta sesion.
                     </div>
                   ) : (
                     history.map((item, index) => (
-                      <div key={`${item.rawValue}-${index}`} className="rounded-[22px] border border-slate-200 bg-white px-4 py-4">
+                      <div key={`${item.rawValue}-${index}`} className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-4">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <p className="truncate font-semibold text-slate-950">{item.fullName}</p>
-                            <p className="mt-1 text-sm text-slate-500">
+                            <p className="truncate font-semibold text-white">{item.fullName}</p>
+                            <p className="mt-1 text-sm text-white/50">
                               {item.delegation} | {item.discipline}
                             </p>
                           </div>
-                          <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
+                          <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/65">
                             {SCAN_LOCATIONS.find((option) => option.value === item.location)?.label}
                           </span>
                         </div>
-                        <p className="mt-3 text-xs text-slate-400">{item.scannedAt}</p>
+                        <p className="mt-3 text-xs text-white/40">{item.scannedAt}</p>
                       </div>
                     ))
                   )}

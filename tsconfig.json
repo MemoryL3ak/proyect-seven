@@ -25,5 +25,5 @@
       "@/*": ["./src/*"]
     }
   },
-  "exclude": ["frontend"]
+  "exclude": ["frontend", "mobile"]
 }

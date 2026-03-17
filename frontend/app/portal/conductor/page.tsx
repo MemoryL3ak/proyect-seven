@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { filterValidatedAthletes } from "@/lib/athletes";
 import { useI18n } from "@/lib/i18n";
 
 type Trip = {
@@ -192,7 +193,7 @@ export default function DriverPortalPage() {
       );
 
       setAthletes(
-        (athletesData || []).reduce<Record<string, AthleteItem>>((acc, athlete) => {
+        (filterValidatedAthletes(athletesData || [])).reduce<Record<string, AthleteItem>>((acc, athlete) => {
           acc[athlete.id] = athlete;
           return acc;
         }, {})
@@ -440,18 +441,18 @@ export default function DriverPortalPage() {
   return (
     <div className="space-y-6">
       <section className="glass rounded-3xl p-6">
-        <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Seven</p>
-        <h1 className="font-display text-3xl text-ink">{t("Portal Conductor")}</h1>
-        <p className="text-sm text-slate-500 mt-2">{t("Revisa tus viajes y reporta cada etapa del traslado.")}</p>
+        <p className="text-xs uppercase tracking-[0.3em] text-white/40">Seven</p>
+        <h1 className="font-sans font-bold text-3xl text-white">{t("Portal Conductor")}</h1>
+        <p className="text-sm text-white/50 mt-2">{t("Revisa tus viajes y reporta cada etapa del traslado.")}</p>
       </section>
 
       {!driverProfile && (
         <section className="surface rounded-3xl p-6 space-y-4">
           <div className="space-y-3">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+            <p className="text-xs uppercase tracking-[0.2em] text-white/40">
               {t("Solicita tu código")}
             </p>
-            <label className="flex flex-col gap-2 text-sm text-slate-600">
+            <label className="flex flex-col gap-2 text-sm text-white/65">
               {t("Correo electrónico")}
               <input
                 className="input"
@@ -468,11 +469,11 @@ export default function DriverPortalPage() {
             >
               {requestLoading ? t("Enviando...") : t("Solicita tu código")}
             </button>
-            {requestStatus && <p className="text-sm text-emerald-600">{requestStatus}</p>}
-            {requestError && <p className="text-sm text-rose-600">{requestError}</p>}
+            {requestStatus && <p className="text-sm text-emerald-400">{requestStatus}</p>}
+            {requestError && <p className="text-sm text-rose-400">{requestError}</p>}
           </div>
 
-          <label className="flex flex-col gap-2 text-sm text-slate-600">
+          <label className="flex flex-col gap-2 text-sm text-white/65">
             {t("Tu código de acceso")}
             <input
               className="input"
@@ -484,8 +485,8 @@ export default function DriverPortalPage() {
           <button className="btn btn-primary w-fit" onClick={loadTrips} disabled={loading}>
             {loading ? t("Cargando...") : t("Ver mis viajes")}
           </button>
-          {idError && <p className="text-sm text-rose-600">{idError}</p>}
-          {error && <p className="text-sm text-rose-600">{error}</p>}
+          {idError && <p className="text-sm text-rose-400">{idError}</p>}
+          {error && <p className="text-sm text-rose-400">{error}</p>}
         </section>
       )}
 
@@ -494,11 +495,11 @@ export default function DriverPortalPage() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t("Perfil")}</p>
-                <h2 className="font-display text-2xl text-ink">
+                <p className="text-xs uppercase tracking-[0.2em] text-white/40">{t("Perfil")}</p>
+                <h2 className="font-sans font-bold text-2xl text-white">
                   {driverProfile?.fullName || t("Conductor")}
                 </h2>
-                <p className="text-sm text-slate-500">RUT: {driverProfile?.rut || "-"}</p>
+                <p className="text-sm text-white/50">RUT: {driverProfile?.rut || "-"}</p>
               </div>
               {driverProfile?.photoUrl ? (
                 <img
@@ -507,7 +508,7 @@ export default function DriverPortalPage() {
                   className="h-14 w-14 rounded-full object-cover"
                 />
               ) : (
-                <div className="h-14 w-14 rounded-full bg-slate-100 flex items-center justify-center text-xs text-slate-400">
+                <div className="h-14 w-14 rounded-full bg-white/10 flex items-center justify-center text-xs text-white/40">
                   {t("Sin foto")}
                 </div>
               )}
@@ -528,16 +529,16 @@ export default function DriverPortalPage() {
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="glass rounded-2xl p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t("Correo")}</p>
-              <p className="text-sm text-slate-600">{driverProfile?.email || "-"}</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-white/40">{t("Correo")}</p>
+              <p className="text-sm text-white/65">{driverProfile?.email || "-"}</p>
             </div>
             <div className="glass rounded-2xl p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t("ID de conductor")}</p>
-              <p className="text-sm text-slate-600">{driverProfile?.userId || driverProfile?.id || "-"}</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-white/40">{t("ID de conductor")}</p>
+              <p className="text-sm text-white/65">{driverProfile?.userId || driverProfile?.id || "-"}</p>
             </div>
             <div className="glass rounded-2xl p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t("Vehículo")}</p>
-              <p className="text-sm text-slate-600">
+              <p className="text-xs uppercase tracking-[0.2em] text-white/40">{t("Vehículo")}</p>
+              <p className="text-sm text-white/65">
                 {(() => {
                   const vehicle = driverProfile?.vehicleId ? vehicles[driverProfile.vehicleId] : null;
                   if (!vehicle) return "-";
@@ -549,8 +550,8 @@ export default function DriverPortalPage() {
               </p>
             </div>
             <div className="glass rounded-2xl p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t("Proveedor")}</p>
-              <p className="text-sm text-slate-600">
+              <p className="text-xs uppercase tracking-[0.2em] text-white/40">{t("Proveedor")}</p>
+              <p className="text-sm text-white/65">
                 {(() => {
                   const provider = driverProfile?.providerId ? providers[driverProfile.providerId] : null;
                   if (!provider) return "-";
@@ -566,9 +567,9 @@ export default function DriverPortalPage() {
       {driverProfile && (
         <section className="surface rounded-3xl p-6">
           <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-            <h2 className="font-display text-2xl text-ink">{t("Viajes asignados")}</h2>
+            <h2 className="font-sans font-bold text-2xl text-white">{t("Viajes asignados")}</h2>
             <div className="flex flex-wrap gap-3">
-              <label className="flex items-center gap-2 text-sm text-slate-500">
+              <label className="flex items-center gap-2 text-sm text-white/50">
                 {t("Tipo")}
                 <select
                   className="input h-9 min-w-[140px] pr-10 !text-[12px] !leading-tight !pt-[0.4rem] !pb-[0.2rem]"
@@ -583,7 +584,7 @@ export default function DriverPortalPage() {
                   ))}
                 </select>
               </label>
-              <label className="flex items-center gap-2 text-sm text-slate-500">
+              <label className="flex items-center gap-2 text-sm text-white/50">
                 {t("Destino")}
                 <input
                   className="input h-9"
@@ -595,7 +596,7 @@ export default function DriverPortalPage() {
             </div>
           </div>
           {filteredTrips.length === 0 ? (
-            <p className="text-sm text-slate-500">{t("No hay viajes asignados aún.")}</p>
+            <p className="text-sm text-white/50">{t("No hay viajes asignados aún.")}</p>
           ) : (
             <div className="space-y-4">
               {filteredTrips.map((trip) => {
@@ -605,9 +606,9 @@ export default function DriverPortalPage() {
                   <div key={trip.id} className="glass rounded-2xl p-4 space-y-3">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
-                        <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t("Viaje")}</p>
-                        <p className="text-sm text-slate-600">{trip.id}</p>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs uppercase tracking-[0.2em] text-white/40">{t("Viaje")}</p>
+                        <p className="text-sm text-white/65">{trip.id}</p>
+                        <p className="text-xs text-white/50">
                           {t("Evento")}: {event?.name || trip.eventId || "-"}
                         </p>
                       </div>
@@ -617,24 +618,24 @@ export default function DriverPortalPage() {
                     </div>
 
                     <div className="grid gap-3 md:grid-cols-2">
-                      <div className="text-xs text-slate-500">
+                      <div className="text-xs text-white/50">
                         {t("Vehículo")}: {vehicle?.plate || trip.vehicleId}
                         {vehicle?.type ? ` (${vehicle.type})` : ""}
                         {vehicle?.brand || vehicle?.model
                           ? ` · ${[vehicle?.brand, vehicle?.model].filter(Boolean).join(" ")}`
                           : ""}
                       </div>
-                      <div className="text-xs text-slate-500">
+                      <div className="text-xs text-white/50">
                         {t("Programación")}: {formatDate(trip.scheduledAt)}
                       </div>
-                      <div className="text-xs text-slate-500">
+                      <div className="text-xs text-white/50">
                         {t("Costo de viaje")}: {formatCurrencyCLP(trip.tripCost)}
                       </div>
-                      <div className="text-xs text-slate-500">
+                      <div className="text-xs text-white/50">
                         {t("Origen")}:{" "}
                         {trip.origin ? (
                           <a
-                            className="text-emerald-700 hover:underline"
+                            className="text-emerald-400 hover:underline"
                             href={buildMapsLink(trip.origin)}
                             target="_blank"
                             rel="noreferrer"
@@ -645,11 +646,11 @@ export default function DriverPortalPage() {
                           "-"
                         )}
                       </div>
-                      <div className="text-xs text-slate-500">
+                      <div className="text-xs text-white/50">
                         {t("Destino")}:{" "}
                         {trip.destination ? (
                           <a
-                            className="text-emerald-700 hover:underline"
+                            className="text-emerald-400 hover:underline"
                             href={buildMapsLink(trip.destination)}
                             target="_blank"
                             rel="noreferrer"
@@ -660,12 +661,12 @@ export default function DriverPortalPage() {
                           "-"
                         )}
                       </div>
-                      <div className="text-xs text-slate-500">{t("Delegación")}: {resolveDelegations(trip)}</div>
-                      <div className="text-xs text-slate-500">{t("Encargado de delegaci\u00f3n")}: {resolveDelegationLeads(trip)}</div>
-                      <div className="text-xs text-slate-500">{t("Participantes")}: {(trip.athleteIds || []).length}</div>
+                      <div className="text-xs text-white/50">{t("Delegación")}: {resolveDelegations(trip)}</div>
+                      <div className="text-xs text-white/50">{t("Encargado de delegaci\u00f3n")}: {resolveDelegationLeads(trip)}</div>
+                      <div className="text-xs text-white/50">{t("Participantes")}: {(trip.athleteIds || []).length}</div>
                     </div>
 
-                    <div className="text-xs text-slate-500">
+                    <div className="text-xs text-white/50">
                       {t("Inicio")}: {formatDate(trip.startedAt)} | {t("Cierre")}: {formatDate(trip.completedAt)}
                     </div>
 
@@ -694,20 +695,20 @@ export default function DriverPortalPage() {
       )}
 
       {pickupTrip && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0b1628]/80 backdrop-blur px-4">
           <div className="surface w-full max-w-md rounded-3xl p-6 shadow-xl">
             <div className="space-y-2">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+              <p className="text-xs uppercase tracking-[0.2em] text-white/40">
                 {t("Código de verificación")}
               </p>
-              <h3 className="font-display text-2xl text-ink">
+              <h3 className="font-sans font-bold text-2xl text-white">
                 {pickupTrip && isPortalRequest(pickupTrip) ? t("En curso") : t("Recogido")}
               </h3>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-white/50">
                 {t("Ingresa el código de usuario del pasajero para iniciar el viaje.")}
               </p>
             </div>
-            <label className="flex flex-col gap-2 text-sm text-slate-600 mt-4">
+            <label className="flex flex-col gap-2 text-sm text-white/65 mt-4">
               {t("Código de usuario")}
               <input
                 className="input"
@@ -718,7 +719,7 @@ export default function DriverPortalPage() {
                 maxLength={12}
               />
             </label>
-            {pickupError && <p className="text-sm text-rose-600 mt-2">{pickupError}</p>}
+            {pickupError && <p className="text-sm text-rose-400 mt-2">{pickupError}</p>}
             <div className="flex flex-wrap gap-2 mt-5">
               <button className="btn btn-primary" onClick={submitPickupCode}>
                 {t("Validar")}
@@ -740,3 +741,5 @@ export default function DriverPortalPage() {
     </div>
   );
 }
+
+

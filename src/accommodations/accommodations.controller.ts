@@ -30,6 +30,14 @@ export class AccommodationsController {
     return this.accommodationsService.update(id, updateAccommodationDto);
   }
 
+  @Patch(':id/sync-rooms')
+  syncRooms(
+    @Param('id') id: string,
+    @Body() body: { roomInventory?: Record<string, number> },
+  ) {
+    return this.accommodationsService.syncRoomsFromInventory(id, body?.roomInventory ?? {});
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.accommodationsService.remove(id);

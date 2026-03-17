@@ -217,12 +217,12 @@ export default function EventAndCapacityPlanner() {
   };
 
   return (
-    <section className="surface rounded-3xl border border-slate-200 p-5 shadow-sm">
+    <section className="surface rounded-3xl border border-white/10 p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Planificacion AND</p>
-          <h2 className="mt-1 text-2xl font-semibold text-slate-900">Capacidad esperada por disciplina y delegacion</h2>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="text-xs uppercase tracking-[0.24em] text-white/50">Planificacion AND</p>
+          <h2 className="mt-1 text-2xl font-semibold text-white">Capacidad esperada por disciplina y delegacion</h2>
+          <p className="mt-1 text-sm text-white/50">
             Define el objetivo de llegada/registro para cada disciplina y distribuyelo por delegacion del evento.
           </p>
         </div>
@@ -246,39 +246,39 @@ export default function EventAndCapacityPlanner() {
             <option key={event.id} value={event.id}>{event.name || event.id}</option>
           ))}
         </select>
-        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-          <div className="text-xs text-slate-500">Total esperado</div>
-          <div className="text-lg font-semibold text-slate-900">{totalExpected}</div>
+        <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+          <div className="text-xs text-white/50">Total esperado</div>
+          <div className="text-lg font-semibold text-white">{totalExpected}</div>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-          <div className="text-xs text-slate-500">Asignado a delegaciones</div>
-          <div className="text-lg font-semibold text-slate-900">{totalAllocated}</div>
+        <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+          <div className="text-xs text-white/50">Asignado a delegaciones</div>
+          <div className="text-lg font-semibold text-white">{totalAllocated}</div>
         </div>
       </div>
 
-      <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
-        <span className="text-slate-500">Balance global:</span>{" "}
-        <span className={totalBalance === 0 ? "font-semibold text-emerald-700" : totalBalance > 0 ? "font-semibold text-amber-700" : "font-semibold text-rose-700"}>
+      <div className="mt-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm">
+        <span className="text-white/50">Balance global:</span>{" "}
+        <span className={totalBalance === 0 ? "font-semibold text-emerald-400" : totalBalance > 0 ? "font-semibold text-amber-400" : "font-semibold text-rose-400"}>
           {totalBalance > 0 ? `Faltan ${totalBalance} por asignar` : totalBalance < 0 ? `Exceso de ${Math.abs(totalBalance)} asignados` : "Cuadre perfecto"}
         </span>
       </div>
 
-      {loading ? <p className="mt-3 text-sm text-slate-500">Cargando planificacion...</p> : null}
-      {error ? <p className="mt-3 text-sm text-rose-600">{error}</p> : null}
-      {message ? <p className="mt-3 text-sm text-emerald-700">{message}</p> : null}
+      {loading ? <p className="mt-3 text-sm text-white/50">Cargando planificacion...</p> : null}
+      {error ? <p className="mt-3 text-sm text-rose-400">{error}</p> : null}
+      {message ? <p className="mt-3 text-sm text-emerald-400">{message}</p> : null}
 
       {!loading && selectedEvent && eventDisciplines.length === 0 ? (
-        <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+        <p className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-400">
           Este evento no tiene disciplinas asociadas. Primero agrega disciplinas en el formulario de Eventos y luego configura la planificacion AND.
         </p>
       ) : null}
 
       {eventDisciplines.length > 0 ? (
         <div className="mt-4 grid gap-4 xl:grid-cols-[1.15fr_1.85fr]">
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+          <div className="rounded-2xl border border-white/10 bg-white/4 p-4">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Objetivo por disciplina</h3>
-              <span className="text-xs text-slate-500">{plannerRows.length} disciplinas</span>
+              <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-white/50">Objetivo por disciplina</h3>
+              <span className="text-xs text-white/50">{plannerRows.length} disciplinas</span>
             </div>
             <div className="space-y-2">
               {plannerRows.map((row) => (
@@ -288,13 +288,15 @@ export default function EventAndCapacityPlanner() {
                   onClick={() => setSelectedDisciplineId(row.id)}
                   className={[
                     "w-full rounded-xl border p-3 text-left transition",
-                    selectedDisciplineId === row.id ? "border-emerald-300 bg-emerald-50" : "border-slate-200 bg-slate-50 hover:bg-white",
+                    selectedDisciplineId === row.id
+                      ? "border-emerald-500/40 bg-emerald-500/10"
+                      : "border-white/10 bg-white/5 hover:bg-white/8",
                   ].join(" ")}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="font-medium text-slate-900">{row.name}</p>
-                      <p className="mt-1 text-xs text-slate-500">
+                      <p className="font-medium text-white">{row.name}</p>
+                      <p className="mt-1 text-xs text-white/50">
                         Asignado {row.allocated} / Objetivo {row.total}
                       </p>
                     </div>
@@ -309,13 +311,13 @@ export default function EventAndCapacityPlanner() {
                       placeholder="0"
                     />
                   </div>
-                  <div className="mt-2 h-2 rounded-full bg-slate-200">
+                  <div className="mt-2 h-2 rounded-full bg-white/10">
                     <div
                       className={`h-2 rounded-full ${row.balance < 0 ? "bg-rose-500" : "bg-emerald-500"}`}
                       style={{ width: `${row.total > 0 ? Math.min(Math.round((row.allocated / row.total) * 100), 100) : 0}%` }}
                     />
                   </div>
-                  <p className={`mt-2 text-xs ${row.balance === 0 ? "text-emerald-700" : row.balance > 0 ? "text-amber-700" : "text-rose-700"}`}>
+                  <p className={`mt-2 text-xs ${row.balance === 0 ? "text-emerald-400" : row.balance > 0 ? "text-amber-400" : "text-rose-400"}`}>
                     {row.balance === 0 ? "Distribucion completa" : row.balance > 0 ? `Faltan ${row.balance} por distribuir` : `Exceso de ${Math.abs(row.balance)}`}
                   </p>
                 </button>
@@ -323,28 +325,28 @@ export default function EventAndCapacityPlanner() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+          <div className="rounded-2xl border border-white/10 bg-white/4 p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h3 className="text-base font-semibold text-slate-900">
+                <h3 className="text-base font-semibold text-white">
                   {selectedDiscipline ? `Distribucion por delegacion: ${selectedDiscipline.name}` : "Distribucion por delegacion"}
                 </h3>
-                <p className="mt-1 text-sm text-slate-500">
+                <p className="mt-1 text-sm text-white/50">
                   Define cuanto deberia registrar cada delegacion para la disciplina seleccionada.
                 </p>
               </div>
               <div className="grid grid-cols-3 gap-2 text-xs">
-                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                  <div className="text-slate-500">Objetivo</div>
-                  <div className="font-semibold text-slate-900">{selectedDisciplineSummary.total}</div>
+                <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+                  <div className="text-white/50">Objetivo</div>
+                  <div className="font-semibold text-white">{selectedDisciplineSummary.total}</div>
                 </div>
-                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                  <div className="text-slate-500">Asignado</div>
-                  <div className="font-semibold text-slate-900">{selectedDisciplineSummary.allocated}</div>
+                <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+                  <div className="text-white/50">Asignado</div>
+                  <div className="font-semibold text-white">{selectedDisciplineSummary.allocated}</div>
                 </div>
-                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                  <div className="text-slate-500">Balance</div>
-                  <div className={`font-semibold ${selectedDisciplineSummary.balance === 0 ? "text-emerald-700" : selectedDisciplineSummary.balance > 0 ? "text-amber-700" : "text-rose-700"}`}>
+                <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+                  <div className="text-white/50">Balance</div>
+                  <div className={`font-semibold ${selectedDisciplineSummary.balance === 0 ? "text-emerald-400" : selectedDisciplineSummary.balance > 0 ? "text-amber-400" : "text-rose-400"}`}>
                     {selectedDisciplineSummary.balance}
                   </div>
                 </div>
@@ -352,9 +354,9 @@ export default function EventAndCapacityPlanner() {
             </div>
 
             {!selectedDiscipline ? (
-              <p className="mt-4 text-sm text-slate-500">Selecciona una disciplina para asignar cupos por delegacion.</p>
+              <p className="mt-4 text-sm text-white/50">Selecciona una disciplina para asignar cupos por delegacion.</p>
             ) : eventDelegations.length === 0 ? (
-              <p className="mt-4 text-sm text-slate-500">No hay delegaciones creadas para este evento.</p>
+              <p className="mt-4 text-sm text-white/50">No hay delegaciones creadas para este evento.</p>
             ) : (
               <div className="mt-4 overflow-x-auto">
                 <table className="table">
@@ -367,7 +369,7 @@ export default function EventAndCapacityPlanner() {
                   <tbody>
                     {eventDelegations.map((delegation) => (
                       <tr key={delegation.id}>
-                        <td className="font-medium text-slate-900">{delegation.countryCode || delegation.id}</td>
+                        <td className="font-medium text-white">{delegation.countryCode || delegation.id}</td>
                         <td className="w-[220px]">
                           <input
                             className="input"

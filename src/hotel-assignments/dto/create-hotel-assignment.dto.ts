@@ -15,10 +15,6 @@ export class CreateHotelAssignmentDto {
 
   @IsString()
   @IsOptional()
-  bedId?: string;
-
-  @IsString()
-  @IsOptional()
   checkinAt?: string;
 
   @IsString()

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import BulkImportPanel from "@/components/BulkImportPanel";
@@ -12,6 +12,7 @@ export default function DelegationsPage() {
     <div className="min-w-0 space-y-6 overflow-x-hidden">
       <BulkImportPanel
         type="athletes"
+        athleteMode="and"
         onImported={() => setRefreshKey((current) => current + 1)}
       />
       <ResourceScreen config={resources.delegations} refreshKey={refreshKey} />

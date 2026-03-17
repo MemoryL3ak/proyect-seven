@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import { apiFetch } from "@/lib/api";
+import { filterValidatedAthletes } from "@/lib/athletes";
 import { useI18n } from "@/lib/i18n";
 
 type Trip = {
@@ -141,7 +142,7 @@ export default function VehiclePositionsPage() {
       );
 
       setAthletes(
-        (athleteData || []).reduce<Record<string, AthleteItem>>((acc, athlete) => {
+        (filterValidatedAthletes(athleteData || [])).reduce<Record<string, AthleteItem>>((acc, athlete) => {
           acc[athlete.id] = athlete;
           return acc;
         }, {})
@@ -236,7 +237,7 @@ export default function VehiclePositionsPage() {
 
       <section className="surface rounded-2xl p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="text-xs text-slate-500">
+          <div className="text-xs text-white/50">
             {t("Última actualización")}: {lastUpdated ? lastUpdated.toLocaleTimeString("es-CL") : "-"}
           </div>
           <button className="btn btn-ghost" onClick={loadData} disabled={loading}>
@@ -247,9 +248,9 @@ export default function VehiclePositionsPage() {
       </section>
 
       <section className="surface rounded-2xl p-6">
-        <h2 className="font-display text-2xl text-ink mb-4">{t("Viajes")}</h2>
+        <h2 className="font-sans font-bold text-2xl text-white mb-4">{t("Viajes")}</h2>
         {orderedTrips.length === 0 ? (
-          <p className="text-sm text-slate-500">{t("Sin viajes registrados.")}</p>
+          <p className="text-sm text-white/50">{t("Sin viajes registrados.")}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="table">
@@ -295,7 +296,7 @@ export default function VehiclePositionsPage() {
                           <div className="flex flex-col gap-2">
                             <button
                               type="button"
-                              className="w-56 h-36 rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md transition"
+                              className="w-56 h-36 rounded-2xl overflow-hidden border border-white/10 transition"
                               onClick={() =>
                                 setMapPreview({
                                   lat: position.lat,
@@ -312,7 +313,7 @@ export default function VehiclePositionsPage() {
                               />
                             </button>
                             <a
-                              className="text-xs font-semibold text-emerald-700 hover:underline"
+                              className="text-xs font-semibold text-emerald-400 hover:underline"
                               href={buildGoogleMapsLink(position.lat, position.lng)}
                               target="_blank"
                               rel="noreferrer"
@@ -344,14 +345,14 @@ export default function VehiclePositionsPage() {
       </section>
 
       {mapPreview && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
           <div className="surface w-full max-w-4xl rounded-3xl p-4 shadow-2xl">
             <div className="flex items-center justify-between px-2 pb-3">
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                <p className="text-xs uppercase tracking-[0.2em] text-white/40">
                   {t("Tracking de viajes")}
                 </p>
-                <h3 className="font-display text-xl text-ink">{mapPreview.title}</h3>
+                <h3 className="font-sans font-bold text-xl text-white">{mapPreview.title}</h3>
               </div>
               <div className="flex items-center gap-2">
                 <a
@@ -371,7 +372,7 @@ export default function VehiclePositionsPage() {
                 </button>
               </div>
             </div>
-            <div className="aspect-[16/9] w-full overflow-hidden rounded-2xl border border-slate-200">
+            <div className="aspect-[16/9] w-full overflow-hidden rounded-2xl border border-white/10">
               <iframe
                 title="map-preview"
                 src={buildMapEmbed(mapPreview.lat, mapPreview.lng)}
@@ -385,3 +386,5 @@ export default function VehiclePositionsPage() {
     </div>
   );
 }
+
+

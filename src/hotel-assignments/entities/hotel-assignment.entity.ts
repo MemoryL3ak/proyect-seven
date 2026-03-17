@@ -3,7 +3,6 @@ export class HotelAssignment {
   participantId: string;
   hotelId: string;
   roomId?: string | null;
-  bedId?: string | null;
   checkinAt?: Date | null;
   checkoutAt?: Date | null;
   status: string;

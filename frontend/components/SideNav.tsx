@@ -67,7 +67,6 @@ const navSections: NavSection[] = [
           { href: "/operations/hotel-tracking", label: "Tracking Hotelería", icon: "hotel" },
           { href: "/masters/accommodations", label: "Hoteles", icon: "hotel" },
           { href: "/masters/hotel-rooms", label: "Habitaciones", icon: "hotel" },
-          { href: "/masters/hotel-beds", label: "Camas", icon: "hotel" },
           { href: "/operations/hotel-assignments", label: "Asignaciones Hotel", icon: "hotel" },
           { href: "/operations/hotel-keys", label: "Gestión de llaves", icon: "hotel" }
         ]
@@ -307,188 +306,224 @@ export default function SideNav() {
   }, []);
 
   return (
-    <aside className="w-full max-w-[290px] bg-white border-r border-slate-200 px-5 py-6 h-screen sticky top-0">
-      <div className="flex h-full flex-col">
-        <div className="mb-8">
-          <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Seven</p>
-          <h1 className="text-xl font-semibold text-ink">Logistic Core</h1>
+    <aside
+      className="h-screen sticky top-0 flex flex-col shrink-0"
+      style={{
+        width: "240px",
+        background: "linear-gradient(180deg, #08111f 0%, #0b1628 100%)",
+        borderRight: "1px solid rgba(201,168,76,0.1)",
+        boxShadow: "4px 0 30px rgba(0,0,0,0.4)"
+      }}
+    >
+      {/* Logo */}
+      <div className="flex items-center gap-3 px-5 pt-6 pb-5 shrink-0">
+        <div
+          className="flex items-center justify-center shrink-0 font-black text-[15px]"
+          style={{
+            width: 36, height: 36, borderRadius: "50%",
+            border: "1.5px solid #c9a84c",
+            color: "#c9a84c",
+            background: "rgba(201,168,76,0.1)",
+            boxShadow: "0 0 16px rgba(201,168,76,0.3)"
+          }}
+        >7</div>
+        <div>
+          <div className="flex items-baseline">
+            <span className="font-black text-[15px] tracking-widest text-white">SEVEN</span>
+            <span className="font-black text-[15px] tracking-widest" style={{ color: "#c9a84c" }}>ARENA</span>
+          </div>
+          <div className="text-[9px] tracking-[0.3em] uppercase mt-0.5" style={{ color: "rgba(201,168,76,0.5)" }}>
+            Operations Platform
+          </div>
         </div>
+      </div>
 
-        <nav className="space-y-5 flex-1 overflow-y-auto pr-1">
-          {navSections.map((section) => {
-            if (section.href) {
-              const isActive = pathname === section.href;
-              return (
-                <div key={section.title}>
-                  <Link
-                    href={section.href}
-                    className="flex w-full items-center justify-between text-xs uppercase tracking-[0.2em] text-slate-400 mb-6"
-                  >
-                    <span className="flex items-center gap-2 whitespace-nowrap">
-                      <Icon name={section.icon} className={isActive ? "text-slate-500" : "text-slate-400"} />
-                      <span className={isActive ? "text-slate-700" : ""}>{t(section.title)}</span>
-                    </span>
-                    <span className="w-3" />
-                  </Link>
-                </div>
-              );
-            }
+      {/* Gold divider */}
+      <div className="mx-5 shrink-0" style={{ height: 1, background: "linear-gradient(90deg,transparent,rgba(201,168,76,0.3),transparent)" }} />
 
-            const isOpen = openSections[section.title];
+      {/* Nav */}
+      <nav className="flex-1 overflow-y-auto px-3 py-4" style={{ scrollbarWidth: "none", display: "flex", flexDirection: "column", gap: "2px" }}>
+        {navSections.map((section) => {
+          if (section.href) {
+            const isActive = pathname === section.href || pathname.startsWith(section.href + "/");
             return (
-              <div key={section.title}>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setOpenSections((prev) =>
-                      navSections.reduce<Record<string, boolean>>((acc, current) => {
-                        acc[current.title] =
-                          current.title === section.title ? !prev[section.title] : false;
-                        return acc;
-                      }, {})
-                    )
-                  }
-                  className="flex w-full items-center justify-between text-xs uppercase tracking-[0.2em] text-slate-400 mb-2"
-                >
-                  <span className="flex items-center gap-2">
-                    <Icon name={section.icon} className="text-slate-400" />
-                    {t(section.title)}
-                  </span>
-                  <span
-                    className={clsx(
-                      "transition-transform duration-200 ease-out",
-                      isOpen ? "rotate-180" : "rotate-0"
-                    )}
-                  >
-                    ▾
-                  </span>
-                </button>
+              <Link
+                key={section.title}
+                href={section.href}
+                className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150"
+                style={{
+                  color: isActive ? "#c9a84c" : "rgba(255,255,255,0.55)",
+                  background: isActive ? "rgba(201,168,76,0.1)" : "transparent",
+                  borderLeft: isActive ? "2px solid #c9a84c" : "2px solid transparent"
+                }}
+              >
+                <Icon name={section.icon} />
+                <span>{t(section.title)}</span>
+              </Link>
+            );
+          }
 
-                <div
-                  className={clsx(
-                    "space-y-2 overflow-hidden transition-all duration-200 ease-out",
-                    isOpen ? "max-h-[1200px] opacity-100" : "max-h-0 opacity-0"
-                  )}
-                >
-                  {section.items?.map((item, index) => (
+          const isOpen = !!openSections[section.title];
+          const sectionActive = sectionHasActivePath(section, pathname);
+
+          return (
+            <div key={section.title}>
+              {/* Section header button */}
+              <button
+                type="button"
+                onClick={() =>
+                  setOpenSections((prev) =>
+                    navSections.reduce<Record<string, boolean>>((acc, cur) => {
+                      acc[cur.title] = cur.title === section.title ? !prev[section.title] : false;
+                      return acc;
+                    }, {})
+                  )
+                }
+                className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150"
+                style={{
+                  color: sectionActive ? "#c9a84c" : "rgba(255,255,255,0.65)",
+                  background: "transparent",
+                  border: "none",
+                  borderLeft: sectionActive && !isOpen ? "2px solid #c9a84c" : "2px solid transparent",
+                  cursor: "pointer"
+                }}
+              >
+                <span className="flex items-center gap-2.5">
+                  <Icon name={section.icon} />
+                  {t(section.title)}
+                </span>
+                <span style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", transition: "transform 200ms ease", transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", display: "inline-block" }}>▾</span>
+              </button>
+
+              {/* Expandable content — inline style maxHeight, NO Tailwind arbitrary values */}
+              <div
+                style={{
+                  overflow: "hidden",
+                  maxHeight: isOpen ? "800px" : "0px",
+                  opacity: isOpen ? 1 : 0,
+                  transition: "max-height 250ms ease, opacity 200ms ease",
+                  paddingLeft: "8px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "2px"
+                }}
+              >
+                {section.items?.map((item) => {
+                  const active = pathname === item.href;
+                  return (
                     <Link
                       key={item.href}
                       href={item.href}
-                      className={clsx(
-                        "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ease-out",
-                        pathname === item.href
-                          ? "bg-slate-100 text-slate-900"
-                          : "text-slate-600 hover:bg-slate-50"
-                      )}
+                      className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] transition-all duration-150"
                       style={{
-                        transitionDelay: isOpen ? `${index * 35}ms` : "0ms",
-                        opacity: isOpen ? 1 : 0,
-                        transform: isOpen ? "translateY(0)" : "translateY(-4px)"
+                        color: active ? "#c9a84c" : "rgba(255,255,255,0.55)",
+                        background: active ? "rgba(201,168,76,0.1)" : "transparent",
+                        borderLeft: active ? "2px solid #c9a84c" : "2px solid transparent",
+                        fontWeight: active ? 600 : 400
                       }}
                     >
-                      <Icon name={item.icon} className="text-slate-500" />
+                      <Icon name={item.icon} />
                       {t(item.label)}
                     </Link>
-                  ))}
+                  );
+                })}
 
-                  {section.groups?.map((group) => {
-                    const groupKey = `${section.title}::${group.title}`;
-                    const groupIsOpen = !!openGroups[groupKey];
-                    const groupHasActiveItem = group.items.some((item) => pathname === item.href);
+                {section.groups?.map((group) => {
+                  const groupKey = `${section.title}::${group.title}`;
+                  const groupIsOpen = !!openGroups[groupKey];
+                  const groupActive = group.items.some((i) => pathname === i.href);
 
-                    return (
-                      <div key={group.title}>
-                        <button
-                          type="button"
-                          className={clsx(
-                            "flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-medium transition-all duration-200 ease-out",
-                            groupHasActiveItem
-                              ? "bg-slate-100 text-slate-900"
-                              : "text-slate-600 hover:bg-slate-50"
-                          )}
-                          onClick={() =>
-                            setOpenGroups((prev) => ({
-                              ...prev,
-                              [groupKey]: !prev[groupKey]
-                            }))
-                          }
-                          >
-                          <span className="flex items-center gap-2">
-                            <Icon name={group.icon} className="text-slate-500" />
-                            {t(group.title)}
-                          </span>
-                          <span
-                            className={clsx(
-                              "text-xs transition-transform duration-200",
-                              groupIsOpen ? "rotate-180" : "rotate-0"
-                            )}
-                          >
-                            ▾
-                          </span>
-                        </button>
-                        <div
-                          className={clsx(
-                            "space-y-1 overflow-hidden transition-all duration-200 ease-out",
-                            groupIsOpen ? "max-h-80 opacity-100 pt-1 pl-3" : "max-h-0 opacity-0"
-                          )}
-                        >
-                          {group.items.map((item) => (
+                  return (
+                    <div key={group.title}>
+                      <button
+                        type="button"
+                        onClick={() => setOpenGroups((prev) => ({ ...prev, [groupKey]: !prev[groupKey] }))}
+                        className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-[13px] transition-all duration-150"
+                        style={{
+                          color: groupActive ? "#c9a84c" : "rgba(255,255,255,0.55)",
+                          background: groupActive ? "rgba(201,168,76,0.08)" : "transparent",
+                          borderLeft: groupActive ? "2px solid #c9a84c" : "2px solid transparent",
+                          fontWeight: groupActive ? 600 : 400,
+                          border: "none",
+                          cursor: "pointer"
+                        }}
+                      >
+                        <span className="flex items-center gap-2.5">
+                          <Icon name={group.icon} />
+                          {t(group.title)}
+                        </span>
+                        <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", transition: "transform 200ms ease", transform: groupIsOpen ? "rotate(180deg)" : "rotate(0deg)", display: "inline-block" }}>▾</span>
+                      </button>
+
+                      <div
+                        style={{
+                          overflow: "hidden",
+                          maxHeight: groupIsOpen ? "400px" : "0px",
+                          opacity: groupIsOpen ? 1 : 0,
+                          transition: "max-height 250ms ease, opacity 200ms ease",
+                          paddingLeft: "16px",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "2px"
+                        }}
+                      >
+                        {group.items.map((item) => {
+                          const active = pathname === item.href;
+                          return (
                             <Link
                               key={item.href}
                               href={item.href}
-                              className={clsx(
-                                "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ease-out",
-                                pathname === item.href
-                                  ? "bg-white text-slate-900 ring-1 ring-slate-200"
-                                  : "text-slate-600 hover:bg-white"
-                              )}
+                              className="flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-[12px] transition-all duration-150"
+                              style={{
+                                color: active ? "#c9a84c" : "rgba(255,255,255,0.45)",
+                                background: active ? "rgba(201,168,76,0.1)" : "transparent",
+                                borderLeft: active ? "2px solid #c9a84c" : "2px solid transparent",
+                                fontWeight: active ? 600 : 400
+                              }}
                             >
-                              <Icon name={item.icon} className="text-slate-500" />
+                              <Icon name={item.icon} />
                               {t(item.label)}
                             </Link>
-                          ))}
-                        </div>
+                          );
+                        })}
                       </div>
-                    );
-                  })}
-                </div>
+                    </div>
+                  );
+                })}
               </div>
+            </div>
+          );
+        })}
+      </nav>
+
+      {/* Language switcher */}
+      <div className="px-4 py-4 shrink-0" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+        <p className="text-[10px] uppercase tracking-[0.2em] mb-2" style={{ color: "rgba(255,255,255,0.3)" }}>{t("Idioma")}</p>
+        <div className="grid grid-cols-3 gap-1.5">
+          {[
+            { key: "es", label: "Español", short: "ES", flag: "🇨🇱" },
+            { key: "en", label: "English",  short: "EN", flag: "🇺🇸" },
+            { key: "pt", label: "Português",short: "PT", flag: "🇧🇷" }
+          ].map((option) => {
+            const active = locale === option.key;
+            return (
+              <button
+                key={option.key}
+                type="button"
+                onClick={() => setLocale(option.key as "es" | "en" | "pt")}
+                className="flex items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-semibold transition-all"
+                style={{
+                  background: active ? "rgba(201,168,76,0.15)" : "rgba(255,255,255,0.05)",
+                  color: active ? "#c9a84c" : "rgba(255,255,255,0.45)",
+                  border: active ? "1px solid rgba(201,168,76,0.35)" : "1px solid rgba(255,255,255,0.08)"
+                }}
+                title={t(option.label)}
+              >
+                <span>{option.flag}</span>
+                <span className="tracking-[0.12em]">{option.short}</span>
+              </button>
             );
           })}
-        </nav>
-
-        <div className="pt-6 border-t border-slate-200">
-          <label className="text-[10px] uppercase tracking-[0.2em] text-slate-400">
-            {t("Idioma")}
-          </label>
-          <div className="mt-2 grid grid-cols-3 gap-2">
-            {[
-              { key: "es", label: "Español", short: "ES", flag: "🇨🇱" },
-              { key: "en", label: "English", short: "EN", flag: "🇺🇸" },
-              { key: "pt", label: "Português", short: "PT", flag: "🇧🇷" }
-            ].map((option) => {
-              const active = locale === option.key;
-              return (
-                <button
-                  key={option.key}
-                  type="button"
-                  onClick={() => setLocale(option.key as "es" | "en" | "pt")}
-                  className={clsx(
-                    "flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition-all",
-                    active
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-900 shadow-sm"
-                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
-                  )}
-                  title={t(option.label)}
-                >
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full text-[12px]">
-                    {option.flag}
-                  </span>
-                  <span className="text-[11px] font-semibold tracking-[0.18em]">{option.short}</span>
-                </button>
-              );
-            })}
-          </div>
         </div>
       </div>
     </aside>
