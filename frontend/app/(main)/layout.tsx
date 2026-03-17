@@ -8,7 +8,7 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-mesh min-h-screen flex">
+    <div className="min-h-screen flex" style={{ background: "linear-gradient(to right, #07101f 260px, #f0f3fa 260px)" }}>
       <SideNav />
       <main className="flex-1 min-w-0 overflow-x-hidden px-7 py-7">
         <TopBar />
