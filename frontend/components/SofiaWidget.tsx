@@ -54,22 +54,45 @@ export default function SofiaWidget() {
 
   return (
     <>
-      {/* FAB */}
-      <button type="button" onClick={() => setOpen(!open)} style={{
-        position: "fixed", bottom: "24px", right: "24px", zIndex: 40,
-        width: "52px", height: "52px", borderRadius: "50%",
-        background: isDark ? "linear-gradient(135deg, #1e3a8a, #0d1b3e)" : "linear-gradient(135deg, #1e4ed8, #1a42c0)",
-        border: isDark ? "1.5px solid rgba(212,168,67,0.5)" : "2px solid rgba(255,255,255,0.8)",
-        boxShadow: isDark ? "0 4px 20px rgba(13,27,62,0.5)" : "0 4px 20px rgba(30,78,216,0.4)",
-        cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center"
-      }}>
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-          <circle cx="12" cy="12" r="9" stroke={isDark ? "#d4a843" : "#ffffff"} strokeWidth="1.5" fill={isDark ? "rgba(212,168,67,0.1)" : "rgba(255,255,255,0.15)"}/>
-          <path d="M8 10h8M8 13h5" stroke={isDark ? "#d4a843" : "#ffffff"} strokeWidth="1.5" strokeLinecap="round"/>
-          <circle cx="17" cy="7" r="3" fill={isDark ? "#d4a843" : "#93c5fd"}/>
-          <text x="17" y="9.2" fontSize="4" fill={isDark ? "#07101f" : "#1e3a8a"} fontWeight="bold" textAnchor="middle">AI</text>
-        </svg>
-      </button>
+      {/* FAB wrapper with animated rings */}
+      <div style={{ position: "fixed", bottom: "24px", right: "24px", zIndex: 40, width: "56px", height: "56px" }}>
+        {/* Pulse rings */}
+        <div style={{
+          position: "absolute", inset: 0, borderRadius: "50%",
+          background: isDark ? "rgba(212,168,67,0.3)" : "rgba(99,102,241,0.3)",
+          animation: "sofiaRing 2s ease-out infinite"
+        }} />
+        <div style={{
+          position: "absolute", inset: 0, borderRadius: "50%",
+          background: isDark ? "rgba(212,168,67,0.2)" : "rgba(99,102,241,0.2)",
+          animation: "sofiaRing2 2s ease-out infinite 0.5s"
+        }} />
+        {/* Main button */}
+        <button type="button" onClick={() => setOpen(!open)} style={{
+          position: "relative", width: "56px", height: "56px", borderRadius: "50%",
+          background: isDark
+            ? "linear-gradient(135deg, #c9a84c 0%, #1e3a8a 60%, #0d1b3e 100%)"
+            : "linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #7c3aed 100%)",
+          backgroundSize: "200% 200%",
+          border: "none",
+          animation: isDark ? "sofiaFloat 3s ease-in-out infinite, sofiaGlowGold 3s ease-in-out infinite" : "sofiaFloat 3s ease-in-out infinite, sofiaGlow 3s ease-in-out infinite",
+          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+          flexDirection: "column", gap: "1px"
+        }}>
+          {/* Sparkle icon */}
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+            {/* Big sparkle center */}
+            <path d="M12 2L13.5 9.5L21 11L13.5 12.5L12 20L10.5 12.5L3 11L10.5 9.5Z"
+              fill="#ffffff" opacity="0.95"/>
+            {/* Small sparkle top-right */}
+            <path d="M19 2L19.8 5.2L23 6L19.8 6.8L19 10L18.2 6.8L15 6L18.2 5.2Z"
+              fill="#ffffff" opacity="0.7" transform="scale(0.55) translate(16, -2)"/>
+            {/* Small sparkle bottom-left */}
+            <path d="M5 16L5.6 18.4L8 19L5.6 19.6L5 22L4.4 19.6L2 19L4.4 18.4Z"
+              fill="#ffffff" opacity="0.6" transform="scale(0.5) translate(-2, 8)"/>
+          </svg>
+        </button>
+      </div>
 
       {open && (
         <div style={{

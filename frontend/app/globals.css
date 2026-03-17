@@ -376,6 +376,31 @@ label > *:first-child {
   from { background-position: -600px 0; }
   to   { background-position: 600px 0; }
 }
+@keyframes sofiaRing {
+  0%   { transform: scale(1);   opacity: 0.6; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+@keyframes sofiaRing2 {
+  0%   { transform: scale(1);   opacity: 0.4; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+@keyframes sofiaGlow {
+  0%, 100% { box-shadow: 0 0 20px 4px rgba(99,102,241,0.5); }
+  50%       { box-shadow: 0 0 32px 8px rgba(139,92,246,0.7); }
+}
+@keyframes sofiaGlowGold {
+  0%, 100% { box-shadow: 0 0 20px 4px rgba(212,168,67,0.4); }
+  50%       { box-shadow: 0 0 32px 8px rgba(212,168,67,0.7); }
+}
+@keyframes sofiaFloat {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-4px); }
+}
+@keyframes gradientShift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
