@@ -310,39 +310,24 @@ export default function SideNav() {
       className="h-screen sticky top-0 flex flex-col shrink-0"
       style={{
         width: "240px",
-        background: "linear-gradient(180deg, #08111f 0%, #0b1628 100%)",
-        borderRight: "1px solid rgba(201,168,76,0.1)",
-        boxShadow: "4px 0 30px rgba(0,0,0,0.4)"
+        background: "var(--sidebar)",
+        borderRight: "1px solid var(--border-muted)"
       }}
     >
       {/* Logo */}
-      <div className="flex items-center gap-3 px-5 pt-6 pb-5 shrink-0">
-        <div
-          className="flex items-center justify-center shrink-0 font-black text-[15px]"
-          style={{
-            width: 36, height: 36, borderRadius: "50%",
-            border: "1.5px solid #c9a84c",
-            color: "#c9a84c",
-            background: "rgba(201,168,76,0.1)",
-            boxShadow: "0 0 16px rgba(201,168,76,0.3)"
-          }}
-        >7</div>
-        <div>
-          <div className="flex items-baseline">
-            <span className="font-black text-[15px] tracking-widest text-white">SEVEN</span>
-            <span className="font-black text-[15px] tracking-widest" style={{ color: "#c9a84c" }}>ARENA</span>
-          </div>
-          <div className="text-[9px] tracking-[0.3em] uppercase mt-0.5" style={{ color: "rgba(201,168,76,0.5)" }}>
-            Operations Platform
-          </div>
-        </div>
+      <div className="flex items-center gap-3 px-4 pt-5 pb-4 shrink-0">
+        <img
+          src="/branding/LOGO-SEVEN.png"
+          alt="Seven Arena"
+          style={{ height: 36, width: "auto", objectFit: "contain" }}
+        />
       </div>
 
-      {/* Gold divider */}
-      <div className="mx-5 shrink-0" style={{ height: 1, background: "linear-gradient(90deg,transparent,rgba(201,168,76,0.3),transparent)" }} />
+      {/* Divider */}
+      <div className="mx-4 shrink-0" style={{ height: 1, background: "var(--border-muted)" }} />
 
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4" style={{ scrollbarWidth: "none", display: "flex", flexDirection: "column", gap: "2px" }}>
+      <nav className="flex-1 overflow-y-auto px-3 py-3" style={{ scrollbarWidth: "none", display: "flex", flexDirection: "column", gap: "1px" }}>
         {navSections.map((section) => {
           if (section.href) {
             const isActive = pathname === section.href || pathname.startsWith(section.href + "/");
@@ -350,14 +335,13 @@ export default function SideNav() {
               <Link
                 key={section.title}
                 href={section.href}
-                className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150"
+                className="flex items-center gap-2.5 rounded-md px-3 py-2 text-[13px] font-medium transition-all duration-100"
                 style={{
-                  color: isActive ? "#c9a84c" : "rgba(255,255,255,0.55)",
-                  background: isActive ? "rgba(201,168,76,0.1)" : "transparent",
-                  borderLeft: isActive ? "2px solid #c9a84c" : "2px solid transparent"
+                  color: isActive ? "var(--gold)" : "var(--text-muted)",
+                  background: isActive ? "var(--elevated)" : "transparent",
                 }}
               >
-                <Icon name={section.icon} />
+                <Icon name={section.icon} className={isActive ? "text-[var(--gold)]" : ""} />
                 <span>{t(section.title)}</span>
               </Link>
             );
@@ -368,7 +352,6 @@ export default function SideNav() {
 
           return (
             <div key={section.title}>
-              {/* Section header button */}
               <button
                 type="button"
                 onClick={() =>
@@ -379,33 +362,31 @@ export default function SideNav() {
                     }, {})
                   )
                 }
-                className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150"
+                className="flex w-full items-center justify-between rounded-md px-3 py-2 text-[13px] font-medium transition-all duration-100"
                 style={{
-                  color: sectionActive ? "#c9a84c" : "rgba(255,255,255,0.65)",
-                  background: "transparent",
+                  color: sectionActive ? "var(--gold)" : "var(--text-muted)",
+                  background: sectionActive && !isOpen ? "var(--elevated)" : "transparent",
                   border: "none",
-                  borderLeft: sectionActive && !isOpen ? "2px solid #c9a84c" : "2px solid transparent",
                   cursor: "pointer"
                 }}
               >
                 <span className="flex items-center gap-2.5">
-                  <Icon name={section.icon} />
+                  <Icon name={section.icon} className={sectionActive ? "text-[var(--gold)]" : ""} />
                   {t(section.title)}
                 </span>
-                <span style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", transition: "transform 200ms ease", transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", display: "inline-block" }}>▾</span>
+                <span style={{ fontSize: 9, color: "var(--text-faint)", transition: "transform 200ms ease", transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", display: "inline-block" }}>▼</span>
               </button>
 
-              {/* Expandable content — inline style maxHeight, NO Tailwind arbitrary values */}
               <div
                 style={{
                   overflow: "hidden",
                   maxHeight: isOpen ? "800px" : "0px",
                   opacity: isOpen ? 1 : 0,
                   transition: "max-height 250ms ease, opacity 200ms ease",
-                  paddingLeft: "8px",
+                  paddingLeft: "10px",
                   display: "flex",
                   flexDirection: "column",
-                  gap: "2px"
+                  gap: "1px"
                 }}
               >
                 {section.items?.map((item) => {
@@ -414,11 +395,10 @@ export default function SideNav() {
                     <Link
                       key={item.href}
                       href={item.href}
-                      className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] transition-all duration-150"
+                      className="flex items-center gap-2.5 rounded-md px-3 py-1.5 text-[12px] transition-all duration-100"
                       style={{
-                        color: active ? "#c9a84c" : "rgba(255,255,255,0.55)",
-                        background: active ? "rgba(201,168,76,0.1)" : "transparent",
-                        borderLeft: active ? "2px solid #c9a84c" : "2px solid transparent",
+                        color: active ? "var(--gold)" : "var(--text-muted)",
+                        background: active ? "var(--elevated)" : "transparent",
                         fontWeight: active ? 600 : 400
                       }}
                     >
@@ -438,11 +418,10 @@ export default function SideNav() {
                       <button
                         type="button"
                         onClick={() => setOpenGroups((prev) => ({ ...prev, [groupKey]: !prev[groupKey] }))}
-                        className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-[13px] transition-all duration-150"
+                        className="flex w-full items-center justify-between rounded-md px-3 py-1.5 text-[12px] transition-all duration-100"
                         style={{
-                          color: groupActive ? "#c9a84c" : "rgba(255,255,255,0.55)",
-                          background: groupActive ? "rgba(201,168,76,0.08)" : "transparent",
-                          borderLeft: groupActive ? "2px solid #c9a84c" : "2px solid transparent",
+                          color: groupActive ? "var(--gold)" : "var(--text-muted)",
+                          background: groupActive ? "var(--elevated)" : "transparent",
                           fontWeight: groupActive ? 600 : 400,
                           border: "none",
                           cursor: "pointer"
@@ -452,7 +431,7 @@ export default function SideNav() {
                           <Icon name={group.icon} />
                           {t(group.title)}
                         </span>
-                        <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", transition: "transform 200ms ease", transform: groupIsOpen ? "rotate(180deg)" : "rotate(0deg)", display: "inline-block" }}>▾</span>
+                        <span style={{ fontSize: 9, color: "var(--text-faint)", transition: "transform 200ms ease", transform: groupIsOpen ? "rotate(180deg)" : "rotate(0deg)", display: "inline-block" }}>▼</span>
                       </button>
 
                       <div
@@ -461,10 +440,10 @@ export default function SideNav() {
                           maxHeight: groupIsOpen ? "400px" : "0px",
                           opacity: groupIsOpen ? 1 : 0,
                           transition: "max-height 250ms ease, opacity 200ms ease",
-                          paddingLeft: "16px",
+                          paddingLeft: "12px",
                           display: "flex",
                           flexDirection: "column",
-                          gap: "2px"
+                          gap: "1px"
                         }}
                       >
                         {group.items.map((item) => {
@@ -473,11 +452,10 @@ export default function SideNav() {
                             <Link
                               key={item.href}
                               href={item.href}
-                              className="flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-[12px] transition-all duration-150"
+                              className="flex items-center gap-2.5 rounded-md px-3 py-1.5 text-[12px] transition-all duration-100"
                               style={{
-                                color: active ? "#c9a84c" : "rgba(255,255,255,0.45)",
-                                background: active ? "rgba(201,168,76,0.1)" : "transparent",
-                                borderLeft: active ? "2px solid #c9a84c" : "2px solid transparent",
+                                color: active ? "var(--gold)" : "var(--text-faint)",
+                                background: active ? "var(--elevated)" : "transparent",
                                 fontWeight: active ? 600 : 400
                               }}
                             >
@@ -497,9 +475,9 @@ export default function SideNav() {
       </nav>
 
       {/* Language switcher */}
-      <div className="px-4 py-4 shrink-0" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
-        <p className="text-[10px] uppercase tracking-[0.2em] mb-2" style={{ color: "rgba(255,255,255,0.3)" }}>{t("Idioma")}</p>
-        <div className="grid grid-cols-3 gap-1.5">
+      <div className="px-3 py-3 shrink-0" style={{ borderTop: "1px solid var(--border-muted)" }}>
+        <p className="text-[10px] uppercase tracking-[0.18em] mb-2 px-1" style={{ color: "var(--text-faint)" }}>{t("Idioma")}</p>
+        <div className="grid grid-cols-3 gap-1">
           {[
             { key: "es", label: "Español", short: "ES", flag: "🇨🇱" },
             { key: "en", label: "English",  short: "EN", flag: "🇺🇸" },
@@ -511,16 +489,16 @@ export default function SideNav() {
                 key={option.key}
                 type="button"
                 onClick={() => setLocale(option.key as "es" | "en" | "pt")}
-                className="flex items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-semibold transition-all"
+                className="flex items-center justify-center gap-1 rounded-md px-2 py-1.5 text-[11px] font-semibold transition-all"
                 style={{
-                  background: active ? "rgba(201,168,76,0.15)" : "rgba(255,255,255,0.05)",
-                  color: active ? "#c9a84c" : "rgba(255,255,255,0.45)",
-                  border: active ? "1px solid rgba(201,168,76,0.35)" : "1px solid rgba(255,255,255,0.08)"
+                  background: active ? "var(--gold-dim)" : "var(--elevated)",
+                  color: active ? "var(--gold)" : "var(--text-faint)",
+                  border: `1px solid ${active ? "var(--gold-glow)" : "var(--border-muted)"}`
                 }}
                 title={t(option.label)}
               >
                 <span>{option.flag}</span>
-                <span className="tracking-[0.12em]">{option.short}</span>
+                <span>{option.short}</span>
               </button>
             );
           })}

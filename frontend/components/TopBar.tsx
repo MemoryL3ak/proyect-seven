@@ -57,32 +57,31 @@ export default function TopBar() {
 
   return (
     <header
-      className="flex flex-wrap items-center justify-between gap-4 mb-8 pb-6"
-      style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}
+      className="flex flex-wrap items-center justify-between gap-4 mb-7 pb-5"
+      style={{ borderBottom: "1px solid var(--border-muted)" }}
     >
       <div>
-        <p className="section-label mb-2">Panel Operativo</p>
+        <p className="section-label mb-1.5">Seven Arena</p>
         <h2
-          className="font-black text-white"
-          style={{ fontSize: "1.75rem", letterSpacing: "-0.025em", lineHeight: 1.1 }}
+          className="font-bold"
+          style={{ fontSize: "1.4rem", letterSpacing: "-0.02em", lineHeight: 1.2, color: "var(--text)" }}
         >
           {title}
         </h2>
       </div>
 
-      <div className="flex items-center gap-3">
-        {/* Live indicator */}
+      <div className="flex items-center gap-2.5">
         <div
-          className="flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold"
+          className="flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold"
           style={{
-            background: "rgba(16,185,129,0.1)",
-            border: "1px solid rgba(16,185,129,0.2)",
-            color: "#34d399"
+            background: "var(--success-dim)",
+            border: "1px solid rgba(63,185,80,0.2)",
+            color: "var(--success)"
           }}
         >
           <span
-            className="w-1.5 h-1.5 rounded-full bg-emerald-400"
-            style={{ animation: "pulseDot 2s ease-in-out infinite" }}
+            className="w-1.5 h-1.5 rounded-full"
+            style={{ background: "var(--success)", animation: "pulseDot 2s ease-in-out infinite" }}
           />
           En vivo
         </div>

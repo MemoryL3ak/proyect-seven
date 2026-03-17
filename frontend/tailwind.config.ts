@@ -9,20 +9,25 @@ const config: Config = {
         display: ["var(--font-sans)"]
       },
       colors: {
-        ink:         "#0b1628",
-        navy:        "#0b1628",
-        "navy-light":"#0f1e35",
-        gold:        "#c9a84c",
+        bg:          "#0d1117",
+        surface:     "#161b22",
+        elevated:    "#21262d",
+        sidebar:     "#010409",
+        gold:        "#d4a843",
         "gold-light":"#e8c96a",
-        ember:       "#f97316",
-        mist:        "#f4f6f9",
-        slate:       "#334155"
+        border:      "#30363d",
+        "text-main": "#e6edf3",
+        "text-muted":"#8b949e",
+        success:     "#3fb950",
+        warning:     "#d29922",
+        danger:      "#f85149",
+        info:        "#58a6ff"
       },
       boxShadow: {
-        card: "0 4px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)",
-        glow: "0 0 40px rgba(201,168,76,0.2)",
-        gold: "0 0 20px rgba(201,168,76,0.35)",
-        soft: "0 20px 60px rgba(11,22,40,0.4)"
+        card: "0 1px 3px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.3)",
+        glow: "0 0 20px rgba(212,168,67,0.25)",
+        gold: "0 0 12px rgba(212,168,67,0.3)",
+        soft: "0 8px 24px rgba(0,0,0,0.4)"
       },
       animation: {
         "fade-up":  "fadeUp 0.3s ease both",

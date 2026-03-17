@@ -13,12 +13,21 @@ export default function PageHeader({
 }) {
   const { t } = useI18n();
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 mb-6 pb-5"
-      style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+    <div
+      className="flex flex-wrap items-center justify-between gap-4 mb-6 pb-5"
+      style={{ borderBottom: "1px solid var(--border-muted)" }}
+    >
       <div>
-        <p className="section-label mb-2">{t("Modulo")}</p>
-        <h3 className="font-black text-white" style={{ fontSize: "1.5rem", letterSpacing: "-0.02em" }}>{t(title)}</h3>
-        <p className="text-sm mt-1 max-w-xl" style={{ color: "rgba(255,255,255,0.45)" }}>{t(description)}</p>
+        <p className="section-label mb-1.5">{t("Modulo")}</p>
+        <h3
+          className="font-bold"
+          style={{ fontSize: "1.3rem", letterSpacing: "-0.02em", color: "var(--text)" }}
+        >
+          {t(title)}
+        </h3>
+        <p className="text-sm mt-1 max-w-xl" style={{ color: "var(--text-muted)" }}>
+          {t(description)}
+        </p>
       </div>
       {action}
     </div>
