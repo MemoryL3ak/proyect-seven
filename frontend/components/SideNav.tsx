@@ -342,7 +342,7 @@ export default function SideNav() {
           style={{
             width: "100%",
             height: "auto",
-            transform: "scale(2.2)",
+            transform: "scale(1.9)",
             transformOrigin: "center center",
             height: "auto",
             objectFit: "contain",
