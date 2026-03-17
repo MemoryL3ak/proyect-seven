@@ -319,7 +319,7 @@ export default function SideNav() {
       <div
         className="flex items-center justify-center shrink-0"
         style={{
-          padding: "28px 20px 24px",
+          padding: "12px 20px 10px",
           borderBottom: "1px solid rgba(255,255,255,0.1)"
         }}
       >
