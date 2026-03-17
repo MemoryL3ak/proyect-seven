@@ -310,32 +310,28 @@ export default function SideNav() {
       className="h-screen sticky top-0 flex flex-col shrink-0"
       style={{
         width: "260px",
-        background: "linear-gradient(180deg, #0c1635 0%, #1a2d5a 20%, #0d1b3e 60%, #080f20 100%)",
-        borderRight: "1px solid rgba(201,168,76,0.15)",
-        boxShadow: "4px 0 32px rgba(0,0,0,0.5)"
+        background: "#07101f",
+        borderRight: "1px solid rgba(201,168,76,0.2)",
+        boxShadow: "4px 0 40px rgba(0,0,0,0.7)"
       }}
     >
       {/* Logo */}
       <div
-        className="flex items-center justify-center shrink-0"
+        className="flex flex-col items-center justify-center shrink-0"
         style={{
-          padding: "0px 16px",
-          height: "130px",
-          overflow: "hidden",
-          borderBottom: "1px solid rgba(201,168,76,0.2)",
-          background: "radial-gradient(ellipse 100% 150% at 50% 50%, rgba(26,60,120,0.6) 0%, transparent 100%)"
+          padding: "24px 20px 20px",
+          borderBottom: "1px solid rgba(201,168,76,0.15)",
+          background: "radial-gradient(ellipse 120% 160% at 50% 40%, #1a3060 0%, #0d1e40 50%, transparent 100%)"
         }}
       >
         <img
           src="/branding/LOGO-SEVEN.png"
           alt="Seven Arena"
           style={{
-            height: "auto",
-            width: "100%",
-            objectFit: "cover",
-            transform: "scale(1.4)",
-            transformOrigin: "center center",
-            filter: "drop-shadow(0 0 20px rgba(201,168,76,0.5)) drop-shadow(0 4px 12px rgba(0,0,0,0.5))"
+            height: 120,
+            width: "auto",
+            objectFit: "contain",
+            filter: "drop-shadow(0 0 24px rgba(201,168,76,0.6)) drop-shadow(0 8px 20px rgba(0,0,0,0.8))"
           }}
         />
       </div>
@@ -351,8 +347,8 @@ export default function SideNav() {
                 href={section.href}
                 className="flex items-center gap-3 mx-2 px-3 py-2.5 text-[13.5px] font-medium transition-all duration-150 relative"
                 style={{
-                  color: isActive ? "#c9a84c" : "rgba(255,255,255,0.6)",
-                  background: isActive ? "rgba(201,168,76,0.1)" : "transparent",
+                  color: isActive ? "#e8c96a" : "rgba(255,255,255,0.82)",
+                  background: isActive ? "rgba(201,168,76,0.12)" : "transparent",
                   borderRadius: "8px",
                   borderLeft: isActive ? "3px solid #c9a84c" : "3px solid transparent",
                   marginBottom: "1px"
@@ -381,7 +377,7 @@ export default function SideNav() {
                 }
                 className="flex w-full items-center justify-between mx-0 px-5 py-2.5 text-[13.5px] font-semibold transition-all duration-150"
                 style={{
-                  color: sectionActive ? "#c9a84c" : "rgba(255,255,255,0.7)",
+                  color: sectionActive ? "#e8c96a" : "rgba(255,255,255,0.85)",
                   background: "transparent",
                   border: "none",
                   cursor: "pointer",
@@ -418,8 +414,8 @@ export default function SideNav() {
                         href={item.href}
                         className="flex items-center gap-3 px-3 py-2 text-[12.5px] transition-all duration-150"
                         style={{
-                          color: active ? "#ffffff" : "rgba(255,255,255,0.45)",
-                          background: active ? "rgba(255,255,255,0.08)" : "transparent",
+                          color: active ? "#e8c96a" : "rgba(255,255,255,0.65)",
+                          background: active ? "rgba(201,168,76,0.1)" : "transparent",
                           fontWeight: active ? 600 : 400,
                           borderRadius: "7px",
                           borderLeft: active ? "2px solid #c9a84c" : "2px solid transparent",
@@ -458,8 +454,8 @@ export default function SideNav() {
                                 href={item.href}
                                 className="flex items-center gap-3 px-3 py-2 text-[12.5px] transition-all duration-150"
                                 style={{
-                                  color: active ? "#ffffff" : "rgba(255,255,255,0.38)",
-                                  background: active ? "rgba(255,255,255,0.08)" : "transparent",
+                                  color: active ? "#e8c96a" : "rgba(255,255,255,0.6)",
+                                  background: active ? "rgba(201,168,76,0.1)" : "transparent",
                                   fontWeight: active ? 600 : 400,
                                   borderRadius: "7px",
                                   borderLeft: active ? "2px solid #c9a84c" : "2px solid transparent",
