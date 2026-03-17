@@ -315,12 +315,31 @@ export default function SideNav() {
       }}
     >
       {/* Logo */}
-      <div className="flex items-center px-5 pt-5 pb-4 shrink-0">
-        <img
-          src="/branding/LOGO-SEVEN.png"
-          alt="Seven Arena"
-          style={{ height: 48, width: "auto", objectFit: "contain" }}
-        />
+      <div className="flex items-center gap-3 px-4 pt-5 pb-4 shrink-0">
+        <div
+          style={{
+            background: "#ffffff",
+            borderRadius: "10px",
+            padding: "5px",
+            width: 44,
+            height: 44,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+            boxShadow: "0 2px 8px rgba(0,0,0,0.3)"
+          }}
+        >
+          <img
+            src="/branding/LOGO-SEVEN.png"
+            alt="Seven Arena"
+            style={{ height: 34, width: 34, objectFit: "contain" }}
+          />
+        </div>
+        <div>
+          <p style={{ color: "#ffffff", fontWeight: 700, fontSize: "13px", lineHeight: 1.2, letterSpacing: "-0.01em" }}>Seven Arena</p>
+          <p style={{ color: "rgba(255,255,255,0.35)", fontSize: "10px", fontWeight: 500, letterSpacing: "0.12em", textTransform: "uppercase" }}>Operations</p>
+        </div>
       </div>
 
       {/* Divider */}
