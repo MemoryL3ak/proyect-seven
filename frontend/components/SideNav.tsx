@@ -310,19 +310,20 @@ export default function SideNav() {
       className="h-screen sticky top-0 flex flex-col shrink-0"
       style={{
         width: "260px",
-        background: "linear-gradient(180deg, #1a2e5a 0%, #0f1e3a 40%, #0a1628 100%)",
-        borderRight: "1px solid rgba(255,255,255,0.08)",
-        boxShadow: "4px 0 32px rgba(0,0,0,0.4)"
+        background: "linear-gradient(180deg, #0d1b3e 0%, #091528 60%, #060e1c 100%)",
+        borderRight: "1px solid rgba(255,255,255,0.07)",
+        boxShadow: "4px 0 32px rgba(0,0,0,0.5)"
       }}
     >
       {/* Logo */}
       <div
-        className="flex items-center justify-center shrink-0"
+        className="flex items-center justify-center shrink-0 relative"
         style={{
           padding: "0px 20px",
           height: "110px",
           overflow: "hidden",
-          borderBottom: "1px solid rgba(255,255,255,0.1)"
+          borderBottom: "1px solid rgba(201,168,76,0.25)",
+          background: "radial-gradient(ellipse 80% 120% at 50% 50%, #2a4a9a 0%, #162550 45%, transparent 100%)"
         }}
       >
         <img
@@ -334,7 +335,7 @@ export default function SideNav() {
             objectFit: "cover",
             transform: "scale(1.4)",
             transformOrigin: "center center",
-            filter: "drop-shadow(0 2px 12px rgba(0,0,0,0.4)) brightness(1.2) contrast(1.1)"
+            filter: "drop-shadow(0 0 16px rgba(201,168,76,0.5)) brightness(1.3) contrast(1.1) saturate(1.2)"
           }}
         />
       </div>
