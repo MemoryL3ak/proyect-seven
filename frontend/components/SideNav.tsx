@@ -311,33 +311,45 @@ export default function SideNav() {
       style={{
         width: "260px",
         background: "#07101f",
-        borderRight: "1px solid rgba(201,168,76,0.2)",
-        boxShadow: "4px 0 40px rgba(0,0,0,0.7)"
+        borderRight: "1px solid rgba(255,255,255,0.05)",
+        boxShadow: "4px 0 40px rgba(0,0,0,0.7)",
+        position: "relative",
+        overflow: "hidden"
       }}
     >
-      {/* Logo */}
+      {/* Texture overlay */}
+      <div style={{
+        position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0,
+        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E")`,
+        backgroundRepeat: "repeat", backgroundSize: "200px"
+      }} />
+      {/* Radial glow top */}
+      <div style={{
+        position: "absolute", top: "-60px", left: "50%", transform: "translateX(-50%)",
+        width: "320px", height: "320px", borderRadius: "50%",
+        background: "radial-gradient(ellipse, rgba(30,58,138,0.55) 0%, transparent 70%)",
+        pointerEvents: "none", zIndex: 0
+      }} />
+
+      {/* Logo — no container borders, seamless */}
       <div
-        className="flex flex-col items-center justify-center shrink-0"
-        style={{
-          padding: "24px 20px 20px",
-          borderBottom: "1px solid rgba(201,168,76,0.15)",
-          background: "radial-gradient(ellipse 120% 160% at 50% 40%, #1a3060 0%, #0d1e40 50%, transparent 100%)"
-        }}
+        className="flex items-center justify-center shrink-0"
+        style={{ padding: "32px 12px 24px", position: "relative", zIndex: 1 }}
       >
         <img
           src="/branding/LOGO-SEVEN.png"
           alt="Seven Arena"
           style={{
-            height: 120,
-            width: "auto",
+            width: "82%",
+            height: "auto",
             objectFit: "contain",
-            filter: "drop-shadow(0 0 24px rgba(201,168,76,0.6)) drop-shadow(0 8px 20px rgba(0,0,0,0.8))"
+            filter: "drop-shadow(0 0 28px rgba(201,168,76,0.55)) drop-shadow(0 6px 18px rgba(0,0,0,0.9))"
           }}
         />
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto py-4" style={{ scrollbarWidth: "none" }}>
+      <nav className="flex-1 overflow-y-auto py-2" style={{ scrollbarWidth: "none", position: "relative", zIndex: 1 }}>
         {navSections.map((section) => {
           if (section.href) {
             const isActive = pathname === section.href || pathname.startsWith(section.href + "/");
@@ -478,7 +490,7 @@ export default function SideNav() {
       </nav>
 
       {/* Language switcher */}
-      <div className="px-3 py-3 shrink-0" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+      <div className="px-3 py-3 shrink-0" style={{ borderTop: "1px solid rgba(255,255,255,0.06)", position: "relative", zIndex: 1 }}>
         <p className="text-[10px] uppercase tracking-[0.18em] mb-2 px-1" style={{ color: "rgba(255,255,255,0.3)" }}>{t("Idioma")}</p>
         <div className="grid grid-cols-3 gap-1">
           {[
