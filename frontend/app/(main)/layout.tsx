@@ -12,7 +12,7 @@ export default function MainLayout({
       <SideNav />
       <main className="flex-1 min-w-0 overflow-x-hidden px-7 py-7">
         <TopBar />
-        <div className="min-w-0">{children}</div>
+        <div className="min-w-0 mx-auto" style={{ maxWidth: "1400px" }}>{children}</div>
       </main>
       <SofiaWidget />
     </div>
