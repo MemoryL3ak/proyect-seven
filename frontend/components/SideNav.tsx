@@ -332,6 +332,8 @@ export default function SideNav() {
             height: "auto",
             width: "100%",
             objectFit: "cover",
+            transform: "scale(3)",
+            transformOrigin: "center center",
             filter: "drop-shadow(0 2px 12px rgba(0,0,0,0.4)) brightness(1.15) contrast(0.9) saturate(0.4) invert(1)"
           }}
         />
