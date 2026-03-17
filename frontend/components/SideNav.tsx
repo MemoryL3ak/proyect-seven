@@ -319,7 +319,7 @@ export default function SideNav() {
       <div
         className="flex items-center justify-center shrink-0"
         style={{
-          padding: "4px 20px 2px",
+          padding: "0px 20px",
           borderBottom: "1px solid rgba(255,255,255,0.1)"
         }}
       >
@@ -327,7 +327,7 @@ export default function SideNav() {
           src="/branding/LOGO-SEVEN.png"
           alt="Seven Arena"
           style={{
-            height: 140,
+            height: 180,
             width: "auto",
             objectFit: "contain",
             filter: "drop-shadow(0 2px 12px rgba(0,0,0,0.4)) brightness(1.15) contrast(0.9) saturate(0.4) invert(1)"
