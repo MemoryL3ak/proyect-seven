@@ -508,11 +508,9 @@ export default function VehicleRequestPortalPage() {
   return (
     <div className="min-h-screen px-4 py-8 sm:px-6 lg:px-8" style={{ background: "var(--elevated)" }}>
       <div className="mx-auto max-w-6xl space-y-6">
-        <section className="overflow-hidden rounded-[32px] px-6 py-7 shadow-[0_24px_80px_rgba(15,23,42,0.08)] sm:px-8" style={{ background: "linear-gradient(135deg, var(--banner-bg) 0%, var(--banner-bg-end) 100%)", border: "1px solid var(--banner-border)" }}>
+        <section className="overflow-hidden rounded-[32px] px-6 py-7 shadow-[0_24px_80px_rgba(15,23,42,0.08)] sm:px-8">
           <div className="flex flex-wrap items-end justify-between gap-5">
             <div className="max-w-3xl">
-              <p className="text-[11px] uppercase tracking-[0.36em]" style={{ color: "var(--brand)" }}>Movilidad operativa</p>
-              <h1 className="mt-3 text-3xl font-semibold leading-tight sm:text-[2.5rem]" style={{ color: "var(--text)" }}>Portal de solicitudes de vehiculo</h1>
               <p className="mt-3 max-w-2xl text-sm leading-6 sm:text-base" style={{ color: "var(--text-muted)" }}>
                 Ingresa con tu codigo de usuario, solicita un vehiculo hacia una sede y sigue en tiempo real el estado de asignacion.
               </p>

@@ -403,12 +403,11 @@ export default function SportsCalendarDayDetailPage() {
     <div className="space-y-6">
       <section
         className="rounded-[28px] p-6 shadow-xl"
-        style={{ background: "linear-gradient(135deg, var(--banner-bg) 0%, var(--banner-bg-end) 100%)", border: "1px solid var(--banner-border)" }}
+       
       >
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-3xl">
-            <p className="text-xs uppercase tracking-[0.28em]" style={{ color: "var(--text-muted)" }}>Jornada operativa</p>
-            <h1 className="mt-2 text-4xl font-semibold leading-tight" style={{ color: "var(--text)" }}>{formatDateLong(`${dayKey}T12:00:00`)}</h1>
+            <h1 className="text-xl font-semibold" style={{ color: "var(--text)" }}>{formatDateLong(`${dayKey}T12:00:00`)}</h1>
             <p className="mt-2 text-sm" style={{ color: "var(--text-muted)" }}>
               Vista ejecutiva del dia con llegadas, retiros, vuelos y agenda operativa por delegacion.
             </p>

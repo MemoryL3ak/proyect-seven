@@ -417,9 +417,7 @@ export default function AthletePortalPage() {
 
   return (
     <div className="space-y-6">
-      <section className="surface rounded-3xl p-6" style={{ background: "linear-gradient(135deg, var(--banner-bg) 0%, var(--banner-bg-end) 100%)", border: "1px solid var(--banner-border)" }}>
-        <p className="text-xs uppercase tracking-[0.3em]" style={{ color: "var(--brand)" }}>Seven</p>
-        <h1 className="font-sans font-bold text-3xl" style={{ color: "var(--text)" }}>{t("Portal de usuario")}</h1>
+      <section className="surface rounded-3xl p-6">
         <p className="text-sm mt-2" style={{ color: "var(--text-muted)" }}>
           {t("Consulta tu itinerario y confirma cada etapa del viaje.")}
         </p>

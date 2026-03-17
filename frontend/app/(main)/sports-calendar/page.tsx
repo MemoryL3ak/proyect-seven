@@ -767,12 +767,10 @@ export default function SportsCalendarPage() {
     <div className="space-y-5">
       <section
         className="rounded-3xl p-5"
-        style={{ background: "linear-gradient(135deg, var(--banner-bg) 0%, var(--banner-bg-end) 100%)", border: "1px solid var(--banner-border)" }}
+       
       >
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-[0.24em]" style={{ color: "var(--text-muted)" }}>Calendario deportivo</p>
-            <h1 className="mt-1 text-2xl font-semibold" style={{ color: "var(--text)" }}>Planificacion por disciplinas, entrenamientos y pruebas</h1>
             <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
               Registro operativo de entrenamientos y pruebas por delegacion, con llegadas y retiros integrados desde AND.
             </p>

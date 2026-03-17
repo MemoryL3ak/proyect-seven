@@ -1043,12 +1043,10 @@ export default function HealthPage() {
     <div className="space-y-6">
       <section
         className="rounded-3xl p-6 shadow-xl"
-        style={{ background: "linear-gradient(135deg, var(--banner-bg) 0%, var(--banner-bg-end) 100%)", border: "1px solid var(--banner-border)" }}
+       
       >
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.28em]" style={{ color: "var(--text-muted)" }}>SALUD · FUPD JDE</p>
-            <h1 className="mt-1 text-3xl font-semibold" style={{ color: "var(--text)" }}>Ficha única de participación del deportista</h1>
             <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>Registro clínico-administrativo completo por participante.</p>
           </div>
           <div className="rounded-2xl px-4 py-3 text-sm" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>

@@ -540,12 +540,10 @@ export default function AccreditationsPage() {
     <div className="space-y-6">
       <section
         className="rounded-3xl p-6 shadow-xl"
-        style={{ background: "linear-gradient(135deg, var(--banner-bg) 0%, var(--banner-bg-end) 100%)", border: "1px solid var(--banner-border)" }}
+       
       >
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.28em]" style={{ color: "var(--text-muted)" }}>Control de acceso</p>
-            <h1 className="mt-1 text-3xl font-semibold" style={{ color: "var(--text)" }}>Flujo de acreditacion {selectedEventName ? `- ${selectedEventName}` : ""}</h1>
             <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>Panel para validar identidad, acreditar y generar credenciales.</p>
           </div>
           <div className="rounded-2xl px-4 py-3 text-sm" style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text-muted)" }}>

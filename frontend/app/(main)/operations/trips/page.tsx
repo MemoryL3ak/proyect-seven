@@ -519,12 +519,10 @@ export default function TripsPage() {
 
       <section
         className="overflow-hidden rounded-[32px] px-6 py-7"
-        style={{ background: "linear-gradient(135deg, var(--banner-bg) 0%, var(--banner-bg-end) 100%)", border: "1px solid var(--banner-border)" }}
+       
       >
         <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
           <div className="max-w-3xl">
-            <p className="text-xs uppercase tracking-[0.34em]" style={{ color: "var(--text-muted)" }}>Control de viajes</p>
-            <h2 className="mt-3 font-sans font-bold text-4xl leading-tight" style={{ color: "var(--text)" }}>Solicitudes, asignación y seguimiento</h2>
             <p className="mt-3 max-w-2xl text-sm" style={{ color: "var(--text-muted)" }}>
               Vista operativa para revisar solicitudes, programar servicios y monitorear viajes activos.
             </p>

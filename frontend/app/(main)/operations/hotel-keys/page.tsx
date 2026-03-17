@@ -414,12 +414,10 @@ export default function HotelKeysPage() {
 
       <section
         className="overflow-hidden rounded-[30px] p-6"
-        style={{ background: "linear-gradient(135deg, var(--banner-bg) 0%, var(--banner-bg-end) 100%)", border: "1px solid var(--banner-border)" }}
+       
       >
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.32em]" style={{ color: "var(--text-muted)" }}>Hotelería</p>
-            <h2 className="mt-2 font-sans font-bold text-4xl leading-tight" style={{ color: "var(--text)" }}>Control centralizado de llaves</h2>
             <p className="mt-2 text-sm" style={{ color: "var(--text-muted)" }}>
               Cada llave y copia queda trazada con responsable, timestamps y bitácora operativa.
             </p>
