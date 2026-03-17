@@ -82,11 +82,11 @@ export default function TopBar() {
           title={theme === "dark" ? "Cambiar a tema claro" : "Cambiar a tema oscuro"}
           style={{
             display: "flex", alignItems: "center", justifyContent: "center",
-            width: "32px", height: "32px", borderRadius: "8px",
-            background: theme === "dark" ? "rgba(255,255,255,0.05)" : "#f1f5f9",
-            border: theme === "dark" ? "1px solid rgba(255,255,255,0.1)" : "1px solid #e2e8f0",
+            width: "36px", height: "36px", borderRadius: "8px",
+            background: theme === "dark" ? "#0d1b3e" : "#f1f5f9",
+            border: theme === "dark" ? "1px solid rgba(201,168,76,0.3)" : "1px solid #e2e8f0",
             cursor: "pointer", transition: "all 150ms ease",
-            color: theme === "dark" ? "rgba(255,255,255,0.6)" : "#64748b"
+            color: theme === "dark" ? "#d4a843" : "#64748b"
           }}
         >
           {theme === "dark" ? (
