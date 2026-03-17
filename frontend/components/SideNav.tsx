@@ -316,22 +316,18 @@ export default function SideNav() {
       }}
     >
       {/* Logo */}
-      <div className="flex flex-col items-center justify-center pt-6 pb-5 shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-        <div style={{
-          background: "#ffffff",
-          borderRadius: "16px",
-          padding: "12px 24px",
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.4)"
-        }}>
-          <img
-            src="/branding/LOGO-SEVEN.png"
-            alt="Seven Arena"
-            style={{ height: 64, width: "auto", objectFit: "contain" }}
-          />
-        </div>
+      <div className="flex items-center px-5 py-4 shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+        <img
+          src="/branding/LOGO-SEVEN.png"
+          alt="Seven Arena"
+          style={{
+            height: 36,
+            width: "auto",
+            objectFit: "contain",
+            filter: "brightness(0) invert(1)",
+            opacity: 0.92
+          }}
+        />
       </div>
 
       {/* Nav */}
