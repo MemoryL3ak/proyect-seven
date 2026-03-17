@@ -766,19 +766,19 @@ export default function SportsCalendarPage() {
   return (
     <div className="space-y-5">
       <section
-        className="rounded-3xl border border-white/10 p-5 text-white"
-        style={{ background: "linear-gradient(110deg, #0b1628 0%, #0f766e 58%, #0ea5a0 100%)" }}
+        className="rounded-3xl p-5"
+        style={{ background: "linear-gradient(135deg, var(--brand-dim) 0%, #e0f2fe 100%)", border: "1px solid var(--info-border)" }}
       >
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-[0.24em] text-white/85">Calendario deportivo</p>
-            <h1 className="mt-1 text-2xl font-semibold">Planificacion por disciplinas, entrenamientos y pruebas</h1>
-            <p className="mt-1 text-sm text-white/85">
+            <p className="text-xs uppercase tracking-[0.24em]" style={{ color: "var(--text-muted)" }}>Calendario deportivo</p>
+            <h1 className="mt-1 text-2xl font-semibold" style={{ color: "var(--text)" }}>Planificacion por disciplinas, entrenamientos y pruebas</h1>
+            <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
               Registro operativo de entrenamientos y pruebas por delegacion, con llegadas y retiros integrados desde AND.
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <span className="rounded-full bg-white/10 px-3 py-1 text-xs">{entries.length} actividades</span>
+            <span className="rounded-full px-3 py-1 text-xs" style={{ background: "var(--elevated)", border: "1px solid var(--border)", color: "var(--text-muted)" }}>{entries.length} actividades</span>
             <span className="rounded-full bg-rose-700 px-3 py-1 text-xs">{liveCount} en vivo</span>
           </div>
         </div>

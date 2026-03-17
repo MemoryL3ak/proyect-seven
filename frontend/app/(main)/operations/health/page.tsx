@@ -1042,16 +1042,16 @@ export default function HealthPage() {
   return (
     <div className="space-y-6">
       <section
-        className="rounded-3xl border border-white/15 p-6 text-white shadow-xl"
-        style={{ background: "linear-gradient(110deg, #0f172a 0%, #075985 58%, #0ea5a0 100%)" }}
+        className="rounded-3xl p-6 shadow-xl"
+        style={{ background: "linear-gradient(135deg, var(--brand-dim) 0%, #e0f2fe 100%)", border: "1px solid var(--info-border)" }}
       >
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.28em] text-white/85">SALUD · FUPD JDE</p>
-            <h1 className="mt-1 text-3xl font-semibold">Ficha única de participación del deportista</h1>
-            <p className="mt-1 text-sm text-white/85">Registro clínico-administrativo completo por participante.</p>
+            <p className="text-xs uppercase tracking-[0.28em]" style={{ color: "var(--text-muted)" }}>SALUD · FUPD JDE</p>
+            <h1 className="mt-1 text-3xl font-semibold" style={{ color: "var(--text)" }}>Ficha única de participación del deportista</h1>
+            <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>Registro clínico-administrativo completo por participante.</p>
           </div>
-          <div className="rounded-2xl border border-white/35 bg-black/20 px-4 py-3 text-sm">
+          <div className="rounded-2xl px-4 py-3 text-sm" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
             {activeSubsection === "record" ? <>Avance ficha: <span className="font-semibold">{completion}%</span></> : <>Subsección: <span className="font-semibold">{HEALTH_SUBSECTIONS.find((item) => item.id === activeSubsection)?.label}</span></>}
           </div>
         </div>
@@ -1098,9 +1098,9 @@ export default function HealthPage() {
               v
             </button>
             {athletePickerOpen ? (
-              <div className="absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded-xl p-1 shadow-xl" style={{background:"#0f1e35",border:"1px solid rgba(255,255,255,0.1)"}}>
+              <div className="absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded-xl p-1 shadow-xl" style={{background:"var(--surface)",border:"1px solid var(--border)"}}>
                 {searchableAthletes.length === 0 ? (
-                  <div className="px-3 py-2 text-sm text-white/50">Sin resultados</div>
+                  <div className="px-3 py-2 text-sm" style={{ color: "var(--text-muted)" }}>Sin resultados</div>
                 ) : (
                   searchableAthletes.slice(0, 60).map((item) => (
                     <button
@@ -1130,7 +1130,7 @@ export default function HealthPage() {
                 key={item.id}
                 type="button"
                 className="min-w-[132px] rounded-xl px-4 py-2.5 text-sm font-semibold transition"
-                style={active ? {background:"rgba(201,168,76,0.2)",color:"#c9a84c",border:"1px solid rgba(201,168,76,0.3)"} : {background:"transparent",color:"rgba(255,255,255,0.6)"}}
+                style={active ? {background:"var(--gold-dim)",color:"#92670a",border:"1px solid var(--gold)"} : {background:"transparent",color:"var(--text-muted)"}}
                 onClick={() => setActiveSubsection(item.id)}
               >
                 <span className="block text-center">{item.label}</span>

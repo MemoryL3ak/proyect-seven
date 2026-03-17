@@ -401,42 +401,45 @@ export default function SportsCalendarDayDetailPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.08),_transparent_34%),linear-gradient(120deg,_#0b1628_0%,_#164e63_48%,_#0f766e_100%)] p-6 text-white shadow-xl">
+      <section
+        className="rounded-[28px] p-6 shadow-xl"
+        style={{ background: "linear-gradient(135deg, var(--brand-dim) 0%, #e0f2fe 100%)", border: "1px solid var(--info-border)" }}
+      >
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-3xl">
-            <p className="text-xs uppercase tracking-[0.28em] text-white/70">Jornada operativa</p>
-            <h1 className="mt-2 text-4xl font-semibold leading-tight">{formatDateLong(`${dayKey}T12:00:00`)}</h1>
-            <p className="mt-2 text-sm text-white/78">
+            <p className="text-xs uppercase tracking-[0.28em]" style={{ color: "var(--text-muted)" }}>Jornada operativa</p>
+            <h1 className="mt-2 text-4xl font-semibold leading-tight" style={{ color: "var(--text)" }}>{formatDateLong(`${dayKey}T12:00:00`)}</h1>
+            <p className="mt-2 text-sm" style={{ color: "var(--text-muted)" }}>
               Vista ejecutiva del dia con llegadas, retiros, vuelos y agenda operativa por delegacion.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-sm">
-              <div className="text-[11px] uppercase tracking-[0.18em] text-white/65">Evento</div>
-              <div className="mt-1 font-semibold">{selectedEvent?.name || "Todos"}</div>
+            <div className="rounded-2xl px-4 py-3 text-sm" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+              <div className="text-[11px] uppercase tracking-[0.18em]" style={{ color: "var(--text-muted)" }}>Evento</div>
+              <div className="mt-1 font-semibold" style={{ color: "var(--text)" }}>{selectedEvent?.name || "Todos"}</div>
             </div>
-            <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-sm">
-              <div className="text-[11px] uppercase tracking-[0.18em] text-white/65">Delegacion</div>
-              <div className="mt-1 font-semibold">{delegationId ? delegationLabel(delegations, delegationId) : "Todas"}</div>
+            <div className="rounded-2xl px-4 py-3 text-sm" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+              <div className="text-[11px] uppercase tracking-[0.18em]" style={{ color: "var(--text-muted)" }}>Delegacion</div>
+              <div className="mt-1 font-semibold" style={{ color: "var(--text)" }}>{delegationId ? delegationLabel(delegations, delegationId) : "Todas"}</div>
             </div>
           </div>
         </div>
         <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
-            <div className="text-[11px] uppercase tracking-[0.18em] text-white/70">Llegadas</div>
-            <div className="mt-2 text-4xl font-semibold">{kpis.arrivals}</div>
+          <div className="rounded-2xl p-4" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+            <div className="text-[11px] uppercase tracking-[0.18em]" style={{ color: "var(--text-muted)" }}>Llegadas</div>
+            <div className="mt-2 text-4xl font-semibold" style={{ color: "var(--text)" }}>{kpis.arrivals}</div>
           </div>
-          <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
-            <div className="text-[11px] uppercase tracking-[0.18em] text-white/70">Retiros</div>
-            <div className="mt-2 text-4xl font-semibold">{kpis.departures}</div>
+          <div className="rounded-2xl p-4" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+            <div className="text-[11px] uppercase tracking-[0.18em]" style={{ color: "var(--text-muted)" }}>Retiros</div>
+            <div className="mt-2 text-4xl font-semibold" style={{ color: "var(--text)" }}>{kpis.departures}</div>
           </div>
-          <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
-            <div className="text-[11px] uppercase tracking-[0.18em] text-white/70">Actividades</div>
-            <div className="mt-2 text-4xl font-semibold">{kpis.activities}</div>
+          <div className="rounded-2xl p-4" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+            <div className="text-[11px] uppercase tracking-[0.18em]" style={{ color: "var(--text-muted)" }}>Actividades</div>
+            <div className="mt-2 text-4xl font-semibold" style={{ color: "var(--text)" }}>{kpis.activities}</div>
           </div>
-          <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
-            <div className="text-[11px] uppercase tracking-[0.18em] text-white/70">Delegaciones activas</div>
-            <div className="mt-2 text-4xl font-semibold">{kpis.activeDelegations}</div>
+          <div className="rounded-2xl p-4" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+            <div className="text-[11px] uppercase tracking-[0.18em]" style={{ color: "var(--text-muted)" }}>Delegaciones activas</div>
+            <div className="mt-2 text-4xl font-semibold" style={{ color: "var(--text)" }}>{kpis.activeDelegations}</div>
           </div>
         </div>
       </section>

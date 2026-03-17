@@ -517,25 +517,28 @@ export default function TripsPage() {
         }
       />
 
-      <section className="overflow-hidden rounded-[32px] bg-[radial-gradient(circle_at_top_left,_rgba(45,212,191,0.25),_transparent_32%),linear-gradient(120deg,#081226_0%,#12315f_45%,#0f766e_100%)] px-6 py-7 text-white shadow-[0_25px_70px_rgba(8,18,38,0.22)]">
+      <section
+        className="overflow-hidden rounded-[32px] px-6 py-7"
+        style={{ background: "linear-gradient(135deg, var(--brand-dim) 0%, #e0f2fe 100%)", border: "1px solid var(--info-border)" }}
+      >
         <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
           <div className="max-w-3xl">
-            <p className="text-xs uppercase tracking-[0.34em] text-white/65">Control de viajes</p>
-            <h2 className="mt-3 font-sans font-bold text-4xl leading-tight">Solicitudes, asignación y seguimiento</h2>
-            <p className="mt-3 max-w-2xl text-sm text-white/75">
+            <p className="text-xs uppercase tracking-[0.34em]" style={{ color: "var(--text-muted)" }}>Control de viajes</p>
+            <h2 className="mt-3 font-sans font-bold text-4xl leading-tight" style={{ color: "var(--text)" }}>Solicitudes, asignación y seguimiento</h2>
+            <p className="mt-3 max-w-2xl text-sm" style={{ color: "var(--text-muted)" }}>
               Vista operativa para revisar solicitudes, programar servicios y monitorear viajes activos.
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 xl:min-w-[420px]">
-            <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur">
-              <p className="text-[10px] uppercase tracking-[0.28em] text-white/60">Ultima sincronizacion</p>
-              <p className="mt-2 text-lg font-semibold">
+            <div className="rounded-2xl px-4 py-3" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+              <p className="text-[10px] uppercase tracking-[0.28em]" style={{ color: "var(--text-muted)" }}>Ultima sincronizacion</p>
+              <p className="mt-2 text-lg font-semibold" style={{ color: "var(--text)" }}>
                 {lastUpdated ? formatDateTime(lastUpdated.toISOString()) : "-"}
               </p>
             </div>
-            <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur">
-              <p className="text-[10px] uppercase tracking-[0.28em] text-white/60">Monitor</p>
-              <p className="mt-2 text-lg font-semibold">Auto refresh cada 8 segundos</p>
+            <div className="rounded-2xl px-4 py-3" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+              <p className="text-[10px] uppercase tracking-[0.28em]" style={{ color: "var(--text-muted)" }}>Monitor</p>
+              <p className="mt-2 text-lg font-semibold" style={{ color: "var(--text)" }}>Auto refresh cada 8 segundos</p>
             </div>
           </div>
         </div>

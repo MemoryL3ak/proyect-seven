@@ -412,18 +412,21 @@ export default function HotelKeysPage() {
         }
       />
 
-      <section className="overflow-hidden rounded-[30px] bg-[radial-gradient(circle_at_10%_10%,rgba(56,189,248,0.2),transparent_30%),radial-gradient(circle_at_80%_20%,rgba(16,185,129,0.2),transparent_35%),linear-gradient(125deg,#022c22_0%,#065f46_45%,#0f766e_100%)] p-6 text-white shadow-[0_24px_70px_rgba(6,95,70,0.28)]">
+      <section
+        className="overflow-hidden rounded-[30px] p-6"
+        style={{ background: "linear-gradient(135deg, var(--brand-dim) 0%, #e0f2fe 100%)", border: "1px solid var(--info-border)" }}
+      >
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.32em] text-white/70">Hotelería</p>
-            <h2 className="mt-2 font-sans font-bold text-4xl leading-tight">Control centralizado de llaves</h2>
-            <p className="mt-2 text-sm text-white/80">
+            <p className="text-xs uppercase tracking-[0.32em]" style={{ color: "var(--text-muted)" }}>Hotelería</p>
+            <h2 className="mt-2 font-sans font-bold text-4xl leading-tight" style={{ color: "var(--text)" }}>Control centralizado de llaves</h2>
+            <p className="mt-2 text-sm" style={{ color: "var(--text-muted)" }}>
               Cada llave y copia queda trazada con responsable, timestamps y bitácora operativa.
             </p>
           </div>
-          <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-sm backdrop-blur">
-            <p className="text-[10px] uppercase tracking-[0.24em] text-white/70">Última sincronización</p>
-            <p className="mt-1 font-semibold">{lastUpdated ? formatDateTime(lastUpdated.toISOString()) : "-"}</p>
+          <div className="rounded-2xl px-4 py-3 text-sm" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+            <p className="text-[10px] uppercase tracking-[0.24em]" style={{ color: "var(--text-muted)" }}>Última sincronización</p>
+            <p className="mt-1 font-semibold" style={{ color: "var(--text)" }}>{lastUpdated ? formatDateTime(lastUpdated.toISOString()) : "-"}</p>
           </div>
         </div>
       </section>

@@ -237,7 +237,7 @@ export default function VehiclePositionsPage() {
 
       <section className="surface rounded-2xl p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="text-xs text-white/50">
+          <div className="text-xs" style={{ color: "var(--text-muted)" }}>
             {t("Última actualización")}: {lastUpdated ? lastUpdated.toLocaleTimeString("es-CL") : "-"}
           </div>
           <button className="btn btn-ghost" onClick={loadData} disabled={loading}>
@@ -248,9 +248,9 @@ export default function VehiclePositionsPage() {
       </section>
 
       <section className="surface rounded-2xl p-6">
-        <h2 className="font-sans font-bold text-2xl text-white mb-4">{t("Viajes")}</h2>
+        <h2 className="font-sans font-bold text-2xl mb-4" style={{ color: "var(--text)" }}>{t("Viajes")}</h2>
         {orderedTrips.length === 0 ? (
-          <p className="text-sm text-white/50">{t("Sin viajes registrados.")}</p>
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>{t("Sin viajes registrados.")}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="table">
@@ -296,7 +296,8 @@ export default function VehiclePositionsPage() {
                           <div className="flex flex-col gap-2">
                             <button
                               type="button"
-                              className="w-56 h-36 rounded-2xl overflow-hidden border border-white/10 transition"
+                              className="w-56 h-36 rounded-2xl overflow-hidden transition"
+                              style={{ border: "1px solid var(--border)" }}
                               onClick={() =>
                                 setMapPreview({
                                   lat: position.lat,
@@ -313,7 +314,8 @@ export default function VehiclePositionsPage() {
                               />
                             </button>
                             <a
-                              className="text-xs font-semibold text-emerald-400 hover:underline"
+                              className="text-xs font-semibold hover:underline"
+                              style={{ color: "var(--brand)" }}
                               href={buildGoogleMapsLink(position.lat, position.lng)}
                               target="_blank"
                               rel="noreferrer"
@@ -345,14 +347,14 @@ export default function VehiclePositionsPage() {
       </section>
 
       {mapPreview && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="surface w-full max-w-4xl rounded-3xl p-4 shadow-2xl">
             <div className="flex items-center justify-between px-2 pb-3">
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-white/40">
+                <p className="text-xs uppercase tracking-[0.2em]" style={{ color: "var(--text-muted)" }}>
                   {t("Tracking de viajes")}
                 </p>
-                <h3 className="font-sans font-bold text-xl text-white">{mapPreview.title}</h3>
+                <h3 className="font-sans font-bold text-xl" style={{ color: "var(--text)" }}>{mapPreview.title}</h3>
               </div>
               <div className="flex items-center gap-2">
                 <a
@@ -372,7 +374,7 @@ export default function VehiclePositionsPage() {
                 </button>
               </div>
             </div>
-            <div className="aspect-[16/9] w-full overflow-hidden rounded-2xl border border-white/10">
+            <div className="aspect-[16/9] w-full overflow-hidden rounded-2xl" style={{ border: "1px solid var(--border)" }}>
               <iframe
                 title="map-preview"
                 src={buildMapEmbed(mapPreview.lat, mapPreview.lng)}

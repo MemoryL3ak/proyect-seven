@@ -417,10 +417,10 @@ export default function AthletePortalPage() {
 
   return (
     <div className="space-y-6">
-      <section className="glass rounded-3xl p-6">
-        <p className="text-xs uppercase tracking-[0.3em] text-white/40">Seven</p>
-        <h1 className="font-sans font-bold text-3xl text-white">{t("Portal de usuario")}</h1>
-        <p className="text-sm text-white/50 mt-2">
+      <section className="surface rounded-3xl p-6" style={{ background: "linear-gradient(135deg, var(--brand-dim) 0%, #e0f2fe 100%)", border: "1px solid var(--info-border)" }}>
+        <p className="text-xs uppercase tracking-[0.3em]" style={{ color: "var(--brand)" }}>Seven</p>
+        <h1 className="font-sans font-bold text-3xl" style={{ color: "var(--text)" }}>{t("Portal de usuario")}</h1>
+        <p className="text-sm mt-2" style={{ color: "var(--text-muted)" }}>
           {t("Consulta tu itinerario y confirma cada etapa del viaje.")}
         </p>
       </section>
@@ -428,10 +428,10 @@ export default function AthletePortalPage() {
       {!athlete && (
         <section className="surface rounded-3xl p-6 space-y-4">
           <div className="space-y-3">
-            <p className="text-xs uppercase tracking-[0.2em] text-white/40">
+            <p className="text-xs uppercase tracking-[0.2em]" style={{ color: "var(--text-muted)" }}>
               {t("Solicita tu código")}
             </p>
-            <label className="flex flex-col gap-2 text-sm text-white/65">
+            <label className="flex flex-col gap-2 text-sm" style={{ color: "var(--text)" }}>
               {t("Correo electrónico")}
               <input
                 className="input"
@@ -448,11 +448,11 @@ export default function AthletePortalPage() {
             >
               {requestLoading ? t("Enviando...") : t("Solicita tu código")}
             </button>
-            {requestStatus && <p className="text-sm text-emerald-400">{requestStatus}</p>}
-            {requestError && <p className="text-sm text-rose-400">{requestError}</p>}
+            {requestStatus && <p className="text-sm text-emerald-600">{requestStatus}</p>}
+            {requestError && <p className="text-sm text-rose-600">{requestError}</p>}
           </div>
 
-          <label className="flex flex-col gap-2 text-sm text-white/65">
+          <label className="flex flex-col gap-2 text-sm" style={{ color: "var(--text)" }}>
             {t("Tu código de acceso")}
             <input
               className="input"
@@ -464,7 +464,7 @@ export default function AthletePortalPage() {
           <button className="btn btn-primary w-fit" onClick={loadAthlete} disabled={loading}>
             {loading ? t("Cargando...") : t("Ver mi información")}
           </button>
-          {error && <p className="text-sm text-rose-400">{error}</p>}
+          {error && <p className="text-sm text-rose-600">{error}</p>}
         </section>
       )}
 
@@ -472,14 +472,14 @@ export default function AthletePortalPage() {
         <section className="surface rounded-3xl p-6 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-white/40">{t("Perfil")}</p>
-              <h2 className="font-sans font-bold text-2xl text-white">{athlete.fullName}</h2>
-              <p className="text-sm text-white/50">{athlete.countryCode || ""}</p>
-              <p className="text-sm text-white/50">
+              <p className="text-xs uppercase tracking-[0.2em]" style={{ color: "var(--text-muted)" }}>{t("Perfil")}</p>
+              <h2 className="font-sans font-bold text-2xl" style={{ color: "var(--text)" }}>{athlete.fullName}</h2>
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>{athlete.countryCode || ""}</p>
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>
                 {t("Tipo de usuario")}: {trip?.clientType || athlete.userType || "-"}
               </p>
-              <p className="text-sm text-white/50">{t("Evento")}: {event?.name || "-"}</p>
-              <p className="text-sm text-white/50">
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>{t("Evento")}: {event?.name || "-"}</p>
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>
                 {t("Delegación")}: {delegation ? countryLabels[delegation.countryCode] || delegation.countryCode : "-"}
               </p>
             </div>
@@ -498,47 +498,47 @@ export default function AthletePortalPage() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="glass rounded-2xl p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-white/40">{t("Vuelo")}</p>
-              <p className="text-sm text-white/65">
+            <div className="surface rounded-2xl p-4" style={{ border: "1px solid var(--border)" }}>
+              <p className="text-xs uppercase tracking-[0.2em]" style={{ color: "var(--text-muted)" }}>{t("Vuelo")}</p>
+              <p className="text-sm" style={{ color: "var(--text)" }}>
                 {flight
                   ? `${flight.airline} · ${flight.flightNumber}`
                   : athlete.airline || athlete.flightNumber
                   ? `${athlete.airline || t("Aerolínea")} · ${athlete.flightNumber || "-"}`
                   : "-"}
               </p>
-              <p className="text-sm text-white/50">
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>
                 {t("Arribo")}: {formatDate(athlete.arrivalTime || flight?.arrivalTime)}
               </p>
             </div>
-            <div className="glass rounded-2xl p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-white/40">{t("Hotel")}</p>
-              <p className="text-sm text-white/65">{hotel?.name || "-"}</p>
-              <p className="text-sm text-white/50">
+            <div className="surface rounded-2xl p-4" style={{ border: "1px solid var(--border)" }}>
+              <p className="text-xs uppercase tracking-[0.2em]" style={{ color: "var(--text-muted)" }}>{t("Hotel")}</p>
+              <p className="text-sm" style={{ color: "var(--text)" }}>{hotel?.name || "-"}</p>
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>
                 {t("Habitación")}: {hotelRoom?.roomNumber || athlete.roomNumber || "-"}
               </p>
-              <p className="text-sm text-white/50">
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>
                 {t("Tipo de habitación")}: {hotelRoom?.roomType || athlete.roomType || "-"} · {t("Cama")}:{" "}
                 {hotelBed?.bedType || athlete.bedType || "-"}
               </p>
-              <p className="text-sm text-white/50">
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>
                 {t("Equipaje")}: {luggageLabels[athlete.luggageType ?? ""] || athlete.luggageType || "-"}
               </p>
             </div>
-            <div className="glass rounded-2xl p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-white/40">{t("Transporte")}</p>
-              <p className="text-sm text-white/65">{t("Conductor")}: {driver?.fullName || "-"}</p>
-              <p className="text-sm text-white/50">
+            <div className="surface rounded-2xl p-4" style={{ border: "1px solid var(--border)" }}>
+              <p className="text-xs uppercase tracking-[0.2em]" style={{ color: "var(--text-muted)" }}>{t("Transporte")}</p>
+              <p className="text-sm" style={{ color: "var(--text)" }}>{t("Conductor")}: {driver?.fullName || "-"}</p>
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>
                 {t("Vehículo")}: {vehicle ? `${vehicle.type} · ${vehicle.plate}` : "-"}
               </p>
             </div>
-            <div className="glass rounded-2xl p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-white/40">{t("Check-ins")}</p>
-              <p className="text-sm text-white/50">{t("Aeropuerto")}: {formatDate(athlete.airportCheckinAt)}</p>
-              <p className="text-sm text-white/50">
+            <div className="surface rounded-2xl p-4" style={{ border: "1px solid var(--border)" }}>
+              <p className="text-xs uppercase tracking-[0.2em]" style={{ color: "var(--text-muted)" }}>{t("Check-ins")}</p>
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>{t("Aeropuerto")}: {formatDate(athlete.airportCheckinAt)}</p>
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>
                 {t("Hotel")}: {formatDate(athlete.hotelCheckinAt)}
               </p>
-              <p className="text-sm text-white/50">
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>
                 {t("Check-out")}: {formatDate(athlete.hotelCheckoutAt)}
               </p>
             </div>

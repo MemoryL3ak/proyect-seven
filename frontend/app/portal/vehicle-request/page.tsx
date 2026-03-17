@@ -81,33 +81,33 @@ const VEHICLE_TYPES = [
 const statusMeta: Record<string, { label: string; tone: string; panel: string }> = {
   REQUESTED: {
     label: "Solicitado",
-    tone: "border-amber-400/30 bg-amber-400/10 text-amber-300",
-    panel: "from-amber-400/5 to-transparent",
+    tone: "border-amber-400 bg-amber-50 text-amber-700",
+    panel: "",
   },
   SCHEDULED: {
     label: "Programado",
-    tone: "border-sky-400/30 bg-sky-400/10 text-sky-300",
-    panel: "from-sky-400/5 to-transparent",
+    tone: "border-sky-400 bg-sky-50 text-sky-700",
+    panel: "",
   },
   EN_ROUTE: {
     label: "En ruta a recoger",
-    tone: "border-indigo-400/30 bg-indigo-400/10 text-indigo-300",
-    panel: "from-indigo-400/5 to-transparent",
+    tone: "border-indigo-400 bg-indigo-50 text-indigo-700",
+    panel: "",
   },
   PICKED_UP: {
     label: "En curso",
-    tone: "border-violet-400/30 bg-violet-400/10 text-violet-300",
-    panel: "from-violet-400/5 to-transparent",
+    tone: "border-violet-400 bg-violet-50 text-violet-700",
+    panel: "",
   },
   DROPPED_OFF: {
     label: "Finalizado en destino",
-    tone: "border-cyan-400/30 bg-cyan-400/10 text-cyan-300",
-    panel: "from-cyan-400/5 to-transparent",
+    tone: "border-cyan-500 bg-cyan-50 text-cyan-700",
+    panel: "",
   },
   COMPLETED: {
     label: "Viaje completado",
-    tone: "border-emerald-400/30 bg-emerald-400/10 text-emerald-300",
-    panel: "from-emerald-400/5 to-transparent",
+    tone: "border-emerald-500 bg-emerald-50 text-emerald-700",
+    panel: "",
   },
 };
 
@@ -506,25 +506,25 @@ export default function VehicleRequestPortalPage() {
   }, [activeTab, athlete?.id]);
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(160deg,#0b1628_0%,#081020_50%,#0d1a2e_100%)] px-4 py-8 sm:px-6 lg:px-8">
+    <div className="min-h-screen px-4 py-8 sm:px-6 lg:px-8" style={{ background: "var(--elevated)" }}>
       <div className="mx-auto max-w-6xl space-y-6">
-        <section className="overflow-hidden rounded-[32px] border border-white/10 bg-[linear-gradient(135deg,#08152d_0%,#0b4161_52%,#0f766e_100%)] px-6 py-7 text-white shadow-[0_24px_80px_rgba(15,23,42,0.16)] sm:px-8">
+        <section className="overflow-hidden rounded-[32px] px-6 py-7 shadow-[0_24px_80px_rgba(15,23,42,0.08)] sm:px-8" style={{ background: "linear-gradient(135deg, var(--brand-dim) 0%, #e0f2fe 100%)", border: "1px solid var(--info-border)" }}>
           <div className="flex flex-wrap items-end justify-between gap-5">
             <div className="max-w-3xl">
-              <p className="text-[11px] uppercase tracking-[0.36em] text-cyan-100/80">Movilidad operativa</p>
-              <h1 className="mt-3 text-3xl font-semibold leading-tight sm:text-[2.5rem]">Portal de solicitudes de vehiculo</h1>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-cyan-50/90 sm:text-base">
+              <p className="text-[11px] uppercase tracking-[0.36em]" style={{ color: "var(--brand)" }}>Movilidad operativa</p>
+              <h1 className="mt-3 text-3xl font-semibold leading-tight sm:text-[2.5rem]" style={{ color: "var(--text)" }}>Portal de solicitudes de vehiculo</h1>
+              <p className="mt-3 max-w-2xl text-sm leading-6 sm:text-base" style={{ color: "var(--text-muted)" }}>
                 Ingresa con tu codigo de usuario, solicita un vehiculo hacia una sede y sigue en tiempo real el estado de asignacion.
               </p>
             </div>
             <div className="grid min-w-[260px] gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur">
-                <div className="text-[11px] uppercase tracking-[0.24em] text-white/70">Portal</div>
-                <div className="mt-2 text-xl font-semibold">{athlete ? "Sesion activa" : "Acceso privado"}</div>
+              <div className="rounded-2xl px-4 py-3" style={{ border: "1px solid var(--info-border)", background: "var(--surface)" }}>
+                <div className="text-[11px] uppercase tracking-[0.24em]" style={{ color: "var(--text-muted)" }}>Portal</div>
+                <div className="mt-2 text-xl font-semibold" style={{ color: "var(--text)" }}>{athlete ? "Sesion activa" : "Acceso privado"}</div>
               </div>
-              <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur">
-                <div className="text-[11px] uppercase tracking-[0.24em] text-white/70">Solicitudes</div>
-                <div className="mt-2 text-xl font-semibold">{trips.length}</div>
+              <div className="rounded-2xl px-4 py-3" style={{ border: "1px solid var(--info-border)", background: "var(--surface)" }}>
+                <div className="text-[11px] uppercase tracking-[0.24em]" style={{ color: "var(--text-muted)" }}>Solicitudes</div>
+                <div className="mt-2 text-xl font-semibold" style={{ color: "var(--text)" }}>{trips.length}</div>
               </div>
             </div>
           </div>
@@ -532,16 +532,16 @@ export default function VehicleRequestPortalPage() {
 
         {!athlete ? (
           <section className="grid gap-6 lg:grid-cols-[0.96fr_1.04fr]">
-            <article className="rounded-[30px] border border-white/10 bg-white/5 p-6 shadow-xl shadow-black/40">
-              <p className="text-xs uppercase tracking-[0.24em] text-white/50">Acceso</p>
-              <h2 className="mt-2 text-3xl font-semibold tracking-tight text-white">Ingresa con tu codigo</h2>
-              <p className="mt-3 max-w-md text-sm leading-6 text-white/65">
+            <article className="rounded-[30px] p-6 shadow-sm" style={{ border: "1px solid var(--border)", background: "var(--surface)" }}>
+              <p className="text-xs uppercase tracking-[0.24em]" style={{ color: "var(--text-muted)" }}>Acceso</p>
+              <h2 className="mt-2 text-3xl font-semibold tracking-tight" style={{ color: "var(--text)" }}>Ingresa con tu codigo</h2>
+              <p className="mt-3 max-w-md text-sm leading-6" style={{ color: "var(--text-muted)" }}>
                 Usa el mismo codigo corto del portal de usuario para abrir tu panel de movilidad y gestionar solicitudes de vehiculo.
               </p>
 
               <div className="mt-6 space-y-4">
                 <label className="block space-y-2">
-                  <span className="text-sm font-medium text-white/85">Codigo de usuario</span>
+                  <span className="text-sm font-medium" style={{ color: "var(--text)" }}>Codigo de usuario</span>
                   <input
                     className="input h-12 text-base"
                     value={userCode}
@@ -552,25 +552,25 @@ export default function VehicleRequestPortalPage() {
                 <button type="button" className="btn btn-primary h-12 w-full text-base" onClick={login} disabled={loading}>
                   {loading ? "Ingresando..." : "Abrir portal"}
                 </button>
-                {error ? <p className="text-sm text-rose-400">{error}</p> : null}
+                {error ? <p className="text-sm text-rose-600">{error}</p> : null}
               </div>
             </article>
 
-            <article className="rounded-[30px] border border-white/10 bg-white/5 p-6 shadow-xl shadow-black/40">
+            <article className="rounded-[30px] p-6 shadow-sm" style={{ border: "1px solid var(--border)", background: "var(--surface)" }}>
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.24em] text-white/50">Recuperacion de acceso</p>
-                  <h2 className="mt-2 text-3xl font-semibold tracking-tight text-white">Solicita tu codigo</h2>
+                  <p className="text-xs uppercase tracking-[0.24em]" style={{ color: "var(--text-muted)" }}>Recuperacion de acceso</p>
+                  <h2 className="mt-2 text-3xl font-semibold tracking-tight" style={{ color: "var(--text)" }}>Solicita tu codigo</h2>
                 </div>
-                <span className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-300">Portal seguro</span>
+                <span className="rounded-full px-3 py-1 text-xs font-semibold" style={{ border: "1px solid var(--info-border)", background: "var(--brand-dim)", color: "var(--brand)" }}>Portal seguro</span>
               </div>
-              <p className="mt-3 max-w-lg text-sm leading-6 text-white/65">
+              <p className="mt-3 max-w-lg text-sm leading-6" style={{ color: "var(--text-muted)" }}>
                 Si no tienes tu codigo, solicita el acceso con tu correo registrado y luego vuelve para revisar el estado de tus solicitudes.
               </p>
 
               <div className="mt-6 grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
                 <label className="block space-y-2">
-                  <span className="text-sm font-medium text-white/85">Correo electronico</span>
+                  <span className="text-sm font-medium" style={{ color: "var(--text)" }}>Correo electronico</span>
                   <input
                     className="input h-12 text-base"
                     value={requestEmail}
@@ -588,37 +588,37 @@ export default function VehicleRequestPortalPage() {
                   {requestAccessLoading ? "Enviando..." : "Solicitar codigo"}
                 </button>
               </div>
-              {accessRequestStatus ? <p className="mt-4 text-sm text-emerald-400">{accessRequestStatus}</p> : null}
-              {accessRequestError ? <p className="mt-4 text-sm text-rose-400">{accessRequestError}</p> : null}
+              {accessRequestStatus ? <p className="mt-4 text-sm text-emerald-600">{accessRequestStatus}</p> : null}
+              {accessRequestError ? <p className="mt-4 text-sm text-rose-600">{accessRequestError}</p> : null}
 
               <div className="mt-8 grid gap-3 sm:grid-cols-3">
-                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-                  <div className="text-xs uppercase tracking-[0.22em] text-white/50">Paso 1</div>
-                  <p className="mt-2 text-sm font-medium text-white">Solicita tu codigo</p>
+                <div className="rounded-2xl px-4 py-4" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
+                  <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>Paso 1</div>
+                  <p className="mt-2 text-sm font-medium" style={{ color: "var(--text)" }}>Solicita tu codigo</p>
                 </div>
-                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-                  <div className="text-xs uppercase tracking-[0.22em] text-white/50">Paso 2</div>
-                  <p className="mt-2 text-sm font-medium text-white">Ingresa al portal</p>
+                <div className="rounded-2xl px-4 py-4" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
+                  <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>Paso 2</div>
+                  <p className="mt-2 text-sm font-medium" style={{ color: "var(--text)" }}>Ingresa al portal</p>
                 </div>
-                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-                  <div className="text-xs uppercase tracking-[0.22em] text-white/50">Paso 3</div>
-                  <p className="mt-2 text-sm font-medium text-white">Sigue el estado del viaje</p>
+                <div className="rounded-2xl px-4 py-4" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
+                  <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>Paso 3</div>
+                  <p className="mt-2 text-sm font-medium" style={{ color: "var(--text)" }}>Sigue el estado del viaje</p>
                 </div>
               </div>
             </article>
           </section>
         ) : (
           <section className="space-y-6">
-            <article className="rounded-[30px] border border-white/10 bg-white/5 p-6 shadow-xl shadow-black/40">
+            <article className="rounded-[30px] p-6 shadow-sm" style={{ border: "1px solid var(--border)", background: "var(--surface)" }}>
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.24em] text-white/50">Sesion activa</p>
-                  <h2 className="mt-2 text-3xl font-semibold tracking-tight text-white">{athlete.fullName || athlete.id}</h2>
-                  <div className="mt-3 flex flex-wrap gap-3 text-sm text-white/65">
-                    <span className="rounded-full bg-white/10 px-3 py-1 font-medium text-white/85">
+                  <p className="text-xs uppercase tracking-[0.24em]" style={{ color: "var(--text-muted)" }}>Sesion activa</p>
+                  <h2 className="mt-2 text-3xl font-semibold tracking-tight" style={{ color: "var(--text)" }}>{athlete.fullName || athlete.id}</h2>
+                  <div className="mt-3 flex flex-wrap gap-3 text-sm">
+                    <span className="rounded-full px-3 py-1 font-medium" style={{ background: "var(--elevated)", color: "var(--text)" }}>
                       Evento: {events[athlete.eventId || ""]?.name || athlete.eventId || "-"}
                     </span>
-                    <span className="rounded-full bg-white/10 px-3 py-1 font-medium text-white/85">
+                    <span className="rounded-full px-3 py-1 font-medium" style={{ background: "var(--elevated)", color: "var(--text)" }}>
                       Delegacion: {delegations[athlete.delegationId || ""]?.countryCode || athlete.delegationId || "-"}
                     </span>
                   </div>
@@ -629,82 +629,80 @@ export default function VehicleRequestPortalPage() {
               </div>
 
               <div className="mt-6 grid gap-4 md:grid-cols-4">
-                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-                  <div className="text-xs uppercase tracking-[0.22em] text-white/50">Solicitadas</div>
-                  <div className="mt-2 text-3xl font-semibold text-white">{requestStats.requested}</div>
+                <div className="rounded-2xl px-4 py-4" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
+                  <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>Solicitadas</div>
+                  <div className="mt-2 text-3xl font-semibold" style={{ color: "var(--text)" }}>{requestStats.requested}</div>
                 </div>
-                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-                  <div className="text-xs uppercase tracking-[0.22em] text-white/50">Programadas</div>
-                  <div className="mt-2 text-3xl font-semibold text-sky-400">{requestStats.scheduled}</div>
+                <div className="rounded-2xl px-4 py-4" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
+                  <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>Programadas</div>
+                  <div className="mt-2 text-3xl font-semibold" style={{ color: "var(--brand)" }}>{requestStats.scheduled}</div>
                 </div>
-                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-                  <div className="text-xs uppercase tracking-[0.22em] text-white/50">En curso</div>
-                  <div className="mt-2 text-3xl font-semibold text-indigo-400">{requestStats.active}</div>
+                <div className="rounded-2xl px-4 py-4" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
+                  <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>En curso</div>
+                  <div className="mt-2 text-3xl font-semibold" style={{ color: "var(--warning)" }}>{requestStats.active}</div>
                 </div>
-                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-                  <div className="text-xs uppercase tracking-[0.22em] text-white/50">Cerradas</div>
-                  <div className="mt-2 text-3xl font-semibold text-emerald-400">{requestStats.completed}</div>
+                <div className="rounded-2xl px-4 py-4" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
+                  <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>Cerradas</div>
+                  <div className="mt-2 text-3xl font-semibold" style={{ color: "var(--success)" }}>{requestStats.completed}</div>
                 </div>
               </div>
             </article>
 
-            <article className="rounded-[30px] border border-white/10 bg-white/5 p-3 shadow-xl shadow-black/40 sm:p-4">
+            <article className="rounded-[30px] p-3 shadow-sm sm:p-4" style={{ border: "1px solid var(--border)", background: "var(--surface)" }}>
               <div className="grid gap-3 md:grid-cols-2">
                 <button
                   type="button"
-                  className={`rounded-[22px] px-5 py-4 text-left transition ${
-                    activeTab === "request"
-                      ? "bg-[linear-gradient(135deg,#0b4161_0%,#0f766e_100%)] text-white shadow-lg"
-                      : "border border-white/10 bg-white/5 text-white/70"
-                  }`}
+                  className="rounded-[22px] px-5 py-4 text-left transition"
+                  style={activeTab === "request"
+                    ? { background: "linear-gradient(135deg, var(--brand-dim) 0%, #e0f2fe 100%)", border: "1px solid var(--info-border)", color: "var(--text)" }
+                    : { border: "1px solid var(--border)", background: "var(--elevated)", color: "var(--text-muted)" }}
                   onClick={() => setActiveTab("request")}
                 >
-                  <div className={`text-xs uppercase tracking-[0.22em] ${activeTab === "request" ? "text-white/70" : "text-white/50"}`}>Nueva solicitud</div>
-                  <div className="mt-2 text-xl font-semibold">Solicitar vehiculo</div>
-                  <p className={`mt-2 text-sm leading-6 ${activeTab === "request" ? "text-cyan-50/90" : "text-white/50"}`}>
+                  <div className="text-xs uppercase tracking-[0.22em]" style={{ color: activeTab === "request" ? "var(--brand)" : "var(--text-muted)" }}>Nueva solicitud</div>
+                  <div className="mt-2 text-xl font-semibold" style={{ color: "var(--text)" }}>Solicitar vehiculo</div>
+                  <p className="mt-2 text-sm leading-6" style={{ color: activeTab === "request" ? "var(--text-muted)" : "var(--text-faint)" }}>
                     Registra un nuevo requerimiento operativo hacia una sede.
                   </p>
                 </button>
                 <button
                   type="button"
-                  className={`rounded-[22px] px-5 py-4 text-left transition ${
-                    activeTab === "status"
-                      ? "bg-[linear-gradient(135deg,#0b4161_0%,#0f766e_100%)] text-white shadow-lg"
-                      : "border border-white/10 bg-white/5 text-white/70"
-                  }`}
+                  className="rounded-[22px] px-5 py-4 text-left transition"
+                  style={activeTab === "status"
+                    ? { background: "linear-gradient(135deg, var(--brand-dim) 0%, #e0f2fe 100%)", border: "1px solid var(--info-border)", color: "var(--text)" }
+                    : { border: "1px solid var(--border)", background: "var(--elevated)", color: "var(--text-muted)" }}
                   onClick={() => setActiveTab("status")}
                 >
-                  <div className={`text-xs uppercase tracking-[0.22em] ${activeTab === "status" ? "text-white/70" : "text-white/50"}`}>Estado de servicio</div>
-                  <div className="mt-2 text-xl font-semibold">Solicitudes de vehiculo</div>
-                  <p className={`mt-2 text-sm leading-6 ${activeTab === "status" ? "text-cyan-50/90" : "text-white/50"}`}>
+                  <div className="text-xs uppercase tracking-[0.22em]" style={{ color: activeTab === "status" ? "var(--brand)" : "var(--text-muted)" }}>Estado de servicio</div>
+                  <div className="mt-2 text-xl font-semibold" style={{ color: "var(--text)" }}>Solicitudes de vehiculo</div>
+                  <p className="mt-2 text-sm leading-6" style={{ color: activeTab === "status" ? "var(--text-muted)" : "var(--text-faint)" }}>
                     Revisa asignacion, chofer, vehiculo, patente y programacion.
                   </p>
                 </button>
               </div>
             </article>
 
-            {message ? <p className="text-sm text-emerald-400">{message}</p> : null}
-            {error ? <p className="text-sm text-rose-400">{error}</p> : null}
+            {message ? <p className="text-sm text-emerald-600">{message}</p> : null}
+            {error ? <p className="text-sm text-rose-600">{error}</p> : null}
 
             {activeTab === "request" ? (
               <section className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-                <article className="rounded-[30px] border border-white/10 bg-white/5 p-6 shadow-xl shadow-black/40">
-                  <p className="text-xs uppercase tracking-[0.24em] text-white/50">Nueva solicitud</p>
-                  <h3 className="mt-2 text-3xl font-semibold tracking-tight text-white">
+                <article className="rounded-[30px] p-6 shadow-sm" style={{ border: "1px solid var(--border)", background: "var(--surface)" }}>
+                  <p className="text-xs uppercase tracking-[0.24em]" style={{ color: "var(--text-muted)" }}>Nueva solicitud</p>
+                  <h3 className="mt-2 text-3xl font-semibold tracking-tight" style={{ color: "var(--text)" }}>
                     {editingTripId ? "Modificar solicitud" : "Pedir vehiculo"}
                   </h3>
-                  <p className="mt-3 text-sm leading-6 text-white/65">
+                  <p className="mt-3 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
                     Selecciona el tipo de vehiculo, la sede, la hora y la cantidad de personas. Puedes modificar la solicitud hasta 2 horas antes del viaje.
                   </p>
                   {editingTrip ? (
-                    <div className="mt-4 rounded-2xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-300">
+                    <div className="mt-4 rounded-2xl px-4 py-3 text-sm" style={{ border: "1px solid var(--warning-border)", background: "var(--warning-dim)", color: "var(--warning)" }}>
                       Editable hasta las <strong>{formatDateTime(getEditDeadline(editingTrip)?.toISOString() || null)}</strong>.
                     </div>
                   ) : null}
 
                   <form className="mt-6 space-y-4" onSubmit={submitRequest}>
                     <label className="block space-y-2">
-                      <span className="text-sm font-medium text-white/85">Tipo de vehiculo</span>
+                      <span className="text-sm font-medium" style={{ color: "var(--text)" }}>Tipo de vehiculo</span>
                       <select className="input h-12 text-base" value={selectedVehicleType} onChange={(e) => setSelectedVehicleType(e.target.value)}>
                         {VEHICLE_TYPES.map((item) => (
                           <option key={item.value} value={item.value}>
@@ -714,7 +712,7 @@ export default function VehicleRequestPortalPage() {
                       </select>
                     </label>
                     <label className="block space-y-2">
-                      <span className="text-sm font-medium text-white/85">Direccion de origen</span>
+                      <span className="text-sm font-medium" style={{ color: "var(--text)" }}>Direccion de origen</span>
                       <input
                         className="input h-12 text-base"
                         type="text"
@@ -722,12 +720,12 @@ export default function VehicleRequestPortalPage() {
                         onChange={(e) => setOriginAddress(e.target.value)}
                         placeholder="Ej: Avenida Grecia 1851, Ñuñoa"
                       />
-                      <span className="text-xs text-white/50">
+                      <span className="text-xs" style={{ color: "var(--text-muted)" }}>
                         Ingresa la direccion exacta donde debe recogerte el conductor.
                       </span>
                     </label>
                     <label className="block space-y-2">
-                      <span className="text-sm font-medium text-white/85">Sede destino</span>
+                      <span className="text-sm font-medium" style={{ color: "var(--text)" }}>Sede destino</span>
                       <select className="input h-12 text-base" value={selectedVenueId} onChange={(e) => setSelectedVenueId(e.target.value)}>
                         <option value="">Selecciona una sede</option>
                         {venues.map((venue) => (
@@ -738,7 +736,7 @@ export default function VehicleRequestPortalPage() {
                       </select>
                     </label>
                     <label className="block space-y-2">
-                      <span className="text-sm font-medium text-white/85">Hora del servicio</span>
+                      <span className="text-sm font-medium" style={{ color: "var(--text)" }}>Hora del servicio</span>
                       <input
                         className="input h-12 w-full text-base"
                         type="datetime-local"
@@ -747,7 +745,7 @@ export default function VehicleRequestPortalPage() {
                       />
                     </label>
                     <label className="block max-w-[220px] space-y-2">
-                      <span className="text-sm font-medium text-white/85">Cantidad de personas</span>
+                      <span className="text-sm font-medium" style={{ color: "var(--text)" }}>Cantidad de personas</span>
                       <input
                         className="input h-12 text-base"
                         type="number"
@@ -758,7 +756,7 @@ export default function VehicleRequestPortalPage() {
                       />
                     </label>
                     <label className="block space-y-2">
-                      <span className="text-sm font-medium text-white/85">Observaciones operativas</span>
+                      <span className="text-sm font-medium" style={{ color: "var(--text)" }}>Observaciones operativas</span>
                       <textarea
                         className="input min-h-[132px] resize-none text-base"
                         value={notes}
@@ -783,36 +781,36 @@ export default function VehicleRequestPortalPage() {
                   </form>
                 </article>
 
-                <article className="rounded-[30px] border border-white/10 bg-white/5 p-6 shadow-xl shadow-black/40">
-                  <p className="text-xs uppercase tracking-[0.24em] text-white/50">Vista previa</p>
-                  <h3 className="mt-2 text-3xl font-semibold tracking-tight text-white">Resumen del servicio</h3>
+                <article className="rounded-[30px] p-6 shadow-sm" style={{ border: "1px solid var(--border)", background: "var(--surface)" }}>
+                  <p className="text-xs uppercase tracking-[0.24em]" style={{ color: "var(--text-muted)" }}>Vista previa</p>
+                  <h3 className="mt-2 text-3xl font-semibold tracking-tight" style={{ color: "var(--text)" }}>Resumen del servicio</h3>
                   <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                      <div className="text-xs uppercase tracking-[0.22em] text-white/50">Solicitante</div>
-                      <div className="mt-2 text-lg font-semibold text-white">{athlete.fullName || athlete.id}</div>
+                    <div className="rounded-2xl p-4" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
+                      <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>Solicitante</div>
+                      <div className="mt-2 text-lg font-semibold" style={{ color: "var(--text)" }}>{athlete.fullName || athlete.id}</div>
                     </div>
-                    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                      <div className="text-xs uppercase tracking-[0.22em] text-white/50">Tipo requerido</div>
-                      <div className="mt-2 text-lg font-semibold text-white">{vehicleTypeLabel(selectedVehicleType)}</div>
+                    <div className="rounded-2xl p-4" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
+                      <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>Tipo requerido</div>
+                      <div className="mt-2 text-lg font-semibold" style={{ color: "var(--text)" }}>{vehicleTypeLabel(selectedVehicleType)}</div>
                     </div>
-                    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                      <div className="text-xs uppercase tracking-[0.22em] text-white/50">Programacion</div>
-                      <div className="mt-2 text-lg font-semibold text-white">
+                    <div className="rounded-2xl p-4" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
+                      <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>Programacion</div>
+                      <div className="mt-2 text-lg font-semibold" style={{ color: "var(--text)" }}>
                         {requestedTime ? formatDateTime(new Date(requestedTime).toISOString()) : "Selecciona hora"}
                       </div>
                     </div>
-                    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                      <div className="text-xs uppercase tracking-[0.22em] text-white/50">Personas</div>
-                      <div className="mt-2 text-lg font-semibold text-white">{passengerCount || "1"}</div>
+                    <div className="rounded-2xl p-4" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
+                      <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>Personas</div>
+                      <div className="mt-2 text-lg font-semibold" style={{ color: "var(--text)" }}>{passengerCount || "1"}</div>
                     </div>
-                    <div className="rounded-2xl border border-white/10 bg-white/5 p-4 sm:col-span-2">
-                      <div className="text-xs uppercase tracking-[0.22em] text-white/50">Origen</div>
-                      <div className="mt-2 text-lg font-semibold text-white">{originAddress || "Ingresa direccion de origen"}</div>
+                    <div className="rounded-2xl p-4 sm:col-span-2" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
+                      <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>Origen</div>
+                      <div className="mt-2 text-lg font-semibold" style={{ color: "var(--text)" }}>{originAddress || "Ingresa direccion de origen"}</div>
                     </div>
-                    <div className="rounded-2xl border border-white/10 bg-white/5 p-4 sm:col-span-2">
-                      <div className="text-xs uppercase tracking-[0.22em] text-white/50">Sede</div>
-                      <div className="mt-2 text-lg font-semibold text-white">{selectedVenue?.name || "Selecciona una sede"}</div>
-                      <p className="mt-2 text-sm leading-6 text-white/65">{venueSummary(selectedVenue)}</p>
+                    <div className="rounded-2xl p-4 sm:col-span-2" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
+                      <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>Sede</div>
+                      <div className="mt-2 text-lg font-semibold" style={{ color: "var(--text)" }}>{selectedVenue?.name || "Selecciona una sede"}</div>
+                      <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>{venueSummary(selectedVenue)}</p>
                     </div>
                   </div>
                 </article>
@@ -820,10 +818,10 @@ export default function VehicleRequestPortalPage() {
             ) : (
               <section className="space-y-5">
                 {trips.length === 0 ? (
-                  <article className="rounded-[30px] border border-dashed border-white/20 bg-white/5 p-12 text-center shadow-sm">
-                    <p className="text-xs uppercase tracking-[0.24em] text-white/50">Estado de servicio</p>
-                    <h3 className="mt-3 text-3xl font-semibold tracking-tight text-white">Aun no tienes solicitudes</h3>
-                    <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-white/65">
+                  <article className="rounded-[30px] p-12 text-center shadow-sm" style={{ border: "1px dashed var(--border-strong)", background: "var(--surface)" }}>
+                    <p className="text-xs uppercase tracking-[0.24em]" style={{ color: "var(--text-muted)" }}>Estado de servicio</p>
+                    <h3 className="mt-3 text-3xl font-semibold tracking-tight" style={{ color: "var(--text)" }}>Aun no tienes solicitudes</h3>
+                    <p className="mx-auto mt-3 max-w-lg text-sm leading-6" style={{ color: "var(--text-muted)" }}>
                       Cuando registres una solicitud de vehiculo, aqui veras su estado, la asignacion del chofer y los datos del vehiculo programado.
                     </p>
                   </article>
@@ -841,27 +839,28 @@ export default function VehicleRequestPortalPage() {
                     return (
                       <article
                         key={trip.id}
-                        className={`rounded-[30px] border border-white/10 bg-gradient-to-br ${status.panel} bg-white/5 p-6 shadow-xl shadow-black/40`}
+                        className="rounded-[30px] p-6 shadow-sm"
+                        style={{ border: "1px solid var(--border)", background: "var(--surface)" }}
                       >
                         <div className="flex flex-wrap items-start justify-between gap-4">
                           <div>
-                            <p className="text-xs uppercase tracking-[0.24em] text-white/50">Solicitud {trip.id.slice(0, 8)}</p>
-                            <h3 className="mt-2 text-3xl font-semibold tracking-tight text-white">
+                            <p className="text-xs uppercase tracking-[0.24em]" style={{ color: "var(--text-muted)" }}>Solicitud {trip.id.slice(0, 8)}</p>
+                            <h3 className="mt-2 text-3xl font-semibold tracking-tight" style={{ color: "var(--text)" }}>
                               {venue?.name || trip.destination || "Destino solicitado"}
                             </h3>
-                            <p className="mt-2 text-sm leading-6 text-white/65">
+                            <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
                               {vehicleTypeLabel(trip.requestedVehicleType)} solicitado el {formatDateTime(trip.requestedAt || trip.createdAt)}
                             </p>
                           </div>
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className={`rounded-full border px-4 py-2 text-sm font-semibold ${status.tone}`}>{status.label}</span>
+                            <span className="rounded-full border px-4 py-2 text-sm font-semibold" style={{ border: "1px solid var(--border-strong)", background: "var(--elevated)", color: "var(--text)" }}>{status.label}</span>
                             {editable ? (
                               <button className="btn btn-ghost h-10 px-4 text-sm" type="button" onClick={() => startEditingTrip(trip)}>
                                 Modificar solicitud
                               </button>
                             ) : null}
                             {editable ? (
-                              <button className="btn btn-ghost h-10 px-4 text-sm text-rose-400" type="button" onClick={() => cancelTrip(trip)}>
+                              <button className="btn btn-ghost h-10 px-4 text-sm text-rose-600" type="button" onClick={() => cancelTrip(trip)}>
                                 Cancelar solicitud
                               </button>
                             ) : null}
@@ -870,42 +869,42 @@ export default function VehicleRequestPortalPage() {
 
                         <div className="mt-6 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
                           <div className="grid gap-4 sm:grid-cols-2">
-                            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                              <div className="text-xs uppercase tracking-[0.22em] text-white/50">Sede destino</div>
-                              <div className="mt-2 text-lg font-semibold text-white">{venue?.name || "Pendiente"}</div>
-                              <p className="mt-2 text-sm leading-6 text-white/65">{venueSummary(venue)}</p>
+                            <div className="rounded-2xl p-4" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
+                              <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>Sede destino</div>
+                              <div className="mt-2 text-lg font-semibold" style={{ color: "var(--text)" }}>{venue?.name || "Pendiente"}</div>
+                              <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>{venueSummary(venue)}</p>
                             </div>
-                            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                              <div className="text-xs uppercase tracking-[0.22em] text-white/50">Programacion</div>
-                              <div className="mt-2 text-lg font-semibold text-white">{formatDateTime(trip.scheduledAt)}</div>
-                              <p className="mt-2 text-sm leading-6 text-white/65">Origen: {trip.origin || "Pendiente"}</p>
+                            <div className="rounded-2xl p-4" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
+                              <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>Programacion</div>
+                              <div className="mt-2 text-lg font-semibold" style={{ color: "var(--text)" }}>{formatDateTime(trip.scheduledAt)}</div>
+                              <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>Origen: {trip.origin || "Pendiente"}</p>
                             </div>
-                            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                              <div className="text-xs uppercase tracking-[0.22em] text-white/50">Personas</div>
-                              <div className="mt-2 text-lg font-semibold text-white">{trip.passengerCount || "-"}</div>
-                              <p className="mt-2 text-sm leading-6 text-white/65">Capacidad requerida para el servicio</p>
+                            <div className="rounded-2xl p-4" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
+                              <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>Personas</div>
+                              <div className="mt-2 text-lg font-semibold" style={{ color: "var(--text)" }}>{trip.passengerCount || "-"}</div>
+                              <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>Capacidad requerida para el servicio</p>
                             </div>
-                            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                              <div className="text-xs uppercase tracking-[0.22em] text-white/50">Chofer asignado</div>
-                              <div className="mt-2 text-lg font-semibold text-white">{driver?.fullName || "Pendiente de asignacion"}</div>
-                              <p className="mt-2 text-sm leading-6 text-white/65">{driver?.phone || "Telefono aun no disponible"}</p>
+                            <div className="rounded-2xl p-4" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
+                              <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>Chofer asignado</div>
+                              <div className="mt-2 text-lg font-semibold" style={{ color: "var(--text)" }}>{driver?.fullName || "Pendiente de asignacion"}</div>
+                              <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>{driver?.phone || "Telefono aun no disponible"}</p>
                             </div>
-                            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                              <div className="text-xs uppercase tracking-[0.22em] text-white/50">Vehiculo</div>
-                              <div className="mt-2 text-lg font-semibold text-white">{vehicle?.plate || "Pendiente"}</div>
-                              <p className="mt-2 text-sm leading-6 text-white/65">
+                            <div className="rounded-2xl p-4" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
+                              <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>Vehiculo</div>
+                              <div className="mt-2 text-lg font-semibold" style={{ color: "var(--text)" }}>{vehicle?.plate || "Pendiente"}</div>
+                              <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
                                 {[vehicle?.type, vehicle?.brand, vehicle?.model].filter(Boolean).join(" · ") || "Aun sin datos de unidad"}
                               </p>
                             </div>
                             {trip.status === "EN_ROUTE" || trip.status === "PICKED_UP" ? (
-                              <div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/10 p-4 sm:col-span-2">
+                              <div className="rounded-2xl p-4 sm:col-span-2" style={{ border: "1px solid var(--success-border)", background: "var(--success-dim)" }}>
                                 <div className="flex flex-wrap items-center justify-between gap-3">
                                   <div>
-                                    <div className="text-xs uppercase tracking-[0.22em] text-emerald-400">Seguimiento en vivo</div>
-                                    <div className="mt-2 text-lg font-semibold text-white">
+                                    <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--success)" }}>Seguimiento en vivo</div>
+                                    <div className="mt-2 text-lg font-semibold" style={{ color: "var(--text)" }}>
                                       {trip.status === "PICKED_UP" ? "Tu viaje esta en curso" : "Tu conductor va en camino"}
                                     </div>
-                                    <p className="mt-2 text-sm leading-6 text-white/65">
+                                    <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
                                       {coords
                                         ? `Ultima actualizacion ${formatDateTime(livePosition?.timestamp)}`
                                         : "Esperando posicion en tiempo real del vehiculo."}
@@ -922,7 +921,7 @@ export default function VehicleRequestPortalPage() {
                                     </a>
                                   ) : null}
                                 </div>
-                                <div className="mt-4 overflow-hidden rounded-2xl border border-emerald-400/30 bg-white/5">
+                                <div className="mt-4 overflow-hidden rounded-2xl" style={{ border: "1px solid var(--success-border)", background: "var(--surface)" }}>
                                   {coords && mapEmbedUrl ? (
                                     <iframe
                                       title={`live-map-${trip.id}`}
@@ -931,11 +930,11 @@ export default function VehicleRequestPortalPage() {
                                       loading="lazy"
                                     />
                                   ) : coords ? (
-                                    <div className="flex h-64 items-center justify-center bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.1),transparent_58%),linear-gradient(135deg,#0b1628,#0d1a2e)] px-6 text-center text-sm text-white/65">
-                                      Falta configurar <code className="mx-1 rounded bg-white/10 px-1.5 py-0.5">NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> para mostrar el mapa en tiempo real.
+                                    <div className="flex h-64 items-center justify-center px-6 text-center text-sm" style={{ background: "var(--elevated)", color: "var(--text-muted)" }}>
+                                      Falta configurar <code className="mx-1 rounded px-1.5 py-0.5" style={{ background: "var(--border)", color: "var(--text)" }}>NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> para mostrar el mapa en tiempo real.
                                     </div>
                                   ) : (
-                                    <div className="flex h-64 items-center justify-center bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.1),transparent_58%),linear-gradient(135deg,#0b1628,#0d1a2e)] px-6 text-center text-sm text-white/65">
+                                    <div className="flex h-64 items-center justify-center px-6 text-center text-sm" style={{ background: "var(--elevated)", color: "var(--text-muted)" }}>
                                       El mapa aparecera apenas el conductor comparta su posicion desde el portal.
                                     </div>
                                   )}
@@ -944,26 +943,26 @@ export default function VehicleRequestPortalPage() {
                             ) : null}
                           </div>
 
-                          <div className="rounded-[26px] border border-white/10 bg-white/5 p-5">
-                            <div className="text-xs uppercase tracking-[0.22em] text-white/50">Trazabilidad</div>
+                          <div className="rounded-[26px] p-5" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
+                            <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>Trazabilidad</div>
                             <div className="mt-4 space-y-3">
-                              <div className="rounded-2xl bg-white/5 px-4 py-3 text-sm text-white/80">
+                              <div className="rounded-2xl px-4 py-3 text-sm" style={{ background: "var(--surface)", color: "var(--text)" }}>
                                 <strong>Estado actual:</strong> {status.label}
                               </div>
-                              <div className="rounded-2xl bg-white/5 px-4 py-3 text-sm text-white/80">
+                              <div className="rounded-2xl px-4 py-3 text-sm" style={{ background: "var(--surface)", color: "var(--text)" }}>
                                 <strong>Creada:</strong> {formatDateTime(trip.requestedAt || trip.createdAt)}
                               </div>
-                              <div className="rounded-2xl bg-white/5 px-4 py-3 text-sm text-white/80">
+                              <div className="rounded-2xl px-4 py-3 text-sm" style={{ background: "var(--surface)", color: "var(--text)" }}>
                                 <strong>Destino final:</strong> {trip.destination || venue?.name || "Pendiente"}
                               </div>
-                              <div className="rounded-2xl bg-white/5 px-4 py-3 text-sm text-white/80">
+                              <div className="rounded-2xl px-4 py-3 text-sm" style={{ background: "var(--surface)", color: "var(--text)" }}>
                                 <strong>Observaciones:</strong> {trip.notes || "Sin observaciones registradas."}
                               </div>
-                              <div className="rounded-2xl bg-white/5 px-4 py-3 text-sm text-white/80">
+                              <div className="rounded-2xl px-4 py-3 text-sm" style={{ background: "var(--surface)", color: "var(--text)" }}>
                                 <strong>Editable hasta:</strong>{" "}
                                 {editDeadline ? formatDateTime(editDeadline.toISOString()) : "-"}
                               </div>
-                              <div className="rounded-2xl bg-white/5 px-4 py-3 text-sm text-white/80">
+                              <div className="rounded-2xl px-4 py-3 text-sm" style={{ background: "var(--surface)", color: "var(--text)" }}>
                                 <strong>Ventana de cambios:</strong>{" "}
                                 {editable
                                   ? "Activa para edicion y cancelacion."
@@ -978,8 +977,8 @@ export default function VehicleRequestPortalPage() {
                 )}
 
                 {trips.length > 0 ? (
-                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-[24px] border border-white/10 bg-white/5 px-5 py-4 shadow-sm">
-                    <p className="text-sm text-white/65">
+                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-[24px] px-5 py-4 shadow-sm" style={{ border: "1px solid var(--border)", background: "var(--surface)" }}>
+                    <p className="text-sm" style={{ color: "var(--text-muted)" }}>
                       Mostrando <strong>{Math.min(visibleTripsCount, trips.length)}</strong> de{" "}
                       <strong>{trips.length}</strong> solicitud(es).
                     </p>

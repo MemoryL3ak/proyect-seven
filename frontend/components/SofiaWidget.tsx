@@ -24,9 +24,7 @@ const formatAssistant = (value: string) => {
     .map((line) => line.trim())
     .filter(Boolean);
 
-  if (lines.length === 0) {
-    return { title: "Respuesta", bullets: [] as string[] };
-  }
+  if (lines.length === 0) return { title: "Respuesta", bullets: [] as string[] };
 
   const firstLine = lines[0];
   let title = firstLine.length <= 60 ? firstLine : "Respuesta";
@@ -83,100 +81,139 @@ export default function SofiaWidget() {
 
   return (
     <>
+      {/* FAB button */}
       <button
         type="button"
-        className="fixed bottom-6 right-6 z-40 flex items-center gap-3 rounded-full px-6 py-4 text-sm font-semibold text-white shadow-xl transition hover:-translate-y-0.5"
+        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl"
         style={{
-          background: "linear-gradient(135deg, #c9a84c 0%, #a8892e 100%)",
-          boxShadow: "0 8px 32px rgba(201,168,76,0.35)",
+          background: "var(--gold)",
+          color: "var(--gold-btn-text)",
+          boxShadow: "0 4px 16px rgba(201,168,76,0.4)",
         }}
-        onClick={() => setOpen(true)}
+        onClick={() => setOpen(!open)}
       >
-        <span className="h-2 w-2 rounded-full bg-white/60" />
-        <span className="text-base font-semibold tracking-[0em]">Sof IA</span>
+        <span
+          className="h-2 w-2 rounded-full"
+          style={{ background: "rgba(26,20,0,0.4)" }}
+        />
+        <span className="font-bold tracking-wide">Sof IA</span>
       </button>
 
+      {/* Panel — no overlay, floats above content */}
       {open && (
-        <div className="fixed inset-0 z-50 flex items-end justify-end bg-black/50 p-6 pointer-events-none backdrop-blur-sm">
+        <div
+          className="fixed bottom-20 right-6 z-50 w-[380px] overflow-hidden rounded-xl shadow-2xl"
+          style={{
+            background: "var(--surface)",
+            border: "1px solid var(--border-strong)",
+            boxShadow: "0 20px 60px rgba(15,23,42,0.15), 0 4px 16px rgba(15,23,42,0.08)"
+          }}
+        >
+          {/* Header */}
           <div
-            className="w-full max-w-md overflow-hidden rounded-3xl pointer-events-auto shadow-[0_32px_80px_rgba(0,0,0,0.6)]"
-            style={{ background: "#0f1d35", border: "1px solid rgba(255,255,255,0.10)" }}
+            className="flex items-center justify-between px-5 py-4"
+            style={{ borderBottom: "1px solid var(--border)" }}
           >
-            <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
-              <div>
-                <p className="text-sm font-semibold tracking-[0em] text-white/50">Sof IA</p>
-                <h4 className="font-sans font-bold text-xl text-white">{t("Asistente inteligente")}</h4>
-              </div>
-              <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={() => setOpen(false)}
-              >
-                {t("Cerrar")}
-              </button>
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.15em]" style={{ color: "var(--gold)" }}>
+                Sof IA
+              </p>
+              <h4 className="font-bold text-base" style={{ color: "var(--text)" }}>
+                {t("Asistente inteligente")}
+              </h4>
             </div>
+            <button
+              type="button"
+              className="btn btn-ghost text-sm px-3 py-1.5"
+              onClick={() => setOpen(false)}
+            >
+              {t("Cerrar")}
+            </button>
+          </div>
 
-            <div className="max-h-[55vh] space-y-3 overflow-y-auto px-5 py-4">
-              {messages.length === 0 && (
-                <div className="text-sm text-white/50">
-                  {t("Haz una pregunta sobre viajes, participantes, delegaciones, hoteles o transporte.")}
-                </div>
-              )}
-              {messages.map((message, index) => {
-                if (message.role === "assistant") {
-                  const formatted = formatAssistant(message.content);
-                  return (
-                    <div
-                      key={`${message.role}-${index}`}
-                      className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/85"
-                    >
-                      <p className="text-sm font-semibold text-white">{formatted.title}</p>
-                      {formatted.bullets.length > 0 && (
-                        <ul className="mt-2 space-y-1 text-sm text-white/65">
-                          {formatted.bullets.map((item, idx) => (
-                            <li key={`${index}-${idx}`} className="flex gap-2">
-                              <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-emerald-400" />
-                              <span>{item}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  );
-                }
-
+          {/* Messages */}
+          <div className="max-h-[45vh] space-y-3 overflow-y-auto px-5 py-4">
+            {messages.length === 0 && (
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+                {t("Haz una pregunta sobre viajes, participantes, delegaciones, hoteles o transporte.")}
+              </p>
+            )}
+            {messages.map((message, index) => {
+              if (message.role === "assistant") {
+                const formatted = formatAssistant(message.content);
                 return (
                   <div
                     key={`${message.role}-${index}`}
-                    className="rounded-2xl px-4 py-3 text-sm text-white ml-6"
-                    style={{ background: "linear-gradient(135deg, rgba(201,168,76,0.20) 0%, rgba(11,22,40,0.80) 100%)", border: "1px solid rgba(201,168,76,0.25)" }}
+                    className="rounded-lg px-4 py-3 text-sm"
+                    style={{
+                      background: "var(--elevated)",
+                      border: "1px solid var(--border)"
+                    }}
                   >
-                    {message.content}
+                    <p className="font-semibold text-sm" style={{ color: "var(--text)" }}>
+                      {formatted.title}
+                    </p>
+                    {formatted.bullets.length > 0 && (
+                      <ul className="mt-2 space-y-1">
+                        {formatted.bullets.map((item, idx) => (
+                          <li key={`${index}-${idx}`} className="flex gap-2 text-sm" style={{ color: "var(--text-muted)" }}>
+                            <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ background: "var(--success)" }} />
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                 );
-              })}
-              {loading && <div className="text-sm text-white/40">{t("Preparando respuesta...")}</div>}
-              {error && <div className="text-sm text-rose-400">{error}</div>}
-            </div>
+              }
 
-            <div className="border-t border-white/10 px-5 py-4">
-              <div className="flex flex-wrap gap-2">
-                <input
-                  className="input flex-1"
-                  placeholder={t("Escribe tu pregunta")}
-                  value={input}
-                  onChange={(event) => setInput(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      sendMessage();
-                    }
+              return (
+                <div
+                  key={`${message.role}-${index}`}
+                  className="rounded-lg px-4 py-3 text-sm ml-8"
+                  style={{
+                    background: "var(--brand-dim)",
+                    border: "1px solid var(--info-border)",
+                    color: "var(--brand)"
                   }}
-                />
-                <button className="btn btn-primary" onClick={sendMessage} disabled={loading}>
-                  {loading ? t("Enviando...") : t("Enviar")}
-                </button>
-              </div>
+                >
+                  {message.content}
+                </div>
+              );
+            })}
+            {loading && (
+              <p className="text-sm" style={{ color: "var(--text-faint)" }}>
+                {t("Preparando respuesta...")}
+              </p>
+            )}
+            {error && (
+              <p className="text-sm" style={{ color: "var(--danger)" }}>
+                {error}
+              </p>
+            )}
+          </div>
+
+          {/* Input */}
+          <div
+            className="px-5 py-4"
+            style={{ borderTop: "1px solid var(--border)" }}
+          >
+            <div className="flex gap-2">
+              <input
+                className="input flex-1"
+                placeholder={t("Escribe tu pregunta")}
+                value={input}
+                onChange={(event) => setInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    sendMessage();
+                  }
+                }}
+              />
+              <button className="btn btn-primary" onClick={sendMessage} disabled={loading}>
+                {loading ? t("...") : t("Enviar")}
+              </button>
             </div>
           </div>
         </div>

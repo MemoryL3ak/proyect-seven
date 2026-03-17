@@ -153,16 +153,16 @@ export default function ClientesPage() {
 
       <section className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
         <article className="surface rounded-2xl p-4">
-          <p className="text-xs uppercase tracking-[0.2em] text-white/40">Total clientes</p>
-          <p className="mt-2 text-3xl font-sans font-bold text-white">{filtered.length}</p>
+          <p className="text-xs uppercase tracking-[0.2em]" style={{ color: "var(--text-faint)" }}>Total clientes</p>
+          <p className="mt-2 text-3xl font-sans font-bold" style={{ color: "var(--text)" }}>{filtered.length}</p>
         </article>
         {Object.entries(typeCounts)
           .sort((a, b) => b[1] - a[1])
           .slice(0, 4)
           .map(([type, count]) => (
             <article key={type} className="surface rounded-2xl p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-white/40">{type}</p>
-              <p className="mt-2 text-3xl font-sans font-bold text-white">{count}</p>
+              <p className="text-xs uppercase tracking-[0.2em]" style={{ color: "var(--text-faint)" }}>{type}</p>
+              <p className="mt-2 text-3xl font-sans font-bold" style={{ color: "var(--text)" }}>{count}</p>
             </article>
           ))}
       </section>
@@ -196,7 +196,7 @@ export default function ClientesPage() {
             </tbody>
           </table>
           {!loading && filtered.length === 0 ? (
-            <p className="mt-4 text-sm text-white/50">No hay participantes para este filtro.</p>
+            <p className="mt-4 text-sm" style={{ color: "var(--text-muted)" }}>No hay participantes para este filtro.</p>
           ) : null}
         </div>
       </section>

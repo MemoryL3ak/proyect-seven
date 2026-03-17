@@ -253,11 +253,11 @@ export default function HotelTrackingPage() {
 
       <section className="surface rounded-2xl p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="text-xs text-white/50">
+          <div className="text-xs" style={{ color: "var(--text-muted)" }}>
             {t("Última actualización")}: {lastUpdated ? lastUpdated.toLocaleTimeString("es-CL") : "-"}
           </div>
           <div className="flex items-center gap-3">
-            <label className="text-xs uppercase tracking-[0.2em] text-white/40">
+            <label className="text-xs uppercase tracking-[0.2em]" style={{ color: "var(--text-faint)" }}>
               {t("Evento")}
             </label>
             <select
@@ -281,51 +281,51 @@ export default function HotelTrackingPage() {
       </section>
 
       <section className="surface rounded-2xl p-6">
-        <h2 className="font-sans font-bold text-2xl text-white mb-4">{t("Overview")}</h2>
+        <h2 className="font-sans font-bold text-2xl mb-4" style={{ color: "var(--text)" }}>{t("Overview")}</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div className="rounded-xl p-4 surface">
-            <p className="text-xs uppercase tracking-[0.2em] text-white/40">
+            <p className="text-xs uppercase tracking-[0.2em]" style={{ color: "var(--text-faint)" }}>
               {t("Participantes registrados")}
             </p>
-            <p className="text-2xl font-semibold text-white">{overview.totalParticipants}</p>
+            <p className="text-2xl font-semibold" style={{ color: "var(--text)" }}>{overview.totalParticipants}</p>
           </div>
           <div className="rounded-xl p-4 surface">
-            <p className="text-xs uppercase tracking-[0.2em] text-white/40">
+            <p className="text-xs uppercase tracking-[0.2em]" style={{ color: "var(--text-faint)" }}>
               {t("Participantes asignados")}
             </p>
-            <p className="text-2xl font-semibold text-white">{overview.assignedParticipants}</p>
+            <p className="text-2xl font-semibold" style={{ color: "var(--text)" }}>{overview.assignedParticipants}</p>
           </div>
           <div className="rounded-xl p-4 surface">
-            <p className="text-xs uppercase tracking-[0.2em] text-white/40">
+            <p className="text-xs uppercase tracking-[0.2em]" style={{ color: "var(--text-faint)" }}>
               {t("Por asignar")}
             </p>
-            <p className="text-2xl font-semibold text-white">{overview.unassignedParticipants}</p>
+            <p className="text-2xl font-semibold" style={{ color: "var(--text)" }}>{overview.unassignedParticipants}</p>
           </div>
           <div className="rounded-xl p-4 surface">
-            <p className="text-xs uppercase tracking-[0.2em] text-white/40">
+            <p className="text-xs uppercase tracking-[0.2em]" style={{ color: "var(--text-faint)" }}>
               {t("Hoteles")}
             </p>
-            <p className="text-2xl font-semibold text-white">{overview.hotelsCount}</p>
+            <p className="text-2xl font-semibold" style={{ color: "var(--text)" }}>{overview.hotelsCount}</p>
           </div>
           <div className="rounded-xl p-4 surface">
-            <p className="text-xs uppercase tracking-[0.2em] text-white/40">
+            <p className="text-xs uppercase tracking-[0.2em]" style={{ color: "var(--text-faint)" }}>
               {t("Habitaciones")}
             </p>
-            <p className="text-2xl font-semibold text-white">{overview.totalRooms}</p>
+            <p className="text-2xl font-semibold" style={{ color: "var(--text)" }}>{overview.totalRooms}</p>
           </div>
           <div className="rounded-xl p-4 surface">
-            <p className="text-xs uppercase tracking-[0.2em] text-white/40">
+            <p className="text-xs uppercase tracking-[0.2em]" style={{ color: "var(--text-faint)" }}>
               {t("Camas")}
             </p>
-            <p className="text-2xl font-semibold text-white">{overview.totalBeds}</p>
+            <p className="text-2xl font-semibold" style={{ color: "var(--text)" }}>{overview.totalBeds}</p>
           </div>
         </div>
       </section>
 
       <section className="surface rounded-2xl p-6">
-        <h2 className="font-sans font-bold text-2xl text-white mb-4">{t("Disponibilidad")}</h2>
+        <h2 className="font-sans font-bold text-2xl mb-4" style={{ color: "var(--text)" }}>{t("Disponibilidad")}</h2>
         {rows.length === 0 ? (
-          <p className="text-sm text-white/50">{t("Sin hoteles registrados.")}</p>
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>{t("Sin hoteles registrados.")}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="table">
@@ -358,7 +358,7 @@ export default function HotelTrackingPage() {
                         {row.roomUsage.length === 0 ? (
                           "-"
                         ) : (
-                          <div className="space-y-1 text-xs text-white/50">
+                          <div className="space-y-1 text-xs" style={{ color: "var(--text-muted)" }}>
                             {row.roomUsage.map((room) => (
                               <div key={room.type}>
                                 {room.type}: {room.total}
@@ -371,7 +371,7 @@ export default function HotelTrackingPage() {
                         {row.bedUsage.length === 0 ? (
                           "-"
                         ) : (
-                          <div className="space-y-1 text-xs text-white/50">
+                          <div className="space-y-1 text-xs" style={{ color: "var(--text-muted)" }}>
                             {row.bedUsage.map((bed) => (
                               <div key={bed.type}>
                                 {bed.type}: {bed.available}/{bed.total}
@@ -382,13 +382,13 @@ export default function HotelTrackingPage() {
                       </td>
                       <td>
                         <div className="flex items-center gap-2">
-                          <div className="h-2 w-24 rounded-full bg-white/10 overflow-hidden">
+                          <div className="h-2 w-24 rounded-full overflow-hidden" style={{ background: "var(--border)" }}>
                             <div
-                              className="h-full bg-emerald-400"
-                              style={{ width: `${Math.min(occupancy, 100)}%` }}
+                              className="h-full"
+                              style={{ width: `${Math.min(occupancy, 100)}%`, background: "var(--success)" }}
                             />
                           </div>
-                          <span className="text-xs text-white/50">{formatPercent(occupancy)}</span>
+                          <span className="text-xs" style={{ color: "var(--text-muted)" }}>{formatPercent(occupancy)}</span>
                         </div>
                       </td>
                     </tr>

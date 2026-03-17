@@ -539,16 +539,16 @@ export default function AccreditationsPage() {
   return (
     <div className="space-y-6">
       <section
-        className="rounded-3xl border border-white/10 p-6 text-white shadow-xl"
-        style={{ background: "linear-gradient(110deg, #0b1628 0%, #0f766e 58%, #0ea5a0 100%)" }}
+        className="rounded-3xl p-6 shadow-xl"
+        style={{ background: "linear-gradient(135deg, var(--brand-dim) 0%, #e0f2fe 100%)", border: "1px solid var(--info-border)" }}
       >
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.28em] text-white/85">Control de acceso</p>
-            <h1 className="mt-1 text-3xl font-semibold">Flujo de acreditacion {selectedEventName ? `- ${selectedEventName}` : ""}</h1>
-            <p className="mt-1 text-sm text-white/85">Panel para validar identidad, acreditar y generar credenciales.</p>
+            <p className="text-xs uppercase tracking-[0.28em]" style={{ color: "var(--text-muted)" }}>Control de acceso</p>
+            <h1 className="mt-1 text-3xl font-semibold" style={{ color: "var(--text)" }}>Flujo de acreditacion {selectedEventName ? `- ${selectedEventName}` : ""}</h1>
+            <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>Panel para validar identidad, acreditar y generar credenciales.</p>
           </div>
-          <div className="rounded-2xl border border-white/35 bg-black/20 px-4 py-3 text-sm">
+          <div className="rounded-2xl px-4 py-3 text-sm" style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text-muted)" }}>
             Ultima actualizacion: {lastUpdated ? lastUpdated.toLocaleTimeString("es-CL") : "-"}
           </div>
         </div>

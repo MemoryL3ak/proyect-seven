@@ -319,7 +319,7 @@ export default function SideNav() {
         <img
           src="/branding/LOGO-SEVEN.png"
           alt="Seven Arena"
-          style={{ height: 38, width: "auto", objectFit: "contain" }}
+          style={{ height: 48, width: "auto", objectFit: "contain" }}
         />
       </div>
 
