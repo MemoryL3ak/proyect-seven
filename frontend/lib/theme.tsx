@@ -2,19 +2,20 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 
-type Theme = "dark" | "light";
+export type Theme = "dark" | "light" | "obsidian";
 
-const ThemeContext = createContext<{ theme: Theme; toggleTheme: () => void }>({
+const ThemeContext = createContext<{ theme: Theme; setTheme: (t: Theme) => void; toggleTheme: () => void }>({
   theme: "dark",
-  toggleTheme: () => {}
+  setTheme: () => {},
+  toggleTheme: () => {},
 });
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("dark");
+  const [theme, setThemeState] = useState<Theme>("dark");
 
   useEffect(() => {
     const saved = localStorage.getItem("sa-theme") as Theme | null;
-    if (saved === "light" || saved === "dark") setTheme(saved);
+    if (saved === "light" || saved === "dark" || saved === "obsidian") setThemeState(saved);
   }, []);
 
   useEffect(() => {
@@ -22,10 +23,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("sa-theme", theme);
   }, [theme]);
 
-  const toggleTheme = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
+  const setTheme = (t: Theme) => setThemeState(t);
+  const toggleTheme = () =>
+    setThemeState((t) => (t === "dark" ? "light" : t === "light" ? "obsidian" : "dark"));
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );

@@ -7,54 +7,34 @@ import clsx from "clsx";
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
 
-type NavItem = {
-  href: string;
-  label: string;
-  icon: string;
-};
-
-type NavGroup = {
-  title: string;
-  icon: string;
-  items: NavItem[];
-};
-
-type NavSection = {
-  title: string;
-  icon: string;
-  items?: NavItem[];
-  groups?: NavGroup[];
-  href?: string;
-};
+type NavItem = { href: string; label: string; icon: string };
+type NavGroup = { title: string; icon: string; items: NavItem[] };
+type NavSection = { title: string; icon: string; items?: NavItem[]; groups?: NavGroup[]; href?: string };
 
 const navSections: NavSection[] = [
   {
-    title: "Dashboard",
-    icon: "dashboard",
+    title: "Dashboard", icon: "dashboard",
     items: [
       { href: "/dashboard/comercial", label: "Dashboard Comercial", icon: "dashboard" },
       { href: "/dashboard/operacional", label: "Dashboard Operacional", icon: "dashboard" }
     ]
   },
   {
-    title: "Registro",
-    icon: "stack",
+    title: "Registro", icon: "stack",
     items: [
       { href: "/registro/eventos", label: "Registro Evento", icon: "calendar" },
       { href: "/registro/participantes", label: "Inscripción Participantes", icon: "users" }
     ]
   },
   {
-    title: "Operación",
-    icon: "route",
+    title: "Operación", icon: "route",
     items: [
       { href: "/operacion/and", label: "AND", icon: "users" },
       { href: "/operacion/cumplimiento-and", label: "Cumplimiento AND", icon: "shield" }
     ],
     groups: [
       {
-        title: "Transporte",
-        icon: "route",
+        title: "Transporte", icon: "route",
         items: [
           { href: "/operations/vehicle-positions", label: "Tracking de Viajes", icon: "pin" },
           { href: "/operations/trips", label: "Viajes", icon: "route" },
@@ -62,8 +42,7 @@ const navSections: NavSection[] = [
         ]
       },
       {
-        title: "Hotelería",
-        icon: "hotel",
+        title: "Hotelería", icon: "hotel",
         items: [
           { href: "/operations/hotel-tracking", label: "Tracking Hotelería", icon: "hotel" },
           { href: "/masters/accommodations", label: "Hoteles", icon: "hotel" },
@@ -73,8 +52,7 @@ const navSections: NavSection[] = [
         ]
       },
       {
-        title: "Alimentación",
-        icon: "food",
+        title: "Alimentación", icon: "food",
         items: [
           { href: "/operations/food", label: "Alimentación", icon: "food" },
           { href: "/operations/food/cenas", label: "Cenas", icon: "food" },
@@ -83,40 +61,18 @@ const navSections: NavSection[] = [
         ]
       },
       {
-        title: "Salud",
-        icon: "health-cross",
+        title: "Salud", icon: "health-cross",
         items: [{ href: "/health", label: "Salud", icon: "health-cross" }]
       }
     ]
   },
+  { title: "Clientes", icon: "users", href: "/clientes" },
+  { title: "Deportes", icon: "sports-rings", href: "/deportes" },
+  { title: "Sede", icon: "pin", href: "/sede" },
+  { title: "Calendario Deportivo", icon: "calendar", href: "/sports-calendar" },
+  { title: "Acreditación", icon: "shield", href: "/accreditations" },
   {
-    title: "Clientes",
-    icon: "users",
-    href: "/clientes"
-  },
-  {
-    title: "Deportes",
-    icon: "sports-rings",
-    href: "/deportes"
-  },
-  {
-    title: "Sede",
-    icon: "pin",
-    href: "/sede"
-  },
-  {
-    title: "Calendario Deportivo",
-    icon: "calendar",
-    href: "/sports-calendar"
-  },
-  {
-    title: "Acreditación",
-    icon: "shield",
-    href: "/accreditations"
-  },
-  {
-    title: "Portales",
-    icon: "portal",
+    title: "Portales", icon: "portal",
     items: [
       { href: "/portal/user", label: "Portal de usuario", icon: "athlete" },
       { href: "/portal/conductor", label: "Portal Conductor", icon: "driver" },
@@ -128,135 +84,22 @@ const navSections: NavSection[] = [
 function Icon({ name, className }: { name: string; className?: string }) {
   const base = "w-[18px] h-[18px]";
   switch (name) {
-    case "dashboard":
-      return (
-        <svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-          <rect x="3" y="3" width="8" height="8" rx="1.5" />
-          <rect x="13" y="3" width="8" height="5" rx="1.5" />
-          <rect x="13" y="10" width="8" height="11" rx="1.5" />
-          <rect x="3" y="13" width="8" height="8" rx="1.5" />
-        </svg>
-      );
-    case "calendar":
-      return (
-        <svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-          <rect x="3" y="5" width="18" height="16" rx="2" />
-          <path d="M8 3v4M16 3v4M3 9h18" />
-        </svg>
-      );
-    case "users":
-      return (
-        <svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-          <circle cx="8" cy="8" r="3" />
-          <circle cx="17" cy="9" r="2.5" />
-          <path d="M3 20c0-3 2.5-5 5-5s5 2 5 5" />
-          <path d="M14 20c0-2 1.5-3.5 3.5-3.5S21 18 21 20" />
-        </svg>
-      );
-    case "hotel":
-      return (
-        <svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-          <rect x="4" y="3" width="16" height="18" rx="2" />
-          <path d="M8 7h2M14 7h2M8 11h2M14 11h2M8 15h2M14 15h2" />
-        </svg>
-      );
-    case "athlete":
-      return (
-        <svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-          <circle cx="12" cy="7" r="3" />
-          <path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6" />
-        </svg>
-      );
-    case "driver":
-      return (
-        <svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-          <circle cx="12" cy="12" r="7" />
-          <path d="M12 5v4M5 12h4M15 12h4M12 15v4" />
-        </svg>
-      );
-    case "route":
-      return (
-        <svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-          <path d="M6 6c3 0 3 4 6 4s3-4 6-4" />
-          <path d="M6 18c3 0 3-4 6-4s3 4 6 4" />
-        </svg>
-      );
-    case "pin":
-      return (
-        <svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-          <path d="M12 22s6-6 6-11a6 6 0 0 0-12 0c0 5 6 11 6 11z" />
-          <circle cx="12" cy="11" r="2" />
-        </svg>
-      );
-    case "shield":
-      return (
-        <svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-          <path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7l8-4z" />
-        </svg>
-      );
-    case "health-cross":
-      return (
-        <svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-          <rect x="3" y="3" width="18" height="18" rx="4" />
-          <path d="M12 7v10M7 12h10" />
-        </svg>
-      );
-    case "food":
-      return (
-        <svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-          <path d="M6 3v8M9 3v8M7.5 11v10" />
-          <path d="M16 3c-2 2-2.5 4.5-2.5 7.5V21" />
-          <path d="M16 3c2 2 2.5 4.5 2.5 7.5" />
-        </svg>
-      );
-    case "scan":
-      return (
-        <svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-          <path d="M4 8V5a1 1 0 0 1 1-1h3" />
-          <path d="M20 8V5a1 1 0 0 0-1-1h-3" />
-          <path d="M4 16v3a1 1 0 0 0 1 1h3" />
-          <path d="M20 16v3a1 1 0 0 1-1 1h-3" />
-          <path d="M7 12h10" />
-          <path d="M12 7v10" />
-        </svg>
-      );
-    case "stack":
-      return (
-        <svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-          <path d="M12 3l9 5-9 5-9-5 9-5z" />
-          <path d="M3 13l9 5 9-5" />
-        </svg>
-      );
-    case "portal":
-      return (
-        <svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-          <rect x="4" y="3" width="16" height="18" rx="2" />
-          <path d="M8 12h8M12 8v8" />
-        </svg>
-      );
-    case "trophy":
-      return (
-        <svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-          <path d="M8 4h8v3a4 4 0 0 1-8 0V4z" />
-          <path d="M6 4H4a3 3 0 0 0 3 3" />
-          <path d="M18 4h2a3 3 0 0 1-3 3" />
-          <path d="M12 13v3" />
-          <path d="M8 20h8" />
-          <path d="M9 16h6" />
-        </svg>
-      );
-    case "sports-rings":
-      return (
-        <svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="6.2" cy="9.2" r="3.1" />
-          <circle cx="12" cy="9.2" r="3.1" />
-          <circle cx="17.8" cy="9.2" r="3.1" />
-          <circle cx="9.1" cy="14.8" r="3.1" />
-          <circle cx="14.9" cy="14.8" r="3.1" />
-        </svg>
-      );
-    default:
-      return null;
+    case "dashboard": return (<svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="3" y="3" width="8" height="8" rx="1.5" /><rect x="13" y="3" width="8" height="5" rx="1.5" /><rect x="13" y="10" width="8" height="11" rx="1.5" /><rect x="3" y="13" width="8" height="8" rx="1.5" /></svg>);
+    case "calendar": return (<svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 9h18" /></svg>);
+    case "users": return (<svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="8" cy="8" r="3" /><circle cx="17" cy="9" r="2.5" /><path d="M3 20c0-3 2.5-5 5-5s5 2 5 5" /><path d="M14 20c0-2 1.5-3.5 3.5-3.5S21 18 21 20" /></svg>);
+    case "hotel": return (<svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="4" y="3" width="16" height="18" rx="2" /><path d="M8 7h2M14 7h2M8 11h2M14 11h2M8 15h2M14 15h2" /></svg>);
+    case "athlete": return (<svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="12" cy="7" r="3" /><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6" /></svg>);
+    case "driver": return (<svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="12" cy="12" r="7" /><path d="M12 5v4M5 12h4M15 12h4M12 15v4" /></svg>);
+    case "route": return (<svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M6 6c3 0 3 4 6 4s3-4 6-4" /><path d="M6 18c3 0 3-4 6-4s3 4 6 4" /></svg>);
+    case "pin": return (<svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M12 22s6-6 6-11a6 6 0 0 0-12 0c0 5 6 11 6 11z" /><circle cx="12" cy="11" r="2" /></svg>);
+    case "shield": return (<svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7l8-4z" /></svg>);
+    case "health-cross": return (<svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="3" y="3" width="18" height="18" rx="4" /><path d="M12 7v10M7 12h10" /></svg>);
+    case "food": return (<svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M6 3v8M9 3v8M7.5 11v10" /><path d="M16 3c-2 2-2.5 4.5-2.5 7.5V21" /><path d="M16 3c2 2 2.5 4.5 2.5 7.5" /></svg>);
+    case "scan": return (<svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M4 8V5a1 1 0 0 1 1-1h3" /><path d="M20 8V5a1 1 0 0 0-1-1h-3" /><path d="M4 16v3a1 1 0 0 0 1 1h3" /><path d="M20 16v3a1 1 0 0 1-1 1h-3" /><path d="M7 12h10" /><path d="M12 7v10" /></svg>);
+    case "stack": return (<svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M12 3l9 5-9 5-9-5 9-5z" /><path d="M3 13l9 5 9-5" /></svg>);
+    case "portal": return (<svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="4" y="3" width="16" height="18" rx="2" /><path d="M8 12h8M12 8v8" /></svg>);
+    case "sports-rings": return (<svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="6.2" cy="9.2" r="3.1" /><circle cx="12" cy="9.2" r="3.1" /><circle cx="17.8" cy="9.2" r="3.1" /><circle cx="9.1" cy="14.8" r="3.1" /><circle cx="14.9" cy="14.8" r="3.1" /></svg>);
+    default: return null;
   }
 }
 
@@ -272,55 +115,105 @@ export default function SideNav() {
   const { locale, setLocale, t } = useI18n();
   const { theme } = useTheme();
   const isDark = theme === "dark";
+  const isObsidian = theme === "obsidian";
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    const activeSection = navSections.find((section) => sectionHasActivePath(section, pathname));
+    const activeSection = navSections.find((s) => sectionHasActivePath(s, pathname));
     if (!activeSection) return;
-
     setOpenSections((prev) => {
       const next: Record<string, boolean> = {};
-      navSections.forEach((section) => {
-        next[section.title] = section.title === activeSection.title;
-      });
+      navSections.forEach((s) => { next[s.title] = s.title === activeSection.title; });
       return { ...prev, ...next };
     });
-
-    if (activeSection.groups) {
-      const activeGroup = activeSection.groups.find((group) =>
-        group.items.some((item) => item.href === pathname)
-      );
-      if (activeGroup) {
-        const key = `${activeSection.title}::${activeGroup.title}`;
-        setOpenGroups((prev) => ({ ...prev, [key]: true }));
-      }
-    }
   }, [pathname]);
 
   useEffect(() => {
     setOpenSections((prev) => {
       if (Object.keys(prev).length > 0) return prev;
-      return navSections.reduce<Record<string, boolean>>((acc, section) => {
-        acc[section.title] = section.title === "Dashboard";
+      return navSections.reduce<Record<string, boolean>>((acc, s) => {
+        acc[s.title] = s.title === "Dashboard";
         return acc;
       }, {});
     });
   }, []);
 
-  return (
-    <aside
-      className="h-screen sticky top-0 flex flex-col shrink-0"
-      style={{
-        width: isDark ? "260px" : "240px",
-        background: isDark ? "#07101f" : "#ffffff",
-        borderRight: isDark ? "1px solid rgba(255,255,255,0.05)" : "none",
-        boxShadow: "none",
+  // ── Obsidian color helpers
+  const obsidianActive = { color: "#22d3ee", bg: "rgba(34,211,238,0.1)", border: "2px solid rgba(34,211,238,0.5)" };
+  const obsidianHover = "rgba(34,211,238,0.06)";
+  const obsidianMuted = "rgba(255,255,255,0.45)";
+  const obsidianGroupLabel = "rgba(34,211,238,0.4)";
+
+  function activeColor(active: boolean) {
+    if (isObsidian) return active ? obsidianActive.color : obsidianMuted;
+    if (isDark) return active ? "#e8c96a" : "rgba(255,255,255,0.82)";
+    return active ? "#1e4ed8" : "#475569";
+  }
+  function activeBg(active: boolean) {
+    if (isObsidian) return active ? obsidianActive.bg : "transparent";
+    if (isDark) return active ? "rgba(201,168,76,0.12)" : "transparent";
+    return active ? "#eff3ff" : "transparent";
+  }
+  function activeBorderLeft(active: boolean) {
+    if (isObsidian) return active ? "2px solid #22d3ee" : "2px solid transparent";
+    if (isDark) return active ? "3px solid #c9a84c" : "3px solid transparent";
+    return "none";
+  }
+
+  const sidebarStyle: React.CSSProperties = isObsidian
+    ? {
+        width: "260px",
+        background: "rgba(6,9,22,0.96)",
+        borderRight: "1px solid rgba(34,211,238,0.1)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
         position: "relative",
-        overflow: "hidden"
-      }}
-    >
-      {/* Texture overlay — dark mode only */}
+        overflow: "hidden",
+      }
+    : isDark
+    ? {
+        width: "260px",
+        background: "#07101f",
+        borderRight: "1px solid rgba(255,255,255,0.05)",
+        position: "relative",
+        overflow: "hidden",
+      }
+    : {
+        width: "240px",
+        background: "#ffffff",
+        borderRight: "none",
+        position: "relative",
+        overflow: "hidden",
+      };
+
+  return (
+    <aside className="h-screen sticky top-0 flex flex-col shrink-0" style={sidebarStyle}>
+
+      {/* Obsidian: grid line texture overlay */}
+      {isObsidian && (
+        <>
+          <div style={{
+            position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0,
+            backgroundImage: `linear-gradient(rgba(34,211,238,0.03) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(34,211,238,0.03) 1px, transparent 1px)`,
+            backgroundSize: "40px 40px"
+          }} />
+          <div style={{
+            position: "absolute", top: "-80px", left: "50%", transform: "translateX(-50%)",
+            width: "300px", height: "300px", borderRadius: "50%",
+            background: "radial-gradient(ellipse, rgba(34,211,238,0.12) 0%, transparent 70%)",
+            pointerEvents: "none", zIndex: 0
+          }} />
+          <div style={{
+            position: "absolute", bottom: "-60px", right: "-40px",
+            width: "200px", height: "200px", borderRadius: "50%",
+            background: "radial-gradient(ellipse, rgba(168,85,247,0.1) 0%, transparent 70%)",
+            pointerEvents: "none", zIndex: 0
+          }} />
+        </>
+      )}
+
+      {/* Dark: noise texture + glow */}
       {isDark && (
         <>
           <div style={{
@@ -328,7 +221,6 @@ export default function SideNav() {
             backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E")`,
             backgroundRepeat: "repeat", backgroundSize: "200px"
           }} />
-          {/* Radial glow top */}
           <div style={{
             position: "absolute", top: "-60px", left: "50%", transform: "translateX(-50%)",
             width: "320px", height: "320px", borderRadius: "50%",
@@ -339,41 +231,30 @@ export default function SideNav() {
       )}
 
       {/* Logo */}
-      {isDark ? (
-        <div
-          className="flex items-center justify-center shrink-0"
-          style={{ height: "170px", overflow: "hidden", position: "relative", zIndex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}
-        >
-          <img
-            src="/branding/LOGO-SEVEN.png"
-            alt="Seven Arena"
-            style={{
-              width: "100%",
-              height: "auto",
-              transform: "scale(1.9)",
-              transformOrigin: "center center",
-              filter: "drop-shadow(0 0 28px rgba(201,168,76,0.55)) drop-shadow(0 6px 18px rgba(0,0,0,0.9))"
-            }}
-          />
-        </div>
-      ) : (
-        <div
-          className="flex items-center justify-center shrink-0"
-          style={{ height: "170px", overflow: "hidden", position: "relative", zIndex: 1, display: "flex", alignItems: "center", justifyContent: "center", borderBottom: "1px solid #e8edf5" }}
-        >
-          <img
-            src="/branding/LOGO-SEVEN.png"
-            alt="Seven Arena"
-            style={{
-              width: "100%",
-              height: "auto",
-              transform: "scale(1.9)",
-              transformOrigin: "center center",
-              filter: "drop-shadow(0 4px 12px rgba(15,23,42,0.15))"
-            }}
-          />
-        </div>
-      )}
+      <div
+        className="flex items-center justify-center shrink-0"
+        style={{
+          height: "170px", overflow: "hidden", position: "relative", zIndex: 1,
+          borderBottom: isObsidian
+            ? "1px solid rgba(34,211,238,0.08)"
+            : isDark ? "none" : "1px solid #e8edf5"
+        }}
+      >
+        <img
+          src="/branding/LOGO-SEVEN.png"
+          alt="Seven Arena"
+          style={{
+            width: "100%", height: "auto",
+            transform: "scale(1.9)",
+            transformOrigin: "center center",
+            filter: isObsidian
+              ? "drop-shadow(0 0 24px rgba(34,211,238,0.4)) drop-shadow(0 0 8px rgba(168,85,247,0.2)) drop-shadow(0 6px 18px rgba(0,0,0,0.9))"
+              : isDark
+              ? "drop-shadow(0 0 28px rgba(201,168,76,0.55)) drop-shadow(0 6px 18px rgba(0,0,0,0.9))"
+              : "drop-shadow(0 4px 12px rgba(15,23,42,0.15))"
+          }}
+        />
+      </div>
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-2" style={{ scrollbarWidth: "none", position: "relative", zIndex: 1 }}>
@@ -384,19 +265,15 @@ export default function SideNav() {
               <Link
                 key={section.title}
                 href={section.href}
-                className="flex items-center gap-3 mx-2 px-3 py-2.5 text-[13.5px] font-medium transition-all duration-150 relative"
+                className="flex items-center gap-3 mx-2 px-3 py-2.5 text-[13.5px] font-medium transition-all duration-150"
                 style={{
-                  color: isActive
-                    ? (isDark ? "#e8c96a" : "#1e4ed8")
-                    : (isDark ? "rgba(255,255,255,0.82)" : "#475569"),
-                  background: isActive
-                    ? (isDark ? "rgba(201,168,76,0.12)" : "#eff3ff")
-                    : "transparent",
-                  borderRadius: "8px",
-                  borderLeft: isDark ? (isActive ? "3px solid #c9a84c" : "3px solid transparent") : "none",
+                  color: activeColor(isActive),
+                  background: activeBg(isActive),
                   borderRadius: isDark ? "8px" : "10px",
-                  marginBottom: isDark ? "1px" : "2px",
+                  borderLeft: activeBorderLeft(isActive),
+                  marginBottom: "1px",
                   fontWeight: isActive ? 600 : 400,
+                  ...(isObsidian && isActive ? { boxShadow: "0 0 12px rgba(34,211,238,0.1)" } : {})
                 }}
               >
                 <Icon name={section.icon} />
@@ -420,18 +297,14 @@ export default function SideNav() {
                     }, {})
                   )
                 }
-                className="flex w-full items-center justify-between mx-0 px-5 py-2.5 text-[13.5px] font-semibold transition-all duration-150"
+                className="flex w-full items-center justify-between px-5 py-2.5 text-[13.5px] font-semibold transition-all duration-150"
                 style={{
-                  color: sectionActive
-                    ? (isDark ? "#e8c96a" : "#1e4ed8")
-                    : (isDark ? "rgba(255,255,255,0.85)" : "#374151"),
-                  background: (!isDark && sectionActive && !isOpen) ? "#eff3ff" : "transparent",
-                  borderRadius: !isDark ? "10px" : "0",
-                  margin: !isDark ? "0 8px" : "0",
-                  width: !isDark ? "calc(100% - 16px)" : "100%",
-                  border: "none",
-                  cursor: "pointer",
-                  letterSpacing: "0.01em"
+                  color: activeColor(sectionActive),
+                  background: (!isObsidian && !isDark && sectionActive && !isOpen) ? "#eff3ff" : "transparent",
+                  borderRadius: !isDark && !isObsidian ? "10px" : "0",
+                  margin: !isDark && !isObsidian ? "0 8px" : "0",
+                  width: !isDark && !isObsidian ? "calc(100% - 16px)" : "100%",
+                  border: "none", cursor: "pointer", letterSpacing: "0.01em"
                 }}
               >
                 <span className="flex items-center gap-3">
@@ -440,35 +313,27 @@ export default function SideNav() {
                 </span>
                 <span style={{
                   fontSize: 8,
-                  color: isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.25)",
+                  color: isObsidian ? "rgba(34,211,238,0.3)" : isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.25)",
                   transition: "transform 200ms ease",
                   transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
                   display: "inline-block"
                 }}>▼</span>
               </button>
 
-              <div
-                style={{
-                  overflow: "hidden",
-                  maxHeight: isOpen ? "800px" : "0px",
-                  opacity: isOpen ? 1 : 0,
-                  transition: "max-height 280ms ease, opacity 200ms ease",
-                }}
-              >
+              <div style={{ overflow: "hidden", maxHeight: isOpen ? "900px" : "0px", opacity: isOpen ? 1 : 0, transition: "max-height 280ms ease, opacity 200ms ease" }}>
                 <div style={{ paddingLeft: "8px", paddingRight: "8px", paddingBottom: "4px", display: "flex", flexDirection: "column", gap: "1px" }}>
                   {section.items?.map((item) => {
                     const active = pathname === item.href;
                     return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
+                      <Link key={item.href} href={item.href}
                         className="flex items-center gap-3 px-3 py-2 text-[12.5px] transition-all duration-150"
                         style={{
-                          color: active ? (isDark ? "#e8c96a" : "#1e4ed8") : (isDark ? "rgba(255,255,255,0.65)" : "#64748b"),
-                          background: active ? (isDark ? "rgba(201,168,76,0.1)" : "#eff3ff") : "transparent",
+                          color: activeColor(active),
+                          background: activeBg(active),
                           fontWeight: active ? 600 : 400,
-                          borderRadius: isDark ? "7px" : "10px",
-                          borderLeft: isDark ? (active ? "2px solid #c9a84c" : "2px solid transparent") : "none",
+                          borderRadius: isDark || isObsidian ? "7px" : "10px",
+                          borderLeft: activeBorderLeft(active),
+                          ...(isObsidian && active ? { boxShadow: "0 0 8px rgba(34,211,238,0.08)" } : {})
                         }}
                       >
                         <Icon name={item.icon} />
@@ -478,37 +343,30 @@ export default function SideNav() {
                   })}
 
                   {section.groups?.map((group) => {
-                    const groupKey = `${section.title}::${group.title}`;
-                    const groupIsOpen = !!openGroups[groupKey];
                     const groupActive = group.items.some((i) => pathname === i.href);
-
                     return (
                       <div key={group.title}>
                         <p style={{
-                          fontSize: "9.5px",
-                          fontWeight: 700,
-                          letterSpacing: "0.15em",
+                          fontSize: "9.5px", fontWeight: 700, letterSpacing: "0.15em",
                           textTransform: "uppercase",
-                          color: isDark ? "rgba(255,255,255,0.22)" : "rgba(0,0,0,0.35)",
+                          color: isObsidian ? obsidianGroupLabel : isDark ? "rgba(255,255,255,0.22)" : "rgba(0,0,0,0.35)",
                           padding: "10px 12px 4px"
                         }}>
                           {t(group.title)}
                         </p>
-
                         <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
                           {group.items.map((item) => {
                             const active = pathname === item.href;
                             return (
-                              <Link
-                                key={item.href}
-                                href={item.href}
+                              <Link key={item.href} href={item.href}
                                 className="flex items-center gap-3 px-3 py-2 text-[12.5px] transition-all duration-150"
                                 style={{
-                                  color: active ? (isDark ? "#e8c96a" : "#1e4ed8") : (isDark ? "rgba(255,255,255,0.6)" : "#64748b"),
-                                  background: active ? (isDark ? "rgba(201,168,76,0.1)" : "#eff3ff") : "transparent",
+                                  color: activeColor(active),
+                                  background: activeBg(active),
                                   fontWeight: active ? 600 : 400,
-                                  borderRadius: isDark ? "7px" : "10px",
-                                  borderLeft: isDark ? (active ? "2px solid #c9a84c" : "2px solid transparent") : "none",
+                                  borderRadius: isDark || isObsidian ? "7px" : "10px",
+                                  borderLeft: activeBorderLeft(active),
+                                  ...(isObsidian && active ? { boxShadow: "0 0 8px rgba(34,211,238,0.08)" } : {})
                                 }}
                               >
                                 <Icon name={item.icon} />
@@ -528,25 +386,35 @@ export default function SideNav() {
       </nav>
 
       {/* Language switcher */}
-      <div className="px-3 py-3 shrink-0" style={{ borderTop: isDark ? "1px solid rgba(255,255,255,0.06)" : "1px solid #e2e8f0", position: "relative", zIndex: 1 }}>
-        <p className="text-[10px] uppercase tracking-[0.18em] mb-2 px-1" style={{ color: isDark ? "rgba(255,255,255,0.3)" : "#94a3b8" }}>{t("Idioma")}</p>
+      <div className="px-3 py-3 shrink-0" style={{
+        borderTop: isObsidian
+          ? "1px solid rgba(34,211,238,0.08)"
+          : isDark ? "1px solid rgba(255,255,255,0.06)" : "1px solid #e2e8f0",
+        position: "relative", zIndex: 1
+      }}>
+        <p className="text-[10px] uppercase tracking-[0.18em] mb-2 px-1" style={{
+          color: isObsidian ? "rgba(34,211,238,0.35)" : isDark ? "rgba(255,255,255,0.3)" : "#94a3b8"
+        }}>{t("Idioma")}</p>
         <div className="grid grid-cols-3 gap-1">
           {[
             { key: "es", label: "Español", short: "ES", flag: "🇨🇱" },
-            { key: "en", label: "English",  short: "EN", flag: "🇺🇸" },
-            { key: "pt", label: "Português",short: "PT", flag: "🇧🇷" }
+            { key: "en", label: "English", short: "EN", flag: "🇺🇸" },
+            { key: "pt", label: "Português", short: "PT", flag: "🇧🇷" }
           ].map((option) => {
             const active = locale === option.key;
             return (
-              <button
-                key={option.key}
-                type="button"
-                onClick={() => setLocale(option.key as "es" | "en" | "pt")}
+              <button key={option.key} type="button" onClick={() => setLocale(option.key as "es" | "en" | "pt")}
                 className="flex items-center justify-center gap-1 rounded-md px-2 py-1.5 text-[11px] font-semibold transition-all"
                 style={{
-                  background: active ? (isDark ? "rgba(201,168,76,0.15)" : "#eff3ff") : (isDark ? "rgba(255,255,255,0.05)" : "#f4f6fb"),
-                  color: active ? (isDark ? "#c9a84c" : "#1e4ed8") : (isDark ? "rgba(255,255,255,0.4)" : "#64748b"),
-                  border: `1px solid ${active ? (isDark ? "rgba(201,168,76,0.4)" : "#bfdbfe") : (isDark ? "rgba(255,255,255,0.1)" : "#e2e8f0")}`
+                  background: active
+                    ? isObsidian ? "rgba(34,211,238,0.12)" : isDark ? "rgba(201,168,76,0.15)" : "#eff3ff"
+                    : isObsidian ? "rgba(255,255,255,0.04)" : isDark ? "rgba(255,255,255,0.05)" : "#f4f6fb",
+                  color: active
+                    ? isObsidian ? "#22d3ee" : isDark ? "#c9a84c" : "#1e4ed8"
+                    : isObsidian ? "rgba(255,255,255,0.35)" : isDark ? "rgba(255,255,255,0.4)" : "#64748b",
+                  border: `1px solid ${active
+                    ? isObsidian ? "rgba(34,211,238,0.35)" : isDark ? "rgba(201,168,76,0.4)" : "#bfdbfe"
+                    : isObsidian ? "rgba(255,255,255,0.06)" : isDark ? "rgba(255,255,255,0.1)" : "#e2e8f0"}`
                 }}
                 title={t(option.label)}
               >

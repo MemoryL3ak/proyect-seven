@@ -585,3 +585,233 @@ label > *:first-child {
 [data-theme="light"] .progress-bar-fill {
   background: linear-gradient(90deg, #1e4ed8, #3b82f6);
 }
+
+/* ─────────────────────────────────────────────────────────────
+   OBSIDIAN THEME — [data-theme="obsidian"]
+   Dark glass morphism · Electric cyan · Deep space palette
+───────────────────────────────────────────────────────────── */
+[data-theme="obsidian"] {
+  --bg:              #060913;
+  --surface:         rgba(255,255,255,0.04);
+  --surface-solid:   #0d1220;
+  --elevated:        rgba(255,255,255,0.07);
+  --sidebar-bg:      rgba(6,9,19,0.92);
+  --border-muted:    rgba(255,255,255,0.04);
+  --border:          rgba(255,255,255,0.08);
+  --border-strong:   rgba(255,255,255,0.14);
+  --brand:           #22d3ee;
+  --brand-light:     #67e8f9;
+  --brand-dim:       rgba(34,211,238,0.1);
+  --accent2:         #a855f7;
+  --accent2-dim:     rgba(168,85,247,0.1);
+  --gold:            #f59e0b;
+  --gold-light:      #fbbf24;
+  --gold-dim:        rgba(245,158,11,0.12);
+  --gold-btn-text:   #1a1400;
+  --text:            #e2e8f0;
+  --text-muted:      #64748b;
+  --text-faint:      #2d3748;
+  --success:         #10b981;
+  --success-dim:     rgba(16,185,129,0.12);
+  --success-border:  rgba(16,185,129,0.25);
+  --warning:         #f59e0b;
+  --warning-dim:     rgba(245,158,11,0.12);
+  --warning-border:  rgba(245,158,11,0.25);
+  --danger:          #ef4444;
+  --danger-dim:      rgba(239,68,68,0.12);
+  --danger-border:   rgba(239,68,68,0.25);
+  --info:            #22d3ee;
+  --info-dim:        rgba(34,211,238,0.1);
+  --info-border:     rgba(34,211,238,0.2);
+  --banner-bg:       rgba(255,255,255,0.03);
+  --banner-bg-end:   rgba(34,211,238,0.03);
+  --banner-border:   rgba(34,211,238,0.12);
+  --banner-card-bg:  rgba(34,211,238,0.06);
+  --banner-card-border: rgba(34,211,238,0.15);
+}
+
+[data-theme="obsidian"] body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+[data-theme="obsidian"] .surface {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+[data-theme="obsidian"] .surface:hover {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(34,211,238,0.2);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(34,211,238,0.08);
+}
+
+[data-theme="obsidian"] .btn-primary {
+  background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%);
+  border-color: #22d3ee;
+  color: #030712;
+  box-shadow: 0 0 20px rgba(34,211,238,0.35);
+}
+[data-theme="obsidian"] .btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #67e8f9 0%, #22d3ee 100%);
+  box-shadow: 0 0 32px rgba(34,211,238,0.5);
+}
+[data-theme="obsidian"] .btn-ghost {
+  color: var(--text-muted);
+  border-color: rgba(255,255,255,0.1);
+}
+[data-theme="obsidian"] .btn-ghost:hover {
+  background: rgba(255,255,255,0.06);
+  color: var(--text);
+  border-color: rgba(34,211,238,0.25);
+}
+
+[data-theme="obsidian"] .input {
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(255,255,255,0.1);
+  color: var(--text);
+}
+[data-theme="obsidian"] .input:focus {
+  border-color: #22d3ee;
+  box-shadow: 0 0 0 3px rgba(34,211,238,0.12);
+  background: rgba(255,255,255,0.07);
+}
+[data-theme="obsidian"] select.input,
+[data-theme="obsidian"] .input option {
+  background: #0d1220;
+}
+
+[data-theme="obsidian"] .section-label {
+  color: #22d3ee;
+}
+[data-theme="obsidian"] .progress-bar {
+  background: rgba(255,255,255,0.07);
+}
+[data-theme="obsidian"] .progress-bar-fill {
+  background: linear-gradient(90deg, #22d3ee, #a855f7);
+  box-shadow: 0 0 8px rgba(34,211,238,0.5);
+}
+
+[data-theme="obsidian"] .badge-blue {
+  background: rgba(34,211,238,0.1);
+  color: #22d3ee;
+  border-color: rgba(34,211,238,0.25);
+}
+[data-theme="obsidian"] .badge-slate {
+  background: rgba(255,255,255,0.06);
+  color: var(--text-muted);
+  border-color: rgba(255,255,255,0.1);
+}
+
+/* Obsidian scrollbar */
+[data-theme="obsidian"] ::-webkit-scrollbar-thumb {
+  background: rgba(34,211,238,0.2);
+}
+[data-theme="obsidian"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(34,211,238,0.4);
+}
+
+/* table */
+[data-theme="obsidian"] .table thead {
+  background: rgba(34,211,238,0.05);
+}
+[data-theme="obsidian"] .table tbody tr:hover {
+  background: rgba(34,211,238,0.04);
+}
+[data-theme="obsidian"] .table th {
+  color: #22d3ee;
+}
+
+/* Obsidian bg overrides */
+[data-theme="obsidian"] .bg-white { background: rgba(255,255,255,0.04) !important; }
+[data-theme="obsidian"] .bg-slate-50 { background: rgba(255,255,255,0.04) !important; }
+[data-theme="obsidian"] .bg-white\/5,
+[data-theme="obsidian"] .bg-white\/4,
+[data-theme="obsidian"] .bg-white\/10 { background: rgba(255,255,255,0.06) !important; }
+[data-theme="obsidian"] .border-slate-200,
+[data-theme="obsidian"] .border-white\/10 { border-color: rgba(255,255,255,0.08) !important; }
+[data-theme="obsidian"] .text-slate-500,
+[data-theme="obsidian"] .text-slate-600 { color: #64748b !important; }
+[data-theme="obsidian"] .text-slate-900,
+[data-theme="obsidian"] .text-slate-800 { color: #e2e8f0 !important; }
+
+/* ── Animated mesh background for obsidian ── */
+.obsidian-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+.obsidian-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.12;
+  animation: orbFloat 14s ease-in-out infinite;
+}
+.obsidian-orb-1 {
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, #22d3ee 0%, transparent 70%);
+  top: -200px; left: -100px;
+  animation-duration: 16s;
+}
+.obsidian-orb-2 {
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, #a855f7 0%, transparent 70%);
+  bottom: -150px; right: -100px;
+  animation-duration: 20s;
+  animation-delay: -8s;
+}
+.obsidian-orb-3 {
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, #f59e0b 0%, transparent 70%);
+  top: 50%; left: 50%;
+  animation-duration: 24s;
+  animation-delay: -4s;
+  opacity: 0.07;
+}
+
+@keyframes orbFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(40px, -30px) scale(1.05); }
+  50% { transform: translate(-20px, 20px) scale(0.97); }
+  75% { transform: translate(30px, 40px) scale(1.03); }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-200%); }
+  100% { transform: translateX(200%); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 12px rgba(34,211,238,0.3); }
+  50% { box-shadow: 0 0 24px rgba(34,211,238,0.6); }
+}
+
+/* glass card for obsidian */
+.glass-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: background 200ms, border-color 200ms, box-shadow 200ms;
+}
+.glass-card:hover {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(34,211,238,0.2);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(34,211,238,0.06);
+}
+
+/* glow text */
+.glow-cyan { color: #22d3ee; text-shadow: 0 0 20px rgba(34,211,238,0.5); }
+.glow-purple { color: #a855f7; text-shadow: 0 0 20px rgba(168,85,247,0.5); }
+.glow-gold { color: #f59e0b; text-shadow: 0 0 20px rgba(245,158,11,0.5); }
