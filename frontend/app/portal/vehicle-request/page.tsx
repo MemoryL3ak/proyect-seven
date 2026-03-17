@@ -508,7 +508,7 @@ export default function VehicleRequestPortalPage() {
   return (
     <div className="min-h-screen px-4 py-8 sm:px-6 lg:px-8" style={{ background: "var(--elevated)" }}>
       <div className="mx-auto max-w-6xl space-y-6">
-        <section className="overflow-hidden rounded-[32px] px-6 py-7 shadow-[0_24px_80px_rgba(15,23,42,0.08)] sm:px-8" style={{ background: "linear-gradient(135deg, var(--brand-dim) 0%, #e0f2fe 100%)", border: "1px solid var(--info-border)" }}>
+        <section className="overflow-hidden rounded-[32px] px-6 py-7 shadow-[0_24px_80px_rgba(15,23,42,0.08)] sm:px-8" style={{ background: "linear-gradient(135deg, var(--banner-bg) 0%, var(--banner-bg-end) 100%)", border: "1px solid var(--banner-border)" }}>
           <div className="flex flex-wrap items-end justify-between gap-5">
             <div className="max-w-3xl">
               <p className="text-[11px] uppercase tracking-[0.36em]" style={{ color: "var(--brand)" }}>Movilidad operativa</p>
@@ -518,11 +518,11 @@ export default function VehicleRequestPortalPage() {
               </p>
             </div>
             <div className="grid min-w-[260px] gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl px-4 py-3" style={{ border: "1px solid var(--info-border)", background: "var(--surface)" }}>
+              <div className="rounded-2xl px-4 py-3" style={{ border: "1px solid var(--banner-border)", background: "var(--surface)" }}>
                 <div className="text-[11px] uppercase tracking-[0.24em]" style={{ color: "var(--text-muted)" }}>Portal</div>
                 <div className="mt-2 text-xl font-semibold" style={{ color: "var(--text)" }}>{athlete ? "Sesion activa" : "Acceso privado"}</div>
               </div>
-              <div className="rounded-2xl px-4 py-3" style={{ border: "1px solid var(--info-border)", background: "var(--surface)" }}>
+              <div className="rounded-2xl px-4 py-3" style={{ border: "1px solid var(--banner-border)", background: "var(--surface)" }}>
                 <div className="text-[11px] uppercase tracking-[0.24em]" style={{ color: "var(--text-muted)" }}>Solicitudes</div>
                 <div className="mt-2 text-xl font-semibold" style={{ color: "var(--text)" }}>{trips.length}</div>
               </div>
@@ -562,7 +562,7 @@ export default function VehicleRequestPortalPage() {
                   <p className="text-xs uppercase tracking-[0.24em]" style={{ color: "var(--text-muted)" }}>Recuperacion de acceso</p>
                   <h2 className="mt-2 text-3xl font-semibold tracking-tight" style={{ color: "var(--text)" }}>Solicita tu codigo</h2>
                 </div>
-                <span className="rounded-full px-3 py-1 text-xs font-semibold" style={{ border: "1px solid var(--info-border)", background: "var(--brand-dim)", color: "var(--brand)" }}>Portal seguro</span>
+                <span className="rounded-full px-3 py-1 text-xs font-semibold" style={{ border: "1px solid var(--banner-border)", background: "var(--brand-dim)", color: "var(--brand)" }}>Portal seguro</span>
               </div>
               <p className="mt-3 max-w-lg text-sm leading-6" style={{ color: "var(--text-muted)" }}>
                 Si no tienes tu codigo, solicita el acceso con tu correo registrado y luego vuelve para revisar el estado de tus solicitudes.
@@ -654,7 +654,7 @@ export default function VehicleRequestPortalPage() {
                   type="button"
                   className="rounded-[22px] px-5 py-4 text-left transition"
                   style={activeTab === "request"
-                    ? { background: "linear-gradient(135deg, var(--brand-dim) 0%, #e0f2fe 100%)", border: "1px solid var(--info-border)", color: "var(--text)" }
+                    ? { background: "linear-gradient(135deg, var(--banner-bg) 0%, var(--banner-bg-end) 100%)", border: "1px solid var(--banner-border)", color: "var(--text)" }
                     : { border: "1px solid var(--border)", background: "var(--elevated)", color: "var(--text-muted)" }}
                   onClick={() => setActiveTab("request")}
                 >
@@ -668,7 +668,7 @@ export default function VehicleRequestPortalPage() {
                   type="button"
                   className="rounded-[22px] px-5 py-4 text-left transition"
                   style={activeTab === "status"
-                    ? { background: "linear-gradient(135deg, var(--brand-dim) 0%, #e0f2fe 100%)", border: "1px solid var(--info-border)", color: "var(--text)" }
+                    ? { background: "linear-gradient(135deg, var(--banner-bg) 0%, var(--banner-bg-end) 100%)", border: "1px solid var(--banner-border)", color: "var(--text)" }
                     : { border: "1px solid var(--border)", background: "var(--elevated)", color: "var(--text-muted)" }}
                   onClick={() => setActiveTab("status")}
                 >

@@ -23,6 +23,13 @@
   --brand:        #1e3a8a;   /* navy from logo — blue-900 */
   --brand-light:  #3b82f6;   /* interactive blue */
   --brand-dim:    #e8eef8;   /* slightly more blue — active item bg */
+
+  /* ── Page banners */
+  --banner-bg:        #f5ede0;   /* dark mode: warm sand/arena */
+  --banner-bg-end:    #ede3d4;   /* dark mode: banner gradient end */
+  --banner-border:    #e0d0be;   /* dark mode: banner border */
+  --banner-card-bg:   #fffaf5;   /* dark mode: inner stat card bg */
+  --banner-card-border: #e8d8c4; /* dark mode: inner stat card border */
   --gold:         #d4a843;   /* brighter gold */
   --gold-light:   #eacc6a;
   --gold-dim:     rgba(201,168,76,0.12);
@@ -72,6 +79,23 @@ body {
 .bg-mesh {
   background: var(--bg);
   min-height: 100vh;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   PAGE BANNERS — hero sections at top of each module
+───────────────────────────────────────────────────────────── */
+.page-banner {
+  overflow: hidden;
+  border-radius: 32px;
+  padding: 28px 28px;
+  background: linear-gradient(135deg, var(--banner-bg) 0%, var(--banner-bg-end) 100%);
+  border: 1px solid var(--banner-border);
+}
+.page-banner-card {
+  background: var(--banner-card-bg);
+  border: 1px solid var(--banner-card-border);
+  border-radius: 16px;
+  padding: 12px 16px;
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -523,6 +547,13 @@ label > *:first-child {
   --text:           #0f172a;
   --text-muted:     #4a5568;
   --text-faint:     #94a3b8;
+
+  /* ── Page banners — light: clean white */
+  --banner-bg:          #ffffff;
+  --banner-bg-end:      #f8faff;
+  --banner-border:      #e2e8f0;
+  --banner-card-bg:     #f8faff;
+  --banner-card-border: #e2e8f0;
 }
 
 [data-theme="light"] .surface {

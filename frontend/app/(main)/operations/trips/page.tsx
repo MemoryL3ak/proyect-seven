@@ -519,7 +519,7 @@ export default function TripsPage() {
 
       <section
         className="overflow-hidden rounded-[32px] px-6 py-7"
-        style={{ background: "linear-gradient(135deg, var(--brand-dim) 0%, #e0f2fe 100%)", border: "1px solid var(--info-border)" }}
+        style={{ background: "linear-gradient(135deg, var(--banner-bg) 0%, var(--banner-bg-end) 100%)", border: "1px solid var(--banner-border)" }}
       >
         <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
           <div className="max-w-3xl">

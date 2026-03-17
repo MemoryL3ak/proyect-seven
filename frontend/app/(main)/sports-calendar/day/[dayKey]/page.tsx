@@ -403,7 +403,7 @@ export default function SportsCalendarDayDetailPage() {
     <div className="space-y-6">
       <section
         className="rounded-[28px] p-6 shadow-xl"
-        style={{ background: "linear-gradient(135deg, var(--brand-dim) 0%, #e0f2fe 100%)", border: "1px solid var(--info-border)" }}
+        style={{ background: "linear-gradient(135deg, var(--banner-bg) 0%, var(--banner-bg-end) 100%)", border: "1px solid var(--banner-border)" }}
       >
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-3xl">

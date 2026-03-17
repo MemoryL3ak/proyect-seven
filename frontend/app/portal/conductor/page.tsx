@@ -440,7 +440,7 @@ export default function DriverPortalPage() {
 
   return (
     <div className="space-y-6">
-      <section className="surface rounded-3xl p-6" style={{ background: "linear-gradient(135deg, var(--brand-dim) 0%, #e0f2fe 100%)", border: "1px solid var(--info-border)" }}>
+      <section className="surface rounded-3xl p-6" style={{ background: "linear-gradient(135deg, var(--banner-bg) 0%, var(--banner-bg-end) 100%)", border: "1px solid var(--banner-border)" }}>
         <p className="text-xs uppercase tracking-[0.3em]" style={{ color: "var(--brand)" }}>Seven</p>
         <h1 className="font-sans font-bold text-3xl" style={{ color: "var(--text)" }}>{t("Portal Conductor")}</h1>
         <p className="text-sm mt-2" style={{ color: "var(--text-muted)" }}>{t("Revisa tus viajes y reporta cada etapa del traslado.")}</p>
