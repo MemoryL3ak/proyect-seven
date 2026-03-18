@@ -13,7 +13,9 @@ async function bootstrap() {
     'https://proyect-seven-q9q8jgx37-ariels-projects-b6125cb2.vercel.app',
     'https://proyect-seven-cqgvzzv14-ariels-projects-b6125cb2.vercel.app',
     'https://seven.management',
-    'https://www.seven.management'
+    'https://www.seven.management',
+    'https://sevenarena.app',
+    'https://www.sevenarena.app'
   ]);
   app.enableCors({
     origin: (origin, callback) => {
@@ -22,7 +24,7 @@ async function bootstrap() {
       if (origin.endsWith('.vercel.app')) return callback(null, true);
       return callback(new Error('Not allowed by CORS'));
     },
-    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     exposedHeaders: ['Authorization', 'x-refresh-token'],
     credentials: true,
