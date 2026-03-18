@@ -997,7 +997,12 @@ export default function UsuariosPage() {
                       <button
                         key={type}
                         type="button"
-                        onClick={() => setForm((f) => ({ ...f, loginType: type, passwordEditable: type === "username" }))}
+                        onClick={() => setForm((f) => ({
+                          ...f,
+                          loginType: type,
+                          passwordEditable: type === "username",
+                          tempPassword: type === "username" ? "" : generateTempPassword(),
+                        }))}
                         style={{
                           padding: "7px 16px", borderRadius: "8px", fontSize: "12.5px", fontWeight: 600,
                           cursor: "pointer", transition: "all 150ms", border: "1px solid",
@@ -1096,13 +1101,16 @@ export default function UsuariosPage() {
                     <input
                       type={showTempPassword ? "text" : "password"}
                       value={form.tempPassword}
-                      onChange={form.passwordEditable || form.loginType === "username" ? (e) => setForm((f) => ({ ...f, tempPassword: e.target.value })) : undefined}
-                      readOnly={!form.passwordEditable && form.loginType !== "username"}
+                      onChange={form.loginType === "username" || form.passwordEditable ? (e) => setForm((f) => ({ ...f, tempPassword: e.target.value })) : undefined}
+                      readOnly={form.loginType !== "username" && !form.passwordEditable}
+                      placeholder={form.loginType === "username" ? "Escribe la contraseña" : undefined}
                       style={{
                         ...selM,
                         padding: "11px 80px 11px 14px",
                         borderRadius: "10px", fontSize: "14px", outline: "none", width: "100%",
-                        fontFamily: "monospace", letterSpacing: "0.05em",
+                        fontFamily: form.loginType === "username" ? "inherit" : "monospace",
+                        letterSpacing: form.loginType === "username" ? "normal" : "0.05em",
+                        cursor: form.loginType !== "username" && !form.passwordEditable ? "default" : "text",
                       }}
                     />
                     <div style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", display: "flex", gap: "6px" }}>
