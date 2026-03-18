@@ -1,6 +1,6 @@
-﻿"use client";
+"use client";
 
-import PageHeader from "@/components/PageHeader";
+import { useTheme } from "@/lib/theme";
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("es-CL", {
@@ -9,41 +9,38 @@ const formatCurrency = (value: number) =>
     maximumFractionDigits: 0,
   }).format(value);
 
-const formatNumber = (value: number) =>
-  new Intl.NumberFormat("es-CL").format(value);
-
 const commercialBuckets = [
   {
     key: "transport",
-    label: "Vehiculos",
+    label: "Vehículos",
     awarded: 486_000_000,
     consumed: 318_000_000,
     forecast: 442_000_000,
-    tone: "from-sky-500 via-cyan-500 to-teal-400",
+    accentIndex: 0,
   },
   {
     key: "hospitality",
-    label: "Hoteleria",
+    label: "Hotelería",
     awarded: 932_000_000,
     consumed: 701_000_000,
     forecast: 884_000_000,
-    tone: "from-emerald-500 via-teal-500 to-cyan-500",
+    accentIndex: 1,
   },
   {
     key: "food",
-    label: "Alimentacion",
+    label: "Alimentación",
     awarded: 624_000_000,
     consumed: 356_000_000,
     forecast: 598_000_000,
-    tone: "from-amber-400 via-orange-400 to-rose-400",
+    accentIndex: 2,
   },
   {
     key: "production",
-    label: "Produccion",
+    label: "Producción",
     awarded: 278_000_000,
     consumed: 174_000_000,
     forecast: 241_000_000,
-    tone: "from-fuchsia-500 via-violet-500 to-indigo-500",
+    accentIndex: 3,
   },
 ] as const;
 
@@ -55,98 +52,11 @@ const spendByWeek = [
   { label: "Sem 5", amount: 355_000_000 },
 ];
 
-const BudgetMeter = ({
-  label,
-  awarded,
-  consumed,
-  forecast,
-  tone,
-}: {
-  label: string;
-  awarded: number;
-  consumed: number;
-  forecast: number;
-  tone: string;
-}) => {
-  const consumptionPct = Math.min(100, Math.round((consumed / awarded) * 100));
-  const forecastPct = Math.min(100, Math.round((forecast / awarded) * 100));
-
-  return (
-    <article className="rounded-[28px] border border-white/60 bg-white/90 p-5 shadow-[0_20px_45px_-30px_rgba(15,23,42,0.45)] backdrop-blur">
-      <div>
-        <p className="text-[11px] uppercase tracking-[0.26em] text-slate-400">{label}</p>
-        <p className="mt-3 text-2xl font-semibold text-slate-950">{formatCurrency(consumed)}</p>
-        <p className="mt-1 text-sm text-slate-500">consumido de {formatCurrency(awarded)}</p>
-      </div>
-
-      <div className="mt-5 rounded-2xl border border-slate-100 bg-slate-50/80 px-3 py-3">
-        <div className="text-[10px] uppercase tracking-[0.24em] text-slate-400">Forecast</div>
-        <div className="mt-1 text-base font-semibold text-slate-900">{formatCurrency(forecast)}</div>
-      </div>
-
-      <div className="mt-5 space-y-3">
-        <div>
-          <div className="mb-1 flex items-center justify-between text-xs text-slate-500">
-            <span>% consumido</span>
-            <span className="font-semibold text-slate-800">{consumptionPct}%</span>
-          </div>
-          <div className="h-3 overflow-hidden rounded-full bg-slate-100">
-            <div className={`h-full rounded-full bg-gradient-to-r ${tone}`} style={{ width: `${consumptionPct}%` }} />
-          </div>
-        </div>
-        <div>
-          <div className="mb-1 flex items-center justify-between text-xs text-slate-500">
-            <span>% comprometido proyectado</span>
-            <span className="font-semibold text-slate-800">{forecastPct}%</span>
-          </div>
-          <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-            <div className="h-full rounded-full bg-slate-400" style={{ width: `${forecastPct}%` }} />
-          </div>
-        </div>
-      </div>
-    </article>
-  );
-};
-
-const CommercialBarChart = ({
-  rows,
-}: {
-  rows: { label: string; amount: number }[];
-}) => {
-  const max = Math.max(...rows.map((row) => row.amount), 1);
-
-  return (
-    <div className="space-y-4">
-      {rows.map((row, index) => {
-        const width = Math.max(10, Math.round((row.amount / max) * 100));
-        return (
-          <div key={row.label} className="grid gap-2 md:grid-cols-[80px_1fr_120px] md:items-center">
-            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-              {row.label}
-            </div>
-            <div className="h-11 overflow-hidden rounded-2xl bg-slate-100">
-              <div
-                className={`flex h-full items-center rounded-2xl px-4 text-sm font-medium text-white shadow-lg ${
-                  index % 2 === 0
-                    ? "bg-gradient-to-r from-sky-600 via-cyan-500 to-teal-400"
-                    : "bg-gradient-to-r from-indigo-600 via-violet-500 to-fuchsia-500"
-                }`}
-                style={{ width: `${width}%` }}
-              >
-                {formatCurrency(row.amount)}
-              </div>
-            </div>
-            <div className="text-right text-sm text-slate-500">
-              {formatNumber(Math.round(row.amount / 1_000_000))} MM
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-};
-
 export default function CommercialDashboardPage() {
+  const { theme } = useTheme();
+  const isObsidian = theme === "obsidian";
+  const isAtlas = theme === "atlas";
+
   const totals = commercialBuckets.reduce(
     (acc, item) => {
       acc.awarded += item.awarded;
@@ -160,114 +70,294 @@ export default function CommercialDashboardPage() {
   const consumptionPct = Math.round((totals.consumed / totals.awarded) * 100);
   const forecastPct = Math.round((totals.forecast / totals.awarded) * 100);
 
+  const pal = isObsidian
+    ? {
+        accents: ["#22d3ee", "#a855f7", "#f59e0b", "#10b981"],
+        cardBg: "#0e1728",
+        cardBorder: "rgba(34,211,238,0.1)",
+        cardBorderTop: (c: string) => `2px solid ${c}`,
+        innerBg: "#0a1322",
+        innerBorder: "rgba(34,211,238,0.1)",
+        textPrimary: "#e2e8f0",
+        textMuted: "rgba(255,255,255,0.45)",
+        textFaint: "rgba(255,255,255,0.25)",
+        progressTrack: "#0a1322",
+        shadow: "0 4px 24px rgba(0,0,0,0.55)",
+        tag: { bg: "rgba(34,211,238,0.08)", color: "rgba(255,255,255,0.35)", border: "rgba(34,211,238,0.15)" },
+      }
+    : isAtlas
+    ? {
+        accents: ["#3b5bdb", "#7c3aed", "#f59e0b", "#16a34a"],
+        cardBg: "#ffffff",
+        cardBorder: "#e8edf5",
+        cardBorderTop: (c: string) => `2px solid ${c}`,
+        innerBg: "#f8fafc",
+        innerBorder: "#e8edf5",
+        textPrimary: "#0f172a",
+        textMuted: "#64748b",
+        textFaint: "#94a3b8",
+        progressTrack: "#f1f5f9",
+        shadow: "0 1px 4px rgba(0,0,0,0.07)",
+        tag: { bg: "#f1f5f9", color: "#64748b", border: "#e2e8f0" },
+      }
+    : theme === "dark"
+    ? {
+        accents: ["#c9a84c", "#818cf8", "#f59e0b", "#10b981"],
+        cardBg: "var(--surface)",
+        cardBorder: "var(--border)",
+        cardBorderTop: (c: string) => `2px solid ${c}`,
+        innerBg: "var(--elevated)",
+        innerBorder: "var(--border-muted)",
+        textPrimary: "var(--text)",
+        textMuted: "var(--text-muted)",
+        textFaint: "var(--text-faint)",
+        progressTrack: "var(--elevated)",
+        shadow: "0 2px 12px rgba(0,0,0,0.35)",
+        tag: { bg: "var(--elevated)", color: "var(--text-faint)", border: "var(--border-muted)" },
+      }
+    : {
+        // light
+        accents: ["#1e3a8a", "#7c3aed", "#0ea5e9", "#16a34a"],
+        cardBg: "#ffffff",
+        cardBorder: "#e8edf5",
+        cardBorderTop: (c: string) => `2px solid ${c}`,
+        innerBg: "#f8fafc",
+        innerBorder: "#e8edf5",
+        textPrimary: "#0f172a",
+        textMuted: "#64748b",
+        textFaint: "#94a3b8",
+        progressTrack: "#f1f5f9",
+        shadow: "0 1px 4px rgba(0,0,0,0.07)",
+        tag: { bg: "#f1f5f9", color: "#64748b", border: "#e2e8f0" },
+      };
+
+  const maxWeekAmount = Math.max(...spendByWeek.map((w) => w.amount), 1);
+
   return (
-    <div className="space-y-8">
-      <PageHeader
-        title="Dashboard comercial"
-        description="Presupuesto, consumo y forecast ficticio de servicios operativos criticos."
-      />
+    <div className="space-y-6" style={{ animation: "fadeInUp 0.4s ease" }}>
+      {/* ── Header */}
+      <div>
+        <p style={{ fontSize: "11px", color: pal.textFaint, textTransform: "uppercase", letterSpacing: "0.15em", fontWeight: 600 }}>
+          Control comercial
+        </p>
+        <h1 style={{ fontSize: "1.6rem", fontWeight: 700, color: pal.textPrimary, marginTop: "4px" }}>
+          Dashboard consumo operacional
+        </h1>
+        <p style={{ fontSize: "13px", color: pal.textMuted, marginTop: "4px" }}>
+          Vista ejecutiva ficticia para seguir presupuesto adjudicado, ejecución acumulada y proyección de cierre por servicio crítico.
+        </p>
+      </div>
 
-      <section className="relative overflow-hidden rounded-[36px] border border-slate-200/80 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.18),_transparent_26%),radial-gradient(circle_at_85%_10%,_rgba(16,185,129,0.18),_transparent_24%),linear-gradient(135deg,_#071a33_0%,_#102d59_48%,_#0f766e_100%)] p-7 text-white shadow-[0_30px_90px_-45px_rgba(15,23,42,0.8)]">
-        <div className="grid gap-6 xl:grid-cols-[1.45fr_0.75fr]">
-          <div>
-            <p className="text-[11px] uppercase tracking-[0.32em] text-white/60">Control comercial</p>
-            <h1 className="mt-3 max-w-3xl text-4xl font-semibold tracking-tight">
-              Dashboard consumo operacional
-            </h1>
-            <p className="mt-4 max-w-2xl text-sm leading-6 text-white/72">
-              Vista ejecutiva ficticia para seguir presupuesto adjudicado, ejecucion acumulada y
-              proyeccion de cierre por servicio critico.
+      {/* ── Summary KPIs */}
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
+        {[
+          { label: "Adjudicado total", value: formatCurrency(totals.awarded), color: pal.accents[0] },
+          { label: "Consumido acumulado", value: formatCurrency(totals.consumed), color: pal.accents[1] },
+          { label: "Uso total", value: `${consumptionPct}%`, color: pal.accents[2] },
+        ].map((kpi, i) => (
+          <div
+            key={i}
+            style={{
+              background: pal.cardBg,
+              border: `1px solid ${pal.cardBorder}`,
+              borderTop: pal.cardBorderTop(kpi.color),
+              borderRadius: "14px",
+              padding: "18px 20px",
+              boxShadow: pal.shadow,
+              animation: `fadeInUp 0.4s ease both`,
+              animationDelay: `${i * 0.06}s`,
+            }}
+          >
+            <p style={{ fontSize: "10px", color: pal.textFaint, textTransform: "uppercase", letterSpacing: "0.15em", fontWeight: 600 }}>
+              {kpi.label}
             </p>
-
-            <div className="mt-6 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-4 backdrop-blur">
-                <div className="text-[11px] uppercase tracking-[0.22em] text-white/55">Adjudicado</div>
-                <div className="mt-2 text-2xl font-semibold">{formatCurrency(totals.awarded)}</div>
-              </div>
-              <div className="rounded-2xl border border-emerald-300/30 bg-emerald-300/10 px-4 py-4 backdrop-blur">
-                <div className="text-[11px] uppercase tracking-[0.22em] text-emerald-100/80">Consumido</div>
-                <div className="mt-2 text-2xl font-semibold">{formatCurrency(totals.consumed)}</div>
-              </div>
-              <div className="rounded-2xl border border-sky-300/30 bg-sky-300/10 px-4 py-4 backdrop-blur">
-                <div className="text-[11px] uppercase tracking-[0.22em] text-sky-100/80">Uso total</div>
-                <div className="mt-2 text-2xl font-semibold">{consumptionPct}%</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-[28px] border border-white/12 bg-white/8 p-5 backdrop-blur">
-            <div className="flex items-center justify-between text-sm text-white/70">
-              <span>Forecast de cierre</span>
-              <span className="font-semibold text-white">{forecastPct}%</span>
-            </div>
-            <div className="mt-4 h-3 overflow-hidden rounded-full bg-white/10">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-emerald-300 via-cyan-300 to-sky-300"
-                style={{ width: `${Math.min(100, forecastPct)}%` }}
-              />
-            </div>
-            <div className="mt-5 text-3xl font-semibold">{formatCurrency(totals.forecast)}</div>
-            <p className="mt-2 text-sm leading-6 text-white/68">
-              El escenario base proyecta cierre sobre el 92% del presupuesto adjudicado, con presion
-              principal en hoteleria y movilidad de ultima milla.
+            <p style={{ fontSize: "1.6rem", fontWeight: 800, color: kpi.color, marginTop: "8px", lineHeight: 1, fontVariantNumeric: "tabular-nums",
+              ...(isObsidian ? { textShadow: `0 0 22px ${kpi.color}55` } : {}) }}>
+              {kpi.value}
             </p>
           </div>
+        ))}
+      </div>
+
+      {/* ── Forecast de cierre */}
+      <div style={{
+        background: pal.cardBg,
+        border: `1px solid ${pal.cardBorder}`,
+        borderTop: pal.cardBorderTop(pal.accents[0]),
+        borderRadius: "14px",
+        padding: "20px",
+        boxShadow: pal.shadow,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+          <p style={{ fontSize: "11px", color: pal.accents[0], fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase" }}>
+            Forecast de cierre
+          </p>
+          <span style={{ fontSize: "13px", fontWeight: 700, color: pal.accents[0] }}>{forecastPct}%</span>
         </div>
-      </section>
+        <div style={{ height: "7px", background: pal.progressTrack, borderRadius: "99px", overflow: "hidden", marginBottom: "12px" }}>
+          <div style={{ height: "100%", width: `${Math.min(100, forecastPct)}%`, background: pal.accents[0], borderRadius: "99px", transition: "width 0.8s ease",
+            ...(isObsidian ? { boxShadow: `0 0 8px ${pal.accents[0]}88` } : {}) }} />
+        </div>
+        <div style={{ display: "flex", alignItems: "baseline", gap: "12px" }}>
+          <p style={{ fontSize: "1.5rem", fontWeight: 700, color: pal.textPrimary, fontVariantNumeric: "tabular-nums" }}>
+            {formatCurrency(totals.forecast)}
+          </p>
+          <p style={{ fontSize: "12px", color: pal.textMuted }}>
+            Proyección base: cierre en el {forecastPct}% del adjudicado, presión principal en hotelería y movilidad.
+          </p>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "8px" }}>
+          <span style={{
+            fontSize: "10px", fontWeight: 600, padding: "2px 8px", borderRadius: "99px",
+            background: pal.tag.bg, color: pal.tag.color, border: `1px solid ${pal.tag.border}`,
+            textTransform: "uppercase", letterSpacing: "0.1em",
+          }}>
+            Datos ficticios
+          </span>
+        </div>
+      </div>
 
-      <section className="space-y-5">
-        <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
-          {commercialBuckets.map((bucket) => (
-            <BudgetMeter
+      {/* ── Per-service breakdown */}
+      <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
+        {commercialBuckets.map((bucket, i) => {
+          const color = pal.accents[bucket.accentIndex];
+          const consumptionPctLocal = Math.min(100, Math.round((bucket.consumed / bucket.awarded) * 100));
+          const forecastPctLocal = Math.min(100, Math.round((bucket.forecast / bucket.awarded) * 100));
+          return (
+            <div
               key={bucket.key}
-              label={bucket.label}
-              awarded={bucket.awarded}
-              consumed={bucket.consumed}
-              forecast={bucket.forecast}
-              tone={bucket.tone}
-            />
-          ))}
-        </div>
+              style={{
+                background: pal.cardBg,
+                border: `1px solid ${pal.cardBorder}`,
+                borderTop: pal.cardBorderTop(color),
+                borderRadius: "14px",
+                padding: "18px",
+                boxShadow: pal.shadow,
+                animation: "fadeInUp 0.4s ease both",
+                animationDelay: `${i * 0.06}s`,
+              }}
+            >
+              <p style={{ fontSize: "10px", color: pal.textFaint, textTransform: "uppercase", letterSpacing: "0.15em", fontWeight: 600 }}>
+                {bucket.label}
+              </p>
+              <p style={{ fontSize: "1.35rem", fontWeight: 700, color: pal.textPrimary, marginTop: "8px", lineHeight: 1.1, fontVariantNumeric: "tabular-nums" }}>
+                {formatCurrency(bucket.consumed)}
+              </p>
+              <p style={{ fontSize: "11px", color: pal.textMuted, marginTop: "3px" }}>
+                consumido de {formatCurrency(bucket.awarded)}
+              </p>
 
-        <div className="rounded-[30px] border border-slate-200/80 bg-white p-6 shadow-[0_18px_55px_-35px_rgba(15,23,42,0.4)]">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <p className="text-[11px] uppercase tracking-[0.24em] text-slate-400">Consumo acumulado</p>
-              <h2 className="mt-2 text-3xl font-semibold text-slate-950">Tendencia semanal de ejecucion</h2>
-            </div>
-            <div className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-              Datos ficticios
-            </div>
-          </div>
-          <div className="mt-8">
-            <CommercialBarChart rows={spendByWeek} />
-          </div>
-        </div>
+              <div style={{ marginTop: "14px", background: pal.innerBg, border: `1px solid ${pal.innerBorder}`, borderRadius: "10px", padding: "10px 12px" }}>
+                <p style={{ fontSize: "9px", color: pal.textFaint, textTransform: "uppercase", letterSpacing: "0.2em" }}>Forecast</p>
+                <p style={{ fontSize: "1rem", fontWeight: 700, color: pal.textPrimary, marginTop: "2px", fontVariantNumeric: "tabular-nums" }}>
+                  {formatCurrency(bucket.forecast)}
+                </p>
+              </div>
 
-        <div className="rounded-[30px] border border-slate-200/80 bg-white p-6 shadow-[0_18px_55px_-35px_rgba(15,23,42,0.4)]">
-          <p className="text-[11px] uppercase tracking-[0.24em] text-slate-400">Lectura ejecutiva</p>
-          <h2 className="mt-2 text-3xl font-semibold text-slate-950">Foco de consumo</h2>
-          <div className="mt-6 space-y-4">
-            {commercialBuckets.map((bucket) => {
-              const pct = Math.round((bucket.consumed / bucket.awarded) * 100);
-              return (
-                <div key={bucket.key}>
-                  <div className="mb-2 flex items-center justify-between text-sm text-slate-600">
-                    <span>{bucket.label}</span>
-                    <span className="font-semibold text-slate-950">{pct}%</span>
+              <div style={{ marginTop: "14px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: pal.textMuted, marginBottom: "4px" }}>
+                    <span>% consumido</span>
+                    <span style={{ color, fontWeight: 600 }}>{consumptionPctLocal}%</span>
                   </div>
-                  <div className="h-3 overflow-hidden rounded-full bg-slate-100">
-                    <div
-                      className={`h-full rounded-full bg-gradient-to-r ${bucket.tone}`}
-                      style={{ width: `${Math.min(100, pct)}%` }}
-                    />
+                  <div style={{ height: "6px", background: pal.progressTrack, borderRadius: "99px", overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${consumptionPctLocal}%`, background: color, borderRadius: "99px", transition: "width 0.8s ease",
+                      ...(isObsidian ? { boxShadow: `0 0 6px ${color}88` } : {}) }} />
                   </div>
                 </div>
-              );
-            })}
-          </div>
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: pal.textMuted, marginBottom: "4px" }}>
+                    <span>% comprometido proyectado</span>
+                    <span style={{ color: pal.textMuted, fontWeight: 600 }}>{forecastPctLocal}%</span>
+                  </div>
+                  <div style={{ height: "4px", background: pal.progressTrack, borderRadius: "99px", overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${forecastPctLocal}%`, background: pal.textFaint, borderRadius: "99px", transition: "width 0.8s ease" }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ── Weekly spend trend */}
+      <div style={{
+        background: pal.cardBg,
+        border: `1px solid ${pal.cardBorder}`,
+        borderTop: pal.cardBorderTop(pal.accents[1]),
+        borderRadius: "14px",
+        padding: "20px",
+        boxShadow: pal.shadow,
+      }}>
+        <div style={{ marginBottom: "16px" }}>
+          <p style={{ fontSize: "11px", color: pal.accents[1], fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase" }}>
+            Consumo acumulado
+          </p>
+          <p style={{ fontSize: "15px", fontWeight: 600, color: pal.textPrimary, marginTop: "2px" }}>
+            Tendencia semanal de ejecución
+          </p>
         </div>
-      </section>
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          {spendByWeek.map((week, i) => {
+            const barPct = Math.max(8, Math.round((week.amount / maxWeekAmount) * 100));
+            const color = i % 2 === 0 ? pal.accents[0] : pal.accents[1];
+            return (
+              <div key={week.label} style={{ display: "grid", gridTemplateColumns: "56px 1fr 110px", alignItems: "center", gap: "10px" }}>
+                <p style={{ fontSize: "11px", fontWeight: 600, color: pal.textMuted, textTransform: "uppercase", letterSpacing: "0.15em" }}>
+                  {week.label}
+                </p>
+                <div style={{ height: "34px", background: pal.progressTrack, borderRadius: "8px", overflow: "hidden" }}>
+                  <div style={{
+                    height: "100%", width: `${barPct}%`,
+                    background: color, borderRadius: "8px",
+                    transition: "width 0.8s ease",
+                    display: "flex", alignItems: "center", paddingLeft: "10px",
+                    ...(isObsidian ? { boxShadow: `0 0 8px ${color}66` } : {}),
+                  }} />
+                </div>
+                <p style={{ fontSize: "12px", color: pal.textMuted, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+                  {formatCurrency(week.amount)}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Executive summary bars */}
+      <div style={{
+        background: pal.cardBg,
+        border: `1px solid ${pal.cardBorder}`,
+        borderTop: pal.cardBorderTop(pal.accents[2]),
+        borderRadius: "14px",
+        padding: "20px",
+        boxShadow: pal.shadow,
+      }}>
+        <p style={{ fontSize: "11px", color: pal.accents[2], fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: "4px" }}>
+          Lectura ejecutiva
+        </p>
+        <p style={{ fontSize: "15px", fontWeight: 600, color: pal.textPrimary, marginBottom: "16px" }}>
+          Foco de consumo por servicio
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          {commercialBuckets.map((bucket) => {
+            const color = pal.accents[bucket.accentIndex];
+            const pct = Math.round((bucket.consumed / bucket.awarded) * 100);
+            return (
+              <div key={bucket.key}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: pal.textMuted, marginBottom: "5px" }}>
+                  <span>{bucket.label}</span>
+                  <span style={{ color, fontWeight: 700 }}>{pct}%</span>
+                </div>
+                <div style={{ height: "6px", background: pal.progressTrack, borderRadius: "99px", overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${Math.min(100, pct)}%`, background: color, borderRadius: "99px", transition: "width 0.8s ease",
+                    ...(isObsidian ? { boxShadow: `0 0 6px ${color}88` } : {}) }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
