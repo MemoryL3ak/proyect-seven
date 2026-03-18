@@ -1,7 +1,7 @@
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className="min-h-screen flex"
+      className="min-h-screen flex flex-col lg:flex-row"
       style={{
         background: "#020b1a",
         position: "relative",
@@ -105,18 +105,30 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         }
       `}</style>
 
-      {/* ── Left Panel — Branding (hidden on small screens) ── */}
+      {/* ── Left Panel — Branding ── */}
       <div
-        className="hidden lg:flex flex-col justify-between"
+        className="flex flex-col justify-between lg:justify-between"
         style={{
-          width: "52%",
-          minWidth: "480px",
+          width: "100%",
           background: "linear-gradient(160deg, #020b1a 0%, #071530 40%, #0d2255 70%, #07101f 100%)",
           position: "relative",
           overflow: "hidden",
-          padding: "0 64px 60px",
+          padding: "32px 28px 28px",
         }}
+        // On lg screens, restore original width & padding
       >
+        {/* Responsive overrides via style tag */}
+        <style>{`
+          @media (min-width: 1024px) {
+            .auth-left-panel {
+              width: 52% !important;
+              min-width: 480px !important;
+              padding: 0 64px 60px !important;
+              flex-shrink: 0;
+            }
+          }
+        `}</style>
+
         {/* Grid texture */}
         <div style={{
           position: "absolute", inset: 0, pointerEvents: "none",
@@ -132,32 +144,27 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           backgroundRepeat: "repeat", backgroundSize: "200px",
         }} />
 
-        {/* Ambient orb 1 */}
+        {/* Ambient orbs */}
         <div style={{
           position: "absolute", top: "-80px", left: "-80px",
           width: "500px", height: "500px", borderRadius: "50%",
           background: "radial-gradient(ellipse, rgba(30,58,138,0.5) 0%, transparent 70%)",
-          animation: "float1 12s ease-in-out infinite",
-          pointerEvents: "none",
+          animation: "float1 12s ease-in-out infinite", pointerEvents: "none",
         }} />
-        {/* Ambient orb 2 — gold */}
         <div style={{
           position: "absolute", bottom: "80px", right: "-60px",
           width: "400px", height: "400px", borderRadius: "50%",
           background: "radial-gradient(ellipse, rgba(201,168,76,0.18) 0%, transparent 70%)",
-          animation: "float2 16s ease-in-out infinite",
-          pointerEvents: "none",
+          animation: "float2 16s ease-in-out infinite", pointerEvents: "none",
         }} />
-        {/* Ambient orb 3 — deep blue */}
         <div style={{
           position: "absolute", top: "45%", left: "40%",
           width: "300px", height: "300px", borderRadius: "50%",
           background: "radial-gradient(ellipse, rgba(56,100,220,0.22) 0%, transparent 70%)",
-          animation: "float3 9s ease-in-out infinite",
-          pointerEvents: "none",
+          animation: "float3 9s ease-in-out infinite", pointerEvents: "none",
         }} />
 
-        {/* Floating particles */}
+        {/* Particles */}
         {[
           { left: "15%", delay: "0s", duration: "8s" },
           { left: "35%", delay: "2s", duration: "11s" },
@@ -169,8 +176,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         ].map((p, i) => (
           <div key={i} className="particle" style={{
             left: p.left, bottom: "-10px",
-            animationDelay: p.delay,
-            animationDuration: p.duration,
+            animationDelay: p.delay, animationDuration: p.duration,
           }} />
         ))}
 
@@ -180,63 +186,106 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           transform: "translate(-50%, -50%)",
           width: "520px", height: "520px", borderRadius: "50%",
           border: "1px solid rgba(201,168,76,0.06)",
-          animation: "ring-pulse 6s ease-in-out infinite",
-          pointerEvents: "none",
+          animation: "ring-pulse 6s ease-in-out infinite", pointerEvents: "none",
         }} />
         <div style={{
           position: "absolute", top: "50%", left: "50%",
           transform: "translate(-50%, -50%)",
           width: "380px", height: "380px", borderRadius: "50%",
           border: "1px solid rgba(201,168,76,0.09)",
-          animation: "ring-pulse 6s ease-in-out infinite 2s",
-          pointerEvents: "none",
+          animation: "ring-pulse 6s ease-in-out infinite 2s", pointerEvents: "none",
         }} />
         <div style={{
           position: "absolute", top: "50%", left: "50%",
           transform: "translate(-50%, -50%)",
           width: "240px", height: "240px", borderRadius: "50%",
           border: "1px solid rgba(201,168,76,0.14)",
-          animation: "ring-pulse 6s ease-in-out infinite 4s",
-          pointerEvents: "none",
+          animation: "ring-pulse 6s ease-in-out infinite 4s", pointerEvents: "none",
         }} />
-
-        {/* Spinning ring */}
         <div style={{
           position: "absolute", top: "50%", left: "50%",
           marginTop: "-280px", marginLeft: "-280px",
           width: "560px", height: "560px", borderRadius: "50%",
           border: "1px dashed rgba(201,168,76,0.07)",
-          animation: "spin-slow 30s linear infinite",
-          pointerEvents: "none",
+          animation: "spin-slow 30s linear infinite", pointerEvents: "none",
         }} />
         <div style={{
           position: "absolute", top: "50%", left: "50%",
           marginTop: "-200px", marginLeft: "-200px",
           width: "400px", height: "400px", borderRadius: "50%",
           border: "1px dashed rgba(30,78,216,0.1)",
-          animation: "spin-reverse 22s linear infinite",
-          pointerEvents: "none",
+          animation: "spin-reverse 22s linear infinite", pointerEvents: "none",
         }} />
 
-        {/* Left content — Logo */}
-        <div className="auth-left-content" style={{ position: "relative", zIndex: 1, overflow: "hidden" }}>
+        {/* ── Mobile layout: horizontal logo + text ── */}
+        <div className="flex lg:hidden items-center gap-4 auth-left-content" style={{ position: "relative", zIndex: 1, marginBottom: "20px" }}>
+          <img
+            src="/branding/LOGO-SEVEN.png"
+            alt="Seven Arena"
+            style={{
+              height: 90, width: "auto", objectFit: "contain", flexShrink: 0,
+              filter: "drop-shadow(0 0 20px rgba(201,168,76,0.6)) drop-shadow(0 4px 12px rgba(0,0,0,0.9))",
+            }}
+          />
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+              <span style={{
+                width: 6, height: 6, borderRadius: "50%",
+                background: "#22d3ee", boxShadow: "0 0 8px #22d3ee",
+                animation: "pulse-ring 2s ease-in-out infinite", display: "inline-block",
+              }} />
+              <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#22d3ee" }}>
+                Plataforma Deportiva
+              </span>
+            </div>
+            <h1 style={{ fontSize: "22px", fontWeight: 800, lineHeight: 1.15, color: "#f8fafc", letterSpacing: "-0.02em", margin: 0 }}>
+              Gestión de alto{" "}
+              <span style={{
+                background: "linear-gradient(90deg, #c9a84c 0%, #f0d070 40%, #c9a84c 80%)",
+                backgroundSize: "200% auto",
+                WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+                backgroundClip: "text", animation: "shimmer 4s linear infinite",
+              }}>rendimiento</span>
+            </h1>
+            <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", lineHeight: 1.5, margin: "4px 0 0" }}>
+              Centraliza operaciones, acreditaciones y hotelería para eventos de élite.
+            </p>
+          </div>
+        </div>
+
+        {/* ── Mobile: compact stats ── */}
+        <div className="flex lg:hidden auth-left-content" style={{ position: "relative", zIndex: 1, gap: "0", borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: "16px", marginBottom: "4px" }}>
+          {[
+            { value: "2,400+", label: "Atletas" },
+            { value: "80+", label: "Disciplinas" },
+            { value: "99.9%", label: "Uptime" },
+          ].map((s, i) => (
+            <div key={s.label} style={{
+              flex: 1, textAlign: "center",
+              borderRight: i < 2 ? "1px solid rgba(255,255,255,0.06)" : "none",
+            }}>
+              <p style={{ fontSize: "18px", fontWeight: 800, color: "#c9a84c", margin: 0, lineHeight: 1 }}>{s.value}</p>
+              <p style={{ fontSize: "10px", color: "rgba(255,255,255,0.32)", margin: "3px 0 0", letterSpacing: "0.05em", textTransform: "uppercase" }}>{s.label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Desktop layout: original full content ── */}
+        {/* Logo */}
+        <div className="hidden lg:block auth-left-content" style={{ position: "relative", zIndex: 1, overflow: "hidden" }}>
           <img
             src="/branding/LOGO-SEVEN.png"
             alt="Seven Arena"
             style={{
               height: 400, width: "auto", objectFit: "contain",
-              display: "block",
-              marginTop: "-30px",
-              marginBottom: "-60px",
+              display: "block", marginTop: "-30px", marginBottom: "-60px",
               filter: "drop-shadow(0 0 40px rgba(201,168,76,0.6)) drop-shadow(0 0 80px rgba(201,168,76,0.2)) drop-shadow(0 8px 24px rgba(0,0,0,0.9))",
             }}
           />
         </div>
 
         {/* Center hero */}
-        <div className="auth-left-content" style={{ position: "relative", zIndex: 1, flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: "20px" }}>
-
-          {/* Animated tag */}
+        <div className="hidden lg:flex auth-left-content" style={{ position: "relative", zIndex: 1, flex: 1, flexDirection: "column", justifyContent: "center", gap: "20px" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", width: "fit-content" }}>
             <span style={{
               width: 8, height: 8, borderRadius: "50%",
@@ -248,7 +297,6 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             </span>
           </div>
 
-          {/* Main headline */}
           <h1 style={{ fontSize: "clamp(32px, 3vw, 48px)", fontWeight: 800, lineHeight: 1.1, color: "#f8fafc", letterSpacing: "-0.02em", margin: 0 }}>
             Gestión de alto<br />
             <span style={{
@@ -263,29 +311,24 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             Centraliza operaciones, acreditaciones, hotelería y transporte en una sola plataforma para eventos de élite.
           </p>
 
-          {/* ── LIVE DASHBOARD WIDGET ── */}
+          {/* Live dashboard widget */}
           <div style={{
             background: "rgba(255,255,255,0.04)",
             border: "1px solid rgba(201,168,76,0.18)",
-            borderRadius: "18px",
-            overflow: "hidden",
-            backdropFilter: "blur(16px)",
-            marginTop: "4px",
+            borderRadius: "18px", overflow: "hidden",
+            backdropFilter: "blur(16px)", marginTop: "4px",
             boxShadow: "0 8px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)",
           }}>
-            {/* Widget header */}
             <div style={{
               display: "flex", alignItems: "center", justifyContent: "space-between",
-              padding: "12px 16px",
-              borderBottom: "1px solid rgba(255,255,255,0.06)",
+              padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.06)",
               background: "rgba(201,168,76,0.05)",
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <span style={{
                   width: 7, height: 7, borderRadius: "50%",
                   background: "#ef4444", boxShadow: "0 0 8px #ef4444",
-                  animation: "pulse-ring 1.5s ease-in-out infinite",
-                  display: "inline-block",
+                  animation: "pulse-ring 1.5s ease-in-out infinite", display: "inline-block",
                 }} />
                 <span style={{ fontSize: "11px", fontWeight: 700, color: "#ef4444", letterSpacing: "0.12em" }}>EN VIVO</span>
               </div>
@@ -295,8 +338,6 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                 <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#22c55e", opacity: 0.7 }} />
               </div>
             </div>
-
-            {/* Ticker — duplicated rows for seamless loop */}
             <div style={{ height: "148px", overflow: "hidden", position: "relative" }}>
               <div style={{ animation: "ticker-scroll 14s linear infinite" }}>
                 {[
@@ -306,7 +347,6 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                   { flag: "🇨🇴", name: "L. García", sport: "🚴 Ciclismo", status: "⏳ Pendiente", color: "#f59e0b" },
                   { flag: "🇵🇪", name: "V. Torres", sport: "🤸 Gimnasia", status: "✅ Acreditado", color: "#22c55e" },
                   { flag: "🇺🇾", name: "D. López", sport: "🏋️ Pesas", status: "🔑 Check-in", color: "#c9a84c" },
-                  // duplicate for seamless scroll
                   { flag: "🇨🇱", name: "C. Rodríguez", sport: "🏊 Natación", status: "✅ Acreditado", color: "#22c55e" },
                   { flag: "🇦🇷", name: "M. Fernández", sport: "🥊 Boxeo", status: "🔑 Check-in", color: "#c9a84c" },
                   { flag: "🇧🇷", name: "A. Santos", sport: "⚽ Fútbol", status: "✅ Acreditado", color: "#22c55e" },
@@ -316,8 +356,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                 ].map((row, i) => (
                   <div key={i} style={{
                     display: "flex", alignItems: "center", justifyContent: "space-between",
-                    padding: "10px 16px",
-                    borderBottom: "1px solid rgba(255,255,255,0.04)",
+                    padding: "10px 16px", borderBottom: "1px solid rgba(255,255,255,0.04)",
                   }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                       <span style={{ fontSize: "15px" }}>{row.flag}</span>
@@ -328,12 +367,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                   </div>
                 ))}
               </div>
-              {/* Fade top/bottom */}
               <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "28px", background: "linear-gradient(to bottom, rgba(7,16,31,0.8), transparent)", pointerEvents: "none" }} />
               <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "28px", background: "linear-gradient(to top, rgba(7,16,31,0.8), transparent)", pointerEvents: "none" }} />
             </div>
-
-            {/* Widget footer — animated progress bar */}
             <div style={{ padding: "10px 16px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
                 <span style={{ fontSize: "10.5px", color: "rgba(255,255,255,0.35)", letterSpacing: "0.05em" }}>ACREDITACIONES HOY</span>
@@ -343,8 +379,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                 <div style={{
                   height: "100%", width: "71%",
                   background: "linear-gradient(90deg, #c9a84c, #f0d070)",
-                  borderRadius: "2px",
-                  boxShadow: "0 0 8px rgba(201,168,76,0.6)",
+                  borderRadius: "2px", boxShadow: "0 0 8px rgba(201,168,76,0.6)",
                   animation: "bar-fill 8s ease-in-out infinite",
                 }} />
               </div>
@@ -352,8 +387,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           </div>
         </div>
 
-        {/* Bottom stats */}
-        <div className="auth-left-content" style={{ position: "relative", zIndex: 1 }}>
+        {/* Bottom stats — desktop only */}
+        <div className="hidden lg:block auth-left-content" style={{ position: "relative", zIndex: 1 }}>
           <div style={{ display: "flex", gap: "0", borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: "24px" }}>
             {[
               { value: "2,400+", label: "Atletas gestionados" },
@@ -379,7 +414,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
       {/* ── Right Panel — Login form ── */}
       <div
-        className="flex-1 flex items-center justify-center px-6 py-12"
+        className="flex-1 flex items-center justify-center px-6 py-10"
         style={{
           background: "linear-gradient(160deg, #03111f 0%, #071530 50%, #050f20 100%)",
           position: "relative",
@@ -387,16 +422,13 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           minHeight: "100vh",
         }}
       >
-        {/* Background texture */}
         <div style={{
           position: "absolute", inset: 0, pointerEvents: "none",
           backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E")`,
           backgroundRepeat: "repeat", backgroundSize: "150px",
         }} />
-        {/* Right glow */}
         <div style={{
-          position: "absolute", top: "30%", left: "50%",
-          transform: "translate(-50%, -50%)",
+          position: "absolute", top: "30%", left: "50%", transform: "translate(-50%, -50%)",
           width: "500px", height: "500px", borderRadius: "50%",
           background: "radial-gradient(ellipse, rgba(20,50,120,0.35) 0%, transparent 70%)",
           pointerEvents: "none",
@@ -408,7 +440,6 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           pointerEvents: "none",
         }} />
 
-        {/* Form card */}
         <div className="auth-form-card relative z-10 w-full" style={{ maxWidth: "420px" }}>
           {children}
         </div>
