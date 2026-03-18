@@ -11,6 +11,7 @@ type SupabaseUser = {
   created_at?: string;
   last_sign_in_at?: string;
   banned_until?: string | null;
+  email_confirmed_at?: string | null;
   user_metadata: Record<string, string>;
 };
 
@@ -33,6 +34,7 @@ type AppUser = {
   status: UserStatus;
   createdAt: string;
   lastLogin?: string;
+  emailConfirmed: boolean;
   initials: string;
   color: string;
 };
@@ -80,12 +82,12 @@ const AVATAR_COLORS = ["#6366f1", "#ec4899", "#10b981", "#f59e0b", "#3b82f6", "#
 
 // ── Seed data ──────────────────────────────────────────────────────────────
 const SEED_USERS: AppUser[] = [
-  { id: "1", fullName: "Carlos Rodríguez", email: "carlos@sevenarana.com", role: "Administrador", modules: ROLE_PERMISSIONS["Administrador"], status: "active", createdAt: "2024-01-15", lastLogin: "hace 2 horas", initials: "CR", color: "#6366f1" },
-  { id: "2", fullName: "Ana González", email: "ana@sevenarana.com", role: "Supervisor", modules: ROLE_PERMISSIONS["Supervisor"], status: "active", createdAt: "2024-02-20", lastLogin: "hace 1 día", initials: "AG", color: "#ec4899" },
-  { id: "3", fullName: "Marco Silva", email: "marco@sevenarana.com", role: "Coordinador", modules: ROLE_PERMISSIONS["Coordinador"], status: "active", createdAt: "2024-03-10", lastLogin: "hace 3 días", initials: "MS", color: "#10b981" },
-  { id: "4", fullName: "Valentina Torres", email: "valen@sevenarana.com", role: "Operador", modules: ROLE_PERMISSIONS["Operador"], status: "active", createdAt: "2024-04-05", lastLogin: "hoy", initials: "VT", color: "#f59e0b" },
-  { id: "5", fullName: "Felipe Muñoz", email: "felipe@sevenarana.com", role: "Visualizador", modules: ROLE_PERMISSIONS["Visualizador"], status: "inactive", createdAt: "2024-05-12", lastLogin: "hace 2 semanas", initials: "FM", color: "#3b82f6" },
-  { id: "6", fullName: "Daniela Pérez", email: "dani@sevenarana.com", role: "Operador", modules: ROLE_PERMISSIONS["Operador"], status: "pending", createdAt: "2024-06-01", initials: "DP", color: "#8b5cf6" },
+  { id: "1", fullName: "Carlos Rodríguez", email: "carlos@sevenarana.com", role: "Administrador", modules: ROLE_PERMISSIONS["Administrador"], status: "active", emailConfirmed: true, createdAt: "2024-01-15", lastLogin: "hace 2 horas", initials: "CR", color: "#6366f1" },
+  { id: "2", fullName: "Ana González", email: "ana@sevenarana.com", role: "Supervisor", modules: ROLE_PERMISSIONS["Supervisor"], status: "active", emailConfirmed: true, createdAt: "2024-02-20", lastLogin: "hace 1 día", initials: "AG", color: "#ec4899" },
+  { id: "3", fullName: "Marco Silva", email: "marco@sevenarana.com", role: "Coordinador", modules: ROLE_PERMISSIONS["Coordinador"], status: "active", emailConfirmed: true, createdAt: "2024-03-10", lastLogin: "hace 3 días", initials: "MS", color: "#10b981" },
+  { id: "4", fullName: "Valentina Torres", email: "valen@sevenarana.com", role: "Operador", modules: ROLE_PERMISSIONS["Operador"], status: "active", emailConfirmed: true, createdAt: "2024-04-05", lastLogin: "hoy", initials: "VT", color: "#f59e0b" },
+  { id: "5", fullName: "Felipe Muñoz", email: "felipe@sevenarana.com", role: "Visualizador", modules: ROLE_PERMISSIONS["Visualizador"], status: "inactive", emailConfirmed: true, createdAt: "2024-05-12", lastLogin: "hace 2 semanas", initials: "FM", color: "#3b82f6" },
+  { id: "6", fullName: "Daniela Pérez", email: "dani@sevenarana.com", role: "Operador", modules: ROLE_PERMISSIONS["Operador"], status: "pending", emailConfirmed: false, createdAt: "2024-06-01", initials: "DP", color: "#8b5cf6" },
 ];
 
 function formatRelative(iso: string) {
@@ -251,6 +253,7 @@ export default function UsuariosPage() {
           role: (u.user_metadata?.role as Role) || "Operador",
           modules: ROLE_PERMISSIONS[(u.user_metadata?.role as Role) || "Operador"] || [],
           status: u.banned_until ? "inactive" : "active",
+          emailConfirmed: Boolean(u.email_confirmed_at),
           createdAt: u.created_at?.split("T")[0] || "",
           lastLogin: u.last_sign_in_at ? formatRelative(u.last_sign_in_at) : undefined,
           initials: getInitials(u.user_metadata?.name || u.email?.split("@")[0] || "?"),
@@ -353,6 +356,7 @@ export default function UsuariosPage() {
           role: form.role,
           modules: form.modules,
           status: form.status,
+          emailConfirmed: true,
           createdAt: new Date().toISOString().split("T")[0],
           initials: getInitials(form.fullName),
           color: AVATAR_COLORS[users.length % AVATAR_COLORS.length],
@@ -662,7 +666,17 @@ export default function UsuariosPage() {
                       </div>
 
                       {/* Email */}
-                      <p style={{ fontSize: "13px", color: "var(--text-muted)", margin: 0 }}>{user.email}</p>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+                        <p style={{ fontSize: "13px", color: "var(--text-muted)", margin: 0 }}>{user.email}</p>
+                        {!user.emailConfirmed && (
+                          <span style={{
+                            fontSize: "10px", fontWeight: 700, padding: "1px 7px", borderRadius: "99px", width: "fit-content",
+                            background: "rgba(245,158,11,0.12)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.3)",
+                          }}>
+                            ⚠ Email no confirmado
+                          </span>
+                        )}
+                      </div>
 
                       {/* Role */}
                       <span style={{
@@ -703,6 +717,27 @@ export default function UsuariosPage() {
 
                       {/* Actions */}
                       <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end" }}>
+                        {!user.emailConfirmed && (
+                          <button
+                            onClick={async () => {
+                              try {
+                                await apiFetch(`/auth/users/${user.id}/confirm-email`, { method: "PATCH" });
+                                setUsers((us) => us.map((u) => u.id === user.id ? { ...u, emailConfirmed: true } : u));
+                              } catch (err) {
+                                alert(err instanceof Error ? err.message : "Error confirmando email");
+                              }
+                            }}
+                            style={{
+                              background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.35)",
+                              borderRadius: "8px", padding: "6px 8px",
+                              cursor: "pointer", color: "#f59e0b", fontSize: "11px", fontWeight: 700,
+                              transition: "all 150ms", whiteSpace: "nowrap",
+                            }}
+                            title="Confirmar email para permitir acceso"
+                          >
+                            Confirmar email
+                          </button>
+                        )}
                         <button
                           onClick={() => openEdit(user)}
                           style={{

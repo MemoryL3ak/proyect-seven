@@ -22,6 +22,11 @@ export class AuthController {
     return this.authService.updateUser(id, body);
   }
 
+  @Patch('users/:id/confirm-email')
+  async confirmUserEmail(@Param('id') id: string) {
+    return this.authService.confirmUserEmail(id);
+  }
+
   @Patch('users/:id/disable')
   async disableUser(@Param('id') id: string) {
     return this.authService.disableUser(id);

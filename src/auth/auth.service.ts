@@ -68,6 +68,7 @@ export class AuthService {
   ): Promise<{ user: User }> {
     const { data: result, error } = await this.supabase.auth.admin.updateUserById(id, {
       ...(data.password ? { password: data.password } : {}),
+      email_confirm: true,
       user_metadata: {
         ...(data.name ? { name: data.name } : {}),
         ...(data.role ? { role: data.role } : {}),
@@ -84,6 +85,17 @@ export class AuthService {
       throw new BadRequestException(error?.message || 'Error updating user');
     }
     return { user: result.user };
+  }
+
+  async confirmUserEmail(id: string): Promise<{ message: string }> {
+    const { error } = await this.supabase.auth.admin.updateUserById(id, {
+      email_confirm: true,
+    });
+    if (error) {
+      this.logger.error('confirmUserEmail error', JSON.stringify(error));
+      throw new BadRequestException(error.message);
+    }
+    return { message: 'Email confirmed successfully' };
   }
 
   async disableUser(id: string): Promise<{ message: string }> {
