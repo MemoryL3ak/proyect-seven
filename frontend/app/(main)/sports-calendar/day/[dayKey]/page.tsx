@@ -434,12 +434,15 @@ export default function SportsCalendarDayDetailPage() {
             <div className="text-[11px] uppercase tracking-[0.18em]" style={{ color: "var(--text-muted)" }}>Delegaciones activas</div>
             <div className="mt-2 text-4xl font-semibold" style={{ color: "var(--text)" }}>{kpis.activeDelegations}</div>
           </div>
-        </div>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
-          href={`/sports-calendar${eventId || delegationId ? `?eventId=${encodeURIComponent(eventId)}&delegationId=${encodeURIComponent(delegationId)}` : ""}`}
+          href={
+            eventId || delegationId
+              ? `/sports-calendar?eventId=${encodeURIComponent(eventId)}&delegationId=${encodeURIComponent(delegationId)}`
+              : "/sports-calendar"
+          }
           className="btn btn-ghost"
         >
           Volver al calendario
@@ -660,4 +663,3 @@ export default function SportsCalendarDayDetailPage() {
     </div>
   );
 }
-
