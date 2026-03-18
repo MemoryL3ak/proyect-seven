@@ -2488,7 +2488,7 @@ export default function ResourceScreen({
                     />
                   )}
                   {isAccommodation && field.key === "totalCapacity" && (
-                    <span className="text-xs" style={{color:"rgba(255,255,255,0.4)"}}>
+                    <span className="text-xs" style={{color:"var(--text-faint)"}}>
                       {t("Calculado automáticamente desde habitaciones")}
                     </span>
                   )}
@@ -2617,7 +2617,7 @@ export default function ResourceScreen({
                       {tripFields.map((field) => renderField(field))}
                     </div>
                     {tripType ? (
-                      <p className="mt-3 text-xs" style={{color:"rgba(255,255,255,0.55)"}}>
+                      <p className="mt-3 text-xs" style={{color:"var(--text-muted)"}}>
                         {tripType === "ARRIVAL"
                           ? t("Se muestran los campos operativos de llegada.")
                           : t("Se muestran los campos operativos de salida.")}
@@ -2809,12 +2809,12 @@ export default function ResourceScreen({
                         <p className="section-label">
                           {t("Configuración deportiva")}
                         </p>
-                        <p className="mt-1 text-sm" style={{color:"rgba(255,255,255,0.55)"}}>
+                        <p className="mt-1 text-sm" style={{color:"var(--text-muted)"}}>
                           {t("Define disciplinas del evento y su capacidad esperada de registro AND.")}
                         </p>
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs" style={{color:"rgba(255,255,255,0.65)"}}>
+                        <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs" style={{color:"var(--text-muted)"}}>
                           {selectedDisciplineIds.length} disciplinas
                         </span>
                         <span className="rounded-full border border-emerald-200/30 bg-emerald-900/30 px-3 py-1 text-xs font-medium text-emerald-400">
@@ -2831,10 +2831,10 @@ export default function ResourceScreen({
                       <div className="rounded-xl border border-white/10 bg-white/5 p-4">
                         <div className="mb-3 flex items-center justify-between gap-2">
                           <div>
-                            <p className="text-xs uppercase tracking-[0.16em]" style={{color:"rgba(255,255,255,0.55)"}}>
+                            <p className="text-xs uppercase tracking-[0.16em]" style={{color:"var(--text-muted)"}}>
                               {t("Disciplinas del evento")}
                             </p>
-                            <p className="text-sm" style={{color:"rgba(255,255,255,0.55)"}}>
+                            <p className="text-sm" style={{color:"var(--text-muted)"}}>
                               {t("Selecciona las disciplinas que participarán en este evento.")}
                             </p>
                           </div>
@@ -2845,17 +2845,17 @@ export default function ResourceScreen({
                       <div className="rounded-xl border border-white/10 bg-white/5 p-4">
                         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                           <div>
-                            <p className="text-xs uppercase tracking-[0.16em]" style={{color:"rgba(255,255,255,0.55)"}}>Planificación AND</p>
+                            <p className="text-xs uppercase tracking-[0.16em]" style={{color:"var(--text-muted)"}}>Planificación AND</p>
                             <p className="text-sm font-semibold text-white">Capacidad esperada por delegación y disciplina</p>
                           </div>
-                          <div className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs" style={{color:"rgba(255,255,255,0.65)"}}>
+                          <div className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs" style={{color:"var(--text-muted)"}}>
                             Total esperado {totalExpected}
                           </div>
                         </div>
 
                         {selectedDisciplineIds.length === 0 ? (
                           <div className="rounded-lg border border-dashed border-white/20 bg-white/5 p-4">
-                            <p className="text-xs" style={{color:"rgba(255,255,255,0.55)"}}>
+                            <p className="text-xs" style={{color:"var(--text-muted)"}}>
                               {t("Selecciona disciplinas para definir la capacidad esperada AND.")}
                             </p>
                           </div>
@@ -2919,7 +2919,7 @@ export default function ResourceScreen({
 
                             {plannerDisciplineOption ? (
                               <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                                <p className="text-xs uppercase tracking-[0.16em]" style={{color:"rgba(255,255,255,0.55)"}}>
+                                <p className="text-xs uppercase tracking-[0.16em]" style={{color:"var(--text-muted)"}}>
                                   {t("Detalle disciplina")} · {String(plannerDisciplineOption.label || plannerDisciplineOption.value)}
                                 </p>
                                 <div className="mt-2 max-h-52 overflow-auto space-y-1.5">
@@ -2928,24 +2928,24 @@ export default function ResourceScreen({
                                     if (value === undefined || value === "") return null;
                                     return (
                                       <div key={`${plannerDisciplineOption.value}-${country.value}`} className="flex items-center justify-between rounded-lg border border-white/10 px-2.5 py-1.5 text-sm">
-                                        <span style={{color:"rgba(255,255,255,0.75)"}}>{country.value} · {country.label}</span>
+                                        <span style={{color:"var(--text)"}}>{country.value} · {country.label}</span>
                                         <span className="font-semibold text-white">{value}</span>
                                       </div>
                                     );
                                   })}
                                   {Object.keys(plannerRow).length === 0 ? (
-                                    <p className="text-xs" style={{color:"rgba(255,255,255,0.55)"}}>{t("Sin capacidad asignada para esta disciplina.")}</p>
+                                    <p className="text-xs" style={{color:"var(--text-muted)"}}>{t("Sin capacidad asignada para esta disciplina.")}</p>
                                   ) : null}
                                 </div>
                               </div>
                             ) : null}
 
                             <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                              <p className="text-xs uppercase tracking-[0.16em]" style={{color:"rgba(255,255,255,0.55)"}}>{t("Resumen por disciplina")}</p>
+                              <p className="text-xs uppercase tracking-[0.16em]" style={{color:"var(--text-muted)"}}>{t("Resumen por disciplina")}</p>
                               <div className="mt-2 space-y-1.5">
                                 {selectedDisciplineOptions.map((option) => (
                                   <div key={`sum-${option.value}`} className="flex items-center justify-between text-sm">
-                                    <span style={{color:"rgba(255,255,255,0.75)"}}>{String(option.label || option.value)}</span>
+                                    <span style={{color:"var(--text)"}}>{String(option.label || option.value)}</span>
                                     <span className="font-semibold text-white">
                                       {expectedByDisciplineFromMatrix[option.value] ?? 0}
                                     </span>
@@ -3011,7 +3011,7 @@ export default function ResourceScreen({
           </button>
         </div>
         {items.length === 0 ? (
-          <div className="text-sm" style={{color:"rgba(255,255,255,0.55)"}}>{t("Sin registros aún.")}</div>
+          <div className="text-sm" style={{color:"var(--text-muted)"}}>{t("Sin registros aún.")}</div>
         ) : (
           <div className="max-h-[70vh] overflow-auto rounded-2xl border border-white/10">
             <table className="table">
