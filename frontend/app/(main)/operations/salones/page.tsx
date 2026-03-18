@@ -646,7 +646,6 @@ export default function SalonesPage() {
                             <div key={h} style={{
                               height: `${HOUR_HEIGHT}px`,
                               borderTop: `1px solid ${h === HOUR_START ? "transparent" : pal.gridLine}`,
-                              borderTop: `1px solid ${pal.gridLine}`,
                             }} />
                           ))}
                           {/* Reservation blocks */}
