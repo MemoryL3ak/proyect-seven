@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 
-export type Theme = "dark" | "light" | "obsidian";
+export type Theme = "dark" | "light" | "obsidian" | "atlas";
 
 const ThemeContext = createContext<{ theme: Theme; setTheme: (t: Theme) => void; toggleTheme: () => void }>({
   theme: "dark",
@@ -15,7 +15,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const saved = localStorage.getItem("sa-theme") as Theme | null;
-    if (saved === "light" || saved === "dark" || saved === "obsidian") setThemeState(saved);
+    if (saved === "light" || saved === "dark" || saved === "obsidian" || saved === "atlas") setThemeState(saved);
   }, []);
 
   useEffect(() => {
@@ -25,7 +25,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const setTheme = (t: Theme) => setThemeState(t);
   const toggleTheme = () =>
-    setThemeState((t) => (t === "dark" ? "light" : t === "light" ? "obsidian" : "dark"));
+    setThemeState((t) =>
+      t === "dark" ? "light" : t === "light" ? "obsidian" : t === "obsidian" ? "atlas" : "dark"
+    );
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
