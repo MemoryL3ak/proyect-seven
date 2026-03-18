@@ -2359,7 +2359,14 @@ export default function ResourceScreen({
                                 setForm({ ...form, [field.key]: next });
                               }}
                             />
-                            <span className="flex-1">{t(option.label)}</span>
+                            <span className="flex-1" style={{ color: "var(--text)" }}>
+                              {t(option.label)}
+                              {(option as any).category || (option as any).gender ? (
+                                <span style={{ fontSize: "10px", color: "var(--text-faint)", marginLeft: "6px" }}>
+                                  {[(option as any).gender, (option as any).category].filter(Boolean).join(" · ")}
+                                </span>
+                              ) : null}
+                            </span>
                             {isLead && (
                               <span className="badge badge-amber">{t("Encargado")}</span>
                             )}
