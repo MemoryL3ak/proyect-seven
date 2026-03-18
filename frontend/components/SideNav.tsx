@@ -120,7 +120,7 @@ function sectionHasActivePath(section: NavSection, pathname: string) {
   return false;
 }
 
-export default function SideNav() {
+export default function SideNav({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
   const { locale, setLocale, t } = useI18n();
   const { theme } = useTheme();
@@ -304,6 +304,7 @@ export default function SideNav() {
               <Link
                 key={section.title}
                 href={section.href}
+                onClick={onClose}
                 className="flex items-center gap-3 mx-2 px-3 py-2.5 text-[13.5px] font-medium transition-all duration-150"
                 style={{
                   color: activeColor(isActive),
@@ -365,6 +366,7 @@ export default function SideNav() {
                     const active = pathname === item.href;
                     return (
                       <Link key={item.href} href={item.href}
+                        onClick={onClose}
                         className="flex items-center gap-3 px-3 py-2 text-[12.5px] transition-all duration-150"
                         style={{
                           color: activeColor(active),
@@ -435,6 +437,7 @@ export default function SideNav() {
                             const active = pathname === item.href;
                             return (
                               <Link key={item.href} href={item.href}
+                                onClick={onClose}
                                 className="flex items-center gap-3 px-3 py-2 text-[12.5px] transition-all duration-150"
                                 style={{
                                   marginLeft: "10px",

@@ -7,7 +7,7 @@ import { humanizePath } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
 
-export default function TopBar() {
+export default function TopBar({ onMenuOpen }: { onMenuOpen?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const { t } = useI18n();
@@ -233,6 +233,32 @@ export default function TopBar() {
     );
   };
 
+  const renderHamburger = (color: string, border: string, bg: string) => (
+    <button
+      type="button"
+      className="topbar-hamburger"
+      onClick={onMenuOpen}
+      aria-label="Abrir menú"
+      style={{
+        display: "none",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "36px",
+        height: "36px",
+        borderRadius: "8px",
+        background: bg,
+        border: `1px solid ${border}`,
+        cursor: "pointer",
+        color,
+        flexShrink: 0,
+      }}
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+        <path d="M3 6h18M3 12h18M3 18h18" />
+      </svg>
+    </button>
+  );
+
   /* ── ATLAS ─────────────────────────────────────────────── */
   if (isAtlas) {
     return (
@@ -268,6 +294,7 @@ export default function TopBar() {
 
         {/* Left: Logo + divider + breadcrumb */}
         <div style={{ display: "flex", alignItems: "center", gap: "0", position: "relative", zIndex: 1 }}>
+          {renderHamburger("#3b5bdb", "#c7d2fe", "#eef2ff")}
           <img
             src="/branding/LOGO-SEVEN-2.png"
             alt="Seven Arena"
@@ -333,6 +360,7 @@ export default function TopBar() {
         <div style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", width: "180px", height: "60px", background: "radial-gradient(ellipse, rgba(34,211,238,0.08) 0%, transparent 70%)", pointerEvents: "none" }} />
 
         <div style={{ display: "flex", alignItems: "center", gap: "14px", position: "relative", zIndex: 1 }}>
+          {renderHamburger("#22d3ee", "rgba(34,211,238,0.3)", "rgba(34,211,238,0.1)")}
           <img
             src="/branding/LOGO-SEVEN-2.png"
             alt="Seven Arena"
@@ -392,6 +420,7 @@ export default function TopBar() {
         <div style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", width: "160px", height: "60px", background: "radial-gradient(ellipse, rgba(201,168,76,0.07) 0%, transparent 70%)", pointerEvents: "none" }} />
 
         <div style={{ display: "flex", alignItems: "center", gap: "14px", position: "relative", zIndex: 1 }}>
+          {renderHamburger("#d4a843", "rgba(201,168,76,0.3)", "#0d1b3e")}
           <img
             src="/branding/LOGO-SEVEN-2.png"
             alt="Seven Arena"
@@ -447,6 +476,7 @@ export default function TopBar() {
       borderBottom: "1px solid var(--border-muted)",
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+        {renderHamburger("#1e3a8a", "#c7d2fe", "#eef2ff")}
         <img
           src="/branding/LOGO-SEVEN-2.png"
           alt="Seven Arena"
