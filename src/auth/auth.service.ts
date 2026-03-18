@@ -26,21 +26,30 @@ export class AuthService {
   async register({
     name,
     email,
+    username,
     password,
     role,
+    isTemporaryPassword,
   }: CreateUserDto): Promise<{ user: User }> {
-    const normalizedEmail = String(email || '').trim().toLowerCase();
-    this.logger.log(`Registering user: ${normalizedEmail}`);
+    const resolvedEmail = email
+      ? String(email).trim().toLowerCase()
+      : `${String(username || '').trim().toLowerCase()}@nomail.seven`;
+
+    // Email users: temporary by default. Username users: permanent by default.
+    const forceChange = isTemporaryPassword ?? !!email;
+
+    this.logger.log(`Registering user: ${resolvedEmail} (username: ${!!username})`);
 
     const { data, error } = await this.supabase.auth.admin.createUser({
-      email: normalizedEmail,
+      email: resolvedEmail,
       password,
       email_confirm: true,
       user_metadata: {
         name,
         role,
-        forcePasswordChange: true,
-        force_password_change: true,
+        ...(username ? { username } : {}),
+        forcePasswordChange: forceChange,
+        force_password_change: forceChange,
       },
     });
 
@@ -124,7 +133,11 @@ export class AuthService {
     email,
     password,
   }: LoginUserDto): Promise<{ user: User; session: Session }> {
-    const normalizedEmail = String(email || '').trim().toLowerCase();
+    let normalizedEmail = String(email || '').trim().toLowerCase();
+    // Support username login: if no @ present, treat as username@nomail.seven
+    if (!normalizedEmail.includes('@')) {
+      normalizedEmail = `${normalizedEmail}@nomail.seven`;
+    }
     const normalizedPassword = String(password || '').trim();
 
     try {

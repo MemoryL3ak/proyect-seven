@@ -111,14 +111,25 @@ function getInitials(name: string) {
   return name.split(" ").slice(0, 2).map((n) => n[0]).join("").toUpperCase();
 }
 
+// ── Helpers ─────────────────────────────────────────────────────────────────
+function isUsernameUser(email: string) {
+  return email.endsWith("@nomail.seven");
+}
+function extractUsername(email: string) {
+  return isUsernameUser(email) ? email.replace("@nomail.seven", "") : email;
+}
+
 // ── Empty form ─────────────────────────────────────────────────────────────
 function emptyForm() {
   return {
     fullName: "",
     email: "",
+    username: "",
+    loginType: "email" as "email" | "username",
     role: "Operador" as Role,
     modules: ROLE_PERMISSIONS["Operador"],
     tempPassword: generateTempPassword(),
+    passwordEditable: false,
     status: "active" as UserStatus,
   };
 }
@@ -293,7 +304,18 @@ export default function UsuariosPage() {
 
   function openEdit(user: AppUser) {
     setEditingUser(user);
-    setForm({ fullName: user.fullName, email: user.email, role: user.role, modules: user.modules, tempPassword: generateTempPassword(), status: user.status });
+    const uType = isUsernameUser(user.email) ? "username" : "email";
+    setForm({
+      fullName: user.fullName,
+      email: uType === "email" ? user.email : "",
+      username: uType === "username" ? extractUsername(user.email) : "",
+      loginType: uType,
+      role: user.role,
+      modules: user.modules,
+      tempPassword: generateTempPassword(),
+      passwordEditable: uType === "username",
+      status: user.status,
+    });
     setShowModal(true);
     setShowTempPassword(false);
     setSaveError(null);
@@ -322,7 +344,10 @@ export default function UsuariosPage() {
   }
 
   async function handleSave() {
-    if (!form.fullName || !form.email) return;
+    const isUsername = form.loginType === "username";
+    if (!form.fullName) return;
+    if (isUsername && !form.username) return;
+    if (!isUsername && !form.email) return;
     setSaveError(null);
     setSaving(true);
     try {
@@ -333,10 +358,10 @@ export default function UsuariosPage() {
           body: JSON.stringify({
             name: form.fullName,
             role: form.role,
-            password: form.tempPassword,
+            ...(form.passwordEditable ? { password: form.tempPassword } : {}),
           }),
         });
-        setUsers((us) => us.map((u) => u.id === editingUser.id ? { ...u, ...form } : u));
+        setUsers((us) => us.map((u) => u.id === editingUser.id ? { ...u, fullName: form.fullName, role: form.role, modules: form.modules, status: form.status } : u));
       } else {
         // Create: register via backend → Supabase Auth
         const result = await apiFetch<{ user: SupabaseUser }>("/auth/register", {
@@ -344,15 +369,19 @@ export default function UsuariosPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             name: form.fullName,
-            email: form.email,
+            ...(isUsername ? { username: form.username } : { email: form.email }),
             password: form.tempPassword,
             role: form.role,
+            isTemporaryPassword: !isUsername,
           }),
         });
+        const displayEmail = isUsername
+          ? `${form.username}@nomail.seven`
+          : form.email;
         const newUser: AppUser = {
           id: result.user.id,
           fullName: form.fullName,
-          email: form.email,
+          email: displayEmail,
           role: form.role,
           modules: form.modules,
           status: form.status,
@@ -665,10 +694,17 @@ export default function UsuariosPage() {
                         </div>
                       </div>
 
-                      {/* Email */}
+                      {/* Email / Username */}
                       <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
-                        <p style={{ fontSize: "13px", color: "var(--text-muted)", margin: 0 }}>{user.email}</p>
-                        {!user.emailConfirmed && (
+                        {isUsernameUser(user.email) ? (
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "13px", color: "var(--text-muted)" }}>
+                            <span style={{ fontSize: "10px", fontWeight: 700, padding: "1px 6px", borderRadius: "99px", background: "rgba(99,102,241,0.12)", color: "#818cf8", border: "1px solid rgba(99,102,241,0.25)" }}>USUARIO</span>
+                            {extractUsername(user.email)}
+                          </span>
+                        ) : (
+                          <p style={{ fontSize: "13px", color: "var(--text-muted)", margin: 0 }}>{user.email}</p>
+                        )}
+                        {!user.emailConfirmed && !isUsernameUser(user.email) && (
                           <span style={{
                             fontSize: "10px", fontWeight: 700, padding: "1px 7px", borderRadius: "99px", width: "fit-content",
                             background: "rgba(245,158,11,0.12)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.3)",
@@ -717,7 +753,7 @@ export default function UsuariosPage() {
 
                       {/* Actions */}
                       <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end" }}>
-                        {!user.emailConfirmed && (
+                        {!user.emailConfirmed && !isUsernameUser(user.email) && (
                           <button
                             onClick={async () => {
                               try {
@@ -954,6 +990,27 @@ export default function UsuariosPage() {
                 <h3 style={{ fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: pal.mTextFaint, margin: "0 0 14px" }}>
                   Información personal
                 </h3>
+                {/* Login type toggle */}
+                {!editingUser && (
+                  <div style={{ display: "flex", gap: "8px", marginBottom: "4px" }}>
+                    {(["email", "username"] as const).map((type) => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => setForm((f) => ({ ...f, loginType: type, passwordEditable: type === "username" }))}
+                        style={{
+                          padding: "7px 16px", borderRadius: "8px", fontSize: "12.5px", fontWeight: 600,
+                          cursor: "pointer", transition: "all 150ms", border: "1px solid",
+                          background: form.loginType === type ? pal.accent + "22" : pal.mElevated,
+                          borderColor: form.loginType === type ? pal.accent : pal.mBorder,
+                          color: form.loginType === type ? pal.accent : pal.mTextMuted,
+                        }}
+                      >
+                        {type === "email" ? "📧 Con Email" : "👤 Con Usuario"}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                   <div>
                     <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: pal.mTextMuted, marginBottom: "6px" }}>
@@ -968,16 +1025,33 @@ export default function UsuariosPage() {
                     />
                   </div>
                   <div>
-                    <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: pal.mTextMuted, marginBottom: "6px" }}>
-                      Email *
-                    </label>
-                    <input
-                      type="email"
-                      value={form.email}
-                      onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                      placeholder="email@ejemplo.com"
-                      style={{ ...selM, padding: "10px 14px", borderRadius: "10px", fontSize: "14px", outline: "none", width: "100%" }}
-                    />
+                    {form.loginType === "username" ? (
+                      <>
+                        <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: pal.mTextMuted, marginBottom: "6px" }}>
+                          Nombre de usuario *
+                        </label>
+                        <input
+                          type="text"
+                          value={form.username}
+                          onChange={(e) => setForm((f) => ({ ...f, username: e.target.value.toLowerCase().replace(/\s/g, "") }))}
+                          placeholder="nombre.usuario"
+                          style={{ ...selM, padding: "10px 14px", borderRadius: "10px", fontSize: "14px", outline: "none", width: "100%", fontFamily: "monospace" }}
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: pal.mTextMuted, marginBottom: "6px" }}>
+                          Email *
+                        </label>
+                        <input
+                          type="email"
+                          value={form.email}
+                          onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                          placeholder="email@ejemplo.com"
+                          style={{ ...selM, padding: "10px 14px", borderRadius: "10px", fontSize: "14px", outline: "none", width: "100%" }}
+                        />
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1016,13 +1090,14 @@ export default function UsuariosPage() {
               {/* Temp password */}
               <div>
                   <h3 style={{ fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: pal.mTextFaint, margin: "0 0 14px" }}>
-                    {editingUser ? "Restablecer contraseña" : "Contraseña temporal"}
+                    {editingUser ? "Restablecer contraseña" : form.loginType === "username" ? "Contraseña asignada" : "Contraseña temporal"}
                   </h3>
                   <div style={{ position: "relative" }}>
                     <input
                       type={showTempPassword ? "text" : "password"}
                       value={form.tempPassword}
-                      readOnly
+                      onChange={form.passwordEditable || form.loginType === "username" ? (e) => setForm((f) => ({ ...f, tempPassword: e.target.value })) : undefined}
+                      readOnly={!form.passwordEditable && form.loginType !== "username"}
                       style={{
                         ...selM,
                         padding: "11px 80px 11px 14px",
@@ -1227,16 +1302,16 @@ export default function UsuariosPage() {
               </button>
               <button
                 onClick={handleSave}
-                disabled={!form.fullName || !form.email || saving}
+                disabled={!form.fullName || (form.loginType === "username" ? !form.username : !form.email) || saving}
                 style={{
                   padding: "10px 24px",
-                  background: (!form.fullName || !form.email || saving) ? "rgba(100,116,139,0.3)" : `linear-gradient(135deg, ${pal.accent}, ${pal.accent2 ?? pal.accent})`,
+                  background: (!form.fullName || (form.loginType === "username" ? !form.username : !form.email) || saving) ? "rgba(100,116,139,0.3)" : `linear-gradient(135deg, ${pal.accent}, ${pal.accent2 ?? pal.accent})`,
                   border: "none",
                   borderRadius: "10px", fontSize: "14px", fontWeight: 700,
-                  color: (!form.fullName || !form.email || saving) ? "rgba(100,116,139,0.6)" : (isLight ? "#fff" : "#0d1b3e"),
-                  cursor: (!form.fullName || !form.email || saving) ? "not-allowed" : "pointer",
+                  color: (!form.fullName || (form.loginType === "username" ? !form.username : !form.email) || saving) ? "rgba(100,116,139,0.6)" : (isLight ? "#fff" : "#0d1b3e"),
+                  cursor: (!form.fullName || (form.loginType === "username" ? !form.username : !form.email) || saving) ? "not-allowed" : "pointer",
                   transition: "all 150ms",
-                  boxShadow: (!form.fullName || !form.email || saving) ? "none" : `0 4px 16px ${pal.kpiGlow}`,
+                  boxShadow: (!form.fullName || (form.loginType === "username" ? !form.username : !form.email) || saving) ? "none" : `0 4px 16px ${pal.kpiGlow}`,
                   display: "flex", alignItems: "center", gap: "8px",
                 }}
               >
