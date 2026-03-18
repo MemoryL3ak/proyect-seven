@@ -35,3 +35,19 @@ export class UpdatePasswordDto {
   @MinLength(8)
   newPassword: string;
 }
+
+export class ChangeTemporaryPasswordDto {
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(8)
+  temporaryPassword: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(8)
+  newPassword: string;
+}

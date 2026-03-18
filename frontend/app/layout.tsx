@@ -11,7 +11,11 @@ const sans = Sora({
 
 export const metadata: Metadata = {
   title: "Seven | Plataforma Logística",
-  description: "Control operativo y trazabilidad en tiempo real para eventos deportivos."
+  description: "Control operativo y trazabilidad en tiempo real para eventos deportivos.",
+  icons: {
+    icon: "/branding/LOGO-SEVEN-2.png",
+    apple: "/branding/LOGO-SEVEN-2.png",
+  },
 };
 
 export default function RootLayout({

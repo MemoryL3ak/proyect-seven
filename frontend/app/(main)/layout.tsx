@@ -62,6 +62,35 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     );
   }
 
+  if (theme === "atlas") {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", background: "#eef1f8" }}>
+        {/* Dark nav sidebar */}
+        <div style={{ position: "sticky", top: 0, height: "100vh", flexShrink: 0, zIndex: 20 }}>
+          <SideNav />
+        </div>
+        {/* Main canvas */}
+        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+          {/* Top bar strip */}
+          <div style={{
+            background: "#ffffff",
+            borderBottom: "1px solid #e8edf5",
+            padding: "0 32px",
+            position: "sticky", top: 0, zIndex: 10,
+            boxShadow: "0 1px 3px rgba(0,0,0,0.05)"
+          }}>
+            <TopBar />
+          </div>
+          {/* Scrollable content */}
+          <main style={{ flex: 1, padding: "24px 32px", overflowX: "hidden" }}>
+            <div style={{ maxWidth: "1400px", margin: "0 auto" }}>{children}</div>
+          </main>
+        </div>
+        <SofiaWidget />
+      </div>
+    );
+  }
+
   // Dark mode
   return (
     <div className="min-h-screen flex" style={{ background: "linear-gradient(to right, #07101f 260px, #f0f3fa 260px)" }}>

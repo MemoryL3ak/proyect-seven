@@ -6,8 +6,10 @@ import {
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { SupabaseClient, Session, User } from '@supabase/supabase-js';
 import {
+  ChangeTemporaryPasswordDto,
   CreateUserDto,
   LoginUserDto,
   UpdatePasswordDto,
@@ -18,6 +20,7 @@ export class AuthService {
   constructor(
     private readonly logger: Logger = new Logger(AuthService.name),
     @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
+    private readonly config: ConfigService,
   ) {}
 
   async register({
@@ -25,45 +28,114 @@ export class AuthService {
     email,
     password,
     role,
-  }: CreateUserDto): Promise<{ user: User; session: Session }> {
-    const { data, error } = await this.supabase.auth.signUp({
-      email,
+  }: CreateUserDto): Promise<{ user: User }> {
+    const normalizedEmail = String(email || '').trim().toLowerCase();
+    this.logger.log(`Registering user: ${normalizedEmail}`);
+
+    const { data, error } = await this.supabase.auth.admin.createUser({
+      email: normalizedEmail,
       password,
-      options: {
-        data: { name, role },
-        emailRedirectTo: process.env.APP_CALLBACK_URL,
+      email_confirm: true,
+      user_metadata: {
+        name,
+        role,
+        forcePasswordChange: true,
+        force_password_change: true,
       },
     });
 
-    if (error || !data.user || !data.session) {
-      throw new Error(error?.message || 'Unexpected error during registration');
+    if (error || !data.user) {
+      this.logger.error('Register error', JSON.stringify(error));
+      throw new BadRequestException(error?.message || 'Unexpected error during registration');
     }
 
-    return {
-      user: data.user ?? null,
-      session: data.session ?? null,
-    };
+    this.logger.log(`User created: ${data.user.id}`);
+    return { user: data.user };
+  }
+
+  async listUsers(): Promise<{ users: User[] }> {
+    const { data, error } = await this.supabase.auth.admin.listUsers();
+    if (error) {
+      this.logger.error('listUsers error', JSON.stringify(error));
+      throw new BadRequestException(error.message);
+    }
+    return { users: data.users };
+  }
+
+  async updateUser(
+    id: string,
+    data: { name?: string; role?: string; password?: string },
+  ): Promise<{ user: User }> {
+    const { data: result, error } = await this.supabase.auth.admin.updateUserById(id, {
+      ...(data.password ? { password: data.password } : {}),
+      user_metadata: {
+        ...(data.name ? { name: data.name } : {}),
+        ...(data.role ? { role: data.role } : {}),
+        ...(data.password
+          ? {
+              forcePasswordChange: true,
+              force_password_change: true,
+            }
+          : {}),
+      },
+    });
+    if (error || !result.user) {
+      this.logger.error('updateUser error', JSON.stringify(error));
+      throw new BadRequestException(error?.message || 'Error updating user');
+    }
+    return { user: result.user };
+  }
+
+  async disableUser(id: string): Promise<{ message: string }> {
+    const { error } = await this.supabase.auth.admin.updateUserById(id, {
+      ban_duration: '876000h', // ~100 years = effectively disabled
+    });
+    if (error) {
+      this.logger.error('disableUser error', JSON.stringify(error));
+      throw new BadRequestException(error.message);
+    }
+    return { message: 'User disabled successfully' };
+  }
+
+  async enableUser(id: string): Promise<{ message: string }> {
+    const { error } = await this.supabase.auth.admin.updateUserById(id, {
+      ban_duration: 'none',
+    });
+    if (error) {
+      this.logger.error('enableUser error', JSON.stringify(error));
+      throw new BadRequestException(error.message);
+    }
+    return { message: 'User enabled successfully' };
   }
 
   async login({
     email,
     password,
   }: LoginUserDto): Promise<{ user: User; session: Session }> {
+    const normalizedEmail = String(email || '').trim().toLowerCase();
+    const normalizedPassword = String(password || '').trim();
+
     try {
       const { data, error } = await this.supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: normalizedEmail,
+        password: normalizedPassword,
       });
 
       if (error) {
-        this.logger.error('Error during login', error);
-        if (
-          error.status === 400 ||
-          /invalid login credentials/i.test(error.message)
-        ) {
+        const code = String((error as { code?: string })?.code || '').toLowerCase();
+        const message = String(error.message || '');
+        this.logger.error(`Error during login (${code || 'no_code'}): ${message}`);
+
+        if (code === 'invalid_credentials' || /invalid login credentials/i.test(message)) {
           throw new UnauthorizedException('Invalid email or password');
         }
-        throw new BadRequestException(error.message);
+        if (/email not confirmed/i.test(message)) {
+          throw new UnauthorizedException('Email not confirmed');
+        }
+        if (/user is banned|user not allowed/i.test(message)) {
+          throw new UnauthorizedException('User disabled');
+        }
+        throw new BadRequestException(message || 'Login failed');
       }
 
       if (!data.user || !data.session) {
@@ -181,5 +253,40 @@ export class AuthService {
       session: data.session,
       user: data.user,
     };
+  }
+
+  async changeTemporaryPassword({
+    email,
+    temporaryPassword,
+    newPassword,
+  }: ChangeTemporaryPasswordDto): Promise<{ message: string }> {
+    const normalizedEmail = String(email || '').trim().toLowerCase();
+    const tempPassword = String(temporaryPassword || '').trim();
+    const nextPassword = String(newPassword || '').trim();
+
+    const { data, error } = await this.supabase.auth.signInWithPassword({
+      email: normalizedEmail,
+      password: tempPassword,
+    });
+
+    if (error || !data.user) {
+      throw new UnauthorizedException('Invalid temporary credentials');
+    }
+
+    const currentMetadata = (data.user.user_metadata || {}) as Record<string, unknown>;
+    const { error: updateError } = await this.supabase.auth.admin.updateUserById(data.user.id, {
+      password: nextPassword,
+      user_metadata: {
+        ...currentMetadata,
+        forcePasswordChange: false,
+        force_password_change: false,
+      },
+    });
+
+    if (updateError) {
+      throw new BadRequestException(updateError.message || 'Error updating temporary password');
+    }
+
+    return { message: 'Password updated successfully' };
   }
 }
