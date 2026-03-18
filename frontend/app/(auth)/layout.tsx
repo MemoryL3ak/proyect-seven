@@ -106,28 +106,28 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       `}</style>
 
       {/* ── Left Panel — Branding ── */}
+      <style>{`
+        .auth-left-panel {
+          width: 100%;
+          padding: 32px 28px 28px;
+        }
+        @media (min-width: 1024px) {
+          .auth-left-panel {
+            width: 52% !important;
+            min-width: 480px !important;
+            padding: 0 64px 60px !important;
+            flex-shrink: 0;
+          }
+        }
+      `}</style>
       <div
-        className="flex flex-col justify-between lg:justify-between"
+        className="auth-left-panel flex flex-col justify-between"
         style={{
-          width: "100%",
           background: "linear-gradient(160deg, #020b1a 0%, #071530 40%, #0d2255 70%, #07101f 100%)",
           position: "relative",
           overflow: "hidden",
-          padding: "32px 28px 28px",
         }}
-        // On lg screens, restore original width & padding
       >
-        {/* Responsive overrides via style tag */}
-        <style>{`
-          @media (min-width: 1024px) {
-            .auth-left-panel {
-              width: 52% !important;
-              min-width: 480px !important;
-              padding: 0 64px 60px !important;
-              flex-shrink: 0;
-            }
-          }
-        `}</style>
 
         {/* Grid texture */}
         <div style={{
