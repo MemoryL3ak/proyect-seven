@@ -1,10 +1,10 @@
 ﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
-import PageHeader from "@/components/PageHeader";
 import { apiFetch } from "@/lib/api";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { useI18n } from "@/lib/i18n";
+import { useTheme } from "@/lib/theme";
 
 type Accommodation = {
   id: string;
@@ -20,6 +20,7 @@ type HotelRoom = {
   id: string;
   hotelId?: string | null;
   roomType?: string | null;
+  bedsCapacity?: number | null;
 };
 
 type HotelBed = {
@@ -54,6 +55,52 @@ const formatPercent = (value: number) => `${Math.round(value)}%`;
 
 export default function HotelTrackingPage() {
   const { t } = useI18n();
+  const { theme } = useTheme();
+  const isObsidian = theme === "obsidian";
+  const isAtlas = theme === "atlas";
+  const isDark = theme === "dark";
+
+  const pal = isObsidian ? {
+    panelBg: "linear-gradient(135deg, #0a1322 0%, #0e1728 60%, #0d1a30 100%)",
+    panelBorder: "rgba(34,211,238,0.08)", panelShadow: "0 4px 32px rgba(0,0,0,0.6)",
+    orb1: "rgba(34,211,238,0.07)", orb2: "rgba(168,85,247,0.06)",
+    accent: "#22d3ee", titleColor: "#e2e8f0", subtitleColor: "rgba(255,255,255,0.45)",
+    cardBg: "#0e1728", cardBorder: "rgba(34,211,238,0.1)", cardShadow: "0 4px 20px rgba(0,0,0,0.5)",
+    labelColor: "rgba(255,255,255,0.35)", textMuted: "rgba(255,255,255,0.45)",
+    inputBg: "rgba(255,255,255,0.05)", btnBorder: "rgba(255,255,255,0.15)", btnColor: "rgba(255,255,255,0.8)",
+    progressTrack: "rgba(255,255,255,0.08)",
+    kpi: ["#38bdf8", "#10b981", "#f59e0b", "#a855f7", "#6366f1", "#14b8a6"],
+  } : isDark ? {
+    panelBg: "linear-gradient(135deg, #0f172a 0%, #1e293b 55%, #111827 100%)",
+    panelBorder: "rgba(255,255,255,0.06)", panelShadow: "0 4px 24px rgba(0,0,0,0.45)",
+    orb1: "rgba(201,168,76,0.07)", orb2: "rgba(129,140,248,0.06)",
+    accent: "#c9a84c", titleColor: "#f1f5f9", subtitleColor: "rgba(255,255,255,0.4)",
+    cardBg: "var(--surface)", cardBorder: "var(--border)", cardShadow: "0 2px 12px rgba(0,0,0,0.3)",
+    labelColor: "var(--text-faint)", textMuted: "var(--text-muted)",
+    inputBg: "rgba(255,255,255,0.04)", btnBorder: "rgba(255,255,255,0.12)", btnColor: "rgba(255,255,255,0.75)",
+    progressTrack: "rgba(255,255,255,0.07)",
+    kpi: ["#38bdf8", "#10b981", "#f59e0b", "#a855f7", "#818cf8", "#14b8a6"],
+  } : isAtlas ? {
+    panelBg: "linear-gradient(135deg, #ffffff 0%, #f0f4ff 60%, #eef1f8 100%)",
+    panelBorder: "#c7d2fe", panelShadow: "0 1px 4px rgba(0,0,0,0.07)",
+    orb1: "rgba(59,91,219,0.06)", orb2: "rgba(100,129,240,0.05)",
+    accent: "#3b5bdb", titleColor: "#0f172a", subtitleColor: "#64748b",
+    cardBg: "#ffffff", cardBorder: "#e2e8f0", cardShadow: "0 1px 4px rgba(0,0,0,0.06)",
+    labelColor: "#94a3b8", textMuted: "#64748b",
+    inputBg: "#ffffff", btnBorder: "#c7d2fe", btnColor: "#3b5bdb",
+    progressTrack: "#e2e8f0",
+    kpi: ["#3b82f6", "#10b981", "#f59e0b", "#a855f7", "#6366f1", "#14b8a6"],
+  } : {
+    panelBg: "linear-gradient(135deg, #ffffff 0%, #f8fafc 60%, #f1f5f9 100%)",
+    panelBorder: "#e2e8f0", panelShadow: "0 1px 4px rgba(0,0,0,0.06)",
+    orb1: "rgba(30,58,138,0.04)", orb2: "rgba(124,58,237,0.04)",
+    accent: "#1e3a8a", titleColor: "#0f172a", subtitleColor: "#64748b",
+    cardBg: "#ffffff", cardBorder: "#e2e8f0", cardShadow: "0 1px 3px rgba(0,0,0,0.05)",
+    labelColor: "#94a3b8", textMuted: "#64748b",
+    inputBg: "#ffffff", btnBorder: "#e2e8f0", btnColor: "#374151",
+    progressTrack: "#f1f5f9",
+    kpi: ["#3b82f6", "#10b981", "#f59e0b", "#a855f7", "#6366f1", "#14b8a6"],
+  };
   const [hotels, setHotels] = useState<Accommodation[]>([]);
   const [hotelRooms, setHotelRooms] = useState<HotelRoom[]>([]);
   const [hotelBeds, setHotelBeds] = useState<HotelBed[]>([]);
@@ -162,31 +209,20 @@ export default function HotelTrackingPage() {
           },
           {}
         );
-        const roomUsageList = Object.entries(roomUsage).map(([type, totalRooms]) => ({
-          type,
-          total: totalRooms
-        }));
-        const bedUsageList = Object.entries(bedUsage).map(([type, totalBeds]) => {
-          const usedBeds = filteredAssignments.filter((assignment) => {
-            if (assignment.hotelId !== hotel.id) return false;
-            if (!assignment.participantId) return false;
-            const athlete = athleteById.get(assignment.participantId);
-            return athlete?.bedType === type;
-          }).length;
-          return {
-            type,
-            total: totalBeds,
-            used: usedBeds,
-            available: Math.max(totalBeds - usedBeds, 0)
-          };
+        const roomUsageList = Object.entries(roomUsage).map(([type, totalRooms]) => {
+          const bedsForType = hotelRoomList
+            .filter((r) => (r.roomType ?? "SIN_TIPO") === type)
+            .reduce((s, r) => s + (r.bedsCapacity ?? 0), 0);
+          return { type, total: totalRooms, beds: bedsForType };
         });
+        const totalHotelBeds = hotelRoomList.reduce((s, r) => s + (r.bedsCapacity ?? 0), 0);
         return {
           ...hotel,
           assigned,
           available,
           occupancy,
           roomUsage: roomUsageList,
-          bedUsage: bedUsageList,
+          totalHotelBeds,
           totalCapacity: total
         };
       })
@@ -197,7 +233,6 @@ export default function HotelTrackingPage() {
     const activeHotels = selectedEventId
       ? hotels.filter((hotel) => hotel.eventId === selectedEventId)
       : hotels;
-    const roomById = new Map(hotelRooms.map((room) => [room.id, room]));
 
     const filteredAthletes = selectedEventId
       ? athletes.filter((athlete) => athlete.eventId === selectedEventId)
@@ -222,11 +257,8 @@ export default function HotelTrackingPage() {
     }, 0);
 
     const totalBeds = activeHotels.reduce((sum, hotel) => {
-      const beds = hotelBeds.filter((bed) => {
-        const room = bed.roomId ? roomById.get(bed.roomId) : null;
-        return room?.hotelId === hotel.id;
-      }).length;
-      return sum + beds;
+      const rooms = hotelRooms.filter((room) => room.hotelId === hotel.id);
+      return sum + rooms.reduce((s, room) => s + (room.bedsCapacity ?? 0), 0);
     }, 0);
 
     const unassignedParticipants = Math.max(
@@ -242,88 +274,146 @@ export default function HotelTrackingPage() {
       totalBeds,
       hotelsCount: activeHotels.length
     };
-  }, [selectedEventId, hotels, athletes, hotelRooms, hotelBeds, hotelAssignments]);
+  }, [selectedEventId, hotels, athletes, hotelRooms, hotelAssignments]);
+
+  const assignmentPct = overview.totalParticipants > 0
+    ? Math.round((overview.assignedParticipants / overview.totalParticipants) * 100)
+    : 0;
+  const assignmentColor = assignmentPct >= 80 ? "#10b981" : assignmentPct >= 40 ? "#f59e0b" : "#ef4444";
+
+  const kpiCards = [
+    { label: "Participantes registrados", value: overview.totalParticipants, icon: "👥", i: 0, sub: "Total en el evento" },
+    { label: "Asignados a hotel", value: overview.assignedParticipants, icon: "✅", i: 1, sub: `${assignmentPct}% cubierto` },
+    { label: "Por asignar", value: overview.unassignedParticipants, icon: "⏳", i: 2, sub: overview.unassignedParticipants > 0 ? "Pendientes de alojamiento" : "Sin pendientes" },
+    { label: "Hoteles activos", value: overview.hotelsCount, icon: "🏨", i: 3, sub: "Propiedades en operación" },
+    { label: "Habitaciones", value: overview.totalRooms, icon: "🚪", i: 4, sub: "Total de cuartos" },
+    { label: "Camas", value: overview.totalBeds, icon: "🛏", i: 5, sub: "Total de plazas" },
+  ];
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Tracking hotelería"
-        description="Disponibilidad en tiempo real por hotel y ocupación."
-      />
+      {/* ── Command panel */}
+      <section style={{
+        background: pal.panelBg,
+        border: `1px solid ${pal.panelBorder}`,
+        borderRadius: "20px",
+        padding: "24px 28px",
+        boxShadow: pal.panelShadow,
+        position: "relative",
+        overflow: "hidden",
+      }}>
+        <div style={{ position: "absolute", top: "-40px", right: "8%", width: "200px", height: "200px", borderRadius: "50%", background: pal.orb1, filter: "blur(50px)", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", bottom: "-30px", left: "15%", width: "150px", height: "150px", borderRadius: "50%", background: pal.orb2, filter: "blur(40px)", pointerEvents: "none" }} />
 
-      <section className="surface rounded-2xl p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="text-xs" style={{ color: "var(--text-muted)" }}>
-            {t("Última actualización")}: {lastUpdated ? lastUpdated.toLocaleTimeString("es-CL") : "-"}
+        <div className="flex flex-wrap items-start justify-between gap-4" style={{ position: "relative" }}>
+          <div>
+            <div className="flex items-center gap-3 mb-1">
+              <p style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: pal.accent }}>Operaciones</p>
+              <span style={{ display: "flex", alignItems: "center", gap: "5px", background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.28)", borderRadius: "99px", padding: "2px 8px" }}>
+                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#10b981", animation: "pulse 2s infinite", display: "inline-block" }} />
+                <span style={{ fontSize: "10px", fontWeight: 700, color: "#10b981", letterSpacing: "0.08em" }}>EN VIVO</span>
+              </span>
+            </div>
+            <h1 style={{ fontSize: "22px", fontWeight: 800, color: pal.titleColor, lineHeight: 1.2, marginBottom: "4px" }}>Tracking hotelería</h1>
+            <p style={{ fontSize: "13px", color: pal.subtitleColor }}>
+              {lastUpdated ? `Actualizado ${lastUpdated.toLocaleTimeString("es-CL")}` : "Disponibilidad en tiempo real"}
+            </p>
           </div>
-          <div className="flex items-center gap-3">
-            <label className="text-xs uppercase tracking-[0.2em]" style={{ color: "var(--text-faint)" }}>
-              {t("Evento")}
-            </label>
-            <select
-              className="input h-10 flex-1 min-w-[420px] leading-5"
-              value={selectedEventId}
-              onChange={(event) => setSelectedEventId(event.target.value)}
+
+          <div className="flex flex-wrap items-center gap-3">
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <label style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: pal.subtitleColor }}>Evento</label>
+              <select
+                className="input h-10 leading-5"
+                style={{ minWidth: "260px", background: pal.inputBg, color: pal.titleColor }}
+                value={selectedEventId}
+                onChange={(e) => setSelectedEventId(e.target.value)}
+              >
+                <option value="">{t("Todos")}</option>
+                {Object.values(events).map((ev) => (
+                  <option key={ev.id} value={ev.id}>{ev.name || ev.id}</option>
+                ))}
+              </select>
+            </div>
+            <button
+              onClick={loadData}
+              disabled={loading}
+              style={{
+                background: "transparent", border: `1px solid ${pal.btnBorder}`,
+                borderRadius: "10px", padding: "9px 18px",
+                color: loading ? pal.subtitleColor : pal.btnColor,
+                fontSize: "13px", fontWeight: 600,
+                cursor: loading ? "not-allowed" : "pointer",
+                display: "flex", alignItems: "center", gap: "7px",
+              }}
             >
-              <option value="">{t("Todos")}</option>
-              {Object.values(events).map((eventItem) => (
-                <option key={eventItem.id} value={eventItem.id}>
-                  {eventItem.name || eventItem.id}
-                </option>
-              ))}
-            </select>
+              <span style={{ fontSize: "14px" }}>↻</span>
+              {loading ? "Actualizando..." : "Refrescar"}
+            </button>
           </div>
-          <button className="btn btn-ghost" onClick={loadData} disabled={loading}>
-            {loading ? t("Actualizando...") : t("Refrescar")}
-          </button>
         </div>
-        {error && <p className="text-sm text-rose-600 mt-3">{error}</p>}
+        {error && <p className="mt-3 text-sm" style={{ color: "#ef4444" }}>{error}</p>}
       </section>
 
-      <section className="surface rounded-2xl p-6">
-        <h2 className="font-sans font-bold text-2xl mb-4" style={{ color: "var(--text)" }}>{t("Overview")}</h2>
+      {/* ── KPI cards */}
+      <section>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px", flexWrap: "wrap", gap: "8px" }}>
+          <div>
+            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: pal.labelColor }}>Resumen operativo</p>
+            <h2 style={{ marginTop: "3px", fontWeight: 700, fontSize: "16px", color: pal.titleColor }}>Overview de alojamiento</h2>
+          </div>
+          {/* Assignment progress bar */}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <span style={{ fontSize: "12px", fontWeight: 600, color: pal.textMuted }}>Cobertura</span>
+            <div style={{ width: "120px", height: "6px", borderRadius: "99px", background: pal.progressTrack, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${assignmentPct}%`, background: assignmentColor, borderRadius: "99px", transition: "width 400ms ease" }} />
+            </div>
+            <span style={{ fontSize: "13px", fontWeight: 800, color: assignmentColor }}>{assignmentPct}%</span>
+          </div>
+        </div>
+
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="rounded-xl p-4 surface">
-            <p className="text-xs uppercase tracking-[0.2em]" style={{ color: "var(--text-faint)" }}>
-              {t("Participantes registrados")}
-            </p>
-            <p className="text-2xl font-semibold" style={{ color: "var(--text)" }}>{overview.totalParticipants}</p>
-          </div>
-          <div className="rounded-xl p-4 surface">
-            <p className="text-xs uppercase tracking-[0.2em]" style={{ color: "var(--text-faint)" }}>
-              {t("Participantes asignados")}
-            </p>
-            <p className="text-2xl font-semibold" style={{ color: "var(--text)" }}>{overview.assignedParticipants}</p>
-          </div>
-          <div className="rounded-xl p-4 surface">
-            <p className="text-xs uppercase tracking-[0.2em]" style={{ color: "var(--text-faint)" }}>
-              {t("Por asignar")}
-            </p>
-            <p className="text-2xl font-semibold" style={{ color: "var(--text)" }}>{overview.unassignedParticipants}</p>
-          </div>
-          <div className="rounded-xl p-4 surface">
-            <p className="text-xs uppercase tracking-[0.2em]" style={{ color: "var(--text-faint)" }}>
-              {t("Hoteles")}
-            </p>
-            <p className="text-2xl font-semibold" style={{ color: "var(--text)" }}>{overview.hotelsCount}</p>
-          </div>
-          <div className="rounded-xl p-4 surface">
-            <p className="text-xs uppercase tracking-[0.2em]" style={{ color: "var(--text-faint)" }}>
-              {t("Habitaciones")}
-            </p>
-            <p className="text-2xl font-semibold" style={{ color: "var(--text)" }}>{overview.totalRooms}</p>
-          </div>
-          <div className="rounded-xl p-4 surface">
-            <p className="text-xs uppercase tracking-[0.2em]" style={{ color: "var(--text-faint)" }}>
-              {t("Camas")}
-            </p>
-            <p className="text-2xl font-semibold" style={{ color: "var(--text)" }}>{overview.totalBeds}</p>
-          </div>
+          {kpiCards.map((card) => {
+            const color = card.i === 2 && overview.unassignedParticipants > 0 ? "#f59e0b" : pal.kpi[card.i];
+            return (
+              <article key={card.label} style={{
+                background: pal.cardBg,
+                border: `1px solid ${pal.cardBorder}`,
+                borderTop: `3px solid ${color}`,
+                borderRadius: "20px",
+                padding: "18px 20px",
+                boxShadow: pal.cardShadow,
+                transition: "transform 120ms ease",
+              }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ""; }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span style={{ fontSize: "18px" }}>{card.icon}</span>
+                    <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: pal.labelColor }}>{card.label}</span>
+                  </div>
+                  <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: color, boxShadow: `0 0 6px ${color}88`, display: "inline-block", flexShrink: 0 }} />
+                </div>
+                <p style={{
+                  fontSize: "2.4rem", fontWeight: 800, color, lineHeight: 1,
+                  fontVariantNumeric: "tabular-nums",
+                  ...(isObsidian ? { textShadow: `0 0 20px ${color}55` } : {}),
+                }}>
+                  {loading ? "—" : card.value}
+                </p>
+                <p style={{ marginTop: "6px", fontSize: "12px", color: pal.textMuted }}>{card.sub}</p>
+              </article>
+            );
+          })}
         </div>
       </section>
 
       <section className="surface rounded-2xl p-6">
-        <h2 className="font-sans font-bold text-2xl mb-4" style={{ color: "var(--text)" }}>{t("Disponibilidad")}</h2>
+        <div style={{ marginBottom: "16px" }}>
+          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: pal.labelColor }}>Por propiedad</p>
+          <h2 className="font-sans font-bold text-lg mt-1" style={{ color: "var(--text)" }}>{t("Disponibilidad")}</h2>
+        </div>
         {rows.length === 0 ? (
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>{t("Sin hoteles registrados.")}</p>
         ) : (
@@ -368,14 +458,13 @@ export default function HotelTrackingPage() {
                         )}
                       </td>
                       <td>
-                        {row.bedUsage.length === 0 ? (
+                        {row.totalHotelBeds === 0 ? (
                           "-"
                         ) : (
                           <div className="space-y-1 text-xs" style={{ color: "var(--text-muted)" }}>
-                            {row.bedUsage.map((bed) => (
-                              <div key={bed.type}>
-                                {bed.type}: {bed.available}/{bed.total}
-                              </div>
+                            <div style={{ fontWeight: 700, color: "var(--text)", fontSize: "13px" }}>{row.totalHotelBeds}</div>
+                            {row.roomUsage.filter((r) => r.beds > 0).map((r) => (
+                              <div key={r.type}>{r.type}: {r.beds}</div>
                             ))}
                           </div>
                         )}
