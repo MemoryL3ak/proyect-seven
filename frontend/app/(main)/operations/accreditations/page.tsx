@@ -5,6 +5,7 @@ import QRCode from "qrcode";
 import { apiFetch } from "@/lib/api";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { buildCredentialHtml } from "@/lib/credential-template";
+import { useTheme } from "@/lib/theme";
 
 type EventItem = { id: string; name?: string | null };
 type DisciplineItem = { id: string; name?: string | null; category?: string | null; gender?: string | null };
@@ -126,6 +127,52 @@ function initials(name?: string | null) {
 }
 
 export default function AccreditationsPage() {
+  const { theme } = useTheme();
+  const isObsidian = theme === "obsidian";
+  const isAtlas = theme === "atlas";
+  const isDark = theme === "dark";
+
+  const pal = isObsidian ? {
+    panelBg: "linear-gradient(135deg, #0a1322 0%, #0e1728 60%, #0d1a30 100%)",
+    panelBorder: "rgba(34,211,238,0.08)", panelShadow: "0 4px 32px rgba(0,0,0,0.6)",
+    orb1: "rgba(34,211,238,0.08)", orb2: "rgba(168,85,247,0.07)",
+    accent: "#22d3ee", titleColor: "#e2e8f0", subtitleColor: "rgba(255,255,255,0.45)",
+    labelColor: "rgba(255,255,255,0.35)", textMuted: "rgba(255,255,255,0.5)",
+    cardShadow: "0 4px 20px rgba(0,0,0,0.5)", cardBorder: "rgba(34,211,238,0.12)",
+    inputBg: "rgba(255,255,255,0.06)", inputColor: "#e2e8f0",
+    innerBg: "rgba(255,255,255,0.04)",
+  } : isDark ? {
+    panelBg: "linear-gradient(135deg, #0f172a 0%, #1e293b 55%, #111827 100%)",
+    panelBorder: "rgba(255,255,255,0.06)", panelShadow: "0 4px 24px rgba(0,0,0,0.45)",
+    orb1: "rgba(34,211,238,0.07)", orb2: "rgba(129,140,248,0.06)",
+    accent: "#38bdf8", titleColor: "#f1f5f9", subtitleColor: "rgba(255,255,255,0.4)",
+    labelColor: "var(--text-faint)", textMuted: "var(--text-muted)",
+    cardShadow: "0 2px 12px rgba(0,0,0,0.3)", cardBorder: "rgba(255,255,255,0.08)",
+    inputBg: "rgba(255,255,255,0.07)", inputColor: "#f1f5f9",
+    innerBg: "rgba(255,255,255,0.04)",
+  } : isAtlas ? {
+    panelBg: "linear-gradient(135deg, #ffffff 0%, #f0f4ff 60%, #eef1f8 100%)",
+    panelBorder: "#c7d2fe", panelShadow: "0 1px 4px rgba(0,0,0,0.07)",
+    orb1: "rgba(59,91,219,0.06)", orb2: "rgba(100,129,240,0.05)",
+    accent: "#3b5bdb", titleColor: "#0f172a", subtitleColor: "#64748b",
+    labelColor: "#94a3b8", textMuted: "#64748b",
+    cardShadow: "0 1px 4px rgba(0,0,0,0.06)", cardBorder: "#e2e8f0",
+    inputBg: "#ffffff", inputColor: "#0f172a",
+    innerBg: "#f8fafc",
+  } : {
+    panelBg: "linear-gradient(135deg, #ffffff 0%, #f8fafc 60%, #f1f5f9 100%)",
+    panelBorder: "#e2e8f0", panelShadow: "0 1px 4px rgba(0,0,0,0.06)",
+    orb1: "rgba(34,211,238,0.05)", orb2: "rgba(124,58,237,0.04)",
+    accent: "#1e3a8a", titleColor: "#0f172a", subtitleColor: "#64748b",
+    labelColor: "#94a3b8", textMuted: "#64748b",
+    cardShadow: "0 1px 3px rgba(0,0,0,0.05)", cardBorder: "#e2e8f0",
+    inputBg: "#ffffff", inputColor: "#0f172a",
+    innerBg: "#f8fafc",
+  };
+
+  const sel = { background: pal.inputBg, color: pal.inputColor };          // for inside dark panel
+  const selFlat = { background: "var(--elevated)", color: "var(--text)" }; // for outside panel (var(--surface) bg)
+
   const [events, setEvents] = useState<EventItem[]>([]);
   const [disciplines, setDisciplines] = useState<DisciplineItem[]>([]);
   const [providers, setProviders] = useState<ProviderItem[]>([]);
@@ -536,149 +583,173 @@ export default function AccreditationsPage() {
       setError(err instanceof Error ? err.message : "No se pudo generar credencial.");
     }
   };
+  const pctColor = andKpiTotals.pct >= 80 ? "#10b981" : andKpiTotals.pct >= 50 ? "#f59e0b" : "#ef4444";
+  const varColor = andKpiTotals.variance < 0 ? "#ef4444" : "#10b981";
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
-        <p className="text-sm" style={{ color: "var(--text-muted)" }}>Panel para validar identidad, acreditar y generar credenciales.</p>
-        <div className="rounded-lg px-3 py-1.5 text-xs" style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text-muted)" }}>
-          Última actualización: <span className="font-semibold" style={{ color: "var(--text)" }}>{lastUpdated ? lastUpdated.toLocaleTimeString("es-CL") : "-"}</span>
-        </div>
-      </div>
+    <div className="space-y-5">
 
-      <section className="surface rounded-3xl p-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-xs uppercase tracking-[0.22em] text-white/50">AND / Acreditacion</p>
-            <h2 className="mt-1 text-2xl font-semibold text-white">Cumplimiento de acreditacion sobre registro AND</h2>
-            <p className="mt-1 text-sm text-white/50">Compara participantes registrados en AND vs participantes acreditados por disciplina.</p>
-          </div>
-          <button className="btn btn-ghost" type="button" onClick={loadData} disabled={loading}>
-            {loading ? "Actualizando..." : "Refrescar KPI"}
-          </button>
-        </div>
+      {/* ── AND Compliance panel */}
+      <section style={{ borderRadius: "24px", overflow: "hidden", boxShadow: pal.panelShadow }}>
+        <div style={{ background: pal.panelBg, border: `1px solid ${pal.panelBorder}`, borderRadius: "24px", padding: "24px 28px 22px", position: "relative", overflow: "hidden" }}>
+          <div style={{ position: "absolute", top: "-50px", right: "-30px", width: "250px", height: "250px", borderRadius: "50%", background: pal.orb1, filter: "blur(60px)", pointerEvents: "none" }} />
+          <div style={{ position: "absolute", bottom: "-30px", left: "20%", width: "200px", height: "200px", borderRadius: "50%", background: pal.orb2, filter: "blur(50px)", pointerEvents: "none" }} />
 
-        <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
-          <div className="grid gap-3 xl:grid-cols-[1.25fr_1.25fr_0.9fr]">
-            <div>
-              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/50">Evento</p>
-              <select className="input" value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)}>
-                <option value="">Selecciona evento</option>
-                {events.map((item) => <option key={item.id} value={item.id}>{item.name || item.id}</option>)}
-              </select>
+          <div style={{ position: "relative" }}>
+            {/* Header */}
+            <div className="flex flex-wrap items-start justify-between gap-3" style={{ marginBottom: "18px" }}>
+              <div>
+                <div className="flex items-center gap-2" style={{ marginBottom: "5px" }}>
+                  <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: pal.labelColor }}>AND / Acreditacion</span>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", borderRadius: "99px", padding: "2px 10px" }}>
+                    <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#10b981", display: "inline-block", animation: "pulse 2s ease-in-out infinite" }} />
+                    <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: "#10b981" }}>EN VIVO</span>
+                  </span>
+                </div>
+                <h2 style={{ fontSize: "20px", fontWeight: 800, color: pal.titleColor, margin: 0 }}>Cumplimiento de acreditacion sobre registro AND</h2>
+                <p style={{ fontSize: "12px", color: pal.subtitleColor, marginTop: "3px" }}>Compara participantes registrados en AND vs participantes acreditados por disciplina.</p>
+              </div>
+              <button className="btn btn-ghost" type="button" onClick={loadData} disabled={loading} style={{ flexShrink: 0 }}>
+                {loading ? "Actualizando..." : "↻ Refrescar KPI"}
+              </button>
             </div>
-            <div>
-              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/50">Delegacion AND</p>
-              <select className="input" value={andKpiDelegationId} onChange={(e) => setAndKpiDelegationId(e.target.value)}>
-                <option value="">Todas las delegaciones</option>
-                {eventDelegations.map((item) => <option key={item.id} value={item.id}>{item.countryCode || item.id}</option>)}
-              </select>
-            </div>
-            <div className="rounded-2xl border border-blue-500/20 bg-blue-500/10 px-4 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-400">Vista activa</p>
-              <p className="mt-2 text-lg font-semibold text-white">{andKpiDelegationId ? (delegationMap[andKpiDelegationId]?.countryCode || andKpiDelegationId) : "Consolidado"}</p>
-              <p className="mt-1 text-sm text-white/50">{andKpiDelegationId ? "Filtro por delegacion" : "Todo el evento"}</p>
-            </div>
-          </div>
-        </div>
 
-        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <div className="surface rounded-2xl p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-white/50">Registrado AND</p>
-            <p className="mt-3 text-4xl font-semibold text-white">{andKpiTotals.registered}</p>
-            <p className="mt-2 text-sm text-white/50">Base declarada por AND</p>
-          </div>
-          <div className="surface rounded-2xl p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-white/50">Acreditado</p>
-            <p className="mt-3 text-4xl font-semibold text-white">{andKpiTotals.accredited}</p>
-            <p className="mt-2 text-sm text-white/50">Casos aprobados en acreditacion</p>
-          </div>
-          <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-emerald-400">Cumplimiento total</p>
-            <div className="mt-3 flex items-end gap-2">
-              <p className="text-4xl font-semibold text-emerald-400">{andKpiTotals.pct}%</p>
-              <p className="pb-1 text-sm text-emerald-400/80">sobre AND</p>
+            {/* Filters + active view */}
+            <div style={{ background: pal.innerBg, border: `1px solid ${pal.cardBorder}`, borderRadius: "16px", padding: "16px", marginBottom: "18px" }}>
+              <div className="grid gap-3 xl:grid-cols-[1.25fr_1.25fr_0.9fr]">
+                <div>
+                  <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: pal.labelColor, marginBottom: "8px" }}>Evento</p>
+                  <select className="input rounded-xl" style={sel} value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)}>
+                    <option value="">Selecciona evento</option>
+                    {events.map((item) => <option key={item.id} value={item.id}>{item.name || item.id}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: pal.labelColor, marginBottom: "8px" }}>Delegacion AND</p>
+                  <select className="input rounded-xl" style={sel} value={andKpiDelegationId} onChange={(e) => setAndKpiDelegationId(e.target.value)}>
+                    <option value="">Todas las delegaciones</option>
+                    {eventDelegations.map((item) => <option key={item.id} value={item.id}>{item.countryCode || item.id}</option>)}
+                  </select>
+                </div>
+                <div style={{ background: "rgba(56,189,248,0.12)", border: "1px solid rgba(56,189,248,0.25)", borderRadius: "14px", padding: "14px 16px" }}>
+                  <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "#38bdf8" }}>Vista activa</p>
+                  <p style={{ marginTop: "8px", fontSize: "18px", fontWeight: 700, color: pal.titleColor }}>{andKpiDelegationId ? (delegationMap[andKpiDelegationId]?.countryCode || andKpiDelegationId) : "Consolidado"}</p>
+                  <p style={{ marginTop: "2px", fontSize: "12px", color: pal.subtitleColor }}>{andKpiDelegationId ? "Filtro por delegacion" : "Todo el evento"}</p>
+                </div>
+              </div>
             </div>
-            <div className="mt-3 h-2.5 rounded-full bg-emerald-500/20">
-              <div className="h-2.5 rounded-full bg-emerald-500" style={{ width: `${Math.min(andKpiTotals.pct, 100)}%` }} />
-            </div>
-          </div>
-          <div className="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-rose-400">Brecha neta</p>
-            <p className={`mt-3 text-4xl font-semibold ${andKpiTotals.variance < 0 ? "text-rose-400" : "text-emerald-400"}`}>{andKpiTotals.variance}</p>
-            <p className="mt-2 text-sm text-white/50">Diferencia contra el registro AND</p>
-          </div>
-        </div>
 
-        <div className="mt-5 overflow-x-auto">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Delegación</th>
-                <th>Disciplina</th>
-                <th>Tipo</th>
-                <th>Género</th>
-                <th>Registrado AND</th>
-                <th>Acreditado</th>
-                <th>Brecha</th>
-                <th>Cumplimiento</th>
-              </tr>
-            </thead>
-            <tbody>
-              {andKpiRows.map((row) => (
-                <tr key={row.key}>
-                  <td>{row.delegationCode}</td>
-                  <td>{row.disciplineName}</td>
-                  <td>{row.disciplineCategory}</td>
-                  <td>{row.disciplineGender}</td>
-                  <td>{row.registered}</td>
-                  <td>{row.accredited}</td>
-                  <td className={row.variance < 0 ? "text-rose-400" : "text-emerald-400"}>{row.variance}</td>
-                  <td>
-                    <div className="flex items-center gap-3">
-                      <div className="h-2 w-36 rounded-full bg-white/10">
-                        <div className="h-2 rounded-full bg-cyan-500" style={{ width: `${Math.min(row.pct, 100)}%` }} />
-                      </div>
-                      <span className="text-sm font-semibold text-white/90">{row.pct}%</span>
+            {/* KPI cards */}
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              {[
+                { label: "Registrado AND",  value: String(andKpiTotals.registered), color: pal.accent,  icon: "📋", sub: "Base declarada por AND",            extra: null },
+                { label: "Acreditado",       value: String(andKpiTotals.accredited), color: "#10b981",  icon: "✅", sub: "Casos aprobados en acreditacion",    extra: null },
+                { label: "Cumplimiento",     value: `${andKpiTotals.pct}%`,          color: pctColor,    icon: "📊", sub: "sobre AND",                          extra: "bar" },
+                { label: "Brecha neta",      value: String(andKpiTotals.variance),   color: varColor,    icon: "📉", sub: "Diferencia contra registro AND",      extra: null },
+              ].map((card) => (
+                <article key={card.label} style={{
+                  background: (isObsidian || isDark) ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.65)",
+                  border: `1px solid ${card.color}25`,
+                  borderTop: `3px solid ${card.color}`,
+                  borderRadius: "18px", padding: "16px 18px",
+                  transition: "transform 120ms ease",
+                }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}
+                >
+                  <div className="flex items-center justify-between" style={{ marginBottom: "8px" }}>
+                    <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: card.color }}>{card.label}</p>
+                    <span style={{ fontSize: "18px" }}>{card.icon}</span>
+                  </div>
+                  <p style={{
+                    fontSize: "2.2rem", fontWeight: 800, lineHeight: 1, color: card.color,
+                    textShadow: (isObsidian || isDark) ? `0 0 20px ${card.color}44` : "none",
+                  }}>{card.value}</p>
+                  <p style={{ fontSize: "11px", color: pal.subtitleColor, marginTop: "5px" }}>{card.sub}</p>
+                  {card.extra === "bar" ? (
+                    <div style={{ marginTop: "8px", height: "6px", borderRadius: "99px", background: `${pctColor}25` }}>
+                      <div style={{ height: "6px", borderRadius: "99px", background: pctColor, width: `${Math.min(andKpiTotals.pct, 100)}%`, transition: "width 600ms ease" }} />
                     </div>
-                  </td>
-                </tr>
+                  ) : null}
+                </article>
               ))}
-            </tbody>
-          </table>
-          {andKpiRows.length === 0 ? <p className="mt-3 text-sm text-white/50">No hay participantes AND para mostrar cumplimiento en este filtro.</p> : null}
+            </div>
+
+            {/* AND rows table */}
+            <div style={{ marginTop: "18px", overflowX: "auto", background: pal.innerBg, border: `1px solid ${pal.cardBorder}`, borderRadius: "16px" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+                <thead>
+                  <tr>
+                    {["Delegación","Disciplina","Tipo","Género","Registrado AND","Acreditado","Brecha","Cumplimiento"].map((h) => (
+                      <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: pal.labelColor, borderBottom: `1px solid ${pal.cardBorder}`, whiteSpace: "nowrap" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {andKpiRows.map((row, idx) => {
+                    const rc = row.variance < 0 ? "#ef4444" : "#10b981";
+                    return (
+                      <tr key={row.key} style={{ borderBottom: idx < andKpiRows.length - 1 ? `1px solid ${pal.cardBorder}` : "none" }}>
+                        <td style={{ padding: "10px 14px", fontWeight: 700, color: pal.titleColor }}>{row.delegationCode}</td>
+                        <td style={{ padding: "10px 14px", color: pal.titleColor }}>{row.disciplineName}</td>
+                        <td style={{ padding: "10px 14px", color: pal.subtitleColor }}>{row.disciplineCategory}</td>
+                        <td style={{ padding: "10px 14px", color: pal.subtitleColor }}>{row.disciplineGender}</td>
+                        <td style={{ padding: "10px 14px", fontWeight: 600, color: pal.titleColor }}>{row.registered}</td>
+                        <td style={{ padding: "10px 14px", fontWeight: 600, color: "#10b981" }}>{row.accredited}</td>
+                        <td style={{ padding: "10px 14px", fontWeight: 700, color: rc }}>{row.variance}</td>
+                        <td style={{ padding: "10px 14px" }}>
+                          <div className="flex items-center gap-2">
+                            <div style={{ width: "80px", height: "6px", borderRadius: "99px", background: `${pctColor}22`, flexShrink: 0 }}>
+                              <div style={{ height: "6px", borderRadius: "99px", background: row.pct >= 80 ? "#10b981" : row.pct >= 50 ? "#f59e0b" : "#ef4444", width: `${Math.min(row.pct, 100)}%` }} />
+                            </div>
+                            <span style={{ fontSize: "12px", fontWeight: 700, color: row.pct >= 80 ? "#10b981" : row.pct >= 50 ? "#f59e0b" : "#ef4444" }}>{row.pct}%</span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {andKpiRows.length === 0 ? <p style={{ padding: "16px", fontSize: "13px", color: pal.subtitleColor }}>No hay participantes AND para mostrar cumplimiento en este filtro.</p> : null}
+            </div>
+          </div>
         </div>
       </section>
 
-      <section className="surface rounded-2xl p-5">
+      {/* ── Filter bar */}
+      <section style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "20px", padding: "18px 20px", boxShadow: pal.cardShadow }}>
         <div className="grid gap-3 lg:grid-cols-12">
-          <select className="input lg:col-span-3" value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)}>
+          <select className="input rounded-xl lg:col-span-3" style={selFlat} value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)}>
             <option value="">Todos los eventos</option>
             {events.map((item) => <option key={item.id} value={item.id}>{item.name || item.id}</option>)}
           </select>
-          <select className="input lg:col-span-2" value={subjectFilter} onChange={(e) => setSubjectFilter(e.target.value as "ALL" | "PARTICIPANT" | "DRIVER")}>
+          <select className="input rounded-xl lg:col-span-2" style={selFlat} value={subjectFilter} onChange={(e) => setSubjectFilter(e.target.value as "ALL" | "PARTICIPANT" | "DRIVER")}>
             <option value="ALL">Todos los sujetos</option>
             <option value="PARTICIPANT">Participante</option>
             <option value="DRIVER">Conductor</option>
           </select>
-          <select className="input lg:col-span-2" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}>
+          <select className="input rounded-xl lg:col-span-2" style={selFlat} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}>
             {STATUS_OPTIONS.map((status) => <option key={status} value={status}>{statusFilterLabel(status)}</option>)}
           </select>
-          <input className="input lg:col-span-3" placeholder="Buscar por nombre, ID o codigo credencial" value={query} onChange={(e) => setQuery(e.target.value)} />
-          <button className="btn btn-ghost lg:col-span-2" onClick={loadData} disabled={loading}>{loading ? "Actualizando..." : "Refrescar"}</button>
+          <input className="input rounded-xl lg:col-span-3" style={selFlat} placeholder="Buscar por nombre, ID o codigo credencial" value={query} onChange={(e) => setQuery(e.target.value)} />
+          <button className="btn btn-ghost lg:col-span-2" onClick={loadData} disabled={loading}>{loading ? "Actualizando..." : "↻ Refrescar"}</button>
         </div>
         {(error || message) ? (
           <div className="mt-3 space-y-1">
-            {error ? <p className="text-sm text-rose-600">{error}</p> : null}
-            {message ? <p className="text-sm text-emerald-400">{message}</p> : null}
+            {error ? <p className="text-sm" style={{ color: "#ef4444" }}>{error}</p> : null}
+            {message ? <p className="text-sm" style={{ color: "#10b981" }}>{message}</p> : null}
           </div>
         ) : null}
       </section>
 
+      {/* ── Create form + participants/drivers table */}
       <section className="grid gap-4 xl:grid-cols-[1.35fr_1fr]">
-        <form onSubmit={createAccreditation} className="surface rounded-2xl p-5 xl:order-1">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-white/50">Nueva acreditacion</h3>
-          <div className="mt-3 space-y-3">
-            <select className="input" value={newSubjectType} onChange={(e) => {
+
+        {/* Form */}
+        <form onSubmit={createAccreditation} style={{ background: "var(--surface)", border: `1px solid var(--border)`, borderTop: `3px solid ${pal.accent}`, borderRadius: "20px", padding: "20px", boxShadow: pal.cardShadow }} className="xl:order-1">
+          <h3 style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--text-faint)", marginBottom: "14px" }}>Nueva acreditacion</h3>
+          <div className="space-y-3">
+            <select className="input rounded-xl" style={selFlat} value={newSubjectType} onChange={(e) => {
               const type = e.target.value as "PARTICIPANT" | "DRIVER";
               setNewSubjectType(type);
               setSelectedDelegationId("");
@@ -691,55 +762,58 @@ export default function AccreditationsPage() {
             </select>
 
             {newSubjectType === "PARTICIPANT" ? (
-              <select className="input" value={selectedDelegationId} onChange={(e) => setSelectedDelegationId(e.target.value)}>
+              <select className="input rounded-xl" style={selFlat} value={selectedDelegationId} onChange={(e) => setSelectedDelegationId(e.target.value)}>
                 <option value="">Todas las delegaciones</option>
                 {eventDelegations.map((item) => <option key={item.id} value={item.id}>{item.countryCode || item.id}</option>)}
               </select>
             ) : null}
 
-            <input className="input" placeholder={newSubjectType === "PARTICIPANT" ? "Buscar participante por nombre, pasaporte o ID" : "Buscar conductor por nombre, RUT o ID"} value={subjectSearch} onChange={(e) => setSubjectSearch(e.target.value)} />
+            <input className="input rounded-xl" style={selFlat} placeholder={newSubjectType === "PARTICIPANT" ? "Buscar participante por nombre, pasaporte o ID" : "Buscar conductor por nombre, RUT o ID"} value={subjectSearch} onChange={(e) => setSubjectSearch(e.target.value)} />
 
             {newSubjectType === "PARTICIPANT" ? (
-              <select className="input" value={newAthleteId} onChange={(e) => setNewAthleteId(e.target.value)} required>
+              <select className="input rounded-xl" style={selFlat} value={newAthleteId} onChange={(e) => setNewAthleteId(e.target.value)} required>
                 <option value="">Selecciona participante</option>
                 {selectableAthletes.map((item) => <option key={item.id} value={item.id}>{item.fullName || item.id} - {(item.delegationId && delegationMap[item.delegationId]?.countryCode) || "SIN_DELEGACION"}</option>)}
               </select>
             ) : (
-              <select className="input" value={newDriverId} onChange={(e) => setNewDriverId(e.target.value)} required>
+              <select className="input rounded-xl" style={selFlat} value={newDriverId} onChange={(e) => setNewDriverId(e.target.value)} required>
                 <option value="">Selecciona conductor</option>
                 {selectableDrivers.map((item) => <option key={item.id} value={item.id}>{item.fullName || item.id} - {item.rut || "SIN_RUT"}</option>)}
               </select>
             )}
 
             {(selectedAthlete || selectedDriver) ? (
-              <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                <p className="text-xs uppercase tracking-[0.16em] text-white/50">Ficha de validacion</p>
-                <div className="mt-2 flex gap-3">
-                  {selectedPhotoUrl ? <img src={selectedPhotoUrl} alt="Foto sujeto" className="h-24 w-20 rounded-lg border border-white/10 object-cover" /> : <div className="grid h-24 w-20 place-items-center rounded-lg border border-white/10 bg-white/10 text-sm font-bold text-white/90">{initials(selectedAthlete?.fullName || selectedDriver?.fullName)}</div>}
-                  <div className="grid flex-1 gap-1 text-xs text-white/90">
-                    {newSubjectType === "PARTICIPANT" && selectedAthlete ? <><p><span className="font-semibold">Nombre:</span> {selectedAthlete.fullName || "-"}</p><p><span className="font-semibold">Email:</span> {selectedAthlete.email || "-"}</p><p><span className="font-semibold">Pais:</span> {selectedAthlete.countryCode || "-"}</p><p><span className="font-semibold">Pasaporte:</span> {selectedAthlete.passportNumber || "-"}</p><p><span className="font-semibold">Delegacion:</span> {selectedAthlete.delegationId ? delegationMap[selectedAthlete.delegationId]?.countryCode || selectedAthlete.delegationId : "-"}</p></> : null}
-                    {newSubjectType === "DRIVER" && selectedDriver ? <><p><span className="font-semibold">Nombre:</span> {selectedDriver.fullName || "-"}</p><p><span className="font-semibold">RUT:</span> {selectedDriver.rut || "-"}</p><p><span className="font-semibold">Email:</span> {selectedDriver.email || "-"}</p><p><span className="font-semibold">Telefono:</span> {selectedDriver.phone || "-"}</p><p><span className="font-semibold">Licencia:</span> {selectedDriver.licenseNumber || "-"}</p><p><span className="font-semibold">Proveedor:</span> {selectedDriver.providerId ? providerMap[selectedDriver.providerId]?.name || selectedDriver.providerId : "-"}</p></> : null}
+              <div style={{ borderRadius: "14px", border: `1px solid ${pal.cardBorder}`, background: pal.innerBg, padding: "14px" }}>
+                <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--text-faint)", marginBottom: "10px" }}>Ficha de validacion</p>
+                <div className="flex gap-3">
+                  {selectedPhotoUrl
+                    ? <img src={selectedPhotoUrl} alt="Foto sujeto" style={{ height: "96px", width: "80px", borderRadius: "10px", border: "1px solid var(--border)", objectFit: "cover" }} />
+                    : <div style={{ display: "grid", height: "96px", width: "80px", placeItems: "center", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--elevated)", fontSize: "14px", fontWeight: 700, color: "var(--text)" }}>{initials(selectedAthlete?.fullName || selectedDriver?.fullName)}</div>}
+                  <div style={{ display: "grid", flex: 1, gap: "3px", fontSize: "12px", color: "var(--text)" }}>
+                    {newSubjectType === "PARTICIPANT" && selectedAthlete ? <><p><span style={{ fontWeight: 600 }}>Nombre:</span> {selectedAthlete.fullName || "-"}</p><p><span style={{ fontWeight: 600 }}>Email:</span> {selectedAthlete.email || "-"}</p><p><span style={{ fontWeight: 600 }}>Pais:</span> {selectedAthlete.countryCode || "-"}</p><p><span style={{ fontWeight: 600 }}>Pasaporte:</span> {selectedAthlete.passportNumber || "-"}</p><p><span style={{ fontWeight: 600 }}>Delegacion:</span> {selectedAthlete.delegationId ? delegationMap[selectedAthlete.delegationId]?.countryCode || selectedAthlete.delegationId : "-"}</p></> : null}
+                    {newSubjectType === "DRIVER" && selectedDriver ? <><p><span style={{ fontWeight: 600 }}>Nombre:</span> {selectedDriver.fullName || "-"}</p><p><span style={{ fontWeight: 600 }}>RUT:</span> {selectedDriver.rut || "-"}</p><p><span style={{ fontWeight: 600 }}>Email:</span> {selectedDriver.email || "-"}</p><p><span style={{ fontWeight: 600 }}>Telefono:</span> {selectedDriver.phone || "-"}</p><p><span style={{ fontWeight: 600 }}>Licencia:</span> {selectedDriver.licenseNumber || "-"}</p><p><span style={{ fontWeight: 600 }}>Proveedor:</span> {selectedDriver.providerId ? providerMap[selectedDriver.providerId]?.name || selectedDriver.providerId : "-"}</p></> : null}
                   </div>
                 </div>
-                <div className="mt-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/50">Asignacion de accesos</p>
-                  <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                <div style={{ marginTop: "14px" }}>
+                  <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--text-faint)", marginBottom: "8px" }}>Asignacion de accesos</p>
+                  <div className="grid gap-2 sm:grid-cols-2">
                     {ACCESS_OPTIONS.map((option) => {
                       const checked = draftAccessTypes.includes(option.code);
                       return (
-                        <label key={option.code} className={`flex items-center gap-3 rounded-xl border px-3 py-2 text-sm transition ${checked ? "border-cyan-500/40 bg-cyan-500/10 text-cyan-300" : "border-white/10 bg-white/5 text-white/90"}`}>
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={(e) =>
-                              setDraftAccessTypes((current) =>
-                                e.target.checked
-                                  ? normalizeAccessTypes([...current, option.code])
-                                  : current.filter((item) => item !== option.code)
-                              )
-                            }
+                        <label key={option.code} style={{
+                          display: "flex", alignItems: "center", gap: "10px",
+                          borderRadius: "12px", border: checked ? "1px solid rgba(34,211,238,0.35)" : "1px solid var(--border)",
+                          background: checked ? "rgba(34,211,238,0.08)" : "var(--elevated)",
+                          padding: "8px 12px", fontSize: "13px", cursor: "pointer",
+                          color: checked ? "#22d3ee" : "var(--text)",
+                          transition: "all 120ms ease",
+                        }}>
+                          <input type="checkbox" checked={checked}
+                            onChange={(e) => setDraftAccessTypes((current) =>
+                              e.target.checked ? normalizeAccessTypes([...current, option.code]) : current.filter((item) => item !== option.code)
+                            )}
                           />
-                          <span className="inline-flex min-w-10 items-center justify-center rounded-lg bg-white/10 px-2 py-1 text-xs font-semibold text-white/90">{option.code}</span>
+                          <span style={{ display: "inline-flex", minWidth: "32px", alignItems: "center", justifyContent: "center", borderRadius: "8px", background: checked ? "rgba(34,211,238,0.15)" : "var(--border)", padding: "2px 6px", fontSize: "11px", fontWeight: 700 }}>{option.code}</span>
                           <span>{option.label}</span>
                         </label>
                       );
@@ -749,75 +823,109 @@ export default function AccreditationsPage() {
               </div>
             ) : null}
 
-            <div className="flex justify-end pt-1"><button className="btn btn-primary px-10" type="submit" disabled={saving || !selectedEventId}>{saving ? "Guardando..." : (selectedAccreditation ? (isAccredited(selectedAccreditation.status) ? "Guardar accesos" : "Guardar y acreditar") : "Acreditar")}</button></div>
+            <div className="flex justify-end pt-1">
+              <button className="btn btn-primary px-10" type="submit" disabled={saving || !selectedEventId}>
+                {saving ? "Guardando..." : (selectedAccreditation ? (isAccredited(selectedAccreditation.status) ? "Guardar accesos" : "Guardar y acreditar") : "Acreditar")}
+              </button>
+            </div>
           </div>
         </form>
-        <div className="surface rounded-2xl p-5 xl:order-2">
+
+        {/* Participants / drivers table */}
+        <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "20px", padding: "20px", boxShadow: pal.cardShadow }} className="xl:order-2">
           {newSubjectType === "PARTICIPANT" ? (
             <>
-              <h4 className="text-xs uppercase tracking-[0.16em] text-white/50">Participantes registrados</h4>
-              <div className="overflow-x-auto mt-2">
-                <table className="table">
-                  <thead><tr><th>Nombre</th><th>Delegacion</th><th>Pais</th><th>Pasaporte</th><th>Accesos</th><th>Estado</th><th>Credencial</th><th>Acciones</th></tr></thead>
+              <h4 style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--text-faint)", marginBottom: "12px" }}>Participantes registrados</h4>
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+                  <thead>
+                    <tr style={{ background: "var(--elevated)" }}>
+                      {["Nombre","Delegacion","Pais","Pasaporte","Accesos","Estado","Credencial","Acciones"].map((h) => (
+                        <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--text-faint)", borderBottom: "1px solid var(--border)", whiteSpace: "nowrap" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
                   <tbody>
-                    {participantRows.map((item) => {
+                    {participantRows.map((item, idx) => {
                       const acc = accByAthlete[item.id];
                       const accredited = isAccredited(acc?.status);
                       const accessTypes = normalizeAccessTypes(acc?.accessTypes);
                       return (
-                        <tr key={item.id}>
-                          <td><p className="font-medium text-white">{item.fullName || item.id}</p><p className="text-xs text-white/50">{item.id}</p></td>
-                          <td>{item.delegationId ? delegationMap[item.delegationId]?.countryCode || item.delegationId : "-"}</td>
-                          <td>{item.countryCode || "-"}</td>
-                          <td>{item.passportNumber || "-"}</td>
-                          <td>
+                        <tr key={item.id} style={{ borderBottom: "1px solid var(--border)", background: idx % 2 === 0 ? "transparent" : "var(--elevated)" }}>
+                          <td style={{ padding: "10px 12px" }}><p style={{ fontWeight: 600, color: "var(--text)" }}>{item.fullName || item.id}</p><p style={{ fontSize: "11px", color: "var(--text-faint)" }}>{item.id}</p></td>
+                          <td style={{ padding: "10px 12px", color: "var(--text-muted)" }}>{item.delegationId ? delegationMap[item.delegationId]?.countryCode || item.delegationId : "-"}</td>
+                          <td style={{ padding: "10px 12px", color: "var(--text-muted)" }}>{item.countryCode || "-"}</td>
+                          <td style={{ padding: "10px 12px", color: "var(--text-muted)" }}>{item.passportNumber || "-"}</td>
+                          <td style={{ padding: "10px 12px" }}>
                             <div className="flex flex-wrap gap-1">
-                              {accessTypes.length ? accessTypes.map((code) => <span key={code} className="rounded-full bg-cyan-500/10 px-2 py-1 text-xs font-semibold text-cyan-300">{code}</span>) : <span className="text-xs text-white/40">Sin accesos</span>}
+                              {accessTypes.length ? accessTypes.map((code) => <span key={code} style={{ borderRadius: "99px", background: "rgba(34,211,238,0.12)", border: "1px solid rgba(34,211,238,0.25)", padding: "2px 8px", fontSize: "11px", fontWeight: 700, color: "#22d3ee" }}>{code}</span>) : <span style={{ fontSize: "11px", color: "var(--text-faint)" }}>Sin accesos</span>}
                             </div>
                           </td>
-                          <td><span className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${rowStatusClass(acc?.status)}`}>{rowStatusLabel(acc?.status)}</span></td>
-                          <td>{credentialLabel(acc)}</td>
-                          <td><div className="flex flex-wrap gap-2"><button className="btn btn-ghost" type="button" onClick={() => { setNewSubjectType("PARTICIPANT"); setSelectedDelegationId(item.delegationId || ""); setSubjectSearch(item.fullName || ""); setNewAthleteId(item.id); setNewDriverId(""); }}>Editar accesos</button><button className="btn btn-ghost" type="button" disabled={!acc || !accredited || saving} onClick={() => acc && setNotAccredited(acc)}>Modificar acreditacion</button><button className="btn btn-primary" type="button" disabled={!accredited} onClick={() => generateCredential("PARTICIPANT", item.id)}>Generar credencial</button></div></td>
+                          <td style={{ padding: "10px 12px" }}>
+                            <span style={{ display: "inline-flex", borderRadius: "99px", padding: "3px 10px", fontSize: "11px", fontWeight: 700, background: accredited ? "rgba(16,185,129,0.12)" : "var(--elevated)", border: accredited ? "1px solid rgba(16,185,129,0.3)" : "1px solid var(--border)", color: accredited ? "#10b981" : "var(--text-muted)" }}>{rowStatusLabel(acc?.status)}</span>
+                          </td>
+                          <td style={{ padding: "10px 12px", color: "var(--text-muted)", fontSize: "12px" }}>{credentialLabel(acc)}</td>
+                          <td style={{ padding: "8px 12px" }}>
+                            <div className="flex flex-wrap gap-1">
+                              <button className="btn btn-ghost" type="button" style={{ fontSize: "11px", padding: "4px 10px" }} onClick={() => { setNewSubjectType("PARTICIPANT"); setSelectedDelegationId(item.delegationId || ""); setSubjectSearch(item.fullName || ""); setNewAthleteId(item.id); setNewDriverId(""); }}>Editar</button>
+                              <button className="btn btn-ghost" type="button" style={{ fontSize: "11px", padding: "4px 10px" }} disabled={!acc || !accredited || saving} onClick={() => acc && setNotAccredited(acc)}>Modificar</button>
+                              <button className="btn btn-primary" type="button" style={{ fontSize: "11px", padding: "4px 10px" }} disabled={!accredited} onClick={() => generateCredential("PARTICIPANT", item.id)}>Credencial</button>
+                            </div>
+                          </td>
                         </tr>
                       );
                     })}
                   </tbody>
                 </table>
               </div>
-              {participantRows.length === 0 ? <p className="mt-3 text-sm text-white/50">No hay participantes para ese filtro.</p> : null}
+              {participantRows.length === 0 ? <p style={{ marginTop: "12px", fontSize: "13px", color: "var(--text-muted)" }}>No hay participantes para ese filtro.</p> : null}
             </>
           ) : (
             <>
-              <h4 className="text-xs uppercase tracking-[0.16em] text-white/50">Conductores registrados</h4>
-              <div className="overflow-x-auto mt-2">
-                <table className="table">
-                  <thead><tr><th>Nombre</th><th>RUT</th><th>Proveedor</th><th>Telefono</th><th>Accesos</th><th>Estado</th><th>Credencial</th><th>Acciones</th></tr></thead>
+              <h4 style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--text-faint)", marginBottom: "12px" }}>Conductores registrados</h4>
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+                  <thead>
+                    <tr style={{ background: "var(--elevated)" }}>
+                      {["Nombre","RUT","Proveedor","Telefono","Accesos","Estado","Credencial","Acciones"].map((h) => (
+                        <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--text-faint)", borderBottom: "1px solid var(--border)", whiteSpace: "nowrap" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
                   <tbody>
-                    {driverRows.map((item) => {
+                    {driverRows.map((item, idx) => {
                       const acc = accByDriver[item.id];
                       const accredited = isAccredited(acc?.status);
                       const accessTypes = normalizeAccessTypes(acc?.accessTypes ?? item.accessTypes);
                       return (
-                        <tr key={item.id}>
-                          <td><p className="font-medium text-white">{item.fullName || item.id}</p><p className="text-xs text-white/50">{item.id}</p></td>
-                          <td>{item.rut || "-"}</td>
-                          <td>{item.providerId ? providerMap[item.providerId]?.name || item.providerId : "-"}</td>
-                          <td>{item.phone || "-"}</td>
-                          <td>
+                        <tr key={item.id} style={{ borderBottom: "1px solid var(--border)", background: idx % 2 === 0 ? "transparent" : "var(--elevated)" }}>
+                          <td style={{ padding: "10px 12px" }}><p style={{ fontWeight: 600, color: "var(--text)" }}>{item.fullName || item.id}</p><p style={{ fontSize: "11px", color: "var(--text-faint)" }}>{item.id}</p></td>
+                          <td style={{ padding: "10px 12px", color: "var(--text-muted)" }}>{item.rut || "-"}</td>
+                          <td style={{ padding: "10px 12px", color: "var(--text-muted)" }}>{item.providerId ? providerMap[item.providerId]?.name || item.providerId : "-"}</td>
+                          <td style={{ padding: "10px 12px", color: "var(--text-muted)" }}>{item.phone || "-"}</td>
+                          <td style={{ padding: "10px 12px" }}>
                             <div className="flex flex-wrap gap-1">
-                              {accessTypes.length ? accessTypes.map((code) => <span key={code} className="rounded-full bg-cyan-500/10 px-2 py-1 text-xs font-semibold text-cyan-300">{code}</span>) : <span className="text-xs text-white/40">Sin accesos</span>}
+                              {accessTypes.length ? accessTypes.map((code) => <span key={code} style={{ borderRadius: "99px", background: "rgba(34,211,238,0.12)", border: "1px solid rgba(34,211,238,0.25)", padding: "2px 8px", fontSize: "11px", fontWeight: 700, color: "#22d3ee" }}>{code}</span>) : <span style={{ fontSize: "11px", color: "var(--text-faint)" }}>Sin accesos</span>}
                             </div>
                           </td>
-                          <td><span className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${rowStatusClass(acc?.status)}`}>{rowStatusLabel(acc?.status)}</span></td>
-                          <td>{credentialLabel(acc)}</td>
-                          <td><div className="flex flex-wrap gap-2"><button className="btn btn-ghost" type="button" onClick={() => { setNewSubjectType("DRIVER"); setSubjectSearch(item.fullName || ""); setNewAthleteId(""); setNewDriverId(item.id); }}>Editar accesos</button><button className="btn btn-ghost" type="button" disabled={!acc || !accredited || saving} onClick={() => acc && setNotAccredited(acc)}>Modificar acreditacion</button><button className="btn btn-primary" type="button" disabled={!accredited} onClick={() => generateCredential("DRIVER", item.id)}>Generar credencial</button></div></td>
+                          <td style={{ padding: "10px 12px" }}>
+                            <span style={{ display: "inline-flex", borderRadius: "99px", padding: "3px 10px", fontSize: "11px", fontWeight: 700, background: accredited ? "rgba(16,185,129,0.12)" : "var(--elevated)", border: accredited ? "1px solid rgba(16,185,129,0.3)" : "1px solid var(--border)", color: accredited ? "#10b981" : "var(--text-muted)" }}>{rowStatusLabel(acc?.status)}</span>
+                          </td>
+                          <td style={{ padding: "10px 12px", color: "var(--text-muted)", fontSize: "12px" }}>{credentialLabel(acc)}</td>
+                          <td style={{ padding: "8px 12px" }}>
+                            <div className="flex flex-wrap gap-1">
+                              <button className="btn btn-ghost" type="button" style={{ fontSize: "11px", padding: "4px 10px" }} onClick={() => { setNewSubjectType("DRIVER"); setSubjectSearch(item.fullName || ""); setNewAthleteId(""); setNewDriverId(item.id); }}>Editar</button>
+                              <button className="btn btn-ghost" type="button" style={{ fontSize: "11px", padding: "4px 10px" }} disabled={!acc || !accredited || saving} onClick={() => acc && setNotAccredited(acc)}>Modificar</button>
+                              <button className="btn btn-primary" type="button" style={{ fontSize: "11px", padding: "4px 10px" }} disabled={!accredited} onClick={() => generateCredential("DRIVER", item.id)}>Credencial</button>
+                            </div>
+                          </td>
                         </tr>
                       );
                     })}
                   </tbody>
                 </table>
               </div>
-              {driverRows.length === 0 ? <p className="mt-3 text-sm text-white/50">No hay conductores para ese filtro.</p> : null}
+              {driverRows.length === 0 ? <p style={{ marginTop: "12px", fontSize: "13px", color: "var(--text-muted)" }}>No hay conductores para ese filtro.</p> : null}
             </>
           )}
         </div>

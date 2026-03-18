@@ -48,7 +48,8 @@ const navSections: NavSection[] = [
           { href: "/masters/accommodations", label: "Hoteles", icon: "hotel" },
           { href: "/masters/hotel-rooms", label: "Habitaciones", icon: "hotel" },
           { href: "/operations/hotel-assignments", label: "Asignaciones Hotel", icon: "hotel" },
-          { href: "/operations/hotel-keys", label: "Gestión de llaves", icon: "hotel" }
+          { href: "/operations/hotel-keys", label: "Gestión de llaves", icon: "hotel" },
+          { href: "/operations/salones", label: "Reserva de salones", icon: "salon" }
         ]
       },
       {
@@ -107,6 +108,7 @@ function Icon({ name, className }: { name: string; className?: string }) {
     case "sports-rings": return (<svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="6.2" cy="9.2" r="3.1" /><circle cx="12" cy="9.2" r="3.1" /><circle cx="17.8" cy="9.2" r="3.1" /><circle cx="9.1" cy="14.8" r="3.1" /><circle cx="14.9" cy="14.8" r="3.1" /></svg>);
     case "admin": return (<svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7l8-4z" /><path d="M9 12l2 2 4-4" /></svg>);
     case "users-admin": return (<svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="8" cy="8" r="3" /><circle cx="17" cy="9" r="2.5" /><path d="M3 20c0-3 2.5-5 5-5s5 2 5 5" /><path d="M14 20c0-2 1.5-3.5 3.5-3.5S21 18 21 20" /><path d="M19 4l2 2-5 5-2-2" /></svg>);
+    case "salon": return (<svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="2" y="6" width="20" height="13" rx="2" /><path d="M2 10h20" /><path d="M6 6V4M18 6V4" /><path d="M8 14h8M8 17h5" /></svg>);
     default: return null;
   }
 }

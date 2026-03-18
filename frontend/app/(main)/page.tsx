@@ -8,6 +8,7 @@ import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
 import DonutChart from "@/components/charts/DonutChart";
 import BarChart from "@/components/charts/BarChart";
+import SparkLine from "@/components/charts/SparkLine";
 
 type Trip = { id: string; status?: string | null };
 type HotelAssignment = { id: string; roomId?: string | null; status?: string | null };
@@ -22,96 +23,6 @@ const STATUS = {
 const norm = (v?: string | null) => (v ? v.trim().toUpperCase() : "");
 const fmt = (n: number) => new Intl.NumberFormat("es-CL").format(n);
 
-function KpiCard({
-  label,
-  value,
-  helper,
-  accent = false,
-  index = 0,
-}: {
-  label: string;
-  value: string;
-  helper?: string;
-  accent?: boolean;
-  index?: number;
-}) {
-  return (
-    <div
-      className={`rounded-xl p-5 animate-fade-up stagger-${Math.min(index + 1, 6)}`}
-      style={{
-        background: accent ? "var(--gold-dim)" : "var(--surface)",
-        border: `1px solid ${accent ? "rgba(212,168,67,0.25)" : "var(--border-muted)"}`,
-        boxShadow: "0 1px 4px rgba(0,0,0,0.3)"
-      }}
-    >
-      <p
-        className="text-[11px] uppercase tracking-[0.18em] font-semibold"
-        style={{ color: accent ? "var(--gold)" : "var(--text-faint)" }}
-      >
-        {label}
-      </p>
-      <p
-        className="mt-3 font-bold tabular-nums"
-        style={{
-          fontSize: "1.9rem",
-          letterSpacing: "-0.025em",
-          lineHeight: 1,
-          color: accent ? "var(--gold-light)" : "var(--text)",
-        }}
-      >
-        {value}
-      </p>
-      {helper ? <p className="mt-1.5 text-xs" style={{ color: "var(--text-muted)" }}>{helper}</p> : null}
-    </div>
-  );
-}
-
-function SectionTitle({ label }: { label: string }) {
-  return <p className="section-label mb-4">{label}</p>;
-}
-
-function ProgressRow({
-  label,
-  value,
-  total,
-  color = "#c9a84c",
-}: {
-  label: string;
-  value: number;
-  total: number;
-  color?: string;
-}) {
-  const pct = total > 0 ? Math.round((value / total) * 100) : 0;
-  return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between text-xs">
-        <span style={{ color: "var(--text-muted)" }}>{label}</span>
-        <span className="font-semibold" style={{ color }}>
-          {fmt(value)} <span style={{ color: "var(--text-faint)" }}>/ {fmt(total)}</span>
-        </span>
-      </div>
-      <div className="progress-bar">
-        <div
-          className="progress-bar-fill"
-          style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${color}, ${color}aa)` }}
-        />
-      </div>
-    </div>
-  );
-}
-
-function StatusPill({ count, label, color }: { count: number; label: string; color: string }) {
-  return (
-    <div className="rounded-lg p-4 text-center" style={{ background: "var(--elevated)", border: "1px solid var(--border-muted)" }}>
-      <p className="font-bold text-2xl tabular-nums" style={{ color }}>
-        {fmt(count)}
-      </p>
-      <p className="text-[11px] mt-1 uppercase tracking-[0.12em]" style={{ color: "var(--text-muted)" }}>
-        {label}
-      </p>
-    </div>
-  );
-}
 
 export default function Page() {
   const { t } = useI18n();
@@ -183,6 +94,7 @@ export default function Page() {
   const occupancyPct = bedStats.total > 0 ? Math.round((bedStats.occupied / bedStats.total) * 100) : 0;
   const { theme } = useTheme();
   const isObsidian = theme === "obsidian";
+  const isAtlas = theme === "atlas";
 
   const tripDonutSegments = [
     { value: tripStats.scheduled, color: "#f59e0b", label: "Programados" },
@@ -201,99 +113,157 @@ export default function Page() {
     { label: "Hecho", value: tripStats.completed, color: "#22d3ee" },
   ];
 
-  if (isObsidian) {
+  // ── Unified layout: dark / light / obsidian ─────────────────
+  if (!isAtlas) {
+    // Color palette per theme
+    const pal = isObsidian ? {
+      kpi:  ["#22d3ee","#a855f7","#f59e0b","#10b981","#38bdf8","#10b981"],
+      c1: "#22d3ee", c2: "#a855f7", c3: "#f59e0b",
+      cardBg: "#0e1728", cardBorder: "rgba(34,211,238,0.1)", cardBorderTop: (c: string) => `2px solid ${c}`,
+      innerBg: "#0a1322", innerBorder: "rgba(34,211,238,0.1)",
+      textPrimary: "#e2e8f0", textMuted: "rgba(255,255,255,0.45)",
+      progressTrack: "#0a1322", shadow: "0 4px 24px rgba(0,0,0,0.55)",
+      noData: "rgba(255,255,255,0.3)",
+      donutColors: (["#a855f7","#22d3ee"] as [string,string]),
+      bar: [{label:"Prog.",value:tripStats.scheduled,color:"#f59e0b"},{label:"Activo",value:tripStats.active,color:"#10b981"},{label:"Hecho",value:tripStats.completed,color:"#22d3ee"}],
+    } : theme === "dark" ? {
+      kpi:  ["#c9a84c","#818cf8","#f59e0b","#10b981","#c9a84c","#10b981"],
+      c1: "#c9a84c", c2: "#818cf8", c3: "#f59e0b",
+      cardBg: "var(--surface)", cardBorder: "var(--border)", cardBorderTop: (c: string) => `2px solid ${c}`,
+      innerBg: "var(--elevated)", innerBorder: "var(--border-muted)",
+      textPrimary: "var(--text)", textMuted: "var(--text-muted)",
+      progressTrack: "var(--elevated)", shadow: "0 2px 12px rgba(0,0,0,0.35)",
+      noData: "var(--text-faint)",
+      donutColors: (["#818cf8","#c9a84c"] as [string,string]),
+      bar: [{label:"Prog.",value:tripStats.scheduled,color:"#f59e0b"},{label:"Activo",value:tripStats.active,color:"#10b981"},{label:"Hecho",value:tripStats.completed,color:"#c9a84c"}],
+    } : {
+      kpi:  ["#1e3a8a","#7c3aed","#0ea5e9","#16a34a","#1e3a8a","#16a34a"],
+      c1: "#1e3a8a", c2: "#7c3aed", c3: "#0ea5e9",
+      cardBg: "#ffffff", cardBorder: "#e8edf5", cardBorderTop: (c: string) => `2px solid ${c}`,
+      innerBg: "#f8fafc", innerBorder: "#e8edf5",
+      textPrimary: "#0f172a", textMuted: "#64748b",
+      progressTrack: "#f1f5f9", shadow: "0 1px 4px rgba(0,0,0,0.07)",
+      noData: "#94a3b8",
+      donutColors: (["#7c3aed","#0ea5e9"] as [string,string]),
+      bar: [{label:"Prog.",value:tripStats.scheduled,color:"#f59e0b"},{label:"Activo",value:tripStats.active,color:"#16a34a"},{label:"Hecho",value:tripStats.completed,color:"#1e3a8a"}],
+    };
+
+    const tripDonutPal = [
+      { value: tripStats.scheduled, color: pal.c3, label: "Programados" },
+      { value: tripStats.active, color: "#10b981", label: "En curso" },
+      { value: tripStats.completed, color: pal.c1, label: "Completados" },
+    ].filter(s => s.value > 0);
+
+    const hotelDonutPal = [
+      { value: bedStats.occupied, color: pal.donutColors[0], label: "Ocupadas" },
+      { value: bedStats.available, color: pal.donutColors[1], label: "Disponibles" },
+    ].filter(s => s.value > 0);
+
     return (
       <div className="space-y-6" style={{ animation: "fadeInUp 0.4s ease" }}>
         {/* ── KPI row */}
         <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
           {[
-            { label: "Participantes", value: fmt(athletesCount), color: "#22d3ee", icon: "👥" },
-            { label: "Eventos", value: fmt(eventsCount), color: "#a855f7", icon: "🗓" },
-            { label: "Hoteles", value: fmt(accommodationsCount), color: "#f59e0b", icon: "🏨" },
-            { label: "Viajes totales", value: fmt(trips.length), color: "#10b981", icon: "🚌" },
-            { label: "Asignaciones", value: fmt(hotelAssignments.length), color: "#22d3ee", icon: "🛏" },
-            { label: "Ocupación", value: `${occupancyPct}%`, color: occupancyPct > 80 ? "#ef4444" : "#10b981", icon: "📊" },
-          ].map((kpi, i) => (
-            <div key={i} className="glass-card p-4" style={{ animationDelay: `${i * 0.06}s`, animation: "fadeInUp 0.4s ease both" }}>
-              <div className="flex items-center justify-between mb-2">
-                <span style={{ fontSize: "18px" }}>{kpi.icon}</span>
-                <span style={{ fontSize: "10px", color: kpi.color, fontWeight: 700, letterSpacing: "0.1em" }}>LIVE</span>
+            { label: "Participantes", value: fmt(athletesCount), icon: "👥", link: "/registro/participantes" },
+            { label: "Eventos", value: fmt(eventsCount), icon: "🗓", link: "/deportes" },
+            { label: "Hoteles", value: fmt(accommodationsCount), icon: "🏨", link: "/masters/accommodations" },
+            { label: "Viajes totales", value: fmt(trips.length), icon: "🚌", link: "/operations/trips" },
+            { label: "Asignaciones", value: fmt(hotelAssignments.length), icon: "🛏", link: "/hotel-assignments" },
+            { label: "Ocupación", value: `${occupancyPct}%`, icon: "📊", link: "/operations/hotel-tracking" },
+          ].map((kpi, i) => {
+            const color = i < pal.kpi.length ? pal.kpi[i] : pal.c1;
+            return (
+            <Link key={i} href={kpi.link} style={{ textDecoration: "none" }}>
+              <div style={{
+                background: pal.cardBg,
+                border: `1px solid ${pal.cardBorder}`,
+                borderTop: pal.cardBorderTop(color),
+                borderRadius: "14px", padding: "16px",
+                boxShadow: pal.shadow,
+                transition: "transform 120ms ease, box-shadow 120ms ease",
+                animationDelay: `${i * 0.06}s`, animation: "fadeInUp 0.4s ease both",
+                cursor: "pointer",
+              }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ""; }}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <span style={{ fontSize: "18px" }}>{kpi.icon}</span>
+                  <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: color, boxShadow: `0 0 5px ${color}99`, display: "inline-block" }} />
+                </div>
+                <p style={{ fontSize: "1.65rem", fontWeight: 800, color, lineHeight: 1, fontVariantNumeric: "tabular-nums",
+                  ...(isObsidian ? { textShadow: `0 0 22px ${color}55` } : {}) }}>
+                  {loading ? "—" : kpi.value}
+                </p>
+                <p style={{ fontSize: "11px", color: pal.textMuted, marginTop: "5px", fontWeight: 500 }}>{kpi.label}</p>
               </div>
-              <p style={{ fontSize: "1.6rem", fontWeight: 800, color: kpi.color, lineHeight: 1, fontVariantNumeric: "tabular-nums",
-                textShadow: `0 0 20px ${kpi.color}66` }}>
-                {loading ? "—" : kpi.value}
-              </p>
-              <p style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)", marginTop: "4px" }}>{kpi.label}</p>
-            </div>
-          ))}
+            </Link>
+            );
+          })}
         </div>
 
         {/* ── Charts row */}
         <div className="grid gap-4 lg:grid-cols-3">
           {/* Transport donut */}
-          <div className="glass-card p-5">
+          <div style={{ background: pal.cardBg, border: `1px solid ${pal.cardBorder}`, borderTop: pal.cardBorderTop(pal.c1), borderRadius: "16px", padding: "20px", boxShadow: pal.shadow }}>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p style={{ fontSize: "11px", color: "#22d3ee", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase" }}>Transporte</p>
-                <p style={{ fontSize: "15px", fontWeight: 600, color: "var(--text)" }}>Estado de viajes</p>
+                <p style={{ fontSize: "11px", color: pal.c1, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase" }}>Transporte</p>
+                <p style={{ fontSize: "15px", fontWeight: 600, color: pal.textPrimary }}>Estado de viajes</p>
               </div>
-              <Link href="/operations/trips" style={{ fontSize: "11px", color: "#22d3ee", textDecoration: "none" }}>Ver todos →</Link>
+              <Link href="/operations/trips" style={{ fontSize: "11px", color: pal.c1, textDecoration: "none" }}>Ver todos →</Link>
             </div>
             <div className="flex items-center justify-center gap-6">
-              {tripDonutSegments.length > 0 ? (
-                <DonutChart segments={tripDonutSegments} size={140} thickness={20}
-                  label={fmt(trips.length)} sublabel="total" />
+              {tripDonutPal.length > 0 ? (
+                <DonutChart segments={tripDonutPal} size={140} thickness={20} label={fmt(trips.length)} sublabel="total" />
               ) : (
-                <p style={{ color: "rgba(255,255,255,0.3)", fontSize: "13px" }}>Sin datos</p>
+                <p style={{ color: pal.noData, fontSize: "13px" }}>Sin datos</p>
               )}
             </div>
           </div>
 
           {/* Hotel donut */}
-          <div className="glass-card p-5">
+          <div style={{ background: pal.cardBg, border: `1px solid ${pal.cardBorder}`, borderTop: pal.cardBorderTop(pal.c2), borderRadius: "16px", padding: "20px", boxShadow: pal.shadow }}>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p style={{ fontSize: "11px", color: "#a855f7", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase" }}>Hotelería</p>
-                <p style={{ fontSize: "15px", fontWeight: 600, color: "var(--text)" }}>Ocupación de camas</p>
+                <p style={{ fontSize: "11px", color: pal.c2, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase" }}>Hotelería</p>
+                <p style={{ fontSize: "15px", fontWeight: 600, color: pal.textPrimary }}>Ocupación de camas</p>
               </div>
-              <Link href="/operations/hotel-tracking" style={{ fontSize: "11px", color: "#a855f7", textDecoration: "none" }}>Ver tracking →</Link>
+              <Link href="/operations/hotel-tracking" style={{ fontSize: "11px", color: pal.c2, textDecoration: "none" }}>Ver tracking →</Link>
             </div>
             <div className="flex items-center justify-center">
-              {hotelDonutSegments.length > 0 ? (
-                <DonutChart segments={hotelDonutSegments} size={140} thickness={20}
-                  label={`${occupancyPct}%`} sublabel="ocupado" />
+              {hotelDonutPal.length > 0 ? (
+                <DonutChart segments={hotelDonutPal} size={140} thickness={20} label={`${occupancyPct}%`} sublabel="ocupado" />
               ) : (
-                <p style={{ color: "rgba(255,255,255,0.3)", fontSize: "13px" }}>Sin datos</p>
+                <p style={{ color: pal.noData, fontSize: "13px" }}>Sin datos</p>
               )}
             </div>
           </div>
 
           {/* Bar chart */}
-          <div className="glass-card p-5">
+          <div style={{ background: pal.cardBg, border: `1px solid ${pal.cardBorder}`, borderTop: pal.cardBorderTop(pal.c3), borderRadius: "16px", padding: "20px", boxShadow: pal.shadow }}>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p style={{ fontSize: "11px", color: "#f59e0b", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase" }}>Distribución</p>
-                <p style={{ fontSize: "15px", fontWeight: 600, color: "var(--text)" }}>Viajes por estado</p>
+                <p style={{ fontSize: "11px", color: pal.c3, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase" }}>Distribución</p>
+                <p style={{ fontSize: "15px", fontWeight: 600, color: pal.textPrimary }}>Viajes por estado</p>
               </div>
             </div>
-            <BarChart data={tripBarData} height={100} showValues />
+            <BarChart data={pal.bar} height={100} showValues />
           </div>
         </div>
 
-        {/* ── Hotel rooms grid */}
-        <div className="glass-card p-5">
-          <div className="flex items-center justify-between mb-4">
-            <p style={{ fontSize: "11px", color: "#22d3ee", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase" }}>Inventario hotelero</p>
-          </div>
+        {/* ── Hotel inventory */}
+        <div style={{ background: pal.cardBg, border: `1px solid ${pal.cardBorder}`, borderTop: pal.cardBorderTop(pal.c1), borderRadius: "16px", padding: "20px", boxShadow: pal.shadow }}>
+          <p style={{ fontSize: "11px", color: pal.c1, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: "16px" }}>Inventario hotelero</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              { label: "Total habitaciones", value: fmt(roomStats.total), color: "rgba(255,255,255,0.7)" },
-              { label: "Disponibles", value: fmt(roomStats.available), color: "#22d3ee" },
-              { label: "Total camas", value: fmt(bedStats.total), color: "rgba(255,255,255,0.7)" },
+              { label: "Total habitaciones", value: fmt(roomStats.total), color: pal.textPrimary },
+              { label: "Disponibles", value: fmt(roomStats.available), color: pal.c1 },
+              { label: "Total camas", value: fmt(bedStats.total), color: pal.textPrimary },
               { label: "Camas libres", value: fmt(bedStats.available), color: "#10b981" },
             ].map((item, i) => (
-              <div key={i} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "12px", padding: "14px" }}>
-                <p style={{ fontSize: "10px", color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.12em" }}>{item.label}</p>
+              <div key={i} style={{ background: pal.innerBg, border: `1px solid ${pal.innerBorder}`, borderRadius: "12px", padding: "14px" }}>
+                <p style={{ fontSize: "10px", color: pal.textMuted, textTransform: "uppercase", letterSpacing: "0.12em" }}>{item.label}</p>
                 <p style={{ fontSize: "1.5rem", fontWeight: 700, color: item.color, marginTop: "4px", fontVariantNumeric: "tabular-nums" }}>
                   {loading ? "—" : item.value}
                 </p>
@@ -301,93 +271,240 @@ export default function Page() {
             ))}
           </div>
           <div className="mt-4 space-y-2">
-            <div>
-              <div className="flex justify-between text-xs mb-1" style={{ color: "rgba(255,255,255,0.4)" }}>
-                <span>Camas ocupadas</span>
-                <span style={{ color: "#a855f7", fontWeight: 600 }}>{bedStats.occupied} / {bedStats.total}</span>
+            {[
+              { label: "Camas ocupadas", value: bedStats.occupied, total: bedStats.total, color: pal.c2, pct: occupancyPct },
+              { label: "Habitaciones disponibles", value: roomStats.available, total: roomStats.total, color: "#10b981",
+                pct: roomStats.total > 0 ? Math.round((roomStats.available / roomStats.total) * 100) : 0 },
+            ].map((row, i) => (
+              <div key={i}>
+                <div className="flex justify-between text-xs mb-1" style={{ color: pal.textMuted }}>
+                  <span>{row.label}</span>
+                  <span style={{ color: row.color, fontWeight: 600 }}>{row.value} / {row.total}</span>
+                </div>
+                <div style={{ height: "7px", background: pal.progressTrack, borderRadius: "99px", overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${row.pct}%`, background: row.color, borderRadius: "99px", transition: "width 0.8s ease",
+                    ...(isObsidian ? { boxShadow: `0 0 8px ${row.color}88` } : {}) }} />
+                </div>
               </div>
-              <div style={{ height: "6px", background: "rgba(255,255,255,0.07)", borderRadius: "99px", overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${occupancyPct}%`, background: "linear-gradient(90deg, #22d3ee, #a855f7)", borderRadius: "99px", boxShadow: "0 0 8px rgba(168,85,247,0.5)", transition: "width 0.8s ease" }} />
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between text-xs mb-1" style={{ color: "rgba(255,255,255,0.4)" }}>
-                <span>Habitaciones disponibles</span>
-                <span style={{ color: "#10b981", fontWeight: 600 }}>{roomStats.available} / {roomStats.total}</span>
-              </div>
-              <div style={{ height: "6px", background: "rgba(255,255,255,0.07)", borderRadius: "99px", overflow: "hidden" }}>
-                <div style={{ height: "100%", width: roomStats.total > 0 ? `${Math.round((roomStats.available / roomStats.total) * 100)}%` : "0%", background: "linear-gradient(90deg, #10b981, #34d399)", borderRadius: "99px", boxShadow: "0 0 8px rgba(16,185,129,0.4)", transition: "width 0.8s ease" }} />
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="space-y-6">
-      {/* ── Hero */}
-      <section className="rounded-xl p-6 animate-fade-up" style={{ background: "var(--surface)", border: "1px solid var(--border-muted)", boxShadow: "0 1px 4px rgba(0,0,0,0.3)" }}>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="section-label mb-2">Event Operations Dashboard</p>
-            <h1 className="font-bold" style={{ fontSize: "1.6rem", letterSpacing: "-0.02em", color: "var(--text)" }}>Panel Operativo</h1>
-            <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-              {loading ? "Cargando datos..." : error ? "Error al cargar" : "Resumen en tiempo real del evento"}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            {error ? <span className="badge badge-rose">{error}</span> : null}
-            <div className="flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold"
-              style={{ background: "var(--success-dim)", border: "1px solid rgba(63,185,80,0.2)", color: "var(--success)" }}>
-              <span className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--success)", animation: "pulseDot 2s ease-in-out infinite" }} />
-              {loading ? "Cargando" : "En vivo"}
+  // ── Atlas theme dashboard ──────────────────────────────────
+  if (isAtlas) {
+    const card = (style?: React.CSSProperties): React.CSSProperties => ({
+      background: "#ffffff",
+      border: "1px solid #e8edf5",
+      borderRadius: "10px",
+      boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+      padding: "20px",
+      ...style,
+    });
+
+    const atlasKpis = [
+      { label: "Participantes", value: fmt(athletesCount), prev: null, color: "#3b5bdb", icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.85"/>
+        </svg>
+      )},
+      { label: "Eventos activos", value: fmt(eventsCount), prev: null, color: "#7c3aed", icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
+        </svg>
+      )},
+      { label: "Hoteles", value: fmt(accommodationsCount), prev: null, color: "#0ea5e9", icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+      )},
+      { label: "Viajes totales", value: fmt(trips.length), prev: null, color: "#16a34a", icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+      )},
+      { label: "Asignaciones hotel", value: fmt(hotelAssignments.length), prev: null, color: "#f59e0b", icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M2 20h20M5 20V10l7-6 7 6v10"/><rect x="9" y="14" width="6" height="6"/>
+        </svg>
+      )},
+      { label: "Ocupación camas", value: `${occupancyPct}%`, prev: null, color: occupancyPct > 80 ? "#dc2626" : "#16a34a", icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M2 17h20M2 12h20M6 7h12"/><rect x="3" y="17" width="18" height="4" rx="1"/>
+        </svg>
+      )},
+    ];
+
+    const sparkSeeds = [
+      [12, 18, 14, 22, 19, 28, 24, 32, 27, 35, 30, 40],
+      [8, 12, 10, 15, 13, 18, 16, 22, 19, 25, 21, 28],
+      [5, 7, 6, 9, 8, 11, 10, 14, 12, 16, 14, 18],
+      [20, 24, 22, 28, 26, 32, 30, 36, 34, 40, 38, 44],
+      [15, 19, 17, 21, 20, 24, 22, 27, 25, 30, 28, 33],
+      [10, 14, 12, 17, 15, 20, 18, 23, 21, 26, 24, 29],
+    ];
+
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+
+        {/* ── KPI strip */}
+        <div style={{ display: "grid", gap: "14px", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
+          {atlasKpis.map((kpi, i) => (
+            <div key={i} style={card()}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+                <div style={{
+                  width: "34px", height: "34px", borderRadius: "8px", display: "flex",
+                  alignItems: "center", justifyContent: "center",
+                  background: `${kpi.color}14`, color: kpi.color
+                }}>
+                  {kpi.icon}
+                </div>
+                <SparkLine data={sparkSeeds[i]} width={60} height={28} color={kpi.color} filled />
+              </div>
+              <p style={{ fontSize: "1.6rem", fontWeight: 800, color: "#0f172a", lineHeight: 1, letterSpacing: "-0.025em" }}>
+                {loading ? "—" : kpi.value}
+              </p>
+              <p style={{ fontSize: "12px", color: "#64748b", marginTop: "4px" }}>{kpi.label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Charts row */}
+        <div style={{ display: "grid", gap: "14px", gridTemplateColumns: "1fr 1fr 1fr" }}>
+
+          {/* Trip status breakdown */}
+          <div style={card()}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+              <div>
+                <p style={{ fontSize: "11px", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 600 }}>Transporte</p>
+                <p style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a", marginTop: "2px" }}>Estado de viajes</p>
+              </div>
+              <Link href="/operations/trips" style={{ fontSize: "11px", color: "#3b5bdb", fontWeight: 600, textDecoration: "none" }}>Ver todos →</Link>
+            </div>
+            <div style={{ display: "flex", gap: "10px", marginBottom: "12px" }}>
+              {[
+                { label: "Programados", value: tripStats.scheduled, color: "#f59e0b", bg: "#fffbeb" },
+                { label: "En curso", value: tripStats.active, color: "#16a34a", bg: "#f0fdf4" },
+                { label: "Hechos", value: tripStats.completed, color: "#3b5bdb", bg: "#eef2ff" },
+              ].map((item, i) => (
+                <div key={i} style={{ flex: 1, background: item.bg, border: `1px solid ${item.color}28`, borderRadius: "8px", padding: "10px 12px", textAlign: "center" }}>
+                  <p style={{ fontSize: "1.3rem", fontWeight: 800, color: item.color, lineHeight: 1 }}>{loading ? "—" : fmt(item.value)}</p>
+                  <p style={{ fontSize: "10px", color: "#64748b", marginTop: "3px", fontWeight: 500 }}>{item.label}</p>
+                </div>
+              ))}
+            </div>
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "#94a3b8", marginBottom: "4px" }}>
+                <span>Completados del total</span>
+                <span style={{ color: "#3b5bdb", fontWeight: 600 }}>{trips.length > 0 ? `${Math.round((tripStats.completed / trips.length) * 100)}%` : "—"}</span>
+              </div>
+              <div style={{ height: "6px", background: "#f1f5f9", borderRadius: "99px", overflow: "hidden" }}>
+                <div style={{ height: "100%", width: trips.length > 0 ? `${Math.round((tripStats.completed / trips.length) * 100)}%` : "0%", background: "linear-gradient(90deg, #3b5bdb, #6481f0)", borderRadius: "99px", transition: "width 0.8s ease" }} />
+              </div>
             </div>
           </div>
-        </div>
-        <div className="mt-5 grid gap-3 grid-cols-2 md:grid-cols-3">
-          <KpiCard label="Participantes" value={loading ? "—" : fmt(athletesCount)} helper="Total en plataforma" accent index={0} />
-          <KpiCard label="Eventos activos" value={loading ? "—" : fmt(eventsCount)} helper="Configurados" index={1} />
-          <KpiCard label="Hoteles registrados" value={loading ? "—" : fmt(accommodationsCount)} helper="Inventario activo" index={2} />
-        </div>
-      </section>
 
-      {/* ── Viajes */}
-      <section className="animate-fade-up stagger-2">
-        <div className="flex items-center justify-between mb-3">
-          <SectionTitle label="Movilidad · Transporte" />
-          <Link href="/operations/trips" className="text-xs font-semibold transition-colors" style={{ color: "var(--brand)" }}>Ver todos →</Link>
-        </div>
-        <div className="surface rounded-xl p-5">
-          <div className="grid grid-cols-3 gap-3 mb-5">
-            <StatusPill count={loading ? 0 : tripStats.scheduled} label="Programados" color="var(--gold)" />
-            <StatusPill count={loading ? 0 : tripStats.active} label="En curso" color="var(--success)" />
-            <StatusPill count={loading ? 0 : tripStats.completed} label="Completados" color="var(--info)" />
+          {/* Hotel occupancy */}
+          <div style={card()}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+              <div>
+                <p style={{ fontSize: "11px", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 600 }}>Hotelería</p>
+                <p style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a", marginTop: "2px" }}>Ocupación</p>
+              </div>
+              <Link href="/operations/hotel-tracking" style={{ fontSize: "11px", color: "#3b5bdb", fontWeight: 600, textDecoration: "none" }}>Ver tracking →</Link>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+              <DonutChart segments={hotelDonutSegments.length > 0 ? hotelDonutSegments.map(s => ({...s, color: s.label === "Ocupadas" ? "#3b5bdb" : "#0ea5e9"})) : [{ value: 1, color: "#e2e8f0", label: "Sin datos" }]} size={110} thickness={16} label={`${occupancyPct}%`} sublabel="ocupado" />
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "8px" }}>
+                {[
+                  { label: "Camas ocupadas", value: bedStats.occupied, total: bedStats.total, color: "#3b5bdb" },
+                  { label: "Disponibles", value: bedStats.available, total: bedStats.total, color: "#0ea5e9" },
+                  { label: "Habitaciones libres", value: roomStats.available, total: roomStats.total, color: "#16a34a" },
+                ].map((row, i) => (
+                  <div key={i}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", marginBottom: "3px" }}>
+                      <span style={{ color: "#64748b" }}>{row.label}</span>
+                      <span style={{ color: row.color, fontWeight: 600 }}>{fmt(row.value)}</span>
+                    </div>
+                    <div style={{ height: "5px", background: "#f1f5f9", borderRadius: "99px", overflow: "hidden" }}>
+                      <div style={{ height: "100%", width: row.total > 0 ? `${Math.round((row.value / row.total) * 100)}%` : "0%", background: row.color, borderRadius: "99px", transition: "width 0.8s ease" }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-          <ProgressRow label="Completados del total" value={tripStats.completed} total={trips.length} />
-        </div>
-      </section>
 
-      {/* ── Hotelería */}
-      <section className="animate-fade-up stagger-3">
-        <div className="flex items-center justify-between mb-3">
-          <SectionTitle label="Hotelería · Ocupación" />
-          <Link href="/operations/hotel-tracking" className="text-xs font-semibold transition-colors" style={{ color: "var(--brand)" }}>Ver tracking →</Link>
-        </div>
-        <div className="surface rounded-xl p-5">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-            <KpiCard label="Asignaciones" value={loading ? "—" : fmt(hotelAssignments.length)} helper="Con cama asignada" index={0} />
-            <KpiCard label="Habitaciones disp." value={loading ? "—" : fmt(roomStats.available)} helper={`de ${fmt(roomStats.total)}`} index={1} />
-            <KpiCard label="Camas disp." value={loading ? "—" : fmt(bedStats.available)} helper={`de ${fmt(bedStats.total)}`} index={2} />
-            <KpiCard label="Ocupación" value={loading ? "—" : `${occupancyPct}%`} helper="Camas ocupadas" accent index={3} />
+          {/* Quick stats */}
+          <div style={card()}>
+            <div style={{ marginBottom: "16px" }}>
+              <p style={{ fontSize: "11px", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 600 }}>Resumen operacional</p>
+              <p style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a", marginTop: "2px" }}>Inventario hotelero</p>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
+              {[
+                { label: "Total habitaciones", value: fmt(roomStats.total), icon: "🏨" },
+                { label: "Habitaciones libres", value: fmt(roomStats.available), icon: "✅", highlight: "#16a34a" },
+                { label: "Total camas", value: fmt(bedStats.total), icon: "🛏" },
+                { label: "Camas disponibles", value: fmt(bedStats.available), icon: "✅", highlight: "#16a34a" },
+                { label: "Asignaciones activas", value: fmt(hotelAssignments.length), icon: "📋", highlight: "#3b5bdb" },
+              ].map((row, i) => (
+                <div key={i} style={{
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  padding: "9px 0",
+                  borderBottom: i < 4 ? "1px solid #f1f5f9" : "none"
+                }}>
+                  <span style={{ fontSize: "12px", color: "#64748b", display: "flex", alignItems: "center", gap: "6px" }}>
+                    <span style={{ fontSize: "13px" }}>{row.icon}</span>
+                    {row.label}
+                  </span>
+                  <span style={{ fontSize: "13px", fontWeight: 700, color: row.highlight ?? "#0f172a" }}>
+                    {loading ? "—" : row.value}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="space-y-3">
-            <ProgressRow label="Camas ocupadas" value={bedStats.occupied} total={bedStats.total} />
-            <ProgressRow label="Habitaciones disponibles" value={roomStats.available} total={roomStats.total} color="var(--success)" />
-          </div>
+
         </div>
-      </section>
-    </div>
-  );
+
+        {/* ── Bar chart full-width */}
+        <div style={card({ padding: "20px 24px" })}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+            <div>
+              <p style={{ fontSize: "11px", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 600 }}>Distribución</p>
+              <p style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a", marginTop: "2px" }}>Viajes por estado</p>
+            </div>
+            <div style={{ display: "flex", gap: "12px" }}>
+              {[
+                { label: "Programados", color: "#f59e0b" },
+                { label: "En curso", color: "#16a34a" },
+                { label: "Completados", color: "#3b5bdb" },
+              ].map((item) => (
+                <div key={item.label} style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "11px", color: "#64748b" }}>
+                  <span style={{ width: "8px", height: "8px", borderRadius: "2px", background: item.color, display: "inline-block" }} />
+                  {item.label}
+                </div>
+              ))}
+            </div>
+          </div>
+          <BarChart
+            data={[
+              { label: "Prog.", value: tripStats.scheduled, color: "#f59e0b" },
+              { label: "Activo", value: tripStats.active, color: "#16a34a" },
+              { label: "Hecho", value: tripStats.completed, color: "#3b5bdb" },
+            ]}
+            height={80}
+            showValues
+          />
+        </div>
+
+      </div>
+    );
+  }
+
+  // Atlas is already handled above — this line is never reached
+  return null;
 }

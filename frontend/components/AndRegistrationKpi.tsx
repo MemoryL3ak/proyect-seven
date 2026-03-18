@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { filterValidatedAthletes } from "@/lib/athletes";
+import { useTheme } from "@/lib/theme";
 
 type EventItem = {
   id: string;
@@ -16,7 +17,12 @@ type EventItem = {
   }> | null;
 };
 
-type DisciplineItem = { id: string; name?: string | null };
+type DisciplineItem = {
+  id: string;
+  name?: string | null;
+  category?: string | null;
+  gender?: string | null;
+};
 type DelegationItem = { id: string; countryCode?: string | null; eventId?: string | null };
 type AthleteItem = {
   id: string;
@@ -50,6 +56,23 @@ function formatCount(value: number | null | undefined) {
 
 function normalizeDelegationKey(value?: string | null) {
   return String(value ?? "").trim().toUpperCase();
+}
+
+function typeLabel(value?: string | null) {
+  const normalized = String(value ?? "").trim().toUpperCase();
+  if (!normalized) return "-";
+  if (normalized === "CONVENTIONAL") return "Convencional";
+  if (normalized === "PARALYMPIC") return "Paralímpica";
+  return value || "-";
+}
+
+function genderLabel(value?: string | null) {
+  const normalized = String(value ?? "").trim().toUpperCase();
+  if (!normalized) return "-";
+  if (normalized === "M" || normalized === "MALE" || normalized === "MASCULINO") return "Masculino";
+  if (normalized === "F" || normalized === "FEMALE" || normalized === "FEMENINO") return "Femenino";
+  if (normalized === "X" || normalized === "MIXED" || normalized === "MIXTO") return "Mixto";
+  return value || "-";
 }
 
 function readDelegationExpected(
@@ -124,12 +147,45 @@ export default function AndRegistrationKpi({
   subtitle = "Compara el objetivo definido en Eventos con los participantes registrados en Arrival & Departure por disciplina.",
   eyebrow = "AND KPI",
 }: KpiProps) {
+  const { theme } = useTheme();
+  const isObsidian = theme === "obsidian";
+  const isAtlas = theme === "atlas";
+  const isDark = theme === "dark";
+
+  const pal = isObsidian ? {
+    cardBg: "#0e1728", cardBorder: "rgba(34,211,238,0.1)",
+    shadow: "0 4px 24px rgba(0,0,0,0.55)",
+    textPrimary: "#e2e8f0", textMuted: "rgba(255,255,255,0.45)",
+    progressTrack: "#0a1322",
+    c1: "#10b981", c2: "#ef4444", c3: "#22d3ee", c4: "#f59e0b",
+  } : isDark ? {
+    cardBg: "var(--surface)", cardBorder: "var(--border)",
+    shadow: "0 2px 12px rgba(0,0,0,0.35)",
+    textPrimary: "var(--text)", textMuted: "var(--text-muted)",
+    progressTrack: "var(--elevated)",
+    c1: "#10b981", c2: "#ef4444", c3: "#c9a84c", c4: "#f59e0b",
+  } : isAtlas ? {
+    cardBg: "#ffffff", cardBorder: "#e2e8f0",
+    shadow: "0 1px 4px rgba(0,0,0,0.07), 0 0 0 1px rgba(0,0,0,0.03)",
+    textPrimary: "#0f172a", textMuted: "#64748b",
+    progressTrack: "#f1f5f9",
+    c1: "#10b981", c2: "#ef4444", c3: "#3b5bdb", c4: "#f59e0b",
+  } : {
+    cardBg: "#ffffff", cardBorder: "#e8edf5",
+    shadow: "0 1px 4px rgba(0,0,0,0.07)",
+    textPrimary: "#0f172a", textMuted: "#64748b",
+    progressTrack: "#f1f5f9",
+    c1: "#10b981", c2: "#ef4444", c3: "#1e3a8a", c4: "#f59e0b",
+  };
+
   const [events, setEvents] = useState<EventItem[]>([]);
   const [disciplines, setDisciplines] = useState<DisciplineItem[]>([]);
   const [delegations, setDelegations] = useState<DelegationItem[]>([]);
   const [athletes, setAthletes] = useState<AthleteItem[]>([]);
   const [selectedEventId, setSelectedEventId] = useState("");
   const [selectedDelegationId, setSelectedDelegationId] = useState("");
+  const [selectedDisciplineId, setSelectedDisciplineId] = useState("");
+  const [maxRows, setMaxRows] = useState(100);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -184,8 +240,12 @@ export default function AndRegistrationKpi({
 
   const rows = useMemo(() => {
     if (!selectedEvent) return [] as Array<{
+      delegationKey: string;
+      delegationName: string;
       disciplineId: string;
       disciplineName: string;
+      disciplineType: string;
+      disciplineGender: string;
       expected: number;
       registered: number;
       pct: number | null;
@@ -195,6 +255,7 @@ export default function AndRegistrationKpi({
     }>;
 
     const expectedFromRows = readExpectedFromRows(selectedEvent);
+    const disciplineDataById = new Map(disciplines.map((item) => [item.id, item]));
     const expectedByDiscipline =
       Object.keys(expectedFromRows.totals).length > 0
         ? expectedFromRows.totals
@@ -205,14 +266,32 @@ export default function AndRegistrationKpi({
         : readExpectedByDisciplineDelegation(selectedEvent.config);
 
     const eventAthletes = filterValidatedAthletes(athletes).filter((a) => a.eventId === selectedEvent.id);
-    const scopedAthletes = selectedDelegationId
-      ? eventAthletes.filter((a) => a.delegationId === selectedDelegationId)
-      : eventAthletes;
+    const delegationCodeById = new Map(
+      filteredDelegations.map((item) => [item.id, normalizeDelegationKey(item.countryCode || item.id)]),
+    );
+    const delegationNameByCode = new Map(
+      filteredDelegations.map((item) => [
+        normalizeDelegationKey(item.countryCode || item.id),
+        item.countryCode || item.id || "Sin delegación",
+      ]),
+    );
+    const selectedDelegationCode = selectedDelegationId
+      ? delegationCodeById.get(selectedDelegationId) || normalizeDelegationKey(selectedDelegationId)
+      : "";
 
+    const actualByDisciplineDelegation = new Map<string, number>();
     const actualByDiscipline = new Map<string, number>();
-    scopedAthletes.forEach((athlete) => {
-      const key = athlete.disciplineId ?? "SIN_DISCIPLINA";
-      actualByDiscipline.set(key, (actualByDiscipline.get(key) ?? 0) + 1);
+    eventAthletes.forEach((athlete) => {
+      const disciplineKey = athlete.disciplineId ?? "SIN_DISCIPLINA";
+      const delegationCode = normalizeDelegationKey(
+        delegationCodeById.get(athlete.delegationId || "") || athlete.delegationId || "SIN_DELEGACION",
+      );
+      const compositeKey = `${disciplineKey}__${delegationCode}`;
+      actualByDisciplineDelegation.set(compositeKey, (actualByDisciplineDelegation.get(compositeKey) ?? 0) + 1);
+      actualByDiscipline.set(disciplineKey, (actualByDiscipline.get(disciplineKey) ?? 0) + 1);
+      if (!delegationNameByCode.has(delegationCode)) {
+        delegationNameByCode.set(delegationCode, delegationCode || "Sin delegación");
+      }
     });
 
     const allIds = new Set<string>([
@@ -223,63 +302,173 @@ export default function AndRegistrationKpi({
     ]);
 
     return Array.from(allIds)
-      .map((disciplineId) => {
-        const delegationSpecificExpected = selectedDelegationId
-          ? readDelegationExpected(
-              expectedByDisciplineDelegation[disciplineId],
-              selectedDelegationId,
-              selectedDelegationCountryCode,
-            )
-          : undefined;
+      .flatMap((disciplineId) => {
+        const disciplineName =
+          disciplineId === "SIN_DISCIPLINA" ? "Sin disciplina" : disciplineMap.get(disciplineId) || disciplineId;
+        const disciplineData = disciplineDataById.get(disciplineId);
+        const disciplineType = typeLabel(disciplineData?.category);
+        const disciplineGender = genderLabel(disciplineData?.gender);
+        const delegationRow = expectedByDisciplineDelegation[disciplineId] ?? {};
+        const expectedDelegationCodes = Object.keys(delegationRow).map((key) =>
+          normalizeDelegationKey(delegationCodeById.get(key) || key),
+        );
+        const actualDelegationCodes = Array.from(actualByDisciplineDelegation.keys())
+          .filter((key) => key.startsWith(`${disciplineId}__`))
+          .map((key) => key.split("__")[1]);
+        const delegationCodesFromEvent = filteredDelegations.map((item) =>
+          normalizeDelegationKey(item.countryCode || item.id),
+        );
+
+        const buildRow = (delegationCode: string, fallbackExpected: number | null = null) => {
+          const expectedFromDelegation = Object.entries(delegationRow).find(([key]) => {
+            const normalizedKey = normalizeDelegationKey(delegationCodeById.get(key) || key);
+            return normalizedKey === delegationCode;
+          });
+          const expected =
+            expectedFromDelegation !== undefined
+              ? Number(expectedFromDelegation[1] ?? 0)
+              : fallbackExpected ?? 0;
+          const registered =
+            actualByDisciplineDelegation.get(`${disciplineId}__${delegationCode}`) ?? 0;
+          const hasDelegationExpected = expectedFromDelegation !== undefined || fallbackExpected !== null;
+          const pct = hasDelegationExpected ? percentValue(registered, expected) : null;
+          const variance = hasDelegationExpected ? registered - expected : null;
+          const statusTone = (pct ?? 0) > 100 ? "over" : (pct ?? 0) >= 100 ? "good" : "warn";
+          return {
+            delegationKey: delegationCode,
+            delegationName: delegationNameByCode.get(delegationCode) || delegationCode || "Sin delegación",
+            disciplineId,
+            disciplineName,
+            disciplineType,
+            disciplineGender,
+            expected,
+            registered,
+            pct,
+            variance,
+            statusTone,
+            hasDelegationExpected,
+          };
+        };
+
+        if (selectedDelegationId) {
+          const delegationSpecificExpected = readDelegationExpected(
+            delegationRow,
+            selectedDelegationId,
+            selectedDelegationCountryCode,
+          );
+          return [buildRow(selectedDelegationCode, delegationSpecificExpected ?? null)];
+        }
+
+        const combinedCodes = new Set<string>([
+          ...delegationCodesFromEvent,
+          ...expectedDelegationCodes,
+          ...actualDelegationCodes,
+        ]);
+
         const totalExpectedByDiscipline =
           expectedByDiscipline[disciplineId] ??
-          Object.values(expectedByDisciplineDelegation[disciplineId] ?? {}).reduce((s, n) => s + n, 0);
-        const hasDelegationExpected = !selectedDelegationId || delegationSpecificExpected !== undefined;
-        const expected = selectedDelegationId
-          ? (delegationSpecificExpected ?? 0)
-          : totalExpectedByDiscipline;
-        const registered = actualByDiscipline.get(disciplineId) ?? 0;
-        const pct = hasDelegationExpected ? percentValue(registered, expected) : null;
-        const variance = hasDelegationExpected ? registered - expected : null;
-        const statusTone = (pct ?? 0) > 100 ? "over" : (pct ?? 0) >= 100 ? "good" : "warn";
-        return {
-          disciplineId,
-          disciplineName: disciplineId === "SIN_DISCIPLINA" ? "Sin disciplina" : disciplineMap.get(disciplineId) || disciplineId,
-          expected,
-          registered,
-          pct,
-          variance,
-          statusTone,
-          hasDelegationExpected,
-        };
+          Object.values(delegationRow).reduce((s, n) => s + n, 0);
+
+        if (combinedCodes.size === 0) {
+          const registered = actualByDiscipline.get(disciplineId) ?? 0;
+          const pct = percentValue(registered, totalExpectedByDiscipline);
+          const variance = registered - totalExpectedByDiscipline;
+          const statusTone = (pct ?? 0) > 100 ? "over" : (pct ?? 0) >= 100 ? "good" : "warn";
+          return [
+            {
+              delegationKey: "TODAS",
+              delegationName: "Todas",
+              disciplineId,
+              disciplineName,
+              disciplineType,
+              disciplineGender,
+              expected: totalExpectedByDiscipline,
+              registered,
+              pct,
+              variance,
+              statusTone,
+              hasDelegationExpected: true,
+            },
+          ];
+        }
+
+        return Array.from(combinedCodes).map((delegationCode) => buildRow(delegationCode));
       })
-      .sort((a, b) => a.disciplineName.localeCompare(b.disciplineName));
-  }, [selectedEvent, athletes, selectedDelegationId, selectedDelegationCountryCode, disciplineMap]);
+      .sort((a, b) => {
+        const byDelegation = a.delegationName.localeCompare(b.delegationName);
+        if (byDelegation !== 0) return byDelegation;
+        return a.disciplineName.localeCompare(b.disciplineName);
+      });
+  }, [selectedEvent, athletes, selectedDelegationId, selectedDelegationCountryCode, disciplineMap, disciplines, filteredDelegations]);
+
+  const disciplineOptions = useMemo(
+    () =>
+      rows
+        .map((row) => ({ id: row.disciplineId, name: row.disciplineName }))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [rows],
+  );
+
+  useEffect(() => {
+    if (!selectedDisciplineId) return;
+    const exists = disciplineOptions.some((item) => item.id === selectedDisciplineId);
+    if (!exists) setSelectedDisciplineId("");
+  }, [disciplineOptions, selectedDisciplineId]);
+
+  const filteredRows = useMemo(
+    () => (selectedDisciplineId ? rows.filter((row) => row.disciplineId === selectedDisciplineId) : rows),
+    [rows, selectedDisciplineId],
+  );
 
   const totals = useMemo(() => {
-    const comparableRows = selectedDelegationId ? rows.filter((row) => row.hasDelegationExpected) : rows;
+    const comparableRows = selectedDelegationId
+      ? filteredRows.filter((row) => row.hasDelegationExpected)
+      : filteredRows;
     const expected = comparableRows.reduce((sum, row) => sum + row.expected, 0);
-    const registered = rows.reduce((sum, row) => sum + row.registered, 0);
+    const registered = filteredRows.reduce((sum, row) => sum + row.registered, 0);
     const hasComparableExpected = comparableRows.length > 0 && comparableRows.some((row) => row.expected > 0 || row.hasDelegationExpected);
     const pct = hasComparableExpected ? percentValue(registered, expected) : null;
     const variance = hasComparableExpected ? registered - expected : null;
     return { expected, registered, pct, variance, hasComparableExpected };
-  }, [rows, selectedDelegationId]);
+  }, [filteredRows, selectedDelegationId]);
+
+  const visibleRows = useMemo(() => filteredRows.slice(0, maxRows), [filteredRows, maxRows]);
+
+  const deficitStats = useMemo(() => {
+    const comparable = filteredRows.filter((r) => r.hasDelegationExpected && r.pct !== null);
+    const deficit = comparable.filter((r) => (r.pct ?? 0) < 100);
+    const onTrack = comparable.filter((r) => (r.pct ?? 0) >= 100);
+    const uniqueDeficitDisciplines = new Set(deficit.map((r) => r.disciplineId)).size;
+    return { deficit: deficit.length, onTrack: onTrack.length, uniqueDeficitDisciplines };
+  }, [filteredRows]);
+
+  const varianceColor = totals.variance === null
+    ? pal.textMuted
+    : totals.variance < 0 ? pal.c2
+    : totals.variance > 0 ? pal.c4
+    : pal.c1;
+
+  const complianceColor = totals.pct === null
+    ? pal.textMuted
+    : (totals.pct ?? 0) >= 100 ? pal.c1
+    : (totals.pct ?? 0) >= 75 ? pal.c4
+    : pal.c2;
 
   return (
-    <section className="surface rounded-3xl border border-white/10 p-5">
+    <section className="surface rounded-3xl p-5" style={{ border: "1px solid var(--border)" }}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.22em] text-white/50">{eyebrow}</p>
-          <h2 className="mt-1 text-2xl font-semibold text-white">{title}</h2>
-          <p className="mt-1 text-sm text-white/50">{subtitle}</p>
+          <p className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>{eyebrow}</p>
+          <h2 className="mt-1 text-2xl font-semibold" style={{ color: "var(--text)" }}>{title}</h2>
+          <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>{subtitle}</p>
         </div>
         <button className="btn btn-ghost" type="button" onClick={load} disabled={loading}>
           {loading ? "Actualizando..." : "Refrescar KPI"}
         </button>
       </div>
 
-      <div className="mt-4 grid gap-3 lg:grid-cols-[2fr_2fr_1fr_1fr]">
+      {/* ── Filters */}
+      <div className="mt-4 grid gap-3 sm:grid-cols-3">
         <select className="input" value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)}>
           <option value="">Selecciona evento</option>
           {events.map((event) => (
@@ -292,76 +481,130 @@ export default function AndRegistrationKpi({
             <option key={delegation.id} value={delegation.id}>{delegation.countryCode || delegation.id}</option>
           ))}
         </select>
-        <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-          <div className="text-xs text-white/50">Esperado</div>
-          <div className="text-lg font-semibold text-white">
-            {selectedDelegationId && !totals.hasComparableExpected ? "-" : totals.expected}
-          </div>
-        </div>
-        <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-          <div className="text-xs text-white/50">Registrado</div>
-          <div className="text-lg font-semibold text-white">{totals.registered}</div>
-        </div>
+        <select className="input" value={selectedDisciplineId} onChange={(e) => setSelectedDisciplineId(e.target.value)}>
+          <option value="">Todas las disciplinas</option>
+          {disciplineOptions.map((discipline) => (
+            <option key={discipline.id} value={discipline.id}>{discipline.name}</option>
+          ))}
+        </select>
       </div>
 
-      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="rounded-2xl border border-white/10 bg-white/4 p-4">
-          <p className="text-xs uppercase tracking-[0.18em] text-white/50">Cumplimiento total</p>
-          <div className="mt-2 flex items-end gap-2">
-            <p className="text-3xl font-semibold text-emerald-400">
-              {totals.pct === null ? "N/D" : formatPercent(totals.pct)}
-            </p>
-            <p className="pb-1 text-sm text-white/50">esperado vs registrado</p>
+      {/* ── KPI Cards */}
+      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Cumplimiento */}
+        <div style={{
+          background: pal.cardBg, border: `1px solid ${pal.cardBorder}`,
+          borderTop: `3px solid ${complianceColor}`,
+          borderRadius: "14px", padding: "18px",
+          boxShadow: pal.shadow,
+        }}>
+          <div className="flex items-center justify-between mb-3">
+            <span style={{ fontSize: "18px" }}>✅</span>
+            <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: complianceColor, boxShadow: `0 0 6px ${complianceColor}99`, display: "inline-block" }} />
           </div>
-          <div className="mt-3 h-2 rounded-full bg-white/10">
-            <div className="h-2 rounded-full bg-emerald-500" style={{ width: `${Math.min(totals.pct ?? 0, 100)}%` }} />
+          <p style={{ fontSize: "2rem", fontWeight: 800, color: complianceColor, lineHeight: 1, fontVariantNumeric: "tabular-nums",
+            ...(isObsidian ? { textShadow: `0 0 20px ${complianceColor}55` } : {}) }}>
+            {totals.pct === null ? "N/D" : formatPercent(totals.pct)}
+          </p>
+          <p style={{ fontSize: "11px", color: pal.textMuted, marginTop: "6px", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.12em" }}>Cumplimiento total</p>
+          <div style={{ marginTop: "10px", height: "4px", borderRadius: "99px", background: pal.progressTrack }}>
+            <div style={{ height: "4px", borderRadius: "99px", width: `${Math.min(totals.pct ?? 0, 100)}%`, background: complianceColor, transition: "width 0.5s ease" }} />
           </div>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-white/4 p-4">
-          <p className="text-xs uppercase tracking-[0.18em] text-white/50">Brecha neta</p>
-          <p
-            className={`mt-2 text-3xl font-semibold ${
-              totals.variance === null
-                ? "text-white/50"
-                : totals.variance < 0
-                  ? "text-rose-400"
-                  : totals.variance > 0
-                    ? "text-amber-400"
-                    : "text-emerald-400"
-            }`}
-          >
+
+        {/* Brecha neta */}
+        <div style={{
+          background: pal.cardBg, border: `1px solid ${pal.cardBorder}`,
+          borderTop: `3px solid ${varianceColor}`,
+          borderRadius: "14px", padding: "18px",
+          boxShadow: pal.shadow,
+        }}>
+          <div className="flex items-center justify-between mb-3">
+            <span style={{ fontSize: "18px" }}>{totals.variance === null ? "➖" : totals.variance < 0 ? "📉" : totals.variance > 0 ? "📈" : "✅"}</span>
+            <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: varianceColor, boxShadow: `0 0 6px ${varianceColor}99`, display: "inline-block" }} />
+          </div>
+          <p style={{ fontSize: "2rem", fontWeight: 800, color: varianceColor, lineHeight: 1, fontVariantNumeric: "tabular-nums",
+            ...(isObsidian ? { textShadow: `0 0 20px ${varianceColor}55` } : {}) }}>
             {totals.variance === null ? "-" : totals.variance > 0 ? `+${totals.variance}` : totals.variance}
           </p>
-          <p className="mt-1 text-sm text-white/50">
-            {totals.variance === null
-              ? "Sin meta por delegacion configurada"
-              : "Participantes respecto del objetivo definido"}
+          <p style={{ fontSize: "11px", color: pal.textMuted, marginTop: "6px", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.12em" }}>Brecha neta</p>
+          <p style={{ fontSize: "12px", color: pal.textMuted, marginTop: "4px" }}>
+            {selectedDelegationId && !totals.hasComparableExpected ? "Sin meta configurada" : `${totals.registered} reg. / ${totals.expected} esp.`}
           </p>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-white/4 p-4">
-          <p className="text-xs uppercase tracking-[0.18em] text-white/50">Vista activa</p>
-          <p className="mt-2 text-base font-semibold text-white">
-            {selectedDelegationId
-              ? `Delegacion ${filteredDelegations.find((d) => d.id === selectedDelegationId)?.countryCode || selectedDelegationId}`
-              : "Consolidado del evento"}
+
+        {/* Disciplinas con déficit */}
+        <div style={{
+          background: pal.cardBg, border: `1px solid ${pal.cardBorder}`,
+          borderTop: `3px solid ${deficitStats.deficit > 0 ? pal.c2 : pal.c1}`,
+          borderRadius: "14px", padding: "18px",
+          boxShadow: pal.shadow,
+        }}>
+          <div className="flex items-center justify-between mb-3">
+            <span style={{ fontSize: "18px" }}>⚠️</span>
+            <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: deficitStats.deficit > 0 ? pal.c2 : pal.c1, boxShadow: `0 0 6px ${deficitStats.deficit > 0 ? pal.c2 : pal.c1}99`, display: "inline-block" }} />
+          </div>
+          <p style={{ fontSize: "2rem", fontWeight: 800, color: deficitStats.deficit > 0 ? pal.c2 : pal.c1, lineHeight: 1,
+            ...(isObsidian ? { textShadow: `0 0 20px ${deficitStats.deficit > 0 ? pal.c2 : pal.c1}55` } : {}) }}>
+            {deficitStats.uniqueDeficitDisciplines}
           </p>
-          <p className="mt-1 text-sm text-white/50">
-            {selectedDelegationId
-              ? totals.hasComparableExpected
-                ? "Usa capacidad por disciplina + delegacion"
-                : "Sin meta esperada por delegacion (solo registro real)"
-              : "Usa capacidad total por disciplina"}
+          <p style={{ fontSize: "11px", color: pal.textMuted, marginTop: "6px", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.12em" }}>Disciplinas en déficit</p>
+          <p style={{ fontSize: "12px", color: pal.textMuted, marginTop: "4px" }}>
+            {deficitStats.onTrack} en objetivo · {deficitStats.deficit} rezagadas
+          </p>
+        </div>
+
+        {/* Cobertura delegaciones */}
+        <div style={{
+          background: pal.cardBg, border: `1px solid ${pal.cardBorder}`,
+          borderTop: `3px solid ${pal.c3}`,
+          borderRadius: "14px", padding: "18px",
+          boxShadow: pal.shadow,
+        }}>
+          <div className="flex items-center justify-between mb-3">
+            <span style={{ fontSize: "18px" }}>🌎</span>
+            <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: pal.c3, boxShadow: `0 0 6px ${pal.c3}99`, display: "inline-block" }} />
+          </div>
+          <p style={{ fontSize: "2rem", fontWeight: 800, color: pal.c3, lineHeight: 1,
+            ...(isObsidian ? { textShadow: `0 0 20px ${pal.c3}55` } : {}) }}>
+            {filteredDelegations.length}
+          </p>
+          <p style={{ fontSize: "11px", color: pal.textMuted, marginTop: "6px", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.12em" }}>Delegaciones</p>
+          <p style={{ fontSize: "12px", color: pal.textMuted, marginTop: "4px" }}>
+            {totals.registered} participantes AND
           </p>
         </div>
       </div>
 
-      {error ? <p className="mt-3 text-sm text-rose-400">{error}</p> : null}
+      {error ? <p className="mt-3 text-sm" style={{ color: "#ef4444" }}>{error}</p> : null}
 
-      <div className="mt-4 overflow-x-auto">
+      <div className="mt-4 flex items-center justify-between gap-3">
+        <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+          Mostrando {Math.min(filteredRows.length, maxRows)} de {filteredRows.length} filas
+        </p>
+        <div className="flex items-center gap-2">
+          <span className="text-xs" style={{ color: "var(--text-muted)" }}>Límite</span>
+          <select
+            className="input h-9 min-w-[120px]"
+            value={maxRows}
+            onChange={(e) => setMaxRows(Number(e.target.value) || 100)}
+          >
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+            <option value={200}>200</option>
+            <option value={500}>500</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="mt-3 max-h-[560px] overflow-auto">
         <table className="table">
           <thead>
             <tr>
+              <th>Delegación</th>
               <th>Disciplina</th>
+              <th>Tipo</th>
+              <th>Género</th>
               <th>Esperado</th>
               <th>Registrado</th>
               <th>Brecha</th>
@@ -369,23 +612,29 @@ export default function AndRegistrationKpi({
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
-              <tr key={row.disciplineId}>
-                <td className="font-medium text-white">{row.disciplineName}</td>
+            {visibleRows.map((row) => (
+              <tr key={`${row.delegationKey}-${row.disciplineId}`}>
+                <td>{row.delegationName}</td>
+                <td className="font-medium" style={{ color: "var(--text)" }}>{row.disciplineName}</td>
+                <td>{row.disciplineType}</td>
+                <td>{row.disciplineGender}</td>
                 <td>{row.hasDelegationExpected ? row.expected : "-"}</td>
                 <td>{row.registered}</td>
-                <td className={row.variance === null ? "text-white/40" : row.variance < 0 ? "text-rose-400" : row.variance > 0 ? "text-amber-400" : "text-emerald-400"}>
+                <td style={{ color: row.variance === null ? "var(--text-faint)" : row.variance < 0 ? "#f87171" : row.variance > 0 ? "#fbbf24" : "#34d399" }}>
                   {row.variance === null ? "-" : row.variance > 0 ? `+${row.variance}` : row.variance}
                 </td>
                 <td>
                   <div className="flex min-w-[220px] items-center gap-2">
-                    <div className="h-2 flex-1 rounded-full bg-white/10">
+                    <div className="h-2 flex-1 rounded-full" style={{ background: "var(--border)" }}>
                       <div
-                        className={`h-2 rounded-full ${row.statusTone === "good" ? "bg-emerald-500" : row.statusTone === "over" ? "bg-amber-500" : "bg-cyan-500"}`}
-                        style={{ width: `${Math.min(row.pct ?? 0, 100)}%` }}
+                        className="h-2 rounded-full"
+                        style={{
+                          width: `${Math.min(row.pct ?? 0, 100)}%`,
+                          background: row.statusTone === "good" ? "#10b981" : row.statusTone === "over" ? "#f59e0b" : "#06b6d4"
+                        }}
                       />
                     </div>
-                    <span className="min-w-[52px] text-right text-xs font-semibold text-white/85">
+                    <span className="min-w-[52px] text-right text-xs font-semibold" style={{ color: "var(--text)" }}>
                       {row.pct === null ? "N/D" : formatPercent(row.pct)}
                     </span>
                   </div>
@@ -396,8 +645,8 @@ export default function AndRegistrationKpi({
         </table>
       </div>
 
-      {!loading && rows.length === 0 ? (
-        <p className="mt-3 text-sm text-white/50">
+      {!loading && filteredRows.length === 0 ? (
+        <p className="mt-3 text-sm" style={{ color: "var(--text-muted)" }}>
           Define primero la planificacion AND en Eventos (capacidad por disciplina y por delegacion) para ver este KPI.
         </p>
       ) : null}

@@ -23,6 +23,7 @@ import { SportsCalendarModule } from './sports-calendar/sports-calendar.module';
 import { AccreditationsModule } from './accreditations/accreditations.module';
 import { VenuesModule } from './venues/venues.module';
 import { HotelKeysModule } from './hotel-keys/hotel-keys.module';
+import { SalonesModule } from './salones/salones.module';
 
 @Module({
   imports: [
@@ -57,6 +58,7 @@ import { HotelKeysModule } from './hotel-keys/hotel-keys.module';
     HotelBedsModule,
     HotelAssignmentsModule,
     HotelKeysModule,
+    SalonesModule,
     SportsCalendarModule,
     AccreditationsModule,
     VenuesModule,

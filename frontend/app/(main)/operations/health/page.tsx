@@ -4,6 +4,7 @@ import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
 import { apiFetch } from "@/lib/api";
 import { filterValidatedAthletes } from "@/lib/athletes";
+import { useTheme } from "@/lib/theme";
 
 type EventItem = { id: string; name?: string | null };
 type DelegationItem = { id: string; eventId?: string | null; countryCode?: string | null };
@@ -487,6 +488,49 @@ async function loadLogoAsDataUrl(path: string) {
 }
 
 export default function HealthPage() {
+  const { theme } = useTheme();
+  const isObsidian = theme === "obsidian";
+  const isAtlas = theme === "atlas";
+  const isDark = theme === "dark";
+
+  const pal = isObsidian ? {
+    panelBg: "linear-gradient(135deg, #0a1322 0%, #0e1728 60%, #0d1a30 100%)",
+    panelBorder: "rgba(34,211,238,0.08)", panelShadow: "0 4px 32px rgba(0,0,0,0.6)",
+    orb1: "rgba(16,185,129,0.08)", orb2: "rgba(239,68,68,0.06)",
+    accent: "#22d3ee", titleColor: "#e2e8f0", subtitleColor: "rgba(255,255,255,0.45)",
+    cardBg: "#0e1728", cardBorder: "rgba(34,211,238,0.1)", cardShadow: "0 4px 20px rgba(0,0,0,0.5)",
+    labelColor: "rgba(255,255,255,0.35)", textMuted: "rgba(255,255,255,0.5)",
+    rowBg: "rgba(255,255,255,0.04)", rowHover: "rgba(255,255,255,0.07)",
+    universeBg: "rgba(255,255,255,0.06)", universeBorder: "rgba(255,255,255,0.1)",
+  } : isDark ? {
+    panelBg: "linear-gradient(135deg, #0f172a 0%, #1e293b 55%, #111827 100%)",
+    panelBorder: "rgba(255,255,255,0.06)", panelShadow: "0 4px 24px rgba(0,0,0,0.45)",
+    orb1: "rgba(16,185,129,0.07)", orb2: "rgba(239,68,68,0.06)",
+    accent: "#10b981", titleColor: "#f1f5f9", subtitleColor: "rgba(255,255,255,0.4)",
+    cardBg: "var(--surface)", cardBorder: "var(--border)", cardShadow: "0 2px 12px rgba(0,0,0,0.3)",
+    labelColor: "var(--text-faint)", textMuted: "var(--text-muted)",
+    rowBg: "rgba(255,255,255,0.03)", rowHover: "rgba(255,255,255,0.05)",
+    universeBg: "rgba(255,255,255,0.05)", universeBorder: "rgba(255,255,255,0.08)",
+  } : isAtlas ? {
+    panelBg: "linear-gradient(135deg, #ffffff 0%, #f0f4ff 60%, #eef1f8 100%)",
+    panelBorder: "#c7d2fe", panelShadow: "0 1px 4px rgba(0,0,0,0.07)",
+    orb1: "rgba(16,185,129,0.06)", orb2: "rgba(239,68,68,0.04)",
+    accent: "#3b5bdb", titleColor: "#0f172a", subtitleColor: "#64748b",
+    cardBg: "#ffffff", cardBorder: "#e2e8f0", cardShadow: "0 1px 4px rgba(0,0,0,0.06)",
+    labelColor: "#94a3b8", textMuted: "#64748b",
+    rowBg: "#f8fafc", rowHover: "#f1f5f9",
+    universeBg: "#f1f5f9", universeBorder: "#e2e8f0",
+  } : {
+    panelBg: "linear-gradient(135deg, #ffffff 0%, #f8fafc 60%, #f1f5f9 100%)",
+    panelBorder: "#e2e8f0", panelShadow: "0 1px 4px rgba(0,0,0,0.06)",
+    orb1: "rgba(16,185,129,0.05)", orb2: "rgba(239,68,68,0.04)",
+    accent: "#10b981", titleColor: "#0f172a", subtitleColor: "#64748b",
+    cardBg: "#ffffff", cardBorder: "#e2e8f0", cardShadow: "0 1px 3px rgba(0,0,0,0.05)",
+    labelColor: "#94a3b8", textMuted: "#64748b",
+    rowBg: "#f8fafc", rowHover: "#f1f5f9",
+    universeBg: "#f1f5f9", universeBorder: "#e2e8f0",
+  };
+
   const [events, setEvents] = useState<EventItem[]>([]);
   const [delegations, setDelegations] = useState<DelegationItem[]>([]);
   const [disciplines, setDisciplines] = useState<DisciplineItem[]>([]);
@@ -1041,8 +1085,7 @@ export default function HealthPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
-        <p className="text-sm" style={{ color: "var(--text-muted)" }}>Registro clínico-administrativo completo por participante.</p>
+      <div className="flex flex-wrap items-center justify-end gap-3 mb-2">
         <div className="rounded-lg px-3 py-1.5 text-sm" style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text-muted)" }}>
           {activeSubsection === "record" ? <>Avance ficha: <span className="font-semibold" style={{ color: "var(--text)" }}>{completion}%</span></> : <>Subsección: <span className="font-semibold" style={{ color: "var(--text)" }}>{HEALTH_SUBSECTIONS.find((item) => item.id === activeSubsection)?.label}</span></>}
         </div>
@@ -1131,103 +1174,149 @@ export default function HealthPage() {
         </div>
       </section>
 
-      {activeSubsection === "dashboard" ? <section className="surface rounded-3xl p-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-white/50">Subsección Salud / Dashboard</p>
-            <h2 className="mt-1 text-2xl font-semibold text-white">Inteligencia de salud</h2>
-            <p className="mt-1 text-sm text-white/50">
-              Métricas calculadas sobre las fichas del filtro actual para detectar dietas, alergias y condiciones relevantes.
-            </p>
-          </div>
-          <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/65">
-            Universo analizado: <span className="font-semibold text-white">{healthDashboard.totalAthletes}</span> participantes
-          </div>
-        </div>
+      {activeSubsection === "dashboard" ? (
+        <section style={{ borderRadius: "24px", overflow: "hidden", boxShadow: pal.panelShadow }}>
+          {/* ── Command panel header */}
+          <div style={{ background: pal.panelBg, border: `1px solid ${pal.panelBorder}`, borderRadius: "24px", padding: "28px 32px 24px", position: "relative", overflow: "hidden" }}>
+            {/* Ambient orbs */}
+            <div style={{ position: "absolute", top: "-60px", right: "-40px", width: "260px", height: "260px", borderRadius: "50%", background: pal.orb1, filter: "blur(60px)", pointerEvents: "none" }} />
+            <div style={{ position: "absolute", bottom: "-40px", left: "20%", width: "200px", height: "200px", borderRadius: "50%", background: pal.orb2, filter: "blur(50px)", pointerEvents: "none" }} />
 
-        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-2xl p-4" style={{background:"rgba(16,185,129,0.08)",border:"1px solid rgba(16,185,129,0.2)"}}>
-            <p className="text-xs uppercase tracking-[0.18em] text-emerald-400">Fichas cargadas</p>
-            <p className="mt-2 text-3xl font-semibold text-emerald-400">{healthDashboard.savedRecords}</p>
-            <p className="mt-1 text-sm text-emerald-400/70">Con información de salud registrada</p>
+            <div className="flex flex-wrap items-start justify-between gap-4" style={{ position: "relative" }}>
+              <div>
+                <div className="flex items-center gap-2" style={{ marginBottom: "6px" }}>
+                  <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: pal.labelColor }}>Salud</span>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", borderRadius: "99px", padding: "2px 10px" }}>
+                    <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#10b981", display: "inline-block", animation: "pulse 2s ease-in-out infinite" }} />
+                    <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: "#10b981" }}>EN VIVO</span>
+                  </span>
+                </div>
+                <h2 style={{ fontSize: "22px", fontWeight: 800, color: pal.titleColor, margin: 0 }}>Inteligencia de salud</h2>
+                <p style={{ fontSize: "13px", color: pal.subtitleColor, marginTop: "4px" }}>
+                  Métricas calculadas sobre las fichas del filtro actual para detectar dietas, alergias y condiciones relevantes.
+                </p>
+              </div>
+              <div style={{ background: pal.universeBg, border: `1px solid ${pal.universeBorder}`, borderRadius: "14px", padding: "10px 18px", fontSize: "13px", color: pal.textMuted, flexShrink: 0 }}>
+                Universo analizado: <span style={{ fontWeight: 700, color: pal.titleColor }}>{healthDashboard.totalAthletes}</span> participantes
+              </div>
+            </div>
           </div>
-          <div className="rounded-2xl p-4" style={{background:"rgba(245,158,11,0.08)",border:"1px solid rgba(245,158,11,0.2)"}}>
-            <p className="text-xs uppercase tracking-[0.18em] text-amber-400">Alimentación especial</p>
-            <p className="mt-2 text-3xl font-semibold text-amber-400">{healthDashboard.specialDietCount}</p>
-            <p className="mt-1 text-sm text-amber-400/70">Casos con requerimiento dietario declarado</p>
-          </div>
-          <div className="rounded-2xl border border-rose-500/20 bg-rose-500/8 p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-rose-400">Alergias</p>
-            <p className="mt-2 text-3xl font-semibold text-rose-400">{healthDashboard.allergicCount}</p>
-            <p className="mt-1 text-sm text-rose-400/70">Participantes con alergias activas</p>
-          </div>
-          <div className="rounded-2xl p-4" style={{background:"rgba(59,130,246,0.08)",border:"1px solid rgba(59,130,246,0.2)"}}>
-            <p className="text-xs uppercase tracking-[0.18em] text-blue-400">Enfermedad crónica</p>
-            <p className="mt-2 text-3xl font-semibold text-blue-400">{healthDashboard.chronicCount}</p>
-            <p className="mt-1 text-sm text-blue-400/70">Casos con patología crónica declarada</p>
-          </div>
-        </div>
 
-        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-2xl border border-white/8 bg-white/5 p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-white/50">Celíacos</p>
-            <p className="mt-2 text-2xl font-semibold text-white">{healthDashboard.celiacCount}</p>
-          </div>
-          <div className="rounded-2xl border border-white/8 bg-white/5 p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-white/50">Veganos</p>
-            <p className="mt-2 text-2xl font-semibold text-white">{healthDashboard.veganCount}</p>
-          </div>
-          <div className="rounded-2xl border border-white/8 bg-white/5 p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-white/50">Vegetarianos</p>
-            <p className="mt-2 text-2xl font-semibold text-white">{healthDashboard.vegetarianCount}</p>
-          </div>
-          <div className="rounded-2xl border border-white/8 bg-white/5 p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-white/50">Con medicación</p>
-            <p className="mt-2 text-2xl font-semibold text-white">{healthDashboard.medicationsCount}</p>
-          </div>
-        </div>
+          <div style={{ background: pal.cardBg, border: `1px solid ${pal.cardBorder}`, borderTop: "none", borderRadius: "0 0 24px 24px", padding: "24px 28px 28px" }}>
 
-        <div className="mt-5 grid gap-4 xl:grid-cols-3">
-          <div className="rounded-2xl border border-white/8 bg-white/5 p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-white/50">Top condiciones</p>
-            <div className="mt-3 space-y-2">
-              {healthDashboard.topConditions.length === 0 ? <p className="text-sm text-white/50">Sin enfermedades crónicas detalladas.</p> : null}
-              {healthDashboard.topConditions.map((item) => (
-                <div key={item.label} className="flex items-center justify-between rounded-xl bg-white/5 px-3 py-2">
-                  <span className="text-sm font-medium text-white/80">{item.label}</span>
-                  <span className="rounded-full bg-white/15 px-2.5 py-1 text-xs font-semibold text-white/80">{item.count}</span>
+            {/* ── Primary KPI cards */}
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              {[
+                { label: "Fichas cargadas",     value: healthDashboard.savedRecords,    color: "#10b981", icon: "🏥", sub: "Con info de salud registrada",    glow: "rgba(16,185,129,0.18)" },
+                { label: "Alimentación especial", value: healthDashboard.specialDietCount, color: "#f59e0b", icon: "🥗", sub: "Requerimiento dietario declarado",  glow: "rgba(245,158,11,0.15)" },
+                { label: "Alergias",             value: healthDashboard.allergicCount,  color: "#ef4444", icon: "⚠️", sub: "Participantes con alergias activas", glow: "rgba(239,68,68,0.15)"  },
+                { label: "Enfermedad crónica",   value: healthDashboard.chronicCount,   color: "#38bdf8", icon: "💊", sub: "Patología crónica declarada",        glow: "rgba(56,189,248,0.15)" },
+              ].map((card) => (
+                <article key={card.label} style={{
+                  background: pal.cardBg, border: `1px solid ${pal.cardBorder}`,
+                  borderTop: `3px solid ${card.color}`, borderRadius: "18px",
+                  padding: "18px 20px", boxShadow: pal.cardShadow,
+                  transition: "transform 120ms ease",
+                }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}
+                >
+                  <div className="flex items-center justify-between" style={{ marginBottom: "10px" }}>
+                    <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: card.color }}>{card.label}</p>
+                    <span style={{ fontSize: "20px", lineHeight: 1 }}>{card.icon}</span>
+                  </div>
+                  <div className="flex items-end gap-2">
+                    <p style={{
+                      fontSize: "2.4rem", fontWeight: 800, lineHeight: 1, color: card.color,
+                      textShadow: (isObsidian || isDark) ? `0 0 20px ${card.glow}` : "none",
+                    }}>{card.value}</p>
+                    <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: card.color, marginBottom: "8px", boxShadow: `0 0 8px ${card.color}` }} />
+                  </div>
+                  <p style={{ fontSize: "11px", color: pal.textMuted, marginTop: "6px" }}>{card.sub}</p>
+                </article>
+              ))}
+            </div>
+
+            {/* ── Secondary KPI row */}
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4" style={{ marginTop: "16px" }}>
+              {[
+                { label: "Celíacos",       value: healthDashboard.celiacCount,      color: "#a78bfa", icon: "🌾" },
+                { label: "Veganos",         value: healthDashboard.veganCount,       color: "#34d399", icon: "🌱" },
+                { label: "Vegetarianos",    value: healthDashboard.vegetarianCount,  color: "#6ee7b7", icon: "🥦" },
+                { label: "Con medicación",  value: healthDashboard.medicationsCount, color: "#f472b6", icon: "💉" },
+              ].map((card) => (
+                <article key={card.label} style={{
+                  background: pal.cardBg, border: `1px solid ${pal.cardBorder}`,
+                  borderLeft: `3px solid ${card.color}`, borderRadius: "16px",
+                  padding: "14px 18px", display: "flex", alignItems: "center", gap: "14px",
+                  boxShadow: pal.cardShadow, transition: "transform 120ms ease",
+                }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}
+                >
+                  <span style={{ fontSize: "24px", lineHeight: 1, flexShrink: 0 }}>{card.icon}</span>
+                  <div>
+                    <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: card.color, marginBottom: "2px" }}>{card.label}</p>
+                    <p style={{ fontSize: "1.9rem", fontWeight: 800, lineHeight: 1, color: card.color }}>{card.value}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            {/* ── Top lists */}
+            <div className="grid gap-4 xl:grid-cols-3" style={{ marginTop: "20px" }}>
+              {[
+                {
+                  label: "Top condiciones", icon: "🫀", color: "#38bdf8",
+                  items: healthDashboard.topConditions,
+                  empty: "Sin enfermedades crónicas detalladas.",
+                  chipColor: "rgba(56,189,248,0.18)", chipText: "#38bdf8",
+                },
+                {
+                  label: "Top alergias", icon: "⚠️", color: "#ef4444",
+                  items: healthDashboard.topAllergies,
+                  empty: "Sin alergias detalladas.",
+                  chipColor: "rgba(239,68,68,0.18)", chipText: "#ef4444",
+                },
+                {
+                  label: "Top dietas y restricciones", icon: "🥗", color: "#f59e0b",
+                  items: healthDashboard.topDiets,
+                  empty: "Sin alimentación especial detallada.",
+                  chipColor: "rgba(245,158,11,0.18)", chipText: "#f59e0b",
+                },
+              ].map((section) => (
+                <div key={section.label} style={{
+                  background: pal.cardBg, border: `1px solid ${pal.cardBorder}`,
+                  borderTop: `3px solid ${section.color}`, borderRadius: "18px",
+                  padding: "18px 18px 16px", boxShadow: pal.cardShadow,
+                }}>
+                  <div className="flex items-center gap-2" style={{ marginBottom: "14px" }}>
+                    <span style={{ fontSize: "16px" }}>{section.icon}</span>
+                    <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: section.color }}>{section.label}</p>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {section.items.length === 0
+                      ? <p style={{ fontSize: "13px", color: pal.textMuted }}>{section.empty}</p>
+                      : section.items.map((item) => (
+                        <div key={item.label} style={{
+                          display: "flex", alignItems: "center", justifyContent: "space-between",
+                          background: pal.rowBg, borderRadius: "10px", padding: "8px 12px",
+                        }}>
+                          <span style={{ fontSize: "13px", fontWeight: 500, color: pal.titleColor }}>{item.label}</span>
+                          <span style={{
+                            background: section.chipColor, borderRadius: "99px",
+                            padding: "2px 10px", fontSize: "12px", fontWeight: 700, color: section.chipText,
+                          }}>{item.count}</span>
+                        </div>
+                      ))
+                    }
+                  </div>
                 </div>
               ))}
             </div>
           </div>
-
-          <div className="rounded-2xl border border-white/8 bg-white/5 p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-white/50">Top alergias</p>
-            <div className="mt-3 space-y-2">
-              {healthDashboard.topAllergies.length === 0 ? <p className="text-sm text-white/50">Sin alergias detalladas.</p> : null}
-              {healthDashboard.topAllergies.map((item) => (
-                <div key={item.label} className="flex items-center justify-between rounded-xl bg-rose-500/10 px-3 py-2">
-                  <span className="text-sm font-medium text-white/80">{item.label}</span>
-                  <span className="rounded-full bg-rose-500/20 px-2.5 py-1 text-xs font-semibold text-rose-300">{item.count}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-white/8 bg-white/5 p-4">
-            <p className="text-xs uppercase tracking-[0.18em] text-white/50">Top dietas y restricciones</p>
-            <div className="mt-3 space-y-2">
-              {healthDashboard.topDiets.length === 0 ? <p className="text-sm text-white/50">Sin alimentación especial detallada.</p> : null}
-              {healthDashboard.topDiets.map((item) => (
-                <div key={item.label} className="flex items-center justify-between rounded-xl bg-amber-500/10 px-3 py-2">
-                  <span className="text-sm font-medium text-white/80">{item.label}</span>
-                  <span className="rounded-full bg-amber-500/20 px-2.5 py-1 text-xs font-semibold text-amber-300">{item.count}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section> : null}
+        </section>
+      ) : null}
 
       {activeSubsection === "bulk" ? (
         <section className="surface rounded-3xl p-5">

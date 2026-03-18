@@ -765,8 +765,7 @@ export default function SportsCalendarPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
-        <p className="text-sm" style={{ color: "var(--text-muted)" }}>Registro operativo de entrenamientos y pruebas por delegacion, con llegadas y retiros integrados desde AND.</p>
+      <div className="flex flex-wrap items-center justify-end gap-3 mb-2">
         <div className="flex items-center gap-2">
           <span className="rounded-full px-3 py-1 text-xs" style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text-muted)" }}>{entries.length} actividades</span>
           <span className="rounded-full bg-rose-700 px-3 py-1 text-xs text-white">{liveCount} en vivo</span>
