@@ -133,6 +133,7 @@ export default function AccreditationsPage() {
     labelColor: "#94a3b8", textMuted: "#64748b",
     cardShadow: "0 1px 4px rgba(15,23,42,0.06)", cardBorder: "#e2e8f0",
     innerBg: "#f8fafc",
+    orb1: "rgba(33,208,179,0.15)", orb2: "rgba(31,205,255,0.1)",
   };
 
   const sel = { background: "#ffffff", color: "#0f172a" };
