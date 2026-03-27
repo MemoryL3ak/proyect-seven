@@ -42,4 +42,8 @@ export class AutoAssignHotelByRoomTypeDto {
   @IsBoolean()
   @IsOptional()
   avoidMinorAdultMix?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  avoidMixedClientType?: boolean;
 }

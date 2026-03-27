@@ -17,6 +17,9 @@ type DisciplineRow = {
   event_id?: string | null;
   category?: string | null;
   gender?: string | null;
+  parent_id?: string | null;
+  scheduled_at?: string | null;
+  venue_name?: string | null;
 };
 
 @Injectable()
@@ -67,6 +70,15 @@ export class DisciplinesService {
     if (dto.gender !== undefined) {
       row.gender = this.normalizeGender(dto.gender);
     }
+    if (dto.parentId !== undefined) {
+      row.parent_id = dto.parentId || null;
+    }
+    if (dto.scheduledAt !== undefined) {
+      row.scheduled_at = dto.scheduledAt ? new Date(dto.scheduledAt) : null;
+    }
+    if (dto.venueName !== undefined) {
+      row.venue_name = dto.venueName || null;
+    }
     return row;
   }
 
@@ -77,6 +89,9 @@ export class DisciplinesService {
       eventId: row.event_id ?? null,
       category: this.normalizeCategory(row.category),
       gender: this.normalizeGender(row.gender),
+      parentId: row.parent_id ?? null,
+      scheduledAt: row.scheduled_at ? new Date(row.scheduled_at) : null,
+      venueName: row.venue_name ?? null,
     };
   }
 

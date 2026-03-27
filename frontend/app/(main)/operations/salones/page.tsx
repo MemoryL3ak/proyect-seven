@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { apiFetch } from "@/lib/api";
-import { useTheme } from "@/lib/theme";
+import { useI18n } from "@/lib/i18n";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -47,8 +47,8 @@ const SALON_TYPES = [
 ];
 
 const SALON_TYPE_ICON: Record<string, string> = {
-  SALA_REUNION: "🤝", AUDITORIO: "🎤", SALON_EVENTOS: "🎪",
-  COMEDOR: "🍽️", SALA_PRENSA: "📰", OTRO: "🏛️",
+  SALA_REUNION: "Reunión", AUDITORIO: "Auditorio", SALON_EVENTOS: "Eventos",
+  COMEDOR: "Comedor", SALA_PRENSA: "Prensa", OTRO: "Otro",
 };
 
 const SALON_STATUS = [
@@ -108,8 +108,23 @@ function formatTime(t: string): string {
   return `${h}:${m}`;
 }
 
+function durationLabel(startTime: string, endTime: string): string {
+  const diff = timeToMinutes(endTime.slice(0, 5)) - timeToMinutes(startTime.slice(0, 5));
+  if (diff <= 0) return "";
+  const h = Math.floor(diff / 60);
+  const m = diff % 60;
+  if (h === 0) return `${m}min`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}min`;
+}
+
+function toDateOnly(d: string): string {
+  return d ? d.slice(0, 10) : "";
+}
+
 function isoToDisplay(d: string): string {
-  const [y, mo, day] = d.split("-");
+  const safe = toDateOnly(d);
+  const [y, mo, day] = safe.split("-");
   return `${day}/${mo}/${y}`;
 }
 
@@ -130,43 +145,17 @@ const emptyResForm = (salonId = "", date = "") => ({
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export default function SalonesPage() {
-  const { theme } = useTheme();
-  const isObsidian = theme === "obsidian";
-  const isAtlas = theme === "atlas";
-  const isDark = theme === "dark";
+  const { locale, t } = useI18n();
+  const dateLocale = locale === "en" ? "en-US" : locale === "pt" ? "pt-BR" : "es-CL";
 
   // ── Palette ─────────────────────────────────────────────────────────────────
-  const pal = isObsidian ? {
-    bg: "#080f1e", panelBg: "#0e1728", panelBorder: "rgba(34,211,238,0.1)",
-    cardBg: "#0a1322", cardBorder: "rgba(34,211,238,0.1)", shadow: "0 4px 24px rgba(0,0,0,0.55)",
-    accent: "#22d3ee", accent2: "#a855f7",
-    text: "#e2e8f0", textMuted: "rgba(255,255,255,0.45)", textFaint: "rgba(255,255,255,0.25)",
-    gridLine: "rgba(255,255,255,0.05)", gridLineHour: "rgba(255,255,255,0.08)",
-    today: "rgba(34,211,238,0.06)", inputBg: "rgba(255,255,255,0.05)",
-    calHeader: "#0e1728", headerBorder: "rgba(34,211,238,0.1)",
-  } : isDark ? {
-    bg: "var(--bg)", panelBg: "var(--surface)", panelBorder: "var(--border)",
-    cardBg: "var(--elevated)", cardBorder: "var(--border-muted)", shadow: "0 2px 12px rgba(0,0,0,0.3)",
-    accent: "#c9a84c", accent2: "#818cf8",
-    text: "var(--text)", textMuted: "var(--text-muted)", textFaint: "var(--text-faint)",
-    gridLine: "rgba(255,255,255,0.04)", gridLineHour: "rgba(255,255,255,0.07)",
-    today: "rgba(201,168,76,0.05)", inputBg: "rgba(255,255,255,0.04)",
-    calHeader: "var(--surface)", headerBorder: "var(--border)",
-  } : isAtlas ? {
-    bg: "#f0f4ff", panelBg: "#ffffff", panelBorder: "#c7d2fe",
-    cardBg: "#ffffff", cardBorder: "#e2e8f0", shadow: "0 1px 4px rgba(0,0,0,0.07)",
-    accent: "#3b5bdb", accent2: "#7c3aed",
+  const pal = {
+    panelBg: "#ffffff", panelBorder: "#e2e8f0",
+    cardBg: "#ffffff", cardBorder: "#e2e8f0", shadow: "0 1px 4px rgba(15,23,42,0.06)",
+    accent: "#21D0B3",
     text: "#0f172a", textMuted: "#64748b", textFaint: "#94a3b8",
-    gridLine: "#f1f5f9", gridLineHour: "#e2e8f0",
-    today: "rgba(59,91,219,0.04)", inputBg: "#f8fafc",
-    calHeader: "#f8fafc", headerBorder: "#e2e8f0",
-  } : {
-    bg: "#f8fafc", panelBg: "#ffffff", panelBorder: "#e2e8f0",
-    cardBg: "#ffffff", cardBorder: "#e8edf5", shadow: "0 1px 4px rgba(0,0,0,0.07)",
-    accent: "#1e3a8a", accent2: "#7c3aed",
-    text: "#0f172a", textMuted: "#64748b", textFaint: "#94a3b8",
-    gridLine: "#f8fafc", gridLineHour: "#f1f5f9",
-    today: "rgba(30,58,138,0.04)", inputBg: "#f8fafc",
+    gridLine: "#f1f5f9",
+    today: "rgba(33,208,179,0.04)", inputBg: "#f8fafc",
     calHeader: "#f8fafc", headerBorder: "#e2e8f0",
   };
 
@@ -208,7 +197,7 @@ export default function SalonesPage() {
         setSelectedSalonId(salonData[0].id);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error cargando datos");
+      setError(err instanceof Error ? err.message : t("Error cargando datos"));
     } finally {
       setLoading(false);
     }
@@ -228,9 +217,10 @@ export default function SalonesPage() {
     reservations
       .filter((r) => r.salonId === selectedSalonId && r.status !== "CANCELLED")
       .forEach((r) => {
-        // expand multi-day reservations
-        let cur = new Date(r.startDate + "T00:00:00");
-        const end = new Date(r.endDate + "T00:00:00");
+        const startD = toDateOnly(r.startDate);
+        const endD   = toDateOnly(r.endDate);
+        let cur = new Date(startD + "T00:00:00");
+        const end = new Date(endD + "T00:00:00");
         while (cur <= end) {
           const key = toDateStr(cur);
           if (!map[key]) map[key] = [];
@@ -244,8 +234,8 @@ export default function SalonesPage() {
   const upcomingReservations = useMemo(() => {
     const today = toDateStr(new Date());
     return reservations
-      .filter((r) => r.salonId === selectedSalonId && r.endDate >= today)
-      .sort((a, b) => a.startDate.localeCompare(b.startDate) || a.startTime.localeCompare(b.startTime));
+      .filter((r) => r.salonId === selectedSalonId && toDateOnly(r.endDate) >= today)
+      .sort((a, b) => toDateOnly(a.startDate).localeCompare(toDateOnly(b.startDate)) || a.startTime.localeCompare(b.startTime));
   }, [reservations, selectedSalonId]);
 
   // ── Salon CRUD ────────────────────────────────────────────────────────────────
@@ -269,7 +259,7 @@ export default function SalonesPage() {
 
   const saveSalon = async () => {
     if (!salonForm.hotelId || !salonForm.name.trim()) {
-      setModalError("Hotel y nombre son obligatorios.");
+      setModalError(t("Hotel y nombre son obligatorios."));
       return;
     }
     setSaving(true);
@@ -289,7 +279,7 @@ export default function SalonesPage() {
       setShowSalonModal(false);
       await loadData();
     } catch (err) {
-      setModalError(err instanceof Error ? err.message : "Error guardando");
+      setModalError(err instanceof Error ? err.message : t("Error guardando"));
     } finally {
       setSaving(false);
     }
@@ -301,7 +291,7 @@ export default function SalonesPage() {
       if (selectedSalonId === id) setSelectedSalonId("");
       await loadData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error eliminando salón");
+      setError(err instanceof Error ? err.message : t("Error eliminando salón"));
     } finally {
       setConfirmDelete(null);
     }
@@ -331,7 +321,7 @@ export default function SalonesPage() {
 
   const saveReservation = async () => {
     if (!resForm.salonId || !resForm.title.trim() || !resForm.startDate || !resForm.startTime || !resForm.endTime) {
-      setModalError("Salón, título, fecha y horario son obligatorios.");
+      setModalError(t("Salón, título, fecha y horario son obligatorios."));
       return;
     }
     setSaving(true);
@@ -354,7 +344,7 @@ export default function SalonesPage() {
       setShowResModal(false);
       await loadData();
     } catch (err) {
-      setModalError(err instanceof Error ? err.message : "Error guardando");
+      setModalError(err instanceof Error ? err.message : t("Error guardando"));
     } finally {
       setSaving(false);
     }
@@ -365,7 +355,7 @@ export default function SalonesPage() {
       await apiFetch(`/salones/reservations/${id}`, { method: "DELETE" });
       await loadData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error eliminando reserva");
+      setError(err instanceof Error ? err.message : t("Error eliminando reserva"));
     } finally {
       setConfirmDelete(null);
     }
@@ -407,33 +397,35 @@ export default function SalonesPage() {
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", marginBottom: "24px" }}>
         <div>
-          <p style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: pal.accent }}>
-            Hotelería
-          </p>
-          <h1 style={{ fontSize: "22px", fontWeight: 800, color: pal.text, marginTop: "2px" }}>
-            Reserva de salones
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.25)", borderRadius: "99px", padding: "3px 12px", fontSize: "10px", fontWeight: 700, letterSpacing: "0.25em", textTransform: "uppercase", color: "#21D0B3" }}>
+            <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#21D0B3", display: "inline-block" }} />
+            {t("Hotelería")}
+          </span>
+          <h1 style={{ fontSize: "22px", fontWeight: 800, color: "#0f172a", marginTop: "8px" }}>
+            {t("Reserva de salones")}
           </h1>
-          <p style={{ fontSize: "13px", color: pal.textMuted, marginTop: "2px" }}>
-            Gestiona salones, reservas y visualiza la ocupación semanal
+          <p style={{ fontSize: "13px", color: "#64748b", marginTop: "2px" }}>
+            {t("Gestiona salones, reservas y visualiza la ocupación semanal")}
           </p>
         </div>
         <div style={{ display: "flex", gap: "8px" }}>
           <button onClick={openCreateSalon} style={{
             padding: "8px 16px", borderRadius: "10px", fontSize: "13px", fontWeight: 600,
-            background: "transparent", border: `1px solid ${pal.panelBorder}`, color: pal.textMuted, cursor: "pointer",
+            background: "#ffffff", border: "1px solid #e2e8f0", color: "#64748b", cursor: "pointer",
           }}>
-            + Nuevo salón
+            {t("+ Nuevo salón")}
           </button>
           <button
             onClick={() => openCreateRes()}
             disabled={!selectedSalonId}
             style={{
               padding: "8px 18px", borderRadius: "10px", fontSize: "13px", fontWeight: 600,
-              background: pal.accent, color: "#fff", border: "none", cursor: selectedSalonId ? "pointer" : "not-allowed",
-              opacity: selectedSalonId ? 1 : 0.5,
+              background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: "#fff", border: "none",
+              cursor: selectedSalonId ? "pointer" : "not-allowed", opacity: selectedSalonId ? 1 : 0.5,
+              boxShadow: "0 2px 10px rgba(33,208,179,0.3)",
             }}
           >
-            + Nueva reserva
+            {t("+ Nueva reserva")}
           </button>
         </div>
       </div>
@@ -450,19 +442,18 @@ export default function SalonesPage() {
         {/* ── Salones sidebar ─────────────────────────────────────────────────── */}
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           {loading && salones.length === 0 ? (
-            <p style={{ color: pal.textFaint, fontSize: "13px" }}>Cargando...</p>
+            <p style={{ color: pal.textFaint, fontSize: "13px" }}>{t("Cargando...")}</p>
           ) : salones.length === 0 ? (
             <div style={{
-              background: pal.panelBg, border: `1px dashed ${pal.panelBorder}`,
+              background: "#ffffff", border: "1px dashed #e2e8f0",
               borderRadius: "14px", padding: "24px", textAlign: "center",
             }}>
-              <p style={{ fontSize: "28px", marginBottom: "8px" }}>🏛️</p>
-              <p style={{ color: pal.textMuted, fontSize: "13px" }}>Sin salones creados</p>
+              <p style={{ color: "#64748b", fontSize: "13px" }}>{t("Sin salones creados")}</p>
               <button onClick={openCreateSalon} style={{
                 marginTop: "12px", padding: "7px 14px", borderRadius: "8px", fontSize: "12px",
                 background: pal.accent, color: "#fff", border: "none", cursor: "pointer", fontWeight: 600,
               }}>
-                Crear primer salón
+                {t("Crear primer salón")}
               </button>
             </div>
           ) : salones.map((salon) => {
@@ -481,19 +472,20 @@ export default function SalonesPage() {
               >
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <span style={{ fontSize: "20px" }}>{SALON_TYPE_ICON[salon.type] ?? "🏛️"}</span>
                     <div>
                       <p style={{ fontWeight: 700, fontSize: "13px", color: isSelected ? pal.accent : pal.text }}>{salon.name}</p>
                       <p style={{ fontSize: "11px", color: pal.textFaint, marginTop: "1px" }}>
-                        {SALON_TYPES.find((t) => t.value === salon.type)?.label ?? salon.type}
-                        {salon.floor ? ` · Piso ${salon.floor}` : ""}
+                        {t(SALON_TYPES.find((st) => st.value === salon.type)?.label ?? salon.type)}
+                        {salon.floor ? ` · ${t("Piso")} ${salon.floor}` : ""}
                       </p>
                     </div>
                   </div>
                   <button
                     onClick={(e) => { e.stopPropagation(); openEditSalon(salon); }}
-                    style={{ background: "transparent", border: "none", cursor: "pointer", color: pal.textFaint, fontSize: "14px", padding: "2px 4px" }}
-                  >✏️</button>
+                    style={{ background: "transparent", border: "none", cursor: "pointer", color: "#94a3b8", padding: "2px 4px", display: "flex", alignItems: "center" }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  </button>
                 </div>
 
                 <div style={{ display: "flex", gap: "8px", marginTop: "10px" }}>
@@ -503,17 +495,20 @@ export default function SalonesPage() {
                     color: salon.status === "ACTIVE" ? "#10b981" : "#ef4444",
                     border: `1px solid ${salon.status === "ACTIVE" ? "rgba(16,185,129,0.25)" : "rgba(239,68,68,0.25)"}`,
                   }}>
-                    {SALON_STATUS.find((s) => s.value === salon.status)?.label ?? salon.status}
+                    {t(SALON_STATUS.find((s) => s.value === salon.status)?.label ?? salon.status)}
                   </span>
                   {salon.capacity > 0 && (
-                    <span style={{ fontSize: "10px", color: pal.textFaint }}>👥 {salon.capacity}</span>
+                    <span style={{ fontSize: "10px", color: "#94a3b8" }}>
+                      <svg style={{ display: "inline", marginRight: "3px", verticalAlign: "middle" }} width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                      {salon.capacity}
+                    </span>
                   )}
                   {resCount > 0 && (
                     <span style={{
                       fontSize: "10px", fontWeight: 600, padding: "2px 7px", borderRadius: "99px",
                       background: `${pal.accent}18`, color: pal.accent, border: `1px solid ${pal.accent}33`,
                     }}>
-                      {resCount} próx.
+                      {resCount} {t("próx.")}
                     </span>
                   )}
                 </div>
@@ -527,12 +522,11 @@ export default function SalonesPage() {
 
           {!selectedSalon ? (
             <div style={{
-              background: pal.panelBg, border: `1px dashed ${pal.panelBorder}`,
+              background: "#ffffff", border: "1px dashed #e2e8f0",
               borderRadius: "16px", padding: "60px 24px", textAlign: "center",
             }}>
-              <p style={{ fontSize: "40px", marginBottom: "12px" }}>🗓️</p>
-              <p style={{ color: pal.textMuted, fontSize: "15px", fontWeight: 600 }}>Selecciona un salón</p>
-              <p style={{ color: pal.textFaint, fontSize: "13px", marginTop: "4px" }}>para ver su calendario de ocupación</p>
+              <p style={{ color: "#64748b", fontSize: "15px", fontWeight: 600 }}>{t("Selecciona un salón")}</p>
+              <p style={{ color: "#94a3b8", fontSize: "13px", marginTop: "4px" }}>{t("para ver su calendario de ocupación")}</p>
             </div>
           ) : (
             <>
@@ -551,14 +545,14 @@ export default function SalonesPage() {
                       {selectedSalon.name}
                     </p>
                     <p style={{ fontSize: "15px", fontWeight: 700, color: pal.text, marginTop: "2px" }}>
-                      {MONTHS_ES[weekStart.getMonth()].charAt(0).toUpperCase() + MONTHS_ES[weekStart.getMonth()].slice(1)} {weekStart.getFullYear()}
+                      {weekStart.toLocaleDateString(dateLocale, { month: "long", year: "numeric" })}
                     </p>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     <button onClick={() => setWeekStart(getWeekStart(new Date()))} style={{
                       padding: "5px 12px", borderRadius: "8px", fontSize: "12px", fontWeight: 600,
                       background: "transparent", border: `1px solid ${pal.panelBorder}`, color: pal.textMuted, cursor: "pointer",
-                    }}>Hoy</button>
+                    }}>{t("Hoy")}</button>
                     <button onClick={() => setWeekStart((w) => addDays(w, -7))} style={{
                       width: "32px", height: "32px", borderRadius: "8px", border: `1px solid ${pal.panelBorder}`,
                       background: "transparent", color: pal.textMuted, cursor: "pointer", fontSize: "16px", display: "flex", alignItems: "center", justifyContent: "center",
@@ -569,8 +563,8 @@ export default function SalonesPage() {
                     }}>›</button>
                     <button onClick={() => openCreateRes()} style={{
                       padding: "5px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: 600,
-                      background: pal.accent, color: "#fff", border: "none", cursor: "pointer",
-                    }}>+ Reserva</button>
+                      background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: "#fff", border: "none", cursor: "pointer",
+                    }}>+ {t("Reserva")}</button>
                   </div>
                 </div>
 
@@ -590,10 +584,10 @@ export default function SalonesPage() {
                           padding: "10px 4px", textAlign: "center", cursor: "pointer",
                         }}
                         onClick={() => openCreateRes(ds)}
-                        title={`Añadir reserva el ${ds}`}
+                        title={t("Añadir reserva el {date}").replace("{date}", ds)}
                       >
                         <p style={{ fontSize: "10px", fontWeight: 600, color: pal.textFaint, textTransform: "uppercase", letterSpacing: "0.1em" }}>
-                          {DAYS_ES[day.getDay()]}
+                          {day.toLocaleDateString(dateLocale, { weekday: "short" })}
                         </p>
                         <p style={{
                           fontSize: "18px", fontWeight: 800, marginTop: "2px",
@@ -651,24 +645,61 @@ export default function SalonesPage() {
                           {/* Reservation blocks */}
                           {dayRes.map((res) => {
                             const sc = RES_STATUS_COLOR[res.status] ?? RES_STATUS_COLOR.CONFIRMED;
+                            const startMin = timeToMinutes(res.startTime.slice(0, 5));
+                            const endMin   = timeToMinutes(res.endTime.slice(0, 5));
+                            const blockH   = Math.max(20, ((endMin - startMin) / 60) * HOUR_HEIGHT - 2);
+                            const dur      = durationLabel(res.startTime, res.endTime);
+                            const isShort  = blockH < 40;
+                            const isMedium = blockH >= 40 && blockH < 72;
                             return (
                               <div
                                 key={res.id}
                                 style={blockStyle(res)}
                                 onClick={(e) => { e.stopPropagation(); openEditRes(res); }}
-                                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.filter = "brightness(1.12)"; }}
+                                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.filter = "brightness(1.13)"; }}
                                 onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.filter = ""; }}
                               >
-                                <p style={{ fontSize: "11px", fontWeight: 700, color: sc.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                  {res.title}
-                                </p>
-                                <p style={{ fontSize: "10px", color: sc.text, opacity: 0.75, marginTop: "1px" }}>
-                                  {formatTime(res.startTime)} – {formatTime(res.endTime)}
-                                </p>
-                                {res.organizerName && (
-                                  <p style={{ fontSize: "9px", color: sc.text, opacity: 0.6, marginTop: "1px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                    {res.organizerName}
-                                  </p>
+                                {isShort ? (
+                                  /* Chip view: single line */
+                                  <div style={{ display: "flex", alignItems: "center", gap: "4px", height: "100%" }}>
+                                    <span style={{ fontSize: "10px", fontWeight: 700, color: sc.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
+                                      {res.title}
+                                    </span>
+                                    <span style={{ fontSize: "9px", color: sc.text, opacity: 0.7, whiteSpace: "nowrap", flexShrink: 0 }}>
+                                      {formatTime(res.startTime)}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  /* Card view: title + time + duration + organizer */
+                                  <>
+                                    <p style={{ fontSize: "11px", fontWeight: 700, color: sc.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", lineHeight: 1.3 }}>
+                                      {res.title}
+                                    </p>
+                                    <div style={{ display: "flex", alignItems: "center", gap: "5px", marginTop: "2px", flexWrap: "nowrap", overflow: "hidden" }}>
+                                      <span style={{ fontSize: "10px", color: sc.text, opacity: 0.8, whiteSpace: "nowrap" }}>
+                                        {formatTime(res.startTime)} – {formatTime(res.endTime)}
+                                      </span>
+                                      {dur && (
+                                        <span style={{
+                                          fontSize: "9px", fontWeight: 600, padding: "0px 5px", borderRadius: "99px",
+                                          background: `${sc.dot}28`, color: sc.text, opacity: 0.9,
+                                          whiteSpace: "nowrap", flexShrink: 0,
+                                        }}>
+                                          {dur}
+                                        </span>
+                                      )}
+                                    </div>
+                                    {!isMedium && res.organizerName && (
+                                      <p style={{ fontSize: "9px", color: sc.text, opacity: 0.6, marginTop: "3px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                        {res.organizerName}
+                                      </p>
+                                    )}
+                                    {!isMedium && res.attendees && (
+                                      <p style={{ fontSize: "9px", color: sc.text, opacity: 0.6, marginTop: "1px" }}>
+                                        {res.attendees} {t("asistentes")}
+                                      </p>
+                                    )}
+                                  </>
                                 )}
                               </div>
                             );
@@ -688,7 +719,7 @@ export default function SalonesPage() {
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
                   <div>
                     <p style={{ fontSize: "11px", color: pal.accent, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase" }}>
-                      Próximas reservas
+                      {t("Próximas reservas")}
                     </p>
                     <p style={{ fontSize: "14px", fontWeight: 600, color: pal.text, marginTop: "2px" }}>
                       {selectedSalon.name}
@@ -698,44 +729,58 @@ export default function SalonesPage() {
                     padding: "6px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: 600,
                     background: `${pal.accent}18`, color: pal.accent, border: `1px solid ${pal.accent}33`, cursor: "pointer",
                   }}>
-                    + Reservar
+                    + {t("Reservar")}
                   </button>
                 </div>
 
                 {upcomingReservations.length === 0 ? (
                   <p style={{ color: pal.textFaint, fontSize: "13px", textAlign: "center", padding: "24px 0" }}>
-                    Sin reservas próximas
+                    {t("Sin reservas próximas")}
                   </p>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                     {upcomingReservations.map((res) => {
                       const sc = RES_STATUS_COLOR[res.status] ?? RES_STATUS_COLOR.CONFIRMED;
-                      const statusLabel = RES_STATUS.find((s) => s.value === res.status)?.label ?? res.status;
+                      const statusLabel = t(RES_STATUS.find((s) => s.value === res.status)?.label ?? res.status);
+                      const dur = durationLabel(res.startTime, res.endTime);
+                      const jumpToWeek = () => setWeekStart(getWeekStart(new Date(toDateOnly(res.startDate) + "T00:00:00")));
                       return (
                         <div
                           key={res.id}
+                          onClick={() => { jumpToWeek(); openEditRes(res); }}
                           style={{
                             background: pal.cardBg, border: `1px solid ${pal.cardBorder}`,
                             borderLeft: `3px solid ${sc.dot}`, borderRadius: "10px", padding: "12px 14px",
                             display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px",
+                            cursor: "pointer", transition: "filter 120ms",
                           }}
+                          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.filter = "brightness(0.95)"; }}
+                          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.filter = ""; }}
                         >
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <p style={{ fontWeight: 700, fontSize: "13px", color: pal.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                               {res.title}
                             </p>
-                            <div style={{ display: "flex", gap: "10px", marginTop: "4px", flexWrap: "wrap" }}>
-                              <span style={{ fontSize: "11px", color: pal.textMuted }}>
-                                📅 {isoToDisplay(res.startDate)}{res.endDate !== res.startDate ? ` → ${isoToDisplay(res.endDate)}` : ""}
+                            <div style={{ display: "flex", gap: "8px", marginTop: "4px", flexWrap: "wrap", alignItems: "center" }}>
+                              <span style={{ fontSize: "11px", color: "#64748b" }}>
+                                {isoToDisplay(res.startDate)}{res.endDate !== res.startDate ? ` → ${isoToDisplay(res.endDate)}` : ""}
                               </span>
-                              <span style={{ fontSize: "11px", color: pal.textMuted }}>
-                                🕐 {formatTime(res.startTime)} – {formatTime(res.endTime)}
+                              <span style={{ fontSize: "11px", color: "#64748b" }}>
+                                {formatTime(res.startTime)} – {formatTime(res.endTime)}
                               </span>
+                              {dur && (
+                                <span style={{
+                                  fontSize: "10px", fontWeight: 600, padding: "1px 7px", borderRadius: "99px",
+                                  background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`,
+                                }}>
+                                  {dur}
+                                </span>
+                              )}
                               {res.organizerName && (
-                                <span style={{ fontSize: "11px", color: pal.textMuted }}>👤 {res.organizerName}</span>
+                                <span style={{ fontSize: "11px", color: "#64748b" }}>{res.organizerName}</span>
                               )}
                               {res.attendees && (
-                                <span style={{ fontSize: "11px", color: pal.textMuted }}>👥 {res.attendees}</span>
+                                <span style={{ fontSize: "11px", color: "#64748b" }}>{res.attendees} {t("asistentes")}</span>
                               )}
                             </div>
                           </div>
@@ -746,8 +791,12 @@ export default function SalonesPage() {
                             }}>
                               {statusLabel}
                             </span>
-                            <button onClick={() => openEditRes(res)} style={{ background: "transparent", border: "none", cursor: "pointer", color: pal.textFaint, fontSize: "13px", padding: "2px" }}>✏️</button>
-                            <button onClick={() => setConfirmDelete({ type: "res", id: res.id })} style={{ background: "transparent", border: "none", cursor: "pointer", color: "#ef4444", fontSize: "13px", padding: "2px" }}>🗑️</button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setConfirmDelete({ type: "res", id: res.id }); }}
+                              style={{ background: "transparent", border: "none", cursor: "pointer", color: "#ef4444", padding: "2px", display: "flex", alignItems: "center" }}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                            </button>
                           </div>
                         </div>
                       );
@@ -777,50 +826,50 @@ export default function SalonesPage() {
           }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
               <h2 style={{ fontSize: "17px", fontWeight: 800, color: pal.text }}>
-                {editingSalon ? "Editar salón" : "Nuevo salón"}
+                {editingSalon ? t("Editar salón") : t("Nuevo salón")}
               </h2>
               <button onClick={() => setShowSalonModal(false)} style={{ background: "transparent", border: "none", cursor: "pointer", color: pal.textFaint, fontSize: "18px" }}>✕</button>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
               <div>
-                <label style={labelStyle}>Hotel *</label>
+                <label style={labelStyle}>{t("Hotel")} *</label>
                 <select style={inputStyle} value={salonForm.hotelId} onChange={(e) => setSalonForm({ ...salonForm, hotelId: e.target.value })}>
-                  <option value="">Selecciona un hotel</option>
+                  <option value="">{t("Selecciona un hotel")}</option>
                   {hotels.map((h) => <option key={h.id} value={h.id}>{h.name || h.id}</option>)}
                 </select>
               </div>
               <div>
-                <label style={labelStyle}>Nombre *</label>
-                <input style={inputStyle} value={salonForm.name} onChange={(e) => setSalonForm({ ...salonForm, name: e.target.value })} placeholder="Ej: Sala Andino" />
+                <label style={labelStyle}>{t("Nombre")} *</label>
+                <input style={inputStyle} value={salonForm.name} onChange={(e) => setSalonForm({ ...salonForm, name: e.target.value })} placeholder={t("Ej: Sala Andino")} />
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 <div>
-                  <label style={labelStyle}>Tipo</label>
+                  <label style={labelStyle}>{t("Tipo")}</label>
                   <select style={inputStyle} value={salonForm.type} onChange={(e) => setSalonForm({ ...salonForm, type: e.target.value })}>
-                    {SALON_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                    {SALON_TYPES.map((st) => <option key={st.value} value={st.value}>{t(st.label)}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label style={labelStyle}>Estado</label>
+                  <label style={labelStyle}>{t("Estado")}</label>
                   <select style={inputStyle} value={salonForm.status} onChange={(e) => setSalonForm({ ...salonForm, status: e.target.value })}>
-                    {SALON_STATUS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+                    {SALON_STATUS.map((s) => <option key={s.value} value={s.value}>{t(s.label)}</option>)}
                   </select>
                 </div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 <div>
-                  <label style={labelStyle}>Capacidad (personas)</label>
+                  <label style={labelStyle}>{t("Capacidad (personas)")}</label>
                   <input style={inputStyle} type="number" min={0} value={salonForm.capacity} onChange={(e) => setSalonForm({ ...salonForm, capacity: e.target.value })} placeholder="0" />
                 </div>
                 <div>
-                  <label style={labelStyle}>Piso / Ubicación</label>
+                  <label style={labelStyle}>{t("Piso / Ubicación")}</label>
                   <input style={inputStyle} value={salonForm.floor} onChange={(e) => setSalonForm({ ...salonForm, floor: e.target.value })} placeholder="Ej: 2" />
                 </div>
               </div>
               <div>
-                <label style={labelStyle}>Notas</label>
-                <textarea style={{ ...inputStyle, resize: "vertical", minHeight: "64px" }} value={salonForm.notes} onChange={(e) => setSalonForm({ ...salonForm, notes: e.target.value })} placeholder="Equipamiento, restricciones, etc." />
+                <label style={labelStyle}>{t("Notas")}</label>
+                <textarea style={{ ...inputStyle, resize: "vertical", minHeight: "64px" }} value={salonForm.notes} onChange={(e) => setSalonForm({ ...salonForm, notes: e.target.value })} placeholder={t("Equipamiento, restricciones, etc.")} />
               </div>
             </div>
 
@@ -834,17 +883,17 @@ export default function SalonesPage() {
                   onClick={() => { setShowSalonModal(false); setConfirmDelete({ type: "salon", id: editingSalon.id }); }}
                   style={{ padding: "8px 14px", borderRadius: "9px", fontSize: "13px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#ef4444", cursor: "pointer" }}
                 >
-                  Eliminar
+                  {t("Eliminar")}
                 </button>
               )}
               <button onClick={() => setShowSalonModal(false)} style={{ padding: "8px 14px", borderRadius: "9px", fontSize: "13px", background: "transparent", border: `1px solid ${pal.panelBorder}`, color: pal.textMuted, cursor: "pointer" }}>
-                Cancelar
+                {t("Cancelar")}
               </button>
               <button onClick={saveSalon} disabled={saving} style={{
                 padding: "8px 20px", borderRadius: "9px", fontSize: "13px", fontWeight: 700,
-                background: pal.accent, color: "#fff", border: "none", cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1,
+                background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: "#fff", border: "none", cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1,
               }}>
-                {saving ? "Guardando..." : editingSalon ? "Actualizar" : "Crear salón"}
+                {saving ? t("Guardando...") : editingSalon ? t("Actualizar") : t("Crear salón")}
               </button>
             </div>
           </div>
@@ -868,59 +917,59 @@ export default function SalonesPage() {
           }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
               <h2 style={{ fontSize: "17px", fontWeight: 800, color: pal.text }}>
-                {editingRes ? "Editar reserva" : "Nueva reserva"}
+                {editingRes ? t("Editar reserva") : t("Nueva reserva")}
               </h2>
               <button onClick={() => setShowResModal(false)} style={{ background: "transparent", border: "none", cursor: "pointer", color: pal.textFaint, fontSize: "18px" }}>✕</button>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
               <div>
-                <label style={labelStyle}>Salón *</label>
+                <label style={labelStyle}>{t("Salón")} *</label>
                 <select style={inputStyle} value={resForm.salonId} onChange={(e) => setResForm({ ...resForm, salonId: e.target.value })}>
-                  <option value="">Selecciona un salón</option>
-                  {salones.map((s) => <option key={s.id} value={s.id}>{SALON_TYPE_ICON[s.type] ?? "🏛️"} {s.name}</option>)}
+                  <option value="">{t("Selecciona un salón")}</option>
+                  {salones.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </div>
               <div>
-                <label style={labelStyle}>Título *</label>
-                <input style={inputStyle} value={resForm.title} onChange={(e) => setResForm({ ...resForm, title: e.target.value })} placeholder="Ej: Reunión técnica delegaciones" />
+                <label style={labelStyle}>{t("Título")} *</label>
+                <input style={inputStyle} value={resForm.title} onChange={(e) => setResForm({ ...resForm, title: e.target.value })} placeholder={t("Ej: Reunión técnica delegaciones")} />
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 <div>
-                  <label style={labelStyle}>Fecha inicio *</label>
+                  <label style={labelStyle}>{t("Fecha inicio")} *</label>
                   <input style={inputStyle} type="date" value={resForm.startDate} onChange={(e) => setResForm({ ...resForm, startDate: e.target.value, endDate: resForm.endDate || e.target.value })} />
                 </div>
                 <div>
-                  <label style={labelStyle}>Fecha fin</label>
+                  <label style={labelStyle}>{t("Fecha fin")}</label>
                   <input style={inputStyle} type="date" value={resForm.endDate} onChange={(e) => setResForm({ ...resForm, endDate: e.target.value })} />
                 </div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 <div>
-                  <label style={labelStyle}>Hora inicio *</label>
+                  <label style={labelStyle}>{t("Hora inicio")} *</label>
                   <input style={inputStyle} type="time" value={resForm.startTime} onChange={(e) => setResForm({ ...resForm, startTime: e.target.value })} />
                 </div>
                 <div>
-                  <label style={labelStyle}>Hora fin *</label>
+                  <label style={labelStyle}>{t("Hora fin")} *</label>
                   <input style={inputStyle} type="time" value={resForm.endTime} onChange={(e) => setResForm({ ...resForm, endTime: e.target.value })} />
                 </div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 <div>
-                  <label style={labelStyle}>Organizador</label>
-                  <input style={inputStyle} value={resForm.organizerName} onChange={(e) => setResForm({ ...resForm, organizerName: e.target.value })} placeholder="Nombre" />
+                  <label style={labelStyle}>{t("Organizador")}</label>
+                  <input style={inputStyle} value={resForm.organizerName} onChange={(e) => setResForm({ ...resForm, organizerName: e.target.value })} placeholder={t("Nombre")} />
                 </div>
                 <div>
-                  <label style={labelStyle}>Asistentes</label>
+                  <label style={labelStyle}>{t("Asistentes")}</label>
                   <input style={inputStyle} type="number" min={0} value={resForm.attendees} onChange={(e) => setResForm({ ...resForm, attendees: e.target.value })} placeholder="0" />
                 </div>
               </div>
               <div>
-                <label style={labelStyle}>Email organizador</label>
+                <label style={labelStyle}>{t("Email organizador")}</label>
                 <input style={inputStyle} type="email" value={resForm.organizerEmail} onChange={(e) => setResForm({ ...resForm, organizerEmail: e.target.value })} placeholder="correo@ejemplo.com" />
               </div>
               <div>
-                <label style={labelStyle}>Estado</label>
+                <label style={labelStyle}>{t("Estado")}</label>
                 <div style={{ display: "flex", gap: "8px" }}>
                   {RES_STATUS.map((s) => {
                     const sc = RES_STATUS_COLOR[s.value];
@@ -936,15 +985,15 @@ export default function SalonesPage() {
                           color: isActive ? sc.text : pal.textMuted,
                         }}
                       >
-                        {s.label}
+                        {t(s.label)}
                       </button>
                     );
                   })}
                 </div>
               </div>
               <div>
-                <label style={labelStyle}>Notas</label>
-                <textarea style={{ ...inputStyle, resize: "vertical", minHeight: "60px" }} value={resForm.notes} onChange={(e) => setResForm({ ...resForm, notes: e.target.value })} placeholder="Requerimientos especiales, equipamiento..." />
+                <label style={labelStyle}>{t("Notas")}</label>
+                <textarea style={{ ...inputStyle, resize: "vertical", minHeight: "60px" }} value={resForm.notes} onChange={(e) => setResForm({ ...resForm, notes: e.target.value })} placeholder={t("Requerimientos especiales, equipamiento...")} />
               </div>
             </div>
 
@@ -958,17 +1007,17 @@ export default function SalonesPage() {
                   onClick={() => { setShowResModal(false); setConfirmDelete({ type: "res", id: editingRes.id }); }}
                   style={{ padding: "8px 14px", borderRadius: "9px", fontSize: "13px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#ef4444", cursor: "pointer" }}
                 >
-                  Eliminar
+                  {t("Eliminar")}
                 </button>
               )}
               <button onClick={() => setShowResModal(false)} style={{ padding: "8px 14px", borderRadius: "9px", fontSize: "13px", background: "transparent", border: `1px solid ${pal.panelBorder}`, color: pal.textMuted, cursor: "pointer" }}>
-                Cancelar
+                {t("Cancelar")}
               </button>
               <button onClick={saveReservation} disabled={saving} style={{
                 padding: "8px 20px", borderRadius: "9px", fontSize: "13px", fontWeight: 700,
-                background: pal.accent, color: "#fff", border: "none", cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1,
+                background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: "#fff", border: "none", cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1,
               }}>
-                {saving ? "Guardando..." : editingRes ? "Actualizar" : "Crear reserva"}
+                {saving ? t("Guardando...") : editingRes ? t("Actualizar") : t("Crear reserva")}
               </button>
             </div>
           </div>
@@ -988,22 +1037,21 @@ export default function SalonesPage() {
             borderRadius: "18px", padding: "28px", width: "100%", maxWidth: "380px",
             boxShadow: "0 24px 80px rgba(0,0,0,0.5)", textAlign: "center",
           }}>
-            <p style={{ fontSize: "32px", marginBottom: "12px" }}>⚠️</p>
-            <p style={{ fontWeight: 700, fontSize: "16px", color: pal.text }}>¿Confirmar eliminación?</p>
+            <p style={{ fontWeight: 700, fontSize: "16px", color: "#0f172a" }}>{t("¿Confirmar eliminación?")}</p>
             <p style={{ color: pal.textMuted, fontSize: "13px", marginTop: "6px" }}>
               {confirmDelete.type === "salon"
-                ? "Se eliminará el salón y todas sus reservas."
-                : "Se eliminará esta reserva permanentemente."}
+                ? t("Se eliminará el salón y todas sus reservas.")
+                : t("Se eliminará esta reserva permanentemente.")}
             </p>
             <div style={{ display: "flex", gap: "10px", marginTop: "20px", justifyContent: "center" }}>
               <button onClick={() => setConfirmDelete(null)} style={{ padding: "9px 18px", borderRadius: "9px", fontSize: "13px", background: "transparent", border: `1px solid ${pal.panelBorder}`, color: pal.textMuted, cursor: "pointer" }}>
-                Cancelar
+                {t("Cancelar")}
               </button>
               <button
                 onClick={() => confirmDelete.type === "salon" ? deleteSalon(confirmDelete.id) : deleteReservation(confirmDelete.id)}
                 style={{ padding: "9px 18px", borderRadius: "9px", fontSize: "13px", fontWeight: 700, background: "#ef4444", color: "#fff", border: "none", cursor: "pointer" }}
               >
-                Eliminar
+                {t("Eliminar")}
               </button>
             </div>
           </div>

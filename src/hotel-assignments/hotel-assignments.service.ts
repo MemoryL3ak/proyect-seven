@@ -14,6 +14,7 @@ type HotelAssignmentRow = {
   participant_id: string;
   hotel_id: string;
   room_id: string | null;
+  pre_checkin_at: string | null;
   checkin_at: string | null;
   checkout_at: string | null;
   status: string;
@@ -36,6 +37,7 @@ type AssignmentProfile = {
   isMinor: boolean;
   countryCode: string;
   disciplineId: string;
+  userType: string;
 };
 
 type Candidate = {
@@ -44,6 +46,7 @@ type Candidate = {
   isMinor: boolean;
   countryCode: string;
   disciplineId: string;
+  userType: string;
 };
 
 const CLOSED_STATUSES = ['CHECKOUT', 'CHECKED_OUT', 'FINISHED', 'CANCELLED'];
@@ -80,6 +83,7 @@ export class HotelAssignmentsService {
     if (dto.participantId !== undefined) row.participant_id = dto.participantId;
     if (dto.hotelId !== undefined) row.hotel_id = dto.hotelId;
     if (dto.roomId !== undefined) row.room_id = dto.roomId ?? null;
+    if (dto.preCheckinAt !== undefined) row.pre_checkin_at = dto.preCheckinAt ?? null;
     if (dto.checkinAt !== undefined) row.checkin_at = dto.checkinAt ?? null;
     if (dto.checkoutAt !== undefined) row.checkout_at = dto.checkoutAt ?? null;
     if (dto.status !== undefined) row.status = dto.status;
@@ -92,6 +96,7 @@ export class HotelAssignmentsService {
       participantId: row.participant_id,
       hotelId: row.hotel_id,
       roomId: row.room_id,
+      preCheckinAt: row.pre_checkin_at ? new Date(row.pre_checkin_at) : null,
       checkinAt: row.checkin_at ? new Date(row.checkin_at) : null,
       checkoutAt: row.checkout_at ? new Date(row.checkout_at) : null,
       status: row.status,
@@ -146,16 +151,18 @@ export class HotelAssignmentsService {
           participant_id,
           hotel_id,
           room_id,
+          pre_checkin_at,
           checkin_at,
           checkout_at,
           status
-        ) values ($1, $2, $3, $4, $5, $6)
+        ) values ($1, $2, $3, $4, $5, $6, $7)
         returning *
       `,
         [
           dto.participantId,
           dto.hotelId,
           dto.roomId ?? null,
+          dto.preCheckinAt ?? null,
           dto.checkinAt ?? null,
           dto.checkoutAt ?? null,
           dto.status ?? 'ASSIGNED',
@@ -170,13 +177,28 @@ export class HotelAssignmentsService {
     }
   }
 
-  async findAll() {
+  async findAll(userType?: string) {
     try {
-      const rows = (await this.dataSource.query(`
-        select *
-        from logistics.hotel_assignments
-        order by created_at desc
-      `)) as HotelAssignmentRow[];
+      let sql: string;
+      let params: unknown[];
+      if (userType) {
+        sql = `
+          select ha.*
+          from logistics.hotel_assignments ha
+          join core.athletes a on a.id = ha.participant_id
+          where upper(coalesce(a.user_type, '')) = upper($1)
+          order by ha.created_at desc
+        `;
+        params = [userType];
+      } else {
+        sql = `
+          select *
+          from logistics.hotel_assignments
+          order by created_at desc
+        `;
+        params = [];
+      }
+      const rows = (await this.dataSource.query(sql, params)) as HotelAssignmentRow[];
       return rows.map((row) => this.toEntity(row));
     } catch (error) {
       throw new InternalServerErrorException(
@@ -294,6 +316,44 @@ export class HotelAssignmentsService {
     }
   }
 
+  async bulkCreate(entries: Array<{ participantId: string; hotelId: string; roomNumber?: string; checkinAt?: string; checkoutAt?: string }>) {
+    const results: Array<{ participantId: string; status: 'created' | 'error'; message?: string }> = [];
+
+    for (const entry of entries) {
+      try {
+        let roomId: string | null = null;
+        if (entry.roomNumber) {
+          const roomRows = (await this.dataSource.query(
+            `select id from logistics.hotel_rooms where hotel_id = $1 and room_number = $2 limit 1`,
+            [entry.hotelId, entry.roomNumber],
+          )) as Array<{ id: string }>;
+          roomId = roomRows[0]?.id ?? null;
+        }
+
+        await this.ensureRoomHasAvailability(roomId);
+
+        await this.dataSource.query(
+          `
+          insert into logistics.hotel_assignments (participant_id, hotel_id, room_id, checkin_at, checkout_at, status)
+          values ($1, $2, $3, $4, $5, 'ASSIGNED')
+          on conflict (participant_id) do update
+            set hotel_id = excluded.hotel_id,
+                room_id = excluded.room_id,
+                checkin_at = excluded.checkin_at,
+                checkout_at = excluded.checkout_at,
+                updated_at = now()
+          `,
+          [entry.participantId, entry.hotelId, roomId, entry.checkinAt ?? null, entry.checkoutAt ?? null],
+        );
+        results.push({ participantId: entry.participantId, status: 'created' });
+      } catch (err) {
+        results.push({ participantId: entry.participantId, status: 'error', message: err instanceof Error ? err.message : 'Error' });
+      }
+    }
+
+    return results;
+  }
+
   async getCapacityByHotel(hotelId: string) {
     try {
       const rooms = (await this.dataSource.query(
@@ -364,6 +424,7 @@ export class HotelAssignmentsService {
       keepDisciplineTogether: boolean;
       avoidMixedGender: boolean;
       avoidMinorAdultMix: boolean;
+      avoidMixedClientType: boolean;
     },
   ) {
     if (roomAssignments.length === 0) return true;
@@ -388,6 +449,11 @@ export class HotelAssignmentsService {
       if (mixedDiscipline) return false;
     }
 
+    if (rules.avoidMixedClientType) {
+      const mixedClientType = roomAssignments.some((item) => item.userType && candidate.userType && item.userType !== candidate.userType);
+      if (mixedClientType) return false;
+    }
+
     return true;
   }
 
@@ -396,6 +462,7 @@ export class HotelAssignmentsService {
     const keepDisciplineTogether = dto.keepDisciplineTogether ?? true;
     const avoidMixedGender = dto.avoidMixedGender ?? true;
     const avoidMinorAdultMix = dto.avoidMinorAdultMix ?? true;
+    const avoidMixedClientType = dto.avoidMixedClientType ?? true;
     const assignmentsCount = Math.max(1, Number(dto.assignmentsCount || 1));
 
     try {
@@ -424,6 +491,7 @@ export class HotelAssignmentsService {
           a.country_code,
           a.discipline_id,
           a.date_of_birth,
+          a.user_type,
           a.metadata
         from logistics.hotel_assignments ha
         join core.athletes a on a.id = ha.participant_id
@@ -439,6 +507,7 @@ export class HotelAssignmentsService {
         country_code: string | null;
         discipline_id: string | null;
         date_of_birth: string | null;
+        user_type: string | null;
         metadata: Record<string, unknown> | null;
       }>;
 
@@ -454,6 +523,7 @@ export class HotelAssignmentsService {
           isMinor: isMinorFromDate(row.date_of_birth),
           countryCode: String(row.country_code || '').trim().toUpperCase(),
           disciplineId: String(row.discipline_id || '').trim(),
+          userType: String(row.user_type || '').trim().toUpperCase(),
         };
         const current = occupancyByRoom.get(row.room_id) || [];
         current.push(profile);
@@ -465,13 +535,14 @@ export class HotelAssignmentsService {
         country_code: string | null;
         discipline_id: string | null;
         date_of_birth: string | null;
+        user_type: string | null;
         metadata: Record<string, unknown> | null;
       }> = [];
 
       if (dto.participantIds && dto.participantIds.length > 0) {
         candidateRows = (await this.dataSource.query(
           `
-          select id, country_code, discipline_id, date_of_birth, metadata
+          select id, country_code, discipline_id, date_of_birth, user_type, metadata
           from core.athletes
           where id = any($1::uuid[])
         `,
@@ -481,12 +552,13 @@ export class HotelAssignmentsService {
           country_code: string | null;
           discipline_id: string | null;
           date_of_birth: string | null;
+          user_type: string | null;
           metadata: Record<string, unknown> | null;
         }>;
       } else {
         candidateRows = (await this.dataSource.query(
           `
-          select id, country_code, discipline_id, date_of_birth, metadata
+          select id, country_code, discipline_id, date_of_birth, user_type, metadata
           from core.athletes
           where hotel_accommodation_id = $1
             and upper(coalesce(room_type, '')) = upper($2)
@@ -497,6 +569,7 @@ export class HotelAssignmentsService {
           country_code: string | null;
           discipline_id: string | null;
           date_of_birth: string | null;
+          user_type: string | null;
           metadata: Record<string, unknown> | null;
         }>;
       }
@@ -523,6 +596,7 @@ export class HotelAssignmentsService {
             isMinor: isMinorFromDate(row.date_of_birth),
             countryCode: String(row.country_code || '').trim().toUpperCase(),
             disciplineId: String(row.discipline_id || '').trim(),
+            userType: String(row.user_type || '').trim().toUpperCase(),
           };
         });
 
@@ -554,6 +628,7 @@ export class HotelAssignmentsService {
               keepDisciplineTogether,
               avoidMixedGender,
               avoidMinorAdultMix,
+              avoidMixedClientType,
             })
           ) {
             continue;
@@ -591,6 +666,7 @@ export class HotelAssignmentsService {
             isMinor: candidate.isMinor,
             countryCode: candidate.countryCode,
             disciplineId: candidate.disciplineId,
+            userType: candidate.userType,
           });
           occupancyByRoom.set(assignedRoomId, roomOccupancy);
         }

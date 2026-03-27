@@ -14,6 +14,12 @@ export class Provider {
   @Column({ length: 150 })
   name: string;
 
+  @Column({ length: 80, type: 'varchar', nullable: true })
+  type?: string | null;
+
+  @Column({ length: 100, type: 'varchar', nullable: true })
+  subtype?: string | null;
+
   @Column({ length: 150, type: 'varchar', nullable: true })
   email?: string | null;
 

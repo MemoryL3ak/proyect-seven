@@ -1,11 +1,13 @@
 import {
+  BadRequestException,
   Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient, createClient } from '@supabase/supabase-js';
+import { ConfigService } from '@nestjs/config';
 import { Repository } from 'typeorm';
 import { CreateProviderDto } from './dto/create-provider.dto';
 import { UpdateProviderDto } from './dto/update-provider.dto';
@@ -14,6 +16,8 @@ import { Provider } from './entities/provider.entity';
 type ProviderRow = {
   id: string;
   name: string;
+  type: string | null;
+  subtype: string | null;
   email: string | null;
   rut: string | null;
   metadata: Record<string, unknown> | null;
@@ -25,25 +29,27 @@ type ProviderRow = {
 export class ProvidersService {
   constructor(
     @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
+    private readonly configService: ConfigService,
     @InjectRepository(Provider)
     private readonly providerRepository: Repository<Provider>,
   ) {}
 
+  private getAdminClient() {
+    const supabaseUrl = this.configService.get<string>('SUPABASE_URL');
+    const serviceRoleKey = this.configService.get<string>('SUPABASE_SERVICE_ROLE_KEY');
+    if (!supabaseUrl || !serviceRoleKey) return null;
+    return createClient(supabaseUrl, serviceRoleKey);
+  }
+
   private toRow(dto: CreateProviderDto | UpdateProviderDto) {
     const row: Record<string, unknown> = {};
 
-    if (dto.name !== undefined) {
-      row.name = dto.name;
-    }
-    if (dto.email !== undefined) {
-      row.email = dto.email ?? null;
-    }
-    if (dto.rut !== undefined) {
-      row.rut = dto.rut ?? null;
-    }
-    if (dto.metadata !== undefined) {
-      row.metadata = dto.metadata ?? {};
-    }
+    if (dto.name !== undefined) row.name = dto.name;
+    if (dto.type !== undefined) row.type = dto.type ?? null;
+    if (dto.subtype !== undefined) row.subtype = dto.subtype ?? null;
+    if (dto.email !== undefined) row.email = dto.email ?? null;
+    if (dto.rut !== undefined) row.rut = dto.rut ?? null;
+    if (dto.metadata !== undefined) row.metadata = dto.metadata ?? {};
 
     return row;
   }
@@ -52,6 +58,8 @@ export class ProvidersService {
     return {
       id: row.id,
       name: row.name,
+      type: row.type,
+      subtype: row.subtype,
       email: row.email,
       rut: row.rut,
       metadata: row.metadata ?? {},
@@ -152,5 +160,44 @@ export class ProvidersService {
     }
 
     return this.toEntity(data as ProviderRow);
+  }
+
+  async uploadDocument(id: string, key: string, dataUrl: string) {
+    const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+    if (!match) throw new BadRequestException('Invalid document payload');
+
+    const contentType = match[1];
+    const base64 = match[2];
+    const buffer = Buffer.from(base64, 'base64');
+    const extension = contentType.split('/')[1]?.split('+')[0] || 'bin';
+    const path = `${id}/${key}-${Date.now()}.${extension}`;
+
+    const admin = this.getAdminClient();
+    if (!admin) {
+      throw new InternalServerErrorException(
+        'SUPABASE_SERVICE_ROLE_KEY is required to upload provider documents',
+      );
+    }
+
+    const { error } = await admin.storage
+      .from('provider-documents')
+      .upload(path, buffer, { contentType, upsert: true });
+
+    if (error) {
+      throw new InternalServerErrorException(
+        error.message || 'Error uploading provider document',
+      );
+    }
+
+    const { data } = admin.storage.from('provider-documents').getPublicUrl(path);
+    const publicUrl = data?.publicUrl ?? null;
+    if (!publicUrl) {
+      throw new InternalServerErrorException('Error resolving provider document URL');
+    }
+
+    const provider = await this.findOne(id);
+    const metadata = { ...(provider.metadata ?? {}), [key]: publicUrl };
+
+    return this.update(id, { metadata });
   }
 }

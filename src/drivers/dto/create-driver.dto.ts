@@ -5,6 +5,7 @@ import {
   IsISO8601,
   IsInt,
   IsNotEmpty,
+  IsNumber,
   IsObject,
   IsOptional,
   IsString,
@@ -107,6 +108,10 @@ export class CreateDriverDto {
   @IsString()
   @IsOptional()
   credentialIssuedBy?: string;
+
+  @IsNumber()
+  @IsOptional()
+  budgetAmount?: number;
 
   @IsString()
   @IsOptional()

@@ -34,6 +34,7 @@ type DriverRow = {
   credential_code: string | null;
   credential_issued_at: string | null;
   credential_issued_by: string | null;
+  budget_amount: string | null;
   status: string;
   metadata: Record<string, unknown>;
   created_at: string;
@@ -125,6 +126,9 @@ export class DriversService {
     if (dto.credentialIssuedBy !== undefined) {
       row.credential_issued_by = dto.credentialIssuedBy ?? null;
     }
+    if (dto.budgetAmount !== undefined) {
+      row.budget_amount = dto.budgetAmount ?? null;
+    }
     if (dto.status !== undefined) {
       row.status = dto.status;
     }
@@ -160,6 +164,7 @@ export class DriversService {
         ? new Date(row.credential_issued_at)
         : null,
       credentialIssuedBy: row.credential_issued_by,
+      budgetAmount: row.budget_amount != null ? parseFloat(row.budget_amount) : null,
       status: row.status,
       metadata: row.metadata,
       createdAt: new Date(row.created_at),

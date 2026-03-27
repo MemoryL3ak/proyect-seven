@@ -80,133 +80,147 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="animate-scale-in flex flex-col items-center">
-      <h2
-        style={{
-          fontSize: "24px",
-          fontWeight: 700,
-          color: "rgba(255,255,255,0.95)",
-          marginBottom: "18px",
-          alignSelf: "flex-start",
-        }}
-      >
-        Iniciar sesión
-      </h2>
+    <div
+      className="w-full"
+      style={{
+        background: "rgba(255,255,255,0.05)",
+        border: "1px solid rgba(255,255,255,0.1)",
+        borderRadius: "20px",
+        padding: "32px 28px",
+        backdropFilter: "blur(12px)",
+        boxShadow: "0 24px 64px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.2)",
+      }}
+    >
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "28px" }}>
+        <img
+          src="/branding/LOGO-SEVEN-1.png"
+          alt="Seven Arena"
+          style={{ height: 48, width: "auto", objectFit: "contain", flexShrink: 0 }}
+        />
+        <div>
+          <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#f1f5f9", margin: 0, lineHeight: 1.2 }}>
+            Iniciar sesión
+          </h2>
+          <p style={{ fontSize: "12.5px", color: "rgba(255,255,255,0.4)", margin: "3px 0 0" }}>
+            Ingresa tus credenciales para continuar
+          </p>
+        </div>
+      </div>
 
-      <div className="w-full space-y-4">
-        <div style={{ position: "relative" }}>
-          <span
-            style={{
-              position: "absolute",
-              left: 16,
-              top: "50%",
-              transform: "translateY(-50%)",
-              color: "rgba(255,255,255,0.3)",
-              pointerEvents: "none",
-            }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-              <rect x="2" y="4" width="20" height="16" rx="3" />
-              <path d="m2 7 10 7 10-7" />
-            </svg>
-          </span>
-          <input
-            type="text"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email o nombre de usuario"
-            required
-            style={{
-              width: "100%",
-              padding: "16px 16px 16px 48px",
-              borderRadius: "14px",
-              border: "1px solid rgba(255,255,255,0.12)",
-              background: "rgba(255,255,255,0.92)",
-              color: "#0d1b3e",
-              fontSize: "15px",
-              outline: "none",
-              fontWeight: 500,
-            }}
-          />
+      {/* Divider */}
+      <div style={{ height: "1px", background: "rgba(255,255,255,0.07)", marginBottom: "24px" }} />
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        {/* Email field */}
+        <div>
+          <label style={{ display: "block", fontSize: "11.5px", fontWeight: 600, color: "rgba(255,255,255,0.5)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "7px" }}>
+            Correo electrónico o usuario
+          </label>
+          <div style={{ position: "relative" }}>
+            <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.25)", pointerEvents: "none" }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <rect x="2" y="4" width="20" height="16" rx="3" />
+                <path d="m2 7 10 7 10-7" />
+              </svg>
+            </span>
+            <input
+              type="text"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") handleSubmit(); }}
+              placeholder="tu@correo.com"
+              required
+              style={{
+                width: "100%",
+                padding: "13px 14px 13px 42px",
+                borderRadius: "12px",
+                border: "1px solid rgba(255,255,255,0.12)",
+                background: "rgba(255,255,255,0.08)",
+                color: "#f1f5f9",
+                fontSize: "14px",
+                outline: "none",
+                fontWeight: 500,
+                transition: "border-color 150ms",
+              }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(52,243,198,0.5)"; e.currentTarget.style.background = "rgba(255,255,255,0.1)"; }}
+              onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
+            />
+          </div>
         </div>
 
-        <div style={{ position: "relative" }}>
-          <span
-            style={{
-              position: "absolute",
-              left: 16,
-              top: "50%",
-              transform: "translateY(-50%)",
-              color: "rgba(255,255,255,0.3)",
-              pointerEvents: "none",
-            }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-              <rect x="3" y="11" width="18" height="11" rx="2" />
-              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            </svg>
-          </span>
-          <input
-            type={showPassword ? "text" : "password"}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
-            required
-            style={{
-              width: "100%",
-              padding: "16px 44px 16px 48px",
-              borderRadius: "14px",
-              border: "1px solid rgba(255,255,255,0.12)",
-              background: "rgba(255,255,255,0.92)",
-              color: "#0d1b3e",
-              fontSize: "15px",
-              outline: "none",
-              fontWeight: 500,
-            }}
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword((prev) => !prev)}
-            style={{
-              position: "absolute",
-              right: 12,
-              top: "50%",
-              transform: "translateY(-50%)",
-              border: "none",
-              background: "transparent",
-              color: "rgba(13,27,62,0.7)",
-              cursor: "pointer",
-              padding: 0,
-            }}
-            aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-          >
-            {showPassword ? (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
-                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
-                <line x1="1" y1="1" x2="23" y2="23" />
+        {/* Password field */}
+        <div>
+          <label style={{ display: "block", fontSize: "11.5px", fontWeight: 600, color: "rgba(255,255,255,0.5)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "7px" }}>
+            Contraseña
+          </label>
+          <div style={{ position: "relative" }}>
+            <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.25)", pointerEvents: "none" }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <rect x="3" y="11" width="18" height="11" rx="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
               </svg>
-            ) : (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-            )}
-          </button>
+            </span>
+            <input
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") handleSubmit(); }}
+              placeholder="••••••••"
+              required
+              style={{
+                width: "100%",
+                padding: "13px 44px 13px 42px",
+                borderRadius: "12px",
+                border: "1px solid rgba(255,255,255,0.12)",
+                background: "rgba(255,255,255,0.08)",
+                color: "#f1f5f9",
+                fontSize: "14px",
+                outline: "none",
+                fontWeight: 500,
+                transition: "border-color 150ms",
+              }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(52,243,198,0.5)"; e.currentTarget.style.background = "rgba(255,255,255,0.1)"; }}
+              onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              style={{
+                position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
+                border: "none", background: "transparent",
+                color: "rgba(255,255,255,0.35)", cursor: "pointer", padding: 0,
+              }}
+              aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+            >
+              {showPassword ? (
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                  <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                  <line x1="1" y1="1" x2="23" y2="23" />
+                </svg>
+              ) : (
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              )}
+            </button>
+          </div>
         </div>
 
-        {requiresPasswordChange ? (
-          <div
-            style={{
-              borderRadius: "14px",
-              border: "1px solid rgba(201,168,76,0.35)",
-              background: "rgba(201,168,76,0.08)",
-              padding: "12px",
-              display: "grid",
-              gap: "10px",
-            }}
-          >
-            <p style={{ color: "#f5d68a", fontSize: "13px", margin: 0 }}>
+        {/* Temporary password change */}
+        {requiresPasswordChange && (
+          <div style={{
+            borderRadius: "12px",
+            border: "1px solid rgba(52,243,198,0.3)",
+            background: "rgba(52,243,198,0.06)",
+            padding: "14px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "10px",
+          }}>
+            <p style={{ color: "#34F3C6", fontSize: "12.5px", margin: 0 }}>
               Debes cambiar la contraseña temporal para continuar.
             </p>
             <input
@@ -215,15 +229,9 @@ export default function LoginPage() {
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="Nueva contraseña"
               style={{
-                width: "100%",
-                padding: "13px 14px",
-                borderRadius: "12px",
-                border: "1px solid rgba(255,255,255,0.14)",
-                background: "rgba(255,255,255,0.92)",
-                color: "#0d1b3e",
-                fontSize: "14px",
-                outline: "none",
-                fontWeight: 500,
+                width: "100%", padding: "12px 14px", borderRadius: "10px",
+                border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.08)",
+                color: "#f1f5f9", fontSize: "14px", outline: "none", fontWeight: 500,
               }}
             />
             <input
@@ -232,15 +240,9 @@ export default function LoginPage() {
               onChange={(e) => setConfirmNewPassword(e.target.value)}
               placeholder="Confirmar nueva contraseña"
               style={{
-                width: "100%",
-                padding: "13px 14px",
-                borderRadius: "12px",
-                border: "1px solid rgba(255,255,255,0.14)",
-                background: "rgba(255,255,255,0.92)",
-                color: "#0d1b3e",
-                fontSize: "14px",
-                outline: "none",
-                fontWeight: 500,
+                width: "100%", padding: "12px 14px", borderRadius: "10px",
+                border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.08)",
+                color: "#f1f5f9", fontSize: "14px", outline: "none", fontWeight: 500,
               }}
             />
             <button
@@ -248,25 +250,21 @@ export default function LoginPage() {
               onClick={handleChangePassword}
               disabled={savingPassword}
               style={{
-                width: "100%",
-                padding: "14px",
-                borderRadius: "12px",
-                border: "none",
-                background: "linear-gradient(135deg, #d4a843 0%, #c9a84c 50%, #b8933a 100%)",
-                color: "#0d1b3e",
-                fontSize: "14px",
-                fontWeight: 700,
+                width: "100%", padding: "13px", borderRadius: "10px", border: "none",
+                background: "linear-gradient(135deg, #34F3C6 0%, #21D0B3 50%, #15B09A 100%)",
+                color: "#0d1b3e", fontSize: "14px", fontWeight: 700,
                 cursor: savingPassword ? "not-allowed" : "pointer",
                 opacity: savingPassword ? 0.7 : 1,
-                letterSpacing: "0.02em",
               }}
             >
               {savingPassword ? "Actualizando..." : "Actualizar contraseña y continuar"}
             </button>
           </div>
-        ) : null}
+        )}
 
-        {error && <p style={{ color: "#fca5a5", fontSize: "13px", textAlign: "center" }}>{error}</p>}
+        {error && (
+          <p style={{ color: "#fca5a5", fontSize: "12.5px", textAlign: "center", margin: 0 }}>{error}</p>
+        )}
 
         <button
           type="button"
@@ -274,23 +272,23 @@ export default function LoginPage() {
           disabled={loading || requiresPasswordChange}
           style={{
             width: "100%",
-            padding: "17px",
-            borderRadius: "14px",
+            padding: "15px",
+            borderRadius: "12px",
             border: "none",
-            background: "linear-gradient(135deg, #d4a843 0%, #c9a84c 50%, #b8933a 100%)",
+            background: "linear-gradient(135deg, #34F3C6 0%, #21D0B3 50%, #15B09A 100%)",
             color: "#0d1b3e",
-            fontSize: "16px",
+            fontSize: "15px",
             fontWeight: 700,
             cursor: loading || requiresPasswordChange ? "not-allowed" : "pointer",
             opacity: loading || requiresPasswordChange ? 0.7 : 1,
-            letterSpacing: "0.03em",
-            boxShadow: "0 4px 20px rgba(201,168,76,0.4)",
+            letterSpacing: "0.02em",
+            boxShadow: "0 4px 20px rgba(52,243,198,0.35)",
             transition: "all 150ms ease",
+            marginTop: "4px",
           }}
         >
-          {loading ? "Ingresando..." : "Log In"}
+          {loading ? "Ingresando..." : "Iniciar sesión →"}
         </button>
-
       </div>
     </div>
   );

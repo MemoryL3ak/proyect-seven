@@ -1,6 +1,1 @@
-import ResourceScreen from "@/components/ResourceScreen";
-import { resources } from "@/lib/resources";
-
-export default function SedePage() {
-  return <ResourceScreen config={resources.venues} />;
-}
+export { default } from "@/app/(main)/masters/venues/page";

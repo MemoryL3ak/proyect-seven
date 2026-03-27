@@ -1,385 +1,243 @@
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div
-      className="min-h-screen flex flex-col lg:flex-row"
-      style={{
-        background: "#020b1a",
-        position: "relative",
-        overflow: "hidden",
-      }}
-    >
-      {/* ── CSS Animations ── */}
+    <div className="flex flex-col lg:flex-row" style={{ background: "#060e16", height: "100vh", overflow: "hidden" }}>
       <style>{`
-        @keyframes float1 {
-          0%, 100% { transform: translateY(0px) translateX(0px) scale(1); }
-          33% { transform: translateY(-40px) translateX(20px) scale(1.05); }
-          66% { transform: translateY(20px) translateX(-15px) scale(0.95); }
-        }
-        @keyframes float2 {
-          0%, 100% { transform: translateY(0px) translateX(0px) rotate(0deg); }
-          50% { transform: translateY(-60px) translateX(30px) rotate(180deg); }
-        }
-        @keyframes float3 {
-          0%, 100% { transform: translateY(0px) scale(1); opacity: 0.6; }
-          50% { transform: translateY(-30px) scale(1.1); opacity: 0.9; }
-        }
-        @keyframes spin-slow {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        @keyframes spin-reverse {
-          from { transform: rotate(360deg); }
-          to { transform: rotate(0deg); }
-        }
-        @keyframes pulse-glow {
-          0%, 100% { box-shadow: 0 0 40px rgba(201,168,76,0.3), 0 0 80px rgba(201,168,76,0.1); }
-          50% { box-shadow: 0 0 80px rgba(201,168,76,0.6), 0 0 160px rgba(201,168,76,0.2); }
-        }
-        @keyframes pulse-ring {
-          0% { transform: scale(0.95); opacity: 0.8; }
-          50% { transform: scale(1.05); opacity: 0.4; }
-          100% { transform: scale(0.95); opacity: 0.8; }
-        }
+        body { background: #060e16 !important; }
         @keyframes slide-up-in {
           from { opacity: 0; transform: translateY(32px); }
-          to { opacity: 1; transform: translateY(0); }
+          to   { opacity: 1; transform: translateY(0); }
         }
-        @keyframes fade-in-slow {
+        @keyframes fade-in {
           from { opacity: 0; }
-          to { opacity: 1; }
+          to   { opacity: 1; }
         }
         @keyframes shimmer {
-          0% { background-position: -200% center; }
-          100% { background-position: 200% center; }
-        }
-        @keyframes particle-drift {
-          0% { transform: translateY(100vh) translateX(0px); opacity: 0; }
-          10% { opacity: 0.6; }
-          90% { opacity: 0.6; }
-          100% { transform: translateY(-100px) translateX(60px); opacity: 0; }
-        }
-        @keyframes ring-pulse {
-          0%, 100% { opacity: 0.15; transform: scale(1); }
-          50% { opacity: 0.4; transform: scale(1.08); }
-        }
-        @keyframes text-reveal {
-          from { opacity: 0; letter-spacing: 0.3em; }
-          to { opacity: 1; letter-spacing: 0.15em; }
+          0%   { background-position: -200% center; }
+          100% { background-position:  200% center; }
         }
         @keyframes ticker-scroll {
           0%   { transform: translateY(0); }
           100% { transform: translateY(-50%); }
         }
         @keyframes bar-fill {
-          0%   { width: 0%; opacity: 0; }
+          0%   { width: 0%;   opacity: 0; }
           20%  { opacity: 1; }
           80%  { opacity: 1; }
           100% { width: 100%; opacity: 0; }
-        }
-        @keyframes row-in {
-          from { opacity: 0; transform: translateX(-12px); }
-          to   { opacity: 1; transform: translateX(0); }
         }
         @keyframes count-up {
           from { opacity: 0; transform: translateY(8px); }
           to   { opacity: 1; transform: translateY(0); }
         }
+        @keyframes pulse-dot {
+          0%, 100% { opacity: 1; }
+          50%      { opacity: 0.3; }
+        }
         .auth-form-card {
-          animation: slide-up-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
-          animation-delay: 0.2s;
+          animation: slide-up-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+          animation-delay: 0.15s;
           opacity: 0;
         }
         .auth-left-content {
-          animation: fade-in-slow 1.2s ease both;
-          animation-delay: 0.1s;
+          animation: fade-in 0.9s ease both;
+          animation-delay: 0.05s;
           opacity: 0;
         }
-        .particle {
-          position: absolute;
-          width: 3px;
-          height: 3px;
-          border-radius: 50%;
-          background: rgba(201,168,76,0.7);
-          animation: particle-drift linear infinite;
-          pointer-events: none;
-        }
-      `}</style>
-
-      {/* ── Left Panel — Branding ── */}
-      <style>{`
         .auth-left-panel {
           width: 100%;
-          padding: 32px 28px 28px;
+          padding: 28px 24px;
+          display: flex;
+          flex-direction: column;
+          background: #0e1822;
+          position: relative;
+          overflow-y: auto;
         }
         @media (min-width: 1024px) {
           .auth-left-panel {
             width: 52% !important;
             min-width: 480px !important;
-            padding: 0 64px 60px !important;
-            flex-shrink: 0;
+            height: 100vh;
+            padding: 44px 60px !important;
+            justify-content: space-between;
+            overflow: hidden;
           }
         }
       `}</style>
-      <div
-        className="auth-left-panel flex flex-col justify-between"
-        style={{
-          background: "linear-gradient(160deg, #020b1a 0%, #071530 40%, #0d2255 70%, #07101f 100%)",
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
 
-        {/* Grid texture */}
+      {/* ── Left Panel ── */}
+      <div className="auth-left-panel">
+
+        {/* Subtle noise overlay */}
         <div style={{
-          position: "absolute", inset: 0, pointerEvents: "none",
-          backgroundImage: `linear-gradient(rgba(201,168,76,0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(201,168,76,0.03) 1px, transparent 1px)`,
-          backgroundSize: "60px 60px",
+          position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E")`,
+          backgroundSize: "150px",
         }} />
 
-        {/* Noise texture */}
+        {/* Teal left-edge accent bar */}
         <div style={{
-          position: "absolute", inset: 0, pointerEvents: "none",
-          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E")`,
-          backgroundRepeat: "repeat", backgroundSize: "200px",
+          position: "absolute", left: 0, top: 0, bottom: 0,
+          width: "4px",
+          background: "linear-gradient(180deg, transparent 0%, #34F3C6 20%, #21D0B3 70%, transparent 100%)",
+          zIndex: 1,
         }} />
 
-        {/* Ambient orbs */}
+        {/* Subtle bottom-right teal bloom */}
         <div style={{
-          position: "absolute", top: "-80px", left: "-80px",
-          width: "500px", height: "500px", borderRadius: "50%",
-          background: "radial-gradient(ellipse, rgba(30,58,138,0.5) 0%, transparent 70%)",
-          animation: "float1 12s ease-in-out infinite", pointerEvents: "none",
-        }} />
-        <div style={{
-          position: "absolute", bottom: "80px", right: "-60px",
-          width: "400px", height: "400px", borderRadius: "50%",
-          background: "radial-gradient(ellipse, rgba(201,168,76,0.18) 0%, transparent 70%)",
-          animation: "float2 16s ease-in-out infinite", pointerEvents: "none",
-        }} />
-        <div style={{
-          position: "absolute", top: "45%", left: "40%",
-          width: "300px", height: "300px", borderRadius: "50%",
-          background: "radial-gradient(ellipse, rgba(56,100,220,0.22) 0%, transparent 70%)",
-          animation: "float3 9s ease-in-out infinite", pointerEvents: "none",
+          position: "absolute", bottom: "-80px", right: "-60px",
+          width: "360px", height: "360px", borderRadius: "50%",
+          background: "radial-gradient(ellipse, rgba(33,208,179,0.08) 0%, transparent 65%)",
+          pointerEvents: "none", zIndex: 0,
         }} />
 
-        {/* Particles */}
-        {[
-          { left: "15%", delay: "0s", duration: "8s" },
-          { left: "35%", delay: "2s", duration: "11s" },
-          { left: "55%", delay: "5s", duration: "9s" },
-          { left: "72%", delay: "1s", duration: "13s" },
-          { left: "88%", delay: "7s", duration: "10s" },
-          { left: "25%", delay: "4s", duration: "12s" },
-          { left: "65%", delay: "9s", duration: "8s" },
-        ].map((p, i) => (
-          <div key={i} className="particle" style={{
-            left: p.left, bottom: "-10px",
-            animationDelay: p.delay, animationDuration: p.duration,
-          }} />
-        ))}
-
-        {/* Decorative rings */}
-        <div style={{
-          position: "absolute", top: "50%", left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: "520px", height: "520px", borderRadius: "50%",
-          border: "1px solid rgba(201,168,76,0.06)",
-          animation: "ring-pulse 6s ease-in-out infinite", pointerEvents: "none",
-        }} />
-        <div style={{
-          position: "absolute", top: "50%", left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: "380px", height: "380px", borderRadius: "50%",
-          border: "1px solid rgba(201,168,76,0.09)",
-          animation: "ring-pulse 6s ease-in-out infinite 2s", pointerEvents: "none",
-        }} />
-        <div style={{
-          position: "absolute", top: "50%", left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: "240px", height: "240px", borderRadius: "50%",
-          border: "1px solid rgba(201,168,76,0.14)",
-          animation: "ring-pulse 6s ease-in-out infinite 4s", pointerEvents: "none",
-        }} />
-        <div style={{
-          position: "absolute", top: "50%", left: "50%",
-          marginTop: "-280px", marginLeft: "-280px",
-          width: "560px", height: "560px", borderRadius: "50%",
-          border: "1px dashed rgba(201,168,76,0.07)",
-          animation: "spin-slow 30s linear infinite", pointerEvents: "none",
-        }} />
-        <div style={{
-          position: "absolute", top: "50%", left: "50%",
-          marginTop: "-200px", marginLeft: "-200px",
-          width: "400px", height: "400px", borderRadius: "50%",
-          border: "1px dashed rgba(30,78,216,0.1)",
-          animation: "spin-reverse 22s linear infinite", pointerEvents: "none",
-        }} />
-
-        {/* ── Mobile layout: horizontal logo + text ── */}
-        <div className="flex lg:hidden items-center gap-4 auth-left-content" style={{ position: "relative", zIndex: 1, marginBottom: "20px" }}>
-          <img
-            src="/branding/LOGO-SEVEN.png"
-            alt="Seven Arena"
-            style={{
-              height: 90, width: "auto", objectFit: "contain", flexShrink: 0,
-              filter: "drop-shadow(0 0 20px rgba(201,168,76,0.6)) drop-shadow(0 4px 12px rgba(0,0,0,0.9))",
-            }}
-          />
+        {/* ── Mobile: logo + tagline ── */}
+        <div className="flex lg:hidden items-center gap-3 auth-left-content" style={{ position: "relative", zIndex: 1, marginBottom: "24px" }}>
+          <img src="/branding/LOGO-SEVEN-1.png" alt="Seven Arena" style={{ height: 52, width: "auto", objectFit: "contain" }} />
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
-              <span style={{
-                width: 6, height: 6, borderRadius: "50%",
-                background: "#22d3ee", boxShadow: "0 0 8px #22d3ee",
-                animation: "pulse-ring 2s ease-in-out infinite", display: "inline-block",
-              }} />
-              <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#22d3ee" }}>
-                Plataforma Deportiva
-              </span>
-            </div>
-            <h1 style={{ fontSize: "22px", fontWeight: 800, lineHeight: 1.15, color: "#f8fafc", letterSpacing: "-0.02em", margin: 0 }}>
-              Gestión de alto{" "}
-              <span style={{
-                background: "linear-gradient(90deg, #c9a84c 0%, #f0d070 40%, #c9a84c 80%)",
-                backgroundSize: "200% auto",
-                WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-                backgroundClip: "text", animation: "shimmer 4s linear infinite",
-              }}>rendimiento</span>
-            </h1>
-            <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", lineHeight: 1.5, margin: "4px 0 0" }}>
-              Centraliza operaciones, acreditaciones y hotelería para eventos de élite.
+            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#34F3C6", margin: 0 }}>
+              Plataforma Deportiva
+            </p>
+            <p style={{ fontSize: "13px", fontWeight: 700, color: "#f1f5f9", margin: "2px 0 0" }}>
+              Gestión de alto <span style={{ color: "#34F3C6" }}>rendimiento</span>
             </p>
           </div>
         </div>
 
-        {/* ── Mobile: compact stats ── */}
-        <div className="flex lg:hidden auth-left-content" style={{ position: "relative", zIndex: 1, gap: "0", borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: "16px", marginBottom: "4px" }}>
+        {/* ── Mobile: stats ── */}
+        <div className="flex lg:hidden auth-left-content" style={{
+          position: "relative", zIndex: 1,
+          borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: "16px", marginBottom: "4px",
+        }}>
           {[
             { value: "2,400+", label: "Atletas" },
-            { value: "80+", label: "Disciplinas" },
-            { value: "99.9%", label: "Uptime" },
+            { value: "80+",    label: "Disciplinas" },
+            { value: "99.9%",  label: "Uptime" },
           ].map((s, i) => (
             <div key={s.label} style={{
               flex: 1, textAlign: "center",
               borderRight: i < 2 ? "1px solid rgba(255,255,255,0.06)" : "none",
             }}>
-              <p style={{ fontSize: "18px", fontWeight: 800, color: "#c9a84c", margin: 0, lineHeight: 1 }}>{s.value}</p>
-              <p style={{ fontSize: "10px", color: "rgba(255,255,255,0.32)", margin: "3px 0 0", letterSpacing: "0.05em", textTransform: "uppercase" }}>{s.label}</p>
+              <p style={{ fontSize: "18px", fontWeight: 800, color: "#34F3C6", margin: 0 }}>{s.value}</p>
+              <p style={{ fontSize: "10px", color: "rgba(255,255,255,0.35)", margin: "2px 0 0", textTransform: "uppercase", letterSpacing: "0.05em" }}>{s.label}</p>
             </div>
           ))}
         </div>
 
-        {/* ── Desktop layout: original full content ── */}
-        {/* Logo */}
-        <div className="hidden lg:block auth-left-content" style={{ position: "relative", zIndex: 1, overflow: "hidden" }}>
+        {/* ── Desktop: Logo block ── */}
+        <div className="hidden lg:block auth-left-content" style={{ position: "relative", zIndex: 1 }}>
           <img
-            src="/branding/LOGO-SEVEN.png"
+            src="/branding/LOGO-SEVEN-1.png"
             alt="Seven Arena"
-            style={{
-              height: 400, width: "auto", objectFit: "contain",
-              display: "block", marginTop: "-30px", marginBottom: "-60px",
-              filter: "drop-shadow(0 0 40px rgba(201,168,76,0.6)) drop-shadow(0 0 80px rgba(201,168,76,0.2)) drop-shadow(0 8px 24px rgba(0,0,0,0.9))",
-            }}
+            style={{ height: 130, width: "auto", objectFit: "contain", display: "block" }}
           />
         </div>
 
-        {/* Center hero */}
-        <div className="hidden lg:flex auth-left-content" style={{ position: "relative", zIndex: 1, flex: 1, flexDirection: "column", justifyContent: "center", gap: "20px" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", width: "fit-content" }}>
-            <span style={{
-              width: 8, height: 8, borderRadius: "50%",
-              background: "#22d3ee", boxShadow: "0 0 12px #22d3ee",
-              animation: "pulse-ring 2s ease-in-out infinite", display: "inline-block",
-            }} />
-            <span style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "#22d3ee" }}>
+        {/* ── Desktop: Hero ── */}
+        <div className="hidden lg:flex auth-left-content" style={{
+          position: "relative", zIndex: 1,
+          flex: 1, flexDirection: "column", justifyContent: "center", gap: "14px",
+          paddingTop: "4px",
+        }}>
+
+          {/* Divider */}
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div style={{ width: "32px", height: "2px", background: "#34F3C6", borderRadius: "1px" }} />
+            <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "rgba(52,243,198,0.7)" }}>
               Plataforma de Gestión Deportiva
             </span>
           </div>
 
-          <h1 style={{ fontSize: "clamp(32px, 3vw, 48px)", fontWeight: 800, lineHeight: 1.1, color: "#f8fafc", letterSpacing: "-0.02em", margin: 0 }}>
+          <h1 style={{
+            fontSize: "clamp(30px, 2.8vw, 44px)", fontWeight: 800,
+            lineHeight: 1.12, color: "#f1f5f9",
+            letterSpacing: "-0.025em", margin: 0,
+          }}>
             Gestión de alto<br />
             <span style={{
-              background: "linear-gradient(90deg, #c9a84c 0%, #f0d070 40%, #c9a84c 80%)",
+              background: "linear-gradient(90deg, #34F3C6 0%, #1FCDFF 50%, #34F3C6 100%)",
               backgroundSize: "200% auto",
               WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-              backgroundClip: "text", animation: "shimmer 4s linear infinite",
+              backgroundClip: "text", animation: "shimmer 5s linear infinite",
             }}>rendimiento</span>{" "}deportivo
           </h1>
 
-          <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.45)", maxWidth: "360px", lineHeight: 1.7, margin: 0 }}>
+          <p style={{ fontSize: "13.5px", color: "rgba(255,255,255,0.4)", maxWidth: "360px", lineHeight: 1.75, margin: 0 }}>
             Centraliza operaciones, acreditaciones, hotelería y transporte en una sola plataforma para eventos de élite.
           </p>
 
-          {/* Live dashboard widget */}
+          {/* Live widget */}
           <div style={{
-            background: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(201,168,76,0.18)",
-            borderRadius: "18px", overflow: "hidden",
-            backdropFilter: "blur(16px)", marginTop: "4px",
-            boxShadow: "0 8px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)",
+            background: "rgba(255,255,255,0.06)",
+            border: "1px solid rgba(255,255,255,0.14)",
+            borderRadius: "14px", overflow: "hidden",
+            boxShadow: "0 4px 24px rgba(0,0,0,0.4)",
           }}>
+            {/* Widget header */}
             <div style={{
               display: "flex", alignItems: "center", justifyContent: "space-between",
-              padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.06)",
-              background: "rgba(201,168,76,0.05)",
+              padding: "10px 14px",
+              borderBottom: "1px solid rgba(255,255,255,0.1)",
+              background: "rgba(255,255,255,0.04)",
             }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
                 <span style={{
-                  width: 7, height: 7, borderRadius: "50%",
-                  background: "#ef4444", boxShadow: "0 0 8px #ef4444",
-                  animation: "pulse-ring 1.5s ease-in-out infinite", display: "inline-block",
+                  width: 6, height: 6, borderRadius: "50%", background: "#ef4444",
+                  animation: "pulse-dot 1.4s ease-in-out infinite", display: "inline-block",
                 }} />
-                <span style={{ fontSize: "11px", fontWeight: 700, color: "#ef4444", letterSpacing: "0.12em" }}>EN VIVO</span>
+                <span style={{ fontSize: "10px", fontWeight: 700, color: "rgba(255,255,255,0.7)", letterSpacing: "0.14em" }}>EN VIVO</span>
               </div>
               <div style={{ display: "flex", gap: "5px" }}>
-                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#ef4444", opacity: 0.7 }} />
-                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#f59e0b", opacity: 0.7 }} />
-                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#22c55e", opacity: 0.7 }} />
+                {["#ef4444","#f59e0b","#22c55e"].map(c => (
+                  <span key={c} style={{ width: 7, height: 7, borderRadius: "50%", background: c, opacity: 0.75 }} />
+                ))}
               </div>
             </div>
-            <div style={{ height: "148px", overflow: "hidden", position: "relative" }}>
+
+            {/* Ticker rows */}
+            <div style={{ height: "108px", overflow: "hidden", position: "relative" }}>
               <div style={{ animation: "ticker-scroll 14s linear infinite" }}>
                 {[
-                  { flag: "🇨🇱", name: "C. Rodríguez", sport: "🏊 Natación", status: "✅ Acreditado", color: "#22c55e" },
-                  { flag: "🇦🇷", name: "M. Fernández", sport: "🥊 Boxeo", status: "🔑 Check-in", color: "#c9a84c" },
-                  { flag: "🇧🇷", name: "A. Santos", sport: "⚽ Fútbol", status: "✅ Acreditado", color: "#22c55e" },
-                  { flag: "🇨🇴", name: "L. García", sport: "🚴 Ciclismo", status: "⏳ Pendiente", color: "#f59e0b" },
-                  { flag: "🇵🇪", name: "V. Torres", sport: "🤸 Gimnasia", status: "✅ Acreditado", color: "#22c55e" },
-                  { flag: "🇺🇾", name: "D. López", sport: "🏋️ Pesas", status: "🔑 Check-in", color: "#c9a84c" },
-                  { flag: "🇨🇱", name: "C. Rodríguez", sport: "🏊 Natación", status: "✅ Acreditado", color: "#22c55e" },
-                  { flag: "🇦🇷", name: "M. Fernández", sport: "🥊 Boxeo", status: "🔑 Check-in", color: "#c9a84c" },
-                  { flag: "🇧🇷", name: "A. Santos", sport: "⚽ Fútbol", status: "✅ Acreditado", color: "#22c55e" },
-                  { flag: "🇨🇴", name: "L. García", sport: "🚴 Ciclismo", status: "⏳ Pendiente", color: "#f59e0b" },
-                  { flag: "🇵🇪", name: "V. Torres", sport: "🤸 Gimnasia", status: "✅ Acreditado", color: "#22c55e" },
-                  { flag: "🇺🇾", name: "D. López", sport: "🏋️ Pesas", status: "🔑 Check-in", color: "#c9a84c" },
+                  { flag: "🇨🇱", name: "C. Rodríguez", sport: "Natación",  status: "Acreditado", color: "#22c55e" },
+                  { flag: "🇦🇷", name: "M. Fernández", sport: "Boxeo",     status: "Check-in",   color: "#34F3C6" },
+                  { flag: "🇧🇷", name: "A. Santos",    sport: "Fútbol",    status: "Acreditado", color: "#22c55e" },
+                  { flag: "🇨🇴", name: "L. García",    sport: "Ciclismo",  status: "Pendiente",  color: "#f59e0b" },
+                  { flag: "🇵🇪", name: "V. Torres",    sport: "Gimnasia",  status: "Acreditado", color: "#22c55e" },
+                  { flag: "🇺🇾", name: "D. López",     sport: "Pesas",     status: "Check-in",   color: "#34F3C6" },
+                  { flag: "🇨🇱", name: "C. Rodríguez", sport: "Natación",  status: "Acreditado", color: "#22c55e" },
+                  { flag: "🇦🇷", name: "M. Fernández", sport: "Boxeo",     status: "Check-in",   color: "#34F3C6" },
+                  { flag: "🇧🇷", name: "A. Santos",    sport: "Fútbol",    status: "Acreditado", color: "#22c55e" },
+                  { flag: "🇨🇴", name: "L. García",    sport: "Ciclismo",  status: "Pendiente",  color: "#f59e0b" },
+                  { flag: "🇵🇪", name: "V. Torres",    sport: "Gimnasia",  status: "Acreditado", color: "#22c55e" },
+                  { flag: "🇺🇾", name: "D. López",     sport: "Pesas",     status: "Check-in",   color: "#34F3C6" },
                 ].map((row, i) => (
                   <div key={i} style={{
                     display: "flex", alignItems: "center", justifyContent: "space-between",
-                    padding: "10px 16px", borderBottom: "1px solid rgba(255,255,255,0.04)",
+                    padding: "9px 14px", borderBottom: "1px solid rgba(255,255,255,0.06)",
                   }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                      <span style={{ fontSize: "15px" }}>{row.flag}</span>
-                      <span style={{ fontSize: "12.5px", fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>{row.name}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: "9px", minWidth: "130px" }}>
+                      <span style={{ fontSize: "13px" }}>{row.flag}</span>
+                      <span style={{ fontSize: "12px", fontWeight: 600, color: "rgba(255,255,255,0.9)" }}>{row.name}</span>
                     </div>
-                    <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)" }}>{row.sport}</span>
-                    <span style={{ fontSize: "11.5px", fontWeight: 600, color: row.color }}>{row.status}</span>
+                    <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.45)", flex: 1, textAlign: "center" }}>{row.sport}</span>
+                    <span style={{ fontSize: "11px", fontWeight: 600, color: row.color, minWidth: "72px", textAlign: "right" }}>{row.status}</span>
                   </div>
                 ))}
               </div>
-              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "28px", background: "linear-gradient(to bottom, rgba(7,16,31,0.8), transparent)", pointerEvents: "none" }} />
-              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "28px", background: "linear-gradient(to top, rgba(7,16,31,0.8), transparent)", pointerEvents: "none" }} />
+              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "24px", background: "linear-gradient(to bottom, rgba(14,24,34,0.9), transparent)", pointerEvents: "none" }} />
+              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "24px", background: "linear-gradient(to top, rgba(14,24,34,0.9), transparent)", pointerEvents: "none" }} />
             </div>
-            <div style={{ padding: "10px 16px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
-                <span style={{ fontSize: "10.5px", color: "rgba(255,255,255,0.35)", letterSpacing: "0.05em" }}>ACREDITACIONES HOY</span>
-                <span style={{ fontSize: "10.5px", color: "#c9a84c", fontWeight: 700 }}>847 / 1,200</span>
+
+            {/* Progress footer */}
+            <div style={{ padding: "10px 14px", borderTop: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px" }}>
+                <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.5)", letterSpacing: "0.06em" }}>ACREDITACIONES HOY</span>
+                <span style={{ fontSize: "10px", color: "#34F3C6", fontWeight: 700 }}>847 / 1,200</span>
               </div>
-              <div style={{ height: "4px", background: "rgba(255,255,255,0.07)", borderRadius: "2px", overflow: "hidden" }}>
+              <div style={{ height: "3px", background: "rgba(255,255,255,0.1)", borderRadius: "2px", overflow: "hidden" }}>
                 <div style={{
                   height: "100%", width: "71%",
-                  background: "linear-gradient(90deg, #c9a84c, #f0d070)",
-                  borderRadius: "2px", boxShadow: "0 0 8px rgba(201,168,76,0.6)",
+                  background: "linear-gradient(90deg, #21D0B3, #34F3C6)",
+                  borderRadius: "2px",
                   animation: "bar-fill 8s ease-in-out infinite",
                 }} />
               </div>
@@ -387,9 +245,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           </div>
         </div>
 
-        {/* Bottom stats — desktop only */}
+        {/* ── Desktop: Bottom stats ── */}
         <div className="hidden lg:block auth-left-content" style={{ position: "relative", zIndex: 1 }}>
-          <div style={{ display: "flex", gap: "0", borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: "24px" }}>
+          <div style={{ display: "flex", borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: "24px" }}>
             {[
               { value: "2,400+", label: "Atletas gestionados" },
               { value: "80+",    label: "Disciplinas deportivas" },
@@ -397,15 +255,15 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             ].map((s, i) => (
               <div key={s.label} style={{
                 flex: 1,
+                paddingLeft:  i > 0 ? "24px" : "0",
                 paddingRight: i < 2 ? "24px" : "0",
-                borderRight: i < 2 ? "1px solid rgba(255,255,255,0.06)" : "none",
-                paddingLeft: i > 0 ? "24px" : "0",
-                animation: `count-up 0.8s ease both`,
-                animationDelay: `${0.4 + i * 0.15}s`,
+                borderRight:  i < 2 ? "1px solid rgba(255,255,255,0.06)" : "none",
+                animation: `count-up 0.7s ease both`,
+                animationDelay: `${0.3 + i * 0.12}s`,
                 opacity: 0,
               }}>
-                <p style={{ fontSize: "22px", fontWeight: 800, color: "#c9a84c", margin: 0, lineHeight: 1 }}>{s.value}</p>
-                <p style={{ fontSize: "10.5px", color: "rgba(255,255,255,0.32)", margin: "4px 0 0", letterSpacing: "0.05em", textTransform: "uppercase" }}>{s.label}</p>
+                <p style={{ fontSize: "20px", fontWeight: 800, color: "#34F3C6", margin: 0, lineHeight: 1 }}>{s.value}</p>
+                <p style={{ fontSize: "10px", color: "rgba(255,255,255,0.3)", margin: "4px 0 0", letterSpacing: "0.06em", textTransform: "uppercase" }}>{s.label}</p>
               </div>
             ))}
           </div>
@@ -416,27 +274,18 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <div
         className="flex-1 flex items-center justify-center px-6 py-10"
         style={{
-          background: "linear-gradient(160deg, #03111f 0%, #071530 50%, #050f20 100%)",
+          background: "linear-gradient(160deg, #060e16 0%, #0d1a28 50%, #091422 100%)",
           position: "relative",
           overflow: "hidden",
-          minHeight: "100vh",
+          height: "100vh",
+          overflowY: "auto",
         }}
       >
+        {/* Subtle teal bloom center-right */}
         <div style={{
-          position: "absolute", inset: 0, pointerEvents: "none",
-          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E")`,
-          backgroundRepeat: "repeat", backgroundSize: "150px",
-        }} />
-        <div style={{
-          position: "absolute", top: "30%", left: "50%", transform: "translate(-50%, -50%)",
+          position: "absolute", top: "40%", left: "50%", transform: "translate(-50%, -50%)",
           width: "500px", height: "500px", borderRadius: "50%",
-          background: "radial-gradient(ellipse, rgba(20,50,120,0.35) 0%, transparent 70%)",
-          pointerEvents: "none",
-        }} />
-        <div style={{
-          position: "absolute", bottom: "-50px", right: "-50px",
-          width: "300px", height: "300px", borderRadius: "50%",
-          background: "radial-gradient(ellipse, rgba(201,168,76,0.1) 0%, transparent 70%)",
+          background: "radial-gradient(ellipse, rgba(33,208,179,0.06) 0%, transparent 65%)",
           pointerEvents: "none",
         }} />
 

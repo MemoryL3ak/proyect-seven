@@ -5,7 +5,7 @@ import QRCode from "qrcode";
 import { apiFetch } from "@/lib/api";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { buildCredentialHtml } from "@/lib/credential-template";
-import { useTheme } from "@/lib/theme";
+
 
 type EventItem = { id: string; name?: string | null };
 type DisciplineItem = { id: string; name?: string | null; category?: string | null; gender?: string | null };
@@ -127,51 +127,15 @@ function initials(name?: string | null) {
 }
 
 export default function AccreditationsPage() {
-  const { theme } = useTheme();
-  const isObsidian = theme === "obsidian";
-  const isAtlas = theme === "atlas";
-  const isDark = theme === "dark";
-
-  const pal = isObsidian ? {
-    panelBg: "linear-gradient(135deg, #0a1322 0%, #0e1728 60%, #0d1a30 100%)",
-    panelBorder: "rgba(34,211,238,0.08)", panelShadow: "0 4px 32px rgba(0,0,0,0.6)",
-    orb1: "rgba(34,211,238,0.08)", orb2: "rgba(168,85,247,0.07)",
-    accent: "#22d3ee", titleColor: "#e2e8f0", subtitleColor: "rgba(255,255,255,0.45)",
-    labelColor: "rgba(255,255,255,0.35)", textMuted: "rgba(255,255,255,0.5)",
-    cardShadow: "0 4px 20px rgba(0,0,0,0.5)", cardBorder: "rgba(34,211,238,0.12)",
-    inputBg: "rgba(255,255,255,0.06)", inputColor: "#e2e8f0",
-    innerBg: "rgba(255,255,255,0.04)",
-  } : isDark ? {
-    panelBg: "linear-gradient(135deg, #0f172a 0%, #1e293b 55%, #111827 100%)",
-    panelBorder: "rgba(255,255,255,0.06)", panelShadow: "0 4px 24px rgba(0,0,0,0.45)",
-    orb1: "rgba(34,211,238,0.07)", orb2: "rgba(129,140,248,0.06)",
-    accent: "#38bdf8", titleColor: "#f1f5f9", subtitleColor: "rgba(255,255,255,0.4)",
-    labelColor: "var(--text-faint)", textMuted: "var(--text-muted)",
-    cardShadow: "0 2px 12px rgba(0,0,0,0.3)", cardBorder: "rgba(255,255,255,0.08)",
-    inputBg: "rgba(255,255,255,0.07)", inputColor: "#f1f5f9",
-    innerBg: "rgba(255,255,255,0.04)",
-  } : isAtlas ? {
-    panelBg: "linear-gradient(135deg, #ffffff 0%, #f0f4ff 60%, #eef1f8 100%)",
-    panelBorder: "#c7d2fe", panelShadow: "0 1px 4px rgba(0,0,0,0.07)",
-    orb1: "rgba(59,91,219,0.06)", orb2: "rgba(100,129,240,0.05)",
-    accent: "#3b5bdb", titleColor: "#0f172a", subtitleColor: "#64748b",
+  const pal = {
+    panelBg: "#ffffff", panelBorder: "#e2e8f0", panelShadow: "0 1px 4px rgba(15,23,42,0.06)",
+    accent: "#21D0B3", titleColor: "#0f172a", subtitleColor: "#64748b",
     labelColor: "#94a3b8", textMuted: "#64748b",
-    cardShadow: "0 1px 4px rgba(0,0,0,0.06)", cardBorder: "#e2e8f0",
-    inputBg: "#ffffff", inputColor: "#0f172a",
-    innerBg: "#f8fafc",
-  } : {
-    panelBg: "linear-gradient(135deg, #ffffff 0%, #f8fafc 60%, #f1f5f9 100%)",
-    panelBorder: "#e2e8f0", panelShadow: "0 1px 4px rgba(0,0,0,0.06)",
-    orb1: "rgba(34,211,238,0.05)", orb2: "rgba(124,58,237,0.04)",
-    accent: "#1e3a8a", titleColor: "#0f172a", subtitleColor: "#64748b",
-    labelColor: "#94a3b8", textMuted: "#64748b",
-    cardShadow: "0 1px 3px rgba(0,0,0,0.05)", cardBorder: "#e2e8f0",
-    inputBg: "#ffffff", inputColor: "#0f172a",
+    cardShadow: "0 1px 4px rgba(15,23,42,0.06)", cardBorder: "#e2e8f0",
     innerBg: "#f8fafc",
   };
 
-  const sel = { background: pal.inputBg, color: pal.inputColor };          // for inside dark panel
-  const selFlat = { background: "var(--elevated)", color: "var(--text)" }; // for outside panel (var(--surface) bg)
+  const sel = { background: "#ffffff", color: "#0f172a" };
 
   const [events, setEvents] = useState<EventItem[]>([]);
   const [disciplines, setDisciplines] = useState<DisciplineItem[]>([]);
@@ -609,7 +573,7 @@ export default function AccreditationsPage() {
                 <h2 style={{ fontSize: "20px", fontWeight: 800, color: pal.titleColor, margin: 0 }}>Cumplimiento de acreditacion sobre registro AND</h2>
                 <p style={{ fontSize: "12px", color: pal.subtitleColor, marginTop: "3px" }}>Compara participantes registrados en AND vs participantes acreditados por disciplina.</p>
               </div>
-              <button className="btn btn-ghost" type="button" onClick={loadData} disabled={loading} style={{ flexShrink: 0 }}>
+              <button type="button" onClick={loadData} disabled={loading} style={{ flexShrink: 0, border: "1px solid #e2e8f0", borderRadius: "12px", padding: "8px 16px", fontSize: "13px", fontWeight: 600, color: "#475569", background: "#ffffff", cursor: loading ? "default" : "pointer", opacity: loading ? 0.6 : 1 }}>
                 {loading ? "Actualizando..." : "↻ Refrescar KPI"}
               </button>
             </div>
@@ -631,8 +595,8 @@ export default function AccreditationsPage() {
                     {eventDelegations.map((item) => <option key={item.id} value={item.id}>{item.countryCode || item.id}</option>)}
                   </select>
                 </div>
-                <div style={{ background: "rgba(56,189,248,0.12)", border: "1px solid rgba(56,189,248,0.25)", borderRadius: "14px", padding: "14px 16px" }}>
-                  <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "#38bdf8" }}>Vista activa</p>
+                <div style={{ background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.25)", borderRadius: "14px", padding: "14px 16px" }}>
+                  <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "#21D0B3" }}>Vista activa</p>
                   <p style={{ marginTop: "8px", fontSize: "18px", fontWeight: 700, color: pal.titleColor }}>{andKpiDelegationId ? (delegationMap[andKpiDelegationId]?.countryCode || andKpiDelegationId) : "Consolidado"}</p>
                   <p style={{ marginTop: "2px", fontSize: "12px", color: pal.subtitleColor }}>{andKpiDelegationId ? "Filtro por delegacion" : "Todo el evento"}</p>
                 </div>
@@ -642,14 +606,14 @@ export default function AccreditationsPage() {
             {/* KPI cards */}
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
               {[
-                { label: "Registrado AND",  value: String(andKpiTotals.registered), color: pal.accent,  icon: "📋", sub: "Base declarada por AND",            extra: null },
-                { label: "Acreditado",       value: String(andKpiTotals.accredited), color: "#10b981",  icon: "✅", sub: "Casos aprobados en acreditacion",    extra: null },
-                { label: "Cumplimiento",     value: `${andKpiTotals.pct}%`,          color: pctColor,    icon: "📊", sub: "sobre AND",                          extra: "bar" },
-                { label: "Brecha neta",      value: String(andKpiTotals.variance),   color: varColor,    icon: "📉", sub: "Diferencia contra registro AND",      extra: null },
+                { label: "Registrado AND",  value: String(andKpiTotals.registered), color: pal.accent,  sub: "Base declarada por AND",            extra: null },
+                { label: "Acreditado",       value: String(andKpiTotals.accredited), color: "#10b981",  sub: "Casos aprobados en acreditacion",    extra: null },
+                { label: "Cumplimiento",     value: `${andKpiTotals.pct}%`,          color: pctColor,    sub: "sobre AND",                          extra: "bar" },
+                { label: "Brecha neta",      value: String(andKpiTotals.variance),   color: varColor,    sub: "Diferencia contra registro AND",      extra: null },
               ].map((card) => (
                 <article key={card.label} style={{
-                  background: (isObsidian || isDark) ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.65)",
-                  border: `1px solid ${card.color}25`,
+                  background: "#ffffff",
+                  border: `1px solid ${pal.cardBorder}`,
                   borderTop: `3px solid ${card.color}`,
                   borderRadius: "18px", padding: "16px 18px",
                   transition: "transform 120ms ease",
@@ -657,14 +621,10 @@ export default function AccreditationsPage() {
                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}
                 >
-                  <div className="flex items-center justify-between" style={{ marginBottom: "8px" }}>
-                    <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: card.color }}>{card.label}</p>
-                    <span style={{ fontSize: "18px" }}>{card.icon}</span>
+                  <div style={{ marginBottom: "8px" }}>
+                    <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: pal.labelColor }}>{card.label}</p>
                   </div>
-                  <p style={{
-                    fontSize: "2.2rem", fontWeight: 800, lineHeight: 1, color: card.color,
-                    textShadow: (isObsidian || isDark) ? `0 0 20px ${card.color}44` : "none",
-                  }}>{card.value}</p>
+                  <p style={{ fontSize: "2.2rem", fontWeight: 800, lineHeight: 1, color: card.color }}>{card.value}</p>
                   <p style={{ fontSize: "11px", color: pal.subtitleColor, marginTop: "5px" }}>{card.sub}</p>
                   {card.extra === "bar" ? (
                     <div style={{ marginTop: "8px", height: "6px", borderRadius: "99px", background: `${pctColor}25` }}>
@@ -717,22 +677,22 @@ export default function AccreditationsPage() {
       </section>
 
       {/* ── Filter bar */}
-      <section style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "20px", padding: "18px 20px", boxShadow: pal.cardShadow }}>
+      <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "20px", padding: "18px 20px", boxShadow: pal.cardShadow }}>
         <div className="grid gap-3 lg:grid-cols-12">
-          <select className="input rounded-xl lg:col-span-3" style={selFlat} value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)}>
+          <select className="input rounded-xl lg:col-span-3" value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)}>
             <option value="">Todos los eventos</option>
             {events.map((item) => <option key={item.id} value={item.id}>{item.name || item.id}</option>)}
           </select>
-          <select className="input rounded-xl lg:col-span-2" style={selFlat} value={subjectFilter} onChange={(e) => setSubjectFilter(e.target.value as "ALL" | "PARTICIPANT" | "DRIVER")}>
+          <select className="input rounded-xl lg:col-span-2" value={subjectFilter} onChange={(e) => setSubjectFilter(e.target.value as "ALL" | "PARTICIPANT" | "DRIVER")}>
             <option value="ALL">Todos los sujetos</option>
             <option value="PARTICIPANT">Participante</option>
             <option value="DRIVER">Conductor</option>
           </select>
-          <select className="input rounded-xl lg:col-span-2" style={selFlat} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}>
+          <select className="input rounded-xl lg:col-span-2" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}>
             {STATUS_OPTIONS.map((status) => <option key={status} value={status}>{statusFilterLabel(status)}</option>)}
           </select>
-          <input className="input rounded-xl lg:col-span-3" style={selFlat} placeholder="Buscar por nombre, ID o codigo credencial" value={query} onChange={(e) => setQuery(e.target.value)} />
-          <button className="btn btn-ghost lg:col-span-2" onClick={loadData} disabled={loading}>{loading ? "Actualizando..." : "↻ Refrescar"}</button>
+          <input className="input rounded-xl lg:col-span-3" placeholder="Buscar por nombre, ID o codigo credencial" value={query} onChange={(e) => setQuery(e.target.value)} />
+          <button type="button" className="lg:col-span-2" onClick={loadData} disabled={loading} style={{ border: "1px solid #e2e8f0", borderRadius: "12px", padding: "8px 14px", fontSize: "13px", fontWeight: 600, color: "#475569", background: "#ffffff", cursor: loading ? "default" : "pointer", opacity: loading ? 0.6 : 1 }}>{loading ? "Actualizando..." : "↻ Refrescar"}</button>
         </div>
         {(error || message) ? (
           <div className="mt-3 space-y-1">
@@ -746,10 +706,10 @@ export default function AccreditationsPage() {
       <section className="grid gap-4 xl:grid-cols-[1.35fr_1fr]">
 
         {/* Form */}
-        <form onSubmit={createAccreditation} style={{ background: "var(--surface)", border: `1px solid var(--border)`, borderTop: `3px solid ${pal.accent}`, borderRadius: "20px", padding: "20px", boxShadow: pal.cardShadow }} className="xl:order-1">
-          <h3 style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--text-faint)", marginBottom: "14px" }}>Nueva acreditacion</h3>
+        <form onSubmit={createAccreditation} style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderTop: `3px solid ${pal.accent}`, borderRadius: "20px", padding: "20px", boxShadow: pal.cardShadow }} className="xl:order-1">
+          <h3 style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#94a3b8", marginBottom: "14px" }}>Nueva acreditacion</h3>
           <div className="space-y-3">
-            <select className="input rounded-xl" style={selFlat} value={newSubjectType} onChange={(e) => {
+            <select className="input rounded-xl" value={newSubjectType} onChange={(e) => {
               const type = e.target.value as "PARTICIPANT" | "DRIVER";
               setNewSubjectType(type);
               setSelectedDelegationId("");
@@ -762,50 +722,50 @@ export default function AccreditationsPage() {
             </select>
 
             {newSubjectType === "PARTICIPANT" ? (
-              <select className="input rounded-xl" style={selFlat} value={selectedDelegationId} onChange={(e) => setSelectedDelegationId(e.target.value)}>
+              <select className="input rounded-xl" value={selectedDelegationId} onChange={(e) => setSelectedDelegationId(e.target.value)}>
                 <option value="">Todas las delegaciones</option>
                 {eventDelegations.map((item) => <option key={item.id} value={item.id}>{item.countryCode || item.id}</option>)}
               </select>
             ) : null}
 
-            <input className="input rounded-xl" style={selFlat} placeholder={newSubjectType === "PARTICIPANT" ? "Buscar participante por nombre, pasaporte o ID" : "Buscar conductor por nombre, RUT o ID"} value={subjectSearch} onChange={(e) => setSubjectSearch(e.target.value)} />
+            <input className="input rounded-xl" placeholder={newSubjectType === "PARTICIPANT" ? "Buscar participante por nombre, pasaporte o ID" : "Buscar conductor por nombre, RUT o ID"} value={subjectSearch} onChange={(e) => setSubjectSearch(e.target.value)} />
 
             {newSubjectType === "PARTICIPANT" ? (
-              <select className="input rounded-xl" style={selFlat} value={newAthleteId} onChange={(e) => setNewAthleteId(e.target.value)} required>
+              <select className="input rounded-xl" value={newAthleteId} onChange={(e) => setNewAthleteId(e.target.value)} required>
                 <option value="">Selecciona participante</option>
                 {selectableAthletes.map((item) => <option key={item.id} value={item.id}>{item.fullName || item.id} - {(item.delegationId && delegationMap[item.delegationId]?.countryCode) || "SIN_DELEGACION"}</option>)}
               </select>
             ) : (
-              <select className="input rounded-xl" style={selFlat} value={newDriverId} onChange={(e) => setNewDriverId(e.target.value)} required>
+              <select className="input rounded-xl" value={newDriverId} onChange={(e) => setNewDriverId(e.target.value)} required>
                 <option value="">Selecciona conductor</option>
                 {selectableDrivers.map((item) => <option key={item.id} value={item.id}>{item.fullName || item.id} - {item.rut || "SIN_RUT"}</option>)}
               </select>
             )}
 
             {(selectedAthlete || selectedDriver) ? (
-              <div style={{ borderRadius: "14px", border: `1px solid ${pal.cardBorder}`, background: pal.innerBg, padding: "14px" }}>
-                <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--text-faint)", marginBottom: "10px" }}>Ficha de validacion</p>
+              <div style={{ borderRadius: "14px", border: "1px solid #e2e8f0", background: "#f8fafc", padding: "14px" }}>
+                <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#94a3b8", marginBottom: "10px" }}>Ficha de validacion</p>
                 <div className="flex gap-3">
                   {selectedPhotoUrl
-                    ? <img src={selectedPhotoUrl} alt="Foto sujeto" style={{ height: "96px", width: "80px", borderRadius: "10px", border: "1px solid var(--border)", objectFit: "cover" }} />
-                    : <div style={{ display: "grid", height: "96px", width: "80px", placeItems: "center", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--elevated)", fontSize: "14px", fontWeight: 700, color: "var(--text)" }}>{initials(selectedAthlete?.fullName || selectedDriver?.fullName)}</div>}
-                  <div style={{ display: "grid", flex: 1, gap: "3px", fontSize: "12px", color: "var(--text)" }}>
+                    ? <img src={selectedPhotoUrl} alt="Foto sujeto" style={{ height: "96px", width: "80px", borderRadius: "10px", border: "1px solid #e2e8f0", objectFit: "cover" }} />
+                    : <div style={{ display: "grid", height: "96px", width: "80px", placeItems: "center", borderRadius: "10px", border: "1px solid #e2e8f0", background: "#ffffff", fontSize: "14px", fontWeight: 700, color: "#0f172a" }}>{initials(selectedAthlete?.fullName || selectedDriver?.fullName)}</div>}
+                  <div style={{ display: "grid", flex: 1, gap: "3px", fontSize: "12px", color: "#0f172a" }}>
                     {newSubjectType === "PARTICIPANT" && selectedAthlete ? <><p><span style={{ fontWeight: 600 }}>Nombre:</span> {selectedAthlete.fullName || "-"}</p><p><span style={{ fontWeight: 600 }}>Email:</span> {selectedAthlete.email || "-"}</p><p><span style={{ fontWeight: 600 }}>Pais:</span> {selectedAthlete.countryCode || "-"}</p><p><span style={{ fontWeight: 600 }}>Pasaporte:</span> {selectedAthlete.passportNumber || "-"}</p><p><span style={{ fontWeight: 600 }}>Delegacion:</span> {selectedAthlete.delegationId ? delegationMap[selectedAthlete.delegationId]?.countryCode || selectedAthlete.delegationId : "-"}</p></> : null}
                     {newSubjectType === "DRIVER" && selectedDriver ? <><p><span style={{ fontWeight: 600 }}>Nombre:</span> {selectedDriver.fullName || "-"}</p><p><span style={{ fontWeight: 600 }}>RUT:</span> {selectedDriver.rut || "-"}</p><p><span style={{ fontWeight: 600 }}>Email:</span> {selectedDriver.email || "-"}</p><p><span style={{ fontWeight: 600 }}>Telefono:</span> {selectedDriver.phone || "-"}</p><p><span style={{ fontWeight: 600 }}>Licencia:</span> {selectedDriver.licenseNumber || "-"}</p><p><span style={{ fontWeight: 600 }}>Proveedor:</span> {selectedDriver.providerId ? providerMap[selectedDriver.providerId]?.name || selectedDriver.providerId : "-"}</p></> : null}
                   </div>
                 </div>
                 <div style={{ marginTop: "14px" }}>
-                  <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--text-faint)", marginBottom: "8px" }}>Asignacion de accesos</p>
+                  <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#94a3b8", marginBottom: "8px" }}>Asignacion de accesos</p>
                   <div className="grid gap-2 sm:grid-cols-2">
                     {ACCESS_OPTIONS.map((option) => {
                       const checked = draftAccessTypes.includes(option.code);
                       return (
                         <label key={option.code} style={{
                           display: "flex", alignItems: "center", gap: "10px",
-                          borderRadius: "12px", border: checked ? "1px solid rgba(34,211,238,0.35)" : "1px solid var(--border)",
-                          background: checked ? "rgba(34,211,238,0.08)" : "var(--elevated)",
+                          borderRadius: "12px", border: checked ? "1px solid rgba(33,208,179,0.35)" : "1px solid #e2e8f0",
+                          background: checked ? "rgba(33,208,179,0.08)" : "#ffffff",
                           padding: "8px 12px", fontSize: "13px", cursor: "pointer",
-                          color: checked ? "#22d3ee" : "var(--text)",
+                          color: checked ? "#21D0B3" : "#0f172a",
                           transition: "all 120ms ease",
                         }}>
                           <input type="checkbox" checked={checked}
@@ -813,7 +773,7 @@ export default function AccreditationsPage() {
                               e.target.checked ? normalizeAccessTypes([...current, option.code]) : current.filter((item) => item !== option.code)
                             )}
                           />
-                          <span style={{ display: "inline-flex", minWidth: "32px", alignItems: "center", justifyContent: "center", borderRadius: "8px", background: checked ? "rgba(34,211,238,0.15)" : "var(--border)", padding: "2px 6px", fontSize: "11px", fontWeight: 700 }}>{option.code}</span>
+                          <span style={{ display: "inline-flex", minWidth: "32px", alignItems: "center", justifyContent: "center", borderRadius: "8px", background: checked ? "rgba(33,208,179,0.15)" : "#f1f5f9", padding: "2px 6px", fontSize: "11px", fontWeight: 700 }}>{option.code}</span>
                           <span>{option.label}</span>
                         </label>
                       );
@@ -824,108 +784,177 @@ export default function AccreditationsPage() {
             ) : null}
 
             <div className="flex justify-end pt-1">
-              <button className="btn btn-primary px-10" type="submit" disabled={saving || !selectedEventId}>
+              <button type="submit" disabled={saving || !selectedEventId} style={{ padding: "10px 28px", borderRadius: "12px", background: (saving || !selectedEventId) ? "#a7f3ed" : "linear-gradient(135deg, #21D0B3, #14AE98)", color: (saving || !selectedEventId) ? "#0B7A6D" : "#ffffff", fontSize: "13px", fontWeight: 700, border: "none", cursor: (saving || !selectedEventId) ? "not-allowed" : "pointer", boxShadow: (saving || !selectedEventId) ? "none" : "0 2px 10px rgba(33,208,179,0.35)" }}>
                 {saving ? "Guardando..." : (selectedAccreditation ? (isAccredited(selectedAccreditation.status) ? "Guardar accesos" : "Guardar y acreditar") : "Acreditar")}
               </button>
             </div>
           </div>
         </form>
 
-        {/* Participants / drivers table */}
-        <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "20px", padding: "20px", boxShadow: pal.cardShadow }} className="xl:order-2">
+        {/* Participants / drivers cards */}
+        <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "20px", padding: "20px", boxShadow: pal.cardShadow, overflow: "hidden" }} className="xl:order-2">
           {newSubjectType === "PARTICIPANT" ? (
             <>
-              <h4 style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--text-faint)", marginBottom: "12px" }}>Participantes registrados</h4>
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
-                  <thead>
-                    <tr style={{ background: "var(--elevated)" }}>
-                      {["Nombre","Delegacion","Pais","Pasaporte","Accesos","Estado","Credencial","Acciones"].map((h) => (
-                        <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--text-faint)", borderBottom: "1px solid var(--border)", whiteSpace: "nowrap" }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {participantRows.map((item, idx) => {
-                      const acc = accByAthlete[item.id];
-                      const accredited = isAccredited(acc?.status);
-                      const accessTypes = normalizeAccessTypes(acc?.accessTypes);
-                      return (
-                        <tr key={item.id} style={{ borderBottom: "1px solid var(--border)", background: idx % 2 === 0 ? "transparent" : "var(--elevated)" }}>
-                          <td style={{ padding: "10px 12px" }}><p style={{ fontWeight: 600, color: "var(--text)" }}>{item.fullName || item.id}</p><p style={{ fontSize: "11px", color: "var(--text-faint)" }}>{item.id}</p></td>
-                          <td style={{ padding: "10px 12px", color: "var(--text-muted)" }}>{item.delegationId ? delegationMap[item.delegationId]?.countryCode || item.delegationId : "-"}</td>
-                          <td style={{ padding: "10px 12px", color: "var(--text-muted)" }}>{item.countryCode || "-"}</td>
-                          <td style={{ padding: "10px 12px", color: "var(--text-muted)" }}>{item.passportNumber || "-"}</td>
-                          <td style={{ padding: "10px 12px" }}>
-                            <div className="flex flex-wrap gap-1">
-                              {accessTypes.length ? accessTypes.map((code) => <span key={code} style={{ borderRadius: "99px", background: "rgba(34,211,238,0.12)", border: "1px solid rgba(34,211,238,0.25)", padding: "2px 8px", fontSize: "11px", fontWeight: 700, color: "#22d3ee" }}>{code}</span>) : <span style={{ fontSize: "11px", color: "var(--text-faint)" }}>Sin accesos</span>}
-                            </div>
-                          </td>
-                          <td style={{ padding: "10px 12px" }}>
-                            <span style={{ display: "inline-flex", borderRadius: "99px", padding: "3px 10px", fontSize: "11px", fontWeight: 700, background: accredited ? "rgba(16,185,129,0.12)" : "var(--elevated)", border: accredited ? "1px solid rgba(16,185,129,0.3)" : "1px solid var(--border)", color: accredited ? "#10b981" : "var(--text-muted)" }}>{rowStatusLabel(acc?.status)}</span>
-                          </td>
-                          <td style={{ padding: "10px 12px", color: "var(--text-muted)", fontSize: "12px" }}>{credentialLabel(acc)}</td>
-                          <td style={{ padding: "8px 12px" }}>
-                            <div className="flex flex-wrap gap-1">
-                              <button className="btn btn-ghost" type="button" style={{ fontSize: "11px", padding: "4px 10px" }} onClick={() => { setNewSubjectType("PARTICIPANT"); setSelectedDelegationId(item.delegationId || ""); setSubjectSearch(item.fullName || ""); setNewAthleteId(item.id); setNewDriverId(""); }}>Editar</button>
-                              <button className="btn btn-ghost" type="button" style={{ fontSize: "11px", padding: "4px 10px" }} disabled={!acc || !accredited || saving} onClick={() => acc && setNotAccredited(acc)}>Modificar</button>
-                              <button className="btn btn-primary" type="button" style={{ fontSize: "11px", padding: "4px 10px" }} disabled={!accredited} onClick={() => generateCredential("PARTICIPANT", item.id)}>Credencial</button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+              {/* Header bar */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
+                <div>
+                  <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#94a3b8" }}>Participantes registrados</p>
+                  <p style={{ fontSize: "12px", color: "#64748b", marginTop: "2px" }}>{participantRows.length} resultado{participantRows.length !== 1 ? "s" : ""}</p>
+                </div>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <span style={{ fontSize: "12px", fontWeight: 700, padding: "3px 12px", borderRadius: "99px", background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)", color: "#10b981" }}>
+                    {participantRows.filter(r => isAccredited(accByAthlete[r.id]?.status)).length} acreditados
+                  </span>
+                  <span style={{ fontSize: "12px", fontWeight: 700, padding: "3px 12px", borderRadius: "99px", background: "#f1f5f9", border: "1px solid #e2e8f0", color: "#64748b" }}>
+                    {participantRows.filter(r => !isAccredited(accByAthlete[r.id]?.status)).length} pendientes
+                  </span>
+                </div>
               </div>
-              {participantRows.length === 0 ? <p style={{ marginTop: "12px", fontSize: "13px", color: "var(--text-muted)" }}>No hay participantes para ese filtro.</p> : null}
+
+              <div style={{ overflowY: "auto", maxHeight: "520px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                {participantRows.map((item) => {
+                  const acc = accByAthlete[item.id];
+                  const accredited = isAccredited(acc?.status);
+                  const credIssued = hasCredential(acc);
+                  const accessTypes = normalizeAccessTypes(acc?.accessTypes);
+                  const photo = photoFromMetadata(item.metadata);
+                  const delegCode = item.delegationId ? (delegationMap[item.delegationId]?.countryCode || item.delegationId) : null;
+                  return (
+                    <div key={item.id} style={{
+                      borderRadius: "14px",
+                      border: `1px solid ${accredited ? "rgba(16,185,129,0.25)" : "#e2e8f0"}`,
+                      borderLeft: `4px solid ${accredited ? "#10b981" : "#cbd5e1"}`,
+                      background: accredited ? "rgba(16,185,129,0.03)" : "#fafafa",
+                      padding: "12px 14px",
+                      display: "flex", alignItems: "center", gap: "12px",
+                    }}>
+                      {/* Avatar */}
+                      {photo
+                        ? <img src={photo} alt="" style={{ width: "42px", height: "42px", borderRadius: "10px", objectFit: "cover", flexShrink: 0, border: "1px solid #e2e8f0" }} />
+                        : <div style={{ width: "42px", height: "42px", borderRadius: "10px", background: accredited ? "rgba(16,185,129,0.12)" : "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: "13px", fontWeight: 800, color: accredited ? "#10b981" : "#94a3b8" }}>
+                            {initials(item.fullName)}
+                          </div>
+                      }
+                      {/* Info */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                          <p style={{ fontWeight: 700, fontSize: "13px", color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "180px" }}>{item.fullName || item.id}</p>
+                          {delegCode && <span style={{ fontSize: "10px", fontWeight: 700, background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: "6px", padding: "1px 6px", color: "#475569", flexShrink: 0 }}>{delegCode}</span>}
+                          {item.countryCode && <span style={{ fontSize: "10px", color: "#94a3b8", flexShrink: 0 }}>{item.countryCode}</span>}
+                        </div>
+                        <div style={{ marginTop: "5px", display: "flex", flexWrap: "wrap", gap: "4px", alignItems: "center" }}>
+                          {/* Status */}
+                          <span style={{ fontSize: "10px", fontWeight: 700, padding: "2px 8px", borderRadius: "99px", background: accredited ? "rgba(16,185,129,0.12)" : "#f1f5f9", border: accredited ? "1px solid rgba(16,185,129,0.3)" : "1px solid #e2e8f0", color: accredited ? "#10b981" : "#64748b" }}>
+                            {accredited ? "✓ Acreditado" : "Pendiente"}
+                          </span>
+                          {/* Credential */}
+                          <span style={{ fontSize: "10px", fontWeight: 700, padding: "2px 8px", borderRadius: "99px", background: credIssued ? "rgba(33,208,179,0.1)" : "#f8fafc", border: credIssued ? "1px solid rgba(33,208,179,0.25)" : "1px solid #e2e8f0", color: credIssued ? "#21D0B3" : "#94a3b8" }}>
+                            {credIssued ? "Credencial ✓" : "Sin credencial"}
+                          </span>
+                          {/* Access chips */}
+                          {accessTypes.map(code => <span key={code} style={{ fontSize: "10px", fontWeight: 700, padding: "2px 7px", borderRadius: "99px", background: "rgba(33,208,179,0.1)", border: "1px solid rgba(33,208,179,0.2)", color: "#21D0B3" }}>{code}</span>)}
+                        </div>
+                      </div>
+                      {/* Actions */}
+                      <div style={{ display: "flex", flexDirection: "column", gap: "5px", flexShrink: 0 }}>
+                        <button type="button" style={{ fontSize: "11px", padding: "5px 12px", borderRadius: "8px", border: "1px solid #e2e8f0", background: "#ffffff", color: "#475569", cursor: "pointer", fontWeight: 600 }}
+                          onClick={() => { setNewSubjectType("PARTICIPANT"); setSelectedDelegationId(item.delegationId || ""); setSubjectSearch(item.fullName || ""); setNewAthleteId(item.id); setNewDriverId(""); }}>
+                          Editar
+                        </button>
+                        <button type="button"
+                          style={{ fontSize: "11px", padding: "5px 12px", borderRadius: "8px", border: "none", background: !accredited ? "#e2e8f0" : "linear-gradient(135deg, #21D0B3, #14AE98)", color: !accredited ? "#94a3b8" : "#ffffff", cursor: !accredited ? "not-allowed" : "pointer", fontWeight: 700 }}
+                          disabled={!accredited}
+                          onClick={() => generateCredential("PARTICIPANT", item.id)}>
+                          Credencial
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+                {participantRows.length === 0 && (
+                  <div style={{ padding: "32px 16px", textAlign: "center", fontSize: "13px", color: "#94a3b8" }}>No hay participantes para ese filtro.</div>
+                )}
+              </div>
             </>
           ) : (
             <>
-              <h4 style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--text-faint)", marginBottom: "12px" }}>Conductores registrados</h4>
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
-                  <thead>
-                    <tr style={{ background: "var(--elevated)" }}>
-                      {["Nombre","RUT","Proveedor","Telefono","Accesos","Estado","Credencial","Acciones"].map((h) => (
-                        <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--text-faint)", borderBottom: "1px solid var(--border)", whiteSpace: "nowrap" }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {driverRows.map((item, idx) => {
-                      const acc = accByDriver[item.id];
-                      const accredited = isAccredited(acc?.status);
-                      const accessTypes = normalizeAccessTypes(acc?.accessTypes ?? item.accessTypes);
-                      return (
-                        <tr key={item.id} style={{ borderBottom: "1px solid var(--border)", background: idx % 2 === 0 ? "transparent" : "var(--elevated)" }}>
-                          <td style={{ padding: "10px 12px" }}><p style={{ fontWeight: 600, color: "var(--text)" }}>{item.fullName || item.id}</p><p style={{ fontSize: "11px", color: "var(--text-faint)" }}>{item.id}</p></td>
-                          <td style={{ padding: "10px 12px", color: "var(--text-muted)" }}>{item.rut || "-"}</td>
-                          <td style={{ padding: "10px 12px", color: "var(--text-muted)" }}>{item.providerId ? providerMap[item.providerId]?.name || item.providerId : "-"}</td>
-                          <td style={{ padding: "10px 12px", color: "var(--text-muted)" }}>{item.phone || "-"}</td>
-                          <td style={{ padding: "10px 12px" }}>
-                            <div className="flex flex-wrap gap-1">
-                              {accessTypes.length ? accessTypes.map((code) => <span key={code} style={{ borderRadius: "99px", background: "rgba(34,211,238,0.12)", border: "1px solid rgba(34,211,238,0.25)", padding: "2px 8px", fontSize: "11px", fontWeight: 700, color: "#22d3ee" }}>{code}</span>) : <span style={{ fontSize: "11px", color: "var(--text-faint)" }}>Sin accesos</span>}
-                            </div>
-                          </td>
-                          <td style={{ padding: "10px 12px" }}>
-                            <span style={{ display: "inline-flex", borderRadius: "99px", padding: "3px 10px", fontSize: "11px", fontWeight: 700, background: accredited ? "rgba(16,185,129,0.12)" : "var(--elevated)", border: accredited ? "1px solid rgba(16,185,129,0.3)" : "1px solid var(--border)", color: accredited ? "#10b981" : "var(--text-muted)" }}>{rowStatusLabel(acc?.status)}</span>
-                          </td>
-                          <td style={{ padding: "10px 12px", color: "var(--text-muted)", fontSize: "12px" }}>{credentialLabel(acc)}</td>
-                          <td style={{ padding: "8px 12px" }}>
-                            <div className="flex flex-wrap gap-1">
-                              <button className="btn btn-ghost" type="button" style={{ fontSize: "11px", padding: "4px 10px" }} onClick={() => { setNewSubjectType("DRIVER"); setSubjectSearch(item.fullName || ""); setNewAthleteId(""); setNewDriverId(item.id); }}>Editar</button>
-                              <button className="btn btn-ghost" type="button" style={{ fontSize: "11px", padding: "4px 10px" }} disabled={!acc || !accredited || saving} onClick={() => acc && setNotAccredited(acc)}>Modificar</button>
-                              <button className="btn btn-primary" type="button" style={{ fontSize: "11px", padding: "4px 10px" }} disabled={!accredited} onClick={() => generateCredential("DRIVER", item.id)}>Credencial</button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+              {/* Header bar */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
+                <div>
+                  <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#94a3b8" }}>Conductores registrados</p>
+                  <p style={{ fontSize: "12px", color: "#64748b", marginTop: "2px" }}>{driverRows.length} resultado{driverRows.length !== 1 ? "s" : ""}</p>
+                </div>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <span style={{ fontSize: "12px", fontWeight: 700, padding: "3px 12px", borderRadius: "99px", background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)", color: "#10b981" }}>
+                    {driverRows.filter(r => isAccredited(accByDriver[r.id]?.status)).length} acreditados
+                  </span>
+                  <span style={{ fontSize: "12px", fontWeight: 700, padding: "3px 12px", borderRadius: "99px", background: "#f1f5f9", border: "1px solid #e2e8f0", color: "#64748b" }}>
+                    {driverRows.filter(r => !isAccredited(accByDriver[r.id]?.status)).length} pendientes
+                  </span>
+                </div>
               </div>
-              {driverRows.length === 0 ? <p style={{ marginTop: "12px", fontSize: "13px", color: "var(--text-muted)" }}>No hay conductores para ese filtro.</p> : null}
+
+              <div style={{ overflowY: "auto", maxHeight: "520px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                {driverRows.map((item) => {
+                  const acc = accByDriver[item.id];
+                  const accredited = isAccredited(acc?.status);
+                  const credIssued = hasCredential(acc);
+                  const accessTypes = normalizeAccessTypes(acc?.accessTypes ?? item.accessTypes);
+                  const photo = item.photoUrl || photoFromMetadata(item.metadata);
+                  const provName = item.providerId ? (providerMap[item.providerId]?.name || null) : null;
+                  return (
+                    <div key={item.id} style={{
+                      borderRadius: "14px",
+                      border: `1px solid ${accredited ? "rgba(16,185,129,0.25)" : "#e2e8f0"}`,
+                      borderLeft: `4px solid ${accredited ? "#10b981" : "#cbd5e1"}`,
+                      background: accredited ? "rgba(16,185,129,0.03)" : "#fafafa",
+                      padding: "12px 14px",
+                      display: "flex", alignItems: "center", gap: "12px",
+                    }}>
+                      {/* Avatar */}
+                      {photo
+                        ? <img src={photo} alt="" style={{ width: "42px", height: "42px", borderRadius: "10px", objectFit: "cover", flexShrink: 0, border: "1px solid #e2e8f0" }} />
+                        : <div style={{ width: "42px", height: "42px", borderRadius: "10px", background: accredited ? "rgba(16,185,129,0.12)" : "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: "13px", fontWeight: 800, color: accredited ? "#10b981" : "#94a3b8" }}>
+                            {initials(item.fullName)}
+                          </div>
+                      }
+                      {/* Info */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                          <p style={{ fontWeight: 700, fontSize: "13px", color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "180px" }}>{item.fullName || item.id}</p>
+                          {item.rut && <span style={{ fontSize: "10px", color: "#94a3b8", flexShrink: 0 }}>{item.rut}</span>}
+                          {provName && <span style={{ fontSize: "10px", fontWeight: 600, background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: "6px", padding: "1px 6px", color: "#475569", flexShrink: 0 }}>{provName}</span>}
+                        </div>
+                        <div style={{ marginTop: "5px", display: "flex", flexWrap: "wrap", gap: "4px", alignItems: "center" }}>
+                          <span style={{ fontSize: "10px", fontWeight: 700, padding: "2px 8px", borderRadius: "99px", background: accredited ? "rgba(16,185,129,0.12)" : "#f1f5f9", border: accredited ? "1px solid rgba(16,185,129,0.3)" : "1px solid #e2e8f0", color: accredited ? "#10b981" : "#64748b" }}>
+                            {accredited ? "✓ Acreditado" : "Pendiente"}
+                          </span>
+                          <span style={{ fontSize: "10px", fontWeight: 700, padding: "2px 8px", borderRadius: "99px", background: credIssued ? "rgba(33,208,179,0.1)" : "#f8fafc", border: credIssued ? "1px solid rgba(33,208,179,0.25)" : "1px solid #e2e8f0", color: credIssued ? "#21D0B3" : "#94a3b8" }}>
+                            {credIssued ? "Credencial ✓" : "Sin credencial"}
+                          </span>
+                          {accessTypes.map(code => <span key={code} style={{ fontSize: "10px", fontWeight: 700, padding: "2px 7px", borderRadius: "99px", background: "rgba(33,208,179,0.1)", border: "1px solid rgba(33,208,179,0.2)", color: "#21D0B3" }}>{code}</span>)}
+                        </div>
+                      </div>
+                      {/* Actions */}
+                      <div style={{ display: "flex", flexDirection: "column", gap: "5px", flexShrink: 0 }}>
+                        <button type="button" style={{ fontSize: "11px", padding: "5px 12px", borderRadius: "8px", border: "1px solid #e2e8f0", background: "#ffffff", color: "#475569", cursor: "pointer", fontWeight: 600 }}
+                          onClick={() => { setNewSubjectType("DRIVER"); setSubjectSearch(item.fullName || ""); setNewAthleteId(""); setNewDriverId(item.id); }}>
+                          Editar
+                        </button>
+                        <button type="button"
+                          style={{ fontSize: "11px", padding: "5px 12px", borderRadius: "8px", border: "none", background: !accredited ? "#e2e8f0" : "linear-gradient(135deg, #21D0B3, #14AE98)", color: !accredited ? "#94a3b8" : "#ffffff", cursor: !accredited ? "not-allowed" : "pointer", fontWeight: 700 }}
+                          disabled={!accredited}
+                          onClick={() => generateCredential("DRIVER", item.id)}>
+                          Credencial
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+                {driverRows.length === 0 && (
+                  <div style={{ padding: "32px 16px", textAlign: "center", fontSize: "13px", color: "#94a3b8" }}>No hay conductores para ese filtro.</div>
+                )}
+              </div>
             </>
           )}
         </div>

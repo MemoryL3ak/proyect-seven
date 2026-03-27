@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsISO8601, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateDisciplineDto {
   @IsString()
@@ -16,4 +16,16 @@ export class CreateDisciplineDto {
   @IsString()
   @IsOptional()
   gender?: string;
+
+  @IsString()
+  @IsOptional()
+  parentId?: string;
+
+  @IsISO8601()
+  @IsOptional()
+  scheduledAt?: string;
+
+  @IsString()
+  @IsOptional()
+  venueName?: string;
 }

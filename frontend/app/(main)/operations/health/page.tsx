@@ -1,10 +1,11 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
+import React, { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import { apiFetch } from "@/lib/api";
 import { filterValidatedAthletes } from "@/lib/athletes";
-import { useTheme } from "@/lib/theme";
+import { useI18n } from "@/lib/i18n";
+import StyledSelect from "@/components/StyledSelect";
 
 type EventItem = { id: string; name?: string | null };
 type DelegationItem = { id: string; eventId?: string | null; countryCode?: string | null };
@@ -97,6 +98,22 @@ type HealthRecord = {
     directorStamp: string;
     certificateDate: string;
   };
+};
+
+type KpiIconType = "clipboard" | "utensils" | "alert" | "activity" | "leaf" | "sprout" | "pill" | "syringe" | "heart";
+const KpiIcon = ({ type, color, size = 18 }: { type: KpiIconType; color: string; size?: number }) => {
+  const s: React.CSSProperties = { width: size, height: size, display: "block", flexShrink: 0 };
+  const p = { fill: "none", stroke: color, strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+  if (type === "clipboard") return <svg style={s} viewBox="0 0 24 24" {...p}><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12l2 2 4-4"/></svg>;
+  if (type === "utensils") return <svg style={s} viewBox="0 0 24 24" {...p}><path d="M3 2v7c0 1.1.9 2 2 2h4v11h2V11h4a2 2 0 002-2V2"/><line x1="15" y1="2" x2="15" y2="22"/></svg>;
+  if (type === "alert") return <svg style={s} viewBox="0 0 24 24" {...p}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>;
+  if (type === "activity") return <svg style={s} viewBox="0 0 24 24" {...p}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>;
+  if (type === "leaf") return <svg style={s} viewBox="0 0 24 24" {...p}><path d="M17 8C8 10 5.9 16.17 3.82 19.34L2 21"/><path d="M17 8c1.46 1.46 2.39 3.58 2 6-1.39 5.56-7.35 7-11 7"/><path d="M2 21c0-5.43 2.18-9.53 5-12"/></svg>;
+  if (type === "sprout") return <svg style={s} viewBox="0 0 24 24" {...p}><path d="M7 20h10"/><path d="M10 20c5.5-2.5 8.5-7 4-14 0 0-5.5 6-8 14"/><path d="M10.9 7c3.1-4.5 7.9-4.5 8.9 0-1 .5-4 1-5.9 1"/><path d="M7.1 7c-3.1-4.5-7.9-4.5-8.9 0 1 .5 4 1 5.9 1"/></svg>;
+  if (type === "pill") return <svg style={s} viewBox="0 0 24 24" {...p}><path d="M10.5 20.5l10-10a4.95 4.95 0 10-7-7l-10 10a4.95 4.95 0 107 7z"/><line x1="8.5" y1="8.5" x2="15.5" y2="15.5"/></svg>;
+  if (type === "syringe") return <svg style={s} viewBox="0 0 24 24" {...p}><path d="M18 2l4 4-10 10-5-5L18 2z"/><path d="M7.5 13.5L4 17l3 3 3.5-3.5"/><line x1="6" y1="20" x2="2" y2="22"/><line x1="9" y1="8" x2="14" y2="13"/></svg>;
+  if (type === "heart") return <svg style={s} viewBox="0 0 24 24" {...p}><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>;
+  return null;
 };
 
 const SHIRT_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
@@ -488,44 +505,12 @@ async function loadLogoAsDataUrl(path: string) {
 }
 
 export default function HealthPage() {
-  const { theme } = useTheme();
-  const isObsidian = theme === "obsidian";
-  const isAtlas = theme === "atlas";
-  const isDark = theme === "dark";
+  const { t } = useI18n();
 
-  const pal = isObsidian ? {
-    panelBg: "linear-gradient(135deg, #0a1322 0%, #0e1728 60%, #0d1a30 100%)",
-    panelBorder: "rgba(34,211,238,0.08)", panelShadow: "0 4px 32px rgba(0,0,0,0.6)",
-    orb1: "rgba(16,185,129,0.08)", orb2: "rgba(239,68,68,0.06)",
-    accent: "#22d3ee", titleColor: "#e2e8f0", subtitleColor: "rgba(255,255,255,0.45)",
-    cardBg: "#0e1728", cardBorder: "rgba(34,211,238,0.1)", cardShadow: "0 4px 20px rgba(0,0,0,0.5)",
-    labelColor: "rgba(255,255,255,0.35)", textMuted: "rgba(255,255,255,0.5)",
-    rowBg: "rgba(255,255,255,0.04)", rowHover: "rgba(255,255,255,0.07)",
-    universeBg: "rgba(255,255,255,0.06)", universeBorder: "rgba(255,255,255,0.1)",
-  } : isDark ? {
-    panelBg: "linear-gradient(135deg, #0f172a 0%, #1e293b 55%, #111827 100%)",
-    panelBorder: "rgba(255,255,255,0.06)", panelShadow: "0 4px 24px rgba(0,0,0,0.45)",
-    orb1: "rgba(16,185,129,0.07)", orb2: "rgba(239,68,68,0.06)",
-    accent: "#10b981", titleColor: "#f1f5f9", subtitleColor: "rgba(255,255,255,0.4)",
-    cardBg: "var(--surface)", cardBorder: "var(--border)", cardShadow: "0 2px 12px rgba(0,0,0,0.3)",
-    labelColor: "var(--text-faint)", textMuted: "var(--text-muted)",
-    rowBg: "rgba(255,255,255,0.03)", rowHover: "rgba(255,255,255,0.05)",
-    universeBg: "rgba(255,255,255,0.05)", universeBorder: "rgba(255,255,255,0.08)",
-  } : isAtlas ? {
-    panelBg: "linear-gradient(135deg, #ffffff 0%, #f0f4ff 60%, #eef1f8 100%)",
-    panelBorder: "#c7d2fe", panelShadow: "0 1px 4px rgba(0,0,0,0.07)",
-    orb1: "rgba(16,185,129,0.06)", orb2: "rgba(239,68,68,0.04)",
-    accent: "#3b5bdb", titleColor: "#0f172a", subtitleColor: "#64748b",
-    cardBg: "#ffffff", cardBorder: "#e2e8f0", cardShadow: "0 1px 4px rgba(0,0,0,0.06)",
-    labelColor: "#94a3b8", textMuted: "#64748b",
-    rowBg: "#f8fafc", rowHover: "#f1f5f9",
-    universeBg: "#f1f5f9", universeBorder: "#e2e8f0",
-  } : {
-    panelBg: "linear-gradient(135deg, #ffffff 0%, #f8fafc 60%, #f1f5f9 100%)",
-    panelBorder: "#e2e8f0", panelShadow: "0 1px 4px rgba(0,0,0,0.06)",
-    orb1: "rgba(16,185,129,0.05)", orb2: "rgba(239,68,68,0.04)",
-    accent: "#10b981", titleColor: "#0f172a", subtitleColor: "#64748b",
-    cardBg: "#ffffff", cardBorder: "#e2e8f0", cardShadow: "0 1px 3px rgba(0,0,0,0.05)",
+  const pal = {
+    panelBg: "#ffffff", panelBorder: "#e2e8f0", panelShadow: "0 1px 4px rgba(15,23,42,0.06)",
+    accent: "#21D0B3", titleColor: "#0f172a", subtitleColor: "#64748b",
+    cardBg: "#ffffff", cardBorder: "#e2e8f0", cardShadow: "0 1px 4px rgba(15,23,42,0.06)",
     labelColor: "#94a3b8", textMuted: "#64748b",
     rowBg: "#f8fafc", rowHover: "#f1f5f9",
     universeBg: "#f1f5f9", universeBorder: "#e2e8f0",
@@ -544,6 +529,7 @@ export default function HealthPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [activeSubsection, setActiveSubsection] = useState<HealthSubsection>("record");
+  const bulkFileRef = useRef<HTMLInputElement>(null);
   const [bulkRows, setBulkRows] = useState<BulkHealthRow[]>([]);
   const [bulkFileName, setBulkFileName] = useState<string | null>(null);
   const [bulkErrors, setBulkErrors] = useState<BulkImportError[]>([]);
@@ -844,7 +830,7 @@ export default function HealthPage() {
         updated += 1;
       }
 
-      setBulkResult(`Carga masiva finalizada. ${updated} fichas actualizadas.`);
+      setBulkResult(t("Carga masiva finalizada. {n} fichas actualizadas.").replace("{n}", String(updated)));
       await load();
     } catch (err) {
       setBulkErrors((current) => [
@@ -1072,42 +1058,48 @@ export default function HealthPage() {
     }
   };
 
+  const fieldStyle: React.CSSProperties = {
+    width: "100%", padding: "8px 12px", borderRadius: "10px",
+    border: "1px solid #e2e8f0", background: "#f8fafc",
+    fontSize: "14px", color: "#0f172a", outline: "none",
+  };
+
   const yesNo = (label: string, value: YesNo, onChange: (value: YesNo) => void) => (
-    <label className="space-y-1">
-      <span className="text-sm font-medium text-white/80">{label}</span>
-      <select className="input" value={value} onChange={(e) => onChange(e.target.value as YesNo)}>
-        <option value="">Selecciona</option>
+    <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+      <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{label}</span>
+      <StyledSelect value={value} onChange={(e) => onChange(e.target.value as YesNo)}>
+        <option value="">{t("Selecciona")}</option>
         <option value="SI">Sí</option>
         <option value="NO">No</option>
-      </select>
+      </StyledSelect>
     </label>
   );
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-end gap-3 mb-2">
-        <div className="rounded-lg px-3 py-1.5 text-sm" style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text-muted)" }}>
-          {activeSubsection === "record" ? <>Avance ficha: <span className="font-semibold" style={{ color: "var(--text)" }}>{completion}%</span></> : <>Subsección: <span className="font-semibold" style={{ color: "var(--text)" }}>{HEALTH_SUBSECTIONS.find((item) => item.id === activeSubsection)?.label}</span></>}
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "flex-end", gap: "12px", marginBottom: "8px" }}>
+        <div style={{ borderRadius: "8px", padding: "6px 12px", fontSize: "13px", background: "#ffffff", border: "1px solid #e2e8f0", color: "#64748b" }}>
+          {activeSubsection === "record" ? <>{t("Avance ficha")}: <span style={{ fontWeight: 600, color: "#0f172a" }}>{completion}%</span></> : <>{t("Subsección")}: <span style={{ fontWeight: 600, color: "#0f172a" }}>{t(HEALTH_SUBSECTIONS.find((item) => item.id === activeSubsection)?.label ?? "")}</span></>}
         </div>
       </div>
 
-      <section className="surface rounded-2xl p-5">
+      <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div className="grid gap-3 lg:grid-cols-12">
-          <select className="input lg:col-span-4" value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)}>
-            <option value="">Selecciona evento</option>
+          <StyledSelect wrapperClassName="lg:col-span-4" value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)}>
+            <option value="">{t("Selecciona evento")}</option>
             {events.map((item) => (
               <option key={item.id} value={item.id}>{item.name || item.id}</option>
             ))}
-          </select>
-          <select className="input lg:col-span-3" value={selectedDelegationId} onChange={(e) => setSelectedDelegationId(e.target.value)}>
-            <option value="">Todas las delegaciones</option>
+          </StyledSelect>
+          <StyledSelect wrapperClassName="lg:col-span-3" value={selectedDelegationId} onChange={(e) => setSelectedDelegationId(e.target.value)}>
+            <option value="">{t("Todas las delegaciones")}</option>
             {filteredDelegations.map((item) => (
               <option key={item.id} value={item.id}>{item.countryCode || item.id}</option>
             ))}
-          </select>
+          </StyledSelect>
           <div className="relative lg:col-span-5">
             <input
-              className="input pr-9"
+              style={{ width: "100%", paddingRight: "36px", padding: "8px 36px 8px 12px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "#f8fafc", fontSize: "14px", color: "#0f172a", outline: "none" }}
               value={athleteSearch}
               onFocus={() => setAthletePickerOpen(true)}
               onBlur={() => setTimeout(() => setAthletePickerOpen(false), 120)}
@@ -1120,11 +1112,11 @@ export default function HealthPage() {
                   setRecord(emptyHealthRecord());
                 }
               }}
-              placeholder="Buscar y seleccionar participante"
+              placeholder={t("Buscar y seleccionar participante")}
             />
             <button
               type="button"
-              className="absolute inset-y-0 right-2 text-white/50"
+              style={{ position: "absolute", inset: "0 8px 0 auto", background: "none", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: "12px" }}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => setAthletePickerOpen((prev) => !prev)}
               aria-label="Mostrar participantes"
@@ -1132,15 +1124,17 @@ export default function HealthPage() {
               v
             </button>
             {athletePickerOpen ? (
-              <div className="absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded-xl p-1 shadow-xl" style={{background:"var(--surface)",border:"1px solid var(--border)"}}>
+              <div style={{ position: "absolute", zIndex: 30, marginTop: "4px", maxHeight: "224px", width: "100%", overflowY: "auto", borderRadius: "12px", padding: "4px", boxShadow: "0 8px 24px rgba(15,23,42,0.12)", background: "#ffffff", border: "1px solid #e2e8f0" }}>
                 {searchableAthletes.length === 0 ? (
-                  <div className="px-3 py-2 text-sm" style={{ color: "var(--text-muted)" }}>Sin resultados</div>
+                  <div style={{ padding: "8px 12px", fontSize: "14px", color: "#94a3b8" }}>{t("Sin resultados")}</div>
                 ) : (
                   searchableAthletes.slice(0, 60).map((item) => (
                     <button
                       key={item.id}
                       type="button"
-                      className="block w-full rounded-lg px-3 py-2 text-left text-sm text-white/80 hover:bg-white/10"
+                      style={{ display: "block", width: "100%", borderRadius: "8px", padding: "8px 12px", textAlign: "left", fontSize: "14px", color: "#0f172a", background: "none", border: "none", cursor: "pointer" }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#f8fafc"; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "none"; }}
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => onPickAthlete(item.id)}
                     >
@@ -1152,22 +1146,27 @@ export default function HealthPage() {
             ) : null}
           </div>
         </div>
-        {loading ? <p className="mt-3 text-sm text-white/50">Cargando...</p> : null}
+        {loading ? <p style={{ marginTop: "12px", fontSize: "13px", color: "#94a3b8" }}>{t("Cargando...")}</p> : null}
       </section>
 
-      <section className="surface rounded-2xl p-3">
-        <div className="inline-flex flex-wrap rounded-2xl border border-white/8 bg-white/5 p-1">
+      <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "12px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+        <div style={{ display: "inline-flex", flexWrap: "wrap", borderRadius: "12px", border: "1px solid #e2e8f0", background: "#f8fafc", padding: "4px" }}>
           {HEALTH_SUBSECTIONS.map((item) => {
             const active = item.id === activeSubsection;
             return (
               <button
                 key={item.id}
                 type="button"
-                className="min-w-[132px] rounded-xl px-4 py-2.5 text-sm font-semibold transition"
-                style={active ? {background:"var(--gold-dim)",color:"#92670a",border:"1px solid var(--gold)"} : {background:"transparent",color:"var(--text-muted)"}}
+                style={{
+                  minWidth: "132px", borderRadius: "10px", padding: "8px 16px",
+                  fontSize: "14px", fontWeight: 600, border: "none", cursor: "pointer", transition: "all 150ms",
+                  background: active ? "linear-gradient(135deg, #21D0B3, #14AE98)" : "transparent",
+                  color: active ? "#ffffff" : "#64748b",
+                  boxShadow: active ? "0 2px 8px rgba(33,208,179,0.3)" : "none",
+                }}
                 onClick={() => setActiveSubsection(item.id)}
               >
-                <span className="block text-center">{item.label}</span>
+                <span style={{ display: "block", textAlign: "center" }}>{t(item.label)}</span>
               </button>
             );
           })}
@@ -1179,25 +1178,25 @@ export default function HealthPage() {
           {/* ── Command panel header */}
           <div style={{ background: pal.panelBg, border: `1px solid ${pal.panelBorder}`, borderRadius: "24px", padding: "28px 32px 24px", position: "relative", overflow: "hidden" }}>
             {/* Ambient orbs */}
-            <div style={{ position: "absolute", top: "-60px", right: "-40px", width: "260px", height: "260px", borderRadius: "50%", background: pal.orb1, filter: "blur(60px)", pointerEvents: "none" }} />
-            <div style={{ position: "absolute", bottom: "-40px", left: "20%", width: "200px", height: "200px", borderRadius: "50%", background: pal.orb2, filter: "blur(50px)", pointerEvents: "none" }} />
+            <div style={{ position: "absolute", top: "-60px", right: "-40px", width: "260px", height: "260px", borderRadius: "50%", background: "rgba(33,208,179,0.06)", filter: "blur(60px)", pointerEvents: "none" }} />
+            <div style={{ position: "absolute", bottom: "-40px", left: "20%", width: "200px", height: "200px", borderRadius: "50%", background: "rgba(33,208,179,0.04)", filter: "blur(50px)", pointerEvents: "none" }} />
 
             <div className="flex flex-wrap items-start justify-between gap-4" style={{ position: "relative" }}>
               <div>
                 <div className="flex items-center gap-2" style={{ marginBottom: "6px" }}>
-                  <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: pal.labelColor }}>Salud</span>
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", borderRadius: "99px", padding: "2px 10px" }}>
-                    <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#10b981", display: "inline-block", animation: "pulse 2s ease-in-out infinite" }} />
-                    <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: "#10b981" }}>EN VIVO</span>
+                  <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: pal.labelColor }}>{t("Salud")}</span>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", background: "rgba(33,208,179,0.1)", border: "1px solid rgba(33,208,179,0.25)", borderRadius: "99px", padding: "2px 10px" }}>
+                    <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#21D0B3", display: "inline-block" }} />
+                    <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: "#21D0B3" }}>EN VIVO</span>
                   </span>
                 </div>
-                <h2 style={{ fontSize: "22px", fontWeight: 800, color: pal.titleColor, margin: 0 }}>Inteligencia de salud</h2>
+                <h2 style={{ fontSize: "22px", fontWeight: 800, color: pal.titleColor, margin: 0 }}>{t("Inteligencia de salud")}</h2>
                 <p style={{ fontSize: "13px", color: pal.subtitleColor, marginTop: "4px" }}>
-                  Métricas calculadas sobre las fichas del filtro actual para detectar dietas, alergias y condiciones relevantes.
+                  {t("Métricas calculadas sobre las fichas del filtro actual para detectar dietas, alergias y condiciones relevantes.")}
                 </p>
               </div>
               <div style={{ background: pal.universeBg, border: `1px solid ${pal.universeBorder}`, borderRadius: "14px", padding: "10px 18px", fontSize: "13px", color: pal.textMuted, flexShrink: 0 }}>
-                Universo analizado: <span style={{ fontWeight: 700, color: pal.titleColor }}>{healthDashboard.totalAthletes}</span> participantes
+                {t("Universo analizado:")} <span style={{ fontWeight: 700, color: pal.titleColor }}>{healthDashboard.totalAthletes}</span> {t("participantes")}
               </div>
             </div>
           </div>
@@ -1207,10 +1206,10 @@ export default function HealthPage() {
             {/* ── Primary KPI cards */}
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
               {[
-                { label: "Fichas cargadas",     value: healthDashboard.savedRecords,    color: "#10b981", icon: "🏥", sub: "Con info de salud registrada",    glow: "rgba(16,185,129,0.18)" },
-                { label: "Alimentación especial", value: healthDashboard.specialDietCount, color: "#f59e0b", icon: "🥗", sub: "Requerimiento dietario declarado",  glow: "rgba(245,158,11,0.15)" },
-                { label: "Alergias",             value: healthDashboard.allergicCount,  color: "#ef4444", icon: "⚠️", sub: "Participantes con alergias activas", glow: "rgba(239,68,68,0.15)"  },
-                { label: "Enfermedad crónica",   value: healthDashboard.chronicCount,   color: "#38bdf8", icon: "💊", sub: "Patología crónica declarada",        glow: "rgba(56,189,248,0.15)" },
+                { label: t("Fichas cargadas"),     value: healthDashboard.savedRecords,    color: "#10b981", icon: "clipboard" as KpiIconType, sub: t("Con info de salud registrada"),    glow: "rgba(16,185,129,0.18)" },
+                { label: t("Alimentación especial"), value: healthDashboard.specialDietCount, color: "#f59e0b", icon: "utensils" as KpiIconType, sub: t("Requerimiento dietario declarado"),  glow: "rgba(245,158,11,0.15)" },
+                { label: t("Alergias"),             value: healthDashboard.allergicCount,  color: "#ef4444", icon: "alert" as KpiIconType, sub: t("Participantes con alergias activas"), glow: "rgba(239,68,68,0.15)"  },
+                { label: t("Enfermedad crónica"),   value: healthDashboard.chronicCount,   color: "#38bdf8", icon: "activity" as KpiIconType, sub: t("Patología crónica declarada"),        glow: "rgba(56,189,248,0.15)" },
               ].map((card) => (
                 <article key={card.label} style={{
                   background: pal.cardBg, border: `1px solid ${pal.cardBorder}`,
@@ -1223,12 +1222,11 @@ export default function HealthPage() {
                 >
                   <div className="flex items-center justify-between" style={{ marginBottom: "10px" }}>
                     <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: card.color }}>{card.label}</p>
-                    <span style={{ fontSize: "20px", lineHeight: 1 }}>{card.icon}</span>
+                    <KpiIcon type={card.icon} color={card.color} size={20} />
                   </div>
                   <div className="flex items-end gap-2">
                     <p style={{
                       fontSize: "2.4rem", fontWeight: 800, lineHeight: 1, color: card.color,
-                      textShadow: (isObsidian || isDark) ? `0 0 20px ${card.glow}` : "none",
                     }}>{card.value}</p>
                     <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: card.color, marginBottom: "8px", boxShadow: `0 0 8px ${card.color}` }} />
                   </div>
@@ -1240,10 +1238,10 @@ export default function HealthPage() {
             {/* ── Secondary KPI row */}
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4" style={{ marginTop: "16px" }}>
               {[
-                { label: "Celíacos",       value: healthDashboard.celiacCount,      color: "#a78bfa", icon: "🌾" },
-                { label: "Veganos",         value: healthDashboard.veganCount,       color: "#34d399", icon: "🌱" },
-                { label: "Vegetarianos",    value: healthDashboard.vegetarianCount,  color: "#6ee7b7", icon: "🥦" },
-                { label: "Con medicación",  value: healthDashboard.medicationsCount, color: "#f472b6", icon: "💉" },
+                { label: t("Celíacos"),       value: healthDashboard.celiacCount,      color: "#a78bfa", icon: "leaf" as KpiIconType },
+                { label: t("Veganos"),         value: healthDashboard.veganCount,       color: "#34d399", icon: "sprout" as KpiIconType },
+                { label: t("Vegetarianos"),    value: healthDashboard.vegetarianCount,  color: "#6ee7b7", icon: "leaf" as KpiIconType },
+                { label: t("Con medicación"),  value: healthDashboard.medicationsCount, color: "#f472b6", icon: "syringe" as KpiIconType },
               ].map((card) => (
                 <article key={card.label} style={{
                   background: pal.cardBg, border: `1px solid ${pal.cardBorder}`,
@@ -1254,7 +1252,7 @@ export default function HealthPage() {
                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}
                 >
-                  <span style={{ fontSize: "24px", lineHeight: 1, flexShrink: 0 }}>{card.icon}</span>
+                  <KpiIcon type={card.icon} color={card.color} size={24} />
                   <div>
                     <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: card.color, marginBottom: "2px" }}>{card.label}</p>
                     <p style={{ fontSize: "1.9rem", fontWeight: 800, lineHeight: 1, color: card.color }}>{card.value}</p>
@@ -1267,21 +1265,21 @@ export default function HealthPage() {
             <div className="grid gap-4 xl:grid-cols-3" style={{ marginTop: "20px" }}>
               {[
                 {
-                  label: "Top condiciones", icon: "🫀", color: "#38bdf8",
+                  label: t("Top condiciones"), icon: "heart" as KpiIconType, color: "#38bdf8",
                   items: healthDashboard.topConditions,
-                  empty: "Sin enfermedades crónicas detalladas.",
+                  empty: t("Sin enfermedades crónicas detalladas."),
                   chipColor: "rgba(56,189,248,0.18)", chipText: "#38bdf8",
                 },
                 {
-                  label: "Top alergias", icon: "⚠️", color: "#ef4444",
+                  label: t("Top alergias"), icon: "alert" as KpiIconType, color: "#ef4444",
                   items: healthDashboard.topAllergies,
-                  empty: "Sin alergias detalladas.",
+                  empty: t("Sin alergias detalladas."),
                   chipColor: "rgba(239,68,68,0.18)", chipText: "#ef4444",
                 },
                 {
-                  label: "Top dietas y restricciones", icon: "🥗", color: "#f59e0b",
+                  label: t("Top dietas y restricciones"), icon: "utensils" as KpiIconType, color: "#f59e0b",
                   items: healthDashboard.topDiets,
-                  empty: "Sin alimentación especial detallada.",
+                  empty: t("Sin alimentación especial detallada."),
                   chipColor: "rgba(245,158,11,0.18)", chipText: "#f59e0b",
                 },
               ].map((section) => (
@@ -1291,7 +1289,7 @@ export default function HealthPage() {
                   padding: "18px 18px 16px", boxShadow: pal.cardShadow,
                 }}>
                   <div className="flex items-center gap-2" style={{ marginBottom: "14px" }}>
-                    <span style={{ fontSize: "16px" }}>{section.icon}</span>
+                    <KpiIcon type={section.icon} color={section.color} size={16} />
                     <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: section.color }}>{section.label}</p>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -1319,68 +1317,68 @@ export default function HealthPage() {
       ) : null}
 
       {activeSubsection === "bulk" ? (
-        <section className="surface rounded-3xl p-5">
-          <div className="flex flex-wrap items-start justify-between gap-4">
+        <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: "16px" }}>
             <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-white/50">Subsección Salud / Carga masiva</p>
-              <h2 className="mt-1 text-2xl font-semibold text-white">Importar fichas de salud</h2>
-              <p className="mt-1 text-sm text-white/50">
-                Actualiza fichas por lote usando `athlete_id` o `passport_number`, respetando el filtro actual.
+              <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "#94a3b8" }}>{t("Subsección Salud / Carga masiva")}</span>
+              <h2 style={{ marginTop: "4px", fontSize: "20px", fontWeight: 700, color: "#0f172a" }}>{t("Importar fichas de salud")}</h2>
+              <p style={{ marginTop: "4px", fontSize: "13px", color: "#64748b" }}>
+                {t("Actualiza fichas por lote usando `athlete_id` o `passport_number`, respetando el filtro actual.")}
               </p>
             </div>
-            <button type="button" className="btn btn-ghost" onClick={downloadHealthTemplate}>
-              Descargar template
+            <button type="button" onClick={downloadHealthTemplate} style={{ padding: "8px 16px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "#ffffff", color: "#64748b", fontWeight: 600, fontSize: "13px", cursor: "pointer" }}>
+              {t("Descargar template")}
             </button>
           </div>
 
           <div className="mt-5 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
-            <div className="rounded-2xl border border-white/8 bg-white/5 p-4">
-              <label className="block">
-                <span className="text-sm font-medium text-white/80">Archivo Excel</span>
-                <input className="input mt-2" type="file" accept=".xlsx,.xls" onChange={onBulkFileChange} />
-              </label>
-              <div className="mt-3 space-y-2 text-sm text-white/65">
-                <p><strong>Archivo:</strong> {bulkFileName || "-"}</p>
-                <p><strong>Filas detectadas:</strong> {bulkRows.length}</p>
-                <p><strong>Evento filtrado:</strong> {events.find((item) => item.id === selectedEventId)?.name || "Sin filtro"}</p>
+            <div style={{ borderRadius: "12px", border: "1px solid #e2e8f0", background: "#f8fafc", padding: "16px" }}>
+              <span style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a" }}>{t("Archivo Excel")}</span>
+              <input ref={bulkFileRef} id="health-bulk-file" className="sr-only" type="file" accept=".xlsx,.xls" onChange={onBulkFileChange} />
+              <div style={{ marginTop: "8px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "12px" }}>
+                <label htmlFor="health-bulk-file" style={{ padding: "8px 16px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "#ffffff", color: "#64748b", fontWeight: 600, fontSize: "13px", cursor: "pointer" }}>
+                  {t("Seleccionar archivo")}
+                </label>
+                <span style={{ fontSize: "12px", color: "#94a3b8" }}>{bulkFileName ?? t("Sin archivo seleccionado")}</span>
               </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <button type="button" className="btn btn-primary" onClick={runBulkImport} disabled={bulkLoading || bulkRows.length === 0}>
-                  {bulkLoading ? "Importando..." : "Ejecutar carga"}
+              <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "4px", fontSize: "13px", color: "#64748b" }}>
+                <p><strong style={{ color: "#0f172a" }}>{t("Filas detectadas:")}</strong> {bulkRows.length}</p>
+                <p><strong style={{ color: "#0f172a" }}>{t("Evento filtrado:")}</strong> {events.find((item) => item.id === selectedEventId)?.name || t("Sin filtro")}</p>
+              </div>
+              <div style={{ marginTop: "16px", display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                <button type="button" onClick={runBulkImport} disabled={bulkLoading || bulkRows.length === 0} style={{ padding: "9px 18px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: "#ffffff", fontWeight: 700, fontSize: "13px", cursor: bulkLoading || bulkRows.length === 0 ? "not-allowed" : "pointer", opacity: bulkLoading || bulkRows.length === 0 ? 0.6 : 1, boxShadow: "0 2px 8px rgba(33,208,179,0.3)" }}>
+                  {bulkLoading ? t("Importando...") : t("Ejecutar carga")}
                 </button>
-                <button type="button" className="btn btn-ghost" onClick={() => { setBulkRows([]); setBulkFileName(null); setBulkErrors([]); setBulkResult(null); }}>
-                  Limpiar
+                <button type="button" onClick={() => { setBulkRows([]); setBulkFileName(null); setBulkErrors([]); setBulkResult(null); if (bulkFileRef.current) bulkFileRef.current.value = ""; }} style={{ padding: "9px 16px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "#ffffff", color: "#64748b", fontWeight: 600, fontSize: "13px", cursor: "pointer" }}>
+                  {t("Limpiar")}
                 </button>
               </div>
-              {bulkResult ? <p className="mt-3 text-sm font-medium text-emerald-400">{bulkResult}</p> : null}
+              {bulkResult ? <p style={{ marginTop: "12px", fontSize: "13px", fontWeight: 600, color: "#21D0B3" }}>{bulkResult}</p> : null}
             </div>
 
-            <div className="rounded-2xl border border-white/8 bg-white/5 p-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-white/50">Vista previa</p>
+            <div style={{ borderRadius: "12px", border: "1px solid #e2e8f0", background: "#f8fafc", padding: "16px" }}>
+              <p style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "#94a3b8" }}>{t("Vista previa")}</p>
               {bulkPreview.length === 0 ? (
-                <p className="mt-3 text-sm text-white/50">Aún no hay archivo cargado.</p>
+                <p style={{ marginTop: "12px", fontSize: "13px", color: "#94a3b8" }}>{t("Aún no hay archivo cargado.")}</p>
               ) : (
-                <div className="mt-3 overflow-x-auto">
-                  <table className="table">
+                <div style={{ marginTop: "12px", overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
                     <thead>
-                      <tr>
-                        <th>Fila</th>
-                        <th>Athlete ID</th>
-                        <th>Pasaporte</th>
-                        <th>Nombre</th>
-                        <th>Dieta</th>
-                        <th>Crónico</th>
+                      <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
+                        {[t("Fila"), "Athlete ID", t("Pasaporte"), t("Nombre"), t("Dieta"), t("Crónico")].map((h) => (
+                          <th key={h} style={{ textAlign: "left", padding: "6px 10px", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#94a3b8" }}>{h}</th>
+                        ))}
                       </tr>
                     </thead>
                     <tbody>
                       {bulkPreview.map((row, index) => (
-                        <tr key={`${row.athlete_id}-${index}`}>
-                          <td>{index + 2}</td>
-                          <td>{row.athlete_id || "-"}</td>
-                          <td>{row.passport_number || "-"}</td>
-                          <td>{row.full_name || "-"}</td>
-                          <td>{row.special_diet_detail || row.special_diet || "-"}</td>
-                          <td>{row.chronic_detail || row.chronic_diseases || "-"}</td>
+                        <tr key={`${row.athlete_id}-${index}`} style={{ background: index % 2 === 0 ? "#ffffff" : "#f8fafc" }}>
+                          <td style={{ padding: "6px 10px", color: "#0f172a" }}>{index + 2}</td>
+                          <td style={{ padding: "6px 10px", color: "#64748b" }}>{row.athlete_id || "-"}</td>
+                          <td style={{ padding: "6px 10px", color: "#64748b" }}>{row.passport_number || "-"}</td>
+                          <td style={{ padding: "6px 10px", color: "#0f172a" }}>{row.full_name || "-"}</td>
+                          <td style={{ padding: "6px 10px", color: "#64748b" }}>{row.special_diet_detail || row.special_diet || "-"}</td>
+                          <td style={{ padding: "6px 10px", color: "#64748b" }}>{row.chronic_detail || row.chronic_diseases || "-"}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -1388,12 +1386,12 @@ export default function HealthPage() {
                 </div>
               )}
               {bulkErrors.length ? (
-                <div className="mt-4 rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4">
-                  <p className="text-sm font-semibold text-rose-300">Errores detectados</p>
-                  <div className="mt-2 space-y-1 text-sm text-rose-300/80">
+                <div style={{ marginTop: "16px", borderRadius: "12px", border: "1px solid rgba(239,68,68,0.2)", background: "rgba(239,68,68,0.05)", padding: "16px" }}>
+                  <p style={{ fontSize: "13px", fontWeight: 600, color: "#ef4444" }}>{t("Errores detectados")}</p>
+                  <div style={{ marginTop: "8px", display: "flex", flexDirection: "column", gap: "4px", fontSize: "13px", color: "#ef4444" }}>
                     {bulkErrors.slice(0, 12).map((item, index) => (
                       <p key={`${item.row}-${item.field}-${index}`}>
-                        {item.row > 0 ? `Fila ${item.row}` : "Sistema"}{item.field ? ` · ${item.field}` : ""}: {item.message}
+                        {item.row > 0 ? `${t("Fila")} ${item.row}` : t("Sistema")}{item.field ? ` · ${item.field}` : ""}: {item.message}
                       </p>
                     ))}
                   </div>
@@ -1405,107 +1403,106 @@ export default function HealthPage() {
       ) : null}
 
       {activeSubsection === "record" ? <form onSubmit={save} className="space-y-4">
-        <section className="surface rounded-2xl p-5">
-          <p className="text-xs uppercase tracking-[0.2em] text-white/50">Antecedentes personales</p>
+        <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+          <p style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "#94a3b8" }}>{t("Antecedentes personales")}</p>
           <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            <label className="space-y-1">
-              <span className="text-sm font-medium text-white/80">Deporte</span>
-              <select
-                className="input"
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Deporte")}</span>
+              <StyledSelect
                 value={record.sport}
                 onChange={(e) => setRecord((p) => ({ ...p, sport: e.target.value }))}
               >
-                <option value="">Selecciona disciplina</option>
+                <option value="">{t("Selecciona disciplina")}</option>
                 {filteredDisciplineOptions.map((item) => (
                   <option key={item.id} value={item.name || item.id}>
                     {item.name || item.id}
                   </option>
                 ))}
-              </select>
+              </StyledSelect>
             </label>
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Nombre completo</span><input className="input" value={record.personal.fullName} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, fullName: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Nombre social</span><input className="input" value={record.personal.socialName} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, socialName: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Género con que te identificas</span><input className="input" value={record.personal.genderIdentity} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, genderIdentity: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Género cédula</span><input className="input" value={record.personal.idCardGender} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, idCardGender: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">RUT</span><input className="input" value={record.personal.rut} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, rut: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Estatura</span><input className="input" value={record.personal.height} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, height: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Peso corporal</span><input className="input" value={record.personal.weight} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, weight: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Fecha nacimiento</span><input className="input" type="date" value={record.personal.birthDate} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, birthDate: e.target.value } }))} /></label>
-            {yesNo("Alérgico", record.personal.allergic, (value) => setRecord((p) => ({ ...p, personal: { ...p.personal, allergic: value } })))}
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Alérgico a</span><input className="input" value={record.personal.allergicTo} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, allergicTo: e.target.value } }))} /></label>
-            {yesNo("Enfermedades crónicas", record.personal.chronicDiseases, (value) => setRecord((p) => ({ ...p, personal: { ...p.personal, chronicDiseases: value } })))}
-            <label className="space-y-1 md:col-span-2"><span className="text-sm font-medium text-white/80">Detalle crónico / medicamentos</span><input className="input" value={record.personal.chronicDetail} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, chronicDetail: e.target.value } }))} /></label>
-            {yesNo("Tratamiento psiquiátrico", record.personal.psychiatricTreatment, (value) => setRecord((p) => ({ ...p, personal: { ...p.personal, psychiatricTreatment: value } })))}
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Detalle tratamiento</span><input className="input" value={record.personal.psychiatricDetail} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, psychiatricDetail: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Diagnóstico psiquiátrico</span><input className="input" value={record.personal.psychiatricDiagnosis} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, psychiatricDiagnosis: e.target.value } }))} /></label>
-            {yesNo("Medicamentos psiquiátricos", record.personal.psychiatricMedications, (value) => setRecord((p) => ({ ...p, personal: { ...p.personal, psychiatricMedications: value } })))}
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Dosis y horarios</span><input className="input" value={record.personal.psychiatricDoseSchedule} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, psychiatricDoseSchedule: e.target.value } }))} /></label>
-            {yesNo("Alimentación especial", record.personal.specialDiet, (value) => setRecord((p) => ({ ...p, personal: { ...p.personal, specialDiet: value } })))}
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">¿Cuál?</span><input className="input" value={record.personal.specialDietDetail} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, specialDietDetail: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Nombre completo")}</span><input style={fieldStyle} value={record.personal.fullName} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, fullName: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Nombre social")}</span><input style={fieldStyle} value={record.personal.socialName} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, socialName: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Género con que te identificas")}</span><input style={fieldStyle} value={record.personal.genderIdentity} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, genderIdentity: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Género cédula")}</span><input style={fieldStyle} value={record.personal.idCardGender} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, idCardGender: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>RUT</span><input style={fieldStyle} value={record.personal.rut} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, rut: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Estatura")}</span><input style={fieldStyle} value={record.personal.height} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, height: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Peso corporal")}</span><input style={fieldStyle} value={record.personal.weight} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, weight: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Fecha nacimiento")}</span><input style={fieldStyle} type="date" value={record.personal.birthDate} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, birthDate: e.target.value } }))} /></label>
+            {yesNo(t("Alérgico"), record.personal.allergic, (value) => setRecord((p) => ({ ...p, personal: { ...p.personal, allergic: value } })))}
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Alérgico a")}</span><input style={fieldStyle} value={record.personal.allergicTo} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, allergicTo: e.target.value } }))} /></label>
+            {yesNo(t("Enfermedades crónicas"), record.personal.chronicDiseases, (value) => setRecord((p) => ({ ...p, personal: { ...p.personal, chronicDiseases: value } })))}
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }} className="md:col-span-2"><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Detalle crónico / medicamentos")}</span><input style={fieldStyle} value={record.personal.chronicDetail} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, chronicDetail: e.target.value } }))} /></label>
+            {yesNo(t("Tratamiento psiquiátrico"), record.personal.psychiatricTreatment, (value) => setRecord((p) => ({ ...p, personal: { ...p.personal, psychiatricTreatment: value } })))}
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Detalle tratamiento")}</span><input style={fieldStyle} value={record.personal.psychiatricDetail} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, psychiatricDetail: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Diagnóstico psiquiátrico")}</span><input style={fieldStyle} value={record.personal.psychiatricDiagnosis} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, psychiatricDiagnosis: e.target.value } }))} /></label>
+            {yesNo(t("Medicamentos psiquiátricos"), record.personal.psychiatricMedications, (value) => setRecord((p) => ({ ...p, personal: { ...p.personal, psychiatricMedications: value } })))}
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Dosis y horarios")}</span><input style={fieldStyle} value={record.personal.psychiatricDoseSchedule} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, psychiatricDoseSchedule: e.target.value } }))} /></label>
+            {yesNo(t("Alimentación especial"), record.personal.specialDiet, (value) => setRecord((p) => ({ ...p, personal: { ...p.personal, specialDiet: value } })))}
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("¿Cuál?")}</span><input style={fieldStyle} value={record.personal.specialDietDetail} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, specialDietDetail: e.target.value } }))} /></label>
           </div>
         </section>
 
-        <section className="surface rounded-2xl p-5">
-          <p className="text-xs uppercase tracking-[0.2em] text-white/50">Contacto, representación y emergencia</p>
+        <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+          <p style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "#94a3b8" }}>{t("Contacto, representación y emergencia")}</p>
           <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            <label className="space-y-1 md:col-span-2"><span className="text-sm font-medium text-white/80">Dirección</span><input className="input" value={record.contact.address} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, address: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Comuna</span><input className="input" value={record.contact.commune} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, commune: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Ciudad</span><input className="input" value={record.contact.city} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, city: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Región</span><input className="input" value={record.contact.region} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, region: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Fono</span><input className="input" value={record.contact.phone} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, phone: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Email</span><input className="input" value={record.contact.email} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, email: e.target.value } }))} /></label>
-            {yesNo("Pueblo originario", record.contact.indigenous, (value) => setRecord((p) => ({ ...p, contact: { ...p.contact, indigenous: value } })))}
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">¿Cuál?</span><input className="input" value={record.contact.indigenousDetail} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, indigenousDetail: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Talla ropa</span><select className="input" value={record.contact.shirtSize} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, shirtSize: e.target.value } }))}><option value="">Selecciona</option>{SHIRT_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}</select></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Dependencia establecimiento</span><select className="input" value={record.representation.dependencyType} onChange={(e) => setRecord((p) => ({ ...p, representation: { ...p.representation, dependencyType: e.target.value } }))}><option value="">Selecciona</option>{DEPENDENCY_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
-            <label className="space-y-1 md:col-span-2"><span className="text-sm font-medium text-white/80">Institución que representa</span><input className="input" value={record.representation.institutionName} onChange={(e) => setRecord((p) => ({ ...p, representation: { ...p.representation, institutionName: e.target.value } }))} /></label>
-            {yesNo("Inscrito en club", record.representation.enrolledClub, (value) => setRecord((p) => ({ ...p, representation: { ...p.representation, enrolledClub: value } })))}
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Nombre del club</span><input className="input" value={record.representation.clubName} onChange={(e) => setRecord((p) => ({ ...p, representation: { ...p.representation, clubName: e.target.value } }))} /></label>
-            {yesNo("Promesas Chile", record.representation.promesasChile, (value) => setRecord((p) => ({ ...p, representation: { ...p.representation, promesasChile: value } })))}
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Emergencia: nombre</span><input className="input" value={record.emergency.name} onChange={(e) => setRecord((p) => ({ ...p, emergency: { ...p.emergency, name: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Emergencia: teléfono</span><input className="input" value={record.emergency.phone} onChange={(e) => setRecord((p) => ({ ...p, emergency: { ...p.emergency, phone: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Emergencia: email</span><input className="input" value={record.emergency.email} onChange={(e) => setRecord((p) => ({ ...p, emergency: { ...p.emergency, email: e.target.value } }))} /></label>
-            <label className="space-y-1 md:col-span-2"><span className="text-sm font-medium text-white/80">Emergencia: dirección</span><input className="input" value={record.emergency.address} onChange={(e) => setRecord((p) => ({ ...p, emergency: { ...p.emergency, address: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Parentesco/Relación</span><input className="input" value={record.emergency.relation} onChange={(e) => setRecord((p) => ({ ...p, emergency: { ...p.emergency, relation: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }} className="md:col-span-2"><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Dirección")}</span><input style={fieldStyle} value={record.contact.address} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, address: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Comuna")}</span><input style={fieldStyle} value={record.contact.commune} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, commune: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Ciudad")}</span><input style={fieldStyle} value={record.contact.city} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, city: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Región")}</span><input style={fieldStyle} value={record.contact.region} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, region: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Fono")}</span><input style={fieldStyle} value={record.contact.phone} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, phone: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>Email</span><input style={fieldStyle} value={record.contact.email} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, email: e.target.value } }))} /></label>
+            {yesNo(t("Pueblo originario"), record.contact.indigenous, (value) => setRecord((p) => ({ ...p, contact: { ...p.contact, indigenous: value } })))}
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("¿Cuál?")}</span><input style={fieldStyle} value={record.contact.indigenousDetail} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, indigenousDetail: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Talla ropa")}</span><StyledSelect value={record.contact.shirtSize} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, shirtSize: e.target.value } }))}><option value="">{t("Selecciona")}</option>{SHIRT_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}</StyledSelect></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Dependencia establecimiento")}</span><StyledSelect value={record.representation.dependencyType} onChange={(e) => setRecord((p) => ({ ...p, representation: { ...p.representation, dependencyType: e.target.value } }))}><option value="">{t("Selecciona")}</option>{DEPENDENCY_OPTIONS.map((item) => <option key={item} value={item}>{t(item)}</option>)}</StyledSelect></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }} className="md:col-span-2"><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Institución que representa")}</span><input style={fieldStyle} value={record.representation.institutionName} onChange={(e) => setRecord((p) => ({ ...p, representation: { ...p.representation, institutionName: e.target.value } }))} /></label>
+            {yesNo(t("Inscrito en club"), record.representation.enrolledClub, (value) => setRecord((p) => ({ ...p, representation: { ...p.representation, enrolledClub: value } })))}
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Nombre del club")}</span><input style={fieldStyle} value={record.representation.clubName} onChange={(e) => setRecord((p) => ({ ...p, representation: { ...p.representation, clubName: e.target.value } }))} /></label>
+            {yesNo(t("Promesas Chile"), record.representation.promesasChile, (value) => setRecord((p) => ({ ...p, representation: { ...p.representation, promesasChile: value } })))}
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Emergencia: nombre")}</span><input style={fieldStyle} value={record.emergency.name} onChange={(e) => setRecord((p) => ({ ...p, emergency: { ...p.emergency, name: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Emergencia: teléfono")}</span><input style={fieldStyle} value={record.emergency.phone} onChange={(e) => setRecord((p) => ({ ...p, emergency: { ...p.emergency, phone: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Emergencia: email")}</span><input style={fieldStyle} value={record.emergency.email} onChange={(e) => setRecord((p) => ({ ...p, emergency: { ...p.emergency, email: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }} className="md:col-span-2"><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Emergencia: dirección")}</span><input style={fieldStyle} value={record.emergency.address} onChange={(e) => setRecord((p) => ({ ...p, emergency: { ...p.emergency, address: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Parentesco/Relación")}</span><input style={fieldStyle} value={record.emergency.relation} onChange={(e) => setRecord((p) => ({ ...p, emergency: { ...p.emergency, relation: e.target.value } }))} /></label>
           </div>
         </section>
 
-        <section className="surface rounded-2xl p-5">
-          <p className="text-xs uppercase tracking-[0.2em] text-white/50">Certificados y autorizaciones</p>
+        <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+          <p style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "#94a3b8" }}>{t("Certificados y autorizaciones")}</p>
           <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Cert. salud: nombre deportista</span><input className="input" value={record.healthCertificate.athleteName} onChange={(e) => setRecord((p) => ({ ...p, healthCertificate: { ...p.healthCertificate, athleteName: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Aptitud física</span><select className="input" value={record.healthCertificate.fitness} onChange={(e) => setRecord((p) => ({ ...p, healthCertificate: { ...p.healthCertificate, fitness: e.target.value as "" | "APTO" | "NO_APTO" } }))}><option value="">Selecciona</option><option value="APTO">Apto(a)</option><option value="NO_APTO">No apto(a)</option></select></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Médico: nombre</span><input className="input" value={record.healthCertificate.doctorName} onChange={(e) => setRecord((p) => ({ ...p, healthCertificate: { ...p.healthCertificate, doctorName: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Médico: RUT</span><input className="input" value={record.healthCertificate.doctorRut} onChange={(e) => setRecord((p) => ({ ...p, healthCertificate: { ...p.healthCertificate, doctorRut: e.target.value } }))} /></label>
-            <label className="space-y-1 md:col-span-2"><span className="text-sm font-medium text-white/80">Firma y timbre médico</span><input className="input" value={record.healthCertificate.signatureStamp} onChange={(e) => setRecord((p) => ({ ...p, healthCertificate: { ...p.healthCertificate, signatureStamp: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Apoderado(a): nombre</span><input className="input" value={record.guardianAuthorization.guardianName} onChange={(e) => setRecord((p) => ({ ...p, guardianAuthorization: { ...p.guardianAuthorization, guardianName: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Apoderado(a): RUT</span><input className="input" value={record.guardianAuthorization.guardianRut} onChange={(e) => setRecord((p) => ({ ...p, guardianAuthorization: { ...p.guardianAuthorization, guardianRut: e.target.value } }))} /></label>
-            <label className="space-y-1 md:col-span-2"><span className="text-sm font-medium text-white/80">Firma apoderado(a)</span><input className="input" value={record.guardianAuthorization.guardianSignature} onChange={(e) => setRecord((p) => ({ ...p, guardianAuthorization: { ...p.guardianAuthorization, guardianSignature: e.target.value } }))} /></label>
-            <label className="space-y-1 md:col-span-2"><span className="text-sm font-medium text-white/80">Cert. escolar: establecimiento</span><input className="input" value={record.schoolCertificate.establishmentName} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, establishmentName: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Alumno(a)</span><input className="input" value={record.schoolCertificate.studentName} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, studentName: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">RUT alumno(a)</span><input className="input" value={record.schoolCertificate.studentRut} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, studentRut: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Director(a): nombre</span><input className="input" value={record.schoolCertificate.directorName} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, directorName: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Director(a): RUT</span><input className="input" value={record.schoolCertificate.directorRut} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, directorRut: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Firma director(a)</span><input className="input" value={record.schoolCertificate.directorSignature} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, directorSignature: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Timbre director(a)</span><input className="input" value={record.schoolCertificate.directorStamp} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, directorStamp: e.target.value } }))} /></label>
-            <label className="space-y-1"><span className="text-sm font-medium text-white/80">Fecha certificado</span><input className="input" type="date" value={record.schoolCertificate.certificateDate} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, certificateDate: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Cert. salud: nombre deportista")}</span><input style={fieldStyle} value={record.healthCertificate.athleteName} onChange={(e) => setRecord((p) => ({ ...p, healthCertificate: { ...p.healthCertificate, athleteName: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Aptitud física")}</span><StyledSelect value={record.healthCertificate.fitness} onChange={(e) => setRecord((p) => ({ ...p, healthCertificate: { ...p.healthCertificate, fitness: e.target.value as "" | "APTO" | "NO_APTO" } }))}><option value="">{t("Selecciona")}</option><option value="APTO">{t("Apto(a)")}</option><option value="NO_APTO">{t("No apto(a)")}</option></StyledSelect></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Médico: nombre")}</span><input style={fieldStyle} value={record.healthCertificate.doctorName} onChange={(e) => setRecord((p) => ({ ...p, healthCertificate: { ...p.healthCertificate, doctorName: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Médico: RUT")}</span><input style={fieldStyle} value={record.healthCertificate.doctorRut} onChange={(e) => setRecord((p) => ({ ...p, healthCertificate: { ...p.healthCertificate, doctorRut: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }} className="md:col-span-2"><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Firma y timbre médico")}</span><input style={fieldStyle} value={record.healthCertificate.signatureStamp} onChange={(e) => setRecord((p) => ({ ...p, healthCertificate: { ...p.healthCertificate, signatureStamp: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Apoderado(a): nombre")}</span><input style={fieldStyle} value={record.guardianAuthorization.guardianName} onChange={(e) => setRecord((p) => ({ ...p, guardianAuthorization: { ...p.guardianAuthorization, guardianName: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Apoderado(a): RUT")}</span><input style={fieldStyle} value={record.guardianAuthorization.guardianRut} onChange={(e) => setRecord((p) => ({ ...p, guardianAuthorization: { ...p.guardianAuthorization, guardianRut: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }} className="md:col-span-2"><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Firma apoderado(a)")}</span><input style={fieldStyle} value={record.guardianAuthorization.guardianSignature} onChange={(e) => setRecord((p) => ({ ...p, guardianAuthorization: { ...p.guardianAuthorization, guardianSignature: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }} className="md:col-span-2"><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Cert. escolar: establecimiento")}</span><input style={fieldStyle} value={record.schoolCertificate.establishmentName} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, establishmentName: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Alumno(a)")}</span><input style={fieldStyle} value={record.schoolCertificate.studentName} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, studentName: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("RUT alumno(a)")}</span><input style={fieldStyle} value={record.schoolCertificate.studentRut} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, studentRut: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Director(a): nombre")}</span><input style={fieldStyle} value={record.schoolCertificate.directorName} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, directorName: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Director(a): RUT")}</span><input style={fieldStyle} value={record.schoolCertificate.directorRut} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, directorRut: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Firma director(a)")}</span><input style={fieldStyle} value={record.schoolCertificate.directorSignature} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, directorSignature: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Timbre director(a)")}</span><input style={fieldStyle} value={record.schoolCertificate.directorStamp} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, directorStamp: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Fecha certificado")}</span><input style={fieldStyle} type="date" value={record.schoolCertificate.certificateDate} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, certificateDate: e.target.value } }))} /></label>
           </div>
         </section>
 
-        <section className="surface rounded-2xl p-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="text-sm text-white/65">
-              {selectedAthlete ? `Participante seleccionado: ${selectedAthlete.fullName || selectedAthlete.id}` : "Selecciona un participante para guardar la ficha."}
+        <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
+            <div style={{ fontSize: "13px", color: "#64748b" }}>
+              {selectedAthlete ? `${t("Participante seleccionado:")} ${selectedAthlete.fullName || selectedAthlete.id}` : t("Selecciona un participante para guardar la ficha.")}
             </div>
-            <button className="btn btn-primary px-8" type="submit" disabled={!selectedAthleteId || saving}>
-              {saving ? "Guardando..." : "Guardar ficha de salud"}
+            <button style={{ padding: "9px 28px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: "#ffffff", fontWeight: 700, fontSize: "14px", cursor: !selectedAthleteId || saving ? "not-allowed" : "pointer", opacity: !selectedAthleteId || saving ? 0.6 : 1, boxShadow: "0 2px 8px rgba(33,208,179,0.3)" }} type="submit" disabled={!selectedAthleteId || saving}>
+              {saving ? t("Guardando...") : t("Guardar ficha de salud")}
             </button>
-            <button className="btn btn-ghost px-6" type="button" disabled={!selectedAthleteId} onClick={exportHealthSheet}>
-              Exportar ficha (PDF)
+            <button style={{ padding: "9px 20px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "#ffffff", color: "#64748b", fontWeight: 600, fontSize: "14px", cursor: !selectedAthleteId ? "not-allowed" : "pointer", opacity: !selectedAthleteId ? 0.5 : 1 }} type="button" disabled={!selectedAthleteId} onClick={exportHealthSheet}>
+              {t("Exportar ficha (PDF)")}
             </button>
           </div>
-          {error ? <p className="mt-3 text-sm text-rose-600">{error}</p> : null}
-          {message ? <p className="mt-3 text-sm text-emerald-400">{message}</p> : null}
+          {error ? <p style={{ marginTop: "12px", fontSize: "13px", color: "#ef4444" }}>{error}</p> : null}
+          {message ? <p style={{ marginTop: "12px", fontSize: "13px", color: "#21D0B3" }}>{message}</p> : null}
         </section>
       </form> : null}
     </div>

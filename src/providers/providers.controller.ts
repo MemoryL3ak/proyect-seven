@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import { CreateProviderDto } from './dto/create-provider.dto';
 import { UpdateProviderDto } from './dto/update-provider.dto';
+import { UploadProviderDocumentDto } from './dto/upload-provider-document.dto';
 import { ProvidersService } from './providers.service';
 
 @Controller('providers')
@@ -25,6 +26,14 @@ export class ProvidersController {
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateProviderDto: UpdateProviderDto) {
     return this.providersService.update(id, updateProviderDto);
+  }
+
+  @Post(':id/document')
+  uploadDocument(
+    @Param('id') id: string,
+    @Body() payload: UploadProviderDocumentDto,
+  ) {
+    return this.providersService.uploadDocument(id, payload.key, payload.dataUrl);
   }
 
   @Delete(':id')

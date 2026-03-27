@@ -401,39 +401,47 @@ export default function SportsCalendarDayDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
-        <div>
-          <h1 className="text-lg font-semibold" style={{ color: "var(--text)" }}>{formatDateLong(`${dayKey}T12:00:00`)}</h1>
-          <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>Vista ejecutiva del dia con llegadas, retiros, vuelos y agenda operativa por delegacion.</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <div className="rounded-lg px-3 py-1.5 text-sm" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
-            <div className="text-[10px] uppercase tracking-[0.18em]" style={{ color: "var(--text-muted)" }}>Evento</div>
-            <div className="text-xs font-semibold" style={{ color: "var(--text)" }}>{selectedEvent?.name || "Todos"}</div>
+      <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "20px", padding: "20px 24px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)", marginBottom: "0" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+              <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#94a3b8" }}>Seven Arena</span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.25)", borderRadius: "99px", padding: "2px 10px" }}>
+                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#21D0B3", display: "inline-block", animation: "pulse 2s ease-in-out infinite" }} />
+                <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: "#21D0B3" }}>EN VIVO</span>
+              </span>
+            </div>
+            <h1 style={{ fontSize: "22px", fontWeight: 800, color: "#0f172a", textTransform: "capitalize" }}>{formatDateLong(`${dayKey}T12:00:00`)}</h1>
+            <p style={{ marginTop: "2px", fontSize: "13px", color: "#64748b" }}>Vista ejecutiva del dia con llegadas, retiros, vuelos y agenda operativa por delegacion.</p>
           </div>
-          <div className="rounded-lg px-3 py-1.5 text-sm" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
-            <div className="text-[10px] uppercase tracking-[0.18em]" style={{ color: "var(--text-muted)" }}>Delegacion</div>
-            <div className="text-xs font-semibold" style={{ color: "var(--text)" }}>{delegationId ? delegationLabel(delegations, delegationId) : "Todas"}</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+            <div style={{ background: "rgba(33,208,179,0.06)", border: "1px solid rgba(33,208,179,0.2)", borderRadius: "10px", padding: "8px 14px" }}>
+              <div style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#94a3b8" }}>Evento</div>
+              <div style={{ fontSize: "13px", fontWeight: 700, color: "#0f172a" }}>{selectedEvent?.name || "Todos"}</div>
+            </div>
+            <div style={{ background: "rgba(33,208,179,0.06)", border: "1px solid rgba(33,208,179,0.2)", borderRadius: "10px", padding: "8px 14px" }}>
+              <div style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#94a3b8" }}>Delegacion</div>
+              <div style={{ fontSize: "13px", fontWeight: 700, color: "#0f172a" }}>{delegationId ? delegationLabel(delegations, delegationId) : "Todas"}</div>
+            </div>
           </div>
         </div>
       </div>
+
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-2xl p-4" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
-            <div className="text-[11px] uppercase tracking-[0.18em]" style={{ color: "var(--text-muted)" }}>Llegadas</div>
-            <div className="mt-2 text-4xl font-semibold" style={{ color: "var(--text)" }}>{kpis.arrivals}</div>
+        {[
+          { label: "Llegadas", value: kpis.arrivals, color: "#38bdf8" },
+          { label: "Retiros", value: kpis.departures, color: "#f472b6" },
+          { label: "Actividades", value: kpis.activities, color: "#21D0B3" },
+          { label: "Delegaciones activas", value: kpis.activeDelegations, color: "#a78bfa" },
+        ].map((kpi) => (
+          <div key={kpi.label} style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderTop: `3px solid ${kpi.color}`, borderRadius: "16px", padding: "16px 20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)", transition: "transform 120ms ease" }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}
+          >
+            <div style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: kpi.color }}>{kpi.label}</div>
+            <div style={{ marginTop: "8px", fontSize: "2.8rem", fontWeight: 800, color: kpi.color, lineHeight: 1 }}>{kpi.value}</div>
           </div>
-          <div className="rounded-2xl p-4" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
-            <div className="text-[11px] uppercase tracking-[0.18em]" style={{ color: "var(--text-muted)" }}>Retiros</div>
-            <div className="mt-2 text-4xl font-semibold" style={{ color: "var(--text)" }}>{kpis.departures}</div>
-          </div>
-          <div className="rounded-2xl p-4" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
-            <div className="text-[11px] uppercase tracking-[0.18em]" style={{ color: "var(--text-muted)" }}>Actividades</div>
-            <div className="mt-2 text-4xl font-semibold" style={{ color: "var(--text)" }}>{kpis.activities}</div>
-          </div>
-          <div className="rounded-2xl p-4" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
-            <div className="text-[11px] uppercase tracking-[0.18em]" style={{ color: "var(--text-muted)" }}>Delegaciones activas</div>
-            <div className="mt-2 text-4xl font-semibold" style={{ color: "var(--text)" }}>{kpis.activeDelegations}</div>
-          </div>
+        ))}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -450,31 +458,32 @@ export default function SportsCalendarDayDetailPage() {
         {error ? <p className="text-sm text-rose-600">{error}</p> : null}
       </div>
 
-      {loading ? <div className="surface rounded-3xl p-8 text-sm text-white/50">Cargando detalle del dia...</div> : null}
+      {loading ? <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "20px", padding: "32px", fontSize: "13px", color: "#94a3b8" }}>Cargando detalle del dia...</div> : null}
 
       {!loading ? (
         <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
           <div className="space-y-4">
-            <div className="surface rounded-3xl p-5">
-              <div className="flex items-center justify-between gap-3">
+            {/* Recepcion del dia */}
+            <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "20px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
                 <div>
-                  <p className="text-xs uppercase tracking-[0.18em] text-white/50">Llegadas por delegacion</p>
-                  <h2 className="mt-1 text-2xl font-semibold text-white">Recepcion del dia</h2>
+                  <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#94a3b8" }}>Llegadas por delegacion</span>
+                  <h2 style={{ marginTop: "4px", fontSize: "20px", fontWeight: 800, color: "#0f172a" }}>Recepcion del dia</h2>
                 </div>
-                <span className="rounded-full bg-blue-500/10 px-3 py-1 text-xs font-semibold text-blue-400">{arrivals.length} personas</span>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", background: "rgba(56,189,248,0.1)", border: "1px solid rgba(56,189,248,0.25)", borderRadius: "99px", padding: "4px 12px", fontSize: "11px", fontWeight: 700, color: "#0ea5e9" }}>{arrivals.length} personas</span>
               </div>
               <div className="mt-4 space-y-3">
-                {arrivalsByDelegation.length === 0 ? <p className="text-sm text-white/50">No hay llegadas programadas para esta fecha.</p> : null}
+                {arrivalsByDelegation.length === 0 ? <p style={{ fontSize: "13px", color: "#94a3b8" }}>No hay llegadas programadas para esta fecha.</p> : null}
                 {arrivalsByDelegation.map((group) => (
-                  <div key={group.delegationId} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                    <div className="flex items-start justify-between gap-3">
+                  <div key={group.delegationId} style={{ borderRadius: "14px", border: "1px solid #e2e8f0", borderLeft: "3px solid #38bdf8", background: "#f8fafc", padding: "14px" }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
                       <div>
-                        <p className="text-lg font-semibold text-white">{group.delegationLabel}</p>
-                        <p className="text-sm text-white/50">{group.people.length} personas arribando</p>
+                        <p style={{ fontSize: "16px", fontWeight: 800, color: "#0f172a" }}>{group.delegationLabel}</p>
+                        <p style={{ fontSize: "12px", color: "#64748b" }}>{group.people.length} personas arribando</p>
                       </div>
                       <div className="flex flex-wrap gap-1">
                         {Array.from(new Set(group.people.map((item) => item.disciplineId ? (disciplineMap[item.disciplineId] || item.disciplineId) : "Sin disciplina"))).map((discipline) => (
-                          <span key={discipline} className="rounded-full bg-white/10 px-2 py-1 text-[10px] font-semibold text-white/90">{discipline}</span>
+                          <span key={discipline} style={{ borderRadius: "99px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.2)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: "#21D0B3" }}>{discipline}</span>
                         ))}
                       </div>
                     </div>
@@ -482,12 +491,12 @@ export default function SportsCalendarDayDetailPage() {
                       {group.people.map((athlete) => {
                         const flight = athlete.arrivalFlightId ? flightMap[athlete.arrivalFlightId] : undefined;
                         return (
-                          <div key={athlete.id} className="rounded-xl border border-white/10 bg-white/5 p-3">
-                            <p className="text-sm font-semibold text-white">{athlete.fullName || athlete.id}</p>
-                            <p className="mt-1 text-xs text-white/50">
+                          <div key={athlete.id} style={{ borderRadius: "10px", border: "1px solid #e2e8f0", background: "#ffffff", padding: "10px 12px" }}>
+                            <p style={{ fontSize: "13px", fontWeight: 700, color: "#0f172a" }}>{athlete.fullName || athlete.id}</p>
+                            <p style={{ marginTop: "2px", fontSize: "11px", color: "#64748b" }}>
                               {athlete.disciplineId ? (disciplineMap[athlete.disciplineId] || athlete.disciplineId) : "Sin disciplina"}
                             </p>
-                            <div className="mt-2 space-y-1 text-xs text-white/65">
+                            <div style={{ marginTop: "6px", display: "flex", flexDirection: "column", gap: "2px", fontSize: "11px", color: "#475569" }}>
                               <p><strong>Arribo:</strong> {formatDateTime(athlete.arrivalTime)}</p>
                               <p><strong>Vuelo:</strong> {flight?.airline || athlete.airline || "-"} · {flight?.flightNumber || athlete.flightNumber || "-"}</p>
                               <p><strong>Origen:</strong> {flight?.origin || athlete.origin || "-"}</p>
@@ -502,50 +511,51 @@ export default function SportsCalendarDayDetailPage() {
               </div>
             </div>
 
-            <div className="surface rounded-3xl p-5">
-              <p className="text-xs uppercase tracking-[0.18em] text-white/50">Agenda operativa</p>
-              <h2 className="mt-1 text-2xl font-semibold text-white">Cronograma del dia</h2>
+            {/* Cronograma del dia */}
+            <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "20px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+              <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#94a3b8" }}>Agenda operativa</span>
+              <h2 style={{ marginTop: "4px", fontSize: "20px", fontWeight: 800, color: "#0f172a" }}>Cronograma del dia</h2>
               <div className="mt-4 space-y-3">
-                {dayEntries.length === 0 ? <p className="text-sm text-white/50">No hay actividades registradas para este dia.</p> : null}
+                {dayEntries.length === 0 ? <p style={{ fontSize: "13px", color: "#94a3b8" }}>No hay actividades registradas para este dia.</p> : null}
                 {dayEntries.map((entry) => (
-                  <article key={entry.id} className="surface rounded-2xl p-4">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
+                  <article key={entry.id} style={{ borderRadius: "14px", border: "1px solid #e2e8f0", borderLeft: "3px solid #21D0B3", background: "#f8fafc", padding: "14px" }}>
+                    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
                       <div>
-                        <p className="text-xs text-white/50">{formatDateTime(entry.startAtUtc)} · {entry.sport} / {entry.league}</p>
-                        <h3 className="mt-1 text-lg font-semibold text-white">{titleFromEvent(entry)}</h3>
+                        <p style={{ fontSize: "11px", color: "#94a3b8" }}>{formatDateTime(entry.startAtUtc)} · {entry.sport} / {entry.league}</p>
+                        <h3 style={{ marginTop: "2px", fontSize: "15px", fontWeight: 800, color: "#0f172a" }}>{titleFromEvent(entry)}</h3>
                       </div>
                       <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold ${scheduleTypeBadgeClass(getMetaString(entry.metadata, "scheduleType"))}`}>
                         {scheduleTypeLabel(getMetaString(entry.metadata, "scheduleType"))}
                       </span>
                     </div>
-                    <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                    <div style={{ marginTop: "8px", display: "flex", flexWrap: "wrap", gap: "6px" }}>
                       {getMetaString(entry.metadata, "delegationId") ? (
-                        <span className="rounded-full bg-indigo-500/10 px-2 py-1 font-semibold text-indigo-300">
+                        <span style={{ borderRadius: "99px", background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: "#6366f1" }}>
                           {delegationLabel(delegations, getMetaString(entry.metadata, "delegationId"))}
                         </span>
                       ) : null}
-                      <span className="rounded-full bg-white/10 px-2 py-1 font-semibold text-white/90">
+                      <span style={{ borderRadius: "99px", background: "#f1f5f9", border: "1px solid #e2e8f0", padding: "2px 8px", fontSize: "10px", fontWeight: 600, color: "#64748b" }}>
                         {entry.venue || "Sede por confirmar"}
                       </span>
-                      <span className="rounded-full bg-white/10 px-2 py-1 font-semibold text-white/90">
+                      <span style={{ borderRadius: "99px", background: "#f1f5f9", border: "1px solid #e2e8f0", padding: "2px 8px", fontSize: "10px", fontWeight: 600, color: "#64748b" }}>
                         {entry.status || "SCHEDULED"}
                       </span>
                     </div>
                     {entry.source === "and-derived" ? (
-                      <div className="mt-3 rounded-xl border border-blue-500/20 bg-blue-500/10 p-3">
-                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-blue-400">Resumen AND</p>
-                        <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                          <span className="rounded-full bg-white/10 px-2 py-1 font-semibold text-white/90">
+                      <div style={{ marginTop: "10px", borderRadius: "10px", border: "1px solid rgba(33,208,179,0.2)", background: "rgba(33,208,179,0.05)", padding: "10px 12px" }}>
+                        <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#21D0B3" }}>Resumen AND</p>
+                        <div style={{ marginTop: "6px", display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                          <span style={{ borderRadius: "99px", background: "rgba(33,208,179,0.08)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: "#21D0B3" }}>
                             {getMetaString(entry.metadata, "peopleCount") || "0"} personas
                           </span>
-                          <span className="rounded-full bg-white/10 px-2 py-1 font-semibold text-white/90">
+                          <span style={{ borderRadius: "99px", background: "rgba(33,208,179,0.08)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: "#21D0B3" }}>
                             {getMetaString(entry.metadata, "disciplineCount") || "0"} disciplinas
                           </span>
                         </div>
                         {getMetaStringArray(entry.metadata, "disciplineNames").length ? (
-                          <div className="mt-2 flex flex-wrap gap-1">
+                          <div style={{ marginTop: "6px", display: "flex", flexWrap: "wrap", gap: "4px" }}>
                             {getMetaStringArray(entry.metadata, "disciplineNames").map((discipline) => (
-                              <span key={discipline} className="rounded-full bg-white/10 px-2 py-1 text-[10px] font-semibold text-white/90">
+                              <span key={discipline} style={{ borderRadius: "99px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.2)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: "#21D0B3" }}>
                                 {discipline}
                               </span>
                             ))}
@@ -560,41 +570,42 @@ export default function SportsCalendarDayDetailPage() {
           </div>
 
           <div className="space-y-4">
-            <div className="surface rounded-3xl p-5">
-              <p className="text-xs uppercase tracking-[0.18em] text-white/50">Operacion terrestre</p>
-              <h2 className="mt-1 text-2xl font-semibold text-white">Transportes asignados</h2>
+            {/* Transportes */}
+            <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "20px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+              <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#94a3b8" }}>Operacion terrestre</span>
+              <h2 style={{ marginTop: "4px", fontSize: "20px", fontWeight: 800, color: "#0f172a" }}>Transportes asignados</h2>
               <div className="mt-4 space-y-3">
-                {transportAssignments.length === 0 ? <p className="text-sm text-white/50">No hay transportes asociados a las delegaciones del dia.</p> : null}
+                {transportAssignments.length === 0 ? <p style={{ fontSize: "13px", color: "#94a3b8" }}>No hay transportes asociados a las delegaciones del dia.</p> : null}
                 {transportAssignments.map((trip) => (
-                  <div key={trip.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                    <div className="flex items-start justify-between gap-3">
+                  <div key={trip.id} style={{ borderRadius: "14px", border: "1px solid #e2e8f0", borderLeft: "3px solid #a78bfa", background: "#f8fafc", padding: "14px" }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
                       <div>
-                        <p className="text-lg font-semibold text-white">{tripTypeLabel(trip.tripType)}</p>
-                        <p className="text-sm text-white/50">{trip.origin || "Origen por confirmar"} {" -> "} {trip.destination || "Destino por confirmar"}</p>
+                        <p style={{ fontSize: "15px", fontWeight: 700, color: "#0f172a" }}>{tripTypeLabel(trip.tripType)}</p>
+                        <p style={{ fontSize: "12px", color: "#64748b" }}>{trip.origin || "Origen por confirmar"} → {trip.destination || "Destino por confirmar"}</p>
                       </div>
                       <span className={`rounded-full px-3 py-1 text-[11px] font-semibold ${tripStatusClass(trip.status)}`}>
                         {tripStatusLabel(trip.status)}
                       </span>
                     </div>
-                    <div className="mt-3 grid gap-2 text-sm text-white/90 sm:grid-cols-2">
+                    <div style={{ marginTop: "10px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px", fontSize: "12px", color: "#475569" }}>
                       <p><strong>Hora:</strong> {trip.timeLabel}</p>
                       <p><strong>Chofer:</strong> {trip.driverName}</p>
                       <p><strong>Vehiculo:</strong> {trip.vehicleLabel}</p>
                       <p><strong>Personas:</strong> {trip.linkedAthletes.length}</p>
                     </div>
-                    <div className="mt-3 flex flex-wrap gap-1">
+                    <div style={{ marginTop: "8px", display: "flex", flexWrap: "wrap", gap: "4px" }}>
                       {trip.linkedDelegations.map((item) => (
-                        <span key={`${trip.id}-${item}`} className="rounded-full bg-indigo-500/10 px-2 py-1 text-[10px] font-semibold text-indigo-300">
+                        <span key={`${trip.id}-${item}`} style={{ borderRadius: "99px", background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: "#6366f1" }}>
                           {delegationLabel(delegations, item)}
                         </span>
                       ))}
                     </div>
                     {trip.linkedAthletes.length ? (
-                      <div className="mt-3 border-t border-white/10 pt-3">
-                        <p className="text-[11px] uppercase tracking-[0.16em] text-white/50">Pasajeros asociados</p>
-                        <div className="mt-2 flex flex-wrap gap-1.5">
+                      <div style={{ marginTop: "10px", borderTop: "1px solid #e2e8f0", paddingTop: "10px" }}>
+                        <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#94a3b8" }}>Pasajeros asociados</p>
+                        <div style={{ marginTop: "6px", display: "flex", flexWrap: "wrap", gap: "6px" }}>
                           {trip.linkedAthletes.map((athlete) => (
-                            <span key={`${trip.id}-${athlete.id}`} className="rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-medium text-white/90">
+                            <span key={`${trip.id}-${athlete.id}`} style={{ borderRadius: "99px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.2)", padding: "2px 8px", fontSize: "11px", fontWeight: 600, color: "#21D0B3" }}>
                               {athlete.fullName || athlete.id}
                             </span>
                           ))}
@@ -606,26 +617,25 @@ export default function SportsCalendarDayDetailPage() {
               </div>
             </div>
 
-            <div className="surface rounded-3xl p-5">
-              <p className="text-xs uppercase tracking-[0.18em] text-white/50">Operación aérea</p>
-              <h2 className="mt-1 text-2xl font-semibold text-white">Vuelos del dia</h2>
+            {/* Vuelos */}
+            <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "20px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+              <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#94a3b8" }}>Operación aérea</span>
+              <h2 style={{ marginTop: "4px", fontSize: "20px", fontWeight: 800, color: "#0f172a" }}>Vuelos del dia</h2>
               <div className="mt-4 space-y-3">
-                {flightsOfDay.length === 0 ? <p className="text-sm text-white/50">No hay vuelos asociados a llegadas en esta fecha.</p> : null}
+                {flightsOfDay.length === 0 ? <p style={{ fontSize: "13px", color: "#94a3b8" }}>No hay vuelos asociados a llegadas en esta fecha.</p> : null}
                 {flightsOfDay.map((flight) => (
-                  <div key={flight.key} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                    <div className="flex items-start justify-between gap-3">
+                  <div key={flight.key} style={{ borderRadius: "14px", border: "1px solid #e2e8f0", borderLeft: "3px solid #38bdf8", background: "#f8fafc", padding: "14px" }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
                       <div>
-                        <p className="text-lg font-semibold text-white">{flight.flightLabel}</p>
-                        <p className="text-sm text-white/50">{flight.airline} · {flight.origin}</p>
+                        <p style={{ fontSize: "15px", fontWeight: 700, color: "#0f172a" }}>{flight.flightLabel}</p>
+                        <p style={{ fontSize: "12px", color: "#64748b" }}>{flight.airline} · {flight.origin}</p>
                       </div>
-                      <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/90">{flight.people.length} personas</span>
+                      <span style={{ borderRadius: "99px", background: "rgba(56,189,248,0.1)", border: "1px solid rgba(56,189,248,0.25)", padding: "3px 10px", fontSize: "11px", fontWeight: 700, color: "#0ea5e9" }}>{flight.people.length} personas</span>
                     </div>
-                    <div className="mt-2 text-xs text-white/65">
-                      <p><strong>Terminal:</strong> {flight.terminal}</p>
-                    </div>
-                    <div className="mt-3 flex flex-wrap gap-1">
+                    <p style={{ marginTop: "6px", fontSize: "12px", color: "#64748b" }}><strong>Terminal:</strong> {flight.terminal}</p>
+                    <div style={{ marginTop: "8px", display: "flex", flexWrap: "wrap", gap: "4px" }}>
                       {Array.from(new Set(flight.people.map((person) => delegationLabel(delegations, person.delegationId)))).map((delegation) => (
-                        <span key={delegation} className="rounded-full bg-indigo-500/10 px-2 py-1 text-[10px] font-semibold text-indigo-300">
+                        <span key={delegation} style={{ borderRadius: "99px", background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: "#6366f1" }}>
                           {delegation}
                         </span>
                       ))}
@@ -635,21 +645,22 @@ export default function SportsCalendarDayDetailPage() {
               </div>
             </div>
 
-            <div className="surface rounded-3xl p-5">
-              <p className="text-xs uppercase tracking-[0.18em] text-white/50">Retiros</p>
-              <h2 className="mt-1 text-2xl font-semibold text-white">Salidas del dia</h2>
+            {/* Retiros */}
+            <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "20px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+              <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#94a3b8" }}>Retiros</span>
+              <h2 style={{ marginTop: "4px", fontSize: "20px", fontWeight: 800, color: "#0f172a" }}>Salidas del dia</h2>
               <div className="mt-4 space-y-2">
-                {departures.length === 0 ? <p className="text-sm text-white/50">No hay retiros programados para esta fecha.</p> : null}
+                {departures.length === 0 ? <p style={{ fontSize: "13px", color: "#94a3b8" }}>No hay retiros programados para esta fecha.</p> : null}
                 {departures.map((athlete) => (
-                  <div key={athlete.id} className="rounded-2xl border border-white/10 bg-white/5 p-3">
-                    <div className="flex items-start justify-between gap-3">
+                  <div key={athlete.id} style={{ borderRadius: "12px", border: "1px solid #e2e8f0", borderLeft: "3px solid #f472b6", background: "#f8fafc", padding: "10px 14px" }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
                       <div>
-                        <p className="font-semibold text-white">{athlete.fullName || athlete.id}</p>
-                        <p className="text-sm text-white/50">
+                        <p style={{ fontSize: "13px", fontWeight: 700, color: "#0f172a" }}>{athlete.fullName || athlete.id}</p>
+                        <p style={{ fontSize: "12px", color: "#64748b" }}>
                           {delegationLabel(delegations, athlete.delegationId)} · {athlete.disciplineId ? (disciplineMap[athlete.disciplineId] || athlete.disciplineId) : "Sin disciplina"}
                         </p>
                       </div>
-                      <span className="rounded-full bg-rose-500/10 px-2 py-1 text-[10px] font-semibold text-rose-400">
+                      <span style={{ borderRadius: "99px", background: "rgba(244,114,182,0.1)", border: "1px solid rgba(244,114,182,0.25)", padding: "3px 10px", fontSize: "10px", fontWeight: 700, color: "#ec4899" }}>
                         {formatDateTime(athlete.departureTime)}
                       </span>
                     </div>

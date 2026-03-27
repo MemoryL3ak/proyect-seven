@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "Seven",
+    "slug": "seven-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.seven.logistics",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Seven usa tu ubicación para compartirla con el equipo de operaciones durante un viaje activo.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Seven usa tu ubicación para compartirla con el equipo de operaciones durante un viaje activo.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.seven.logistics",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Seven usa tu ubicación durante viajes activos."
+        }
+      ]
+    ],
+    "scheme": "seven",
+    "newArchEnabled": false,
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "8ce61d25-66f9-4187-b0a1-cb905c4f0631"
+      }
+    },
+    "owner": "arielbv"
+  }
+}

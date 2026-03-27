@@ -11,6 +11,14 @@ export class CreateAccommodationDto {
 
   @IsString()
   @IsOptional()
+  accommodationType?: string;
+
+  @IsString()
+  @IsOptional()
+  tower?: string;
+
+  @IsString()
+  @IsOptional()
   address?: string;
 
   @IsObject()

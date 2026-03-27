@@ -5,29 +5,29 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["var(--font-sans)"],
-        display: ["var(--font-sans)"]
+        sans: ["\"Helvetica Neue\"", "Helvetica", "Arial", "sans-serif"],
+        display: ["\"Helvetica Neue\"", "Helvetica", "Arial", "sans-serif"]
       },
       colors: {
-        bg:          "#f8fafc",
+        bg:          "#f0f3fa",
         surface:     "#ffffff",
         elevated:    "#f1f5f9",
-        brand:       "#1e3a8a",
-        "brand-dim": "#eff6ff",
-        gold:        "#c9a84c",
-        "gold-light":"#e8c96a",
+        brand:       "#21D0B3",
+        "brand-dim": "rgba(33,208,179,0.1)",
+        gold:        "#34F3C6",
+        "gold-light":"#6AF5DC",
         border:      "#e2e8f0",
         "text-main": "#0f172a",
         "text-muted":"#64748b",
         success:     "#16a34a",
         warning:     "#d97706",
         danger:      "#dc2626",
-        info:        "#2563eb"
+        info:        "#1FCDFF"
       },
       boxShadow: {
         card: "0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04)",
-        glow: "0 0 16px rgba(201,168,76,0.2)",
-        gold: "0 4px 10px rgba(201,168,76,0.3)",
+        glow: "0 0 16px rgba(52,243,198,0.2)",
+        gold: "0 4px 10px rgba(52,243,198,0.3)",
         soft: "0 4px 16px rgba(15,23,42,0.08)"
       },
       animation: {

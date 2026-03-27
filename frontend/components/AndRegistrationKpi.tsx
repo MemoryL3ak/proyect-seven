@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { filterValidatedAthletes } from "@/lib/athletes";
-import { useTheme } from "@/lib/theme";
 
 type EventItem = {
   id: string;
@@ -147,37 +146,6 @@ export default function AndRegistrationKpi({
   subtitle = "Compara el objetivo definido en Eventos con los participantes registrados en Arrival & Departure por disciplina.",
   eyebrow = "AND KPI",
 }: KpiProps) {
-  const { theme } = useTheme();
-  const isObsidian = theme === "obsidian";
-  const isAtlas = theme === "atlas";
-  const isDark = theme === "dark";
-
-  const pal = isObsidian ? {
-    cardBg: "#0e1728", cardBorder: "rgba(34,211,238,0.1)",
-    shadow: "0 4px 24px rgba(0,0,0,0.55)",
-    textPrimary: "#e2e8f0", textMuted: "rgba(255,255,255,0.45)",
-    progressTrack: "#0a1322",
-    c1: "#10b981", c2: "#ef4444", c3: "#22d3ee", c4: "#f59e0b",
-  } : isDark ? {
-    cardBg: "var(--surface)", cardBorder: "var(--border)",
-    shadow: "0 2px 12px rgba(0,0,0,0.35)",
-    textPrimary: "var(--text)", textMuted: "var(--text-muted)",
-    progressTrack: "var(--elevated)",
-    c1: "#10b981", c2: "#ef4444", c3: "#c9a84c", c4: "#f59e0b",
-  } : isAtlas ? {
-    cardBg: "#ffffff", cardBorder: "#e2e8f0",
-    shadow: "0 1px 4px rgba(0,0,0,0.07), 0 0 0 1px rgba(0,0,0,0.03)",
-    textPrimary: "#0f172a", textMuted: "#64748b",
-    progressTrack: "#f1f5f9",
-    c1: "#10b981", c2: "#ef4444", c3: "#3b5bdb", c4: "#f59e0b",
-  } : {
-    cardBg: "#ffffff", cardBorder: "#e8edf5",
-    shadow: "0 1px 4px rgba(0,0,0,0.07)",
-    textPrimary: "#0f172a", textMuted: "#64748b",
-    progressTrack: "#f1f5f9",
-    c1: "#10b981", c2: "#ef4444", c3: "#1e3a8a", c4: "#f59e0b",
-  };
-
   const [events, setEvents] = useState<EventItem[]>([]);
   const [disciplines, setDisciplines] = useState<DisciplineItem[]>([]);
   const [delegations, setDelegations] = useState<DelegationItem[]>([]);
@@ -443,22 +411,22 @@ export default function AndRegistrationKpi({
   }, [filteredRows]);
 
   const varianceColor = totals.variance === null
-    ? pal.textMuted
-    : totals.variance < 0 ? pal.c2
-    : totals.variance > 0 ? pal.c4
-    : pal.c1;
+    ? "var(--text-muted)"
+    : totals.variance < 0 ? "#ef4444"
+    : totals.variance > 0 ? "#f59e0b"
+    : "#10b981";
 
   const complianceColor = totals.pct === null
-    ? pal.textMuted
-    : (totals.pct ?? 0) >= 100 ? pal.c1
-    : (totals.pct ?? 0) >= 75 ? pal.c4
-    : pal.c2;
+    ? "var(--text-muted)"
+    : (totals.pct ?? 0) >= 100 ? "#10b981"
+    : (totals.pct ?? 0) >= 75 ? "#f59e0b"
+    : "#ef4444";
 
   return (
-    <section className="surface rounded-3xl p-5" style={{ border: "1px solid var(--border)" }}>
+    <section className="surface rounded-3xl p-5" style={{ border: "1px solid var(--border)", borderTop: "2px solid #21D0B3", boxShadow: "0 1px 6px rgba(15,23,42,0.06)" }}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>{eyebrow}</p>
+          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#21D0B3", marginBottom: "4px" }}>{eyebrow}</p>
           <h2 className="mt-1 text-2xl font-semibold" style={{ color: "var(--text)" }}>{title}</h2>
           <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>{subtitle}</p>
         </div>
@@ -492,85 +460,80 @@ export default function AndRegistrationKpi({
       {/* ── KPI Cards */}
       <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {/* Cumplimiento */}
-        <div style={{
-          background: pal.cardBg, border: `1px solid ${pal.cardBorder}`,
-          borderTop: `3px solid ${complianceColor}`,
-          borderRadius: "14px", padding: "18px",
-          boxShadow: pal.shadow,
-        }}>
+        <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderTop: `2px solid ${complianceColor}`, borderRadius: "16px", padding: "18px", boxShadow: "0 1px 6px rgba(15,23,42,0.06)" }}>
           <div className="flex items-center justify-between mb-3">
-            <span style={{ fontSize: "18px" }}>✅</span>
-            <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: complianceColor, boxShadow: `0 0 6px ${complianceColor}99`, display: "inline-block" }} />
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={complianceColor} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/>
+            </svg>
+            <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: complianceColor, display: "inline-block" }} />
           </div>
-          <p style={{ fontSize: "2rem", fontWeight: 800, color: complianceColor, lineHeight: 1, fontVariantNumeric: "tabular-nums",
-            ...(isObsidian ? { textShadow: `0 0 20px ${complianceColor}55` } : {}) }}>
+          <p style={{ fontSize: "2rem", fontWeight: 800, color: complianceColor, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
             {totals.pct === null ? "N/D" : formatPercent(totals.pct)}
           </p>
-          <p style={{ fontSize: "11px", color: pal.textMuted, marginTop: "6px", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.12em" }}>Cumplimiento total</p>
-          <div style={{ marginTop: "10px", height: "4px", borderRadius: "99px", background: pal.progressTrack }}>
+          <p style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "6px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.14em" }}>Cumplimiento total</p>
+          <div style={{ marginTop: "10px", height: "4px", borderRadius: "99px", background: "#f1f5f9" }}>
             <div style={{ height: "4px", borderRadius: "99px", width: `${Math.min(totals.pct ?? 0, 100)}%`, background: complianceColor, transition: "width 0.5s ease" }} />
           </div>
         </div>
 
         {/* Brecha neta */}
-        <div style={{
-          background: pal.cardBg, border: `1px solid ${pal.cardBorder}`,
-          borderTop: `3px solid ${varianceColor}`,
-          borderRadius: "14px", padding: "18px",
-          boxShadow: pal.shadow,
-        }}>
+        <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderTop: `2px solid ${varianceColor}`, borderRadius: "16px", padding: "18px", boxShadow: "0 1px 6px rgba(15,23,42,0.06)" }}>
           <div className="flex items-center justify-between mb-3">
-            <span style={{ fontSize: "18px" }}>{totals.variance === null ? "➖" : totals.variance < 0 ? "📉" : totals.variance > 0 ? "📈" : "✅"}</span>
-            <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: varianceColor, boxShadow: `0 0 6px ${varianceColor}99`, display: "inline-block" }} />
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={varianceColor} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              {totals.variance === null || totals.variance === 0
+                ? <><line x1="5" y1="12" x2="19" y2="12"/></>
+                : totals.variance < 0
+                ? <><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></>
+                : <><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></>}
+            </svg>
+            <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: varianceColor, display: "inline-block" }} />
           </div>
-          <p style={{ fontSize: "2rem", fontWeight: 800, color: varianceColor, lineHeight: 1, fontVariantNumeric: "tabular-nums",
-            ...(isObsidian ? { textShadow: `0 0 20px ${varianceColor}55` } : {}) }}>
+          <p style={{ fontSize: "2rem", fontWeight: 800, color: varianceColor, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
             {totals.variance === null ? "-" : totals.variance > 0 ? `+${totals.variance}` : totals.variance}
           </p>
-          <p style={{ fontSize: "11px", color: pal.textMuted, marginTop: "6px", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.12em" }}>Brecha neta</p>
-          <p style={{ fontSize: "12px", color: pal.textMuted, marginTop: "4px" }}>
+          <p style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "6px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.14em" }}>Brecha neta</p>
+          <p style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "4px" }}>
             {selectedDelegationId && !totals.hasComparableExpected ? "Sin meta configurada" : `${totals.registered} reg. / ${totals.expected} esp.`}
           </p>
         </div>
 
         {/* Disciplinas con déficit */}
-        <div style={{
-          background: pal.cardBg, border: `1px solid ${pal.cardBorder}`,
-          borderTop: `3px solid ${deficitStats.deficit > 0 ? pal.c2 : pal.c1}`,
-          borderRadius: "14px", padding: "18px",
-          boxShadow: pal.shadow,
-        }}>
-          <div className="flex items-center justify-between mb-3">
-            <span style={{ fontSize: "18px" }}>⚠️</span>
-            <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: deficitStats.deficit > 0 ? pal.c2 : pal.c1, boxShadow: `0 0 6px ${deficitStats.deficit > 0 ? pal.c2 : pal.c1}99`, display: "inline-block" }} />
-          </div>
-          <p style={{ fontSize: "2rem", fontWeight: 800, color: deficitStats.deficit > 0 ? pal.c2 : pal.c1, lineHeight: 1,
-            ...(isObsidian ? { textShadow: `0 0 20px ${deficitStats.deficit > 0 ? pal.c2 : pal.c1}55` } : {}) }}>
-            {deficitStats.uniqueDeficitDisciplines}
-          </p>
-          <p style={{ fontSize: "11px", color: pal.textMuted, marginTop: "6px", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.12em" }}>Disciplinas en déficit</p>
-          <p style={{ fontSize: "12px", color: pal.textMuted, marginTop: "4px" }}>
-            {deficitStats.onTrack} en objetivo · {deficitStats.deficit} rezagadas
-          </p>
-        </div>
+        {(() => {
+          const defColor = deficitStats.deficit > 0 ? "#ef4444" : "#10b981";
+          return (
+            <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderTop: `2px solid ${defColor}`, borderRadius: "16px", padding: "18px", boxShadow: "0 1px 6px rgba(15,23,42,0.06)" }}>
+              <div className="flex items-center justify-between mb-3">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={defColor} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: defColor, display: "inline-block" }} />
+              </div>
+              <p style={{ fontSize: "2rem", fontWeight: 800, color: defColor, lineHeight: 1 }}>
+                {deficitStats.uniqueDeficitDisciplines}
+              </p>
+              <p style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "6px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.14em" }}>Disciplinas en déficit</p>
+              <p style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "4px" }}>
+                {deficitStats.onTrack} en objetivo · {deficitStats.deficit} rezagadas
+              </p>
+            </div>
+          );
+        })()}
 
         {/* Cobertura delegaciones */}
-        <div style={{
-          background: pal.cardBg, border: `1px solid ${pal.cardBorder}`,
-          borderTop: `3px solid ${pal.c3}`,
-          borderRadius: "14px", padding: "18px",
-          boxShadow: pal.shadow,
-        }}>
+        <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderTop: "2px solid #1FCDFF", borderRadius: "16px", padding: "18px", boxShadow: "0 1px 6px rgba(15,23,42,0.06)" }}>
           <div className="flex items-center justify-between mb-3">
-            <span style={{ fontSize: "18px" }}>🌎</span>
-            <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: pal.c3, boxShadow: `0 0 6px ${pal.c3}99`, display: "inline-block" }} />
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1FCDFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
+              <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>
+            </svg>
+            <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#1FCDFF", display: "inline-block" }} />
           </div>
-          <p style={{ fontSize: "2rem", fontWeight: 800, color: pal.c3, lineHeight: 1,
-            ...(isObsidian ? { textShadow: `0 0 20px ${pal.c3}55` } : {}) }}>
+          <p style={{ fontSize: "2rem", fontWeight: 800, color: "#1FCDFF", lineHeight: 1 }}>
             {filteredDelegations.length}
           </p>
-          <p style={{ fontSize: "11px", color: pal.textMuted, marginTop: "6px", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.12em" }}>Delegaciones</p>
-          <p style={{ fontSize: "12px", color: pal.textMuted, marginTop: "4px" }}>
+          <p style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "6px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.14em" }}>Delegaciones</p>
+          <p style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "4px" }}>
             {totals.registered} participantes AND
           </p>
         </div>
@@ -601,14 +564,11 @@ export default function AndRegistrationKpi({
         <table className="table">
           <thead>
             <tr>
-              <th>Delegación</th>
-              <th>Disciplina</th>
-              <th>Tipo</th>
-              <th>Género</th>
-              <th>Esperado</th>
-              <th>Registrado</th>
-              <th>Brecha</th>
-              <th>Cumplimiento</th>
+              {["Delegación","Disciplina","Tipo","Género","Esperado","Registrado","Brecha","Cumplimiento"].map((col) => (
+                <th key={col} className="sticky top-0 z-10" style={{ background: "linear-gradient(to bottom, #eaf4fb, #e8f0f8)", color: "#1FCDFF", fontSize: "10px", letterSpacing: "0.16em", textTransform: "uppercase", borderBottom: "2px solid rgba(31,205,255,0.25)", fontWeight: 700 }}>
+                  {col}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>

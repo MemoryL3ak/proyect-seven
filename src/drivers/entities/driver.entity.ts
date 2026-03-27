@@ -69,6 +69,9 @@ export class Driver {
   @Column({ name: 'credential_issued_by', type: 'text', nullable: true })
   credentialIssuedBy?: string | null;
 
+  @Column({ name: 'budget_amount', type: 'numeric', precision: 14, scale: 2, nullable: true })
+  budgetAmount?: number | null;
+
   @Column({ length: 30, default: 'ACTIVE' })
   status: string;
 

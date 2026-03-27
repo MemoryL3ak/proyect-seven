@@ -131,6 +131,21 @@ export class Athlete {
   @Column({ name: 'observations', type: 'text', nullable: true })
   observations?: string | null;
 
+  @Column({ name: 'region', type: 'text', nullable: true })
+  region?: string | null;
+
+  @Column({ name: 'transport_type', type: 'text', nullable: true })
+  transportType?: string | null;
+
+  @Column({ name: 'bus_plate', type: 'text', nullable: true })
+  busPlate?: string | null;
+
+  @Column({ name: 'bus_driver_name', type: 'text', nullable: true })
+  busDriverName?: string | null;
+
+  @Column({ name: 'bus_company', type: 'text', nullable: true })
+  busCompany?: string | null;
+
   @Column({ name: 'is_delegation_lead', type: 'boolean', default: false })
   isDelegationLead: boolean;
 

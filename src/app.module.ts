@@ -24,6 +24,11 @@ import { AccreditationsModule } from './accreditations/accreditations.module';
 import { VenuesModule } from './venues/venues.module';
 import { HotelKeysModule } from './hotel-keys/hotel-keys.module';
 import { SalonesModule } from './salones/salones.module';
+import { HotelExtrasModule } from './hotel-extras/hotel-extras.module';
+import { HotelExtraReservationsModule } from './hotel-extra-reservations/hotel-extra-reservations.module';
+import { FoodLocationsModule } from './food-locations/food-locations.module';
+import { FoodMenusModule } from './food-menus/food-menus.module';
+import { ProviderParticipantsModule } from './provider-participants/provider-participants.module';
 
 @Module({
   imports: [
@@ -59,6 +64,11 @@ import { SalonesModule } from './salones/salones.module';
     HotelAssignmentsModule,
     HotelKeysModule,
     SalonesModule,
+    HotelExtrasModule,
+    HotelExtraReservationsModule,
+    FoodLocationsModule,
+    FoodMenusModule,
+    ProviderParticipantsModule,
     SportsCalendarModule,
     AccreditationsModule,
     VenuesModule,

@@ -17,6 +17,12 @@ export class Accommodation {
   @Column({ length: 150 })
   name: string;
 
+  @Column({ name: 'accommodation_type', length: 20, default: 'HOTEL' })
+  accommodationType: string;
+
+  @Column({ length: 50, type: 'varchar', nullable: true })
+  tower?: string | null;
+
   @Column({ length: 200, type: 'varchar', nullable: true })
   address?: string | null;
 

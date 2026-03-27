@@ -5,7 +5,6 @@ import dynamic from "next/dynamic";
 import { apiFetch } from "@/lib/api";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { useI18n } from "@/lib/i18n";
-import { useTheme } from "@/lib/theme";
 import type { TrackingMarker } from "@/components/LiveTrackingMap";
 
 const LiveTrackingMap = dynamic(() => import("@/components/LiveTrackingMap"), { ssr: false });
@@ -107,9 +106,6 @@ const formatTripType = (value?: string | null) => {
 
 export default function VehiclePositionsPage() {
   const { t } = useI18n();
-  const { theme } = useTheme();
-  const isObsidian = theme === "obsidian";
-  const isAtlas = theme === "atlas";
   const [trips, setTrips] = useState<Trip[]>([]);
   const [events, setEvents] = useState<Record<string, EventItem>>({});
   const [drivers, setDrivers] = useState<Record<string, DriverItem>>({});
@@ -332,49 +328,18 @@ export default function VehiclePositionsPage() {
   const buildGoogleMapsLink = (lat: number, lng: number) =>
     `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
 
-  const isDark = theme === "dark";
-  const isLight = theme === "light";
-
-  const pal = isObsidian ? {
-    panelBg: "linear-gradient(135deg, #0a1322 0%, #0e1728 60%, #0d1a30 100%)",
-    panelBorder: "1px solid rgba(34,211,238,0.08)",
-    panelShadow: "0 4px 32px rgba(0,0,0,0.6)",
-    orb1: "rgba(34,211,238,0.07)", orb2: "rgba(168,85,247,0.06)",
-    accent: "#22d3ee",
-    titleColor: "#e2e8f0", subtitleColor: "rgba(255,255,255,0.45)",
-    chipBg: "rgba(255,255,255,0.05)", chipBorder: "rgba(255,255,255,0.1)", chipLabel: "rgba(255,255,255,0.4)",
-    btnBg: "rgba(255,255,255,0.07)", btnBorder: "rgba(255,255,255,0.15)", btnColor: "rgba(255,255,255,0.8)",
-    kpi: ["#38bdf8", "#10b981", "#f59e0b", "#22d3ee", "#a855f7"],
-  } : isDark ? {
-    panelBg: "linear-gradient(135deg, #0f172a 0%, #1e293b 55%, #111827 100%)",
-    panelBorder: "1px solid rgba(255,255,255,0.06)",
-    panelShadow: "0 4px 24px rgba(0,0,0,0.45)",
-    orb1: "rgba(201,168,76,0.07)", orb2: "rgba(129,140,248,0.06)",
-    accent: "#c9a84c",
-    titleColor: "#f1f5f9", subtitleColor: "rgba(255,255,255,0.4)",
-    chipBg: "rgba(255,255,255,0.04)", chipBorder: "rgba(255,255,255,0.08)", chipLabel: "rgba(255,255,255,0.38)",
-    btnBg: "rgba(255,255,255,0.06)", btnBorder: "rgba(255,255,255,0.12)", btnColor: "rgba(255,255,255,0.75)",
-    kpi: ["#c9a84c", "#10b981", "#f59e0b", "#818cf8", "#a855f7"],
-  } : isAtlas ? {
-    panelBg: "linear-gradient(135deg, #ffffff 0%, #f0f4ff 60%, #eef1f8 100%)",
-    panelBorder: "1px solid #c7d2fe",
-    panelShadow: "0 1px 4px rgba(0,0,0,0.07), 0 0 0 1px rgba(59,91,219,0.06)",
-    orb1: "rgba(59,91,219,0.06)", orb2: "rgba(100,129,240,0.05)",
-    accent: "#3b5bdb",
-    titleColor: "#0f172a", subtitleColor: "#64748b",
-    chipBg: "#ffffff", chipBorder: "#e2e8f0", chipLabel: "#64748b",
-    btnBg: "#ffffff", btnBorder: "#c7d2fe", btnColor: "#3b5bdb",
-    kpi: ["#3b5bdb", "#10b981", "#f59e0b", "#6481f0", "#a855f7"],
-  } : { // light
-    panelBg: "linear-gradient(135deg, #ffffff 0%, #f8fafc 60%, #f1f5f9 100%)",
+  // Brand palette — matches app light design system
+  const pal = {
+    panelBg: "#ffffff",
     panelBorder: "1px solid #e2e8f0",
-    panelShadow: "0 1px 4px rgba(0,0,0,0.06)",
-    orb1: "rgba(30,58,138,0.04)", orb2: "rgba(124,58,237,0.04)",
-    accent: "#1e3a8a",
-    titleColor: "#0f172a", subtitleColor: "#64748b",
-    chipBg: "#ffffff", chipBorder: "#e2e8f0", chipLabel: "#64748b",
-    btnBg: "#ffffff", btnBorder: "#e2e8f0", btnColor: "#374151",
-    kpi: ["#1e3a8a", "#10b981", "#f59e0b", "#7c3aed", "#a855f7"],
+    panelShadow: "0 1px 4px rgba(15,23,42,0.06)",
+    orb1: "rgba(33,208,179,0.07)", orb2: "rgba(31,205,255,0.05)",
+    accent: "#21D0B3",
+    titleColor: "#0f172a",
+    subtitleColor: "#64748b",
+    chipBg: "#f8fafc", chipBorder: "#e2e8f0", chipLabel: "#64748b",
+    btnBg: "#ffffff", btnBorder: "#e2e8f0", btnColor: "#475569",
+    kpi: ["#21D0B3", "#10b981", "#f59e0b", "#3b82f6", "#8b5cf6"],
   };
 
   return (
@@ -438,11 +403,11 @@ export default function VehiclePositionsPage() {
         {/* KPI chips */}
         <div className="flex flex-wrap gap-3 mt-5" style={{ position: "relative" }}>
           {[
-            { label: "Total viajes", value: tripStats.total, color: pal.kpi[0], icon: "🚌" },
-            { label: "En ruta", value: tripStats.active, color: pal.kpi[1], icon: "🟢" },
-            { label: "Programados", value: tripStats.scheduled, color: pal.kpi[2], icon: "🕐" },
-            { label: "Completados", value: tripStats.completed, color: pal.kpi[3], icon: "✅" },
-            { label: "Con GPS", value: tripStats.withPosition, color: pal.kpi[4], icon: "📍" },
+            { label: "Total viajes", value: tripStats.total, color: pal.kpi[0], icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> },
+            { label: "En ruta", value: tripStats.active, color: pal.kpi[1], icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
+            { label: "Programados", value: tripStats.scheduled, color: pal.kpi[2], icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> },
+            { label: "Completados", value: tripStats.completed, color: pal.kpi[3], icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg> },
+            { label: "Con GPS", value: tripStats.withPosition, color: pal.kpi[4], icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> },
           ].map((stat) => (
             <div key={stat.label} style={{
               background: pal.chipBg,
@@ -451,14 +416,13 @@ export default function VehiclePositionsPage() {
               borderRadius: "12px",
               padding: "10px 16px",
               minWidth: "110px",
-              boxShadow: (isObsidian || isDark) ? "0 2px 8px rgba(0,0,0,0.3)" : "0 1px 3px rgba(0,0,0,0.06)",
+              boxShadow: "0 1px 3px rgba(15,23,42,0.06)",
             }}>
               <div className="flex items-center gap-2 mb-1">
-                <span style={{ fontSize: "13px" }}>{stat.icon}</span>
+                <span style={{ color: stat.color }}>{stat.icon}</span>
                 <span style={{ fontSize: "10px", color: pal.chipLabel, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em" }}>{stat.label}</span>
               </div>
-              <p style={{ fontSize: "1.5rem", fontWeight: 800, color: stat.color, lineHeight: 1,
-                ...(isObsidian ? { textShadow: `0 0 18px ${stat.color}55` } : {}) }}>
+              <p style={{ fontSize: "1.5rem", fontWeight: 800, color: stat.color, lineHeight: 1 }}>
                 {loading ? "—" : stat.value}
               </p>
             </div>
@@ -469,11 +433,11 @@ export default function VehiclePositionsPage() {
       </section>
 
       {/* ── View tabs */}
-      <section style={{ background: pal.panelBg, border: pal.panelBorder, borderRadius: "16px", padding: "6px", boxShadow: pal.panelShadow }}>
+      <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "6px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div className="grid gap-2 grid-cols-2">
           {([
-            { key: "tracking" as const, label: "🗺 Tracking en vivo", count: activeTrips.length },
-            { key: "table" as const, label: "📋 Todos los viajes", count: orderedTrips.length },
+            { key: "tracking" as const, label: "Tracking en vivo", count: activeTrips.length },
+            { key: "table" as const, label: "Todos los viajes", count: orderedTrips.length },
           ]).map((tab) => {
             const selected = activeView === tab.key;
             return (
@@ -484,16 +448,16 @@ export default function VehiclePositionsPage() {
                 style={{
                   display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px",
                   borderRadius: "12px", padding: "10px 16px", cursor: "pointer",
-                  background: selected ? (isObsidian ? "#10b981" : isAtlas ? "#3b5bdb" : isDark ? "#10b981" : "#16a34a") : "transparent",
+                  background: selected ? "#21D0B3" : "transparent",
                   border: "none", transition: "all 150ms",
                 }}
               >
-                <span style={{ fontSize: "13px", fontWeight: 700, color: selected ? "#ffffff" : pal.titleColor }}>{tab.label}</span>
+                <span style={{ fontSize: "13px", fontWeight: 700, color: selected ? "#ffffff" : "#0f172a" }}>{tab.label}</span>
                 <span style={{
                   minWidth: "28px", borderRadius: "99px", padding: "3px 8px", fontSize: "12px", fontWeight: 700,
-                  background: selected ? "rgba(255,255,255,0.2)" : pal.chipBg,
-                  color: selected ? "#ffffff" : pal.subtitleColor,
-                  border: selected ? "none" : `1px solid ${pal.chipBorder}`,
+                  background: selected ? "rgba(255,255,255,0.25)" : "#f1f5f9",
+                  color: selected ? "#ffffff" : "#64748b",
+                  border: selected ? "none" : "1px solid #e2e8f0",
                 }}>
                   {tab.count}
                 </span>
@@ -516,12 +480,14 @@ export default function VehiclePositionsPage() {
                   borderRadius: "14px", padding: "12px 18px", gap: "12px",
                 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    <span style={{ fontSize: "22px" }}>✅</span>
+                    <span style={{ color: "#10b981", flexShrink: 0 }}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    </span>
                     <div>
                       <p style={{ fontSize: "13px", fontWeight: 700, color: "#10b981" }}>
                         Viaje completado — {alert.driverName}
                       </p>
-                      <p style={{ fontSize: "12px", color: pal.subtitleColor }}>
+                      <p style={{ fontSize: "12px", color: "#64748b" }}>
                         Llegó a {alert.destination} · {alert.ts.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })}
                       </p>
                     </div>
@@ -529,9 +495,9 @@ export default function VehiclePositionsPage() {
                   <button
                     type="button"
                     onClick={() => setCompletedAlerts((prev) => prev.filter((_, j) => j !== i))}
-                    style={{ color: pal.subtitleColor, background: "none", border: "none", cursor: "pointer", fontSize: "18px", padding: "4px 8px", lineHeight: 1 }}
+                    style={{ color: "#94a3b8", background: "none", border: "none", cursor: "pointer", padding: "4px 8px", lineHeight: 1 }}
                   >
-                    ✕
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                   </button>
                 </div>
               ))}
@@ -541,12 +507,15 @@ export default function VehiclePositionsPage() {
           {/* Big map + sidebar */}
           {activeTrips.length === 0 ? (
             <div style={{
-              borderRadius: "20px", border: `1px dashed ${pal.chipBorder}`, background: pal.chipBg,
+              borderRadius: "20px", border: "1px dashed #cbd5e1", background: "#ffffff",
               padding: "72px 24px", textAlign: "center" as const,
+              boxShadow: "0 1px 4px rgba(15,23,42,0.05)",
             }}>
-              <span style={{ fontSize: "48px", display: "block", marginBottom: "16px" }}>🚌</span>
-              <p style={{ fontWeight: 800, fontSize: "18px", color: pal.titleColor }}>Sin viajes activos en este momento</p>
-              <p style={{ fontSize: "14px", marginTop: "6px", color: pal.subtitleColor }}>Las rutas aparecerán aquí automáticamente al iniciarse.</p>
+              <span style={{ color: "#cbd5e1", display: "flex", justifyContent: "center", marginBottom: "16px" }}>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+              </span>
+              <p style={{ fontWeight: 800, fontSize: "18px", color: "#0f172a" }}>Sin viajes activos en este momento</p>
+              <p style={{ fontSize: "14px", marginTop: "6px", color: "#64748b" }}>Las rutas aparecerán aquí automáticamente al iniciarse.</p>
             </div>
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "16px", alignItems: "start" }} className="xl:grid-cols-[1fr_340px] md:!grid-cols-1">
@@ -555,8 +524,8 @@ export default function VehiclePositionsPage() {
               <div style={{
                 borderRadius: "20px",
                 overflow: "hidden",
-                border: `1px solid ${pal.chipBorder}`,
-                boxShadow: (isObsidian || isDark) ? "0 4px 24px rgba(0,0,0,0.55)" : "0 1px 8px rgba(0,0,0,0.08)",
+                border: "1px solid #e2e8f0",
+                boxShadow: "0 1px 8px rgba(15,23,42,0.08)",
                 position: "relative",
               }}>
                 {/* Live badge over map */}
@@ -575,7 +544,7 @@ export default function VehiclePositionsPage() {
                 <LiveTrackingMap
                   markers={trackingMarkers}
                   height={560}
-                  isDark={isObsidian || isDark}
+                  isDark={false}
                 />
               </div>
 
@@ -592,12 +561,12 @@ export default function VehiclePositionsPage() {
 
                   return (
                     <div key={trip.id} style={{
-                      background: pal.chipBg,
-                      border: `1px solid ${pal.chipBorder}`,
+                      background: "#ffffff",
+                      border: "1px solid #e2e8f0",
                       borderLeft: `4px solid ${sc.accent}`,
                       borderRadius: "14px",
                       padding: "12px 14px",
-                      boxShadow: (isObsidian || isDark) ? "0 2px 10px rgba(0,0,0,0.35)" : "0 1px 4px rgba(0,0,0,0.06)",
+                      boxShadow: "0 1px 4px rgba(15,23,42,0.06)",
                       transition: "transform 120ms ease",
                       cursor: position ? "pointer" : "default",
                     }}
@@ -607,10 +576,10 @@ export default function VehiclePositionsPage() {
                       {/* Header row */}
                       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "6px", marginBottom: "8px" }}>
                         <div style={{ minWidth: 0 }}>
-                          <p style={{ fontSize: "13px", fontWeight: 800, color: pal.titleColor, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          <p style={{ fontSize: "13px", fontWeight: 800, color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                             {driver?.fullName || "Conductor pendiente"}
                           </p>
-                          <p style={{ fontSize: "11px", color: pal.subtitleColor, marginTop: "1px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          <p style={{ fontSize: "11px", color: "#64748b", marginTop: "1px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                             {vehicle ? [vehicle.plate, vehicle.type].filter(Boolean).join(" · ") : "Sin vehículo"}
                           </p>
                         </div>
@@ -624,29 +593,34 @@ export default function VehiclePositionsPage() {
                             {STATUS_LABEL[trip.status ?? ""] || trip.status}
                           </span>
                           {elapsedMin !== null && (
-                            <span style={{ fontSize: "10px", color: pal.subtitleColor }}>⏱ {elapsedMin}m</span>
+                            <span style={{ fontSize: "10px", color: "#64748b" }}>{elapsedMin}m</span>
                           )}
                         </div>
                       </div>
 
                       {/* Route */}
-                      <div style={{ fontSize: "11px", color: pal.subtitleColor, lineHeight: 1.5 }}>
-                        <span>📍 {trip.origin || "Origen"}</span>
-                        <span style={{ color: pal.chipBorder }}> → </span>
-                        <span>🏟 {venue?.name || trip.destination || "Destino"}</span>
+                      <div style={{ fontSize: "11px", color: "#64748b", lineHeight: 1.5, display: "flex", alignItems: "center", gap: "6px" }}>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2.2" strokeLinecap="round"><path d="M12 22s6-6 6-11a6 6 0 0 0-12 0c0 5 6 11 6 11z"/><circle cx="12" cy="11" r="2"/></svg>
+                        <span>{trip.origin || "Origen"}</span>
+                        <span style={{ color: "#cbd5e1" }}>→</span>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h2M14 7h2M8 11h2M14 11h2"/></svg>
+                        <span>{venue?.name || trip.destination || "Destino"}</span>
                       </div>
 
                       {/* Footer */}
                       <div style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "6px" }}>
-                        <span style={{ fontSize: "10px", color: pal.subtitleColor }}>
+                        <span style={{ fontSize: "10px", color: "#64748b" }}>
                           {trip.passengerCount || 0} pax · {resolveDelegations(trip)}
                         </span>
                         {position ? (
-                          <span style={{ fontSize: "10px", color: "#10b981", fontWeight: 600 }}>
-                            📡 GPS activo
+                          <span style={{ fontSize: "10px", color: "#10b981", fontWeight: 600, display: "flex", alignItems: "center", gap: "4px" }}>
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="currentColor"/></svg>
+                            GPS activo
                           </span>
                         ) : (
-                          <span style={{ fontSize: "10px", color: pal.subtitleColor }}>📡 Sin señal</span>
+                          <span style={{ fontSize: "10px", color: "#94a3b8", display: "flex", alignItems: "center", gap: "4px" }}>
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.56 9"/><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="currentColor"/></svg>
+                            Sin señal</span>
                         )}
                       </div>
                     </div>
@@ -660,10 +634,10 @@ export default function VehiclePositionsPage() {
 
       {/* ── Table view */}
       {activeView === "table" && (
-        <section className="surface rounded-2xl p-6">
-          <h2 className="font-sans font-bold text-xl mb-4" style={{ color: "var(--text)" }}>{t("Todos los viajes")}</h2>
+        <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "24px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+          <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#0f172a", marginBottom: "16px" }}>{t("Todos los viajes")}</h2>
           {orderedTrips.length === 0 ? (
-            <p className="text-sm" style={{ color: "var(--text-muted)" }}>{t("Sin viajes registrados.")}</p>
+            <p style={{ fontSize: "14px", color: "#64748b" }}>{t("Sin viajes registrados.")}</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="table">
@@ -755,40 +729,33 @@ export default function VehiclePositionsPage() {
       )}
 
       {mapPreview && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="surface w-full max-w-4xl rounded-3xl p-4 shadow-2xl">
-            <div className="flex items-center justify-between px-2 pb-3">
+        <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(15,23,42,0.4)", padding: "16px", backdropFilter: "blur(4px)" }}>
+          <div style={{ background: "#ffffff", width: "100%", maxWidth: "900px", borderRadius: "20px", padding: "20px", boxShadow: "0 24px 64px rgba(15,23,42,0.22)" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
               <div>
-                <p className="text-xs uppercase tracking-[0.2em]" style={{ color: "var(--text-muted)" }}>
-                  {t("Tracking de viajes")}
-                </p>
-                <h3 className="font-sans font-bold text-xl" style={{ color: "var(--text)" }}>{mapPreview.title}</h3>
+                <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", color: "#21D0B3" }}>{t("Tracking de viajes")}</p>
+                <h3 style={{ fontSize: "18px", fontWeight: 700, color: "#0f172a" }}>{mapPreview.title}</h3>
               </div>
-              <div className="flex items-center gap-2">
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <a
-                  className="btn btn-ghost"
                   href={buildGoogleMapsLink(mapPreview.lat, mapPreview.lng)}
                   target="_blank"
                   rel="noreferrer"
+                  style={{ padding: "8px 16px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "#ffffff", color: "#475569", fontSize: "13px", fontWeight: 600, textDecoration: "none" }}
                 >
                   {t("Ver en Google Maps")}
                 </a>
                 <button
-                  className="btn btn-primary"
                   type="button"
                   onClick={() => setMapPreview(null)}
+                  style={{ padding: "8px 16px", borderRadius: "10px", border: "none", background: "#21D0B3", color: "#ffffff", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}
                 >
                   {t("Cerrar")}
                 </button>
               </div>
             </div>
-            <div className="aspect-[16/9] w-full overflow-hidden rounded-2xl" style={{ border: "1px solid var(--border)" }}>
-              <iframe
-                title="map-preview"
-                src={buildMapEmbed(mapPreview.lat, mapPreview.lng)}
-                className="h-full w-full"
-                loading="lazy"
-              />
+            <div style={{ aspectRatio: "16/9", width: "100%", overflow: "hidden", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
+              <iframe title="map-preview" src={buildMapEmbed(mapPreview.lat, mapPreview.lng)} style={{ width: "100%", height: "100%" }} loading="lazy" />
             </div>
           </div>
         </div>

@@ -12,6 +12,8 @@ type AccommodationRow = {
   id: string;
   event_id: string;
   name: string;
+  accommodation_type: string;
+  tower: string | null;
   address: string | null;
   geo_location: unknown | null;
   total_capacity: number;
@@ -113,6 +115,8 @@ export class AccommodationsService {
       id: row.id,
       eventId: row.event_id,
       name: row.name,
+      accommodationType: String(row.accommodation_type || 'HOTEL').toUpperCase(),
+      tower: row.tower ?? null,
       address: row.address,
       geoLocation: row.geo_location,
       totalCapacity: row.total_capacity,
@@ -138,6 +142,14 @@ export class AccommodationsService {
     if (dto.name !== undefined) {
       set.push(`name = $${index++}`);
       params.push(dto.name);
+    }
+    if (dto.accommodationType !== undefined) {
+      set.push(`accommodation_type = $${index++}`);
+      params.push(String(dto.accommodationType || 'HOTEL').toUpperCase());
+    }
+    if (dto.tower !== undefined) {
+      set.push(`tower = $${index++}`);
+      params.push(dto.tower ?? null);
     }
     if (dto.address !== undefined) {
       set.push(`address = $${index++}`);
@@ -344,9 +356,13 @@ export class AccommodationsService {
           : {}),
       };
 
-      const columns = ['event_id', 'name'];
-      const values: unknown[] = [createDto.eventId, createDto.name];
-      let index = 3;
+      const columns = ['event_id', 'name', 'accommodation_type'];
+      const values: unknown[] = [
+        createDto.eventId,
+        createDto.name,
+        String(createDto.accommodationType || 'HOTEL').toUpperCase(),
+      ];
+      let index = 4;
 
       const optionalField = (col: string, value: unknown, cast = '') => {
         columns.push(col);
@@ -354,7 +370,8 @@ export class AccommodationsService {
         return `$${index++}${cast}`;
       };
 
-      const placeholders: string[] = ['$1', '$2'];
+      const placeholders: string[] = ['$1', '$2', '$3'];
+      placeholders.push(optionalField('tower', createDto.tower ?? null));
       placeholders.push(optionalField('address', createDto.address ?? null));
       if (createDto.geoLocation !== undefined && createDto.geoLocation !== null) {
         columns.push('geo_location');

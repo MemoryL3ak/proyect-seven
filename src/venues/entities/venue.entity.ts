@@ -26,6 +26,9 @@ export class Venue {
   @Column({ type: 'text', nullable: true })
   commune?: string | null;
 
+  @Column({ name: 'photo_url', type: 'text', nullable: true })
+  photoUrl?: string | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

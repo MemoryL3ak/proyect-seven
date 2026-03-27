@@ -6,8 +6,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient, createClient } from '@supabase/supabase-js';
 import * as https from 'https';
+import { ConfigService } from '@nestjs/config';
 import { DataSource, Repository } from 'typeorm';
 import { CreateAthleteDto } from './dto/create-athlete.dto';
 import { UpdateAthleteDto } from './dto/update-athlete.dto';
@@ -55,6 +56,11 @@ type AthleteRow = {
   sports_equipment: string | null;
   requires_assistance: boolean | null;
   observations: string | null;
+  region: string | null;
+  transport_type: string | null;
+  bus_plate: string | null;
+  bus_driver_name: string | null;
+  bus_company: string | null;
   is_delegation_lead: boolean | null;
   transport_trip_id: string | null;
   transport_vehicle_id: string | null;
@@ -78,10 +84,18 @@ type AthleteRow = {
 export class AthletesService {
   constructor(
     @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
+    private readonly configService: ConfigService,
     @InjectRepository(Athlete)
     private readonly athleteRepository: Repository<Athlete>,
     private readonly dataSource: DataSource,
   ) {}
+
+  private getAdminClient() {
+    const supabaseUrl = this.configService.get<string>('SUPABASE_URL');
+    const serviceRoleKey = this.configService.get<string>('SUPABASE_SERVICE_ROLE_KEY');
+    if (!supabaseUrl || !serviceRoleKey) return null;
+    return createClient(supabaseUrl, serviceRoleKey);
+  }
 
   private toRow(dto: CreateAthleteDto | UpdateAthleteDto) {
     const row: Record<string, unknown> = {};
@@ -126,6 +140,11 @@ export class AthletesService {
     if (dto.sportsEquipment !== undefined) row.sports_equipment = dto.sportsEquipment ?? null;
     if (dto.requiresAssistance !== undefined) row.requires_assistance = dto.requiresAssistance ?? false;
     if (dto.observations !== undefined) row.observations = dto.observations ?? null;
+    if (dto.region !== undefined) row.region = dto.region ?? null;
+    if (dto.transportType !== undefined) row.transport_type = dto.transportType ?? null;
+    if (dto.busPlate !== undefined) row.bus_plate = dto.busPlate ?? null;
+    if (dto.busDriverName !== undefined) row.bus_driver_name = dto.busDriverName ?? null;
+    if (dto.busCompany !== undefined) row.bus_company = dto.busCompany ?? null;
     if (dto.isDelegationLead !== undefined) row.is_delegation_lead = dto.isDelegationLead ?? false;
     if (dto.transportTripId !== undefined) row.transport_trip_id = dto.transportTripId ?? null;
     if (dto.transportVehicleId !== undefined) row.transport_vehicle_id = dto.transportVehicleId ?? null;
@@ -195,6 +214,11 @@ export class AthletesService {
       sportsEquipment: row.sports_equipment,
       requiresAssistance: row.requires_assistance ?? false,
       observations: row.observations,
+      region: row.region,
+      transportType: row.transport_type,
+      busPlate: row.bus_plate,
+      busDriverName: row.bus_driver_name,
+      busCompany: row.bus_company,
       isDelegationLead: row.is_delegation_lead ?? false,
       transportTripId: row.transport_trip_id,
       transportVehicleId: row.transport_vehicle_id,
@@ -500,6 +524,53 @@ export class AthletesService {
     }
 
     return { message: 'Código enviado al correo' };
+  }
+
+  async uploadHealthDocument(id: string, dataUrl: string) {
+    const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+    if (!match) throw new BadRequestException('Invalid document payload');
+
+    const contentType = match[1];
+    const base64 = match[2];
+    const buffer = Buffer.from(base64, 'base64');
+    const extension = contentType.split('/')[1]?.replace('jpeg', 'jpg') || 'jpg';
+    const path = `${id}/${Date.now()}.${extension}`;
+
+    const admin = this.getAdminClient();
+    if (!admin) {
+      throw new InternalServerErrorException(
+        'SUPABASE_SERVICE_ROLE_KEY is required to upload health documents',
+      );
+    }
+
+    const { error } = await admin.storage
+      .from('athlete-health-docs')
+      .upload(path, buffer, { contentType, upsert: true });
+
+    if (error) {
+      throw new InternalServerErrorException(error.message || 'Error uploading health document');
+    }
+
+    const { data } = admin.storage.from('athlete-health-docs').getPublicUrl(path);
+    const publicUrl = data?.publicUrl ?? null;
+    if (!publicUrl) {
+      throw new InternalServerErrorException('Error resolving health document URL');
+    }
+
+    // Store the URL in athlete metadata
+    const athlete = await this.findOne(id);
+    const existingMetadata = (athlete.metadata as Record<string, unknown>) ?? {};
+    const existingHealthRecord = (existingMetadata.healthRecord as Record<string, unknown>) ?? {};
+    const updatedMetadata = {
+      ...existingMetadata,
+      healthRecord: {
+        ...existingHealthRecord,
+        medicalDocumentUrl: publicUrl,
+        medicalDocumentUploadedAt: new Date().toISOString(),
+      },
+    };
+
+    return this.update(id, { metadata: updatedMetadata });
   }
 }
 

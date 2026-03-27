@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { filterValidatedAthletes } from "@/lib/athletes";
+import StyledSelect from "@/components/StyledSelect";
 
 type EventOption = { id: string; name: string };
 type DisciplineOption = {
@@ -772,28 +773,28 @@ export default function SportsCalendarPage() {
         </div>
       </div>
 
-      <section className="surface rounded-2xl p-4">
+      <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "16px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div className="grid gap-2 lg:grid-cols-12">
-          <select className="input lg:col-span-3" value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)}>
+          <StyledSelect wrapperClassName="lg:col-span-3" value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)}>
             <option value="">Todos los eventos principales</option>
             {eventOptions.map((item) => (
               <option key={item.id} value={item.id}>{item.name}</option>
             ))}
-          </select>
-          <select className="input lg:col-span-2" value={selectedDelegationId} onChange={(e) => setSelectedDelegationId(e.target.value)}>
+          </StyledSelect>
+          <StyledSelect wrapperClassName="lg:col-span-2" value={selectedDelegationId} onChange={(e) => setSelectedDelegationId(e.target.value)}>
             <option value="">Todas las delegaciones</option>
             {filteredDelegationOptions.map((item) => (
               <option key={item.id} value={item.id}>{item.countryCode || item.id}</option>
             ))}
-          </select>
+          </StyledSelect>
           <input className="input lg:col-span-2" placeholder="Disciplina" value={sportFilter} onChange={(e) => setSportFilter(e.target.value)} />
           <input className="input lg:col-span-1" placeholder="Fase/Categoria" value={phaseFilter} onChange={(e) => setPhaseFilter(e.target.value)} />
           <input className="input lg:col-span-2" placeholder="Competidor o delegacion" value={personFilter} onChange={(e) => setPersonFilter(e.target.value)} />
-          <select className="input lg:col-span-1" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <StyledSelect wrapperClassName="lg:col-span-1" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             {STATUSES.map((status) => (
               <option key={status} value={status}>{status === "ALL" ? "Todos" : status}</option>
             ))}
-          </select>
+          </StyledSelect>
           <button className="btn btn-ghost lg:col-span-1" type="button" onClick={downloadTemplate}>Template CSV</button>
           <button className="btn btn-primary lg:col-span-1" type="button" onClick={() => fileRef.current?.click()} disabled={saving}>
             {saving ? "Importando..." : "Cargar CSV"}
@@ -802,102 +803,92 @@ export default function SportsCalendarPage() {
         </div>
       </section>
 
-      <section className="surface rounded-2xl p-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+      <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
           <div>
-            <p className="text-xs uppercase tracking-[0.18em] text-white/50">Agenda AND por delegacion</p>
-            <h2 className="mt-1 text-lg font-semibold text-white">
-              Fechas por disciplina y delegacion
-            </h2>
-            <p className="mt-1 text-sm text-white/50">
-              Llegada y retiro se obtienen desde AND. Entrenamientos y pruebas se completan en este calendario.
-            </p>
+            <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#94a3b8" }}>Agenda AND por delegacion</span>
+            <h2 style={{ marginTop: "4px", fontSize: "18px", fontWeight: 800, color: "#0f172a" }}>Fechas por disciplina y delegacion</h2>
+            <p style={{ marginTop: "4px", fontSize: "13px", color: "#64748b" }}>Llegada y retiro se obtienen desde AND. Entrenamientos y pruebas se completan en este calendario.</p>
           </div>
-          <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/65">
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.2)", borderRadius: "10px", padding: "6px 12px", fontSize: "12px", fontWeight: 600, color: "#21D0B3" }}>
             {selectedDelegationId ? "Vista filtrada por delegacion" : "Vista consolidada (todas las delegaciones)"}
           </div>
         </div>
 
-        <div className="mt-4 overflow-x-auto">
-          <table className="table">
+        <div style={{ marginTop: "16px", overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
             <thead>
-              <tr>
-                <th>Delegacion</th>
-                <th>Personas</th>
-                <th>Disciplinas</th>
-                <th>Fecha de llegada (AND)</th>
-                <th>Fechas de entrenamiento</th>
-                <th>Fechas de pruebas</th>
-                <th>Fecha de retiro (AND)</th>
+              <tr style={{ background: "#f8fafc" }}>
+                {["Delegacion", "Personas", "Disciplinas", "Fecha de llegada (AND)", "Fechas de entrenamiento", "Fechas de pruebas", "Fecha de retiro (AND)"].map((h) => (
+                  <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#94a3b8", borderBottom: "1px solid #e2e8f0", whiteSpace: "nowrap" }}>{h}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {andDelegationScheduleRows.map((row) => (
-                <tr key={row.delegationId}>
-                  <td>{row.delegationLabel}</td>
-                  <td>{row.peopleCount}</td>
-                  <td>
+              {andDelegationScheduleRows.map((row, idx) => (
+                <tr key={row.delegationId} style={{ borderBottom: "1px solid #f1f5f9", background: idx % 2 === 0 ? "#ffffff" : "#f8fafc" }}>
+                  <td style={{ padding: "10px 14px", fontWeight: 700, color: "#0f172a" }}>{row.delegationLabel}</td>
+                  <td style={{ padding: "10px 14px", color: "#475569" }}>{row.peopleCount}</td>
+                  <td style={{ padding: "10px 14px" }}>
                     {row.disciplines.length ? (
                       <div className="flex flex-wrap gap-1">
                         {row.disciplines.map((discipline) => (
-                          <span key={discipline.disciplineId} className="inline-flex rounded-full bg-white/10 px-2 py-1 text-[10px] font-semibold text-white/90">
+                          <span key={discipline.disciplineId} style={{ display: "inline-flex", borderRadius: "99px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.2)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: "#21D0B3" }}>
                             {discipline.disciplineName} · {discipline.athleteCount}
                           </span>
                         ))}
                       </div>
                     ) : (
-                      <span className="text-xs text-white/40">Sin detalle</span>
+                      <span style={{ fontSize: "12px", color: "#94a3b8" }}>Sin detalle</span>
                     )}
                   </td>
-                  <td>{formatDateTime(row.arrivalAt)}</td>
-                  <td>
+                  <td style={{ padding: "10px 14px", color: "#475569", fontSize: "12px" }}>{formatDateTime(row.arrivalAt)}</td>
+                  <td style={{ padding: "10px 14px" }}>
                     {row.trainingDates.length ? (
                       <div className="flex flex-wrap gap-1">
                         {row.trainingDates.map((value) => (
-                          <span key={value} className="inline-flex rounded-full bg-amber-500/10 px-2 py-1 text-[10px] font-semibold text-amber-400">
+                          <span key={value} style={{ display: "inline-flex", borderRadius: "99px", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.2)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: "#d97706" }}>
                             {formatDateShort(value)}
                           </span>
                         ))}
                       </div>
                     ) : (
-                      <span className="text-xs text-white/40">Sin programar</span>
+                      <span style={{ fontSize: "12px", color: "#94a3b8" }}>Sin programar</span>
                     )}
                   </td>
-                  <td>
+                  <td style={{ padding: "10px 14px" }}>
                     {row.competitionDates.length ? (
                       <div className="flex flex-wrap gap-1">
                         {row.competitionDates.map((value) => (
-                          <span key={value} className="inline-flex rounded-full bg-emerald-500/10 px-2 py-1 text-[10px] font-semibold text-emerald-400">
+                          <span key={value} style={{ display: "inline-flex", borderRadius: "99px", background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: "#059669" }}>
                             {formatDateShort(value)}
                           </span>
                         ))}
                       </div>
                     ) : (
-                      <span className="text-xs text-white/40">Sin programar</span>
+                      <span style={{ fontSize: "12px", color: "#94a3b8" }}>Sin programar</span>
                     )}
                   </td>
-                  <td>{formatDateTime(row.departureAt)}</td>
+                  <td style={{ padding: "10px 14px", color: "#475569", fontSize: "12px" }}>{formatDateTime(row.departureAt)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
           {andDelegationScheduleRows.length === 0 ? (
-            <p className="mt-3 text-sm text-white/50">
-              No hay datos para construir la agenda por delegacion con los filtros actuales.
-            </p>
+            <p style={{ marginTop: "12px", fontSize: "13px", color: "#94a3b8" }}>No hay datos para construir la agenda por delegacion con los filtros actuales.</p>
           ) : null}
         </div>
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[2fr_1fr]">
-        <div className="surface rounded-2xl p-4">
+        <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "16px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <button className="btn btn-ghost" type="button" onClick={() => setMonthCursor((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}>Mes anterior</button>
               <button className="btn btn-ghost" type="button" onClick={() => { const now = new Date(); setMonthCursor(startOfMonth(now)); setSelectedDay(now); }}>Hoy</button>
               <button className="btn btn-ghost" type="button" onClick={() => setMonthCursor((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}>Mes siguiente</button>
             </div>
-            <h2 className="text-lg font-semibold capitalize text-white">{monthLabel(monthCursor)}</h2>
+            <h2 style={{ fontSize: "18px", fontWeight: 800, color: "#0f172a", textTransform: "capitalize" }}>{monthLabel(monthCursor)}</h2>
           </div>
           <div className="mb-3 flex flex-wrap gap-2">
             {SCHEDULE_TYPE_OPTIONS.map((item) => (
@@ -993,14 +984,14 @@ export default function SportsCalendarPage() {
         </div>
 
         <div className="space-y-4">
-          <form onSubmit={createEntry} className="surface rounded-2xl p-4">
-            <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-white/50">
+          <form onSubmit={createEntry} style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "16px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+            <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#21D0B3" }}>Programar actividad</span>
+            <h3 style={{ marginTop: "2px", fontSize: "16px", fontWeight: 800, color: "#0f172a" }}>
               {entryFormTitle(getMetaString(newEntry.metadata, "scheduleType"), Boolean(editingEntryId))}
             </h3>
-            <p className="mt-1 text-xs text-white/50">{dayLabel(selectedDay)}</p>
+            <p style={{ marginTop: "2px", fontSize: "12px", color: "#64748b" }}>{dayLabel(selectedDay)}</p>
             <div className="mt-3 grid gap-2">
-              <select
-                className="input"
+              <StyledSelect
                 value={selectedManualScheduleType}
                 onChange={(e) =>
                   setNewEntry({
@@ -1022,13 +1013,12 @@ export default function SportsCalendarPage() {
                 {MANUAL_SCHEDULE_TYPE_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
-              </select>
-              <p className="text-xs text-white/50">
+              </StyledSelect>
+              <p style={{ fontSize: "11px", color: "#94a3b8" }}>
                 Llegada y retiro se calculan automaticamente desde AND (no se cargan manualmente aqui).
               </p>
               <div className="grid grid-cols-2 gap-2">
-                <select
-                  className="input"
+                <StyledSelect
                   value={getMetaString(newEntry.metadata, "disciplineCategory")}
                   onChange={(e) =>
                     setNewEntry({
@@ -1045,9 +1035,8 @@ export default function SportsCalendarPage() {
                   {DISCIPLINE_CATEGORY_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>{option.label}</option>
                   ))}
-                </select>
-                <select
-                  className="input"
+                </StyledSelect>
+                <StyledSelect
                   value={getMetaString(newEntry.metadata, "disciplineGender")}
                   onChange={(e) =>
                     setNewEntry({
@@ -1064,10 +1053,9 @@ export default function SportsCalendarPage() {
                   {DISCIPLINE_GENDER_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>{option.label}</option>
                   ))}
-                </select>
+                </StyledSelect>
               </div>
-              <select
-                className="input"
+              <StyledSelect
                 value={getMetaString(newEntry.metadata, "disciplineId")}
                 onChange={(e) => {
                   const disciplineId = e.target.value;
@@ -1088,9 +1076,8 @@ export default function SportsCalendarPage() {
                 {filteredDisciplineOptions.map((item) => (
                   <option key={item.id} value={item.id}>{item.name || item.id}</option>
                 ))}
-              </select>
-              <select
-                className="input"
+              </StyledSelect>
+              <StyledSelect
                 value={getMetaString(newEntry.metadata, "delegationId")}
                 onChange={(e) =>
                   setNewEntry({
@@ -1103,7 +1090,7 @@ export default function SportsCalendarPage() {
                 {filteredDelegationOptions.map((item) => (
                   <option key={item.id} value={item.id}>{item.countryCode || item.id}</option>
                 ))}
-              </select>
+              </StyledSelect>
               {isTrainingActivity ? (
                 <>
                   <input
@@ -1168,11 +1155,11 @@ export default function SportsCalendarPage() {
             </div>
           </form>
 
-          <div className="surface rounded-2xl p-4">
-            <div className="flex items-center justify-between gap-3">
+          <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "16px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
               <div>
-                <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-white/50">Actividades del dia</h3>
-                <p className="mt-1 text-xs text-white/50">{dayLabel(selectedDay)}</p>
+                <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#94a3b8" }}>Actividades del dia</span>
+                <p style={{ marginTop: "2px", fontSize: "13px", fontWeight: 700, color: "#0f172a" }}>{dayLabel(selectedDay)}</p>
               </div>
               <Link
                 href={`/sports-calendar/day/${selectedDayKey}?eventId=${encodeURIComponent(selectedEventId || "")}&delegationId=${encodeURIComponent(selectedDelegationId || "")}`}
@@ -1181,61 +1168,53 @@ export default function SportsCalendarPage() {
                 Ver detalle del dia
               </Link>
             </div>
-            {loading ? <p className="mt-2 text-sm text-white/50">Cargando...</p> : null}
-            {!loading && selectedDayEntries.length === 0 ? <p className="mt-2 text-sm text-white/50">Sin actividades en esta fecha.</p> : null}
+            {loading ? <p style={{ marginTop: "8px", fontSize: "13px", color: "#94a3b8" }}>Cargando...</p> : null}
+            {!loading && selectedDayEntries.length === 0 ? <p style={{ marginTop: "8px", fontSize: "13px", color: "#94a3b8" }}>Sin actividades en esta fecha.</p> : null}
             <div className="mt-2 space-y-2">
               {selectedDayEntries.map((entry) => (
-                <div key={entry.id} className="rounded-lg border border-white/10 bg-white/5 p-2">
-                  <p className="text-xs text-white/50">{formatTime(entry.startAtUtc)} - {entry.sport} / {entry.league}</p>
-                  <p className="text-sm font-semibold text-white">{titleFromEvent(entry)}</p>
+                <div key={entry.id} style={{ borderRadius: "10px", border: "1px solid #e2e8f0", borderLeft: "3px solid #21D0B3", background: "#f8fafc", padding: "10px 12px" }}>
+                  <p style={{ fontSize: "11px", color: "#94a3b8" }}>{formatTime(entry.startAtUtc)} · {entry.sport} / {entry.league}</p>
+                  <p style={{ fontSize: "13px", fontWeight: 700, color: "#0f172a", marginTop: "2px" }}>{titleFromEvent(entry)}</p>
                   <div className="mt-1 flex flex-wrap gap-1.5">
                     <span className={`inline-flex rounded-full px-2 py-1 text-[10px] font-semibold ${scheduleTypeBadgeClass(getMetaString(entry.metadata, "scheduleType"))}`}>
                       {scheduleTypeLabel(getMetaString(entry.metadata, "scheduleType"))}
                     </span>
                     {getMetaString(entry.metadata, "delegationId") ? (
-                      <span className="inline-flex rounded-full bg-indigo-500/10 px-2 py-1 text-[10px] font-semibold text-indigo-300">
+                      <span style={{ display: "inline-flex", borderRadius: "99px", background: "rgba(99,102,241,0.1)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: "#6366f1" }}>
                         {delegationLabelById(delegationOptions, getMetaString(entry.metadata, "delegationId"))}
                       </span>
                     ) : null}
                     {entry.source === "and-derived" && getMetaString(entry.metadata, "peopleCount") ? (
-                      <span className="inline-flex rounded-full bg-white/10 px-2 py-1 text-[10px] font-semibold text-white/90">
+                      <span style={{ display: "inline-flex", borderRadius: "99px", background: "rgba(33,208,179,0.08)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: "#21D0B3" }}>
                         {getMetaString(entry.metadata, "peopleCount")} personas
                       </span>
                     ) : null}
                     {entry.source === "and-derived" && getMetaString(entry.metadata, "disciplineCount") ? (
-                      <span className="inline-flex rounded-full bg-violet-500/10 px-2 py-1 text-[10px] font-semibold text-violet-300">
+                      <span style={{ display: "inline-flex", borderRadius: "99px", background: "rgba(139,92,246,0.1)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: "#7c3aed" }}>
                         {getMetaString(entry.metadata, "disciplineCount")} disciplinas
                       </span>
                     ) : null}
                   </div>
-                  <p className="text-xs text-white/65">{entry.venue ?? "Sede por confirmar"} - {entry.status ?? "SCHEDULED"}</p>
+                  <p style={{ fontSize: "11px", color: "#64748b", marginTop: "4px" }}>{entry.venue ?? "Sede por confirmar"} · {entry.status ?? "SCHEDULED"}</p>
                   {entry.source === "and-derived" && getMetaStringArray(entry.metadata, "disciplineNames").length ? (
-                    <div className="mt-2">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/50">Detalle</p>
+                    <div style={{ marginTop: "8px" }}>
+                      <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#94a3b8" }}>Detalle</p>
                       <div className="mt-1 flex flex-wrap gap-1">
                         {getMetaStringArray(entry.metadata, "disciplineNames").map((discipline) => (
-                          <span key={discipline} className="inline-flex rounded-full bg-white/10 px-2 py-1 text-[10px] font-semibold text-white/90">
+                          <span key={discipline} style={{ display: "inline-flex", borderRadius: "99px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.2)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: "#21D0B3" }}>
                             {discipline}
                           </span>
                         ))}
                       </div>
                     </div>
                   ) : null}
-                  <div className="mt-2">
+                  <div style={{ marginTop: "8px" }}>
                     {entry.source === "and-derived" ? (
-                      <p className="text-xs font-medium text-blue-400">Hito AND (solo lectura)</p>
+                      <p style={{ fontSize: "11px", fontWeight: 600, color: "#21D0B3" }}>Hito AND (solo lectura)</p>
                     ) : (
                       <div className="flex gap-2">
-                        <button className="btn btn-ghost" type="button" onClick={() => onEditEntry(entry)}>
-                          Editar
-                        </button>
-                        <button
-                          className="btn btn-ghost"
-                          type="button"
-                          onClick={() => setPendingDeleteEntryId(entry.id)}
-                        >
-                          Eliminar
-                        </button>
+                        <button className="btn btn-ghost" type="button" onClick={() => onEditEntry(entry)}>Editar</button>
+                        <button className="btn btn-ghost" type="button" onClick={() => setPendingDeleteEntryId(entry.id)}>Eliminar</button>
                       </div>
                     )}
                   </div>

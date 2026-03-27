@@ -3,6 +3,7 @@ import { AthletesService } from './athletes.service';
 import { CreateAthleteDto } from './dto/create-athlete.dto';
 import { RequestAthleteAccessDto } from './dto/request-athlete-access.dto';
 import { UpdateAthleteDto } from './dto/update-athlete.dto';
+import { UploadHealthDocumentDto } from './dto/upload-health-document.dto';
 
 @Controller('athletes')
 export class AthletesController {
@@ -31,6 +32,14 @@ export class AthletesController {
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateAthleteDto: UpdateAthleteDto) {
     return this.athletesService.update(id, updateAthleteDto);
+  }
+
+  @Post(':id/health-document')
+  uploadHealthDocument(
+    @Param('id') id: string,
+    @Body() payload: UploadHealthDocumentDto,
+  ) {
+    return this.athletesService.uploadHealthDocument(id, payload.dataUrl);
   }
 
   @Delete(':id')

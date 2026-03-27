@@ -3,6 +3,7 @@
 import { useEffect, useId, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
 import { apiFetch } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 
 type ImportType = "athletes" | "drivers" | "hospitality";
 type ParseMode = "template" | "and-itinerary";
@@ -499,6 +500,7 @@ export default function BulkImportPanel({
   onImported?: () => void;
   athleteMode?: AthleteMode;
 }) {
+  const { t } = useI18n();
   const inputId = useId();
   const [fileName, setFileName] = useState<string | null>(null);
   const [rows, setRows] = useState<Record<string, string>[]>([]);
@@ -1079,20 +1081,23 @@ export default function BulkImportPanel({
   const previewRows = normalizedRows.slice(0, 8);
 
   return (
-    <section className="surface max-w-full min-w-0 overflow-hidden rounded-3xl p-6 space-y-4">
+    <section
+      className="surface max-w-full min-w-0 overflow-hidden rounded-3xl p-6 space-y-4"
+      style={{ borderTop: "2px solid #21D0B3", boxShadow: "0 1px 6px rgba(15,23,42,0.06)" }}
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-white/40">Carga masiva</p>
-          <h2 className="font-sans font-bold text-2xl text-white">
+          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#21D0B3", marginBottom: "4px" }}>{t("Carga masiva")}</p>
+          <h2 style={{ fontSize: "1.4rem", fontWeight: 700, color: "var(--text)", lineHeight: 1.2 }}>
             {type === "athletes"
               ? athleteMode === "registration"
-                ? "Inscripción de participantes"
-                : "Participantes AND"
+                ? t("Inscripción de participantes")
+                : t("Participantes AND")
               : type === "drivers"
-                ? "Conductores"
-                : "Hoteleria"}
+                ? t("Conductores")
+                : t("Hoteles/Villa Panamerica")}
           </h2>
-          <p className="text-sm text-white/50">Sube XLSX, revisa la vista previa y luego importa.</p>
+          <p style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "3px" }}>{t("Sube XLSX, revisa la vista previa y luego importa.")}</p>
         </div>
         <button
           className="btn btn-ghost"
@@ -1110,17 +1115,17 @@ export default function BulkImportPanel({
             )
           }
         >
-          Descargar plantilla
+          {t("Descargar plantilla")}
         </button>
       </div>
 
       {type === "athletes" && athleteMode === "and" && (
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+        <div style={{ borderRadius: "14px", border: "1px solid var(--border)", background: "var(--elevated)", padding: "16px" }}>
           <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
-            <label className="flex flex-col gap-2 text-sm text-white/65">
-              Evento para la carga
+            <label className="flex flex-col gap-2" style={{ fontSize: "13px", color: "var(--text-muted)" }}>
+              {t("Evento para la carga")}
               <select className="input" value={selectedEventId} onChange={(event) => setSelectedEventId(event.target.value)}>
-                <option value="">Selecciona un evento</option>
+                <option value="">{t("Selecciona un evento")}</option>
                 {events.map((option) => (
                   <option key={option.id} value={option.id}>
                     {option.name}
@@ -1128,11 +1133,11 @@ export default function BulkImportPanel({
                 ))}
               </select>
             </label>
-            <div className="rounded-xl border border-white/10 bg-white/4 px-4 py-3 text-sm text-white/65">
-              Formato detectado: <span className="font-semibold text-white">{parseMode === "and-itinerary" ? "Itinerario AND real" : "Plantilla normalizada"}</span>
+            <div style={{ borderRadius: "10px", border: "1px solid var(--border)", padding: "12px 16px", fontSize: "13px", color: "var(--text-muted)" }}>
+              {t("Formato detectado")}: <span style={{ fontWeight: 600, color: "var(--text)" }}>{parseMode === "and-itinerary" ? t("Itinerario AND real") : t("Plantilla normalizada")}</span>
             </div>
           </div>
-          <p className="mt-3 text-xs text-white/50">
+          <p style={{ marginTop: "10px", fontSize: "11px", color: "var(--text-faint)" }}>
             La plantilla acepta <code>event_name</code>. Si el archivo no trae evento, se usara el evento seleccionado aqui.
             Para fechas usa <code>dd-mm-yy</code> y para fecha/hora <code>dd-mm-yy hh:mm</code> o <code>dd-mm-yy hh-mm</code>.
           </p>
@@ -1140,33 +1145,33 @@ export default function BulkImportPanel({
       )}
 
       <div className="flex flex-wrap items-end gap-3">
-        <div className="flex flex-col gap-2 text-sm text-white/65">
-          <span>Archivo XLSX</span>
+        <div className="flex flex-col gap-2" style={{ fontSize: "13px", color: "var(--text-muted)" }}>
+          <span>{t("Archivo XLSX")}</span>
           <div className="flex flex-wrap items-center gap-3">
             <input id={inputId} className="sr-only" type="file" accept=".xlsx" onChange={(event) => handleFile(event.target.files?.[0] ?? null)} />
-            <label htmlFor={inputId} className="btn btn-ghost cursor-pointer">Seleccionar archivo</label>
-            <span className="text-xs text-white/50">{fileName ? `Archivo: ${fileName}` : "Sin archivo seleccionado"}</span>
+            <label htmlFor={inputId} className="btn btn-ghost cursor-pointer">{t("Seleccionar archivo")}</label>
+            <span style={{ fontSize: "12px", color: "var(--text-faint)" }}>{fileName ? `Archivo: ${fileName}` : t("Sin archivo seleccionado")}</span>
           </div>
         </div>
-        <button className="btn btn-ghost" type="button" onClick={() => void validate()} disabled={!rows.length || loading}>Validar</button>
-        <button className="btn btn-primary" type="button" onClick={handleImport} disabled={!rows.length || loading}>{loading ? "Cargando..." : "Cargar"}</button>
+        <button className="btn btn-ghost" type="button" onClick={() => void validate()} disabled={!rows.length || loading}>{t("Validar")}</button>
+        <button className="btn btn-primary" type="button" onClick={handleImport} disabled={!rows.length || loading}>{loading ? t("Cargando...") : t("Cargar")}</button>
       </div>
 
       {previewRows.length > 0 && (
-        <div className="rounded-2xl border border-white/10 bg-white/4 p-4">
+        <div style={{ borderRadius: "14px", border: "1px solid var(--border)", background: "var(--elevated)", padding: "16px" }}>
           <div className="mb-3">
-            <p className="text-xs uppercase tracking-[0.2em] text-white/40">Vista previa</p>
-            <p className="text-sm text-white/65">Mostrando {previewRows.length} de {normalizedRows.length} fila(s).</p>
+            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#21D0B3" }}>{t("Vista previa")}</p>
+            <p style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "2px" }}>{t("Mostrando")} {previewRows.length} {t("de")} {normalizedRows.length} {t("fila(s).")}</p>
           </div>
-          <div className="max-w-full overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+          <div style={{ maxWidth: "100%", overflow: "hidden", borderRadius: "10px", border: "1px solid var(--border)" }}>
             <div className="max-w-full overflow-x-auto overscroll-x-contain">
-              <table className="w-max min-w-full text-left text-xs text-white/65">
+              <table style={{ width: "max-content", minWidth: "100%", textAlign: "left", fontSize: "12px", color: "var(--text-muted)" }}>
               <thead>
                 <tr>
                   {headers.map((header) => (
                     <th
                       key={header}
-                      className="whitespace-nowrap border-b border-white/10 bg-white/8 px-3 py-2 font-semibold uppercase tracking-[0.14em] text-white/50"
+                      style={{ whiteSpace: "nowrap", borderBottom: "2px solid rgba(31,205,255,0.25)", background: "linear-gradient(to bottom, #eaf4fb, #e8f0f8)", padding: "8px 12px", fontWeight: 700, fontSize: "10px", letterSpacing: "0.16em", textTransform: "uppercase", color: "#1FCDFF" }}
                     >
                       {header}
                     </th>
@@ -1175,11 +1180,11 @@ export default function BulkImportPanel({
               </thead>
               <tbody>
                 {previewRows.map((row, index) => (
-                  <tr key={`${index}`}>
+                  <tr key={`${index}`} style={{ borderBottom: "1px solid var(--border)" }}>
                     {headers.map((header) => (
                       <td
                         key={header}
-                        className="max-w-[160px] whitespace-nowrap border-b border-white/8 px-3 py-2 align-top text-white/65"
+                        style={{ maxWidth: "160px", whiteSpace: "nowrap", padding: "8px 12px", verticalAlign: "top", color: "var(--text-muted)" }}
                         title={row[header] || "-"}
                       >
                         <span className="block overflow-hidden text-ellipsis">
@@ -1193,19 +1198,19 @@ export default function BulkImportPanel({
               </table>
             </div>
           </div>
-          <p className="mt-3 text-xs text-white/50">
-            Desplaza horizontalmente para revisar todas las columnas antes de cargar.
+          <p style={{ marginTop: "10px", fontSize: "11px", color: "var(--text-faint)" }}>
+            {t("Desplaza horizontalmente para revisar todas las columnas antes de cargar.")}
           </p>
         </div>
       )}
 
       {errors.length > 0 && (
         <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-400">
-          <p className="font-semibold">Errores encontrados</p>
+          <p className="font-semibold">{t("Errores encontrados")}</p>
           <ul className="list-disc pl-5">
             {errors.slice(0, 20).map((error, index) => (
               <li key={`${error.row}-${index}`}>
-                Fila {error.row}
+                {t("Fila")} {error.row}
                 {error.field ? ` (${error.field})` : ""}: {error.message}
               </li>
             ))}

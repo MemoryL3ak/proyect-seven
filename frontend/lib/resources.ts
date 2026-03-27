@@ -27,10 +27,14 @@ export type FieldDef = {
     | "athletes"
     | "hotelRooms"
     | "hotelBeds"
-    | "disciplines";
+    | "disciplines"
+    | "accommodationTowers"
+    | "hotelExtras";
   transient?: boolean;
   formHidden?: boolean;
   readOnly?: boolean;
+  /** Muestra este campo solo cuando el campo `field` tenga el valor `value` */
+  showWhen?: { field: string; value: string };
 };
 
 export type ResourceConfig = {
@@ -150,6 +154,11 @@ export const resources: Record<string, ResourceConfig> = {
       "participantSportsEquipment",
       "participantRequiresAssistance",
       "participantObservations",
+      "participantRegion",
+      "participantTransportType",
+      "participantBusPlate",
+      "participantBusDriverName",
+      "participantBusCompany",
       "participantHotelAccommodationId",
       "participantRoomType",
       "participantBedType",
@@ -343,6 +352,43 @@ export const resources: Record<string, ResourceConfig> = {
         ]
       },
       { key: "participantObservations", label: "Observaciones", type: "text", transient: true },
+      {
+        key: "participantRegion",
+        label: "Región",
+        type: "select",
+        transient: true,
+        options: [
+          { label: "Arica y Parinacota", value: "ARICA_Y_PARINACOTA" },
+          { label: "Tarapacá", value: "TARAPACA" },
+          { label: "Antofagasta", value: "ANTOFAGASTA" },
+          { label: "Atacama", value: "ATACAMA" },
+          { label: "Coquimbo", value: "COQUIMBO" },
+          { label: "Valparaíso", value: "VALPARAISO" },
+          { label: "Metropolitana de Santiago", value: "METROPOLITANA" },
+          { label: "Libertador Gral. B. O'Higgins", value: "OHIGGINS" },
+          { label: "Maule", value: "MAULE" },
+          { label: "Ñuble", value: "NUBLE" },
+          { label: "Biobío", value: "BIOBIO" },
+          { label: "La Araucanía", value: "ARAUCANIA" },
+          { label: "Los Ríos", value: "LOS_RIOS" },
+          { label: "Los Lagos", value: "LOS_LAGOS" },
+          { label: "Aysén del Gral. C. Ibáñez del Campo", value: "AYSEN" },
+          { label: "Magallanes y de la Antártica Chilena", value: "MAGALLANES" }
+        ]
+      },
+      {
+        key: "participantTransportType",
+        label: "Tipo de transporte",
+        type: "select",
+        transient: true,
+        options: [
+          { label: "Avión", value: "AVION" },
+          { label: "Bus", value: "BUS" }
+        ]
+      },
+      { key: "participantBusPlate", label: "Patente Bus", type: "text", transient: true },
+      { key: "participantBusDriverName", label: "Nombre Chofer", type: "text", transient: true },
+      { key: "participantBusCompany", label: "Empresa Bus", type: "text", transient: true },
       { key: "participantHotelAccommodationId", label: "Hotel", type: "select", optionsSource: "accommodations", transient: true },
       {
         key: "participantRoomType",
@@ -485,6 +531,7 @@ export const resources: Record<string, ResourceConfig> = {
       { key: "vehicleBrand", label: "Marca", type: "text" },
       { key: "vehicleModel", label: "Modelo", type: "text" },
       { key: "vehicleCapacity", label: "Capacidad", type: "number" },
+      { key: "budgetAmount", label: "Monto licitado / presupuesto (CLP)", type: "number" },
       {
         key: "photoDataUrl",
         label: "Foto del conductor",
@@ -566,8 +613,34 @@ export const resources: Record<string, ResourceConfig> = {
           { label: "Proveedores", value: "PROVEEDORES" }
         ]
       },
-      { key: "countryCode", label: "País", type: "text" },
+      {
+        key: "countryCode",
+        label: "País",
+        type: "select",
+        options: [
+          { label: "Argentina", value: "ARG" },
+          { label: "Bolivia", value: "BOL" },
+          { label: "Brasil", value: "BRA" },
+          { label: "Chile", value: "CHL" },
+          { label: "Colombia", value: "COL" },
+          { label: "Ecuador", value: "ECU" },
+          { label: "Paraguay", value: "PRY" },
+          { label: "Perú", value: "PER" },
+          { label: "Uruguay", value: "URY" },
+          { label: "Venezuela", value: "VEN" },
+          { label: "México", value: "MEX" },
+          { label: "Estados Unidos", value: "USA" },
+          { label: "Canadá", value: "CAN" },
+          { label: "España", value: "ESP" },
+          { label: "Francia", value: "FRA" },
+          { label: "Alemania", value: "DEU" },
+          { label: "Italia", value: "ITA" },
+          { label: "Portugal", value: "PRT" },
+          { label: "Reino Unido", value: "GBR" }
+        ]
+      },
       { key: "passportNumber", label: "Pasaporte", type: "text" },
+      { key: "rut", label: "RUT", type: "text" },
       { key: "dateOfBirth", label: "Fecha nacimiento", type: "date" },
       { key: "phone", label: "Teléfono", type: "text" },
       { key: "email", label: "Correo electrónico", type: "text" },
@@ -578,6 +651,73 @@ export const resources: Record<string, ResourceConfig> = {
         options: [
           { label: "Sí", value: "true" },
           { label: "No", value: "false" }
+        ]
+      },
+      {
+        key: "dietaryNeeds",
+        label: "Tipo de alimentación",
+        type: "select",
+        options: [
+          { label: "Estándar", value: "ESTANDAR" },
+          { label: "Vegetariano", value: "VEGETARIANO" },
+          { label: "Vegano", value: "VEGANO" },
+          { label: "Sin gluten", value: "SIN_GLUTEN" },
+          { label: "Sin lactosa", value: "SIN_LACTOSA" },
+          { label: "Halal", value: "HALAL" },
+          { label: "Kosher", value: "KOSHER" },
+          { label: "Sin mariscos", value: "SIN_MARISCOS" },
+          { label: "Diabético", value: "DIABETICO" },
+          { label: "Otro", value: "OTRO" }
+        ]
+      },
+      {
+        key: "tripType",
+        label: "Tipo de viaje",
+        type: "select",
+        options: [
+          { label: "Llegada", value: "ARRIVAL" },
+          { label: "Salida", value: "DEPARTURE" }
+        ]
+      },
+      { key: "flightNumber", label: "Número de vuelo", type: "text" },
+      { key: "airline", label: "Aerolínea", type: "text" },
+      { key: "origin", label: "Origen", type: "text" },
+      { key: "arrivalTime", label: "Fecha y hora de llegada", type: "datetime" },
+      { key: "departureTime", label: "Fecha y hora de salida", type: "datetime" },
+      { key: "departureGate", label: "Puerta de embarque", type: "text" },
+      {
+        key: "transportType",
+        label: "Tipo de transporte",
+        type: "select",
+        options: [
+          { label: "Avión", value: "AVION" },
+          { label: "Bus", value: "BUS" }
+        ]
+      },
+      { key: "busPlate", label: "Patente Bus", type: "text" },
+      { key: "busDriverName", label: "Nombre Chofer", type: "text" },
+      { key: "busCompany", label: "Empresa Bus", type: "text" },
+      {
+        key: "region",
+        label: "Región",
+        type: "select",
+        options: [
+          { label: "Arica y Parinacota", value: "ARICA_PARINACOTA" },
+          { label: "Tarapacá", value: "TARAPACA" },
+          { label: "Antofagasta", value: "ANTOFAGASTA" },
+          { label: "Atacama", value: "ATACAMA" },
+          { label: "Coquimbo", value: "COQUIMBO" },
+          { label: "Valparaíso", value: "VALPARAISO" },
+          { label: "Metropolitana", value: "METROPOLITANA" },
+          { label: "O'Higgins", value: "OHIGGINS" },
+          { label: "Maule", value: "MAULE" },
+          { label: "Ñuble", value: "NUBLE" },
+          { label: "Biobío", value: "BIOBIO" },
+          { label: "La Araucanía", value: "ARAUCANIA" },
+          { label: "Los Ríos", value: "LOS_RIOS" },
+          { label: "Los Lagos", value: "LOS_LAGOS" },
+          { label: "Aysén", value: "AYSEN" },
+          { label: "Magallanes", value: "MAGALLANES" }
         ]
       },
       { key: "status", label: "Estado", type: "text", readOnly: true }
@@ -649,9 +789,46 @@ export const resources: Record<string, ResourceConfig> = {
     description: "Asignación de participantes a hotel y habitación.",
     endpoint: "/hotel-assignments",
     fields: [
+      {
+        key: "clientTypeFilter",
+        label: "Filtrar por tipo de cliente",
+        type: "select",
+        transient: true,
+        options: [
+          { label: "Todos", value: "" },
+          { label: "VIP", value: "VIP" },
+          { label: "T1", value: "T1" },
+          { label: "Familia Parapan", value: "FAMILIA_PARAPAN" },
+          { label: "TA", value: "TA" },
+          { label: "TF", value: "TF" },
+          { label: "TM", value: "TM" },
+          { label: "Comité Organizador", value: "COMITE_ORGANIZADOR" },
+          { label: "Proveedores", value: "PROVEEDORES" },
+        ]
+      },
       { key: "participantId", label: "Participante", type: "select", required: true, optionsSource: "athletes" },
-      { key: "hotelId", label: "Hotel", type: "select", required: true, optionsSource: "accommodations" },
+      {
+        key: "accommodationTypeFilter",
+        label: "Tipo de alojamiento",
+        type: "select",
+        transient: true,
+        options: [
+          { label: "Todos", value: "" },
+          { label: "Hotel", value: "HOTEL" },
+          { label: "Villa Panamericana", value: "VILLA" },
+        ]
+      },
+      {
+        key: "towerFilter",
+        label: "Torre",
+        type: "select",
+        transient: true,
+        optionsSource: "accommodationTowers",
+        showWhen: { field: "accommodationTypeFilter", value: "VILLA" },
+      },
+      { key: "hotelId", label: "Hotel / Villa", type: "select", required: true, optionsSource: "accommodations" },
       { key: "roomId", label: "Habitación", type: "select", optionsSource: "hotelRooms" },
+      { key: "preCheckinAt", label: "Pre check-in", type: "datetime" },
       { key: "checkinAt", label: "Check-in", type: "datetime" },
       { key: "checkoutAt", label: "Check-out", type: "datetime" },
       {
@@ -667,11 +844,13 @@ export const resources: Record<string, ResourceConfig> = {
     ]
   },
   accommodations: {
-    name: "Hotelería",
-    description: "Inventario de hoteles y habitaciones por tipo.",
+    name: "Hoteles/Villa Panamerica",
+    description: "Inventario de hoteles y villas panamericanas.",
     endpoint: "/accommodations",
     tableOrder: [
       "eventId",
+      "accommodationType",
+      "tower",
       "name",
       "address",
       "roomSingle",
@@ -685,7 +864,18 @@ export const resources: Record<string, ResourceConfig> = {
     ],
     fields: [
       { key: "eventId", label: "Evento", type: "select", required: true, optionsSource: "events" },
-      { key: "name", label: "Hotel", type: "text", required: true },
+      {
+        key: "accommodationType",
+        label: "Tipo de alojamiento",
+        type: "select",
+        required: true,
+        options: [
+          { label: "Hotel", value: "HOTEL" },
+          { label: "Villa Panamericana", value: "VILLA" },
+        ]
+      },
+      { key: "tower", label: "Torre", type: "text", showWhen: { field: "accommodationType", value: "VILLA" } },
+      { key: "name", label: "Nombre", type: "text", required: true },
       { key: "address", label: "Dirección", type: "text" },
       { key: "roomSingle", label: "Habitaciones Single", type: "number", transient: true },
       { key: "roomDouble", label: "Habitaciones Double", type: "number", transient: true },
@@ -801,6 +991,70 @@ export const resources: Record<string, ResourceConfig> = {
       { key: "location", label: "Location JSON", type: "json", required: true },
       { key: "speed", label: "Velocidad", type: "number" },
       { key: "heading", label: "Heading", type: "number" }
+    ]
+  },
+  hotelExtras: {
+    name: "Extras",
+    description: "Catálogo de extras disponibles por hotel (mesas, sillas, proyectores, etc.).",
+    endpoint: "/hotel-extras",
+    tableOrder: ["hotelId", "name", "price", "quantity"],
+    fields: [
+      { key: "hotelId", label: "Hotel / Villa", type: "select", required: true, optionsSource: "accommodations" },
+      { key: "name", label: "Nombre del extra", type: "text", required: true },
+      { key: "price", label: "Precio", type: "number" },
+      { key: "quantity", label: "Cantidad disponible", type: "number" }
+    ]
+  },
+  foodLocations: {
+    name: "Lugares de comida",
+    description: "Recintos de alimentación y tipos de cliente asignados.",
+    endpoint: "/food-locations",
+    tableOrder: ["accommodationId", "name", "description", "capacity", "clientTypes"],
+    fields: [
+      { key: "accommodationId", label: "Hotel / Villa", type: "select", optionsSource: "accommodations" },
+      { key: "name", label: "Nombre del lugar", type: "text", required: true },
+      { key: "description", label: "Descripción", type: "text" },
+      { key: "capacity", label: "Aforo", type: "number" },
+      {
+        key: "clientTypes",
+        label: "Tipos de cliente",
+        type: "multiselect",
+        options: [
+          { label: "VIP", value: "VIP" },
+          { label: "T1", value: "T1" },
+          { label: "Familia Parapan", value: "FAMILIA_PARAPAN" },
+          { label: "TA (Deportista)", value: "TA" },
+          { label: "TF (Oficiales Técnicos)", value: "TF" },
+          { label: "TM (Prensa)", value: "TM" },
+          { label: "Comité Organizador", value: "COMITE_ORGANIZADOR" },
+          { label: "Proveedores", value: "PROVEEDORES" }
+        ]
+      }
+    ]
+  },
+  hotelExtraReservations: {
+    name: "Reservas de Extras",
+    description: "Solicitudes de extras por participante.",
+    endpoint: "/hotel-extra-reservations",
+    tableOrder: ["extraId", "participantId", "startDate", "endDate", "quantity", "status", "notes"],
+    fields: [
+      { key: "extraId", label: "Extra", type: "select", required: true, optionsSource: "hotelExtras" },
+      { key: "participantId", label: "Participante", type: "select", required: true, optionsSource: "athletes" },
+      { key: "startDate", label: "Desde", type: "date" },
+      { key: "endDate", label: "Hasta", type: "date" },
+      { key: "quantity", label: "Cantidad", type: "number" },
+      { key: "notes", label: "Notas", type: "text" },
+      {
+        key: "status",
+        label: "Estado",
+        type: "select",
+        options: [
+          { label: "Pendiente", value: "PENDING" },
+          { label: "Aprobado", value: "APPROVED" },
+          { label: "Rechazado", value: "REJECTED" },
+          { label: "Entregado", value: "DELIVERED" }
+        ]
+      }
     ]
   }
 };

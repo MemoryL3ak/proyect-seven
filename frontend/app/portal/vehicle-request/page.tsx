@@ -506,100 +506,135 @@ export default function VehicleRequestPortalPage() {
   }, [activeTab, athlete?.id]);
 
   return (
-    <div className="min-h-screen px-4 py-8 sm:px-6 lg:px-8" style={{ background: "var(--elevated)" }}>
-      <div className="mx-auto max-w-6xl space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>Ingresa con tu codigo de usuario, solicita un vehiculo hacia una sede y sigue en tiempo real el estado de asignacion.</p>
-          <div className="flex gap-2">
-            <div className="rounded-lg px-3 py-1.5" style={{ border: "1px solid var(--border)", background: "var(--surface)" }}>
-              <div className="text-[10px] uppercase tracking-[0.2em]" style={{ color: "var(--text-muted)" }}>Portal</div>
-              <div className="text-xs font-semibold" style={{ color: "var(--text)" }}>{athlete ? "Sesion activa" : "Acceso privado"}</div>
+    <>
+      {!athlete && (
+        <div className="flex flex-col lg:flex-row" style={{ minHeight: "100vh", background: "#020c18", position: "relative", overflow: "hidden" }}>
+          <style>{`
+            @keyframes pvr-f1{0%,100%{transform:translateY(0px) scale(1)}50%{transform:translateY(-30px) translateX(10px) scale(1.05)}}
+            @keyframes pvr-f2{0%,100%{transform:translateY(0px)}50%{transform:translateY(-20px) translateX(15px)}}
+            @keyframes pvr-pulse{0%,100%{opacity:0.15;transform:scale(1)}50%{opacity:0.4;transform:scale(1.08)}}
+            @keyframes pvr-shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
+            @keyframes pvr-in{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+            .pvr-form{animation:pvr-in 0.6s cubic-bezier(0.16,1,0.3,1) both;animation-delay:0.15s;opacity:0;}
+          `}</style>
+
+          {/* Left branding panel */}
+          <div className="flex flex-col justify-between p-8 lg:p-14 lg:w-[46%] lg:flex-shrink-0"
+            style={{ background: "linear-gradient(160deg,#020c18 0%,#041a2e 40%,#062240 70%,#030f1e 100%)", position: "relative", overflow: "hidden", minHeight: "180px" }}>
+            <div style={{ position: "absolute", inset: 0, pointerEvents: "none", backgroundImage: `linear-gradient(rgba(33,208,179,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(33,208,179,0.03) 1px,transparent 1px)`, backgroundSize: "60px 60px" }} />
+            <div style={{ position: "absolute", top: "-60px", left: "-60px", width: "400px", height: "400px", borderRadius: "50%", background: "radial-gradient(ellipse,rgba(6,34,64,0.6) 0%,transparent 70%)", animation: "pvr-f1 12s ease-in-out infinite", pointerEvents: "none" }} />
+            <div style={{ position: "absolute", bottom: "60px", right: "-40px", width: "320px", height: "320px", borderRadius: "50%", background: "radial-gradient(ellipse,rgba(33,208,179,0.1) 0%,transparent 70%)", animation: "pvr-f2 16s ease-in-out infinite", pointerEvents: "none" }} />
+            {[480, 340, 200].map((size, i) => (
+              <div key={i} style={{ position: "absolute", top: "50%", left: "50%", marginTop: -size / 2, marginLeft: -size / 2, width: size, height: size, borderRadius: "50%", border: `1px solid rgba(33,208,179,${0.04 + i * 0.04})`, animation: `pvr-pulse 6s ease-in-out infinite ${i * 2}s`, pointerEvents: "none" }} />
+            ))}
+            <div style={{ position: "relative", zIndex: 1 }}>
+              <img src="/branding/LOGO-SEVEN-1.png" alt="Seven Arena" className="h-14 sm:h-20 lg:h-28" style={{ width: "auto", objectFit: "contain", filter: "drop-shadow(0 0 30px rgba(33,208,179,0.4)) drop-shadow(0 4px 12px rgba(0,0,0,0.9))" }} />
             </div>
-            <div className="rounded-lg px-3 py-1.5" style={{ border: "1px solid var(--border)", background: "var(--surface)" }}>
-              <div className="text-[10px] uppercase tracking-[0.2em]" style={{ color: "var(--text-muted)" }}>Solicitudes</div>
-              <div className="text-xs font-semibold" style={{ color: "var(--text)" }}>{trips.length}</div>
+            <div style={{ position: "relative", zIndex: 1, flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: "16px", padding: "24px 0" }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", width: "fit-content" }}>
+                <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#21D0B3", boxShadow: "0 0 8px #21D0B3" }} />
+                <span style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#21D0B3" }}>Portal de Movilidad</span>
+              </div>
+              <h1 style={{ fontSize: "clamp(28px,4vw,44px)", fontWeight: 700, lineHeight: 1.1, color: "#ffffff", margin: 0 }}>
+                Solicita tu<br />
+                <span style={{ background: "linear-gradient(90deg,#21D0B3,#34F3C6,#21D0B3)", backgroundSize: "200% auto", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", animation: "pvr-shimmer 4s linear infinite" }}>
+                  vehículo
+                </span>
+              </h1>
+              <p className="hidden sm:block" style={{ fontSize: "15px", lineHeight: 1.6, color: "rgba(255,255,255,0.55)", maxWidth: "340px", margin: 0 }}>
+                Registra, modifica y haz seguimiento en tiempo real de tus solicitudes de transporte hacia las sedes del evento.
+              </p>
+              <div className="hidden lg:flex flex-col" style={{ gap: "10px", marginTop: "8px" }}>
+                {([
+                  [<svg key="car" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(33,208,179,0.8)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>, "Solicita tu traslado"],
+                  [<svg key="clock" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(33,208,179,0.8)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>, "Seguimiento en tiempo real"],
+                  [<svg key="pin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(33,208,179,0.8)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>, "Hacia las sedes del evento"],
+                ] as [React.ReactNode, string][]).map(([icon, label]) => (
+                  <div key={label} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <span style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>{icon}</span>
+                    <span style={{ fontSize: "13px", color: "rgba(255,255,255,0.6)", fontWeight: 500 }}>{label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="hidden lg:block" style={{ position: "relative", zIndex: 1 }}>
+              <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.25)", letterSpacing: "0.08em" }}>© Seven Arena · Portal seguro</p>
             </div>
           </div>
-        </div>
 
-        {!athlete ? (
-          <section className="grid gap-6 lg:grid-cols-[0.96fr_1.04fr]">
-            <article className="rounded-[30px] p-6 shadow-sm" style={{ border: "1px solid var(--border)", background: "var(--surface)" }}>
-              <p className="text-xs uppercase tracking-[0.24em]" style={{ color: "var(--text-muted)" }}>Acceso</p>
-              <h2 className="mt-2 text-3xl font-semibold tracking-tight" style={{ color: "var(--text)" }}>Ingresa con tu codigo</h2>
-              <p className="mt-3 max-w-md text-sm leading-6" style={{ color: "var(--text-muted)" }}>
-                Usa el mismo codigo corto del portal de usuario para abrir tu panel de movilidad y gestionar solicitudes de vehiculo.
-              </p>
+          {/* Right login panel */}
+          <div className="pvr-form flex flex-1 flex-col justify-center px-5 py-8 sm:px-6 sm:py-12 lg:px-14" style={{ background: "linear-gradient(160deg,#030f1e 0%,#041a2e 50%,#020c18 100%)" }}>
+            <div style={{ maxWidth: 480, width: "100%", margin: "0 auto" }}>
+              <div style={{ marginBottom: "32px" }}>
+                <p style={{ fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", color: "#21D0B3", marginBottom: "8px" }}>Acceso</p>
+                <h2 style={{ fontSize: "26px", fontWeight: 700, color: "#ffffff", margin: "0 0 6px" }}>Ingresa con tu código</h2>
+                <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.45)", margin: 0 }}>Usa el código corto del portal de usuario para acceder a tu panel de movilidad.</p>
+              </div>
 
-              <div className="mt-6 space-y-4">
-                <label className="block space-y-2">
-                  <span className="text-sm font-medium" style={{ color: "var(--text)" }}>Codigo de usuario</span>
-                  <input
-                    className="input h-12 text-base"
-                    value={userCode}
-                    onChange={(e) => setUserCode(e.target.value)}
-                    placeholder="Ingresa tu codigo"
-                  />
-                </label>
-                <button type="button" className="btn btn-primary h-12 w-full text-base" onClick={login} disabled={loading}>
-                  {loading ? "Ingresando..." : "Abrir portal"}
+              <div style={{ display: "flex", flexDirection: "column", gap: "14px", marginBottom: "28px" }}>
+                <input
+                  className="input h-12 text-base"
+                  value={userCode}
+                  onChange={(e) => setUserCode(e.target.value)}
+                  placeholder="Código de usuario"
+                  onKeyDown={(e) => e.key === "Enter" && login()}
+                  style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(33,208,179,0.2)", color: "#ffffff", borderRadius: "12px" }}
+                />
+                <button
+                  type="button"
+                  onClick={login}
+                  disabled={loading}
+                  style={{ height: "48px", borderRadius: "12px", fontWeight: 700, fontSize: "15px", cursor: loading ? "not-allowed" : "pointer", background: "linear-gradient(135deg,#34F3C6 0%,#21D0B3 50%,#15B09A 100%)", color: "#0d1b3e", border: "none", opacity: loading ? 0.7 : 1, boxShadow: "0 4px 20px rgba(33,208,179,0.35)" }}
+                >
+                  {loading ? "Ingresando…" : "Abrir portal"}
                 </button>
-                {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+                {error && <p style={{ fontSize: "13px", color: "#f87171", margin: 0 }}>{error}</p>}
               </div>
-            </article>
 
-            <article className="rounded-[30px] p-6 shadow-sm" style={{ border: "1px solid var(--border)", background: "var(--surface)" }}>
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.24em]" style={{ color: "var(--text-muted)" }}>Recuperacion de acceso</p>
-                  <h2 className="mt-2 text-3xl font-semibold tracking-tight" style={{ color: "var(--text)" }}>Solicita tu codigo</h2>
-                </div>
-                <span className="rounded-full px-3 py-1 text-xs font-semibold" style={{ border: "1px solid var(--banner-border)", background: "var(--brand-dim)", color: "var(--brand)" }}>Portal seguro</span>
-              </div>
-              <p className="mt-3 max-w-lg text-sm leading-6" style={{ color: "var(--text-muted)" }}>
-                Si no tienes tu codigo, solicita el acceso con tu correo registrado y luego vuelve para revisar el estado de tus solicitudes.
-              </p>
-
-              <div className="mt-6 grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
-                <label className="block space-y-2">
-                  <span className="text-sm font-medium" style={{ color: "var(--text)" }}>Correo electronico</span>
+              <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "28px" }}>
+                <p style={{ fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", color: "#21D0B3", marginBottom: "8px" }}>Recuperación de acceso</p>
+                <h3 style={{ fontSize: "18px", fontWeight: 600, color: "#ffffff", margin: "0 0 6px" }}>Solicita tu código</h3>
+                <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.4)", margin: "0 0 16px" }}>
+                  Si no tienes tu código, ingrésalo con tu correo registrado y te lo enviamos.
+                </p>
+                <div style={{ display: "flex", gap: "10px", flexDirection: "column" }}>
                   <input
-                    className="input h-12 text-base"
+                    className="input h-11 text-sm"
                     value={requestEmail}
                     onChange={(e) => setRequestEmail(e.target.value)}
                     placeholder="email@dominio.com"
                     type="email"
+                    style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#ffffff", borderRadius: "10px" }}
                   />
-                </label>
-                <button
-                  type="button"
-                  className="btn btn-ghost h-12 px-5 text-base"
-                  onClick={requestAccess}
-                  disabled={requestAccessLoading}
-                >
-                  {requestAccessLoading ? "Enviando..." : "Solicitar codigo"}
-                </button>
-              </div>
-              {accessRequestStatus ? <p className="mt-4 text-sm text-emerald-600">{accessRequestStatus}</p> : null}
-              {accessRequestError ? <p className="mt-4 text-sm text-rose-600">{accessRequestError}</p> : null}
+                  <button
+                    type="button"
+                    onClick={requestAccess}
+                    disabled={requestAccessLoading}
+                    style={{ width: "100%", height: "44px", padding: "0 20px", borderRadius: "10px", fontWeight: 500, fontSize: "13px", cursor: requestAccessLoading ? "not-allowed" : "pointer", background: "rgba(33,208,179,0.1)", color: "#21D0B3", border: "1px solid rgba(33,208,179,0.3)", opacity: requestAccessLoading ? 0.7 : 1 }}
+                  >
+                    {requestAccessLoading ? "Enviando…" : "Solicitar código"}
+                  </button>
+                </div>
+                {accessRequestStatus && <p style={{ fontSize: "13px", color: "#34d399", marginTop: "10px" }}>{accessRequestStatus}</p>}
+                {accessRequestError && <p style={{ fontSize: "13px", color: "#f87171", marginTop: "10px" }}>{accessRequestError}</p>}
 
-              <div className="mt-8 grid gap-3 sm:grid-cols-3">
-                <div className="rounded-2xl px-4 py-4" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
-                  <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>Paso 1</div>
-                  <p className="mt-2 text-sm font-medium" style={{ color: "var(--text)" }}>Solicita tu codigo</p>
-                </div>
-                <div className="rounded-2xl px-4 py-4" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
-                  <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>Paso 2</div>
-                  <p className="mt-2 text-sm font-medium" style={{ color: "var(--text)" }}>Ingresa al portal</p>
-                </div>
-                <div className="rounded-2xl px-4 py-4" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
-                  <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>Paso 3</div>
-                  <p className="mt-2 text-sm font-medium" style={{ color: "var(--text)" }}>Sigue el estado del viaje</p>
+                <div style={{ marginTop: "24px", display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "10px" }}>
+                  {[["Paso 1", "Solicita tu código"], ["Paso 2", "Ingresa al portal"], ["Paso 3", "Sigue el viaje"]].map(([step, label]) => (
+                    <div key={step} style={{ borderRadius: "12px", padding: "12px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(33,208,179,0.12)" }}>
+                      <div style={{ fontSize: "10px", letterSpacing: "0.18em", textTransform: "uppercase", color: "rgba(33,208,179,0.7)", marginBottom: "6px" }}>{step}</div>
+                      <p style={{ fontSize: "12px", fontWeight: 500, color: "rgba(255,255,255,0.7)", margin: 0 }}>{label}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
-            </article>
-          </section>
-        ) : (
+            </div>
+          </div>
+        </div>
+      )}
+
+      {athlete && (
+        <div className="min-h-screen px-4 py-8 sm:px-6 lg:px-8" style={{ background: "var(--elevated)" }}>
+          <div className="mx-auto max-w-6xl space-y-6">
           <section className="space-y-6">
             <article className="rounded-[30px] p-6 shadow-sm" style={{ border: "1px solid var(--border)", background: "var(--surface)" }}>
               <div className="flex flex-wrap items-start justify-between gap-4">
@@ -999,9 +1034,10 @@ export default function VehicleRequestPortalPage() {
               </section>
             )}
           </section>
-        )}
-      </div>
-    </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

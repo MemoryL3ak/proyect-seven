@@ -6,6 +6,7 @@ import { apiFetch } from "@/lib/api";
 import { isAthletePersonalDataValidated } from "@/lib/athletes";
 import type { FieldDef, ResourceConfig } from "@/lib/resources";
 import { useI18n } from "@/lib/i18n";
+import StyledSelect from "@/components/StyledSelect";
 
 type Option = { label: string; value: string };
 
@@ -219,6 +220,7 @@ export default function ResourceScreen({
   onEditRequested,
   viewMode = "both",
   athleteScope = "validated",
+  queryParams,
 }: {
   config?: ResourceConfig;
   externalEditingId?: string | null;
@@ -227,6 +229,7 @@ export default function ResourceScreen({
   onEditRequested?: (id: string) => void;
   viewMode?: "both" | "form" | "table";
   athleteScope?: "all" | "validated";
+  queryParams?: Record<string, string>;
 }) {
   const { t } = useI18n();
   if (!config) {
@@ -255,6 +258,10 @@ export default function ResourceScreen({
   const [vehicleOptions, setVehicleOptions] = useState<Option[]>([]);
   const [vehicleLookup, setVehicleLookup] = useState<Record<string, any>>({});
   const [flightLookup, setFlightLookup] = useState<Record<string, any>>({});
+  const [athleteSearch, setAthleteSearch] = useState("");
+  const [athleteStatusFilter, setAthleteStatusFilter] = useState<"all" | "validated" | "pending">("all");
+  const [andSearch, setAndSearch] = useState("");
+  const [andTripFilter, setAndTripFilter] = useState<"all" | "ARRIVAL" | "DEPARTURE">("all");
   const [driverOptions, setDriverOptions] = useState<Option[]>([]);
   const [driverUserOptions, setDriverUserOptions] = useState<Option[]>([]);
   const [athleteOptions, setAthleteOptions] = useState<Option[]>([]);
@@ -262,6 +269,7 @@ export default function ResourceScreen({
   const [hotelRoomOptions, setHotelRoomOptions] = useState<Option[]>([]);
   const [hotelBeds, setHotelBeds] = useState<Record<string, any>[]>([]);
   const [hotelBedOptions, setHotelBedOptions] = useState<Option[]>([]);
+  const [hotelExtraOptions, setHotelExtraOptions] = useState<Option[]>([]);
   const [driverLookup, setDriverLookup] = useState<Record<string, any>>({});
   const [eventCapacityTotals, setEventCapacityTotals] = useState<EventCapacityTotals>({});
   const [eventCapacityMatrix, setEventCapacityMatrix] = useState<EventCapacityMatrix>({});
@@ -356,7 +364,11 @@ export default function ResourceScreen({
     [config.fields]
   );
   const needsAccommodations = useMemo(
-    () => config.fields.some((field) => field.optionsSource === "accommodations"),
+    () => config.fields.some((field) => field.optionsSource === "accommodations" || field.optionsSource === "accommodationTowers"),
+    [config.fields]
+  );
+  const needsHotelExtras = useMemo(
+    () => config.fields.some((field) => field.optionsSource === "hotelExtras"),
     [config.fields]
   );
   const needsVenues = useMemo(
@@ -548,7 +560,12 @@ export default function ResourceScreen({
             participantRut:
               athlete.countryCode === "CHL" && athlete.passportNumber
                 ? athlete.passportNumber
-                : ""
+                : "",
+            participantRegion: athlete.region ?? "",
+            participantTransportType: athlete.transportType ?? "",
+            participantBusPlate: athlete.busPlate ?? "",
+            participantBusDriverName: athlete.busDriverName ?? "",
+            participantBusCompany: athlete.busCompany ?? ""
           };
         });
 
@@ -556,7 +573,10 @@ export default function ResourceScreen({
         return;
       }
 
-      const data = await apiFetch<Record<string, any>[]>(config.endpoint);
+      const fetchUrl = queryParams && Object.keys(queryParams).length > 0
+        ? `${config.endpoint}?${new URLSearchParams(queryParams).toString()}`
+        : config.endpoint;
+      const data = await apiFetch<Record<string, any>[]>(fetchUrl);
       if (config.endpoint === "/events") {
         const mapped = (Array.isArray(data) ? data : []).map((item) => {
           const parsed = readEventAndConfig(item.config);
@@ -637,13 +657,31 @@ export default function ResourceScreen({
   const loadAccommodations = async () => {
     try {
       const data = await apiFetch<Record<string, any>[]>("/accommodations");
-      const options = (data || []).map((hotel) => ({
-        label: hotel.name ?? hotel.id,
-        value: hotel.id
-      }));
+      const options = (data || []).map((hotel) => {
+        const type = String(hotel.accommodationType || "HOTEL").toUpperCase();
+        const tower = hotel.tower ? String(hotel.tower) : null;
+        const label = type === "VILLA" && tower
+          ? `${hotel.name ?? hotel.id} – Torre ${tower}`
+          : (hotel.name ?? hotel.id);
+        return { label, value: hotel.id, accommodationType: type, tower };
+      });
       setAccommodationOptions(options);
     } catch (err) {
       setAccommodationOptions([]);
+    }
+  };
+
+  const loadHotelExtras = async () => {
+    try {
+      const data = await apiFetch<Record<string, any>[]>("/hotel-extras");
+      const options = (data || []).map((extra) => ({
+        label: extra.name ?? extra.id,
+        value: extra.id,
+        hotelId: extra.hotelId,
+      }));
+      setHotelExtraOptions(options);
+    } catch (err) {
+      setHotelExtraOptions([]);
     }
   };
 
@@ -714,7 +752,8 @@ export default function ResourceScreen({
         label: athlete.fullName ?? athlete.id,
         value: athlete.id,
         delegationId: athlete.delegationId,
-        isDelegationLead: athlete.isDelegationLead
+        isDelegationLead: athlete.isDelegationLead,
+        userType: String(athlete.userType ?? "").trim().toUpperCase()
       }));
       setAthleteOptions(options);
     } catch (err) {
@@ -830,6 +869,12 @@ export default function ResourceScreen({
       loadAccommodations();
     }
   }, [needsAccommodations]);
+
+  useEffect(() => {
+    if (needsHotelExtras) {
+      loadHotelExtras();
+    }
+  }, [needsHotelExtras]);
 
   useEffect(() => {
     if (needsVenues) {
@@ -1292,6 +1337,11 @@ export default function ResourceScreen({
                   : undefined,
             observations:
               (form.participantObservations as string | undefined) || undefined,
+            region: (form.participantRegion as string | undefined) || undefined,
+            transportType: (form.participantTransportType as string | undefined) || undefined,
+            busPlate: (form.participantBusPlate as string | undefined) || undefined,
+            busDriverName: (form.participantBusDriverName as string | undefined) || undefined,
+            busCompany: (form.participantBusCompany as string | undefined) || undefined,
             metadata: participantMetadata
           };
 
@@ -1596,6 +1646,11 @@ export default function ResourceScreen({
           ? item.participantMetadata
           : {};
       next.participantRut = item.participantRut ?? "";
+      next.participantRegion = item.participantRegion ?? "";
+      next.participantTransportType = item.participantTransportType ?? "";
+      next.participantBusPlate = item.participantBusPlate ?? "";
+      next.participantBusDriverName = item.participantBusDriverName ?? "";
+      next.participantBusCompany = item.participantBusCompany ?? "";
       setForm(next);
       return;
     }
@@ -1977,11 +2032,35 @@ export default function ResourceScreen({
     if (source === "events") return eventOptions;
     if (source === "disciplines") return disciplineOptions;
     if (source === "delegations") return delegationOptions;
-    if (source === "accommodations") return accommodationOptions;
+    if (source === "accommodationTowers") {
+      const villas = (accommodationOptions as any[]).filter((opt) => opt.accommodationType === "VILLA");
+      const seen = new Set<string>();
+      const towers: Option[] = [{ label: "Todas", value: "" }];
+      for (const opt of villas) {
+        const t = opt.tower ? String(opt.tower) : null;
+        if (t && !seen.has(t)) {
+          seen.add(t);
+          towers.push({ label: `Torre ${t}`, value: t });
+        }
+      }
+      return towers;
+    }
+    if (source === "accommodations") {
+      if (config.endpoint === "/hotel-assignments") {
+        const typeFilter = (form.accommodationTypeFilter as string | undefined) ?? "";
+        const towerFilter = (form.towerFilter as string | undefined) ?? "";
+        let opts = accommodationOptions as any[];
+        if (typeFilter) opts = opts.filter((opt) => opt.accommodationType === typeFilter.toUpperCase());
+        if (towerFilter) opts = opts.filter((opt) => opt.tower === towerFilter);
+        return opts;
+      }
+      return accommodationOptions;
+    }
     if (source === "venues") return venueOptions;
     if (source === "vehicles") return vehicleOptions;
     if (source === "drivers") return driverOptions;
     if (source === "driverUsers") return driverUserOptions;
+    if (source === "hotelExtras") return hotelExtraOptions;
     if (source === "hotelRooms") return hotelRoomOptions;
     if (source === "hotelBeds") return hotelBedOptions;
     if (field.optionsSource === "athletes") {
@@ -1990,6 +2069,14 @@ export default function ResourceScreen({
         if (delegationId) {
           return (athleteOptions as any[]).filter(
             (option) => option.delegationId === delegationId
+          );
+        }
+      }
+      if (config.endpoint === "/hotel-assignments") {
+        const clientTypeFilter = (form.clientTypeFilter as string | undefined) ?? "";
+        if (clientTypeFilter) {
+          return (athleteOptions as any[]).filter(
+            (option) => option.userType === clientTypeFilter.toUpperCase()
           );
         }
       }
@@ -2116,9 +2203,9 @@ export default function ResourceScreen({
       <PageHeader title={config.name} description={config.description} />
 
       {viewMode !== "table" ? (
-      <section className="surface p-6">
+      <section className="surface p-6" style={{ borderTop: "2px solid var(--brand)" }}>
         <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-          <h4 className="font-bold text-white text-xl">
+          <h4 className="font-bold text-xl" style={{ color: "var(--text)" }}>
             {editingId ? t("Editar registro") : t("Nuevo registro")}
           </h4>
           {editingId && (
@@ -2155,6 +2242,11 @@ export default function ResourceScreen({
                     </div>
                   </div>
                 );
+              }
+
+              if (field.showWhen) {
+                const depValue = form[field.showWhen.field] as string | undefined;
+                if ((depValue ?? "") !== field.showWhen.value) return null;
               }
 
               if (config.endpoint === "/athletes") {
@@ -2212,8 +2304,7 @@ export default function ResourceScreen({
                       }
                     />
                   ) : field.type === "select" ? (
-                    <select
-                      className="input"
+                    <StyledSelect
                       value={(form[field.key] as string) || ""}
                       disabled={field.readOnly}
                       onChange={(event) => {
@@ -2256,6 +2347,14 @@ export default function ResourceScreen({
                           }
                         }
                         if (config.endpoint === "/hotel-assignments") {
+                          if (field.key === "accommodationTypeFilter") {
+                            setForm({ ...form, accommodationTypeFilter: nextValue, towerFilter: "", hotelId: "", roomId: "", bedId: "" });
+                            return;
+                          }
+                          if (field.key === "towerFilter") {
+                            setForm({ ...form, towerFilter: nextValue, hotelId: "", roomId: "", bedId: "" });
+                            return;
+                          }
                           if (field.key === "hotelId") {
                             setForm({ ...form, hotelId: nextValue, roomId: "", bedId: "" });
                             return;
@@ -2308,7 +2407,7 @@ export default function ResourceScreen({
                           {t(option.label)}
                         </option>
                       ))}
-                    </select>
+                    </StyledSelect>
                   ) : field.type === "multiselect" ? (
                     <div className="input min-h-[120px] max-h-[220px] flex flex-col gap-2 overflow-y-auto">
                       {config.endpoint === "/trips" && field.key === "athleteIds" && (
@@ -2391,27 +2490,36 @@ export default function ResourceScreen({
                       })}
                     </div>
                   ) : field.type === "file" ? (
-                    <input
-                      className="input"
-                      type="file"
-                      accept="image/*"
-                      onChange={(event) => {
-                        const file = event.target.files?.[0];
-                        if (!file) {
-                          setForm({ ...form, [field.key]: "" });
-                          return;
-                        }
-                        const reader = new FileReader();
-                        reader.onload = () => {
-                          const result = reader.result;
-                          setForm({
-                            ...form,
-                            [field.key]: typeof result === "string" ? result : ""
-                          });
-                        };
-                        reader.readAsDataURL(file);
-                      }}
-                    />
+                    <div className="flex flex-wrap items-center gap-3">
+                      <input
+                        id={`file-${field.key}`}
+                        className="sr-only"
+                        type="file"
+                        accept="image/*"
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          if (!file) {
+                            setForm({ ...form, [field.key]: "" });
+                            return;
+                          }
+                          const reader = new FileReader();
+                          reader.onload = () => {
+                            const result = reader.result;
+                            setForm({
+                              ...form,
+                              [field.key]: typeof result === "string" ? result : ""
+                            });
+                          };
+                          reader.readAsDataURL(file);
+                        }}
+                      />
+                      <label htmlFor={`file-${field.key}`} className="btn btn-ghost cursor-pointer">
+                        Seleccionar imagen
+                      </label>
+                      <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+                        {form[field.key] ? t("Imagen seleccionada") : t("Sin imagen seleccionada")}
+                      </span>
+                    </div>
                   ) : (
                     <input
                       className={`input ${field.readOnly ? "opacity-60" : ""}`}
@@ -2502,13 +2610,19 @@ export default function ResourceScreen({
                 (form.participantCountryCode as string | undefined) ?? "";
               const showRut = participantCountry === "CHL";
               const showPassport = participantCountry !== "CHL";
+              const delegationCountry = (form.countryCode as string | undefined) ?? "";
+              const participantTransportType = (form.participantTransportType as string | undefined) ?? "";
+              const participantTripType = (form.participantTripType as string | undefined) ?? "";
               const shouldRender = (field: FieldDef) => {
-                if (field.key === "participantRut") {
-                  return showRut;
-                }
-                if (field.key === "participantPassportNumber") {
-                  return showPassport;
-                }
+                if (field.key === "participantRut") return showRut;
+                if (field.key === "participantPassportNumber") return showPassport;
+                if (field.key === "participantRegion") return delegationCountry === "CHL";
+                if (field.key === "participantArrivalTime") return participantTripType === "ARRIVAL";
+                if (field.key === "participantDepartureTime") return participantTripType === "DEPARTURE";
+                if (field.key === "participantDepartureGate") return participantTripType === "DEPARTURE" && participantTransportType === "AVION";
+                if (field.key === "participantArrivalBaggage") return participantTripType === "ARRIVAL" && participantTransportType === "AVION";
+                if (["participantFlightNumber", "participantAirline", "participantOrigin"].includes(field.key)) return participantTransportType === "AVION";
+                if (["participantBusPlate", "participantBusDriverName", "participantBusCompany"].includes(field.key)) return participantTransportType === "BUS";
                 return true;
               };
 
@@ -2539,7 +2653,12 @@ export default function ResourceScreen({
                 "participantArrivalTime",
                 "participantDepartureTime",
                 "participantDepartureGate",
-                "participantArrivalBaggage"
+                "participantArrivalBaggage",
+                "participantRegion",
+                "participantTransportType",
+                "participantBusPlate",
+                "participantBusDriverName",
+                "participantBusCompany"
               ]);
               const luggageKeys = new Set([
                 "participantBolsoCount",
@@ -2676,6 +2795,7 @@ export default function ResourceScreen({
                   (a, b) =>
                     hotelFieldOrder.indexOf(a.key) - hotelFieldOrder.indexOf(b.key)
                 );
+              const athleteCountry = (form.countryCode as string | undefined) ?? "";
               const personalKeys = new Set([
                 "eventId",
                 "delegationId",
@@ -2686,9 +2806,13 @@ export default function ResourceScreen({
                 "countryCode",
                 "rut",
                 "passportNumber",
-                "dateOfBirth"
+                "dateOfBirth",
+                "dietaryNeeds",
+                "region"
               ]);
               const flightKeys = new Set([
+                "tripType",
+                "transportType",
                 "flightNumber",
                 "airline",
                 "origin",
@@ -2698,22 +2822,40 @@ export default function ResourceScreen({
                 "luggageType",
                 "luggageNotes"
               ]);
-              const personalFields = fields.filter((field) => personalKeys.has(field.key));
+              const transportKeys = new Set([
+                "busPlate",
+                "busDriverName",
+                "busCompany"
+              ]);
+              const personalFields = fields.filter((field) => {
+                if (!personalKeys.has(field.key)) return false;
+                if (field.key === "region") return athleteCountry === "CHL";
+                return true;
+              });
               const luggageType =
                 (form.luggageType as string | undefined) ?? "";
               const showLuggageNotes = luggageType === "EXTRA_BAGGAGE";
+              const tripTypeValue = (form.tripType as string | undefined) ?? "";
+              const transportTypeValue = (form.transportType as string | undefined) ?? "";
               const flightFields = fields.filter((field) => {
                 if (!flightKeys.has(field.key)) return false;
-                if (field.key === "luggageNotes") {
-                  return showLuggageNotes;
-                }
+                if (field.key === "luggageNotes") return showLuggageNotes;
+                if (field.key === "arrivalTime") return tripTypeValue === "ARRIVAL";
+                if (field.key === "departureTime") return tripTypeValue === "DEPARTURE";
+                if (field.key === "departureGate") return tripTypeValue === "DEPARTURE" && transportTypeValue === "AVION";
+                if (["flightNumber", "airline", "origin"].includes(field.key)) return transportTypeValue === "AVION";
                 return true;
+              });
+              const transportFields = fields.filter((field) => {
+                if (!transportKeys.has(field.key)) return false;
+                return transportTypeValue === "BUS";
               });
               const otherFields = fields.filter(
                 (field) =>
                   !hotelKeys.has(field.key) &&
                   !personalKeys.has(field.key) &&
-                  !flightKeys.has(field.key)
+                  !flightKeys.has(field.key) &&
+                  !transportKeys.has(field.key)
               );
 
               return (
@@ -2734,12 +2876,18 @@ export default function ResourceScreen({
                   <section className="surface md:col-span-2 p-5">
                     <div className="mb-4">
                       <p className="section-label">
-                        {t("Vuelo")}
+                        {t("Viaje")}
                       </p>
                     </div>
                     <div className="grid gap-4 md:grid-cols-2">
                       {flightFields.map((field) => renderField(field))}
+                      {transportFields.map((field) => renderField(field))}
                     </div>
+                    {transportTypeValue === "BUS" && (
+                      <p className="mt-3 text-xs" style={{color:"var(--text-muted)"}}>
+                        {t("Complete los datos del bus de traslado.")}
+                      </p>
+                    )}
                   </section>
                   <section className="surface md:col-span-2 p-5">
                     <div className="mb-4">
@@ -2792,7 +2940,7 @@ export default function ResourceScreen({
 
               return (
                 <>
-                  <section className="surface md:col-span-2 p-5">
+                  <section className="surface md:col-span-2 p-5" style={{ borderTop: "2px solid var(--brand)" }}>
                     <div className="mb-4">
                       <p className="section-label">
                         {t("Datos generales")}
@@ -2803,7 +2951,7 @@ export default function ResourceScreen({
                     </div>
                   </section>
 
-                  <section className="surface md:col-span-2 p-5">
+                  <section className="surface md:col-span-2 p-5" style={{ borderTop: "2px solid #1FCDFF" }}>
                     <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                       <div>
                         <p className="section-label">
@@ -2814,10 +2962,10 @@ export default function ResourceScreen({
                         </p>
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs" style={{color:"var(--text-muted)"}}>
+                        <span style={{ borderRadius: "99px", border: "1px solid var(--border)", background: "var(--elevated)", padding: "2px 12px", fontSize: "11px", color: "var(--text-muted)" }}>
                           {selectedDisciplineIds.length} disciplinas
                         </span>
-                        <span className="rounded-full border border-emerald-200/30 bg-emerald-900/30 px-3 py-1 text-xs font-medium text-emerald-400">
+                        <span style={{ borderRadius: "99px", border: "1px solid rgba(33,208,179,0.35)", background: "rgba(33,208,179,0.1)", padding: "2px 12px", fontSize: "11px", fontWeight: 700, color: "var(--brand)" }}>
                           Total esperado {totalExpected}
                         </span>
                       </div>
@@ -2828,33 +2976,31 @@ export default function ResourceScreen({
                     </div>
 
                     <div className="mt-4 grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-                      <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-                        <div className="mb-3 flex items-center justify-between gap-2">
-                          <div>
-                            <p className="text-xs uppercase tracking-[0.16em]" style={{color:"var(--text-muted)"}}>
-                              {t("Disciplinas del evento")}
-                            </p>
-                            <p className="text-sm" style={{color:"var(--text-muted)"}}>
-                              {t("Selecciona las disciplinas que participarán en este evento.")}
-                            </p>
-                          </div>
+                      <div style={{ borderRadius: "12px", border: "1px solid var(--border)", background: "var(--surface)", borderTop: "2px solid var(--brand)", padding: "16px" }}>
+                        <div className="mb-3">
+                          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--brand)", marginBottom: "3px" }}>
+                            {t("Disciplinas del evento")}
+                          </p>
+                          <p className="text-sm" style={{color:"var(--text-muted)"}}>
+                            {t("Selecciona las disciplinas que participarán en este evento.")}
+                          </p>
                         </div>
                         {renderKeys(["disciplineIds"])}
                       </div>
 
-                      <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                      <div style={{ borderRadius: "12px", border: "1px solid var(--border)", background: "var(--surface)", borderTop: "2px solid #1FCDFF", padding: "16px" }}>
                         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                           <div>
-                            <p className="text-xs uppercase tracking-[0.16em]" style={{color:"var(--text-muted)"}}>Planificación AND</p>
-                            <p className="text-sm font-semibold text-white">Capacidad esperada por delegación y disciplina</p>
+                            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#1FCDFF", marginBottom: "3px" }}>Planificación AND</p>
+                            <p className="text-sm font-semibold" style={{ color: "var(--text)" }}>Capacidad esperada por delegación y disciplina</p>
                           </div>
-                          <div className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs" style={{color:"var(--text-muted)"}}>
+                          <span style={{ borderRadius: "99px", border: "1px solid rgba(31,205,255,0.35)", background: "rgba(31,205,255,0.1)", padding: "2px 12px", fontSize: "11px", fontWeight: 700, color: "#1FCDFF" }}>
                             Total esperado {totalExpected}
-                          </div>
+                          </span>
                         </div>
 
                         {selectedDisciplineIds.length === 0 ? (
-                          <div className="rounded-lg border border-dashed border-white/20 bg-white/5 p-4">
+                          <div style={{ borderRadius: "8px", border: "1px dashed var(--border-strong)", background: "transparent", padding: "16px" }}>
                             <p className="text-xs" style={{color:"var(--text-muted)"}}>
                               {t("Selecciona disciplinas para definir la capacidad esperada AND.")}
                             </p>
@@ -2862,8 +3008,7 @@ export default function ResourceScreen({
                         ) : (
                           <div className="space-y-3">
                             <div className="grid gap-2 md:grid-cols-[1fr_1fr_140px_auto]">
-                              <select
-                                className="input"
+                              <StyledSelect
                                 value={plannerDisciplineId}
                                 onChange={(e) => setEventPlannerDisciplineId(e.target.value)}
                               >
@@ -2873,9 +3018,8 @@ export default function ResourceScreen({
                                     {String(option.label || option.value)}
                                   </option>
                                 ))}
-                              </select>
-                              <select
-                                className="input"
+                              </StyledSelect>
+                              <StyledSelect
                                 value={eventPlannerDelegationCode}
                                 onChange={(e) => setEventPlannerDelegationCode(e.target.value)}
                               >
@@ -2884,7 +3028,7 @@ export default function ResourceScreen({
                                     {option.value} · {option.label}
                                   </option>
                                 ))}
-                              </select>
+                              </StyledSelect>
                               <input
                                 className="input text-right"
                                 type="number"
@@ -2918,7 +3062,7 @@ export default function ResourceScreen({
                             </div>
 
                             {plannerDisciplineOption ? (
-                              <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                              <div style={{ borderRadius: "10px", border: "1px solid var(--border)", background: "var(--surface)", padding: "12px" }}>
                                 <p className="text-xs uppercase tracking-[0.16em]" style={{color:"var(--text-muted)"}}>
                                   {t("Detalle disciplina")} · {String(plannerDisciplineOption.label || plannerDisciplineOption.value)}
                                 </p>
@@ -2927,9 +3071,9 @@ export default function ResourceScreen({
                                     const value = plannerRow[country.value];
                                     if (value === undefined || value === "") return null;
                                     return (
-                                      <div key={`${plannerDisciplineOption.value}-${country.value}`} className="flex items-center justify-between rounded-lg border border-white/10 px-2.5 py-1.5 text-sm">
+                                      <div key={`${plannerDisciplineOption.value}-${country.value}`} className="flex items-center justify-between px-2.5 py-1.5 text-sm" style={{ borderRadius: "6px", border: "1px solid var(--border)", background: "var(--elevated)" }}>
                                         <span style={{color:"var(--text)"}}>{country.value} · {country.label}</span>
-                                        <span className="font-semibold text-white">{value}</span>
+                                        <span className="font-semibold" style={{ color: "var(--brand)" }}>{value}</span>
                                       </div>
                                     );
                                   })}
@@ -2940,13 +3084,13 @@ export default function ResourceScreen({
                               </div>
                             ) : null}
 
-                            <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                            <div style={{ borderRadius: "10px", border: "1px solid var(--border)", background: "var(--surface)", padding: "12px" }}>
                               <p className="text-xs uppercase tracking-[0.16em]" style={{color:"var(--text-muted)"}}>{t("Resumen por disciplina")}</p>
                               <div className="mt-2 space-y-1.5">
                                 {selectedDisciplineOptions.map((option) => (
                                   <div key={`sum-${option.value}`} className="flex items-center justify-between text-sm">
                                     <span style={{color:"var(--text)"}}>{String(option.label || option.value)}</span>
-                                    <span className="font-semibold text-white">
+                                    <span className="font-semibold" style={{ color: "var(--brand)" }}>
                                       {expectedByDisciplineFromMatrix[option.value] ?? 0}
                                     </span>
                                   </div>
@@ -2969,7 +3113,7 @@ export default function ResourceScreen({
             const roomKeys = ["roomSingle", "roomDouble", "roomTriple", "roomSuite"];
             return (
               <>
-                {["eventId", "name", "address"].map((key) => {
+                {["eventId", "accommodationType", "tower", "name", "address"].map((key) => {
                   const field = byKey.get(key);
                   return field ? renderField(field) : null;
                 })}
@@ -2993,7 +3137,7 @@ export default function ResourceScreen({
           })()}
 
           <div className="flex items-end">
-            <button className="btn btn-primary" type="submit">
+            <button className="btn btn-primary" type="submit" style={{ padding: "9px 24px", fontSize: "13px", borderRadius: "10px", letterSpacing: "0.06em" }}>
               {editingId ? t("Actualizar") : t("Crear")}
             </button>
           </div>
@@ -3003,26 +3147,402 @@ export default function ResourceScreen({
       ) : null}
 
       {viewMode !== "form" ? (
-      <section className="surface p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h4 className="font-bold text-white text-xl">{t("Registros")}</h4>
-          <button className="btn btn-ghost" onClick={loadItems} disabled={loading}>
+      <section className="surface p-6" style={{ borderTop: "2px solid #1FCDFF" }}>
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#1FCDFF", marginBottom: "3px" }}>
+              {t("Base de datos")}
+            </p>
+            <h4 style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--text)", letterSpacing: "-0.01em" }}>{t("Registros")}</h4>
+          </div>
+          <button
+            className="btn btn-ghost"
+            onClick={loadItems}
+            disabled={loading}
+            style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px" }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7 }}>
+              <path d="M21 2v6h-6" /><path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+              <path d="M3 22v-6h6" /><path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+            </svg>
             {loading ? t("Actualizando...") : t("Refrescar")}
           </button>
         </div>
         {items.length === 0 ? (
           <div className="text-sm" style={{color:"var(--text-muted)"}}>{t("Sin registros aún.")}</div>
-        ) : (
-          <div className="max-h-[70vh] overflow-auto rounded-2xl border border-white/10">
+        ) : config.endpoint === "/delegations" ? (() => {
+          const searchLower = andSearch.toLowerCase();
+          const filtered = items.filter((item) => {
+            const nameMatch = !andSearch || (item.participantFullName ?? "").toLowerCase().includes(searchLower);
+            const trip = (item.participantTripType ?? "").toUpperCase();
+            const tripMatch =
+              andTripFilter === "all" ||
+              (andTripFilter === "ARRIVAL" && trip === "ARRIVAL") ||
+              (andTripFilter === "DEPARTURE" && trip === "DEPARTURE");
+            return nameMatch && tripMatch;
+          });
+          const arrivalCount = items.filter((i) => (i.participantTripType ?? "").toUpperCase() === "ARRIVAL").length;
+          const departureCount = items.filter((i) => (i.participantTripType ?? "").toUpperCase() === "DEPARTURE").length;
+          const USER_TYPE_LABELS: Record<string, string> = {
+            VIP: "VIP", FAMILIA_PARAPAN: "Familia Parapan", TA: "Deportista",
+            TF: "Oficiales Técnicos", TM: "Prensa", COMITE_ORGANIZADOR: "Comité Organizador", PROVEEDORES: "Proveedores",
+          };
+          return (
+            <div>
+              {/* Stats bar */}
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px", flexWrap: "wrap" }}>
+                <span style={{ fontSize: "12px", fontWeight: 600, color: "#21D0B3", background: "rgba(33,208,179,0.1)", borderRadius: "20px", padding: "3px 10px", border: "1px solid rgba(33,208,179,0.2)" }}>
+                  {arrivalCount} {t("llegadas")}
+                </span>
+                <span style={{ fontSize: "12px", fontWeight: 600, color: "#a78bfa", background: "rgba(167,139,250,0.1)", borderRadius: "20px", padding: "3px 10px", border: "1px solid rgba(167,139,250,0.2)" }}>
+                  {departureCount} {t("salidas")}
+                </span>
+                <span style={{ fontSize: "12px", color: "var(--text-muted)", marginLeft: "4px" }}>— {items.length} {t("total")}</span>
+              </div>
+              {/* Search + filter */}
+              <div style={{ display: "flex", gap: "8px", marginBottom: "16px", flexWrap: "wrap" }}>
+                <input
+                  type="text"
+                  placeholder={t("Buscar por nombre...")}
+                  value={andSearch}
+                  onChange={(e) => setAndSearch(e.target.value)}
+                  style={{ flex: 1, minWidth: "180px", maxWidth: "320px", border: "1px solid var(--border)", borderRadius: "8px", padding: "6px 12px", fontSize: "13px", background: "var(--surface)", color: "var(--text)", outline: "none" }}
+                />
+                {(["all", "ARRIVAL", "DEPARTURE"] as const).map((f) => (
+                  <button key={f} type="button" onClick={() => setAndTripFilter(f)} style={{
+                    fontSize: "12px", fontWeight: 600, padding: "5px 14px", borderRadius: "20px", cursor: "pointer", border: "1.5px solid",
+                    borderColor: andTripFilter === f ? (f === "ARRIVAL" ? "#21D0B3" : f === "DEPARTURE" ? "#a78bfa" : "#1FCDFF") : "var(--border)",
+                    background: andTripFilter === f ? (f === "ARRIVAL" ? "rgba(33,208,179,0.1)" : f === "DEPARTURE" ? "rgba(167,139,250,0.1)" : "rgba(31,205,255,0.1)") : "transparent",
+                    color: andTripFilter === f ? (f === "ARRIVAL" ? "#21D0B3" : f === "DEPARTURE" ? "#a78bfa" : "#1FCDFF") : "var(--text-muted)",
+                  }}>
+                    {f === "all" ? t("Todos") : f === "ARRIVAL" ? t("Llegadas") : t("Salidas")}
+                  </button>
+                ))}
+              </div>
+              {/* Cards */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "65vh", overflowY: "auto" }}>
+                {filtered.length === 0 && (
+                  <div style={{ color: "var(--text-muted)", fontSize: "13px", padding: "16px 0" }}>{t("Sin resultados.")}</div>
+                )}
+                {filtered.map((item) => {
+                  const trip = (item.participantTripType ?? "").toUpperCase();
+                  const isArrival = trip === "ARRIVAL";
+                  const isDeparture = trip === "DEPARTURE";
+                  const borderColor = isArrival ? "#21D0B3" : isDeparture ? "#a78bfa" : "#cbd5e1";
+                  const bgColor = isArrival ? "rgba(33,208,179,0.03)" : isDeparture ? "rgba(167,139,250,0.03)" : "#fafafa";
+                  const initials = (item.participantFullName ?? "?").split(" ").slice(0, 2).map((w: string) => w[0] ?? "").join("").toUpperCase();
+                  const avatarBg = isArrival ? "rgba(33,208,179,0.15)" : isDeparture ? "rgba(167,139,250,0.12)" : "rgba(148,163,184,0.12)";
+                  const avatarColor = isArrival ? "#059669" : isDeparture ? "#7c3aed" : "#64748b";
+                  const eventLabel = eventOptions.find((o) => o.value === item.eventId)?.label ?? null;
+                  const disciplineLabel = disciplineOptions.find((o: any) => o.value === item.participantDisciplineId)?.label ?? null;
+                  const userTypeLabel = USER_TYPE_LABELS[item.participantUserType ?? ""] ?? item.participantUserType ?? null;
+                  const isLead = item.participantIsDelegationLead === "true";
+                  const visaRequired = item.participantVisaRequired === "true";
+                  return (
+                    <div key={item.id ?? JSON.stringify(item)} style={{
+                      borderRadius: "12px",
+                      border: `1px solid ${isArrival ? "rgba(33,208,179,0.25)" : isDeparture ? "rgba(167,139,250,0.25)" : "#e2e8f0"}`,
+                      borderLeft: `4px solid ${borderColor}`,
+                      background: bgColor,
+                      padding: "12px 14px",
+                      display: "flex", alignItems: "flex-start", gap: "12px",
+                    }}>
+                      {/* Avatar */}
+                      <div style={{ width: "40px", height: "40px", borderRadius: "50%", flexShrink: 0, background: avatarBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", fontWeight: 700, color: avatarColor }}>
+                        {initials}
+                      </div>
+                      {/* Main info */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "4px" }}>
+                          <span style={{ fontWeight: 700, fontSize: "14px", color: "var(--text)" }}>{item.participantFullName ?? "-"}</span>
+                          {isLead && (
+                            <span style={{ fontSize: "10px", fontWeight: 700, padding: "2px 7px", borderRadius: "20px", background: "rgba(251,191,36,0.15)", color: "#b45309", border: "1px solid rgba(251,191,36,0.3)" }}>
+                              {t("Jefe delegación")}
+                            </span>
+                          )}
+                          {trip && (
+                            <span style={{
+                              fontSize: "10px", fontWeight: 700, letterSpacing: "0.06em", padding: "2px 8px", borderRadius: "20px",
+                              background: isArrival ? "rgba(33,208,179,0.12)" : isDeparture ? "rgba(167,139,250,0.12)" : "rgba(148,163,184,0.1)",
+                              color: isArrival ? "#21D0B3" : isDeparture ? "#a78bfa" : "var(--text-muted)",
+                              border: `1px solid ${isArrival ? "rgba(33,208,179,0.25)" : isDeparture ? "rgba(167,139,250,0.25)" : "var(--border)"}`,
+                            }}>
+                              {isArrival ? t("LLEGADA") : isDeparture ? t("SALIDA") : trip}
+                            </span>
+                          )}
+                        </div>
+                        {/* Tags */}
+                        <div style={{ display: "flex", gap: "5px", flexWrap: "wrap", marginBottom: "5px" }}>
+                          {item.participantCountryCode && (
+                            <span style={{ fontSize: "10px", fontWeight: 600, padding: "1px 7px", borderRadius: "4px", background: "rgba(99,102,241,0.08)", color: "#6366f1", border: "1px solid rgba(99,102,241,0.15)" }}>
+                              {item.participantCountryCode}
+                            </span>
+                          )}
+                          {userTypeLabel && (
+                            <span style={{ fontSize: "10px", fontWeight: 500, padding: "1px 7px", borderRadius: "4px", background: "rgba(148,163,184,0.1)", color: "var(--text-muted)", border: "1px solid var(--border)" }}>
+                              {userTypeLabel}
+                            </span>
+                          )}
+                          {disciplineLabel && (
+                            <span style={{ fontSize: "10px", fontWeight: 500, padding: "1px 7px", borderRadius: "4px", background: "rgba(148,163,184,0.08)", color: "var(--text-muted)", border: "1px solid var(--border)" }}>
+                              {disciplineLabel}
+                            </span>
+                          )}
+                          {visaRequired && (
+                            <span style={{ fontSize: "10px", fontWeight: 600, padding: "1px 7px", borderRadius: "4px", background: "rgba(245,158,11,0.1)", color: "#b45309", border: "1px solid rgba(245,158,11,0.2)" }}>
+                              {t("Visa requerida")}
+                            </span>
+                          )}
+                        </div>
+                        {/* Detail row */}
+                        <div style={{ display: "flex", gap: "14px", flexWrap: "wrap" }}>
+                          {item.participantPhone && (
+                            <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                              <span style={{ fontWeight: 600 }}>{t("Tel")}: </span>{item.participantPhone}
+                            </span>
+                          )}
+                          {item.participantEmail && (
+                            <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>{item.participantEmail}</span>
+                          )}
+                          {eventLabel && (
+                            <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                              <span style={{ fontWeight: 600 }}>{t("Evento")}: </span>{eventLabel}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {/* Actions */}
+                      <div style={{ display: "flex", gap: "4px", flexShrink: 0 }}>
+                        <button className="btn btn-ghost" style={{ fontSize: "11px", padding: "4px 10px" }} onClick={() => { handleEdit(item); if (item.id) onEditRequested?.(item.id); }}>
+                          {t("Editar")}
+                        </button>
+                        {item.id && (
+                          <button className="btn btn-ghost" style={{ fontSize: "11px", padding: "4px 10px", color: "#ef4444" }} onClick={() => handleDelete(item.id)}>
+                            {t("Eliminar")}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })() : config.endpoint === "/athletes" ? (() => {
+          const validatedCount = items.filter((i) => isAthletePersonalDataValidated(i)).length;
+          const pendingCount = items.length - validatedCount;
+          const searchLower = athleteSearch.toLowerCase();
+          const filtered = items.filter((item) => {
+            const nameMatch = !athleteSearch || (item.fullName ?? "").toLowerCase().includes(searchLower);
+            const isVal = isAthletePersonalDataValidated(item);
+            const statusMatch =
+              athleteStatusFilter === "all" ||
+              (athleteStatusFilter === "validated" && isVal) ||
+              (athleteStatusFilter === "pending" && !isVal);
+            return nameMatch && statusMatch;
+          });
+          const USER_TYPE_LABELS: Record<string, string> = {
+            VIP: "VIP",
+            FAMILIA_PARAPAN: "Familia Parapan",
+            TA: "TA (Deportista)",
+            TF: "TF (Oficiales Técnicos)",
+            TM: "TM (Prensa)",
+            COMITE_ORGANIZADOR: "Comité Organizador",
+            PROVEEDORES: "Proveedores",
+          };
+          return (
+            <div>
+              {/* Stats bar */}
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px", flexWrap: "wrap" }}>
+                <span style={{ fontSize: "12px", fontWeight: 600, color: "#10b981", background: "rgba(16,185,129,0.1)", borderRadius: "20px", padding: "3px 10px", border: "1px solid rgba(16,185,129,0.2)" }}>
+                  {validatedCount} {t("validados")}
+                </span>
+                <span style={{ fontSize: "12px", fontWeight: 600, color: "#f59e0b", background: "rgba(245,158,11,0.1)", borderRadius: "20px", padding: "3px 10px", border: "1px solid rgba(245,158,11,0.2)" }}>
+                  {pendingCount} {t("pendientes")}
+                </span>
+                <span style={{ fontSize: "12px", color: "var(--text-muted)", marginLeft: "4px" }}>
+                  — {items.length} {t("total")}
+                </span>
+              </div>
+              {/* Search + filter */}
+              <div style={{ display: "flex", gap: "8px", marginBottom: "16px", flexWrap: "wrap" }}>
+                <input
+                  type="text"
+                  placeholder={t("Buscar por nombre...")}
+                  value={athleteSearch}
+                  onChange={(e) => setAthleteSearch(e.target.value)}
+                  style={{ flex: 1, minWidth: "180px", maxWidth: "320px", border: "1px solid var(--border)", borderRadius: "8px", padding: "6px 12px", fontSize: "13px", background: "var(--surface)", color: "var(--text)", outline: "none" }}
+                />
+                {(["all", "validated", "pending"] as const).map((f) => (
+                  <button
+                    key={f}
+                    type="button"
+                    onClick={() => setAthleteStatusFilter(f)}
+                    style={{
+                      fontSize: "12px", fontWeight: 600, padding: "5px 14px", borderRadius: "20px", cursor: "pointer", border: "1.5px solid",
+                      borderColor: athleteStatusFilter === f ? (f === "validated" ? "#10b981" : f === "pending" ? "#f59e0b" : "#1FCDFF") : "var(--border)",
+                      background: athleteStatusFilter === f ? (f === "validated" ? "rgba(16,185,129,0.1)" : f === "pending" ? "rgba(245,158,11,0.1)" : "rgba(31,205,255,0.1)") : "transparent",
+                      color: athleteStatusFilter === f ? (f === "validated" ? "#10b981" : f === "pending" ? "#f59e0b" : "#1FCDFF") : "var(--text-muted)",
+                    }}
+                  >
+                    {f === "all" ? t("Todos") : f === "validated" ? t("Validados") : t("Pendientes")}
+                  </button>
+                ))}
+              </div>
+              {/* Cards */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "65vh", overflowY: "auto" }}>
+                {filtered.length === 0 && (
+                  <div style={{ color: "var(--text-muted)", fontSize: "13px", padding: "16px 0" }}>{t("Sin resultados.")}</div>
+                )}
+                {filtered.map((item) => {
+                  const isVal = isAthletePersonalDataValidated(item);
+                  const missing = missingAthleteValidationFields(item);
+                  const initials = (item.fullName ?? "?").split(" ").slice(0, 2).map((w: string) => w[0] ?? "").join("").toUpperCase();
+                  const delegLabel = delegationOptions.find((o) => o.value === item.delegationId)?.label ?? item.delegationId ?? null;
+                  const eventLabel = eventOptions.find((o) => o.value === item.eventId)?.label ?? null;
+                  const disciplineLabel = disciplineOptions.find((o: any) => o.value === item.disciplineId)?.label ?? null;
+                  const userTypeLabel = USER_TYPE_LABELS[item.userType ?? ""] ?? item.userType ?? null;
+                  const dob = item.dateOfBirth ? new Date(item.dateOfBirth).toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" }) : null;
+                  return (
+                    <div key={item.id ?? JSON.stringify(item)} style={{
+                      borderRadius: "12px",
+                      border: `1px solid ${isVal ? "rgba(16,185,129,0.25)" : "#e2e8f0"}`,
+                      borderLeft: `4px solid ${isVal ? "#10b981" : "#f59e0b"}`,
+                      background: isVal ? "rgba(16,185,129,0.03)" : "#fafafa",
+                      padding: "12px 14px",
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: "12px",
+                    }}>
+                      {/* Avatar */}
+                      <div style={{
+                        width: "40px", height: "40px", borderRadius: "50%", flexShrink: 0,
+                        background: isVal ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.12)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: "13px", fontWeight: 700,
+                        color: isVal ? "#059669" : "#b45309",
+                      }}>
+                        {initials}
+                      </div>
+                      {/* Main info */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "4px" }}>
+                          <span style={{ fontWeight: 700, fontSize: "14px", color: "var(--text)" }}>{item.fullName ?? "-"}</span>
+                          {/* Status badge */}
+                          <span style={{
+                            fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", padding: "2px 8px", borderRadius: "20px",
+                            background: isVal ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.12)",
+                            color: isVal ? "#059669" : "#b45309",
+                            border: `1px solid ${isVal ? "rgba(16,185,129,0.3)" : "rgba(245,158,11,0.3)"}`,
+                          }}>
+                            {isVal ? t("VALIDADO") : t("PENDIENTE")}
+                          </span>
+                          {/* Missing fields warning */}
+                          {!isVal && missing.length > 0 && (
+                            <span title={missing.map((f) => f.label).join(", ")} style={{
+                              fontSize: "10px", fontWeight: 600, padding: "2px 8px", borderRadius: "20px",
+                              background: "rgba(239,68,68,0.1)", color: "#dc2626",
+                              border: "1px solid rgba(239,68,68,0.2)", cursor: "help",
+                            }}>
+                              {missing.length} {t("campos faltantes")}
+                            </span>
+                          )}
+                        </div>
+                        {/* Tags row */}
+                        <div style={{ display: "flex", gap: "5px", flexWrap: "wrap", marginBottom: "5px" }}>
+                          {delegLabel && (
+                            <span style={{ fontSize: "10px", fontWeight: 600, padding: "1px 7px", borderRadius: "4px", background: "rgba(31,205,255,0.1)", color: "#0891b2", border: "1px solid rgba(31,205,255,0.2)" }}>
+                              {delegLabel}
+                            </span>
+                          )}
+                          {item.countryCode && (
+                            <span style={{ fontSize: "10px", fontWeight: 600, padding: "1px 7px", borderRadius: "4px", background: "rgba(99,102,241,0.08)", color: "#6366f1", border: "1px solid rgba(99,102,241,0.15)" }}>
+                              {item.countryCode}
+                            </span>
+                          )}
+                          {disciplineLabel && (
+                            <span style={{ fontSize: "10px", fontWeight: 500, padding: "1px 7px", borderRadius: "4px", background: "rgba(148,163,184,0.12)", color: "var(--text-muted)", border: "1px solid var(--border)" }}>
+                              {disciplineLabel}
+                            </span>
+                          )}
+                          {userTypeLabel && (
+                            <span style={{ fontSize: "10px", fontWeight: 500, padding: "1px 7px", borderRadius: "4px", background: "rgba(148,163,184,0.08)", color: "var(--text-muted)", border: "1px solid var(--border)" }}>
+                              {userTypeLabel}
+                            </span>
+                          )}
+                        </div>
+                        {/* Detail row */}
+                        <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+                          {item.passportNumber && (
+                            <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                              <span style={{ fontWeight: 600 }}>{t("Pasaporte")}: </span>{item.passportNumber}
+                            </span>
+                          )}
+                          {dob && (
+                            <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                              <span style={{ fontWeight: 600 }}>{t("Nac.")}: </span>{dob}
+                            </span>
+                          )}
+                          {eventLabel && (
+                            <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                              <span style={{ fontWeight: 600 }}>{t("Evento")}: </span>{eventLabel}
+                            </span>
+                          )}
+                          {item.email && (
+                            <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>{item.email}</span>
+                          )}
+                        </div>
+                      </div>
+                      {/* Actions */}
+                      <div style={{ display: "flex", flexDirection: "column", gap: "5px", flexShrink: 0, alignItems: "flex-end" }}>
+                        {!isVal && (
+                          <button
+                            className="btn btn-primary"
+                            style={{ fontSize: "11px", padding: "5px 12px", borderRadius: "8px" }}
+                            onClick={() => handleValidateAthlete(item)}
+                          >
+                            {t("Validar")}
+                          </button>
+                        )}
+                        <div style={{ display: "flex", gap: "4px" }}>
+                          <button
+                            className="btn btn-ghost"
+                            style={{ fontSize: "11px", padding: "4px 10px" }}
+                            onClick={() => {
+                              handleEdit(item);
+                              if (item.id) onEditRequested?.(item.id);
+                            }}
+                          >
+                            {t("Editar")}
+                          </button>
+                          {item.id && (
+                            <button
+                              className="btn btn-ghost"
+                              style={{ fontSize: "11px", padding: "4px 10px", color: "#ef4444" }}
+                              onClick={() => handleDelete(item.id)}
+                            >
+                              {t("Eliminar")}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })() : (
+          <div className="max-h-[70vh] overflow-auto rounded-2xl" style={{ border: "1px solid var(--border)" }}>
             <table className="table">
               <thead>
                 <tr>
                   {columns.map((col) => (
-                    <th key={col.key} className="sticky top-0 z-10 bg-[#0b1628]">
+                    <th key={col.key} className="sticky top-0 z-10" style={{ background: "linear-gradient(to bottom, #eaf4fb, #e8f0f8)", color: "#1FCDFF", fontSize: "10px", letterSpacing: "0.16em", textTransform: "uppercase", borderBottom: "2px solid rgba(31,205,255,0.25)", fontWeight: 700 }}>
                       {col.label}
                     </th>
                   ))}
-                  <th className="sticky top-0 z-10 bg-[#0b1628]">{t("Acciones")}</th>
+                  <th className="sticky top-0 z-10" style={{ background: "linear-gradient(to bottom, #eaf4fb, #e8f0f8)", color: "#1FCDFF", fontSize: "10px", letterSpacing: "0.16em", textTransform: "uppercase", borderBottom: "2px solid rgba(31,205,255,0.25)", fontWeight: 700 }}>{t("Acciones")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -3041,15 +3561,6 @@ export default function ResourceScreen({
                       >
                         {t("Editar")}
                       </button>
-                      {config.endpoint === "/athletes" ? (
-                        <button
-                          className="btn btn-ghost"
-                          onClick={() => handleValidateAthlete(item)}
-                          disabled={isAthletePersonalDataValidated(item)}
-                        >
-                          {isAthletePersonalDataValidated(item) ? "Validado" : "Validar datos"}
-                        </button>
-                      ) : null}
                       {item.id && (
                         <button className="btn btn-ghost" onClick={() => handleDelete(item.id)}>
                           {t("Eliminar")}

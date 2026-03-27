@@ -1,5 +1,6 @@
 export const CLIENT_TYPE_OPTIONS = [
   { label: "VIP", value: "VIP" },
+  { label: "T1", value: "T1" },
   { label: "Familia Parapan", value: "FAMILIA_PARAPAN" },
   { label: "TA (Deportista)", value: "TA" },
   { label: "TF (Oficiales Técnicos)", value: "TF" },

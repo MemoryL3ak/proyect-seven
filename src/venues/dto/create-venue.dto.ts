@@ -20,4 +20,8 @@ export class CreateVenueDto {
   @IsString()
   @IsOptional()
   commune?: string;
+
+  @IsString()
+  @IsOptional()
+  photoUrl?: string;
 }

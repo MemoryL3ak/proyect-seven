@@ -163,6 +163,26 @@ export class CreateAthleteDto {
   @IsOptional()
   observations?: string;
 
+  @IsString()
+  @IsOptional()
+  region?: string;
+
+  @IsString()
+  @IsOptional()
+  transportType?: string;
+
+  @IsString()
+  @IsOptional()
+  busPlate?: string;
+
+  @IsString()
+  @IsOptional()
+  busDriverName?: string;
+
+  @IsString()
+  @IsOptional()
+  busCompany?: string;
+
   @IsBoolean()
   @IsOptional()
   isDelegationLead?: boolean;

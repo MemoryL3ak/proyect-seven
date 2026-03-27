@@ -31,6 +31,11 @@ export class FlightsController {
     return this.flightsService.lookupAirline(flightNumber);
   }
 
+  @Get('track')
+  trackFlight(@Query('flightNumber') flightNumber: string) {
+    return this.flightsService.trackFlight(flightNumber);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.flightsService.findOne(id);

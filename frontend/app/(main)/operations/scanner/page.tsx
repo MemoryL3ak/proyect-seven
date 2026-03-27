@@ -3,15 +3,15 @@ import Link from "next/link";
 export default function ScannerOperationsPage() {
   return (
     <div className="space-y-6">
-      <section
-        className="rounded-3xl border border-slate-300 p-6 text-white shadow-xl"
-        style={{ background: "linear-gradient(110deg, #0f172a 0%, #1d4ed8 52%, #0f766e 100%)" }}
-      >
-        <div className="flex flex-wrap items-end justify-between gap-4">
+      <section style={{ borderRadius: "24px", background: "#ffffff", border: "1px solid #e2e8f0", padding: "24px 28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
           <div>
-            <p className="text-xs uppercase tracking-[0.28em] text-white/85">Control de acceso</p>
-            <h1 className="mt-1 text-3xl font-semibold">Portal de escaneo QR</h1>
-            <p className="mt-1 max-w-2xl text-sm text-white/85">
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.25)", borderRadius: "99px", padding: "3px 12px", fontSize: "10px", fontWeight: 700, letterSpacing: "0.25em", textTransform: "uppercase", color: "#21D0B3" }}>
+              <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#21D0B3", display: "inline-block" }} />
+              Control de acceso
+            </span>
+            <h1 style={{ marginTop: "10px", fontSize: "1.6rem", fontWeight: 800, lineHeight: 1.1, color: "#0f172a" }}>Portal de escaneo QR</h1>
+            <p style={{ marginTop: "6px", fontSize: "14px", color: "#64748b", maxWidth: "480px" }}>
               El escaner se abre ahora en una vista independiente, optimizada para telefono y uso operativo en acceso.
             </p>
           </div>
@@ -19,30 +19,27 @@ export default function ScannerOperationsPage() {
             href="/scanner"
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center rounded-2xl border border-white/35 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/18"
+            style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "10px 20px", borderRadius: "12px", background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: "#ffffff", fontSize: "13px", fontWeight: 700, textDecoration: "none", boxShadow: "0 2px 10px rgba(33,208,179,0.35)" }}
           >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
             Abrir portal independiente
           </Link>
         </div>
       </section>
 
-      <section className="surface rounded-3xl p-6">
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-            <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Uso recomendado</p>
-            <p className="mt-3 text-lg font-semibold text-slate-950">Telefono o totem</p>
-            <p className="mt-2 text-sm leading-6 text-slate-500">Interfaz limpia, full screen y sin menu lateral para operacion continua.</p>
-          </div>
-          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-            <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Lugares activos</p>
-            <p className="mt-3 text-lg font-semibold text-slate-950">Estadio, Hotel, Gimnasio, Casino</p>
-            <p className="mt-2 text-sm leading-6 text-slate-500">Cada lectura queda identificada por el lugar seleccionado en pantalla.</p>
-          </div>
-          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-            <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Acceso directo</p>
-            <p className="mt-3 text-lg font-semibold text-slate-950">`/scanner`</p>
-            <p className="mt-2 text-sm leading-6 text-slate-500">Puedes abrir esa ruta directamente desde el navegador del telefono.</p>
-          </div>
+      <section style={{ borderRadius: "24px", background: "#ffffff", border: "1px solid #e2e8f0", padding: "24px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+        <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(3, 1fr)" }}>
+          {[
+            { label: "Uso recomendado", title: "Teléfono o totem", desc: "Interfaz limpia, full screen y sin menú lateral para operación continua." },
+            { label: "Lugares activos", title: "Estadio, Hotel, Gimnasio, Casino", desc: "Cada lectura queda identificada por el lugar seleccionado en pantalla." },
+            { label: "Acceso directo", title: "/scanner", desc: "Puedes abrir esa ruta directamente desde el navegador del teléfono." },
+          ].map((card) => (
+            <div key={card.label} style={{ borderRadius: "16px", border: "1px solid #e2e8f0", background: "#f8fafc", padding: "20px" }}>
+              <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#94a3b8" }}>{card.label}</p>
+              <p style={{ marginTop: "10px", fontSize: "15px", fontWeight: 700, color: "#0f172a" }}>{card.title}</p>
+              <p style={{ marginTop: "6px", fontSize: "13px", lineHeight: 1.6, color: "#64748b" }}>{card.desc}</p>
+            </div>
+          ))}
         </div>
       </section>
     </div>

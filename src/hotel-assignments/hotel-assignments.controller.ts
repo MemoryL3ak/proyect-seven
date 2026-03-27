@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { AutoAssignHotelByRoomTypeDto } from './dto/auto-assign-hotel-by-room-type.dto';
 import { CreateHotelAssignmentDto } from './dto/create-hotel-assignment.dto';
 import { UpdateHotelAssignmentDto } from './dto/update-hotel-assignment.dto';
@@ -14,8 +14,13 @@ export class HotelAssignmentsController {
   }
 
   @Get()
-  findAll() {
-    return this.hotelAssignmentsService.findAll();
+  findAll(@Query('userType') userType?: string) {
+    return this.hotelAssignmentsService.findAll(userType);
+  }
+
+  @Post('bulk')
+  bulkCreate(@Body() body: Array<{ participantId: string; hotelId: string; roomNumber?: string; checkinAt?: string; checkoutAt?: string }>) {
+    return this.hotelAssignmentsService.bulkCreate(body);
   }
 
   @Get('capacity/:hotelId')

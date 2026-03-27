@@ -5,6 +5,14 @@ export class CreateProviderDto {
   @IsNotEmpty()
   name: string;
 
+  @IsString()
+  @IsOptional()
+  type?: string;
+
+  @IsString()
+  @IsOptional()
+  subtype?: string;
+
   @IsEmail()
   @IsOptional()
   email?: string;

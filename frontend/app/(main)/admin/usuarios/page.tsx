@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { useTheme } from "@/lib/theme";
 import { apiFetch } from "@/lib/api";
+import StyledSelect from "@/components/StyledSelect";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type SupabaseUser = {
@@ -119,6 +119,152 @@ function extractUsername(email: string) {
   return isUsernameUser(email) ? email.replace("@nomail.seven", "") : email;
 }
 
+// ── Icons ────────────────────────────────────────────────────────────────────
+function UsersIcon({ color, size = 18 }: { color: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>
+    </svg>
+  );
+}
+function ActiveIcon({ color, size = 18 }: { color: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+    </svg>
+  );
+}
+function ShieldIcon({ color, size = 18 }: { color: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    </svg>
+  );
+}
+function ClockIcon({ color, size = 18 }: { color: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+    </svg>
+  );
+}
+function KeyIcon({ color, size = 18 }: { color: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+    </svg>
+  );
+}
+
+function BarChart2Icon({ color, size = 18 }: { color: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/>
+    </svg>
+  );
+}
+function ClipboardIcon({ color, size = 18 }: { color: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+    </svg>
+  );
+}
+function TruckIcon({ color, size = 18 }: { color: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+    </svg>
+  );
+}
+function BedIcon({ color, size = 18 }: { color: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 4v16"/><path d="M2 8h18a2 2 0 012 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/>
+    </svg>
+  );
+}
+function UtensilsIcon({ color, size = 18 }: { color: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 00-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/>
+    </svg>
+  );
+}
+function HeartIcon({ color, size = 18 }: { color: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+    </svg>
+  );
+}
+function TrophyIcon({ color, size = 18 }: { color: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/>
+    </svg>
+  );
+}
+function MapPinIcon({ color, size = 18 }: { color: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
+    </svg>
+  );
+}
+function CalendarIcon({ color, size = 18 }: { color: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+    </svg>
+  );
+}
+function AwardIcon({ color, size = 18 }: { color: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/>
+    </svg>
+  );
+}
+function GlobeIcon({ color, size = 18 }: { color: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>
+    </svg>
+  );
+}
+function SettingsIcon({ color, size = 18 }: { color: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+    </svg>
+  );
+}
+
+type IconFC = (p: { color: string; size?: number }) => React.JSX.Element;
+const GROUP_ICON: Record<string, IconFC> = {
+  Dashboard: BarChart2Icon,
+  Registro: ClipboardIcon,
+  Operación: ShieldIcon,
+  Transporte: TruckIcon,
+  Hotelería: BedIcon,
+  Alimentación: UtensilsIcon,
+  Salud: HeartIcon,
+  Clientes: UsersIcon,
+  Deportes: TrophyIcon,
+  Sede: MapPinIcon,
+  Calendario: CalendarIcon,
+  Acreditaciones: AwardIcon,
+  Portales: GlobeIcon,
+  Administración: SettingsIcon,
+};
+
+function ModuleIcon({ module, color, size = 11 }: { module: AppModule; color: string; size?: number }) {
+  const Icon = GROUP_ICON[module.group];
+  if (!Icon) return null;
+  return <Icon color={color} size={size} />;
+}
+
 // ── Empty form ─────────────────────────────────────────────────────────────
 function emptyForm() {
   return {
@@ -136,102 +282,21 @@ function emptyForm() {
 
 // ── Component ──────────────────────────────────────────────────────────────
 export default function UsuariosPage() {
-  const { theme } = useTheme();
-
-  const isDark = theme === "dark";
-  const isObsidian = theme === "obsidian";
-  const isAtlas = theme === "atlas";
-  const isLight = theme === "light";
-
-  const pal = isObsidian ? {
-    panelBg: "linear-gradient(135deg, #070d1c 0%, #0d1b35 100%)",
-    titleColor: "#e2e8f0",
-    accent: "#22d3ee",
-    accent2: "#a855f7",
-    inputBg: "rgba(255,255,255,0.06)",
-    inputColor: "#e2e8f0",
-    inputBorder: "rgba(34,211,238,0.15)",
-    orb1: "rgba(34,211,238,0.15)",
-    orb2: "rgba(168,85,247,0.12)",
-    kpiGlow: "rgba(34,211,238,0.3)",
-    rowHover: "rgba(34,211,238,0.04)",
-    tableBorder: "rgba(34,211,238,0.08)",
-    headerBg: "rgba(34,211,238,0.06)",
-    modalBg: "#070d1c",
-    modalBorder: "rgba(34,211,238,0.15)",
-    mText: "#e2e8f0",
-    mTextMuted: "rgba(255,255,255,0.55)",
-    mTextFaint: "rgba(255,255,255,0.28)",
-    mElevated: "rgba(255,255,255,0.06)",
-    mBorder: "rgba(34,211,238,0.12)",
-  } : isAtlas ? {
-    panelBg: "linear-gradient(135deg, #1c2333 0%, #243047 100%)",
-    titleColor: "#e2e8f0",
-    accent: "#6481f0",
-    accent2: "#38bdf8",
-    inputBg: "rgba(255,255,255,0.07)",
-    inputColor: "#e2e8f0",
-    inputBorder: "rgba(100,129,240,0.2)",
-    orb1: "rgba(100,129,240,0.2)",
-    orb2: "rgba(56,189,248,0.15)",
-    kpiGlow: "rgba(100,129,240,0.35)",
-    rowHover: "rgba(100,129,240,0.05)",
-    tableBorder: "rgba(100,129,240,0.1)",
-    headerBg: "rgba(100,129,240,0.08)",
-    modalBg: "#1c2333",
-    modalBorder: "rgba(100,129,240,0.2)",
-    mText: "#e2e8f0",
-    mTextMuted: "rgba(255,255,255,0.55)",
-    mTextFaint: "rgba(255,255,255,0.28)",
-    mElevated: "rgba(255,255,255,0.07)",
-    mBorder: "rgba(100,129,240,0.15)",
-  } : isDark ? {
-    panelBg: "linear-gradient(135deg, #07101f 0%, #0d1b3e 100%)",
-    titleColor: "#f1f5f9",
-    accent: "#c9a84c",
-    accent2: "#6481f0",
-    inputBg: "rgba(255,255,255,0.07)",
-    inputColor: "#f1f5f9",
-    inputBorder: "rgba(201,168,76,0.2)",
-    orb1: "rgba(30,58,138,0.6)",
-    orb2: "rgba(201,168,76,0.15)",
-    kpiGlow: "rgba(201,168,76,0.4)",
-    rowHover: "rgba(201,168,76,0.04)",
-    tableBorder: "rgba(255,255,255,0.05)",
-    headerBg: "rgba(255,255,255,0.04)",
-    modalBg: "#07101f",
-    modalBorder: "rgba(201,168,76,0.15)",
-    mText: "#f1f5f9",
-    mTextMuted: "rgba(255,255,255,0.55)",
-    mTextFaint: "rgba(255,255,255,0.28)",
-    mElevated: "rgba(255,255,255,0.07)",
-    mBorder: "rgba(255,255,255,0.1)",
-  } : {
-    panelBg: "linear-gradient(135deg, #1e3a6e 0%, #1e4ed8 100%)",
-    titleColor: "#f8fafc",
-    accent: "#1e4ed8",
-    accent2: "#7c3aed",
-    inputBg: "rgba(255,255,255,0.15)",
-    inputColor: "#f8fafc",
-    inputBorder: "rgba(255,255,255,0.25)",
-    orb1: "rgba(30,78,216,0.15)",
-    orb2: "rgba(124,58,237,0.1)",
-    kpiGlow: "rgba(30,78,216,0.3)",
-    rowHover: "rgba(30,78,216,0.04)",
-    tableBorder: "rgba(30,78,216,0.08)",
-    headerBg: "rgba(30,78,216,0.05)",
+  const pal = {
+    accent: "#21D0B3",
+    kpiGlow: "rgba(33,208,179,0.25)",
+    rowHover: "rgba(33,208,179,0.04)",
+    tableBorder: "#e2e8f0",
+    headerBg: "#f8fafc",
     modalBg: "#ffffff",
-    modalBorder: "rgba(30,78,216,0.15)",
-    mText: "#1e293b",
+    modalBorder: "#e2e8f0",
+    mText: "#0f172a",
     mTextMuted: "#64748b",
     mTextFaint: "#94a3b8",
-    mElevated: "#f1f5f9",
+    mElevated: "#f8fafc",
     mBorder: "#e2e8f0",
   };
 
-  const sel: React.CSSProperties = { background: pal.inputBg, color: pal.inputColor, border: `1px solid ${pal.inputBorder}` };
-  const selFlat: React.CSSProperties = { background: "var(--elevated)", color: "var(--text)", border: "1px solid var(--border)" };
-  // Inside modal: use explicit pal colors (not CSS vars) since modal has explicit dark bg
   const selM: React.CSSProperties = { background: pal.mElevated, color: pal.mText, border: `1px solid ${pal.mBorder}` };
 
   // ── State ──────────────────────────────────────────────────────────────
@@ -441,125 +506,68 @@ export default function UsuariosPage() {
     return { label: "Pendiente", color: "#f59e0b", bg: "rgba(245,158,11,0.1)" };
   }
 
-  const inputCls: React.CSSProperties = {
-    ...sel,
-    padding: "10px 14px",
-    borderRadius: "10px",
-    fontSize: "14px",
-    outline: "none",
-    width: "100%",
-  };
-
   // ═══════════════════════════════════════════════════════════════════════
   return (
-    <div style={{ padding: "0 0 60px", minHeight: "100vh" }}>
+    <div className="space-y-5">
 
-      {/* ── Command Panel ───────────────────────────────────────────── */}
-      <div style={{ padding: "28px 40px 0" }}>
-      <div style={{
-        background: pal.panelBg,
-        padding: "36px 40px 32px",
-        position: "relative",
-        overflow: "hidden",
-        borderRadius: "24px",
-        boxShadow: "0 8px 40px rgba(0,0,0,0.25)",
-        marginBottom: "28px",
-      }}>
-        {/* Orbs */}
-        <div style={{ position: "absolute", top: "-60px", right: "-60px", width: "300px", height: "300px", borderRadius: "50%", background: `radial-gradient(ellipse, ${pal.orb1} 0%, transparent 70%)`, pointerEvents: "none" }} />
-        <div style={{ position: "absolute", bottom: "-40px", left: "30%", width: "200px", height: "200px", borderRadius: "50%", background: `radial-gradient(ellipse, ${pal.orb2} 0%, transparent 70%)`, pointerEvents: "none" }} />
-
-        {/* Grid texture */}
-        <div style={{
-          position: "absolute", inset: 0, pointerEvents: "none",
-          backgroundImage: `linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px)`,
-          backgroundSize: "40px 40px",
-        }} />
-
-        <div style={{ position: "relative", zIndex: 1 }}>
-          {/* Badge */}
-          <div style={{ display: "inline-flex", alignItems: "center", gap: "7px", marginBottom: "14px" }}>
-            <span style={{ width: 7, height: 7, borderRadius: "50%", background: pal.accent, boxShadow: `0 0 10px ${pal.accent}`, animation: "pulse 2s ease-in-out infinite", display: "inline-block" }} />
-            <span style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: pal.accent, opacity: 0.85 }}>
-              Administración del Sistema
-            </span>
-          </div>
-
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "20px" }}>
-            <div>
-              <h1 style={{ fontSize: "28px", fontWeight: 800, color: pal.titleColor, margin: "0 0 6px", letterSpacing: "-0.02em" }}>
-                Gestión de Usuarios
-              </h1>
-              <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.45)", margin: 0 }}>
-                Administra accesos, roles y permisos del sistema
-              </p>
-            </div>
-
-            {/* Create button */}
-            <button
-              onClick={openCreate}
-              style={{
-                display: "flex", alignItems: "center", gap: "8px",
-                padding: "12px 22px",
-                background: `linear-gradient(135deg, ${pal.accent}, ${pal.accent2 ?? pal.accent})`,
-                color: isLight ? "#fff" : "#0d1b3e",
-                border: "none", borderRadius: "12px",
-                fontSize: "14px", fontWeight: 700, cursor: "pointer",
-                boxShadow: `0 4px 20px ${pal.kpiGlow}`,
-                transition: "all 150ms ease",
-                whiteSpace: "nowrap",
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = `0 8px 28px ${pal.kpiGlow}`; }}
-              onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = `0 4px 20px ${pal.kpiGlow}`; }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-              </svg>
-              Nuevo Usuario
-            </button>
-          </div>
-
-          {/* KPI row */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "14px", marginTop: "28px" }}>
-            {[
-              { label: "Total Usuarios", value: kpis.total, icon: "👥", color: pal.accent },
-              { label: "Activos", value: kpis.active, icon: "✅", color: "#22c55e" },
-              { label: "Administradores", value: kpis.admins, icon: "🔐", color: "#ef4444" },
-              { label: "Pendientes", value: kpis.pending, icon: "⏳", color: "#f59e0b" },
-            ].map((k) => (
-              <div key={k.label} style={{
-                background: "rgba(255,255,255,0.05)",
-                border: "1px solid rgba(255,255,255,0.08)",
-                borderTop: `3px solid ${k.color}`,
-                borderRadius: "12px",
-                padding: "16px",
-                backdropFilter: "blur(12px)",
-                transition: "all 200ms ease",
-              }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.transform = "translateY(-2px)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.transform = "translateY(0)"; }}
-              >
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
-                  <span style={{ fontSize: "20px" }}>{k.icon}</span>
-                  <span style={{
-                    fontSize: "28px", fontWeight: 800, color: k.color,
-                    textShadow: `0 0 20px ${k.color}80`,
-                    lineHeight: 1,
-                  }}>{k.value}</span>
-                </div>
-                <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.45)", margin: 0, fontWeight: 500 }}>{k.label}</p>
-              </div>
-            ))}
-          </div>
+      {/* ── Header */}
+      <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "20px", padding: "24px 28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)", marginBottom: "24px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+          <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#94a3b8" }}>Seven Arena</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.25)", borderRadius: "99px", padding: "2px 10px" }}>
+            <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#21D0B3", display: "inline-block", animation: "pulse 2s ease-in-out infinite" }} />
+            <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: "#21D0B3" }}>ADMINISTRACIÓN</span>
+          </span>
         </div>
-      </div>
-      </div>
 
-      {/* ── Body ───────────────────────────────────────────────────── */}
-      <div style={{ padding: "0 40px" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "16px", marginBottom: "24px" }}>
+          <h1 style={{ fontSize: "24px", fontWeight: 800, color: "#0f172a", margin: 0 }}>Gestión de Usuarios</h1>
+          <button
+            onClick={openCreate}
+            style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 20px", background: "#21D0B3", color: "#ffffff", border: "none", borderRadius: "12px", fontSize: "14px", fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 14px rgba(33,208,179,0.3)", transition: "all 150ms ease", whiteSpace: "nowrap" }}
+            onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 6px 20px rgba(33,208,179,0.4)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 14px rgba(33,208,179,0.3)"; }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Nuevo Usuario
+          </button>
+        </div>
+
+        {/* KPI row */}
+        <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+          {(
+            [
+              { label: "Total Usuarios", value: kpis.total, Icon: UsersIcon, sub: "en el sistema", color: "#21D0B3" },
+              { label: "Activos", value: kpis.active, Icon: ActiveIcon, sub: "usuarios activos", color: "#22c55e" },
+              { label: "Administradores", value: kpis.admins, Icon: ShieldIcon, sub: "con acceso total", color: "#ef4444" },
+              { label: "Pendientes", value: kpis.pending, Icon: ClockIcon, sub: "por confirmar", color: "#f59e0b" },
+            ] as { label: string; value: number; Icon: (p: { color: string; size?: number }) => React.JSX.Element; sub: string; color: string }[]
+          ).map((k) => (
+            <div key={k.label} style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderTop: `3px solid ${k.color}`, borderRadius: "16px", padding: "16px 18px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)", transition: "transform 120ms ease" }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
+                <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: k.color, margin: 0 }}>{k.label}</p>
+                <k.Icon color={k.color} size={18} />
+              </div>
+              <p style={{ fontSize: "2rem", fontWeight: 800, lineHeight: 1, color: k.color, margin: "0 0 8px" }}>{k.value}</p>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: k.color, flexShrink: 0 }} />
+                <p style={{ fontSize: "11px", color: "#64748b", margin: 0 }}>{k.sub}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Body */}
+      <div>
 
         {/* Tabs */}
-        <div style={{ display: "flex", gap: "4px", marginBottom: "24px", borderBottom: "1px solid var(--border)", paddingBottom: "0" }}>
+        <div style={{ display: "flex", gap: "4px", marginBottom: "24px", borderBottom: "1px solid #e2e8f0", paddingBottom: "0" }}>
           {(["usuarios", "roles"] as const).map((tab) => (
             <button
               key={tab}
@@ -568,13 +576,18 @@ export default function UsuariosPage() {
                 padding: "10px 20px",
                 background: "none", border: "none",
                 borderBottom: activeTab === tab ? `2px solid ${pal.accent}` : "2px solid transparent",
-                color: activeTab === tab ? pal.accent : "var(--text-muted)",
+                color: activeTab === tab ? pal.accent : "#64748b",
                 fontSize: "14px", fontWeight: activeTab === tab ? 700 : 500,
                 cursor: "pointer", transition: "all 150ms", marginBottom: "-1px",
                 textTransform: "capitalize",
               }}
             >
-              {tab === "usuarios" ? "👥 Usuarios" : "🔑 Roles y Permisos"}
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                {tab === "usuarios"
+                  ? <><UsersIcon color={activeTab === tab ? pal.accent : "#64748b"} size={14} /> Usuarios</>
+                  : <><KeyIcon color={activeTab === tab ? pal.accent : "#64748b"} size={14} /> Roles y Permisos</>
+                }
+              </span>
             </button>
           ))}
         </div>
@@ -586,7 +599,7 @@ export default function UsuariosPage() {
             <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginBottom: "20px", alignItems: "center" }}>
               {/* Search */}
               <div style={{ position: "relative", flex: "1", minWidth: "220px" }}>
-                <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-faint)", pointerEvents: "none" }}>
+                <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8", pointerEvents: "none" }}>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
                   </svg>
@@ -596,33 +609,33 @@ export default function UsuariosPage() {
                   placeholder="Buscar usuarios..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  style={{ ...selFlat, padding: "10px 14px 10px 38px", borderRadius: "10px", fontSize: "13.5px", outline: "none", width: "100%" }}
+                  style={{ background: "#f8fafc", color: "#0f172a", border: "1px solid #e2e8f0", padding: "10px 14px 10px 38px", borderRadius: "10px", fontSize: "13.5px", outline: "none", width: "100%" }}
                 />
               </div>
 
               {/* Role filter */}
-              <select
+              <StyledSelect
                 value={filterRole}
                 onChange={(e) => setFilterRole(e.target.value as Role | "")}
-                style={{ ...selFlat, padding: "10px 14px", borderRadius: "10px", fontSize: "13.5px", outline: "none", minWidth: "160px" }}
+                wrapperStyle={{ minWidth: "160px", flex: "none" }}
               >
                 <option value="">Todos los roles</option>
                 {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
-              </select>
+              </StyledSelect>
 
               {/* Status filter */}
-              <select
+              <StyledSelect
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value as UserStatus | "")}
-                style={{ ...selFlat, padding: "10px 14px", borderRadius: "10px", fontSize: "13.5px", outline: "none", minWidth: "150px" }}
+                wrapperStyle={{ minWidth: "150px", flex: "none" }}
               >
                 <option value="">Todos los estados</option>
                 <option value="active">Activos</option>
                 <option value="inactive">Inactivos</option>
                 <option value="pending">Pendientes</option>
-              </select>
+              </StyledSelect>
 
-              <span style={{ fontSize: "13px", color: "var(--text-muted)", whiteSpace: "nowrap" }}>
+              <span style={{ fontSize: "13px", color: "#64748b", whiteSpace: "nowrap" }}>
                 {filtered.length} usuario{filtered.length !== 1 ? "s" : ""}
               </span>
             </div>
@@ -632,7 +645,7 @@ export default function UsuariosPage() {
               border: `1px solid ${pal.tableBorder}`,
               borderRadius: "16px",
               overflow: "hidden",
-              background: "var(--surface)",
+              background: "#ffffff",
             }}>
               {/* Table header */}
               <div style={{
@@ -644,16 +657,16 @@ export default function UsuariosPage() {
                 borderBottom: `1px solid ${pal.tableBorder}`,
               }}>
                 {["Usuario", "Email", "Rol", "Módulos", "Estado", ""].map((h) => (
-                  <span key={h} style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-faint)" }}>{h}</span>
+                  <span key={h} style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#94a3b8" }}>{h}</span>
                 ))}
               </div>
 
               {loadingUsers ? (
-                <div style={{ padding: "48px", textAlign: "center", color: "var(--text-muted)", fontSize: "14px" }}>
+                <div style={{ padding: "48px", textAlign: "center", color: "#64748b", fontSize: "14px" }}>
                   Cargando usuarios...
                 </div>
               ) : filtered.length === 0 ? (
-                <div style={{ padding: "48px", textAlign: "center", color: "var(--text-muted)", fontSize: "14px" }}>
+                <div style={{ padding: "48px", textAlign: "center", color: "#64748b", fontSize: "14px" }}>
                   No hay usuarios que coincidan con los filtros
                 </div>
               ) : (
@@ -689,20 +702,20 @@ export default function UsuariosPage() {
                           {user.initials}
                         </div>
                         <div>
-                          <p style={{ fontSize: "14px", fontWeight: 600, color: "var(--text)", margin: 0 }}>{user.fullName}</p>
-                          {user.lastLogin && <p style={{ fontSize: "11.5px", color: "var(--text-faint)", margin: "1px 0 0" }}>Último: {user.lastLogin}</p>}
+                          <p style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a", margin: 0 }}>{user.fullName}</p>
+                          {user.lastLogin && <p style={{ fontSize: "11.5px", color: "#94a3b8", margin: "1px 0 0" }}>Último: {user.lastLogin}</p>}
                         </div>
                       </div>
 
                       {/* Email / Username */}
                       <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
                         {isUsernameUser(user.email) ? (
-                          <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "13px", color: "var(--text-muted)" }}>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "13px", color: "#64748b" }}>
                             <span style={{ fontSize: "10px", fontWeight: 700, padding: "1px 6px", borderRadius: "99px", background: "rgba(99,102,241,0.12)", color: "#818cf8", border: "1px solid rgba(99,102,241,0.25)" }}>USUARIO</span>
                             {extractUsername(user.email)}
                           </span>
                         ) : (
-                          <p style={{ fontSize: "13px", color: "var(--text-muted)", margin: 0 }}>{user.email}</p>
+                          <p style={{ fontSize: "13px", color: "#64748b", margin: 0 }}>{user.email}</p>
                         )}
                         {!user.emailConfirmed && !isUsernameUser(user.email) && (
                           <span style={{
@@ -735,7 +748,7 @@ export default function UsuariosPage() {
                         }}>
                           {user.modules.length}
                         </span>
-                        <span style={{ fontSize: "12px", color: "var(--text-faint)" }}>
+                        <span style={{ fontSize: "12px", color: "#94a3b8" }}>
                           / {ALL_MODULES.length}
                         </span>
                       </div>
@@ -748,7 +761,7 @@ export default function UsuariosPage() {
                           boxShadow: user.status === "active" ? `0 0 6px ${si.color}` : "none",
                           flexShrink: 0,
                         }} />
-                        <span style={{ fontSize: "12.5px", color: "var(--text-muted)", fontWeight: 500 }}>{si.label}</span>
+                        <span style={{ fontSize: "12.5px", color: "#64748b", fontWeight: 500 }}>{si.label}</span>
                       </div>
 
                       {/* Actions */}
@@ -777,14 +790,14 @@ export default function UsuariosPage() {
                         <button
                           onClick={() => openEdit(user)}
                           style={{
-                            background: "var(--elevated)", border: "1px solid var(--border)",
+                            background: "#f8fafc", border: "1px solid #e2e8f0",
                             borderRadius: "8px", padding: "6px",
-                            cursor: "pointer", color: "var(--text-muted)",
+                            cursor: "pointer", color: "#64748b",
                             transition: "all 150ms",
                           }}
                           title="Editar"
                           onMouseEnter={(e) => { e.currentTarget.style.color = pal.accent; e.currentTarget.style.borderColor = pal.accent; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = "var(--border)"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.color = "#64748b"; e.currentTarget.style.borderColor = "#e2e8f0"; }}
                         >
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -794,10 +807,10 @@ export default function UsuariosPage() {
                         <button
                           onClick={() => setConfirmDelete(user)}
                           style={{
-                            background: "var(--elevated)", border: "1px solid var(--border)",
+                            background: "#f8fafc", border: "1px solid #e2e8f0",
                             borderRadius: "8px", padding: "6px",
                             cursor: "pointer",
-                            color: user.status === "active" ? "var(--text-muted)" : "#22c55e",
+                            color: user.status === "active" ? "#64748b" : "#22c55e",
                             transition: "all 150ms",
                           }}
                           title={user.status === "active" ? "Deshabilitar acceso" : "Habilitar acceso"}
@@ -806,8 +819,8 @@ export default function UsuariosPage() {
                             e.currentTarget.style.borderColor = user.status === "active" ? "#ef4444" : "#22c55e";
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.color = user.status === "active" ? "var(--text-muted)" : "#22c55e";
-                            e.currentTarget.style.borderColor = "var(--border)";
+                            e.currentTarget.style.color = user.status === "active" ? "#64748b" : "#22c55e";
+                            e.currentTarget.style.borderColor = "#e2e8f0";
                           }}
                         >
                           {user.status === "active" ? (
@@ -841,7 +854,7 @@ export default function UsuariosPage() {
                   border: `1px solid ${pal.tableBorder}`,
                   borderTop: `3px solid ${rc.color}`,
                   borderRadius: "16px",
-                  background: "var(--surface)",
+                  background: "#ffffff",
                   overflow: "hidden",
                   transition: "transform 200ms ease, box-shadow 200ms ease",
                 }}
@@ -858,12 +871,12 @@ export default function UsuariosPage() {
                         fontSize: "13px", fontWeight: 700, color: rc.color,
                       }}>{role}</span>
                       <span style={{
-                        fontSize: "12px", color: "var(--text-faint)", fontWeight: 500,
+                        fontSize: "12px", color: "#94a3b8", fontWeight: 500,
                       }}>
                         {roleUsers.length} usuario{roleUsers.length !== 1 ? "s" : ""}
                       </span>
                     </div>
-                    <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: 0 }}>
+                    <p style={{ fontSize: "12px", color: "#64748b", margin: 0 }}>
                       {perms.length} de {ALL_MODULES.length} módulos habilitados
                     </p>
                   </div>
@@ -878,7 +891,7 @@ export default function UsuariosPage() {
                         <div key={group} style={{ marginBottom: "12px" }}>
                           <p style={{
                             fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em",
-                            textTransform: "uppercase", color: "var(--text-faint)",
+                            textTransform: "uppercase", color: "#94a3b8",
                             margin: "0 0 6px",
                           }}>{group}</p>
                           <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
@@ -889,9 +902,9 @@ export default function UsuariosPage() {
                                 background: `${rc.color}12`,
                                 border: `1px solid ${rc.color}25`,
                                 borderRadius: "100px",
-                                fontSize: "11px", color: "var(--text-muted)", fontWeight: 500,
+                                fontSize: "11px", color: "#64748b", fontWeight: 500,
                               }}>
-                                {m.icon} {m.label}
+                                <ModuleIcon module={m} color={rc.color} size={10} /> {m.label}
                               </span>
                             ))}
                           </div>
@@ -909,7 +922,7 @@ export default function UsuariosPage() {
                             <div key={u.id} style={{
                               width: 28, height: 28, borderRadius: "50%",
                               background: u.color,
-                              border: "2px solid var(--surface)",
+                              border: "2px solid #ffffff",
                               marginLeft: i > 0 ? "-8px" : "0",
                               display: "flex", alignItems: "center", justifyContent: "center",
                               fontSize: "10px", fontWeight: 700, color: "#fff",
@@ -920,7 +933,7 @@ export default function UsuariosPage() {
                           ))}
                         </div>
                         {roleUsers.length > 4 && (
-                          <span style={{ fontSize: "11px", color: "var(--text-faint)" }}>+{roleUsers.length - 4} más</span>
+                          <span style={{ fontSize: "11px", color: "#94a3b8" }}>+{roleUsers.length - 4} más</span>
                         )}
                       </div>
                     </div>
@@ -1069,25 +1082,23 @@ export default function UsuariosPage() {
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                   <div>
                     <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: pal.mTextMuted, marginBottom: "6px" }}>Rol</label>
-                    <select
+                    <StyledSelect
                       value={form.role}
                       onChange={(e) => handleRoleChange(e.target.value as Role)}
-                      style={{ ...selM, padding: "10px 14px", borderRadius: "10px", fontSize: "14px", outline: "none", width: "100%" }}
                     >
                       {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
-                    </select>
+                    </StyledSelect>
                   </div>
                   <div>
                     <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: pal.mTextMuted, marginBottom: "6px" }}>Estado</label>
-                    <select
+                    <StyledSelect
                       value={form.status}
                       onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as UserStatus }))}
-                      style={{ ...selM, padding: "10px 14px", borderRadius: "10px", fontSize: "14px", outline: "none", width: "100%" }}
                     >
                       <option value="active">Activo</option>
                       <option value="inactive">Inactivo</option>
                       <option value="pending">Pendiente</option>
-                    </select>
+                    </StyledSelect>
                   </div>
                 </div>
               </div>
@@ -1208,7 +1219,7 @@ export default function UsuariosPage() {
                                 cursor: "pointer", flexShrink: 0, transition: "all 150ms",
                               }}
                             >
-                              {allSelected && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={isLight ? "#fff" : "#0d1b3e"} strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
+                              {allSelected && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
                               {someSelected && !allSelected && <div style={{ width: 8, height: 2, background: pal.accent, borderRadius: "1px" }} />}
                             </div>
                             <span style={{ fontSize: "13.5px", fontWeight: 600, color: pal.mText }}>{group}</span>
@@ -1216,7 +1227,7 @@ export default function UsuariosPage() {
                               fontSize: "11px",
                               padding: "2px 7px",
                               borderRadius: "100px",
-                              background: allSelected ? `${pal.accent}22` : isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)",
+                              background: allSelected ? `${pal.accent}22` : "rgba(0,0,0,0.06)",
                               color: allSelected ? pal.accent : pal.mTextFaint,
                               fontWeight: 600,
                             }}>
@@ -1248,7 +1259,7 @@ export default function UsuariosPage() {
                                     background: checked ? `${pal.accent}10` : "transparent",
                                     transition: "background 150ms",
                                   }}
-                                  onMouseEnter={(e) => { if (!checked) e.currentTarget.style.background = isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.05)"; }}
+                                  onMouseEnter={(e) => { if (!checked) e.currentTarget.style.background = "rgba(0,0,0,0.04)"; }}
                                   onMouseLeave={(e) => { e.currentTarget.style.background = checked ? `${pal.accent}10` : "transparent"; }}
                                 >
                                   <div style={{
@@ -1258,9 +1269,9 @@ export default function UsuariosPage() {
                                     display: "flex", alignItems: "center", justifyContent: "center",
                                     flexShrink: 0, transition: "all 150ms",
                                   }}>
-                                    {checked && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke={isLight ? "#fff" : "#0d1b3e"} strokeWidth="3.5"><polyline points="20 6 9 17 4 12"/></svg>}
+                                    {checked && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5"><polyline points="20 6 9 17 4 12"/></svg>}
                                   </div>
-                                  <span style={{ fontSize: "14px" }}>{m.icon}</span>
+                                  <ModuleIcon module={m} color={checked ? pal.accent : "#94a3b8"} size={13} />
                                   <span style={{ fontSize: "13px", color: checked ? pal.mText : pal.mTextMuted, fontWeight: checked ? 500 : 400, transition: "color 150ms" }}>
                                     {m.label}
                                   </span>
@@ -1284,7 +1295,7 @@ export default function UsuariosPage() {
                 background: "rgba(239,68,68,0.1)",
                 border: "1px solid rgba(239,68,68,0.25)",
                 borderRadius: "10px",
-                color: "#fca5a5",
+                color: "#ef4444",
                 fontSize: "13px",
               }}>
                 {saveError}
@@ -1313,10 +1324,10 @@ export default function UsuariosPage() {
                 disabled={!form.fullName || (form.loginType === "username" ? !form.username : !form.email) || saving}
                 style={{
                   padding: "10px 24px",
-                  background: (!form.fullName || (form.loginType === "username" ? !form.username : !form.email) || saving) ? "rgba(100,116,139,0.3)" : `linear-gradient(135deg, ${pal.accent}, ${pal.accent2 ?? pal.accent})`,
+                  background: (!form.fullName || (form.loginType === "username" ? !form.username : !form.email) || saving) ? "rgba(100,116,139,0.3)" : pal.accent,
                   border: "none",
                   borderRadius: "10px", fontSize: "14px", fontWeight: 700,
-                  color: (!form.fullName || (form.loginType === "username" ? !form.username : !form.email) || saving) ? "rgba(100,116,139,0.6)" : (isLight ? "#fff" : "#0d1b3e"),
+                  color: (!form.fullName || (form.loginType === "username" ? !form.username : !form.email) || saving) ? "rgba(100,116,139,0.6)" : "#ffffff",
                   cursor: (!form.fullName || (form.loginType === "username" ? !form.username : !form.email) || saving) ? "not-allowed" : "pointer",
                   transition: "all 150ms",
                   boxShadow: (!form.fullName || (form.loginType === "username" ? !form.username : !form.email) || saving) ? "none" : `0 4px 16px ${pal.kpiGlow}`,
