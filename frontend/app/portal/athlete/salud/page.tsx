@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 
@@ -326,7 +327,7 @@ function StepBar({ current }: { current: Step }) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-export default function FichaSaludPage() {
+function FichaSaludContent() {
   const searchParams = useSearchParams();
   const [athleteId, setAthleteId] = useState(searchParams.get("id") ?? "");
   const [athlete, setAthlete] = useState<AthleteItem | null>(null);
@@ -799,5 +800,13 @@ function NavButtons({
         Continuar
       </button>
     </div>
+  );
+}
+
+export default function FichaSaludPage() {
+  return (
+    <Suspense>
+      <FichaSaludContent />
+    </Suspense>
   );
 }
