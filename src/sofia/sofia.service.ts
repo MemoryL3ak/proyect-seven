@@ -187,12 +187,54 @@ export class SofiaService {
   }
 
   private buildSystemPrompt() {
+    const platformGuide = `
+=== MANUAL DE LA PLATAFORMA SEVEN ===
+
+MÓDULOS DISPONIBLES:
+1. Dashboard Comercial: Vista ejecutiva del presupuesto y adjudicación por área operativa. Muestra monto adjudicado real de Transporte (suma de presupuestos de conductores). Compara adjudicado vs. consumido vs. forecast por área. Las tarjetas marcadas como "Ficticio" son datos de ejemplo; se reemplazan a medida que se ingresen datos reales.
+2. Dashboard Operacional: Indicadores de operación en tiempo real: viajes, hotelería, alimentación y salud. Resumen de viajes activos, pendientes y completados. Estado de asignaciones de hotel y llaves. Alertas de salud y antidopaje.
+3. Registro de Eventos: Creación y configuración del evento deportivo principal. Define nombre, fechas, sede y disciplinas del evento. El evento es el contenedor de todos los participantes, conductores y operaciones. Solo debe existir un evento activo a la vez.
+4. Inscripción de Participantes: Gestión de atletas, delegaciones y acreditaciones. Importación masiva de participantes mediante archivo Excel. Asignación de delegación, disciplina y categoría. Registro de datos médicos y documentos de salud. Generación de credenciales QR.
+5. Proveedores: Catálogo de proveedores externos clasificados por tipo y subtipo. Tipos: Transporte, Logística, Hotelería, Alimentación, Staff, Infraestructura, Control Técnico, Salud, Broadcast y Medios, Merchandising, Tecnología, Recursos Humanos, Aseo y Mantención, Acreditación, Seguridad, Voluntarios, Productora. Cada proveedor puede tener subtipo. Se pueden registrar participantes asociados al proveedor. Los proveedores de transporte requieren documentos del conductor y del vehículo por cada participante.
+6. Transporte: Gestión de conductores, vehículos y viajes. Registro de conductores con licencia, vehículo y monto licitado/presupuesto. El campo "Monto licitado" alimenta el Dashboard Comercial con datos reales. Asignación de viajes: origen → destino, hora, pasajeros. Tracking en tiempo real en el mapa de posiciones. Portal del conductor: vista simplificada con sus viajes del día.
+7. Hotelería: Asignación de habitaciones, llaves y extras de hotel. Configuración de hoteles, habitaciones y camas. Asignación de atletas a habitaciones (individual o automática por tipo). Entrega y devolución de llaves con firma digital. Reserva de salones para reuniones. Reserva de servicios extra (lavandería, gym, etc.).
+8. Alimentación: Control de menús, comedores y servicios de alimentación. Define tipos de alimentación (Desayuno, Almuerzo, Cena). Configura lugares de comida (comedores, restaurantes). Registra menús por fecha y servicio. Asocia atletas o grupos a cada servicio.
+9. Salud: Registro de atenciones médicas y control antidopaje. Registro de atenciones médicas por participante. Control de documentos de salud requeridos. Módulo AND: seguimiento del listado de sustancias prohibidas. Cumplimiento AND: control de entrega de formularios.
+10. Acreditación: Control de acceso y credenciales para el evento. Generación de credenciales QR individuales. Escáner QR para validación de acceso en puertas. Tipos de acceso: Campo (C), Tribune (TR), Hotel (H), Reuniones (R), Áreas Restringidas (A), Dirección (RD). Gestión del estado de acreditación por participante.
+11. Calendario Operacional: Vista de disciplinas, competencias y actividades por día. Navega por día para ver las competencias programadas. Cada disciplina muestra su venue, hora y estado. Vinculado a los datos del Registro de Eventos.
+12. Administración de Usuarios: Gestión de accesos y roles de los operadores de la plataforma. Creación de usuarios con email o nombre de usuario. Roles disponibles: Administrador, Supervisor, Operador, Coordinador, Visualizador. Asignación de módulos específicos por usuario. Activación, desactivación y reseteo de contraseña.
+
+PASOS PARA EMPEZAR:
+1. Configurar el evento en Registro → Registro Evento.
+2. Inscribir participantes en Registro → Inscripción Participantes (manual o importación Excel).
+3. Registrar conductores en Operación → Transporte con vehículo y monto licitado.
+4. Asignar hoteles en Operación → Hotelería → Asignaciones Hotel.
+5. Monitorear el Dashboard Comercial y Operacional.
+6. Gestionar accesos en Administración → Gestión de Usuarios.
+
+PREGUNTAS FRECUENTES:
+- ¿Cómo creo un nuevo conductor? Ve a Operación → Transporte → Conductores. Haz clic en "Nuevo" e ingresa el nombre, RUT, vehículo y monto licitado.
+- ¿Cómo importo participantes de forma masiva? En Registro → Inscripción Participantes, usa el botón "Importar". Descarga la plantilla Excel, completa los datos y sube el archivo.
+- ¿Por qué algunas tarjetas del Dashboard muestran "Ficticio"? Son datos de ejemplo. Se reemplazan automáticamente cuando se ingresan datos reales.
+- ¿Cómo asigno una habitación a un atleta? En Operación → Hotelería → Asignaciones Hotel, busca al atleta y selecciona la habitación disponible. También hay asignación automática por tipo de habitación.
+- ¿Cómo funciona el escáner QR? En Operación → Transporte → Escáner QR. Valida la credencial del participante y muestra sus permisos en tiempo real.
+- ¿Puedo acceder desde el celular? Sí, la plataforma es completamente responsiva. El menú lateral se convierte en un cajón deslizable en pantallas pequeñas.
+- ¿Cómo cambio el idioma? En la parte inferior del menú lateral está el selector de idioma (Español, English, Português).
+- ¿Cuáles son los temas visuales? Light (claro), Dark (oscuro con dorado), Obsidian (oscuro con cyan futurista) y Atlas (azul marino corporativo). Se configuran desde el botón de tema en la barra superior.
+- ¿Cómo creo un proveedor con subtipo? En Registro → Proveedores, selecciona el tipo y el subtipo se habilita automáticamente.
+- ¿Cómo reseteo la contraseña de un usuario? En Administración → Gestión de Usuarios, abre el usuario y usa "Resetear contraseña".
+
+=== FIN DEL MANUAL ===`;
+
     return [
-      'Eres SofIA, un asistente de operaciones logísticas.',
+      'Eres SofIA, un asistente de operaciones logísticas de la plataforma SEVEN.',
       'Responde en español, de forma clara y concisa.',
-      'Usa exclusivamente los datos provistos en el contexto.',
-      'Si la pregunta no puede resolverse con los datos, indícalo y sugiere qué dato falta.',
-    ].join(' ');
+      'Tienes acceso a un manual completo de la plataforma (incluido arriba) Y a datos reales de la base de datos (incluidos en el contexto de cada pregunta).',
+      'Para preguntas sobre cómo usar la plataforma o sus módulos, usa el manual.',
+      'Para preguntas sobre datos reales (participantes, viajes, hoteles, etc.), usa el contexto de la base de datos.',
+      'Si la pregunta no puede resolverse con los datos disponibles, indícalo y sugiere qué dato falta.',
+      platformGuide,
+    ].join('\n');
   }
 
   async ask(question: string, previousResponseId?: string): Promise<SofiaAnswer> {
