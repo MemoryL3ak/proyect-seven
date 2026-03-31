@@ -144,6 +144,7 @@ export default function DriverPortalPage() {
   const [driverPosition, setDriverPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [driverToast, setDriverToast] = useState<{ message: string; emoji: string } | null>(null);
   const ratedTripIds = useRef<Set<string>>(new Set());
+  const tripsRef = useRef<Trip[]>([]);
 
   const loadTrips = async () => {
     if (!driverId) return;
@@ -442,15 +443,21 @@ export default function DriverPortalPage() {
     return () => navigator.geolocation.clearWatch(watchId);
   }, [driverProfile?.id]);
 
+  // Keep tripsRef in sync
+  useEffect(() => {
+    tripsRef.current = trips;
+    trips.forEach((t) => { if (t.driverRating) ratedTripIds.current.add(t.id); });
+  }, [trips]);
+
   // Poll for new ratings on completed trips
   useEffect(() => {
-    if (!driverProfile || trips.length === 0) return;
-    // Initialize known ratings
-    trips.forEach((t) => { if (t.driverRating) ratedTripIds.current.add(t.id); });
+    if (!driverProfile) return;
 
     const checkRatings = async () => {
+      const current = tripsRef.current;
+      if (current.length === 0) return;
       try {
-        const completedIds = trips
+        const completedIds = current
           .filter((t) => ["COMPLETED", "DROPPED_OFF"].includes(t.status ?? ""))
           .filter((t) => !ratedTripIds.current.has(t.id))
           .map((t) => t.id);
@@ -460,7 +467,7 @@ export default function DriverPortalPage() {
             ratedTripIds.current.add(id);
             const stars = "⭐".repeat(fresh.driverRating);
             const comment = fresh.ratingComment ? `\n"${fresh.ratingComment}"` : "";
-            setDriverToast({ message: `Recibiste ${stars} ${comment}`, emoji: "🌟" });
+            setDriverToast({ message: `Recibiste ${stars}${comment}`, emoji: "🌟" });
             setTrips((prev) => prev.map((t) => t.id === id ? fresh : t));
             setTimeout(() => setDriverToast(null), 8000);
           }
@@ -468,9 +475,9 @@ export default function DriverPortalPage() {
       } catch { /* non-blocking */ }
     };
 
-    const interval = setInterval(checkRatings, 10000);
+    const interval = setInterval(checkRatings, 8000);
     return () => clearInterval(interval);
-  }, [driverProfile?.id, trips.length]);
+  }, [driverProfile?.id]);
 
   const getTripAthleteIds = (trip: Trip) => {
     const ids = new Set<string>(trip.athleteIds || []);
@@ -1105,9 +1112,21 @@ export default function DriverPortalPage() {
                           {/* Action button — status-based, Uber style */}
                           <div style={{ display:"flex",flexDirection:"column",gap:"8px" }}>
                             {isCompleted ? (
-                              <div style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:8,padding:"14px",borderRadius:"16px",background:"rgba(33,208,179,0.08)",border:"1px solid rgba(33,208,179,0.2)" }}>
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                <span style={{ fontSize:"14px",fontWeight:700,color:"#21D0B3" }}>{t("Viaje completado")}</span>
+                              <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
+                                <div style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:8,padding:"12px",borderRadius:"16px",background:"rgba(33,208,179,0.08)",border:"1px solid rgba(33,208,179,0.2)" }}>
+                                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                  <span style={{ fontSize:"14px",fontWeight:700,color:"#21D0B3" }}>{t("Viaje completado")}</span>
+                                </div>
+                                {trip.driverRating ? (
+                                  <div style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"10px",borderRadius:"12px",background:"#FFFBEB",border:"1px solid #FDE68A" }}>
+                                    <span style={{ fontSize:"14px" }}>{"⭐".repeat(trip.driverRating)}{"☆".repeat(5 - trip.driverRating)}</span>
+                                    {trip.ratingComment && <span style={{ fontSize:"12px",color:"#92400E",fontStyle:"italic" }}>"{trip.ratingComment}"</span>}
+                                  </div>
+                                ) : (
+                                  <div style={{ textAlign:"center",padding:"6px",fontSize:"11px",color:"#94a3b8" }}>
+                                    {t("Sin evaluación aún")}
+                                  </div>
+                                )}
                               </div>
                             ) : status === "SCHEDULED" ? (
                               <button type="button" onClick={() => updateTrip(trip.id, "EN_ROUTE")} disabled={loading}
