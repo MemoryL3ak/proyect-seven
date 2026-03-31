@@ -65,10 +65,10 @@ function loadGoogleMaps(): Promise<void> {
 
 export default function TripMap({ origin, destination, driverPosition, userPosition, height = 260 }: TripMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<google.maps.Map | null>(null);
-  const driverMarkerRef = useRef<google.maps.Marker | null>(null);
-  const userMarkerRef = useRef<google.maps.Marker | null>(null);
-  const directionsRendererRef = useRef<google.maps.DirectionsRenderer | null>(null);
+  const mapRef = useRef<any>(null);
+  const driverMarkerRef = useRef<any>(null);
+  const userMarkerRef = useRef<any>(null);
+  const directionsRendererRef = useRef<any>(null);
   const initKey = useRef("");
   const driverPositionRef = useRef<LatLng | null>(driverPosition ?? null);
 
