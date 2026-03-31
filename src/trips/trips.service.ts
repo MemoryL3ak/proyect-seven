@@ -18,6 +18,7 @@ type TripRow = {
   vehicle_id: string | null;
   requester_athlete_id: string | null;
   destination_venue_id: string | null;
+  destination_hotel_id: string | null;
   requested_vehicle_type: string | null;
   passenger_count: number | null;
   notes: string | null;
@@ -32,6 +33,9 @@ type TripRow = {
   scheduled_at: string | null;
   started_at: string | null;
   completed_at: string | null;
+  driver_rating: number | null;
+  rating_comment: string | null;
+  rated_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -71,6 +75,9 @@ export class TripsService {
     }
     if (dto.destinationVenueId !== undefined) {
       row.destination_venue_id = dto.destinationVenueId ?? null;
+    }
+    if (dto.destinationHotelId !== undefined) {
+      row.destination_hotel_id = dto.destinationHotelId ?? null;
     }
     if (dto.requestedVehicleType !== undefined) {
       row.requested_vehicle_type = dto.requestedVehicleType ?? null;
@@ -114,6 +121,15 @@ export class TripsService {
     if (dto.requestedAt !== undefined) {
       row.requested_at = dto.requestedAt ?? null;
     }
+    if (dto.driverRating !== undefined) {
+      row.driver_rating = dto.driverRating ?? null;
+    }
+    if (dto.ratingComment !== undefined) {
+      row.rating_comment = dto.ratingComment ?? null;
+    }
+    if (dto.ratedAt !== undefined) {
+      row.rated_at = dto.ratedAt ?? null;
+    }
 
     return row;
   }
@@ -139,12 +155,16 @@ export class TripsService {
       return currentStatus;
     }
 
-    if (dto.status !== undefined) {
+    if (dto.status) {
       return dto.status;
     }
 
     if (!currentStatus && dto.tripType === 'PORTAL_REQUEST') {
       return 'REQUESTED';
+    }
+
+    if (!currentStatus) {
+      return 'SCHEDULED';
     }
 
     return currentStatus;
@@ -169,6 +189,7 @@ export class TripsService {
       vehicleId: row.vehicle_id,
       requesterAthleteId: row.requester_athlete_id,
       destinationVenueId: row.destination_venue_id,
+      destinationHotelId: row.destination_hotel_id,
       requestedVehicleType: row.requested_vehicle_type,
       passengerCount: row.passenger_count,
       notes: row.notes,
@@ -183,6 +204,9 @@ export class TripsService {
       scheduledAt: row.scheduled_at ? new Date(row.scheduled_at) : null,
       startedAt: row.started_at ? new Date(row.started_at) : null,
       completedAt: row.completed_at ? new Date(row.completed_at) : null,
+      driverRating: row.driver_rating,
+      ratingComment: row.rating_comment,
+      ratedAt: row.rated_at ? new Date(row.rated_at) : null,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
     };
@@ -326,9 +350,11 @@ export class TripsService {
     return this.findOne((data as TripRow).id);
   }
 
-  async findAll() {
+  async findAll(requesterAthleteId?: string) {
     try {
+      const where = requesterAthleteId ? { requesterAthleteId } : undefined;
       const trips = await this.tripRepository.find({
+        where,
         order: { createdAt: 'DESC' },
       });
       return trips.map((trip) => ({

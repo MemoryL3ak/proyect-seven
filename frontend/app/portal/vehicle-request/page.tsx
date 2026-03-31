@@ -1,6 +1,7 @@
 ﻿"use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import PlacesAutocompleteInput from "@/components/PlacesAutocompleteInput";
 import { apiFetch } from "@/lib/api";
 import { filterValidatedAthletes } from "@/lib/athletes";
 
@@ -424,7 +425,7 @@ export default function VehicleRequestPortalPage() {
         requestedVehicleType: selectedVehicleType,
         passengerCount: normalizedPassengerCount,
         destinationVenueId: selectedVenueId,
-        destination: venue?.name || venue?.address || "Sede solicitada",
+        destination: [venue?.address, venue?.commune, venue?.region, "Chile"].filter(Boolean).join(", ") || venue?.name || "Sede solicitada",
         origin: originAddress.trim(),
         status: "REQUESTED",
         requestedAt: editingTripId ? undefined : new Date().toISOString(),
@@ -740,15 +741,14 @@ export default function VehicleRequestPortalPage() {
                     </label>
                     <label className="block space-y-2">
                       <span className="text-sm font-medium" style={{ color: "var(--text)" }}>Direccion de origen</span>
-                      <input
+                      <PlacesAutocompleteInput
                         className="input h-12 text-base"
-                        type="text"
                         value={originAddress}
-                        onChange={(e) => setOriginAddress(e.target.value)}
-                        placeholder="Ej: Avenida Grecia 1851, Ñuñoa"
+                        onChange={setOriginAddress}
+                        placeholder="Ej: Aeropuerto Internacional de Santiago"
                       />
                       <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-                        Ingresa la direccion exacta donde debe recogerte el conductor.
+                        Escribe y selecciona la dirección exacta donde debe recogerte el conductor.
                       </span>
                     </label>
                     <label className="block space-y-2">

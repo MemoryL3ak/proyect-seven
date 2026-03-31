@@ -286,7 +286,13 @@ export default function VehiclePositionsPage() {
     const active = trips.filter((tr) => ["EN_ROUTE", "PICKED_UP"].includes(tr.status ?? "")).length;
     const scheduled = trips.filter((tr) => tr.status === "SCHEDULED").length;
     const completed = trips.filter((tr) => ["COMPLETED", "DROPPED_OFF"].includes(tr.status ?? "")).length;
-    const withPosition = Object.keys(positions).length;
+    const activeVehicleIds = new Set(
+      trips
+        .filter((tr) => ["EN_ROUTE", "PICKED_UP"].includes(tr.status ?? ""))
+        .map((tr) => tr.vehicleId)
+        .filter(Boolean)
+    );
+    const withPosition = Object.keys(positions).filter((vid) => activeVehicleIds.has(vid)).length;
     return { active, scheduled, completed, withPosition, total: trips.length };
   }, [trips, positions]);
 

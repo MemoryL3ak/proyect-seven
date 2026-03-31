@@ -9,6 +9,12 @@ export const metadata: Metadata = {
     icon: "/branding/LOGO-SEVEN-3.png",
     apple: "/branding/LOGO-SEVEN-3.png",
   },
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 5,
+    viewportFit: "cover",
+  },
 };
 
 export default function RootLayout({

@@ -72,10 +72,16 @@ function apiCandidates() {
 
   if (typeof window !== "undefined") {
     const host = window.location.hostname;
+    const proto = window.location.protocol === "https:" ? "https" : "http";
     if (host === "localhost" || host === "127.0.0.1") {
-      candidates.push("http://localhost:3000");
-      candidates.push("http://localhost:3001");
-      candidates.push("http://localhost:3002");
+      candidates.push(`${proto}://localhost:3000`);
+      candidates.push(`${proto}://localhost:3001`);
+      candidates.push(`${proto}://localhost:3002`);
+    } else {
+      // Accessing from network (e.g., mobile device) — use same host/protocol as frontend
+      candidates.push(`${proto}://${host}:3000`);
+      candidates.push(`${proto}://${host}:3001`);
+      candidates.push(`${proto}://${host}:3002`);
     }
   }
 
@@ -129,14 +135,23 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
       throw new Error(`Endpoint no encontrado en API (${base}${path})`);
     }
     const text = await response.text();
-    throw new Error(text || `Request failed (${base}${path})`);
+    let errorMessage = text;
+    try {
+      const json = JSON.parse(text);
+      if (json.message) {
+        errorMessage = Array.isArray(json.message) ? json.message.join(', ') : String(json.message);
+      }
+    } catch { /* not JSON, use raw text */ }
+    throw new Error(errorMessage || `Request failed (${base}${path})`);
   }
 
   if (response.status === 204) {
     return {} as T;
   }
 
-  return response.json() as Promise<T>;
+  const text = await response.text();
+  if (!text) return {} as T;
+  return JSON.parse(text) as T;
 }
 
 export async function login(email: string, password: string) {

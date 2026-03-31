@@ -7,6 +7,7 @@ import { isAthletePersonalDataValidated } from "@/lib/athletes";
 import type { FieldDef, ResourceConfig } from "@/lib/resources";
 import { useI18n } from "@/lib/i18n";
 import StyledSelect from "@/components/StyledSelect";
+import PlacesAutocompleteInput from "@/components/PlacesAutocompleteInput";
 
 type Option = { label: string; value: string };
 
@@ -50,7 +51,7 @@ const emptyValue = (type: FieldDef["type"]) => {
 
 function buildInitial(fields: FieldDef[]) {
   return fields.reduce<FormState>((acc, field) => {
-    acc[field.key] = emptyValue(field.type);
+    acc[field.key] = field.defaultValue ?? emptyValue(field.type);
     return acc;
   }, {});
 }
@@ -255,8 +256,11 @@ export default function ResourceScreen({
   const [providerOptions, setProviderOptions] = useState<Option[]>([]);
   const [accommodationOptions, setAccommodationOptions] = useState<Option[]>([]);
   const [venueOptions, setVenueOptions] = useState<Option[]>([]);
+  const [venuesRaw, setVenuesRaw] = useState<Record<string, any>[]>([]);
+  const [accommodationsRaw, setAccommodationsRaw] = useState<Record<string, any>[]>([]);
   const [vehicleOptions, setVehicleOptions] = useState<Option[]>([]);
   const [vehicleLookup, setVehicleLookup] = useState<Record<string, any>>({});
+  const [vehicleLookupByPlate, setVehicleLookupByPlate] = useState<Record<string, any>>({});
   const [flightLookup, setFlightLookup] = useState<Record<string, any>>({});
   const [athleteSearch, setAthleteSearch] = useState("");
   const [athleteStatusFilter, setAthleteStatusFilter] = useState<"all" | "validated" | "pending">("all");
@@ -666,6 +670,7 @@ export default function ResourceScreen({
         return { label, value: hotel.id, accommodationType: type, tower };
       });
       setAccommodationOptions(options);
+      setAccommodationsRaw(data || []);
     } catch (err) {
       setAccommodationOptions([]);
     }
@@ -711,32 +716,54 @@ export default function ResourceScreen({
         return acc;
       }, {});
       setVehicleLookup(lookup);
+      const plateLookup = (data || []).reduce<Record<string, any>>((acc, vehicle) => {
+        if (vehicle?.plate) acc[vehicle.plate.trim().toUpperCase()] = vehicle;
+        return acc;
+      }, {});
+      setVehicleLookupByPlate(plateLookup);
     } catch (err) {
       setVehicleOptions([]);
       setVehicleLookup({});
+      setVehicleLookupByPlate({});
     }
   };
 
   const loadDrivers = async () => {
     try {
-      const data = await apiFetch<Record<string, any>[]>("/drivers");
-      const options = (data || []).map((driver) => ({
+      const [data, participantsData] = await Promise.all([
+        apiFetch<Record<string, any>[]>("/drivers"),
+        apiFetch<Record<string, any>[]>("/provider-participants").catch(() => []),
+      ]);
+      const participantDrivers = (participantsData || []).filter((p) => {
+        const meta = (p.metadata ?? {}) as Record<string, unknown>;
+        return meta.isDriver === true || meta.isDriver === "true";
+      });
+      const allDrivers = [...(data || []), ...participantDrivers];
+      const options = allDrivers.map((driver) => ({
         label: driver.fullName ?? driver.id,
         value: driver.id
       }));
       setDriverOptions(options);
-      const lookup = (data || []).reduce<Record<string, any>>((acc, driver) => {
+      const lookup = allDrivers.reduce<Record<string, any>>((acc, driver) => {
         if (driver.userId) acc[driver.userId] = driver;
         acc[driver.id] = driver;
         return acc;
       }, {});
       setDriverLookup(lookup);
-      const userOptions = (data || [])
-        .filter((driver) => driver.userId)
-        .map((driver) => ({
-          label: driver.fullName ?? driver.userId,
-          value: driver.userId
-        }));
+      // Regular drivers: indexed by userId (linked auth user)
+      // Provider participant choferes: no userId, use their own id
+      const userOptions = [
+        ...(data || [])
+          .filter((driver) => driver.userId)
+          .map((driver) => ({
+            label: driver.fullName ?? driver.userId,
+            value: driver.userId,
+          })),
+        ...participantDrivers.map((p) => ({
+          label: p.fullName ?? p.id,
+          value: p.id,
+        })),
+      ];
       setDriverUserOptions(userOptions);
     } catch (err) {
       setDriverOptions([]);
@@ -943,8 +970,25 @@ export default function ResourceScreen({
     const driver = driverLookup[selected];
     if (driver?.vehicleId) {
       setForm((prev) => ({ ...prev, vehicleId: driver.vehicleId }));
+    } else if (driver?.metadata?.vehiclePatente) {
+      // Provider participant chofer — match by plate
+      const plate = String(driver.metadata.vehiclePatente).trim().toUpperCase();
+      const vehicle = vehicleLookupByPlate[plate];
+      if (vehicle?.id) {
+        setForm((prev) => ({ ...prev, vehicleId: vehicle.id }));
+      }
     }
-  }, [config.endpoint, form.driverId, driverLookup]);
+  }, [config.endpoint, form.driverId, driverLookup, vehicleLookupByPlate]);
+
+  useEffect(() => {
+    if (config.endpoint !== "/trips") return;
+    const selected = form.requesterAthleteId as string | undefined;
+    if (!selected) return;
+    const athlete = (athleteOptions as any[]).find((o) => o.value === selected);
+    if (athlete?.userType) {
+      setForm((prev) => ({ ...prev, clientType: athlete.userType }));
+    }
+  }, [config.endpoint, form.requesterAthleteId, athleteOptions]);
 
   useEffect(() => {
     if (needsAthletes) {
@@ -1661,6 +1705,11 @@ export default function ResourceScreen({
       if (Array.isArray(item.athleteIds)) {
         next.athleteIds = item.athleteIds;
       }
+      if (item.destinationHotelId) {
+        next.destinationTypeFilter = "HOTEL";
+      } else if (item.destinationVenueId) {
+        next.destinationTypeFilter = "SEDE";
+      }
     }
     if (config.endpoint === "/athletes" && item.countryCode === "CHL") {
       if (item.passportNumber) {
@@ -1764,6 +1813,7 @@ export default function ResourceScreen({
         value: venue.id
       }));
       setVenueOptions(options);
+      setVenuesRaw(data || []);
     } catch (err) {
       setVenueOptions([]);
     }
@@ -2364,6 +2414,22 @@ export default function ResourceScreen({
                             return;
                           }
                         }
+                        if (config.endpoint === "/trips" && field.key === "destinationVenueId") {
+                          const venue = venuesRaw.find((v) => v.id === nextValue);
+                          const addr = venue
+                            ? [venue.address, venue.commune, venue.region, "Chile"].filter(Boolean).join(", ") || venue.name || ""
+                            : "";
+                          setForm({ ...form, destinationVenueId: nextValue, destination: addr });
+                          return;
+                        }
+                        if (config.endpoint === "/trips" && field.key === "destinationHotelId") {
+                          const hotel = accommodationsRaw.find((h) => h.id === nextValue);
+                          const addr = hotel
+                            ? [hotel.address, hotel.commune, hotel.region, "Chile"].filter(Boolean).join(", ") || hotel.name || ""
+                            : "";
+                          setForm({ ...form, destinationHotelId: nextValue, destination: addr });
+                          return;
+                        }
                         if (config.endpoint === "/drivers" && field.key === "vehicleType") {
                           const capacityByType: Record<string, number> = {
                             SEDAN: 4,
@@ -2489,6 +2555,13 @@ export default function ResourceScreen({
                         );
                       })}
                     </div>
+                  ) : field.type === "places" ? (
+                    <PlacesAutocompleteInput
+                      className={`input ${field.readOnly ? "opacity-60" : ""}`}
+                      value={(form[field.key] as string) || ""}
+                      onChange={(val) => setForm({ ...form, [field.key]: val })}
+                      placeholder={field.placeholder}
+                    />
                   ) : field.type === "file" ? (
                     <div className="flex flex-wrap items-center gap-3">
                       <input
@@ -2533,6 +2606,7 @@ export default function ResourceScreen({
                       value={(form[field.key] as string) || ""}
                       placeholder={field.placeholder}
                       readOnly={field.readOnly}
+                      {...(field.min !== undefined ? { min: field.min } : {})}
                       onChange={(event) => {
                         const rawValue = event.target.value;
                         if (config.endpoint === "/drivers" && field.key === "vehiclePlate") {
@@ -2590,6 +2664,13 @@ export default function ResourceScreen({
                             [field.key]: numeric ? formatCurrencyCLP(numeric) : ""
                           });
                           return;
+                        }
+                        if (field.type === "number" && field.min !== undefined) {
+                          const num = Number(rawValue);
+                          if (rawValue !== "" && Number.isFinite(num) && num < field.min) {
+                            setForm({ ...form, [field.key]: String(field.min) });
+                            return;
+                          }
                         }
                         setForm({ ...form, [field.key]: rawValue });
                       }}
@@ -2799,6 +2880,8 @@ export default function ResourceScreen({
               const personalKeys = new Set([
                 "eventId",
                 "delegationId",
+                "disciplineCategory",
+                "disciplineGender",
                 "disciplineId",
                 "isDelegationLead",
                 "fullName",

@@ -2,8 +2,8 @@ import { IsISO8601, IsNotEmpty, IsNumber, IsObject, IsOptional, IsString } from 
 
 export class CreateVehiclePositionDto {
   @IsString()
-  @IsNotEmpty()
-  eventId: string;
+  @IsOptional()
+  eventId?: string;
 
   @IsString()
   @IsNotEmpty()

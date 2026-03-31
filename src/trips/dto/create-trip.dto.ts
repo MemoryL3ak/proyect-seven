@@ -23,6 +23,10 @@ export class CreateTripDto {
 
   @IsString()
   @IsOptional()
+  destinationHotelId?: string;
+
+  @IsString()
+  @IsOptional()
   requestedVehicleType?: string;
 
   @IsNumber()
@@ -81,4 +85,16 @@ export class CreateTripDto {
   @IsISO8601()
   @IsOptional()
   requestedAt?: string;
+
+  @IsNumber()
+  @IsOptional()
+  driverRating?: number;
+
+  @IsString()
+  @IsOptional()
+  ratingComment?: string;
+
+  @IsISO8601()
+  @IsOptional()
+  ratedAt?: string;
 }

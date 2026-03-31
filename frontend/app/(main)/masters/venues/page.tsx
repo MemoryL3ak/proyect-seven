@@ -1,6 +1,7 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import PlacesAutocompleteInput from "@/components/PlacesAutocompleteInput";
 import Link from "next/link";
 import { clRegions } from "@clregions/data/object";
 import PageHeader from "@/components/PageHeader";
@@ -274,9 +275,12 @@ export default function VenuesMasterPage() {
 
             <label className="space-y-2 md:col-span-2">
               <span className="text-sm font-medium text-slate-700">{t("Dirección")}</span>
-              <input className="input" value={form.address}
-                onChange={(e) => setForm((prev) => ({ ...prev, address: e.target.value }))}
-                placeholder={t("Ej: Avenida Grecia 1851")} />
+              <PlacesAutocompleteInput
+                className="input"
+                value={form.address}
+                onChange={(val) => setForm((prev) => ({ ...prev, address: val }))}
+                placeholder={t("Ej: Avenida Grecia 1851, Ñuñoa")}
+              />
             </label>
 
             <label className="space-y-2">

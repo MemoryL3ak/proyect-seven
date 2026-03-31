@@ -85,6 +85,26 @@ export class VehiclePositionsService {
     return this.toEntity(data as VehiclePositionRow);
   }
 
+  async findLatestByVehicle(vehicleId: string): Promise<VehiclePosition | null> {
+    const { data, error } = await this.supabase
+      .schema('telemetry')
+      .from('vehicle_positions')
+      .select('*')
+      .eq('vehicle_id', vehicleId)
+      .order('timestamp', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      throw new InternalServerErrorException(
+        error.message || 'Error fetching latest vehicle position',
+      );
+    }
+
+    if (!data) return null;
+    return this.toEntity(data as VehiclePositionRow);
+  }
+
   async findAll() {
     try {
       return await this.vehiclePositionRepository.find({

@@ -26,6 +26,9 @@ export class Trip {
   @Column({ name: 'destination_venue_id', type: 'uuid', nullable: true })
   destinationVenueId?: string | null;
 
+  @Column({ name: 'destination_hotel_id', type: 'uuid', nullable: true })
+  destinationHotelId?: string | null;
+
   @Column({ name: 'requested_vehicle_type', length: 60, type: 'varchar', nullable: true })
   requestedVehicleType?: string | null;
 
@@ -73,6 +76,15 @@ export class Trip {
 
   @Column({ name: 'completed_at', type: 'timestamptz', nullable: true })
   completedAt?: Date | null;
+
+  @Column({ name: 'driver_rating', type: 'smallint', nullable: true })
+  driverRating?: number | null;
+
+  @Column({ name: 'rating_comment', type: 'text', nullable: true })
+  ratingComment?: string | null;
+
+  @Column({ name: 'rated_at', type: 'timestamptz', nullable: true })
+  ratedAt?: Date | null;
 
   athleteIds?: string[];
 

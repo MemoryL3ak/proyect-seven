@@ -17,6 +17,11 @@ export class VehiclePositionsController {
     return this.vehiclePositionsService.findAll();
   }
 
+  @Get('by-vehicle/:vehicleId')
+  findLatestByVehicle(@Param('vehicleId') vehicleId: string) {
+    return this.vehiclePositionsService.findLatestByVehicle(vehicleId);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.vehiclePositionsService.findOne(id);

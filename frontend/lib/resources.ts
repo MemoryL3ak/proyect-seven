@@ -6,7 +6,8 @@
   | "json"
   | "select"
   | "multiselect"
-  | "file";
+  | "file"
+  | "places";
 
 export type FieldDef = {
   key: string;
@@ -33,6 +34,8 @@ export type FieldDef = {
   transient?: boolean;
   formHidden?: boolean;
   readOnly?: boolean;
+  min?: number;
+  defaultValue?: string;
   /** Muestra este campo solo cuando el campo `field` tenga el valor `value` */
   showWhen?: { field: string; value: string };
 };
@@ -597,6 +600,26 @@ export const resources: Record<string, ResourceConfig> = {
     fields: [
       { key: "eventId", label: "Evento", type: "select", required: true, optionsSource: "events" },
       { key: "delegationId", label: "Delegación", type: "select", optionsSource: "delegations" },
+      {
+        key: "disciplineCategory",
+        label: "Categoría",
+        type: "select",
+        transient: true,
+        options: [
+          { label: "Convencional", value: "CONVENTIONAL" },
+          { label: "Paralímpica", value: "PARALYMPIC" }
+        ]
+      },
+      {
+        key: "disciplineGender",
+        label: "Género",
+        type: "select",
+        transient: true,
+        options: [
+          { label: "Masculino", value: "MALE" },
+          { label: "Femenino", value: "FEMALE" }
+        ]
+      },
       { key: "disciplineId", label: "Disciplina", type: "select", optionsSource: "disciplines" },
       { key: "fullName", label: "Nombre completo", type: "text", required: true },
       {
@@ -891,7 +914,6 @@ export const resources: Record<string, ResourceConfig> = {
     tableOrder: [
       "eventId",
       "requesterAthleteId",
-      "destinationVenueId",
       "requestedVehicleType",
       "passengerCount",
       "driverId",
@@ -910,12 +932,38 @@ export const resources: Record<string, ResourceConfig> = {
       "completedAt",
       "delegationId",
       "athleteIds",
-      "requestedAt"
+      "requestedAt",
+      "destinationTypeFilter",
+      "destinationVenueId",
+      "destinationHotelId"
     ],
     fields: [
       { key: "eventId", label: "Evento", type: "select", required: true, optionsSource: "events" },
       { key: "requesterAthleteId", label: "Solicitante", type: "select", optionsSource: "athletes" },
-      { key: "destinationVenueId", label: "Sede destino", type: "select", optionsSource: "venues" },
+      {
+        key: "destinationTypeFilter",
+        label: "Tipo de destino",
+        type: "select",
+        transient: true,
+        options: [
+          { label: "Sede", value: "SEDE" },
+          { label: "Hotel", value: "HOTEL" },
+        ],
+      },
+      {
+        key: "destinationVenueId",
+        label: "Sede destino",
+        type: "select",
+        optionsSource: "venues",
+        showWhen: { field: "destinationTypeFilter", value: "SEDE" },
+      },
+      {
+        key: "destinationHotelId",
+        label: "Hotel destino",
+        type: "select",
+        optionsSource: "accommodations",
+        showWhen: { field: "destinationTypeFilter", value: "HOTEL" },
+      },
       {
         key: "requestedVehicleType",
         label: "Vehículo solicitado",
@@ -927,9 +975,9 @@ export const resources: Record<string, ResourceConfig> = {
           { label: "Bus", value: "BUS" }
         ]
       },
-      { key: "passengerCount", label: "Cantidad de personas", type: "number" },
+      { key: "passengerCount", label: "Cantidad de personas", type: "number", min: 1 },
       { key: "driverId", label: "Conductor", type: "select", optionsSource: "driverUsers" },
-      { key: "vehicleId", label: "Vehículo", type: "select", optionsSource: "vehicles", readOnly: true },
+      { key: "vehicleId", label: "Vehículo", type: "select", optionsSource: "vehicles" },
       {
         key: "tripType",
         label: "Tipo de viaje",
@@ -955,13 +1003,14 @@ export const resources: Record<string, ResourceConfig> = {
           { label: "Proveedores", value: "PROVEEDORES" }
         ]
       },
-      { key: "origin", label: "Origen", type: "text" },
-      { key: "destination", label: "Destino", type: "text" },
+      { key: "origin", label: "Origen", type: "places", placeholder: "Ej: Aeropuerto Internacional de Santiago" },
+      { key: "destination", label: "Destino", type: "places", placeholder: "Ej: Hotel Sheraton, Santiago" },
       { key: "notes", label: "Observaciones", type: "text" },
       {
         key: "status",
         label: "Estado",
         type: "select",
+        defaultValue: "SCHEDULED",
         options: [
           { label: "Solicitado", value: "REQUESTED" },
           { label: "Programado", value: "SCHEDULED" },
