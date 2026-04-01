@@ -6,6 +6,12 @@ import { apiFetch } from "@/lib/api";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import NotificationBell, { useNotifications } from "@/components/NotificationBell";
 import TripChat from "@/components/TripChat";
+import dynamic from "next/dynamic";
+
+const TripMap = dynamic(() => import("@/components/TripMap"), {
+  ssr: false,
+  loading: () => <div style={{ height: 200, background: "#eef2f6", borderRadius: 12 }} />,
+});
 
 type Athlete = {
   id: string;
@@ -1108,22 +1114,31 @@ export default function VehicleRequestPortalPage() {
                               </div>
                             )}
 
-                            {/* Live tracking for active trips */}
-                            {isActive && (
-                              <div style={{ padding:10,borderRadius:12,background:"rgba(33,208,179,0.06)",border:"1px solid rgba(33,208,179,0.2)" }}>
-                                <p style={{ fontSize:12,fontWeight:700,color:"#0a7a6b",margin:0 }}>
-                                  {trip.status === "PICKED_UP" ? "🚗 Viaje en curso" : "🚗 Conductor en camino"}
-                                </p>
-                                {coords && (
-                                  <a
-                                    href={buildDirectionsLink(coords.lat, coords.lng, trip.origin)}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    style={{ fontSize:12,color:"#21D0B3",fontWeight:600,marginTop:4,display:"inline-block" }}
-                                  >
-                                    Abrir ruta en Maps →
-                                  </a>
-                                )}
+                            {/* Map for scheduled and active trips */}
+                            {(isActive || trip.status === "SCHEDULED") && (
+                              <div style={{ borderRadius:12,overflow:"hidden",border:"1px solid rgba(33,208,179,0.25)" }}>
+                                <TripMap
+                                  origin={trip.origin}
+                                  destination={trip.destination || venue?.name}
+                                  driverPosition={coords ? { lat: coords.lat, lng: coords.lng } : null}
+                                  userPosition={trip.passengerLat && trip.passengerLng ? { lat: trip.passengerLat, lng: trip.passengerLng } : null}
+                                  height={200}
+                                />
+                                <div style={{ padding:"8px 10px",background:"rgba(33,208,179,0.06)",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+                                  <span style={{ fontSize:12,fontWeight:700,color:"#0a7a6b" }}>
+                                    {trip.status === "PICKED_UP" ? "🚗 En curso" : "🚗 Conductor en camino"}
+                                  </span>
+                                  {coords && (
+                                    <a
+                                      href={buildDirectionsLink(coords.lat, coords.lng, trip.origin)}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      style={{ fontSize:11,color:"#21D0B3",fontWeight:600 }}
+                                    >
+                                      Abrir en Maps →
+                                    </a>
+                                  )}
+                                </div>
                               </div>
                             )}
 
