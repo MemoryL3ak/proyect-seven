@@ -981,19 +981,27 @@ export default function ResourceScreen({
   useEffect(() => {
     if (config.endpoint !== "/trips") return;
     const selected = form.driverId as string | undefined;
-    if (!selected) return;
+    if (!selected) {
+      setForm((prev) => ({ ...prev, vehicleId: "", vehiclePlateDisplay: "" }));
+      return;
+    }
     const driver = driverLookup[selected];
     if (driver?.vehicleId) {
-      setForm((prev) => ({ ...prev, vehicleId: driver.vehicleId }));
+      const v = vehicleLookup[driver.vehicleId];
+      const plate = v?.plate || "";
+      setForm((prev) => ({ ...prev, vehicleId: driver.vehicleId, vehiclePlate: plate.toUpperCase(), vehiclePlateDisplay: plate.toUpperCase() }));
     } else if (driver?.metadata?.vehiclePatente) {
-      // Provider participant chofer — match by plate
       const plate = String(driver.metadata.vehiclePatente).trim().toUpperCase();
       const vehicle = vehicleLookupByPlate[plate];
       if (vehicle?.id) {
-        setForm((prev) => ({ ...prev, vehicleId: vehicle.id }));
+        setForm((prev) => ({ ...prev, vehicleId: vehicle.id, vehiclePlate: plate, vehiclePlateDisplay: plate }));
+      } else {
+        setForm((prev) => ({ ...prev, vehicleId: "", vehiclePlate: plate, vehiclePlateDisplay: plate }));
       }
+    } else {
+      setForm((prev) => ({ ...prev, vehicleId: "", vehiclePlate: "", vehiclePlateDisplay: "Sin vehículo asignado" }));
     }
-  }, [config.endpoint, form.driverId, driverLookup, vehicleLookupByPlate]);
+  }, [config.endpoint, form.driverId, driverLookup, vehicleLookup, vehicleLookupByPlate]);
 
   useEffect(() => {
     if (config.endpoint !== "/trips") return;

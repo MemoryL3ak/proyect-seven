@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
+import { filterValidatedAthletes } from "@/lib/athletes";
 
 // All possible types — always show every one
 const ALL_TYPES = [
@@ -33,7 +34,7 @@ export default function TiposAlimentacionPage() {
       apiFetch<Athlete[]>("/athletes"),
       apiFetch<Delegation[]>("/delegations"),
     ]).then(([aths, dels]) => {
-      setAthletes(aths ?? []);
+      setAthletes(filterValidatedAthletes(aths ?? []));
       setDelegations(dels ?? []);
       setLoading(false);
     });

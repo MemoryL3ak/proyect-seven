@@ -13,8 +13,11 @@ export class VehiclePosition {
   @Column({ name: 'event_id', type: 'uuid' })
   eventId: string;
 
-  @Column({ name: 'vehicle_id', type: 'uuid' })
-  vehicleId: string;
+  @Column({ name: 'vehicle_id', type: 'uuid', nullable: true })
+  vehicleId?: string | null;
+
+  @Column({ name: 'driver_id', type: 'uuid' })
+  driverId: string;
 
   @Column({ name: 'timestamp', type: 'timestamptz' })
   timestamp: Date;

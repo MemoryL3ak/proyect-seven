@@ -6,8 +6,12 @@ export class CreateVehiclePositionDto {
   eventId?: string;
 
   @IsString()
+  @IsOptional()
+  vehicleId?: string;
+
+  @IsString()
   @IsNotEmpty()
-  vehicleId: string;
+  driverId: string;
 
   @IsISO8601()
   timestamp: string;

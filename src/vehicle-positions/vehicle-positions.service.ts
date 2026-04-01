@@ -14,7 +14,8 @@ import { VehiclePosition } from './entities/vehicle-position.entity';
 type VehiclePositionRow = {
   id: string;
   event_id: string;
-  vehicle_id: string;
+  vehicle_id: string | null;
+  driver_id: string;
   timestamp: string;
   location: unknown;
   speed: number | null;
@@ -37,7 +38,10 @@ export class VehiclePositionsService {
       row.event_id = dto.eventId;
     }
     if (dto.vehicleId !== undefined) {
-      row.vehicle_id = dto.vehicleId;
+      row.vehicle_id = dto.vehicleId ?? null;
+    }
+    if ((dto as any).driverId !== undefined) {
+      row.driver_id = (dto as any).driverId;
     }
     if (dto.timestamp !== undefined) {
       row.timestamp = dto.timestamp;
@@ -60,6 +64,7 @@ export class VehiclePositionsService {
       id: row.id,
       eventId: row.event_id,
       vehicleId: row.vehicle_id,
+      driverId: row.driver_id,
       timestamp: new Date(row.timestamp),
       location: row.location,
       speed: row.speed,
@@ -98,6 +103,26 @@ export class VehiclePositionsService {
     if (error) {
       throw new InternalServerErrorException(
         error.message || 'Error fetching latest vehicle position',
+      );
+    }
+
+    if (!data) return null;
+    return this.toEntity(data as VehiclePositionRow);
+  }
+
+  async findLatestByDriver(driverId: string): Promise<VehiclePosition | null> {
+    const { data, error } = await this.supabase
+      .schema('telemetry')
+      .from('vehicle_positions')
+      .select('*')
+      .eq('driver_id', driverId)
+      .order('timestamp', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      throw new InternalServerErrorException(
+        error.message || 'Error fetching latest driver position',
       );
     }
 

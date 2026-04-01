@@ -8,6 +8,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
 import * as https from 'https';
+import { accessCodeEmailHtml } from '../shared/email-templates';
 import { ConfigService } from '@nestjs/config';
 import { Repository } from 'typeorm';
 import { CreateDriverDto } from './dto/create-driver.dto';
@@ -187,16 +188,40 @@ export class DriversService {
         'eventId is required to create vehicle',
       );
     }
-    if (!dto.vehiclePlate || !dto.vehicleType) {
-      throw new InternalServerErrorException(
-        'vehiclePlate and vehicleType are required to create vehicle',
-      );
+    if (!dto.vehiclePlate) {
+      return undefined;
+    }
+    const vehicleType = dto.vehicleType || 'SEDAN';
+
+    const plate = dto.vehiclePlate.trim().toUpperCase();
+
+    // Check if vehicle with this plate already exists
+    const { data: existing } = await this.supabase
+      .schema('transport')
+      .from('vehicles')
+      .select('id')
+      .eq('plate', plate)
+      .maybeSingle();
+
+    if (existing?.id) {
+      // Update existing vehicle with new info
+      await this.supabase
+        .schema('transport')
+        .from('vehicles')
+        .update({
+          type: vehicleType,
+          brand: dto.vehicleBrand ?? undefined,
+          model: dto.vehicleModel ?? undefined,
+          capacity: dto.vehicleCapacity ?? undefined,
+        })
+        .eq('id', existing.id);
+      return existing.id as string;
     }
 
     const payload = {
       event_id: eventId,
-      plate: dto.vehiclePlate,
-      type: dto.vehicleType,
+      plate,
+      type: vehicleType,
       brand: dto.vehicleBrand ?? null,
       model: dto.vehicleModel ?? null,
       capacity: dto.vehicleCapacity ?? 0,
@@ -522,23 +547,55 @@ export class DriversService {
 
   async requestAccess(email: string) {
     const normalizedEmail = email.trim().toLowerCase();
-    const { data, error } = await this.supabase
+
+    // 1. Try transport.drivers first
+    const { data: driverData, error: driverError } = await this.supabase
       .schema('transport')
       .from('drivers')
       .select('id, full_name, email')
       .ilike('email', normalizedEmail)
       .maybeSingle();
 
-    if (error) {
+    if (driverError) {
       throw new InternalServerErrorException(
-        error.message || 'Error fetching driver',
+        driverError.message || 'Error fetching driver',
       );
     }
 
-    if (!data) {
-      throw new BadRequestException(
-        'El correo no corresponde a un conductor registrado',
-      );
+    // 2. If not found, also check provider_participants with isDriver flag
+    let resolvedId: string | null = null;
+    let resolvedName: string | null = null;
+
+    if (driverData) {
+      resolvedId = driverData.id;
+      resolvedName = driverData.full_name;
+    } else {
+      const { data: participantData, error: participantError } =
+        await this.supabase
+          .schema('core')
+          .from('provider_participants')
+          .select('id, full_name, email, metadata')
+          .ilike('email', normalizedEmail)
+          .maybeSingle();
+
+      if (participantError) {
+        throw new InternalServerErrorException(
+          participantError.message || 'Error fetching participant',
+        );
+      }
+
+      const meta = (participantData?.metadata ?? {}) as Record<string, unknown>;
+      const isDriver =
+        meta.isDriver === true || meta.isDriver === 'true';
+
+      if (!participantData || !isDriver) {
+        throw new BadRequestException(
+          'El correo no corresponde a un conductor registrado',
+        );
+      }
+
+      resolvedId = participantData.id;
+      resolvedName = participantData.full_name;
     }
 
     const apiKey = process.env.RESEND_API_KEY;
@@ -548,56 +605,11 @@ export class DriversService {
       throw new InternalServerErrorException('Email provider not configured');
     }
 
-    const fullName = data.full_name ?? 'Conductor';
-    const accessCode = data.id.slice(-6);
+    const fullName = resolvedName ?? 'Conductor';
+    const accessCode = resolvedId!.slice(-6);
     const subject = 'Tu código de acceso';
     const text = `Hola ${fullName},\n\nTu código de acceso para ingresar al portal es:\n${accessCode}\n\nGuárdalo en un lugar seguro.\n`;
-    const html = `<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Tu codigo de acceso</title>
-  </head>
-  <body style="margin:0;background:#f5f7fb;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
-    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:#f5f7fb;padding:32px 16px;">
-      <tr>
-        <td align="center">
-          <table role="presentation" cellpadding="0" cellspacing="0" width="560" style="max-width:560px;background:#ffffff;border-radius:16px;box-shadow:0 12px 30px rgba(15,23,42,0.08);overflow:hidden;">
-            <tr>
-              <td style="padding:28px 32px 8px 32px;">
-                <div style="font-size:11px;letter-spacing:0.3em;text-transform:uppercase;color:#94a3b8;">Seven</div>
-                <h1 style="margin:8px 0 0 0;font-size:22px;font-weight:600;color:#0f172a;">Tu codigo de acceso</h1>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:4px 32px 24px 32px;">
-                <p style="margin:0;font-size:14px;color:#475569;">Hola ${fullName},</p>
-                <p style="margin:14px 0 0 0;font-size:14px;color:#475569;">
-                  Tu código de acceso para ingresar al portal es:
-                </p>
-                <div style="margin:16px 0;padding:14px 16px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc;font-size:16px;letter-spacing:0.02em;color:#0f172a;">
-                  ${accessCode}
-                </div>
-                <p style="margin:0;font-size:13px;color:#64748b;">
-                  Guardalo en un lugar seguro.
-                </p>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:0 32px 28px 32px;">
-                <div style="height:1px;background:#e2e8f0;"></div>
-                <p style="margin:14px 0 0 0;font-size:11px;color:#94a3b8;">
-                  Si no solicitaste este codigo, ignora este mensaje.
-                </p>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
-  </body>
-</html>`;
+    const html = accessCodeEmailHtml(fullName, accessCode);
 
     const payload = JSON.stringify({
       from,

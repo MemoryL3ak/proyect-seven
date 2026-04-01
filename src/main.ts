@@ -21,6 +21,8 @@ async function bootstrap() {
   const allowedOrigins = new Set([
     'http://localhost:3000',
     'http://localhost:3001',
+    'https://localhost:3000',
+    'https://localhost:3001',
     'https://proyect-seven-q9q8jgx37-ariels-projects-b6125cb2.vercel.app',
     'https://proyect-seven-cqgvzzv14-ariels-projects-b6125cb2.vercel.app',
     'https://seven.management',

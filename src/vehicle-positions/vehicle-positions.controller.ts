@@ -22,6 +22,11 @@ export class VehiclePositionsController {
     return this.vehiclePositionsService.findLatestByVehicle(vehicleId);
   }
 
+  @Get('by-driver/:driverId')
+  findLatestByDriver(@Param('driverId') driverId: string) {
+    return this.vehiclePositionsService.findLatestByDriver(driverId);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.vehiclePositionsService.findOne(id);

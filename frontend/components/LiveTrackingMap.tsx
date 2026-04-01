@@ -20,6 +20,7 @@ type Props = {
   markers: TrackingMarker[];
   height?: number;
   isDark?: boolean;
+  selectedTripId?: string | null;
 };
 
 const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
@@ -81,7 +82,7 @@ function createDriverCarIcon(initials: string, accent: string): string {
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
-export default function LiveTrackingMap({ markers, height = 560 }: Props) {
+export default function LiveTrackingMap({ markers, height = 560, selectedTripId }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const gmMarkersRef = useRef<Record<string, any>>({});
@@ -199,6 +200,34 @@ export default function LiveTrackingMap({ markers, height = 560 }: Props) {
       didFitRef.current = true;
     }
   }, [markers]);
+
+  // Highlight selected marker and pan to it
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const google = (window as any).google;
+    if (!google?.maps) return;
+
+    markers.forEach((m) => {
+      const gm = gmMarkersRef.current[m.tripId];
+      if (!gm) return;
+      const isSelected = m.tripId === selectedTripId;
+      const initials = getInitials(m.driverName);
+      gm.setIcon({
+        url: createDriverCarIcon(initials, isSelected ? "#f59e0b" : m.accent),
+        scaledSize: new google.maps.Size(isSelected ? 80 : 64, isSelected ? 90 : 72),
+        anchor: new google.maps.Point(isSelected ? 40 : 32, isSelected ? 90 : 68),
+      });
+      gm.setZIndex(isSelected ? 100 : 10);
+    });
+
+    if (selectedTripId) {
+      const selected = markers.find((m) => m.tripId === selectedTripId);
+      if (selected) {
+        mapRef.current.panTo({ lat: selected.lat, lng: selected.lng });
+        if (mapRef.current.getZoom() < 14) mapRef.current.setZoom(14);
+      }
+    }
+  }, [selectedTripId, markers]);
 
   return (
     <div ref={containerRef} style={{ width: "100%", height: `${height}px`, borderRadius: 12 }} />

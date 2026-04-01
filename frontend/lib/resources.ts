@@ -917,7 +917,7 @@ export const resources: Record<string, ResourceConfig> = {
       "requestedVehicleType",
       "passengerCount",
       "driverId",
-      "vehicleId",
+      "vehiclePlate",
       "tripType",
       "clientType",
       "origin",
@@ -935,7 +935,9 @@ export const resources: Record<string, ResourceConfig> = {
       "requestedAt",
       "destinationTypeFilter",
       "destinationVenueId",
-      "destinationHotelId"
+      "destinationHotelId",
+      "vehiclePlateDisplay",
+      "vehicleId"
     ],
     fields: [
       { key: "eventId", label: "Evento", type: "select", required: true, optionsSource: "events" },
@@ -977,7 +979,9 @@ export const resources: Record<string, ResourceConfig> = {
       },
       { key: "passengerCount", label: "Cantidad de personas", type: "number", min: 1 },
       { key: "driverId", label: "Conductor", type: "select", optionsSource: "driverUsers" },
-      { key: "vehicleId", label: "Vehículo", type: "select", optionsSource: "vehicles" },
+      { key: "vehiclePlateDisplay", label: "Vehículo (patente)", type: "text", readOnly: true, transient: true, placeholder: "Se asigna al seleccionar conductor" },
+      { key: "vehiclePlate", label: "Vehículo (Patente)", type: "text", readOnly: true, formHidden: true },
+      { key: "vehicleId", label: "Vehículo", type: "select", optionsSource: "vehicles", formHidden: true },
       {
         key: "tripType",
         label: "Tipo de viaje",

@@ -14,6 +14,7 @@ type Trip = {
   eventId?: string | null;
   driverId: string;
   vehicleId: string;
+  vehiclePlate?: string | null;
   origin?: string | null;
   destination?: string | null;
   destinationVenueId?: string | null;
@@ -55,7 +56,8 @@ const STATUS_LABEL: Record<string, string> = {
 
 type PositionItem = {
   id: string;
-  vehicleId: string;
+  vehicleId?: string;
+  driverId?: string;
   timestamp: string;
   location?: { coordinates?: [number, number] } | { lat?: number; lng?: number };
 };
@@ -116,6 +118,7 @@ export default function VehiclePositionsPage() {
   const [positions, setPositions] = useState<Record<string, { lat: number; lng: number; timestamp: string }>>({});
   const [completedAlerts, setCompletedAlerts] = useState<Array<{ tripId: string; driverName: string; destination: string; ts: Date }>>([]);
   const [activeView, setActiveView] = useState<"tracking" | "table">("tracking");
+  const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -130,7 +133,7 @@ export default function VehiclePositionsPage() {
     setLoading(true);
     setError(null);
     try {
-      const [tripData, eventData, driverData, vehicleData, athleteData, delegationData, positionData, venueData] =
+      const [tripData, eventData, driverData, vehicleData, athleteData, delegationData, positionData, venueData, participantData] =
         await Promise.all([
           apiFetch<Trip[]>("/trips"),
           apiFetch<EventItem[]>("/events"),
@@ -139,7 +142,8 @@ export default function VehiclePositionsPage() {
           apiFetch<AthleteItem[]>("/athletes"),
           apiFetch<DelegationItem[]>("/delegations"),
           apiFetch<PositionItem[]>("/vehicle-positions"),
-          apiFetch<VenueItem[]>("/venues")
+          apiFetch<VenueItem[]>("/venues"),
+          apiFetch<Record<string, any>[]>("/provider-participants")
         ]);
 
       const nextTrips = tripData || [];
@@ -186,13 +190,17 @@ export default function VehiclePositionsPage() {
         }, {})
       );
 
-      setDrivers(
-        (driverData || []).reduce<Record<string, DriverItem>>((acc, driver) => {
-          if (driver.userId) acc[driver.userId] = driver;
-          acc[driver.id] = driver;
-          return acc;
-        }, {})
-      );
+      const driverMap = (driverData || []).reduce<Record<string, DriverItem>>((acc, driver) => {
+        if (driver.userId) acc[driver.userId] = driver;
+        acc[driver.id] = driver;
+        return acc;
+      }, {});
+      (participantData || []).forEach((p) => {
+        if (!driverMap[p.id]) {
+          driverMap[p.id] = { id: p.id, fullName: p.fullName || p.id, userId: null, vehicleId: null } as any;
+        }
+      });
+      setDrivers(driverMap);
 
       setVehicles(
         (vehicleData || []).reduce<Record<string, VehicleItem>>((acc, vehicle) => {
@@ -215,18 +223,20 @@ export default function VehiclePositionsPage() {
         }, {})
       );
 
-      const latestByVehicle: Record<string, { lat: number; lng: number; timestamp: string }> = {};
+      const latestByDriver: Record<string, { lat: number; lng: number; timestamp: string }> = {};
       (positionData || []).forEach((pos) => {
+        const key = pos.driverId || pos.vehicleId;
+        if (!key) return;
         const coordinates = (pos.location as any)?.coordinates;
         const lat = coordinates ? coordinates[1] : (pos.location as any)?.lat;
         const lng = coordinates ? coordinates[0] : (pos.location as any)?.lng;
         if (lat === undefined || lng === undefined) return;
-        const current = latestByVehicle[pos.vehicleId];
+        const current = latestByDriver[key];
         if (!current || new Date(pos.timestamp) > new Date(current.timestamp)) {
-          latestByVehicle[pos.vehicleId] = { lat, lng, timestamp: pos.timestamp };
+          latestByDriver[key] = { lat, lng, timestamp: pos.timestamp };
         }
       });
-      setPositions(latestByVehicle);
+      setPositions(latestByDriver);
 
       setLastUpdated(new Date());
     } catch (err) {
@@ -258,9 +268,9 @@ export default function VehiclePositionsPage() {
   const trackingMarkers = useMemo<TrackingMarker[]>(() => {
     return activeTrips
       .map((trip) => {
-        const position = positions[trip.vehicleId];
+        const position = positions[trip.driverId] || positions[trip.vehicleId];
         if (!position) return null;
-        const vehicle = vehicles[trip.vehicleId];
+        const vehicle = trip.vehicleId ? vehicles[trip.vehicleId] : null;
         const driver = drivers[trip.driverId];
         const venue = trip.destinationVenueId ? venues[trip.destinationVenueId] : null;
         const sc = STATUS_COLORS[trip.status ?? "EN_ROUTE"] ?? STATUS_COLORS.EN_ROUTE;
@@ -270,7 +280,7 @@ export default function VehiclePositionsPage() {
           lat: position.lat,
           lng: position.lng,
           driverName: driver?.fullName || "Conductor",
-          vehiclePlate: vehicle?.plate || trip.vehicleId,
+          vehiclePlate: vehicle?.plate || trip.vehiclePlate || trip.vehicleId,
           statusLabel: STATUS_LABEL[trip.status ?? ""] || trip.status || "",
           accent: sc.accent,
           origin: trip.origin || "Origen",
@@ -286,13 +296,13 @@ export default function VehiclePositionsPage() {
     const active = trips.filter((tr) => ["EN_ROUTE", "PICKED_UP"].includes(tr.status ?? "")).length;
     const scheduled = trips.filter((tr) => tr.status === "SCHEDULED").length;
     const completed = trips.filter((tr) => ["COMPLETED", "DROPPED_OFF"].includes(tr.status ?? "")).length;
-    const activeVehicleIds = new Set(
+    const activeDriverIds = new Set(
       trips
         .filter((tr) => ["EN_ROUTE", "PICKED_UP"].includes(tr.status ?? ""))
-        .map((tr) => tr.vehicleId)
+        .map((tr) => tr.driverId)
         .filter(Boolean)
     );
-    const withPosition = Object.keys(positions).filter((vid) => activeVehicleIds.has(vid)).length;
+    const withPosition = Object.keys(positions).filter((id) => activeDriverIds.has(id)).length;
     return { active, scheduled, completed, withPosition, total: trips.length };
   }, [trips, positions]);
 
@@ -551,6 +561,7 @@ export default function VehiclePositionsPage() {
                   markers={trackingMarkers}
                   height={560}
                   isDark={false}
+                  selectedTripId={selectedTripId}
                 />
               </div>
 
@@ -558,24 +569,25 @@ export default function VehiclePositionsPage() {
               <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxHeight: "580px", overflowY: "auto", paddingRight: "2px" }}>
                 {activeTrips.map((trip) => {
                   const sc = STATUS_COLORS[trip.status ?? "EN_ROUTE"] ?? STATUS_COLORS.EN_ROUTE;
-                  const vehicle = vehicles[trip.vehicleId];
+                  const vehicle = trip.vehicleId ? vehicles[trip.vehicleId] : null;
                   const driver = drivers[trip.driverId];
                   const venue = trip.destinationVenueId ? venues[trip.destinationVenueId] : null;
-                  const position = positions[trip.vehicleId];
+                  const position = positions[trip.driverId] || (trip.vehicleId ? positions[trip.vehicleId] : null);
                   const elapsedMs = trip.startedAt ? Date.now() - new Date(trip.startedAt).getTime() : null;
                   const elapsedMin = elapsedMs !== null ? Math.floor(elapsedMs / 60000) : null;
 
                   return (
                     <div key={trip.id} style={{
-                      background: "#ffffff",
-                      border: "1px solid #e2e8f0",
+                      background: selectedTripId === trip.id ? "#f0fdfa" : "#ffffff",
+                      border: selectedTripId === trip.id ? "2px solid #14b8a6" : "1px solid #e2e8f0",
                       borderLeft: `4px solid ${sc.accent}`,
                       borderRadius: "14px",
                       padding: "12px 14px",
-                      boxShadow: "0 1px 4px rgba(15,23,42,0.06)",
+                      boxShadow: selectedTripId === trip.id ? "0 0 8px rgba(20,184,166,0.3)" : "0 1px 4px rgba(15,23,42,0.06)",
                       transition: "transform 120ms ease",
                       cursor: position ? "pointer" : "default",
                     }}
+                      onClick={() => { if (position) setSelectedTripId(selectedTripId === trip.id ? null : trip.id); }}
                       onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateX(2px)"; }}
                       onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = ""; }}
                     >
@@ -586,7 +598,7 @@ export default function VehiclePositionsPage() {
                             {driver?.fullName || "Conductor pendiente"}
                           </p>
                           <p style={{ fontSize: "11px", color: "#64748b", marginTop: "1px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {vehicle ? [vehicle.plate, vehicle.type].filter(Boolean).join(" · ") : "Sin vehículo"}
+                            {vehicle ? [vehicle.plate, vehicle.type].filter(Boolean).join(" · ") : (trip.vehiclePlate || "Sin vehículo")}
                           </p>
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "3px", flexShrink: 0 }}>
@@ -670,8 +682,8 @@ export default function VehiclePositionsPage() {
                   {orderedTrips.map((trip) => {
                     const event = trip.eventId ? events[trip.eventId] : null;
                     const driver = drivers[trip.driverId];
-                    const vehicle = vehicles[trip.vehicleId];
-                    const position = positions[trip.vehicleId];
+                    const vehicle = trip.vehicleId ? vehicles[trip.vehicleId] : null;
+                    const position = positions[trip.driverId] || (trip.vehicleId ? positions[trip.vehicleId] : null);
                     return (
                       <tr key={trip.id}>
                         <td>{trip.id}</td>

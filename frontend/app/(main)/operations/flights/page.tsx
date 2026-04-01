@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { filterValidatedAthletes } from "@/lib/athletes";
 
 type Flight = {
   id: string;
@@ -110,7 +111,7 @@ export default function FlightsPage() {
       ]);
       setFlights(flightData ?? []);
       setEvents(eventData ?? []);
-      setAthletes(athleteData ?? []);
+      setAthletes(filterValidatedAthletes(athleteData ?? []));
       if (!selectedEventId && eventData?.length) setSelectedEventId(eventData[0].id);
     } finally {
       setLoading(false);

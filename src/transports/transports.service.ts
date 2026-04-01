@@ -56,10 +56,9 @@ export class TransportsService {
     });
 
     if (!response.ok) {
-      const text = await response.text().catch(() => '');
-      throw new InternalServerErrorException(
-        `Boostr API error: ${response.status} ${text}`.trim(),
-      );
+      // Any non-OK Boostr response (404 not found, 429 rate limit, etc.)
+      // is not a server error on our side — return empty result
+      return { plate: normalized, brand: null, model: null, year: null };
     }
 
     const data = await response.json().catch(() => ({}));

@@ -8,6 +8,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
 import * as https from 'https';
+import { accessCodeEmailHtml } from '../shared/email-templates';
 import { ConfigService } from '@nestjs/config';
 import { DataSource, Repository } from 'typeorm';
 import { CreateAthleteDto } from './dto/create-athlete.dto';
@@ -415,9 +416,9 @@ export class AthletesService {
       );
     }
 
-    if (!data || !data.is_delegation_lead) {
+    if (!data) {
       throw new BadRequestException(
-        'El correo no corresponde a un encargado de delegación',
+        'El correo no corresponde a un participante registrado',
       );
     }
 
@@ -432,52 +433,7 @@ export class AthletesService {
     const accessCode = data.id.slice(-6);
     const subject = 'Tu código de acceso';
     const text = `Hola ${fullName},\n\nTu código de acceso para ingresar al portal es:\n${accessCode}\n\nGuárdalo en un lugar seguro.\n`;
-    const html = `<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Tu codigo de acceso</title>
-  </head>
-  <body style="margin:0;background:#f5f7fb;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
-    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:#f5f7fb;padding:32px 16px;">
-      <tr>
-        <td align="center">
-          <table role="presentation" cellpadding="0" cellspacing="0" width="560" style="max-width:560px;background:#ffffff;border-radius:16px;box-shadow:0 12px 30px rgba(15,23,42,0.08);overflow:hidden;">
-            <tr>
-              <td style="padding:28px 32px 8px 32px;">
-                <div style="font-size:11px;letter-spacing:0.3em;text-transform:uppercase;color:#94a3b8;">Seven</div>
-                <h1 style="margin:8px 0 0 0;font-size:22px;font-weight:600;color:#0f172a;">Tu codigo de acceso</h1>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:4px 32px 24px 32px;">
-                <p style="margin:0;font-size:14px;color:#475569;">Hola ${fullName},</p>
-                <p style="margin:14px 0 0 0;font-size:14px;color:#475569;">
-                  Tu código de acceso para ingresar al portal es:
-                </p>
-                <div style="margin:16px 0;padding:14px 16px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc;font-size:16px;letter-spacing:0.02em;color:#0f172a;">
-                  ${accessCode}
-                </div>
-                <p style="margin:0;font-size:13px;color:#64748b;">
-                  Guardalo en un lugar seguro.
-                </p>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:0 32px 28px 32px;">
-                <div style="height:1px;background:#e2e8f0;"></div>
-                <p style="margin:14px 0 0 0;font-size:11px;color:#94a3b8;">
-                  Si no solicitaste este codigo, ignora este mensaje.
-                </p>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
-  </body>
-</html>`;
+    const html = accessCodeEmailHtml(fullName, accessCode);
 
     const payload = JSON.stringify({
       from,

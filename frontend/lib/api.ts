@@ -74,9 +74,10 @@ function apiCandidates() {
     const host = window.location.hostname;
     const proto = window.location.protocol === "https:" ? "https" : "http";
     if (host === "localhost" || host === "127.0.0.1") {
-      candidates.push(`${proto}://localhost:3000`);
-      candidates.push(`${proto}://localhost:3001`);
-      candidates.push(`${proto}://localhost:3002`);
+      candidates.push(`https://localhost:3000`);
+      candidates.push(`http://localhost:3000`);
+      candidates.push(`https://localhost:3001`);
+      candidates.push(`http://localhost:3001`);
     } else {
       // Accessing from network (e.g., mobile device) — use same host/protocol as frontend
       candidates.push(`${proto}://${host}:3000`);

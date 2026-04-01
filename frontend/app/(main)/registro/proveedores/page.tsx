@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import CountrySelect from "@/components/CountrySelect";
 
 // ── Type/subtype catalogue ──────────────────────────────────────────────────
 type TypeEntry = { label: string; subtypes: string[]; color: string; bg: string };
@@ -175,6 +177,12 @@ const EMPTY_PARTICIPANT_FORM = {
   arrivalTime: "",
   departureTime: "",
   observations: "",
+  isDriver: false,
+  vehicleMarca: "",
+  vehicleModelo: "",
+  vehicleAno: "",
+  vehiclePatente: "",
+  vehicleTipo: "",
 };
 
 // ── Main page ────────────────────────────────────────────────────────────────
@@ -202,6 +210,36 @@ export default function ProveedoresPage() {
   const [participantDocFiles, setParticipantDocFiles] = useState<Record<string, File | null>>({});
   const [savingParticipant, setSavingParticipant] = useState(false);
   const [participantError, setParticipantError] = useState<string | null>(null);
+  const [lookingUpPlate, setLookingUpPlate] = useState(false);
+  const [plateError, setPlateError] = useState<string | null>(null);
+
+  const lookupPlate = async (plate: string) => {
+    const p = plate.trim().toUpperCase().replace(/\s+/g, "");
+    if (p.length < 5) return;
+    setLookingUpPlate(true);
+    setPlateError(null);
+    try {
+      const data = await apiFetch<{ brand: string | null; model: string | null; year: number | null }>(
+        `/transports/lookup-plate/${encodeURIComponent(p)}`
+      );
+      setParticipantForm(f => ({
+        ...f,
+        vehicleMarca: data.brand ?? f.vehicleMarca,
+        vehicleModelo: data.model ?? f.vehicleModelo,
+        vehicleAno: data.year ? String(data.year) : f.vehicleAno,
+      }));
+    } catch {
+      setPlateError("No se encontró información para esta patente");
+    } finally {
+      setLookingUpPlate(false);
+    }
+  };
+
+  // ── Confirm dialog state
+  const [confirmDialog, setConfirmDialog] = useState<{
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
 
   // ── Loaders ─────────────────────────────────────────────────────────────
   const loadProviders = async () => {
@@ -329,14 +367,19 @@ export default function ProveedoresPage() {
     }
   };
 
-  const removeProvider = async (p: Provider) => {
-    if (!confirm(`¿Eliminar proveedor "${p.name}"?`)) return;
-    try {
-      await apiFetch(`/providers/${p.id}`, { method: "DELETE" });
-      await loadProviders();
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Error al eliminar");
-    }
+  const removeProvider = (p: Provider) => {
+    setConfirmDialog({
+      message: `¿Eliminar proveedor "${p.name}"? Esta acción no se puede deshacer.`,
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        try {
+          await apiFetch(`/providers/${p.id}`, { method: "DELETE" });
+          await loadProviders();
+        } catch (e) {
+          alert(e instanceof Error ? e.message : "Error al eliminar");
+        }
+      },
+    });
   };
 
   const handleProviderClick = (p: Provider) => {
@@ -365,6 +408,7 @@ export default function ProveedoresPage() {
     setParticipantForm({ ...EMPTY_PARTICIPANT_FORM, providerId: providerFilter });
     setParticipantDocFiles({});
     setParticipantError(null);
+    setPlateError(null);
     setParticipantModal({});
   };
 
@@ -387,9 +431,16 @@ export default function ProveedoresPage() {
       arrivalTime: p.arrivalTime ? p.arrivalTime.slice(0, 16) : "",
       departureTime: p.departureTime ? p.departureTime.slice(0, 16) : "",
       observations: p.observations ?? "",
+      isDriver: p.metadata?.isDriver === true,
+      vehicleMarca: (p.metadata?.vehicleMarca as string) ?? "",
+      vehicleModelo: (p.metadata?.vehicleModelo as string) ?? "",
+      vehicleAno: (p.metadata?.vehicleAno as string) ?? "",
+      vehiclePatente: (p.metadata?.vehiclePatente as string) ?? "",
+      vehicleTipo: (p.metadata?.vehicleTipo as string) ?? "",
     });
     setParticipantDocFiles({});
     setParticipantError(null);
+    setPlateError(null);
     setParticipantModal({ editing: p });
   };
 
@@ -417,6 +468,16 @@ export default function ProveedoresPage() {
         arrivalTime: participantForm.arrivalTime || null,
         departureTime: participantForm.departureTime || null,
         observations: participantForm.observations || null,
+        metadata: isTransporteParticipant ? {
+          isDriver: participantForm.isDriver,
+          ...(participantForm.isDriver ? {
+            vehicleMarca: participantForm.vehicleMarca || null,
+            vehicleModelo: participantForm.vehicleModelo || null,
+            vehicleAno: participantForm.vehicleAno || null,
+            vehiclePatente: participantForm.vehiclePatente || null,
+            vehicleTipo: participantForm.vehicleTipo || null,
+          } : {}),
+        } : undefined,
       };
 
       let participantId: string;
@@ -455,14 +516,19 @@ export default function ProveedoresPage() {
     }
   };
 
-  const removeParticipant = async (p: Participant) => {
-    if (!confirm(`¿Eliminar participante "${p.fullName}"?`)) return;
-    try {
-      await apiFetch(`/provider-participants/${p.id}`, { method: "DELETE" });
-      await loadParticipants();
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Error al eliminar");
-    }
+  const removeParticipant = (p: Participant) => {
+    setConfirmDialog({
+      message: `¿Eliminar participante "${p.fullName}"? Esta acción no se puede deshacer.`,
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        try {
+          await apiFetch(`/provider-participants/${p.id}`, { method: "DELETE" });
+          await loadParticipants();
+        } catch (e) {
+          alert(e instanceof Error ? e.message : "Error al eliminar");
+        }
+      },
+    });
   };
 
   const activeFilterProvider = providers.find(p => p.id === providerFilter) ?? null;
@@ -473,6 +539,17 @@ export default function ProveedoresPage() {
   // ── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
+      <ConfirmDialog
+        open={!!confirmDialog}
+        title="Confirmar eliminación"
+        message={confirmDialog?.message ?? ""}
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
+        danger
+        onConfirm={() => confirmDialog?.onConfirm()}
+        onCancel={() => setConfirmDialog(null)}
+      />
+
       {/* Header */}
       <section
         className="surface rounded-3xl p-6 flex flex-wrap items-center justify-between gap-4"
@@ -992,22 +1069,27 @@ export default function ProveedoresPage() {
                     <input className="input" value={participantForm.fullName} onChange={e => setParticipantForm(f => ({ ...f, fullName: e.target.value }))} placeholder="Nombre y apellido" autoFocus />
                   </label>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                      RUT
-                      <input className="input" value={participantForm.rut} onChange={e => setParticipantForm(f => ({ ...f, rut: e.target.value }))} placeholder="12.345.678-9" />
-                    </label>
-                    <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                      País (código)
-                      <input className="input" value={participantForm.countryCode} onChange={e => setParticipantForm(f => ({ ...f, countryCode: e.target.value.toUpperCase().slice(0, 3) }))} placeholder="CHL" maxLength={3} />
-                    </label>
-                  </div>
+                  <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
+                    País
+                    <CountrySelect
+                      value={participantForm.countryCode}
+                      onChange={val => setParticipantForm(f => ({ ...f, countryCode: val, rut: val !== "CHL" ? "" : f.rut, passportNumber: val === "CHL" ? "" : f.passportNumber }))}
+                    />
+                  </label>
+
 
                   <div className="grid grid-cols-2 gap-3">
-                    <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                      Pasaporte
-                      <input className="input" value={participantForm.passportNumber} onChange={e => setParticipantForm(f => ({ ...f, passportNumber: e.target.value }))} placeholder="A12345678" />
-                    </label>
+                    {participantForm.countryCode === "CHL" ? (
+                      <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
+                        RUT
+                        <input className="input" value={participantForm.rut} onChange={e => setParticipantForm(f => ({ ...f, rut: e.target.value }))} placeholder="12.345.678-9" autoFocus />
+                      </label>
+                    ) : (
+                      <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
+                        Pasaporte
+                        <input className="input" value={participantForm.passportNumber} onChange={e => setParticipantForm(f => ({ ...f, passportNumber: e.target.value }))} placeholder="A12345678" />
+                      </label>
+                    )}
                     <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
                       Fecha de nacimiento
                       <input className="input" type="date" value={participantForm.dateOfBirth} onChange={e => setParticipantForm(f => ({ ...f, dateOfBirth: e.target.value }))} />
@@ -1042,92 +1124,155 @@ export default function ProveedoresPage() {
                 </div>
               </div>
 
-              {/* AND */}
-              <div style={{ borderTop: "1px solid var(--border)", paddingTop: "12px" }}>
-                <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: "12px" }}>Arrival &amp; Departure</p>
-                <div className="space-y-3">
-                  <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                    Tipo de viaje
-                    <select className="input" value={participantForm.tripType} onChange={e => setParticipantForm(f => ({ ...f, tripType: e.target.value }))}>
-                      <option value="">— Sin especificar —</option>
-                      {TRIP_TYPES.map(t => <option key={t} value={t}>{TRIP_TYPE_LABELS[t]}</option>)}
-                    </select>
-                  </label>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                      Nº de vuelo
-                      <input className="input" value={participantForm.flightNumber} onChange={e => setParticipantForm(f => ({ ...f, flightNumber: e.target.value }))} placeholder="LA800" />
-                    </label>
-                    <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                      Aerolínea
-                      <input className="input" value={participantForm.airline} onChange={e => setParticipantForm(f => ({ ...f, airline: e.target.value }))} placeholder="LATAM" />
-                    </label>
-                  </div>
-
-                  <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                    Origen
-                    <input className="input" value={participantForm.origin} onChange={e => setParticipantForm(f => ({ ...f, origin: e.target.value }))} placeholder="Buenos Aires, Argentina" />
-                  </label>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                      Hora de llegada
-                      <input className="input" type="datetime-local" value={participantForm.arrivalTime} onChange={e => setParticipantForm(f => ({ ...f, arrivalTime: e.target.value }))} />
-                    </label>
-                    <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                      Hora de salida
-                      <input className="input" type="datetime-local" value={participantForm.departureTime} onChange={e => setParticipantForm(f => ({ ...f, departureTime: e.target.value }))} />
-                    </label>
-                  </div>
-                </div>
-              </div>
-
               {/* Observaciones */}
               <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
                 Observaciones
                 <textarea className="input" rows={2} value={participantForm.observations} onChange={e => setParticipantForm(f => ({ ...f, observations: e.target.value }))} placeholder="Notas adicionales…" style={{ resize: "vertical" }} />
               </label>
 
-              {/* Documentos (solo TRANSPORTE) */}
+              {/* Chofer flag + vehículo + docs (solo TRANSPORTE) */}
               {isTransporteParticipant && (
                 <div style={{ borderTop: "1px solid var(--border)", paddingTop: "16px" }}>
-                  <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#21D0B3", marginBottom: "2px" }}>
-                    Documentación requerida
-                  </p>
-                  <p style={{ fontSize: "12px", color: "var(--text-muted)", marginBottom: "12px" }}>
-                    Documentos del participante y del vehículo. Formatos: imagen o PDF.
-                  </p>
 
-                  <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: "4px" }}>
-                    Documentos personales
-                  </p>
-                  {TRANSPORT_DOCS_PERSON.map(doc => (
-                    <DocRow
-                      key={doc.key}
-                      label={doc.label}
-                      docKey={doc.key}
-                      file={participantDocFiles[doc.key] ?? null}
-                      url={typeof participantModal?.editing?.metadata?.[doc.key] === "string" ? (participantModal.editing.metadata![doc.key] as string) : undefined}
-                      onFile={(k, f) => setParticipantDocFiles(prev => ({ ...prev, [k]: f }))}
-                      disabled={savingParticipant}
-                    />
-                  ))}
+                  {/* Toggle chofer */}
+                  <button
+                    type="button"
+                    onClick={() => setParticipantForm(f => ({ ...f, isDriver: !f.isDriver }))}
+                    style={{
+                      width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+                      padding: "12px 14px", borderRadius: "12px", cursor: "pointer", border: "none",
+                      background: participantForm.isDriver ? "rgba(33,208,179,0.08)" : "var(--elevated)",
+                      transition: "background 0.2s",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={participantForm.isDriver ? "#21D0B3" : "var(--text-muted)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>
+                      </svg>
+                      <span style={{ fontSize: "13px", fontWeight: 600, color: participantForm.isDriver ? "#21D0B3" : "var(--text-muted)" }}>
+                        Es chofer
+                      </span>
+                    </div>
+                    {/* Toggle pill */}
+                    <div style={{
+                      width: "40px", height: "22px", borderRadius: "11px", position: "relative",
+                      background: participantForm.isDriver ? "#21D0B3" : "var(--border-strong)",
+                      transition: "background 0.2s", flexShrink: 0,
+                    }}>
+                      <div style={{
+                        position: "absolute", top: "3px",
+                        left: participantForm.isDriver ? "21px" : "3px",
+                        width: "16px", height: "16px", borderRadius: "50%",
+                        background: "#fff", transition: "left 0.2s",
+                        boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
+                      }} />
+                    </div>
+                  </button>
 
-                  <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--text-muted)", marginTop: "16px", marginBottom: "4px" }}>
-                    Documentos del vehículo
-                  </p>
-                  {TRANSPORT_DOCS_VEHICLE.map(doc => (
-                    <DocRow
-                      key={doc.key}
-                      label={doc.label}
-                      docKey={doc.key}
-                      file={participantDocFiles[doc.key] ?? null}
-                      url={typeof participantModal?.editing?.metadata?.[doc.key] === "string" ? (participantModal.editing.metadata![doc.key] as string) : undefined}
-                      onFile={(k, f) => setParticipantDocFiles(prev => ({ ...prev, [k]: f }))}
-                      disabled={savingParticipant}
-                    />
-                  ))}
+                  {participantForm.isDriver && (<>
+                    {/* Vehículo */}
+                    <div style={{ marginTop: "16px" }}>
+                      <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: "10px" }}>
+                        Detalle del vehículo
+                      </p>
+                      <div className="space-y-3">
+                        {/* Patente con lookup */}
+                        <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
+                          <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                            Patente
+                            {lookingUpPlate && (
+                              <span style={{ fontSize: "10px", color: "#21D0B3", fontWeight: 500, letterSpacing: "0.05em" }}>Buscando…</span>
+                            )}
+                            {!lookingUpPlate && plateError && (
+                              <span style={{ fontSize: "10px", color: "#f87171", fontWeight: 500 }}>{plateError}</span>
+                            )}
+                            {!lookingUpPlate && !plateError && participantForm.vehicleMarca && (
+                              <span style={{ fontSize: "10px", color: "#21D0B3", fontWeight: 500 }}>✓ Datos encontrados</span>
+                            )}
+                          </span>
+                          <input
+                            className="input"
+                            value={participantForm.vehiclePatente}
+                            onChange={e => { setPlateError(null); setParticipantForm(f => ({ ...f, vehiclePatente: e.target.value.toUpperCase() })); }}
+                            onBlur={e => lookupPlate(e.target.value)}
+                            placeholder="ABCD12"
+                          />
+                        </label>
+                        <div className="grid grid-cols-2 gap-3">
+                          <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
+                            Marca
+                            <input className="input" value={participantForm.vehicleMarca} onChange={e => setParticipantForm(f => ({ ...f, vehicleMarca: e.target.value }))} placeholder="Toyota" />
+                          </label>
+                          <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
+                            Modelo
+                            <input className="input" value={participantForm.vehicleModelo} onChange={e => setParticipantForm(f => ({ ...f, vehicleModelo: e.target.value }))} placeholder="Corolla" />
+                          </label>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
+                            Año
+                            <input className="input" value={participantForm.vehicleAno} onChange={e => setParticipantForm(f => ({ ...f, vehicleAno: e.target.value }))} placeholder="2022" maxLength={4} />
+                          </label>
+                          <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
+                            Tipo
+                            <select className="input" value={participantForm.vehicleTipo} onChange={e => setParticipantForm(f => ({ ...f, vehicleTipo: e.target.value }))}>
+                              <option value="">— Tipo —</option>
+                              <option value="sedan">Sedán</option>
+                              <option value="suv">SUV</option>
+                              <option value="camioneta">Camioneta</option>
+                              <option value="furgon">Furgón</option>
+                              <option value="van">Van</option>
+                              <option value="minibus">Minibús</option>
+                              <option value="bus">Bus</option>
+                              <option value="moto">Moto</option>
+                              <option value="otro">Otro</option>
+                            </select>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Documentación */}
+                    <div style={{ marginTop: "20px" }}>
+                      <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#21D0B3", marginBottom: "2px" }}>
+                        Documentación requerida
+                      </p>
+                      <p style={{ fontSize: "12px", color: "var(--text-muted)", marginBottom: "12px" }}>
+                        Documentos del participante y del vehículo. Formatos: imagen o PDF.
+                      </p>
+
+                      <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: "4px" }}>
+                        Documentos personales
+                      </p>
+                      {TRANSPORT_DOCS_PERSON.map(doc => (
+                        <DocRow
+                          key={doc.key}
+                          label={doc.label}
+                          docKey={doc.key}
+                          file={participantDocFiles[doc.key] ?? null}
+                          url={typeof participantModal?.editing?.metadata?.[doc.key] === "string" ? (participantModal.editing.metadata![doc.key] as string) : undefined}
+                          onFile={(k, f) => setParticipantDocFiles(prev => ({ ...prev, [k]: f }))}
+                          disabled={savingParticipant}
+                        />
+                      ))}
+
+                      <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--text-muted)", marginTop: "16px", marginBottom: "4px" }}>
+                        Documentos del vehículo
+                      </p>
+                      {TRANSPORT_DOCS_VEHICLE.map(doc => (
+                        <DocRow
+                          key={doc.key}
+                          label={doc.label}
+                          docKey={doc.key}
+                          file={participantDocFiles[doc.key] ?? null}
+                          url={typeof participantModal?.editing?.metadata?.[doc.key] === "string" ? (participantModal.editing.metadata![doc.key] as string) : undefined}
+                          onFile={(k, f) => setParticipantDocFiles(prev => ({ ...prev, [k]: f }))}
+                          disabled={savingParticipant}
+                        />
+                      ))}
+                    </div>
+                  </>)}
+
                 </div>
               )}
 

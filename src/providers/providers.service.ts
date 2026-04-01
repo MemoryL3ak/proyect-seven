@@ -150,6 +150,12 @@ export class ProvidersService {
       .maybeSingle();
 
     if (error) {
+      // FK violation: provider has linked drivers
+      if ((error as { code?: string }).code === '23503') {
+        throw new BadRequestException(
+          'No se puede eliminar el proveedor porque tiene conductores asociados. Elimina o reasigna los conductores primero.',
+        );
+      }
       throw new InternalServerErrorException(
         error.message || 'Error deleting provider',
       );

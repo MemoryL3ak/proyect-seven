@@ -15,6 +15,10 @@ export class CreateTripDto {
 
   @IsString()
   @IsOptional()
+  vehiclePlate?: string;
+
+  @IsString()
+  @IsOptional()
   requesterAthleteId?: string;
 
   @IsString()
