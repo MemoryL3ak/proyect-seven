@@ -530,6 +530,54 @@ export default function VehicleRequestPortalPage() {
     };
   }, [athlete, trips]);
 
+  // Poll active trips every 5s for status changes + notifications
+  const prevStatuses = useRef<Record<string, string>>({});
+  useEffect(() => {
+    if (!athlete) return;
+    // Initialize status tracking
+    trips.forEach((t) => {
+      if (t.id && t.status) prevStatuses.current[t.id] = t.status;
+    });
+
+    const pollTrips = async () => {
+      try {
+        const tripData = await apiFetch<Trip[]>("/trips");
+        const myTrips = (tripData || [])
+          .filter(
+            (trip) =>
+              (trip.requesterAthleteId && trip.requesterAthleteId === athlete.id) ||
+              (trip.athleteIds || []).includes(athlete.id),
+          )
+          .sort(
+            (a, b) =>
+              new Date(b.requestedAt || b.createdAt || 0).getTime() -
+              new Date(a.requestedAt || a.createdAt || 0).getTime(),
+          );
+
+        // Detect status changes and notify
+        myTrips.forEach((t) => {
+          const prev = prevStatuses.current[t.id];
+          if (prev && t.status && prev !== t.status) {
+            const msgs: Record<string, { message: string; emoji: string }> = {
+              SCHEDULED: { message: "Tu traslado fue programado", emoji: "📅" },
+              EN_ROUTE: { message: "El conductor está en camino", emoji: "🚗" },
+              PICKED_UP: { message: "Estás en ruta a tu destino", emoji: "✅" },
+              COMPLETED: { message: "Viaje completado", emoji: "🎉" },
+            };
+            const info = msgs[t.status];
+            if (info) notify.push(info.message, info.emoji);
+          }
+          if (t.id && t.status) prevStatuses.current[t.id] = t.status;
+        });
+
+        setTrips(myTrips);
+      } catch { /* silent */ }
+    };
+
+    const timer = window.setInterval(pollTrips, 5000);
+    return () => window.clearInterval(timer);
+  }, [athlete?.id]);
+
   useEffect(() => {
     if (activeTab !== "status") return;
     setVisibleTripsCount(5);
