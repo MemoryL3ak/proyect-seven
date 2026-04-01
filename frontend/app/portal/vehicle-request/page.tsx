@@ -1207,6 +1207,58 @@ export default function VehicleRequestPortalPage() {
         </div>
       )}
 
+      {/* Rating popup modal */}
+      {ratingTripId && (() => {
+        const rTrip = trips.find((t) => t.id === ratingTripId);
+        if (!rTrip || rTrip.driverRating) return null;
+        const rDriver = rTrip.driverId ? drivers[rTrip.driverId] : null;
+        return (
+          <div
+            onClick={() => { setRatingTripId(null); setRatingStars(0); setRatingComment(""); }}
+            style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:9000,display:"flex",alignItems:"center",justifyContent:"center",padding:16 }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{ background:"#fff",borderRadius:20,padding:"28px 24px",maxWidth:340,width:"100%",textAlign:"center",boxShadow:"0 20px 60px rgba(0,0,0,0.2)" }}
+            >
+              <p style={{ fontSize:32,margin:"0 0 4px" }}>
+                {ratingStars === 0 ? "🚗" : ratingStars <= 2 ? "😕" : ratingStars <= 3 ? "🙂" : ratingStars <= 4 ? "😊" : "🤩"}
+              </p>
+              <p style={{ fontSize:16,fontWeight:700,color:"#0f172a",margin:"0 0 4px" }}>¿Cómo fue tu viaje?</p>
+              {rDriver?.fullName && <p style={{ fontSize:13,color:"#64748b",margin:"0 0 16px" }}>Conductor: {rDriver.fullName}</p>}
+
+              <div style={{ display:"flex",justifyContent:"center",gap:6,marginBottom:16 }}>
+                {[1,2,3,4,5].map((star) => (
+                  <button key={star} type="button" onClick={() => setRatingStars(star)}
+                    style={{ background:"none",border:"none",cursor:"pointer",padding:3,transition:"transform .15s",transform:ratingStars >= star ? "scale(1.15)" : "scale(1)" }}>
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill={ratingStars >= star ? "#FBBF24" : "none"} stroke={ratingStars >= star ? "#F59E0B" : "#CBD5E1"} strokeWidth="1.5">
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                    </svg>
+                  </button>
+                ))}
+              </div>
+
+              <textarea
+                value={ratingComment}
+                onChange={(e) => setRatingComment(e.target.value)}
+                placeholder="Comentario opcional..."
+                rows={2}
+                style={{ width:"100%",padding:10,borderRadius:12,border:"1px solid #e2e8f0",fontSize:13,resize:"none",outline:"none",boxSizing:"border-box",fontFamily:"inherit",marginBottom:14 }}
+              />
+
+              <button type="button" onClick={() => submitRating(rTrip.id)} disabled={ratingStars === 0 || ratingLoading}
+                style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:ratingStars > 0 ? "linear-gradient(135deg,#34F3C6,#21D0B3)" : "#e2e8f0",color:ratingStars > 0 ? "#0d1b3e" : "#94a3b8",fontSize:15,fontWeight:700,cursor:ratingStars > 0 ? "pointer" : "not-allowed",opacity:ratingLoading ? 0.7 : 1 }}>
+                {ratingLoading ? "Enviando..." : "Enviar evaluación"}
+              </button>
+              <button type="button" onClick={() => { setRatingTripId(null); setRatingStars(0); setRatingComment(""); }}
+                style={{ marginTop:8,background:"none",border:"none",color:"#94a3b8",fontSize:13,cursor:"pointer",padding:8 }}>
+                Omitir
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Trip Chat */}
       {athlete && activeChatTrip && (
         <TripChat
