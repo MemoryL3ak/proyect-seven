@@ -796,6 +796,12 @@ export default function VehicleRequestPortalPage() {
                   onMarkAllRead={notify.markAllRead}
                   onClear={notify.clear}
                 />
+                <button type="button" onClick={() => athlete && loadPortal(athlete)} disabled={loading}
+                  style={{ display:"flex",alignItems:"center",justifyContent:"center",width:42,height:42,borderRadius:14,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.08)",cursor:"pointer",flexShrink:0,opacity:loading?0.5:1 }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+                  </svg>
+                </button>
                 <button type="button" onClick={logout} style={{ display:"flex",alignItems:"center",gap:"6px",padding:"8px 12px",borderRadius:"10px",border:"1px solid #e2e8f0",background:"#f8fafc",color:"#64748b",fontSize:"11px",fontWeight:600,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap" }}>
                   Salir
                 </button>
@@ -1010,7 +1016,7 @@ export default function VehicleRequestPortalPage() {
                           <div style={{ padding:"0 14px 10px",display:"flex",alignItems:"center",gap:8 }}>
                             <span style={{ width:6,height:6,borderRadius:"50%",background:"#7c3aed",animation:"vrPulse 1.5s ease-in-out infinite" }} />
                             <span style={{ fontSize:12,fontWeight:600,color:"#7c3aed" }}>
-                              {trip.status === "PICKED_UP" ? "En curso" : "Conductor en camino"}
+                              {trip.status === "PICKED_UP" ? "Viaje en curso" : trip.status === "EN_ROUTE" ? "Conductor en camino" : ""}
                             </span>
                           </div>
                         )}
@@ -1126,7 +1132,7 @@ export default function VehicleRequestPortalPage() {
                                 />
                                 <div style={{ padding:"8px 10px",background:"rgba(33,208,179,0.06)",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
                                   <span style={{ fontSize:12,fontWeight:700,color:"#0a7a6b" }}>
-                                    {trip.status === "PICKED_UP" ? "🚗 En curso" : "🚗 Conductor en camino"}
+                                    {trip.status === "PICKED_UP" ? "🚗 Viaje en curso" : trip.status === "EN_ROUTE" ? "🚗 Conductor en camino" : "📍 Ruta programada"}
                                   </span>
                                   {coords && (
                                     <a
