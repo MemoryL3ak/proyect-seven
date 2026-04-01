@@ -570,6 +570,22 @@ export default function VehicleRequestPortalPage() {
     };
   }, [athlete, trips]);
 
+  // Auto-show rating popup when any trip completes
+  const ratingShownFor = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    trips.forEach((t) => {
+      if (
+        (t.status === "COMPLETED" || t.status === "DROPPED_OFF") &&
+        !t.driverRating &&
+        t.driverId &&
+        !ratingShownFor.current.has(t.id)
+      ) {
+        ratingShownFor.current.add(t.id);
+        setRatingTripId(t.id);
+      }
+    });
+  }, [trips]);
+
   // Poll active trips every 5s for status changes + notifications
   const prevStatuses = useRef<Record<string, string>>({});
   useEffect(() => {
