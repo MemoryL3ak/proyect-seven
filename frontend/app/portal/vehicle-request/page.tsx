@@ -4,6 +4,8 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import PlacesAutocompleteInput from "@/components/PlacesAutocompleteInput";
 import { apiFetch } from "@/lib/api";
 import { filterValidatedAthletes } from "@/lib/athletes";
+import NotificationBell, { useNotifications } from "@/components/NotificationBell";
+import TripChat from "@/components/TripChat";
 
 type Athlete = {
   id: string;
@@ -57,6 +59,8 @@ type Trip = {
   destination?: string | null;
   athleteIds?: string[];
   createdAt?: string | null;
+  passengerLat?: number | null;
+  passengerLng?: number | null;
 };
 
 type EventItem = { id: string; name?: string | null };
@@ -193,6 +197,7 @@ function buildDirectionsLink(lat: number, lng: number, destination?: string | nu
 }
 
 export default function VehicleRequestPortalPage() {
+  const autoLoginRef = useRef(false);
   const [userCode, setUserCode] = useState("");
   const [requestEmail, setRequestEmail] = useState("");
   const [accessRequestStatus, setAccessRequestStatus] = useState<string | null>(null);
@@ -200,6 +205,7 @@ export default function VehicleRequestPortalPage() {
   const [requestAccessLoading, setRequestAccessLoading] = useState(false);
 
   const [athlete, setAthlete] = useState<Athlete | null>(null);
+  const notify = useNotifications();
   const [events, setEvents] = useState<Record<string, EventItem>>({});
   const [delegations, setDelegations] = useState<Record<string, DelegationItem>>({});
   const [venues, setVenues] = useState<Venue[]>([]);
@@ -305,6 +311,25 @@ export default function VehicleRequestPortalPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (autoLoginRef.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const athleteId = params.get("athleteId");
+    if (!athleteId) return;
+    autoLoginRef.current = true;
+    (async () => {
+      setLoading(true);
+      try {
+        const data = await apiFetch<Athlete>(`/athletes/${athleteId}`);
+        if (data) {
+          setAthlete(data);
+          setActiveTab("request");
+          await loadPortal(data);
+        }
+      } catch {} finally { setLoading(false); }
+    })();
+  }, []);
 
   const requestAccess = async () => {
     if (!requestEmail.trim()) return;
@@ -457,6 +482,10 @@ export default function VehicleRequestPortalPage() {
   const editingTrip = useMemo(() => trips.find((trip) => trip.id === editingTripId) || null, [editingTripId, trips]);
   const visibleTrips = useMemo(() => trips.slice(0, visibleTripsCount), [trips, visibleTripsCount]);
   const hasMoreTrips = trips.length > visibleTripsCount;
+
+  const activeChatTrip = useMemo(() =>
+    trips.find((trip) => ["SCHEDULED", "EN_ROUTE", "PICKED_UP"].includes(trip.status || "")) || null,
+  [trips]);
 
   const requestStats = useMemo(() => {
     const requested = trips.filter((trip) => trip.status === "REQUESTED").length;
@@ -634,94 +663,109 @@ export default function VehicleRequestPortalPage() {
       )}
 
       {athlete && (
-        <div className="min-h-screen px-4 py-8 sm:px-6 lg:px-8" style={{ background: "var(--elevated)" }}>
-          <div className="mx-auto max-w-6xl space-y-6">
-          <section className="space-y-6">
-            <article className="rounded-[30px] p-6 shadow-sm" style={{ border: "1px solid var(--border)", background: "var(--surface)" }}>
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.24em]" style={{ color: "var(--text-muted)" }}>Sesion activa</p>
-                  <h2 className="mt-2 text-3xl font-semibold tracking-tight" style={{ color: "var(--text)" }}>{athlete.fullName || athlete.id}</h2>
-                  <div className="mt-3 flex flex-wrap gap-3 text-sm">
-                    <span className="rounded-full px-3 py-1 font-medium" style={{ background: "var(--elevated)", color: "var(--text)" }}>
-                      Evento: {events[athlete.eventId || ""]?.name || athlete.eventId || "-"}
-                    </span>
-                    <span className="rounded-full px-3 py-1 font-medium" style={{ background: "var(--elevated)", color: "var(--text)" }}>
-                      Delegacion: {delegations[athlete.delegationId || ""]?.countryCode || athlete.delegationId || "-"}
-                    </span>
-                  </div>
-                </div>
-                <button type="button" className="btn btn-ghost h-11 px-5" onClick={logout}>
-                  Cerrar sesion
-                </button>
-              </div>
+        <div style={{ minHeight:"100vh",background:"#eef1f8",position:"relative",overflow:"hidden" }}>
+          <style>{`
+            @keyframes vr-in{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+            @keyframes vr-glow{0%,100%{opacity:0.4}50%{opacity:0.8}}
+            .vr-card{animation:vr-in .5s cubic-bezier(0.16,1,0.3,1) both;background:#fff;border:1px solid rgba(226,232,240,0.8);border-radius:18px;padding:16px;position:relative;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.04);}
+            .vr-card:hover{box-shadow:0 6px 24px rgba(33,208,179,0.12);border-color:rgba(33,208,179,0.25);}
+            @media(min-width:641px){.vr-card{border-radius:24px;padding:24px;}}
+          `}</style>
+          {/* Decorative bg */}
+          <div style={{ position:"fixed",top:"-100px",right:"-100px",width:"400px",height:"400px",borderRadius:"50%",background:"radial-gradient(ellipse,rgba(33,208,179,0.06) 0%,transparent 65%)",pointerEvents:"none",zIndex:0 }} />
 
-              <div className="mt-6 grid gap-4 md:grid-cols-4">
-                <div className="rounded-2xl px-4 py-4" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
-                  <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>Solicitadas</div>
-                  <div className="mt-2 text-3xl font-semibold" style={{ color: "var(--text)" }}>{requestStats.requested}</div>
-                </div>
-                <div className="rounded-2xl px-4 py-4" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
-                  <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>Programadas</div>
-                  <div className="mt-2 text-3xl font-semibold" style={{ color: "var(--brand)" }}>{requestStats.scheduled}</div>
-                </div>
-                <div className="rounded-2xl px-4 py-4" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
-                  <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>En curso</div>
-                  <div className="mt-2 text-3xl font-semibold" style={{ color: "var(--warning)" }}>{requestStats.active}</div>
-                </div>
-                <div className="rounded-2xl px-4 py-4" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
-                  <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>Cerradas</div>
-                  <div className="mt-2 text-3xl font-semibold" style={{ color: "var(--success)" }}>{requestStats.completed}</div>
-                </div>
+          {/* Banner */}
+          <div style={{ position:"relative",background:"linear-gradient(135deg,#041a2e 0%,#062240 45%,#0a3356 80%,#041a2e 100%)",overflow:"hidden",zIndex:1 }}>
+            <div style={{ position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(33,208,179,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(33,208,179,0.04) 1px,transparent 1px)",backgroundSize:"48px 48px",pointerEvents:"none" }} />
+            <div style={{ position:"absolute",bottom:"-1px",left:0,right:0,height:"2px",background:"linear-gradient(90deg,transparent,#21D0B3 30%,#34F3C6 50%,#21D0B3 70%,transparent)",pointerEvents:"none",animation:"vr-glow 3s ease-in-out infinite" }} />
+            <div style={{ padding:"10px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",maxWidth:"960px",margin:"0 auto",position:"relative",zIndex:1 }}>
+              <img src="/branding/LOGO-SEVEN-1.png" alt="Seven Arena" style={{ height:"34px",width:"auto",objectFit:"contain",filter:"drop-shadow(0 0 18px rgba(33,208,179,0.5)) drop-shadow(0 2px 8px rgba(0,0,0,0.8))" }} />
+              <div style={{ display:"flex",alignItems:"center",gap:"8px" }}>
+                <div style={{ width:6,height:6,borderRadius:"50%",background:"#21D0B3",boxShadow:"0 0 8px #21D0B3",animation:"vr-glow 2s ease-in-out infinite",flexShrink:0 }} />
+                <span style={{ fontSize:"8px",fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(33,208,179,0.9)" }}>Portal Movilidad</span>
               </div>
-            </article>
+            </div>
+          </div>
 
-            <article className="rounded-[30px] p-3 shadow-sm sm:p-4" style={{ border: "1px solid var(--border)", background: "var(--surface)" }}>
-              <div className="grid gap-3 md:grid-cols-2">
-                <button
-                  type="button"
-                  className="rounded-[22px] px-5 py-4 text-left transition"
-                  style={activeTab === "request"
-                    ? { background: "linear-gradient(135deg, var(--banner-bg) 0%, var(--banner-bg-end) 100%)", border: "1px solid var(--banner-border)", color: "var(--text)" }
-                    : { border: "1px solid var(--border)", background: "var(--elevated)", color: "var(--text-muted)" }}
-                  onClick={() => setActiveTab("request")}
-                >
-                  <div className="text-xs uppercase tracking-[0.22em]" style={{ color: activeTab === "request" ? "var(--brand)" : "var(--text-muted)" }}>Nueva solicitud</div>
-                  <div className="mt-2 text-xl font-semibold" style={{ color: "var(--text)" }}>Solicitar vehiculo</div>
-                  <p className="mt-2 text-sm leading-6" style={{ color: activeTab === "request" ? "var(--text-muted)" : "var(--text-faint)" }}>
-                    Registra un nuevo requerimiento operativo hacia una sede.
-                  </p>
-                </button>
-                <button
-                  type="button"
-                  className="rounded-[22px] px-5 py-4 text-left transition"
-                  style={activeTab === "status"
-                    ? { background: "linear-gradient(135deg, var(--banner-bg) 0%, var(--banner-bg-end) 100%)", border: "1px solid var(--banner-border)", color: "var(--text)" }
-                    : { border: "1px solid var(--border)", background: "var(--elevated)", color: "var(--text-muted)" }}
-                  onClick={() => setActiveTab("status")}
-                >
-                  <div className="text-xs uppercase tracking-[0.22em]" style={{ color: activeTab === "status" ? "var(--brand)" : "var(--text-muted)" }}>Estado de servicio</div>
-                  <div className="mt-2 text-xl font-semibold" style={{ color: "var(--text)" }}>Solicitudes de vehiculo</div>
-                  <p className="mt-2 text-sm leading-6" style={{ color: activeTab === "status" ? "var(--text-muted)" : "var(--text-faint)" }}>
-                    Revisa asignacion, chofer, vehiculo, patente y programacion.
-                  </p>
+          <div style={{ maxWidth:"960px",margin:"0 auto",padding:"14px 10px 48px",position:"relative",zIndex:1 }}>
+
+          {/* Profile card */}
+          <div className="vr-card" style={{ marginBottom:"12px",display:"flex",flexDirection:"column",gap:"12px",borderLeft:"4px solid #21D0B3" }}>
+            <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",gap:"10px" }}>
+              <div style={{ display:"flex",alignItems:"center",gap:"12px",minWidth:0 }}>
+                <div style={{ width:42,height:42,borderRadius:"50%",background:"linear-gradient(135deg,#21D0B3,#062240)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"14px",fontWeight:900,color:"#fff",boxShadow:"0 3px 12px rgba(33,208,179,0.3)",flexShrink:0 }}>
+                  {(athlete.fullName || "?").split(" ").slice(0,2).map(w=>w[0]||"").join("").toUpperCase()}
+                </div>
+                <div style={{ minWidth:0 }}>
+                  <p style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:"#21D0B3",margin:"0 0 2px" }}>Sesión activa</p>
+                  <h2 style={{ fontSize:"17px",fontWeight:800,color:"#0f172a",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{athlete.fullName || athlete.id}</h2>
+                </div>
+              </div>
+              <div style={{ display:"flex", gap:"6px", alignItems:"center" }}>
+                <NotificationBell
+                  notifications={notify.notifications}
+                  unreadCount={notify.unreadCount}
+                  onMarkAllRead={notify.markAllRead}
+                  onClear={notify.clear}
+                />
+                <button type="button" onClick={logout} style={{ display:"flex",alignItems:"center",gap:"6px",padding:"8px 12px",borderRadius:"10px",border:"1px solid #e2e8f0",background:"#f8fafc",color:"#64748b",fontSize:"11px",fontWeight:600,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap" }}>
+                  Salir
                 </button>
               </div>
-            </article>
+            </div>
+            <div style={{ display:"flex",flexWrap:"wrap",gap:"6px" }}>
+              <span style={{ fontSize:"10px",fontWeight:600,padding:"3px 10px",borderRadius:"14px",background:"linear-gradient(135deg,rgba(33,208,179,0.12),rgba(33,208,179,0.06))",color:"#0a7a6b",border:"1px solid rgba(33,208,179,0.3)" }}>
+                {events[athlete.eventId || ""]?.name || "-"}
+              </span>
+              <span style={{ fontSize:"10px",fontWeight:600,padding:"3px 10px",borderRadius:"14px",background:"#f1f5f9",color:"#334155",border:"1px solid #dde3ed" }}>
+                {delegations[athlete.delegationId || ""]?.countryCode || "-"}
+              </span>
+            </div>
+            {/* Stats row */}
+            <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"6px" }}>
+              {([
+                { label:"Solicit.", value:requestStats.requested, color:"#0f172a" },
+                { label:"Program.", value:requestStats.scheduled, color:"#21D0B3" },
+                { label:"Activas", value:requestStats.active, color:"#f59e0b" },
+                { label:"Cerradas", value:requestStats.completed, color:"#10b981" },
+              ] as const).map(s => (
+                <div key={s.label} style={{ textAlign:"center",padding:"8px 4px",borderRadius:"10px",background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                  <div style={{ fontSize:"8px",fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"#94a3b8" }}>{s.label}</div>
+                  <div style={{ fontSize:"20px",fontWeight:700,color:s.color,marginTop:"2px" }}>{s.value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <section style={{ display:"flex",flexDirection:"column",gap:"12px" }}>
+
+            <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px" }}>
+              {([
+                { key:"request" as PortalTab, label:"Solicitar", sub:"Nuevo viaje" },
+                { key:"status" as PortalTab, label:"Estado", sub:"Mis solicitudes" },
+              ]).map(tab => (
+                <button key={tab.key} type="button" onClick={() => setActiveTab(tab.key)}
+                  style={{
+                    padding:"12px 14px",borderRadius:"14px",textAlign:"left",cursor:"pointer",transition:"all .2s",border:"none",
+                    background: activeTab===tab.key ? "linear-gradient(135deg,#041a2e,#062240)" : "#fff",
+                    boxShadow: activeTab===tab.key ? "0 4px 16px rgba(33,208,179,0.2)" : "0 1px 6px rgba(0,0,0,0.04)",
+                  }}>
+                  <div style={{ fontSize:"9px",fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:activeTab===tab.key?"#21D0B3":"#94a3b8" }}>{tab.label}</div>
+                  <div style={{ fontSize:"14px",fontWeight:700,color:activeTab===tab.key?"#fff":"#0f172a",marginTop:"4px" }}>{tab.sub}</div>
+                </button>
+              ))}
+            </div>
 
             {message ? <p className="text-sm text-emerald-600">{message}</p> : null}
             {error ? <p className="text-sm text-rose-600">{error}</p> : null}
 
             {activeTab === "request" ? (
-              <section className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-                <article className="rounded-[30px] p-6 shadow-sm" style={{ border: "1px solid var(--border)", background: "var(--surface)" }}>
-                  <p className="text-xs uppercase tracking-[0.24em]" style={{ color: "var(--text-muted)" }}>Nueva solicitud</p>
-                  <h3 className="mt-2 text-3xl font-semibold tracking-tight" style={{ color: "var(--text)" }}>
+              <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr] xl:gap-6">
+                <div className="vr-card">
+                  <p style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:"#21D0B3",margin:"0 0 4px" }}>Nueva solicitud</p>
+                  <h3 style={{ fontSize:"18px",fontWeight:800,color:"#0f172a",margin:"0 0 4px" }}>
                     {editingTripId ? "Modificar solicitud" : "Pedir vehiculo"}
                   </h3>
-                  <p className="mt-3 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
-                    Selecciona el tipo de vehiculo, la sede, la hora y la cantidad de personas. Puedes modificar la solicitud hasta 2 horas antes del viaje.
-                  </p>
                   {editingTrip ? (
                     <div className="mt-4 rounded-2xl px-4 py-3 text-sm" style={{ border: "1px solid var(--warning-border)", background: "var(--warning-dim)", color: "var(--warning)" }}>
                       Editable hasta las <strong>{formatDateTime(getEditDeadline(editingTrip)?.toISOString() || null)}</strong>.
@@ -806,10 +850,10 @@ export default function VehicleRequestPortalPage() {
                       </button>
                     ) : null}
                   </form>
-                </article>
+                </div>
 
-                <article className="rounded-[30px] p-6 shadow-sm" style={{ border: "1px solid var(--border)", background: "var(--surface)" }}>
-                  <p className="text-xs uppercase tracking-[0.24em]" style={{ color: "var(--text-muted)" }}>Vista previa</p>
+                <div className="vr-card hidden xl:block">
+                  <p style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:"#21D0B3",margin:"0 0 4px" }}>Vista previa</p>
                   <h3 className="mt-2 text-3xl font-semibold tracking-tight" style={{ color: "var(--text)" }}>Resumen del servicio</h3>
                   <div className="mt-6 grid gap-4 sm:grid-cols-2">
                     <div className="rounded-2xl p-4" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
@@ -840,18 +884,18 @@ export default function VehicleRequestPortalPage() {
                       <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>{venueSummary(selectedVenue)}</p>
                     </div>
                   </div>
-                </article>
+                </div>
               </section>
             ) : (
-              <section className="space-y-5">
+              <section style={{ display:"flex",flexDirection:"column",gap:"12px" }}>
                 {trips.length === 0 ? (
-                  <article className="rounded-[30px] p-12 text-center shadow-sm" style={{ border: "1px dashed var(--border-strong)", background: "var(--surface)" }}>
-                    <p className="text-xs uppercase tracking-[0.24em]" style={{ color: "var(--text-muted)" }}>Estado de servicio</p>
-                    <h3 className="mt-3 text-3xl font-semibold tracking-tight" style={{ color: "var(--text)" }}>Aun no tienes solicitudes</h3>
-                    <p className="mx-auto mt-3 max-w-lg text-sm leading-6" style={{ color: "var(--text-muted)" }}>
-                      Cuando registres una solicitud de vehiculo, aqui veras su estado, la asignacion del chofer y los datos del vehiculo programado.
+                  <div className="vr-card" style={{ textAlign:"center",padding:"32px 16px",border:"1px dashed rgba(33,208,179,0.3)" }}>
+                    <p style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:"#94a3b8",margin:"0 0 8px" }}>Estado de servicio</p>
+                    <h3 style={{ fontSize:"18px",fontWeight:800,color:"#0f172a",margin:"0 0 6px" }}>Aún no tienes solicitudes</h3>
+                    <p style={{ fontSize:"13px",color:"#64748b",margin:0,lineHeight:1.5 }}>
+                      Cuando registres una solicitud, aquí verás su estado y datos del vehículo.
                     </p>
-                  </article>
+                  </div>
                 ) : (
                   visibleTrips.map((trip) => {
                     const venue = venues.find((item) => item.id === trip.destinationVenueId);
@@ -864,15 +908,14 @@ export default function VehicleRequestPortalPage() {
                     const coords = extractCoords(livePosition);
                     const mapEmbedUrl = coords ? buildMapEmbed(coords.lat, coords.lng) : null;
                     return (
-                      <article
+                      <div
                         key={trip.id}
-                        className="rounded-[30px] p-6 shadow-sm"
-                        style={{ border: "1px solid var(--border)", background: "var(--surface)" }}
+                        className="vr-card"
                       >
-                        <div className="flex flex-wrap items-start justify-between gap-4">
-                          <div>
-                            <p className="text-xs uppercase tracking-[0.24em]" style={{ color: "var(--text-muted)" }}>Solicitud {trip.id.slice(0, 8)}</p>
-                            <h3 className="mt-2 text-3xl font-semibold tracking-tight" style={{ color: "var(--text)" }}>
+                        <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:"10px" }}>
+                          <div style={{ minWidth:0 }}>
+                            <p style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:"#94a3b8",margin:"0 0 4px" }}>Solicitud {trip.id.slice(0, 8)}</p>
+                            <h3 style={{ fontSize:"16px",fontWeight:800,color:"#0f172a",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
                               {venue?.name || trip.destination || "Destino solicitado"}
                             </h3>
                             <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
@@ -998,7 +1041,7 @@ export default function VehicleRequestPortalPage() {
                             </div>
                           </div>
                         </div>
-                      </article>
+                      </div>
                     );
                   })
                 )}
@@ -1037,8 +1080,16 @@ export default function VehicleRequestPortalPage() {
           </div>
         </div>
       )}
+
+      {/* Trip Chat */}
+      {athlete && activeChatTrip && (
+        <TripChat
+          tripId={activeChatTrip.id}
+          senderType="PASSENGER"
+          senderName={athlete.fullName || "Pasajero"}
+          onNewMessage={(name, content) => notify.push(`${name}: ${content.slice(0, 80)}`, "💬")}
+        />
+      )}
     </>
   );
 }
-
-
