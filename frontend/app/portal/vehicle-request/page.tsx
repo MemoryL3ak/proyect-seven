@@ -61,6 +61,9 @@ type Trip = {
   createdAt?: string | null;
   passengerLat?: number | null;
   passengerLng?: number | null;
+  driverRating?: number | null;
+  ratingComment?: string | null;
+  ratedAt?: string | null;
 };
 
 type EventItem = { id: string; name?: string | null };
@@ -228,6 +231,11 @@ export default function VehicleRequestPortalPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [ratingTripId, setRatingTripId] = useState<string | null>(null);
+  const [ratingStars, setRatingStars] = useState(0);
+  const [ratingComment, setRatingComment] = useState("");
+  const [ratingLoading, setRatingLoading] = useState(false);
+  const [expandedTripId, setExpandedTripId] = useState<string | null>(null);
 
   const loadPortal = async (matchedAthlete: Athlete) => {
     const [tripData, venueData, driverData, vehicleData, eventData, delegationData] = await Promise.all([
@@ -483,6 +491,31 @@ export default function VehicleRequestPortalPage() {
   const visibleTrips = useMemo(() => trips.slice(0, visibleTripsCount), [trips, visibleTripsCount]);
   const hasMoreTrips = trips.length > visibleTripsCount;
 
+  const submitRating = async (tripId: string) => {
+    if (ratingStars === 0) return;
+    setRatingLoading(true);
+    try {
+      await apiFetch(`/trips/${tripId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          driverRating: ratingStars,
+          ratingComment: ratingComment.trim() || undefined,
+          ratedAt: new Date().toISOString(),
+        }),
+      });
+      setTrips((prev) => prev.map((t) => t.id === tripId ? { ...t, driverRating: ratingStars } : t));
+      notify.push("¡Gracias por tu evaluación!", "⭐");
+      setRatingTripId(null);
+      setRatingStars(0);
+      setRatingComment("");
+    } catch {
+      notify.push("No se pudo enviar la evaluación", "❌");
+    } finally {
+      setRatingLoading(false);
+    }
+  };
+
   const activeChatTrip = useMemo(() =>
     trips.find((trip) => ["SCHEDULED", "EN_ROUTE", "PICKED_UP"].includes(trip.status || "")) || null,
   [trips]);
@@ -715,6 +748,7 @@ export default function VehicleRequestPortalPage() {
           <style>{`
             @keyframes vr-in{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
             @keyframes vr-glow{0%,100%{opacity:0.4}50%{opacity:0.8}}
+            @keyframes vrPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(1.4)}}
             .vr-card{animation:vr-in .5s cubic-bezier(0.16,1,0.3,1) both;background:#fff;border:1px solid rgba(226,232,240,0.8);border-radius:18px;padding:16px;position:relative;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.04);}
             .vr-card:hover{box-shadow:0 6px 24px rgba(33,208,179,0.12);border-color:rgba(33,208,179,0.25);}
             @media(min-width:641px){.vr-card{border-radius:24px;padding:24px;}}
@@ -935,14 +969,11 @@ export default function VehicleRequestPortalPage() {
                 </div>
               </section>
             ) : (
-              <section style={{ display:"flex",flexDirection:"column",gap:"12px" }}>
+              <section style={{ display:"flex",flexDirection:"column",gap:"10px" }}>
                 {trips.length === 0 ? (
-                  <div className="vr-card" style={{ textAlign:"center",padding:"32px 16px",border:"1px dashed rgba(33,208,179,0.3)" }}>
-                    <p style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:"#94a3b8",margin:"0 0 8px" }}>Estado de servicio</p>
-                    <h3 style={{ fontSize:"18px",fontWeight:800,color:"#0f172a",margin:"0 0 6px" }}>Aún no tienes solicitudes</h3>
-                    <p style={{ fontSize:"13px",color:"#64748b",margin:0,lineHeight:1.5 }}>
-                      Cuando registres una solicitud, aquí verás su estado y datos del vehículo.
-                    </p>
+                  <div style={{ textAlign:"center",padding:"28px 16px",borderRadius:16,border:"1px dashed rgba(33,208,179,0.3)",background:"#fafcfb" }}>
+                    <p style={{ fontSize:"15px",fontWeight:700,color:"#0f172a",margin:"0 0 4px" }}>Sin solicitudes</p>
+                    <p style={{ fontSize:"12.5px",color:"#64748b",margin:0 }}>Tus solicitudes de vehículo aparecerán aquí.</p>
                   </div>
                 ) : (
                   visibleTrips.map((trip) => {
@@ -950,178 +981,212 @@ export default function VehicleRequestPortalPage() {
                     const driver = trip.driverId ? drivers[trip.driverId] : null;
                     const vehicle = trip.vehicleId ? vehicles[trip.vehicleId] : null;
                     const status = statusMeta[trip.status || "REQUESTED"] || statusMeta.REQUESTED;
-                    const editDeadline = getEditDeadline(trip);
                     const editable = canEditTrip(trip);
+                    const isExpanded = expandedTripId === trip.id;
+                    const isActive = trip.status === "EN_ROUTE" || trip.status === "PICKED_UP";
+                    const isCompleted = trip.status === "COMPLETED" || trip.status === "DROPPED_OFF";
+                    const canRate = isCompleted && !trip.driverRating && trip.driverId;
                     const livePosition = trip.vehicleId ? positionsByVehicle[trip.vehicleId] : null;
                     const coords = extractCoords(livePosition);
-                    const mapEmbedUrl = coords ? buildMapEmbed(coords.lat, coords.lng) : null;
+
                     return (
-                      <div
-                        key={trip.id}
-                        className="vr-card"
-                      >
-                        <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:"10px" }}>
-                          <div style={{ minWidth:0 }}>
-                            <p style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:"#94a3b8",margin:"0 0 4px" }}>Solicitud {trip.id.slice(0, 8)}</p>
-                            <h3 style={{ fontSize:"16px",fontWeight:800,color:"#0f172a",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
-                              {venue?.name || trip.destination || "Destino solicitado"}
-                            </h3>
-                            <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
-                              {vehicleTypeLabel(trip.requestedVehicleType)} solicitado el {formatDateTime(trip.requestedAt || trip.createdAt)}
+                      <div key={trip.id} style={{
+                        borderRadius:16,border:"1px solid #e2e8f0",background:"#fff",
+                        overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)",
+                      }}>
+                        {/* ── Compact header (always visible) ── */}
+                        <button
+                          type="button"
+                          onClick={() => setExpandedTripId(isExpanded ? null : trip.id)}
+                          style={{
+                            width:"100%",display:"flex",alignItems:"center",gap:10,
+                            padding:"12px 14px",background:"none",border:"none",cursor:"pointer",
+                            textAlign:"left",
+                          }}
+                        >
+                          {/* Status dot */}
+                          <span style={{
+                            width:10,height:10,borderRadius:"50%",flexShrink:0,
+                            background: isActive ? "#7c3aed" : isCompleted ? "#21D0B3" : trip.status === "SCHEDULED" ? "#0ea5e9" : "#f59e0b",
+                            boxShadow: isActive ? "0 0 8px rgba(124,58,237,0.4)" : "none",
+                          }} />
+                          <div style={{ flex:1,minWidth:0 }}>
+                            <p style={{ fontSize:13.5,fontWeight:700,color:"#0f172a",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                              {venue?.name || trip.destination || "Destino pendiente"}
+                            </p>
+                            <p style={{ fontSize:11,color:"#94a3b8",margin:"2px 0 0" }}>
+                              {formatDateTime(trip.scheduledAt || trip.requestedAt)} · {status.label}
                             </p>
                           </div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="rounded-full border px-4 py-2 text-sm font-semibold" style={{ border: "1px solid var(--border-strong)", background: "var(--elevated)", color: "var(--text)" }}>{status.label}</span>
-                            {editable ? (
-                              <button className="btn btn-ghost h-10 px-4 text-sm" type="button" onClick={() => startEditingTrip(trip)}>
-                                Modificar solicitud
-                              </button>
-                            ) : null}
-                            {editable ? (
-                              <button className="btn btn-ghost h-10 px-4 text-sm text-rose-600" type="button" onClick={() => cancelTrip(trip)}>
-                                Cancelar solicitud
-                              </button>
-                            ) : null}
-                          </div>
-                        </div>
+                          {/* Driver + vehicle chips */}
+                          {driver && (
+                            <span style={{ fontSize:10.5,fontWeight:600,padding:"3px 8px",borderRadius:8,background:"#f1f5f9",color:"#334155",whiteSpace:"nowrap",flexShrink:0 }}>
+                              {driver.fullName}
+                            </span>
+                          )}
+                          {/* Expand arrow */}
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0,transition:"transform .2s",transform:isExpanded?"rotate(180deg)":"rotate(0)" }}>
+                            <polyline points="6 9 12 15 18 9" />
+                          </svg>
+                        </button>
 
-                        <div className="mt-6 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-                          <div className="grid gap-4 sm:grid-cols-2">
-                            <div className="rounded-2xl p-4" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
-                              <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>Sede destino</div>
-                              <div className="mt-2 text-lg font-semibold" style={{ color: "var(--text)" }}>{venue?.name || "Pendiente"}</div>
-                              <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>{venueSummary(venue)}</p>
-                            </div>
-                            <div className="rounded-2xl p-4" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
-                              <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>Programacion</div>
-                              <div className="mt-2 text-lg font-semibold" style={{ color: "var(--text)" }}>{formatDateTime(trip.scheduledAt)}</div>
-                              <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>Origen: {trip.origin || "Pendiente"}</p>
-                            </div>
-                            <div className="rounded-2xl p-4" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
-                              <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>Personas</div>
-                              <div className="mt-2 text-lg font-semibold" style={{ color: "var(--text)" }}>{trip.passengerCount || "-"}</div>
-                              <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>Capacidad requerida para el servicio</p>
-                            </div>
-                            <div className="rounded-2xl p-4" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
-                              <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>Chofer asignado</div>
-                              <div className="mt-2 text-lg font-semibold" style={{ color: "var(--text)" }}>{driver?.fullName || "Pendiente de asignacion"}</div>
-                              <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>{driver?.phone || "Telefono aun no disponible"}</p>
-                            </div>
-                            <div className="rounded-2xl p-4" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
-                              <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>Vehiculo</div>
-                              <div className="mt-2 text-lg font-semibold" style={{ color: "var(--text)" }}>{vehicle?.plate || "Pendiente"}</div>
-                              <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
-                                {[vehicle?.type, vehicle?.brand, vehicle?.model].filter(Boolean).join(" · ") || "Aun sin datos de unidad"}
-                              </p>
-                            </div>
-                            {trip.status === "EN_ROUTE" || trip.status === "PICKED_UP" ? (
-                              <div className="rounded-2xl p-4 sm:col-span-2" style={{ border: "1px solid var(--success-border)", background: "var(--success-dim)" }}>
-                                <div className="flex flex-wrap items-center justify-between gap-3">
-                                  <div>
-                                    <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--success)" }}>Seguimiento en vivo</div>
-                                    <div className="mt-2 text-lg font-semibold" style={{ color: "var(--text)" }}>
-                                      {trip.status === "PICKED_UP" ? "Tu viaje esta en curso" : "Tu conductor va en camino"}
-                                    </div>
-                                    <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>
-                                      {coords
-                                        ? `Ultima actualizacion ${formatDateTime(livePosition?.timestamp)}`
-                                        : "Esperando posicion en tiempo real del vehiculo."}
-                                    </p>
-                                  </div>
-                                  {coords ? (
-                                    <a
-                                      className="btn btn-ghost h-10 px-4 text-sm"
-                                      href={buildDirectionsLink(coords.lat, coords.lng, trip.origin)}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                    >
-                                      Abrir ruta en Maps
-                                    </a>
-                                  ) : null}
-                                </div>
-                                <div className="mt-4 overflow-hidden rounded-2xl" style={{ border: "1px solid var(--success-border)", background: "var(--surface)" }}>
-                                  {coords && mapEmbedUrl ? (
-                                    <iframe
-                                      title={`live-map-${trip.id}`}
-                                      src={mapEmbedUrl}
-                                      className="h-64 w-full"
-                                      loading="lazy"
-                                    />
-                                  ) : coords ? (
-                                    <div className="flex h-64 items-center justify-center px-6 text-center text-sm" style={{ background: "var(--elevated)", color: "var(--text-muted)" }}>
-                                      Falta configurar <code className="mx-1 rounded px-1.5 py-0.5" style={{ background: "var(--border)", color: "var(--text)" }}>NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> para mostrar el mapa en tiempo real.
-                                    </div>
-                                  ) : (
-                                    <div className="flex h-64 items-center justify-center px-6 text-center text-sm" style={{ background: "var(--elevated)", color: "var(--text-muted)" }}>
-                                      El mapa aparecera apenas el conductor comparta su posicion desde el portal.
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            ) : null}
+                        {/* ── Active trip banner ── */}
+                        {isActive && !isExpanded && (
+                          <div style={{ padding:"0 14px 10px",display:"flex",alignItems:"center",gap:8 }}>
+                            <span style={{ width:6,height:6,borderRadius:"50%",background:"#7c3aed",animation:"vrPulse 1.5s ease-in-out infinite" }} />
+                            <span style={{ fontSize:12,fontWeight:600,color:"#7c3aed" }}>
+                              {trip.status === "PICKED_UP" ? "En curso" : "Conductor en camino"}
+                            </span>
                           </div>
+                        )}
 
-                          <div className="rounded-[26px] p-5" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
-                            <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>Trazabilidad</div>
-                            <div className="mt-4 space-y-3">
-                              <div className="rounded-2xl px-4 py-3 text-sm" style={{ background: "var(--surface)", color: "var(--text)" }}>
-                                <strong>Estado actual:</strong> {status.label}
-                              </div>
-                              <div className="rounded-2xl px-4 py-3 text-sm" style={{ background: "var(--surface)", color: "var(--text)" }}>
-                                <strong>Creada:</strong> {formatDateTime(trip.requestedAt || trip.createdAt)}
-                              </div>
-                              <div className="rounded-2xl px-4 py-3 text-sm" style={{ background: "var(--surface)", color: "var(--text)" }}>
-                                <strong>Destino final:</strong> {trip.destination || venue?.name || "Pendiente"}
-                              </div>
-                              <div className="rounded-2xl px-4 py-3 text-sm" style={{ background: "var(--surface)", color: "var(--text)" }}>
-                                <strong>Observaciones:</strong> {trip.notes || "Sin observaciones registradas."}
-                              </div>
-                              <div className="rounded-2xl px-4 py-3 text-sm" style={{ background: "var(--surface)", color: "var(--text)" }}>
-                                <strong>Editable hasta:</strong>{" "}
-                                {editDeadline ? formatDateTime(editDeadline.toISOString()) : "-"}
-                              </div>
-                              <div className="rounded-2xl px-4 py-3 text-sm" style={{ background: "var(--surface)", color: "var(--text)" }}>
-                                <strong>Ventana de cambios:</strong>{" "}
-                                {editable
-                                  ? "Activa para edicion y cancelacion."
-                                  : "Cerrada. Ya esta dentro de las 2 horas previas al viaje."}
-                              </div>
+                        {/* ── Rate prompt (completed, no rating) ── */}
+                        {canRate && !isExpanded && ratingTripId !== trip.id && (
+                          <div style={{ padding:"0 14px 10px" }}>
+                            <button type="button" onClick={() => setRatingTripId(trip.id)} style={{
+                              display:"flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:10,
+                              border:"1px solid rgba(33,208,179,0.3)",background:"rgba(33,208,179,0.06)",
+                              color:"#0a7a6b",fontSize:12,fontWeight:600,cursor:"pointer",
+                            }}>
+                              ⭐ Evaluar conductor
+                            </button>
+                          </div>
+                        )}
+
+                        {/* ── Rating stars (completed, no rating) ── */}
+                        {isCompleted && !trip.driverRating && ratingTripId === trip.id && (
+                          <div style={{ padding:"0 14px 14px",display:"flex",flexDirection:"column",alignItems:"center",gap:10 }}>
+                            <p style={{ fontSize:13,fontWeight:600,color:"#0f172a",margin:0 }}>
+                              ¿Cómo fue tu viaje?
+                            </p>
+                            <div style={{ display:"flex",gap:4 }}>
+                              {[1,2,3,4,5].map((star) => (
+                                <button key={star} type="button" onClick={() => setRatingStars(star)} style={{ background:"none",border:"none",cursor:"pointer",padding:2 }}>
+                                  <svg width="32" height="32" viewBox="0 0 24 24" fill={ratingStars >= star ? "#FBBF24" : "none"} stroke={ratingStars >= star ? "#F59E0B" : "#CBD5E1"} strokeWidth="1.5">
+                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                                  </svg>
+                                </button>
+                              ))}
+                            </div>
+                            <textarea
+                              value={ratingComment}
+                              onChange={(e) => setRatingComment(e.target.value)}
+                              placeholder="Comentario opcional..."
+                              rows={2}
+                              style={{ width:"100%",padding:10,borderRadius:10,border:"1px solid #e2e8f0",fontSize:13,resize:"none",outline:"none",boxSizing:"border-box",fontFamily:"inherit" }}
+                            />
+                            <div style={{ display:"flex",gap:8,width:"100%" }}>
+                              <button type="button" onClick={() => submitRating(trip.id)} disabled={ratingStars === 0 || ratingLoading}
+                                style={{ flex:1,padding:10,borderRadius:10,border:"none",background:ratingStars > 0 ? "linear-gradient(135deg,#34F3C6,#21D0B3)" : "#e2e8f0",color:ratingStars > 0 ? "#0d1b3e" : "#94a3b8",fontSize:13,fontWeight:700,cursor:ratingStars > 0 ? "pointer" : "not-allowed" }}>
+                                {ratingLoading ? "..." : "Enviar"}
+                              </button>
+                              <button type="button" onClick={() => { setRatingTripId(null); setRatingStars(0); setRatingComment(""); }}
+                                style={{ padding:"10px 14px",borderRadius:10,border:"1px solid #e2e8f0",background:"#f8fafc",color:"#64748b",fontSize:13,fontWeight:600,cursor:"pointer" }}>
+                                Omitir
+                              </button>
                             </div>
                           </div>
-                        </div>
+                        )}
+
+                        {/* ── Rating already given ── */}
+                        {trip.driverRating && !isExpanded && (
+                          <div style={{ padding:"0 14px 10px",display:"flex",alignItems:"center",gap:4 }}>
+                            {Array.from({ length: trip.driverRating }, (_, i) => (
+                              <svg key={i} width="14" height="14" viewBox="0 0 24 24" fill="#FBBF24" stroke="#F59E0B" strokeWidth="1.5">
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                              </svg>
+                            ))}
+                            <span style={{ fontSize:11,color:"#94a3b8",marginLeft:4 }}>Evaluado</span>
+                          </div>
+                        )}
+
+                        {/* ── Expanded details ── */}
+                        {isExpanded && (
+                          <div style={{ padding:"0 14px 14px",display:"flex",flexDirection:"column",gap:8 }}>
+                            {/* Info rows */}
+                            <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:6 }}>
+                              <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Origen</p>
+                                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0",lineHeight:1.3 }}>{trip.origin || "Pendiente"}</p>
+                              </div>
+                              <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Destino</p>
+                                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0",lineHeight:1.3 }}>{trip.destination || venue?.name || "Pendiente"}</p>
+                              </div>
+                              <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Conductor</p>
+                                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{driver?.fullName || "Pendiente"}</p>
+                                {driver?.phone && <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0" }}>{driver.phone}</p>}
+                              </div>
+                              <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Vehículo</p>
+                                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{vehicle?.plate || "Pendiente"}</p>
+                                {vehicle && <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0" }}>{[vehicle.type, vehicle.brand, vehicle.model].filter(Boolean).join(" · ")}</p>}
+                              </div>
+                              <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Personas</p>
+                                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{trip.passengerCount || "-"}</p>
+                              </div>
+                              <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Tipo</p>
+                                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{vehicleTypeLabel(trip.requestedVehicleType)}</p>
+                              </div>
+                            </div>
+                            {trip.notes && (
+                              <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Notas</p>
+                                <p style={{ fontSize:12.5,color:"#334155",margin:"3px 0 0",lineHeight:1.4 }}>{trip.notes}</p>
+                              </div>
+                            )}
+
+                            {/* Live tracking for active trips */}
+                            {isActive && (
+                              <div style={{ padding:10,borderRadius:12,background:"rgba(33,208,179,0.06)",border:"1px solid rgba(33,208,179,0.2)" }}>
+                                <p style={{ fontSize:12,fontWeight:700,color:"#0a7a6b",margin:0 }}>
+                                  {trip.status === "PICKED_UP" ? "🚗 Viaje en curso" : "🚗 Conductor en camino"}
+                                </p>
+                                {coords && (
+                                  <a
+                                    href={buildDirectionsLink(coords.lat, coords.lng, trip.origin)}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    style={{ fontSize:12,color:"#21D0B3",fontWeight:600,marginTop:4,display:"inline-block" }}
+                                  >
+                                    Abrir ruta en Maps →
+                                  </a>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Action buttons */}
+                            {editable && (
+                              <div style={{ display:"flex",gap:8,marginTop:4 }}>
+                                <button type="button" onClick={() => startEditingTrip(trip)}
+                                  style={{ flex:1,padding:"8px 12px",borderRadius:10,border:"1px solid #e2e8f0",background:"#f8fafc",color:"#334155",fontSize:12,fontWeight:600,cursor:"pointer" }}>
+                                  Modificar
+                                </button>
+                                <button type="button" onClick={() => cancelTrip(trip)}
+                                  style={{ padding:"8px 12px",borderRadius:10,border:"1px solid #fecaca",background:"#fef2f2",color:"#dc2626",fontSize:12,fontWeight:600,cursor:"pointer" }}>
+                                  Cancelar
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                   })
                 )}
 
-                {trips.length > 0 ? (
-                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-[24px] px-5 py-4 shadow-sm" style={{ border: "1px solid var(--border)", background: "var(--surface)" }}>
-                    <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-                      Mostrando <strong>{Math.min(visibleTripsCount, trips.length)}</strong> de{" "}
-                      <strong>{trips.length}</strong> solicitud(es).
-                    </p>
-                    <div className="flex items-center gap-2">
-                      {hasMoreTrips ? (
-                        <button
-                          type="button"
-                          className="btn btn-ghost h-11 px-5 text-sm"
-                          onClick={() => setVisibleTripsCount((current) => current + 5)}
-                        >
-                          Ver mas solicitudes
-                        </button>
-                      ) : null}
-                      {visibleTripsCount > 5 && trips.length > 5 ? (
-                        <button
-                          type="button"
-                          className="btn btn-ghost h-11 px-5 text-sm"
-                          onClick={() => setVisibleTripsCount(5)}
-                        >
-                          Mostrar menos
-                        </button>
-                      ) : null}
-                    </div>
-                  </div>
-                ) : null}
+                {trips.length > 0 && hasMoreTrips && (
+                  <button
+                    type="button"
+                    onClick={() => setVisibleTripsCount((c) => c + 5)}
+                    style={{ padding:"10px",borderRadius:12,border:"1px solid #e2e8f0",background:"#f8fafc",color:"#64748b",fontSize:12.5,fontWeight:600,cursor:"pointer",textAlign:"center" }}
+                  >
+                    Ver más ({trips.length - visibleTripsCount} restantes)
+                  </button>
+                )}
               </section>
             )}
           </section>
