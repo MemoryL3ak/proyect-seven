@@ -177,6 +177,8 @@ export default function DeportesPage() {
   const [pruebaFilterCategory, setPruebaFilterCategory] = useState("");
   const [pruebaFilterGender, setPruebaFilterGender] = useState("");
   const [pruebaModal, setPruebaModal] = useState<null | { editing?: Discipline; parentId: string }>(null);
+  const [calMonthCursor, setCalMonthCursor] = useState(() => { const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); return d; });
+  const [calSelectedDay, setCalSelectedDay] = useState(() => new Date());
   const [pruebaForm, setPruebaForm] = useState(EMPTY_PRUEBA);
   const [pruebaSaving, setPruebaSaving] = useState(false);
   const [pruebaError, setPruebaError] = useState<string | null>(null);
@@ -776,86 +778,134 @@ export default function DeportesPage() {
 
       {/* ── Calendario tab */}
       {tab === "calendario" && (() => {
-        // Collect all pruebas (disciplines with parentId) that have scheduledAt, from the current event
         const calendarPruebas = disciplines
           .filter(d => d.parentId && d.scheduledAt && (selectedEventId ? d.eventId === selectedEventId : true))
           .sort((a, b) => new Date(a.scheduledAt!).getTime() - new Date(b.scheduledAt!).getTime());
 
-        // Build parent discipline name map
         const parentMap = new Map(disciplines.filter(d => !d.parentId).map(d => [d.id, d.name ?? d.id]));
 
-        // Group by date
+        // Group by ISO day key
         const byDay = new Map<string, typeof calendarPruebas>();
         calendarPruebas.forEach(d => {
           const day = d.scheduledAt!.slice(0, 10);
           if (!byDay.has(day)) byDay.set(day, []);
           byDay.get(day)!.push(d);
         });
-        const days = Array.from(byDay.keys()).sort();
 
-        const unscheduled = disciplines.filter(d => d.parentId && !d.scheduledAt && (selectedEventId ? d.eventId === selectedEventId : true));
+        // Month grid helpers
+        const WEEK = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+
+        const buildGrid = (cursor: Date) => {
+          const y = cursor.getFullYear(), m = cursor.getMonth();
+          const first = new Date(y, m, 1);
+          const startDow = (first.getDay() + 6) % 7; // Mon=0
+          const days: Date[] = [];
+          for (let i = -startDow; days.length < 42; i++) {
+            days.push(new Date(y, m, 1 + i));
+          }
+          return days;
+        };
+
+        const grid = buildGrid(calMonthCursor);
+        const todayKey = new Date().toISOString().slice(0, 10);
+        const curMonth = calMonthCursor.getMonth();
+        const monthStr = new Intl.DateTimeFormat("es-CL", { month: "long", year: "numeric" }).format(calMonthCursor);
+
+        // Selected day detail
+        const selectedDayKey = calSelectedDay.toISOString().slice(0, 10);
+        const selectedItems = byDay.get(selectedDayKey) || [];
+        const selectedDayLabel = new Intl.DateTimeFormat("es-CL", { weekday: "long", day: "2-digit", month: "long" }).format(calSelectedDay);
 
         return (
           <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "20px", overflow: "hidden", boxShadow: pal.cardShadow }}>
-            {calendarPruebas.length === 0 && unscheduled.length === 0 && (
-              <div style={{ padding: "48px 24px", textAlign: "center", fontSize: "13px", color: "#94a3b8" }}>
-                {selectedEventId
-                  ? "No hay pruebas con horario asignado. Edita una prueba en la pestaña Pruebas para asignarle fecha y hora."
-                  : "Selecciona un evento para ver su calendario deportivo."}
-              </div>
-            )}
+            {/* Month navigation */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: "1px solid #f1f5f9" }}>
+              <button onClick={() => setCalMonthCursor(d => new Date(d.getFullYear(), d.getMonth() - 1, 1))}
+                style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "#64748b", fontSize: 18 }}>
+                ◀
+              </button>
+              <span style={{ fontSize: 15, fontWeight: 700, color: "#0f172a", textTransform: "capitalize" }}>{monthStr}</span>
+              <button onClick={() => setCalMonthCursor(d => new Date(d.getFullYear(), d.getMonth() + 1, 1))}
+                style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "#64748b", fontSize: 18 }}>
+                ▶
+              </button>
+            </div>
 
-            {days.map(day => {
-              const items = byDay.get(day)!;
-              const dateLabel = new Date(day + "T12:00:00").toLocaleDateString("es-CL", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-              return (
-                <div key={day} style={{ borderBottom: "1px solid #e2e8f0" }}>
-                  {/* Day header */}
-                  <div style={{ padding: "12px 20px", background: "linear-gradient(to bottom, #eaf4fb, #e8f0f8)", display: "flex", alignItems: "center", gap: "12px" }}>
-                    <span style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#1FCDFF" }}>{dateLabel}</span>
-                    <span style={{ fontSize: "11px", fontWeight: 600, color: "#1FCDFF", opacity: 0.6 }}>{items.length} prueba{items.length !== 1 ? "s" : ""}</span>
-                  </div>
-                  {/* Pruebas for this day */}
-                  {items.map((prueba, pi) => {
+            {/* Week header */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", borderBottom: "1px solid #f1f5f9" }}>
+              {WEEK.map(d => (
+                <div key={d} style={{ textAlign: "center", padding: "6px 0", fontSize: 10, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.08em", textTransform: "uppercase" }}>{d}</div>
+              ))}
+            </div>
+
+            {/* Day cells */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)" }}>
+              {grid.map((day, i) => {
+                const dk = day.toISOString().slice(0, 10);
+                const isCurrentMonth = day.getMonth() === curMonth;
+                const isToday = dk === todayKey;
+                const isSelected = dk === selectedDayKey;
+                const events = byDay.get(dk) || [];
+                const hasEvents = events.length > 0;
+                return (
+                  <button key={i} type="button"
+                    onClick={() => setCalSelectedDay(new Date(day))}
+                    style={{
+                      position: "relative", padding: "8px 4px", minHeight: 52,
+                      background: isSelected ? "rgba(33,208,179,0.1)" : "transparent",
+                      border: "1px solid #f8fafc", cursor: "pointer",
+                      opacity: isCurrentMonth ? 1 : 0.3,
+                    }}>
+                    <span style={{
+                      display: "inline-flex", alignItems: "center", justifyContent: "center",
+                      width: 26, height: 26, borderRadius: "50%",
+                      fontSize: 12, fontWeight: isToday || isSelected ? 800 : 500,
+                      background: isToday ? "#21D0B3" : "transparent",
+                      color: isToday ? "#fff" : isSelected ? "#0a7a6b" : "#0f172a",
+                    }}>
+                      {day.getDate()}
+                    </span>
+                    {hasEvents && (
+                      <div style={{ display: "flex", gap: 2, justifyContent: "center", marginTop: 2 }}>
+                        {events.slice(0, 3).map((_, ei) => (
+                          <span key={ei} style={{ width: 5, height: 5, borderRadius: "50%", background: "#21D0B3" }} />
+                        ))}
+                        {events.length > 3 && <span style={{ fontSize: 8, color: "#94a3b8", lineHeight: "5px" }}>+</span>}
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Selected day detail */}
+            <div style={{ borderTop: "1px solid #e2e8f0", padding: "14px 18px" }}>
+              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#21D0B3", margin: "0 0 10px" }}>
+                {selectedDayLabel} · {selectedItems.length} prueba{selectedItems.length !== 1 ? "s" : ""}
+              </p>
+              {selectedItems.length === 0 ? (
+                <p style={{ fontSize: 12.5, color: "#94a3b8", margin: 0 }}>Sin pruebas este día</p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {selectedItems.map(prueba => {
                     const time = new Date(prueba.scheduledAt!).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
                     const catColor = CATEGORY_COLORS[prueba.category ?? ""] ?? "#94a3b8";
-                    const genColor = GENDER_COLORS[(prueba.gender ?? "").trim().toUpperCase()] ?? "#94a3b8";
                     return (
-                      <div key={prueba.id} style={{
-                        display: "flex", alignItems: "center", gap: "16px", padding: "12px 20px",
-                        borderTop: pi > 0 ? "1px solid #f1f5f9" : "none",
-                      }}>
-                        {/* Time */}
-                        <div style={{ flexShrink: 0, textAlign: "center", minWidth: "52px" }}>
-                          <p style={{ fontSize: "17px", fontWeight: 800, color: "#21D0B3", lineHeight: 1 }}>{time}</p>
-                        </div>
-                        {/* Info */}
+                      <div key={prueba.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 10, background: "#f8fafc", border: "1px solid #f1f5f9" }}>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: "#21D0B3", flexShrink: 0, minWidth: 50 }}>{time}</span>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{ fontWeight: 700, fontSize: "14px", color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{prueba.name}</p>
-                          <p style={{ fontSize: "12px", color: "#64748b", marginTop: "2px" }}>{parentMap.get(prueba.parentId!) ?? ""}</p>
+                          <p style={{ fontSize: 12.5, fontWeight: 600, color: "#0f172a", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{prueba.name}</p>
+                          <p style={{ fontSize: 10.5, color: "#64748b", margin: "1px 0 0" }}>
+                            {parentMap.get(prueba.parentId!) ?? ""}{prueba.venueName ? ` · ${prueba.venueName}` : ""}
+                          </p>
                         </div>
-                        {/* Venue */}
-                        {prueba.venueName && (
-                          <span style={{ fontSize: "12px", color: "#64748b", flexShrink: 0 }}>{prueba.venueName}</span>
+                        {prueba.category && (
+                          <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 6, background: `${catColor}15`, color: catColor, flexShrink: 0 }}>
+                            {categoryLabel(prueba.category)}
+                          </span>
                         )}
-                        {/* Badges */}
-                        <div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>
-                          {prueba.category && (
-                            <span style={{ background: `${catColor}18`, border: `1px solid ${catColor}35`, borderRadius: "99px", padding: "2px 8px", fontSize: "11px", fontWeight: 700, color: catColor }}>
-                              {categoryLabel(prueba.category)}
-                            </span>
-                          )}
-                          {prueba.gender && (
-                            <span style={{ background: `${genColor}18`, border: `1px solid ${genColor}35`, borderRadius: "99px", padding: "2px 8px", fontSize: "11px", fontWeight: 700, color: genColor }}>
-                              {genderLabel(prueba.gender)}
-                            </span>
-                          )}
-                        </div>
-                        {/* Edit button */}
-                        <button onClick={() => openEditPrueba(prueba)} style={{ background: "none", border: "none", cursor: "pointer", color: "#cbd5e1", padding: "4px", flexShrink: 0 }}
-                          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#64748b"; }}
-                          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#cbd5e1"; }}>
-                          <svg style={{ width: "14px", height: "14px" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <button onClick={() => openEditPrueba(prueba)} style={{ background: "none", border: "none", cursor: "pointer", color: "#cbd5e1", padding: 4, flexShrink: 0 }}>
+                          <svg style={{ width: 12, height: 12 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                           </svg>
                         </button>
@@ -863,35 +913,8 @@ export default function DeportesPage() {
                     );
                   })}
                 </div>
-              );
-            })}
-
-            {/* Unscheduled pruebas */}
-            {unscheduled.length > 0 && (
-              <div>
-                <div style={{ padding: "12px 20px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
-                  <span style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#94a3b8" }}>Sin horario asignado · {unscheduled.length}</span>
-                </div>
-                {unscheduled.map((prueba, pi) => (
-                  <div key={prueba.id} style={{ display: "flex", alignItems: "center", gap: "16px", padding: "10px 20px", borderTop: pi > 0 ? "1px solid #f1f5f9" : "none" }}>
-                    <div style={{ flexShrink: 0, minWidth: "52px" }}>
-                      <p style={{ fontSize: "12px", color: "#cbd5e1", fontWeight: 600 }}>—</p>
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontWeight: 600, fontSize: "13px", color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{prueba.name}</p>
-                      <p style={{ fontSize: "11px", color: "#94a3b8", marginTop: "1px" }}>{parentMap.get(prueba.parentId!) ?? ""}</p>
-                    </div>
-                    <button onClick={() => openEditPrueba(prueba)} style={{ background: "none", border: "none", cursor: "pointer", color: "#cbd5e1", padding: "4px", flexShrink: 0 }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#64748b"; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#cbd5e1"; }}>
-                      <svg style={{ width: "14px", height: "14px" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+              )}
+            </div>
           </section>
         );
       })()}
