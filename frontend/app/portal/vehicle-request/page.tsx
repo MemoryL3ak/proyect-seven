@@ -790,28 +790,7 @@ export default function VehicleRequestPortalPage() {
             <div style={{ position:"absolute",bottom:"-1px",left:0,right:0,height:"2px",background:"linear-gradient(90deg,transparent,#21D0B3 30%,#34F3C6 50%,#21D0B3 70%,transparent)",pointerEvents:"none",animation:"vr-glow 3s ease-in-out infinite" }} />
             <div style={{ padding:"10px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",maxWidth:"960px",margin:"0 auto",position:"relative",zIndex:1 }}>
               <img src="/branding/LOGO-SEVEN-1.png" alt="Seven Arena" style={{ height:"34px",width:"auto",objectFit:"contain",filter:"drop-shadow(0 0 18px rgba(33,208,179,0.5)) drop-shadow(0 2px 8px rgba(0,0,0,0.8))" }} />
-              <div style={{ display:"flex",alignItems:"center",gap:"8px" }}>
-                <div style={{ width:6,height:6,borderRadius:"50%",background:"#21D0B3",boxShadow:"0 0 8px #21D0B3",animation:"vr-glow 2s ease-in-out infinite",flexShrink:0 }} />
-                <span style={{ fontSize:"8px",fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(33,208,179,0.9)" }}>Portal Movilidad</span>
-              </div>
-            </div>
-          </div>
-
-          <div style={{ maxWidth:"960px",margin:"0 auto",padding:"14px 10px 48px",position:"relative",zIndex:1 }}>
-
-          {/* Profile card */}
-          <div className="vr-card" style={{ marginBottom:"12px",display:"flex",flexDirection:"column",gap:"12px",borderLeft:"4px solid #21D0B3" }}>
-            <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",gap:"10px" }}>
-              <div style={{ display:"flex",alignItems:"center",gap:"12px",minWidth:0 }}>
-                <div style={{ width:42,height:42,borderRadius:"50%",background:"linear-gradient(135deg,#21D0B3,#062240)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"14px",fontWeight:900,color:"#fff",boxShadow:"0 3px 12px rgba(33,208,179,0.3)",flexShrink:0 }}>
-                  {(athlete.fullName || "?").split(" ").slice(0,2).map(w=>w[0]||"").join("").toUpperCase()}
-                </div>
-                <div style={{ minWidth:0 }}>
-                  <p style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:"#21D0B3",margin:"0 0 2px" }}>Sesión activa</p>
-                  <h2 style={{ fontSize:"17px",fontWeight:800,color:"#0f172a",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{athlete.fullName || athlete.id}</h2>
-                </div>
-              </div>
-              <div style={{ display:"flex", gap:"6px", alignItems:"center" }}>
+              <div style={{ display:"flex",alignItems:"center",gap:8 }}>
                 <NotificationBell
                   notifications={notify.notifications}
                   unreadCount={notify.unreadCount}
@@ -819,23 +798,40 @@ export default function VehicleRequestPortalPage() {
                   onClear={notify.clear}
                 />
                 <button type="button" onClick={() => athlete && loadPortal(athlete)} disabled={loading}
-                  style={{ display:"flex",alignItems:"center",justifyContent:"center",width:42,height:42,borderRadius:14,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.08)",cursor:"pointer",flexShrink:0,opacity:loading?0.5:1 }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",cursor:"pointer",flexShrink:0,opacity:loading?0.5:1 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
                   </svg>
                 </button>
-                <button type="button" onClick={logout} style={{ display:"flex",alignItems:"center",gap:"6px",padding:"8px 12px",borderRadius:"10px",border:"1px solid #e2e8f0",background:"#f8fafc",color:"#64748b",fontSize:"11px",fontWeight:600,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap" }}>
-                  Salir
+                <button type="button" onClick={logout}
+                  style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(255,255,255,0.15)",background:"rgba(255,255,255,0.08)",cursor:"pointer",flexShrink:0 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+                  </svg>
                 </button>
               </div>
             </div>
-            <div style={{ display:"flex",flexWrap:"wrap",gap:"6px" }}>
-              <span style={{ fontSize:"10px",fontWeight:600,padding:"3px 10px",borderRadius:"14px",background:"linear-gradient(135deg,rgba(33,208,179,0.12),rgba(33,208,179,0.06))",color:"#0a7a6b",border:"1px solid rgba(33,208,179,0.3)" }}>
-                {events[athlete.eventId || ""]?.name || "-"}
-              </span>
-              <span style={{ fontSize:"10px",fontWeight:600,padding:"3px 10px",borderRadius:"14px",background:"#f1f5f9",color:"#334155",border:"1px solid #dde3ed" }}>
-                {delegations[athlete.delegationId || ""]?.countryCode || "-"}
-              </span>
+          </div>
+
+          <div style={{ maxWidth:"960px",margin:"0 auto",padding:"14px 10px 48px",position:"relative",zIndex:1 }}>
+
+          {/* Profile card */}
+          <div className="vr-card" style={{ marginBottom:"12px",display:"flex",flexDirection:"column",gap:"10px",borderLeft:"4px solid #21D0B3" }}>
+            <div style={{ display:"flex",alignItems:"center",gap:"10px" }}>
+              <div style={{ width:38,height:38,borderRadius:"50%",background:"linear-gradient(135deg,#21D0B3,#062240)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"13px",fontWeight:900,color:"#fff",boxShadow:"0 3px 12px rgba(33,208,179,0.3)",flexShrink:0 }}>
+                {(athlete.fullName || "?").split(" ").slice(0,2).map(w=>w[0]||"").join("").toUpperCase()}
+              </div>
+              <div style={{ minWidth:0,flex:1 }}>
+                <h2 style={{ fontSize:"15px",fontWeight:800,color:"#0f172a",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{athlete.fullName || athlete.id}</h2>
+                <div style={{ display:"flex",flexWrap:"wrap",gap:"4px",marginTop:3 }}>
+                  <span style={{ fontSize:"9px",fontWeight:600,padding:"2px 8px",borderRadius:"10px",background:"linear-gradient(135deg,rgba(33,208,179,0.12),rgba(33,208,179,0.06))",color:"#0a7a6b",border:"1px solid rgba(33,208,179,0.3)" }}>
+                    {events[athlete.eventId || ""]?.name || "-"}
+                  </span>
+                  <span style={{ fontSize:"9px",fontWeight:600,padding:"2px 8px",borderRadius:"10px",background:"#f1f5f9",color:"#334155",border:"1px solid #dde3ed" }}>
+                    {delegations[athlete.delegationId || ""]?.countryCode || "-"}
+                  </span>
+                </div>
+              </div>
             </div>
             {/* Stats row */}
             <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"6px" }}>
