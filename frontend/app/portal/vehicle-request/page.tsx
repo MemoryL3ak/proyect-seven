@@ -842,130 +842,99 @@ export default function VehicleRequestPortalPage() {
             {error ? <p className="text-sm text-rose-600">{error}</p> : null}
 
             {activeTab === "request" ? (
-              <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr] xl:gap-6">
-                <div className="vr-card">
-                  <p style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:"#21D0B3",margin:"0 0 4px" }}>Nueva solicitud</p>
-                  <h3 style={{ fontSize:"18px",fontWeight:800,color:"#0f172a",margin:"0 0 4px" }}>
-                    {editingTripId ? "Modificar solicitud" : "Pedir vehiculo"}
-                  </h3>
+              <section>
+                <div style={{ borderRadius:16,border:"1px solid #e2e8f0",background:"#fff",padding:"16px 14px",boxShadow:"0 1px 4px rgba(15,23,42,0.04)" }}>
+                  <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:"0 0 12px" }}>
+                    {editingTripId ? "Modificar solicitud" : "Solicitar vehículo"}
+                  </p>
                   {editingTrip ? (
-                    <div className="mt-4 rounded-2xl px-4 py-3 text-sm" style={{ border: "1px solid var(--warning-border)", background: "var(--warning-dim)", color: "var(--warning)" }}>
-                      Editable hasta las <strong>{formatDateTime(getEditDeadline(editingTrip)?.toISOString() || null)}</strong>.
+                    <div style={{ padding:"8px 10px",borderRadius:10,background:"#fffbeb",border:"1px solid #fde68a",color:"#92400e",fontSize:12,marginBottom:12 }}>
+                      Editable hasta <strong>{formatDateTime(getEditDeadline(editingTrip)?.toISOString() || null)}</strong>
                     </div>
                   ) : null}
 
-                  <form className="mt-6 space-y-4" onSubmit={submitRequest}>
-                    <label className="block space-y-2">
-                      <span className="text-sm font-medium" style={{ color: "var(--text)" }}>Tipo de vehiculo</span>
-                      <select className="input h-12 text-base" value={selectedVehicleType} onChange={(e) => setSelectedVehicleType(e.target.value)}>
-                        {VEHICLE_TYPES.map((item) => (
-                          <option key={item.value} value={item.value}>
-                            {item.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="block space-y-2">
-                      <span className="text-sm font-medium" style={{ color: "var(--text)" }}>Direccion de origen</span>
+                  <form onSubmit={submitRequest} style={{ display:"flex",flexDirection:"column",gap:10 }}>
+                    {/* Row: tipo + personas */}
+                    <div style={{ display:"grid",gridTemplateColumns:"1fr 90px",gap:8 }}>
+                      <div>
+                        <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>Tipo de vehículo</label>
+                        <select className="input" value={selectedVehicleType} onChange={(e) => setSelectedVehicleType(e.target.value)}
+                          style={{ width:"100%",height:40,fontSize:13,borderRadius:10 }}>
+                          {VEHICLE_TYPES.map((item) => (
+                            <option key={item.value} value={item.value}>{item.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>Personas</label>
+                        <input className="input" type="number" min={1} step={1} value={passengerCount}
+                          onChange={(e) => setPassengerCount(e.target.value)}
+                          style={{ width:"100%",height:40,fontSize:13,borderRadius:10,textAlign:"center" }} />
+                      </div>
+                    </div>
+
+                    {/* Origen */}
+                    <div>
+                      <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>Origen</label>
                       <PlacesAutocompleteInput
-                        className="input h-12 text-base"
+                        className="input"
                         value={originAddress}
                         onChange={setOriginAddress}
-                        placeholder="Ej: Aeropuerto Internacional de Santiago"
+                        placeholder="Dirección de recogida"
+                        style={{ height:40,fontSize:13,borderRadius:10 }}
                       />
-                      <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-                        Escribe y selecciona la dirección exacta donde debe recogerte el conductor.
-                      </span>
-                    </label>
-                    <label className="block space-y-2">
-                      <span className="text-sm font-medium" style={{ color: "var(--text)" }}>Sede destino</span>
-                      <select className="input h-12 text-base" value={selectedVenueId} onChange={(e) => setSelectedVenueId(e.target.value)}>
+                    </div>
+
+                    {/* Sede destino */}
+                    <div>
+                      <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>Sede destino</label>
+                      <select className="input" value={selectedVenueId} onChange={(e) => setSelectedVenueId(e.target.value)}
+                        style={{ width:"100%",height:40,fontSize:13,borderRadius:10 }}>
                         <option value="">Selecciona una sede</option>
                         {venues.map((venue) => (
                           <option key={venue.id} value={venue.id}>
-                            {venue.name}{venue.address ? ` - ${venue.address}` : ""}
+                            {venue.name}{venue.address ? ` — ${venue.address}` : ""}
                           </option>
                         ))}
                       </select>
-                    </label>
-                    <label className="block space-y-2">
-                      <span className="text-sm font-medium" style={{ color: "var(--text)" }}>Hora del servicio</span>
-                      <input
-                        className="input h-12 w-full text-base"
-                        type="datetime-local"
-                        value={requestedTime}
-                        onChange={(e) => setRequestedTime(e.target.value)}
-                      />
-                    </label>
-                    <label className="block max-w-[220px] space-y-2">
-                      <span className="text-sm font-medium" style={{ color: "var(--text)" }}>Cantidad de personas</span>
-                      <input
-                        className="input h-12 text-base"
-                        type="number"
-                        min={1}
-                        step={1}
-                        value={passengerCount}
-                        onChange={(e) => setPassengerCount(e.target.value)}
-                      />
-                    </label>
-                    <label className="block space-y-2">
-                      <span className="text-sm font-medium" style={{ color: "var(--text)" }}>Observaciones operativas</span>
-                      <textarea
-                        className="input min-h-[132px] resize-none text-base"
-                        value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                        placeholder="Ej: equipamiento, hora estimada, prioridad o indicacion de acceso"
-                      />
-                    </label>
-                    <button type="submit" className="btn btn-primary h-12 w-full text-base" disabled={submitting}>
-                      {submitting
-                        ? editingTripId
-                          ? "Guardando cambios..."
-                          : "Enviando solicitud..."
-                        : editingTripId
-                          ? "Guardar cambios"
-                          : "Guardar solicitud"}
-                    </button>
-                    {editingTripId ? (
-                      <button type="button" className="btn btn-ghost h-12 w-full text-base" onClick={resetRequestForm}>
-                        Cancelar edicion
-                      </button>
-                    ) : null}
-                  </form>
-                </div>
+                    </div>
 
-                <div className="vr-card hidden xl:block">
-                  <p style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:"#21D0B3",margin:"0 0 4px" }}>Vista previa</p>
-                  <h3 className="mt-2 text-3xl font-semibold tracking-tight" style={{ color: "var(--text)" }}>Resumen del servicio</h3>
-                  <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                    <div className="rounded-2xl p-4" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
-                      <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>Solicitante</div>
-                      <div className="mt-2 text-lg font-semibold" style={{ color: "var(--text)" }}>{athlete.fullName || athlete.id}</div>
+                    {/* Hora */}
+                    <div>
+                      <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>Fecha y hora</label>
+                      <input className="input" type="datetime-local" value={requestedTime}
+                        onChange={(e) => setRequestedTime(e.target.value)}
+                        style={{ width:"100%",height:40,fontSize:13,borderRadius:10 }} />
                     </div>
-                    <div className="rounded-2xl p-4" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
-                      <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>Tipo requerido</div>
-                      <div className="mt-2 text-lg font-semibold" style={{ color: "var(--text)" }}>{vehicleTypeLabel(selectedVehicleType)}</div>
+
+                    {/* Notas (colapsable) */}
+                    <div>
+                      <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>Notas (opcional)</label>
+                      <textarea className="input" value={notes} onChange={(e) => setNotes(e.target.value)}
+                        placeholder="Equipamiento, prioridad, indicaciones..."
+                        rows={2}
+                        style={{ width:"100%",fontSize:13,borderRadius:10,resize:"none",padding:"8px 10px",boxSizing:"border-box",fontFamily:"inherit" }} />
                     </div>
-                    <div className="rounded-2xl p-4" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
-                      <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>Programacion</div>
-                      <div className="mt-2 text-lg font-semibold" style={{ color: "var(--text)" }}>
-                        {requestedTime ? formatDateTime(new Date(requestedTime).toISOString()) : "Selecciona hora"}
-                      </div>
-                    </div>
-                    <div className="rounded-2xl p-4" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
-                      <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>Personas</div>
-                      <div className="mt-2 text-lg font-semibold" style={{ color: "var(--text)" }}>{passengerCount || "1"}</div>
-                    </div>
-                    <div className="rounded-2xl p-4 sm:col-span-2" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
-                      <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>Origen</div>
-                      <div className="mt-2 text-lg font-semibold" style={{ color: "var(--text)" }}>{originAddress || "Ingresa direccion de origen"}</div>
-                    </div>
-                    <div className="rounded-2xl p-4 sm:col-span-2" style={{ border: "1px solid var(--border)", background: "var(--elevated)" }}>
-                      <div className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--text-muted)" }}>Sede</div>
-                      <div className="mt-2 text-lg font-semibold" style={{ color: "var(--text)" }}>{selectedVenue?.name || "Selecciona una sede"}</div>
-                      <p className="mt-2 text-sm leading-6" style={{ color: "var(--text-muted)" }}>{venueSummary(selectedVenue)}</p>
-                    </div>
-                  </div>
+
+                    {/* Submit */}
+                    <button type="submit" disabled={submitting}
+                      style={{
+                        width:"100%",height:42,borderRadius:12,border:"none",fontSize:14,fontWeight:700,cursor:"pointer",
+                        background: submitting ? "#e2e8f0" : "linear-gradient(135deg,#21D0B3,#14AE98)",
+                        color: submitting ? "#94a3b8" : "#fff",
+                        boxShadow: submitting ? "none" : "0 2px 10px rgba(33,208,179,0.3)",
+                      }}>
+                      {submitting
+                        ? (editingTripId ? "Guardando..." : "Enviando...")
+                        : (editingTripId ? "Guardar cambios" : "Enviar solicitud")}
+                    </button>
+                    {editingTripId && (
+                      <button type="button" onClick={resetRequestForm}
+                        style={{ width:"100%",height:38,borderRadius:10,border:"1px solid #e2e8f0",background:"#f8fafc",color:"#64748b",fontSize:13,fontWeight:600,cursor:"pointer" }}>
+                        Cancelar
+                      </button>
+                    )}
+                  </form>
                 </div>
               </section>
             ) : (
