@@ -345,6 +345,14 @@ export default function UserPortalPage() {
     );
   };
 
+  // Show rating when trip completes (outside polling, catches any missed state)
+  useEffect(() => {
+    if (!trip) return;
+    if ((trip.status === "COMPLETED" || trip.status === "DROPPED_OFF") && !trip.driverRating) {
+      setShowRating(true);
+    }
+  }, [trip?.status]);
+
   useEffect(() => {
     if (!trip) return;
     const activeStatuses = ["SCHEDULED", "EN_ROUTE", "PICKED_UP"];

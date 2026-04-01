@@ -606,6 +606,11 @@ export default function VehicleRequestPortalPage() {
             };
             const info = msgs[t.status];
             if (info) notify.push(info.message, info.emoji);
+            // Auto-open rating when trip completes
+            if ((t.status === "COMPLETED" || t.status === "DROPPED_OFF") && !t.driverRating && t.driverId) {
+              setRatingTripId(t.id);
+              setExpandedTripId(t.id);
+            }
           }
           if (t.id && t.status) prevStatuses.current[t.id] = t.status;
         });
