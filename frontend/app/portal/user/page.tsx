@@ -55,14 +55,14 @@ type Event = { id: string; name: string };
 type Delegation = { id: string; countryCode: string };
 type CalendarEvent = {
   id: string;
-  sport: string;
-  league: string;
-  venue?: string | null;
-  startAtUtc: string;
-  status?: string | null;
-  metadata?: Record<string, unknown>;
+  name?: string | null;
+  parentId?: string | null;
+  scheduledAt?: string | null;
+  venueName?: string | null;
+  category?: string | null;
+  gender?: string | null;
 };
-type VenueItem = { id: string; name: string };
+type DisciplineParent = { id: string; name?: string | null };
 
 const countryLabels: Record<string, string> = {
   ARG:"Argentina",BOL:"Bolivia",BRA:"Brasil",CHL:"Chile",COL:"Colombia",
@@ -154,7 +154,7 @@ export default function UserPortalPage() {
   const [ratingLoading, setRatingLoading] = useState(false);
   const [driverEta, setDriverEta] = useState<{ distance: string; duration: string } | null>(null);
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
-  const [venues, setVenues] = useState<VenueItem[]>([]);
+  const [disciplineParents, setDisciplineParents] = useState<DisciplineParent[]>([]);
   const [healthRecord, setHealthRecord] = useState<Record<string, any> | null>(null);
   const notify = useNotifications();
   const prevTripStatus = useRef<string | null>(null);
@@ -233,21 +233,19 @@ export default function UserPortalPage() {
         try { setHotelBed(await apiFetch<HotelBed>(`/hotel-beds/${assignment.bedId}`)); } catch { setHotelBed(null); }
       } else { setHotelBed(null); }
 
-      // Load calendar events and venues
+      // Load disciplines (pruebas) for calendar
       try {
-        const [calData, venueData] = await Promise.all([
-          data.eventId
-            ? apiFetch<CalendarEvent[]>(`/sports-calendar/events?eventId=${data.eventId}`)
-            : Promise.resolve([]),
-          apiFetch<VenueItem[]>("/venues"),
-        ]);
+        const discData = await apiFetch<CalendarEvent[]>("/disciplines");
+        const allDiscs = Array.isArray(discData) ? discData : [];
+        // Parents (sports) for label lookup
+        setDisciplineParents(allDiscs.filter((d) => !d.parentId));
+        // Pruebas with scheduledAt, filtered by event
         setCalendarEvents(
-          (calData || [])
-            .sort((a, b) => new Date(a.startAtUtc).getTime() - new Date(b.startAtUtc).getTime())
-            .slice(0, 30),
+          allDiscs
+            .filter((d) => d.parentId && d.scheduledAt && (!data.eventId || (d as any).eventId === data.eventId))
+            .sort((a, b) => new Date(a.scheduledAt!).getTime() - new Date(b.scheduledAt!).getTime()),
         );
-        setVenues(venueData || []);
-      } catch { setCalendarEvents([]); setVenues([]); }
+      } catch { setCalendarEvents([]); setDisciplineParents([]); }
 
       // Load health record from athlete metadata
       const hr = (data as any).metadata?.healthRecord ?? null;
@@ -1028,19 +1026,18 @@ export default function UserPortalPage() {
           ) : (
             <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
               {calendarEvents.map((ce) => {
-                const schedType = (ce.metadata as any)?.scheduleType;
-                const dotColor = schedType === "COMPETITION" ? "#10b981" : schedType === "TRAINING" ? "#f59e0b" : schedType === "ARRIVAL" ? "#3b82f6" : schedType === "DEPARTURE" ? "#f43f5e" : "#94a3b8";
-                const venueName = ce.venue ? (venues.find((v) => v.id === ce.venue)?.name || ce.venue) : null;
+                const parentName = ce.parentId ? (disciplineParents.find((p) => p.id === ce.parentId)?.name || "") : "";
+                const isPast = new Date(ce.scheduledAt!) < new Date();
                 return (
-                  <div key={ce.id} style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                    <span style={{ width:8,height:8,borderRadius:"50%",background:dotColor,flexShrink:0 }} />
+                  <div key={ce.id} style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9",opacity:isPast ? 0.5 : 1 }}>
+                    <span style={{ width:8,height:8,borderRadius:"50%",background:isPast ? "#94a3b8" : "#21D0B3",flexShrink:0 }} />
                     <div style={{ flex:1,minWidth:0 }}>
                       <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
-                        {ce.sport}{ce.league ? ` · ${ce.league}` : ""}
+                        {ce.name}{parentName ? ` · ${parentName}` : ""}
                       </p>
                       <p style={{ fontSize:10.5,color:"#64748b",margin:"1px 0 0" }}>
-                        {new Date(ce.startAtUtc).toLocaleDateString("es-CL",{ weekday:"short",day:"2-digit",month:"short" })} · {new Date(ce.startAtUtc).toLocaleTimeString("es-CL",{ hour:"2-digit",minute:"2-digit" })}
-                        {venueName ? ` · ${venueName}` : ""}
+                        {new Date(ce.scheduledAt!).toLocaleDateString("es-CL",{ weekday:"short",day:"2-digit",month:"short" })} · {new Date(ce.scheduledAt!).toLocaleTimeString("es-CL",{ hour:"2-digit",minute:"2-digit" })}
+                        {ce.venueName ? ` · ${ce.venueName}` : ""}
                       </p>
                     </div>
                   </div>
