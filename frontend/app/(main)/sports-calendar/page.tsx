@@ -429,13 +429,11 @@ export default function SportsCalendarPage() {
     loadEntries();
   }, [monthCursor, selectedEventId, selectedDelegationId, sportFilter, phaseFilter, personFilter, statusFilter]);
 
-  const filteredVenueOptions = useMemo(
-    () =>
-      venueOptions.filter((v) =>
-        selectedEventId ? v.eventId === selectedEventId : true,
-      ),
-    [venueOptions, selectedEventId],
-  );
+  const filteredVenueOptions = useMemo(() => {
+    if (!selectedEventId) return venueOptions;
+    const byEvent = venueOptions.filter((v) => v.eventId === selectedEventId);
+    return byEvent.length > 0 ? byEvent : venueOptions;
+  }, [venueOptions, selectedEventId]);
 
   const filteredDelegationOptions = useMemo(
     () =>

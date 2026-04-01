@@ -957,11 +957,13 @@ export default function DeportesPage() {
                   onChange={e => setPruebaForm(f => ({ ...f, venueName: e.target.value }))}
                 >
                   <option value="">{t("Selecciona una sede")}</option>
-                  {venueOptions
-                    .filter((v) => !selectedEventId || v.eventId === selectedEventId)
-                    .map((v) => (
+                  {(() => {
+                    const byEvent = selectedEventId ? venueOptions.filter((v) => v.eventId === selectedEventId) : [];
+                    const list = byEvent.length > 0 ? byEvent : venueOptions;
+                    return list.map((v) => (
                       <option key={v.id} value={v.name}>{v.name}{v.address ? ` — ${v.address}` : ""}</option>
-                    ))}
+                    ));
+                  })()}
                 </select>
               </label>
             </div>
