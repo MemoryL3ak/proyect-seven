@@ -498,6 +498,13 @@ export default function VehicleRequestPortalPage() {
   const visibleTrips = useMemo(() => trips.slice(0, visibleTripsCount), [trips, visibleTripsCount]);
   const hasMoreTrips = trips.length > visibleTripsCount;
 
+  const dismissRating = () => {
+    if (ratingTripId) ratingDismissed.current.add(ratingTripId);
+    setRatingTripId(null);
+    setRatingStars(0);
+    setRatingComment("");
+  };
+
   const submitRating = async (tripId: string) => {
     if (ratingStars === 0) return;
     setRatingLoading(true);
@@ -570,19 +577,17 @@ export default function VehicleRequestPortalPage() {
     };
   }, [athlete, trips]);
 
-  // Auto-show rating popup when any trip completes
-  const ratingShownFor = useRef<Set<string>>(new Set());
+  // Auto-show rating popup when a trip transitions to completed
+  const ratingDismissed = useRef<Set<string>>(new Set());
+  const prevTripStatuses = useRef<Record<string, string>>({});
   useEffect(() => {
     trips.forEach((t) => {
-      if (
-        (t.status === "COMPLETED" || t.status === "DROPPED_OFF") &&
-        !t.driverRating &&
-        t.driverId &&
-        !ratingShownFor.current.has(t.id)
-      ) {
-        ratingShownFor.current.add(t.id);
+      const prev = prevTripStatuses.current[t.id];
+      const isNewCompletion = prev && prev !== t.status && (t.status === "COMPLETED" || t.status === "DROPPED_OFF");
+      if (isNewCompletion && !t.driverRating && t.driverId && !ratingDismissed.current.has(t.id)) {
         setRatingTripId(t.id);
       }
+      if (t.id && t.status) prevTripStatuses.current[t.id] = t.status;
     });
   }, [trips]);
 
@@ -1230,7 +1235,7 @@ export default function VehicleRequestPortalPage() {
         const rDriver = rTrip.driverId ? drivers[rTrip.driverId] : null;
         return (
           <div
-            onClick={() => { setRatingTripId(null); setRatingStars(0); setRatingComment(""); }}
+            onClick={dismissRating}
             style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:9000,display:"flex",alignItems:"center",justifyContent:"center",padding:16 }}
           >
             <div
@@ -1266,7 +1271,7 @@ export default function VehicleRequestPortalPage() {
                 style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:ratingStars > 0 ? "linear-gradient(135deg,#34F3C6,#21D0B3)" : "#e2e8f0",color:ratingStars > 0 ? "#0d1b3e" : "#94a3b8",fontSize:15,fontWeight:700,cursor:ratingStars > 0 ? "pointer" : "not-allowed",opacity:ratingLoading ? 0.7 : 1 }}>
                 {ratingLoading ? "Enviando..." : "Enviar evaluación"}
               </button>
-              <button type="button" onClick={() => { setRatingTripId(null); setRatingStars(0); setRatingComment(""); }}
+              <button type="button" onClick={dismissRating}
                 style={{ marginTop:8,background:"none",border:"none",color:"#94a3b8",fontSize:13,cursor:"pointer",padding:8 }}>
                 Omitir
               </button>
