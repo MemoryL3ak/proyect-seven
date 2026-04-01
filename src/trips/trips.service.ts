@@ -6,16 +6,18 @@ import {
 } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { MoreThan, Repository } from 'typeorm';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
 import { Trip } from './entities/trip.entity';
+import { TripMessage } from './entities/trip-message.entity';
 
 type TripRow = {
   id: string;
   event_id: string;
   driver_id: string | null;
   vehicle_id: string | null;
+  vehicle_plate: string | null;
   requester_athlete_id: string | null;
   destination_venue_id: string | null;
   destination_hotel_id: string | null;
@@ -36,6 +38,8 @@ type TripRow = {
   driver_rating: number | null;
   rating_comment: string | null;
   rated_at: string | null;
+  passenger_lat: number | null;
+  passenger_lng: number | null;
   created_at: string;
   updated_at: string;
 };
@@ -56,6 +60,8 @@ export class TripsService {
     @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
     @InjectRepository(Trip)
     private readonly tripRepository: Repository<Trip>,
+    @InjectRepository(TripMessage)
+    private readonly messageRepository: Repository<TripMessage>,
   ) {}
 
   private toRow(dto: CreateTripDto | UpdateTripDto) {
@@ -69,6 +75,9 @@ export class TripsService {
     }
     if (dto.vehicleId !== undefined) {
       row.vehicle_id = dto.vehicleId;
+    }
+    if (dto.vehiclePlate !== undefined) {
+      row.vehicle_plate = dto.vehiclePlate ?? null;
     }
     if (dto.requesterAthleteId !== undefined) {
       row.requester_athlete_id = dto.requesterAthleteId ?? null;
@@ -187,6 +196,7 @@ export class TripsService {
       eventId: row.event_id,
       driverId: row.driver_id,
       vehicleId: row.vehicle_id,
+      vehiclePlate: row.vehicle_plate,
       requesterAthleteId: row.requester_athlete_id,
       destinationVenueId: row.destination_venue_id,
       destinationHotelId: row.destination_hotel_id,
@@ -207,6 +217,8 @@ export class TripsService {
       driverRating: row.driver_rating,
       ratingComment: row.rating_comment,
       ratedAt: row.rated_at ? new Date(row.rated_at) : null,
+      passengerLat: row.passenger_lat,
+      passengerLng: row.passenger_lng,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
     };
@@ -455,5 +467,44 @@ export class TripsService {
     }
 
     return this.toEntity(data as TripRow);
+  }
+
+  /* ─── Passenger Position ─── */
+
+  async updatePassengerPosition(tripId: string, lat: number, lng: number) {
+    await this.tripRepository.update(tripId, {
+      passengerLat: lat,
+      passengerLng: lng,
+    });
+    return { ok: true };
+  }
+
+  /* ─── Trip Chat Messages ─── */
+
+  async getMessages(tripId: string, since?: string) {
+    const where: Record<string, any> = { tripId };
+    if (since) {
+      where.createdAt = MoreThan(new Date(since));
+    }
+    return this.messageRepository.find({
+      where,
+      order: { createdAt: 'ASC' },
+      take: 200,
+    });
+  }
+
+  async sendMessage(
+    tripId: string,
+    senderType: 'DRIVER' | 'PASSENGER',
+    senderName: string,
+    content: string,
+  ) {
+    const message = this.messageRepository.create({
+      tripId,
+      senderType,
+      senderName,
+      content: content.slice(0, 1000),
+    });
+    return this.messageRepository.save(message);
   }
 }

@@ -5,6 +5,8 @@ import dynamic from "next/dynamic";
 import { apiFetch } from "@/lib/api";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { useI18n } from "@/lib/i18n";
+import NotificationBell, { useNotifications } from "@/components/NotificationBell";
+import TripChat from "@/components/TripChat";
 
 const TripMap = dynamic(() => import("@/components/TripMap"), {
   ssr: false,
@@ -30,6 +32,8 @@ type Trip = {
   driverRating?: number | null;
   ratingComment?: string | null;
   ratedAt?: string | null;
+  passengerLat?: number | null;
+  passengerLng?: number | null;
 };
 
 type Driver = {
@@ -142,7 +146,7 @@ export default function DriverPortalPage() {
   const [pickupError, setPickupError] = useState<string | null>(null);
   const [trackingTripId, setTrackingTripId] = useState<string | null>(null);
   const [driverPosition, setDriverPosition] = useState<{ lat: number; lng: number } | null>(null);
-  const [driverToast, setDriverToast] = useState<{ message: string; emoji: string } | null>(null);
+  const driverNotify = useNotifications();
   const ratedTripIds = useRef<Set<string>>(new Set());
   const tripsRef = useRef<Trip[]>([]);
 
@@ -384,14 +388,15 @@ export default function DriverPortalPage() {
     speed?: number | null,
     heading?: number | null
   ) => {
-    if (!trip.vehicleId) return;
+    if (!trip.driverId) return;
     try {
       await apiFetch(`/vehicle-positions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...(trip.eventId ? { eventId: trip.eventId } : {}),
-          vehicleId: trip.vehicleId,
+          driverId: trip.driverId,
+          ...(trip.vehicleId ? { vehicleId: trip.vehicleId } : {}),
           timestamp: new Date().toISOString(),
           location: { type: "Point", coordinates: [longitude, latitude] },
           speed,
@@ -467,9 +472,8 @@ export default function DriverPortalPage() {
             ratedTripIds.current.add(id);
             const stars = "⭐".repeat(fresh.driverRating);
             const comment = fresh.ratingComment ? `\n"${fresh.ratingComment}"` : "";
-            setDriverToast({ message: `Recibiste ${stars}${comment}`, emoji: "🌟" });
+            driverNotify.push(`Recibiste ${stars}${comment}`, "🌟");
             setTrips((prev) => prev.map((t) => t.id === id ? fresh : t));
-            setTimeout(() => setDriverToast(null), 8000);
           }
         }
       } catch { /* non-blocking */ }
@@ -762,15 +766,7 @@ export default function DriverPortalPage() {
 
           <div className="dc-content">
 
-            {/* Toast notification */}
-            {driverToast && (
-              <div style={{ position:"fixed",top:16,left:"50%",transform:"translateX(-50%)",zIndex:200,animation:"dc-in .4s cubic-bezier(0.16,1,0.3,1) both",pointerEvents:"none" }}>
-                <div style={{ display:"flex",alignItems:"center",gap:10,padding:"14px 22px",borderRadius:16,background:"linear-gradient(135deg,#062240,#0a3356)",color:"#fff",fontSize:14,fontWeight:600,boxShadow:"0 8px 32px rgba(0,0,0,0.3)",whiteSpace:"pre-line",maxWidth:340,textAlign:"center" }}>
-                  <span style={{ fontSize:24 }}>{driverToast.emoji}</span>
-                  {driverToast.message}
-                </div>
-              </div>
-            )}
+            {/* Notifications are shown via the NotificationBell in the profile card */}
 
             {/* Profile card */}
             <div className="dc-profile-card">
@@ -807,6 +803,12 @@ export default function DriverPortalPage() {
                   </div>
                 </div>
               </div>
+              <NotificationBell
+                notifications={driverNotify.notifications}
+                unreadCount={driverNotify.unreadCount}
+                onMarkAllRead={driverNotify.markAllRead}
+                onClear={driverNotify.clear}
+              />
               <button type="button" onClick={loadTrips} disabled={loading}
                 style={{ display:"flex",alignItems:"center",gap:"8px",padding:"10px 16px",borderRadius:"14px",border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.08)",color:"#21D0B3",fontSize:"13px",fontWeight:600,cursor:"pointer",flexShrink:0,transition:"all .2s",whiteSpace:"nowrap",opacity:loading?0.6:1 }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -1005,7 +1007,7 @@ export default function DriverPortalPage() {
 
                         {/* MAP */}
                         <div style={{ position:"relative" }}>
-                          <TripMap origin={trip.origin} destination={trip.destination} driverPosition={driverPosition} height={240} />
+                          <TripMap origin={trip.origin} destination={trip.destination} driverPosition={driverPosition} userPosition={trip.passengerLat && trip.passengerLng ? { lat: trip.passengerLat, lng: trip.passengerLng } : null} height={240} />
                           {/* Status badge overlay */}
                           <div style={{ position:"absolute",top:12,left:12,zIndex:10 }}>
                             <span style={{ display:"inline-flex",alignItems:"center",gap:"6px",padding:"6px 14px",borderRadius:"20px",background: isCompleted?"rgba(33,208,179,0.92)":status==="EN_ROUTE"?"rgba(251,191,36,0.92)":status==="PICKED_UP"?"rgba(139,92,246,0.92)":"rgba(15,23,42,0.78)",color:"#fff",fontSize:"11px",fontWeight:800,letterSpacing:"0.08em",backdropFilter:"blur(6px)",boxShadow:"0 2px 12px rgba(0,0,0,0.2)",textTransform:"uppercase" }}>
@@ -1220,8 +1222,16 @@ export default function DriverPortalPage() {
           </div>
         </div>
       )}
+
+      {/* ── Trip Chat (active trips only) ── */}
+      {driverProfile && trackingTripId && (
+        <TripChat
+          tripId={trackingTripId}
+          senderType="DRIVER"
+          senderName={driverProfile.fullName}
+          onNewMessage={(name, content) => driverNotify.push(`${name}: ${content.slice(0, 80)}`, "💬")}
+        />
+      )}
     </>
   );
 }
-
-

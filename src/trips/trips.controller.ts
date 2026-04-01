@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
 import { TripsService } from './trips.service';
@@ -13,8 +13,8 @@ export class TripsController {
   }
 
   @Get()
-  findAll() {
-    return this.tripsService.findAll();
+  findAll(@Query('requesterAthleteId') requesterAthleteId?: string) {
+    return this.tripsService.findAll(requesterAthleteId);
   }
 
   @Get(':id')
@@ -30,5 +30,33 @@ export class TripsController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.tripsService.remove(id);
+  }
+
+  /* ─── Passenger position ─── */
+
+  @Patch(':id/passenger-position')
+  updatePassengerPosition(
+    @Param('id') id: string,
+    @Body() body: { lat: number; lng: number },
+  ) {
+    return this.tripsService.updatePassengerPosition(id, body.lat, body.lng);
+  }
+
+  /* ─── Trip Chat ─── */
+
+  @Get(':id/messages')
+  getMessages(
+    @Param('id') id: string,
+    @Query('since') since?: string,
+  ) {
+    return this.tripsService.getMessages(id, since);
+  }
+
+  @Post(':id/messages')
+  sendMessage(
+    @Param('id') id: string,
+    @Body() body: { senderType: 'DRIVER' | 'PASSENGER'; senderName: string; content: string },
+  ) {
+    return this.tripsService.sendMessage(id, body.senderType, body.senderName, body.content);
   }
 }

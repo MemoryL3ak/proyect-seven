@@ -5,6 +5,8 @@ import { apiFetch } from "@/lib/api";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { useI18n } from "@/lib/i18n";
 import TripMap from "@/components/TripMap";
+import NotificationBell, { useNotifications } from "@/components/NotificationBell";
+import TripChat from "@/components/TripChat";
 
 type Athlete = {
   id: string;
@@ -47,7 +49,7 @@ type HotelAssignment = {
 type HotelRoom = { id: string; roomNumber: string; roomType: string };
 type HotelBed = { id: string; bedType: string };
 type Vehicle = { id: string; plate: string; type: string };
-type Trip = { id: string; driverId: string; vehicleId?: string | null; athleteIds?: string[]; requesterAthleteId?: string | null; clientType?: string | null; origin?: string | null; destination?: string | null; status?: string | null; scheduledAt?: string | null; startedAt?: string | null; completedAt?: string | null; tripType?: string | null; notes?: string | null; driverRating?: number | null; ratingComment?: string | null; ratedAt?: string | null };
+type Trip = { id: string; driverId: string; vehicleId?: string | null; athleteIds?: string[]; requesterAthleteId?: string | null; clientType?: string | null; origin?: string | null; destination?: string | null; status?: string | null; scheduledAt?: string | null; startedAt?: string | null; completedAt?: string | null; tripType?: string | null; notes?: string | null; driverRating?: number | null; ratingComment?: string | null; ratedAt?: string | null; passengerLat?: number | null; passengerLng?: number | null };
 type Driver = { id: string; fullName: string; userId?: string | null };
 type Event = { id: string; name: string };
 type Delegation = { id: string; countryCode: string };
@@ -141,9 +143,8 @@ export default function UserPortalPage() {
   const [ratingComment, setRatingComment] = useState("");
   const [ratingLoading, setRatingLoading] = useState(false);
   const [driverEta, setDriverEta] = useState<{ distance: string; duration: string } | null>(null);
-  const [toast, setToast] = useState<{ message: string; emoji: string } | null>(null);
+  const notify = useNotifications();
   const prevTripStatus = useRef<string | null>(null);
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const arrivedNotified = useRef<string | null>(null); // tracks which segment was already notified
 
   const loadAthlete = async () => {
@@ -158,6 +159,12 @@ export default function UserPortalPage() {
       const match = validatedAthletes.find((a) => a.id?.slice(-6).toLowerCase() === normalizedInput);
       if (!match) { setError(t("El código ingresado no corresponde a un usuario registrado.")); return; }
       const data = await apiFetch<Athlete>(`/athletes/${match.id}`);
+
+      if (data.userType === "VIP") {
+        window.location.href = `/portal/vehicle-request?athleteId=${data.id}`;
+        return;
+      }
+
       setAthlete(data);
 
       const [flightData, hotelData, vehicleData, tripData, tripsList, eventData, delegationData, assignmentData] = await Promise.all([
@@ -275,24 +282,18 @@ export default function UserPortalPage() {
         }),
       });
       setTrip({ ...trip, driverRating: ratingStars });
-      showToast("¡Gracias por tu evaluación!", "⭐");
+      notify.push("¡Gracias por tu evaluación!", "⭐");
       setShowRating(false);
       setRatingStars(0);
       setRatingComment("");
     } catch {
-      showToast("No se pudo enviar la evaluación", "❌");
+      notify.push("No se pudo enviar la evaluación", "❌");
     } finally {
       setRatingLoading(false);
     }
   };
 
   /* ─── trip polling + driver ETA + notifications ─── */
-  const showToast = (message: string, emoji: string) => {
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    setToast({ message, emoji });
-    toastTimer.current = setTimeout(() => setToast(null), 6000);
-  };
-
   const notifyStatusChange = (status: string) => {
     const msgs: Record<string, { message: string; emoji: string }> = {
       EN_ROUTE:    { message: "El conductor está en camino a recogerte", emoji: "🚗" },
@@ -303,10 +304,7 @@ export default function UserPortalPage() {
     };
     const info = msgs[status];
     if (!info) return;
-    showToast(info.message, info.emoji);
-    if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
-      new Notification(`${info.emoji} Seven Arena`, { body: info.message, icon: "/branding/LOGO-SEVEN-1.png" });
-    }
+    notify.push(info.message, info.emoji);
   };
 
   const calculateEta = (
@@ -338,15 +336,9 @@ export default function UserPortalPage() {
         if (durationSecs <= 180 && arrivedNotified.current !== segmentKey) {
           arrivedNotified.current = segmentKey;
           if (tripStatus === "EN_ROUTE") {
-            showToast("El conductor está llegando a recogerte", "🚖");
-            if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
-              new Notification("🚖 Seven Arena", { body: "El conductor está llegando a recogerte", icon: "/branding/LOGO-SEVEN-1.png" });
-            }
+            notify.push("El conductor está llegando a recogerte", "🚖");
           } else if (tripStatus === "PICKED_UP") {
-            showToast("Estás llegando a tu destino", "📍");
-            if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
-              new Notification("📍 Seven Arena", { body: "Estás llegando a tu destino", icon: "/branding/LOGO-SEVEN-1.png" });
-            }
+            notify.push("Estás llegando a tu destino", "📍");
           }
         }
       }
@@ -422,11 +414,22 @@ export default function UserPortalPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trip?.id, trip?.status]);
 
-  /* ─── user geolocation ─── */
+  /* ─── user geolocation + send to backend ─── */
   useEffect(() => {
     if (!athlete || !navigator.geolocation) return;
     const watchId = navigator.geolocation.watchPosition(
-      (pos) => setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      (pos) => {
+        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setUserPos(coords);
+        // Send position to backend so the conductor can see us
+        if (trip?.id && ["EN_ROUTE", "PICKED_UP"].includes(trip.status ?? "")) {
+          apiFetch(`/trips/${trip.id}/passenger-position`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(coords),
+          }).catch(() => {});
+        }
+      },
       () => {},
       { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
     );
@@ -636,26 +639,31 @@ export default function UserPortalPage() {
         .db-logout-label{display:inline;}
 
         @media(max-width:640px){
-          .db-banner-inner{padding:10px 14px;}
-          .db-banner-logo{height:38px!important;}
-          .db-banner-tag span{font-size:9px;letter-spacing:0.14em;}
-          .db-content{padding:12px 8px 56px;}
-          .db-profile-card{padding:14px;gap:10px;flex-direction:column;align-items:stretch;}
-          .db-profile-body{gap:12px;}
-          .db-avatar{width:44px!important;height:44px!important;font-size:15px!important;}
-          .db-profile-name{font-size:17px!important;margin-bottom:6px!important;}
-          .db-cards-grid{grid-template-columns:1fr;gap:10px;margin-bottom:12px;}
-          .db-card{padding:16px;border-radius:16px;}
-          .db-actions-card{padding:14px;border-radius:16px;}
-          .db-actions-grid{grid-template-columns:1fr;gap:10px;}
-          .db-action-btn{padding:15px 16px!important;border-radius:14px!important;font-size:14px!important;min-height:48px!important;}
-          .db-logout-label{display:none;}
-          .db-logout-btn{width:100%;justify-content:center;}
+          .db-banner-inner{padding:8px 14px;}
+          .db-banner-logo{height:30px!important;}
+          .db-banner-tag span{font-size:8px;letter-spacing:0.1em;}
+          .db-content{padding:10px 10px 40px;}
+          .db-profile-card{padding:14px 14px 10px;gap:0;flex-direction:column;align-items:stretch;border-radius:18px;margin-bottom:10px;}
+          .db-profile-body{gap:12px;margin-bottom:10px;}
+          .db-avatar{width:42px!important;height:42px!important;font-size:14px!important;box-shadow:0 3px 12px rgba(33,208,179,0.3)!important;}
+          .db-profile-name{font-size:17px!important;margin-bottom:5px!important;}
+          .db-profile-btns{display:flex!important;gap:6px;width:100%;}
+          .db-profile-btns .db-logout-btn{flex:1;justify-content:center;padding:8px 10px!important;font-size:11px!important;border-radius:10px!important;}
+          .db-logout-label{display:inline!important;}
+          .db-cards-grid{grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+          .db-card{padding:12px;border-radius:14px;box-shadow:0 1px 8px rgba(0,0,0,0.04);}
+          .db-card .db-card-icon{width:28px!important;height:28px!important;border-radius:8px!important;}
+          .db-card .db-card-header{margin-bottom:8px!important;gap:8px!important;}
+          .db-card .db-card-title{font-size:14px!important;}
+          .db-card .db-card-subtitle{font-size:11px!important;}
+          .db-actions-card{padding:12px;border-radius:14px;margin-bottom:10px;}
+          .db-actions-grid{grid-template-columns:1fr;gap:8px;}
+          .db-action-btn{padding:13px 14px!important;border-radius:12px!important;font-size:13px!important;min-height:44px!important;}
         }
 
         @media(max-width:400px){
           .db-banner-tag{display:none;}
-          .db-logout-btn{align-self:flex-end;margin-top:-8px;}
+          .db-cards-grid{grid-template-columns:1fr 1fr;gap:8px;}
         }
       `}</style>
 
@@ -679,16 +687,6 @@ export default function UserPortalPage() {
       </div>
 
       <div className="db-content">
-
-        {/* ── Toast notification ── */}
-        {toast && (
-          <div style={{ position:"fixed",top:16,left:"50%",transform:"translateX(-50%)",zIndex:200,animation:"db-in .4s cubic-bezier(0.16,1,0.3,1) both",pointerEvents:"none" }}>
-            <div style={{ display:"flex",alignItems:"center",gap:"10px",padding:"12px 20px",borderRadius:"16px",background:"#0f172a",color:"#fff",fontSize:"14px",fontWeight:600,boxShadow:"0 8px 32px rgba(0,0,0,0.3)",whiteSpace:"nowrap" }}>
-              <span style={{ fontSize:"18px" }}>{toast.emoji}</span>
-              {toast.message}
-            </div>
-          </div>
-        )}
 
         {/* ── Profile card ── */}
         <div className="db-profile-card">
@@ -718,19 +716,27 @@ export default function UserPortalPage() {
               </div>
             </div>
           </div>
-          <button className="db-logout-btn" type="button" onClick={loadAthlete} disabled={loading}
-            style={{ display:"flex",alignItems:"center",gap:"8px",padding:"10px 16px",borderRadius:"14px",border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.08)",color:"#21D0B3",fontSize:"13px",fontWeight:600,cursor:"pointer",flexShrink:0,transition:"all .2s",whiteSpace:"nowrap",opacity:loading?0.6:1 }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
-            </svg>
-            <span className="db-logout-label">{t("Actualizar")}</span>
-          </button>
-          <button className="db-logout db-logout-btn" type="button"
-            onClick={() => { setAthlete(null); setAthleteId(""); }}
-            style={{ display:"flex",alignItems:"center",gap:"8px",padding:"10px 16px",borderRadius:"14px",border:"1px solid #e2e8f0",background:"#f8fafc",color:"#64748b",fontSize:"13px",fontWeight:600,cursor:"pointer",flexShrink:0,transition:"all .2s",whiteSpace:"nowrap" }}>
-            <IcoLogout />
-            <span className="db-logout-label">{t("Cerrar sesión")}</span>
-          </button>
+          <div className="db-profile-btns" style={{ display:"contents" }}>
+            <NotificationBell
+              notifications={notify.notifications}
+              unreadCount={notify.unreadCount}
+              onMarkAllRead={notify.markAllRead}
+              onClear={notify.clear}
+            />
+            <button className="db-logout-btn" type="button" onClick={loadAthlete} disabled={loading}
+              style={{ display:"flex",alignItems:"center",gap:"8px",padding:"10px 16px",borderRadius:"14px",border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.08)",color:"#21D0B3",fontSize:"13px",fontWeight:600,cursor:"pointer",flexShrink:0,transition:"all .2s",whiteSpace:"nowrap",opacity:loading?0.6:1 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+              </svg>
+              <span className="db-logout-label">{t("Actualizar")}</span>
+            </button>
+            <button className="db-logout db-logout-btn" type="button"
+              onClick={() => { setAthlete(null); setAthleteId(""); }}
+              style={{ display:"flex",alignItems:"center",gap:"8px",padding:"10px 16px",borderRadius:"14px",border:"1px solid #e2e8f0",background:"#f8fafc",color:"#64748b",fontSize:"13px",fontWeight:600,cursor:"pointer",flexShrink:0,transition:"all .2s",whiteSpace:"nowrap" }}>
+              <IcoLogout />
+              <span className="db-logout-label">{t("Cerrar sesión")}</span>
+            </button>
+          </div>
         </div>
 
         {/* ── Info cards grid ── */}
@@ -739,47 +745,47 @@ export default function UserPortalPage() {
           {/* Vuelo */}
           <div className="db-card">
             <div style={{ position:"absolute",top:0,right:0,width:"120px",height:"120px",borderRadius:"50%",background:"radial-gradient(ellipse,rgba(33,208,179,0.09) 0%,transparent 70%)",transform:"translate(30px,-30px)",pointerEvents:"none" }} />
-            <div style={{ display:"flex",alignItems:"center",gap:"12px",marginBottom:"18px" }}>
-              <div style={{ width:"40px",height:"40px",borderRadius:"12px",background:"linear-gradient(135deg,rgba(33,208,179,0.18),rgba(33,208,179,0.06))",border:"1px solid rgba(33,208,179,0.25)",display:"flex",alignItems:"center",justifyContent:"center",color:"#21D0B3",flexShrink:0,boxShadow:"0 2px 8px rgba(33,208,179,0.15)" }}>
+            <div className="db-card-header" style={{ display:"flex",alignItems:"center",gap:"12px",marginBottom:"18px" }}>
+              <div className="db-card-icon" style={{ width:"40px",height:"40px",borderRadius:"12px",background:"linear-gradient(135deg,rgba(33,208,179,0.18),rgba(33,208,179,0.06))",border:"1px solid rgba(33,208,179,0.25)",display:"flex",alignItems:"center",justifyContent:"center",color:"#21D0B3",flexShrink:0,boxShadow:"0 2px 8px rgba(33,208,179,0.15)" }}>
                 <IcoPlane />
               </div>
               <span style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:"#21D0B3" }}>{t("Vuelo")}</span>
             </div>
             {flightLabel ? (
               <>
-                <p style={{ fontSize:"17px",fontWeight:800,color:"#0f172a",margin:"0 0 8px",letterSpacing:"-0.01em" }}>{flightLabel}</p>
+                <p className="db-card-title" style={{ fontSize:"17px",fontWeight:800,color:"#0f172a",margin:"0 0 8px",letterSpacing:"-0.01em" }}>{flightLabel}</p>
                 {(athlete.arrivalTime || flight?.arrivalTime) && (
-                  <p style={{ fontSize:"12px",color:"#64748b",margin:"0 0 4px",display:"flex",alignItems:"center",gap:"5px" }}>
+                  <p className="db-card-subtitle" style={{ fontSize:"12px",color:"#64748b",margin:"0 0 4px",display:"flex",alignItems:"center",gap:"5px" }}>
                     <span style={{ color:"#21D0B3",fontWeight:600 }}>Arribo</span> · {fmt(athlete.arrivalTime || flight?.arrivalTime)}
                   </p>
                 )}
-                {athlete.origin && <p style={{ fontSize:"12px",color:"#64748b",margin:0 }}><span style={{ color:"#21D0B3",fontWeight:600 }}>Origen</span> · {athlete.origin}</p>}
+                {athlete.origin && <p className="db-card-subtitle" style={{ fontSize:"12px",color:"#64748b",margin:0 }}><span style={{ color:"#21D0B3",fontWeight:600 }}>Origen</span> · {athlete.origin}</p>}
               </>
             ) : (
-              <p style={{ fontSize:"14px",color:"#94a3b8",margin:0,fontStyle:"italic" }}>Sin vuelo asignado</p>
+              <p style={{ fontSize:"13px",color:"#94a3b8",margin:0,fontStyle:"italic" }}>Sin vuelo asignado</p>
             )}
           </div>
 
           {/* Hotel */}
           <div className="db-card">
             <div style={{ position:"absolute",top:0,right:0,width:"120px",height:"120px",borderRadius:"50%",background:"radial-gradient(ellipse,rgba(52,243,198,0.08) 0%,transparent 70%)",transform:"translate(30px,-30px)",pointerEvents:"none" }} />
-            <div style={{ display:"flex",alignItems:"center",gap:"12px",marginBottom:"18px" }}>
-              <div style={{ width:"40px",height:"40px",borderRadius:"12px",background:"linear-gradient(135deg,rgba(52,243,198,0.18),rgba(52,243,198,0.06))",border:"1px solid rgba(52,243,198,0.25)",display:"flex",alignItems:"center",justifyContent:"center",color:"#0fa894",flexShrink:0,boxShadow:"0 2px 8px rgba(52,243,198,0.15)" }}>
+            <div className="db-card-header" style={{ display:"flex",alignItems:"center",gap:"12px",marginBottom:"18px" }}>
+              <div className="db-card-icon" style={{ width:"40px",height:"40px",borderRadius:"12px",background:"linear-gradient(135deg,rgba(52,243,198,0.18),rgba(52,243,198,0.06))",border:"1px solid rgba(52,243,198,0.25)",display:"flex",alignItems:"center",justifyContent:"center",color:"#0fa894",flexShrink:0,boxShadow:"0 2px 8px rgba(52,243,198,0.15)" }}>
                 <IcoHotel />
               </div>
               <span style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:"#0fa894" }}>{t("Hotel")}</span>
             </div>
             {hotel?.name ? (
               <>
-                <p style={{ fontSize:"17px",fontWeight:800,color:"#0f172a",margin:"0 0 12px",letterSpacing:"-0.01em" }}>{hotel.name}</p>
-                <div style={{ display:"flex",flexWrap:"wrap",gap:"6px" }}>
-                  {hotelRoom_ && <span style={{ fontSize:"11px",padding:"4px 10px",borderRadius:"8px",background:"#f0fdf8",color:"#0a7a6b",border:"1px solid rgba(33,208,179,0.2)",fontWeight:600 }}>Hab. {hotelRoom_}</span>}
-                  {hotelBed_ && <span style={{ fontSize:"11px",padding:"4px 10px",borderRadius:"8px",background:"#f1f5f9",color:"#475569",border:"1px solid #e2e8f0",fontWeight:500 }}>Cama {hotelBed_}</span>}
-                  {luggage_ && <span style={{ display:"inline-flex",alignItems:"center",gap:"4px",fontSize:"11px",padding:"4px 10px",borderRadius:"8px",background:"#f1f5f9",color:"#475569",border:"1px solid #e2e8f0",fontWeight:500 }}><IcoBag />{luggage_}</span>}
+                <p className="db-card-title" style={{ fontSize:"17px",fontWeight:800,color:"#0f172a",margin:"0 0 8px",letterSpacing:"-0.01em" }}>{hotel.name}</p>
+                <div style={{ display:"flex",flexWrap:"wrap",gap:"4px" }}>
+                  {hotelRoom_ && <span style={{ fontSize:"10px",padding:"3px 8px",borderRadius:"6px",background:"#f0fdf8",color:"#0a7a6b",border:"1px solid rgba(33,208,179,0.2)",fontWeight:600 }}>Hab. {hotelRoom_}</span>}
+                  {hotelBed_ && <span style={{ fontSize:"10px",padding:"3px 8px",borderRadius:"6px",background:"#f1f5f9",color:"#475569",border:"1px solid #e2e8f0",fontWeight:500 }}>Cama {hotelBed_}</span>}
+                  {luggage_ && <span style={{ display:"inline-flex",alignItems:"center",gap:"3px",fontSize:"10px",padding:"3px 8px",borderRadius:"6px",background:"#f1f5f9",color:"#475569",border:"1px solid #e2e8f0",fontWeight:500 }}><IcoBag />{luggage_}</span>}
                 </div>
               </>
             ) : (
-              <p style={{ fontSize:"14px",color:"#94a3b8",margin:0,fontStyle:"italic" }}>Sin hotel asignado</p>
+              <p style={{ fontSize:"13px",color:"#94a3b8",margin:0,fontStyle:"italic" }}>Sin hotel asignado</p>
             )}
           </div>
 
@@ -819,8 +825,8 @@ export default function UserPortalPage() {
                     </span>
                   )}
                   {(trip.origin || trip.destination) && (
-                    <p style={{ fontSize:"16px",fontWeight:800,color:"#0f172a",margin:"0 0 10px",letterSpacing:"-0.01em" }}>
-                      {trip.origin || "–"} <span style={{ color:"#0ea5c8" }}>→</span> {trip.destination || "–"}
+                    <p style={{ fontSize:"13px",fontWeight:700,color:"#0f172a",margin:"0 0 10px",lineHeight:1.4,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:3,WebkitBoxOrient:"vertical" as any }}>
+                      {trip.origin || "–"} <span style={{ color:"#0ea5c8",fontWeight:800 }}>→</span> {trip.destination || "–"}
                     </p>
                   )}
                   {scheduledFmt && (
@@ -859,27 +865,27 @@ export default function UserPortalPage() {
           {/* Check-ins */}
           <div className="db-card">
             <div style={{ position:"absolute",top:0,right:0,width:"120px",height:"120px",borderRadius:"50%",background:"radial-gradient(ellipse,rgba(33,208,179,0.05) 0%,transparent 70%)",transform:"translate(30px,-30px)",pointerEvents:"none" }} />
-            <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"18px" }}>
+            <div className="db-card-header" style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"14px" }}>
               <div style={{ display:"flex",alignItems:"center",gap:"12px" }}>
-                <div style={{ width:"40px",height:"40px",borderRadius:"12px",background:"linear-gradient(135deg,#f8fafc,#f1f5f9)",border:"1px solid #e2e8f0",display:"flex",alignItems:"center",justifyContent:"center",color:"#64748b",flexShrink:0 }}>
+                <div className="db-card-icon" style={{ width:"40px",height:"40px",borderRadius:"12px",background:"linear-gradient(135deg,#f8fafc,#f1f5f9)",border:"1px solid #e2e8f0",display:"flex",alignItems:"center",justifyContent:"center",color:"#64748b",flexShrink:0 }}>
                   <IcoCheck />
                 </div>
                 <span style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:"#475569" }}>{t("Check-ins")}</span>
               </div>
               <span style={{ fontSize:"12px",fontWeight:700,color:checkinsDone===checkins.length?"#21D0B3":"#94a3b8" }}>{checkinsDone}/{checkins.length}</span>
             </div>
-            <div style={{ display:"flex",flexDirection:"column",gap:"12px" }}>
+            <div style={{ display:"flex",flexDirection:"column",gap:"8px" }}>
               {checkins.map(({ label, ts }) => {
                 const done = !!fmt(ts);
                 return (
-                  <div key={label} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",gap:"8px",padding:"10px 12px",borderRadius:"12px",background:done?"linear-gradient(135deg,rgba(33,208,179,0.06),rgba(33,208,179,0.02))":"#f8fafc",border:`1px solid ${done?"rgba(33,208,179,0.2)":"#f1f5f9"}`,transition:"all .3s" }}>
-                    <div style={{ display:"flex",alignItems:"center",gap:"10px" }}>
-                      <div style={{ width:9,height:9,borderRadius:"50%",flexShrink:0,background:done?"#21D0B3":"#cbd5e1",boxShadow:done?"0 0 8px rgba(33,208,179,0.7)":"none",transition:"all .3s" }} />
-                      <span style={{ fontSize:"13px",color:done?"#0f172a":"#94a3b8",fontWeight:done?600:400 }}>{label}</span>
+                  <div key={label} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",gap:"8px",padding:"8px 10px",borderRadius:"10px",background:done?"linear-gradient(135deg,rgba(33,208,179,0.06),rgba(33,208,179,0.02))":"#f8fafc",border:`1px solid ${done?"rgba(33,208,179,0.2)":"#f1f5f9"}`,transition:"all .3s" }}>
+                    <div style={{ display:"flex",alignItems:"center",gap:"8px" }}>
+                      <div style={{ width:8,height:8,borderRadius:"50%",flexShrink:0,background:done?"#21D0B3":"#cbd5e1",boxShadow:done?"0 0 6px rgba(33,208,179,0.7)":"none",transition:"all .3s" }} />
+                      <span style={{ fontSize:"12px",color:done?"#0f172a":"#94a3b8",fontWeight:done?600:400 }}>{label}</span>
                     </div>
                     {done
-                      ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                      : <span style={{ fontSize:"10px",color:"#cbd5e1",fontWeight:500 }}>Pendiente</span>
+                      ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                      : <span style={{ fontSize:"9px",color:"#cbd5e1",fontWeight:500 }}>Pendiente</span>
                     }
                   </div>
                 );
@@ -1111,6 +1117,16 @@ export default function UserPortalPage() {
               </button>
             </div>
           </div>
+        )}
+
+        {/* ── Trip Chat (active trips only) ── */}
+        {trip && ["EN_ROUTE", "PICKED_UP"].includes(trip.status ?? "") && (
+          <TripChat
+            tripId={trip.id}
+            senderType="PASSENGER"
+            senderName={athlete.fullName}
+            onNewMessage={(name, content) => notify.push(`${name}: ${content.slice(0, 80)}`, "💬")}
+          />
         )}
 
         {/* ── Footer ── */}

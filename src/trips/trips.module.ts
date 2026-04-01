@@ -4,9 +4,10 @@ import { SupabaseProvider } from '@/supabase/provider';
 import { TripsController } from './trips.controller';
 import { TripsService } from './trips.service';
 import { Trip } from './entities/trip.entity';
+import { TripMessage } from './entities/trip-message.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Trip])],
+  imports: [TypeOrmModule.forFeature([Trip, TripMessage])],
   controllers: [TripsController],
   providers: [TripsService, SupabaseProvider],
 })

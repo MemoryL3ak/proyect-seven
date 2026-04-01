@@ -20,6 +20,9 @@ export class Trip {
   @Column({ name: 'vehicle_id', type: 'uuid', nullable: true })
   vehicleId?: string | null;
 
+  @Column({ name: 'vehicle_plate', length: 20, type: 'varchar', nullable: true })
+  vehiclePlate?: string | null;
+
   @Column({ name: 'requester_athlete_id', type: 'uuid', nullable: true })
   requesterAthleteId?: string | null;
 
@@ -85,6 +88,12 @@ export class Trip {
 
   @Column({ name: 'rated_at', type: 'timestamptz', nullable: true })
   ratedAt?: Date | null;
+
+  @Column({ name: 'passenger_lat', type: 'float', nullable: true })
+  passengerLat?: number | null;
+
+  @Column({ name: 'passenger_lng', type: 'float', nullable: true })
+  passengerLng?: number | null;
 
   athleteIds?: string[];
 
