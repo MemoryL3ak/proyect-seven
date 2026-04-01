@@ -1067,7 +1067,7 @@ export default function UserPortalPage() {
                 <span style={{ width:8,height:8,borderRadius:"50%",background:"#10b981" }} />
                 <p style={{ fontSize:13,color:"#0f172a",margin:0,fontWeight:600 }}>Ficha completada y firmada</p>
               </div>
-              <a href={`/portal/athlete/salud?athleteId=${athlete.id}`}
+              <a href={`/portal/athlete/salud?id=${athlete.id}`}
                 style={{ display:"inline-flex",alignItems:"center",gap:6,fontSize:12,fontWeight:600,color:"#21D0B3",textDecoration:"none" }}>
                 Ver o editar ficha →
               </a>
@@ -1077,7 +1077,7 @@ export default function UserPortalPage() {
               <p style={{ fontSize:12.5,color:"#64748b",margin:"0 0 12px",lineHeight:1.5 }}>
                 Completa tu ficha de salud con datos médicos, alergias, contacto de emergencia y firma digital.
               </p>
-              <a href={`/portal/athlete/salud?athleteId=${athlete.id}`}
+              <a href={`/portal/athlete/salud?id=${athlete.id}`}
                 style={{ display:"block",width:"100%",padding:12,borderRadius:12,border:"none",background:"linear-gradient(135deg,#21D0B3,#14AE98)",color:"#fff",fontSize:13,fontWeight:700,textAlign:"center",textDecoration:"none",boxShadow:"0 2px 10px rgba(33,208,179,0.3)",boxSizing:"border-box" }}>
                 Completar ficha de salud
               </a>
