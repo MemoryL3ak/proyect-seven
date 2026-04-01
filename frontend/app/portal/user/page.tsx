@@ -242,7 +242,7 @@ export default function UserPortalPage() {
         // Pruebas with scheduledAt, filtered by event
         setCalendarEvents(
           allDiscs
-            .filter((d) => d.parentId && d.scheduledAt && (!data.eventId || (d as any).eventId === data.eventId))
+            .filter((d) => d.parentId && d.scheduledAt)
             .sort((a, b) => new Date(a.scheduledAt!).getTime() - new Date(b.scheduledAt!).getTime()),
         );
       } catch { setCalendarEvents([]); setDisciplineParents([]); }
