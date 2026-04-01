@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 type LatLng = { lat: number; lng: number };
 
@@ -63,7 +64,18 @@ function loadGoogleMaps(): Promise<void> {
   });
 }
 
-export default function TripMap({ origin, destination, driverPosition, userPosition, height = 260 }: TripMapProps) {
+/* ------------------------------------------------------------------ */
+/*  Inner map (reused for inline and fullscreen)                       */
+/* ------------------------------------------------------------------ */
+
+function MapCanvas({
+  origin,
+  destination,
+  driverPosition,
+  userPosition,
+  height,
+  gestureHandling = "cooperative",
+}: TripMapProps & { gestureHandling?: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const driverMarkerRef = useRef<any>(null);
@@ -72,12 +84,10 @@ export default function TripMap({ origin, destination, driverPosition, userPosit
   const initKey = useRef("");
   const driverPositionRef = useRef<LatLng | null>(driverPosition ?? null);
 
-  // Keep ref in sync so the async init always reads the latest value
   useEffect(() => {
     driverPositionRef.current = driverPosition ?? null;
   }, [driverPosition]);
 
-  // Init / reinit map when origin/destination change
   useEffect(() => {
     if (typeof window === "undefined" || !containerRef.current) return;
     const key = `${origin ?? ""}|${destination ?? ""}`;
@@ -97,7 +107,6 @@ export default function TripMap({ origin, destination, driverPosition, userPosit
       const google = (window as any).google;
       const defaultCenter = { lat: -33.45, lng: -70.65 };
 
-      // Create or reuse map
       if (!mapRef.current) {
         mapRef.current = new google.maps.Map(containerRef.current, {
           center: defaultCenter,
@@ -105,11 +114,10 @@ export default function TripMap({ origin, destination, driverPosition, userPosit
           mapTypeControl: false,
           streetViewControl: false,
           fullscreenControl: false,
-          gestureHandling: "cooperative",
+          gestureHandling,
         });
       }
 
-      // Remove old renderer
       if (directionsRendererRef.current) {
         directionsRendererRef.current.setMap(null);
         directionsRendererRef.current = null;
@@ -129,17 +137,12 @@ export default function TripMap({ origin, destination, driverPosition, userPosit
         directionsRendererRef.current = renderer;
 
         directionsService.route(
-          {
-            origin,
-            destination,
-            travelMode: google.maps.TravelMode.DRIVING,
-          },
+          { origin, destination, travelMode: google.maps.TravelMode.DRIVING },
           (result: any, status: string) => {
             if (cancelled) return;
             if (status === "OK") {
               renderer.setDirections(result);
             } else {
-              // Fallback: geocode and center
               const geocoder = new google.maps.Geocoder();
               geocoder.geocode({ address: origin }, (results: any, st: string) => {
                 if (cancelled || st !== "OK" || !results?.[0]) return;
@@ -148,7 +151,7 @@ export default function TripMap({ origin, destination, driverPosition, userPosit
                 new google.maps.Marker({ position: results[0].geometry.location, map, label: "A" });
               });
             }
-          }
+          },
         );
       } else if (origin || destination) {
         const addr = origin || destination;
@@ -161,8 +164,6 @@ export default function TripMap({ origin, destination, driverPosition, userPosit
         });
       }
 
-      // Driver marker — read from ref so we get the latest position even if
-      // it arrived while Google Maps was still loading
       const latestDriverPos = driverPositionRef.current;
       if (latestDriverPos) {
         if (driverMarkerRef.current) {
@@ -183,12 +184,9 @@ export default function TripMap({ origin, destination, driverPosition, userPosit
       }
     })();
 
-    return () => {
-      cancelled = true;
-    };
-  }, [origin, destination]);
+    return () => { cancelled = true; };
+  }, [origin, destination, gestureHandling]);
 
-  // Update driver marker position when it changes
   useEffect(() => {
     if (!mapRef.current || !driverPosition) return;
     const google = (window as any).google;
@@ -211,7 +209,6 @@ export default function TripMap({ origin, destination, driverPosition, userPosit
     }
   }, [driverPosition]);
 
-  // Update user marker position
   useEffect(() => {
     if (!mapRef.current || !userPosition) return;
     const google = (window as any).google;
@@ -234,7 +231,6 @@ export default function TripMap({ origin, destination, driverPosition, userPosit
     }
   }, [userPosition]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (directionsRendererRef.current) {
@@ -257,7 +253,144 @@ export default function TripMap({ origin, destination, driverPosition, userPosit
   return (
     <div
       ref={containerRef}
-      style={{ height, width: "100%", background: "#e5e3df" }}
+      style={{ height: height ?? "100%", width: "100%", background: "#e5e3df" }}
     />
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Main export: inline map + expand button + fullscreen modal         */
+/* ------------------------------------------------------------------ */
+
+export default function TripMap(props: TripMapProps) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <>
+      {/* Inline map with expand button */}
+      <div style={{ position: "relative" }}>
+        <MapCanvas {...props} gestureHandling="cooperative" />
+        {/* Expand button */}
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          style={{
+            position: "absolute",
+            bottom: 10,
+            right: 10,
+            width: 36,
+            height: 36,
+            borderRadius: 10,
+            background: "rgba(255,255,255,0.95)",
+            border: "1px solid #e2e8f0",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            zIndex: 5,
+          }}
+          title="Ampliar mapa"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 3 21 3 21 9" />
+            <polyline points="9 21 3 21 3 15" />
+            <line x1="21" y1="3" x2="14" y2="10" />
+            <line x1="3" y1="21" x2="10" y2="14" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Fullscreen modal */}
+      {expanded && createPortal(
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            background: "#000",
+            display: "flex",
+            flexDirection: "column",
+            animation: "tripMapExpandIn .25s ease both",
+          }}
+        >
+          {/* Header */}
+          <div style={{
+            padding: "10px 14px",
+            paddingTop: "calc(10px + env(safe-area-inset-top, 0px))",
+            background: "linear-gradient(135deg, #30455B, #243550)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexShrink: 0,
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
+              <span style={{ color: "#fff", fontSize: 14, fontWeight: 700 }}>Mapa del viaje</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setExpanded(false)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 34,
+                height: 34,
+                borderRadius: 10,
+                background: "rgba(255,255,255,0.1)",
+                border: "1px solid rgba(255,255,255,0.2)",
+                color: "#fff",
+                cursor: "pointer",
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Full map */}
+          <div style={{ flex: 1 }}>
+            <MapCanvas
+              {...props}
+              height={undefined}
+              gestureHandling="greedy"
+            />
+          </div>
+
+          {/* Legend */}
+          <div style={{
+            padding: "8px 14px",
+            paddingBottom: "calc(8px + env(safe-area-inset-bottom, 0px))",
+            background: "#1e293b",
+            display: "flex",
+            gap: 16,
+            flexShrink: 0,
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#21D0B3", border: "2px solid #062240" }} />
+              <span style={{ fontSize: 11, color: "#94a3b8" }}>Conductor</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#2563eb", border: "2px solid #fff" }} />
+              <span style={{ fontSize: 11, color: "#94a3b8" }}>Tu posición</span>
+            </div>
+          </div>
+
+          <style>{`
+            @keyframes tripMapExpandIn {
+              from { opacity: 0; transform: scale(0.95); }
+              to { opacity: 1; transform: scale(1); }
+            }
+          `}</style>
+        </div>,
+        document.body,
+      )}
+    </>
   );
 }
