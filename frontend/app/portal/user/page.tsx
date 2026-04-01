@@ -156,10 +156,6 @@ export default function UserPortalPage() {
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [venues, setVenues] = useState<VenueItem[]>([]);
   const [healthRecord, setHealthRecord] = useState<Record<string, any> | null>(null);
-  const [showHealthForm, setShowHealthForm] = useState(false);
-  const [healthSaving, setHealthSaving] = useState(false);
-  const signatureCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const sigDrawingRef = useRef(false);
   const notify = useNotifications();
   const prevTripStatus = useRef<string | null>(null);
   const arrivedNotified = useRef<string | null>(null); // tracks which segment was already notified
@@ -247,9 +243,8 @@ export default function UserPortalPage() {
         ]);
         setCalendarEvents(
           (calData || [])
-            .filter((e) => new Date(e.startAtUtc) >= new Date())
             .sort((a, b) => new Date(a.startAtUtc).getTime() - new Date(b.startAtUtc).getTime())
-            .slice(0, 20),
+            .slice(0, 30),
         );
         setVenues(venueData || []);
       } catch { setCalendarEvents([]); setVenues([]); }
@@ -1018,17 +1013,19 @@ export default function UserPortalPage() {
         )}
 
         {/* ── Sports Calendar ── */}
-        {calendarEvents.length > 0 && (
-          <div className="db-card" style={{ marginBottom:16 }}>
-            <div style={{ position:"absolute",top:0,right:0,width:"120px",height:"120px",borderRadius:"50%",background:"radial-gradient(ellipse,rgba(33,208,179,0.09) 0%,transparent 70%)",transform:"translate(30px,-30px)",pointerEvents:"none" }} />
-            <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:14 }}>
-              <div style={{ width:40,height:40,borderRadius:12,background:"linear-gradient(135deg,rgba(33,208,179,0.18),rgba(33,208,179,0.06))",border:"1px solid rgba(33,208,179,0.25)",display:"flex",alignItems:"center",justifyContent:"center",color:"#21D0B3",flexShrink:0 }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                </svg>
-              </div>
-              <span style={{ fontSize:10,fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:"#21D0B3" }}>Calendario</span>
+        <div className="db-card" style={{ marginBottom:16 }}>
+          <div style={{ position:"absolute",top:0,right:0,width:"120px",height:"120px",borderRadius:"50%",background:"radial-gradient(ellipse,rgba(33,208,179,0.09) 0%,transparent 70%)",transform:"translate(30px,-30px)",pointerEvents:"none" }} />
+          <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:14 }}>
+            <div style={{ width:40,height:40,borderRadius:12,background:"linear-gradient(135deg,rgba(33,208,179,0.18),rgba(33,208,179,0.06))",border:"1px solid rgba(33,208,179,0.25)",display:"flex",alignItems:"center",justifyContent:"center",color:"#21D0B3",flexShrink:0 }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
             </div>
+            <span style={{ fontSize:10,fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:"#21D0B3" }}>Calendario deportivo</span>
+          </div>
+          {calendarEvents.length === 0 ? (
+            <p style={{ fontSize:12.5,color:"#94a3b8",margin:0,textAlign:"center",padding:"8px 0" }}>Sin actividades programadas</p>
+          ) : (
             <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
               {calendarEvents.map((ce) => {
                 const schedType = (ce.metadata as any)?.scheduleType;
@@ -1050,8 +1047,8 @@ export default function UserPortalPage() {
                 );
               })}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* ── Health Form ── */}
         <div className="db-card" style={{ marginBottom:16 }}>
@@ -1065,210 +1062,28 @@ export default function UserPortalPage() {
             <span style={{ fontSize:10,fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:"#21D0B3" }}>Ficha de Salud</span>
           </div>
           {healthRecord?.participantSignature ? (
-            <div style={{ display:"flex",alignItems:"center",gap:10 }}>
-              <span style={{ width:8,height:8,borderRadius:"50%",background:"#10b981" }} />
-              <p style={{ fontSize:13,color:"#0f172a",margin:0,fontWeight:600 }}>Ficha completada y firmada</p>
+            <div>
+              <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:10 }}>
+                <span style={{ width:8,height:8,borderRadius:"50%",background:"#10b981" }} />
+                <p style={{ fontSize:13,color:"#0f172a",margin:0,fontWeight:600 }}>Ficha completada y firmada</p>
+              </div>
+              <a href={`/portal/athlete/salud?athleteId=${athlete.id}`}
+                style={{ display:"inline-flex",alignItems:"center",gap:6,fontSize:12,fontWeight:600,color:"#21D0B3",textDecoration:"none" }}>
+                Ver o editar ficha →
+              </a>
             </div>
           ) : (
             <>
               <p style={{ fontSize:12.5,color:"#64748b",margin:"0 0 12px",lineHeight:1.5 }}>
                 Completa tu ficha de salud con datos médicos, alergias, contacto de emergencia y firma digital.
               </p>
-              <button type="button" onClick={() => setShowHealthForm(true)}
-                style={{ width:"100%",padding:12,borderRadius:12,border:"none",background:"linear-gradient(135deg,#21D0B3,#14AE98)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",boxShadow:"0 2px 10px rgba(33,208,179,0.3)" }}>
+              <a href={`/portal/athlete/salud?athleteId=${athlete.id}`}
+                style={{ display:"block",width:"100%",padding:12,borderRadius:12,border:"none",background:"linear-gradient(135deg,#21D0B3,#14AE98)",color:"#fff",fontSize:13,fontWeight:700,textAlign:"center",textDecoration:"none",boxShadow:"0 2px 10px rgba(33,208,179,0.3)",boxSizing:"border-box" }}>
                 Completar ficha de salud
-              </button>
+              </a>
             </>
           )}
         </div>
-
-        {/* ── Health Form Modal ── */}
-        {showHealthForm && athlete && (
-          <div
-            onClick={() => setShowHealthForm(false)}
-            style={{ position:"fixed",inset:0,background:"rgba(2,12,24,0.65)",zIndex:100,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(4px)" }}
-          >
-            <div
-              onClick={(e) => e.stopPropagation()}
-              style={{ background:"#fff",borderRadius:"20px 20px 0 0",width:"100%",maxWidth:480,maxHeight:"85vh",overflowY:"auto",padding:"20px 18px",WebkitOverflowScrolling:"touch" as any }}
-            >
-              <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16 }}>
-                <h3 style={{ fontSize:16,fontWeight:700,color:"#0f172a",margin:0 }}>Ficha de Salud</h3>
-                <button type="button" onClick={() => setShowHealthForm(false)}
-                  style={{ width:30,height:30,borderRadius:8,border:"1px solid #e2e8f0",background:"#f8fafc",color:"#64748b",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
-              </div>
-
-              <form onSubmit={async (e) => {
-                e.preventDefault();
-                const form = e.target as HTMLFormElement;
-                const fd = new FormData(form);
-                const record: Record<string, any> = {
-                  personal: {
-                    fullName: athlete.fullName,
-                    allergic: fd.get("allergic") || "NO",
-                    chronicDiseases: fd.get("chronicDiseases") || "",
-                    medications: fd.get("medications") || "",
-                    specialDiet: fd.get("specialDiet") || "",
-                  },
-                  emergency: {
-                    name: fd.get("emergencyName") || "",
-                    phone: fd.get("emergencyPhone") || "",
-                    relation: fd.get("emergencyRelation") || "",
-                  },
-                  signedAt: new Date().toISOString(),
-                };
-
-                // Get signature from canvas
-                const canvas = signatureCanvasRef.current;
-                if (canvas) {
-                  record.participantSignature = canvas.toDataURL("image/png");
-                }
-
-                setHealthSaving(true);
-                try {
-                  await apiFetch(`/athletes/${athlete.id}`, {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ metadata: { ...(athlete as any).metadata, healthRecord: record } }),
-                  });
-                  setHealthRecord(record);
-                  setShowHealthForm(false);
-                  notify.push("Ficha de salud guardada", "✅");
-                } catch {
-                  notify.push("No se pudo guardar la ficha", "❌");
-                } finally { setHealthSaving(false); }
-              }} style={{ display:"flex",flexDirection:"column",gap:12 }}>
-
-                <div>
-                  <label style={{ fontSize:11,fontWeight:600,color:"#64748b",display:"block",marginBottom:3 }}>¿Tiene alergias?</label>
-                  <select name="allergic" defaultValue={healthRecord?.personal?.allergic || "NO"}
-                    style={{ width:"100%",height:38,borderRadius:10,border:"1px solid #e2e8f0",fontSize:13,padding:"0 10px" }}>
-                    <option value="NO">No</option>
-                    <option value="YES">Sí</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ fontSize:11,fontWeight:600,color:"#64748b",display:"block",marginBottom:3 }}>Enfermedades crónicas</label>
-                  <input name="chronicDiseases" defaultValue={healthRecord?.personal?.chronicDiseases || ""}
-                    placeholder="Ej: Diabetes, Hipertensión..."
-                    style={{ width:"100%",height:38,borderRadius:10,border:"1px solid #e2e8f0",fontSize:13,padding:"0 10px",boxSizing:"border-box" }} />
-                </div>
-
-                <div>
-                  <label style={{ fontSize:11,fontWeight:600,color:"#64748b",display:"block",marginBottom:3 }}>Medicamentos actuales</label>
-                  <input name="medications" defaultValue={healthRecord?.personal?.medications || ""}
-                    placeholder="Ej: Insulina, Metformina..."
-                    style={{ width:"100%",height:38,borderRadius:10,border:"1px solid #e2e8f0",fontSize:13,padding:"0 10px",boxSizing:"border-box" }} />
-                </div>
-
-                <div>
-                  <label style={{ fontSize:11,fontWeight:600,color:"#64748b",display:"block",marginBottom:3 }}>Dieta especial</label>
-                  <input name="specialDiet" defaultValue={healthRecord?.personal?.specialDiet || ""}
-                    placeholder="Ej: Vegetariano, Sin gluten..."
-                    style={{ width:"100%",height:38,borderRadius:10,border:"1px solid #e2e8f0",fontSize:13,padding:"0 10px",boxSizing:"border-box" }} />
-                </div>
-
-                <div style={{ borderTop:"1px solid #f1f5f9",paddingTop:12 }}>
-                  <p style={{ fontSize:11,fontWeight:700,color:"#21D0B3",letterSpacing:"0.15em",textTransform:"uppercase",margin:"0 0 8px" }}>Contacto de emergencia</p>
-                </div>
-
-                <div>
-                  <label style={{ fontSize:11,fontWeight:600,color:"#64748b",display:"block",marginBottom:3 }}>Nombre</label>
-                  <input name="emergencyName" defaultValue={healthRecord?.emergency?.name || ""} required
-                    style={{ width:"100%",height:38,borderRadius:10,border:"1px solid #e2e8f0",fontSize:13,padding:"0 10px",boxSizing:"border-box" }} />
-                </div>
-                <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:8 }}>
-                  <div>
-                    <label style={{ fontSize:11,fontWeight:600,color:"#64748b",display:"block",marginBottom:3 }}>Teléfono</label>
-                    <input name="emergencyPhone" defaultValue={healthRecord?.emergency?.phone || ""} required
-                      style={{ width:"100%",height:38,borderRadius:10,border:"1px solid #e2e8f0",fontSize:13,padding:"0 10px",boxSizing:"border-box" }} />
-                  </div>
-                  <div>
-                    <label style={{ fontSize:11,fontWeight:600,color:"#64748b",display:"block",marginBottom:3 }}>Relación</label>
-                    <input name="emergencyRelation" defaultValue={healthRecord?.emergency?.relation || ""}
-                      placeholder="Ej: Madre, Padre..."
-                      style={{ width:"100%",height:38,borderRadius:10,border:"1px solid #e2e8f0",fontSize:13,padding:"0 10px",boxSizing:"border-box" }} />
-                  </div>
-                </div>
-
-                <div style={{ borderTop:"1px solid #f1f5f9",paddingTop:12 }}>
-                  <p style={{ fontSize:11,fontWeight:700,color:"#21D0B3",letterSpacing:"0.15em",textTransform:"uppercase",margin:"0 0 8px" }}>Firma del participante</p>
-                  <div style={{ border:"1px solid #e2e8f0",borderRadius:12,overflow:"hidden",background:"#fafcfb",touchAction:"none" }}>
-                    <canvas
-                      ref={signatureCanvasRef}
-                      width={340}
-                      height={120}
-                      style={{ width:"100%",height:120,display:"block",cursor:"crosshair" }}
-                      onMouseDown={(e) => {
-                        sigDrawingRef.current = true;
-                        const ctx = signatureCanvasRef.current?.getContext("2d");
-                        if (!ctx) return;
-                        const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
-                        const scaleX = 340 / rect.width;
-                        ctx.beginPath();
-                        ctx.moveTo((e.clientX - rect.left) * scaleX, e.clientY - rect.top);
-                      }}
-                      onMouseMove={(e) => {
-                        if (!sigDrawingRef.current) return;
-                        const ctx = signatureCanvasRef.current?.getContext("2d");
-                        if (!ctx) return;
-                        const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
-                        const scaleX = 340 / rect.width;
-                        ctx.lineWidth = 2;
-                        ctx.strokeStyle = "#0f172a";
-                        ctx.lineCap = "round";
-                        ctx.lineTo((e.clientX - rect.left) * scaleX, e.clientY - rect.top);
-                        ctx.stroke();
-                      }}
-                      onMouseUp={() => { sigDrawingRef.current = false; }}
-                      onMouseLeave={() => { sigDrawingRef.current = false; }}
-                      onTouchStart={(e) => {
-                        e.preventDefault();
-                        sigDrawingRef.current = true;
-                        const ctx = signatureCanvasRef.current?.getContext("2d");
-                        if (!ctx) return;
-                        const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
-                        const touch = e.touches[0];
-                        const scaleX = 340 / rect.width;
-                        ctx.beginPath();
-                        ctx.moveTo((touch.clientX - rect.left) * scaleX, touch.clientY - rect.top);
-                      }}
-                      onTouchMove={(e) => {
-                        e.preventDefault();
-                        if (!sigDrawingRef.current) return;
-                        const ctx = signatureCanvasRef.current?.getContext("2d");
-                        if (!ctx) return;
-                        const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
-                        const touch = e.touches[0];
-                        const scaleX = 340 / rect.width;
-                        ctx.lineWidth = 2;
-                        ctx.strokeStyle = "#0f172a";
-                        ctx.lineCap = "round";
-                        ctx.lineTo((touch.clientX - rect.left) * scaleX, touch.clientY - rect.top);
-                        ctx.stroke();
-                      }}
-                      onTouchEnd={() => { sigDrawingRef.current = false; }}
-                    />
-                  </div>
-                  <button type="button" onClick={() => {
-                    const ctx = signatureCanvasRef.current?.getContext("2d");
-                    if (ctx) ctx.clearRect(0, 0, 340, 120);
-                  }} style={{ fontSize:11,color:"#94a3b8",background:"none",border:"none",cursor:"pointer",marginTop:4,padding:4 }}>
-                    Limpiar firma
-                  </button>
-                </div>
-
-                <button type="submit" disabled={healthSaving}
-                  style={{ width:"100%",padding:14,borderRadius:14,border:"none",background: healthSaving ? "#e2e8f0" : "linear-gradient(135deg,#21D0B3,#14AE98)",color: healthSaving ? "#94a3b8" : "#fff",fontSize:14,fontWeight:700,cursor: healthSaving ? "not-allowed" : "pointer",marginTop:4 }}>
-                  {healthSaving ? "Guardando..." : "Guardar ficha de salud"}
-                </button>
-              </form>
-            </div>
-          </div>
-        )}
 
         {/* ── Trip detail modal ── */}
         {showTripModal && trip && (

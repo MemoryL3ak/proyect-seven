@@ -153,6 +153,7 @@ export default function DeportesPage() {
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [delegations, setDelegations] = useState<Delegation[]>([]);
   const [athletes, setAthletes] = useState<Athlete[]>([]);
+  const [venueOptions, setVenueOptions] = useState<{ id: string; name: string; address?: string | null; eventId?: string | null }[]>([]);
 
   // ── UI state
   const [tab, setTab] = useState<"cupos" | "pruebas" | "calendario">("cupos");
@@ -184,17 +185,19 @@ export default function DeportesPage() {
     setLoading(true);
     setError(null);
     try {
-      const [eventData, disciplineData, delegationData, athleteData] = await Promise.all([
+      const [eventData, disciplineData, delegationData, athleteData, venueData] = await Promise.all([
         apiFetch<EventItem[]>("/events"),
         apiFetch<Discipline[]>("/disciplines"),
         apiFetch<Delegation[]>("/delegations"),
         apiFetch<Athlete[]>("/athletes"),
+        apiFetch<{ id: string; name: string; address?: string | null; eventId?: string | null }[]>("/venues"),
       ]);
       const safeEvents = Array.isArray(eventData) ? eventData : [];
       setEvents(safeEvents);
       setDisciplines(Array.isArray(disciplineData) ? disciplineData : []);
       setDelegations(Array.isArray(delegationData) ? delegationData : []);
       setAthletes(filterValidatedAthletes(Array.isArray(athleteData) ? athleteData : []));
+      setVenueOptions(Array.isArray(venueData) ? venueData : []);
       if (!selectedEventId && safeEvents.length > 0) setSelectedEventId(safeEvents[0].id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo cargar planificación deportiva");
@@ -948,12 +951,18 @@ export default function DeportesPage() {
 
               <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                 <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Recinto")}</span>
-                <input
+                <select
                   style={fieldStyle}
                   value={pruebaForm.venueName}
                   onChange={e => setPruebaForm(f => ({ ...f, venueName: e.target.value }))}
-                  placeholder="ej: Estadio Nacional"
-                />
+                >
+                  <option value="">{t("Selecciona una sede")}</option>
+                  {venueOptions
+                    .filter((v) => !selectedEventId || v.eventId === selectedEventId)
+                    .map((v) => (
+                      <option key={v.id} value={v.name}>{v.name}{v.address ? ` — ${v.address}` : ""}</option>
+                    ))}
+                </select>
               </label>
             </div>
 
