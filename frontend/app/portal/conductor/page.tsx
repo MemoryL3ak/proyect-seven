@@ -274,7 +274,7 @@ export default function DriverPortalPage() {
   const requestLocationPermission = (): Promise<boolean> => {
     return new Promise((resolve) => {
       if (!navigator.geolocation) {
-        alert("Tu navegador no soporta geolocalización. El tracking GPS no estará disponible.");
+        driverNotify.push("Tu navegador no soporta geolocalización", "⚠️");
         resolve(false);
         return;
       }
@@ -282,13 +282,13 @@ export default function DriverPortalPage() {
         () => resolve(true),
         (err) => {
           if (err.code === err.PERMISSION_DENIED) {
-            alert("Debes permitir el acceso a tu ubicación para iniciar el viaje. Activa la ubicación en los ajustes de tu navegador.");
+            driverNotify.push("Activa la ubicación en ajustes del navegador para iniciar el viaje", "📍");
           } else {
-            alert("No se pudo obtener tu ubicación. Verifica que el GPS esté activado.");
+            driverNotify.push("No se pudo obtener tu ubicación. Verifica que el GPS esté activado", "📍");
           }
           resolve(false);
         },
-        { enableHighAccuracy: true, timeout: 10000 }
+        { enableHighAccuracy: true, timeout: 20000, maximumAge: 30000 }
       );
     });
   };
