@@ -1228,7 +1228,7 @@ export default function DriverPortalPage() {
         <TripChat
           tripId={trackingTripId}
           senderType="DRIVER"
-          senderName={driverProfile.fullName}
+          senderName={driverProfile.fullName || "Conductor"}
           onNewMessage={(name, content) => driverNotify.push(`${name}: ${content.slice(0, 80)}`, "💬")}
         />
       )}
