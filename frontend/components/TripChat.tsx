@@ -112,8 +112,28 @@ export default function TripChat({ tripId, senderType, senderName, pollInterval 
         setMessages((prev) =>
           prev.some((m) => m.id === saved.id) ? prev : [...prev, saved],
         );
+      } else {
+        // Optimistic: show message locally even if backend didn't return it
+        setMessages((prev) => [...prev, {
+          id: `local-${Date.now()}`,
+          tripId,
+          senderType,
+          senderName,
+          content: text,
+          createdAt: new Date().toISOString(),
+        }]);
       }
-    } catch { /* will appear on next poll */ }
+    } catch {
+      // Optimistic: show message locally even on error
+      setMessages((prev) => [...prev, {
+        id: `local-${Date.now()}`,
+        tripId,
+        senderType,
+        senderName,
+        content: text,
+        createdAt: new Date().toISOString(),
+      }]);
+    }
     setSending(false);
     inputRef.current?.focus();
   }, [input, sending, tripId, senderType, senderName]);
