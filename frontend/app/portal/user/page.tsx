@@ -1120,7 +1120,7 @@ export default function UserPortalPage() {
         )}
 
         {/* ── Trip Chat (active trips only) ── */}
-        {trip && ["EN_ROUTE", "PICKED_UP"].includes(trip.status ?? "") && (
+        {trip && ["SCHEDULED", "EN_ROUTE", "PICKED_UP"].includes(trip.status ?? "") && (
           <TripChat
             tripId={trip.id}
             senderType="PASSENGER"

@@ -224,7 +224,7 @@ export default function DriverPortalPage() {
 
       // Auto-resume tracking if there's already an active trip
       const activeTrip = filteredTrips.find(
-        (trip) => trip.status === "EN_ROUTE" || trip.status === "PICKED_UP"
+        (trip) => trip.status === "SCHEDULED" || trip.status === "EN_ROUTE" || trip.status === "PICKED_UP"
       );
       if (activeTrip) {
         setTrackingTripId(activeTrip.id);
@@ -316,7 +316,7 @@ export default function DriverPortalPage() {
         body: JSON.stringify(payload)
       });
       setTrips((prev) => prev.map((trip) => (trip.id === updated.id ? updated : trip)));
-      if (status === "EN_ROUTE" || status === "PICKED_UP") {
+      if (status === "SCHEDULED" || status === "EN_ROUTE" || status === "PICKED_UP") {
         setTrackingTripId(updated.id);
       }
       if (status === "DROPPED_OFF" || status === "COMPLETED") {
