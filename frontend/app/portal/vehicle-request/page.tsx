@@ -222,6 +222,7 @@ export default function VehicleRequestPortalPage() {
   const [drivers, setDrivers] = useState<Record<string, Driver>>({});
   const [vehicles, setVehicles] = useState<Record<string, Vehicle>>({});
   const [positionsByVehicle, setPositionsByVehicle] = useState<Record<string, PositionItem>>({});
+  const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
 
   const [selectedVehicleType, setSelectedVehicleType] = useState<string>("SEDAN");
   const [originAddress, setOriginAddress] = useState("");
@@ -616,6 +617,27 @@ export default function VehicleRequestPortalPage() {
     const timer = window.setInterval(pollTrips, 5000);
     return () => window.clearInterval(timer);
   }, [athlete?.id]);
+
+  // User geolocation + send to backend
+  useEffect(() => {
+    if (!athlete || !navigator.geolocation) return;
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setUserPos(coords);
+        if (activeChatTrip?.id && ["EN_ROUTE", "PICKED_UP"].includes(activeChatTrip.status ?? "")) {
+          apiFetch(`/trips/${activeChatTrip.id}/passenger-position`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(coords),
+          }).catch(() => {});
+        }
+      },
+      () => {},
+      { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 },
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, [athlete?.id, activeChatTrip?.id, activeChatTrip?.status]);
 
   useEffect(() => {
     if (activeTab !== "status") return;
@@ -1127,7 +1149,7 @@ export default function VehicleRequestPortalPage() {
                                   origin={trip.origin}
                                   destination={trip.destination || venue?.name}
                                   driverPosition={coords ? { lat: coords.lat, lng: coords.lng } : null}
-                                  userPosition={trip.passengerLat && trip.passengerLng ? { lat: trip.passengerLat, lng: trip.passengerLng } : null}
+                                  userPosition={userPos || (trip.passengerLat && trip.passengerLng ? { lat: trip.passengerLat, lng: trip.passengerLng } : null)}
                                   height={200}
                                 />
                                 <div style={{ padding:"8px 10px",background:"rgba(33,208,179,0.06)",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
