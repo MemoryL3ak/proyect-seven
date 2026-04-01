@@ -757,9 +757,25 @@ export default function DriverPortalPage() {
             <div className="dc-banner-glow" style={{ position:"absolute",bottom:"-1px",left:"0",right:"0",height:"2px",background:"linear-gradient(90deg,transparent,#21D0B3 30%,#34F3C6 50%,#21D0B3 70%,transparent)",pointerEvents:"none" }} />
             <div className="dc-banner-inner">
               <img src="/branding/LOGO-SEVEN-1.png" alt="Seven Arena" className="dc-banner-logo" />
-              <div className="dc-banner-tag">
-                <div style={{ width:6,height:6,borderRadius:"50%",background:"#21D0B3",boxShadow:"0 0 8px #21D0B3",animation:"dc-glow 2s ease-in-out infinite",flexShrink:0 }} />
-                <span>{t("Portal de Conductores")}</span>
+              <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+                <NotificationBell
+                  notifications={driverNotify.notifications}
+                  unreadCount={driverNotify.unreadCount}
+                  onMarkAllRead={driverNotify.markAllRead}
+                  onClear={driverNotify.clear}
+                />
+                <button type="button" onClick={loadTrips} disabled={loading}
+                  style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",cursor:"pointer",flexShrink:0,opacity:loading?0.5:1 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+                  </svg>
+                </button>
+                <button type="button" onClick={() => { setDriverProfile(null); setDriverId(""); setTrips([]); }}
+                  style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(255,255,255,0.15)",background:"rgba(255,255,255,0.08)",cursor:"pointer",flexShrink:0 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+                  </svg>
+                </button>
               </div>
             </div>
           </div>
@@ -803,27 +819,6 @@ export default function DriverPortalPage() {
                   </div>
                 </div>
               </div>
-              <NotificationBell
-                notifications={driverNotify.notifications}
-                unreadCount={driverNotify.unreadCount}
-                onMarkAllRead={driverNotify.markAllRead}
-                onClear={driverNotify.clear}
-              />
-              <button type="button" onClick={loadTrips} disabled={loading}
-                style={{ display:"flex",alignItems:"center",gap:"8px",padding:"10px 16px",borderRadius:"14px",border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.08)",color:"#21D0B3",fontSize:"13px",fontWeight:600,cursor:"pointer",flexShrink:0,transition:"all .2s",whiteSpace:"nowrap",opacity:loading?0.6:1 }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
-                </svg>
-                <span className="dc-btn-text">{t("Actualizar")}</span>
-              </button>
-              <button type="button" className="dc-logout"
-                onClick={() => { setDriverProfile(null); setDriverId(""); setTrips([]); }}
-                style={{ display:"flex",alignItems:"center",gap:"8px",padding:"10px 16px",borderRadius:"14px",border:"1px solid #e2e8f0",background:"#f8fafc",color:"#64748b",fontSize:"13px",fontWeight:600,cursor:"pointer",flexShrink:0,transition:"all .2s",whiteSpace:"nowrap" }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-                </svg>
-                <span className="dc-btn-text">{t("Cerrar sesión")}</span>
-              </button>
             </div>
 
             {/* Info cards */}
