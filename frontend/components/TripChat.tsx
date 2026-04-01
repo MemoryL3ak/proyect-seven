@@ -103,11 +103,16 @@ export default function TripChat({ tripId, senderType, senderName, pollInterval 
     setInput("");
     setSending(true);
     try {
-      await apiFetch(`/trips/${tripId}/messages`, {
+      const saved = await apiFetch<ChatMessage>(`/trips/${tripId}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ senderType, senderName, content: text }),
       });
+      if (saved?.id) {
+        setMessages((prev) =>
+          prev.some((m) => m.id === saved.id) ? prev : [...prev, saved],
+        );
+      }
     } catch { /* will appear on next poll */ }
     setSending(false);
     inputRef.current?.focus();
