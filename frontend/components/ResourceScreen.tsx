@@ -752,17 +752,32 @@ export default function ResourceScreen({
       setDriverLookup(lookup);
       // Regular drivers: indexed by userId (linked auth user)
       // Provider participant choferes: no userId, use their own id
+      const resolvePlate = (driver: any) => {
+        if (driver.vehicleId) {
+          const v = vehicleLookup[driver.vehicleId];
+          if (v?.plate) return v.plate;
+        }
+        const meta = driver.metadata ?? {};
+        return meta.vehiclePatente ?? meta.vehiclePlate ?? null;
+      };
       const userOptions = [
         ...(data || [])
           .filter((driver) => driver.userId)
-          .map((driver) => ({
-            label: driver.fullName ?? driver.userId,
-            value: driver.userId,
-          })),
-        ...participantDrivers.map((p) => ({
-          label: p.fullName ?? p.id,
-          value: p.id,
-        })),
+          .map((driver) => {
+            const plate = resolvePlate(driver);
+            return {
+              label: plate ? `${driver.fullName ?? driver.userId} · ${plate}` : (driver.fullName ?? driver.userId),
+              value: driver.userId,
+            };
+          }),
+        ...participantDrivers.map((p) => {
+          const meta = (p.metadata ?? {}) as Record<string, unknown>;
+          const plate = meta.vehiclePatente ?? meta.vehiclePlate ?? null;
+          return {
+            label: plate ? `${p.fullName ?? p.id} · ${plate}` : (p.fullName ?? p.id),
+            value: p.id,
+          };
+        }),
       ];
       setDriverUserOptions(userOptions);
     } catch (err) {
