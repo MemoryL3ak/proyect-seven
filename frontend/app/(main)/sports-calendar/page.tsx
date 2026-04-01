@@ -7,6 +7,7 @@ import { filterValidatedAthletes } from "@/lib/athletes";
 import StyledSelect from "@/components/StyledSelect";
 
 type EventOption = { id: string; name: string };
+type VenueOption = { id: string; name: string; address?: string | null; eventId?: string | null };
 type DisciplineOption = {
   id: string;
   name?: string | null;
@@ -108,6 +109,12 @@ function scheduleTypeCalendarCardClass(value?: string | null) {
   if (value === "COMPETITION") return "border border-emerald-500/20 bg-emerald-500/10";
   if (value === "DEPARTURE") return "border border-rose-500/20 bg-rose-500/10";
   return "border border-white/10 bg-white/5";
+}
+
+function venueLabelById(options: VenueOption[], idOrName?: string | null) {
+  if (!idOrName) return "";
+  const match = options.find((v) => v.id === idOrName);
+  return match?.name || idOrName;
 }
 
 function delegationLabelById(options: DelegationOption[], id?: string | null) {
@@ -305,6 +312,7 @@ export default function SportsCalendarPage() {
   const [eventOptions, setEventOptions] = useState<EventOption[]>([]);
   const [disciplineOptions, setDisciplineOptions] = useState<DisciplineOption[]>([]);
   const [delegationOptions, setDelegationOptions] = useState<DelegationOption[]>([]);
+  const [venueOptions, setVenueOptions] = useState<VenueOption[]>([]);
   const [athletes, setAthletes] = useState<AthleteAndItem[]>([]);
   const [selectedEventId, setSelectedEventId] = useState("");
   const [selectedDelegationId, setSelectedDelegationId] = useState("");
@@ -345,6 +353,15 @@ export default function SportsCalendarPage() {
       setDelegationOptions(Array.isArray(data) ? data : []);
     } catch {
       setDelegationOptions([]);
+    }
+  };
+
+  const loadVenues = async () => {
+    try {
+      const data = await apiFetch<VenueOption[]>("/venues");
+      setVenueOptions(Array.isArray(data) ? data : []);
+    } catch {
+      setVenueOptions([]);
     }
   };
 
@@ -404,12 +421,21 @@ export default function SportsCalendarPage() {
     loadEventOptions();
     loadDisciplines();
     loadDelegations();
+    loadVenues();
     loadAthletes();
   }, []);
 
   useEffect(() => {
     loadEntries();
   }, [monthCursor, selectedEventId, selectedDelegationId, sportFilter, phaseFilter, personFilter, statusFilter]);
+
+  const filteredVenueOptions = useMemo(
+    () =>
+      venueOptions.filter((v) =>
+        selectedEventId ? v.eventId === selectedEventId : true,
+      ),
+    [venueOptions, selectedEventId],
+  );
 
   const filteredDelegationOptions = useMemo(
     () =>
@@ -969,7 +995,7 @@ export default function SportsCalendarPage() {
                           {scheduleTypeLabel(getMetaString(entry.metadata, "scheduleType"))}
                         </p>
                         <p className="truncate text-[10px]" style={{ color: "#64748b" }}>
-                          {formatTime(entry.startAtUtc)} {entry.venue ? `- ${entry.venue}` : ""}
+                          {formatTime(entry.startAtUtc)} {entry.venue ? `- ${venueLabelById(venueOptions, entry.venue)}` : ""}
                         </p>
                       </div>
                     ))}
@@ -1141,7 +1167,12 @@ export default function SportsCalendarPage() {
                 }
                 required
               />
-              <input className="input" placeholder="Sede" value={newEntry.venue ?? ""} onChange={(e) => setNewEntry({ ...newEntry, venue: e.target.value })} />
+              <select className="input" value={newEntry.venue ?? ""} onChange={(e) => setNewEntry({ ...newEntry, venue: e.target.value })}>
+                <option value="">Selecciona una sede</option>
+                {filteredVenueOptions.map((v) => (
+                  <option key={v.id} value={v.id}>{v.name}{v.address ? ` — ${v.address}` : ""}</option>
+                ))}
+              </select>
               <div className="flex gap-2">
                 <button className="btn btn-primary flex-1" type="submit" disabled={saving || !selectedEventId || !selectedManualScheduleType || !getMetaString(newEntry.metadata, "disciplineId")}>
                   {selectedEventId ? (saving ? "Guardando..." : editingEntryId ? "Guardar cambios" : "Crear actividad") : "Selecciona evento principal"}
@@ -1195,7 +1226,7 @@ export default function SportsCalendarPage() {
                       </span>
                     ) : null}
                   </div>
-                  <p style={{ fontSize: "11px", color: "#64748b", marginTop: "4px" }}>{entry.venue ?? "Sede por confirmar"} · {entry.status ?? "SCHEDULED"}</p>
+                  <p style={{ fontSize: "11px", color: "#64748b", marginTop: "4px" }}>{venueLabelById(venueOptions, entry.venue) || "Sede por confirmar"} · {entry.status ?? "SCHEDULED"}</p>
                   {entry.source === "and-derived" && getMetaStringArray(entry.metadata, "disciplineNames").length ? (
                     <div style={{ marginTop: "8px" }}>
                       <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#94a3b8" }}>Detalle</p>
