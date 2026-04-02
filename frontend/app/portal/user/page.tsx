@@ -453,26 +453,45 @@ export default function UserPortalPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trip?.id, trip?.status]);
 
-  /* ─── user geolocation + send to backend ─── */
+  /* ─── user geolocation + send to backend (Safari-friendly) ─── */
   useEffect(() => {
     if (!athlete || !navigator.geolocation) return;
-    const watchId = navigator.geolocation.watchPosition(
-      (pos) => {
-        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        setUserPos(coords);
-        // Send position to backend so the conductor can see us
-        if (trip?.id && ["EN_ROUTE", "PICKED_UP"].includes(trip.status ?? "")) {
-          apiFetch(`/trips/${trip.id}/passenger-position`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(coords),
-          }).catch(() => {});
-        }
-      },
-      () => {},
-      { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
-    );
-    return () => navigator.geolocation.clearWatch(watchId);
+    let cleared = false;
+    let watchId: number | null = null;
+    let fallbackInterval: number | null = null;
+    let gotPosition = false;
+
+    const onPos = (pos: GeolocationPosition) => {
+      gotPosition = true;
+      const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      setUserPos(coords);
+      if (trip?.id && ["EN_ROUTE", "PICKED_UP"].includes(trip.status ?? "")) {
+        apiFetch(`/trips/${trip.id}/passenger-position`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(coords),
+        }).catch(() => {});
+      }
+    };
+    const opts: PositionOptions = { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 };
+
+    navigator.geolocation.getCurrentPosition(onPos, () => {}, opts);
+    watchId = navigator.geolocation.watchPosition(onPos, () => {}, opts);
+
+    // Safari fallback: poll if watchPosition doesn't fire
+    setTimeout(() => {
+      if (!gotPosition && !cleared) {
+        fallbackInterval = window.setInterval(() => {
+          navigator.geolocation.getCurrentPosition(onPos, () => {}, { enableHighAccuracy: false, maximumAge: 15000, timeout: 20000 });
+        }, 5000);
+      }
+    }, 10000);
+
+    return () => {
+      cleared = true;
+      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+      if (fallbackInterval) window.clearInterval(fallbackInterval);
+    };
   }, [athlete?.id]);
 
   /* ─── helpers ─── */

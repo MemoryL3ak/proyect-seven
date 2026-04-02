@@ -302,7 +302,7 @@ export default function TripChat({ tripId, senderType, senderName, pollInterval 
         /* ─── FAB ─── */
         .tripchat-fab {
           position: fixed;
-          bottom: 20px;
+          bottom: calc(70px + env(safe-area-inset-bottom, 0px));
           right: 16px;
           width: 48px;
           height: 48px;
@@ -451,13 +451,13 @@ export default function TripChat({ tripId, senderType, senderName, pollInterval 
         /* ─── Desktop: floating panel ─── */
         @media (min-width: 640px) {
           .tripchat-fab {
-            bottom: 24px;
+            bottom: calc(70px + env(safe-area-inset-bottom, 0px));
             right: 20px;
             width: 50px;
             height: 50px;
           }
           .tripchat-panel {
-            bottom: 84px;
+            bottom: calc(130px + env(safe-area-inset-bottom, 0px));
             left: auto;
             right: 20px;
             width: 360px;
