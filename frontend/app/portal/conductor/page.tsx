@@ -137,8 +137,10 @@ export default function DriverPortalPage() {
   const [requestLoading, setRequestLoading] = useState(false);
   const [requestError, setRequestError] = useState<string | null>(null);
   const [requestStatus, setRequestStatus] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"actividades" | "reportes" | "cuenta">("actividades");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("active");
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [destinationFilter, setDestinationFilter] = useState("");
   const [idError, setIdError] = useState<string | null>(null);
   const [pickupTrip, setPickupTrip] = useState<Trip | null>(null);
@@ -712,7 +714,9 @@ export default function DriverPortalPage() {
             .dc-banner-logo{height:52px;width:auto;object-fit:contain;filter:drop-shadow(0 0 18px rgba(33,208,179,0.5)) drop-shadow(0 2px 8px rgba(0,0,0,0.8));}
             .dc-banner-tag{display:flex;align-items:center;gap:8px;}
             .dc-banner-tag span{font-size:10px;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:rgba(33,208,179,0.9);}
-            .dc-content{max-width:920px;margin:0 auto;padding:24px 16px 72px;position:relative;z-index:1;}
+            .dc-content{max-width:920px;margin:0 auto;padding:24px 16px 90px;position:relative;z-index:1;}
+            .dc-bottom-tabs{position:fixed;bottom:0;left:0;right:0;z-index:50;background:#fff;border-top:1px solid #e2e8f0;display:flex;padding:4px 0 calc(4px + env(safe-area-inset-bottom,0px));box-shadow:0 -2px 12px rgba(0,0,0,0.06);}
+            .dc-tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 4px;background:none;border:none;cursor:pointer;font-size:10px;font-weight:600;transition:color .15s;-webkit-tap-highlight-color:transparent;}
             .dc-profile-card{background:#fff;border-radius:24px;border:1px solid rgba(226,232,240,0.8);padding:24px 28px;margin-bottom:20px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;animation:dc-in .4s cubic-bezier(0.16,1,0.3,1) both;box-shadow:0 4px 24px rgba(0,0,0,0.06);position:relative;overflow:hidden;}
             .dc-profile-body{display:flex;align-items:center;gap:20px;min-width:0;}
             .dc-avatar{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#21D0B3 0%,#062240 100%);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#fff;box-shadow:0 6px 24px rgba(33,208,179,0.4);letter-spacing:-0.02em;flex-shrink:0;}
@@ -727,7 +731,7 @@ export default function DriverPortalPage() {
             .dc-action-primary:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(33,208,179,0.4);}
             @media(max-width:640px){
               .dc-banner-inner{padding:8px 12px;}.dc-banner-logo{height:32px!important;}
-              .dc-content{padding:10px 8px 56px;}
+              .dc-content{padding:10px 8px 80px;}
               .dc-profile-card{padding:10px 12px;gap:8px;border-radius:16px;margin-bottom:8px;}
               .dc-profile-body{gap:10px;}
               .dc-avatar{width:36px!important;height:36px!important;font-size:13px!important;}
@@ -782,7 +786,8 @@ export default function DriverPortalPage() {
 
           <div className="dc-content">
 
-            {/* Notifications are shown via the NotificationBell in the profile card */}
+            {/* ─── TAB: Actividades ─── */}
+            {activeTab === "actividades" && (<>
 
             {/* Profile card */}
             <div className="dc-profile-card">
@@ -1167,7 +1172,178 @@ export default function DriverPortalPage() {
               )}
             </div>
 
+            </>)}
+
+            {/* ─── TAB: Reportes ─── */}
+            {activeTab === "reportes" && (
+              <div className="dc-trips-section">
+                <h2 style={{ fontSize:16,fontWeight:800,color:"#0f172a",margin:"0 0 14px" }}>Historial de viajes</h2>
+                {(() => {
+                  const completed = trips.filter((t) => t.status === "COMPLETED" || t.status === "DROPPED_OFF");
+                  if (completed.length === 0) return <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:"20px 0" }}>Sin viajes completados</p>;
+                  return (
+                    <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
+                      {completed.map((trip) => {
+                        const veh = trip.vehicleId ? vehicles[trip.vehicleId] : null;
+                        const completedDate = trip.completedAt || trip.startedAt;
+                        return (
+                          <div key={trip.id} style={{ padding:"12px 14px",borderRadius:14,background:"#f8fafc",border:"1px solid #f1f5f9",display:"flex",alignItems:"center",gap:10 }}>
+                            <div style={{ width:36,height:36,borderRadius:10,background:"linear-gradient(135deg,rgba(33,208,179,0.15),rgba(33,208,179,0.05))",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            </div>
+                            <div style={{ flex:1,minWidth:0 }}>
+                              <p style={{ fontSize:13,fontWeight:600,color:"#0f172a",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                                {trip.origin?.split(",")[0] || "—"} → {trip.destination?.split(",")[0] || "—"}
+                              </p>
+                              <p style={{ fontSize:10.5,color:"#64748b",margin:"2px 0 0" }}>
+                                {completedDate ? new Date(completedDate).toLocaleDateString("es-CL",{ day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit" }) : "—"}
+                                {veh?.plate ? ` · ${veh.plate}` : ""}
+                                {trip.tripCost ? ` · $${Number(trip.tripCost).toLocaleString("es-CL")}` : ""}
+                              </p>
+                            </div>
+                            {trip.driverRating && (
+                              <div style={{ display:"flex",alignItems:"center",gap:2,flexShrink:0 }}>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="#FBBF24" stroke="#F59E0B" strokeWidth="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                <span style={{ fontSize:11,fontWeight:700,color:"#f59e0b" }}>{trip.driverRating}</span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
+            {/* ─── TAB: Cuenta ─── */}
+            {activeTab === "cuenta" && (
+              <div style={{ display:"flex",flexDirection:"column",gap:12 }}>
+                {/* Credential card */}
+                <div style={{ background:"linear-gradient(135deg,#041a2e,#062240)",borderRadius:20,padding:"24px 20px",color:"#fff",position:"relative",overflow:"hidden" }}>
+                  <div style={{ position:"absolute",top:0,right:0,width:200,height:200,borderRadius:"50%",background:"radial-gradient(ellipse,rgba(33,208,179,0.15) 0%,transparent 65%)",transform:"translate(60px,-60px)",pointerEvents:"none" }} />
+                  <p style={{ fontSize:9,fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:"#21D0B3",margin:"0 0 12px" }}>Credencial digital</p>
+                  <div style={{ display:"flex",alignItems:"center",gap:16 }}>
+                    <div style={{ position:"relative" }}>
+                      {driverProfile.photoUrl ? (
+                        <img src={driverProfile.photoUrl} alt="" style={{ width:72,height:72,borderRadius:"50%",objectFit:"cover",border:"3px solid #21D0B3" }} />
+                      ) : (
+                        <div style={{ width:72,height:72,borderRadius:"50%",background:"linear-gradient(135deg,#21D0B3,#0a3356)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,fontWeight:900,color:"#fff",border:"3px solid #21D0B3" }}>
+                          {(driverProfile.fullName || "C").split(" ").slice(0,2).map((w: string) => w[0] ?? "").join("").toUpperCase()}
+                        </div>
+                      )}
+                      <button type="button" onClick={async () => {
+                        const input = document.createElement("input");
+                        input.type = "file"; input.accept = "image/*"; input.capture = "environment";
+                        input.onchange = async () => {
+                          const file = input.files?.[0];
+                          if (!file || !driverProfile.id) return;
+                          setUploadingPhoto(true);
+                          try {
+                            const reader = new FileReader();
+                            const dataUrl = await new Promise<string>((resolve) => { reader.onload = () => resolve(reader.result as string); reader.readAsDataURL(file); });
+                            await apiFetch(`/drivers/${driverProfile.id}/photo`, {
+                              method: "POST", headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ dataUrl }),
+                            });
+                            const updated = await apiFetch<Driver>(`/drivers/${driverProfile.id}`);
+                            setDriverProfile(updated);
+                            driverNotify.push("Foto actualizada", "📷");
+                          } catch { driverNotify.push("No se pudo subir la foto", "❌"); }
+                          finally { setUploadingPhoto(false); }
+                        };
+                        input.click();
+                      }} disabled={uploadingPhoto}
+                        style={{ position:"absolute",bottom:-2,right:-2,width:26,height:26,borderRadius:"50%",background:"#21D0B3",border:"2px solid #062240",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#062240" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                      </button>
+                    </div>
+                    <div>
+                      <h2 style={{ fontSize:18,fontWeight:800,margin:"0 0 4px" }}>{driverProfile.fullName || "Conductor"}</h2>
+                      {driverProfile.rut && <p style={{ fontSize:12,color:"rgba(255,255,255,0.6)",margin:"0 0 2px" }}>RUT: {driverProfile.rut}</p>}
+                      {(() => { const p = driverProfile.providerId ? providers[driverProfile.providerId] : null; return p ? <p style={{ fontSize:12,color:"#21D0B3",margin:0,fontWeight:600 }}>{p.name}</p> : null; })()}
+                    </div>
+                  </div>
+                  <div style={{ marginTop:16,padding:"10px 14px",borderRadius:12,background:"rgba(33,208,179,0.12)",border:"1px solid rgba(33,208,179,0.25)",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+                    <span style={{ fontSize:11,fontWeight:600,color:"rgba(255,255,255,0.7)" }}>Código de acceso</span>
+                    <span style={{ fontSize:18,fontWeight:900,color:"#21D0B3",letterSpacing:"0.15em",fontFamily:"monospace" }}>{driverProfile.id?.slice(-6).toUpperCase()}</span>
+                  </div>
+                  <div style={{ marginTop:8,display:"flex",alignItems:"center",gap:6 }}>
+                    <span style={{ width:8,height:8,borderRadius:"50%",background: driverProfile.status === "ACTIVE" ? "#21D0B3" : "#f59e0b" }} />
+                    <span style={{ fontSize:11,color:"rgba(255,255,255,0.6)",fontWeight:600 }}>{driverProfile.status === "ACTIVE" ? "Activo" : driverProfile.status || "—"}</span>
+                  </div>
+                </div>
+
+                {/* Info cards (always visible on this tab) */}
+                <div style={{ display:"grid",gridTemplateColumns:"1fr",gap:10 }}>
+                  {/* Email */}
+                  <div style={{ padding:"12px 14px",borderRadius:14,background:"#fff",border:"1px solid #e2e8f0",display:"flex",alignItems:"center",gap:10 }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                    <div>
+                      <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Correo</p>
+                      <p style={{ fontSize:13,fontWeight:600,color:"#0f172a",margin:"2px 0 0",wordBreak:"break-all" }}>{driverProfile.email || "—"}</p>
+                    </div>
+                  </div>
+                  {/* Phone */}
+                  <div style={{ padding:"12px 14px",borderRadius:14,background:"#fff",border:"1px solid #e2e8f0",display:"flex",alignItems:"center",gap:10 }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+                    <div>
+                      <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Teléfono</p>
+                      <p style={{ fontSize:13,fontWeight:600,color:"#0f172a",margin:"2px 0 0" }}>{driverProfile.phone || "—"}</p>
+                    </div>
+                  </div>
+                  {/* Vehicle */}
+                  {(() => {
+                    const veh = driverProfile.vehicleId ? vehicles[driverProfile.vehicleId] : null;
+                    const meta = driverProfile.metadata ?? {};
+                    const plate = veh?.plate || (meta.vehiclePatente as string | null);
+                    const info = [veh?.type || meta.vehicleTipo, veh?.brand || meta.vehicleMarca, veh?.model || meta.vehicleModelo].filter(Boolean).join(" · ");
+                    return (
+                      <div style={{ padding:"12px 14px",borderRadius:14,background:"#fff",border:"1px solid #e2e8f0",display:"flex",alignItems:"center",gap:10 }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 17H3v-6l2.5-5h11L19 11v6h-2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg>
+                        <div>
+                          <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Vehículo</p>
+                          <p style={{ fontSize:13,fontWeight:600,color:"#0f172a",margin:"2px 0 0" }}>{plate?.toUpperCase() || "Sin asignar"}</p>
+                          {info && <p style={{ fontSize:11,color:"#64748b",margin:"1px 0 0" }}>{info}</p>}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  {/* Provider */}
+                  {(() => {
+                    const prov = driverProfile.providerId ? providers[driverProfile.providerId] : null;
+                    return (
+                      <div style={{ padding:"12px 14px",borderRadius:14,background:"#fff",border:"1px solid #e2e8f0",display:"flex",alignItems:"center",gap:10 }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+                        <div>
+                          <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Proveedor</p>
+                          <p style={{ fontSize:13,fontWeight:600,color:"#0f172a",margin:"2px 0 0" }}>{prov?.name || "Sin asignar"}</p>
+                          {prov?.rut && <p style={{ fontSize:11,color:"#64748b",margin:"1px 0 0" }}>RUT: {prov.rut}</p>}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
+
           </div>
+
+          {/* ─── Bottom Tab Bar ─── */}
+          <div className="dc-bottom-tabs">
+            {([
+              { key: "actividades" as const, label: "Actividades", icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 17H3v-6l2.5-5h11L19 11v6h-2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/><path d="M5 11h14"/></svg> },
+              { key: "reportes" as const, label: "Reportes", icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> },
+              { key: "cuenta" as const, label: "Cuenta", icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
+            ]).map((tab) => (
+              <button key={tab.key} type="button" className="dc-tab-btn" onClick={() => setActiveTab(tab.key)}
+                style={{ color: activeTab === tab.key ? "#21D0B3" : "#94a3b8" }}>
+                {tab.icon}
+                <span>{tab.label}</span>
+              </button>
+            ))}
+          </div>
+
         </div>
       )}
 
