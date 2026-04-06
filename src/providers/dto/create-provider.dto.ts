@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsObject, IsOptional, IsString } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsNumber, IsObject, IsOptional, IsString } from 'class-validator';
 
 export class CreateProviderDto {
   @IsString()
@@ -19,7 +19,31 @@ export class CreateProviderDto {
 
   @IsString()
   @IsOptional()
+  phone?: string;
+
+  @IsString()
+  @IsOptional()
   rut?: string;
+
+  @IsString()
+  @IsOptional()
+  address?: string;
+
+  @IsString()
+  @IsOptional()
+  city?: string;
+
+  @IsString()
+  @IsOptional()
+  contactName?: string;
+
+  @IsNumber()
+  @IsOptional()
+  bidAmount?: number;
+
+  @IsString()
+  @IsOptional()
+  status?: string;
 
   @IsObject()
   @IsOptional()

@@ -469,6 +469,13 @@ function FichaSaludContent() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-4 pb-16 md:p-8">
+      {/* Back button */}
+      <button type="button" onClick={() => window.history.back()}
+        style={{ display:"inline-flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",padding:0,color:"#21D0B3",fontSize:13,fontWeight:600 }}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+        Volver al portal
+      </button>
+
       {/* Header */}
       <div className="space-y-1">
         <p className="text-xs font-medium uppercase tracking-[0.3em]" style={{ color: "var(--text-faint)" }}>Seven Arena</p>

@@ -8,7 +8,9 @@ async function bootstrap() {
   const certDir = path.resolve(process.cwd(), 'frontend', 'certificates');
   const keyPath = path.join(certDir, 'localhost-key.pem');
   const certPath = path.join(certDir, 'localhost.pem');
-  const httpsOptions = fs.existsSync(keyPath) && fs.existsSync(certPath)
+  // Skip HTTPS if explicitly disabled (useful for LAN/mobile testing)
+  const disableHttps = process.env.NO_HTTPS === '1' || process.env.NO_HTTPS === 'true';
+  const httpsOptions = !disableHttps && fs.existsSync(keyPath) && fs.existsSync(certPath)
     ? { key: fs.readFileSync(keyPath), cert: fs.readFileSync(certPath) }
     : undefined;
 

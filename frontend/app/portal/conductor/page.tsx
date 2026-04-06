@@ -151,6 +151,11 @@ export default function DriverPortalPage() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
   const [destinationFilter, setDestinationFilter] = useState("");
+  const [reportDateFrom, setReportDateFrom] = useState("");
+  const [reportDateTo, setReportDateTo] = useState("");
+  const [reportTypeFilter, setReportTypeFilter] = useState<string>("all");
+  const [reportRatingFilter, setReportRatingFilter] = useState<string>("all");
+  const [showReportFilters, setShowReportFilters] = useState(false);
   const [idError, setIdError] = useState<string | null>(null);
   const [pickupTrip, setPickupTrip] = useState<Trip | null>(null);
   const [pickupCode, setPickupCode] = useState("");
@@ -1160,34 +1165,104 @@ export default function DriverPortalPage() {
 
             {/* ─── TAB: Reportes ─── */}
             {activeTab === "reportes" && (() => {
-              const completed = trips
+              const allCompleted = trips
                 .filter((t) => t.status === "COMPLETED" || t.status === "DROPPED_OFF")
                 .sort((a, b) => new Date(b.completedAt || b.startedAt || 0).getTime() - new Date(a.completedAt || a.startedAt || 0).getTime());
+
+              // Collect unique trip types for filter
+              const tripTypes = Array.from(new Set(allCompleted.map((t) => t.tripType).filter(Boolean))) as string[];
+
+              // Apply filters
+              const completed = allCompleted.filter((t) => {
+                // Date range
+                const tDate = new Date(t.completedAt || t.startedAt || 0);
+                if (reportDateFrom) {
+                  const from = new Date(reportDateFrom + "T00:00:00");
+                  if (tDate < from) return false;
+                }
+                if (reportDateTo) {
+                  const to = new Date(reportDateTo + "T23:59:59");
+                  if (tDate > to) return false;
+                }
+                // Trip type
+                if (reportTypeFilter !== "all" && t.tripType !== reportTypeFilter) return false;
+                // Rating
+                if (reportRatingFilter === "rated" && !t.driverRating) return false;
+                if (reportRatingFilter === "unrated" && t.driverRating) return false;
+                return true;
+              });
+
               const totalCost = completed.reduce((sum, t) => sum + (Number(t.tripCost) || 0), 0);
               const rated = completed.filter((t) => t.driverRating);
               const avgRating = rated.length > 0 ? (rated.reduce((sum, t) => sum + (t.driverRating || 0), 0) / rated.length).toFixed(1) : null;
+              const hasActiveFilters = reportDateFrom || reportDateTo || reportTypeFilter !== "all" || reportRatingFilter !== "all";
 
               return (
                 <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
                   {/* Summary stats */}
                   <div style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8 }}>
-                    <div style={{ padding:"10px",borderRadius:12,background:"#fff",border:"1px solid #e2e8f0",textAlign:"center" }}>
+                    <div style={{ padding:"12px 8px",borderRadius:12,background:"#fff",border:"1px solid #e2e8f0",textAlign:"center" }}>
                       <p style={{ fontSize:9,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Viajes</p>
-                      <p style={{ fontSize:22,fontWeight:800,color:"#0f172a",margin:"2px 0 0" }}>{completed.length}</p>
+                      <p style={{ fontSize:22,fontWeight:800,color:"#0f172a",margin:"4px 0 0" }}>{completed.length}</p>
                     </div>
-                    <div style={{ padding:"10px",borderRadius:12,background:"#fff",border:"1px solid #e2e8f0",textAlign:"center" }}>
+                    <div style={{ padding:"12px 8px",borderRadius:12,background:"#fff",border:"1px solid #e2e8f0",textAlign:"center" }}>
                       <p style={{ fontSize:9,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Total</p>
-                      <p style={{ fontSize:22,fontWeight:800,color:"#21D0B3",margin:"2px 0 0" }}>${totalCost.toLocaleString("es-CL")}</p>
+                      <p style={{ fontSize:22,fontWeight:800,color:"#21D0B3",margin:"4px 0 0" }}>${totalCost.toLocaleString("es-CL")}</p>
                     </div>
-                    <div style={{ padding:"10px",borderRadius:12,background:"#fff",border:"1px solid #e2e8f0",textAlign:"center" }}>
+                    <div style={{ padding:"12px 8px",borderRadius:12,background:"#fff",border:"1px solid #e2e8f0",textAlign:"center" }}>
                       <p style={{ fontSize:9,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Rating</p>
-                      <p style={{ fontSize:22,fontWeight:800,color:"#f59e0b",margin:"2px 0 0" }}>{avgRating ? `${avgRating} ⭐` : "—"}</p>
+                      <p style={{ fontSize:22,fontWeight:800,color:"#f59e0b",margin:"4px 0 0" }}>{avgRating ? `${avgRating} ⭐` : "—"}</p>
                     </div>
                   </div>
 
+                  {/* Filter toggle button */}
+                  <button type="button" onClick={() => setShowReportFilters(!showReportFilters)}
+                    style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"8px",borderRadius:10,
+                      background: hasActiveFilters ? "#21D0B3" : "#fff", border:"1px solid #e2e8f0",cursor:"pointer",width:"100%" }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={hasActiveFilters ? "#fff" : "#64748b"} strokeWidth="2" strokeLinecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+                    <span style={{ fontSize:12,fontWeight:600,color: hasActiveFilters ? "#fff" : "#64748b" }}>
+                      {showReportFilters ? "Ocultar filtros" : "Filtrar"}
+                    </span>
+                    {hasActiveFilters && <span style={{ background:"#fff",color:"#21D0B3",borderRadius:10,padding:"0 6px",fontSize:10,fontWeight:800 }}>{completed.length}/{allCompleted.length}</span>}
+                  </button>
+
+                  {/* Collapsible filters */}
+                  {showReportFilters && (
+                    <div style={{ background:"#fff",borderRadius:12,border:"1px solid #e2e8f0",padding:"10px 14px",display:"flex",flexDirection:"column",gap:8 }}>
+                      <div style={{ display:"flex",gap:10,alignItems:"center" }}>
+                        <label style={{ display:"flex",alignItems:"center",gap:6,flex:1,minWidth:0 }}>
+                          <span style={{ fontSize:11,fontWeight:700,color:"#64748b",flexShrink:0 }}>Desde</span>
+                          <input type="date" value={reportDateFrom} onChange={(e) => setReportDateFrom(e.target.value)}
+                            style={{ flex:1,minWidth:0,padding:"7px 6px",borderRadius:8,border:"1px solid #e2e8f0",fontSize:12,color:"#0f172a",background:"#f8fafc",boxSizing:"border-box" }} />
+                        </label>
+                        <label style={{ display:"flex",alignItems:"center",gap:6,flex:1,minWidth:0 }}>
+                          <span style={{ fontSize:11,fontWeight:700,color:"#64748b",flexShrink:0 }}>Hasta</span>
+                          <input type="date" value={reportDateTo} onChange={(e) => setReportDateTo(e.target.value)}
+                            style={{ flex:1,minWidth:0,padding:"7px 6px",borderRadius:8,border:"1px solid #e2e8f0",fontSize:12,color:"#0f172a",background:"#f8fafc",boxSizing:"border-box" }} />
+                        </label>
+                      </div>
+                      <label style={{ display:"flex",alignItems:"center",gap:6 }}>
+                        <span style={{ fontSize:11,fontWeight:700,color:"#64748b",flexShrink:0 }}>Tipo</span>
+                        <select value={reportTypeFilter} onChange={(e) => setReportTypeFilter(e.target.value)}
+                          style={{ flex:1,padding:"7px 10px",borderRadius:8,border:"1px solid #e2e8f0",fontSize:12,color:"#0f172a",background:"#f8fafc",boxSizing:"border-box" }}>
+                          <option value="all">Todos</option>
+                          {tripTypes.map((tt) => <option key={tt} value={tt}>{tt}</option>)}
+                        </select>
+                      </label>
+                      {hasActiveFilters && (
+                        <button type="button" onClick={() => { setReportDateFrom(""); setReportDateTo(""); setReportTypeFilter("all"); setReportRatingFilter("all"); }}
+                          style={{ fontSize:12,color:"#ef4444",background:"none",border:"none",cursor:"pointer",fontWeight:600,padding:0,alignSelf:"flex-end" }}>
+                          Limpiar filtros
+                        </button>
+                      )}
+                    </div>
+                  )}
+
                   {/* Trip list */}
-                  <div style={{ background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden" }}>
-                    <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:"#21D0B3",padding:"12px 14px 8px",margin:0 }}>Historial</p>
+                  <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+                    <div style={{ padding:"12px 14px 8px" }}>
+                      <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>Historial</p>
+                    </div>
                     {completed.length === 0 ? (
                       <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:"20px 14px" }}>Sin viajes completados</p>
                     ) : (
@@ -1388,52 +1463,36 @@ export default function DriverPortalPage() {
                   </button>
                 </div>
 
-                {/* Info cards */}
-                <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
-                  {([
-                    { icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>, label: "Correo", value: driverProfile.email || "—" },
-                    { icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>, label: "Teléfono", value: driverProfile.phone || "—" },
-                  ] as const).map((item) => (
-                    <div key={item.label} style={{ padding:"10px 14px",borderRadius:12,background:"#fff",border:"1px solid #e2e8f0",display:"flex",alignItems:"center",gap:10 }}>
-                      {item.icon}
-                      <div>
-                        <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{item.label}</p>
-                        <p style={{ fontSize:13,fontWeight:600,color:"#0f172a",margin:"1px 0 0",wordBreak:"break-all" }}>{item.value}</p>
-                      </div>
+                {/* Info — single card with rows */}
+                {(() => {
+                  const veh = driverProfile.vehicleId ? vehicles[driverProfile.vehicleId] : null;
+                  const meta = driverProfile.metadata ?? {};
+                  const plate = veh?.plate || (meta.vehiclePatente as string | null);
+                  const vehInfo = [veh?.type || meta.vehicleTipo, veh?.brand || meta.vehicleMarca, veh?.model || meta.vehicleModelo].filter(Boolean).join(" · ");
+                  const prov = driverProfile.providerId ? providers[driverProfile.providerId] : null;
+                  const rows: { icon: React.ReactNode; label: string; value: string; sub?: string }[] = [
+                    { icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>, label: "Correo", value: driverProfile.email || "—" },
+                    { icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>, label: "Teléfono", value: driverProfile.phone || "—" },
+                    { icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><path d="M5 17H3v-6l2.5-5h11L19 11v6h-2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg>, label: "Vehículo", value: plate?.toUpperCase() || "Sin asignar", sub: vehInfo || undefined },
+                    { icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>, label: "Proveedor", value: prov?.name || "Sin asignar", sub: prov?.rut ? `RUT: ${prov.rut}` : undefined },
+                  ];
+                  return (
+                    <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+                      {rows.map((r, i) => (
+                        <div key={r.label} style={{ display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderTop: i > 0 ? "1px solid #f1f5f9" : "none" }}>
+                          <span style={{ flexShrink:0 }}>{r.icon}</span>
+                          <div style={{ flex:1,minWidth:0 }}>
+                            <div style={{ display:"flex",alignItems:"baseline",gap:6 }}>
+                              <span style={{ fontSize:10,fontWeight:700,color:"#94a3b8",textTransform:"uppercase",letterSpacing:"0.08em",flexShrink:0 }}>{r.label}</span>
+                              <span style={{ fontSize:13,fontWeight:600,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{r.value}</span>
+                            </div>
+                            {r.sub && <p style={{ fontSize:11,color:"#64748b",margin:"1px 0 0" }}>{r.sub}</p>}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                  {/* Vehicle */}
-                  {(() => {
-                    const veh = driverProfile.vehicleId ? vehicles[driverProfile.vehicleId] : null;
-                    const meta = driverProfile.metadata ?? {};
-                    const plate = veh?.plate || (meta.vehiclePatente as string | null);
-                    const info = [veh?.type || meta.vehicleTipo, veh?.brand || meta.vehicleMarca, veh?.model || meta.vehicleModelo].filter(Boolean).join(" · ");
-                    return (
-                      <div style={{ padding:"10px 14px",borderRadius:12,background:"#fff",border:"1px solid #e2e8f0",display:"flex",alignItems:"center",gap:10 }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><path d="M5 17H3v-6l2.5-5h11L19 11v6h-2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg>
-                        <div>
-                          <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Vehículo</p>
-                          <p style={{ fontSize:13,fontWeight:600,color:"#0f172a",margin:"1px 0 0" }}>{plate?.toUpperCase() || "Sin asignar"}</p>
-                          {info && <p style={{ fontSize:11,color:"#64748b",margin:"1px 0 0" }}>{info}</p>}
-                        </div>
-                      </div>
-                    );
-                  })()}
-                  {/* Provider */}
-                  {(() => {
-                    const prov = driverProfile.providerId ? providers[driverProfile.providerId] : null;
-                    return (
-                      <div style={{ padding:"10px 14px",borderRadius:12,background:"#fff",border:"1px solid #e2e8f0",display:"flex",alignItems:"center",gap:10 }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
-                        <div>
-                          <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Proveedor</p>
-                          <p style={{ fontSize:13,fontWeight:600,color:"#0f172a",margin:"1px 0 0" }}>{prov?.name || "Sin asignar"}</p>
-                          {prov?.rut && <p style={{ fontSize:11,color:"#64748b",margin:"1px 0 0" }}>RUT: {prov.rut}</p>}
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </div>
+                  );
+                })()}
 
                 {/* Documents section */}
                 <div style={{ background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",padding:"14px",overflow:"hidden" }}>

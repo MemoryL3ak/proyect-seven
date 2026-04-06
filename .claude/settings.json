@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -rE t\\\\\\([''] c:/seven-backend/frontend/app c:/seven-backend/frontend/components --include=*.tsx)",
+      "Bash(grep -vE \"^[/@-]|^[0-9]|^:|^\\\\|^__$|^a$|^T$|^\\\\.$\")",
+      "Bash(grep -rE t\\\\\\(s*[\"\"] c:/seven-backend/frontend/app c:/seven-backend/frontend/components --include=*.tsx)",
+      "Bash(grep -E \"^[A-Z][a-z].*[a-z]$\")",
+      "Bash(python3 -c \"import sys; print\\(sys.stdin.read\\(\\).strip\\(\\)\\)\")",
+      "Bash(grep -ro 'Encargado de delegaci[^ ]*' c:/seven-backend/frontend/app c:/seven-backend/frontend/components --include=*.tsx)",
+      "Bash(grep -rE t\\\\\\(s*[\"\"''] c:/seven-backend/frontend/app c:/seven-backend/frontend/components --include=*.tsx)",
+      "Bash(grep -v '^$')",
+      "Bash(find /c/seven-backend/frontend -type f -name *theme* -o -name *tailwind* -o -name *globals*)",
+      "Bash(git -C \"c:/seven-backend\" diff HEAD -- \"frontend/app/\\(main\\)/operations/hotel-extras/page.tsx\" \"src/hotel-extra-reservations/hotel-extra-reservations.service.ts\")",
+      "Bash(grep -rl \"from ''''lucide-react''''\\\\|from lucide-react\" c:/seven-backend/frontend/components/)",
+      "Bash(sed -i 's/font-family: var\\(--font-sans\\), -apple-system, BlinkMacSystemFont, \"\"Segoe UI\"\", system-ui, sans-serif;/font-family: \"\"Helvetica Neue\"\", Helvetica, Arial, sans-serif;/' c:/seven-backend/frontend/app/globals.css)",
+      "Bash(sed -i 's/\\\\.font-display     { font-family: var\\(--font-sans\\) !important; }/.font-display     { font-family: \"\"Helvetica Neue\"\", Helvetica, Arial, sans-serif !important; }/' c:/seven-backend/frontend/app/globals.css)",
+      "Bash(ls -la '/c/seven-backend/frontend/app/\\(main\\)/masters/sports-calendar/')",
+      "Bash(ls -la '/c/seven-backend/frontend/app/\\(main\\)/deportes/')",
+      "Bash(ls -la '/c/seven-backend/frontend/app/\\(main\\)/sports-calendar/')",
+      "Bash(find '/c/seven-backend/frontend/app/\\(main\\)/sports-calendar' -type f)",
+      "Bash(wc -l \"c:/seven-backend/frontend/app/\\(main\\)/sports-calendar/page.tsx\" \"c:/seven-backend/frontend/app/\\(main\\)/sports-calendar/day/[dayKey]/page.tsx\")",
+      "Bash(wc -l c:/seven-backend/frontend/app/\\\\\\(main\\\\\\)/ayuda/page.tsx c:/seven-backend/frontend/app/\\\\\\(main\\\\\\)/ayuda/manual/page.tsx)",
+      "Bash(find /c/seven-backend/frontend/app/'\\(portal\\)' -type f -name \"*.tsx\" -o -name \"*.ts\")",
+      "Bash(node -e \":*)"
+    ]
+  }
+}

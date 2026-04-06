@@ -24,7 +24,25 @@ export class Provider {
   email?: string | null;
 
   @Column({ length: 30, type: 'varchar', nullable: true })
+  phone?: string | null;
+
+  @Column({ length: 30, type: 'varchar', nullable: true })
   rut?: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  address?: string | null;
+
+  @Column({ length: 100, type: 'varchar', nullable: true })
+  city?: string | null;
+
+  @Column({ name: 'contact_name', length: 150, type: 'varchar', nullable: true })
+  contactName?: string | null;
+
+  @Column({ name: 'bid_amount', type: 'numeric', nullable: true })
+  bidAmount?: number | null;
+
+  @Column({ length: 30, type: 'varchar', default: 'ACTIVE' })
+  status?: string | null;
 
   @Column({ type: 'jsonb', default: () => "'{}'::jsonb" })
   metadata: Record<string, unknown>;

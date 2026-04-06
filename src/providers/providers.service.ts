@@ -19,7 +19,13 @@ type ProviderRow = {
   type: string | null;
   subtype: string | null;
   email: string | null;
+  phone: string | null;
   rut: string | null;
+  address: string | null;
+  city: string | null;
+  contact_name: string | null;
+  bid_amount: number | null;
+  status: string | null;
   metadata: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
@@ -48,7 +54,13 @@ export class ProvidersService {
     if (dto.type !== undefined) row.type = dto.type ?? null;
     if (dto.subtype !== undefined) row.subtype = dto.subtype ?? null;
     if (dto.email !== undefined) row.email = dto.email ?? null;
+    if (dto.phone !== undefined) row.phone = dto.phone ?? null;
     if (dto.rut !== undefined) row.rut = dto.rut ?? null;
+    if (dto.address !== undefined) row.address = dto.address ?? null;
+    if (dto.city !== undefined) row.city = dto.city ?? null;
+    if (dto.contactName !== undefined) row.contact_name = dto.contactName ?? null;
+    if (dto.bidAmount !== undefined) row.bid_amount = dto.bidAmount ?? null;
+    if (dto.status !== undefined) row.status = dto.status ?? null;
     if (dto.metadata !== undefined) row.metadata = dto.metadata ?? {};
 
     return row;
@@ -61,7 +73,13 @@ export class ProvidersService {
       type: row.type,
       subtype: row.subtype,
       email: row.email,
+      phone: row.phone,
       rut: row.rut,
+      address: row.address,
+      city: row.city,
+      contactName: row.contact_name,
+      bidAmount: row.bid_amount != null ? Number(row.bid_amount) : null,
+      status: row.status,
       metadata: row.metadata ?? {},
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),

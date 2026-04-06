@@ -558,9 +558,29 @@ export const resources: Record<string, ResourceConfig> = {
     description: "Proveedores registrados para operaciones.",
     endpoint: "/providers",
     fields: [
-      { key: "name", label: "Nombre", type: "text", required: true },
+      { key: "name", label: "Nombre / Razón Social", type: "text", required: true },
+      { key: "rut", label: "RUT", type: "text" },
+      { key: "type", label: "Tipo", type: "select", options: [
+        { label: "Transporte", value: "TRANSPORTE" },
+        { label: "Alimentación", value: "ALIMENTACION" },
+        { label: "Hotelería", value: "HOTELERIA" },
+        { label: "Logística", value: "LOGISTICA" },
+        { label: "Seguridad", value: "SEGURIDAD" },
+        { label: "Producción", value: "PRODUCCION" },
+        { label: "Otro", value: "OTRO" },
+      ] },
+      { key: "subtype", label: "Subtipo", type: "text" },
+      { key: "contactName", label: "Nombre de contacto", type: "text" },
       { key: "email", label: "Correo", type: "text" },
-      { key: "rut", label: "RUT", type: "text" }
+      { key: "phone", label: "Teléfono", type: "text" },
+      { key: "address", label: "Dirección", type: "text" },
+      { key: "city", label: "Ciudad", type: "text" },
+      { key: "bidAmount", label: "Monto licitado ($)", type: "number" },
+      { key: "status", label: "Estado", type: "select", options: [
+        { label: "Activo", value: "ACTIVE" },
+        { label: "Inactivo", value: "INACTIVE" },
+        { label: "Suspendido", value: "SUSPENDED" },
+      ] },
     ]
   },
   venues: {
