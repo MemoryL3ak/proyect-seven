@@ -129,4 +129,12 @@ export class CreateTripDto {
   @IsString()
   @IsOptional()
   returnDestinationVenueId?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  committeeValidated?: boolean;
+
+  @IsString()
+  @IsOptional()
+  committeeValidatedBy?: string;
 }

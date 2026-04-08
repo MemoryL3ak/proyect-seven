@@ -140,6 +140,7 @@ export default function UserPortalPage() {
   const { t } = useI18n();
   const [athleteId, setAthleteId] = useState("");
   const [athlete, setAthlete] = useState<Athlete | null>(null);
+  const [sessionChecked, setSessionChecked] = useState(false);
   const [flight, setFlight] = useState<Flight | null>(null);
   const [hotel, setHotel] = useState<Hotel | null>(null);
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
@@ -193,6 +194,18 @@ export default function UserPortalPage() {
     return all;
   }, [isChief]);
 
+  // Restore session on mount
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem("portal_user_id");
+      if (saved && !athlete) {
+        loadAthlete(saved).finally(() => setSessionChecked(true));
+      } else {
+        setSessionChecked(true);
+      }
+    } catch { setSessionChecked(true); }
+  }, []);
+
   // Set default tab based on profile
   useEffect(() => {
     if (athlete && !isChief) setActiveTab("sedes");
@@ -212,18 +225,24 @@ export default function UserPortalPage() {
   const prevTripStatus = useRef<string | null>(null);
   const arrivedNotified = useRef<string | null>(null); // tracks which segment was already notified
 
-  const loadAthlete = async () => {
-    if (!athleteId) return;
+  const loadAthlete = async (directId?: string) => {
+    if (!directId && !athleteId) return;
     setLoading(true);
     setError(null);
     try {
-      const normalizedInput = athleteId.trim().toLowerCase();
-      if (normalizedInput.length < 6) { setError(t("El código ingresado no es válido.")); return; }
-      const list = await apiFetch<Athlete[]>(`/athletes`);
-      const validatedAthletes = filterValidatedAthletes(list || []);
-      const match = validatedAthletes.find((a) => a.id?.slice(-6).toLowerCase() === normalizedInput);
-      if (!match) { setError(t("El código ingresado no corresponde a un usuario registrado.")); return; }
-      const data = await apiFetch<Athlete>(`/athletes/${match.id}`);
+      let data: Athlete;
+      if (directId) {
+        data = await apiFetch<Athlete>(`/athletes/${directId}`);
+        if (!data?.id) { setError("Sesión expirada."); return; }
+      } else {
+        const normalizedInput = athleteId.trim().toLowerCase();
+        if (normalizedInput.length < 6) { setError(t("El código ingresado no es válido.")); return; }
+        const list = await apiFetch<Athlete[]>(`/athletes`);
+        const validatedAthletes = filterValidatedAthletes(list || []);
+        const match = validatedAthletes.find((a) => a.id?.slice(-6).toLowerCase() === normalizedInput);
+        if (!match) { setError(t("El código ingresado no corresponde a un usuario registrado.")); return; }
+        data = await apiFetch<Athlete>(`/athletes/${match.id}`);
+      }
 
       if (data.userType === "VIP") {
         window.location.href = `/portal/vehicle-request?athleteId=${data.id}`;
@@ -231,6 +250,7 @@ export default function UserPortalPage() {
       }
 
       setAthlete(data);
+      try { sessionStorage.setItem("portal_user_id", data.id); } catch {}
 
       const [flightData, hotelData, vehicleData, tripData, tripsList, eventData, delegationData, assignmentData] = await Promise.all([
         data.arrivalFlightId ? apiFetch<Flight>(`/flights/${data.arrivalFlightId}`) : Promise.resolve(null),
@@ -309,7 +329,12 @@ export default function UserPortalPage() {
         ]);
         setVenues((venueData || []).filter(v => !data.eventId || v.eventId === data.eventId));
         setAllAccommodations(accomData || []);
-        setFoodLocations(foodLocData || []);
+        const athleteClientType = data.userType || "";
+        setFoodLocations(
+          (foodLocData || []).filter(fl =>
+            !fl.clientTypes || fl.clientTypes.length === 0 || fl.clientTypes.includes(athleteClientType)
+          ),
+        );
         setFoodMenus(foodMenuData || []);
       } catch { /* ignore */ }
 
@@ -574,6 +599,22 @@ export default function UserPortalPage() {
   /* ══════════════════════════════════════════════════════════
      LOGIN SCREEN
   ══════════════════════════════════════════════════════════ */
+  if (!sessionChecked) return (
+    <div style={{ minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"linear-gradient(135deg,#020c18 0%,#0a1628 50%,#041220 100%)",position:"relative",overflow:"hidden" }}>
+      <div style={{ position:"absolute",top:"-20%",right:"-10%",width:"50vw",height:"50vw",borderRadius:"50%",background:"radial-gradient(circle,rgba(33,208,179,0.08) 0%,transparent 70%)",pointerEvents:"none" }} />
+      <div style={{ position:"absolute",bottom:"-15%",left:"-10%",width:"40vw",height:"40vw",borderRadius:"50%",background:"radial-gradient(circle,rgba(31,205,255,0.06) 0%,transparent 70%)",pointerEvents:"none" }} />
+      <div style={{ position:"relative",zIndex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:20 }}>
+        <img src="/branding/LOGO-SEVEN-1.png" alt="Seven Arena" style={{ height:48,width:"auto",objectFit:"contain",filter:"drop-shadow(0 0 24px rgba(33,208,179,0.4)) drop-shadow(0 4px 12px rgba(0,0,0,0.6))",marginBottom:8 }} />
+        <div style={{ width:44,height:44,position:"relative" }}>
+          <div style={{ position:"absolute",inset:0,border:"3px solid rgba(33,208,179,0.15)",borderRadius:"50%" }} />
+          <div style={{ position:"absolute",inset:0,border:"3px solid transparent",borderTopColor:"#21D0B3",borderRadius:"50%",animation:"sa-spin 0.9s cubic-bezier(0.4,0,0.2,1) infinite" }} />
+        </div>
+        <p style={{ fontSize:13,fontWeight:600,color:"rgba(255,255,255,0.5)",margin:0,letterSpacing:"0.03em" }}>Cargando portal...</p>
+      </div>
+      <style>{`@keyframes sa-spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+
   if (!athlete) return (
     <div className="flex flex-col lg:flex-row" style={{ minHeight: "100vh", background: "#020c18", position: "relative", overflow: "hidden" }}>
       <style>{`
@@ -816,7 +857,7 @@ export default function UserPortalPage() {
                 <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
               </svg>
             </button>
-            <button type="button" onClick={() => { setAthlete(null); setAthleteId(""); }}
+            <button type="button" onClick={() => { setAthlete(null); setAthleteId(""); try { sessionStorage.removeItem("portal_user_id"); } catch {} }}
               style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(255,255,255,0.15)",background:"rgba(255,255,255,0.08)",cursor:"pointer",flexShrink:0 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
@@ -1126,48 +1167,137 @@ export default function UserPortalPage() {
 
         {/* ─── Alimentación tab ─── */}
         {activeTab === "alimentacion" && (
-          <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
-            {/* Food locations */}
-            <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>Lugares de comida</p>
-            {foodLocations.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:20 }}>No hay lugares registrados</p>}
-            {foodLocations.map(fl => (
-              <div key={fl.id} style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",padding:"12px 14px" }}>
-                <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>{fl.name}</p>
-                {fl.description && <p style={{ fontSize:12,color:"#64748b",margin:"4px 0 0" }}>{fl.description}</p>}
-                <div style={{ display:"flex",gap:6,marginTop:6,flexWrap:"wrap" }}>
-                  {fl.capacity && <span style={{ fontSize:10,padding:"2px 8px",borderRadius:6,background:"#f1f5f9",color:"#475569",border:"1px solid #e2e8f0" }}>Cap. {fl.capacity}</span>}
-                  {fl.clientTypes?.map(ct => <span key={ct} style={{ fontSize:10,padding:"2px 8px",borderRadius:6,background:"rgba(33,208,179,0.08)",color:"#0a7a6b",border:"1px solid rgba(33,208,179,0.2)" }}>{ct}</span>)}
-                </div>
-              </div>
-            ))}
-            {/* Food menus */}
-            {foodMenus.length > 0 && (
-              <>
-                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#0fa894",margin:"8px 0 0" }}>Menús</p>
-                {(() => {
-                  const grouped = foodMenus.reduce<Record<string,FoodMenu[]>>((acc, fm) => { (acc[fm.date] = acc[fm.date] || []).push(fm); return acc; }, {});
-                  return Object.entries(grouped).sort(([a],[b]) => a.localeCompare(b)).map(([date, menus]) => (
-                    <div key={date} style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
-                      <div style={{ padding:"10px 14px",background:"#f8fafc",borderBottom:"1px solid #f1f5f9" }}>
-                        <p style={{ fontSize:12,fontWeight:700,color:"#0f172a",margin:0 }}>{new Date(date+"T12:00:00").toLocaleDateString("es-CL",{weekday:"long",day:"numeric",month:"long"})}</p>
+          <div style={{ display:"flex",flexDirection:"column",gap:14 }}>
+
+            {/* Today's menu */}
+            {(() => {
+              const today = new Date().toISOString().slice(0, 10);
+              const todayMenus = foodMenus.filter((fm) => fm.date === today);
+              const mealOrder = ["DESAYUNO", "ALMUERZO", "CENA", "ONCE"];
+              const sorted = todayMenus.sort((a, b) => mealOrder.indexOf(a.mealType) - mealOrder.indexOf(b.mealType));
+              const mealStyle = (type: string) => {
+                if (type === "DESAYUNO") return { bg: "#FEF3C7", color: "#92400E", border: "#FDE68A", icon: "☀️", label: "Desayuno" };
+                if (type === "ALMUERZO") return { bg: "#DBEAFE", color: "#1E40AF", border: "#BFDBFE", icon: "🍽️", label: "Almuerzo" };
+                if (type === "CENA") return { bg: "#E0E7FF", color: "#3730A3", border: "#C7D2FE", icon: "🌙", label: "Cena" };
+                return { bg: "#F1F5F9", color: "#475569", border: "#E2E8F0", icon: "🍴", label: type };
+              };
+              return (
+                <div style={{ background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)" }}>
+                  <div style={{ padding:"14px 16px",background:"linear-gradient(135deg,rgba(33,208,179,0.08),rgba(33,208,179,0.02))",borderBottom:"1px solid #e2e8f0",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+                    <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+                      <div style={{ width:32,height:32,borderRadius:10,background:"rgba(33,208,179,0.12)",display:"flex",alignItems:"center",justifyContent:"center" }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
                       </div>
-                      {menus.map(fm => (
-                        <div key={fm.id} style={{ padding:"10px 14px",borderTop:"1px solid #f1f5f9" }}>
-                          <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-                            <span style={{ fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:6,textTransform:"uppercase",
-                              background:fm.mealType==="DESAYUNO"?"#FEF3C7":fm.mealType==="ALMUERZO"?"#DBEAFE":"#E0E7FF",
-                              color:fm.mealType==="DESAYUNO"?"#92400E":fm.mealType==="ALMUERZO"?"#1E40AF":"#3730A3" }}>{fm.mealType}</span>
-                            <p style={{ fontSize:13,fontWeight:600,color:"#0f172a",margin:0 }}>{fm.title}</p>
-                          </div>
-                          {fm.description && <p style={{ fontSize:11,color:"#64748b",margin:"4px 0 0" }}>{fm.description}</p>}
-                          {fm.dietaryType && fm.dietaryType !== "ESTANDAR" && <span style={{ fontSize:9,padding:"2px 6px",borderRadius:4,background:"#f0fdf4",color:"#166534",marginTop:4,display:"inline-block" }}>{fm.dietaryType}</span>}
-                        </div>
-                      ))}
+                      <div>
+                        <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>Menú de hoy</p>
+                        <p style={{ fontSize:11,color:"#64748b",margin:0,textTransform:"capitalize" }}>{new Date().toLocaleDateString("es-CL",{weekday:"long",day:"numeric",month:"long"})}</p>
+                      </div>
                     </div>
-                  ));
-                })()}
-              </>
+                  </div>
+                  {sorted.length > 0 ? sorted.map((fm, i) => {
+                    const m = mealStyle(fm.mealType);
+                    return (
+                      <div key={fm.id} style={{ padding:"14px 16px",borderTop:i>0?"1px solid #f1f5f9":"none",display:"flex",gap:12,alignItems:"flex-start" }}>
+                        <div style={{ width:40,height:40,borderRadius:10,background:m.bg,border:`1px solid ${m.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0 }}>
+                          {m.icon}
+                        </div>
+                        <div style={{ flex:1,minWidth:0 }}>
+                          <div style={{ display:"flex",alignItems:"center",gap:6,flexWrap:"wrap" }}>
+                            <span style={{ fontSize:10,fontWeight:800,padding:"2px 8px",borderRadius:6,textTransform:"uppercase",letterSpacing:"0.05em",background:m.bg,color:m.color }}>{m.label}</span>
+                            {fm.dietaryType && fm.dietaryType !== "ESTANDAR" && (
+                              <span style={{ fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:6,background:"#f0fdf4",color:"#166534",border:"1px solid #bbf7d0" }}>{fm.dietaryType}</span>
+                            )}
+                          </div>
+                          <p style={{ fontSize:15,fontWeight:700,color:"#0f172a",margin:"5px 0 0" }}>{fm.title}</p>
+                          {fm.description && <p style={{ fontSize:12,color:"#64748b",margin:"3px 0 0",lineHeight:1.4 }}>{fm.description}</p>}
+                        </div>
+                      </div>
+                    );
+                  }) : (
+                    <div style={{ padding:20,textAlign:"center" }}>
+                      <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>No hay menú programado para hoy</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Tomorrow's menu */}
+            {(() => {
+              const tomorrow = new Date();
+              tomorrow.setDate(tomorrow.getDate() + 1);
+              const tomorrowKey = tomorrow.toISOString().slice(0, 10);
+              const tomorrowMenus = foodMenus.filter((fm) => fm.date === tomorrowKey);
+              const mealOrder = ["DESAYUNO", "ALMUERZO", "CENA", "ONCE"];
+              const sorted = tomorrowMenus.sort((a, b) => mealOrder.indexOf(a.mealType) - mealOrder.indexOf(b.mealType));
+              const mealStyle = (type: string) => {
+                if (type === "DESAYUNO") return { bg: "#FEF3C7", color: "#92400E", border: "#FDE68A", icon: "☀️", label: "Desayuno" };
+                if (type === "ALMUERZO") return { bg: "#DBEAFE", color: "#1E40AF", border: "#BFDBFE", icon: "🍽️", label: "Almuerzo" };
+                if (type === "CENA") return { bg: "#E0E7FF", color: "#3730A3", border: "#C7D2FE", icon: "🌙", label: "Cena" };
+                return { bg: "#F1F5F9", color: "#475569", border: "#E2E8F0", icon: "🍴", label: type };
+              };
+              return (
+                <div style={{ background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)",opacity:0.85 }}>
+                  <div style={{ padding:"12px 16px",background:"#f8fafc",borderBottom:"1px solid #e2e8f0",display:"flex",alignItems:"center",gap:8 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    <div>
+                      <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0 }}>Menú de mañana</p>
+                      <p style={{ fontSize:11,color:"#94a3b8",margin:0,textTransform:"capitalize" }}>{tomorrow.toLocaleDateString("es-CL",{weekday:"long",day:"numeric",month:"long"})}</p>
+                    </div>
+                  </div>
+                  {sorted.length > 0 ? sorted.map((fm, i) => {
+                    const m = mealStyle(fm.mealType);
+                    return (
+                      <div key={fm.id} style={{ padding:"12px 16px",borderTop:i>0?"1px solid #f1f5f9":"none",display:"flex",gap:12,alignItems:"flex-start" }}>
+                        <div style={{ width:36,height:36,borderRadius:8,background:m.bg,border:`1px solid ${m.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0 }}>
+                          {m.icon}
+                        </div>
+                        <div style={{ flex:1,minWidth:0 }}>
+                          <span style={{ fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:6,textTransform:"uppercase",letterSpacing:"0.05em",background:m.bg,color:m.color }}>{m.label}</span>
+                          <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:"4px 0 0" }}>{fm.title}</p>
+                          {fm.description && <p style={{ fontSize:12,color:"#64748b",margin:"2px 0 0",lineHeight:1.4 }}>{fm.description}</p>}
+                        </div>
+                      </div>
+                    );
+                  }) : (
+                    <div style={{ padding:16,textAlign:"center" }}>
+                      <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>Menú pendiente de programar</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Food locations */}
+            {foodLocations.length > 0 && (
+              <div style={{ background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)" }}>
+                <div style={{ padding:"14px 16px",background:"linear-gradient(135deg,rgba(33,208,179,0.06),rgba(31,205,255,0.04))",borderBottom:"1px solid #e2e8f0" }}>
+                  <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0 }}>Tus lugares de comida</p>
+                  </div>
+                </div>
+                {foodLocations.map((fl, i) => (
+                  <div key={fl.id} style={{ padding:"12px 16px",borderTop:i>0?"1px solid #f1f5f9":"none",display:"flex",alignItems:"center",gap:12 }}>
+                    <div style={{ width:36,height:36,borderRadius:10,background:"rgba(33,208,179,0.08)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+                    </div>
+                    <div style={{ flex:1,minWidth:0 }}>
+                      <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>{fl.name}</p>
+                      {fl.description && <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0",lineHeight:1.3 }}>{fl.description}</p>}
+                    </div>
+                    {fl.capacity && <span style={{ fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:8,background:"#f1f5f9",color:"#475569",flexShrink:0 }}>{fl.capacity} pax</span>}
+                  </div>
+                ))}
+              </div>
             )}
+            {foodLocations.length === 0 && (
+              <div style={{ background:"#fff",borderRadius:16,border:"1px dashed #e2e8f0",padding:24,textAlign:"center" }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round" style={{ margin:"0 auto 8px" }}><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+                <p style={{ fontSize:13,fontWeight:600,color:"#94a3b8",margin:0 }}>No hay lugares asignados</p>
+              </div>
+            )}
+
           </div>
         )}
 
@@ -1183,6 +1313,7 @@ export default function UserPortalPage() {
                 { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>, label:"Evento", value:event?.name || "—" },
                 { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>, label:"Delegación", value:delegation ? (countryLabels[delegation.countryCode]||delegation.countryCode) : "—" },
                 { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>, label:"Tipo", value:athlete.userType || "—" },
+                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={athlete.isDelegationLead ? "#f59e0b" : "#21D0B3"} strokeWidth="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>, label:"Rol", value:athlete.isDelegationLead ? "Jefe de Delegación" : "Participante" },
                 { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>, label:"ID", value:athlete.id.slice(-6).toUpperCase() },
               ]).map((r,i) => (
                 <div key={r.label} style={{ display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderTop:i>0?"1px solid #f1f5f9":"none" }}>
@@ -1229,7 +1360,7 @@ export default function UserPortalPage() {
               {healthRecord ? <span style={{ fontSize:10,padding:"2px 8px",borderRadius:6,background:"rgba(33,208,179,0.1)",color:"#0a7a6b" }}>Completada</span> : <span style={{ fontSize:10,padding:"2px 8px",borderRadius:6,background:"#FEF3C7",color:"#92400E" }}>Pendiente</span>}
             </a>
             {/* Logout */}
-            <button type="button" onClick={() => { setAthlete(null); setAthleteId(""); }}
+            <button type="button" onClick={() => { setAthlete(null); setAthleteId(""); try { sessionStorage.removeItem("portal_user_id"); } catch {} }}
               style={{ width:"100%",padding:12,borderRadius:12,border:"1px solid #e2e8f0",background:"#fff",color:"#ef4444",fontSize:13,fontWeight:600,cursor:"pointer" }}>
               Cerrar sesión
             </button>
@@ -1706,11 +1837,12 @@ export default function UserPortalPage() {
         )}
 
         {/* ── Trip Chat (active trips only) ── */}
-        {trip && ["SCHEDULED", "EN_ROUTE", "PICKED_UP"].includes(trip.status ?? "") && (
+        {trip && ["EN_ROUTE", "PICKED_UP"].includes(trip.status ?? "") && (
           <TripChat
             tripId={trip.id}
             senderType="PASSENGER"
             senderName={athlete.fullName}
+            tripStatus={trip.status}
             onNewMessage={(name, content) => notify.push(`${name}: ${content.slice(0, 80)}`, "💬")}
           />
         )}

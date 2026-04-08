@@ -5,6 +5,7 @@ import { apiFetch } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { CLIENT_TYPE_OPTIONS, clientTypeLabel } from "@/lib/clientTypes";
 import { downloadExcel, downloadPDF } from "@/lib/reports";
+import { AreaChart, Area, BarChart as RBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(value);
@@ -42,6 +43,7 @@ export default function CommercialDashboardPage() {
   const [tripCounts, setTripCounts] = useState({ bid: 0, completed: 0, total: 0 });
   const [clientTypeBreakdown, setClientTypeBreakdown] = useState<{ clientType: string; count: number; cost: number }[]>([]);
   const [weeklySpend, setWeeklySpend] = useState<{ label: string; amount: number }[]>([]);
+  const [dailySpend, setDailySpend] = useState<{ date: string; amount: number; count: number }[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -80,6 +82,24 @@ export default function CommercialDashboardPage() {
         weekMap.set(key, (weekMap.get(key) || 0) + (Number(t.tripCost) || 0));
       });
       setWeeklySpend(Array.from(weekMap.entries()).sort(([a], [b]) => a.localeCompare(b)).slice(-6).map(([, amount], i) => ({ label: `Sem ${i + 1}`, amount })));
+
+      // Daily spend (last 14 days)
+      const dayMap = new Map<string, { amount: number; count: number }>();
+      (trips || []).filter((t) => done.has(t.status || "") && t.scheduledAt).forEach((t) => {
+        const key = new Date(t.scheduledAt!).toISOString().slice(0, 10);
+        const prev = dayMap.get(key) || { amount: 0, count: 0 };
+        dayMap.set(key, { amount: prev.amount + (Number(t.tripCost) || 0), count: prev.count + 1 });
+      });
+      setDailySpend(
+        Array.from(dayMap.entries())
+          .sort(([a], [b]) => a.localeCompare(b))
+          .slice(-14)
+          .map(([date, data]) => ({
+            date: new Date(date).toLocaleDateString("es-CL", { day: "2-digit", month: "short" }),
+            ...data,
+          })),
+      );
+
       setLoaded(true);
     }).catch(() => setLoaded(true));
   }, []);
@@ -131,10 +151,12 @@ export default function CommercialDashboardPage() {
       </div>
 
       {/* ── Summary KPIs ── */}
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-5">
         {[
-          { label: t("Adjudicado total"), value: formatCurrency(totals.awarded), color: TEAL },
-          { label: t("Consumido acumulado"), value: formatCurrency(totals.consumed), color: BLUE },
+          { label: t("Adjudicado"), value: formatCurrency(totals.awarded), color: TEAL },
+          { label: t("Consumido"), value: formatCurrency(totals.consumed), color: BLUE },
+          { label: t("Restante"), value: formatCurrency(Math.max(0, totals.awarded - totals.consumed)), color: "#a78bfa" },
+          { label: t("Viajes restantes"), value: `${Math.max(0, tripCounts.bid - tripCounts.completed)}`, color: "#fb923c" },
           { label: t("Uso total"), value: `${usePct}%`, color: totalSem.color },
         ].map((kpi, i) => (
           <div key={i}
@@ -142,22 +164,15 @@ export default function CommercialDashboardPage() {
             onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = `0 2px 8px ${kpi.color}10`; }}
             style={{
               background: "#fff", border: `1px solid ${kpi.color}25`, borderRadius: 16,
-              padding: "22px 20px", boxShadow: `0 2px 8px ${kpi.color}10`,
+              padding: "18px 16px", boxShadow: `0 2px 8px ${kpi.color}10`,
               transition: "all 200ms ease", cursor: "default",
-              animation: "fadeInUp 0.4s ease both", animationDelay: `${i * 0.06}s`,
+              animation: "fadeInUp 0.4s ease both", animationDelay: `${i * 0.05}s`,
             }}>
-            <p style={{ fontSize: "10px", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.15em", fontWeight: 600 }}>{kpi.label}</p>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 8 }}>
-              <p style={{ fontSize: "1.8rem", fontWeight: 800, color: kpi.color, lineHeight: 1, fontVariantNumeric: "tabular-nums", margin: 0 }}>{kpi.value}</p>
-              {i === 2 && <span style={{ width: 12, height: 12, borderRadius: "50%", background: totalSem.color, display: "inline-block", boxShadow: `0 0 8px ${totalSem.glow}` }} />}
+            <p style={{ fontSize: "10px", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 600 }}>{kpi.label}</p>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 8 }}>
+              <p style={{ fontSize: "1.5rem", fontWeight: 800, color: kpi.color, lineHeight: 1, fontVariantNumeric: "tabular-nums", margin: 0 }}>{kpi.value}</p>
+              {i === 4 && <span style={{ width: 10, height: 10, borderRadius: "50%", background: totalSem.color, display: "inline-block", boxShadow: `0 0 8px ${totalSem.glow}` }} />}
             </div>
-            {i === 2 && totals.awarded > 0 && (
-              <div style={{ marginTop: 12, height: 8, background: "rgba(255,255,255,0.6)", borderRadius: 99, overflow: "hidden", position: "relative" }}>
-                <div style={{ height: "100%", width: `${Math.min(100, usePct)}%`, background: `linear-gradient(90deg, ${totalSem.color}, ${totalSem.color}bb)`, borderRadius: 99, transition: "width 1s cubic-bezier(0.4,0,0.2,1)", position: "relative", overflow: "hidden" }}>
-                  <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)", animation: "shimmer 2.5s ease-in-out infinite" }} />
-                </div>
-              </div>
-            )}
           </div>
         ))}
       </div>
@@ -299,32 +314,62 @@ export default function CommercialDashboardPage() {
         </div>
       </div>
 
-      {/* ── Weekly spend trend ── */}
-      {weeklySpend.length > 0 && (
-        <div style={{ background: "#fff", border: `1px solid ${TEAL}20`, borderRadius: 18, padding: "24px 22px", boxShadow: "0 2px 8px rgba(15,23,42,0.06)", position: "relative", overflow: "hidden" }}>
-          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: `linear-gradient(90deg, ${TEAL}, ${BLUE})` }} />
-          <div style={{ marginBottom: 18 }}>
-            <p style={{ fontSize: 11, color: TEAL, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", margin: 0 }}>Consumo acumulado</p>
-            <p style={{ fontSize: 16, fontWeight: 700, color: "#0f172a", marginTop: 4 }}>Tendencia semanal de ejecución (transporte)</p>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {weeklySpend.map((week, i) => {
-              const barPct = Math.max(8, Math.round((week.amount / maxWeek) * 100));
-              const c = i % 2 === 0 ? TEAL : BLUE;
-              return (
-                <div key={week.label} style={{ display: "grid", gridTemplateColumns: "56px 1fr 110px", alignItems: "center", gap: 12 }}>
-                  <p style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.12em", margin: 0 }}>{week.label}</p>
-                  <div style={{ height: 32, background: "rgba(255,255,255,0.7)", borderRadius: 10, overflow: "hidden", border: "1px solid rgba(0,0,0,0.04)", boxShadow: "inset 0 1px 3px rgba(0,0,0,0.04)" }}>
-                    <div style={{ height: "100%", width: `${barPct}%`, background: `linear-gradient(90deg, ${c}, ${c}cc)`, borderRadius: 10, transition: "width 1s cubic-bezier(0.4,0,0.2,1)", position: "relative", overflow: "hidden", boxShadow: `0 2px 8px ${c}30` }}>
-                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent)", animation: "shimmer 2.5s ease-in-out infinite" }} />
-                      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "rgba(255,255,255,0.4)", borderRadius: "10px 10px 0 0" }} />
-                    </div>
-                  </div>
-                  <p style={{ fontSize: 13, fontWeight: 800, color: "#0f172a", textAlign: "right", fontVariantNumeric: "tabular-nums", margin: 0 }}>{formatCurrency(week.amount)}</p>
-                </div>
-              );
-            })}
-          </div>
+      {/* ── Charts: Daily + Weekly ── */}
+      {(dailySpend.length > 0 || weeklySpend.length > 0) && (
+        <div className="grid gap-4 md:grid-cols-2">
+          {/* Daily trend area chart */}
+          {dailySpend.length > 0 && (
+            <div style={{ background: "#fff", border: `1px solid ${TEAL}20`, borderRadius: 18, padding: "22px 20px", boxShadow: "0 2px 8px rgba(15,23,42,0.06)", position: "relative", overflow: "hidden" }}>
+              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: `linear-gradient(90deg, ${TEAL}, ${BLUE})` }} />
+              <p style={{ fontSize: 11, color: TEAL, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", margin: "0 0 2px" }}>Consumo diario</p>
+              <p style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", margin: "0 0 16px" }}>Monto por día (últimos 14 días)</p>
+              <ResponsiveContainer width="100%" height={220}>
+                <AreaChart data={dailySpend}>
+                  <defs>
+                    <linearGradient id="gradTeal" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={TEAL} stopOpacity={0.3} />
+                      <stop offset="100%" stopColor={TEAL} stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} tickLine={false} axisLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} width={50} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", boxShadow: "0 4px 12px rgba(0,0,0,0.08)", fontSize: 12 }}
+                    formatter={(value: number) => [formatCurrency(value), "Monto"]}
+                  />
+                  <Area type="monotone" dataKey="amount" stroke={TEAL} strokeWidth={2.5} fill="url(#gradTeal)" dot={{ r: 3, fill: TEAL, strokeWidth: 0 }} activeDot={{ r: 5, fill: TEAL, stroke: "#fff", strokeWidth: 2 }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* Weekly bar chart */}
+          {weeklySpend.length > 0 && (
+            <div style={{ background: "#fff", border: `1px solid ${BLUE}20`, borderRadius: 18, padding: "22px 20px", boxShadow: "0 2px 8px rgba(15,23,42,0.06)", position: "relative", overflow: "hidden" }}>
+              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: `linear-gradient(90deg, ${BLUE}, ${TEAL})` }} />
+              <p style={{ fontSize: 11, color: BLUE, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", margin: "0 0 2px" }}>Consumo semanal</p>
+              <p style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", margin: "0 0 16px" }}>Monto acumulado por semana</p>
+              <ResponsiveContainer width="100%" height={220}>
+                <RBarChart data={weeklySpend}>
+                  <defs>
+                    <linearGradient id="gradBlue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={BLUE} stopOpacity={0.9} />
+                      <stop offset="100%" stopColor={TEAL} stopOpacity={0.7} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} tickLine={false} axisLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} width={50} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", boxShadow: "0 4px 12px rgba(0,0,0,0.08)", fontSize: 12 }}
+                    formatter={(value: number) => [formatCurrency(value), "Monto"]}
+                  />
+                  <Bar dataKey="amount" fill="url(#gradBlue)" radius={[6, 6, 0, 0]} />
+                </RBarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
       )}
 

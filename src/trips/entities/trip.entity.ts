@@ -104,6 +104,15 @@ export class Trip {
   @Column({ name: 'leg_type', length: 20, type: 'varchar', nullable: true })
   legType?: string | null;
 
+  @Column({ name: 'committee_validated', type: 'boolean', default: false })
+  committeeValidated: boolean;
+
+  @Column({ name: 'committee_validated_at', type: 'timestamptz', nullable: true })
+  committeeValidatedAt?: Date | null;
+
+  @Column({ name: 'committee_validated_by', length: 150, type: 'varchar', nullable: true })
+  committeeValidatedBy?: string | null;
+
   athleteIds?: string[];
 
   athleteNames?: string[];

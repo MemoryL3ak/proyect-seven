@@ -4,40 +4,19 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { apiFetch, getTokens } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 
-/* ------------------------------------------------------------------ */
-/*  Icon                                                               */
-/* ------------------------------------------------------------------ */
-
-function SofiaIcon({ size = 24 }: { size?: number }) {
+/* ── Sparkle icon (replaces old diamond) ── */
+function SofiaIcon({ size = 20 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path
-        d="M22 3 C22 3 24.2 16.5 34 22 C24.2 27.5 22 41 22 41 C22 41 19.8 27.5 10 22 C19.8 16.5 22 3 22 3Z"
-        fill="white"
-      />
-      <path
-        d="M3 22 C3 22 16.5 24.2 22 34 C27.5 24.2 41 22 41 22 C41 22 27.5 19.8 22 10 C16.5 19.8 3 22 3 22Z"
-        fill="white"
-        opacity="0.6"
-      />
-      <circle cx="22" cy="22" r="3" fill="rgba(20,215,185,0.9)" />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <text x="12" y="18" textAnchor="middle" fontFamily="system-ui, -apple-system, sans-serif" fontSize="20" fontWeight="900" fontStyle="italic" fill="#fff">S</text>
     </svg>
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Types & helpers                                                    */
-/* ------------------------------------------------------------------ */
-
+/* ── Types ── */
 type SofiaMessage = { role: "user" | "assistant"; content: string };
+type StreamChunk = { type: "delta" | "done" | "error" | "tool_call"; content: string; responseId?: string | null };
 
-type StreamChunk = {
-  type: "delta" | "done" | "error" | "tool_call";
-  content: string;
-  responseId?: string | null;
-};
-
-/** Try multiple API base URLs and return the first that connects. */
 function apiCandidates(): string[] {
   if (typeof window === "undefined") return [];
   const envBase = process.env.NEXT_PUBLIC_API_BASE;
@@ -52,72 +31,61 @@ function apiCandidates(): string[] {
 let preferredBase: string | null = null;
 
 async function fetchStream(
-  path: string,
-  body: Record<string, unknown>,
-  onChunk: (chunk: StreamChunk) => void,
-  signal?: AbortSignal,
+  path: string, body: Record<string, unknown>,
+  onChunk: (chunk: StreamChunk) => void, signal?: AbortSignal,
 ) {
   const tokens = getTokens();
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (tokens?.accessToken) headers["Authorization"] = `Bearer ${tokens.accessToken}`;
-
-  const bases = [
-    ...(preferredBase ? [preferredBase] : []),
-    ...apiCandidates().filter((b) => b !== preferredBase),
-  ];
-
+  const bases = [...(preferredBase ? [preferredBase] : []), ...apiCandidates().filter((b) => b !== preferredBase)];
   let response: Response | null = null;
   for (const base of bases) {
-    try {
-      response = await fetch(`${base}${path}`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(body),
-        signal,
-      });
-      preferredBase = base;
-      break;
-    } catch {
-      continue;
-    }
+    try { response = await fetch(`${base}${path}`, { method: "POST", headers, body: JSON.stringify(body), signal }); preferredBase = base; break; } catch { continue; }
   }
-
   if (!response) throw new Error("No se pudo conectar con la API");
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(text || `Error ${response.status}`);
-  }
-
+  if (!response.ok) { const text = await response.text(); throw new Error(text || `Error ${response.status}`); }
   const reader = response.body?.getReader();
   if (!reader) throw new Error("No readable stream");
-
   const decoder = new TextDecoder();
   let buffer = "";
-
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
-
     buffer += decoder.decode(value, { stream: true });
     const lines = buffer.split("\n");
     buffer = lines.pop() || "";
-
     for (const line of lines) {
       if (!line.startsWith("data: ")) continue;
       const jsonStr = line.slice(6).trim();
       if (!jsonStr || jsonStr === "[DONE]") continue;
-      try {
-        const chunk: StreamChunk = JSON.parse(jsonStr);
-        onChunk(chunk);
-      } catch { /* skip malformed */ }
+      try { onChunk(JSON.parse(jsonStr)); } catch {}
     }
   }
 }
 
-/* ------------------------------------------------------------------ */
-/*  Component                                                          */
-/* ------------------------------------------------------------------ */
+/* ── Notification chime using Web Audio API ── */
+function playChime() {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, ctx.currentTime + i * 0.12);
+      gain.gain.linearRampToValueAtTime(0.15, ctx.currentTime + i * 0.12 + 0.04);
+      gain.gain.linearRampToValueAtTime(0, ctx.currentTime + i * 0.12 + 0.3);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + i * 0.12);
+      osc.stop(ctx.currentTime + i * 0.12 + 0.35);
+    });
+    setTimeout(() => ctx.close(), 1500);
+  } catch {}
+}
 
+/* ── Component ── */
 export default function SofiaWidget() {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
@@ -127,11 +95,20 @@ export default function SofiaWidget() {
   const [toolInfo, setToolInfo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [responseId, setResponseId] = useState<string | null>(null);
+  const [showWelcome, setShowWelcome] = useState(false);
 
   const abortRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  // Auto-scroll to bottom when messages change
+  // Welcome alert on every page load
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowWelcome(true);
+      playChime();
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, []);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading, toolInfo]);
@@ -144,337 +121,215 @@ export default function SofiaWidget() {
     setToolInfo(null);
     setMessages((prev) => [...prev, { role: "user", content: question }]);
     setLoading(true);
-
-    // Add a placeholder assistant message that will be filled via streaming
     setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
     const controller = new AbortController();
     abortRef.current = controller;
-
     let streamWorked = false;
     try {
-      await fetchStream(
-        "/sofia/ask-stream",
-        { question, previousResponseId: responseId },
-        (chunk) => {
-          streamWorked = true;
-          switch (chunk.type) {
-            case "delta":
-              setMessages((prev) => {
-                const updated = [...prev];
-                const last = updated[updated.length - 1];
-                if (last?.role === "assistant") {
-                  updated[updated.length - 1] = {
-                    ...last,
-                    content: last.content + chunk.content,
-                  };
-                }
-                return updated;
-              });
-              break;
-            case "tool_call":
-              setToolInfo(chunk.content);
-              break;
-            case "done":
-              if (chunk.responseId) setResponseId(chunk.responseId);
-              setToolInfo(null);
-              break;
-            case "error":
-              setError(chunk.content);
-              break;
-          }
-        },
-        controller.signal,
-      );
+      await fetchStream("/sofia/ask-stream", { question, previousResponseId: responseId }, (chunk) => {
+        streamWorked = true;
+        switch (chunk.type) {
+          case "delta":
+            setMessages((prev) => { const u = [...prev]; const l = u[u.length - 1]; if (l?.role === "assistant") u[u.length - 1] = { ...l, content: l.content + chunk.content }; return u; });
+            break;
+          case "tool_call": setToolInfo(chunk.content); break;
+          case "done": if (chunk.responseId) setResponseId(chunk.responseId); setToolInfo(null); break;
+          case "error": setError(chunk.content); break;
+        }
+      }, controller.signal);
     } catch (err) {
-      if ((err as Error).name === "AbortError") {
-        setMessages((prev) => {
-          const last = prev[prev.length - 1];
-          if (last?.role === "assistant" && !last.content) return prev.slice(0, -1);
-          return prev;
-        });
-        setLoading(false);
-        abortRef.current = null;
-        return;
-      }
-
-      // Fallback to classic /sofia/ask if streaming failed
+      if ((err as Error).name === "AbortError") { setMessages((p) => { const l = p[p.length - 1]; return l?.role === "assistant" && !l.content ? p.slice(0, -1) : p; }); setLoading(false); abortRef.current = null; return; }
       if (!streamWorked) {
         try {
-          const result = await apiFetch<{ answer: string; responseId?: string | null }>("/sofia/ask", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ question, previousResponseId: responseId }),
-          });
-          setMessages((prev) => {
-            const updated = [...prev];
-            updated[updated.length - 1] = { role: "assistant", content: result.answer };
-            return updated;
-          });
+          const result = await apiFetch<{ answer: string; responseId?: string | null }>("/sofia/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question, previousResponseId: responseId }) });
+          setMessages((p) => { const u = [...p]; u[u.length - 1] = { role: "assistant", content: result.answer }; return u; });
           setResponseId(result.responseId ?? null);
-        } catch (fallbackErr) {
-          setError(fallbackErr instanceof Error ? fallbackErr.message : t("No se pudo cargar"));
-          setMessages((prev) => {
-            const last = prev[prev.length - 1];
-            if (last?.role === "assistant" && !last.content) return prev.slice(0, -1);
-            return prev;
-          });
-        }
-      } else {
-        setError(err instanceof Error ? err.message : t("No se pudo cargar"));
-        setMessages((prev) => {
-          const last = prev[prev.length - 1];
-          if (last?.role === "assistant" && !last.content) return prev.slice(0, -1);
-          return prev;
-        });
-      }
-    } finally {
-      setLoading(false);
-      abortRef.current = null;
-    }
+        } catch (fe) { setError(fe instanceof Error ? fe.message : t("No se pudo cargar")); setMessages((p) => { const l = p[p.length - 1]; return l?.role === "assistant" && !l.content ? p.slice(0, -1) : p; }); }
+      } else { setError(err instanceof Error ? err.message : t("No se pudo cargar")); setMessages((p) => { const l = p[p.length - 1]; return l?.role === "assistant" && !l.content ? p.slice(0, -1) : p; }); }
+    } finally { setLoading(false); abortRef.current = null; }
   }, [input, loading, responseId, t]);
 
   return (
     <>
-      {/* FAB */}
-      <div style={{ position: "fixed", bottom: "24px", right: "24px", zIndex: 40, width: "62px", height: "62px" }}>
-        {/* Outer glow bloom */}
-        <div style={{
-          position: "absolute", inset: "-10px", borderRadius: "50%",
-          background: "radial-gradient(ellipse, rgba(33,208,179,0.22) 0%, transparent 70%)",
-          pointerEvents: "none",
-        }} />
-        {/* Pulse rings */}
-        <div style={{
-          position: "absolute", inset: "-7px", borderRadius: "50%",
-          border: "2px solid rgba(33,208,179,0.5)",
-          animation: "sofiaRing 2.2s ease-out infinite",
-        }} />
-        <div style={{
-          position: "absolute", inset: "-14px", borderRadius: "50%",
-          border: "2px solid rgba(33,208,179,0.25)",
-          animation: "sofiaRing 2.2s ease-out infinite 0.7s",
-        }} />
-        {/* Button */}
-        <button
-          type="button"
-          onClick={() => setOpen(!open)}
+      {/* ── Welcome toast ── */}
+      {showWelcome && (
+        <div
+          onClick={() => { setShowWelcome(false); setOpen(true); }}
           style={{
-            position: "relative", width: "68px", height: "68px", borderRadius: "50%",
-            background: "linear-gradient(160deg, #1b3347 0%, #0d1d2b 100%)",
-            border: "2px solid rgba(33,208,179,0.75)",
+            position: "fixed", bottom: 100, right: 24, zIndex: 41,
+            maxWidth: 280, padding: "14px 18px", borderRadius: 16,
+            background: "#fff", border: "1px solid #e2e8f0",
+            boxShadow: "0 8px 32px rgba(15,23,42,0.15), 0 0 0 1px rgba(33,208,179,0.1)",
             cursor: "pointer",
-            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "0px",
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.07), 0 0 0 4px rgba(33,208,179,0.12), 0 8px 30px rgba(33,208,179,0.38), 0 4px 14px rgba(0,0,0,0.5)",
-            animation: "sofiaFloat 3.5s ease-in-out infinite",
-            transition: "transform 140ms ease, box-shadow 140ms ease",
-          }}
-          onMouseEnter={e => {
-            const el = e.currentTarget as HTMLElement;
-            el.style.transform = "scale(1.09)";
-            el.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,0.07), 0 0 0 5px rgba(33,208,179,0.2), 0 10px 38px rgba(33,208,179,0.58), 0 4px 14px rgba(0,0,0,0.5)";
-          }}
-          onMouseLeave={e => {
-            const el = e.currentTarget as HTMLElement;
-            el.style.transform = "scale(1)";
-            el.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,0.07), 0 0 0 4px rgba(33,208,179,0.12), 0 8px 30px rgba(33,208,179,0.38), 0 4px 14px rgba(0,0,0,0.5)";
+            animation: "sofiaToastIn 0.5s cubic-bezier(0.16,1,0.3,1) both",
           }}
         >
-          <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "5px" }}>
-            <div style={{
-              position: "absolute", width: "34px", height: "34px", borderRadius: "50%",
-              background: "radial-gradient(ellipse, rgba(33,208,179,0.28) 0%, transparent 72%)",
-              pointerEvents: "none",
-            }} />
-            <svg width="22" height="22" viewBox="0 0 20 20" fill="none">
-              <path d="M10 0.5 C10 0.5 11.4 7 17 10 C11.4 13 10 19.5 10 19.5 C10 19.5 8.6 13 3 10 C8.6 7 10 0.5 10 0.5Z" fill="#21D0B3"/>
-              <path d="M10 0.5 C10 0.5 11.4 7 17 10 C11.4 13 10 19.5 10 19.5 C10 19.5 8.6 13 3 10 C8.6 7 10 0.5 10 0.5Z" fill="url(#starShine)" opacity="0.4"/>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+            <div style={{ width: 28, height: 28, borderRadius: 8, background: "linear-gradient(135deg, #21D0B3, #1FCDFF)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <SofiaIcon size={16} />
+            </div>
+            <div>
+              <span style={{ fontSize: 12, fontWeight: 800, color: "#0f172a" }}>Sof</span>
+              <span style={{ fontSize: 12, fontWeight: 800, color: "#21D0B3" }}> IA</span>
+            </div>
+          </div>
+          <p style={{ fontSize: 12.5, color: "#475569", margin: 0, lineHeight: 1.5 }}>
+            Puedo ayudarte con viajes, delegaciones, hoteles y transporte. Toca para preguntar.
+          </p>
+          <button type="button" onClick={(e) => { e.stopPropagation(); setShowWelcome(false); }}
+            style={{ position: "absolute", top: 8, right: 10, background: "none", border: "none", color: "#94a3b8", fontSize: 14, cursor: "pointer", padding: 2 }}>
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* ── FAB ── */}
+      <div style={{ position: "fixed", bottom: 24, right: 24, zIndex: 40 }}>
+        {/* Pulse ring */}
+        {!open && (
+          <div style={{ position: "absolute", inset: -6, borderRadius: "50%", border: "2px solid rgba(33,208,179,0.4)", animation: "sofiaRing 2.5s ease-out infinite", pointerEvents: "none" }} />
+        )}
+        <button
+          type="button"
+          onClick={() => { setOpen(!open); setShowWelcome(false); }}
+          style={{
+            position: "relative", width: 80, height: 80, borderRadius: "50%",
+            background: open
+              ? "linear-gradient(135deg, #e2e8f0, #f1f5f9)"
+              : "linear-gradient(145deg, #0f172a 0%, #1e293b 50%, #334155 100%)",
+            border: open ? "1px solid #cbd5e1" : "2px solid rgba(33,208,179,0.6)",
+            cursor: "pointer",
+            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 1,
+            boxShadow: open
+              ? "0 2px 8px rgba(0,0,0,0.1)"
+              : "0 4px 24px rgba(33,208,179,0.3), 0 8px 32px rgba(15,23,42,0.25), inset 0 1px 0 rgba(255,255,255,0.08)",
+            transition: "all 200ms ease",
+          }}
+          onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.08)"; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; }}
+        >
+          {open ? (
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.2" strokeLinecap="round">
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
             </svg>
-          </div>
-          <div style={{ width: "30px", height: "1px", background: "linear-gradient(90deg, transparent, rgba(33,208,179,0.5), transparent)", marginBottom: "5px" }} />
-          <div style={{ display: "flex", alignItems: "baseline", gap: "2px" }}>
-            <span style={{ color: "rgba(255,255,255,0.9)", fontSize: "9.5px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase" }}>Sof</span>
-            <span style={{ color: "#21D0B3", fontSize: "11px", fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", textShadow: "0 0 8px rgba(33,208,179,0.7)" }}>IA</span>
-          </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0 }}>
+              <span style={{ fontSize: 36, fontWeight: 900, fontStyle: "italic", color: "#21D0B3", lineHeight: 1, textShadow: "0 0 16px rgba(33,208,179,0.7), 0 0 32px rgba(33,208,179,0.3)", fontFamily: "system-ui, -apple-system, sans-serif", letterSpacing: "-0.02em" }}>S</span>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 2, marginTop: -3 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.6)", letterSpacing: "0.06em", fontFamily: "system-ui" }}>Sof</span>
+                <span style={{ fontSize: 13, fontWeight: 900, color: "#21D0B3", letterSpacing: "0.03em", textShadow: "0 0 8px rgba(33,208,179,0.5)" }}>IA</span>
+              </div>
+            </div>
+          )}
         </button>
       </div>
 
+      {/* ── Chat panel ── */}
       {open && (
         <div style={{
-          position: "fixed", bottom: "92px", right: "24px", zIndex: 50,
-          width: "390px", borderRadius: "20px", overflow: "hidden",
-          background: "#ffffff",
-          border: "1px solid #e2e8f0",
-          boxShadow: "0 24px 64px rgba(15,23,42,0.18), 0 4px 16px rgba(15,23,42,0.08)",
+          position: "fixed", bottom: 92, right: 24, zIndex: 50,
+          width: 390, borderRadius: 20, overflow: "hidden",
+          background: "linear-gradient(180deg, #1e293b 0%, #263548 100%)",
+          border: "1px solid rgba(255,255,255,0.08)",
+          boxShadow: "0 24px 64px rgba(0,0,0,0.3), 0 4px 16px rgba(0,0,0,0.15)",
+          animation: "sofiaToastIn 0.25s cubic-bezier(0.16,1,0.3,1) both",
         }}>
           {/* Header */}
-          <div style={{
-            padding: "16px 20px",
-            background: "linear-gradient(135deg, #30455B 0%, #243550 100%)",
-            borderBottom: "2px solid #21D0B3",
-          }}>
+          <div style={{ padding: "16px 20px", background: "rgba(33,208,179,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <div style={{
-                  width: "40px", height: "40px", borderRadius: "50%",
-                  background: "linear-gradient(145deg, #1ce8c8, #0d8f7a)",
-                  border: "none",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  overflow: "hidden",
-                  boxShadow: "0 2px 10px rgba(33,208,179,0.4)",
-                }}>
-                  <SofiaIcon size={36} />
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ width: 38, height: 38, borderRadius: "50%", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 10px rgba(0,0,0,0.15)" }}>
+                  <span style={{ fontSize: 18, fontWeight: 900, fontStyle: "italic", color: "#30455B", fontFamily: "system-ui" }}>S</span>
                 </div>
                 <div>
-                  <p style={{
-                    color: "#21D0B3", fontSize: "10px",
-                    fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", margin: 0,
-                  }}>Sof IA</p>
-                  <p style={{ color: "#ffffff", fontSize: "15px", fontWeight: 700, marginTop: "1px", margin: 0 }}>
-                    {t("Asistente inteligente")}
-                  </p>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 3 }}>
+                    <span style={{ color: "#f1f5f9", fontSize: 15, fontWeight: 800 }}>Sof</span>
+                    <span style={{ color: "#21D0B3", fontSize: 16, fontWeight: 900, textShadow: "0 0 8px rgba(33,208,179,0.4)" }}>IA</span>
+                  </div>
+                  <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: 600, margin: 0 }}>{t("Asistente inteligente")}</p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                style={{
-                  background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.18)",
-                  borderRadius: "8px", padding: "5px 13px",
-                  color: "rgba(255,255,255,0.75)", fontSize: "12px", fontWeight: 600, cursor: "pointer",
-                }}
-              >{t("Cerrar")}</button>
+              <button type="button" onClick={() => setOpen(false)}
+                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "5px 12px", color: "rgba(255,255,255,0.4)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                {t("Cerrar")}
+              </button>
             </div>
           </div>
 
           {/* Messages */}
-          <div style={{
-            maxHeight: "44vh", overflowY: "auto", padding: "16px 18px",
-            display: "flex", flexDirection: "column", gap: "10px",
-            background: "#f8fafc",
-          }}>
+          <div style={{ maxHeight: "44vh", overflowY: "auto", padding: "16px 18px", display: "flex", flexDirection: "column", gap: 10, background: "transparent" }}>
             {messages.length === 0 && (
-              <div style={{
-                background: "#ffffff", border: "1px solid #e8edf5",
-                borderRadius: "12px", padding: "14px 16px",
-                display: "flex", gap: "10px", alignItems: "flex-start",
-              }}>
-                <div style={{
-                  width: "28px", height: "28px", borderRadius: "50%", flexShrink: 0,
-                  background: "linear-gradient(145deg, #1ce8c8, #0d8f7a)", overflow: "hidden",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  boxShadow: "0 2px 8px rgba(33,208,179,0.35)",
-                }}>
-                  <SofiaIcon size={18} />
+              <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: "16px", display: "flex", gap: 10, alignItems: "flex-start" }}>
+                <div style={{ width: 28, height: 28, borderRadius: "50%", flexShrink: 0, background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ fontSize: 13, fontWeight: 900, fontStyle: "italic", color: "#fff", fontFamily: "system-ui" }}>S</span>
                 </div>
-                <p style={{ color: "#64748b", fontSize: "13px", lineHeight: 1.6, margin: 0 }}>
+                <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, lineHeight: 1.6, margin: 0 }}>
                   {t("Haz una pregunta sobre viajes, participantes, delegaciones, hoteles o transporte.")}
                 </p>
               </div>
             )}
-            {messages.map((msg, i) => {
-              if (msg.role === "assistant") {
-                return (
-                  <div key={i} style={{
-                    background: "#ffffff", border: "1px solid #e2e8f0",
-                    borderRadius: "12px", padding: "12px 14px",
-                    boxShadow: "0 1px 4px rgba(15,23,42,0.05)",
-                    display: "flex", gap: "10px", alignItems: "flex-start",
-                  }}>
-                    <div style={{
-                      width: "26px", height: "26px", borderRadius: "50%", flexShrink: 0, marginTop: "1px",
-                      background: "linear-gradient(145deg, #1ce8c8, #0d8f7a)", overflow: "hidden",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      boxShadow: "0 2px 8px rgba(33,208,179,0.35)",
-                    }}>
-                      <SofiaIcon size={17} />
-                    </div>
-                    <div style={{
-                      flex: 1, color: "#1e293b", fontSize: "13px", lineHeight: 1.65,
-                      whiteSpace: "pre-wrap", wordBreak: "break-word",
-                    }}>
-                      {msg.content || (loading && i === messages.length - 1 ? "" : "...")}
-                    </div>
-                  </div>
-                );
-              }
-              return (
-                <div key={i} style={{
-                  background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.22)",
-                  borderRadius: "12px", padding: "10px 14px", marginLeft: "36px",
-                  color: "#0A6B5E", fontSize: "13px", lineHeight: 1.5,
-                }}>
-                  {msg.content}
+            {messages.map((msg, i) => msg.role === "assistant" ? (
+              <div key={i} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: "12px 14px", display: "flex", gap: 10, alignItems: "flex-start" }}>
+                <div style={{ width: 24, height: 24, borderRadius: "50%", flexShrink: 0, marginTop: 1, background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ fontSize: 11, fontWeight: 900, fontStyle: "italic", color: "#fff", fontFamily: "system-ui" }}>S</span>
                 </div>
-              );
-            })}
-            {/* Tool call indicator */}
+                <div style={{ flex: 1, color: "rgba(255,255,255,0.85)", fontSize: 13, lineHeight: 1.65, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                  {msg.content || (loading && i === messages.length - 1 ? "" : "...")}
+                </div>
+              </div>
+            ) : (
+              <div key={i} style={{ background: "rgba(33,208,179,0.12)", border: "1px solid rgba(33,208,179,0.2)", borderRadius: 14, padding: "10px 14px", marginLeft: 34, color: "#21D0B3", fontSize: 13, lineHeight: 1.5 }}>
+                {msg.content}
+              </div>
+            ))}
             {toolInfo && (
-              <div style={{
-                display: "flex", gap: "8px", alignItems: "center", padding: "6px 12px",
-                background: "rgba(33,208,179,0.06)", borderRadius: "8px",
-                border: "1px solid rgba(33,208,179,0.15)",
-              }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2">
-                  <circle cx="12" cy="12" r="3" />
-                  <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" />
-                </svg>
-                <span style={{ color: "#0d7a6a", fontSize: "11.5px", fontWeight: 600 }}>
-                  Consultando: {toolInfo}
-                </span>
+              <div style={{ display: "flex", gap: 8, alignItems: "center", padding: "6px 12px", background: "rgba(33,208,179,0.06)", borderRadius: 8, border: "1px solid rgba(33,208,179,0.12)" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><circle cx="12" cy="12" r="3" /><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" /></svg>
+                <span style={{ color: "#21D0B3", fontSize: 11.5, fontWeight: 600 }}>Consultando: {toolInfo}</span>
               </div>
             )}
-            {/* Streaming dots */}
             {loading && !toolInfo && messages[messages.length - 1]?.content === "" && (
-              <div style={{ display: "flex", gap: "6px", alignItems: "center", padding: "4px 0" }}>
+              <div style={{ display: "flex", gap: 6, alignItems: "center", padding: "4px 0" }}>
                 {[0, 1, 2].map((i) => (
-                  <span key={i} style={{
-                    width: "6px", height: "6px", borderRadius: "50%", background: "#21D0B3",
-                    animation: `sofiaRing 1s ease-in-out infinite ${i * 0.2}s`,
-                    display: "inline-block",
-                  }} />
+                  <span key={i} style={{ width: 6, height: 6, borderRadius: "50%", background: "#21D0B3", animation: `sofiaRing 1s ease-in-out infinite ${i * 0.2}s`, display: "inline-block" }} />
                 ))}
-                <span style={{ color: "#94a3b8", fontSize: "12px", marginLeft: "4px" }}>{t("Preparando respuesta...")}</span>
+                <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 12, marginLeft: 4 }}>{t("Preparando respuesta...")}</span>
               </div>
             )}
-            {error && <p style={{ color: "#f43f5e", fontSize: "12px", margin: 0 }}>{error}</p>}
+            {error && <p style={{ color: "#f43f5e", fontSize: 12, margin: 0 }}>{error}</p>}
             <div ref={messagesEndRef} />
           </div>
 
           {/* Input */}
-          <div style={{
-            padding: "12px 16px 16px",
-            borderTop: "1px solid #e8edf5",
-            background: "#ffffff",
-          }}>
-            <div style={{ display: "flex", gap: "8px" }}>
+          <div style={{ padding: "12px 16px 16px", borderTop: "1px solid rgba(255,255,255,0.06)", background: "rgba(0,0,0,0.15)" }}>
+            <div style={{ display: "flex", gap: 8 }}>
               <input
-                style={{
-                  flex: 1, padding: "10px 14px", borderRadius: "10px",
-                  background: "#f4f7fc", border: "1px solid #e2e8f0",
-                  color: "#0f172a", fontSize: "13px", outline: "none",
-                }}
+                style={{ flex: 1, padding: "10px 14px", borderRadius: 12, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#f1f5f9", fontSize: 13, outline: "none" }}
                 placeholder={t("Escribe tu pregunta")}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); sendMessage(); } }}
               />
-              <button
-                onClick={sendMessage}
-                disabled={loading}
-                style={{
-                  padding: "10px 18px", borderRadius: "10px",
-                  background: loading ? "#a7f3ed" : "linear-gradient(135deg, #21D0B3, #14AE98)",
-                  color: loading ? "#0B7A6D" : "#ffffff",
-                  fontWeight: 700, fontSize: "13px", border: "none",
-                  cursor: loading ? "not-allowed" : "pointer",
-                  boxShadow: loading ? "none" : "0 2px 10px rgba(33,208,179,0.35)",
-                }}
-              >{loading ? "···" : t("Enviar")}</button>
+              <button onClick={sendMessage} disabled={loading}
+                style={{ padding: "10px 18px", borderRadius: 12, background: loading ? "rgba(33,208,179,0.2)" : "linear-gradient(135deg, #21D0B3, #14AE98)", color: loading ? "#21D0B3" : "#fff", fontWeight: 700, fontSize: 13, border: "none", cursor: loading ? "not-allowed" : "pointer", boxShadow: loading ? "none" : "0 2px 12px rgba(33,208,179,0.35)" }}>
+                {loading ? "···" : t("Enviar")}
+              </button>
             </div>
           </div>
         </div>
       )}
+
+      <style jsx global>{`
+        @keyframes sofiaRing {
+          0% { transform: scale(1); opacity: 0.6; }
+          100% { transform: scale(1.5); opacity: 0; }
+        }
+        @keyframes sofiaToastIn {
+          from { opacity: 0; transform: translateY(12px) scale(0.95); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+      `}</style>
     </>
   );
 }

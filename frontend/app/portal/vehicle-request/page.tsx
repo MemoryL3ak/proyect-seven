@@ -247,6 +247,7 @@ export default function VehicleRequestPortalPage() {
   const [requestAccessLoading, setRequestAccessLoading] = useState(false);
 
   const [athlete, setAthlete] = useState<Athlete | null>(null);
+  const [sessionChecked, setSessionChecked] = useState(false);
   const notify = useNotifications();
   const [events, setEvents] = useState<Record<string, EventItem>>({});
   const [delegations, setDelegations] = useState<Record<string, DelegationItem>>({});
@@ -379,6 +380,7 @@ export default function VehicleRequestPortalPage() {
       }
       setAthlete(match);
       setActiveTab("solicitud");
+      try { sessionStorage.setItem("portal_vr_id", match.id); } catch {}
       await loadPortal(match);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo iniciar el portal.");
@@ -400,10 +402,34 @@ export default function VehicleRequestPortalPage() {
         if (data) {
           setAthlete(data);
           setActiveTab("solicitud");
+          try { sessionStorage.setItem("portal_vr_id", data.id); } catch {}
           await loadPortal(data);
         }
       } catch {} finally { setLoading(false); }
     })();
+  }, []);
+
+  // Restore session on mount
+  useEffect(() => {
+    if (autoLoginRef.current || athlete) return;
+    try {
+      const saved = sessionStorage.getItem("portal_vr_id");
+      if (!saved) { setSessionChecked(true); return; }
+      autoLoginRef.current = true;
+      (async () => {
+        setLoading(true);
+        try {
+          const data = await apiFetch<Athlete>(`/athletes/${saved}`);
+          if (data?.id) {
+            setAthlete(data);
+            setActiveTab("solicitud");
+            await loadPortal(data);
+          } else { sessionStorage.removeItem("portal_vr_id"); }
+        } catch { sessionStorage.removeItem("portal_vr_id"); }
+        setLoading(false);
+        setSessionChecked(true);
+      })();
+    } catch { setSessionChecked(true); }
   }, []);
 
   const requestAccess = async () => {
@@ -426,6 +452,7 @@ export default function VehicleRequestPortalPage() {
   };
 
   const logout = () => {
+    try { sessionStorage.removeItem("portal_vr_id"); } catch {}
     setAthlete(null);
     setTrips([]);
     setVenues([]);
@@ -607,19 +634,19 @@ export default function VehicleRequestPortalPage() {
         }),
       });
       setTrips((prev) => prev.map((t) => t.id === tripId ? { ...t, driverRating: ratingStars } : t));
-      notify.push("Gracias por tu evaluacion!", "star");
+      notify.push("Gracias por tu evaluacion!", "⭐");
       setRatingTripId(null);
       setRatingStars(0);
       setRatingComment("");
     } catch {
-      notify.push("No se pudo enviar la evaluacion", "x");
+      notify.push("No se pudo enviar la evaluacion", "❌");
     } finally {
       setRatingLoading(false);
     }
   };
 
   const activeChatTrip = useMemo(() =>
-    trips.find((trip) => ["SCHEDULED", "EN_ROUTE", "PICKED_UP"].includes(trip.status || "")) || null,
+    trips.find((trip) => ["EN_ROUTE", "PICKED_UP"].includes(trip.status || "")) || null,
   [trips]);
 
   const requestStats = useMemo(() => {
@@ -1106,7 +1133,22 @@ export default function VehicleRequestPortalPage() {
 
   return (
     <>
-      {!athlete && (
+      {!sessionChecked && !athlete && (
+        <div style={{ minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"linear-gradient(135deg,#020c18 0%,#0a1628 50%,#041220 100%)",position:"relative",overflow:"hidden" }}>
+          <div style={{ position:"absolute",top:"-20%",right:"-10%",width:"50vw",height:"50vw",borderRadius:"50%",background:"radial-gradient(circle,rgba(33,208,179,0.08) 0%,transparent 70%)",pointerEvents:"none" }} />
+          <div style={{ position:"absolute",bottom:"-15%",left:"-10%",width:"40vw",height:"40vw",borderRadius:"50%",background:"radial-gradient(circle,rgba(31,205,255,0.06) 0%,transparent 70%)",pointerEvents:"none" }} />
+          <div style={{ position:"relative",zIndex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:20 }}>
+            <img src="/branding/LOGO-SEVEN-1.png" alt="Seven Arena" style={{ height:48,width:"auto",objectFit:"contain",filter:"drop-shadow(0 0 24px rgba(33,208,179,0.4)) drop-shadow(0 4px 12px rgba(0,0,0,0.6))",marginBottom:8 }} />
+            <div style={{ width:44,height:44,position:"relative" }}>
+              <div style={{ position:"absolute",inset:0,border:"3px solid rgba(33,208,179,0.15)",borderRadius:"50%" }} />
+              <div style={{ position:"absolute",inset:0,border:"3px solid transparent",borderTopColor:"#21D0B3",borderRadius:"50%",animation:"sa-spin 0.9s cubic-bezier(0.4,0,0.2,1) infinite" }} />
+            </div>
+            <p style={{ fontSize:13,fontWeight:600,color:"rgba(255,255,255,0.5)",margin:0,letterSpacing:"0.03em" }}>Cargando portal...</p>
+          </div>
+          <style>{`@keyframes sa-spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      )}
+      {sessionChecked && !athlete && (
         <div className="flex flex-col lg:flex-row" style={{ minHeight: "100vh", background: "#020c18", position: "relative", overflow: "hidden" }}>
           <style>{`
             @keyframes pvr-f1{0%,100%{transform:translateY(0px) scale(1)}50%{transform:translateY(-30px) translateX(10px) scale(1.05)}}
@@ -1857,7 +1899,8 @@ export default function VehicleRequestPortalPage() {
           tripId={activeChatTrip.id}
           senderType="PASSENGER"
           senderName={athlete.fullName || "Pasajero"}
-          onNewMessage={(name, content) => notify.push(`${name}: ${content.slice(0, 80)}`, "msg")}
+          tripStatus={activeChatTrip.status}
+          onNewMessage={(name, content) => notify.push(`${name}: ${content.slice(0, 80)}`, "💬")}
         />
       )}
     </>

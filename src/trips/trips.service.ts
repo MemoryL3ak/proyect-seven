@@ -44,6 +44,9 @@ type TripRow = {
   is_round_trip: boolean;
   parent_trip_id: string | null;
   leg_type: string | null;
+  committee_validated: boolean;
+  committee_validated_at: string | null;
+  committee_validated_by: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -154,6 +157,15 @@ export class TripsService {
     if (dto.legType !== undefined) {
       row.leg_type = dto.legType ?? null;
     }
+    if (dto.committeeValidated !== undefined) {
+      row.committee_validated = dto.committeeValidated ?? false;
+      if (dto.committeeValidated) {
+        row.committee_validated_at = new Date().toISOString();
+      }
+    }
+    if (dto.committeeValidatedBy !== undefined) {
+      row.committee_validated_by = dto.committeeValidatedBy ?? null;
+    }
 
     return row;
   }
@@ -237,6 +249,9 @@ export class TripsService {
       isRoundTrip: row.is_round_trip ?? false,
       parentTripId: row.parent_trip_id,
       legType: row.leg_type,
+      committeeValidated: row.committee_validated ?? false,
+      committeeValidatedAt: row.committee_validated_at ? new Date(row.committee_validated_at) : null,
+      committeeValidatedBy: row.committee_validated_by,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
     };

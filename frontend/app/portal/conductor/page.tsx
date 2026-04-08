@@ -133,6 +133,7 @@ export default function DriverPortalPage() {
   const { t } = useI18n();
   const [driverId, setDriverId] = useState("");
   const [driverProfile, setDriverProfile] = useState<Driver | null>(null);
+  const [sessionChecked, setSessionChecked] = useState(false);
   const [trips, setTrips] = useState<Trip[]>([]);
   const [events, setEvents] = useState<Record<string, EventItem>>({});
   const [vehicles, setVehicles] = useState<Record<string, VehicleItem>>({});
@@ -167,8 +168,22 @@ export default function DriverPortalPage() {
   const ratedTripIds = useRef<Set<string>>(new Set());
   const tripsRef = useRef<Trip[]>([]);
 
-  const loadTrips = async () => {
-    if (!driverId) return;
+  // Restore session on mount
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem("portal_conductor_id");
+      if (saved && !driverProfile) {
+        loadTrips(saved).finally(() => setSessionChecked(true));
+      } else {
+        setSessionChecked(true);
+      }
+    } catch { setSessionChecked(true); }
+  }, []);
+
+  const loadTrips = async (overrideId?: string) => {
+    const id = overrideId || driverId;
+    if (!id) return;
+    if (overrideId) setDriverId(overrideId);
     setLoading(true);
     setError(null);
     setIdError(null);
@@ -208,7 +223,7 @@ export default function DriverPortalPage() {
 
       const allDrivers: Driver[] = [...(driversData || []), ...participantDrivers];
 
-      const normalizedInput = driverId.trim().toLowerCase();
+      const normalizedInput = id.trim().toLowerCase();
       const driverMatch = allDrivers.find((driver) => {
         const id = driver.id ?? "";
         const userId = driver.userId ?? "";
@@ -220,6 +235,7 @@ export default function DriverPortalPage() {
         );
       });
       setDriverProfile(driverMatch ?? null);
+      if (driverMatch) { try { sessionStorage.setItem("portal_conductor_id", driverId.trim()); } catch {} }
       if (!driverMatch) {
         setIdError(t("El ID ingresado no corresponde a un conductor registrado."));
         setTrips([]);
@@ -637,7 +653,22 @@ export default function DriverPortalPage() {
 
   return (
     <>
-      {!driverProfile && (
+      {!sessionChecked && !driverProfile && (
+        <div style={{ minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"linear-gradient(135deg,#020c18 0%,#0a1628 50%,#041220 100%)",position:"relative",overflow:"hidden" }}>
+          <div style={{ position:"absolute",top:"-20%",right:"-10%",width:"50vw",height:"50vw",borderRadius:"50%",background:"radial-gradient(circle,rgba(33,208,179,0.08) 0%,transparent 70%)",pointerEvents:"none" }} />
+          <div style={{ position:"absolute",bottom:"-15%",left:"-10%",width:"40vw",height:"40vw",borderRadius:"50%",background:"radial-gradient(circle,rgba(31,205,255,0.06) 0%,transparent 70%)",pointerEvents:"none" }} />
+          <div style={{ position:"relative",zIndex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:20 }}>
+            <img src="/branding/LOGO-SEVEN-1.png" alt="Seven Arena" style={{ height:48,width:"auto",objectFit:"contain",filter:"drop-shadow(0 0 24px rgba(33,208,179,0.4)) drop-shadow(0 4px 12px rgba(0,0,0,0.6))",marginBottom:8 }} />
+            <div style={{ width:44,height:44,position:"relative" }}>
+              <div style={{ position:"absolute",inset:0,border:"3px solid rgba(33,208,179,0.15)",borderRadius:"50%" }} />
+              <div style={{ position:"absolute",inset:0,border:"3px solid transparent",borderTopColor:"#21D0B3",borderRadius:"50%",animation:"sa-spin 0.9s cubic-bezier(0.4,0,0.2,1) infinite" }} />
+            </div>
+            <p style={{ fontSize:13,fontWeight:600,color:"rgba(255,255,255,0.5)",margin:0,letterSpacing:"0.03em" }}>Cargando portal...</p>
+          </div>
+          <style>{`@keyframes sa-spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      )}
+      {sessionChecked && !driverProfile && (
         <div className="flex flex-col lg:flex-row" style={{ minHeight: "100vh", background: "#020c18", position: "relative", overflow: "hidden" }}>
           <style>{`
             @keyframes pc-f1{0%,100%{transform:translateY(0px) scale(1)}50%{transform:translateY(-30px) translateX(10px) scale(1.05)}}
@@ -821,7 +852,7 @@ export default function DriverPortalPage() {
                     <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
                   </svg>
                 </button>
-                <button type="button" onClick={() => { setDriverProfile(null); setDriverId(""); setTrips([]); }}
+                <button type="button" onClick={() => { try { sessionStorage.removeItem("portal_conductor_id"); } catch {} setDriverProfile(null); setDriverId(""); setTrips([]); }}
                   style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(255,255,255,0.15)",background:"rgba(255,255,255,0.08)",cursor:"pointer",flexShrink:0 }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
@@ -1714,6 +1745,7 @@ export default function DriverPortalPage() {
           tripId={trackingTripId}
           senderType="DRIVER"
           senderName={driverProfile.fullName || "Conductor"}
+          tripStatus={trips.find((t) => t.id === trackingTripId)?.status}
           onNewMessage={(name, content) => driverNotify.push(`${name}: ${content.slice(0, 80)}`, "💬")}
         />
       )}

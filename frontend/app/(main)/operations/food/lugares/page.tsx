@@ -163,9 +163,9 @@ export default function FoodLocationsPage() {
         clientTypes: form.clientTypes,
       };
       if (editingId) {
-        await apiFetch(`/food-locations/${editingId}`, { method: "PATCH", body: JSON.stringify(body) });
+        await apiFetch(`/food-locations/${editingId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       } else {
-        await apiFetch("/food-locations", { method: "POST", body: JSON.stringify(body) });
+        await apiFetch("/food-locations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       }
       setShowForm(false);
       await loadData();
