@@ -95,6 +95,15 @@ export class Trip {
   @Column({ name: 'passenger_lng', type: 'float', nullable: true })
   passengerLng?: number | null;
 
+  @Column({ name: 'is_round_trip', type: 'boolean', default: false })
+  isRoundTrip: boolean;
+
+  @Column({ name: 'parent_trip_id', type: 'uuid', nullable: true })
+  parentTripId?: string | null;
+
+  @Column({ name: 'leg_type', length: 20, type: 'varchar', nullable: true })
+  legType?: string | null;
+
   athleteIds?: string[];
 
   athleteNames?: string[];

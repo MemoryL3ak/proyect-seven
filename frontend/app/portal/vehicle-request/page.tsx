@@ -70,6 +70,10 @@ type Trip = {
   driverRating?: number | null;
   ratingComment?: string | null;
   ratedAt?: string | null;
+  isRoundTrip?: boolean;
+  parentTripId?: string | null;
+  legType?: string | null;
+  childTrips?: Trip[];
 };
 
 type Accommodation = {
@@ -111,10 +115,13 @@ type PositionItem = {
 };
 
 const VEHICLE_TYPES = [
-  { label: "Sedan / SUV", value: "SEDAN" },
-  { label: "Van", value: "VAN" },
-  { label: "Mini bus", value: "MINI_BUS" },
-  { label: "Bus", value: "BUS" },
+  { label: "Auto", value: "AUTO" },
+  { label: "SUV", value: "SUV" },
+  { label: "Van 10 pax", value: "VAN_10" },
+  { label: "Van 15-17 pax", value: "VAN_15" },
+  { label: "Van 19 pax", value: "VAN_19" },
+  { label: "Minibus 20-33 pax", value: "MINIBUS" },
+  { label: "Bus 40-64 pax", value: "BUS" },
 ] as const;
 
 const statusMeta: Record<string, { label: string; tone: string; panel: string }> = {
@@ -260,6 +267,9 @@ export default function VehicleRequestPortalPage() {
   const [requestedTime, setRequestedTime] = useState("");
   const [passengerCount, setPassengerCount] = useState("1");
   const [notes, setNotes] = useState("");
+  const [isRoundTrip, setIsRoundTrip] = useState(false);
+  const [returnTime, setReturnTime] = useState("");
+  const [returnVenueId, setReturnVenueId] = useState("");
   const [editingTripId, setEditingTripId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<PortalTab>("solicitud");
   const [actividadesSubTab, setActividadesSubTab] = useState<ActividadesSubTab>("en_curso");
@@ -439,6 +449,9 @@ export default function VehicleRequestPortalPage() {
     setRequestedTime("");
     setPassengerCount("1");
     setNotes("");
+    setIsRoundTrip(false);
+    setReturnTime("");
+    setReturnVenueId("");
     setEditingTripId(null);
   };
 
@@ -477,6 +490,14 @@ export default function VehicleRequestPortalPage() {
     );
     setPassengerCount(String(trip.passengerCount || 1));
     setNotes(trip.notes || "");
+    setIsRoundTrip(trip.isRoundTrip || false);
+    const returnChild = (trip.childTrips || []).find((c) => c.legType === "RETURN");
+    setReturnTime(
+      returnChild?.scheduledAt && !Number.isNaN(new Date(returnChild.scheduledAt).getTime())
+        ? toDateTimeLocalInput(returnChild.scheduledAt)
+        : "",
+    );
+    setReturnVenueId(returnChild?.destinationVenueId || "");
     setActiveTab("solicitud");
     setError(null);
     setMessage(null);
@@ -502,6 +523,10 @@ export default function VehicleRequestPortalPage() {
       setError("Indica una cantidad de personas valida.");
       return;
     }
+    if (isRoundTrip && !returnTime) {
+      setError("Indica la fecha y hora del viaje de regreso.");
+      return;
+    }
     setSubmitting(true);
     setError(null);
     setMessage(null);
@@ -522,6 +547,15 @@ export default function VehicleRequestPortalPage() {
         requestedAt: editingTripId ? undefined : new Date().toISOString(),
         scheduledAt: new Date(requestedTime).toISOString(),
         notes: notes.trim() || undefined,
+        isRoundTrip,
+        ...(isRoundTrip ? {
+          returnScheduledAt: new Date(returnTime).toISOString(),
+          returnOrigin: [venue?.address, venue?.commune, venue?.region, "Chile"].filter(Boolean).join(", ") || venue?.name || "Sede solicitada",
+          returnDestination: returnVenueId
+            ? (() => { const rv = venues.find((v) => v.id === returnVenueId); return [rv?.address, rv?.commune, rv?.region, "Chile"].filter(Boolean).join(", ") || rv?.name || "Destino regreso"; })()
+            : originAddress.trim(),
+          returnDestinationVenueId: returnVenueId || undefined,
+        } : {}),
       };
 
       await apiFetch(editingTripId ? `/trips/${editingTripId}` : "/trips", {
@@ -806,6 +840,7 @@ export default function VehicleRequestPortalPage() {
             </p>
             <p style={{ fontSize:11,color:"#94a3b8",margin:"2px 0 0" }}>
               {formatDateTime(trip.scheduledAt || trip.requestedAt)} · {status.label}
+              {trip.isRoundTrip && <span style={{ marginLeft:6,padding:"1px 6px",borderRadius:6,background:"#f0fdfa",border:"1px solid #99f6e4",fontSize:10,fontWeight:600,color:"#0a7a6b" }}>Ida y vuelta</span>}
             </p>
           </div>
           {driver && (
@@ -921,6 +956,46 @@ export default function VehicleRequestPortalPage() {
               <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
                 <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Notas</p>
                 <p style={{ fontSize:12.5,color:"#334155",margin:"3px 0 0",lineHeight:1.4 }}>{trip.notes}</p>
+              </div>
+            )}
+
+            {trip.isRoundTrip && trip.childTrips && trip.childTrips.length > 0 && (
+              <div style={{ padding:"10px 12px",borderRadius:12,background:"#f0fdfa",border:"1px solid #99f6e4" }}>
+                <p style={{ fontSize:10,fontWeight:700,color:"#0a7a6b",margin:"0 0 6px",textTransform:"uppercase",letterSpacing:"0.1em" }}>Viaje de regreso</p>
+                {trip.childTrips.map((child) => {
+                  const returnVenue = child.destinationVenueId ? venues.find((v) => v.id === child.destinationVenueId) : null;
+                  const returnDriver = child.driverId ? drivers[child.driverId] : null;
+                  const childStatusMeta = statusMeta[child.status || "REQUESTED"] || statusMeta.REQUESTED;
+                  const childStatus = { label: childStatusMeta.label, color: child.status === "COMPLETED" || child.status === "DROPPED_OFF" ? "#10b981" : child.status === "EN_ROUTE" || child.status === "PICKED_UP" ? "#6366f1" : "#f59e0b" };
+                  return (
+                    <div key={child.id} style={{ display:"flex",flexDirection:"column",gap:6 }}>
+                      <div style={{ display:"flex",alignItems:"center",gap:6,marginBottom:2 }}>
+                        <span style={{ display:"inline-block",width:8,height:8,borderRadius:4,background:childStatus.color }} />
+                        <span style={{ fontSize:11,fontWeight:700,color:childStatus.color }}>{childStatus.label}</span>
+                      </div>
+                      <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:6 }}>
+                        <div style={{ padding:"6px 8px",borderRadius:8,background:"#fff",border:"1px solid #e2e8f0" }}>
+                          <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Fecha regreso</p>
+                          <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{formatDateTime(child.scheduledAt)}</p>
+                        </div>
+                        <div style={{ padding:"6px 8px",borderRadius:8,background:"#fff",border:"1px solid #e2e8f0" }}>
+                          <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Destino</p>
+                          <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0",lineHeight:1.3 }}>
+                            {returnVenue?.name || child.destination || child.origin || "Pendiente"}
+                          </p>
+                        </div>
+                        <div style={{ padding:"6px 8px",borderRadius:8,background:"#fff",border:"1px solid #e2e8f0" }}>
+                          <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Conductor</p>
+                          <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{returnDriver?.fullName || "Pendiente"}</p>
+                        </div>
+                        <div style={{ padding:"6px 8px",borderRadius:8,background:"#fff",border:"1px solid #e2e8f0" }}>
+                          <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Origen</p>
+                          <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0",lineHeight:1.3 }}>{child.origin || "Pendiente"}</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
@@ -1279,6 +1354,50 @@ export default function VehicleRequestPortalPage() {
                         rows={2}
                         style={{ width:"100%",fontSize:13,borderRadius:10,resize:"none",padding:"8px 10px",boxSizing:"border-box",fontFamily:"inherit" }} />
                     </div>
+
+                    {/* Round trip toggle */}
+                    <div style={{ display:"flex",alignItems:"center",gap:10,padding:"6px 0" }}>
+                      <button type="button" onClick={() => setIsRoundTrip(!isRoundTrip)}
+                        style={{
+                          width:44,height:24,borderRadius:12,border:"none",cursor:"pointer",position:"relative",
+                          background: isRoundTrip ? "#21D0B3" : "#cbd5e1",
+                          transition:"background 0.2s",
+                        }}>
+                        <span style={{
+                          position:"absolute",top:2,left: isRoundTrip ? 22 : 2,
+                          width:20,height:20,borderRadius:10,background:"#fff",
+                          boxShadow:"0 1px 3px rgba(0,0,0,0.2)",transition:"left 0.2s",
+                        }} />
+                      </button>
+                      <span style={{ fontSize:13,fontWeight:600,color:"#0f172a" }}>Ida y vuelta</span>
+                    </div>
+
+                    {isRoundTrip && (
+                      <div style={{ display:"flex",flexDirection:"column",gap:10,padding:"10px 12px",borderRadius:12,background:"#f0fdfa",border:"1px solid #99f6e4" }}>
+                        <p style={{ fontSize:12,fontWeight:700,color:"#0a7a6b",margin:0 }}>Datos del regreso</p>
+                        <div>
+                          <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>Fecha y hora de regreso</label>
+                          <input className="input" type="datetime-local" value={returnTime}
+                            onChange={(e) => setReturnTime(e.target.value)}
+                            style={{ width:"100%",height:40,fontSize:13,borderRadius:10 }} />
+                        </div>
+                        <div>
+                          <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>Destino de regreso (opcional)</label>
+                          <select className="input" value={returnVenueId} onChange={(e) => setReturnVenueId(e.target.value)}
+                            style={{ width:"100%",height:40,fontSize:13,borderRadius:10 }}>
+                            <option value="">Misma direccion de origen</option>
+                            {venues.map((venue) => (
+                              <option key={venue.id} value={venue.id}>
+                                {venue.name}{venue.address ? ` — ${venue.address}` : ""}
+                              </option>
+                            ))}
+                          </select>
+                          <p style={{ fontSize:10.5,color:"#64748b",margin:"4px 0 0" }}>
+                            Si no seleccionas una sede, el regreso sera a la direccion de origen.
+                          </p>
+                        </div>
+                      </div>
+                    )}
 
                     <button type="submit" disabled={submitting}
                       style={{

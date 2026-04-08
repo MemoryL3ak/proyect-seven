@@ -111,6 +111,10 @@ type Trip = {
   athleteIds?: string[];
   athleteNames?: string[];
   updatedAt?: string | null;
+  isRoundTrip?: boolean;
+  parentTripId?: string | null;
+  legType?: string | null;
+  childTrips?: Trip[];
 };
 
 type EventItem = { id: string; name?: string | null };
@@ -174,10 +178,16 @@ const STATUS_COLORS: Record<string, { accent: string; chipBg: string; chipBorder
 };
 
 const VEHICLE_TYPE_LABELS: Record<string, string> = {
+  AUTO: "Auto",
+  SUV: "SUV",
+  VAN_10: "Van 10",
+  VAN_15: "Van 15-17",
+  VAN_19: "Van 19",
+  MINIBUS: "Minibus 20-33",
+  BUS: "Bus 40-64",
   SEDAN: "Sedan / SUV",
   VAN: "Van",
   MINI_BUS: "Mini Bus",
-  BUS: "Bus"
 };
 
 const PORTAL_CLIENT_TYPES = new Set(["VIP", "T1"]);
@@ -614,6 +624,12 @@ export default function TripsPage() {
                   Portal
                 </span>
               )}
+              {trip.isRoundTrip && (
+                <span style={{ background: "rgba(20,184,166,0.1)", border: "1px solid rgba(20,184,166,0.3)", borderRadius: "99px", padding: "3px 10px", fontSize: "11px", fontWeight: 700, color: "#14b8a6", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                  Ida y vuelta
+                </span>
+              )}
               {isFresh && (
                 <span style={{ background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.3)", borderRadius: "99px", padding: "3px 10px", fontSize: "11px", fontWeight: 700, color: "#10b981", display: "inline-flex", alignItems: "center", gap: "5px" }}>
                   <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#10b981", animation: "pulse 1.5s infinite", display: "inline-block" }} />
@@ -652,6 +668,53 @@ export default function TripsPage() {
             </div>
           ))}
         </div>
+
+        {trip.isRoundTrip && trip.childTrips && trip.childTrips.length > 0 && (
+          <div className="mt-4" style={{ borderRadius: "16px", border: "1px solid rgba(20,184,166,0.25)", background: "rgba(20,184,166,0.04)", padding: "14px 16px" }}>
+            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "#14b8a6", marginBottom: "10px" }}>Tramo de regreso</p>
+            {trip.childTrips.map((child) => {
+              const childSc = STATUS_COLORS[child.status ?? "REQUESTED"] ?? STATUS_COLORS.REQUESTED;
+              const childTone = statusTone(child.status);
+              const childVenue = child.destinationVenueId ? venues[child.destinationVenueId] : null;
+              return (
+                <div key={child.id} className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+                  {[
+                    { label: "Estado regreso", value: t(childTone.label), icon: <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: childSc.accent, display: "inline-block" }} /> },
+                    { label: "Programación regreso", value: formatDateTime(child.scheduledAt), icon: null },
+                    { label: "Origen regreso", value: safeText(child.origin), icon: null },
+                    { label: "Destino regreso", value: childVenue ? buildVenueAddress(childVenue) : safeText(child.destination), icon: null },
+                    { label: "Conductor regreso", value: child.driverId ? (drivers[child.driverId]?.fullName || "Asignado") : t("Por asignar"), icon: null },
+                    { label: "Vehículo regreso", value: child.vehicleId ? resolveVehicle(child) : t("Por asignar"), icon: null },
+                  ].map((chip) => (
+                    <div key={chip.label} style={{ background: pal.cardBg, border: `1px solid ${pal.cardBorder}`, borderRadius: "14px", padding: "10px 12px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "5px", marginBottom: "4px" }}>
+                        {chip.icon}
+                        <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: pal.labelColor }}>{chip.label}</p>
+                      </div>
+                      <p style={{ fontSize: "13px", fontWeight: 600, color: pal.textPrimary }}>{chip.value}</p>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+            <div className="mt-2 flex gap-2">
+              {trip.childTrips.map((child) => (
+                <button
+                  key={child.id}
+                  type="button"
+                  onClick={() => {
+                    setShowAdminEditor(true);
+                    setActiveTab("editor");
+                    setSelectedTripId(child.id);
+                  }}
+                  style={{ background: "rgba(20,184,166,0.1)", border: "1px solid rgba(20,184,166,0.3)", borderRadius: "99px", padding: "6px 14px", fontSize: "12px", fontWeight: 600, color: "#14b8a6", cursor: "pointer" }}
+                >
+                  Gestionar regreso
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm">
           <p style={{ fontSize: "13px", color: pal.textMuted, maxWidth: "600px" }}>

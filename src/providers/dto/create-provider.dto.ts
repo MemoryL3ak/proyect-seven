@@ -41,6 +41,10 @@ export class CreateProviderDto {
   @IsOptional()
   bidAmount?: number;
 
+  @IsNumber()
+  @IsOptional()
+  bidTripCount?: number;
+
   @IsString()
   @IsOptional()
   status?: string;

@@ -11,6 +11,7 @@ import { CreateTripDto } from './dto/create-trip.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
 import { Trip } from './entities/trip.entity';
 import { TripMessage } from './entities/trip-message.entity';
+import { ProviderRate } from '../providers/entities/provider-rate.entity';
 
 type TripRow = {
   id: string;
@@ -40,6 +41,9 @@ type TripRow = {
   rated_at: string | null;
   passenger_lat: number | null;
   passenger_lng: number | null;
+  is_round_trip: boolean;
+  parent_trip_id: string | null;
+  leg_type: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -62,6 +66,8 @@ export class TripsService {
     private readonly tripRepository: Repository<Trip>,
     @InjectRepository(TripMessage)
     private readonly messageRepository: Repository<TripMessage>,
+    @InjectRepository(ProviderRate)
+    private readonly rateRepository: Repository<ProviderRate>,
   ) {}
 
   private toRow(dto: CreateTripDto | UpdateTripDto) {
@@ -138,6 +144,15 @@ export class TripsService {
     }
     if (dto.ratedAt !== undefined) {
       row.rated_at = dto.ratedAt ?? null;
+    }
+    if (dto.isRoundTrip !== undefined) {
+      row.is_round_trip = dto.isRoundTrip ?? false;
+    }
+    if (dto.parentTripId !== undefined) {
+      row.parent_trip_id = dto.parentTripId ?? null;
+    }
+    if (dto.legType !== undefined) {
+      row.leg_type = dto.legType ?? null;
     }
 
     return row;
@@ -219,6 +234,9 @@ export class TripsService {
       ratedAt: row.rated_at ? new Date(row.rated_at) : null,
       passengerLat: row.passenger_lat,
       passengerLng: row.passenger_lng,
+      isRoundTrip: row.is_round_trip ?? false,
+      parentTripId: row.parent_trip_id,
+      legType: row.leg_type,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
     };
@@ -323,13 +341,28 @@ export class TripsService {
     }
   }
 
-  async create(createTripDto: CreateTripDto) {
-    const row = this.toRow(createTripDto);
-    const inferredStatus = this.inferStatus(createTripDto, null);
-    if (inferredStatus) {
-      row.status = inferredStatus;
-    }
+  private async lookupClientPrice(driverId: string | undefined | null, fleetType: string | undefined | null, tripType: string | undefined | null): Promise<number | null> {
+    if (!driverId || !fleetType || !tripType) return null;
+    try {
+      // Get driver's provider
+      const { data: driver } = await this.supabase
+        .schema('core')
+        .from('drivers')
+        .select('provider_id')
+        .eq('id', driverId)
+        .maybeSingle();
+      if (!driver?.provider_id) return null;
 
+      const rate = await this.rateRepository.findOne({
+        where: { providerId: driver.provider_id, fleetType, tripType },
+      });
+      return rate ? Number(rate.clientPrice) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private async insertTrip(row: Record<string, unknown>) {
     let { data, error } = await this.supabase
       .schema('transport')
       .from('trips')
@@ -352,14 +385,68 @@ export class TripsService {
       );
     }
 
-    if (createTripDto.athleteIds) {
-      await this.setTripAthletes(
-        (data as TripRow).id,
-        createTripDto.athleteIds,
-      );
+    return data as TripRow;
+  }
+
+  async create(createTripDto: CreateTripDto) {
+    // Extract return-trip data before building outbound row
+    const { returnScheduledAt, returnOrigin, returnDestination, returnDestinationVenueId, ...outboundDto } = createTripDto;
+
+    const row = this.toRow(outboundDto);
+    const inferredStatus = this.inferStatus(outboundDto, null);
+    if (inferredStatus) {
+      row.status = inferredStatus;
     }
 
-    return this.findOne((data as TripRow).id);
+    if (createTripDto.isRoundTrip) {
+      row.leg_type = 'OUTBOUND';
+    }
+
+    // Auto-assign cost from provider rates
+    if (row.trip_cost === undefined || row.trip_cost === null) {
+      const cost = await this.lookupClientPrice(
+        createTripDto.driverId,
+        createTripDto.requestedVehicleType,
+        createTripDto.tripType,
+      );
+      if (cost !== null) row.trip_cost = cost;
+    }
+
+    const outboundData = await this.insertTrip(row);
+
+    if (createTripDto.athleteIds) {
+      await this.setTripAthletes(outboundData.id, createTripDto.athleteIds);
+    }
+
+    // Auto-create return trip when round trip
+    if (createTripDto.isRoundTrip) {
+      const returnRow = this.toRow({
+        eventId: createTripDto.eventId,
+        requesterAthleteId: createTripDto.requesterAthleteId,
+        requestedVehicleType: createTripDto.requestedVehicleType,
+        passengerCount: createTripDto.passengerCount,
+        tripType: createTripDto.tripType,
+        clientType: createTripDto.clientType,
+        notes: createTripDto.notes,
+        origin: returnOrigin || createTripDto.destination,
+        destination: returnDestination || createTripDto.origin,
+        destinationVenueId: returnDestinationVenueId || undefined,
+        scheduledAt: returnScheduledAt,
+        requestedAt: createTripDto.requestedAt,
+      });
+      returnRow.status = this.inferStatus({} as CreateTripDto, null) || 'REQUESTED';
+      returnRow.is_round_trip = true;
+      returnRow.parent_trip_id = outboundData.id;
+      returnRow.leg_type = 'RETURN';
+
+      const returnData = await this.insertTrip(returnRow);
+
+      if (createTripDto.athleteIds) {
+        await this.setTripAthletes(returnData.id, createTripDto.athleteIds);
+      }
+    }
+
+    return this.findOne(outboundData.id);
   }
 
   async findAll(requesterAthleteId?: string) {
@@ -369,11 +456,31 @@ export class TripsService {
         where,
         order: { createdAt: 'DESC' },
       });
-      return trips.map((trip) => ({
-        ...trip,
-        athleteIds: [],
-        athleteNames: [],
-      }));
+
+      // Group child trips under their parents
+      const tripMap = new Map<string, any>();
+      const childTrips: Trip[] = [];
+
+      for (const trip of trips) {
+        const extended = { ...trip, athleteIds: [] as string[], athleteNames: [] as string[], childTrips: [] as Trip[] };
+        if (trip.parentTripId) {
+          childTrips.push(trip);
+        } else {
+          tripMap.set(trip.id, extended);
+        }
+      }
+
+      for (const child of childTrips) {
+        const parent = tripMap.get(child.parentTripId!);
+        if (parent) {
+          parent.childTrips.push({ ...child, athleteIds: [], athleteNames: [] });
+        } else {
+          // Orphan child – show as standalone
+          tripMap.set(child.id, { ...child, athleteIds: [], athleteNames: [], childTrips: [] });
+        }
+      }
+
+      return Array.from(tripMap.values());
     } catch (error) {
       throw new InternalServerErrorException(
         error instanceof Error ? error.message : 'Error fetching trips',
@@ -401,6 +508,20 @@ export class TripsService {
 
     const trip = this.toEntity(data as TripRow);
     const [withAthletes] = await this.attachAthletes([trip]);
+
+    // Attach child trips (return legs)
+    const { data: childRows } = await this.supabase
+      .schema('transport')
+      .from('trips')
+      .select('*')
+      .eq('parent_trip_id', id);
+
+    if (childRows && childRows.length > 0) {
+      const childTrips = (childRows as TripRow[]).map((row) => this.toEntity(row));
+      const childrenWithAthletes = await this.attachAthletes(childTrips);
+      (withAthletes as any).childTrips = childrenWithAthletes;
+    }
+
     return withAthletes;
   }
 
@@ -410,6 +531,15 @@ export class TripsService {
     const inferredStatus = this.inferStatus(updateTripDto, currentTrip.status);
     if (inferredStatus !== undefined) {
       row.status = inferredStatus;
+    }
+
+    // Re-calculate cost when driver or vehicle type changes
+    if (updateTripDto.driverId !== undefined || updateTripDto.requestedVehicleType !== undefined || updateTripDto.tripType !== undefined) {
+      const driverId = updateTripDto.driverId ?? currentTrip.driverId;
+      const fleetType = updateTripDto.requestedVehicleType ?? currentTrip.requestedVehicleType;
+      const tripType = updateTripDto.tripType ?? currentTrip.tripType;
+      const cost = await this.lookupClientPrice(driverId, fleetType, tripType);
+      if (cost !== null) row.trip_cost = cost;
     }
 
     let { data, error } = await this.supabase

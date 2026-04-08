@@ -961,6 +961,19 @@ export const resources: Record<string, ResourceConfig> = {
     ],
     fields: [
       { key: "eventId", label: "Evento", type: "select", required: true, optionsSource: "events" },
+      {
+        key: "tripType",
+        label: "Tipo de servicio",
+        type: "select",
+        options: [
+          { label: "Transfer In Out", value: "TRANSFER_IN_OUT" },
+          { label: "Disposición 12 horas", value: "DISPOSICION_12H" },
+          { label: "Viaje de ida", value: "VIAJE_IDA" },
+          { label: "Viaje de regreso", value: "VIAJE_REGRESO" },
+          { label: "Viaje de ida y regreso", value: "VIAJE_IDA_REGRESO" },
+          { label: "Solicitud portal", value: "PORTAL_REQUEST" },
+        ]
+      },
       { key: "requesterAthleteId", label: "Solicitante", type: "select", optionsSource: "athletes" },
       {
         key: "destinationTypeFilter",
@@ -991,10 +1004,13 @@ export const resources: Record<string, ResourceConfig> = {
         label: "Vehículo solicitado",
         type: "select",
         options: [
-          { label: "Sedan / SUV", value: "SEDAN" },
-          { label: "Van", value: "VAN" },
-          { label: "Mini Bus", value: "MINI_BUS" },
-          { label: "Bus", value: "BUS" }
+          { label: "Auto", value: "AUTO" },
+          { label: "SUV", value: "SUV" },
+          { label: "Van 10", value: "VAN_10" },
+          { label: "Van 15-17", value: "VAN_15" },
+          { label: "Van 19", value: "VAN_19" },
+          { label: "Minibus 20-33", value: "MINIBUS" },
+          { label: "Bus 40-64", value: "BUS" },
         ]
       },
       { key: "passengerCount", label: "Cantidad de personas", type: "number", min: 1 },
@@ -1002,17 +1018,6 @@ export const resources: Record<string, ResourceConfig> = {
       { key: "vehiclePlateDisplay", label: "Vehículo (patente)", type: "text", readOnly: true, transient: true, placeholder: "Se asigna al seleccionar conductor" },
       { key: "vehiclePlate", label: "Vehículo (Patente)", type: "text", readOnly: true, formHidden: true },
       { key: "vehicleId", label: "Vehículo", type: "select", optionsSource: "vehicles", formHidden: true },
-      {
-        key: "tripType",
-        label: "Tipo de viaje",
-        type: "select",
-        options: [
-          { label: "Solicitud portal", value: "PORTAL_REQUEST" },
-          { label: "Transfer In Out", value: "TRANSFER_IN_OUT" },
-          { label: "Disposición 12 horas", value: "DISPOSICION_12H" },
-          { label: "Viaje Ida-Vuelta", value: "IDA_VUELTA" }
-        ]
-      },
       {
         key: "clientType",
         label: "Tipo de cliente",
@@ -1030,6 +1035,26 @@ export const resources: Record<string, ResourceConfig> = {
       { key: "origin", label: "Origen", type: "places", placeholder: "Ej: Aeropuerto Internacional de Santiago" },
       { key: "destination", label: "Destino", type: "places", placeholder: "Ej: Hotel Sheraton, Santiago" },
       { key: "notes", label: "Observaciones", type: "text" },
+      {
+        key: "isRoundTrip",
+        label: "Ida y vuelta",
+        type: "select",
+        options: [
+          { label: "Solo ida", value: "false" },
+          { label: "Ida y vuelta", value: "true" },
+        ],
+      },
+      { key: "parentTripId", label: "Viaje padre (regreso)", type: "text", readOnly: true, formHidden: true },
+      {
+        key: "legType",
+        label: "Tramo",
+        type: "select",
+        options: [
+          { label: "Ida", value: "OUTBOUND" },
+          { label: "Regreso", value: "RETURN" },
+        ],
+        formHidden: true,
+      },
       {
         key: "status",
         label: "Estado",

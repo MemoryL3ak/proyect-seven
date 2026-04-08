@@ -375,6 +375,7 @@ export default function DriverPortalPage() {
   };
 
   const isPortalRequest = (trip: Trip) => trip.tripType === "PORTAL_REQUEST";
+  const isDisposicion = (trip: Trip) => trip.tripType === "DISPOSICION_12H";
 
   const confirmPickup = (trip: Trip) => {
     setPickupTrip(trip);
@@ -1051,7 +1052,9 @@ export default function DriverPortalPage() {
                           {/* Route summary */}
                           <div style={{ flex:1,minWidth:0 }}>
                             <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
-                              {(trip.origin?.split(",")[0] || "—")} → {(trip.destination?.split(",")[0] || "—")}
+                              {isDisposicion(trip)
+                                ? "Disposición 12h"
+                                : `${trip.origin?.split(",")[0] || "—"} → ${trip.destination?.split(",")[0] || "—"}`}
                             </p>
                             <p style={{ fontSize:10.5,color:"#94a3b8",margin:"2px 0 0" }}>
                               {trip.scheduledAt ? formatDate(trip.scheduledAt) : "—"} · {statusLabel[status] || status}
@@ -1067,29 +1070,66 @@ export default function DriverPortalPage() {
                         {/* ── Expanded detail ── */}
                         {isSelected && (
                           <div style={{ padding:"0 12px 14px" }}>
-                            {/* Map */}
-                            <div style={{ borderRadius:12,overflow:"hidden",marginBottom:10 }}>
-                              <TripMap origin={trip.origin} destination={trip.destination} driverPosition={driverPosition} userPosition={trip.passengerLat && trip.passengerLng ? { lat: trip.passengerLat, lng: trip.passengerLng } : null} height={180} />
-                            </div>
+                            {isDisposicion(trip) ? (
+                              /* Disposición 12h: simplified header, no map/route */
+                              <div style={{ padding:"12px 14px",borderRadius:12,background:"linear-gradient(135deg,rgba(99,102,241,0.06),rgba(33,208,179,0.06))",border:"1px solid rgba(99,102,241,0.15)",marginBottom:10 }}>
+                                <p style={{ fontSize:11,fontWeight:700,color:"#6366f1",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Servicio a disposición — 12 horas</p>
+                                <p style={{ fontSize:12,color:"#64748b",margin:"4px 0 0" }}>
+                                  {trip.scheduledAt ? formatDate(trip.scheduledAt) : "Sin fecha programada"}
+                                </p>
+                                {trip.notes && <p style={{ fontSize:12,color:"#334155",margin:"6px 0 0",lineHeight:1.4 }}>{trip.notes}</p>}
+                              </div>
+                            ) : (
+                              <>
+                              {/* Map */}
+                              <div style={{ borderRadius:12,overflow:"hidden",marginBottom:10 }}>
+                                <TripMap origin={trip.origin} destination={trip.destination} driverPosition={driverPosition} userPosition={trip.passengerLat && trip.passengerLng ? { lat: trip.passengerLat, lng: trip.passengerLng } : null} height={180} />
+                              </div>
 
-                            {/* Route detail */}
-                            <div style={{ display:"flex",gap:10,marginBottom:10,alignItems:"stretch" }}>
-                              <div style={{ display:"flex",flexDirection:"column",alignItems:"center",paddingTop:2 }}>
-                                <span style={{ width:8,height:8,borderRadius:"50%",background:"#21D0B3",flexShrink:0 }} />
-                                <div style={{ width:2,flex:1,background:"linear-gradient(180deg,#21D0B3,#ef4444)",margin:"3px 0",opacity:0.3,borderRadius:1 }} />
-                                <span style={{ width:8,height:8,borderRadius:"50%",background:"#ef4444",flexShrink:0 }} />
-                              </div>
-                              <div style={{ flex:1,display:"flex",flexDirection:"column",justifyContent:"space-between",gap:4 }}>
-                                <div>
-                                  <p style={{ fontSize:10,color:"#94a3b8",margin:0 }}>{t("Recogida")}</p>
-                                  <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:"1px 0 0" }}>{trip.origin || "—"}</p>
+                              {/* Navigate with Waze / Google Maps */}
+                              {trip.destination && (
+                                <div style={{ display:"flex",gap:6,marginBottom:10 }}>
+                                  <a
+                                    href={`https://waze.com/ul?q=${encodeURIComponent(trip.destination)}&navigate=yes`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{ flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"10px 0",borderRadius:10,border:"1px solid #e2e8f0",background:"#fff",textDecoration:"none",fontSize:12,fontWeight:700,color:"#33ccff" }}
+                                  >
+                                    <img src="https://www.waze.com/favicon.ico" alt="Waze" width="20" height="20" style={{ borderRadius:4 }} />
+                                    Waze
+                                  </a>
+                                  <a
+                                    href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(trip.destination)}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{ flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"10px 0",borderRadius:10,border:"1px solid #e2e8f0",background:"#fff",textDecoration:"none",fontSize:12,fontWeight:700,color:"#4285F4" }}
+                                  >
+                                    <img src="https://maps.google.com/favicon.ico" alt="Google Maps" width="20" height="20" style={{ borderRadius:4 }} />
+                                    Google Maps
+                                  </a>
                                 </div>
-                                <div>
-                                  <p style={{ fontSize:10,color:"#94a3b8",margin:0 }}>{t("Destino")}</p>
-                                  <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:"1px 0 0" }}>{trip.destination || "—"}</p>
+                              )}
+
+                              {/* Route detail */}
+                              <div style={{ display:"flex",gap:10,marginBottom:10,alignItems:"stretch" }}>
+                                <div style={{ display:"flex",flexDirection:"column",alignItems:"center",paddingTop:2 }}>
+                                  <span style={{ width:8,height:8,borderRadius:"50%",background:"#21D0B3",flexShrink:0 }} />
+                                  <div style={{ width:2,flex:1,background:"linear-gradient(180deg,#21D0B3,#ef4444)",margin:"3px 0",opacity:0.3,borderRadius:1 }} />
+                                  <span style={{ width:8,height:8,borderRadius:"50%",background:"#ef4444",flexShrink:0 }} />
+                                </div>
+                                <div style={{ flex:1,display:"flex",flexDirection:"column",justifyContent:"space-between",gap:4 }}>
+                                  <div>
+                                    <p style={{ fontSize:10,color:"#94a3b8",margin:0 }}>{t("Recogida")}</p>
+                                    <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:"1px 0 0" }}>{trip.origin || "—"}</p>
+                                  </div>
+                                  <div>
+                                    <p style={{ fontSize:10,color:"#94a3b8",margin:0 }}>{t("Destino")}</p>
+                                    <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:"1px 0 0" }}>{trip.destination || "—"}</p>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
+                              </>
+                            )}
 
                             {/* Info chips */}
                             <div style={{ display:"flex",flexWrap:"wrap",gap:4,marginBottom:10 }}>
@@ -1117,6 +1157,25 @@ export default function DriverPortalPage() {
                                 <span style={{ fontSize:12,fontWeight:700,color:"#21D0B3" }}>{t("Completado")}</span>
                                 {trip.driverRating && <span style={{ fontSize:12 }}>{"⭐".repeat(trip.driverRating)}</span>}
                               </div>
+                            ) : isDisposicion(trip) ? (
+                              /* ── Disposición 12h: 2-step flow ── */
+                              status === "SCHEDULED" ? (
+                                trackingTripId && trackingTripId !== trip.id ? (
+                                  <div style={{ padding:10,borderRadius:12,background:"#f8fafc",border:"1px solid #e2e8f0",textAlign:"center" }}>
+                                    <p style={{ fontSize:11,color:"#94a3b8",margin:0 }}>Finaliza el servicio en curso para iniciar este</p>
+                                  </div>
+                                ) : (
+                                  <button type="button" onClick={() => updateTrip(trip.id, "PICKED_UP")} disabled={loading}
+                                    style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:"linear-gradient(135deg,#818cf8,#6366f1)",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(99,102,241,0.3)",opacity:loading?0.7:1 }}>
+                                    {t("Iniciar servicio")}
+                                  </button>
+                                )
+                              ) : status === "EN_ROUTE" || status === "PICKED_UP" ? (
+                                <button type="button" onClick={() => updateTrip(trip.id, "COMPLETED")} disabled={loading}
+                                  style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:"linear-gradient(135deg,#34F3C6,#21D0B3)",color:"#0d1b3e",fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(33,208,179,0.3)",opacity:loading?0.7:1 }}>
+                                  {t("Finalizar servicio")}
+                                </button>
+                              ) : null
                             ) : status === "SCHEDULED" ? (
                               trackingTripId && trackingTripId !== trip.id ? (
                                 <div style={{ padding:10,borderRadius:12,background:"#f8fafc",border:"1px solid #e2e8f0",textAlign:"center" }}>

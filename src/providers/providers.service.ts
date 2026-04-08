@@ -10,8 +10,10 @@ import { SupabaseClient, createClient } from '@supabase/supabase-js';
 import { ConfigService } from '@nestjs/config';
 import { Repository } from 'typeorm';
 import { CreateProviderDto } from './dto/create-provider.dto';
+import { CreateProviderRateDto } from './dto/create-provider-rate.dto';
 import { UpdateProviderDto } from './dto/update-provider.dto';
 import { Provider } from './entities/provider.entity';
+import { ProviderRate } from './entities/provider-rate.entity';
 
 type ProviderRow = {
   id: string;
@@ -25,6 +27,7 @@ type ProviderRow = {
   city: string | null;
   contact_name: string | null;
   bid_amount: number | null;
+  bid_trip_count: number | null;
   status: string | null;
   metadata: Record<string, unknown> | null;
   created_at: string;
@@ -38,6 +41,8 @@ export class ProvidersService {
     private readonly configService: ConfigService,
     @InjectRepository(Provider)
     private readonly providerRepository: Repository<Provider>,
+    @InjectRepository(ProviderRate)
+    private readonly rateRepository: Repository<ProviderRate>,
   ) {}
 
   private getAdminClient() {
@@ -60,6 +65,7 @@ export class ProvidersService {
     if (dto.city !== undefined) row.city = dto.city ?? null;
     if (dto.contactName !== undefined) row.contact_name = dto.contactName ?? null;
     if (dto.bidAmount !== undefined) row.bid_amount = dto.bidAmount ?? null;
+    if (dto.bidTripCount !== undefined) row.bid_trip_count = dto.bidTripCount ?? null;
     if (dto.status !== undefined) row.status = dto.status ?? null;
     if (dto.metadata !== undefined) row.metadata = dto.metadata ?? {};
 
@@ -79,6 +85,7 @@ export class ProvidersService {
       city: row.city,
       contactName: row.contact_name,
       bidAmount: row.bid_amount != null ? Number(row.bid_amount) : null,
+      bidTripCount: row.bid_trip_count != null ? Number(row.bid_trip_count) : null,
       status: row.status,
       metadata: row.metadata ?? {},
       createdAt: new Date(row.created_at),
@@ -223,5 +230,57 @@ export class ProvidersService {
     const metadata = { ...(provider.metadata ?? {}), [key]: publicUrl };
 
     return this.update(id, { metadata });
+  }
+
+  /* ─── Provider Rates ─── */
+
+  async findRates(providerId: string) {
+    return this.rateRepository.find({
+      where: { providerId },
+      order: { fleetType: 'ASC', passengerRange: 'ASC', tripType: 'ASC' },
+    });
+  }
+
+  async createRate(dto: CreateProviderRateDto) {
+    const rate = this.rateRepository.create({
+      providerId: dto.providerId,
+      fleetType: dto.fleetType,
+      passengerRange: dto.passengerRange || null,
+      tripType: dto.tripType,
+      clientPrice: dto.clientPrice ?? 0,
+      providerPrice: dto.providerPrice ?? 0,
+    });
+    return this.rateRepository.save(rate);
+  }
+
+  async bulkUpsertRates(providerId: string, rates: CreateProviderRateDto[]) {
+    // Delete existing rates for this provider
+    await this.rateRepository.delete({ providerId });
+
+    if (rates.length === 0) return [];
+
+    const entities = rates.map((dto) =>
+      this.rateRepository.create({
+        providerId,
+        fleetType: dto.fleetType,
+        passengerRange: dto.passengerRange || null,
+        tripType: dto.tripType,
+        clientPrice: dto.clientPrice ?? 0,
+        providerPrice: dto.providerPrice ?? 0,
+      }),
+    );
+
+    return this.rateRepository.save(entities);
+  }
+
+  async removeRate(providerId: string, rateId: string) {
+    const rate = await this.rateRepository.findOne({
+      where: { id: rateId, providerId },
+    });
+    if (!rate) {
+      throw new NotFoundException(`Rate ${rateId} not found`);
+    }
+    await this.rateRepository.remove(rate);
+    return { ok: true };
   }
 }

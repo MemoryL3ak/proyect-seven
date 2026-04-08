@@ -41,6 +41,9 @@ export class Provider {
   @Column({ name: 'bid_amount', type: 'numeric', nullable: true })
   bidAmount?: number | null;
 
+  @Column({ name: 'bid_trip_count', type: 'int', nullable: true })
+  bidTripCount?: number | null;
+
   @Column({ length: 30, type: 'varchar', default: 'ACTIVE' })
   status?: string | null;
 

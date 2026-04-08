@@ -64,8 +64,38 @@ type Provider = {
   subtype?: string | null;
   email?: string | null;
   rut?: string | null;
+  bidAmount?: number | null;
+  bidTripCount?: number | null;
   metadata?: Record<string, unknown> | null;
 };
+
+type ProviderRate = {
+  id?: string;
+  providerId: string;
+  fleetType: string;
+  passengerRange?: string | null;
+  tripType: string;
+  clientPrice: number;
+  providerPrice: number;
+};
+
+const FLEET_TYPES = [
+  { value: "AUTO", label: "Auto", passengers: "" },
+  { value: "SUV", label: "SUV", passengers: "" },
+  { value: "VAN_10", label: "Van", passengers: "10" },
+  { value: "VAN_15", label: "Van", passengers: "15 a 17" },
+  { value: "VAN_19", label: "Van", passengers: "19" },
+  { value: "MINIBUS", label: "Minibus", passengers: "20 a 33" },
+  { value: "BUS", label: "Bus", passengers: "40 a 64" },
+] as const;
+
+const SERVICE_TYPES = [
+  { value: "TRANSFER_IN_OUT", label: "Transfer In Out" },
+  { value: "DISPOSICION_12H", label: "Disposición 12 Horas" },
+  { value: "VIAJE_IDA", label: "Viaje de ida" },
+  { value: "VIAJE_REGRESO", label: "Viaje de regreso" },
+  { value: "VIAJE_IDA_REGRESO", label: "Viaje de ida y regreso" },
+] as const;
 
 type Participant = {
   id: string;
@@ -158,7 +188,7 @@ function DocRow({
 }
 
 // ── Empty forms ──────────────────────────────────────────────────────────────
-const EMPTY_PROVIDER_FORM = { name: "", type: "", subtype: "", email: "", rut: "" };
+const EMPTY_PROVIDER_FORM = { name: "", type: "", subtype: "", email: "", rut: "", bidAmount: "", bidTripCount: "" };
 const EMPTY_PARTICIPANT_FORM = {
   providerId: "",
   fullName: "",
@@ -199,6 +229,7 @@ export default function ProveedoresPage() {
   const [providerForm, setProviderForm] = useState(EMPTY_PROVIDER_FORM);
   const [providerDocFiles, setProviderDocFiles] = useState<Record<string, File | null>>({});
   const [savingProvider, setSavingProvider] = useState(false);
+  const [providerRates, setProviderRates] = useState<ProviderRate[]>([]);
   const [providerError, setProviderError] = useState<string | null>(null);
 
   // ── Participants state
@@ -308,11 +339,17 @@ export default function ProveedoresPage() {
     setProviderForm(EMPTY_PROVIDER_FORM);
     setProviderDocFiles({});
     setProviderError(null);
+    setProviderRates([]);
     setProviderModal({});
   };
 
   const openEditProvider = (p: Provider) => {
-    setProviderForm({ name: p.name, type: p.type ?? "", subtype: p.subtype ?? "", email: p.email ?? "", rut: p.rut ?? "" });
+    setProviderForm({ name: p.name, type: p.type ?? "", subtype: p.subtype ?? "", email: p.email ?? "", rut: p.rut ?? "", bidAmount: p.bidAmount != null ? String(p.bidAmount) : "", bidTripCount: p.bidTripCount != null ? String(p.bidTripCount) : "" });
+    if (p.type === "TRANSPORTE") {
+      apiFetch<ProviderRate[]>(`/providers/${p.id}/rates`).then(setProviderRates).catch(() => setProviderRates([]));
+    } else {
+      setProviderRates([]);
+    }
     setProviderDocFiles({});
     setProviderError(null);
     setProviderModal({ editing: p });
@@ -329,6 +366,8 @@ export default function ProveedoresPage() {
         subtype: providerForm.subtype || null,
         email: providerForm.email || null,
         rut: providerForm.rut || null,
+        bidAmount: providerForm.bidAmount ? Number(providerForm.bidAmount) : null,
+        bidTripCount: providerForm.bidTripCount ? Number(providerForm.bidTripCount) : null,
       };
 
       let providerId: string;
@@ -346,6 +385,22 @@ export default function ProveedoresPage() {
           body: JSON.stringify(body),
         });
         providerId = created.id;
+      }
+
+      // Save rates for transport providers
+      if (providerForm.type === "TRANSPORTE" && providerRates.length > 0) {
+        await apiFetch(`/providers/${providerId}/rates/bulk`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(providerRates.map((r) => ({
+            providerId,
+            fleetType: r.fleetType,
+            passengerRange: r.passengerRange || null,
+            tripType: r.tripType,
+            clientPrice: r.clientPrice,
+            providerPrice: r.providerPrice,
+          }))),
+        });
       }
 
       const pending = Object.entries(providerDocFiles).filter(([, f]) => f !== null);
@@ -959,7 +1014,7 @@ export default function ProveedoresPage() {
           <div
             className="surface rounded-3xl w-full flex flex-col"
             style={{
-              maxWidth: isTransporteProvider ? "680px" : "448px",
+              maxWidth: isTransporteProvider ? "820px" : "448px",
               maxHeight: "90vh",
               borderTop: "2px solid #21D0B3",
               boxShadow: "0 8px 32px rgba(15,23,42,0.18)",
@@ -1009,6 +1064,102 @@ export default function ProveedoresPage() {
                   <input className="input" value={providerForm.rut} onChange={e => setProviderForm(f => ({ ...f, rut: e.target.value }))} placeholder="12.345.678-9" />
                 </label>
               </div>
+
+              {/* Bid amount + trip count for transport, hospitality, food */}
+              {(providerForm.type === "TRANSPORTE" || providerForm.type === "HOTELERIA" || providerForm.type === "ALIMENTACION") && (
+                <div className={providerForm.type === "TRANSPORTE" ? "grid grid-cols-2 gap-3" : ""}>
+                  <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
+                    Monto licitado
+                    <input className="input" type="text" inputMode="numeric" value={providerForm.bidAmount ? `$${Number(providerForm.bidAmount).toLocaleString("es-CL")}` : ""} onChange={e => { const raw = e.target.value.replace(/[^0-9]/g, ""); setProviderForm(f => ({ ...f, bidAmount: raw })); }} placeholder="$0" />
+                  </label>
+                  {providerForm.type === "TRANSPORTE" && (
+                    <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
+                      Total viajes licitados
+                      <input className="input" type="text" inputMode="numeric" value={providerForm.bidTripCount || ""} onChange={e => { const raw = e.target.value.replace(/[^0-9]/g, ""); setProviderForm(f => ({ ...f, bidTripCount: raw })); }} placeholder="0" />
+                    </label>
+                  )}
+                </div>
+              )}
+
+              {/* Rate table for transport providers */}
+              {isTransporteProvider && (
+                <div style={{ borderRadius: 14, border: "1px solid var(--border)", overflow: "hidden" }}>
+                  <div style={{ padding: "10px 14px", background: "rgba(33,208,179,0.06)", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <p style={{ fontSize: 12, fontWeight: 700, color: "#0f172a", margin: 0 }}>Tabla de tarifas</p>
+                    <button type="button" onClick={() => {
+                      // Generate all combinations if empty
+                      if (providerRates.length === 0) {
+                        const generated: ProviderRate[] = [];
+                        for (const fleet of FLEET_TYPES) {
+                          for (const service of SERVICE_TYPES) {
+                            generated.push({
+                              providerId: providerModal?.editing?.id || "",
+                              fleetType: fleet.value,
+                              passengerRange: fleet.passengers || null,
+                              tripType: service.value,
+                              clientPrice: 0,
+                              providerPrice: 0,
+                            });
+                          }
+                        }
+                        setProviderRates(generated);
+                      }
+                    }} style={{ fontSize: 11, fontWeight: 600, color: "#21D0B3", background: "none", border: "1px solid rgba(33,208,179,0.3)", borderRadius: 8, padding: "4px 10px", cursor: "pointer" }}>
+                      {providerRates.length === 0 ? "Generar tabla" : "Regenerar"}
+                    </button>
+                  </div>
+
+                  {providerRates.length > 0 && (
+                    <div style={{ maxHeight: 320, overflowY: "auto" }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                        <thead>
+                          <tr style={{ background: "#f8fafc", position: "sticky", top: 0, zIndex: 1 }}>
+                            <th style={{ padding: "8px 10px", textAlign: "left", fontWeight: 700, color: "#64748b", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", borderBottom: "1px solid var(--border)" }}>Flota</th>
+                            <th style={{ padding: "8px 6px", textAlign: "center", fontWeight: 700, color: "#64748b", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", borderBottom: "1px solid var(--border)" }}>Pax</th>
+                            <th style={{ padding: "8px 10px", textAlign: "left", fontWeight: 700, color: "#64748b", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", borderBottom: "1px solid var(--border)" }}>Tipo servicio</th>
+                            <th style={{ padding: "8px 6px", textAlign: "right", fontWeight: 700, color: "#64748b", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", borderBottom: "1px solid var(--border)" }}>Valor cliente</th>
+                            <th style={{ padding: "8px 6px", textAlign: "right", fontWeight: 700, color: "#64748b", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", borderBottom: "1px solid var(--border)" }}>Valor proveedor</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {providerRates.map((rate, idx) => {
+                            const fleet = FLEET_TYPES.find((f) => f.value === rate.fleetType);
+                            const service = SERVICE_TYPES.find((s) => s.value === rate.tripType);
+                            const isFirstOfFleet = idx === 0 || providerRates[idx - 1].fleetType !== rate.fleetType;
+                            return (
+                              <tr key={`${rate.fleetType}-${rate.tripType}`} style={{ borderBottom: "1px solid #f1f5f9", background: isFirstOfFleet ? "#fafbfc" : "#fff" }}>
+                                <td style={{ padding: "6px 10px", fontWeight: isFirstOfFleet ? 700 : 400, color: "#0f172a" }}>
+                                  {isFirstOfFleet ? (fleet?.label || rate.fleetType) : ""}
+                                </td>
+                                <td style={{ padding: "6px", textAlign: "center", color: "#64748b" }}>
+                                  {isFirstOfFleet ? (fleet?.passengers || "-") : ""}
+                                </td>
+                                <td style={{ padding: "6px 10px", color: "#334155" }}>{service?.label || rate.tripType}</td>
+                                <td style={{ padding: "4px 6px", textAlign: "right" }}>
+                                  <input type="text" inputMode="numeric" value={Number(rate.clientPrice) ? `$${Number(rate.clientPrice).toLocaleString("es-CL")}` : ""} onChange={(e) => {
+                                    const raw = e.target.value.replace(/[^0-9]/g, "");
+                                    const next = [...providerRates];
+                                    next[idx] = { ...next[idx], clientPrice: Number(raw) || 0 };
+                                    setProviderRates(next);
+                                  }} placeholder="$0" style={{ width: 95, padding: "4px 6px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 12, textAlign: "right" }} />
+                                </td>
+                                <td style={{ padding: "4px 6px", textAlign: "right" }}>
+                                  <input type="text" inputMode="numeric" value={Number(rate.providerPrice) ? `$${Number(rate.providerPrice).toLocaleString("es-CL")}` : ""} onChange={(e) => {
+                                    const raw = e.target.value.replace(/[^0-9]/g, "");
+                                    const next = [...providerRates];
+                                    next[idx] = { ...next[idx], providerPrice: Number(raw) || 0 };
+                                    setProviderRates(next);
+                                  }} placeholder="$0" style={{ width: 95, padding: "4px 6px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 12, textAlign: "right" }} />
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {providerError && <p className="text-sm" style={{ color: "#f43f5e" }}>{providerError}</p>}
             </div>
