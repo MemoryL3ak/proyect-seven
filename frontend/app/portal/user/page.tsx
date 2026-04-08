@@ -695,7 +695,7 @@ export default function UserPortalPage() {
                 placeholder={t("Ingresa tu código")}
                 style={{ width:"100%",padding:"16px",borderRadius:"14px",border:"1px solid rgba(33,208,179,0.2)",background:"rgba(255,255,255,0.05)",color:"rgba(255,255,255,0.9)",fontSize:"15px",outline:"none",fontWeight:500,boxSizing:"border-box",transition:"border-color .2s,box-shadow .2s" }} />
             </div>
-            <button type="button" onClick={loadAthlete} disabled={loading}
+            <button type="button" onClick={() => loadAthlete()} disabled={loading}
               style={{ width:"100%",padding:"17px",borderRadius:"14px",border:"none",background:"linear-gradient(135deg,#34F3C6 0%,#21D0B3 50%,#15B09A 100%)",color:"#0d1b3e",fontSize:"16px",fontWeight:700,cursor:loading?"not-allowed":"pointer",opacity:loading?0.7:1,letterSpacing:"0.03em",boxShadow:"0 4px 20px rgba(33,208,179,0.35)",transition:"opacity .2s,transform .1s" }}>
               {loading ? t("Cargando...") : t("Ver mi información")}
             </button>
@@ -851,7 +851,7 @@ export default function UserPortalPage() {
               onMarkAllRead={notify.markAllRead}
               onClear={notify.clear}
             />
-            <button type="button" onClick={loadAthlete} disabled={loading}
+            <button type="button" onClick={() => loadAthlete()} disabled={loading}
               style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",cursor:"pointer",flexShrink:0,opacity:loading?0.5:1 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
