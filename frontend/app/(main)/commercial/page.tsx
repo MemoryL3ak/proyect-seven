@@ -336,7 +336,7 @@ export default function CommercialDashboardPage() {
                   <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} tickLine={false} axisLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} width={50} />
                   <Tooltip
                     contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", boxShadow: "0 4px 12px rgba(0,0,0,0.08)", fontSize: 12 }}
-                    formatter={(value: number) => [formatCurrency(value), "Monto"]}
+                    formatter={(value) => [formatCurrency(Number(value)), "Monto"]}
                   />
                   <Area type="monotone" dataKey="amount" stroke={TEAL} strokeWidth={2.5} fill="url(#gradTeal)" dot={{ r: 3, fill: TEAL, strokeWidth: 0 }} activeDot={{ r: 5, fill: TEAL, stroke: "#fff", strokeWidth: 2 }} />
                 </AreaChart>
@@ -363,7 +363,7 @@ export default function CommercialDashboardPage() {
                   <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} tickLine={false} axisLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} width={50} />
                   <Tooltip
                     contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", boxShadow: "0 4px 12px rgba(0,0,0,0.08)", fontSize: 12 }}
-                    formatter={(value: number) => [formatCurrency(value), "Monto"]}
+                    formatter={(value) => [formatCurrency(Number(value)), "Monto"]}
                   />
                   <Bar dataKey="amount" fill="url(#gradBlue)" radius={[6, 6, 0, 0]} />
                 </RBarChart>
