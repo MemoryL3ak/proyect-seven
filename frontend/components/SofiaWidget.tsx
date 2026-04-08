@@ -5,10 +5,13 @@ import { apiFetch, getTokens } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 
 /* ── Sparkle icon (replaces old diamond) ── */
-function SofiaIcon({ size = 20 }: { size?: number }) {
+function SofiaBotIcon({ size = 24, eyeColor = "#21D0B3" }: { size?: number; eyeColor?: string }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <text x="12" y="18" textAnchor="middle" fontFamily="system-ui, -apple-system, sans-serif" fontSize="20" fontWeight="900" fontStyle="italic" fill="#fff">S</text>
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+      <rect x="3" y="4" width="26" height="20" rx="10" fill="currentColor" />
+      <path d="M8 24 C8 24 6 28 4 29 C6 28 10 27 12 25" fill="currentColor" />
+      <circle cx="12" cy="14" r="3" fill={eyeColor} />
+      <circle cx="20" cy="14" r="3" fill={eyeColor} />
     </svg>
   );
 }
@@ -166,8 +169,8 @@ export default function SofiaWidget() {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-            <div style={{ width: 28, height: 28, borderRadius: 8, background: "linear-gradient(135deg, #21D0B3, #1FCDFF)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <SofiaIcon size={16} />
+            <div style={{ width: 32, height: 32, borderRadius: 10, background: "#30455B", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }}>
+              <div style={{ color: "#fff" }}><SofiaBotIcon size={20} eyeColor="#21D0B3" /></div>
             </div>
             <div>
               <span style={{ fontSize: 12, fontWeight: 800, color: "#0f172a" }}>Sof</span>
@@ -194,16 +197,16 @@ export default function SofiaWidget() {
           type="button"
           onClick={() => { setOpen(!open); setShowWelcome(false); }}
           style={{
-            position: "relative", width: 80, height: 80, borderRadius: "50%",
+            position: "relative", width: 96, height: 96, borderRadius: "50%",
             background: open
               ? "linear-gradient(135deg, #e2e8f0, #f1f5f9)"
-              : "linear-gradient(145deg, #0f172a 0%, #1e293b 50%, #334155 100%)",
-            border: open ? "1px solid #cbd5e1" : "2px solid rgba(33,208,179,0.6)",
+              : "#30455B",
+            border: open ? "1px solid #cbd5e1" : "none",
             cursor: "pointer",
             display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 1,
             boxShadow: open
               ? "0 2px 8px rgba(0,0,0,0.1)"
-              : "0 4px 24px rgba(33,208,179,0.3), 0 8px 32px rgba(15,23,42,0.25), inset 0 1px 0 rgba(255,255,255,0.08)",
+              : "0 4px 24px rgba(48,69,91,0.35), 0 8px 32px rgba(15,23,42,0.2)",
             transition: "all 200ms ease",
           }}
           onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.08)"; }}
@@ -214,11 +217,13 @@ export default function SofiaWidget() {
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0 }}>
-              <span style={{ fontSize: 36, fontWeight: 900, fontStyle: "italic", color: "#21D0B3", lineHeight: 1, textShadow: "0 0 16px rgba(33,208,179,0.7), 0 0 32px rgba(33,208,179,0.3)", fontFamily: "system-ui, -apple-system, sans-serif", letterSpacing: "-0.02em" }}>S</span>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 2, marginTop: -3 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.6)", letterSpacing: "0.06em", fontFamily: "system-ui" }}>Sof</span>
-                <span style={{ fontSize: 13, fontWeight: 900, color: "#21D0B3", letterSpacing: "0.03em", textShadow: "0 0 8px rgba(33,208,179,0.5)" }}>IA</span>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+              <div style={{ color: "#fff" }}>
+                <SofiaBotIcon size={44} eyeColor="#21D0B3" />
+              </div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 2, marginTop: -1 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.7)", letterSpacing: "0.04em", fontFamily: "system-ui" }}>Sof</span>
+                <span style={{ fontSize: 15, fontWeight: 900, color: "#21D0B3", letterSpacing: "0.02em" }}>IA</span>
               </div>
             </div>
           )}
@@ -239,8 +244,8 @@ export default function SofiaWidget() {
           <div style={{ padding: "16px 20px", background: "rgba(33,208,179,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ width: 38, height: 38, borderRadius: "50%", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 10px rgba(0,0,0,0.15)" }}>
-                  <span style={{ fontSize: 18, fontWeight: 900, fontStyle: "italic", color: "#30455B", fontFamily: "system-ui" }}>S</span>
+                <div style={{ width: 38, height: 38, borderRadius: 12, background: "#30455B", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 10px rgba(0,0,0,0.2)" }}>
+                  <div style={{ color: "#fff" }}><SofiaBotIcon size={24} eyeColor="#21D0B3" /></div>
                 </div>
                 <div>
                   <div style={{ display: "flex", alignItems: "baseline", gap: 3 }}>
@@ -261,8 +266,8 @@ export default function SofiaWidget() {
           <div style={{ maxHeight: "44vh", overflowY: "auto", padding: "16px 18px", display: "flex", flexDirection: "column", gap: 10, background: "transparent" }}>
             {messages.length === 0 && (
               <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: "16px", display: "flex", gap: 10, alignItems: "flex-start" }}>
-                <div style={{ width: 28, height: 28, borderRadius: "50%", flexShrink: 0, background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <span style={{ fontSize: 13, fontWeight: 900, fontStyle: "italic", color: "#fff", fontFamily: "system-ui" }}>S</span>
+                <div style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <div style={{ color: "rgba(255,255,255,0.6)" }}><SofiaBotIcon size={18} eyeColor="#21D0B3" /></div>
                 </div>
                 <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, lineHeight: 1.6, margin: 0 }}>
                   {t("Haz una pregunta sobre viajes, participantes, delegaciones, hoteles o transporte.")}
@@ -271,8 +276,8 @@ export default function SofiaWidget() {
             )}
             {messages.map((msg, i) => msg.role === "assistant" ? (
               <div key={i} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: "12px 14px", display: "flex", gap: 10, alignItems: "flex-start" }}>
-                <div style={{ width: 24, height: 24, borderRadius: "50%", flexShrink: 0, marginTop: 1, background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <span style={{ fontSize: 11, fontWeight: 900, fontStyle: "italic", color: "#fff", fontFamily: "system-ui" }}>S</span>
+                <div style={{ width: 24, height: 24, borderRadius: 7, flexShrink: 0, marginTop: 1, background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <div style={{ color: "rgba(255,255,255,0.6)" }}><SofiaBotIcon size={16} eyeColor="#21D0B3" /></div>
                 </div>
                 <div style={{ flex: 1, color: "rgba(255,255,255,0.85)", fontSize: 13, lineHeight: 1.65, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
                   {msg.content || (loading && i === messages.length - 1 ? "" : "...")}
