@@ -18,7 +18,7 @@ const CHARCOAL   = "#30455B";
 type Trip = { id: string; status?: string | null };
 type HotelAssignment = { id: string; roomId?: string | null; status?: string | null };
 type HotelRoom = { id: string; status?: string | null };
-type Discipline = { id: string; name?: string | null; parentId?: string | null };
+type Discipline = { id: string; name?: string | null; parentId?: string | null; category?: string | null; gender?: string | null };
 type EventData = { id: string; expectedCapacities?: Array<{ disciplineId: string; delegationCode: string; expectedCount: number }> };
 type AthleteItem = { id: string; disciplineId?: string | null; status?: string | null };
 
@@ -211,7 +211,10 @@ export default function Page() {
           const parentDisc = disc?.parentId ? disciplines.find((d) => d.id === disc.parentId) : null;
           const registered = athletesByDiscipline.get(discId) || 0;
           const pct = cupos > 0 ? `${Math.round((registered / cupos) * 100)}%` : "0%";
-          const name = parentDisc ? `${parentDisc.name} — ${disc?.name}` : (disc?.name || "Sin nombre");
+          const cLabel = disc?.category === "CONVENTIONAL" ? "Convencional" : disc?.category === "PARALYMPIC" ? "Paralímpico" : "";
+          const gLabel = disc?.gender === "MALE" ? "Masculino" : disc?.gender === "FEMALE" ? "Femenino" : "";
+          const suffix = [cLabel, gLabel].filter(Boolean).join(" - ");
+          const name = (parentDisc ? `${parentDisc.name} — ${disc?.name}` : (disc?.name || "Sin nombre")) + (suffix ? ` (${suffix})` : "");
           return [name, cupos, registered, pct] as (string | number)[];
         })
         .sort((a, b) => (b[1] as number) - (a[1] as number));
@@ -482,7 +485,10 @@ export default function Page() {
                   const parentDisc = disc?.parentId ? disciplines.find((d) => d.id === disc.parentId) : null;
                   const registered = athletesByDiscipline.get(discId) || 0;
                   const pct = cupos > 0 ? Math.round((registered / cupos) * 100) : 0;
-                  return { discId, name: disc?.name || "Sin nombre", parent: parentDisc?.name || null, cupos, registered, pct };
+                  const categoryLabel = disc?.category === "CONVENTIONAL" ? "Convencional" : disc?.category === "PARALYMPIC" ? "Paralímpico" : null;
+                  const genderLabel = disc?.gender === "MALE" ? "Masculino" : disc?.gender === "FEMALE" ? "Femenino" : null;
+                  const tags = [categoryLabel, genderLabel].filter(Boolean).join(" - ");
+                  return { discId, name: disc?.name || "Sin nombre", parent: parentDisc?.name || null, tags, cupos, registered, pct };
                 })
                 .sort((a, b) => b.cupos - a.cupos);
 
@@ -495,6 +501,7 @@ export default function Page() {
                         <span style={{ width: 8, height: 8, borderRadius: "50%", background: semColor, flexShrink: 0, boxShadow: `0 0 4px ${semColor}40` }} />
                         <span style={{ fontSize: "12px", fontWeight: 600, color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {row.parent ? `${row.parent} — ` : ""}{row.name}
+                          {row.tags && <span style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", marginLeft: 6 }}>({row.tags})</span>}
                         </span>
                       </div>
                       <span style={{ fontSize: "11px", fontWeight: 700, color: semColor, flexShrink: 0, marginLeft: 8, fontVariantNumeric: "tabular-nums" }}>
