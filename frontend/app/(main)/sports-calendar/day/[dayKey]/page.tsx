@@ -222,7 +222,7 @@ export default function SportsCalendarDayDetailPage() {
         });
         if (eventId) params.set("eventId", eventId);
 
-        const [entryData, eventData, delegationData, disciplineData, athleteData, flightData, tripData, driverData, vehicleData] = await Promise.all([
+        const [entryData, eventData, delegationData, disciplineData, athleteData, flightData, tripData, driverData, vehicleData, participantData] = await Promise.all([
           apiFetch<SportsEvent[]>(`/sports-calendar/events?${params.toString()}`),
           apiFetch<EventOption[]>("/events"),
           apiFetch<DelegationOption[]>("/delegations"),
