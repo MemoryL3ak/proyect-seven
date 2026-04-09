@@ -133,31 +133,46 @@ export default function SofiaWidget() {
     setLoading(true);
     setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
-    const controller = new AbortController();
-    abortRef.current = controller;
-    let streamWorked = false;
-    try {
-      await fetchStream("/sofia/ask-stream", { question, previousResponseId: responseId }, (chunk) => {
-        streamWorked = true;
-        switch (chunk.type) {
-          case "delta":
-            setMessages((prev) => { const u = [...prev]; const l = u[u.length - 1]; if (l?.role === "assistant") u[u.length - 1] = { ...l, content: l.content + chunk.content }; return u; });
-            break;
-          case "tool_call": setToolInfo(chunk.content); break;
-          case "done": if (chunk.responseId) setResponseId(chunk.responseId); setToolInfo(null); break;
-          case "error": setError(chunk.content); break;
-        }
-      }, controller.signal);
-    } catch (err) {
-      if ((err as Error).name === "AbortError") { setMessages((p) => { const l = p[p.length - 1]; return l?.role === "assistant" && !l.content ? p.slice(0, -1) : p; }); setLoading(false); abortRef.current = null; return; }
-      if (!streamWorked) {
-        try {
-          const result = await apiFetch<{ answer: string; responseId?: string | null }>("/sofia/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question, previousResponseId: responseId }) });
-          setMessages((p) => { const u = [...p]; u[u.length - 1] = { role: "assistant", content: result.answer }; return u; });
-          setResponseId(result.responseId ?? null);
-        } catch (fe) { setError(fe instanceof Error ? fe.message : t("No se pudo cargar")); setMessages((p) => { const l = p[p.length - 1]; return l?.role === "assistant" && !l.content ? p.slice(0, -1) : p; }); }
-      } else { setError(err instanceof Error ? err.message : t("No se pudo cargar")); setMessages((p) => { const l = p[p.length - 1]; return l?.role === "assistant" && !l.content ? p.slice(0, -1) : p; }); }
-    } finally { setLoading(false); abortRef.current = null; }
+    const isLocal = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || /^192\.168\./.test(window.location.hostname));
+
+    if (isLocal) {
+      // Local: use streaming for real-time response
+      const controller = new AbortController();
+      abortRef.current = controller;
+      let streamWorked = false;
+      try {
+        await fetchStream("/sofia/ask-stream", { question, previousResponseId: responseId }, (chunk) => {
+          streamWorked = true;
+          switch (chunk.type) {
+            case "delta":
+              setMessages((prev) => { const u = [...prev]; const l = u[u.length - 1]; if (l?.role === "assistant") u[u.length - 1] = { ...l, content: l.content + chunk.content }; return u; });
+              break;
+            case "tool_call": setToolInfo(chunk.content); break;
+            case "done": if (chunk.responseId) setResponseId(chunk.responseId); setToolInfo(null); break;
+            case "error": setError(chunk.content); break;
+          }
+        }, controller.signal);
+      } catch (err) {
+        if ((err as Error).name === "AbortError") { setMessages((p) => { const l = p[p.length - 1]; return l?.role === "assistant" && !l.content ? p.slice(0, -1) : p; }); setLoading(false); abortRef.current = null; return; }
+        if (!streamWorked) {
+          try {
+            const result = await apiFetch<{ answer: string; responseId?: string | null }>("/sofia/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question, previousResponseId: responseId }) });
+            setMessages((p) => { const u = [...p]; u[u.length - 1] = { role: "assistant", content: result.answer }; return u; });
+            setResponseId(result.responseId ?? null);
+          } catch (fe) { setError(fe instanceof Error ? fe.message : t("No se pudo cargar")); setMessages((p) => { const l = p[p.length - 1]; return l?.role === "assistant" && !l.content ? p.slice(0, -1) : p; }); }
+        } else { setError(err instanceof Error ? err.message : t("No se pudo cargar")); setMessages((p) => { const l = p[p.length - 1]; return l?.role === "assistant" && !l.content ? p.slice(0, -1) : p; }); }
+      } finally { setLoading(false); abortRef.current = null; }
+    } else {
+      // Production: use non-streaming to avoid Vercel SSE buffering issues
+      try {
+        setToolInfo("Consultando...");
+        const result = await apiFetch<{ answer: string; responseId?: string | null }>("/sofia/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question, previousResponseId: responseId }) });
+        setMessages((p) => { const u = [...p]; u[u.length - 1] = { role: "assistant", content: result.answer }; return u; });
+        setResponseId(result.responseId ?? null);
+        setToolInfo(null);
+      } catch (fe) { setError(fe instanceof Error ? fe.message : t("No se pudo cargar")); setMessages((p) => { const l = p[p.length - 1]; return l?.role === "assistant" && !l.content ? p.slice(0, -1) : p; }); }
+      finally { setLoading(false); }
+    }
   }, [input, loading, responseId, t]);
 
   return (
