@@ -51,9 +51,16 @@ async function fetchStream(
   if (!reader) throw new Error("No readable stream");
   const decoder = new TextDecoder();
   let buffer = "";
+  let lastChunkTime = Date.now();
   while (true) {
-    const { done, value } = await reader.read();
+    const readPromise = reader.read();
+    // Timeout: if no data in 15 seconds, abort and fall back to non-streaming
+    const timeoutPromise = new Promise<{ done: true; value: undefined }>((_, reject) => {
+      setTimeout(() => reject(new Error("Stream timeout")), 15000);
+    });
+    const { done, value } = await Promise.race([readPromise, timeoutPromise]);
     if (done) break;
+    lastChunkTime = Date.now();
     buffer += decoder.decode(value, { stream: true });
     const lines = buffer.split("\n");
     buffer = lines.pop() || "";
