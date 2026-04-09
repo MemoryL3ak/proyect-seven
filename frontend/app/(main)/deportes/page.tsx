@@ -388,6 +388,10 @@ export default function DeportesPage() {
       gender: d.gender ?? "",
       scheduledAt: d.scheduledAt ? (() => { const dt = new Date(d.scheduledAt); const y = dt.getFullYear(); const m = String(dt.getMonth()+1).padStart(2,"0"); const day = String(dt.getDate()).padStart(2,"0"); const h = String(dt.getHours()).padStart(2,"0"); const mi = String(dt.getMinutes()).padStart(2,"0"); return `${y}-${m}-${day}T${h}:${mi}`; })() : "",
       venueName: d.venueName ?? "",
+      useDateRange: false,
+      rangeStart: "",
+      rangeEnd: "",
+      rangeTime: "",
     });
     setPruebaError(null);
     setPruebaModal({ editing: d, parentId: d.parentId! });
