@@ -6,6 +6,8 @@ import { apiFetch } from "@/lib/api";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import NotificationBell, { useNotifications } from "@/components/NotificationBell";
 import TripChat from "@/components/TripChat";
+import { buildCredentialHtml } from "@/lib/credential-template";
+import QRCode from "qrcode";
 import dynamic from "next/dynamic";
 
 const TripMap = dynamic(() => import("@/components/TripMap"), {
@@ -19,6 +21,7 @@ type Athlete = {
   userType?: string | null;
   eventId?: string | null;
   delegationId?: string | null;
+  metadata?: Record<string, unknown> | null;
 };
 
 type Venue = {
@@ -28,6 +31,7 @@ type Venue = {
   address?: string | null;
   region?: string | null;
   commune?: string | null;
+  photoUrl?: string | null;
 };
 
 type Driver = {
@@ -74,6 +78,7 @@ type Trip = {
   parentTripId?: string | null;
   legType?: string | null;
   childTrips?: Trip[];
+  metadata?: Record<string, unknown> | null;
 };
 
 type Accommodation = {
@@ -115,13 +120,13 @@ type PositionItem = {
 };
 
 const VEHICLE_TYPES = [
-  { label: "Auto", value: "AUTO" },
-  { label: "SUV", value: "SUV" },
-  { label: "Van 10 pax", value: "VAN_10" },
-  { label: "Van 15-17 pax", value: "VAN_15" },
-  { label: "Van 19 pax", value: "VAN_19" },
-  { label: "Minibus 20-33 pax", value: "MINIBUS" },
-  { label: "Bus 40-64 pax", value: "BUS" },
+  { label: "Sedán — 4 Pasajeros", value: "SEDAN", maxPax: 4 },
+  { label: "SUV — 6 Pasajeros", value: "SUV", maxPax: 6 },
+  { label: "Van 10 — 10 Pasajeros", value: "VAN_10", maxPax: 10 },
+  { label: "Van 15-17 — 17 Pasajeros", value: "VAN_15", maxPax: 17 },
+  { label: "Van 19 — 19 Pasajeros", value: "VAN_19", maxPax: 19 },
+  { label: "Minibus — 33 Pasajeros", value: "MINIBUS", maxPax: 33 },
+  { label: "Bus — 64 Pasajeros", value: "BUS", maxPax: 64 },
 ] as const;
 
 const statusMeta: Record<string, { label: string; tone: string; panel: string }> = {
@@ -195,7 +200,9 @@ function normalizeOriginAddress(value?: string | null) {
 }
 
 function canEditTrip(trip: Trip) {
-  if (!trip.scheduledAt) return false;
+  const editableStatuses = new Set(["REQUESTED", "SCHEDULED"]);
+  if (!editableStatuses.has(trip.status ?? "")) return false;
+  if (!trip.scheduledAt) return trip.status === "REQUESTED";
   const scheduled = new Date(trip.scheduledAt);
   if (Number.isNaN(scheduled.getTime())) return false;
   return scheduled.getTime() - Date.now() > 2 * 60 * 60 * 1000;
@@ -272,6 +279,7 @@ export default function VehicleRequestPortalPage() {
   const [returnTime, setReturnTime] = useState("");
   const [returnVenueId, setReturnVenueId] = useState("");
   const [editingTripId, setEditingTripId] = useState<string | null>(null);
+  const [locationPermission, setLocationPermission] = useState<"granted" | "prompt" | "denied" | null>(null);
   const [activeTab, setActiveTab] = useState<PortalTab>("solicitud");
   const [actividadesSubTab, setActividadesSubTab] = useState<ActividadesSubTab>("en_curso");
   const [visibleTripsCount, setVisibleTripsCount] = useState(5);
@@ -492,7 +500,16 @@ export default function VehicleRequestPortalPage() {
     setError(null);
     setMessage(null);
     try {
-      await apiFetch(`/trips/${trip.id}`, { method: "DELETE" });
+      await apiFetch(`/trips/${trip.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "CANCELLED",
+          metadata: {
+            log: [{ action: "CANCELLED", by: athlete.fullName ?? "usuario", at: new Date().toISOString() }],
+          },
+        }),
+      });
       if (editingTripId === trip.id) {
         resetRequestForm();
       }
@@ -550,6 +567,11 @@ export default function VehicleRequestPortalPage() {
       setError("Indica una cantidad de personas valida.");
       return;
     }
+    const vehicleSpec = VEHICLE_TYPES.find((v) => v.value === selectedVehicleType);
+    if (vehicleSpec && normalizedPassengerCount > vehicleSpec.maxPax) {
+      setError(`El vehículo ${vehicleSpec.label} permite máximo ${vehicleSpec.maxPax} pasajeros.`);
+      return;
+    }
     if (isRoundTrip && !returnTime) {
       setError("Indica la fecha y hora del viaje de regreso.");
       return;
@@ -563,7 +585,7 @@ export default function VehicleRequestPortalPage() {
         eventId: athlete.eventId,
         requesterAthleteId: athlete.id,
         athleteIds: [athlete.id],
-        tripType: "PORTAL_REQUEST",
+        tripType: isRoundTrip ? "VIAJE_IDA_REGRESO" : "VIAJE_IDA",
         clientType: athlete.userType || "ATHLETE",
         requestedVehicleType: selectedVehicleType,
         passengerCount: normalizedPassengerCount,
@@ -573,7 +595,16 @@ export default function VehicleRequestPortalPage() {
         status: "REQUESTED",
         requestedAt: editingTripId ? undefined : new Date().toISOString(),
         scheduledAt: new Date(requestedTime).toISOString(),
-        notes: notes.trim() || undefined,
+        notes: notes.trim() ? `[Portal] ${notes.trim()}` : "[Portal] Solicitud desde portal VIP",
+        ...(editingTripId ? {
+          metadata: {
+            log: [{ action: "MODIFIED", by: athlete.fullName ?? "usuario", at: new Date().toISOString() }],
+          },
+        } : {
+          metadata: {
+            log: [{ action: "CREATED", by: athlete.fullName ?? "usuario", at: new Date().toISOString() }],
+          },
+        }),
         isRoundTrip,
         ...(isRoundTrip ? {
           returnScheduledAt: new Date(returnTime).toISOString(),
@@ -593,7 +624,7 @@ export default function VehicleRequestPortalPage() {
       setMessage(
         editingTripId
           ? "Solicitud actualizada correctamente."
-          : "Solicitud enviada. Transporte la revisara en el modulo de viajes.",
+          : "SOLICITUD_ENVIADA",
       );
       resetRequestForm();
       await loadPortal(athlete);
@@ -758,6 +789,15 @@ export default function VehicleRequestPortalPage() {
     const timer = window.setInterval(pollTrips, 5000);
     return () => window.clearInterval(timer);
   }, [athlete?.id]);
+
+  // Check & monitor location permission
+  useEffect(() => {
+    if (!navigator.permissions) return;
+    navigator.permissions.query({ name: "geolocation" }).then((result) => {
+      setLocationPermission(result.state as "granted" | "prompt" | "denied");
+      result.onchange = () => setLocationPermission(result.state as "granted" | "prompt" | "denied");
+    }).catch(() => {});
+  }, []);
 
   // User geolocation + send to backend (Safari-friendly)
   useEffect(() => {
@@ -1322,8 +1362,30 @@ export default function VehicleRequestPortalPage() {
 
           <section style={{ display:"flex",flexDirection:"column",gap:"12px" }}>
 
-            {message ? <p className="text-sm text-emerald-600">{message}</p> : null}
+            {message && message !== "SOLICITUD_ENVIADA" ? <p className="text-sm text-emerald-600">{message}</p> : null}
             {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+
+            {/* Success modal */}
+            {message === "SOLICITUD_ENVIADA" && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                <div style={{ background:"#fff",borderRadius:"24px",width:"100%",maxWidth:"380px",padding:"32px 28px",boxShadow:"0 8px 40px rgba(15,23,42,0.2)",textAlign:"center" }}>
+                  <div style={{ width:"56px",height:"56px",borderRadius:"50%",background:"rgba(33,208,179,0.12)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 18px" }}>
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  </div>
+                  <h3 style={{ fontSize:"18px",fontWeight:800,color:"#0f172a",margin:"0 0 8px" }}>Solicitud enviada</h3>
+                  <p style={{ fontSize:"13px",color:"#64748b",lineHeight:1.5,margin:"0 0 24px" }}>
+                    Transporte la revisará y asignará un chofer.<br/>
+                    Podrás ver el estado en la pestaña <strong style={{ color:"#0f172a" }}>Actividades</strong>.
+                  </p>
+                  <button
+                    onClick={() => setMessage(null)}
+                    style={{ width:"100%",padding:"12px",borderRadius:"14px",border:"none",background:"linear-gradient(135deg,#21D0B3,#14AE98)",color:"#fff",fontSize:"14px",fontWeight:700,cursor:"pointer",boxShadow:"0 2px 12px rgba(33,208,179,0.35)" }}
+                  >
+                    Entendido
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* ═══════════════════ SOLICITUD TAB ═══════════════════ */}
             {activeTab === "solicitud" && (
@@ -1352,11 +1414,22 @@ export default function VehicleRequestPortalPage() {
                       </div>
                       <div>
                         <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>Personas</label>
-                        <input className="input" type="number" min={1} step={1} value={passengerCount}
+                        <input className="input" type="number" min={1} max={VEHICLE_TYPES.find((v) => v.value === selectedVehicleType)?.maxPax ?? 64} step={1} value={passengerCount}
                           onChange={(e) => setPassengerCount(e.target.value)}
-                          style={{ width:"100%",height:40,fontSize:13,borderRadius:10,textAlign:"center" }} />
+                          style={{ width:"100%",height:40,fontSize:13,borderRadius:10,textAlign:"center", borderColor: Number(passengerCount) > (VEHICLE_TYPES.find((v) => v.value === selectedVehicleType)?.maxPax ?? 64) ? "#ef4444" : undefined }} />
                       </div>
                     </div>
+                    {(() => {
+                      const maxPax = VEHICLE_TYPES.find((v) => v.value === selectedVehicleType)?.maxPax ?? 64;
+                      const vehicleLabel = VEHICLE_TYPES.find((v) => v.value === selectedVehicleType)?.label ?? "";
+                      if (Number(passengerCount) > maxPax) return (
+                        <div style={{ display:"flex",alignItems:"center",gap:6,padding:"8px 12px",borderRadius:10,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)" }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                          <span style={{ fontSize:12,fontWeight:600,color:"#dc2626" }}>El vehículo {vehicleLabel.split("—")[0].trim()} permite máximo {maxPax} pasajeros</span>
+                        </div>
+                      );
+                      return null;
+                    })()}
 
                     <div>
                       <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>Origen</label>
@@ -1427,7 +1500,7 @@ export default function VehicleRequestPortalPage() {
                           <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>Destino de regreso (opcional)</label>
                           <select className="input" value={returnVenueId} onChange={(e) => setReturnVenueId(e.target.value)}
                             style={{ width:"100%",height:40,fontSize:13,borderRadius:10 }}>
-                            <option value="">Misma direccion de origen</option>
+                            <option value="">Volver a dirección de recogida</option>
                             {venues.map((venue) => (
                               <option key={venue.id} value={venue.id}>
                                 {venue.name}{venue.address ? ` — ${venue.address}` : ""}
@@ -1435,7 +1508,7 @@ export default function VehicleRequestPortalPage() {
                             ))}
                           </select>
                           <p style={{ fontSize:10.5,color:"#64748b",margin:"4px 0 0" }}>
-                            Si no seleccionas una sede, el regreso sera a la direccion de origen.
+                            Si no seleccionas una sede, el regreso será a tu dirección de recogida.
                           </p>
                         </div>
                       </div>
@@ -1556,6 +1629,9 @@ export default function VehicleRequestPortalPage() {
                       </button>
                       {isOpen && (
                         <div style={{ padding:"0 14px 14px",display:"flex",flexDirection:"column",gap:8 }}>
+                          {v.photoUrl && (
+                            <img src={v.photoUrl} alt={v.name || "Sede"} style={{ width:"100%",height:140,objectFit:"cover",borderRadius:10 }} />
+                          )}
                           {v.address && (
                             <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
                               <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Direccion</p>
@@ -1763,9 +1839,13 @@ export default function VehicleRequestPortalPage() {
                 {/* Profile card */}
                 <div className="vr-card" style={{ display:"flex",flexDirection:"column",gap:"10px",borderLeft:"4px solid #21D0B3" }}>
                   <div style={{ display:"flex",alignItems:"center",gap:"10px" }}>
-                    <div style={{ width:48,height:48,borderRadius:"50%",background:"linear-gradient(135deg,#21D0B3,#062240)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"16px",fontWeight:900,color:"#fff",boxShadow:"0 3px 12px rgba(33,208,179,0.3)",flexShrink:0 }}>
-                      {(athlete.fullName || "?").split(" ").slice(0,2).map(w=>w[0]||"").join("").toUpperCase()}
-                    </div>
+                    {(athlete.metadata?.photoUrl as string)?.startsWith("http") ? (
+                      <img src={athlete.metadata!.photoUrl as string} alt={athlete.fullName || ""} style={{ width:48,height:48,borderRadius:"50%",objectFit:"cover",flexShrink:0,boxShadow:"0 3px 12px rgba(33,208,179,0.3)",border:"2px solid #21D0B3" }} />
+                    ) : (
+                      <div style={{ width:48,height:48,borderRadius:"50%",background:"linear-gradient(135deg,#21D0B3,#062240)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"16px",fontWeight:900,color:"#fff",boxShadow:"0 3px 12px rgba(33,208,179,0.3)",flexShrink:0 }}>
+                        {(athlete.fullName || "?").split(" ").slice(0,2).map(w=>w[0]||"").join("").toUpperCase()}
+                      </div>
+                    )}
                     <div style={{ minWidth:0,flex:1 }}>
                       <h2 style={{ fontSize:"17px",fontWeight:800,color:"#0f172a",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{athlete.fullName || athlete.id}</h2>
                       <div style={{ display:"flex",flexWrap:"wrap",gap:"4px",marginTop:4 }}>
@@ -1810,6 +1890,34 @@ export default function VehicleRequestPortalPage() {
                     ))}
                   </div>
                 </div>
+
+                {/* Credential button */}
+                <button type="button" onClick={async () => {
+                  try {
+                    const evName = events[athlete.eventId || ""]?.name || "Seven Arena";
+                    const qrData = `Participante: ${athlete.fullName}\nID: ${athlete.id.slice(-6)}\nDelegación: ${delegations[athlete.delegationId || ""]?.countryCode || "—"}`;
+                    const qrDataUrl = await QRCode.toDataURL(qrData, { width: 200, margin: 1 });
+                    const html = buildCredentialHtml({
+                      eventName: evName,
+                      fullName: athlete.fullName || "",
+                      roleLabel: athlete.userType || "PARTICIPANTE",
+                      credentialCode: athlete.id.slice(-6).toUpperCase(),
+                      statusLabel: "ACTIVE",
+                      issuedAtLabel: new Date().toLocaleDateString("es-CL"),
+                      issuerLabel: "Seven Arena",
+                      subjectId: athlete.id,
+                      countryTag: delegations[athlete.delegationId || ""]?.countryCode || "",
+                      photoUrl: "",
+                      qrDataUrl,
+                    });
+                    const w = window.open("", "_blank", "width=450,height=700");
+                    if (w) { w.document.write(html); w.document.close(); }
+                  } catch { notify.push("No se pudo generar la credencial", "❌"); }
+                }}
+                  style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:"linear-gradient(135deg,#041a2e,#062240)",color:"#21D0B3",fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8 }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
+                  Ver credencial digital
+                </button>
 
                 {/* Logout button */}
                 <button type="button" onClick={logout}

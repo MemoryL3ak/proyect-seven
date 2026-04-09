@@ -30,7 +30,7 @@ const navSections: NavSection[] = [
     title: "Operación", icon: "route",
     groups: [
       {
-        title: "Arrival and Departure", icon: "and",
+        title: "Arribos & Llegadas", icon: "and",
         items: [
           { href: "/operacion/and", label: "AND", icon: "and" },
           { href: "/operacion/cumplimiento-and", label: "Cumplimiento AND", icon: "shield" },
@@ -42,6 +42,7 @@ const navSections: NavSection[] = [
         items: [
           { href: "/operations/vehicle-positions", label: "Tracking de Viajes", icon: "pin" },
           { href: "/operations/trips", label: "Viajes", icon: "route" },
+          { href: "/operations/driver-heatmap", label: "Panel Conductores", icon: "driver" },
           { href: "/scanner", label: "Escáner QR", icon: "scan" }
         ]
       },

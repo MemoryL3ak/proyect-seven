@@ -66,6 +66,12 @@ type Provider = {
   rut?: string | null;
   bidAmount?: number | null;
   bidTripCount?: number | null;
+  parentProviderId?: string | null;
+  invoiceType?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  city?: string | null;
+  contactName?: string | null;
   metadata?: Record<string, unknown> | null;
 };
 
@@ -159,6 +165,13 @@ function DocRow({
         color: hasNew ? "#21D0B3" : hasUploaded ? "#10b981" : "var(--text-faint)" }}>
         {hasNew ? file.name : hasUploaded ? "✓ Cargado" : "—"}
       </span>
+      {hasUploaded && url && (
+        <a href={url} target="_blank" rel="noreferrer"
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, borderRadius: 6, border: "1px solid var(--border)", background: "var(--elevated)", cursor: "pointer", flexShrink: 0 }}
+          title="Ver documento">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </a>
+      )}
       <input
         ref={ref}
         type="file"
@@ -188,7 +201,7 @@ function DocRow({
 }
 
 // ── Empty forms ──────────────────────────────────────────────────────────────
-const EMPTY_PROVIDER_FORM = { name: "", type: "", subtype: "", email: "", rut: "", bidAmount: "", bidTripCount: "" };
+const EMPTY_PROVIDER_FORM = { name: "", type: "", subtype: "", email: "", rut: "", phone: "", address: "", city: "", contactName: "", invoiceType: "", bidAmount: "", bidTripCount: "" };
 const EMPTY_PARTICIPANT_FORM = {
   providerId: "",
   fullName: "",
@@ -213,6 +226,7 @@ const EMPTY_PARTICIPANT_FORM = {
   vehicleAno: "",
   vehiclePatente: "",
   vehicleTipo: "",
+  photoDataUrl: "",
 };
 
 // ── Main page ────────────────────────────────────────────────────────────────
@@ -225,7 +239,7 @@ export default function ProveedoresPage() {
   const [loadingProviders, setLoadingProviders] = useState(true);
   const [providerSearch, setProviderSearch] = useState("");
   const [filterType, setFilterType] = useState("");
-  const [providerModal, setProviderModal] = useState<null | { editing?: Provider }>(null);
+  const [providerModal, setProviderModal] = useState<null | { editing?: Provider | null; parentId?: string }>(null);
   const [providerForm, setProviderForm] = useState(EMPTY_PROVIDER_FORM);
   const [providerDocFiles, setProviderDocFiles] = useState<Record<string, File | null>>({});
   const [savingProvider, setSavingProvider] = useState(false);
@@ -236,6 +250,7 @@ export default function ProveedoresPage() {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
   const [participantSearch, setParticipantSearch] = useState("");
+  const [bulkPhotoResult, setBulkPhotoResult] = useState<{ matched: number; notFound: number; names: string[] } | null>(null);
   const [participantModal, setParticipantModal] = useState<null | { editing?: Participant }>(null);
   const [participantForm, setParticipantForm] = useState(EMPTY_PARTICIPANT_FORM);
   const [participantDocFiles, setParticipantDocFiles] = useState<Record<string, File | null>>({});
@@ -344,7 +359,7 @@ export default function ProveedoresPage() {
   };
 
   const openEditProvider = (p: Provider) => {
-    setProviderForm({ name: p.name, type: p.type ?? "", subtype: p.subtype ?? "", email: p.email ?? "", rut: p.rut ?? "", bidAmount: p.bidAmount != null ? String(p.bidAmount) : "", bidTripCount: p.bidTripCount != null ? String(p.bidTripCount) : "" });
+    setProviderForm({ name: p.name, type: p.type ?? "", subtype: p.subtype ?? "", email: p.email ?? "", rut: p.rut ?? "", phone: p.phone ?? "", address: p.address ?? "", city: p.city ?? "", contactName: p.contactName ?? "", invoiceType: p.invoiceType ?? "", bidAmount: p.bidAmount != null ? String(p.bidAmount) : "", bidTripCount: p.bidTripCount != null ? String(p.bidTripCount) : "" });
     if (p.type === "TRANSPORTE") {
       apiFetch<ProviderRate[]>(`/providers/${p.id}/rates`).then(setProviderRates).catch(() => setProviderRates([]));
     } else {
@@ -360,14 +375,22 @@ export default function ProveedoresPage() {
     setSavingProvider(true);
     setProviderError(null);
     try {
+      const parentId = providerModal?.parentId ?? null;
+      const parentProv = parentId ? providers.find(pr => pr.id === parentId) : null;
       const body = {
         name: providerForm.name.trim(),
-        type: providerForm.type || null,
+        type: providerForm.type || parentProv?.type || null,
         subtype: providerForm.subtype || null,
         email: providerForm.email || null,
         rut: providerForm.rut || null,
+        phone: providerForm.phone || null,
+        address: providerForm.address || null,
+        city: providerForm.city || null,
+        contactName: providerForm.contactName || null,
+        invoiceType: providerForm.invoiceType || null,
         bidAmount: providerForm.bidAmount ? Number(providerForm.bidAmount) : null,
         bidTripCount: providerForm.bidTripCount ? Number(providerForm.bidTripCount) : null,
+        ...(parentId ? { parentProviderId: parentId } : {}),
       };
 
       let providerId: string;
@@ -492,6 +515,7 @@ export default function ProveedoresPage() {
       vehicleAno: (p.metadata?.vehicleAno as string) ?? "",
       vehiclePatente: (p.metadata?.vehiclePatente as string) ?? "",
       vehicleTipo: (p.metadata?.vehicleTipo as string) ?? "",
+      photoDataUrl: (p.metadata?.photoUrl as string) ?? "",
     });
     setParticipantDocFiles({});
     setParticipantError(null);
@@ -524,6 +548,7 @@ export default function ProveedoresPage() {
         departureTime: participantForm.departureTime || null,
         observations: participantForm.observations || null,
         metadata: isTransporteParticipant ? {
+          ...(participantModal?.editing?.metadata ?? {}),
           isDriver: participantForm.isDriver,
           ...(participantForm.isDriver ? {
             vehicleMarca: participantForm.vehicleMarca || null,
@@ -550,6 +575,15 @@ export default function ProveedoresPage() {
           body: JSON.stringify(body),
         });
         participantId = created.id;
+      }
+
+      // Upload photo if provided
+      if (participantForm.photoDataUrl && participantForm.photoDataUrl.startsWith("data:")) {
+        await apiFetch(`/provider-participants/${participantId}/document`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ key: "photoUrl", dataUrl: participantForm.photoDataUrl }),
+        });
       }
 
       const pending = Object.entries(participantDocFiles).filter(([, f]) => f !== null);
@@ -774,10 +808,14 @@ export default function ProveedoresPage() {
                             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = "0 1px 6px rgba(15,23,42,0.07)"; }}
                           >
                             <div style={{ padding: "14px 16px", display: "flex", gap: "12px", alignItems: "flex-start" }}>
-                              {/* Avatar */}
-                              <div style={{ width: "42px", height: "42px", borderRadius: "12px", background: typeBg, border: `1px solid ${typeColor}30`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                                <span style={{ fontSize: "14px", fontWeight: 800, color: typeColor }}>{initials}</span>
-                              </div>
+                              {/* Avatar / Logo */}
+                              {typeof p.metadata?.logo === "string" && (p.metadata.logo as string).startsWith("http") ? (
+                                <img src={p.metadata.logo as string} alt={p.name} style={{ width: "42px", height: "42px", borderRadius: "12px", objectFit: "cover", flexShrink: 0, border: `1px solid ${typeColor}30` }} />
+                              ) : (
+                                <div style={{ width: "42px", height: "42px", borderRadius: "12px", background: typeBg, border: `1px solid ${typeColor}30`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                  <span style={{ fontSize: "14px", fontWeight: 800, color: typeColor }}>{initials}</span>
+                                </div>
+                              )}
 
                               {/* Info */}
                               <div style={{ flex: 1, minWidth: 0 }}>
@@ -848,18 +886,56 @@ export default function ProveedoresPage() {
                               </div>
                             </div>
 
-                            {/* Footer: click to see participants */}
-                            <button
-                              onClick={() => handleProviderClick(p)}
-                              style={{ width: "100%", padding: "8px 16px", background: typeBg, border: "none", borderTop: `1px solid ${typeColor}20`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", transition: "background 0.15s" }}
-                              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = `${typeColor}18`; }}
-                              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = typeBg; }}
-                            >
-                              <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke={typeColor} strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                              </svg>
-                              <span style={{ fontSize: "11px", fontWeight: 600, color: typeColor }}>Ver participantes</span>
-                            </button>
+                            {/* Footer: actions */}
+                            <div style={{ display: "flex", borderTop: `1px solid ${typeColor}20` }}>
+                              <button
+                                onClick={() => handleProviderClick(p)}
+                                style={{ flex: 1, padding: "8px 16px", background: typeBg, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", transition: "background 0.15s" }}
+                                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = `${typeColor}18`; }}
+                                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = typeBg; }}
+                              >
+                                <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke={typeColor} strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                <span style={{ fontSize: "11px", fontWeight: 600, color: typeColor }}>Participantes</span>
+                              </button>
+                              {!p.parentProviderId && (
+                                <button
+                                  onClick={() => setProviderModal({ editing: null, parentId: p.id })}
+                                  style={{ padding: "8px 14px", background: typeBg, border: "none", borderLeft: `1px solid ${typeColor}20`, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", transition: "background 0.15s" }}
+                                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = `${typeColor}18`; }}
+                                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = typeBg; }}
+                                  title="Crear subproveedor"
+                                >
+                                  <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke={typeColor} strokeWidth={2}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                  <span style={{ fontSize: "10px", fontWeight: 600, color: typeColor }}>Sub</span>
+                                </button>
+                              )}
+                            </div>
+
+                            {/* Sub-providers */}
+                            {(() => {
+                              const subs = providers.filter(sp => sp.parentProviderId === p.id);
+                              if (subs.length === 0) return null;
+                              return (
+                                <div style={{ padding: "8px 16px 12px", borderTop: `1px solid ${typeColor}15`, background: `${typeColor}05` }}>
+                                  <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: typeColor, margin: "0 0 6px" }}>Subproveedores ({subs.length})</p>
+                                  {subs.map(sub => (
+                                    <div key={sub.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 8px", borderRadius: 6, background: "#fff", border: "1px solid #f1f5f9", marginBottom: 3 }}>
+                                      <span style={{ fontSize: 12, fontWeight: 600, color: "#0f172a" }}>{sub.name}</span>
+                                      <div style={{ display: "flex", gap: 4 }}>
+                                        <button onClick={() => openEditProvider(sub)} style={{ padding: 3, borderRadius: 4, border: "none", background: "none", cursor: "pointer", color: "#94a3b8" }} title="Editar">
+                                          <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                        </button>
+                                        <button onClick={() => removeProvider(sub)} style={{ padding: 3, borderRadius: 4, border: "none", background: "none", cursor: "pointer", color: "#94a3b8" }} title="Eliminar">
+                                          <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              );
+                            })()}
                           </div>
                         );
                       })}
@@ -908,6 +984,105 @@ export default function ProveedoresPage() {
             </span>
           </section>
 
+          {/* Bulk photo upload */}
+          <section className="surface" style={{ borderRadius: "14px", padding: "14px 18px", borderTop: "2px solid #a78bfa", boxShadow: "0 1px 6px rgba(15,23,42,0.06)" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
+              <div>
+                <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#a78bfa", marginBottom: "4px" }}>
+                  Carga masiva de fotos
+                </p>
+                <p style={{ fontSize: "12px", color: "#64748b", margin: 0 }}>
+                  El nombre del archivo debe coincidir con el nombre completo del participante.
+                </p>
+              </div>
+              <label style={{
+                display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 16px", borderRadius: "12px",
+                background: "linear-gradient(135deg, #a78bfa, #7c3aed)", color: "#fff", fontSize: "12px", fontWeight: 700,
+                cursor: "pointer", boxShadow: "0 2px 10px rgba(167,139,250,0.35)",
+              }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Seleccionar fotos
+                <input type="file" accept="image/*" multiple style={{ display: "none" }} onChange={async (e) => {
+                  const files = Array.from(e.target.files || []);
+                  if (files.length === 0) return;
+                  let matched = 0, notFound = 0;
+                  const notFoundNames: string[] = [];
+                  for (const file of files) {
+                    const baseName = file.name.replace(/\.[^.]+$/, "").trim().toLowerCase().replace(/[._-]/g, " ");
+                    const participant = participants.find(p => (p.fullName || "").toLowerCase() === baseName);
+                    if (!participant) { notFound++; notFoundNames.push(file.name); continue; }
+                    try {
+                      const raw = await new Promise<string>((resolve) => { const r = new FileReader(); r.onload = () => resolve(r.result as string); r.readAsDataURL(file); });
+                      let dataUrl = raw;
+                      try {
+                        dataUrl = await new Promise<string>((resolve) => {
+                          const img = new Image();
+                          img.onload = () => {
+                            const canvas = document.createElement("canvas");
+                            const MAX = 1200; let w = img.width, h = img.height;
+                            if (w > MAX || h > MAX) { if (w > h) { h = Math.round(h * MAX / w); w = MAX; } else { w = Math.round(w * MAX / h); h = MAX; } }
+                            canvas.width = w; canvas.height = h;
+                            canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
+                            resolve(canvas.toDataURL("image/jpeg", 0.7));
+                          };
+                          img.onerror = () => resolve(raw);
+                          img.src = raw;
+                        });
+                      } catch { /* use raw */ }
+                      await apiFetch(`/provider-participants/${participant.id}/document`, {
+                        method: "POST", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ key: "photoUrl", dataUrl }),
+                      });
+                      matched++;
+                    } catch { notFound++; notFoundNames.push(file.name); }
+                  }
+                  setBulkPhotoResult({ matched, notFound, names: notFoundNames });
+                  await loadParticipants();
+                  e.target.value = "";
+                }} />
+              </label>
+            </div>
+          </section>
+
+          {/* Bulk photo result modal */}
+          {bulkPhotoResult && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+              <div style={{ background: "#fff", borderRadius: "20px", width: "100%", maxWidth: "400px", padding: "28px", boxShadow: "0 8px 40px rgba(15,23,42,0.2)", textAlign: "center" }}>
+                <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: bulkPhotoResult.matched > 0 ? "rgba(16,185,129,0.1)" : "rgba(245,158,11,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+                  {bulkPhotoResult.matched > 0 ? (
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  ) : (
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  )}
+                </div>
+                <h3 style={{ fontSize: "16px", fontWeight: 700, margin: "0 0 6px" }}>{bulkPhotoResult.matched > 0 ? "Carga completada" : "Sin coincidencias"}</h3>
+                <div style={{ display: "flex", justifyContent: "center", gap: "16px", margin: "12px 0 16px" }}>
+                  <div style={{ padding: "8px 16px", borderRadius: "10px", background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)" }}>
+                    <p style={{ fontSize: "20px", fontWeight: 800, color: "#10b981", margin: 0 }}>{bulkPhotoResult.matched}</p>
+                    <p style={{ fontSize: "10px", fontWeight: 600, color: "#065f46", margin: 0 }}>Exitosas</p>
+                  </div>
+                  <div style={{ padding: "8px 16px", borderRadius: "10px", background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)" }}>
+                    <p style={{ fontSize: "20px", fontWeight: 800, color: "#ef4444", margin: 0 }}>{bulkPhotoResult.notFound}</p>
+                    <p style={{ fontSize: "10px", fontWeight: 600, color: "#991b1b", margin: 0 }}>Sin match</p>
+                  </div>
+                </div>
+                {bulkPhotoResult.names.length > 0 && (
+                  <div style={{ textAlign: "left", background: "#f8fafc", borderRadius: "10px", padding: "10px 14px", marginBottom: "16px", maxHeight: "120px", overflowY: "auto" }}>
+                    <p style={{ fontSize: "10px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 6px" }}>Archivos sin coincidencia</p>
+                    {bulkPhotoResult.names.slice(0, 10).map(name => (
+                      <p key={name} style={{ fontSize: "12px", color: "#64748b", margin: "2px 0" }}>{name}</p>
+                    ))}
+                    {bulkPhotoResult.names.length > 10 && <p style={{ fontSize: "11px", color: "#94a3b8", margin: "4px 0 0" }}>+{bulkPhotoResult.names.length - 10} más...</p>}
+                  </div>
+                )}
+                <button onClick={() => setBulkPhotoResult(null)}
+                  style={{ padding: "10px 32px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 10px rgba(33,208,179,0.3)" }}>
+                  Entendido
+                </button>
+              </div>
+            </div>
+          )}
+
           {loadingParticipants ? (
             <div className="flex items-center justify-center h-40 text-sm" style={{ color: "var(--text-faint)" }}>
               Cargando participantes…
@@ -930,6 +1105,17 @@ export default function ProveedoresPage() {
                     className="flex items-center gap-4 px-5 py-3"
                     style={{ borderBottom: i < filteredParticipants.length - 1 ? "1px solid var(--border)" : "none" }}
                   >
+                    {/* Photo */}
+                    {(() => {
+                      const photo = (p.metadata as any)?.photoUrl;
+                      return photo && typeof photo === "string" && photo.startsWith("http") ? (
+                        <img src={photo} alt="" style={{ width:36, height:36, borderRadius:"50%", objectFit:"cover", flexShrink:0, border:"2px solid #21D0B3" }} />
+                      ) : (
+                        <div style={{ width:36, height:36, borderRadius:"50%", flexShrink:0, background:"rgba(33,208,179,0.1)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"12px", fontWeight:700, color:"#21D0B3" }}>
+                          {(p.fullName || "?").split(" ").slice(0,2).map(w => w[0] ?? "").join("").toUpperCase()}
+                        </div>
+                      );
+                    })()}
                     <div className="flex-1 min-w-0">
                       <span className="block truncate" style={{ fontSize: "14px", fontWeight: 600, color: "var(--text)" }}>{p.fullName}</span>
                       <div style={{ display: "flex", gap: "8px", marginTop: "2px", flexWrap: "wrap" }}>
@@ -1025,11 +1211,39 @@ export default function ProveedoresPage() {
                 {providerModal.editing ? "Editar" : "Nuevo"}
               </p>
               <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "var(--text)" }}>
-                {providerModal.editing ? "Editar proveedor" : "Nuevo proveedor"}
+                {providerModal.editing ? "Editar proveedor" : providerModal.parentId ? `Nuevo subproveedor de ${providers.find(pr => pr.id === providerModal.parentId)?.name || ""}` : "Nuevo proveedor"}
               </h2>
             </div>
 
             <div className="overflow-y-auto px-6 pb-2 flex-1 space-y-4">
+              {/* Logo upload */}
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                {(() => {
+                  const logoUrl = providerDocFiles.logo
+                    ? URL.createObjectURL(providerDocFiles.logo)
+                    : typeof providerModal?.editing?.metadata?.logo === "string" ? (providerModal.editing.metadata.logo as string) : null;
+                  return (
+                    <div style={{ width: "56px", height: "56px", borderRadius: "14px", border: "2px dashed #e2e8f0", background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
+                      {logoUrl ? (
+                        <img src={logoUrl} alt="Logo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ) : (
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                      )}
+                    </div>
+                  );
+                })()}
+                <div style={{ flex: 1 }}>
+                  <DocRow
+                    label="Logo del proveedor"
+                    docKey="logo"
+                    file={providerDocFiles.logo ?? null}
+                    url={typeof providerModal?.editing?.metadata?.logo === "string" ? (providerModal.editing.metadata.logo as string) : undefined}
+                    onFile={(k, f) => setProviderDocFiles(prev => ({ ...prev, [k]: f }))}
+                    disabled={savingProvider}
+                  />
+                </div>
+              </div>
+
               <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
                 Nombre *
                 <input className="input" value={providerForm.name} onChange={e => setProviderForm(f => ({ ...f, name: e.target.value }))} placeholder="Nombre del proveedor" autoFocus />
@@ -1062,6 +1276,38 @@ export default function ProveedoresPage() {
                 <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
                   RUT
                   <input className="input" value={providerForm.rut} onChange={e => setProviderForm(f => ({ ...f, rut: e.target.value }))} placeholder="12.345.678-9" />
+                </label>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
+                  Teléfono
+                  <input className="input" value={providerForm.phone} onChange={e => setProviderForm(f => ({ ...f, phone: e.target.value }))} placeholder="+56 9 1234 5678" />
+                </label>
+                <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
+                  Nombre de contacto
+                  <input className="input" value={providerForm.contactName} onChange={e => setProviderForm(f => ({ ...f, contactName: e.target.value }))} placeholder="Nombre del contacto" />
+                </label>
+              </div>
+
+              <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
+                Dirección
+                <input className="input" value={providerForm.address} onChange={e => setProviderForm(f => ({ ...f, address: e.target.value }))} placeholder="Dirección del proveedor" />
+              </label>
+
+              <div className="grid grid-cols-2 gap-3">
+                <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
+                  Ciudad
+                  <input className="input" value={providerForm.city} onChange={e => setProviderForm(f => ({ ...f, city: e.target.value }))} placeholder="Santiago" />
+                </label>
+                <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
+                  Tipo de factura
+                  <select className="input" value={providerForm.invoiceType} onChange={e => setProviderForm(f => ({ ...f, invoiceType: e.target.value }))}>
+                    <option value="">— Seleccionar —</option>
+                    <option value="AFECTO">Afecto</option>
+                    <option value="EXENTO">Exento</option>
+                    <option value="MIXTO">Mixto</option>
+                  </select>
                 </label>
               </div>
 
@@ -1210,6 +1456,55 @@ export default function ProveedoresPage() {
                   ))}
                 </select>
               </label>
+
+              {/* Foto */}
+              <div style={{ display: "flex", alignItems: "center", gap: "14px", padding: "12px 0" }}>
+                {participantForm.photoDataUrl ? (
+                  <img src={participantForm.photoDataUrl} alt="" style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover", border: "3px solid #21D0B3" }} />
+                ) : (
+                  <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(33,208,179,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", fontWeight: 700, color: "#21D0B3" }}>
+                    {(participantForm.fullName || "?").split(" ").slice(0, 2).map(w => w[0] ?? "").join("").toUpperCase()}
+                  </div>
+                )}
+                <div>
+                  <label style={{
+                    display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 16px", borderRadius: "10px",
+                    background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: "#fff", fontSize: "12px", fontWeight: 700,
+                    cursor: "pointer", boxShadow: "0 2px 8px rgba(33,208,179,0.3)",
+                  }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    {participantForm.photoDataUrl ? "Cambiar foto" : "Subir foto"}
+                    <input type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        const raw = reader.result as string;
+                        const img = new Image();
+                        img.onload = () => {
+                          const canvas = document.createElement("canvas");
+                          const MAX = 1200;
+                          let w = img.width, h = img.height;
+                          if (w > MAX || h > MAX) { if (w > h) { h = Math.round(h * MAX / w); w = MAX; } else { w = Math.round(w * MAX / h); h = MAX; } }
+                          canvas.width = w; canvas.height = h;
+                          canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
+                          setParticipantForm(f => ({ ...f, photoDataUrl: canvas.toDataURL("image/jpeg", 0.7) }));
+                        };
+                        img.onerror = () => setParticipantForm(f => ({ ...f, photoDataUrl: raw }));
+                        img.src = raw;
+                      };
+                      reader.readAsDataURL(file);
+                      e.target.value = "";
+                    }} />
+                  </label>
+                  {participantForm.photoDataUrl && (
+                    <button type="button" onClick={() => setParticipantForm(f => ({ ...f, photoDataUrl: "" }))}
+                      style={{ marginLeft: "8px", fontSize: "11px", color: "#ef4444", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>
+                      Quitar
+                    </button>
+                  )}
+                </div>
+              </div>
 
               {/* Datos personales */}
               <div style={{ borderTop: "1px solid var(--border)", paddingTop: "12px" }}>
@@ -1368,15 +1663,13 @@ export default function ProveedoresPage() {
                             Tipo
                             <select className="input" value={participantForm.vehicleTipo} onChange={e => setParticipantForm(f => ({ ...f, vehicleTipo: e.target.value }))}>
                               <option value="">— Tipo —</option>
-                              <option value="sedan">Sedán</option>
-                              <option value="suv">SUV</option>
-                              <option value="camioneta">Camioneta</option>
-                              <option value="furgon">Furgón</option>
-                              <option value="van">Van</option>
-                              <option value="minibus">Minibús</option>
-                              <option value="bus">Bus</option>
-                              <option value="moto">Moto</option>
-                              <option value="otro">Otro</option>
+                              <option value="SEDAN">Sedán</option>
+                              <option value="SUV">SUV</option>
+                              <option value="VAN_10">Van 10</option>
+                              <option value="VAN_15">Van 15-17</option>
+                              <option value="VAN_19">Van 19</option>
+                              <option value="MINIBUS">Minibus</option>
+                              <option value="BUS">Bus</option>
                             </select>
                           </label>
                         </div>

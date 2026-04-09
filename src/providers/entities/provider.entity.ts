@@ -38,6 +38,12 @@ export class Provider {
   @Column({ name: 'contact_name', length: 150, type: 'varchar', nullable: true })
   contactName?: string | null;
 
+  @Column({ name: 'parent_provider_id', type: 'uuid', nullable: true })
+  parentProviderId?: string | null;
+
+  @Column({ name: 'invoice_type', length: 30, type: 'varchar', nullable: true })
+  invoiceType?: string | null;
+
   @Column({ name: 'bid_amount', type: 'numeric', nullable: true })
   bidAmount?: number | null;
 

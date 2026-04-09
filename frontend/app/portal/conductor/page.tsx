@@ -55,6 +55,7 @@ type Driver = {
   credentialCode?: string | null;
   accessTypes?: string[] | null;
   metadata?: Record<string, unknown> | null;
+  _isParticipant?: boolean;
 };
 
 type EventItem = { id: string; name?: string | null };
@@ -163,10 +164,32 @@ export default function DriverPortalPage() {
   const [pickupError, setPickupError] = useState<string | null>(null);
   const [trackingTripId, setTrackingTripId] = useState<string | null>(null);
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
+  const [seenTripIds, setSeenTripIds] = useState<Set<string>>(() => {
+    try { const saved = localStorage.getItem("conductor_seen_trips"); return saved ? new Set(JSON.parse(saved)) : new Set(); } catch { return new Set(); }
+  });
   const [driverPosition, setDriverPosition] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationPermission, setLocationPermission] = useState<"granted" | "prompt" | "denied" | null>(null);
+  const markTripSeen = (tripId: string) => {
+    setSeenTripIds((prev) => {
+      if (prev.has(tripId)) return prev;
+      const next = new Set(prev);
+      next.add(tripId);
+      try { localStorage.setItem("conductor_seen_trips", JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  };
   const driverNotify = useNotifications();
   const ratedTripIds = useRef<Set<string>>(new Set());
   const tripsRef = useRef<Trip[]>([]);
+
+  // Check & monitor location permission
+  useEffect(() => {
+    if (!navigator.permissions) return;
+    navigator.permissions.query({ name: "geolocation" }).then((result) => {
+      setLocationPermission(result.state as "granted" | "prompt" | "denied");
+      result.onchange = () => setLocationPermission(result.state as "granted" | "prompt" | "denied");
+    }).catch(() => {});
+  }, []);
 
   // Restore session on mount
   useEffect(() => {
@@ -219,6 +242,7 @@ export default function DriverPortalPage() {
           status: p.status,
           providerId: p.providerId,
           metadata: p.metadata,
+          _isParticipant: true,
         }));
 
       const allDrivers: Driver[] = [...(driversData || []), ...participantDrivers];
@@ -305,6 +329,8 @@ export default function DriverPortalPage() {
     }
   };
 
+  const [showLocationBlockedModal, setShowLocationBlockedModal] = useState(false);
+
   const requestLocationPermission = (): Promise<boolean> => {
     return new Promise((resolve) => {
       if (!navigator.geolocation) {
@@ -313,10 +339,11 @@ export default function DriverPortalPage() {
         return;
       }
       navigator.geolocation.getCurrentPosition(
-        () => resolve(true),
+        () => { setLocationPermission("granted"); resolve(true); },
         (err) => {
           if (err.code === err.PERMISSION_DENIED) {
-            driverNotify.push("Activa la ubicación en ajustes del navegador para iniciar el viaje", "📍");
+            setLocationPermission("denied");
+            setShowLocationBlockedModal(true);
           } else {
             driverNotify.push("No se pudo obtener tu ubicación. Verifica que el GPS esté activado", "📍");
           }
@@ -328,8 +355,8 @@ export default function DriverPortalPage() {
   };
 
   const updateTrip = async (tripId: string, status: string) => {
-    // Request GPS permission before starting a route
-    if (status === "EN_ROUTE") {
+    // Request GPS permission before any trip action that requires location
+    if (["EN_ROUTE", "PICKED_UP", "DROPPED_OFF", "COMPLETED"].includes(status)) {
       const hasLocation = await requestLocationPermission();
       if (!hasLocation) return;
     }
@@ -873,8 +900,8 @@ export default function DriverPortalPage() {
               <div style={{ position:"absolute",top:0,right:0,width:"200px",height:"200px",borderRadius:"50%",background:"radial-gradient(ellipse,rgba(33,208,179,0.05) 0%,transparent 65%)",transform:"translate(60px,-60px)",pointerEvents:"none" }} />
               <div className="dc-profile-body">
                 <div style={{ position:"relative",flexShrink:0 }}>
-                  {driverProfile.photoUrl ? (
-                    <img src={driverProfile.photoUrl} alt="Foto" style={{ width:64,height:64,borderRadius:"50%",objectFit:"cover",boxShadow:"0 6px 24px rgba(33,208,179,0.3)" }} />
+                  {(driverProfile.photoUrl || (driverProfile.metadata as any)?.photoUrl) ? (
+                    <img src={driverProfile.photoUrl || (driverProfile.metadata as any)?.photoUrl} alt="Foto" style={{ width:64,height:64,borderRadius:"50%",objectFit:"cover",boxShadow:"0 6px 24px rgba(33,208,179,0.3)" }} />
                   ) : (
                     <div className="dc-avatar">
                       {(driverProfile.fullName || "C").split(" ").slice(0,2).map((w: string) => w[0] ?? "").join("").toUpperCase() || "C"}
@@ -1031,10 +1058,10 @@ export default function DriverPortalPage() {
               {/* Status filter tabs */}
               <div style={{ display:"flex",gap:4,marginBottom:12,background:"#f1f5f9",borderRadius:10,padding:3 }}>
                 {([
-                  { key: "en_curso", label: "En curso", count: trips.filter((t) => t.status === "EN_ROUTE" || t.status === "PICKED_UP").length },
-                  { key: "hoy", label: "Hoy", count: trips.filter((t) => ["SCHEDULED","EN_ROUTE","PICKED_UP"].includes(t.status ?? "") && ((t.scheduledAt || t.startedAt || "").slice(0,10) === todayKey || !(t.scheduledAt || t.startedAt))).length },
-                  { key: "todos", label: "Programados", count: trips.filter((t) => ["SCHEDULED","EN_ROUTE","PICKED_UP"].includes(t.status ?? "")).length },
-                ] as const).map(({ key, label, count }) => (
+                  { key: "en_curso", label: "En curso", count: trips.filter((t) => t.status === "EN_ROUTE" || t.status === "PICKED_UP").length, unread: 0 },
+                  { key: "hoy", label: "Hoy", count: trips.filter((t) => ["SCHEDULED","EN_ROUTE","PICKED_UP"].includes(t.status ?? "") && ((t.scheduledAt || t.startedAt || "").slice(0,10) === todayKey || !(t.scheduledAt || t.startedAt))).length, unread: trips.filter((t) => t.status === "SCHEDULED" && !seenTripIds.has(t.id) && ((t.scheduledAt || t.startedAt || "").slice(0,10) === todayKey || !(t.scheduledAt || t.startedAt))).length },
+                  { key: "todos", label: "Programados", count: trips.filter((t) => ["SCHEDULED","EN_ROUTE","PICKED_UP"].includes(t.status ?? "")).length, unread: trips.filter((t) => t.status === "SCHEDULED" && !seenTripIds.has(t.id)).length },
+                ]).map(({ key, label, count, unread }) => (
                   <button key={key} type="button" onClick={() => setStatusFilter(key)}
                     style={{
                       flex:1,padding:"7px 8px",borderRadius:8,border:"none",
@@ -1050,6 +1077,9 @@ export default function DriverPortalPage() {
                       background: statusFilter === key ? "rgba(33,208,179,0.15)" : "transparent",
                       color: statusFilter === key ? "#0a7a6b" : "#b0b8c4",
                     }}>{count}</span>
+                    {unread > 0 && (
+                      <span style={{ fontSize:9,fontWeight:800,padding:"2px 6px",borderRadius:"99px",background:"#ef4444",color:"#fff",minWidth:16,textAlign:"center" }}>{unread}</span>
+                    )}
                   </button>
                 ))}
               </div>
@@ -1065,29 +1095,44 @@ export default function DriverPortalPage() {
                     const isSelected = selectedTripId === trip.id;
                     const isActive = status === "EN_ROUTE" || status === "PICKED_UP";
                     const isCompleted = status === "COMPLETED" || status === "DROPPED_OFF";
+                    const isSeen = seenTripIds.has(trip.id);
+                    const isNew = status === "SCHEDULED" && !isSeen;
                     const tripVehicle = vehicles[trip.vehicleId];
                     const passengerCount = getTripAthleteIds(trip).length;
 
                     return (
-                      <div key={trip.id} style={{ borderRadius:14,border: isSelected ? "1px solid rgba(33,208,179,0.4)" : "1px solid #f1f5f9",background:"#fff",overflow:"hidden",transition:"border-color .15s" }}>
+                      <div key={trip.id} style={{
+                        borderRadius:14,
+                        border: isSelected ? "1px solid rgba(33,208,179,0.4)" : isNew ? "1px solid rgba(59,130,246,0.3)" : "1px solid #f1f5f9",
+                        background: isNew ? "rgba(59,130,246,0.03)" : "#fff",
+                        overflow:"hidden",transition:"all .15s",
+                      }}>
 
                         {/* ── Compact row (always visible) ── */}
-                        <button type="button" onClick={() => setSelectedTripId(isSelected ? null : trip.id)}
+                        <button type="button" onClick={() => { setSelectedTripId(isSelected ? null : trip.id); markTripSeen(trip.id); }}
                           style={{ width:"100%",display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:"none",border:"none",cursor:"pointer",textAlign:"left" }}>
-                          {/* Status dot */}
-                          <span style={{
-                            width:10,height:10,borderRadius:"50%",flexShrink:0,
-                            background: isActive ? "#7c3aed" : isCompleted ? "#21D0B3" : "#0ea5e9",
-                            boxShadow: isActive ? "0 0 8px rgba(124,58,237,0.4)" : "none",
-                          }} />
+                          {/* Status dot + new badge */}
+                          <div style={{ position:"relative",flexShrink:0 }}>
+                            <span style={{
+                              width:10,height:10,borderRadius:"50%",display:"block",
+                              background: isActive ? "#7c3aed" : isCompleted ? "#21D0B3" : isNew ? "#3b82f6" : "#0ea5e9",
+                              boxShadow: isActive ? "0 0 8px rgba(124,58,237,0.4)" : isNew ? "0 0 8px rgba(59,130,246,0.4)" : "none",
+                            }} />
+                            {isNew && <span style={{ position:"absolute",top:"-6px",right:"-8px",width:6,height:6,borderRadius:"50%",background:"#ef4444",border:"1px solid #fff" }} />}
+                          </div>
                           {/* Route summary */}
                           <div style={{ flex:1,minWidth:0 }}>
-                            <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
-                              {isDisposicion(trip)
-                                ? "Disposición 12h"
-                                : `${trip.origin?.split(",")[0] || "—"} → ${trip.destination?.split(",")[0] || "—"}`}
-                            </p>
-                            <p style={{ fontSize:10.5,color:"#94a3b8",margin:"2px 0 0" }}>
+                            <div style={{ display:"flex",alignItems:"center",gap:6 }}>
+                              <p style={{ fontSize:13,fontWeight: isNew ? 800 : 600,color: isNew ? "#1e40af" : "#0f172a",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                                {isDisposicion(trip)
+                                  ? "Disposición 12h"
+                                  : `${trip.origin?.split(",")[0] || "—"} → ${trip.destination?.split(",")[0] || "—"}`}
+                              </p>
+                              {isNew && (
+                                <span style={{ fontSize:9,fontWeight:800,padding:"2px 6px",borderRadius:"99px",background:"#3b82f6",color:"#fff",flexShrink:0,letterSpacing:"0.05em" }}>NUEVO</span>
+                              )}
+                            </div>
+                            <p style={{ fontSize:10.5,color: isNew ? "#3b82f6" : "#94a3b8",margin:"2px 0 0",fontWeight: isNew ? 600 : 400 }}>
                               {trip.scheduledAt ? formatDate(trip.scheduledAt) : "—"} · {statusLabel[status] || status}
                               {passengerCount > 0 ? ` · ${passengerCount} pax` : ""}
                             </p>
@@ -1467,8 +1512,8 @@ export default function DriverPortalPage() {
                 {/* Profile + Photo */}
                 <div style={{ background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",padding:"16px 14px",display:"flex",alignItems:"center",gap:14 }}>
                   <div style={{ position:"relative",flexShrink:0 }}>
-                    {driverProfile.photoUrl ? (
-                      <img src={driverProfile.photoUrl} alt="" style={{ width:64,height:64,borderRadius:"50%",objectFit:"cover",border:"3px solid #21D0B3" }} />
+                    {(driverProfile.photoUrl || (driverProfile.metadata as any)?.photoUrl) ? (
+                      <img src={driverProfile.photoUrl || (driverProfile.metadata as any)?.photoUrl} alt="" style={{ width:64,height:64,borderRadius:"50%",objectFit:"cover",border:"3px solid #21D0B3" }} />
                     ) : (
                       <div style={{ width:64,height:64,borderRadius:"50%",background:"linear-gradient(135deg,#21D0B3,#062240)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:900,color:"#fff",border:"3px solid #21D0B3" }}>
                         {(driverProfile.fullName || "C").split(" ").slice(0,2).map((w: string) => w[0] ?? "").join("").toUpperCase()}
@@ -1482,13 +1527,27 @@ export default function DriverPortalPage() {
                         if (!file || !driverProfile.id) return;
                         setUploadingPhoto(true);
                         try {
-                          const reader = new FileReader();
-                          const dataUrl = await new Promise<string>((resolve) => { reader.onload = () => resolve(reader.result as string); reader.readAsDataURL(file); });
-                          await apiFetch(`/drivers/${driverProfile.id}/photo`, {
-                            method: "POST", headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ dataUrl }),
+                          const dataUrl = await new Promise<string>((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.onload = () => resolve(reader.result as string);
+                            reader.onerror = () => reject(new Error("Error leyendo archivo"));
+                            reader.readAsDataURL(file);
                           });
-                          const updated = await apiFetch<Driver>(`/drivers/${driverProfile.id}`);
+                          if (driverProfile._isParticipant) {
+                            await apiFetch(`/provider-participants/${driverProfile.id}/document`, {
+                              method: "POST", headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ key: "photoUrl", dataUrl }),
+                            });
+                          } else {
+                            await apiFetch(`/drivers/${driverProfile.id}/photo`, {
+                              method: "POST", headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ dataUrl }),
+                            });
+                          }
+                          const endpoint = driverProfile._isParticipant
+                            ? `/provider-participants/${driverProfile.id}`
+                            : `/drivers/${driverProfile.id}`;
+                          const updated = await apiFetch<Driver>(endpoint);
                           setDriverProfile(updated);
                           driverNotify.push("Foto actualizada", "📷");
                         } catch { driverNotify.push("No se pudo subir la foto", "❌"); }
@@ -1611,7 +1670,7 @@ export default function DriverPortalPage() {
                             <span style={{ fontSize:12,fontWeight:500,color:uploaded ? "#0f172a" : "#94a3b8",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{doc.label}</span>
                           </div>
                           <div style={{ display:"flex",gap:4,flexShrink:0 }}>
-                            {uploaded && typeof docValue === "string" && docValue.startsWith("http") && (
+                            {uploaded && typeof docValue === "string" && (docValue.startsWith("http") || docValue.startsWith("data:")) && (
                               <a href={docValue} target="_blank" rel="noreferrer"
                                 style={{ display:"flex",alignItems:"center",justifyContent:"center",width:28,height:28,borderRadius:7,border:"1px solid #e2e8f0",background:"#fff",cursor:"pointer",flexShrink:0 }}>
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -1625,17 +1684,24 @@ export default function DriverPortalPage() {
                                 if (!file || !driverProfile.id) return;
                                 setUploadingDoc(doc.key);
                                 try {
-                                  const reader = new FileReader();
-                                  const dataUrl = await new Promise<string>((resolve) => { reader.onload = () => resolve(reader.result as string); reader.readAsDataURL(file); });
-                                  const newMeta = { ...(driverProfile.metadata || {}), [doc.key]: dataUrl.slice(0, 100) + "..." };
-                                  // Upload as driver photo endpoint for now, store reference in metadata
-                                  await apiFetch(`/drivers/${driverProfile.id}`, {
-                                    method: "PATCH", headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify({ metadata: { ...(driverProfile.metadata || {}), [doc.key]: `uploaded_${Date.now()}` } }),
+                                  const dataUrl = await new Promise<string>((resolve, reject) => {
+                                    const reader = new FileReader();
+                                    reader.onload = () => resolve(reader.result as string);
+                                    reader.onerror = () => reject(new Error("Error leyendo archivo"));
+                                    reader.readAsDataURL(file);
                                   });
-                                  setDriverProfile({ ...driverProfile, metadata: { ...(driverProfile.metadata || {}), [doc.key]: `uploaded_${Date.now()}` } });
+                                  // Upload document to Supabase storage
+                                  const endpoint = driverProfile._isParticipant
+                                    ? `/provider-participants/${driverProfile.id}/document`
+                                    : `/drivers/${driverProfile.id}/document`;
+                                  const result = await apiFetch<any>(endpoint, {
+                                    method: "POST", headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ key: doc.key, dataUrl }),
+                                  });
+                                  const newUrl = result?.metadata?.[doc.key] ?? `uploaded_${Date.now()}`;
+                                  setDriverProfile({ ...driverProfile, metadata: { ...(driverProfile.metadata || {}), [doc.key]: newUrl } });
                                   driverNotify.push(`${doc.label} cargado`, "📄");
-                                } catch { driverNotify.push(`No se pudo subir ${doc.label}`, "❌"); }
+                                } catch (err) { console.error("Doc upload error:", err); driverNotify.push(`Error: ${err instanceof Error ? err.message : "No se pudo subir"} ${doc.label}`, "❌"); }
                                 finally { setUploadingDoc(null); }
                               };
                               input.click();
@@ -1748,6 +1814,40 @@ export default function DriverPortalPage() {
           tripStatus={trips.find((t) => t.id === trackingTripId)?.status}
           onNewMessage={(name, content) => driverNotify.push(`${name}: ${content.slice(0, 80)}`, "💬")}
         />
+      )}
+
+      {/* ── Location blocked modal ── */}
+      {showLocationBlockedModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div style={{ background:"#fff",borderRadius:"24px",width:"100%",maxWidth:"380px",padding:"32px 28px",boxShadow:"0 8px 40px rgba(15,23,42,0.2)",textAlign:"center" }}>
+            <div style={{ width:"56px",height:"56px",borderRadius:"50%",background:"rgba(239,68,68,0.1)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 18px" }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                <line x1="2" y1="2" x2="22" y2="22" stroke="#ef4444" strokeWidth="2.5"/>
+              </svg>
+            </div>
+            <h3 style={{ fontSize:"18px",fontWeight:800,color:"#0f172a",margin:"0 0 8px" }}>Ubicación no disponible</h3>
+            <p style={{ fontSize:"13px",color:"#64748b",lineHeight:1.5,margin:"0 0 8px" }}>
+              Para continuar necesitas activar la ubicación en tu navegador.
+            </p>
+            <div style={{ background:"#f8fafc",borderRadius:"12px",padding:"12px 16px",margin:"0 0 20px",textAlign:"left" }}>
+              <p style={{ fontSize:"12px",fontWeight:700,color:"#334155",margin:"0 0 6px" }}>Cómo activarla:</p>
+              <p style={{ fontSize:"11px",color:"#64748b",margin:"0 0 4px",lineHeight:1.4 }}>1. Toca el ícono de candado o ajustes en la barra de dirección</p>
+              <p style={{ fontSize:"11px",color:"#64748b",margin:"0 0 4px",lineHeight:1.4 }}>2. Busca "Ubicación" o "Location"</p>
+              <p style={{ fontSize:"11px",color:"#64748b",margin:0,lineHeight:1.4 }}>3. Cambia a "Permitir" y recarga la página</p>
+            </div>
+            <div style={{ display:"flex",gap:"10px" }}>
+              <button type="button" onClick={() => setShowLocationBlockedModal(false)}
+                style={{ flex:1,padding:"12px",borderRadius:"14px",border:"1px solid #e2e8f0",background:"#f8fafc",color:"#475569",fontSize:"13px",fontWeight:700,cursor:"pointer" }}>
+                Cerrar
+              </button>
+              <button type="button" onClick={() => { setShowLocationBlockedModal(false); window.location.reload(); }}
+                style={{ flex:1,padding:"12px",borderRadius:"14px",border:"none",background:"linear-gradient(135deg,#21D0B3,#14AE98)",color:"#fff",fontSize:"13px",fontWeight:700,cursor:"pointer",boxShadow:"0 2px 10px rgba(33,208,179,0.3)" }}>
+                Recargar página
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

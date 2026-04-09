@@ -34,10 +34,12 @@ type Athlete = {
   transportTripId?: string | null;
   transportVehicleId?: string | null;
   isDelegationLead?: boolean | null;
+  disciplineId?: string | null;
   accreditationStatus?: string | null;
   credentialCode?: string | null;
   email?: string | null;
   phone?: string | null;
+  metadata?: Record<string, unknown> | null;
 };
 
 type Flight = { id: string; flightNumber: string; airline: string; arrivalTime: string | null };
@@ -70,11 +72,11 @@ type CalendarEvent = {
   gender?: string | null;
 };
 type DisciplineParent = { id: string; name?: string | null };
-type Venue = { id: string; eventId?: string | null; name?: string | null; address?: string | null; region?: string | null; commune?: string | null };
+type Venue = { id: string; eventId?: string | null; name?: string | null; address?: string | null; region?: string | null; commune?: string | null; photoUrl?: string | null };
 type Accommodation = { id: string; eventId?: string | null; name?: string | null; address?: string | null; city?: string | null; country?: string | null; checkIn?: string | null; checkOut?: string | null; roomType?: string | null; contactPhone?: string | null };
 type FoodLocation = { id: string; accommodationId?: string | null; name: string; description?: string | null; capacity?: number | null; clientTypes: string[] };
 type FoodMenu = { id: string; date: string; mealType: string; title: string; description?: string | null; dietaryType?: string | null; accommodationId?: string | null };
-type PortalTab = "itinerario" | "actividades" | "calendario" | "sedes" | "alimentacion" | "cuenta";
+type PortalTab = "itinerario" | "actividades" | "calendario" | "sedes" | "alimentacion" | "delegacion" | "cuenta";
 
 const countryLabels: Record<string, string> = {
   ARG:"Argentina",BOL:"Bolivia",BRA:"Brasil",CHL:"Chile",COL:"Colombia",
@@ -169,6 +171,7 @@ export default function UserPortalPage() {
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [disciplineParents, setDisciplineParents] = useState<DisciplineParent[]>([]);
   const [healthRecord, setHealthRecord] = useState<Record<string, any> | null>(null);
+  const [delegationMembers, setDelegationMembers] = useState<Athlete[]>([]);
   const [venues, setVenues] = useState<Venue[]>([]);
   const [allAccommodations, setAllAccommodations] = useState<Accommodation[]>([]);
   const [foodLocations, setFoodLocations] = useState<FoodLocation[]>([]);
@@ -188,9 +191,10 @@ export default function UserPortalPage() {
       { key:"calendario", label:"Calendario", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> },
       { key:"sedes", label:"Sedes", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg> },
       { key:"alimentacion", label:"Comida", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg> },
+      { key:"delegacion", label:"Delegación", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg> },
       { key:"cuenta", label:"Cuenta", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
     ];
-    if (!isChief) return all.filter(t => ["sedes","alimentacion","cuenta"].includes(t.key));
+    if (!isChief) return all.filter(t => ["actividades","calendario","sedes","alimentacion","cuenta"].includes(t.key));
     return all;
   }, [isChief]);
 
@@ -208,7 +212,7 @@ export default function UserPortalPage() {
 
   // Set default tab based on profile
   useEffect(() => {
-    if (athlete && !isChief) setActiveTab("sedes");
+    if (athlete && !isChief) setActiveTab("actividades");
   }, [athlete?.id]);
 
   const DAY_NAMES = ["L","M","M","J","V","S","D"];
@@ -341,6 +345,14 @@ export default function UserPortalPage() {
       // Load health record from athlete metadata
       const hr = (data as any).metadata?.healthRecord ?? null;
       setHealthRecord(hr);
+
+      // Load delegation members for delegation leads
+      if (data.isDelegationLead && data.delegationId) {
+        try {
+          const allAthletes = await apiFetch<Athlete[]>("/athletes");
+          setDelegationMembers((allAthletes || []).filter(a => a.delegationId === data.delegationId && a.id !== data.id));
+        } catch { setDelegationMembers([]); }
+      }
 
     } catch (err) {
       let message = err instanceof Error ? err.message : "";
@@ -877,7 +889,11 @@ export default function UserPortalPage() {
           <div style={{ position:"absolute",top:0,right:0,width:"200px",height:"200px",borderRadius:"50%",background:"radial-gradient(ellipse,rgba(33,208,179,0.05) 0%,transparent 65%)",transform:"translate(60px,-60px)",pointerEvents:"none" }} />
           <div className="db-profile-body">
             <div style={{ position:"relative",flexShrink:0 }}>
-              <div className="db-avatar">{initials}</div>
+              {(athlete?.metadata?.photoUrl as string)?.startsWith("http") ? (
+                <img src={athlete.metadata!.photoUrl as string} alt={athlete.fullName} className="db-avatar" style={{ objectFit:"cover" }} />
+              ) : (
+                <div className="db-avatar">{initials}</div>
+              )}
               <div style={{ position:"absolute",bottom:2,right:2,width:12,height:12,borderRadius:"50%",background:"#21D0B3",border:"2px solid #fff",boxShadow:"0 0 8px rgba(33,208,179,0.8)" }} />
             </div>
             <div style={{ minWidth:0 }}>
@@ -989,7 +1005,7 @@ export default function UserPortalPage() {
         )}
 
         {/* ─── Actividades tab (chief only) ─── */}
-        {activeTab === "actividades" && isChief && (
+        {activeTab === "actividades" && (
           <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
             <div style={{ display:"flex",gap:6 }}>
               {(["curso","historial"] as const).map(sub => (
@@ -1037,7 +1053,7 @@ export default function UserPortalPage() {
         )}
 
         {/* ─── Calendario tab (chief only) ─── */}
-        {activeTab === "calendario" && isChief && (() => {
+        {activeTab === "calendario" && (() => {
           const y = calMonthCursor.getFullYear(), m = calMonthCursor.getMonth();
           const cells = getMonthGrid(calMonthCursor);
           const monthLabel = calMonthCursor.toLocaleDateString("es-CL",{month:"long",year:"numeric"});
@@ -1113,6 +1129,9 @@ export default function UserPortalPage() {
                   </button>
                   {isOpen && (
                     <div style={{ padding:"0 14px 14px",display:"flex",flexDirection:"column",gap:8 }}>
+                      {v.photoUrl && (
+                        <img src={v.photoUrl} alt={v.name || "Sede"} style={{ width:"100%",height:140,objectFit:"cover",borderRadius:10 }} />
+                      )}
                       {addr && <p style={{ fontSize:12,color:"#334155",margin:0 }}>{addr}</p>}
                       {addr && process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? (
                         <iframe src={`https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&q=${encodeURIComponent(addr)}`}
@@ -1301,6 +1320,45 @@ export default function UserPortalPage() {
           </div>
         )}
 
+        {/* ─── Mi Delegación tab ─── */}
+        {activeTab === "delegacion" && isChief && (
+          <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+            <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",padding:"14px",borderLeft:"4px solid #f59e0b" }}>
+              <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:"#f59e0b",margin:"0 0 6px" }}>Mi Delegación</p>
+              <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0 }}>{delegation ? (countryLabels[delegation.countryCode] || delegation.countryCode) : "—"}</p>
+              <p style={{ fontSize:12,color:"#64748b",margin:"3px 0 0" }}>{delegationMembers.length} deportista(s) registrado(s)</p>
+            </div>
+            {delegationMembers.length === 0 ? (
+              <div style={{ padding:20,textAlign:"center",background:"#fff",borderRadius:14,border:"1px solid #e2e8f0" }}>
+                <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>No hay otros participantes en tu delegación.</p>
+              </div>
+            ) : (
+              <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
+                {delegationMembers.map((m) => {
+                  const disc = m.disciplineId ? ([...disciplineParents, ...calendarEvents] as any[]).find((d: any) => d.id === m.disciplineId) : null;
+                  const discParent = disc?.parentId ? disciplineParents.find(p => p.id === disc.parentId) : null;
+                  const discLabel = discParent ? `${discParent.name} — ${disc?.name}` : disc?.name;
+                  return (
+                    <div key={m.id} style={{ background:"#fff",borderRadius:12,border:"1px solid #e2e8f0",padding:"10px 14px",display:"flex",alignItems:"center",gap:10 }}>
+                      <div style={{ width:36,height:36,borderRadius:"50%",background:"#f1f5f9",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:"#64748b",flexShrink:0 }}>
+                        {(m.fullName || "?").split(" ").slice(0,2).map(w => w[0] || "").join("").toUpperCase()}
+                      </div>
+                      <div style={{ flex:1,minWidth:0 }}>
+                        <p style={{ fontSize:13,fontWeight:600,color:"#0f172a",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{m.fullName}</p>
+                        <div style={{ display:"flex",gap:4,flexWrap:"wrap",marginTop:3 }}>
+                          {m.userType && <span style={{ fontSize:9,fontWeight:600,padding:"1px 6px",borderRadius:4,background:"#f1f5f9",color:"#64748b" }}>{m.userType}</span>}
+                          {discLabel && <span style={{ fontSize:9,fontWeight:600,padding:"1px 6px",borderRadius:4,background:"rgba(33,208,179,0.1)",color:"#0a7a6b" }}>{discLabel}</span>}
+                          {m.countryCode && <span style={{ fontSize:9,fontWeight:600,padding:"1px 6px",borderRadius:4,background:"rgba(99,102,241,0.08)",color:"#6366f1" }}>{m.countryCode}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ─── Cuenta tab ─── */}
         {activeTab === "cuenta" && (
           <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
@@ -1313,6 +1371,7 @@ export default function UserPortalPage() {
                 { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>, label:"Evento", value:event?.name || "—" },
                 { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>, label:"Delegación", value:delegation ? (countryLabels[delegation.countryCode]||delegation.countryCode) : "—" },
                 { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>, label:"Tipo", value:athlete.userType || "—" },
+                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>, label:"Disciplina", value: (() => { if (!athlete.disciplineId) return "—"; const disc = ([...disciplineParents, ...calendarEvents] as any[]).find((d: any) => d.id === athlete.disciplineId); if (!disc) return "—"; const parent = disc.parentId ? disciplineParents.find(p => p.id === disc.parentId) : null; return parent ? `${parent.name} — ${disc.name}` : (disc.name || "—"); })() },
                 { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={athlete.isDelegationLead ? "#f59e0b" : "#21D0B3"} strokeWidth="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>, label:"Rol", value:athlete.isDelegationLead ? "Jefe de Delegación" : "Participante" },
                 { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>, label:"ID", value:athlete.id.slice(-6).toUpperCase() },
               ]).map((r,i) => (

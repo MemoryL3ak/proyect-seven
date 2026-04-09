@@ -528,7 +528,44 @@ export class AthletesService {
 
     return this.update(id, { metadata: updatedMetadata });
   }
+
+  async uploadPhoto(id: string, dataUrl: string) {
+    const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+    if (!match) throw new BadRequestException('Invalid photo payload');
+
+    const contentType = match[1];
+    const base64 = match[2];
+    const buffer = Buffer.from(base64, 'base64');
+    const extension = contentType.split('/')[1]?.replace('jpeg', 'jpg') || 'jpg';
+    const path = `photos/${id}/${Date.now()}.${extension}`;
+
+    const admin = this.getAdminClient();
+    if (!admin) {
+      throw new InternalServerErrorException(
+        'SUPABASE_SERVICE_ROLE_KEY is required to upload athlete photos',
+      );
+    }
+
+    const { error } = await admin.storage
+      .from('athlete-photos')
+      .upload(path, buffer, { contentType, upsert: true });
+
+    if (error) {
+      throw new InternalServerErrorException(error.message || 'Error uploading athlete photo');
+    }
+
+    const { data } = admin.storage.from('athlete-photos').getPublicUrl(path);
+    const publicUrl = data?.publicUrl ?? null;
+    if (!publicUrl) {
+      throw new InternalServerErrorException('Error resolving athlete photo URL');
+    }
+
+    const athlete = await this.findOne(id);
+    const existingMetadata = (athlete.metadata as Record<string, unknown>) ?? {};
+
+    return this.update(id, {
+      metadata: { ...existingMetadata, photoUrl: publicUrl },
+    });
+  }
 }
-
-
 

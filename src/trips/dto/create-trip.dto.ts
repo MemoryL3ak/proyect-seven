@@ -137,4 +137,8 @@ export class CreateTripDto {
   @IsString()
   @IsOptional()
   committeeValidatedBy?: string;
+
+  @IsObject()
+  @IsOptional()
+  metadata?: Record<string, unknown>;
 }

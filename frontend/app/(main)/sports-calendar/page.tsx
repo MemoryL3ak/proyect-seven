@@ -643,28 +643,57 @@ export default function SportsCalendarPage() {
     setSaving(true);
     setMessage(null);
     try {
-      await apiFetch(
-        editingEntryId
-          ? `/sports-calendar/events/${editingEntryId}`
-          : "/sports-calendar/events",
-        {
-          method: editingEntryId ? "PATCH" : "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...newEntry,
-            league:
-              selectedManualScheduleType === "COMPETITION"
-                ? (newEntry.league || "Prueba")
-                : newEntry.league,
-            eventId: selectedEventId || undefined,
-            metadata:
-              newEntry.metadata && Object.keys(newEntry.metadata).length > 0
-                ? newEntry.metadata
-                : undefined,
-          }),
-        },
-      );
-      setMessage(editingEntryId ? "Actividad actualizada." : "Actividad creada en calendario.");
+      const meta = (newEntry.metadata ?? {}) as Record<string, any>;
+      const useDateRange = meta.useDateRange && !editingEntryId;
+
+      if (useDateRange && meta.rangeStart && meta.rangeEnd && meta.rangeTime) {
+        // Create one entry per day in the date range
+        const start = new Date(meta.rangeStart + "T00:00:00");
+        const end = new Date(meta.rangeEnd + "T00:00:00");
+        const [hours, minutes] = (meta.rangeTime as string).split(":").map(Number);
+        let created = 0;
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+          const dayDate = new Date(d);
+          dayDate.setHours(hours, minutes, 0, 0);
+          const { useDateRange: _, rangeStart: _rs, rangeEnd: _re, rangeTime: _rt, ...cleanMeta } = meta;
+          await apiFetch("/sports-calendar/events", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ...newEntry,
+              startAtUtc: dayDate.toISOString(),
+              league: selectedManualScheduleType === "COMPETITION" ? (newEntry.league || "Prueba") : newEntry.league,
+              eventId: selectedEventId || undefined,
+              metadata: Object.keys(cleanMeta).length > 0 ? cleanMeta : undefined,
+            }),
+          });
+          created++;
+        }
+        setMessage(`Se crearon ${created} actividad(es) en el rango de fechas.`);
+      } else {
+        await apiFetch(
+          editingEntryId
+            ? `/sports-calendar/events/${editingEntryId}`
+            : "/sports-calendar/events",
+          {
+            method: editingEntryId ? "PATCH" : "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ...newEntry,
+              league:
+                selectedManualScheduleType === "COMPETITION"
+                  ? (newEntry.league || "Prueba")
+                  : newEntry.league,
+              eventId: selectedEventId || undefined,
+              metadata:
+                newEntry.metadata && Object.keys(newEntry.metadata).length > 0
+                  ? newEntry.metadata
+                  : undefined,
+            }),
+          },
+        );
+        setMessage(editingEntryId ? "Actividad actualizada." : "Actividad creada en calendario.");
+      }
       setEditingEntryId(null);
       setNewEntry((prev) => ({
         sport: prev.sport,
@@ -790,12 +819,6 @@ export default function SportsCalendarPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-end gap-3 mb-2">
-        <div className="flex items-center gap-2">
-          <span className="rounded-full px-3 py-1 text-xs" style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text-muted)" }}>{entries.length} actividades</span>
-          <span className="rounded-full bg-rose-700 px-3 py-1 text-xs text-white">{liveCount} en vivo</span>
-        </div>
-      </div>
 
       <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "16px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div className="grid gap-2 lg:grid-cols-12">
@@ -819,7 +842,7 @@ export default function SportsCalendarPage() {
               <option key={status} value={status}>{status === "ALL" ? "Todos" : status}</option>
             ))}
           </StyledSelect>
-          <button className="btn btn-ghost lg:col-span-1" type="button" onClick={downloadTemplate}>Template CSV</button>
+          <button className="btn btn-ghost lg:col-span-1" type="button" onClick={downloadTemplate} style={{ fontSize: "12px", padding: "6px 12px" }}>Template CSV</button>
           <button className="btn btn-primary lg:col-span-1" type="button" onClick={() => fileRef.current?.click()} disabled={saving}>
             {saving ? "Importando..." : "Cargar CSV"}
           </button>
@@ -1153,18 +1176,43 @@ export default function SportsCalendarPage() {
                   />
                 </>
               ) : null}
-              <input
-                className="input"
-                type="datetime-local"
-                value={toLocalDateTimeInput(newEntry.startAtUtc)}
-                onChange={(e) =>
-                  setNewEntry({
-                    ...newEntry,
-                    startAtUtc: fromLocalDateTimeInput(e.target.value),
-                  })
-                }
-                required
-              />
+              {/* Date range toggle */}
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
+                <button type="button" onClick={() => setNewEntry({ ...newEntry, metadata: { ...newEntry.metadata, useDateRange: !(newEntry.metadata as any)?.useDateRange } })}
+                  style={{ width: 38, height: 20, borderRadius: 10, border: "none", cursor: "pointer", position: "relative", background: (newEntry.metadata as any)?.useDateRange ? "#21D0B3" : "#cbd5e1", transition: "background 0.2s" }}>
+                  <span style={{ position: "absolute", top: 2, left: (newEntry.metadata as any)?.useDateRange ? 20 : 2, width: 16, height: 16, borderRadius: 8, background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.2)", transition: "left 0.2s" }} />
+                </button>
+                <span style={{ fontSize: 12, fontWeight: 600, color: "#0f172a" }}>Rango de fechas (crear para varios días)</span>
+              </div>
+              {(newEntry.metadata as any)?.useDateRange ? (
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", display: "block", marginBottom: 2 }}>Fecha inicio</label>
+                    <input className="input" type="date" value={(newEntry.metadata as any)?.rangeStart || ""} onChange={(e) => setNewEntry({ ...newEntry, metadata: { ...newEntry.metadata, rangeStart: e.target.value } })} required />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", display: "block", marginBottom: 2 }}>Fecha fin</label>
+                    <input className="input" type="date" value={(newEntry.metadata as any)?.rangeEnd || ""} onChange={(e) => setNewEntry({ ...newEntry, metadata: { ...newEntry.metadata, rangeEnd: e.target.value } })} required />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", display: "block", marginBottom: 2 }}>Hora (todos los días)</label>
+                    <input className="input" type="time" value={(newEntry.metadata as any)?.rangeTime || ""} onChange={(e) => setNewEntry({ ...newEntry, metadata: { ...newEntry.metadata, rangeTime: e.target.value } })} required />
+                  </div>
+                </div>
+              ) : (
+                <input
+                  className="input"
+                  type="datetime-local"
+                  value={toLocalDateTimeInput(newEntry.startAtUtc)}
+                  onChange={(e) =>
+                    setNewEntry({
+                      ...newEntry,
+                      startAtUtc: fromLocalDateTimeInput(e.target.value),
+                    })
+                  }
+                  required
+                />
+              )}
               <select className="input" value={newEntry.venue ?? ""} onChange={(e) => setNewEntry({ ...newEntry, venue: e.target.value })}>
                 <option value="">Selecciona una sede</option>
                 {filteredVenueOptions.map((v) => (

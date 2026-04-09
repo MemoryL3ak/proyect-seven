@@ -261,6 +261,19 @@ export default function HotelKeysPage() {
     } catch (err) { setError(err instanceof Error ? err.message : "No se pudo actualizar estado"); }
   };
 
+  const [deleteKeyConfirm, setDeleteKeyConfirm] = useState<string | null>(null);
+  const removeKey = async (keyId: string) => {
+    setError(null);
+    try {
+      await apiFetch(`/hotel-keys/${keyId}`, { method: "DELETE" });
+      setDeleteKeyConfirm(null);
+      if (selectedKeyId === keyId) setSelectedKeyId(null);
+      await loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo eliminar la llave");
+    }
+  };
+
   const assignedPct = stats.total > 0 ? Math.round((stats.assigned / stats.total) * 100) : 0;
 
   const kpiCards = [
@@ -426,6 +439,11 @@ export default function HotelKeysPage() {
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
                           </button>
                         )}
+                        <button type="button" onClick={() => setDeleteKeyConfirm(key.id)}
+                          style={{ background: "rgba(239,68,68,0.04)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: "99px", padding: "6px 10px", fontSize: "12px", fontWeight: 600, color: "#f43f5e", cursor: "pointer", display: "flex", alignItems: "center" }}
+                          title="Eliminar llave">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -447,20 +465,11 @@ export default function HotelKeysPage() {
                 <option value="">Selecciona hotel</option>
                 {filteredHotels.map((h) => <option key={h.id} value={h.id}>{h.name || h.id}</option>)}
               </select>
-              <select style={selectStyle} value={keyForm.roomId} onChange={(e) => setKeyForm((p) => ({ ...p, roomId: e.target.value, bedId: "" }))} required>
+              <select style={selectStyle} value={keyForm.roomId} onChange={(e) => setKeyForm((p) => ({ ...p, roomId: e.target.value }))} required>
                 <option value="">Selecciona habitación</option>
                 {filteredRooms.map((r) => <option key={r.id} value={r.id}>Habitación {r.roomNumber || r.id}</option>)}
               </select>
-              <select style={selectStyle} value={keyForm.bedId} onChange={(e) => setKeyForm((p) => ({ ...p, bedId: e.target.value }))}>
-                <option value="">Sin cama asociada</option>
-                {filteredBeds.map((b) => <option key={b.id} value={b.id}>{b.bedType || "Cama"} · {b.id.slice(0, 8)}</option>)}
-              </select>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-                <input style={inputStyle} placeholder="Número llave" value={keyForm.keyNumber} onChange={(e) => setKeyForm((p) => ({ ...p, keyNumber: e.target.value }))} required />
-                <input style={inputStyle} placeholder="N° copia" type="number" min={1} value={keyForm.copyNumber} onChange={(e) => setKeyForm((p) => ({ ...p, copyNumber: e.target.value }))} required />
-              </div>
-              <input style={inputStyle} placeholder="Etiqueta opcional" value={keyForm.label} onChange={(e) => setKeyForm((p) => ({ ...p, label: e.target.value }))} />
-              <textarea style={textareaStyle} placeholder="Notas de inventario" value={keyForm.notes} onChange={(e) => setKeyForm((p) => ({ ...p, notes: e.target.value }))} />
+              <input style={inputStyle} placeholder="Número de llave" value={keyForm.keyNumber} onChange={(e) => setKeyForm((p) => ({ ...p, keyNumber: e.target.value }))} required />
               <button type="submit" style={{ padding: "10px", borderRadius: "10px", background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: "#ffffff", fontWeight: 700, fontSize: "13px", border: "none", cursor: "pointer", boxShadow: "0 2px 10px rgba(33,208,179,0.35)" }}>
                 Registrar llave
               </button>
@@ -477,14 +486,12 @@ export default function HotelKeysPage() {
               </h3>
               <form style={{ display: "flex", flexDirection: "column", gap: "10px" }} onSubmit={submitIssue}>
                 <select style={selectStyle} value={issueForm.holderParticipantId}
-                  onChange={(e) => { const a = athleteById[e.target.value]; setIssueForm((p) => ({ ...p, holderParticipantId: e.target.value, holderName: a?.fullName || p.holderName })); }}>
-                  <option value="">Seleccionar participante (opcional)</option>
+                  onChange={(e) => { const a = athleteById[e.target.value]; setIssueForm((p) => ({ ...p, holderParticipantId: e.target.value, holderName: a?.fullName || p.holderName })); }} required>
+                  <option value="">Seleccionar participante</option>
                   {athletes.map((a) => <option key={a.id} value={a.id}>{a.fullName || a.id}</option>)}
                 </select>
-                <input style={inputStyle} placeholder="Nombre de quien recibe" value={issueForm.holderName} onChange={(e) => setIssueForm((p) => ({ ...p, holderName: e.target.value }))} required />
-                <input style={inputStyle} placeholder="Rol / tipo (atleta, staff…)" value={issueForm.holderType} onChange={(e) => setIssueForm((p) => ({ ...p, holderType: e.target.value }))} />
-                <input style={inputStyle} placeholder="Operador que entrega" value={issueForm.actorName} onChange={(e) => setIssueForm((p) => ({ ...p, actorName: e.target.value }))} />
-                <textarea style={textareaStyle} placeholder="Observaciones" value={issueForm.notes} onChange={(e) => setIssueForm((p) => ({ ...p, notes: e.target.value }))} />
+                <input style={inputStyle} placeholder="Operador que entrega" value={issueForm.actorName} onChange={(e) => setIssueForm((p) => ({ ...p, actorName: e.target.value }))} required />
+                <textarea style={textareaStyle} placeholder="Observaciones (opcional)" value={issueForm.notes} onChange={(e) => setIssueForm((p) => ({ ...p, notes: e.target.value }))} />
                 <div style={{ display: "flex", gap: "8px" }}>
                   <button type="submit" style={{ flex: 1, padding: "10px", borderRadius: "10px", background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: "#ffffff", fontWeight: 700, fontSize: "13px", border: "none", cursor: "pointer" }}>
                     Confirmar entrega
@@ -562,6 +569,34 @@ export default function HotelKeysPage() {
           </article>
         </div>
       </section>
+
+      {/* Delete key confirmation modal */}
+      {deleteKeyConfirm && (() => {
+        const keyToDelete = enrichedKeys.find(k => k.id === deleteKeyConfirm);
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div style={{ background: "#fff", borderRadius: "20px", width: "100%", maxWidth: "380px", padding: "28px", boxShadow: "0 8px 40px rgba(15,23,42,0.2)", textAlign: "center" }}>
+              <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "rgba(239,68,68,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              </div>
+              <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#0f172a", margin: "0 0 6px" }}>Eliminar llave</h3>
+              <p style={{ fontSize: "13px", color: "#64748b", margin: "0 0 20px" }}>
+                ¿Estás seguro de eliminar la llave <b style={{ color: "#0f172a" }}>{keyToDelete?.keyNumber || ""}</b>{keyToDelete?.hotelName ? ` del hotel ${keyToDelete.hotelName}` : ""}? Esta acción no se puede deshacer.
+              </p>
+              <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
+                <button onClick={() => setDeleteKeyConfirm(null)}
+                  style={{ padding: "10px 24px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
+                  Cancelar
+                </button>
+                <button onClick={() => removeKey(deleteKeyConfirm)}
+                  style={{ padding: "10px 24px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #ef4444, #dc2626)", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 10px rgba(239,68,68,0.3)" }}>
+                  Sí, eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

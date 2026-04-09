@@ -211,7 +211,7 @@ export class ProviderParticipantsService {
     }
 
     const { error } = await admin.storage
-      .from('provider-documents')
+      .from('driver-documents')
       .upload(path, buffer, { contentType, upsert: true });
 
     if (error) {
@@ -221,7 +221,7 @@ export class ProviderParticipantsService {
     }
 
     const { data } = admin.storage
-      .from('provider-documents')
+      .from('driver-documents')
       .getPublicUrl(path);
     const publicUrl = data?.publicUrl ?? null;
     if (!publicUrl) {

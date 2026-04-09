@@ -15,11 +15,11 @@ async function bootstrap() {
     : undefined;
 
   const app = await NestFactory.create(AppModule, {
-    bodyParser: true,
+    bodyParser: false,
     ...(httpsOptions ? { httpsOptions } : {}),
   });
-  app.use(require('express').json({ limit: '5mb' }));
-  app.use(require('express').urlencoded({ limit: '5mb', extended: true }));
+  app.use(require('express').json({ limit: '50mb' }));
+  app.use(require('express').urlencoded({ limit: '50mb', extended: true }));
   const allowedOrigins = new Set([
     'http://localhost:3000',
     'http://localhost:3001',

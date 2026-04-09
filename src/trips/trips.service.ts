@@ -47,6 +47,7 @@ type TripRow = {
   committee_validated: boolean;
   committee_validated_at: string | null;
   committee_validated_by: string | null;
+  metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 };
@@ -166,6 +167,9 @@ export class TripsService {
     if (dto.committeeValidatedBy !== undefined) {
       row.committee_validated_by = dto.committeeValidatedBy ?? null;
     }
+    if (dto.metadata !== undefined) {
+      row.metadata = dto.metadata;
+    }
 
     return row;
   }
@@ -252,6 +256,7 @@ export class TripsService {
       committeeValidated: row.committee_validated ?? false,
       committeeValidatedAt: row.committee_validated_at ? new Date(row.committee_validated_at) : null,
       committeeValidatedBy: row.committee_validated_by,
+      metadata: row.metadata ?? {},
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
     };
@@ -542,6 +547,44 @@ export class TripsService {
 
   async update(id: string, updateTripDto: UpdateTripDto) {
     const currentTrip = await this.findOne(id);
+
+    // ── Auto-generate bitácora entries from detected changes ──
+    const existingMeta = (currentTrip.metadata ?? {}) as Record<string, unknown>;
+    const existingLog = Array.isArray(existingMeta.log) ? existingMeta.log : [];
+    const incomingLog = Array.isArray(updateTripDto.metadata?.log) ? updateTripDto.metadata.log : [];
+    const autoEntries: { action: string; by: string; at: string; detail?: string }[] = [];
+    const now = new Date().toISOString();
+    const by = 'Sistema';
+
+    if (updateTripDto.driverId !== undefined && updateTripDto.driverId !== currentTrip.driverId) {
+      autoEntries.push({ action: 'DRIVER_ASSIGNED', by, at: now, detail: updateTripDto.driverId || 'removido' });
+    }
+    if (updateTripDto.vehicleId !== undefined && updateTripDto.vehicleId !== currentTrip.vehicleId) {
+      autoEntries.push({ action: 'VEHICLE_ASSIGNED', by, at: now, detail: updateTripDto.vehicleId || 'removido' });
+    }
+    if (updateTripDto.status !== undefined && updateTripDto.status !== currentTrip.status) {
+      autoEntries.push({ action: 'STATUS_CHANGED', by, at: now, detail: `${currentTrip.status} → ${updateTripDto.status}` });
+    }
+    if (updateTripDto.scheduledAt !== undefined) {
+      const oldSch = currentTrip.scheduledAt ? new Date(currentTrip.scheduledAt).toISOString() : null;
+      if (updateTripDto.scheduledAt !== oldSch) {
+        autoEntries.push({ action: 'SCHEDULE_CHANGED', by, at: now });
+      }
+    }
+    if (updateTripDto.requestedVehicleType !== undefined && updateTripDto.requestedVehicleType !== currentTrip.requestedVehicleType) {
+      autoEntries.push({ action: 'VEHICLE_TYPE_CHANGED', by, at: now, detail: `${currentTrip.requestedVehicleType ?? '-'} → ${updateTripDto.requestedVehicleType}` });
+    }
+    if (updateTripDto.passengerCount !== undefined && updateTripDto.passengerCount !== currentTrip.passengerCount) {
+      autoEntries.push({ action: 'PASSENGER_COUNT_CHANGED', by, at: now, detail: `${currentTrip.passengerCount ?? 0} → ${updateTripDto.passengerCount}` });
+    }
+
+    const mergedLog = [...existingLog, ...incomingLog, ...autoEntries];
+    updateTripDto.metadata = {
+      ...existingMeta,
+      ...(updateTripDto.metadata ?? {}),
+      log: mergedLog,
+    };
+
     const row = this.toRow(updateTripDto);
     const inferredStatus = this.inferStatus(updateTripDto, currentTrip.status);
     if (inferredStatus !== undefined) {

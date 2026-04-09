@@ -37,6 +37,14 @@ export class CreateProviderDto {
   @IsOptional()
   contactName?: string;
 
+  @IsString()
+  @IsOptional()
+  parentProviderId?: string;
+
+  @IsString()
+  @IsOptional()
+  invoiceType?: string;
+
   @IsNumber()
   @IsOptional()
   bidAmount?: number;

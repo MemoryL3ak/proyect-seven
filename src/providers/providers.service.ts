@@ -26,6 +26,8 @@ type ProviderRow = {
   address: string | null;
   city: string | null;
   contact_name: string | null;
+  parent_provider_id: string | null;
+  invoice_type: string | null;
   bid_amount: number | null;
   bid_trip_count: number | null;
   status: string | null;
@@ -64,6 +66,8 @@ export class ProvidersService {
     if (dto.address !== undefined) row.address = dto.address ?? null;
     if (dto.city !== undefined) row.city = dto.city ?? null;
     if (dto.contactName !== undefined) row.contact_name = dto.contactName ?? null;
+    if (dto.parentProviderId !== undefined) row.parent_provider_id = dto.parentProviderId ?? null;
+    if (dto.invoiceType !== undefined) row.invoice_type = dto.invoiceType ?? null;
     if (dto.bidAmount !== undefined) row.bid_amount = dto.bidAmount ?? null;
     if (dto.bidTripCount !== undefined) row.bid_trip_count = dto.bidTripCount ?? null;
     if (dto.status !== undefined) row.status = dto.status ?? null;
@@ -84,6 +88,8 @@ export class ProvidersService {
       address: row.address,
       city: row.city,
       contactName: row.contact_name,
+      parentProviderId: row.parent_provider_id,
+      invoiceType: row.invoice_type,
       bidAmount: row.bid_amount != null ? Number(row.bid_amount) : null,
       bidTripCount: row.bid_trip_count != null ? Number(row.bid_trip_count) : null,
       status: row.status,

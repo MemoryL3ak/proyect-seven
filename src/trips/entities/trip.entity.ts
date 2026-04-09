@@ -113,6 +113,9 @@ export class Trip {
   @Column({ name: 'committee_validated_by', length: 150, type: 'varchar', nullable: true })
   committeeValidatedBy?: string | null;
 
+  @Column({ type: 'jsonb', default: () => "'{}'::jsonb" })
+  metadata: Record<string, unknown>;
+
   athleteIds?: string[];
 
   athleteNames?: string[];

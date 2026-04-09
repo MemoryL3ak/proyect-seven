@@ -28,6 +28,7 @@ function loadGoogleMapsPlaces(): Promise<void> {
 interface PlacesAutocompleteInputProps {
   value: string;
   onChange: (value: string) => void;
+  onPlaceDetails?: (details: { region?: string; commune?: string; city?: string }) => void;
   placeholder?: string;
   className?: string;
   style?: React.CSSProperties;
@@ -38,6 +39,7 @@ interface PlacesAutocompleteInputProps {
 export default function PlacesAutocompleteInput({
   value,
   onChange,
+  onPlaceDetails,
   placeholder = "Busca una dirección...",
   className,
   style,
@@ -46,7 +48,9 @@ export default function PlacesAutocompleteInput({
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<any>(null);
   const onChangeRef = useRef(onChange);
+  const onPlaceDetailsRef = useRef(onPlaceDetails);
   useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
+  useEffect(() => { onPlaceDetailsRef.current = onPlaceDetails; }, [onPlaceDetails]);
 
   useEffect(() => {
     let cancelled = false;
@@ -57,13 +61,27 @@ export default function PlacesAutocompleteInput({
         const ac = new google.maps.places.Autocomplete(inputRef.current, {
           types: ["geocode", "establishment"],
           componentRestrictions: { country },
-          fields: ["formatted_address", "geometry", "name"],
+          fields: ["formatted_address", "geometry", "name", "address_components"],
         });
         autocompleteRef.current = ac;
         ac.addListener("place_changed", () => {
           const place = ac.getPlace();
           const address = place.formatted_address || place.name || inputRef.current?.value || "";
           onChangeRef.current(address);
+          // Extract region and commune from address_components
+          if (onPlaceDetailsRef.current) {
+            const comps = (place.address_components || []) as Array<{ long_name: string; types: string[] }>;
+            if (comps.length > 0) {
+              const region = comps.find(c => c.types.includes("administrative_area_level_1"))?.long_name;
+              const commune =
+                comps.find(c => c.types.includes("locality"))?.long_name ||
+                comps.find(c => c.types.includes("administrative_area_level_3"))?.long_name ||
+                comps.find(c => c.types.includes("sublocality_level_1"))?.long_name ||
+                comps.find(c => c.types.includes("sublocality"))?.long_name;
+              const city = comps.find(c => c.types.includes("administrative_area_level_2"))?.long_name;
+              onPlaceDetailsRef.current({ region, commune: commune || city, city });
+            }
+          }
         });
       })
       .catch(() => {});

@@ -122,7 +122,17 @@ export class SofiaService {
   ): Promise<string> {
     try {
       const result = await this.executeToolInner(name, args);
-      return JSON.stringify(result);
+      let json = JSON.stringify(result);
+      // Truncate large tool outputs to avoid OpenAI token limits
+      if (json.length > 30000) {
+        const arr = Array.isArray(result) ? result : null;
+        if (arr) {
+          json = JSON.stringify({ results: arr.slice(0, 20), totalCount: arr.length, note: 'Resultados truncados. Usa filtros para refinar la consulta.' });
+        } else {
+          json = json.slice(0, 30000) + '..."(truncated)"}';
+        }
+      }
+      return json;
     } catch (err) {
       this.logger.error(`Tool ${name} failed: ${err}`);
       return JSON.stringify({ error: `Error ejecutando ${name}: ${err}` });

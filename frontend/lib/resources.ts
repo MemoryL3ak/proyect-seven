@@ -7,7 +7,8 @@
   | "select"
   | "multiselect"
   | "file"
-  | "places";
+  | "places"
+  | "phone";
 
 export type FieldDef = {
   key: string;
@@ -119,7 +120,7 @@ export const resources: Record<string, ResourceConfig> = {
   },
   delegations: {
     name: "AND",
-    description: "Arrival and Departure: delegación y participantes.",
+    description: "Arribos & Llegadas: delegación y participantes.",
     endpoint: "/delegations",
     tableOrder: [
       "eventId",
@@ -446,9 +447,12 @@ export const resources: Record<string, ResourceConfig> = {
         type: "select",
         required: true,
         options: [
-          { label: "Sedan/Suv", value: "SEDAN" },
-          { label: "Van", value: "VAN" },
-          { label: "Mini Bus", value: "MINI_BUS" },
+          { label: "Sedán", value: "SEDAN" },
+          { label: "SUV", value: "SUV" },
+          { label: "Van 10", value: "VAN_10" },
+          { label: "Van 15-17", value: "VAN_15" },
+          { label: "Van 19", value: "VAN_19" },
+          { label: "Minibus", value: "MINIBUS" },
           { label: "Bus", value: "BUS" }
         ]
       },
@@ -525,9 +529,12 @@ export const resources: Record<string, ResourceConfig> = {
         type: "select",
         required: true,
         options: [
-          { label: "Sedan/Suv", value: "SEDAN" },
-          { label: "Van", value: "VAN" },
-          { label: "Mini Bus", value: "MINI_BUS" },
+          { label: "Sedán", value: "SEDAN" },
+          { label: "SUV", value: "SUV" },
+          { label: "Van 10", value: "VAN_10" },
+          { label: "Van 15-17", value: "VAN_15" },
+          { label: "Van 19", value: "VAN_19" },
+          { label: "Minibus", value: "MINIBUS" },
           { label: "Bus", value: "BUS" }
         ]
       },
@@ -575,6 +582,11 @@ export const resources: Record<string, ResourceConfig> = {
       { key: "phone", label: "Teléfono", type: "text" },
       { key: "address", label: "Dirección", type: "text" },
       { key: "city", label: "Ciudad", type: "text" },
+      { key: "invoiceType", label: "Tipo factura", type: "select", options: [
+        { label: "Afecto", value: "AFECTO" },
+        { label: "Exento", value: "EXENTO" },
+        { label: "Mixto", value: "MIXTO" },
+      ] },
       { key: "bidAmount", label: "Monto licitado ($)", type: "number" },
       { key: "status", label: "Estado", type: "select", options: [
         { label: "Activo", value: "ACTIVE" },
@@ -590,7 +602,7 @@ export const resources: Record<string, ResourceConfig> = {
     fields: [
       { key: "eventId", label: "Evento", type: "select", required: true, optionsSource: "events" },
       { key: "name", label: "Sede", type: "text", required: true },
-      { key: "address", label: "Dirección", type: "text", required: true },
+      { key: "address", label: "Dirección", type: "places", required: true },
       { key: "region", label: "Región", type: "text" },
       { key: "commune", label: "Comuna", type: "text" }
     ]
@@ -642,6 +654,7 @@ export const resources: Record<string, ResourceConfig> = {
       },
       { key: "disciplineId", label: "Disciplina", type: "select", optionsSource: "disciplines" },
       { key: "fullName", label: "Nombre completo", type: "text", required: true },
+      { key: "photoDataUrl", label: "Foto del participante", type: "file", transient: true },
       {
         key: "userType",
         label: "Tipo de cliente",
@@ -685,7 +698,7 @@ export const resources: Record<string, ResourceConfig> = {
       { key: "passportNumber", label: "Pasaporte", type: "text" },
       { key: "rut", label: "RUT", type: "text" },
       { key: "dateOfBirth", label: "Fecha nacimiento", type: "date" },
-      { key: "phone", label: "Teléfono", type: "text" },
+      { key: "phone", label: "Teléfono", type: "phone" },
       { key: "email", label: "Correo electrónico", type: "text" },
       {
         key: "visaRequired",
@@ -763,7 +776,7 @@ export const resources: Record<string, ResourceConfig> = {
           { label: "Magallanes", value: "MAGALLANES" }
         ]
       },
-      { key: "status", label: "Estado", type: "text", readOnly: true }
+      { key: "status", label: "Estado", type: "text", readOnly: true, formHidden: true }
     ]
   },
   hotelRooms: {
@@ -1004,13 +1017,13 @@ export const resources: Record<string, ResourceConfig> = {
         label: "Vehículo solicitado",
         type: "select",
         options: [
-          { label: "Auto", value: "AUTO" },
+          { label: "Sedán", value: "SEDAN" },
           { label: "SUV", value: "SUV" },
           { label: "Van 10", value: "VAN_10" },
           { label: "Van 15-17", value: "VAN_15" },
           { label: "Van 19", value: "VAN_19" },
-          { label: "Minibus 20-33", value: "MINIBUS" },
-          { label: "Bus 40-64", value: "BUS" },
+          { label: "Minibus", value: "MINIBUS" },
+          { label: "Bus", value: "BUS" },
         ]
       },
       { key: "passengerCount", label: "Cantidad de personas", type: "number", min: 1 },
@@ -1066,7 +1079,8 @@ export const resources: Record<string, ResourceConfig> = {
           { label: "En ruta", value: "EN_ROUTE" },
           { label: "Recogido", value: "PICKED_UP" },
           { label: "Dejado en hotel", value: "DROPPED_OFF" },
-          { label: "Completado", value: "COMPLETED" }
+          { label: "Completado", value: "COMPLETED" },
+          { label: "Cancelado", value: "CANCELLED" }
         ]
       },
       { key: "requestedAt", label: "Fecha solicitud", type: "datetime", formHidden: true },

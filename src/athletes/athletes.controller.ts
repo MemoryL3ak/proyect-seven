@@ -42,6 +42,14 @@ export class AthletesController {
     return this.athletesService.uploadHealthDocument(id, payload.dataUrl);
   }
 
+  @Post(':id/photo')
+  uploadPhoto(
+    @Param('id') id: string,
+    @Body() payload: { dataUrl: string },
+  ) {
+    return this.athletesService.uploadPhoto(id, payload.dataUrl);
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.athletesService.remove(id);

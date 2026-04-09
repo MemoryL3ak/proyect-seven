@@ -97,7 +97,7 @@ const GENDER_COLORS: Record<string, string> = {
   M: "#60a5fa", F: "#f472b6", X: "#34d399",
 };
 
-const EMPTY_PRUEBA = { name: "", category: "", gender: "", scheduledAt: "", venueName: "" };
+const EMPTY_PRUEBA = { name: "", category: "", gender: "", scheduledAt: "", venueName: "", useDateRange: false, rangeStart: "", rangeEnd: "", rangeTime: "" };
 
 const pal = {
   accent: "#21D0B3",
@@ -386,7 +386,7 @@ export default function DeportesPage() {
       name: d.name ?? "",
       category: d.category ?? "",
       gender: d.gender ?? "",
-      scheduledAt: d.scheduledAt ? d.scheduledAt.slice(0, 16) : "",
+      scheduledAt: d.scheduledAt ? (() => { const dt = new Date(d.scheduledAt); const y = dt.getFullYear(); const m = String(dt.getMonth()+1).padStart(2,"0"); const day = String(dt.getDate()).padStart(2,"0"); const h = String(dt.getHours()).padStart(2,"0"); const mi = String(dt.getMinutes()).padStart(2,"0"); return `${y}-${m}-${day}T${h}:${mi}`; })() : "",
       venueName: d.venueName ?? "",
     });
     setPruebaError(null);
@@ -398,30 +398,63 @@ export default function DeportesPage() {
     setPruebaSaving(true);
     setPruebaError(null);
     try {
-      const body = {
-        name: pruebaForm.name.trim(),
-        category: pruebaForm.category || null,
-        gender: pruebaForm.gender || null,
-        parentId: pruebaModal!.parentId,
-        eventId: selectedEventId || null,
-        scheduledAt: pruebaForm.scheduledAt ? new Date(pruebaForm.scheduledAt).toISOString() : null,
-        venueName: pruebaForm.venueName || null,
-      };
-      if (pruebaModal?.editing) {
-        await apiFetch(`/disciplines/${pruebaModal.editing.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
+      if (pruebaForm.useDateRange && !pruebaModal?.editing && pruebaForm.rangeStart && pruebaForm.rangeEnd && pruebaForm.rangeTime) {
+        // Create one prueba per day in the range
+        const start = new Date(pruebaForm.rangeStart + "T00:00:00");
+        const end = new Date(pruebaForm.rangeEnd + "T00:00:00");
+        const [hours, minutes] = pruebaForm.rangeTime.split(":").map(Number);
+        let created = 0;
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+          const dd = String(d.getDate()).padStart(2, "0");
+          const mm = String(d.getMonth() + 1).padStart(2, "0");
+          const yyyy = d.getFullYear();
+          const hh = String(hours).padStart(2, "0");
+          const mi = String(minutes).padStart(2, "0");
+          const scheduledAt = new Date(yyyy, d.getMonth(), d.getDate(), hours, minutes, 0).toISOString();
+          const dateLabel = `${dd}/${mm}`;
+          await apiFetch("/disciplines", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: `${pruebaForm.name.trim()} (${dateLabel})`,
+              category: pruebaForm.category || null,
+              gender: pruebaForm.gender || null,
+              parentId: pruebaModal!.parentId,
+              eventId: selectedEventId || null,
+              scheduledAt,
+              venueName: pruebaForm.venueName || null,
+            }),
+          });
+          created++;
+        }
+        setPruebaModal(null);
+        await load();
       } else {
-        await apiFetch("/disciplines", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
+        const body = {
+          name: pruebaForm.name.trim(),
+          category: pruebaForm.category || null,
+          gender: pruebaForm.gender || null,
+          parentId: pruebaModal!.parentId,
+          eventId: selectedEventId || null,
+          scheduledAt: pruebaForm.scheduledAt ? new Date(pruebaForm.scheduledAt).toISOString() : null,
+          venueName: pruebaForm.venueName || null,
+        };
+        if (pruebaModal?.editing) {
+          await apiFetch(`/disciplines/${pruebaModal.editing.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+        } else {
+          await apiFetch("/disciplines", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+        }
+        setPruebaModal(null);
+        await load();
       }
-      setPruebaModal(null);
-      await load();
     } catch (e) {
       setPruebaError(e instanceof Error ? e.message : "Error al guardar");
     } finally {
@@ -429,10 +462,11 @@ export default function DeportesPage() {
     }
   };
 
+  const [deletePruebaConfirm, setDeletePruebaConfirm] = useState<Discipline | null>(null);
   const removePrueba = async (d: Discipline) => {
-    if (!confirm(`¿Eliminar la prueba "${d.name}"?`)) return;
     try {
       await apiFetch(`/disciplines/${d.id}`, { method: "DELETE" });
+      setDeletePruebaConfirm(null);
       await load();
     } catch (e) {
       alert(e instanceof Error ? e.message : "Error al eliminar");
@@ -452,10 +486,6 @@ export default function DeportesPage() {
       <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "20px", padding: "24px 28px 22px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
           <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#94a3b8" }}>{t("Deportes")}</span>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.25)", borderRadius: "99px", padding: "2px 10px" }}>
-            <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#21D0B3", display: "inline-block", animation: "pulse 2s ease-in-out infinite" }} />
-            <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: "#21D0B3" }}>EN VIVO</span>
-          </span>
         </div>
         <h1 style={{ fontSize: "22px", fontWeight: 800, color: pal.titleColor, margin: "0 0 16px" }}>{t("Planificación deportiva")}</h1>
 
@@ -755,9 +785,9 @@ export default function DeportesPage() {
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                 </svg>
                               </button>
-                              <button onClick={() => removePrueba(prueba)} style={{ background: "none", border: "none", cursor: "pointer", color: "#cbd5e1", padding: "4px" }}
+                              <button onClick={() => setDeletePruebaConfirm(prueba)} style={{ background: "none", border: "none", cursor: "pointer", color: "#f87171", padding: "4px" }}
                                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#ef4444"; }}
-                                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#cbd5e1"; }}
+                                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#f87171"; }}
                               >
                                 <svg style={{ width: "14px", height: "14px" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -922,7 +952,7 @@ export default function DeportesPage() {
       {/* ── Prueba modal */}
       {pruebaModal && (
         <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(15,23,42,0.4)", backdropFilter: "blur(4px)", padding: "16px" }}>
-          <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "20px", padding: "24px", width: "100%", maxWidth: "380px", boxShadow: "0 8px 40px rgba(15,23,42,0.15)" }}>
+          <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "20px", padding: "24px", width: "100%", maxWidth: "520px", boxShadow: "0 8px 40px rgba(15,23,42,0.15)" }}>
             <h2 style={{ fontWeight: 700, fontSize: "18px", color: "#0f172a", marginBottom: "4px" }}>
               {pruebaModal.editing ? t("Editar prueba") : t("Nueva prueba")}
             </h2>
@@ -962,15 +992,36 @@ export default function DeportesPage() {
                 </label>
               </div>
 
-              <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Fecha y hora")}</span>
-                <input
-                  style={fieldStyle}
-                  type="datetime-local"
-                  value={pruebaForm.scheduledAt}
-                  onChange={e => setPruebaForm(f => ({ ...f, scheduledAt: e.target.value }))}
-                />
-              </label>
+              {/* Date range toggle */}
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
+                <button type="button" onClick={() => setPruebaForm(f => ({ ...f, useDateRange: !f.useDateRange }))}
+                  style={{ width: 38, height: 20, borderRadius: 10, border: "none", cursor: "pointer", position: "relative", background: pruebaForm.useDateRange ? "#21D0B3" : "#cbd5e1", transition: "background 0.2s" }}>
+                  <span style={{ position: "absolute", top: 2, left: pruebaForm.useDateRange ? 20 : 2, width: 16, height: 16, borderRadius: 8, background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.2)", transition: "left 0.2s" }} />
+                </button>
+                <span style={{ fontSize: 12, fontWeight: 600, color: "#0f172a" }}>{t("Rango de fechas (varios días, misma hora)")}</span>
+              </div>
+
+              {pruebaForm.useDateRange ? (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
+                  <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <span style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Fecha inicio")}</span>
+                    <input style={fieldStyle} type="date" value={pruebaForm.rangeStart} onChange={e => setPruebaForm(f => ({ ...f, rangeStart: e.target.value }))} />
+                  </label>
+                  <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <span style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Fecha fin")}</span>
+                    <input style={fieldStyle} type="date" value={pruebaForm.rangeEnd} onChange={e => setPruebaForm(f => ({ ...f, rangeEnd: e.target.value }))} />
+                  </label>
+                  <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <span style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Hora")}</span>
+                    <input style={fieldStyle} type="time" value={pruebaForm.rangeTime} onChange={e => setPruebaForm(f => ({ ...f, rangeTime: e.target.value }))} />
+                  </label>
+                </div>
+              ) : (
+                <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Fecha y hora")}</span>
+                  <input style={fieldStyle} type="datetime-local" value={pruebaForm.scheduledAt} onChange={e => setPruebaForm(f => ({ ...f, scheduledAt: e.target.value }))} />
+                </label>
+              )}
 
               <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                 <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Recinto")}</span>
@@ -997,6 +1048,31 @@ export default function DeportesPage() {
               <button style={ghostBtn} onClick={() => setPruebaModal(null)} disabled={pruebaSaving}>{t("Cancelar")}</button>
               <button style={{ ...primaryBtn, opacity: pruebaSaving ? 0.7 : 1 }} onClick={savePrueba} disabled={pruebaSaving}>
                 {pruebaSaving ? t("Guardando…") : t("Guardar")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete prueba confirmation modal */}
+      {deletePruebaConfirm && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(15,23,42,0.5)", backdropFilter: "blur(4px)", padding: "16px" }}>
+          <div style={{ background: "#fff", borderRadius: "20px", width: "100%", maxWidth: "380px", padding: "28px", boxShadow: "0 8px 40px rgba(15,23,42,0.2)", textAlign: "center" }}>
+            <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "rgba(239,68,68,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </div>
+            <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#0f172a", margin: "0 0 6px" }}>Eliminar prueba</h3>
+            <p style={{ fontSize: "13px", color: "#64748b", margin: "0 0 20px" }}>
+              ¿Estás seguro de eliminar <b style={{ color: "#0f172a" }}>{deletePruebaConfirm.name}</b>? Esta acción no se puede deshacer.
+            </p>
+            <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
+              <button onClick={() => setDeletePruebaConfirm(null)}
+                style={{ padding: "10px 24px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
+                Cancelar
+              </button>
+              <button onClick={() => removePrueba(deletePruebaConfirm)}
+                style={{ padding: "10px 24px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #ef4444, #dc2626)", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 10px rgba(239,68,68,0.3)" }}>
+                Sí, eliminar
               </button>
             </div>
           </div>

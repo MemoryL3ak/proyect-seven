@@ -211,11 +211,12 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
                     }
                   </div>
                 )}
-                <div style={{ display: "flex", flexDirection: "column", alignItems: isMine(msg) ? "flex-end" : "flex-start", maxWidth: "78%" }}>
+                <div style={{ maxWidth: "78%" }}>
                   {!isMine(msg) && isFirstInGroup && (
                     <span className="tripchat-sender-name">{msg.senderName}</span>
                   )}
-                  <div className={isMine(msg) ? "tripchat-bubble-mine" : "tripchat-bubble-other"}>
+                  <div className={isMine(msg) ? "tripchat-bubble-mine" : "tripchat-bubble-other"}
+                    style={{ overflowWrap: "anywhere", wordBreak: "normal", whiteSpace: "normal", maxWidth: "100%" }}>
                     {msg.content}
                   </div>
                   {isLastInGroup && (
@@ -378,22 +379,30 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
         }
 
         .tripchat-bubble-mine {
+          display: inline-block;
           padding: 10px 14px;
           border-radius: 18px 18px 6px 18px;
           background: linear-gradient(135deg, #21D0B3, #14AE98);
           color: #fff;
           font-size: 14px; line-height: 1.45;
-          word-break: break-word;
+          overflow-wrap: break-word;
+          word-break: normal;
+          white-space: normal;
+          max-width: 100%;
           box-shadow: 0 1px 4px rgba(33,208,179,0.2);
           animation: tripMsgIn .25s ease-out both;
         }
         .tripchat-bubble-other {
+          display: inline-block;
           padding: 10px 14px;
           border-radius: 18px 18px 18px 6px;
           background: #fff;
           color: #1e293b;
           font-size: 14px; line-height: 1.45;
-          word-break: break-word;
+          overflow-wrap: break-word;
+          word-break: normal;
+          white-space: normal;
+          max-width: 100%;
           border: 1px solid #edf0f5;
           box-shadow: 0 1px 3px rgba(15,23,42,0.04);
           animation: tripMsgIn .25s ease-out both;
