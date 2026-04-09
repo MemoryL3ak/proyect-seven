@@ -137,6 +137,8 @@ type DriverItem = {
   userId?: string | null;
   fullName?: string | null;
   phone?: string | null;
+  vehicleId?: string | null;
+  metadata?: Record<string, unknown> | null;
 };
 type VehicleItem = {
   id: string;
