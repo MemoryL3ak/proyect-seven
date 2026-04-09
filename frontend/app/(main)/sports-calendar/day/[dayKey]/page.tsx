@@ -47,12 +47,17 @@ type TripOption = {
   startedAt?: string | null;
   completedAt?: string | null;
   athleteIds?: string[];
+  passengerCount?: number | null;
+  vehiclePlate?: string | null;
+  requestedVehicleType?: string | null;
   committeeValidated?: boolean;
 };
 type DriverOption = {
   id: string;
   userId?: string | null;
   fullName?: string | null;
+  vehicleId?: string | null;
+  metadata?: Record<string, unknown> | null;
 };
 type VehicleOption = {
   id: string;
@@ -133,10 +138,16 @@ function tripStatusClass(value?: string | null) {
 }
 
 function tripTypeLabel(value?: string | null) {
-  if (value === "TRANSFER_IN_OUT") return "Transfer";
-  if (value === "DISPOSICION_12H") return "Disposicion 12 h";
-  if (value === "IDA_VUELTA") return "Ida y vuelta";
-  return value || "Traslado";
+  const labels: Record<string, string> = {
+    TRANSFER_IN_OUT: "Transfer",
+    DISPOSICION_12H: "Disposición 12h",
+    IDA_VUELTA: "Ida y vuelta",
+    VIAJE_IDA: "Viaje de ida",
+    VIAJE_IDA_REGRESO: "Ida y regreso",
+    VIAJE_REGRESO: "Viaje de regreso",
+    PORTAL_REQUEST: "Solicitud portal",
+  };
+  return labels[value ?? ""] || "Traslado";
 }
 
 function formatDateLong(value: string) {
@@ -221,6 +232,7 @@ export default function SportsCalendarDayDetailPage() {
           apiFetch<TripOption[]>("/trips"),
           apiFetch<DriverOption[]>("/drivers"),
           apiFetch<VehicleOption[]>("/transports"),
+          apiFetch<any[]>("/provider-participants").catch(() => []),
         ]);
 
         setEntries(Array.isArray(entryData) ? entryData : []);
@@ -230,7 +242,11 @@ export default function SportsCalendarDayDetailPage() {
         setAthletes(filterValidatedAthletes(Array.isArray(athleteData) ? athleteData : []));
         setFlights(Array.isArray(flightData) ? flightData : []);
         setTrips(Array.isArray(tripData) ? tripData : []);
-        setDrivers(Array.isArray(driverData) ? driverData : []);
+        // Merge provider participant drivers into drivers list
+        const participantDrivers: DriverOption[] = (Array.isArray(participantData) ? participantData : [])
+          .filter((p: any) => p.metadata?.isDriver === true || p.metadata?.isDriver === "true")
+          .map((p: any) => ({ id: p.id, fullName: p.fullName, metadata: p.metadata }));
+        setDrivers([...(Array.isArray(driverData) ? driverData : []), ...participantDrivers]);
         setVehicles(Array.isArray(vehicleData) ? vehicleData : []);
       } catch (err) {
         setError(err instanceof Error ? err.message : "No se pudo cargar el detalle del dia.");
@@ -358,15 +374,22 @@ export default function SportsCalendarDayDetailPage() {
         if (delegationId && !linkedDelegations.includes(delegationId)) return null;
 
         const driver = trip.driverId ? driverMap[trip.driverId] : undefined;
-        const vehicle = trip.vehicleId ? vehicleMap[trip.vehicleId] : undefined;
+        let vehicle = trip.vehicleId ? vehicleMap[trip.vehicleId] : undefined;
+        // Try to resolve vehicle from driver if not directly on trip
+        if (!vehicle && driver?.vehicleId) vehicle = vehicleMap[driver.vehicleId];
         const vehicleParts = [vehicle?.plate, vehicle?.type, [vehicle?.brand, vehicle?.model].filter(Boolean).join(" ")].filter(Boolean);
+        // Fallback to driver metadata for participant drivers
+        const driverPlate = !vehicleParts.length && driver?.metadata ? String((driver.metadata as any).vehiclePatente ?? "") : "";
+        const vehicleTypeLabel: Record<string, string> = { SEDAN: "Sedán", SUV: "SUV", VAN_10: "Van 10", VAN_15: "Van 15-17", VAN_19: "Van 19", MINIBUS: "Minibus", BUS: "Bus" };
+        const reqType = trip.requestedVehicleType ? (vehicleTypeLabel[trip.requestedVehicleType] ?? trip.requestedVehicleType) : "";
+        const paxCount = linkedAthletes.length || trip.passengerCount || 0;
 
         return {
           ...trip,
           linkedAthletes,
           linkedDelegations,
-          driverName: driver?.fullName || trip.driverId || "-",
-          vehicleLabel: vehicleParts.length ? vehicleParts.join(" · ") : trip.vehicleId || "-",
+          driverName: driver?.fullName || "-",
+          vehicleLabel: vehicleParts.length ? vehicleParts.join(" · ") : driverPlate || reqType || "-",
           timeLabel: formatDateTime(trip.startedAt || trip.scheduledAt || trip.completedAt),
         };
       })
@@ -576,7 +599,7 @@ export default function SportsCalendarDayDetailPage() {
                         <p><strong>Hora:</strong> {trip.timeLabel}</p>
                         <p><strong>Chofer:</strong> {trip.driverName}</p>
                         <p><strong>Vehículo:</strong> {trip.vehicleLabel}</p>
-                        <p><strong>Personas:</strong> {trip.linkedAthletes.length}</p>
+                        <p><strong>Personas:</strong> {trip.linkedAthletes.length || (trip as any).passengerCount || 0}</p>
                       </div>
                       <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 4 }}>
                         {trip.linkedDelegations.map((item) => (
