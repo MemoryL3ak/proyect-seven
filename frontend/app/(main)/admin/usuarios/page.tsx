@@ -328,7 +328,7 @@ export default function UsuariosPage() {
           fullName: u.user_metadata?.name || u.email?.split("@")[0] || "Sin nombre",
           email: u.email || "",
           role: (u.user_metadata?.role as Role) || "Operador",
-          modules: ROLE_PERMISSIONS[(u.user_metadata?.role as Role) || "Operador"] || [],
+          modules: Array.isArray(u.user_metadata?.modules) ? u.user_metadata.modules : (ROLE_PERMISSIONS[(u.user_metadata?.role as Role) || "Operador"] || []),
           status: u.banned_until ? "inactive" : "active",
           emailConfirmed: Boolean(u.email_confirmed_at),
           createdAt: u.created_at?.split("T")[0] || "",
@@ -424,6 +424,7 @@ export default function UsuariosPage() {
           body: JSON.stringify({
             name: form.fullName,
             role: form.role,
+            modules: form.modules,
             ...(form.passwordEditable ? { password: form.tempPassword } : {}),
           }),
         });
@@ -438,6 +439,7 @@ export default function UsuariosPage() {
             ...(isUsername ? { username: form.username } : { email: form.email }),
             password: form.tempPassword,
             role: form.role,
+            modules: form.modules,
             isTemporaryPassword: !isUsername,
           }),
         });
