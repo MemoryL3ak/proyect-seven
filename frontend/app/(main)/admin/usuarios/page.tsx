@@ -316,6 +316,7 @@ export default function UsuariosPage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<AppUser | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<AppUser | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   // ── Load users from API ───────────────────────────────────────────────
@@ -832,6 +833,22 @@ export default function UsuariosPage() {
                               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
                             </svg>
                           )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteConfirm(user)}
+                          style={{
+                            background: "#f8fafc", border: "1px solid #e2e8f0",
+                            borderRadius: "8px", padding: "6px",
+                            cursor: "pointer", color: "#94a3b8", transition: "all 150ms",
+                          }}
+                          title="Eliminar usuario"
+                          onMouseEnter={(e) => { e.currentTarget.style.color = "#ef4444"; e.currentTarget.style.borderColor = "#ef4444"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.color = "#94a3b8"; e.currentTarget.style.borderColor = "#e2e8f0"; }}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                            <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                          </svg>
                         </button>
                       </div>
                     </div>
@@ -1465,6 +1482,44 @@ export default function UsuariosPage() {
           </div>
         );
       })()}
+
+      {/* Delete user modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setDeleteConfirm(null)}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: "#fff", borderRadius: "20px", width: "100%", maxWidth: "400px", padding: "28px", boxShadow: "0 8px 40px rgba(15,23,42,0.2)", textAlign: "center" }}>
+            <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "rgba(239,68,68,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round">
+                <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>
+            </div>
+            <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#0f172a", margin: "0 0 8px" }}>Eliminar usuario</h3>
+            <p style={{ fontSize: "13px", color: "#64748b", lineHeight: 1.5, margin: "0 0 6px" }}>
+              ¿Estás seguro de eliminar a <strong style={{ color: "#0f172a" }}>{deleteConfirm.fullName}</strong>?
+            </p>
+            <p style={{ fontSize: "12px", color: "#ef4444", margin: "0 0 20px" }}>
+              Esta acción es irreversible. El usuario será eliminado de Supabase Auth.
+            </p>
+            <div style={{ display: "flex", gap: "10px" }}>
+              <button onClick={() => setDeleteConfirm(null)}
+                style={{ flex: 1, padding: "11px", borderRadius: "12px", border: "1px solid #e2e8f0", background: "#f8fafc", color: "#475569", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
+                Cancelar
+              </button>
+              <button onClick={async () => {
+                try {
+                  await apiFetch(`/auth/users/${deleteConfirm.id}`, { method: "DELETE" });
+                  setUsers((us) => us.filter((u) => u.id !== deleteConfirm.id));
+                  setDeleteConfirm(null);
+                } catch (e) {
+                  alert(e instanceof Error ? e.message : "Error eliminando usuario");
+                }
+              }}
+                style={{ flex: 1, padding: "11px", borderRadius: "12px", border: "none", background: "linear-gradient(135deg,#ef4444,#dc2626)", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 10px rgba(239,68,68,0.3)" }}>
+                Sí, eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -62,6 +62,16 @@ export class AuthService {
     return { user: data.user };
   }
 
+  async deleteUser(id: string): Promise<{ message: string }> {
+    const { error } = await this.supabase.auth.admin.deleteUser(id);
+    if (error) {
+      this.logger.error('deleteUser error', JSON.stringify(error));
+      throw new BadRequestException(error.message || 'Error deleting user');
+    }
+    this.logger.log(`User deleted: ${id}`);
+    return { message: 'Usuario eliminado correctamente' };
+  }
+
   async listUsers(): Promise<{ users: User[] }> {
     const { data, error } = await this.supabase.auth.admin.listUsers();
     if (error) {
