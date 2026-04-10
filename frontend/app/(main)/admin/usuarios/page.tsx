@@ -378,7 +378,7 @@ export default function UsuariosPage() {
       loginType: uType,
       role: user.role,
       modules: user.modules,
-      tempPassword: generateTempPassword(),
+      tempPassword: uType === "username" ? "" : "",
       passwordEditable: uType === "username",
       status: user.status,
     });
@@ -1122,16 +1122,24 @@ export default function UsuariosPage() {
 
               {/* Temp password */}
               <div>
-                  <h3 style={{ fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: pal.mTextFaint, margin: "0 0 14px" }}>
-                    {editingUser ? "Restablecer contraseña" : form.loginType === "username" ? "Contraseña asignada" : "Contraseña temporal"}
-                  </h3>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "0 0 14px" }}>
+                    <h3 style={{ fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: pal.mTextFaint, margin: 0 }}>
+                      {editingUser ? "Restablecer contraseña" : form.loginType === "username" ? "Contraseña asignada" : "Contraseña temporal"}
+                    </h3>
+                    {editingUser && form.loginType !== "username" && (
+                      <button type="button" onClick={() => setForm((f) => ({ ...f, passwordEditable: !f.passwordEditable, tempPassword: f.passwordEditable ? "" : generateTempPassword() }))}
+                        style={{ fontSize: "11px", fontWeight: 600, padding: "4px 12px", borderRadius: "8px", border: "none", cursor: "pointer", background: form.passwordEditable ? "rgba(239,68,68,0.1)" : "rgba(33,208,179,0.1)", color: form.passwordEditable ? "#ef4444" : "#21D0B3" }}>
+                        {form.passwordEditable ? "Cancelar cambio" : "Cambiar contraseña"}
+                      </button>
+                    )}
+                  </div>
                   <div style={{ position: "relative" }}>
                     <input
                       type={showTempPassword ? "text" : "password"}
                       value={form.tempPassword}
                       onChange={form.loginType === "username" || form.passwordEditable ? (e) => setForm((f) => ({ ...f, tempPassword: e.target.value })) : undefined}
                       readOnly={form.loginType !== "username" && !form.passwordEditable}
-                      placeholder={form.loginType === "username" ? "Escribe la contraseña" : undefined}
+                      placeholder={form.loginType === "username" ? "Escribe la contraseña" : editingUser && !form.passwordEditable ? "••••••••" : undefined}
                       style={{
                         ...selM,
                         padding: "11px 80px 11px 14px",
