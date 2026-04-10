@@ -451,14 +451,15 @@ export default function DriverPortalPage() {
     speed?: number | null,
     heading?: number | null
   ) => {
-    if (!trip.driverId) return;
+    const resolvedDriverId = trip.driverId || driverProfile?.id;
+    if (!resolvedDriverId) return;
     try {
       await apiFetch(`/vehicle-positions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...(trip.eventId ? { eventId: trip.eventId } : {}),
-          driverId: trip.driverId,
+          driverId: resolvedDriverId,
           ...(trip.vehicleId ? { vehicleId: trip.vehicleId } : {}),
           timestamp: new Date().toISOString(),
           location: { type: "Point", coordinates: [longitude, latitude] },
@@ -495,8 +496,14 @@ export default function DriverPortalPage() {
 
     tick();
     interval = window.setInterval(tick, 5000);
+    // Resume tracking when tab becomes visible again (mobile background)
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") tick();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
       if (interval) window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [trackingTripId, trips]);
 
