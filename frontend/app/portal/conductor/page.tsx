@@ -475,34 +475,88 @@ export default function DriverPortalPage() {
   const getTripById = (tripId: string | null) =>
     tripId ? trips.find((trip) => trip.id === tripId) ?? null : null;
 
+  // Wake Lock: keep screen awake while tracking (prevents browser suspension)
+  useEffect(() => {
+    if (!trackingTripId) return;
+    let wakeLock: any = null;
+
+    const requestWakeLock = async () => {
+      try {
+        if ("wakeLock" in navigator) {
+          wakeLock = await (navigator as any).wakeLock.request("screen");
+          console.log("[WakeLock] Pantalla mantenida activa");
+          wakeLock.addEventListener("release", () => console.log("[WakeLock] Liberado"));
+        }
+      } catch (err) {
+        console.warn("[WakeLock] No disponible:", err);
+      }
+    };
+
+    requestWakeLock();
+
+    // Re-acquire wake lock when tab becomes visible (it gets released on minimize)
+    const onVisibility = () => {
+      if (document.visibilityState === "visible" && !wakeLock) requestWakeLock();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      if (wakeLock) { try { wakeLock.release(); } catch {} }
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [trackingTripId]);
+
+  // GPS tracking: send position every 5s + watchPosition + visibility resume
   useEffect(() => {
     if (!trackingTripId) return;
     const trip = getTripById(trackingTripId);
     if (!trip) return;
 
     let interval: number | null = null;
+    let watchId: number | null = null;
+
     const tick = () => {
-      if (!navigator.geolocation) { console.warn("[GPS] Geolocation no disponible"); return; }
+      if (!navigator.geolocation) return;
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const { latitude, longitude, speed, heading } = pos.coords;
-          console.log("[GPS] Posición obtenida:", latitude, longitude);
           sendPosition(trip, latitude, longitude, speed ?? null, heading ?? null);
         },
-        (err) => { console.error("[GPS] Error obteniendo posición:", err.code, err.message); },
+        () => {},
         { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 }
       );
     };
 
+    // watchPosition fires on every movement (more reliable than polling alone)
+    if (navigator.geolocation) {
+      watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          const { latitude, longitude, speed, heading } = pos.coords;
+          sendPosition(trip, latitude, longitude, speed ?? null, heading ?? null);
+        },
+        () => {},
+        { enableHighAccuracy: true, maximumAge: 5000 }
+      );
+    }
+
+    // Polling as backup (watchPosition can be unreliable on some devices)
     tick();
     interval = window.setInterval(tick, 5000);
-    // Resume tracking when tab becomes visible again (mobile background)
+
+    // Resume immediately when tab becomes visible
     const onVisibility = () => {
-      if (document.visibilityState === "visible") tick();
+      if (document.visibilityState === "visible") {
+        tick();
+        // Restart interval (it may have been throttled in background)
+        if (interval) window.clearInterval(interval);
+        interval = window.setInterval(tick, 5000);
+      }
     };
     document.addEventListener("visibilitychange", onVisibility);
+
     return () => {
       if (interval) window.clearInterval(interval);
+      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [trackingTripId, trips]);
