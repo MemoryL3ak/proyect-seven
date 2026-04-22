@@ -29,6 +29,9 @@ import { HotelExtraReservationsModule } from './hotel-extra-reservations/hotel-e
 import { FoodLocationsModule } from './food-locations/food-locations.module';
 import { FoodMenusModule } from './food-menus/food-menus.module';
 import { ProviderParticipantsModule } from './provider-participants/provider-participants.module';
+import { AccessControlModule } from './access-control/access-control.module';
+import { PremiacionesModule } from './premiaciones/premiaciones.module';
+import { SupportChatsModule } from './support-chats/support-chats.module';
 
 @Module({
   imports: [
@@ -72,6 +75,9 @@ import { ProviderParticipantsModule } from './provider-participants/provider-par
     SportsCalendarModule,
     AccreditationsModule,
     VenuesModule,
+    AccessControlModule,
+    PremiacionesModule,
+    SupportChatsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

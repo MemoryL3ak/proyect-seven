@@ -6,6 +6,7 @@ import { apiFetch } from "@/lib/api";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import NotificationBell, { useNotifications } from "@/components/NotificationBell";
 import TripChat from "@/components/TripChat";
+import AssistanceChat from "@/components/AssistanceChat";
 import { buildCredentialHtml } from "@/lib/credential-template";
 import QRCode from "qrcode";
 import dynamic from "next/dynamic";
@@ -97,7 +98,28 @@ type Accommodation = {
 type EventItem = { id: string; name?: string | null };
 type DelegationItem = { id: string; countryCode?: string | null };
 type AccessRequestResponse = { message?: string };
-type PortalTab = "solicitud" | "actividades" | "sedes" | "hoteles" | "calendario" | "cuenta";
+type PortalTab = "solicitud" | "actividades" | "premiaciones" | "sedes" | "hoteles" | "calendario" | "cuenta";
+
+type PremiacionAwarder = {
+  id: string;
+  premiacion_id: string;
+  athlete_id: string;
+  role: string;
+  confirmed_at: string | null;
+  declined_at: string | null;
+};
+
+type PremiacionVIP = {
+  id: string;
+  title: string;
+  discipline?: string | null;
+  scheduled_at: string;
+  venue_name?: string | null;
+  location_detail?: string | null;
+  status: string;
+  notes?: string | null;
+  myAssignment?: PremiacionAwarder;
+};
 type ActividadesSubTab = "en_curso" | "historial" | "pendientes";
 
 type CalendarEvent = {
@@ -282,6 +304,7 @@ export default function VehicleRequestPortalPage() {
   const [locationPermission, setLocationPermission] = useState<"granted" | "prompt" | "denied" | null>(null);
   const [activeTab, setActiveTab] = useState<PortalTab>("solicitud");
   const [actividadesSubTab, setActividadesSubTab] = useState<ActividadesSubTab>("en_curso");
+  const [premiaciones, setPremiaciones] = useState<PremiacionVIP[]>([]);
   const [visibleTripsCount, setVisibleTripsCount] = useState(5);
 
   const [loading, setLoading] = useState(false);
@@ -722,6 +745,39 @@ export default function VehicleRequestPortalPage() {
       window.clearInterval(timer);
     };
   }, [athlete, trips]);
+
+  // Load premiaciones assigned to this VIP (athlete as awarder)
+  useEffect(() => {
+    if (!athlete?.id) return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const data = await apiFetch<PremiacionVIP[]>(`/premiaciones/by-athlete/${athlete.id}`);
+        if (!cancelled) setPremiaciones(data || []);
+      } catch {
+        // non-blocking
+      }
+    };
+    load();
+    const timer = window.setInterval(load, 60000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [athlete?.id]);
+
+  const confirmAwarder = async (premiacionId: string, awarderId: string, decision: "CONFIRM" | "DECLINE") => {
+    try {
+      const endpoint = decision === "CONFIRM" ? "confirm" : "decline";
+      await apiFetch(`/premiaciones/${premiacionId}/awarders/${awarderId}/${endpoint}`, {
+        method: "PATCH",
+      });
+      const data = await apiFetch<PremiacionVIP[]>(`/premiaciones/by-athlete/${athlete!.id}`);
+      setPremiaciones(data || []);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "No se pudo actualizar");
+    }
+  };
 
   // Auto-show rating popup when a trip transitions to completed
   const ratingDismissed = useRef<Set<string>>(new Set());
@@ -1621,6 +1677,67 @@ export default function VehicleRequestPortalPage() {
               </section>
             )}
 
+            {/* ═══════════════════ PREMIACIONES TAB ═══════════════════ */}
+            {activeTab === "premiaciones" && (
+              <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "#21D0B3", margin: 0 }}>Tus premiaciones</p>
+                {premiaciones.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "28px 16px", borderRadius: 16, border: "1px dashed rgba(33,208,179,0.3)", background: "#fafcfb" }}>
+                    <p style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", margin: "0 0 4px" }}>Sin premiaciones asignadas</p>
+                    <p style={{ fontSize: 12, color: "#64748b", margin: 0 }}>Cuando te designemos como premiador de una ceremonia aparecerá aquí.</p>
+                  </div>
+                ) : premiaciones.map((p) => {
+                  const roleLabel: Record<string, { label: string; color: string }> = {
+                    GOLD: { label: "Medalla de Oro", color: "#eab308" },
+                    SILVER: { label: "Medalla de Plata", color: "#94a3b8" },
+                    BRONZE: { label: "Medalla de Bronce", color: "#b45309" },
+                    AUTHORITY: { label: "Autoridad", color: "#8b5cf6" },
+                    AWARDER: { label: "Premiador", color: "#14b8a6" },
+                  };
+                  const a = p.myAssignment;
+                  const r = (a && roleLabel[a.role]) || roleLabel.AWARDER;
+                  return (
+                    <div key={p.id} style={{ background: "#fff", border: "1px solid #e2e8f0", borderLeft: `4px solid ${r.color}`, borderRadius: 14, padding: "14px 16px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6, gap: 8 }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", margin: 0 }}>{p.title}</p>
+                          {p.discipline && <p style={{ fontSize: 11, color: "#64748b", margin: "2px 0 0" }}>{p.discipline}</p>}
+                        </div>
+                        <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 99, background: `${r.color}15`, color: r.color, flexShrink: 0 }}>{r.label}</span>
+                      </div>
+                      <div style={{ fontSize: 12, color: "#475569", display: "flex", flexDirection: "column", gap: 4, marginTop: 8 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /></svg>
+                          {new Date(p.scheduled_at).toLocaleString("es-CL", { dateStyle: "full", timeStyle: "short" })}
+                        </div>
+                        {(p.venue_name || p.location_detail) && (
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
+                            {[p.venue_name, p.location_detail].filter(Boolean).join(" — ")}
+                          </div>
+                        )}
+                        {p.notes && <p style={{ margin: "4px 0 0", fontSize: 11.5, color: "#64748b" }}>{p.notes}</p>}
+                      </div>
+                      {a && (
+                        <div style={{ marginTop: 12, display: "flex", gap: 6, alignItems: "center" }}>
+                          {a.confirmed_at ? (
+                            <span style={{ fontSize: 11, fontWeight: 700, color: "#10b981" }}>✓ Asistencia confirmada</span>
+                          ) : a.declined_at ? (
+                            <span style={{ fontSize: 11, fontWeight: 700, color: "#ef4444" }}>✗ Declinaste</span>
+                          ) : (
+                            <>
+                              <button type="button" onClick={() => confirmAwarder(p.id, a.id, "CONFIRM")} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: "#10b981", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Confirmar</button>
+                              <button type="button" onClick={() => confirmAwarder(p.id, a.id, "DECLINE")} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Declinar</button>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </section>
+            )}
+
             {/* ═══════════════════ SEDES TAB ═══════════════════ */}
             {activeTab === "sedes" && (
               <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
@@ -1956,6 +2073,7 @@ export default function VehicleRequestPortalPage() {
             {([
               { key: "solicitud" as PortalTab, label: "Solicitud", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> },
               { key: "actividades" as PortalTab, label: "Actividades", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> },
+              { key: "premiaciones" as PortalTab, label: "Premios", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg> },
               { key: "sedes" as PortalTab, label: "Sedes", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> },
               { key: "hoteles" as PortalTab, label: "Hoteles", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 22V8l9-6 9 6v14"/><path d="M9 22V12h6v10"/></svg> },
               { key: "calendario" as PortalTab, label: "Calendario", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> },
@@ -1967,6 +2085,15 @@ export default function VehicleRequestPortalPage() {
               </button>
             ))}
           </div>
+
+          {athlete && (
+            <AssistanceChat
+              originType="athlete"
+              originId={athlete.id}
+              originName={athlete.fullName || "Participante VIP"}
+              eventId={athlete.eventId || null}
+            />
+          )}
         </div>
       )}
 

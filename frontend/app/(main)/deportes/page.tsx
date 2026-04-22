@@ -37,10 +37,40 @@ type Delegation = {
 
 type Athlete = {
   id: string;
+  fullName?: string | null;
   eventId?: string | null;
   delegationId?: string | null;
   disciplineId?: string | null;
+  userType?: string | null;
 };
+
+type PremiacionAwarderForm = { athleteId: string; role: string };
+type PremiacionForm = {
+  enabled: boolean;
+  id?: string;
+  scheduledAt: string;
+  venueId: string;
+  venueName: string;
+  locationDetail: string;
+  notes: string;
+  awarders: PremiacionAwarderForm[];
+};
+const EMPTY_PREMIACION: PremiacionForm = {
+  enabled: false,
+  scheduledAt: "",
+  venueId: "",
+  venueName: "",
+  locationDetail: "",
+  notes: "",
+  awarders: [],
+};
+const PREMIACION_ROLES = [
+  { value: "GOLD", label: "Oro" },
+  { value: "SILVER", label: "Plata" },
+  { value: "BRONZE", label: "Bronce" },
+  { value: "AUTHORITY", label: "Autoridad" },
+  { value: "AWARDER", label: "Premiador" },
+];
 
 type QuotaState = Record<string, string>;
 
@@ -180,6 +210,11 @@ export default function DeportesPage() {
   const [calMonthCursor, setCalMonthCursor] = useState(() => { const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); return d; });
   const [calSelectedDay, setCalSelectedDay] = useState(() => new Date());
   const [pruebaForm, setPruebaForm] = useState(EMPTY_PRUEBA);
+  const [premiacion, setPremiacion] = useState<PremiacionForm>(EMPTY_PREMIACION);
+  const vipAthletes = useMemo(
+    () => (athletes || []).filter((a) => String(a.userType ?? "").toUpperCase() === "VIP"),
+    [athletes],
+  );
   const [pruebaSaving, setPruebaSaving] = useState(false);
   const [pruebaError, setPruebaError] = useState<string | null>(null);
 
@@ -377,8 +412,39 @@ export default function DeportesPage() {
 
   const openAddPrueba = (parentId: string) => {
     setPruebaForm(EMPTY_PRUEBA);
+    setPremiacion(EMPTY_PREMIACION);
     setPruebaError(null);
     setPruebaModal({ parentId });
+  };
+
+  const loadPremiacionForDiscipline = async (disciplineId: string) => {
+    try {
+      const existing = await apiFetch<any>(`/premiaciones/by-discipline/${disciplineId}`);
+      if (!existing) {
+        setPremiacion(EMPTY_PREMIACION);
+        return;
+      }
+      const iso = existing.scheduled_at;
+      const dt = iso ? new Date(iso) : null;
+      const scheduledAtLocal = dt
+        ? `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}T${String(dt.getHours()).padStart(2, "0")}:${String(dt.getMinutes()).padStart(2, "0")}`
+        : "";
+      setPremiacion({
+        enabled: true,
+        id: existing.id,
+        scheduledAt: scheduledAtLocal,
+        venueId: existing.venue_id || "",
+        venueName: existing.venue_name || "",
+        locationDetail: existing.location_detail || "",
+        notes: existing.notes || "",
+        awarders: (existing.awarders || []).map((a: any) => ({
+          athleteId: a.athlete_id,
+          role: a.role,
+        })),
+      });
+    } catch {
+      setPremiacion(EMPTY_PREMIACION);
+    }
   };
 
   const openEditPrueba = (d: Discipline) => {
@@ -393,8 +459,50 @@ export default function DeportesPage() {
       rangeEnd: "",
       rangeTime: "",
     });
+    setPremiacion(EMPTY_PREMIACION);
+    void loadPremiacionForDiscipline(d.id);
     setPruebaError(null);
     setPruebaModal({ editing: d, parentId: d.parentId! });
+  };
+
+  const savePremiacionForDiscipline = async (disciplineId: string) => {
+    if (!premiacion.enabled) {
+      if (premiacion.id) {
+        try { await apiFetch(`/premiaciones/${premiacion.id}`, { method: "DELETE" }); } catch {}
+      }
+      return;
+    }
+    const defaultScheduledAt = pruebaForm.scheduledAt
+      ? new Date(pruebaForm.scheduledAt).toISOString()
+      : new Date().toISOString();
+    const payload = {
+      disciplineId,
+      eventId: selectedEventId || undefined,
+      title: pruebaForm.name.trim() || "Premiación",
+      discipline: undefined,
+      scheduledAt: premiacion.scheduledAt
+        ? new Date(premiacion.scheduledAt).toISOString()
+        : defaultScheduledAt,
+      venueName: premiacion.venueName || pruebaForm.venueName || undefined,
+      venueId: premiacion.venueId || undefined,
+      locationDetail: premiacion.locationDetail || undefined,
+      notes: premiacion.notes || undefined,
+      status: "SCHEDULED",
+      awarders: premiacion.awarders.filter((a) => a.athleteId),
+    };
+    if (premiacion.id) {
+      await apiFetch(`/premiaciones/${premiacion.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    } else {
+      await apiFetch(`/premiaciones`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    }
   };
 
   const savePrueba = async () => {
@@ -443,18 +551,24 @@ export default function DeportesPage() {
           scheduledAt: pruebaForm.scheduledAt ? new Date(pruebaForm.scheduledAt).toISOString() : null,
           venueName: pruebaForm.venueName || null,
         };
+        let disciplineId: string | null = null;
         if (pruebaModal?.editing) {
           await apiFetch(`/disciplines/${pruebaModal.editing.id}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body),
           });
+          disciplineId = pruebaModal.editing.id;
         } else {
-          await apiFetch("/disciplines", {
+          const created = await apiFetch<{ id: string }>("/disciplines", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body),
           });
+          disciplineId = created?.id ?? null;
+        }
+        if (disciplineId) {
+          await savePremiacionForDiscipline(disciplineId);
         }
         setPruebaModal(null);
         await load();
@@ -956,7 +1070,7 @@ export default function DeportesPage() {
       {/* ── Prueba modal */}
       {pruebaModal && (
         <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(15,23,42,0.4)", backdropFilter: "blur(4px)", padding: "16px" }}>
-          <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "20px", padding: "24px", width: "100%", maxWidth: "520px", boxShadow: "0 8px 40px rgba(15,23,42,0.15)" }}>
+          <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "20px", padding: "24px", width: "100%", maxWidth: "560px", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 8px 40px rgba(15,23,42,0.15)" }}>
             <h2 style={{ fontWeight: 700, fontSize: "18px", color: "#0f172a", marginBottom: "4px" }}>
               {pruebaModal.editing ? t("Editar prueba") : t("Nueva prueba")}
             </h2>
@@ -1044,6 +1158,100 @@ export default function DeportesPage() {
                   })()}
                 </select>
               </label>
+
+              {/* ───── Ceremonia de premiación ───── */}
+              <div style={{ borderTop: "1px dashed #e2e8f0", paddingTop: "12px", marginTop: "4px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <button
+                    type="button"
+                    onClick={() => setPremiacion(p => ({ ...p, enabled: !p.enabled }))}
+                    style={{ width: 38, height: 20, borderRadius: 10, border: "none", cursor: "pointer", position: "relative", background: premiacion.enabled ? "#21D0B3" : "#cbd5e1", transition: "background 0.2s" }}
+                  >
+                    <span style={{ position: "absolute", top: 2, left: premiacion.enabled ? 20 : 2, width: 16, height: 16, borderRadius: 8, background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.2)", transition: "left 0.2s" }} />
+                  </button>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>{t("Esta prueba tiene ceremonia de premiación")}</span>
+                </div>
+
+                {premiacion.enabled && (
+                  <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: "12px", display: "flex", flexDirection: "column", gap: 10 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                      <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        <span style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("Fecha y hora ceremonia")}</span>
+                        <input style={fieldStyle} type="datetime-local" value={premiacion.scheduledAt} onChange={e => setPremiacion(p => ({ ...p, scheduledAt: e.target.value }))} />
+                      </label>
+                      <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        <span style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("Sede")}</span>
+                        <select style={fieldStyle} value={premiacion.venueName} onChange={e => setPremiacion(p => ({ ...p, venueName: e.target.value }))}>
+                          <option value="">{t("Usa la misma de la prueba")}</option>
+                          {venueOptions.map((v) => (
+                            <option key={v.id} value={v.name}>{v.name}</option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                    <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      <span style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("Ubicación específica")}</span>
+                      <input style={fieldStyle} placeholder={t("Zona central — Tarima 1") as string} value={premiacion.locationDetail} onChange={e => setPremiacion(p => ({ ...p, locationDetail: e.target.value }))} />
+                    </label>
+                    <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      <span style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("Notas")}</span>
+                      <textarea rows={2} style={{ ...fieldStyle, resize: "none" }} placeholder={t("Instrucciones para los premiadores") as string} value={premiacion.notes} onChange={e => setPremiacion(p => ({ ...p, notes: e.target.value }))} />
+                    </label>
+
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#64748b" }}>{t("Equipo de premiadores (VIP)")}</span>
+                        <button
+                          type="button"
+                          onClick={() => setPremiacion(p => ({ ...p, awarders: [...p.awarders, { athleteId: "", role: "AWARDER" }] }))}
+                          style={{ fontSize: 11, padding: "4px 10px", borderRadius: 8, border: "1px solid #21D0B3", background: "rgba(33,208,179,0.08)", color: "#14b8a6", cursor: "pointer", fontWeight: 700 }}
+                        >
+                          + {t("Agregar VIP")}
+                        </button>
+                      </div>
+                      {premiacion.awarders.length === 0 && (
+                        <p style={{ fontSize: 11, color: "#94a3b8", padding: "8px", textAlign: "center", border: "1px dashed #e2e8f0", borderRadius: 8 }}>
+                          {t("Sin VIPs asignados. Agrega al menos uno.")}
+                        </p>
+                      )}
+                      {premiacion.awarders.map((a, i) => (
+                        <div key={i} style={{ display: "grid", gridTemplateColumns: "2fr 1fr auto", gap: 6, marginBottom: 4 }}>
+                          <select
+                            style={fieldStyle}
+                            value={a.athleteId}
+                            onChange={e => setPremiacion(p => {
+                              const next = [...p.awarders];
+                              next[i] = { ...next[i], athleteId: e.target.value };
+                              return { ...p, awarders: next };
+                            })}
+                          >
+                            <option value="">— VIP —</option>
+                            {vipAthletes.map(x => (
+                              <option key={x.id} value={x.id}>{x.fullName || x.id.slice(0, 8)}</option>
+                            ))}
+                          </select>
+                          <select
+                            style={fieldStyle}
+                            value={a.role}
+                            onChange={e => setPremiacion(p => {
+                              const next = [...p.awarders];
+                              next[i] = { ...next[i], role: e.target.value };
+                              return { ...p, awarders: next };
+                            })}
+                          >
+                            {PREMIACION_ROLES.map(r => (<option key={r.value} value={r.value}>{r.label}</option>))}
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() => setPremiacion(p => ({ ...p, awarders: p.awarders.filter((_, j) => j !== i) }))}
+                            style={{ padding: "6px 10px", border: "none", background: "#fee2e2", color: "#ef4444", borderRadius: 6, cursor: "pointer", fontSize: 12 }}
+                          >×</button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {pruebaError && <p style={{ marginTop: "12px", fontSize: "13px", color: "#ef4444" }}>{pruebaError}</p>}

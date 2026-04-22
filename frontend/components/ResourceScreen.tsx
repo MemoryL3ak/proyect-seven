@@ -1499,54 +1499,14 @@ export default function ResourceScreen({
       let finalPayload = { ...payload };
       if (config.endpoint === "/events") {
         const previousConfig = readEventAndConfig((payload as any).config).raw;
-        const andExpectedByDisciplineDelegation: Record<string, Record<string, number>> = {};
-        Object.entries(eventCapacityMatrix).forEach(([disciplineId, row]) => {
-          const nextRow: Record<string, number> = {};
-          Object.entries(row || {}).forEach(([delegationId, raw]) => {
-            const n = Number(raw);
-            if (Number.isFinite(n) && n >= 0) nextRow[delegationId] = n;
-          });
-          if (Object.keys(nextRow).length > 0) {
-            andExpectedByDisciplineDelegation[disciplineId] = nextRow;
-          }
-        });
-        const andExpectedByDiscipline: Record<string, number> = {};
-        Object.entries(andExpectedByDisciplineDelegation).forEach(([disciplineId, row]) => {
-          const total = Object.values(row).reduce((sum, n) => sum + Number(n || 0), 0);
-          if (Number.isFinite(total) && total >= 0) andExpectedByDiscipline[disciplineId] = total;
-        });
-        Object.entries(eventCapacityTotals).forEach(([disciplineId, raw]) => {
-          if (andExpectedByDiscipline[disciplineId] !== undefined) return;
-          const n = Number(raw);
-          if (Number.isFinite(n) && n >= 0) andExpectedByDiscipline[disciplineId] = n;
-        });
 
         const disciplineCategory = String(form.disciplineCategory ?? "").trim();
         const disciplineGender = String(form.disciplineGender ?? "").trim();
 
+        // Los cupos (expectedCapacities) ya no se registran desde aquí —
+        // se gestionan exclusivamente desde el módulo Deportes.
         finalPayload = {
           ...finalPayload,
-          expectedCapacities: Object.entries(andExpectedByDisciplineDelegation).flatMap(
-            ([disciplineId, row]) =>
-              Object.entries(row)
-                .map(([delegationKey, expectedCount]) => {
-                  const delegationOption = delegationOptions.find(
-                    (option) => String(option.value) === String(delegationKey),
-                  );
-                  const resolvedDelegationCode = String(
-                    delegationOption?.label ?? delegationKey,
-                  )
-                    .trim()
-                    .toUpperCase();
-
-                  return {
-                    disciplineId,
-                    delegationCode: resolvedDelegationCode,
-                    expectedCount: Number(expectedCount) || 0,
-                  };
-                })
-                .filter((item) => item.delegationCode.length === 3),
-          ),
           config: {
             ...previousConfig,
             ...(disciplineCategory
@@ -1554,9 +1514,7 @@ export default function ResourceScreen({
               : { disciplineCategory: undefined }),
             ...(disciplineGender
               ? { disciplineGender }
-              : { disciplineGender: undefined }),
-            andExpectedByDiscipline,
-            andExpectedByDisciplineDelegation
+              : { disciplineGender: undefined })
           }
         };
         if (finalPayload.config && typeof finalPayload.config === "object") {
@@ -3282,15 +3240,12 @@ export default function ResourceScreen({
                           {t("Configuración deportiva")}
                         </p>
                         <p className="mt-1 text-sm" style={{color:"var(--text-muted)"}}>
-                          {t("Define disciplinas del evento y su capacidad esperada de registro AND.")}
+                          {t("Define las disciplinas que participarán en el evento. Los cupos por delegación se gestionan desde el módulo Deportes.")}
                         </p>
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <span style={{ borderRadius: "99px", border: "1px solid var(--border)", background: "var(--elevated)", padding: "2px 12px", fontSize: "11px", color: "var(--text-muted)" }}>
                           {selectedDisciplineIds.length} disciplinas
-                        </span>
-                        <span style={{ borderRadius: "99px", border: "1px solid rgba(33,208,179,0.35)", background: "rgba(33,208,179,0.1)", padding: "2px 12px", fontSize: "11px", fontWeight: 700, color: "var(--brand)" }}>
-                          Total esperado {totalExpected}
                         </span>
                       </div>
                     </div>
@@ -3299,7 +3254,7 @@ export default function ResourceScreen({
                       {renderKeys(["disciplineCategory", "disciplineGender"])}
                     </div>
 
-                    <div className="mt-4 grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+                    <div className="mt-4">
                       <div style={{ borderRadius: "12px", border: "1px solid var(--border)", background: "var(--surface)", borderTop: "2px solid var(--brand)", padding: "16px" }}>
                         <div className="mb-3">
                           <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--brand)", marginBottom: "3px" }}>
@@ -3310,119 +3265,9 @@ export default function ResourceScreen({
                           </p>
                         </div>
                         {renderKeys(["disciplineIds"])}
-                      </div>
-
-                      <div style={{ borderRadius: "12px", border: "1px solid var(--border)", background: "var(--surface)", borderTop: "2px solid #1FCDFF", padding: "16px" }}>
-                        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                          <div>
-                            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#1FCDFF", marginBottom: "3px" }}>Planificación AND</p>
-                            <p className="text-sm font-semibold" style={{ color: "var(--text)" }}>Capacidad esperada por delegación y disciplina</p>
-                          </div>
-                          <span style={{ borderRadius: "99px", border: "1px solid rgba(31,205,255,0.35)", background: "rgba(31,205,255,0.1)", padding: "2px 12px", fontSize: "11px", fontWeight: 700, color: "#1FCDFF" }}>
-                            Total esperado {totalExpected}
-                          </span>
-                        </div>
-
-                        {selectedDisciplineIds.length === 0 ? (
-                          <div style={{ borderRadius: "8px", border: "1px dashed var(--border-strong)", background: "transparent", padding: "16px" }}>
-                            <p className="text-xs" style={{color:"var(--text-muted)"}}>
-                              {t("Selecciona disciplinas para definir la capacidad esperada AND.")}
-                            </p>
-                          </div>
-                        ) : (
-                          <div className="space-y-3">
-                            <div className="grid gap-2 md:grid-cols-[1fr_1fr_140px_auto]">
-                              <StyledSelect
-                                value={plannerDisciplineId}
-                                onChange={(e) => setEventPlannerDisciplineId(e.target.value)}
-                              >
-                                <option value="">{t("Selecciona disciplina")}</option>
-                                {selectedDisciplineOptions.map((option) => (
-                                  <option key={option.value} value={option.value}>
-                                    {String(option.label || option.value)}
-                                  </option>
-                                ))}
-                              </StyledSelect>
-                              <StyledSelect
-                                value={eventPlannerDelegationCode}
-                                onChange={(e) => setEventPlannerDelegationCode(e.target.value)}
-                              >
-                                {DELEGATION_COUNTRY_OPTIONS.map((option) => (
-                                  <option key={option.value} value={option.value}>
-                                    {option.value} · {option.label}
-                                  </option>
-                                ))}
-                              </StyledSelect>
-                              <input
-                                className="input text-right"
-                                type="number"
-                                min={0}
-                                step={1}
-                                placeholder="Capacidad"
-                                value={eventPlannerExpectedValue}
-                                onChange={(e) => setEventPlannerExpectedValue(e.target.value)}
-                              />
-                              <button
-                                type="button"
-                                className="btn btn-primary"
-                                onClick={() => {
-                                  if (!plannerDisciplineOption) return;
-                                  const normalized = eventPlannerExpectedValue.trim();
-                                  const n = Number(normalized);
-                                  if (!normalized || !Number.isFinite(n) || n < 0) return;
-                                  setEventCapacityMatrix((prev) => ({
-                                    ...prev,
-                                    [plannerDisciplineOption.value]: {
-                                      ...(prev[plannerDisciplineOption.value] || {}),
-                                      [eventPlannerDelegationCode]: String(Math.round(n)),
-                                    },
-                                  }));
-                                  setEventPlannerExpectedValue("");
-                                }}
-                                disabled={!plannerDisciplineOption}
-                              >
-                                {t("Asignar")}
-                              </button>
-                            </div>
-
-                            {plannerDisciplineOption ? (
-                              <div style={{ borderRadius: "10px", border: "1px solid var(--border)", background: "var(--surface)", padding: "12px" }}>
-                                <p className="text-xs uppercase tracking-[0.16em]" style={{color:"var(--text-muted)"}}>
-                                  {t("Detalle disciplina")} · {String(plannerDisciplineOption.label || plannerDisciplineOption.value)}
-                                </p>
-                                <div className="mt-2 max-h-52 overflow-auto space-y-1.5">
-                                  {DELEGATION_COUNTRY_OPTIONS.map((country) => {
-                                    const value = plannerRow[country.value];
-                                    if (value === undefined || value === "") return null;
-                                    return (
-                                      <div key={`${plannerDisciplineOption.value}-${country.value}`} className="flex items-center justify-between px-2.5 py-1.5 text-sm" style={{ borderRadius: "6px", border: "1px solid var(--border)", background: "var(--elevated)" }}>
-                                        <span style={{color:"var(--text)"}}>{country.value} · {country.label}</span>
-                                        <span className="font-semibold" style={{ color: "var(--brand)" }}>{value}</span>
-                                      </div>
-                                    );
-                                  })}
-                                  {Object.keys(plannerRow).length === 0 ? (
-                                    <p className="text-xs" style={{color:"var(--text-muted)"}}>{t("Sin capacidad asignada para esta disciplina.")}</p>
-                                  ) : null}
-                                </div>
-                              </div>
-                            ) : null}
-
-                            <div style={{ borderRadius: "10px", border: "1px solid var(--border)", background: "var(--surface)", padding: "12px" }}>
-                              <p className="text-xs uppercase tracking-[0.16em]" style={{color:"var(--text-muted)"}}>{t("Resumen por disciplina")}</p>
-                              <div className="mt-2 space-y-1.5">
-                                {selectedDisciplineOptions.map((option) => (
-                                  <div key={`sum-${option.value}`} className="flex items-center justify-between text-sm">
-                                    <span style={{color:"var(--text)"}}>{String(option.label || option.value)}</span>
-                                    <span className="font-semibold" style={{ color: "var(--brand)" }}>
-                                      {expectedByDisciplineFromMatrix[option.value] ?? 0}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        )}
+                        <p className="mt-3 text-xs" style={{ color: "var(--text-muted)", background: "var(--elevated)", padding: "8px 12px", borderRadius: "8px" }}>
+                          {t("Los cupos por delegación y disciplina se configuran desde el módulo Deportes, al editar cada prueba.")}
+                        </p>
                       </div>
                     </div>
                   </section>

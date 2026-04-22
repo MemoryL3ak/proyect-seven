@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@clregions/data": "^1.0.0",
+    "@supabase/supabase-js": "^2.103.3",
     "@types/leaflet": "^1.9.21",
     "clsx": "^2.1.1",
     "html5-qrcode": "^2.3.8",

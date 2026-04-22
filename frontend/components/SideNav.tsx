@@ -43,8 +43,7 @@ const navSections: NavSection[] = [
         items: [
           { href: "/operations/vehicle-positions", label: "Tracking de Viajes", icon: "pin" },
           { href: "/operations/trips", label: "Viajes", icon: "route" },
-          { href: "/operations/driver-heatmap", label: "Panel Conductores", icon: "driver" },
-          { href: "/scanner", label: "Escáner QR", icon: "scan" }
+          { href: "/operations/driver-heatmap", label: "Panel Conductores", icon: "driver" }
         ]
       },
       {
@@ -72,6 +71,12 @@ const navSections: NavSection[] = [
       {
         title: "Salud", icon: "health-cross",
         items: [{ href: "/health", label: "Salud", icon: "health-cross" }]
+      },
+      {
+        title: "Asistencia", icon: "portal",
+        items: [
+          { href: "/operations/support-chats", label: "Centro de Incidencias", icon: "portal" }
+        ]
       }
     ]
   },
@@ -85,7 +90,8 @@ const navSections: NavSection[] = [
     items: [
       { href: "/portal/user", label: "Portal de usuario", icon: "athlete" },
       { href: "/portal/conductor", label: "Portal Conductor", icon: "driver" },
-      { href: "/portal/vehicle-request", label: "Solicitud de vehículo", icon: "route" }
+      { href: "/portal/vehicle-request", label: "Solicitud de vehículo", icon: "route" },
+      { href: "/portal/access-control", label: "Control de Acceso", icon: "scan" }
     ]
   },
   {
@@ -177,7 +183,6 @@ const HREF_TO_MODULE: Record<string, string> = {
   "/operations/vehicle-positions": "operacion.tracking",
   "/operations/trips": "operacion.viajes",
   "/operations/driver-heatmap": "operacion.viajes",
-  "/scanner": "operacion.scanner",
   "/operations/hotel-tracking": "hoteleria.tracking",
   "/masters/accommodations": "hoteleria.hoteles",
   "/masters/hotel-rooms": "hoteleria.habitaciones",
@@ -192,6 +197,7 @@ const HREF_TO_MODULE: Record<string, string> = {
   "/operations/food/almuerzos": "alimentacion.general",
   "/operations/food/lugares": "alimentacion.general",
   "/health": "salud",
+  "/operations/support-chats": "_always",
   "/clientes": "clientes",
   "/deportes": "deportes",
   "/sede": "sede",
@@ -200,6 +206,7 @@ const HREF_TO_MODULE: Record<string, string> = {
   "/portal/user": "portales",
   "/portal/conductor": "portales",
   "/portal/vehicle-request": "portales",
+  "/portal/access-control": "portales",
   "/admin/usuarios": "admin.usuarios",
   "/ayuda": "_always",
 };

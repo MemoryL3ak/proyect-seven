@@ -7,6 +7,7 @@ import { filterValidatedAthletes } from "@/lib/athletes";
 import { useI18n } from "@/lib/i18n";
 import NotificationBell, { useNotifications } from "@/components/NotificationBell";
 import TripChat from "@/components/TripChat";
+import AssistanceChat from "@/components/AssistanceChat";
 import QRCode from "qrcode";
 import { buildCredentialHtml } from "@/lib/credential-template";
 
@@ -1874,6 +1875,15 @@ export default function DriverPortalPage() {
           senderName={driverProfile.fullName || "Conductor"}
           tripStatus={trips.find((t) => t.id === trackingTripId)?.status}
           onNewMessage={(name, content) => driverNotify.push(`${name}: ${content.slice(0, 80)}`, "💬")}
+        />
+      )}
+
+      {/* ── Asistencia operativa (agente) ── */}
+      {driverProfile && (
+        <AssistanceChat
+          originType="driver"
+          originId={driverProfile.id}
+          originName={driverProfile.fullName || "Conductor"}
         />
       )}
 

@@ -7,6 +7,7 @@ import { useI18n } from "@/lib/i18n";
 import TripMap from "@/components/TripMap";
 import NotificationBell, { useNotifications } from "@/components/NotificationBell";
 import TripChat from "@/components/TripChat";
+import AssistanceChat from "@/components/AssistanceChat";
 import { buildCredentialHtml } from "@/lib/credential-template";
 import QRCode from "qrcode";
 
@@ -1903,6 +1904,15 @@ export default function UserPortalPage() {
             senderName={athlete.fullName}
             tripStatus={trip.status}
             onNewMessage={(name, content) => notify.push(`${name}: ${content.slice(0, 80)}`, "💬")}
+          />
+        )}
+
+        {athlete && (
+          <AssistanceChat
+            originType="athlete"
+            originId={athlete.id}
+            originName={athlete.fullName || "Participante"}
+            eventId={athlete.eventId || null}
           />
         )}
 
