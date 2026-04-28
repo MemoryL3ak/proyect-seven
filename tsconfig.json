@@ -25,5 +25,5 @@
       "@/*": ["./src/*"]
     }
   },
-  "exclude": ["frontend", "mobile"]
+  "exclude": ["frontend", "mobile", "seven-arena-app"]
 }

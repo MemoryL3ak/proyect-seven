@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import PlacesAutocompleteInput from "@/components/PlacesAutocompleteInput";
 import { apiFetch } from "@/lib/api";
+import { getMobileSession, mobileAwareLogout } from "@/lib/mobile-auth";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import NotificationBell, { useNotifications } from "@/components/NotificationBell";
 import TripChat from "@/components/TripChat";
@@ -327,11 +328,20 @@ export default function VehicleRequestPortalPage() {
     }
   };
 
+  const [bootCheckDone, setBootCheckDone] = useState(false);
+
   useEffect(() => {
     if (autoLoginRef.current) return;
     const params = new URLSearchParams(window.location.search);
-    const athleteId = params.get("athleteId");
-    if (!athleteId) return;
+    const queryAthleteId = params.get("athleteId");
+    const session = getMobileSession();
+    const sessionAthleteId =
+      session?.kind === "athlete" ? session.athleteId : null;
+    const athleteId = queryAthleteId || sessionAthleteId;
+    if (!athleteId) {
+      setBootCheckDone(true);
+      return;
+    }
     autoLoginRef.current = true;
     (async () => {
       setLoading(true);
@@ -342,7 +352,10 @@ export default function VehicleRequestPortalPage() {
           setActiveTab("request");
           await loadPortal(data);
         }
-      } catch {} finally { setLoading(false); }
+      } catch {} finally {
+        setLoading(false);
+        setBootCheckDone(true);
+      }
     })();
   }, []);
 
@@ -366,19 +379,7 @@ export default function VehicleRequestPortalPage() {
   };
 
   const logout = () => {
-    setAthlete(null);
-    setTrips([]);
-    setVenues([]);
-    setDrivers({});
-    setVehicles({});
-    setSelectedVenueId("");
-    setRequestedTime("");
-    setPassengerCount("1");
-    setNotes("");
-    setEditingTripId(null);
-    setMessage(null);
-    setError(null);
-    setUserCode("");
+    mobileAwareLogout();
   };
 
   const resetRequestForm = () => {
@@ -692,7 +693,13 @@ export default function VehicleRequestPortalPage() {
 
   return (
     <>
-      {!athlete && (
+      {!athlete && !bootCheckDone && (
+        <div style={{ minHeight: "100vh", background: "#020c18", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ width: 36, height: 36, borderRadius: "50%", border: "3px solid rgba(33,208,179,0.25)", borderTopColor: "#21D0B3", animation: "pvr-spin 0.8s linear infinite" }} />
+          <style>{`@keyframes pvr-spin{to{transform:rotate(360deg)}}`}</style>
+        </div>
+      )}
+      {!athlete && bootCheckDone && (
         <div className="flex flex-col lg:flex-row" style={{ minHeight: "100vh", background: "#020c18", position: "relative", overflow: "hidden" }}>
           <style>{`
             @keyframes pvr-f1{0%,100%{transform:translateY(0px) scale(1)}50%{transform:translateY(-30px) translateX(10px) scale(1.05)}}

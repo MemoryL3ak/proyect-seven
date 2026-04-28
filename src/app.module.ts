@@ -29,6 +29,7 @@ import { HotelExtraReservationsModule } from './hotel-extra-reservations/hotel-e
 import { FoodLocationsModule } from './food-locations/food-locations.module';
 import { FoodMenusModule } from './food-menus/food-menus.module';
 import { ProviderParticipantsModule } from './provider-participants/provider-participants.module';
+import { MobileAuthModule } from './mobile-auth/mobile-auth.module';
 
 @Module({
   imports: [
@@ -38,13 +39,20 @@ import { ProviderParticipantsModule } from './provider-participants/provider-par
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        url: configService.get<string>('DATABASE_URL'),
-        entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: configService.get<string>('DB_SYNCHRONIZE') === 'true',
-        migrations: [__dirname + '/migrations/*{.ts,.js}'],
-      }),
+      useFactory: (configService: ConfigService) => {
+        const url = configService.get<string>('DATABASE_URL') ?? '';
+        const needsSsl =
+          configService.get<string>('DB_SSL') === 'true' ||
+          /supabase\.(co|com)/.test(url);
+        return {
+          type: 'postgres',
+          url,
+          entities: [__dirname + '/**/*.entity{.ts,.js}'],
+          synchronize: configService.get<string>('DB_SYNCHRONIZE') === 'true',
+          migrations: [__dirname + '/migrations/*{.ts,.js}'],
+          ssl: needsSsl ? { rejectUnauthorized: false } : false,
+        };
+      },
     }),
     AuthModule,
     TransportsModule,
@@ -72,6 +80,7 @@ import { ProviderParticipantsModule } from './provider-participants/provider-par
     SportsCalendarModule,
     AccreditationsModule,
     VenuesModule,
+    MobileAuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

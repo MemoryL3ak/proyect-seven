@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { apiFetch } from "@/lib/api";
+import { getMobileSession, mobileAwareLogout } from "@/lib/mobile-auth";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { useI18n } from "@/lib/i18n";
 import NotificationBell, { useNotifications } from "@/components/NotificationBell";
@@ -162,8 +163,9 @@ export default function DriverPortalPage() {
   const ratedTripIds = useRef<Set<string>>(new Set());
   const tripsRef = useRef<Trip[]>([]);
 
-  const loadTrips = async () => {
-    if (!driverId) return;
+  const loadTrips = async (override?: string) => {
+    const codeInput = (override ?? driverId).trim();
+    if (!codeInput) return;
     setLoading(true);
     setError(null);
     setIdError(null);
@@ -203,7 +205,7 @@ export default function DriverPortalPage() {
 
       const allDrivers: Driver[] = [...(driversData || []), ...participantDrivers];
 
-      const normalizedInput = driverId.trim().toLowerCase();
+      const normalizedInput = codeInput.toLowerCase();
       const driverMatch = allDrivers.find((driver) => {
         const id = driver.id ?? "";
         const userId = driver.userId ?? "";
@@ -425,6 +427,26 @@ export default function DriverPortalPage() {
   const getTripById = (tripId: string | null) =>
     tripId ? trips.find((trip) => trip.id === tripId) ?? null : null;
 
+  const [bootCheckDone, setBootCheckDone] = useState(false);
+
+  // Mobile-app auto-login: skip code gate when a mobile session is present.
+  // Hide the gate UI while we're checking to avoid the flash before the dashboard renders.
+  useEffect(() => {
+    if (driverProfile) {
+      setBootCheckDone(true);
+      return;
+    }
+    const session = getMobileSession();
+    if (session?.kind === "driver" && session.driverId) {
+      const code = session.driverId.slice(-6);
+      setDriverId(code);
+      void loadTrips(code).finally(() => setBootCheckDone(true));
+    } else {
+      setBootCheckDone(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (!trackingTripId) return;
     const trip = getTripById(trackingTripId);
@@ -631,7 +653,13 @@ export default function DriverPortalPage() {
 
   return (
     <>
-      {!driverProfile && (
+      {!driverProfile && !bootCheckDone && (
+        <div style={{ minHeight: "100vh", background: "#020c18", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ width: 36, height: 36, borderRadius: "50%", border: "3px solid rgba(33,208,179,0.25)", borderTopColor: "#21D0B3", animation: "pc-spin 0.8s linear infinite" }} />
+          <style>{`@keyframes pc-spin{to{transform:rotate(360deg)}}`}</style>
+        </div>
+      )}
+      {!driverProfile && bootCheckDone && (
         <div className="flex flex-col lg:flex-row" style={{ minHeight: "100vh", background: "#020c18", position: "relative", overflow: "hidden" }}>
           <style>{`
             @keyframes pc-f1{0%,100%{transform:translateY(0px) scale(1)}50%{transform:translateY(-30px) translateX(10px) scale(1.05)}}
@@ -710,7 +738,7 @@ export default function DriverPortalPage() {
                     style={{ width: "100%", padding: "16px", borderRadius: "14px", border: "1px solid rgba(33,208,179,0.2)", background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.9)", fontSize: "15px", outline: "none", fontWeight: 500, boxSizing: "border-box" }}
                   />
                 </div>
-                <button type="button" onClick={loadTrips} disabled={loading}
+                <button type="button" onClick={() => loadTrips()} disabled={loading}
                   style={{ width: "100%", padding: "17px", borderRadius: "14px", border: "none", background: "linear-gradient(135deg,#34F3C6 0%,#21D0B3 50%,#15B09A 100%)", color: "#0d1b3e", fontSize: "16px", fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1, letterSpacing: "0.03em", boxShadow: "0 4px 20px rgba(33,208,179,0.35)" }}>
                   {loading ? t("Cargando...") : t("Ver mis viajes")}
                 </button>
@@ -809,13 +837,13 @@ export default function DriverPortalPage() {
                   onMarkAllRead={driverNotify.markAllRead}
                   onClear={driverNotify.clear}
                 />
-                <button type="button" onClick={loadTrips} disabled={loading}
+                <button type="button" onClick={() => loadTrips()} disabled={loading}
                   style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",cursor:"pointer",flexShrink:0,opacity:loading?0.5:1 }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
                   </svg>
                 </button>
-                <button type="button" onClick={() => { setDriverProfile(null); setDriverId(""); setTrips([]); }}
+                <button type="button" onClick={() => mobileAwareLogout()}
                   style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(255,255,255,0.15)",background:"rgba(255,255,255,0.08)",cursor:"pointer",flexShrink:0 }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>

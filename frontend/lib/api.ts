@@ -197,3 +197,60 @@ export async function changeTemporaryPassword(
     body: JSON.stringify({ email, temporaryPassword, newPassword }),
   });
 }
+
+export type MobileLoginPayload =
+  | {
+      kind: "admin";
+      user: StoredAuthUser;
+      requiresPasswordChange: boolean;
+    }
+  | {
+      kind: "athlete";
+      athleteId: string;
+      profile: { id: string; fullName: string; email: string | null };
+    }
+  | {
+      kind: "driver";
+      driverId: string;
+      profile: { id: string; fullName: string; email: string | null };
+    };
+
+export async function mobileLogin(email: string, secret: string): Promise<MobileLoginPayload> {
+  const { response, base } = await fetchWithBaseFallback("/m/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    cache: "no-store",
+    body: JSON.stringify({ email, secret }),
+  });
+
+  if (!response.ok) {
+    const contentType = response.headers.get("content-type") || "";
+    if (contentType.includes("text/html")) {
+      throw new Error(`Endpoint de login móvil no encontrado en API (${base}/m/auth/login)`);
+    }
+    const text = await response.text();
+    let message = text;
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed?.message) {
+        message = Array.isArray(parsed.message) ? parsed.message.join(", ") : String(parsed.message);
+      }
+    } catch {
+      /* not JSON */
+    }
+    throw new Error(message || `No se pudo iniciar sesión (${base}/m/auth/login)`);
+  }
+
+  const payload = (await response.json()) as MobileLoginPayload;
+
+  if (payload.kind === "admin") {
+    const accessToken = response.headers.get("Authorization")?.replace("Bearer ", "");
+    const refreshToken = response.headers.get("x-refresh-token") || undefined;
+    if (accessToken) {
+      setTokens({ accessToken, refreshToken });
+    }
+    setStoredUser(payload.user ?? null);
+  }
+
+  return payload;
+}
