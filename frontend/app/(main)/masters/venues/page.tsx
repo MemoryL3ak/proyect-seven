@@ -276,9 +276,32 @@ export default function VenuesMasterPage() {
             <label className="space-y-2 md:col-span-2">
               <span className="text-sm font-medium text-slate-700">{t("Dirección")}</span>
               <PlacesAutocompleteInput
+                key={editingId || "new"}
                 className="input"
                 value={form.address}
                 onChange={(val) => setForm((prev) => ({ ...prev, address: val }))}
+                onPlaceDetails={(details) => {
+                  // Match Google region name to our regionOptions
+                  const googleRegion = details.region || "";
+                  const matchedRegion = regionOptions.find((r) =>
+                    r.value.toLowerCase().includes(googleRegion.toLowerCase()) ||
+                    googleRegion.toLowerCase().includes(r.value.toLowerCase().replace(/^región\s+(de\s+)?/i, ""))
+                  );
+                  if (matchedRegion) {
+                    const communes = buildCommuneOptions(matchedRegion.value);
+                    const googleCommune = details.commune || details.city || "";
+                    const matchedCommune = communes.find((c) =>
+                      c.value.toLowerCase() === googleCommune.toLowerCase() ||
+                      c.value.toLowerCase().includes(googleCommune.toLowerCase()) ||
+                      googleCommune.toLowerCase().includes(c.value.toLowerCase())
+                    );
+                    setForm((prev) => ({
+                      ...prev,
+                      region: matchedRegion.value,
+                      commune: matchedCommune?.value || "",
+                    }));
+                  }
+                }}
                 placeholder={t("Ej: Avenida Grecia 1851, Ñuñoa")}
               />
             </label>

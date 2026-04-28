@@ -7,7 +7,8 @@
   | "select"
   | "multiselect"
   | "file"
-  | "places";
+  | "places"
+  | "phone";
 
 export type FieldDef = {
   key: string;
@@ -119,7 +120,7 @@ export const resources: Record<string, ResourceConfig> = {
   },
   delegations: {
     name: "AND",
-    description: "Arrival and Departure: delegación y participantes.",
+    description: "Arribos & Llegadas: delegación y participantes.",
     endpoint: "/delegations",
     tableOrder: [
       "eventId",
@@ -446,9 +447,12 @@ export const resources: Record<string, ResourceConfig> = {
         type: "select",
         required: true,
         options: [
-          { label: "Sedan/Suv", value: "SEDAN" },
-          { label: "Van", value: "VAN" },
-          { label: "Mini Bus", value: "MINI_BUS" },
+          { label: "Sedán", value: "SEDAN" },
+          { label: "SUV", value: "SUV" },
+          { label: "Van 10", value: "VAN_10" },
+          { label: "Van 15-17", value: "VAN_15" },
+          { label: "Van 19", value: "VAN_19" },
+          { label: "Minibus", value: "MINIBUS" },
           { label: "Bus", value: "BUS" }
         ]
       },
@@ -525,9 +529,12 @@ export const resources: Record<string, ResourceConfig> = {
         type: "select",
         required: true,
         options: [
-          { label: "Sedan/Suv", value: "SEDAN" },
-          { label: "Van", value: "VAN" },
-          { label: "Mini Bus", value: "MINI_BUS" },
+          { label: "Sedán", value: "SEDAN" },
+          { label: "SUV", value: "SUV" },
+          { label: "Van 10", value: "VAN_10" },
+          { label: "Van 15-17", value: "VAN_15" },
+          { label: "Van 19", value: "VAN_19" },
+          { label: "Minibus", value: "MINIBUS" },
           { label: "Bus", value: "BUS" }
         ]
       },
@@ -558,9 +565,34 @@ export const resources: Record<string, ResourceConfig> = {
     description: "Proveedores registrados para operaciones.",
     endpoint: "/providers",
     fields: [
-      { key: "name", label: "Nombre", type: "text", required: true },
+      { key: "name", label: "Nombre / Razón Social", type: "text", required: true },
+      { key: "rut", label: "RUT", type: "text" },
+      { key: "type", label: "Tipo", type: "select", options: [
+        { label: "Transporte", value: "TRANSPORTE" },
+        { label: "Alimentación", value: "ALIMENTACION" },
+        { label: "Hotelería", value: "HOTELERIA" },
+        { label: "Logística", value: "LOGISTICA" },
+        { label: "Seguridad", value: "SEGURIDAD" },
+        { label: "Producción", value: "PRODUCCION" },
+        { label: "Otro", value: "OTRO" },
+      ] },
+      { key: "subtype", label: "Subtipo", type: "text" },
+      { key: "contactName", label: "Nombre de contacto", type: "text" },
       { key: "email", label: "Correo", type: "text" },
-      { key: "rut", label: "RUT", type: "text" }
+      { key: "phone", label: "Teléfono", type: "text" },
+      { key: "address", label: "Dirección", type: "text" },
+      { key: "city", label: "Ciudad", type: "text" },
+      { key: "invoiceType", label: "Tipo factura", type: "select", options: [
+        { label: "Afecto", value: "AFECTO" },
+        { label: "Exento", value: "EXENTO" },
+        { label: "Mixto", value: "MIXTO" },
+      ] },
+      { key: "bidAmount", label: "Monto licitado ($)", type: "number" },
+      { key: "status", label: "Estado", type: "select", options: [
+        { label: "Activo", value: "ACTIVE" },
+        { label: "Inactivo", value: "INACTIVE" },
+        { label: "Suspendido", value: "SUSPENDED" },
+      ] },
     ]
   },
   venues: {
@@ -570,7 +602,7 @@ export const resources: Record<string, ResourceConfig> = {
     fields: [
       { key: "eventId", label: "Evento", type: "select", required: true, optionsSource: "events" },
       { key: "name", label: "Sede", type: "text", required: true },
-      { key: "address", label: "Dirección", type: "text", required: true },
+      { key: "address", label: "Dirección", type: "places", required: true },
       { key: "region", label: "Región", type: "text" },
       { key: "commune", label: "Comuna", type: "text" }
     ]
@@ -622,6 +654,7 @@ export const resources: Record<string, ResourceConfig> = {
       },
       { key: "disciplineId", label: "Disciplina", type: "select", optionsSource: "disciplines" },
       { key: "fullName", label: "Nombre completo", type: "text", required: true },
+      { key: "photoDataUrl", label: "Foto del participante", type: "file", transient: true },
       {
         key: "userType",
         label: "Tipo de cliente",
@@ -665,7 +698,7 @@ export const resources: Record<string, ResourceConfig> = {
       { key: "passportNumber", label: "Pasaporte", type: "text" },
       { key: "rut", label: "RUT", type: "text" },
       { key: "dateOfBirth", label: "Fecha nacimiento", type: "date" },
-      { key: "phone", label: "Teléfono", type: "text" },
+      { key: "phone", label: "Teléfono", type: "phone" },
       { key: "email", label: "Correo electrónico", type: "text" },
       {
         key: "visaRequired",
@@ -743,7 +776,7 @@ export const resources: Record<string, ResourceConfig> = {
           { label: "Magallanes", value: "MAGALLANES" }
         ]
       },
-      { key: "status", label: "Estado", type: "text", readOnly: true }
+      { key: "status", label: "Estado", type: "text", readOnly: true, formHidden: true }
     ]
   },
   hotelRooms: {
@@ -941,6 +974,19 @@ export const resources: Record<string, ResourceConfig> = {
     ],
     fields: [
       { key: "eventId", label: "Evento", type: "select", required: true, optionsSource: "events" },
+      {
+        key: "tripType",
+        label: "Tipo de servicio",
+        type: "select",
+        options: [
+          { label: "Transfer In Out", value: "TRANSFER_IN_OUT" },
+          { label: "Disposición 12 horas", value: "DISPOSICION_12H" },
+          { label: "Viaje de ida", value: "VIAJE_IDA" },
+          { label: "Viaje de regreso", value: "VIAJE_REGRESO" },
+          { label: "Viaje de ida y regreso", value: "VIAJE_IDA_REGRESO" },
+          { label: "Solicitud portal", value: "PORTAL_REQUEST" },
+        ]
+      },
       { key: "requesterAthleteId", label: "Solicitante", type: "select", optionsSource: "athletes" },
       {
         key: "destinationTypeFilter",
@@ -971,10 +1017,13 @@ export const resources: Record<string, ResourceConfig> = {
         label: "Vehículo solicitado",
         type: "select",
         options: [
-          { label: "Sedan / SUV", value: "SEDAN" },
-          { label: "Van", value: "VAN" },
-          { label: "Mini Bus", value: "MINI_BUS" },
-          { label: "Bus", value: "BUS" }
+          { label: "Sedán", value: "SEDAN" },
+          { label: "SUV", value: "SUV" },
+          { label: "Van 10", value: "VAN_10" },
+          { label: "Van 15-17", value: "VAN_15" },
+          { label: "Van 19", value: "VAN_19" },
+          { label: "Minibus", value: "MINIBUS" },
+          { label: "Bus", value: "BUS" },
         ]
       },
       { key: "passengerCount", label: "Cantidad de personas", type: "number", min: 1 },
@@ -982,17 +1031,6 @@ export const resources: Record<string, ResourceConfig> = {
       { key: "vehiclePlateDisplay", label: "Vehículo (patente)", type: "text", readOnly: true, transient: true, placeholder: "Se asigna al seleccionar conductor" },
       { key: "vehiclePlate", label: "Vehículo (Patente)", type: "text", readOnly: true, formHidden: true },
       { key: "vehicleId", label: "Vehículo", type: "select", optionsSource: "vehicles", formHidden: true },
-      {
-        key: "tripType",
-        label: "Tipo de viaje",
-        type: "select",
-        options: [
-          { label: "Solicitud portal", value: "PORTAL_REQUEST" },
-          { label: "Transfer In Out", value: "TRANSFER_IN_OUT" },
-          { label: "Disposición 12 horas", value: "DISPOSICION_12H" },
-          { label: "Viaje Ida-Vuelta", value: "IDA_VUELTA" }
-        ]
-      },
       {
         key: "clientType",
         label: "Tipo de cliente",
@@ -1011,6 +1049,26 @@ export const resources: Record<string, ResourceConfig> = {
       { key: "destination", label: "Destino", type: "places", placeholder: "Ej: Hotel Sheraton, Santiago" },
       { key: "notes", label: "Observaciones", type: "text" },
       {
+        key: "isRoundTrip",
+        label: "Ida y vuelta",
+        type: "select",
+        options: [
+          { label: "Solo ida", value: "false" },
+          { label: "Ida y vuelta", value: "true" },
+        ],
+      },
+      { key: "parentTripId", label: "Viaje padre (regreso)", type: "text", readOnly: true, formHidden: true },
+      {
+        key: "legType",
+        label: "Tramo",
+        type: "select",
+        options: [
+          { label: "Ida", value: "OUTBOUND" },
+          { label: "Regreso", value: "RETURN" },
+        ],
+        formHidden: true,
+      },
+      {
         key: "status",
         label: "Estado",
         type: "select",
@@ -1021,7 +1079,8 @@ export const resources: Record<string, ResourceConfig> = {
           { label: "En ruta", value: "EN_ROUTE" },
           { label: "Recogido", value: "PICKED_UP" },
           { label: "Dejado en hotel", value: "DROPPED_OFF" },
-          { label: "Completado", value: "COMPLETED" }
+          { label: "Completado", value: "COMPLETED" },
+          { label: "Cancelado", value: "CANCELLED" }
         ]
       },
       { key: "requestedAt", label: "Fecha solicitud", type: "datetime", formHidden: true },

@@ -214,14 +214,44 @@ export default function NotificationBell({
                 background: n.read ? "transparent" : "rgba(33,208,179,0.04)",
               }}
             >
-              <span style={{
-                fontSize: 17, flexShrink: 0,
-                width: 30, height: 30, borderRadius: 8,
-                background: "#f1f5f9",
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
-                {n.emoji}
-              </span>
+              {(() => {
+                const e = n.emoji;
+                const isError = e === "❌" || e === "error";
+                const isSuccess = e === "✅" || e === "ok" || e === "done";
+                const isStar = e === "⭐" || e === "star";
+                const isChat = e === "💬" || e === "chat";
+                const isCar = e === "🚖" || e === "🚗" || e === "car";
+                const isPin = e === "📍" || e === "pin" || e === "location";
+                const isWarning = e.includes("⚠") || e === "warning";
+                const isCamera = e === "📷" || e === "camera" || e === "photo";
+                const isCal = e === "📅" || e === "cal" || e === "calendar";
+                const bg = isError ? "rgba(239,68,68,0.08)" : isStar ? "rgba(245,158,11,0.08)" : isWarning ? "rgba(245,158,11,0.08)" : "rgba(33,208,179,0.08)";
+                return (
+                  <span style={{ flexShrink:0, width:30, height:30, borderRadius:8, background:bg, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    {isError ? (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                    ) : isSuccess ? (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+                    ) : isStar ? (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" strokeWidth="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    ) : isChat ? (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    ) : isCar ? (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                    ) : isPin ? (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    ) : isWarning ? (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    ) : isCamera ? (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    ) : isCal ? (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    ) : (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                    )}
+                  </span>
+                );
+              })()}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{
                   fontSize: 12.5, fontWeight: n.read ? 500 : 600,

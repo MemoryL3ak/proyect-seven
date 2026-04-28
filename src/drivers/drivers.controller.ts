@@ -42,6 +42,14 @@ export class DriversController {
     return this.driversService.uploadPhoto(id, payload.dataUrl);
   }
 
+  @Post(':id/document')
+  uploadDocument(
+    @Param('id') id: string,
+    @Body() payload: { key: string; dataUrl: string },
+  ) {
+    return this.driversService.uploadDocument(id, payload.key, payload.dataUrl);
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.driversService.remove(id);

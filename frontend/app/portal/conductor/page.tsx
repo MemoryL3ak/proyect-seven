@@ -8,6 +8,7 @@ import { filterValidatedAthletes } from "@/lib/athletes";
 import { useI18n } from "@/lib/i18n";
 import NotificationBell, { useNotifications } from "@/components/NotificationBell";
 import TripChat from "@/components/TripChat";
+import AssistanceChat from "@/components/AssistanceChat";
 import QRCode from "qrcode";
 import { buildCredentialHtml } from "@/lib/credential-template";
 
@@ -56,6 +57,7 @@ type Driver = {
   credentialCode?: string | null;
   accessTypes?: string[] | null;
   metadata?: Record<string, unknown> | null;
+  _isParticipant?: boolean;
 };
 
 type EventItem = { id: string; name?: string | null };
@@ -134,6 +136,7 @@ export default function DriverPortalPage() {
   const { t } = useI18n();
   const [driverId, setDriverId] = useState("");
   const [driverProfile, setDriverProfile] = useState<Driver | null>(null);
+  const [sessionChecked, setSessionChecked] = useState(false);
   const [trips, setTrips] = useState<Trip[]>([]);
   const [events, setEvents] = useState<Record<string, EventItem>>({});
   const [vehicles, setVehicles] = useState<Record<string, VehicleItem>>({});
@@ -152,20 +155,70 @@ export default function DriverPortalPage() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
   const [destinationFilter, setDestinationFilter] = useState("");
+  const [reportDateFrom, setReportDateFrom] = useState("");
+  const [reportDateTo, setReportDateTo] = useState("");
+  const [reportTypeFilter, setReportTypeFilter] = useState<string>("all");
+  const [reportRatingFilter, setReportRatingFilter] = useState<string>("all");
+  const [showReportFilters, setShowReportFilters] = useState(false);
   const [idError, setIdError] = useState<string | null>(null);
   const [pickupTrip, setPickupTrip] = useState<Trip | null>(null);
   const [pickupCode, setPickupCode] = useState("");
   const [pickupError, setPickupError] = useState<string | null>(null);
   const [trackingTripId, setTrackingTripId] = useState<string | null>(null);
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
+  const [seenTripIds, setSeenTripIds] = useState<Set<string>>(() => {
+    try { const saved = localStorage.getItem("conductor_seen_trips"); return saved ? new Set(JSON.parse(saved)) : new Set(); } catch { return new Set(); }
+  });
   const [driverPosition, setDriverPosition] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationPermission, setLocationPermission] = useState<"granted" | "prompt" | "denied" | null>(null);
+  const markTripSeen = (tripId: string) => {
+    setSeenTripIds((prev) => {
+      if (prev.has(tripId)) return prev;
+      const next = new Set(prev);
+      next.add(tripId);
+      try { localStorage.setItem("conductor_seen_trips", JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  };
   const driverNotify = useNotifications();
   const ratedTripIds = useRef<Set<string>>(new Set());
   const tripsRef = useRef<Trip[]>([]);
 
-  const loadTrips = async (override?: string) => {
-    const codeInput = (override ?? driverId).trim();
-    if (!codeInput) return;
+  // Check & monitor location permission
+  useEffect(() => {
+    if (!navigator.permissions) return;
+    navigator.permissions.query({ name: "geolocation" }).then((result) => {
+      setLocationPermission(result.state as "granted" | "prompt" | "denied");
+      result.onchange = () => setLocationPermission(result.state as "granted" | "prompt" | "denied");
+    }).catch(() => {});
+  }, []);
+
+  // Restore session on mount: prefer mobile-app session, fallback to web sessionStorage
+  useEffect(() => {
+    if (driverProfile) {
+      setSessionChecked(true);
+      return;
+    }
+    const session = getMobileSession();
+    if (session?.kind === "driver" && session.driverId) {
+      loadTrips(session.driverId).finally(() => setSessionChecked(true));
+      return;
+    }
+    try {
+      const saved = sessionStorage.getItem("portal_conductor_id");
+      if (saved) {
+        loadTrips(saved).finally(() => setSessionChecked(true));
+      } else {
+        setSessionChecked(true);
+      }
+    } catch { setSessionChecked(true); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const loadTrips = async (overrideId?: string) => {
+    const id = overrideId || driverId;
+    if (!id) return;
+    if (overrideId) setDriverId(overrideId);
     setLoading(true);
     setError(null);
     setIdError(null);
@@ -201,11 +254,12 @@ export default function DriverPortalPage() {
           status: p.status,
           providerId: p.providerId,
           metadata: p.metadata,
+          _isParticipant: true,
         }));
 
       const allDrivers: Driver[] = [...(driversData || []), ...participantDrivers];
 
-      const normalizedInput = codeInput.toLowerCase();
+      const normalizedInput = id.trim().toLowerCase();
       const driverMatch = allDrivers.find((driver) => {
         const id = driver.id ?? "";
         const userId = driver.userId ?? "";
@@ -217,6 +271,7 @@ export default function DriverPortalPage() {
         );
       });
       setDriverProfile(driverMatch ?? null);
+      if (driverMatch) { try { sessionStorage.setItem("portal_conductor_id", driverId.trim()); } catch {} }
       if (!driverMatch) {
         setIdError(t("El ID ingresado no corresponde a un conductor registrado."));
         setTrips([]);
@@ -286,6 +341,8 @@ export default function DriverPortalPage() {
     }
   };
 
+  const [showLocationBlockedModal, setShowLocationBlockedModal] = useState(false);
+
   const requestLocationPermission = (): Promise<boolean> => {
     return new Promise((resolve) => {
       if (!navigator.geolocation) {
@@ -294,10 +351,11 @@ export default function DriverPortalPage() {
         return;
       }
       navigator.geolocation.getCurrentPosition(
-        () => resolve(true),
+        () => { setLocationPermission("granted"); resolve(true); },
         (err) => {
           if (err.code === err.PERMISSION_DENIED) {
-            driverNotify.push("Activa la ubicación en ajustes del navegador para iniciar el viaje", "📍");
+            setLocationPermission("denied");
+            setShowLocationBlockedModal(true);
           } else {
             driverNotify.push("No se pudo obtener tu ubicación. Verifica que el GPS esté activado", "📍");
           }
@@ -309,8 +367,8 @@ export default function DriverPortalPage() {
   };
 
   const updateTrip = async (tripId: string, status: string) => {
-    // Request GPS permission before starting a route
-    if (status === "EN_ROUTE") {
+    // Request GPS permission before any trip action that requires location
+    if (["EN_ROUTE", "PICKED_UP", "DROPPED_OFF", "COMPLETED"].includes(status)) {
       const hasLocation = await requestLocationPermission();
       if (!hasLocation) return;
     }
@@ -372,6 +430,7 @@ export default function DriverPortalPage() {
   };
 
   const isPortalRequest = (trip: Trip) => trip.tripType === "PORTAL_REQUEST";
+  const isDisposicion = (trip: Trip) => trip.tripType === "DISPOSICION_12H";
 
   const confirmPickup = (trip: Trip) => {
     setPickupTrip(trip);
@@ -404,14 +463,15 @@ export default function DriverPortalPage() {
     speed?: number | null,
     heading?: number | null
   ) => {
-    if (!trip.driverId) return;
+    const resolvedDriverId = trip.driverId || driverProfile?.id;
+    if (!resolvedDriverId) return;
     try {
       await apiFetch(`/vehicle-positions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...(trip.eventId ? { eventId: trip.eventId } : {}),
-          driverId: trip.driverId,
+          driverId: resolvedDriverId,
           ...(trip.vehicleId ? { vehicleId: trip.vehicleId } : {}),
           timestamp: new Date().toISOString(),
           location: { type: "Point", coordinates: [longitude, latitude] },
@@ -427,49 +487,89 @@ export default function DriverPortalPage() {
   const getTripById = (tripId: string | null) =>
     tripId ? trips.find((trip) => trip.id === tripId) ?? null : null;
 
-  const [bootCheckDone, setBootCheckDone] = useState(false);
-
-  // Mobile-app auto-login: skip code gate when a mobile session is present.
-  // Hide the gate UI while we're checking to avoid the flash before the dashboard renders.
+  // Wake Lock: keep screen awake while tracking (prevents browser suspension)
   useEffect(() => {
-    if (driverProfile) {
-      setBootCheckDone(true);
-      return;
-    }
-    const session = getMobileSession();
-    if (session?.kind === "driver" && session.driverId) {
-      const code = session.driverId.slice(-6);
-      setDriverId(code);
-      void loadTrips(code).finally(() => setBootCheckDone(true));
-    } else {
-      setBootCheckDone(true);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (!trackingTripId) return;
+    let wakeLock: any = null;
 
+    const requestWakeLock = async () => {
+      try {
+        if ("wakeLock" in navigator) {
+          wakeLock = await (navigator as any).wakeLock.request("screen");
+          console.log("[WakeLock] Pantalla mantenida activa");
+          wakeLock.addEventListener("release", () => console.log("[WakeLock] Liberado"));
+        }
+      } catch (err) {
+        console.warn("[WakeLock] No disponible:", err);
+      }
+    };
+
+    requestWakeLock();
+
+    // Re-acquire wake lock when tab becomes visible (it gets released on minimize)
+    const onVisibility = () => {
+      if (document.visibilityState === "visible" && !wakeLock) requestWakeLock();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      if (wakeLock) { try { wakeLock.release(); } catch {} }
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [trackingTripId]);
+
+  // GPS tracking: send position every 5s + watchPosition + visibility resume
   useEffect(() => {
     if (!trackingTripId) return;
     const trip = getTripById(trackingTripId);
     if (!trip) return;
 
     let interval: number | null = null;
+    let watchId: number | null = null;
+
     const tick = () => {
-      if (!navigator.geolocation) { console.warn("[GPS] Geolocation no disponible"); return; }
+      if (!navigator.geolocation) return;
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const { latitude, longitude, speed, heading } = pos.coords;
-          console.log("[GPS] Posición obtenida:", latitude, longitude);
           sendPosition(trip, latitude, longitude, speed ?? null, heading ?? null);
         },
-        (err) => { console.error("[GPS] Error obteniendo posición:", err.code, err.message); },
+        () => {},
         { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 }
       );
     };
 
+    // watchPosition fires on every movement (more reliable than polling alone)
+    if (navigator.geolocation) {
+      watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          const { latitude, longitude, speed, heading } = pos.coords;
+          sendPosition(trip, latitude, longitude, speed ?? null, heading ?? null);
+        },
+        () => {},
+        { enableHighAccuracy: true, maximumAge: 5000 }
+      );
+    }
+
+    // Polling as backup (watchPosition can be unreliable on some devices)
     tick();
     interval = window.setInterval(tick, 5000);
+
+    // Resume immediately when tab becomes visible
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        tick();
+        // Restart interval (it may have been throttled in background)
+        if (interval) window.clearInterval(interval);
+        interval = window.setInterval(tick, 5000);
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
     return () => {
       if (interval) window.clearInterval(interval);
+      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [trackingTripId, trips]);
 
@@ -653,13 +753,22 @@ export default function DriverPortalPage() {
 
   return (
     <>
-      {!driverProfile && !bootCheckDone && (
-        <div style={{ minHeight: "100vh", background: "#020c18", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ width: 36, height: 36, borderRadius: "50%", border: "3px solid rgba(33,208,179,0.25)", borderTopColor: "#21D0B3", animation: "pc-spin 0.8s linear infinite" }} />
-          <style>{`@keyframes pc-spin{to{transform:rotate(360deg)}}`}</style>
+      {!sessionChecked && !driverProfile && (
+        <div style={{ minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"linear-gradient(135deg,#020c18 0%,#0a1628 50%,#041220 100%)",position:"relative",overflow:"hidden" }}>
+          <div style={{ position:"absolute",top:"-20%",right:"-10%",width:"50vw",height:"50vw",borderRadius:"50%",background:"radial-gradient(circle,rgba(33,208,179,0.08) 0%,transparent 70%)",pointerEvents:"none" }} />
+          <div style={{ position:"absolute",bottom:"-15%",left:"-10%",width:"40vw",height:"40vw",borderRadius:"50%",background:"radial-gradient(circle,rgba(31,205,255,0.06) 0%,transparent 70%)",pointerEvents:"none" }} />
+          <div style={{ position:"relative",zIndex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:20 }}>
+            <img src="/branding/LOGO-SEVEN-1.png" alt="Seven Arena" style={{ height:48,width:"auto",objectFit:"contain",filter:"drop-shadow(0 0 24px rgba(33,208,179,0.4)) drop-shadow(0 4px 12px rgba(0,0,0,0.6))",marginBottom:8 }} />
+            <div style={{ width:44,height:44,position:"relative" }}>
+              <div style={{ position:"absolute",inset:0,border:"3px solid rgba(33,208,179,0.15)",borderRadius:"50%" }} />
+              <div style={{ position:"absolute",inset:0,border:"3px solid transparent",borderTopColor:"#21D0B3",borderRadius:"50%",animation:"sa-spin 0.9s cubic-bezier(0.4,0,0.2,1) infinite" }} />
+            </div>
+            <p style={{ fontSize:13,fontWeight:600,color:"rgba(255,255,255,0.5)",margin:0,letterSpacing:"0.03em" }}>Cargando portal...</p>
+          </div>
+          <style>{`@keyframes sa-spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       )}
-      {!driverProfile && bootCheckDone && (
+      {sessionChecked && !driverProfile && (
         <div className="flex flex-col lg:flex-row" style={{ minHeight: "100vh", background: "#020c18", position: "relative", overflow: "hidden" }}>
           <style>{`
             @keyframes pc-f1{0%,100%{transform:translateY(0px) scale(1)}50%{transform:translateY(-30px) translateX(10px) scale(1.05)}}
@@ -843,7 +952,7 @@ export default function DriverPortalPage() {
                     <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
                   </svg>
                 </button>
-                <button type="button" onClick={() => mobileAwareLogout()}
+                <button type="button" onClick={() => { try { sessionStorage.removeItem("portal_conductor_id"); } catch {} mobileAwareLogout(); }}
                   style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(255,255,255,0.15)",background:"rgba(255,255,255,0.08)",cursor:"pointer",flexShrink:0 }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
@@ -864,8 +973,8 @@ export default function DriverPortalPage() {
               <div style={{ position:"absolute",top:0,right:0,width:"200px",height:"200px",borderRadius:"50%",background:"radial-gradient(ellipse,rgba(33,208,179,0.05) 0%,transparent 65%)",transform:"translate(60px,-60px)",pointerEvents:"none" }} />
               <div className="dc-profile-body">
                 <div style={{ position:"relative",flexShrink:0 }}>
-                  {driverProfile.photoUrl ? (
-                    <img src={driverProfile.photoUrl} alt="Foto" style={{ width:64,height:64,borderRadius:"50%",objectFit:"cover",boxShadow:"0 6px 24px rgba(33,208,179,0.3)" }} />
+                  {(driverProfile.photoUrl || (driverProfile.metadata as any)?.photoUrl) ? (
+                    <img src={driverProfile.photoUrl || (driverProfile.metadata as any)?.photoUrl} alt="Foto" style={{ width:64,height:64,borderRadius:"50%",objectFit:"cover",boxShadow:"0 6px 24px rgba(33,208,179,0.3)" }} />
                   ) : (
                     <div className="dc-avatar">
                       {(driverProfile.fullName || "C").split(" ").slice(0,2).map((w: string) => w[0] ?? "").join("").toUpperCase() || "C"}
@@ -1022,10 +1131,10 @@ export default function DriverPortalPage() {
               {/* Status filter tabs */}
               <div style={{ display:"flex",gap:4,marginBottom:12,background:"#f1f5f9",borderRadius:10,padding:3 }}>
                 {([
-                  { key: "en_curso", label: "En curso", count: trips.filter((t) => t.status === "EN_ROUTE" || t.status === "PICKED_UP").length },
-                  { key: "hoy", label: "Hoy", count: trips.filter((t) => ["SCHEDULED","EN_ROUTE","PICKED_UP"].includes(t.status ?? "") && ((t.scheduledAt || t.startedAt || "").slice(0,10) === todayKey || !(t.scheduledAt || t.startedAt))).length },
-                  { key: "todos", label: "Programados", count: trips.filter((t) => ["SCHEDULED","EN_ROUTE","PICKED_UP"].includes(t.status ?? "")).length },
-                ] as const).map(({ key, label, count }) => (
+                  { key: "en_curso", label: "En curso", count: trips.filter((t) => t.status === "EN_ROUTE" || t.status === "PICKED_UP").length, unread: 0 },
+                  { key: "hoy", label: "Hoy", count: trips.filter((t) => ["SCHEDULED","EN_ROUTE","PICKED_UP"].includes(t.status ?? "") && ((t.scheduledAt || t.startedAt || "").slice(0,10) === todayKey || !(t.scheduledAt || t.startedAt))).length, unread: trips.filter((t) => t.status === "SCHEDULED" && !seenTripIds.has(t.id) && ((t.scheduledAt || t.startedAt || "").slice(0,10) === todayKey || !(t.scheduledAt || t.startedAt))).length },
+                  { key: "todos", label: "Programados", count: trips.filter((t) => ["SCHEDULED","EN_ROUTE","PICKED_UP"].includes(t.status ?? "")).length, unread: trips.filter((t) => t.status === "SCHEDULED" && !seenTripIds.has(t.id)).length },
+                ]).map(({ key, label, count, unread }) => (
                   <button key={key} type="button" onClick={() => setStatusFilter(key)}
                     style={{
                       flex:1,padding:"7px 8px",borderRadius:8,border:"none",
@@ -1041,6 +1150,9 @@ export default function DriverPortalPage() {
                       background: statusFilter === key ? "rgba(33,208,179,0.15)" : "transparent",
                       color: statusFilter === key ? "#0a7a6b" : "#b0b8c4",
                     }}>{count}</span>
+                    {unread > 0 && (
+                      <span style={{ fontSize:9,fontWeight:800,padding:"2px 6px",borderRadius:"99px",background:"#ef4444",color:"#fff",minWidth:16,textAlign:"center" }}>{unread}</span>
+                    )}
                   </button>
                 ))}
               </div>
@@ -1056,27 +1168,44 @@ export default function DriverPortalPage() {
                     const isSelected = selectedTripId === trip.id;
                     const isActive = status === "EN_ROUTE" || status === "PICKED_UP";
                     const isCompleted = status === "COMPLETED" || status === "DROPPED_OFF";
+                    const isSeen = seenTripIds.has(trip.id);
+                    const isNew = status === "SCHEDULED" && !isSeen;
                     const tripVehicle = vehicles[trip.vehicleId];
                     const passengerCount = getTripAthleteIds(trip).length;
 
                     return (
-                      <div key={trip.id} style={{ borderRadius:14,border: isSelected ? "1px solid rgba(33,208,179,0.4)" : "1px solid #f1f5f9",background:"#fff",overflow:"hidden",transition:"border-color .15s" }}>
+                      <div key={trip.id} style={{
+                        borderRadius:14,
+                        border: isSelected ? "1px solid rgba(33,208,179,0.4)" : isNew ? "1px solid rgba(59,130,246,0.3)" : "1px solid #f1f5f9",
+                        background: isNew ? "rgba(59,130,246,0.03)" : "#fff",
+                        overflow:"hidden",transition:"all .15s",
+                      }}>
 
                         {/* ── Compact row (always visible) ── */}
-                        <button type="button" onClick={() => setSelectedTripId(isSelected ? null : trip.id)}
+                        <button type="button" onClick={() => { setSelectedTripId(isSelected ? null : trip.id); markTripSeen(trip.id); }}
                           style={{ width:"100%",display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:"none",border:"none",cursor:"pointer",textAlign:"left" }}>
-                          {/* Status dot */}
-                          <span style={{
-                            width:10,height:10,borderRadius:"50%",flexShrink:0,
-                            background: isActive ? "#7c3aed" : isCompleted ? "#21D0B3" : "#0ea5e9",
-                            boxShadow: isActive ? "0 0 8px rgba(124,58,237,0.4)" : "none",
-                          }} />
+                          {/* Status dot + new badge */}
+                          <div style={{ position:"relative",flexShrink:0 }}>
+                            <span style={{
+                              width:10,height:10,borderRadius:"50%",display:"block",
+                              background: isActive ? "#7c3aed" : isCompleted ? "#21D0B3" : isNew ? "#3b82f6" : "#0ea5e9",
+                              boxShadow: isActive ? "0 0 8px rgba(124,58,237,0.4)" : isNew ? "0 0 8px rgba(59,130,246,0.4)" : "none",
+                            }} />
+                            {isNew && <span style={{ position:"absolute",top:"-6px",right:"-8px",width:6,height:6,borderRadius:"50%",background:"#ef4444",border:"1px solid #fff" }} />}
+                          </div>
                           {/* Route summary */}
                           <div style={{ flex:1,minWidth:0 }}>
-                            <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
-                              {(trip.origin?.split(",")[0] || "—")} → {(trip.destination?.split(",")[0] || "—")}
-                            </p>
-                            <p style={{ fontSize:10.5,color:"#94a3b8",margin:"2px 0 0" }}>
+                            <div style={{ display:"flex",alignItems:"center",gap:6 }}>
+                              <p style={{ fontSize:13,fontWeight: isNew ? 800 : 600,color: isNew ? "#1e40af" : "#0f172a",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                                {isDisposicion(trip)
+                                  ? "Disposición 12h"
+                                  : `${trip.origin?.split(",")[0] || "—"} → ${trip.destination?.split(",")[0] || "—"}`}
+                              </p>
+                              {isNew && (
+                                <span style={{ fontSize:9,fontWeight:800,padding:"2px 6px",borderRadius:"99px",background:"#3b82f6",color:"#fff",flexShrink:0,letterSpacing:"0.05em" }}>NUEVO</span>
+                              )}
+                            </div>
+                            <p style={{ fontSize:10.5,color: isNew ? "#3b82f6" : "#94a3b8",margin:"2px 0 0",fontWeight: isNew ? 600 : 400 }}>
                               {trip.scheduledAt ? formatDate(trip.scheduledAt) : "—"} · {statusLabel[status] || status}
                               {passengerCount > 0 ? ` · ${passengerCount} pax` : ""}
                             </p>
@@ -1090,29 +1219,66 @@ export default function DriverPortalPage() {
                         {/* ── Expanded detail ── */}
                         {isSelected && (
                           <div style={{ padding:"0 12px 14px" }}>
-                            {/* Map */}
-                            <div style={{ borderRadius:12,overflow:"hidden",marginBottom:10 }}>
-                              <TripMap origin={trip.origin} destination={trip.destination} driverPosition={driverPosition} userPosition={trip.passengerLat && trip.passengerLng ? { lat: trip.passengerLat, lng: trip.passengerLng } : null} height={180} />
-                            </div>
+                            {isDisposicion(trip) ? (
+                              /* Disposición 12h: simplified header, no map/route */
+                              <div style={{ padding:"12px 14px",borderRadius:12,background:"linear-gradient(135deg,rgba(99,102,241,0.06),rgba(33,208,179,0.06))",border:"1px solid rgba(99,102,241,0.15)",marginBottom:10 }}>
+                                <p style={{ fontSize:11,fontWeight:700,color:"#6366f1",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Servicio a disposición — 12 horas</p>
+                                <p style={{ fontSize:12,color:"#64748b",margin:"4px 0 0" }}>
+                                  {trip.scheduledAt ? formatDate(trip.scheduledAt) : "Sin fecha programada"}
+                                </p>
+                                {trip.notes && <p style={{ fontSize:12,color:"#334155",margin:"6px 0 0",lineHeight:1.4 }}>{trip.notes}</p>}
+                              </div>
+                            ) : (
+                              <>
+                              {/* Map */}
+                              <div style={{ borderRadius:12,overflow:"hidden",marginBottom:10 }}>
+                                <TripMap origin={trip.origin} destination={trip.destination} driverPosition={driverPosition} userPosition={trip.passengerLat && trip.passengerLng ? { lat: trip.passengerLat, lng: trip.passengerLng } : null} height={180} />
+                              </div>
 
-                            {/* Route detail */}
-                            <div style={{ display:"flex",gap:10,marginBottom:10,alignItems:"stretch" }}>
-                              <div style={{ display:"flex",flexDirection:"column",alignItems:"center",paddingTop:2 }}>
-                                <span style={{ width:8,height:8,borderRadius:"50%",background:"#21D0B3",flexShrink:0 }} />
-                                <div style={{ width:2,flex:1,background:"linear-gradient(180deg,#21D0B3,#ef4444)",margin:"3px 0",opacity:0.3,borderRadius:1 }} />
-                                <span style={{ width:8,height:8,borderRadius:"50%",background:"#ef4444",flexShrink:0 }} />
-                              </div>
-                              <div style={{ flex:1,display:"flex",flexDirection:"column",justifyContent:"space-between",gap:4 }}>
-                                <div>
-                                  <p style={{ fontSize:10,color:"#94a3b8",margin:0 }}>{t("Recogida")}</p>
-                                  <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:"1px 0 0" }}>{trip.origin || "—"}</p>
+                              {/* Navigate with Waze / Google Maps */}
+                              {trip.destination && (
+                                <div style={{ display:"flex",gap:6,marginBottom:10 }}>
+                                  <a
+                                    href={`https://waze.com/ul?q=${encodeURIComponent(trip.destination)}&navigate=yes`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{ flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"10px 0",borderRadius:10,border:"1px solid #e2e8f0",background:"#fff",textDecoration:"none",fontSize:12,fontWeight:700,color:"#33ccff" }}
+                                  >
+                                    <img src="https://www.waze.com/favicon.ico" alt="Waze" width="20" height="20" style={{ borderRadius:4 }} />
+                                    Waze
+                                  </a>
+                                  <a
+                                    href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(trip.destination)}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{ flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"10px 0",borderRadius:10,border:"1px solid #e2e8f0",background:"#fff",textDecoration:"none",fontSize:12,fontWeight:700,color:"#4285F4" }}
+                                  >
+                                    <img src="https://maps.google.com/favicon.ico" alt="Google Maps" width="20" height="20" style={{ borderRadius:4 }} />
+                                    Google Maps
+                                  </a>
                                 </div>
-                                <div>
-                                  <p style={{ fontSize:10,color:"#94a3b8",margin:0 }}>{t("Destino")}</p>
-                                  <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:"1px 0 0" }}>{trip.destination || "—"}</p>
+                              )}
+
+                              {/* Route detail */}
+                              <div style={{ display:"flex",gap:10,marginBottom:10,alignItems:"stretch" }}>
+                                <div style={{ display:"flex",flexDirection:"column",alignItems:"center",paddingTop:2 }}>
+                                  <span style={{ width:8,height:8,borderRadius:"50%",background:"#21D0B3",flexShrink:0 }} />
+                                  <div style={{ width:2,flex:1,background:"linear-gradient(180deg,#21D0B3,#ef4444)",margin:"3px 0",opacity:0.3,borderRadius:1 }} />
+                                  <span style={{ width:8,height:8,borderRadius:"50%",background:"#ef4444",flexShrink:0 }} />
+                                </div>
+                                <div style={{ flex:1,display:"flex",flexDirection:"column",justifyContent:"space-between",gap:4 }}>
+                                  <div>
+                                    <p style={{ fontSize:10,color:"#94a3b8",margin:0 }}>{t("Recogida")}</p>
+                                    <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:"1px 0 0" }}>{trip.origin || "—"}</p>
+                                  </div>
+                                  <div>
+                                    <p style={{ fontSize:10,color:"#94a3b8",margin:0 }}>{t("Destino")}</p>
+                                    <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:"1px 0 0" }}>{trip.destination || "—"}</p>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
+                              </>
+                            )}
 
                             {/* Info chips */}
                             <div style={{ display:"flex",flexWrap:"wrap",gap:4,marginBottom:10 }}>
@@ -1140,6 +1306,25 @@ export default function DriverPortalPage() {
                                 <span style={{ fontSize:12,fontWeight:700,color:"#21D0B3" }}>{t("Completado")}</span>
                                 {trip.driverRating && <span style={{ fontSize:12 }}>{"⭐".repeat(trip.driverRating)}</span>}
                               </div>
+                            ) : isDisposicion(trip) ? (
+                              /* ── Disposición 12h: 2-step flow ── */
+                              status === "SCHEDULED" ? (
+                                trackingTripId && trackingTripId !== trip.id ? (
+                                  <div style={{ padding:10,borderRadius:12,background:"#f8fafc",border:"1px solid #e2e8f0",textAlign:"center" }}>
+                                    <p style={{ fontSize:11,color:"#94a3b8",margin:0 }}>Finaliza el servicio en curso para iniciar este</p>
+                                  </div>
+                                ) : (
+                                  <button type="button" onClick={() => updateTrip(trip.id, "PICKED_UP")} disabled={loading}
+                                    style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:"linear-gradient(135deg,#818cf8,#6366f1)",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(99,102,241,0.3)",opacity:loading?0.7:1 }}>
+                                    {t("Iniciar servicio")}
+                                  </button>
+                                )
+                              ) : status === "EN_ROUTE" || status === "PICKED_UP" ? (
+                                <button type="button" onClick={() => updateTrip(trip.id, "COMPLETED")} disabled={loading}
+                                  style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:"linear-gradient(135deg,#34F3C6,#21D0B3)",color:"#0d1b3e",fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(33,208,179,0.3)",opacity:loading?0.7:1 }}>
+                                  {t("Finalizar servicio")}
+                                </button>
+                              ) : null
                             ) : status === "SCHEDULED" ? (
                               trackingTripId && trackingTripId !== trip.id ? (
                                 <div style={{ padding:10,borderRadius:12,background:"#f8fafc",border:"1px solid #e2e8f0",textAlign:"center" }}>
@@ -1188,34 +1373,104 @@ export default function DriverPortalPage() {
 
             {/* ─── TAB: Reportes ─── */}
             {activeTab === "reportes" && (() => {
-              const completed = trips
+              const allCompleted = trips
                 .filter((t) => t.status === "COMPLETED" || t.status === "DROPPED_OFF")
                 .sort((a, b) => new Date(b.completedAt || b.startedAt || 0).getTime() - new Date(a.completedAt || a.startedAt || 0).getTime());
+
+              // Collect unique trip types for filter
+              const tripTypes = Array.from(new Set(allCompleted.map((t) => t.tripType).filter(Boolean))) as string[];
+
+              // Apply filters
+              const completed = allCompleted.filter((t) => {
+                // Date range
+                const tDate = new Date(t.completedAt || t.startedAt || 0);
+                if (reportDateFrom) {
+                  const from = new Date(reportDateFrom + "T00:00:00");
+                  if (tDate < from) return false;
+                }
+                if (reportDateTo) {
+                  const to = new Date(reportDateTo + "T23:59:59");
+                  if (tDate > to) return false;
+                }
+                // Trip type
+                if (reportTypeFilter !== "all" && t.tripType !== reportTypeFilter) return false;
+                // Rating
+                if (reportRatingFilter === "rated" && !t.driverRating) return false;
+                if (reportRatingFilter === "unrated" && t.driverRating) return false;
+                return true;
+              });
+
               const totalCost = completed.reduce((sum, t) => sum + (Number(t.tripCost) || 0), 0);
               const rated = completed.filter((t) => t.driverRating);
               const avgRating = rated.length > 0 ? (rated.reduce((sum, t) => sum + (t.driverRating || 0), 0) / rated.length).toFixed(1) : null;
+              const hasActiveFilters = reportDateFrom || reportDateTo || reportTypeFilter !== "all" || reportRatingFilter !== "all";
 
               return (
                 <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
                   {/* Summary stats */}
                   <div style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8 }}>
-                    <div style={{ padding:"10px",borderRadius:12,background:"#fff",border:"1px solid #e2e8f0",textAlign:"center" }}>
+                    <div style={{ padding:"12px 8px",borderRadius:12,background:"#fff",border:"1px solid #e2e8f0",textAlign:"center" }}>
                       <p style={{ fontSize:9,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Viajes</p>
-                      <p style={{ fontSize:22,fontWeight:800,color:"#0f172a",margin:"2px 0 0" }}>{completed.length}</p>
+                      <p style={{ fontSize:22,fontWeight:800,color:"#0f172a",margin:"4px 0 0" }}>{completed.length}</p>
                     </div>
-                    <div style={{ padding:"10px",borderRadius:12,background:"#fff",border:"1px solid #e2e8f0",textAlign:"center" }}>
+                    <div style={{ padding:"12px 8px",borderRadius:12,background:"#fff",border:"1px solid #e2e8f0",textAlign:"center" }}>
                       <p style={{ fontSize:9,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Total</p>
-                      <p style={{ fontSize:22,fontWeight:800,color:"#21D0B3",margin:"2px 0 0" }}>${totalCost.toLocaleString("es-CL")}</p>
+                      <p style={{ fontSize:22,fontWeight:800,color:"#21D0B3",margin:"4px 0 0" }}>${totalCost.toLocaleString("es-CL")}</p>
                     </div>
-                    <div style={{ padding:"10px",borderRadius:12,background:"#fff",border:"1px solid #e2e8f0",textAlign:"center" }}>
+                    <div style={{ padding:"12px 8px",borderRadius:12,background:"#fff",border:"1px solid #e2e8f0",textAlign:"center" }}>
                       <p style={{ fontSize:9,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Rating</p>
-                      <p style={{ fontSize:22,fontWeight:800,color:"#f59e0b",margin:"2px 0 0" }}>{avgRating ? `${avgRating} ⭐` : "—"}</p>
+                      <p style={{ fontSize:22,fontWeight:800,color:"#f59e0b",margin:"4px 0 0" }}>{avgRating ? `${avgRating} ⭐` : "—"}</p>
                     </div>
                   </div>
 
+                  {/* Filter toggle button */}
+                  <button type="button" onClick={() => setShowReportFilters(!showReportFilters)}
+                    style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"8px",borderRadius:10,
+                      background: hasActiveFilters ? "#21D0B3" : "#fff", border:"1px solid #e2e8f0",cursor:"pointer",width:"100%" }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={hasActiveFilters ? "#fff" : "#64748b"} strokeWidth="2" strokeLinecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+                    <span style={{ fontSize:12,fontWeight:600,color: hasActiveFilters ? "#fff" : "#64748b" }}>
+                      {showReportFilters ? "Ocultar filtros" : "Filtrar"}
+                    </span>
+                    {hasActiveFilters && <span style={{ background:"#fff",color:"#21D0B3",borderRadius:10,padding:"0 6px",fontSize:10,fontWeight:800 }}>{completed.length}/{allCompleted.length}</span>}
+                  </button>
+
+                  {/* Collapsible filters */}
+                  {showReportFilters && (
+                    <div style={{ background:"#fff",borderRadius:12,border:"1px solid #e2e8f0",padding:"10px 14px",display:"flex",flexDirection:"column",gap:8 }}>
+                      <div style={{ display:"flex",gap:10,alignItems:"center" }}>
+                        <label style={{ display:"flex",alignItems:"center",gap:6,flex:1,minWidth:0 }}>
+                          <span style={{ fontSize:11,fontWeight:700,color:"#64748b",flexShrink:0 }}>Desde</span>
+                          <input type="date" value={reportDateFrom} onChange={(e) => setReportDateFrom(e.target.value)}
+                            style={{ flex:1,minWidth:0,padding:"7px 6px",borderRadius:8,border:"1px solid #e2e8f0",fontSize:12,color:"#0f172a",background:"#f8fafc",boxSizing:"border-box" }} />
+                        </label>
+                        <label style={{ display:"flex",alignItems:"center",gap:6,flex:1,minWidth:0 }}>
+                          <span style={{ fontSize:11,fontWeight:700,color:"#64748b",flexShrink:0 }}>Hasta</span>
+                          <input type="date" value={reportDateTo} onChange={(e) => setReportDateTo(e.target.value)}
+                            style={{ flex:1,minWidth:0,padding:"7px 6px",borderRadius:8,border:"1px solid #e2e8f0",fontSize:12,color:"#0f172a",background:"#f8fafc",boxSizing:"border-box" }} />
+                        </label>
+                      </div>
+                      <label style={{ display:"flex",alignItems:"center",gap:6 }}>
+                        <span style={{ fontSize:11,fontWeight:700,color:"#64748b",flexShrink:0 }}>Tipo</span>
+                        <select value={reportTypeFilter} onChange={(e) => setReportTypeFilter(e.target.value)}
+                          style={{ flex:1,padding:"7px 10px",borderRadius:8,border:"1px solid #e2e8f0",fontSize:12,color:"#0f172a",background:"#f8fafc",boxSizing:"border-box" }}>
+                          <option value="all">Todos</option>
+                          {tripTypes.map((tt) => <option key={tt} value={tt}>{tt}</option>)}
+                        </select>
+                      </label>
+                      {hasActiveFilters && (
+                        <button type="button" onClick={() => { setReportDateFrom(""); setReportDateTo(""); setReportTypeFilter("all"); setReportRatingFilter("all"); }}
+                          style={{ fontSize:12,color:"#ef4444",background:"none",border:"none",cursor:"pointer",fontWeight:600,padding:0,alignSelf:"flex-end" }}>
+                          Limpiar filtros
+                        </button>
+                      )}
+                    </div>
+                  )}
+
                   {/* Trip list */}
-                  <div style={{ background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden" }}>
-                    <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:"#21D0B3",padding:"12px 14px 8px",margin:0 }}>Historial</p>
+                  <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+                    <div style={{ padding:"12px 14px 8px" }}>
+                      <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>Historial</p>
+                    </div>
                     {completed.length === 0 ? (
                       <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:"20px 14px" }}>Sin viajes completados</p>
                     ) : (
@@ -1330,8 +1585,8 @@ export default function DriverPortalPage() {
                 {/* Profile + Photo */}
                 <div style={{ background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",padding:"16px 14px",display:"flex",alignItems:"center",gap:14 }}>
                   <div style={{ position:"relative",flexShrink:0 }}>
-                    {driverProfile.photoUrl ? (
-                      <img src={driverProfile.photoUrl} alt="" style={{ width:64,height:64,borderRadius:"50%",objectFit:"cover",border:"3px solid #21D0B3" }} />
+                    {(driverProfile.photoUrl || (driverProfile.metadata as any)?.photoUrl) ? (
+                      <img src={driverProfile.photoUrl || (driverProfile.metadata as any)?.photoUrl} alt="" style={{ width:64,height:64,borderRadius:"50%",objectFit:"cover",border:"3px solid #21D0B3" }} />
                     ) : (
                       <div style={{ width:64,height:64,borderRadius:"50%",background:"linear-gradient(135deg,#21D0B3,#062240)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:900,color:"#fff",border:"3px solid #21D0B3" }}>
                         {(driverProfile.fullName || "C").split(" ").slice(0,2).map((w: string) => w[0] ?? "").join("").toUpperCase()}
@@ -1345,13 +1600,27 @@ export default function DriverPortalPage() {
                         if (!file || !driverProfile.id) return;
                         setUploadingPhoto(true);
                         try {
-                          const reader = new FileReader();
-                          const dataUrl = await new Promise<string>((resolve) => { reader.onload = () => resolve(reader.result as string); reader.readAsDataURL(file); });
-                          await apiFetch(`/drivers/${driverProfile.id}/photo`, {
-                            method: "POST", headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ dataUrl }),
+                          const dataUrl = await new Promise<string>((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.onload = () => resolve(reader.result as string);
+                            reader.onerror = () => reject(new Error("Error leyendo archivo"));
+                            reader.readAsDataURL(file);
                           });
-                          const updated = await apiFetch<Driver>(`/drivers/${driverProfile.id}`);
+                          if (driverProfile._isParticipant) {
+                            await apiFetch(`/provider-participants/${driverProfile.id}/document`, {
+                              method: "POST", headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ key: "photoUrl", dataUrl }),
+                            });
+                          } else {
+                            await apiFetch(`/drivers/${driverProfile.id}/photo`, {
+                              method: "POST", headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ dataUrl }),
+                            });
+                          }
+                          const endpoint = driverProfile._isParticipant
+                            ? `/provider-participants/${driverProfile.id}`
+                            : `/drivers/${driverProfile.id}`;
+                          const updated = await apiFetch<Driver>(endpoint);
                           setDriverProfile(updated);
                           driverNotify.push("Foto actualizada", "📷");
                         } catch { driverNotify.push("No se pudo subir la foto", "❌"); }
@@ -1416,52 +1685,36 @@ export default function DriverPortalPage() {
                   </button>
                 </div>
 
-                {/* Info cards */}
-                <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
-                  {([
-                    { icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>, label: "Correo", value: driverProfile.email || "—" },
-                    { icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>, label: "Teléfono", value: driverProfile.phone || "—" },
-                  ] as const).map((item) => (
-                    <div key={item.label} style={{ padding:"10px 14px",borderRadius:12,background:"#fff",border:"1px solid #e2e8f0",display:"flex",alignItems:"center",gap:10 }}>
-                      {item.icon}
-                      <div>
-                        <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{item.label}</p>
-                        <p style={{ fontSize:13,fontWeight:600,color:"#0f172a",margin:"1px 0 0",wordBreak:"break-all" }}>{item.value}</p>
-                      </div>
+                {/* Info — single card with rows */}
+                {(() => {
+                  const veh = driverProfile.vehicleId ? vehicles[driverProfile.vehicleId] : null;
+                  const meta = driverProfile.metadata ?? {};
+                  const plate = veh?.plate || (meta.vehiclePatente as string | null);
+                  const vehInfo = [veh?.type || meta.vehicleTipo, veh?.brand || meta.vehicleMarca, veh?.model || meta.vehicleModelo].filter(Boolean).join(" · ");
+                  const prov = driverProfile.providerId ? providers[driverProfile.providerId] : null;
+                  const rows: { icon: React.ReactNode; label: string; value: string; sub?: string }[] = [
+                    { icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>, label: "Correo", value: driverProfile.email || "—" },
+                    { icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>, label: "Teléfono", value: driverProfile.phone || "—" },
+                    { icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><path d="M5 17H3v-6l2.5-5h11L19 11v6h-2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg>, label: "Vehículo", value: plate?.toUpperCase() || "Sin asignar", sub: vehInfo || undefined },
+                    { icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>, label: "Proveedor", value: prov?.name || "Sin asignar", sub: prov?.rut ? `RUT: ${prov.rut}` : undefined },
+                  ];
+                  return (
+                    <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+                      {rows.map((r, i) => (
+                        <div key={r.label} style={{ display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderTop: i > 0 ? "1px solid #f1f5f9" : "none" }}>
+                          <span style={{ flexShrink:0 }}>{r.icon}</span>
+                          <div style={{ flex:1,minWidth:0 }}>
+                            <div style={{ display:"flex",alignItems:"baseline",gap:6 }}>
+                              <span style={{ fontSize:10,fontWeight:700,color:"#94a3b8",textTransform:"uppercase",letterSpacing:"0.08em",flexShrink:0 }}>{r.label}</span>
+                              <span style={{ fontSize:13,fontWeight:600,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{r.value}</span>
+                            </div>
+                            {r.sub && <p style={{ fontSize:11,color:"#64748b",margin:"1px 0 0" }}>{r.sub}</p>}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                  {/* Vehicle */}
-                  {(() => {
-                    const veh = driverProfile.vehicleId ? vehicles[driverProfile.vehicleId] : null;
-                    const meta = driverProfile.metadata ?? {};
-                    const plate = veh?.plate || (meta.vehiclePatente as string | null);
-                    const info = [veh?.type || meta.vehicleTipo, veh?.brand || meta.vehicleMarca, veh?.model || meta.vehicleModelo].filter(Boolean).join(" · ");
-                    return (
-                      <div style={{ padding:"10px 14px",borderRadius:12,background:"#fff",border:"1px solid #e2e8f0",display:"flex",alignItems:"center",gap:10 }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><path d="M5 17H3v-6l2.5-5h11L19 11v6h-2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg>
-                        <div>
-                          <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Vehículo</p>
-                          <p style={{ fontSize:13,fontWeight:600,color:"#0f172a",margin:"1px 0 0" }}>{plate?.toUpperCase() || "Sin asignar"}</p>
-                          {info && <p style={{ fontSize:11,color:"#64748b",margin:"1px 0 0" }}>{info}</p>}
-                        </div>
-                      </div>
-                    );
-                  })()}
-                  {/* Provider */}
-                  {(() => {
-                    const prov = driverProfile.providerId ? providers[driverProfile.providerId] : null;
-                    return (
-                      <div style={{ padding:"10px 14px",borderRadius:12,background:"#fff",border:"1px solid #e2e8f0",display:"flex",alignItems:"center",gap:10 }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
-                        <div>
-                          <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Proveedor</p>
-                          <p style={{ fontSize:13,fontWeight:600,color:"#0f172a",margin:"1px 0 0" }}>{prov?.name || "Sin asignar"}</p>
-                          {prov?.rut && <p style={{ fontSize:11,color:"#64748b",margin:"1px 0 0" }}>RUT: {prov.rut}</p>}
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </div>
+                  );
+                })()}
 
                 {/* Documents section */}
                 <div style={{ background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",padding:"14px",overflow:"hidden" }}>
@@ -1490,7 +1743,7 @@ export default function DriverPortalPage() {
                             <span style={{ fontSize:12,fontWeight:500,color:uploaded ? "#0f172a" : "#94a3b8",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{doc.label}</span>
                           </div>
                           <div style={{ display:"flex",gap:4,flexShrink:0 }}>
-                            {uploaded && typeof docValue === "string" && docValue.startsWith("http") && (
+                            {uploaded && typeof docValue === "string" && (docValue.startsWith("http") || docValue.startsWith("data:")) && (
                               <a href={docValue} target="_blank" rel="noreferrer"
                                 style={{ display:"flex",alignItems:"center",justifyContent:"center",width:28,height:28,borderRadius:7,border:"1px solid #e2e8f0",background:"#fff",cursor:"pointer",flexShrink:0 }}>
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -1504,17 +1757,24 @@ export default function DriverPortalPage() {
                                 if (!file || !driverProfile.id) return;
                                 setUploadingDoc(doc.key);
                                 try {
-                                  const reader = new FileReader();
-                                  const dataUrl = await new Promise<string>((resolve) => { reader.onload = () => resolve(reader.result as string); reader.readAsDataURL(file); });
-                                  const newMeta = { ...(driverProfile.metadata || {}), [doc.key]: dataUrl.slice(0, 100) + "..." };
-                                  // Upload as driver photo endpoint for now, store reference in metadata
-                                  await apiFetch(`/drivers/${driverProfile.id}`, {
-                                    method: "PATCH", headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify({ metadata: { ...(driverProfile.metadata || {}), [doc.key]: `uploaded_${Date.now()}` } }),
+                                  const dataUrl = await new Promise<string>((resolve, reject) => {
+                                    const reader = new FileReader();
+                                    reader.onload = () => resolve(reader.result as string);
+                                    reader.onerror = () => reject(new Error("Error leyendo archivo"));
+                                    reader.readAsDataURL(file);
                                   });
-                                  setDriverProfile({ ...driverProfile, metadata: { ...(driverProfile.metadata || {}), [doc.key]: `uploaded_${Date.now()}` } });
+                                  // Upload document to Supabase storage
+                                  const endpoint = driverProfile._isParticipant
+                                    ? `/provider-participants/${driverProfile.id}/document`
+                                    : `/drivers/${driverProfile.id}/document`;
+                                  const result = await apiFetch<any>(endpoint, {
+                                    method: "POST", headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ key: doc.key, dataUrl }),
+                                  });
+                                  const newUrl = result?.metadata?.[doc.key] ?? `uploaded_${Date.now()}`;
+                                  setDriverProfile({ ...driverProfile, metadata: { ...(driverProfile.metadata || {}), [doc.key]: newUrl } });
                                   driverNotify.push(`${doc.label} cargado`, "📄");
-                                } catch { driverNotify.push(`No se pudo subir ${doc.label}`, "❌"); }
+                                } catch (err) { console.error("Doc upload error:", err); driverNotify.push(`Error: ${err instanceof Error ? err.message : "No se pudo subir"} ${doc.label}`, "❌"); }
                                 finally { setUploadingDoc(null); }
                               };
                               input.click();
@@ -1624,8 +1884,52 @@ export default function DriverPortalPage() {
           tripId={trackingTripId}
           senderType="DRIVER"
           senderName={driverProfile.fullName || "Conductor"}
+          tripStatus={trips.find((t) => t.id === trackingTripId)?.status}
           onNewMessage={(name, content) => driverNotify.push(`${name}: ${content.slice(0, 80)}`, "💬")}
         />
+      )}
+
+      {/* ── Asistencia operativa (agente) ── */}
+      {driverProfile && (
+        <AssistanceChat
+          originType="driver"
+          originId={driverProfile.id}
+          originName={driverProfile.fullName || "Conductor"}
+        />
+      )}
+
+      {/* ── Location blocked modal ── */}
+      {showLocationBlockedModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div style={{ background:"#fff",borderRadius:"24px",width:"100%",maxWidth:"380px",padding:"32px 28px",boxShadow:"0 8px 40px rgba(15,23,42,0.2)",textAlign:"center" }}>
+            <div style={{ width:"56px",height:"56px",borderRadius:"50%",background:"rgba(239,68,68,0.1)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 18px" }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                <line x1="2" y1="2" x2="22" y2="22" stroke="#ef4444" strokeWidth="2.5"/>
+              </svg>
+            </div>
+            <h3 style={{ fontSize:"18px",fontWeight:800,color:"#0f172a",margin:"0 0 8px" }}>Ubicación no disponible</h3>
+            <p style={{ fontSize:"13px",color:"#64748b",lineHeight:1.5,margin:"0 0 8px" }}>
+              Para continuar necesitas activar la ubicación en tu navegador.
+            </p>
+            <div style={{ background:"#f8fafc",borderRadius:"12px",padding:"12px 16px",margin:"0 0 20px",textAlign:"left" }}>
+              <p style={{ fontSize:"12px",fontWeight:700,color:"#334155",margin:"0 0 6px" }}>Cómo activarla:</p>
+              <p style={{ fontSize:"11px",color:"#64748b",margin:"0 0 4px",lineHeight:1.4 }}>1. Toca el ícono de candado o ajustes en la barra de dirección</p>
+              <p style={{ fontSize:"11px",color:"#64748b",margin:"0 0 4px",lineHeight:1.4 }}>2. Busca "Ubicación" o "Location"</p>
+              <p style={{ fontSize:"11px",color:"#64748b",margin:0,lineHeight:1.4 }}>3. Cambia a "Permitir" y recarga la página</p>
+            </div>
+            <div style={{ display:"flex",gap:"10px" }}>
+              <button type="button" onClick={() => setShowLocationBlockedModal(false)}
+                style={{ flex:1,padding:"12px",borderRadius:"14px",border:"1px solid #e2e8f0",background:"#f8fafc",color:"#475569",fontSize:"13px",fontWeight:700,cursor:"pointer" }}>
+                Cerrar
+              </button>
+              <button type="button" onClick={() => { setShowLocationBlockedModal(false); window.location.reload(); }}
+                style={{ flex:1,padding:"12px",borderRadius:"14px",border:"none",background:"linear-gradient(135deg,#21D0B3,#14AE98)",color:"#fff",fontSize:"13px",fontWeight:700,cursor:"pointer",boxShadow:"0 2px 10px rgba(33,208,179,0.3)" }}>
+                Recargar página
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

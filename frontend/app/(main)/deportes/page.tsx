@@ -37,10 +37,40 @@ type Delegation = {
 
 type Athlete = {
   id: string;
+  fullName?: string | null;
   eventId?: string | null;
   delegationId?: string | null;
   disciplineId?: string | null;
+  userType?: string | null;
 };
+
+type PremiacionAwarderForm = { athleteId: string; role: string };
+type PremiacionForm = {
+  enabled: boolean;
+  id?: string;
+  scheduledAt: string;
+  venueId: string;
+  venueName: string;
+  locationDetail: string;
+  notes: string;
+  awarders: PremiacionAwarderForm[];
+};
+const EMPTY_PREMIACION: PremiacionForm = {
+  enabled: false,
+  scheduledAt: "",
+  venueId: "",
+  venueName: "",
+  locationDetail: "",
+  notes: "",
+  awarders: [],
+};
+const PREMIACION_ROLES = [
+  { value: "GOLD", label: "Oro" },
+  { value: "SILVER", label: "Plata" },
+  { value: "BRONZE", label: "Bronce" },
+  { value: "AUTHORITY", label: "Autoridad" },
+  { value: "AWARDER", label: "Premiador" },
+];
 
 type QuotaState = Record<string, string>;
 
@@ -97,7 +127,7 @@ const GENDER_COLORS: Record<string, string> = {
   M: "#60a5fa", F: "#f472b6", X: "#34d399",
 };
 
-const EMPTY_PRUEBA = { name: "", category: "", gender: "", scheduledAt: "", venueName: "" };
+const EMPTY_PRUEBA = { name: "", category: "", gender: "", scheduledAt: "", venueName: "", useDateRange: false, rangeStart: "", rangeEnd: "", rangeTime: "" };
 
 const pal = {
   accent: "#21D0B3",
@@ -180,6 +210,11 @@ export default function DeportesPage() {
   const [calMonthCursor, setCalMonthCursor] = useState(() => { const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); return d; });
   const [calSelectedDay, setCalSelectedDay] = useState(() => new Date());
   const [pruebaForm, setPruebaForm] = useState(EMPTY_PRUEBA);
+  const [premiacion, setPremiacion] = useState<PremiacionForm>(EMPTY_PREMIACION);
+  const vipAthletes = useMemo(
+    () => (athletes || []).filter((a) => String(a.userType ?? "").toUpperCase() === "VIP"),
+    [athletes],
+  );
   const [pruebaSaving, setPruebaSaving] = useState(false);
   const [pruebaError, setPruebaError] = useState<string | null>(null);
 
@@ -377,8 +412,39 @@ export default function DeportesPage() {
 
   const openAddPrueba = (parentId: string) => {
     setPruebaForm(EMPTY_PRUEBA);
+    setPremiacion(EMPTY_PREMIACION);
     setPruebaError(null);
     setPruebaModal({ parentId });
+  };
+
+  const loadPremiacionForDiscipline = async (disciplineId: string) => {
+    try {
+      const existing = await apiFetch<any>(`/premiaciones/by-discipline/${disciplineId}`);
+      if (!existing) {
+        setPremiacion(EMPTY_PREMIACION);
+        return;
+      }
+      const iso = existing.scheduled_at;
+      const dt = iso ? new Date(iso) : null;
+      const scheduledAtLocal = dt
+        ? `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}T${String(dt.getHours()).padStart(2, "0")}:${String(dt.getMinutes()).padStart(2, "0")}`
+        : "";
+      setPremiacion({
+        enabled: true,
+        id: existing.id,
+        scheduledAt: scheduledAtLocal,
+        venueId: existing.venue_id || "",
+        venueName: existing.venue_name || "",
+        locationDetail: existing.location_detail || "",
+        notes: existing.notes || "",
+        awarders: (existing.awarders || []).map((a: any) => ({
+          athleteId: a.athlete_id,
+          role: a.role,
+        })),
+      });
+    } catch {
+      setPremiacion(EMPTY_PREMIACION);
+    }
   };
 
   const openEditPrueba = (d: Discipline) => {
@@ -386,11 +452,57 @@ export default function DeportesPage() {
       name: d.name ?? "",
       category: d.category ?? "",
       gender: d.gender ?? "",
-      scheduledAt: d.scheduledAt ? d.scheduledAt.slice(0, 16) : "",
+      scheduledAt: d.scheduledAt ? (() => { const dt = new Date(d.scheduledAt); const y = dt.getFullYear(); const m = String(dt.getMonth()+1).padStart(2,"0"); const day = String(dt.getDate()).padStart(2,"0"); const h = String(dt.getHours()).padStart(2,"0"); const mi = String(dt.getMinutes()).padStart(2,"0"); return `${y}-${m}-${day}T${h}:${mi}`; })() : "",
       venueName: d.venueName ?? "",
+      useDateRange: false,
+      rangeStart: "",
+      rangeEnd: "",
+      rangeTime: "",
     });
+    setPremiacion(EMPTY_PREMIACION);
+    void loadPremiacionForDiscipline(d.id);
     setPruebaError(null);
     setPruebaModal({ editing: d, parentId: d.parentId! });
+  };
+
+  const savePremiacionForDiscipline = async (disciplineId: string) => {
+    if (!premiacion.enabled) {
+      if (premiacion.id) {
+        try { await apiFetch(`/premiaciones/${premiacion.id}`, { method: "DELETE" }); } catch {}
+      }
+      return;
+    }
+    const defaultScheduledAt = pruebaForm.scheduledAt
+      ? new Date(pruebaForm.scheduledAt).toISOString()
+      : new Date().toISOString();
+    const payload = {
+      disciplineId,
+      eventId: selectedEventId || undefined,
+      title: pruebaForm.name.trim() || "Premiación",
+      discipline: undefined,
+      scheduledAt: premiacion.scheduledAt
+        ? new Date(premiacion.scheduledAt).toISOString()
+        : defaultScheduledAt,
+      venueName: premiacion.venueName || pruebaForm.venueName || undefined,
+      venueId: premiacion.venueId || undefined,
+      locationDetail: premiacion.locationDetail || undefined,
+      notes: premiacion.notes || undefined,
+      status: "SCHEDULED",
+      awarders: premiacion.awarders.filter((a) => a.athleteId),
+    };
+    if (premiacion.id) {
+      await apiFetch(`/premiaciones/${premiacion.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    } else {
+      await apiFetch(`/premiaciones`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    }
   };
 
   const savePrueba = async () => {
@@ -398,30 +510,69 @@ export default function DeportesPage() {
     setPruebaSaving(true);
     setPruebaError(null);
     try {
-      const body = {
-        name: pruebaForm.name.trim(),
-        category: pruebaForm.category || null,
-        gender: pruebaForm.gender || null,
-        parentId: pruebaModal!.parentId,
-        eventId: selectedEventId || null,
-        scheduledAt: pruebaForm.scheduledAt ? new Date(pruebaForm.scheduledAt).toISOString() : null,
-        venueName: pruebaForm.venueName || null,
-      };
-      if (pruebaModal?.editing) {
-        await apiFetch(`/disciplines/${pruebaModal.editing.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
+      if (pruebaForm.useDateRange && !pruebaModal?.editing && pruebaForm.rangeStart && pruebaForm.rangeEnd && pruebaForm.rangeTime) {
+        // Create one prueba per day in the range
+        const start = new Date(pruebaForm.rangeStart + "T00:00:00");
+        const end = new Date(pruebaForm.rangeEnd + "T00:00:00");
+        const [hours, minutes] = pruebaForm.rangeTime.split(":").map(Number);
+        let created = 0;
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+          const dd = String(d.getDate()).padStart(2, "0");
+          const mm = String(d.getMonth() + 1).padStart(2, "0");
+          const yyyy = d.getFullYear();
+          const hh = String(hours).padStart(2, "0");
+          const mi = String(minutes).padStart(2, "0");
+          const scheduledAt = new Date(yyyy, d.getMonth(), d.getDate(), hours, minutes, 0).toISOString();
+          const dateLabel = `${dd}/${mm}`;
+          await apiFetch("/disciplines", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: `${pruebaForm.name.trim()} (${dateLabel})`,
+              category: pruebaForm.category || null,
+              gender: pruebaForm.gender || null,
+              parentId: pruebaModal!.parentId,
+              eventId: selectedEventId || null,
+              scheduledAt,
+              venueName: pruebaForm.venueName || null,
+            }),
+          });
+          created++;
+        }
+        setPruebaModal(null);
+        await load();
       } else {
-        await apiFetch("/disciplines", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
+        const body = {
+          name: pruebaForm.name.trim(),
+          category: pruebaForm.category || null,
+          gender: pruebaForm.gender || null,
+          parentId: pruebaModal!.parentId,
+          eventId: selectedEventId || null,
+          scheduledAt: pruebaForm.scheduledAt ? new Date(pruebaForm.scheduledAt).toISOString() : null,
+          venueName: pruebaForm.venueName || null,
+        };
+        let disciplineId: string | null = null;
+        if (pruebaModal?.editing) {
+          await apiFetch(`/disciplines/${pruebaModal.editing.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          disciplineId = pruebaModal.editing.id;
+        } else {
+          const created = await apiFetch<{ id: string }>("/disciplines", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          disciplineId = created?.id ?? null;
+        }
+        if (disciplineId) {
+          await savePremiacionForDiscipline(disciplineId);
+        }
+        setPruebaModal(null);
+        await load();
       }
-      setPruebaModal(null);
-      await load();
     } catch (e) {
       setPruebaError(e instanceof Error ? e.message : "Error al guardar");
     } finally {
@@ -429,10 +580,11 @@ export default function DeportesPage() {
     }
   };
 
+  const [deletePruebaConfirm, setDeletePruebaConfirm] = useState<Discipline | null>(null);
   const removePrueba = async (d: Discipline) => {
-    if (!confirm(`¿Eliminar la prueba "${d.name}"?`)) return;
     try {
       await apiFetch(`/disciplines/${d.id}`, { method: "DELETE" });
+      setDeletePruebaConfirm(null);
       await load();
     } catch (e) {
       alert(e instanceof Error ? e.message : "Error al eliminar");
@@ -452,10 +604,6 @@ export default function DeportesPage() {
       <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "20px", padding: "24px 28px 22px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
           <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#94a3b8" }}>{t("Deportes")}</span>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.25)", borderRadius: "99px", padding: "2px 10px" }}>
-            <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#21D0B3", display: "inline-block", animation: "pulse 2s ease-in-out infinite" }} />
-            <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: "#21D0B3" }}>EN VIVO</span>
-          </span>
         </div>
         <h1 style={{ fontSize: "22px", fontWeight: 800, color: pal.titleColor, margin: "0 0 16px" }}>{t("Planificación deportiva")}</h1>
 
@@ -755,9 +903,9 @@ export default function DeportesPage() {
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                 </svg>
                               </button>
-                              <button onClick={() => removePrueba(prueba)} style={{ background: "none", border: "none", cursor: "pointer", color: "#cbd5e1", padding: "4px" }}
+                              <button onClick={() => setDeletePruebaConfirm(prueba)} style={{ background: "none", border: "none", cursor: "pointer", color: "#f87171", padding: "4px" }}
                                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#ef4444"; }}
-                                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#cbd5e1"; }}
+                                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#f87171"; }}
                               >
                                 <svg style={{ width: "14px", height: "14px" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -922,7 +1070,7 @@ export default function DeportesPage() {
       {/* ── Prueba modal */}
       {pruebaModal && (
         <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(15,23,42,0.4)", backdropFilter: "blur(4px)", padding: "16px" }}>
-          <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "20px", padding: "24px", width: "100%", maxWidth: "380px", boxShadow: "0 8px 40px rgba(15,23,42,0.15)" }}>
+          <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "20px", padding: "24px", width: "100%", maxWidth: "560px", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 8px 40px rgba(15,23,42,0.15)" }}>
             <h2 style={{ fontWeight: 700, fontSize: "18px", color: "#0f172a", marginBottom: "4px" }}>
               {pruebaModal.editing ? t("Editar prueba") : t("Nueva prueba")}
             </h2>
@@ -962,15 +1110,36 @@ export default function DeportesPage() {
                 </label>
               </div>
 
-              <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Fecha y hora")}</span>
-                <input
-                  style={fieldStyle}
-                  type="datetime-local"
-                  value={pruebaForm.scheduledAt}
-                  onChange={e => setPruebaForm(f => ({ ...f, scheduledAt: e.target.value }))}
-                />
-              </label>
+              {/* Date range toggle */}
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
+                <button type="button" onClick={() => setPruebaForm(f => ({ ...f, useDateRange: !f.useDateRange }))}
+                  style={{ width: 38, height: 20, borderRadius: 10, border: "none", cursor: "pointer", position: "relative", background: pruebaForm.useDateRange ? "#21D0B3" : "#cbd5e1", transition: "background 0.2s" }}>
+                  <span style={{ position: "absolute", top: 2, left: pruebaForm.useDateRange ? 20 : 2, width: 16, height: 16, borderRadius: 8, background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.2)", transition: "left 0.2s" }} />
+                </button>
+                <span style={{ fontSize: 12, fontWeight: 600, color: "#0f172a" }}>{t("Rango de fechas (varios días, misma hora)")}</span>
+              </div>
+
+              {pruebaForm.useDateRange ? (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
+                  <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <span style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Fecha inicio")}</span>
+                    <input style={fieldStyle} type="date" value={pruebaForm.rangeStart} onChange={e => setPruebaForm(f => ({ ...f, rangeStart: e.target.value }))} />
+                  </label>
+                  <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <span style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Fecha fin")}</span>
+                    <input style={fieldStyle} type="date" value={pruebaForm.rangeEnd} onChange={e => setPruebaForm(f => ({ ...f, rangeEnd: e.target.value }))} />
+                  </label>
+                  <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <span style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Hora")}</span>
+                    <input style={fieldStyle} type="time" value={pruebaForm.rangeTime} onChange={e => setPruebaForm(f => ({ ...f, rangeTime: e.target.value }))} />
+                  </label>
+                </div>
+              ) : (
+                <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Fecha y hora")}</span>
+                  <input style={fieldStyle} type="datetime-local" value={pruebaForm.scheduledAt} onChange={e => setPruebaForm(f => ({ ...f, scheduledAt: e.target.value }))} />
+                </label>
+              )}
 
               <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                 <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Recinto")}</span>
@@ -989,6 +1158,100 @@ export default function DeportesPage() {
                   })()}
                 </select>
               </label>
+
+              {/* ───── Ceremonia de premiación ───── */}
+              <div style={{ borderTop: "1px dashed #e2e8f0", paddingTop: "12px", marginTop: "4px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <button
+                    type="button"
+                    onClick={() => setPremiacion(p => ({ ...p, enabled: !p.enabled }))}
+                    style={{ width: 38, height: 20, borderRadius: 10, border: "none", cursor: "pointer", position: "relative", background: premiacion.enabled ? "#21D0B3" : "#cbd5e1", transition: "background 0.2s" }}
+                  >
+                    <span style={{ position: "absolute", top: 2, left: premiacion.enabled ? 20 : 2, width: 16, height: 16, borderRadius: 8, background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.2)", transition: "left 0.2s" }} />
+                  </button>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>{t("Esta prueba tiene ceremonia de premiación")}</span>
+                </div>
+
+                {premiacion.enabled && (
+                  <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: "12px", display: "flex", flexDirection: "column", gap: 10 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                      <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        <span style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("Fecha y hora ceremonia")}</span>
+                        <input style={fieldStyle} type="datetime-local" value={premiacion.scheduledAt} onChange={e => setPremiacion(p => ({ ...p, scheduledAt: e.target.value }))} />
+                      </label>
+                      <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        <span style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("Sede")}</span>
+                        <select style={fieldStyle} value={premiacion.venueName} onChange={e => setPremiacion(p => ({ ...p, venueName: e.target.value }))}>
+                          <option value="">{t("Usa la misma de la prueba")}</option>
+                          {venueOptions.map((v) => (
+                            <option key={v.id} value={v.name}>{v.name}</option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                    <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      <span style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("Ubicación específica")}</span>
+                      <input style={fieldStyle} placeholder={t("Zona central — Tarima 1") as string} value={premiacion.locationDetail} onChange={e => setPremiacion(p => ({ ...p, locationDetail: e.target.value }))} />
+                    </label>
+                    <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      <span style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("Notas")}</span>
+                      <textarea rows={2} style={{ ...fieldStyle, resize: "none" }} placeholder={t("Instrucciones para los premiadores") as string} value={premiacion.notes} onChange={e => setPremiacion(p => ({ ...p, notes: e.target.value }))} />
+                    </label>
+
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#64748b" }}>{t("Equipo de premiadores (VIP)")}</span>
+                        <button
+                          type="button"
+                          onClick={() => setPremiacion(p => ({ ...p, awarders: [...p.awarders, { athleteId: "", role: "AWARDER" }] }))}
+                          style={{ fontSize: 11, padding: "4px 10px", borderRadius: 8, border: "1px solid #21D0B3", background: "rgba(33,208,179,0.08)", color: "#14b8a6", cursor: "pointer", fontWeight: 700 }}
+                        >
+                          + {t("Agregar VIP")}
+                        </button>
+                      </div>
+                      {premiacion.awarders.length === 0 && (
+                        <p style={{ fontSize: 11, color: "#94a3b8", padding: "8px", textAlign: "center", border: "1px dashed #e2e8f0", borderRadius: 8 }}>
+                          {t("Sin VIPs asignados. Agrega al menos uno.")}
+                        </p>
+                      )}
+                      {premiacion.awarders.map((a, i) => (
+                        <div key={i} style={{ display: "grid", gridTemplateColumns: "2fr 1fr auto", gap: 6, marginBottom: 4 }}>
+                          <select
+                            style={fieldStyle}
+                            value={a.athleteId}
+                            onChange={e => setPremiacion(p => {
+                              const next = [...p.awarders];
+                              next[i] = { ...next[i], athleteId: e.target.value };
+                              return { ...p, awarders: next };
+                            })}
+                          >
+                            <option value="">— VIP —</option>
+                            {vipAthletes.map(x => (
+                              <option key={x.id} value={x.id}>{x.fullName || x.id.slice(0, 8)}</option>
+                            ))}
+                          </select>
+                          <select
+                            style={fieldStyle}
+                            value={a.role}
+                            onChange={e => setPremiacion(p => {
+                              const next = [...p.awarders];
+                              next[i] = { ...next[i], role: e.target.value };
+                              return { ...p, awarders: next };
+                            })}
+                          >
+                            {PREMIACION_ROLES.map(r => (<option key={r.value} value={r.value}>{r.label}</option>))}
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() => setPremiacion(p => ({ ...p, awarders: p.awarders.filter((_, j) => j !== i) }))}
+                            style={{ padding: "6px 10px", border: "none", background: "#fee2e2", color: "#ef4444", borderRadius: 6, cursor: "pointer", fontSize: 12 }}
+                          >×</button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {pruebaError && <p style={{ marginTop: "12px", fontSize: "13px", color: "#ef4444" }}>{pruebaError}</p>}
@@ -997,6 +1260,31 @@ export default function DeportesPage() {
               <button style={ghostBtn} onClick={() => setPruebaModal(null)} disabled={pruebaSaving}>{t("Cancelar")}</button>
               <button style={{ ...primaryBtn, opacity: pruebaSaving ? 0.7 : 1 }} onClick={savePrueba} disabled={pruebaSaving}>
                 {pruebaSaving ? t("Guardando…") : t("Guardar")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete prueba confirmation modal */}
+      {deletePruebaConfirm && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(15,23,42,0.5)", backdropFilter: "blur(4px)", padding: "16px" }}>
+          <div style={{ background: "#fff", borderRadius: "20px", width: "100%", maxWidth: "380px", padding: "28px", boxShadow: "0 8px 40px rgba(15,23,42,0.2)", textAlign: "center" }}>
+            <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "rgba(239,68,68,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </div>
+            <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#0f172a", margin: "0 0 6px" }}>Eliminar prueba</h3>
+            <p style={{ fontSize: "13px", color: "#64748b", margin: "0 0 20px" }}>
+              ¿Estás seguro de eliminar <b style={{ color: "#0f172a" }}>{deletePruebaConfirm.name}</b>? Esta acción no se puede deshacer.
+            </p>
+            <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
+              <button onClick={() => setDeletePruebaConfirm(null)}
+                style={{ padding: "10px 24px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
+                Cancelar
+              </button>
+              <button onClick={() => removePrueba(deletePruebaConfirm)}
+                style={{ padding: "10px 24px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #ef4444, #dc2626)", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 10px rgba(239,68,68,0.3)" }}>
+                Sí, eliminar
               </button>
             </div>
           </div>

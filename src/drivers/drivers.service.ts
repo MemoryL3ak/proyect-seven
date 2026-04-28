@@ -545,6 +545,45 @@ export class DriversService {
     return this.update(id, { photoUrl: publicUrl });
   }
 
+  async uploadDocument(id: string, key: string, dataUrl: string) {
+    const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+    if (!match) throw new BadRequestException('Invalid document payload');
+
+    const contentType = match[1];
+    const base64 = match[2];
+    const buffer = Buffer.from(base64, 'base64');
+    const extension = contentType.split('/')[1]?.split('+')[0] || 'bin';
+    const path = `${id}/${key}-${Date.now()}.${extension}`;
+
+    const admin = this.getAdminClient();
+    if (!admin) {
+      throw new InternalServerErrorException(
+        'SUPABASE_SERVICE_ROLE_KEY is required to upload driver documents',
+      );
+    }
+
+    const { error } = await admin.storage
+      .from('driver-documents')
+      .upload(path, buffer, { contentType, upsert: true });
+
+    if (error) {
+      throw new InternalServerErrorException(
+        error.message || 'Error uploading driver document',
+      );
+    }
+
+    const { data } = admin.storage.from('driver-documents').getPublicUrl(path);
+    const publicUrl = data?.publicUrl ?? null;
+    if (!publicUrl) {
+      throw new InternalServerErrorException('Error resolving driver document URL');
+    }
+
+    // Update driver metadata with the public URL
+    const driver = await this.findOne(id);
+    const currentMeta = (driver as any).metadata ?? {};
+    return this.update(id, { metadata: { ...currentMeta, [key]: publicUrl } } as any);
+  }
+
   async requestAccess(email: string) {
     const normalizedEmail = email.trim().toLowerCase();
 

@@ -122,7 +122,17 @@ export class SofiaService {
   ): Promise<string> {
     try {
       const result = await this.executeToolInner(name, args);
-      return JSON.stringify(result);
+      let json = JSON.stringify(result);
+      // Truncate large tool outputs to avoid OpenAI token limits
+      if (json.length > 30000) {
+        const arr = Array.isArray(result) ? result : null;
+        if (arr) {
+          json = JSON.stringify({ results: arr.slice(0, 20), totalCount: arr.length, note: 'Resultados truncados. Usa filtros para refinar la consulta.' });
+        } else {
+          json = json.slice(0, 30000) + '..."(truncated)"}';
+        }
+      }
+      return json;
     } catch (err) {
       this.logger.error(`Tool ${name} failed: ${err}`);
       return JSON.stringify({ error: `Error ejecutando ${name}: ${err}` });
@@ -666,7 +676,7 @@ export class SofiaService {
     let fullText = '';
     let responseId: string | null = null;
     const functionCalls: Array<{ callId: string; name: string; arguments: string }> = [];
-    const fcArgBuffers = new Map<string, { name: string; args: string }>();
+    const fcArgBuffers = new Map<string, { name: string; args: string; callId?: string }>();
 
     for await (const chunk of nodeStream) {
       buffer += typeof chunk === 'string' ? chunk : Buffer.from(chunk).toString('utf-8');
@@ -705,18 +715,22 @@ export class SofiaService {
         if (eventType === 'response.function_call_arguments.delta') {
           const itemId = event.item_id || '';
           if (!fcArgBuffers.has(itemId)) {
-            fcArgBuffers.set(itemId, { name: '', args: '' });
+            fcArgBuffers.set(itemId, { name: event.name || '', args: '', callId: event.call_id || '' });
           }
           fcArgBuffers.get(itemId)!.args += event.delta || '';
+          if (event.call_id && !fcArgBuffers.get(itemId)!.callId) {
+            fcArgBuffers.get(itemId)!.callId = event.call_id;
+          }
         }
 
-        // Response output item added (function_call type carries the name)
+        // Response output item added (function_call type carries the name and call_id)
         if (eventType === 'response.output_item.added') {
           const item = event.item;
           if (item?.type === 'function_call') {
             fcArgBuffers.set(item.id || '', {
               name: item.name || '',
               args: '',
+              callId: item.call_id || item.id || '',
             });
           }
         }
@@ -727,7 +741,7 @@ export class SofiaService {
           const buf = fcArgBuffers.get(itemId);
           if (buf) {
             functionCalls.push({
-              callId: event.call_id || itemId,
+              callId: event.call_id || (buf as any).callId || itemId,
               name: buf.name || event.name || '',
               arguments: event.arguments || buf.args,
             });

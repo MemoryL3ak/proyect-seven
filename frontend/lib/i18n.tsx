@@ -745,7 +745,7 @@ const translations: Record<Locale, Record<string, string>> = {
     "Error eliminando reserva": "Error deleting reservation",
     // ── Trips ────────────────────────────────────────────────────────────
     "Sin solicitante": "No requester",
-    "Pendiente de despacho": "Pending dispatch",
+    "Pendiente asignación": "Pending assignment",
     // ── Health ───────────────────────────────────────────────────────────
     "Municipal": "Municipal",
     "Particular subvencionado": "Subsidized private",
@@ -1542,7 +1542,7 @@ const translations: Record<Locale, Record<string, string>> = {
     "Error eliminando reserva": "Erro ao excluir reserva",
     // ── Trips ────────────────────────────────────────────────────────────
     "Sin solicitante": "Sem solicitante",
-    "Pendiente de despacho": "Pendente de despacho",
+    "Pendiente asignación": "Pendente atribuição",
     // ── Health ───────────────────────────────────────────────────────────
     "Municipal": "Municipal",
     "Particular subvencionado": "Particular subsidiado",

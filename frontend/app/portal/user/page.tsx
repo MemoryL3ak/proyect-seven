@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { apiFetch } from "@/lib/api";
 import { getMobileSession, mobileAwareLogout } from "@/lib/mobile-auth";
 import { filterValidatedAthletes } from "@/lib/athletes";
@@ -8,6 +8,9 @@ import { useI18n } from "@/lib/i18n";
 import TripMap from "@/components/TripMap";
 import NotificationBell, { useNotifications } from "@/components/NotificationBell";
 import TripChat from "@/components/TripChat";
+import AssistanceChat from "@/components/AssistanceChat";
+import { buildCredentialHtml } from "@/lib/credential-template";
+import QRCode from "qrcode";
 
 type Athlete = {
   id: string;
@@ -32,6 +35,13 @@ type Athlete = {
   hotelCheckoutAt?: string | null;
   transportTripId?: string | null;
   transportVehicleId?: string | null;
+  isDelegationLead?: boolean | null;
+  disciplineId?: string | null;
+  accreditationStatus?: string | null;
+  credentialCode?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  metadata?: Record<string, unknown> | null;
 };
 
 type Flight = { id: string; flightNumber: string; airline: string; arrivalTime: string | null };
@@ -64,6 +74,11 @@ type CalendarEvent = {
   gender?: string | null;
 };
 type DisciplineParent = { id: string; name?: string | null };
+type Venue = { id: string; eventId?: string | null; name?: string | null; address?: string | null; region?: string | null; commune?: string | null; photoUrl?: string | null };
+type Accommodation = { id: string; eventId?: string | null; name?: string | null; address?: string | null; city?: string | null; country?: string | null; checkIn?: string | null; checkOut?: string | null; roomType?: string | null; contactPhone?: string | null };
+type FoodLocation = { id: string; accommodationId?: string | null; name: string; description?: string | null; capacity?: number | null; clientTypes: string[] };
+type FoodMenu = { id: string; date: string; mealType: string; title: string; description?: string | null; dietaryType?: string | null; accommodationId?: string | null };
+type PortalTab = "itinerario" | "actividades" | "calendario" | "sedes" | "alimentacion" | "delegacion" | "cuenta";
 
 const countryLabels: Record<string, string> = {
   ARG:"Argentina",BOL:"Bolivia",BRA:"Brasil",CHL:"Chile",COL:"Colombia",
@@ -129,6 +144,7 @@ export default function UserPortalPage() {
   const { t } = useI18n();
   const [athleteId, setAthleteId] = useState("");
   const [athlete, setAthlete] = useState<Athlete | null>(null);
+  const [sessionChecked, setSessionChecked] = useState(false);
   const [flight, setFlight] = useState<Flight | null>(null);
   const [hotel, setHotel] = useState<Hotel | null>(null);
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
@@ -157,24 +173,83 @@ export default function UserPortalPage() {
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [disciplineParents, setDisciplineParents] = useState<DisciplineParent[]>([]);
   const [healthRecord, setHealthRecord] = useState<Record<string, any> | null>(null);
+  const [delegationMembers, setDelegationMembers] = useState<Athlete[]>([]);
+  const [venues, setVenues] = useState<Venue[]>([]);
+  const [allAccommodations, setAllAccommodations] = useState<Accommodation[]>([]);
+  const [foodLocations, setFoodLocations] = useState<FoodLocation[]>([]);
+  const [foodMenus, setFoodMenus] = useState<FoodMenu[]>([]);
+  const [activeTab, setActiveTab] = useState<PortalTab>("itinerario");
+  const [actSubTab, setActSubTab] = useState<"curso" | "historial">("curso");
+  const [calMonthCursor, setCalMonthCursor] = useState(() => new Date());
+  const [calSelectedDay, setCalSelectedDay] = useState<number | null>(null);
+  const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const notify = useNotifications();
+
+  const isChief = athlete?.isDelegationLead === true;
+  const portalTabs = useMemo(() => {
+    const all: { key: PortalTab; label: string; icon: React.ReactNode }[] = [
+      { key:"itinerario", label:"Itinerario", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="5" r="3"/><line x1="12" y1="8" x2="12" y2="16"/><circle cx="12" cy="19" r="3"/></svg> },
+      { key:"actividades", label:"Actividades", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> },
+      { key:"calendario", label:"Calendario", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> },
+      { key:"sedes", label:"Sedes", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg> },
+      { key:"alimentacion", label:"Comida", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg> },
+      { key:"delegacion", label:"Delegación", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg> },
+      { key:"cuenta", label:"Cuenta", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
+    ];
+    if (!isChief) return all.filter(t => ["actividades","calendario","sedes","alimentacion","cuenta"].includes(t.key));
+    return all;
+  }, [isChief]);
+
+  // Restore session on mount
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem("portal_user_id");
+      if (saved && !athlete) {
+        loadAthlete(saved).finally(() => setSessionChecked(true));
+      } else {
+        setSessionChecked(true);
+      }
+    } catch { setSessionChecked(true); }
+  }, []);
+
+  // Set default tab based on profile
+  useEffect(() => {
+    if (athlete && !isChief) setActiveTab("actividades");
+  }, [athlete?.id]);
+
+  const DAY_NAMES = ["L","M","M","J","V","S","D"];
+  function getMonthGrid(cursor: Date) {
+    const y = cursor.getFullYear(), m = cursor.getMonth();
+    const firstDay = new Date(y, m, 1).getDay();
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    const offset = (firstDay + 6) % 7;
+    const cells: (number | null)[] = Array(offset).fill(null);
+    for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+    while (cells.length % 7 !== 0) cells.push(null);
+    return cells;
+  }
   const prevTripStatus = useRef<string | null>(null);
   const arrivedNotified = useRef<string | null>(null); // tracks which segment was already notified
   const [bootCheckDone, setBootCheckDone] = useState(false);
 
-  const loadAthlete = async (override?: string) => {
-    const codeInput = (override ?? athleteId).trim();
-    if (!codeInput) return;
+  const loadAthlete = async (directId?: string) => {
+    if (!directId && !athleteId) return;
     setLoading(true);
     setError(null);
     try {
-      const normalizedInput = codeInput.toLowerCase();
-      if (normalizedInput.length < 6) { setError(t("El código ingresado no es válido.")); return; }
-      const list = await apiFetch<Athlete[]>(`/athletes`);
-      const validatedAthletes = filterValidatedAthletes(list || []);
-      const match = validatedAthletes.find((a) => a.id?.slice(-6).toLowerCase() === normalizedInput);
-      if (!match) { setError(t("El código ingresado no corresponde a un usuario registrado.")); return; }
-      const data = await apiFetch<Athlete>(`/athletes/${match.id}`);
+      let data: Athlete;
+      if (directId) {
+        data = await apiFetch<Athlete>(`/athletes/${directId}`);
+        if (!data?.id) { setError("Sesión expirada."); return; }
+      } else {
+        const normalizedInput = athleteId.trim().toLowerCase();
+        if (normalizedInput.length < 6) { setError(t("El código ingresado no es válido.")); return; }
+        const list = await apiFetch<Athlete[]>(`/athletes`);
+        const validatedAthletes = filterValidatedAthletes(list || []);
+        const match = validatedAthletes.find((a) => a.id?.slice(-6).toLowerCase() === normalizedInput);
+        if (!match) { setError(t("El código ingresado no corresponde a un usuario registrado.")); return; }
+        data = await apiFetch<Athlete>(`/athletes/${match.id}`);
+      }
 
       if (data.userType === "VIP") {
         window.location.href = `/portal/vehicle-request?athleteId=${data.id}`;
@@ -182,6 +257,7 @@ export default function UserPortalPage() {
       }
 
       setAthlete(data);
+      try { sessionStorage.setItem("portal_user_id", data.id); } catch {}
 
       const [flightData, hotelData, vehicleData, tripData, tripsList, eventData, delegationData, assignmentData] = await Promise.all([
         data.arrivalFlightId ? apiFetch<Flight>(`/flights/${data.arrivalFlightId}`) : Promise.resolve(null),
@@ -250,9 +326,36 @@ export default function UserPortalPage() {
         );
       } catch { setCalendarEvents([]); setDisciplineParents([]); }
 
+      // Load venues, accommodations, food locations and menus
+      try {
+        const [venueData, accomData, foodLocData, foodMenuData] = await Promise.all([
+          apiFetch<Venue[]>("/venues").catch(() => []),
+          apiFetch<Accommodation[]>("/accommodations").catch(() => []),
+          apiFetch<FoodLocation[]>("/food-locations").catch(() => []),
+          apiFetch<FoodMenu[]>("/food-menus").catch(() => []),
+        ]);
+        setVenues((venueData || []).filter(v => !data.eventId || v.eventId === data.eventId));
+        setAllAccommodations(accomData || []);
+        const athleteClientType = data.userType || "";
+        setFoodLocations(
+          (foodLocData || []).filter(fl =>
+            !fl.clientTypes || fl.clientTypes.length === 0 || fl.clientTypes.includes(athleteClientType)
+          ),
+        );
+        setFoodMenus(foodMenuData || []);
+      } catch { /* ignore */ }
+
       // Load health record from athlete metadata
       const hr = (data as any).metadata?.healthRecord ?? null;
       setHealthRecord(hr);
+
+      // Load delegation members for delegation leads
+      if (data.isDelegationLead && data.delegationId) {
+        try {
+          const allAthletes = await apiFetch<Athlete[]>("/athletes");
+          setDelegationMembers((allAthletes || []).filter(a => a.delegationId === data.delegationId && a.id !== data.id));
+        } catch { setDelegationMembers([]); }
+      }
 
     } catch (err) {
       let message = err instanceof Error ? err.message : "";
@@ -388,9 +491,7 @@ export default function UserPortalPage() {
     }
     const session = getMobileSession();
     if (session?.kind === "athlete" && session.athleteId) {
-      const code = session.athleteId.slice(-6);
-      setAthleteId(code);
-      void loadAthlete(code).finally(() => setBootCheckDone(true));
+      void loadAthlete(session.athleteId).finally(() => setBootCheckDone(true));
     } else {
       setBootCheckDone(true);
     }
@@ -541,6 +642,22 @@ export default function UserPortalPage() {
   /* ══════════════════════════════════════════════════════════
      LOGIN SCREEN
   ══════════════════════════════════════════════════════════ */
+  if (!sessionChecked) return (
+    <div style={{ minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"linear-gradient(135deg,#020c18 0%,#0a1628 50%,#041220 100%)",position:"relative",overflow:"hidden" }}>
+      <div style={{ position:"absolute",top:"-20%",right:"-10%",width:"50vw",height:"50vw",borderRadius:"50%",background:"radial-gradient(circle,rgba(33,208,179,0.08) 0%,transparent 70%)",pointerEvents:"none" }} />
+      <div style={{ position:"absolute",bottom:"-15%",left:"-10%",width:"40vw",height:"40vw",borderRadius:"50%",background:"radial-gradient(circle,rgba(31,205,255,0.06) 0%,transparent 70%)",pointerEvents:"none" }} />
+      <div style={{ position:"relative",zIndex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:20 }}>
+        <img src="/branding/LOGO-SEVEN-1.png" alt="Seven Arena" style={{ height:48,width:"auto",objectFit:"contain",filter:"drop-shadow(0 0 24px rgba(33,208,179,0.4)) drop-shadow(0 4px 12px rgba(0,0,0,0.6))",marginBottom:8 }} />
+        <div style={{ width:44,height:44,position:"relative" }}>
+          <div style={{ position:"absolute",inset:0,border:"3px solid rgba(33,208,179,0.15)",borderRadius:"50%" }} />
+          <div style={{ position:"absolute",inset:0,border:"3px solid transparent",borderTopColor:"#21D0B3",borderRadius:"50%",animation:"sa-spin 0.9s cubic-bezier(0.4,0,0.2,1) infinite" }} />
+        </div>
+        <p style={{ fontSize:13,fontWeight:600,color:"rgba(255,255,255,0.5)",margin:0,letterSpacing:"0.03em" }}>Cargando portal...</p>
+      </div>
+      <style>{`@keyframes sa-spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+
   if (!athlete) return (
     <div className="flex flex-col lg:flex-row" style={{ minHeight: "100vh", background: "#020c18", position: "relative", overflow: "hidden" }}>
       <style>{`
@@ -783,7 +900,7 @@ export default function UserPortalPage() {
                 <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
               </svg>
             </button>
-            <button type="button" onClick={() => mobileAwareLogout()}
+            <button type="button" onClick={() => { try { sessionStorage.removeItem("portal_user_id"); } catch {} mobileAwareLogout(); }}
               style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(255,255,255,0.15)",background:"rgba(255,255,255,0.08)",cursor:"pointer",flexShrink:0 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
@@ -793,17 +910,21 @@ export default function UserPortalPage() {
         </div>
       </div>
 
-      <div className="db-content">
+      <div className="db-content" style={{ paddingBottom:"calc(70px + env(safe-area-inset-bottom))" }}>
 
-        {/* ── Profile card ── */}
-        <div className="db-profile-card">
+        {/* ── Profile card (compact) ── */}
+        <div className="db-profile-card" style={{ marginBottom:10 }}>
           {/* Left accent bar */}
           <div style={{ position:"absolute",left:0,top:0,bottom:0,width:"4px",background:"linear-gradient(180deg,#21D0B3,#1FCDFF,#21D0B3)" }} />
           {/* Subtle corner glow */}
           <div style={{ position:"absolute",top:0,right:0,width:"200px",height:"200px",borderRadius:"50%",background:"radial-gradient(ellipse,rgba(33,208,179,0.05) 0%,transparent 65%)",transform:"translate(60px,-60px)",pointerEvents:"none" }} />
           <div className="db-profile-body">
             <div style={{ position:"relative",flexShrink:0 }}>
-              <div className="db-avatar">{initials}</div>
+              {(athlete?.metadata?.photoUrl as string)?.startsWith("http") ? (
+                <img src={athlete.metadata!.photoUrl as string} alt={athlete.fullName} className="db-avatar" style={{ objectFit:"cover" }} />
+              ) : (
+                <div className="db-avatar">{initials}</div>
+              )}
               <div style={{ position:"absolute",bottom:2,right:2,width:12,height:12,borderRadius:"50%",background:"#21D0B3",border:"2px solid #fff",boxShadow:"0 0 8px rgba(33,208,179,0.8)" }} />
             </div>
             <div style={{ minWidth:0 }}>
@@ -825,7 +946,533 @@ export default function UserPortalPage() {
           </div>
         </div>
 
-        {/* ── Info cards grid ── */}
+        {/* ── TAB CONTENT ── */}
+        <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+
+        {/* ─── Itinerario tab (chief only) ─── */}
+        {activeTab === "itinerario" && isChief && (
+          <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+            {/* Flight info */}
+            <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+              <div style={{ padding:"12px 14px",borderBottom:"1px solid #f1f5f9",display:"flex",alignItems:"center",gap:10 }}>
+                <IcoPlane />
+                <span style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#21D0B3" }}>Vuelo</span>
+              </div>
+              <div style={{ padding:"12px 14px" }}>
+                {flightLabel ? (
+                  <>
+                    <p style={{ fontSize:15,fontWeight:700,color:"#0f172a",margin:"0 0 4px" }}>{flightLabel}</p>
+                    {(athlete.arrivalTime || flight?.arrivalTime) && <p style={{ fontSize:12,color:"#64748b",margin:"0 0 2px" }}>Arribo: {fmt(athlete.arrivalTime || flight?.arrivalTime)}</p>}
+                    {athlete.origin && <p style={{ fontSize:12,color:"#64748b",margin:0 }}>Origen: {athlete.origin}</p>}
+                  </>
+                ) : <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>Sin vuelo asignado</p>}
+              </div>
+            </div>
+            {/* Hotel info */}
+            <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+              <div style={{ padding:"12px 14px",borderBottom:"1px solid #f1f5f9",display:"flex",alignItems:"center",gap:10 }}>
+                <IcoHotel />
+                <span style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#0fa894" }}>Hotel</span>
+              </div>
+              <div style={{ padding:"12px 14px" }}>
+                {hotel?.name ? (
+                  <>
+                    <p style={{ fontSize:15,fontWeight:700,color:"#0f172a",margin:"0 0 6px" }}>{hotel.name}</p>
+                    <div style={{ display:"flex",flexWrap:"wrap",gap:4 }}>
+                      {hotelRoom_ && <span style={{ fontSize:10,padding:"3px 8px",borderRadius:6,background:"#f0fdf8",color:"#0a7a6b",border:"1px solid rgba(33,208,179,0.2)",fontWeight:600 }}>Hab. {hotelRoom_}</span>}
+                      {hotelBed_ && <span style={{ fontSize:10,padding:"3px 8px",borderRadius:6,background:"#f1f5f9",color:"#475569",border:"1px solid #e2e8f0" }}>Cama {hotelBed_}</span>}
+                    </div>
+                  </>
+                ) : <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>Sin hotel asignado</p>}
+              </div>
+            </div>
+            {/* Check-ins */}
+            <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",padding:"12px 14px" }}>
+              <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#475569",margin:"0 0 10px" }}>Check-ins · {checkinsDone}/{checkins.length}</p>
+              <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
+                {checkins.map(({ label, ts }) => {
+                  const done = !!fmt(ts);
+                  return (
+                    <div key={label} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 10px",borderRadius:10,background:done?"rgba(33,208,179,0.04)":"#f8fafc",border:`1px solid ${done?"rgba(33,208,179,0.2)":"#f1f5f9"}` }}>
+                      <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+                        <div style={{ width:8,height:8,borderRadius:"50%",background:done?"#21D0B3":"#cbd5e1" }} />
+                        <span style={{ fontSize:12,color:done?"#0f172a":"#94a3b8",fontWeight:done?600:400 }}>{label}</span>
+                      </div>
+                      {done ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg> : <span style={{ fontSize:9,color:"#cbd5e1" }}>Pendiente</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            {/* Action buttons */}
+            <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
+              {[
+                { field:"airportCheckinAt" as const, label:"Marcar embarque / llegada", done:!!athlete.airportCheckinAt, icon:<IcoPlane /> },
+                { field:"hotelCheckinAt" as const, label:"Marcar check-in hotel", done:!!athlete.hotelCheckinAt, icon:<IcoHotel /> },
+                { field:"hotelCheckoutAt" as const, label:"Marcar check-out hotel", done:!!athlete.hotelCheckoutAt, icon:<IcoCheck /> },
+              ].filter(a => !a.done).map(a => (
+                <button key={a.field} type="button" disabled={markLoading===a.field} onClick={async () => {
+                  setMarkLoading(a.field);
+                  try {
+                    const now = new Date().toISOString();
+                    if (a.field === "hotelCheckinAt" || a.field === "hotelCheckoutAt") {
+                      if (hotelAssignment) {
+                        const key = a.field === "hotelCheckinAt" ? "checkinAt" : "checkoutAt";
+                        await apiFetch(`/hotel-assignments/${hotelAssignment.id}`, { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ [key]: now }) });
+                      }
+                    }
+                    await apiFetch(`/athletes/${athlete.id}`, { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ [a.field]: now }) });
+                    setAthlete({ ...athlete, [a.field]: now });
+                    notify.push("Registro confirmado", "✅");
+                  } catch { notify.push("No se pudo registrar", "❌"); }
+                  setMarkLoading(null);
+                }}
+                  style={{ width:"100%",padding:14,borderRadius:12,border:"none",background:"linear-gradient(135deg,#21D0B3,#17a68e)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,opacity:markLoading===a.field?0.6:1 }}>
+                  {a.icon} {markLoading===a.field ? "Registrando..." : a.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ─── Actividades tab (chief only) ─── */}
+        {activeTab === "actividades" && (
+          <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+            <div style={{ display:"flex",gap:6 }}>
+              {(["curso","historial"] as const).map(sub => (
+                <button key={sub} type="button" onClick={() => setActSubTab(sub)}
+                  style={{ flex:1,padding:"8px 0",borderRadius:10,border:"none",fontSize:12,fontWeight:700,cursor:"pointer",
+                    background:actSubTab===sub?"linear-gradient(135deg,#041a2e,#062240)":"#fff",
+                    color:actSubTab===sub?"#21D0B3":"#64748b",
+                    boxShadow:actSubTab===sub?"0 2px 8px rgba(33,208,179,0.2)":"0 1px 4px rgba(0,0,0,0.04)" }}>
+                  {sub === "curso" ? "En curso" : "Historial"}
+                </button>
+              ))}
+            </div>
+            {actSubTab === "curso" && (
+              trip && ["SCHEDULED","EN_ROUTE","PICKED_UP"].includes(trip.status ?? "") ? (
+                <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",padding:"14px",cursor:"pointer" }} onClick={() => setShowTripModal(true)}>
+                  <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:10 }}>
+                    {trip.status && <span style={{ padding:"3px 10px",borderRadius:20,fontSize:11,fontWeight:700,
+                      background:trip.status==="EN_ROUTE"?"rgba(59,130,246,0.12)":trip.status==="PICKED_UP"?"rgba(139,92,246,0.12)":"rgba(33,208,179,0.12)",
+                      color:trip.status==="EN_ROUTE"?"#2563eb":trip.status==="PICKED_UP"?"#7c3aed":"#0f9e87" }}>
+                      {trip.status==="EN_ROUTE"?"En ruta":trip.status==="PICKED_UP"?"En curso":"Programado"}
+                    </span>}
+                  </div>
+                  <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:"0 0 6px" }}>{trip.origin || "–"} → {trip.destination || "–"}</p>
+                  {trip.scheduledAt && <p style={{ fontSize:12,color:"#64748b",margin:"0 0 6px" }}>Programado: {fmt(trip.scheduledAt)}</p>}
+                  {driver?.fullName && <p style={{ fontSize:12,color:"#334155",margin:0 }}>Conductor: {driver.fullName}</p>}
+                  {driverEta && trip.status === "EN_ROUTE" && <p style={{ fontSize:12,fontWeight:700,color:"#0ea5c8",margin:"4px 0 0" }}>~{driverEta.duration} · {driverEta.distance}</p>}
+                </div>
+              ) : <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:20 }}>Sin viajes activos</p>
+            )}
+            {actSubTab === "historial" && (() => {
+              const completed = trip && ["COMPLETED","DROPPED_OFF"].includes(trip.status ?? "") ? [trip] : [];
+              return completed.length > 0 ? (
+                <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
+                  {completed.map(t => (
+                    <div key={t.id} style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",padding:"12px 14px" }}>
+                      <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:"0 0 4px" }}>{t.origin || "–"} → {t.destination || "–"}</p>
+                      <p style={{ fontSize:11,color:"#64748b",margin:"0 0 4px" }}>Completado: {fmt(t.completedAt)}</p>
+                      {t.driverRating && <p style={{ fontSize:11,color:"#f59e0b",margin:0 }}>{"⭐".repeat(t.driverRating)} {t.ratingComment && `"${t.ratingComment}"`}</p>}
+                    </div>
+                  ))}
+                </div>
+              ) : <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:20 }}>Sin viajes completados</p>;
+            })()}
+          </div>
+        )}
+
+        {/* ─── Calendario tab (chief only) ─── */}
+        {activeTab === "calendario" && (() => {
+          const y = calMonthCursor.getFullYear(), m = calMonthCursor.getMonth();
+          const cells = getMonthGrid(calMonthCursor);
+          const monthLabel = calMonthCursor.toLocaleDateString("es-CL",{month:"long",year:"numeric"});
+          const eventsInMonth = calendarEvents.filter(e => { const d = new Date(e.scheduledAt!); return d.getFullYear()===y && d.getMonth()===m; });
+          const daysWithEvents = new Set(eventsInMonth.map(e => new Date(e.scheduledAt!).getDate()));
+          const selectedEvents = calSelectedDay ? eventsInMonth.filter(e => new Date(e.scheduledAt!).getDate()===calSelectedDay) : [];
+          return (
+            <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+              <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",padding:"12px" }}>
+                <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10 }}>
+                  <button type="button" onClick={() => setCalMonthCursor(new Date(y,m-1,1))} style={{ background:"none",border:"none",cursor:"pointer",padding:4 }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
+                  </button>
+                  <span style={{ fontSize:14,fontWeight:700,color:"#0f172a",textTransform:"capitalize" }}>{monthLabel}</span>
+                  <button type="button" onClick={() => setCalMonthCursor(new Date(y,m+1,1))} style={{ background:"none",border:"none",cursor:"pointer",padding:4 }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                </div>
+                <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,textAlign:"center" }}>
+                  {DAY_NAMES.map(d => <div key={d} style={{ fontSize:9,fontWeight:700,color:"#94a3b8",padding:4 }}>{d}</div>)}
+                  {cells.map((day,i) => (
+                    <button key={i} type="button" disabled={!day} onClick={() => day && setCalSelectedDay(calSelectedDay===day?null:day)}
+                      style={{ padding:"6px 0",borderRadius:8,border:"none",cursor:day?"pointer":"default",fontSize:12,fontWeight:calSelectedDay===day?800:500,
+                        background:calSelectedDay===day?"#21D0B3":day?"#fff":"transparent",
+                        color:calSelectedDay===day?"#fff":day?"#0f172a":"transparent",position:"relative" }}>
+                      {day || ""}
+                      {day && daysWithEvents.has(day) && calSelectedDay!==day && <div style={{ position:"absolute",bottom:2,left:"50%",transform:"translateX(-50%)",width:4,height:4,borderRadius:"50%",background:"#21D0B3" }} />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {calSelectedDay && selectedEvents.length > 0 && (
+                <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
+                  {selectedEvents.map(ev => {
+                    const parent = disciplineParents.find(p => p.id===ev.parentId);
+                    return (
+                      <div key={ev.id} style={{ background:"#fff",borderRadius:12,border:"1px solid #e2e8f0",padding:"10px 14px" }}>
+                        <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0 }}>{ev.name || parent?.name || "–"}</p>
+                        {parent?.name && ev.name !== parent.name && <p style={{ fontSize:11,color:"#21D0B3",margin:"2px 0 0",fontWeight:600 }}>{parent.name}</p>}
+                        <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0" }}>
+                          {new Date(ev.scheduledAt!).toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})}
+                          {ev.venueName && ` · ${ev.venueName}`}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              {calSelectedDay && selectedEvents.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:12 }}>Sin actividades este día</p>}
+            </div>
+          );
+        })()}
+
+        {/* ─── Sedes tab ─── */}
+        {activeTab === "sedes" && (
+          <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
+            {/* Sedes */}
+            <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>Sedes del evento</p>
+            {venues.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:20 }}>No hay sedes registradas</p>}
+            {venues.map(v => {
+              const isOpen = expandedItemId === `venue-${v.id}`;
+              const addr = [v.address, v.commune, v.region].filter(Boolean).join(", ");
+              return (
+                <div key={v.id} style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+                  <button type="button" onClick={() => setExpandedItemId(isOpen?null:`venue-${v.id}`)}
+                    style={{ width:"100%",display:"flex",alignItems:"center",gap:10,padding:"12px 14px",background:"none",border:"none",cursor:"pointer",textAlign:"left" }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    <div style={{ flex:1,minWidth:0 }}>
+                      <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>{v.name || "–"}</p>
+                      {v.address && <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{v.address}</p>}
+                    </div>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" style={{ transition:"transform .15s",transform:isOpen?"rotate(180deg)":"rotate(0)",flexShrink:0 }}><polyline points="6 9 12 15 18 9"/></svg>
+                  </button>
+                  {isOpen && (
+                    <div style={{ padding:"0 14px 14px",display:"flex",flexDirection:"column",gap:8 }}>
+                      {v.photoUrl && (
+                        <img src={v.photoUrl} alt={v.name || "Sede"} style={{ width:"100%",height:140,objectFit:"cover",borderRadius:10 }} />
+                      )}
+                      {addr && <p style={{ fontSize:12,color:"#334155",margin:0 }}>{addr}</p>}
+                      {addr && process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? (
+                        <iframe src={`https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&q=${encodeURIComponent(addr)}`}
+                          style={{ width:"100%",height:180,border:"none",borderRadius:10 }} allowFullScreen loading="lazy" />
+                      ) : addr ? (
+                        <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}`} target="_blank" rel="noreferrer"
+                          style={{ fontSize:12,color:"#21D0B3",fontWeight:600 }}>Ver en Google Maps</a>
+                      ) : null}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {/* Hoteles */}
+            <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#0fa894",margin:"8px 0 0" }}>Hoteles</p>
+            {allAccommodations.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:20 }}>No hay hoteles registrados</p>}
+            {allAccommodations.map(h => {
+              const isOpen = expandedItemId === `hotel-${h.id}`;
+              const addr = [h.address, h.city, h.country].filter(Boolean).join(", ");
+              return (
+                <div key={h.id} style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+                  <button type="button" onClick={() => setExpandedItemId(isOpen?null:`hotel-${h.id}`)}
+                    style={{ width:"100%",display:"flex",alignItems:"center",gap:10,padding:"12px 14px",background:"none",border:"none",cursor:"pointer",textAlign:"left" }}>
+                    <IcoHotel />
+                    <div style={{ flex:1,minWidth:0 }}>
+                      <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>{h.name || "–"}</p>
+                      {addr && <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{addr}</p>}
+                    </div>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" style={{ transition:"transform .15s",transform:isOpen?"rotate(180deg)":"rotate(0)",flexShrink:0 }}><polyline points="6 9 12 15 18 9"/></svg>
+                  </button>
+                  {isOpen && (
+                    <div style={{ padding:"0 14px 14px",display:"flex",flexDirection:"column",gap:6 }}>
+                      {addr && <p style={{ fontSize:12,color:"#334155",margin:0 }}>{addr}</p>}
+                      {h.checkIn && <p style={{ fontSize:11,color:"#64748b",margin:0 }}>Check-in: {new Date(h.checkIn).toLocaleDateString("es-CL")}</p>}
+                      {h.checkOut && <p style={{ fontSize:11,color:"#64748b",margin:0 }}>Check-out: {new Date(h.checkOut).toLocaleDateString("es-CL")}</p>}
+                      {h.roomType && <p style={{ fontSize:11,color:"#64748b",margin:0 }}>Tipo: {h.roomType}</p>}
+                      {h.contactPhone && <p style={{ fontSize:11,color:"#64748b",margin:0 }}>Teléfono: {h.contactPhone}</p>}
+                      {addr && process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? (
+                        <iframe src={`https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&q=${encodeURIComponent(addr)}`}
+                          style={{ width:"100%",height:180,border:"none",borderRadius:10 }} allowFullScreen loading="lazy" />
+                      ) : addr ? (
+                        <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}`} target="_blank" rel="noreferrer"
+                          style={{ fontSize:12,color:"#21D0B3",fontWeight:600 }}>Ver en Google Maps</a>
+                      ) : null}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ─── Alimentación tab ─── */}
+        {activeTab === "alimentacion" && (
+          <div style={{ display:"flex",flexDirection:"column",gap:14 }}>
+
+            {/* Today's menu */}
+            {(() => {
+              const today = new Date().toISOString().slice(0, 10);
+              const todayMenus = foodMenus.filter((fm) => fm.date === today);
+              const mealOrder = ["DESAYUNO", "ALMUERZO", "CENA", "ONCE"];
+              const sorted = todayMenus.sort((a, b) => mealOrder.indexOf(a.mealType) - mealOrder.indexOf(b.mealType));
+              const mealStyle = (type: string) => {
+                if (type === "DESAYUNO") return { bg: "#FEF3C7", color: "#92400E", border: "#FDE68A", icon: "☀️", label: "Desayuno" };
+                if (type === "ALMUERZO") return { bg: "#DBEAFE", color: "#1E40AF", border: "#BFDBFE", icon: "🍽️", label: "Almuerzo" };
+                if (type === "CENA") return { bg: "#E0E7FF", color: "#3730A3", border: "#C7D2FE", icon: "🌙", label: "Cena" };
+                return { bg: "#F1F5F9", color: "#475569", border: "#E2E8F0", icon: "🍴", label: type };
+              };
+              return (
+                <div style={{ background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)" }}>
+                  <div style={{ padding:"14px 16px",background:"linear-gradient(135deg,rgba(33,208,179,0.08),rgba(33,208,179,0.02))",borderBottom:"1px solid #e2e8f0",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+                    <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+                      <div style={{ width:32,height:32,borderRadius:10,background:"rgba(33,208,179,0.12)",display:"flex",alignItems:"center",justifyContent:"center" }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+                      </div>
+                      <div>
+                        <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>Menú de hoy</p>
+                        <p style={{ fontSize:11,color:"#64748b",margin:0,textTransform:"capitalize" }}>{new Date().toLocaleDateString("es-CL",{weekday:"long",day:"numeric",month:"long"})}</p>
+                      </div>
+                    </div>
+                  </div>
+                  {sorted.length > 0 ? sorted.map((fm, i) => {
+                    const m = mealStyle(fm.mealType);
+                    return (
+                      <div key={fm.id} style={{ padding:"14px 16px",borderTop:i>0?"1px solid #f1f5f9":"none",display:"flex",gap:12,alignItems:"flex-start" }}>
+                        <div style={{ width:40,height:40,borderRadius:10,background:m.bg,border:`1px solid ${m.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0 }}>
+                          {m.icon}
+                        </div>
+                        <div style={{ flex:1,minWidth:0 }}>
+                          <div style={{ display:"flex",alignItems:"center",gap:6,flexWrap:"wrap" }}>
+                            <span style={{ fontSize:10,fontWeight:800,padding:"2px 8px",borderRadius:6,textTransform:"uppercase",letterSpacing:"0.05em",background:m.bg,color:m.color }}>{m.label}</span>
+                            {fm.dietaryType && fm.dietaryType !== "ESTANDAR" && (
+                              <span style={{ fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:6,background:"#f0fdf4",color:"#166534",border:"1px solid #bbf7d0" }}>{fm.dietaryType}</span>
+                            )}
+                          </div>
+                          <p style={{ fontSize:15,fontWeight:700,color:"#0f172a",margin:"5px 0 0" }}>{fm.title}</p>
+                          {fm.description && <p style={{ fontSize:12,color:"#64748b",margin:"3px 0 0",lineHeight:1.4 }}>{fm.description}</p>}
+                        </div>
+                      </div>
+                    );
+                  }) : (
+                    <div style={{ padding:20,textAlign:"center" }}>
+                      <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>No hay menú programado para hoy</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Tomorrow's menu */}
+            {(() => {
+              const tomorrow = new Date();
+              tomorrow.setDate(tomorrow.getDate() + 1);
+              const tomorrowKey = tomorrow.toISOString().slice(0, 10);
+              const tomorrowMenus = foodMenus.filter((fm) => fm.date === tomorrowKey);
+              const mealOrder = ["DESAYUNO", "ALMUERZO", "CENA", "ONCE"];
+              const sorted = tomorrowMenus.sort((a, b) => mealOrder.indexOf(a.mealType) - mealOrder.indexOf(b.mealType));
+              const mealStyle = (type: string) => {
+                if (type === "DESAYUNO") return { bg: "#FEF3C7", color: "#92400E", border: "#FDE68A", icon: "☀️", label: "Desayuno" };
+                if (type === "ALMUERZO") return { bg: "#DBEAFE", color: "#1E40AF", border: "#BFDBFE", icon: "🍽️", label: "Almuerzo" };
+                if (type === "CENA") return { bg: "#E0E7FF", color: "#3730A3", border: "#C7D2FE", icon: "🌙", label: "Cena" };
+                return { bg: "#F1F5F9", color: "#475569", border: "#E2E8F0", icon: "🍴", label: type };
+              };
+              return (
+                <div style={{ background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)",opacity:0.85 }}>
+                  <div style={{ padding:"12px 16px",background:"#f8fafc",borderBottom:"1px solid #e2e8f0",display:"flex",alignItems:"center",gap:8 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    <div>
+                      <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0 }}>Menú de mañana</p>
+                      <p style={{ fontSize:11,color:"#94a3b8",margin:0,textTransform:"capitalize" }}>{tomorrow.toLocaleDateString("es-CL",{weekday:"long",day:"numeric",month:"long"})}</p>
+                    </div>
+                  </div>
+                  {sorted.length > 0 ? sorted.map((fm, i) => {
+                    const m = mealStyle(fm.mealType);
+                    return (
+                      <div key={fm.id} style={{ padding:"12px 16px",borderTop:i>0?"1px solid #f1f5f9":"none",display:"flex",gap:12,alignItems:"flex-start" }}>
+                        <div style={{ width:36,height:36,borderRadius:8,background:m.bg,border:`1px solid ${m.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0 }}>
+                          {m.icon}
+                        </div>
+                        <div style={{ flex:1,minWidth:0 }}>
+                          <span style={{ fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:6,textTransform:"uppercase",letterSpacing:"0.05em",background:m.bg,color:m.color }}>{m.label}</span>
+                          <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:"4px 0 0" }}>{fm.title}</p>
+                          {fm.description && <p style={{ fontSize:12,color:"#64748b",margin:"2px 0 0",lineHeight:1.4 }}>{fm.description}</p>}
+                        </div>
+                      </div>
+                    );
+                  }) : (
+                    <div style={{ padding:16,textAlign:"center" }}>
+                      <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>Menú pendiente de programar</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Food locations */}
+            {foodLocations.length > 0 && (
+              <div style={{ background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)" }}>
+                <div style={{ padding:"14px 16px",background:"linear-gradient(135deg,rgba(33,208,179,0.06),rgba(31,205,255,0.04))",borderBottom:"1px solid #e2e8f0" }}>
+                  <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0 }}>Tus lugares de comida</p>
+                  </div>
+                </div>
+                {foodLocations.map((fl, i) => (
+                  <div key={fl.id} style={{ padding:"12px 16px",borderTop:i>0?"1px solid #f1f5f9":"none",display:"flex",alignItems:"center",gap:12 }}>
+                    <div style={{ width:36,height:36,borderRadius:10,background:"rgba(33,208,179,0.08)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+                    </div>
+                    <div style={{ flex:1,minWidth:0 }}>
+                      <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>{fl.name}</p>
+                      {fl.description && <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0",lineHeight:1.3 }}>{fl.description}</p>}
+                    </div>
+                    {fl.capacity && <span style={{ fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:8,background:"#f1f5f9",color:"#475569",flexShrink:0 }}>{fl.capacity} pax</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+            {foodLocations.length === 0 && (
+              <div style={{ background:"#fff",borderRadius:16,border:"1px dashed #e2e8f0",padding:24,textAlign:"center" }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round" style={{ margin:"0 auto 8px" }}><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+                <p style={{ fontSize:13,fontWeight:600,color:"#94a3b8",margin:0 }}>No hay lugares asignados</p>
+              </div>
+            )}
+
+          </div>
+        )}
+
+        {/* ─── Mi Delegación tab ─── */}
+        {activeTab === "delegacion" && isChief && (
+          <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+            <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",padding:"14px",borderLeft:"4px solid #f59e0b" }}>
+              <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:"#f59e0b",margin:"0 0 6px" }}>Mi Delegación</p>
+              <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0 }}>{delegation ? (countryLabels[delegation.countryCode] || delegation.countryCode) : "—"}</p>
+              <p style={{ fontSize:12,color:"#64748b",margin:"3px 0 0" }}>{delegationMembers.length} deportista(s) registrado(s)</p>
+            </div>
+            {delegationMembers.length === 0 ? (
+              <div style={{ padding:20,textAlign:"center",background:"#fff",borderRadius:14,border:"1px solid #e2e8f0" }}>
+                <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>No hay otros participantes en tu delegación.</p>
+              </div>
+            ) : (
+              <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
+                {delegationMembers.map((m) => {
+                  const disc = m.disciplineId ? ([...disciplineParents, ...calendarEvents] as any[]).find((d: any) => d.id === m.disciplineId) : null;
+                  const discParent = disc?.parentId ? disciplineParents.find(p => p.id === disc.parentId) : null;
+                  const discLabel = discParent ? `${discParent.name} — ${disc?.name}` : disc?.name;
+                  return (
+                    <div key={m.id} style={{ background:"#fff",borderRadius:12,border:"1px solid #e2e8f0",padding:"10px 14px",display:"flex",alignItems:"center",gap:10 }}>
+                      <div style={{ width:36,height:36,borderRadius:"50%",background:"#f1f5f9",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:"#64748b",flexShrink:0 }}>
+                        {(m.fullName || "?").split(" ").slice(0,2).map(w => w[0] || "").join("").toUpperCase()}
+                      </div>
+                      <div style={{ flex:1,minWidth:0 }}>
+                        <p style={{ fontSize:13,fontWeight:600,color:"#0f172a",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{m.fullName}</p>
+                        <div style={{ display:"flex",gap:4,flexWrap:"wrap",marginTop:3 }}>
+                          {m.userType && <span style={{ fontSize:9,fontWeight:600,padding:"1px 6px",borderRadius:4,background:"#f1f5f9",color:"#64748b" }}>{m.userType}</span>}
+                          {discLabel && <span style={{ fontSize:9,fontWeight:600,padding:"1px 6px",borderRadius:4,background:"rgba(33,208,179,0.1)",color:"#0a7a6b" }}>{discLabel}</span>}
+                          {m.countryCode && <span style={{ fontSize:9,fontWeight:600,padding:"1px 6px",borderRadius:4,background:"rgba(99,102,241,0.08)",color:"#6366f1" }}>{m.countryCode}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ─── Cuenta tab ─── */}
+        {activeTab === "cuenta" && (
+          <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+            {/* Info rows */}
+            <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+              {([
+                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>, label:"Nombre", value:athlete.fullName },
+                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>, label:"Correo", value:athlete.email || "—" },
+                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.12.67.29 1.33.49 1.97"/></svg>, label:"Teléfono", value:athlete.phone || "—" },
+                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>, label:"Evento", value:event?.name || "—" },
+                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>, label:"Delegación", value:delegation ? (countryLabels[delegation.countryCode]||delegation.countryCode) : "—" },
+                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>, label:"Tipo", value:athlete.userType || "—" },
+                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>, label:"Disciplina", value: (() => { if (!athlete.disciplineId) return "—"; const disc = ([...disciplineParents, ...calendarEvents] as any[]).find((d: any) => d.id === athlete.disciplineId); if (!disc) return "—"; const parent = disc.parentId ? disciplineParents.find(p => p.id === disc.parentId) : null; return parent ? `${parent.name} — ${disc.name}` : (disc.name || "—"); })() },
+                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={athlete.isDelegationLead ? "#f59e0b" : "#21D0B3"} strokeWidth="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>, label:"Rol", value:athlete.isDelegationLead ? "Jefe de Delegación" : "Participante" },
+                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>, label:"ID", value:athlete.id.slice(-6).toUpperCase() },
+              ]).map((r,i) => (
+                <div key={r.label} style={{ display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderTop:i>0?"1px solid #f1f5f9":"none" }}>
+                  <span style={{ flexShrink:0 }}>{r.icon}</span>
+                  <div style={{ flex:1,minWidth:0,display:"flex",alignItems:"baseline",gap:6 }}>
+                    <span style={{ fontSize:10,fontWeight:700,color:"#94a3b8",textTransform:"uppercase",flexShrink:0 }}>{r.label}</span>
+                    <span style={{ fontSize:13,fontWeight:600,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{r.value}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Credential */}
+            <button type="button" onClick={async () => {
+              try {
+                const evName = event?.name || "Seven Arena";
+                const qrData = `Participante: ${athlete.fullName}\nID: ${athlete.id.slice(-6)}\nDelegación: ${delegation?.countryCode || "—"}`;
+                const qrDataUrl = await QRCode.toDataURL(qrData, { width:200, margin:1 });
+                const html = buildCredentialHtml({
+                  eventName: evName,
+                  fullName: athlete.fullName,
+                  roleLabel: athlete.isDelegationLead ? "JEFE DELEGACIÓN" : "PARTICIPANTE",
+                  credentialCode: athlete.credentialCode || athlete.id.slice(-6).toUpperCase(),
+                  statusLabel: athlete.accreditationStatus || "PENDING",
+                  issuedAtLabel: new Date().toLocaleDateString("es-CL"),
+                  issuerLabel: "Seven Arena",
+                  subjectId: athlete.id,
+                  countryTag: athlete.countryCode || delegation?.countryCode || "",
+                  photoUrl: "",
+                  qrDataUrl,
+                });
+                const w = window.open("","_blank","width=450,height=700");
+                if (w) { w.document.write(html); w.document.close(); }
+              } catch { notify.push("No se pudo generar la credencial","❌"); }
+            }}
+              style={{ width:"100%",padding:14,borderRadius:12,border:"none",background:"linear-gradient(135deg,#041a2e,#062240)",color:"#21D0B3",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
+              Ver credencial digital
+            </button>
+            {/* Health form link */}
+            <a href={`/portal/athlete/salud?id=${athlete.id}`}
+              style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:8,padding:14,borderRadius:12,background:"#fff",border:"1px solid #e2e8f0",color:"#0f172a",fontSize:13,fontWeight:700,textDecoration:"none" }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+              Ficha de salud
+              {healthRecord ? <span style={{ fontSize:10,padding:"2px 8px",borderRadius:6,background:"rgba(33,208,179,0.1)",color:"#0a7a6b" }}>Completada</span> : <span style={{ fontSize:10,padding:"2px 8px",borderRadius:6,background:"#FEF3C7",color:"#92400E" }}>Pendiente</span>}
+            </a>
+            {/* Logout */}
+            <button type="button" onClick={() => { setAthlete(null); setAthleteId(""); try { sessionStorage.removeItem("portal_user_id"); } catch {} }}
+              style={{ width:"100%",padding:12,borderRadius:12,border:"1px solid #e2e8f0",background:"#fff",color:"#ef4444",fontSize:13,fontWeight:600,cursor:"pointer" }}>
+              Cerrar sesión
+            </button>
+          </div>
+        )}
+
+        </div>{/* end tab content */}
+
+        {/* ── Bottom tab bar ── */}
+        <div style={{ position:"fixed",bottom:0,left:0,right:0,display:"flex",background:"#fff",borderTop:"1px solid #e2e8f0",zIndex:100,paddingBottom:"env(safe-area-inset-bottom)" }}>
+          {portalTabs.map(tab => (
+            <button key={tab.key} type="button" onClick={() => setActiveTab(tab.key)}
+              style={{ flex:1,padding:"8px 0 6px",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2,
+                color:activeTab===tab.key?"#21D0B3":"#94a3b8" }}>
+              <span style={{ display:"flex" }}>{tab.icon}</span>
+              <span style={{ fontSize:9,fontWeight:activeTab===tab.key?700:500 }}>{tab.label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* KEEP EXISTING: old info cards grid removed, but keep modals/chat below */}
+        <div style={{ display:"none" }}>
         <div className="db-cards-grid">
 
           {/* Vuelo */}
@@ -1134,6 +1781,8 @@ export default function UserPortalPage() {
           )}
         </div>
 
+        </div>{/* end hidden old content */}
+
         {/* ── Trip detail modal ── */}
         {showTripModal && trip && (
           <div
@@ -1278,21 +1927,25 @@ export default function UserPortalPage() {
         )}
 
         {/* ── Trip Chat (active trips only) ── */}
-        {trip && ["SCHEDULED", "EN_ROUTE", "PICKED_UP"].includes(trip.status ?? "") && (
+        {trip && ["EN_ROUTE", "PICKED_UP"].includes(trip.status ?? "") && (
           <TripChat
             tripId={trip.id}
             senderType="PASSENGER"
             senderName={athlete.fullName}
+            tripStatus={trip.status}
             onNewMessage={(name, content) => notify.push(`${name}: ${content.slice(0, 80)}`, "💬")}
           />
         )}
 
-        {/* ── Footer ── */}
-        <div style={{ textAlign:"center",marginTop:"48px",display:"flex",flexDirection:"column",alignItems:"center",gap:"8px" }}>
-          <img src="/branding/LOGO-SEVEN-1.png" alt="Seven Arena"
-            style={{ height:"40px",width:"auto",objectFit:"contain",opacity:0.85 }} />
-          <p style={{ fontSize:"10px",color:"#94a3b8",letterSpacing:"0.1em",textTransform:"uppercase",margin:0 }}>Portal de Participantes</p>
-        </div>
+        {athlete && (
+          <AssistanceChat
+            originType="athlete"
+            originId={athlete.id}
+            originName={athlete.fullName || "Participante"}
+            eventId={athlete.eventId || null}
+          />
+        )}
+
       </div>
     </div>
   );

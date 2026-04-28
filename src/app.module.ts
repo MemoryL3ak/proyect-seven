@@ -30,6 +30,9 @@ import { FoodLocationsModule } from './food-locations/food-locations.module';
 import { FoodMenusModule } from './food-menus/food-menus.module';
 import { ProviderParticipantsModule } from './provider-participants/provider-participants.module';
 import { MobileAuthModule } from './mobile-auth/mobile-auth.module';
+import { AccessControlModule } from './access-control/access-control.module';
+import { PremiacionesModule } from './premiaciones/premiaciones.module';
+import { SupportChatsModule } from './support-chats/support-chats.module';
 
 @Module({
   imports: [
@@ -81,6 +84,9 @@ import { MobileAuthModule } from './mobile-auth/mobile-auth.module';
     AccreditationsModule,
     VenuesModule,
     MobileAuthModule,
+    AccessControlModule,
+    PremiacionesModule,
+    SupportChatsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

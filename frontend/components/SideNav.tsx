@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import clsx from "clsx";
 import { useI18n } from "@/lib/i18n";
+import { getStoredUser } from "@/lib/api";
 
 type NavItem = { href: string; label: string; icon: string };
 type NavGroup = { title: string; icon: string; items: NavItem[] };
@@ -30,7 +31,7 @@ const navSections: NavSection[] = [
     title: "Operación", icon: "route",
     groups: [
       {
-        title: "Arrival and Departure", icon: "and",
+        title: "Arribos & Llegadas", icon: "and",
         items: [
           { href: "/operacion/and", label: "AND", icon: "and" },
           { href: "/operacion/cumplimiento-and", label: "Cumplimiento AND", icon: "shield" },
@@ -42,7 +43,7 @@ const navSections: NavSection[] = [
         items: [
           { href: "/operations/vehicle-positions", label: "Tracking de Viajes", icon: "pin" },
           { href: "/operations/trips", label: "Viajes", icon: "route" },
-          { href: "/scanner", label: "Escáner QR", icon: "scan" }
+          { href: "/operations/driver-heatmap", label: "Panel Conductores", icon: "driver" }
         ]
       },
       {
@@ -70,6 +71,12 @@ const navSections: NavSection[] = [
       {
         title: "Salud", icon: "health-cross",
         items: [{ href: "/health", label: "Salud", icon: "health-cross" }]
+      },
+      {
+        title: "Asistencia", icon: "portal",
+        items: [
+          { href: "/operations/support-chats", label: "Centro de Incidencias", icon: "portal" }
+        ]
       }
     ]
   },
@@ -83,7 +90,8 @@ const navSections: NavSection[] = [
     items: [
       { href: "/portal/user", label: "Portal de usuario", icon: "athlete" },
       { href: "/portal/conductor", label: "Portal Conductor", icon: "driver" },
-      { href: "/portal/vehicle-request", label: "Solicitud de vehículo", icon: "route" }
+      { href: "/portal/vehicle-request", label: "Solicitud de vehículo", icon: "route" },
+      { href: "/portal/access-control", label: "Control de Acceso", icon: "scan" }
     ]
   },
   {
@@ -162,12 +170,67 @@ const inactiveItemStyle = {
   fontWeight: 400,
 } as const;
 
+// Map href → module ID for access control
+const HREF_TO_MODULE: Record<string, string> = {
+  "/dashboard/comercial": "dashboard.comercial",
+  "/dashboard/operacional": "dashboard.operacional",
+  "/registro/eventos": "registro.eventos",
+  "/registro/participantes": "registro.participantes",
+  "/registro/proveedores": "registro.participantes",
+  "/operacion/and": "operacion.and",
+  "/operacion/cumplimiento-and": "operacion.cumplimiento",
+  "/operations/flights": "operacion.and",
+  "/operations/vehicle-positions": "operacion.tracking",
+  "/operations/trips": "operacion.viajes",
+  "/operations/driver-heatmap": "operacion.viajes",
+  "/operations/hotel-tracking": "hoteleria.tracking",
+  "/masters/accommodations": "hoteleria.hoteles",
+  "/masters/hotel-rooms": "hoteleria.habitaciones",
+  "/operations/hotel-assignments": "hoteleria.asignaciones",
+  "/operations/hotel-keys": "hoteleria.llaves",
+  "/operations/salones": "hoteleria.llaves",
+  "/operations/hotel-extras": "hoteleria.llaves",
+  "/operations/food": "alimentacion.general",
+  "/operations/food/tipos": "alimentacion.general",
+  "/operations/food/desayuno": "alimentacion.general",
+  "/operations/food/cenas": "alimentacion.general",
+  "/operations/food/almuerzos": "alimentacion.general",
+  "/operations/food/lugares": "alimentacion.general",
+  "/health": "salud",
+  "/operations/support-chats": "_always",
+  "/clientes": "clientes",
+  "/deportes": "deportes",
+  "/sede": "sede",
+  "/sports-calendar": "calendario",
+  "/accreditations": "acreditaciones",
+  "/portal/user": "portales",
+  "/portal/conductor": "portales",
+  "/portal/vehicle-request": "portales",
+  "/portal/access-control": "portales",
+  "/admin/usuarios": "admin.usuarios",
+  "/ayuda": "_always",
+};
+
 export default function SideNav({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
   const { locale, setLocale, t } = useI18n();
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const [collapsed, setCollapsed] = useState(false);
+  const [userModules, setUserModules] = useState<string[] | null>(null);
+
+  useEffect(() => {
+    const user = getStoredUser();
+    const mods = user?.user_metadata?.modules;
+    if (Array.isArray(mods) && mods.length > 0) setUserModules(mods as string[]);
+  }, []);
+
+  const canAccess = (href: string): boolean => {
+    if (!userModules) return true; // No modules set = show all (admin/legacy users)
+    const moduleId = HREF_TO_MODULE[href];
+    if (!moduleId || moduleId === "_always") return true;
+    return userModules.includes(moduleId);
+  };
 
   useEffect(() => {
     const activeSection = navSections.find((s) => sectionHasActivePath(s, pathname));
@@ -304,6 +367,11 @@ export default function SideNav({ onClose }: { onClose?: () => void }) {
       {/* ── Nav */}
       <nav className="flex-1 overflow-y-auto" style={{ scrollbarWidth: "none", position: "relative", zIndex: 1, padding: "8px 0" }}>
         {navSections.map((section, sectionIdx) => {
+          // Filter: hide sections where all items are inaccessible
+          if (section.href && !canAccess(section.href)) return null;
+          if (section.items && section.items.filter((i) => canAccess(i.href)).length === 0) return null;
+          if (section.groups && section.groups.every((g) => g.items.filter((i) => canAccess(i.href)).length === 0)) return null;
+
           if (section.href) {
             const isActive = pathname === section.href || pathname.startsWith(section.href + "/");
             return (
@@ -391,7 +459,7 @@ export default function SideNav({ onClose }: { onClose?: () => void }) {
                 transition: "max-height 300ms ease, opacity 200ms ease",
               }}>
                 <div style={{ padding: "4px 8px 6px", display: "flex", flexDirection: "column", gap: "1px" }}>
-                  {section.items?.map((item) => {
+                  {section.items?.filter((item) => canAccess(item.href)).map((item) => {
                     const active = pathname === item.href;
                     return (
                       <Link key={item.href} href={item.href}
@@ -421,7 +489,7 @@ export default function SideNav({ onClose }: { onClose?: () => void }) {
                     );
                   })}
 
-                  {section.groups?.map((group) => {
+                  {section.groups?.filter((group) => group.items.some((i) => canAccess(i.href))).map((group) => {
                     const groupActive = group.items.some((i) => pathname === i.href);
                     const groupKey = `${section.title}::${group.title}`;
                     const isGroupOpen = !!openGroups[groupKey];
@@ -465,7 +533,7 @@ export default function SideNav({ onClose }: { onClose?: () => void }) {
                             borderLeft: "1px solid rgba(33,208,179,0.2)",
                             display: "flex", flexDirection: "column", gap: "1px",
                           }}>
-                            {group.items.map((item) => {
+                            {group.items.filter((item) => canAccess(item.href)).map((item) => {
                               const active = pathname === item.href;
                               return (
                                 <Link key={item.href} href={item.href}

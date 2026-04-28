@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import PlacesAutocompleteInput from "@/components/PlacesAutocompleteInput";
@@ -7,6 +7,9 @@ import { getMobileSession, mobileAwareLogout } from "@/lib/mobile-auth";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import NotificationBell, { useNotifications } from "@/components/NotificationBell";
 import TripChat from "@/components/TripChat";
+import AssistanceChat from "@/components/AssistanceChat";
+import { buildCredentialHtml } from "@/lib/credential-template";
+import QRCode from "qrcode";
 import dynamic from "next/dynamic";
 
 const TripMap = dynamic(() => import("@/components/TripMap"), {
@@ -20,6 +23,7 @@ type Athlete = {
   userType?: string | null;
   eventId?: string | null;
   delegationId?: string | null;
+  metadata?: Record<string, unknown> | null;
 };
 
 type Venue = {
@@ -29,6 +33,7 @@ type Venue = {
   address?: string | null;
   region?: string | null;
   commune?: string | null;
+  photoUrl?: string | null;
 };
 
 type Driver = {
@@ -71,12 +76,63 @@ type Trip = {
   driverRating?: number | null;
   ratingComment?: string | null;
   ratedAt?: string | null;
+  isRoundTrip?: boolean;
+  parentTripId?: string | null;
+  legType?: string | null;
+  childTrips?: Trip[];
+  metadata?: Record<string, unknown> | null;
+};
+
+type Accommodation = {
+  id: string;
+  eventId?: string | null;
+  name?: string | null;
+  address?: string | null;
+  city?: string | null;
+  country?: string | null;
+  checkIn?: string | null;
+  checkOut?: string | null;
+  roomType?: string | null;
+  contactPhone?: string | null;
 };
 
 type EventItem = { id: string; name?: string | null };
 type DelegationItem = { id: string; countryCode?: string | null };
 type AccessRequestResponse = { message?: string };
-type PortalTab = "request" | "status";
+type PortalTab = "solicitud" | "actividades" | "premiaciones" | "sedes" | "hoteles" | "calendario" | "cuenta";
+
+type PremiacionAwarder = {
+  id: string;
+  premiacion_id: string;
+  athlete_id: string;
+  role: string;
+  confirmed_at: string | null;
+  declined_at: string | null;
+};
+
+type PremiacionVIP = {
+  id: string;
+  title: string;
+  discipline?: string | null;
+  scheduled_at: string;
+  venue_name?: string | null;
+  location_detail?: string | null;
+  status: string;
+  notes?: string | null;
+  myAssignment?: PremiacionAwarder;
+};
+type ActividadesSubTab = "en_curso" | "historial" | "pendientes";
+
+type CalendarEvent = {
+  id: string;
+  name?: string | null;
+  parentId?: string | null;
+  scheduledAt?: string | null;
+  venueName?: string | null;
+  category?: string | null;
+  gender?: string | null;
+};
+type DisciplineParent = { id: string; name?: string | null };
 type PositionItem = {
   id: string;
   vehicleId: string;
@@ -87,10 +143,13 @@ type PositionItem = {
 };
 
 const VEHICLE_TYPES = [
-  { label: "Sedan / SUV", value: "SEDAN" },
-  { label: "Van", value: "VAN" },
-  { label: "Mini bus", value: "MINI_BUS" },
-  { label: "Bus", value: "BUS" },
+  { label: "Sedán — 4 Pasajeros", value: "SEDAN", maxPax: 4 },
+  { label: "SUV — 6 Pasajeros", value: "SUV", maxPax: 6 },
+  { label: "Van 10 — 10 Pasajeros", value: "VAN_10", maxPax: 10 },
+  { label: "Van 15-17 — 17 Pasajeros", value: "VAN_15", maxPax: 17 },
+  { label: "Van 19 — 19 Pasajeros", value: "VAN_19", maxPax: 19 },
+  { label: "Minibus — 33 Pasajeros", value: "MINIBUS", maxPax: 33 },
+  { label: "Bus — 64 Pasajeros", value: "BUS", maxPax: 64 },
 ] as const;
 
 const statusMeta: Record<string, { label: string; tone: string; panel: string }> = {
@@ -155,13 +214,6 @@ function vehicleTypeLabel(value?: string | null) {
   return VEHICLE_TYPES.find((item) => item.value === value)?.label || value || "-";
 }
 
-function venueSummary(venue?: Venue | null) {
-  if (!venue) return "Destino por confirmar";
-  return [venue.name, venue.address, [venue.commune, venue.region].filter(Boolean).join(", ")]
-    .filter(Boolean)
-    .join(" · ");
-}
-
 function normalizeOriginAddress(value?: string | null) {
   if (!value) return "";
   if (/^delegacion\s+[a-z]{2,4}$/i.test(value.trim())) {
@@ -171,7 +223,9 @@ function normalizeOriginAddress(value?: string | null) {
 }
 
 function canEditTrip(trip: Trip) {
-  if (!trip.scheduledAt) return false;
+  const editableStatuses = new Set(["REQUESTED", "SCHEDULED"]);
+  if (!editableStatuses.has(trip.status ?? "")) return false;
+  if (!trip.scheduledAt) return trip.status === "REQUESTED";
   const scheduled = new Date(trip.scheduledAt);
   if (Number.isNaN(scheduled.getTime())) return false;
   return scheduled.getTime() - Date.now() > 2 * 60 * 60 * 1000;
@@ -193,17 +247,25 @@ function extractCoords(position?: PositionItem | null) {
   return { lat, lng };
 }
 
-function buildMapEmbed(lat: number, lng: number) {
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-  if (!apiKey) return null;
-  return `https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${lat},${lng}&zoom=16`;
-}
-
 function buildDirectionsLink(lat: number, lng: number, destination?: string | null) {
   if (!destination) {
     return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
   }
   return `https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&destination=${encodeURIComponent(destination)}&travelmode=driving`;
+}
+
+const DAY_NAMES = ["L", "M", "M", "J", "V", "S", "D"];
+
+function getMonthGrid(year: number, month: number) {
+  const firstDay = new Date(year, month, 1);
+  let startDow = firstDay.getDay() - 1;
+  if (startDow < 0) startDow = 6;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const cells: (number | null)[] = [];
+  for (let i = 0; i < startDow; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  while (cells.length % 7 !== 0) cells.push(null);
+  return cells;
 }
 
 export default function VehicleRequestPortalPage() {
@@ -215,6 +277,7 @@ export default function VehicleRequestPortalPage() {
   const [requestAccessLoading, setRequestAccessLoading] = useState(false);
 
   const [athlete, setAthlete] = useState<Athlete | null>(null);
+  const [sessionChecked, setSessionChecked] = useState(false);
   const notify = useNotifications();
   const [events, setEvents] = useState<Record<string, EventItem>>({});
   const [delegations, setDelegations] = useState<Record<string, DelegationItem>>({});
@@ -222,8 +285,12 @@ export default function VehicleRequestPortalPage() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [drivers, setDrivers] = useState<Record<string, Driver>>({});
   const [vehicles, setVehicles] = useState<Record<string, Vehicle>>({});
+  const [accommodations, setAccommodations] = useState<Accommodation[]>([]);
   const [positionsByVehicle, setPositionsByVehicle] = useState<Record<string, PositionItem>>({});
   const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
+
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
+  const [disciplineParents, setDisciplineParents] = useState<DisciplineParent[]>([]);
 
   const [selectedVehicleType, setSelectedVehicleType] = useState<string>("SEDAN");
   const [originAddress, setOriginAddress] = useState("");
@@ -231,8 +298,14 @@ export default function VehicleRequestPortalPage() {
   const [requestedTime, setRequestedTime] = useState("");
   const [passengerCount, setPassengerCount] = useState("1");
   const [notes, setNotes] = useState("");
+  const [isRoundTrip, setIsRoundTrip] = useState(false);
+  const [returnTime, setReturnTime] = useState("");
+  const [returnVenueId, setReturnVenueId] = useState("");
   const [editingTripId, setEditingTripId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<PortalTab>("request");
+  const [locationPermission, setLocationPermission] = useState<"granted" | "prompt" | "denied" | null>(null);
+  const [activeTab, setActiveTab] = useState<PortalTab>("solicitud");
+  const [actividadesSubTab, setActividadesSubTab] = useState<ActividadesSubTab>("en_curso");
+  const [premiaciones, setPremiaciones] = useState<PremiacionVIP[]>([]);
   const [visibleTripsCount, setVisibleTripsCount] = useState(5);
 
   const [loading, setLoading] = useState(false);
@@ -244,15 +317,21 @@ export default function VehicleRequestPortalPage() {
   const [ratingComment, setRatingComment] = useState("");
   const [ratingLoading, setRatingLoading] = useState(false);
   const [expandedTripId, setExpandedTripId] = useState<string | null>(null);
+  const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
+
+  // Calendar state
+  const [calMonthCursor, setCalMonthCursor] = useState(() => new Date());
+  const [calSelectedDay, setCalSelectedDay] = useState<number | null>(null);
 
   const loadPortal = async (matchedAthlete: Athlete) => {
-    const [tripData, venueData, driverData, vehicleData, eventData, delegationData] = await Promise.all([
+    const [tripData, venueData, driverData, vehicleData, eventData, delegationData, accommodationData] = await Promise.all([
       apiFetch<Trip[]>("/trips"),
       apiFetch<Venue[]>("/venues"),
       apiFetch<Driver[]>("/drivers"),
       apiFetch<Vehicle[]>("/transports"),
       apiFetch<EventItem[]>("/events"),
       apiFetch<DelegationItem[]>("/delegations"),
+      apiFetch<Accommodation[]>("/accommodations").catch(() => [] as Accommodation[]),
     ]);
 
     setTrips(
@@ -298,6 +377,19 @@ export default function VehicleRequestPortalPage() {
         return acc;
       }, {}),
     );
+    setAccommodations(Array.isArray(accommodationData) ? accommodationData : []);
+
+    // Load disciplines for calendar
+    try {
+      const discData = await apiFetch<CalendarEvent[]>("/disciplines");
+      const allDiscs = Array.isArray(discData) ? discData : [];
+      setDisciplineParents(allDiscs.filter((d) => !d.parentId));
+      setCalendarEvents(
+        allDiscs
+          .filter((d) => d.parentId && d.scheduledAt)
+          .sort((a, b) => new Date(a.scheduledAt!).getTime() - new Date(b.scheduledAt!).getTime()),
+      );
+    } catch { setCalendarEvents([]); setDisciplineParents([]); }
   };
 
   const login = async () => {
@@ -319,7 +411,8 @@ export default function VehicleRequestPortalPage() {
         return;
       }
       setAthlete(match);
-      setActiveTab("request");
+      setActiveTab("solicitud");
+      try { sessionStorage.setItem("portal_vr_id", match.id); } catch {}
       await loadPortal(match);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo iniciar el portal.");
@@ -328,18 +421,21 @@ export default function VehicleRequestPortalPage() {
     }
   };
 
-  const [bootCheckDone, setBootCheckDone] = useState(false);
-
+  // Restore session on mount: prefer ?athleteId query, then mobile-app session, then sessionStorage.
   useEffect(() => {
     if (autoLoginRef.current) return;
     const params = new URLSearchParams(window.location.search);
     const queryAthleteId = params.get("athleteId");
-    const session = getMobileSession();
+    const mobileSession = getMobileSession();
     const sessionAthleteId =
-      session?.kind === "athlete" ? session.athleteId : null;
-    const athleteId = queryAthleteId || sessionAthleteId;
+      mobileSession?.kind === "athlete" ? mobileSession.athleteId : null;
+    let saved: string | null = null;
+    try {
+      saved = sessionStorage.getItem("portal_vr_id");
+    } catch {}
+    const athleteId = queryAthleteId || sessionAthleteId || saved;
     if (!athleteId) {
-      setBootCheckDone(true);
+      setSessionChecked(true);
       return;
     }
     autoLoginRef.current = true;
@@ -347,16 +443,22 @@ export default function VehicleRequestPortalPage() {
       setLoading(true);
       try {
         const data = await apiFetch<Athlete>(`/athletes/${athleteId}`);
-        if (data) {
+        if (data?.id) {
           setAthlete(data);
-          setActiveTab("request");
+          setActiveTab("solicitud");
+          try { sessionStorage.setItem("portal_vr_id", data.id); } catch {}
           await loadPortal(data);
+        } else {
+          try { sessionStorage.removeItem("portal_vr_id"); } catch {}
         }
-      } catch {} finally {
+      } catch {
+        try { sessionStorage.removeItem("portal_vr_id"); } catch {}
+      } finally {
         setLoading(false);
-        setBootCheckDone(true);
+        setSessionChecked(true);
       }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const requestAccess = async () => {
@@ -379,6 +481,7 @@ export default function VehicleRequestPortalPage() {
   };
 
   const logout = () => {
+    try { sessionStorage.removeItem("portal_vr_id"); } catch {}
     mobileAwareLogout();
   };
 
@@ -389,6 +492,9 @@ export default function VehicleRequestPortalPage() {
     setRequestedTime("");
     setPassengerCount("1");
     setNotes("");
+    setIsRoundTrip(false);
+    setReturnTime("");
+    setReturnVenueId("");
     setEditingTripId(null);
   };
 
@@ -402,7 +508,16 @@ export default function VehicleRequestPortalPage() {
     setError(null);
     setMessage(null);
     try {
-      await apiFetch(`/trips/${trip.id}`, { method: "DELETE" });
+      await apiFetch(`/trips/${trip.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "CANCELLED",
+          metadata: {
+            log: [{ action: "CANCELLED", by: athlete.fullName ?? "usuario", at: new Date().toISOString() }],
+          },
+        }),
+      });
       if (editingTripId === trip.id) {
         resetRequestForm();
       }
@@ -427,7 +542,15 @@ export default function VehicleRequestPortalPage() {
     );
     setPassengerCount(String(trip.passengerCount || 1));
     setNotes(trip.notes || "");
-    setActiveTab("request");
+    setIsRoundTrip(trip.isRoundTrip || false);
+    const returnChild = (trip.childTrips || []).find((c) => c.legType === "RETURN");
+    setReturnTime(
+      returnChild?.scheduledAt && !Number.isNaN(new Date(returnChild.scheduledAt).getTime())
+        ? toDateTimeLocalInput(returnChild.scheduledAt)
+        : "",
+    );
+    setReturnVenueId(returnChild?.destinationVenueId || "");
+    setActiveTab("solicitud");
     setError(null);
     setMessage(null);
   };
@@ -452,6 +575,15 @@ export default function VehicleRequestPortalPage() {
       setError("Indica una cantidad de personas valida.");
       return;
     }
+    const vehicleSpec = VEHICLE_TYPES.find((v) => v.value === selectedVehicleType);
+    if (vehicleSpec && normalizedPassengerCount > vehicleSpec.maxPax) {
+      setError(`El vehículo ${vehicleSpec.label} permite máximo ${vehicleSpec.maxPax} pasajeros.`);
+      return;
+    }
+    if (isRoundTrip && !returnTime) {
+      setError("Indica la fecha y hora del viaje de regreso.");
+      return;
+    }
     setSubmitting(true);
     setError(null);
     setMessage(null);
@@ -461,7 +593,7 @@ export default function VehicleRequestPortalPage() {
         eventId: athlete.eventId,
         requesterAthleteId: athlete.id,
         athleteIds: [athlete.id],
-        tripType: "PORTAL_REQUEST",
+        tripType: isRoundTrip ? "VIAJE_IDA_REGRESO" : "VIAJE_IDA",
         clientType: athlete.userType || "ATHLETE",
         requestedVehicleType: selectedVehicleType,
         passengerCount: normalizedPassengerCount,
@@ -471,7 +603,25 @@ export default function VehicleRequestPortalPage() {
         status: "REQUESTED",
         requestedAt: editingTripId ? undefined : new Date().toISOString(),
         scheduledAt: new Date(requestedTime).toISOString(),
-        notes: notes.trim() || undefined,
+        notes: notes.trim() ? `[Portal] ${notes.trim()}` : "[Portal] Solicitud desde portal VIP",
+        ...(editingTripId ? {
+          metadata: {
+            log: [{ action: "MODIFIED", by: athlete.fullName ?? "usuario", at: new Date().toISOString() }],
+          },
+        } : {
+          metadata: {
+            log: [{ action: "CREATED", by: athlete.fullName ?? "usuario", at: new Date().toISOString() }],
+          },
+        }),
+        isRoundTrip,
+        ...(isRoundTrip ? {
+          returnScheduledAt: new Date(returnTime).toISOString(),
+          returnOrigin: [venue?.address, venue?.commune, venue?.region, "Chile"].filter(Boolean).join(", ") || venue?.name || "Sede solicitada",
+          returnDestination: returnVenueId
+            ? (() => { const rv = venues.find((v) => v.id === returnVenueId); return [rv?.address, rv?.commune, rv?.region, "Chile"].filter(Boolean).join(", ") || rv?.name || "Destino regreso"; })()
+            : originAddress.trim(),
+          returnDestinationVenueId: returnVenueId || undefined,
+        } : {}),
       };
 
       await apiFetch(editingTripId ? `/trips/${editingTripId}` : "/trips", {
@@ -482,11 +632,11 @@ export default function VehicleRequestPortalPage() {
       setMessage(
         editingTripId
           ? "Solicitud actualizada correctamente."
-          : "Solicitud enviada. Transporte la revisara en el modulo de viajes.",
+          : "SOLICITUD_ENVIADA",
       );
       resetRequestForm();
       await loadPortal(athlete);
-      setActiveTab("status");
+      setActiveTab("solicitud");
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo guardar la solicitud.");
     } finally {
@@ -496,8 +646,11 @@ export default function VehicleRequestPortalPage() {
 
   const selectedVenue = useMemo(() => venues.find((item) => item.id === selectedVenueId) || null, [venues, selectedVenueId]);
   const editingTrip = useMemo(() => trips.find((trip) => trip.id === editingTripId) || null, [editingTripId, trips]);
-  const visibleTrips = useMemo(() => trips.slice(0, visibleTripsCount), [trips, visibleTripsCount]);
-  const hasMoreTrips = trips.length > visibleTripsCount;
+
+  // Trips grouped by sub-tab for Actividades
+  const enCursoTrips = useMemo(() => trips.filter((t) => t.status === "EN_ROUTE" || t.status === "PICKED_UP"), [trips]);
+  const historialTrips = useMemo(() => trips.filter((t) => t.status === "COMPLETED" || t.status === "DROPPED_OFF"), [trips]);
+  const pendientesTrips = useMemo(() => trips.filter((t) => t.status === "REQUESTED" || t.status === "SCHEDULED"), [trips]);
 
   const dismissRating = () => {
     if (ratingTripId) ratingDismissed.current.add(ratingTripId);
@@ -520,19 +673,19 @@ export default function VehicleRequestPortalPage() {
         }),
       });
       setTrips((prev) => prev.map((t) => t.id === tripId ? { ...t, driverRating: ratingStars } : t));
-      notify.push("¡Gracias por tu evaluación!", "⭐");
+      notify.push("Gracias por tu evaluacion!", "⭐");
       setRatingTripId(null);
       setRatingStars(0);
       setRatingComment("");
     } catch {
-      notify.push("No se pudo enviar la evaluación", "❌");
+      notify.push("No se pudo enviar la evaluacion", "❌");
     } finally {
       setRatingLoading(false);
     }
   };
 
   const activeChatTrip = useMemo(() =>
-    trips.find((trip) => ["SCHEDULED", "EN_ROUTE", "PICKED_UP"].includes(trip.status || "")) || null,
+    trips.find((trip) => ["EN_ROUTE", "PICKED_UP"].includes(trip.status || "")) || null,
   [trips]);
 
   const requestStats = useMemo(() => {
@@ -578,6 +731,39 @@ export default function VehicleRequestPortalPage() {
     };
   }, [athlete, trips]);
 
+  // Load premiaciones assigned to this VIP (athlete as awarder)
+  useEffect(() => {
+    if (!athlete?.id) return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const data = await apiFetch<PremiacionVIP[]>(`/premiaciones/by-athlete/${athlete.id}`);
+        if (!cancelled) setPremiaciones(data || []);
+      } catch {
+        // non-blocking
+      }
+    };
+    load();
+    const timer = window.setInterval(load, 60000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [athlete?.id]);
+
+  const confirmAwarder = async (premiacionId: string, awarderId: string, decision: "CONFIRM" | "DECLINE") => {
+    try {
+      const endpoint = decision === "CONFIRM" ? "confirm" : "decline";
+      await apiFetch(`/premiaciones/${premiacionId}/awarders/${awarderId}/${endpoint}`, {
+        method: "PATCH",
+      });
+      const data = await apiFetch<PremiacionVIP[]>(`/premiaciones/by-athlete/${athlete!.id}`);
+      setPremiaciones(data || []);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "No se pudo actualizar");
+    }
+  };
+
   // Auto-show rating popup when a trip transitions to completed
   const ratingDismissed = useRef<Set<string>>(new Set());
   const prevTripStatuses = useRef<Record<string, string>>({});
@@ -621,10 +807,10 @@ export default function VehicleRequestPortalPage() {
           const prev = prevStatuses.current[t.id];
           if (prev && t.status && prev !== t.status) {
             const msgs: Record<string, { message: string; emoji: string }> = {
-              SCHEDULED: { message: "Tu traslado fue programado", emoji: "📅" },
-              EN_ROUTE: { message: "El conductor está en camino", emoji: "🚗" },
-              PICKED_UP: { message: "Estás en ruta a tu destino", emoji: "✅" },
-              COMPLETED: { message: "Viaje completado", emoji: "🎉" },
+              SCHEDULED: { message: "Tu traslado fue programado", emoji: "cal" },
+              EN_ROUTE: { message: "El conductor esta en camino", emoji: "car" },
+              PICKED_UP: { message: "Estas en ruta a tu destino", emoji: "ok" },
+              COMPLETED: { message: "Viaje completado", emoji: "done" },
             };
             const info = msgs[t.status];
             if (info) notify.push(info.message, info.emoji);
@@ -645,16 +831,35 @@ export default function VehicleRequestPortalPage() {
     return () => window.clearInterval(timer);
   }, [athlete?.id]);
 
-  // User geolocation + send to backend (Safari-friendly)
+  // Check & monitor location permission
+  useEffect(() => {
+    if (!navigator.permissions) return;
+    navigator.permissions.query({ name: "geolocation" }).then((result) => {
+      setLocationPermission(result.state as "granted" | "prompt" | "denied");
+      result.onchange = () => setLocationPermission(result.state as "granted" | "prompt" | "denied");
+    }).catch(() => {});
+  }, []);
+
+  // Wake Lock: keep screen awake during active trips
+  useEffect(() => {
+    if (!activeChatTrip || !["EN_ROUTE", "PICKED_UP"].includes(activeChatTrip.status ?? "")) return;
+    let wakeLock: any = null;
+    const request = async () => {
+      try { if ("wakeLock" in navigator) { wakeLock = await (navigator as any).wakeLock.request("screen"); } } catch {}
+    };
+    request();
+    const onVis = () => { if (document.visibilityState === "visible" && !wakeLock) request(); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => { if (wakeLock) { try { wakeLock.release(); } catch {} } document.removeEventListener("visibilitychange", onVis); };
+  }, [activeChatTrip?.id, activeChatTrip?.status]);
+
+  // User geolocation + send to backend (Safari-friendly + background resume)
   useEffect(() => {
     if (!athlete || !navigator.geolocation) return;
-    let cleared = false;
     let watchId: number | null = null;
-    let fallbackInterval: number | null = null;
-    let gotPosition = false;
+    let interval: number | null = null;
 
     const onPos = (pos: GeolocationPosition) => {
-      gotPosition = true;
       const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
       setUserPos(coords);
       if (activeChatTrip?.id && ["EN_ROUTE", "PICKED_UP"].includes(activeChatTrip.status ?? "")) {
@@ -670,36 +875,379 @@ export default function VehicleRequestPortalPage() {
     navigator.geolocation.getCurrentPosition(onPos, () => {}, opts);
     watchId = navigator.geolocation.watchPosition(onPos, () => {}, opts);
 
-    // Safari fallback: poll if watchPosition doesn't fire
-    setTimeout(() => {
-      if (!gotPosition && !cleared) {
-        fallbackInterval = window.setInterval(() => {
+    // Polling backup every 5s
+    interval = window.setInterval(() => {
+      navigator.geolocation.getCurrentPosition(onPos, () => {}, { enableHighAccuracy: false, maximumAge: 15000, timeout: 20000 });
+    }, 5000);
+
+    // Resume on visibility change (mobile background)
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        navigator.geolocation.getCurrentPosition(onPos, () => {}, opts);
+        if (interval) window.clearInterval(interval);
+        interval = window.setInterval(() => {
           navigator.geolocation.getCurrentPosition(onPos, () => {}, { enableHighAccuracy: false, maximumAge: 15000, timeout: 20000 });
         }, 5000);
       }
-    }, 10000);
+    };
+    document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
-      cleared = true;
       if (watchId !== null) navigator.geolocation.clearWatch(watchId);
-      if (fallbackInterval) window.clearInterval(fallbackInterval);
+      if (interval) window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [athlete?.id, activeChatTrip?.id, activeChatTrip?.status]);
 
-  useEffect(() => {
-    if (activeTab !== "status") return;
-    setVisibleTripsCount(5);
-  }, [activeTab, athlete?.id]);
+  // Calendar helpers
+  const calYear = calMonthCursor.getFullYear();
+  const calMonth = calMonthCursor.getMonth();
+  const calGrid = useMemo(() => getMonthGrid(calYear, calMonth), [calYear, calMonth]);
+  const calMonthLabel = calMonthCursor.toLocaleDateString("es-CL", { month: "long", year: "numeric" });
+
+  const calDaysWithEvents = useMemo(() => {
+    const set = new Set<number>();
+    calendarEvents.forEach((ce) => {
+      if (!ce.scheduledAt) return;
+      const d = new Date(ce.scheduledAt);
+      if (d.getFullYear() === calYear && d.getMonth() === calMonth) {
+        set.add(d.getDate());
+      }
+    });
+    return set;
+  }, [calendarEvents, calYear, calMonth]);
+
+  const calSelectedDayEvents = useMemo(() => {
+    if (calSelectedDay === null) return [];
+    return calendarEvents.filter((ce) => {
+      if (!ce.scheduledAt) return false;
+      const d = new Date(ce.scheduledAt);
+      return d.getFullYear() === calYear && d.getMonth() === calMonth && d.getDate() === calSelectedDay;
+    });
+  }, [calendarEvents, calYear, calMonth, calSelectedDay]);
+
+  // ── Trip card renderer (shared between sub-tabs) ──
+  const renderTripCard = (trip: Trip) => {
+    const venue = venues.find((item) => item.id === trip.destinationVenueId);
+    const driver = trip.driverId ? drivers[trip.driverId] : null;
+    const vehicle = trip.vehicleId ? vehicles[trip.vehicleId] : null;
+    const status = statusMeta[trip.status || "REQUESTED"] || statusMeta.REQUESTED;
+    const editable = canEditTrip(trip);
+    const isExpanded = expandedTripId === trip.id;
+    const isActive = trip.status === "EN_ROUTE" || trip.status === "PICKED_UP";
+    const isCompleted = trip.status === "COMPLETED" || trip.status === "DROPPED_OFF";
+    const canRate = isCompleted && !trip.driverRating && trip.driverId;
+    const livePosition = trip.vehicleId ? positionsByVehicle[trip.vehicleId] : null;
+    const coords = extractCoords(livePosition);
+
+    return (
+      <div key={trip.id} style={{
+        borderRadius:16,border:"1px solid #e2e8f0",background:"#fff",
+        overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)",
+      }}>
+        {/* Compact header */}
+        <button
+          type="button"
+          onClick={() => setExpandedTripId(isExpanded ? null : trip.id)}
+          style={{
+            width:"100%",display:"flex",alignItems:"center",gap:10,
+            padding:"12px 14px",background:"none",border:"none",cursor:"pointer",
+            textAlign:"left",
+          }}
+        >
+          <span style={{
+            width:10,height:10,borderRadius:"50%",flexShrink:0,
+            background: isActive ? "#7c3aed" : isCompleted ? "#21D0B3" : trip.status === "SCHEDULED" ? "#0ea5e9" : "#f59e0b",
+            boxShadow: isActive ? "0 0 8px rgba(124,58,237,0.4)" : "none",
+          }} />
+          <div style={{ flex:1,minWidth:0 }}>
+            <p style={{ fontSize:13.5,fontWeight:700,color:"#0f172a",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+              {venue?.name || trip.destination || "Destino pendiente"}
+            </p>
+            <p style={{ fontSize:11,color:"#94a3b8",margin:"2px 0 0" }}>
+              {formatDateTime(trip.scheduledAt || trip.requestedAt)} · {status.label}
+              {trip.isRoundTrip && <span style={{ marginLeft:6,padding:"1px 6px",borderRadius:6,background:"#f0fdfa",border:"1px solid #99f6e4",fontSize:10,fontWeight:600,color:"#0a7a6b" }}>Ida y vuelta</span>}
+            </p>
+          </div>
+          {driver && (
+            <span style={{ fontSize:10.5,fontWeight:600,padding:"3px 8px",borderRadius:8,background:"#f1f5f9",color:"#334155",whiteSpace:"nowrap",flexShrink:0 }}>
+              {driver.fullName}
+            </span>
+          )}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0,transition:"transform .2s",transform:isExpanded?"rotate(180deg)":"rotate(0)" }}>
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+
+        {/* Active trip banner */}
+        {isActive && !isExpanded && (
+          <div style={{ padding:"0 14px 10px",display:"flex",alignItems:"center",gap:8 }}>
+            <span style={{ width:6,height:6,borderRadius:"50%",background:"#7c3aed",animation:"vrPulse 1.5s ease-in-out infinite" }} />
+            <span style={{ fontSize:12,fontWeight:600,color:"#7c3aed" }}>
+              {trip.status === "PICKED_UP" ? "Viaje en curso" : trip.status === "EN_ROUTE" ? "Conductor en camino" : ""}
+            </span>
+          </div>
+        )}
+
+        {/* Rate prompt */}
+        {canRate && !isExpanded && ratingTripId !== trip.id && (
+          <div style={{ padding:"0 14px 10px" }}>
+            <button type="button" onClick={() => setRatingTripId(trip.id)} style={{
+              display:"flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:10,
+              border:"1px solid rgba(33,208,179,0.3)",background:"rgba(33,208,179,0.06)",
+              color:"#0a7a6b",fontSize:12,fontWeight:600,cursor:"pointer",
+            }}>
+              Evaluar conductor
+            </button>
+          </div>
+        )}
+
+        {/* Inline rating */}
+        {isCompleted && !trip.driverRating && ratingTripId === trip.id && (
+          <div style={{ padding:"0 14px 14px",display:"flex",flexDirection:"column",alignItems:"center",gap:10 }}>
+            <p style={{ fontSize:13,fontWeight:600,color:"#0f172a",margin:0 }}>Como fue tu viaje?</p>
+            <div style={{ display:"flex",gap:4 }}>
+              {[1,2,3,4,5].map((star) => (
+                <button key={star} type="button" onClick={() => setRatingStars(star)} style={{ background:"none",border:"none",cursor:"pointer",padding:2 }}>
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill={ratingStars >= star ? "#FBBF24" : "none"} stroke={ratingStars >= star ? "#F59E0B" : "#CBD5E1"} strokeWidth="1.5">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                  </svg>
+                </button>
+              ))}
+            </div>
+            <textarea
+              value={ratingComment}
+              onChange={(e) => setRatingComment(e.target.value)}
+              placeholder="Comentario opcional..."
+              rows={2}
+              style={{ width:"100%",padding:10,borderRadius:10,border:"1px solid #e2e8f0",fontSize:13,resize:"none",outline:"none",boxSizing:"border-box",fontFamily:"inherit" }}
+            />
+            <div style={{ display:"flex",gap:8,width:"100%" }}>
+              <button type="button" onClick={() => submitRating(trip.id)} disabled={ratingStars === 0 || ratingLoading}
+                style={{ flex:1,padding:10,borderRadius:10,border:"none",background:ratingStars > 0 ? "linear-gradient(135deg,#34F3C6,#21D0B3)" : "#e2e8f0",color:ratingStars > 0 ? "#0d1b3e" : "#94a3b8",fontSize:13,fontWeight:700,cursor:ratingStars > 0 ? "pointer" : "not-allowed" }}>
+                {ratingLoading ? "..." : "Enviar"}
+              </button>
+              <button type="button" onClick={() => { setRatingTripId(null); setRatingStars(0); setRatingComment(""); }}
+                style={{ padding:"10px 14px",borderRadius:10,border:"1px solid #e2e8f0",background:"#f8fafc",color:"#64748b",fontSize:13,fontWeight:600,cursor:"pointer" }}>
+                Omitir
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Rating already given */}
+        {trip.driverRating && !isExpanded && (
+          <div style={{ padding:"0 14px 10px",display:"flex",alignItems:"center",gap:4 }}>
+            {Array.from({ length: trip.driverRating }, (_, i) => (
+              <svg key={i} width="14" height="14" viewBox="0 0 24 24" fill="#FBBF24" stroke="#F59E0B" strokeWidth="1.5">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+            ))}
+            <span style={{ fontSize:11,color:"#94a3b8",marginLeft:4 }}>Evaluado</span>
+          </div>
+        )}
+
+        {/* Expanded details */}
+        {isExpanded && (
+          <div style={{ padding:"0 14px 14px",display:"flex",flexDirection:"column",gap:8 }}>
+            <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:6 }}>
+              <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Origen</p>
+                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0",lineHeight:1.3 }}>{trip.origin || "Pendiente"}</p>
+              </div>
+              <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Destino</p>
+                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0",lineHeight:1.3 }}>{trip.destination || venue?.name || "Pendiente"}</p>
+              </div>
+              <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Conductor</p>
+                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{driver?.fullName || "Pendiente"}</p>
+                {driver?.phone && <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0" }}>{driver.phone}</p>}
+              </div>
+              <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Vehiculo</p>
+                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{vehicle?.plate || "Pendiente"}</p>
+                {vehicle && <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0" }}>{[vehicle.type, vehicle.brand, vehicle.model].filter(Boolean).join(" · ")}</p>}
+              </div>
+              <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Personas</p>
+                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{trip.passengerCount || "-"}</p>
+              </div>
+              <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Tipo</p>
+                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{vehicleTypeLabel(trip.requestedVehicleType)}</p>
+              </div>
+            </div>
+            {trip.notes && (
+              <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Notas</p>
+                <p style={{ fontSize:12.5,color:"#334155",margin:"3px 0 0",lineHeight:1.4 }}>{trip.notes}</p>
+              </div>
+            )}
+
+            {trip.isRoundTrip && trip.childTrips && trip.childTrips.length > 0 && (
+              <div style={{ padding:"10px 12px",borderRadius:12,background:"#f0fdfa",border:"1px solid #99f6e4" }}>
+                <p style={{ fontSize:10,fontWeight:700,color:"#0a7a6b",margin:"0 0 6px",textTransform:"uppercase",letterSpacing:"0.1em" }}>Viaje de regreso</p>
+                {trip.childTrips.map((child) => {
+                  const returnVenue = child.destinationVenueId ? venues.find((v) => v.id === child.destinationVenueId) : null;
+                  const returnDriver = child.driverId ? drivers[child.driverId] : null;
+                  const childStatusMeta = statusMeta[child.status || "REQUESTED"] || statusMeta.REQUESTED;
+                  const childStatus = { label: childStatusMeta.label, color: child.status === "COMPLETED" || child.status === "DROPPED_OFF" ? "#10b981" : child.status === "EN_ROUTE" || child.status === "PICKED_UP" ? "#6366f1" : "#f59e0b" };
+                  return (
+                    <div key={child.id} style={{ display:"flex",flexDirection:"column",gap:6 }}>
+                      <div style={{ display:"flex",alignItems:"center",gap:6,marginBottom:2 }}>
+                        <span style={{ display:"inline-block",width:8,height:8,borderRadius:4,background:childStatus.color }} />
+                        <span style={{ fontSize:11,fontWeight:700,color:childStatus.color }}>{childStatus.label}</span>
+                      </div>
+                      <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:6 }}>
+                        <div style={{ padding:"6px 8px",borderRadius:8,background:"#fff",border:"1px solid #e2e8f0" }}>
+                          <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Fecha regreso</p>
+                          <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{formatDateTime(child.scheduledAt)}</p>
+                        </div>
+                        <div style={{ padding:"6px 8px",borderRadius:8,background:"#fff",border:"1px solid #e2e8f0" }}>
+                          <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Destino</p>
+                          <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0",lineHeight:1.3 }}>
+                            {returnVenue?.name || child.destination || child.origin || "Pendiente"}
+                          </p>
+                        </div>
+                        <div style={{ padding:"6px 8px",borderRadius:8,background:"#fff",border:"1px solid #e2e8f0" }}>
+                          <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Conductor</p>
+                          <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{returnDriver?.fullName || "Pendiente"}</p>
+                        </div>
+                        <div style={{ padding:"6px 8px",borderRadius:8,background:"#fff",border:"1px solid #e2e8f0" }}>
+                          <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Origen</p>
+                          <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0",lineHeight:1.3 }}>{child.origin || "Pendiente"}</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Map for active/scheduled trips */}
+            {(isActive || trip.status === "SCHEDULED") && (
+              <div style={{ borderRadius:12,overflow:"hidden",border:"1px solid rgba(33,208,179,0.25)" }}>
+                <TripMap
+                  origin={trip.origin}
+                  destination={trip.destination || venue?.name}
+                  driverPosition={coords ? { lat: coords.lat, lng: coords.lng } : null}
+                  userPosition={userPos || (trip.passengerLat && trip.passengerLng ? { lat: trip.passengerLat, lng: trip.passengerLng } : null)}
+                  height={200}
+                />
+                <div style={{ padding:"8px 10px",background:"rgba(33,208,179,0.06)",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+                  <span style={{ fontSize:12,fontWeight:700,color:"#0a7a6b" }}>
+                    {trip.status === "PICKED_UP" ? "Viaje en curso" : trip.status === "EN_ROUTE" ? "Conductor en camino" : "Ruta programada"}
+                  </span>
+                  {coords && (
+                    <a
+                      href={buildDirectionsLink(coords.lat, coords.lng, trip.origin)}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ fontSize:11,color:"#21D0B3",fontWeight:600 }}
+                    >
+                      Abrir en Maps
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Completed trip times */}
+            {isCompleted && (
+              <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:6 }}>
+                {trip.startedAt && (
+                  <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                    <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Inicio</p>
+                    <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{formatDateTime(trip.startedAt)}</p>
+                  </div>
+                )}
+                {trip.completedAt && (
+                  <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                    <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Fin</p>
+                    <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{formatDateTime(trip.completedAt)}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Rating in expanded */}
+            {trip.driverRating && (
+              <div style={{ display:"flex",alignItems:"center",gap:4,padding:"4px 0" }}>
+                {Array.from({ length: trip.driverRating }, (_, i) => (
+                  <svg key={i} width="16" height="16" viewBox="0 0 24 24" fill="#FBBF24" stroke="#F59E0B" strokeWidth="1.5">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                  </svg>
+                ))}
+                <span style={{ fontSize:11,color:"#94a3b8",marginLeft:4 }}>Tu evaluacion</span>
+              </div>
+            )}
+
+            {/* Action buttons */}
+            {editable && (
+              <div style={{ display:"flex",gap:8,marginTop:4 }}>
+                <button type="button" onClick={() => startEditingTrip(trip)}
+                  style={{ flex:1,padding:"8px 12px",borderRadius:10,border:"1px solid #e2e8f0",background:"#f8fafc",color:"#334155",fontSize:12,fontWeight:600,cursor:"pointer" }}>
+                  Modificar
+                </button>
+                <button type="button" onClick={() => cancelTrip(trip)}
+                  style={{ padding:"8px 12px",borderRadius:10,border:"1px solid #fecaca",background:"#fef2f2",color:"#dc2626",fontSize:12,fontWeight:600,cursor:"pointer" }}>
+                  Cancelar
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Google Maps embed for venues/hotels
+  const renderMapEmbed = (address: string | null | undefined, extra?: string | null) => {
+    if (!address) return null;
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    const query = [address, extra].filter(Boolean).join(" ");
+    if (apiKey) {
+      return (
+        <iframe
+          src={`https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${encodeURIComponent(query)}`}
+          style={{ width:"100%",height:180,border:"none",borderRadius:10 }}
+          allowFullScreen
+          loading="lazy"
+        />
+      );
+    }
+    return (
+      <a
+        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`}
+        target="_blank"
+        rel="noreferrer"
+        style={{ display:"inline-flex",alignItems:"center",gap:6,padding:"8px 14px",borderRadius:10,background:"rgba(33,208,179,0.08)",border:"1px solid rgba(33,208,179,0.25)",color:"#0a7a6b",fontSize:12,fontWeight:600,textDecoration:"none",cursor:"pointer" }}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        Ver en Google Maps
+      </a>
+    );
+  };
 
   return (
     <>
-      {!athlete && !bootCheckDone && (
-        <div style={{ minHeight: "100vh", background: "#020c18", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ width: 36, height: 36, borderRadius: "50%", border: "3px solid rgba(33,208,179,0.25)", borderTopColor: "#21D0B3", animation: "pvr-spin 0.8s linear infinite" }} />
-          <style>{`@keyframes pvr-spin{to{transform:rotate(360deg)}}`}</style>
+      {!sessionChecked && !athlete && (
+        <div style={{ minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"linear-gradient(135deg,#020c18 0%,#0a1628 50%,#041220 100%)",position:"relative",overflow:"hidden" }}>
+          <div style={{ position:"absolute",top:"-20%",right:"-10%",width:"50vw",height:"50vw",borderRadius:"50%",background:"radial-gradient(circle,rgba(33,208,179,0.08) 0%,transparent 70%)",pointerEvents:"none" }} />
+          <div style={{ position:"absolute",bottom:"-15%",left:"-10%",width:"40vw",height:"40vw",borderRadius:"50%",background:"radial-gradient(circle,rgba(31,205,255,0.06) 0%,transparent 70%)",pointerEvents:"none" }} />
+          <div style={{ position:"relative",zIndex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:20 }}>
+            <img src="/branding/LOGO-SEVEN-1.png" alt="Seven Arena" style={{ height:48,width:"auto",objectFit:"contain",filter:"drop-shadow(0 0 24px rgba(33,208,179,0.4)) drop-shadow(0 4px 12px rgba(0,0,0,0.6))",marginBottom:8 }} />
+            <div style={{ width:44,height:44,position:"relative" }}>
+              <div style={{ position:"absolute",inset:0,border:"3px solid rgba(33,208,179,0.15)",borderRadius:"50%" }} />
+              <div style={{ position:"absolute",inset:0,border:"3px solid transparent",borderTopColor:"#21D0B3",borderRadius:"50%",animation:"sa-spin 0.9s cubic-bezier(0.4,0,0.2,1) infinite" }} />
+            </div>
+            <p style={{ fontSize:13,fontWeight:600,color:"rgba(255,255,255,0.5)",margin:0,letterSpacing:"0.03em" }}>Cargando portal...</p>
+          </div>
+          <style>{`@keyframes sa-spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       )}
-      {!athlete && bootCheckDone && (
+      {sessionChecked && !athlete && (
         <div className="flex flex-col lg:flex-row" style={{ minHeight: "100vh", background: "#020c18", position: "relative", overflow: "hidden" }}>
           <style>{`
             @keyframes pvr-f1{0%,100%{transform:translateY(0px) scale(1)}50%{transform:translateY(-30px) translateX(10px) scale(1.05)}}
@@ -730,7 +1278,7 @@ export default function VehicleRequestPortalPage() {
               <h1 style={{ fontSize: "clamp(28px,4vw,44px)", fontWeight: 700, lineHeight: 1.1, color: "#ffffff", margin: 0 }}>
                 Solicita tu<br />
                 <span style={{ background: "linear-gradient(90deg,#21D0B3,#34F3C6,#21D0B3)", backgroundSize: "200% auto", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", animation: "pvr-shimmer 4s linear infinite" }}>
-                  vehículo
+                  vehiculo
                 </span>
               </h1>
               <p className="hidden sm:block" style={{ fontSize: "15px", lineHeight: 1.6, color: "rgba(255,255,255,0.55)", maxWidth: "340px", margin: 0 }}>
@@ -750,7 +1298,7 @@ export default function VehicleRequestPortalPage() {
               </div>
             </div>
             <div className="hidden lg:block" style={{ position: "relative", zIndex: 1 }}>
-              <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.25)", letterSpacing: "0.08em" }}>© Seven Arena · Portal seguro</p>
+              <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.25)", letterSpacing: "0.08em" }}>Seven Arena - Portal seguro</p>
             </div>
           </div>
 
@@ -759,8 +1307,8 @@ export default function VehicleRequestPortalPage() {
             <div style={{ maxWidth: 480, width: "100%", margin: "0 auto" }}>
               <div style={{ marginBottom: "32px" }}>
                 <p style={{ fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", color: "#21D0B3", marginBottom: "8px" }}>Acceso</p>
-                <h2 style={{ fontSize: "26px", fontWeight: 700, color: "#ffffff", margin: "0 0 6px" }}>Ingresa con tu código</h2>
-                <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.45)", margin: 0 }}>Usa el código corto del portal de usuario para acceder a tu panel de movilidad.</p>
+                <h2 style={{ fontSize: "26px", fontWeight: 700, color: "#ffffff", margin: "0 0 6px" }}>Ingresa con tu codigo</h2>
+                <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.45)", margin: 0 }}>Usa el codigo corto del portal de usuario para acceder a tu panel de movilidad.</p>
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "14px", marginBottom: "28px" }}>
@@ -768,7 +1316,7 @@ export default function VehicleRequestPortalPage() {
                   className="input h-12 text-base"
                   value={userCode}
                   onChange={(e) => setUserCode(e.target.value)}
-                  placeholder="Código de usuario"
+                  placeholder="Codigo de usuario"
                   onKeyDown={(e) => e.key === "Enter" && login()}
                   style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(33,208,179,0.2)", color: "#ffffff", borderRadius: "12px" }}
                 />
@@ -778,16 +1326,16 @@ export default function VehicleRequestPortalPage() {
                   disabled={loading}
                   style={{ height: "48px", borderRadius: "12px", fontWeight: 700, fontSize: "15px", cursor: loading ? "not-allowed" : "pointer", background: "linear-gradient(135deg,#34F3C6 0%,#21D0B3 50%,#15B09A 100%)", color: "#0d1b3e", border: "none", opacity: loading ? 0.7 : 1, boxShadow: "0 4px 20px rgba(33,208,179,0.35)" }}
                 >
-                  {loading ? "Ingresando…" : "Abrir portal"}
+                  {loading ? "Ingresando..." : "Abrir portal"}
                 </button>
                 {error && <p style={{ fontSize: "13px", color: "#f87171", margin: 0 }}>{error}</p>}
               </div>
 
               <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "28px" }}>
-                <p style={{ fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", color: "#21D0B3", marginBottom: "8px" }}>Recuperación de acceso</p>
-                <h3 style={{ fontSize: "18px", fontWeight: 600, color: "#ffffff", margin: "0 0 6px" }}>Solicita tu código</h3>
+                <p style={{ fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", color: "#21D0B3", marginBottom: "8px" }}>Recuperacion de acceso</p>
+                <h3 style={{ fontSize: "18px", fontWeight: 600, color: "#ffffff", margin: "0 0 6px" }}>Solicita tu codigo</h3>
                 <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.4)", margin: "0 0 16px" }}>
-                  Si no tienes tu código, ingrésalo con tu correo registrado y te lo enviamos.
+                  Si no tienes tu codigo, ingresalo con tu correo registrado y te lo enviamos.
                 </p>
                 <div style={{ display: "flex", gap: "10px", flexDirection: "column" }}>
                   <input
@@ -804,14 +1352,14 @@ export default function VehicleRequestPortalPage() {
                     disabled={requestAccessLoading}
                     style={{ width: "100%", height: "44px", padding: "0 20px", borderRadius: "10px", fontWeight: 500, fontSize: "13px", cursor: requestAccessLoading ? "not-allowed" : "pointer", background: "rgba(33,208,179,0.1)", color: "#21D0B3", border: "1px solid rgba(33,208,179,0.3)", opacity: requestAccessLoading ? 0.7 : 1 }}
                   >
-                    {requestAccessLoading ? "Enviando…" : "Solicitar código"}
+                    {requestAccessLoading ? "Enviando..." : "Solicitar codigo"}
                   </button>
                 </div>
                 {accessRequestStatus && <p style={{ fontSize: "13px", color: "#34d399", marginTop: "10px" }}>{accessRequestStatus}</p>}
                 {accessRequestError && <p style={{ fontSize: "13px", color: "#f87171", marginTop: "10px" }}>{accessRequestError}</p>}
 
                 <div style={{ marginTop: "24px", display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "10px" }}>
-                  {[["Paso 1", "Solicita tu código"], ["Paso 2", "Ingresa al portal"], ["Paso 3", "Sigue el viaje"]].map(([step, label]) => (
+                  {[["Paso 1", "Solicita tu codigo"], ["Paso 2", "Ingresa al portal"], ["Paso 3", "Sigue el viaje"]].map(([step, label]) => (
                     <div key={step} style={{ borderRadius: "12px", padding: "12px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(33,208,179,0.12)" }}>
                       <div style={{ fontSize: "10px", letterSpacing: "0.18em", textTransform: "uppercase", color: "rgba(33,208,179,0.7)", marginBottom: "6px" }}>{step}</div>
                       <p style={{ fontSize: "12px", fontWeight: 500, color: "rgba(255,255,255,0.7)", margin: 0 }}>{label}</p>
@@ -842,7 +1390,10 @@ export default function VehicleRequestPortalPage() {
             <div style={{ position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(33,208,179,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(33,208,179,0.04) 1px,transparent 1px)",backgroundSize:"48px 48px",pointerEvents:"none" }} />
             <div style={{ position:"absolute",bottom:"-1px",left:0,right:0,height:"2px",background:"linear-gradient(90deg,transparent,#21D0B3 30%,#34F3C6 50%,#21D0B3 70%,transparent)",pointerEvents:"none",animation:"vr-glow 3s ease-in-out infinite" }} />
             <div style={{ padding:"10px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",maxWidth:"960px",margin:"0 auto",position:"relative",zIndex:1 }}>
-              <img src="/branding/LOGO-SEVEN-1.png" alt="Seven Arena" style={{ height:"34px",width:"auto",objectFit:"contain",filter:"drop-shadow(0 0 18px rgba(33,208,179,0.5)) drop-shadow(0 2px 8px rgba(0,0,0,0.8))" }} />
+              <div style={{ display:"flex",alignItems:"center",gap:10 }}>
+                <img src="/branding/LOGO-SEVEN-1.png" alt="Seven Arena" style={{ height:"34px",width:"auto",objectFit:"contain",filter:"drop-shadow(0 0 18px rgba(33,208,179,0.5)) drop-shadow(0 2px 8px rgba(0,0,0,0.8))" }} />
+                <span style={{ fontSize:13,fontWeight:700,color:"#fff",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:160 }}>{athlete.fullName || ""}</span>
+              </div>
               <div style={{ display:"flex",alignItems:"center",gap:8 }}>
                 <NotificationBell
                   notifications={notify.notifications}
@@ -866,69 +1417,42 @@ export default function VehicleRequestPortalPage() {
             </div>
           </div>
 
-          <div style={{ maxWidth:"960px",margin:"0 auto",padding:"14px 10px 48px",position:"relative",zIndex:1 }}>
-
-          {/* Profile card */}
-          <div className="vr-card" style={{ marginBottom:"12px",display:"flex",flexDirection:"column",gap:"10px",borderLeft:"4px solid #21D0B3" }}>
-            <div style={{ display:"flex",alignItems:"center",gap:"10px" }}>
-              <div style={{ width:38,height:38,borderRadius:"50%",background:"linear-gradient(135deg,#21D0B3,#062240)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"13px",fontWeight:900,color:"#fff",boxShadow:"0 3px 12px rgba(33,208,179,0.3)",flexShrink:0 }}>
-                {(athlete.fullName || "?").split(" ").slice(0,2).map(w=>w[0]||"").join("").toUpperCase()}
-              </div>
-              <div style={{ minWidth:0,flex:1 }}>
-                <h2 style={{ fontSize:"15px",fontWeight:800,color:"#0f172a",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{athlete.fullName || athlete.id}</h2>
-                <div style={{ display:"flex",flexWrap:"wrap",gap:"4px",marginTop:3 }}>
-                  <span style={{ fontSize:"9px",fontWeight:600,padding:"2px 8px",borderRadius:"10px",background:"linear-gradient(135deg,rgba(33,208,179,0.12),rgba(33,208,179,0.06))",color:"#0a7a6b",border:"1px solid rgba(33,208,179,0.3)" }}>
-                    {events[athlete.eventId || ""]?.name || "-"}
-                  </span>
-                  <span style={{ fontSize:"9px",fontWeight:600,padding:"2px 8px",borderRadius:"10px",background:"#f1f5f9",color:"#334155",border:"1px solid #dde3ed" }}>
-                    {delegations[athlete.delegationId || ""]?.countryCode || "-"}
-                  </span>
-                </div>
-              </div>
-            </div>
-            {/* Stats row */}
-            <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"6px" }}>
-              {([
-                { label:"Solicit.", value:requestStats.requested, color:"#0f172a" },
-                { label:"Program.", value:requestStats.scheduled, color:"#21D0B3" },
-                { label:"Activas", value:requestStats.active, color:"#f59e0b" },
-                { label:"Cerradas", value:requestStats.completed, color:"#10b981" },
-              ] as const).map(s => (
-                <div key={s.label} style={{ textAlign:"center",padding:"8px 4px",borderRadius:"10px",background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                  <div style={{ fontSize:"8px",fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"#94a3b8" }}>{s.label}</div>
-                  <div style={{ fontSize:"20px",fontWeight:700,color:s.color,marginTop:"2px" }}>{s.value}</div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <div style={{ maxWidth:"960px",margin:"0 auto",padding:"14px 10px calc(70px + env(safe-area-inset-bottom))",position:"relative",zIndex:1 }}>
 
           <section style={{ display:"flex",flexDirection:"column",gap:"12px" }}>
 
-            <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px" }}>
-              {([
-                { key:"request" as PortalTab, label:"Solicitar", sub:"Nuevo viaje" },
-                { key:"status" as PortalTab, label:"Estado", sub:"Mis solicitudes" },
-              ]).map(tab => (
-                <button key={tab.key} type="button" onClick={() => setActiveTab(tab.key)}
-                  style={{
-                    padding:"12px 14px",borderRadius:"14px",textAlign:"left",cursor:"pointer",transition:"all .2s",border:"none",
-                    background: activeTab===tab.key ? "linear-gradient(135deg,#041a2e,#062240)" : "#fff",
-                    boxShadow: activeTab===tab.key ? "0 4px 16px rgba(33,208,179,0.2)" : "0 1px 6px rgba(0,0,0,0.04)",
-                  }}>
-                  <div style={{ fontSize:"9px",fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:activeTab===tab.key?"#21D0B3":"#94a3b8" }}>{tab.label}</div>
-                  <div style={{ fontSize:"14px",fontWeight:700,color:activeTab===tab.key?"#fff":"#0f172a",marginTop:"4px" }}>{tab.sub}</div>
-                </button>
-              ))}
-            </div>
-
-            {message ? <p className="text-sm text-emerald-600">{message}</p> : null}
+            {message && message !== "SOLICITUD_ENVIADA" ? <p className="text-sm text-emerald-600">{message}</p> : null}
             {error ? <p className="text-sm text-rose-600">{error}</p> : null}
 
-            {activeTab === "request" ? (
+            {/* Success modal */}
+            {message === "SOLICITUD_ENVIADA" && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                <div style={{ background:"#fff",borderRadius:"24px",width:"100%",maxWidth:"380px",padding:"32px 28px",boxShadow:"0 8px 40px rgba(15,23,42,0.2)",textAlign:"center" }}>
+                  <div style={{ width:"56px",height:"56px",borderRadius:"50%",background:"rgba(33,208,179,0.12)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 18px" }}>
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  </div>
+                  <h3 style={{ fontSize:"18px",fontWeight:800,color:"#0f172a",margin:"0 0 8px" }}>Solicitud enviada</h3>
+                  <p style={{ fontSize:"13px",color:"#64748b",lineHeight:1.5,margin:"0 0 24px" }}>
+                    Transporte la revisará y asignará un chofer.<br/>
+                    Podrás ver el estado en la pestaña <strong style={{ color:"#0f172a" }}>Actividades</strong>.
+                  </p>
+                  <button
+                    onClick={() => setMessage(null)}
+                    style={{ width:"100%",padding:"12px",borderRadius:"14px",border:"none",background:"linear-gradient(135deg,#21D0B3,#14AE98)",color:"#fff",fontSize:"14px",fontWeight:700,cursor:"pointer",boxShadow:"0 2px 12px rgba(33,208,179,0.35)" }}
+                  >
+                    Entendido
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ═══════════════════ SOLICITUD TAB ═══════════════════ */}
+            {activeTab === "solicitud" && (
+              <section style={{ display:"flex",flexDirection:"column",gap:"12px" }}>
               <section>
                 <div style={{ borderRadius:16,border:"1px solid #e2e8f0",background:"#fff",padding:"16px 14px",boxShadow:"0 1px 4px rgba(15,23,42,0.04)" }}>
                   <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:"0 0 12px" }}>
-                    {editingTripId ? "Modificar solicitud" : "Solicitar vehículo"}
+                    {editingTripId ? "Modificar solicitud" : "Solicitar vehiculo"}
                   </p>
                   {editingTrip ? (
                     <div style={{ padding:"8px 10px",borderRadius:10,background:"#fffbeb",border:"1px solid #fde68a",color:"#92400e",fontSize:12,marginBottom:12 }}>
@@ -937,10 +1461,9 @@ export default function VehicleRequestPortalPage() {
                   ) : null}
 
                   <form onSubmit={submitRequest} style={{ display:"flex",flexDirection:"column",gap:10 }}>
-                    {/* Row: tipo + personas */}
                     <div style={{ display:"grid",gridTemplateColumns:"1fr 90px",gap:8 }}>
                       <div>
-                        <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>Tipo de vehículo</label>
+                        <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>Tipo de vehiculo</label>
                         <select className="input" value={selectedVehicleType} onChange={(e) => setSelectedVehicleType(e.target.value)}
                           style={{ width:"100%",height:40,fontSize:13,borderRadius:10 }}>
                           {VEHICLE_TYPES.map((item) => (
@@ -950,25 +1473,34 @@ export default function VehicleRequestPortalPage() {
                       </div>
                       <div>
                         <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>Personas</label>
-                        <input className="input" type="number" min={1} step={1} value={passengerCount}
+                        <input className="input" type="number" min={1} max={VEHICLE_TYPES.find((v) => v.value === selectedVehicleType)?.maxPax ?? 64} step={1} value={passengerCount}
                           onChange={(e) => setPassengerCount(e.target.value)}
-                          style={{ width:"100%",height:40,fontSize:13,borderRadius:10,textAlign:"center" }} />
+                          style={{ width:"100%",height:40,fontSize:13,borderRadius:10,textAlign:"center", borderColor: Number(passengerCount) > (VEHICLE_TYPES.find((v) => v.value === selectedVehicleType)?.maxPax ?? 64) ? "#ef4444" : undefined }} />
                       </div>
                     </div>
+                    {(() => {
+                      const maxPax = VEHICLE_TYPES.find((v) => v.value === selectedVehicleType)?.maxPax ?? 64;
+                      const vehicleLabel = VEHICLE_TYPES.find((v) => v.value === selectedVehicleType)?.label ?? "";
+                      if (Number(passengerCount) > maxPax) return (
+                        <div style={{ display:"flex",alignItems:"center",gap:6,padding:"8px 12px",borderRadius:10,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)" }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                          <span style={{ fontSize:12,fontWeight:600,color:"#dc2626" }}>El vehículo {vehicleLabel.split("—")[0].trim()} permite máximo {maxPax} pasajeros</span>
+                        </div>
+                      );
+                      return null;
+                    })()}
 
-                    {/* Origen */}
                     <div>
                       <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>Origen</label>
                       <PlacesAutocompleteInput
                         className="input"
                         value={originAddress}
                         onChange={setOriginAddress}
-                        placeholder="Dirección de recogida"
+                        placeholder="Direccion de recogida"
                         style={{ height:40,fontSize:13,borderRadius:10 }}
                       />
                     </div>
 
-                    {/* Sede destino */}
                     <div>
                       <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>Sede destino</label>
                       <select className="input" value={selectedVenueId} onChange={(e) => setSelectedVenueId(e.target.value)}
@@ -982,7 +1514,6 @@ export default function VehicleRequestPortalPage() {
                       </select>
                     </div>
 
-                    {/* Hora */}
                     <div>
                       <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>Fecha y hora</label>
                       <input className="input" type="datetime-local" value={requestedTime}
@@ -990,7 +1521,6 @@ export default function VehicleRequestPortalPage() {
                         style={{ width:"100%",height:40,fontSize:13,borderRadius:10 }} />
                     </div>
 
-                    {/* Notas (colapsable) */}
                     <div>
                       <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>Notas (opcional)</label>
                       <textarea className="input" value={notes} onChange={(e) => setNotes(e.target.value)}
@@ -999,7 +1529,50 @@ export default function VehicleRequestPortalPage() {
                         style={{ width:"100%",fontSize:13,borderRadius:10,resize:"none",padding:"8px 10px",boxSizing:"border-box",fontFamily:"inherit" }} />
                     </div>
 
-                    {/* Submit */}
+                    {/* Round trip toggle */}
+                    <div style={{ display:"flex",alignItems:"center",gap:10,padding:"6px 0" }}>
+                      <button type="button" onClick={() => setIsRoundTrip(!isRoundTrip)}
+                        style={{
+                          width:44,height:24,borderRadius:12,border:"none",cursor:"pointer",position:"relative",
+                          background: isRoundTrip ? "#21D0B3" : "#cbd5e1",
+                          transition:"background 0.2s",
+                        }}>
+                        <span style={{
+                          position:"absolute",top:2,left: isRoundTrip ? 22 : 2,
+                          width:20,height:20,borderRadius:10,background:"#fff",
+                          boxShadow:"0 1px 3px rgba(0,0,0,0.2)",transition:"left 0.2s",
+                        }} />
+                      </button>
+                      <span style={{ fontSize:13,fontWeight:600,color:"#0f172a" }}>Ida y vuelta</span>
+                    </div>
+
+                    {isRoundTrip && (
+                      <div style={{ display:"flex",flexDirection:"column",gap:10,padding:"10px 12px",borderRadius:12,background:"#f0fdfa",border:"1px solid #99f6e4" }}>
+                        <p style={{ fontSize:12,fontWeight:700,color:"#0a7a6b",margin:0 }}>Datos del regreso</p>
+                        <div>
+                          <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>Fecha y hora de regreso</label>
+                          <input className="input" type="datetime-local" value={returnTime}
+                            onChange={(e) => setReturnTime(e.target.value)}
+                            style={{ width:"100%",height:40,fontSize:13,borderRadius:10 }} />
+                        </div>
+                        <div>
+                          <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>Destino de regreso (opcional)</label>
+                          <select className="input" value={returnVenueId} onChange={(e) => setReturnVenueId(e.target.value)}
+                            style={{ width:"100%",height:40,fontSize:13,borderRadius:10 }}>
+                            <option value="">Volver a dirección de recogida</option>
+                            {venues.map((venue) => (
+                              <option key={venue.id} value={venue.id}>
+                                {venue.name}{venue.address ? ` — ${venue.address}` : ""}
+                              </option>
+                            ))}
+                          </select>
+                          <p style={{ fontSize:10.5,color:"#64748b",margin:"4px 0 0" }}>
+                            Si no seleccionas una sede, el regreso será a tu dirección de recogida.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
                     <button type="submit" disabled={submitting}
                       style={{
                         width:"100%",height:42,borderRadius:12,border:"none",fontSize:14,fontWeight:700,cursor:"pointer",
@@ -1020,238 +1593,492 @@ export default function VehicleRequestPortalPage() {
                   </form>
                 </div>
               </section>
-            ) : (
-              <section style={{ display:"flex",flexDirection:"column",gap:"10px" }}>
-                {trips.length === 0 ? (
-                  <div style={{ textAlign:"center",padding:"28px 16px",borderRadius:16,border:"1px dashed rgba(33,208,179,0.3)",background:"#fafcfb" }}>
-                    <p style={{ fontSize:"15px",fontWeight:700,color:"#0f172a",margin:"0 0 4px" }}>Sin solicitudes</p>
-                    <p style={{ fontSize:"12.5px",color:"#64748b",margin:0 }}>Tus solicitudes de vehículo aparecerán aquí.</p>
-                  </div>
-                ) : (
-                  visibleTrips.map((trip) => {
-                    const venue = venues.find((item) => item.id === trip.destinationVenueId);
-                    const driver = trip.driverId ? drivers[trip.driverId] : null;
-                    const vehicle = trip.vehicleId ? vehicles[trip.vehicleId] : null;
-                    const status = statusMeta[trip.status || "REQUESTED"] || statusMeta.REQUESTED;
-                    const editable = canEditTrip(trip);
-                    const isExpanded = expandedTripId === trip.id;
-                    const isActive = trip.status === "EN_ROUTE" || trip.status === "PICKED_UP";
-                    const isCompleted = trip.status === "COMPLETED" || trip.status === "DROPPED_OFF";
-                    const canRate = isCompleted && !trip.driverRating && trip.driverId;
-                    const livePosition = trip.vehicleId ? positionsByVehicle[trip.vehicleId] : null;
-                    const coords = extractCoords(livePosition);
+              </section>
+            )}
 
-                    return (
-                      <div key={trip.id} style={{
-                        borderRadius:16,border:"1px solid #e2e8f0",background:"#fff",
-                        overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)",
-                      }}>
-                        {/* ── Compact header (always visible) ── */}
-                        <button
-                          type="button"
-                          onClick={() => setExpandedTripId(isExpanded ? null : trip.id)}
-                          style={{
-                            width:"100%",display:"flex",alignItems:"center",gap:10,
-                            padding:"12px 14px",background:"none",border:"none",cursor:"pointer",
-                            textAlign:"left",
-                          }}
-                        >
-                          {/* Status dot */}
-                          <span style={{
-                            width:10,height:10,borderRadius:"50%",flexShrink:0,
-                            background: isActive ? "#7c3aed" : isCompleted ? "#21D0B3" : trip.status === "SCHEDULED" ? "#0ea5e9" : "#f59e0b",
-                            boxShadow: isActive ? "0 0 8px rgba(124,58,237,0.4)" : "none",
-                          }} />
-                          <div style={{ flex:1,minWidth:0 }}>
-                            <p style={{ fontSize:13.5,fontWeight:700,color:"#0f172a",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
-                              {venue?.name || trip.destination || "Destino pendiente"}
-                            </p>
-                            <p style={{ fontSize:11,color:"#94a3b8",margin:"2px 0 0" }}>
-                              {formatDateTime(trip.scheduledAt || trip.requestedAt)} · {status.label}
-                            </p>
-                          </div>
-                          {/* Driver + vehicle chips */}
-                          {driver && (
-                            <span style={{ fontSize:10.5,fontWeight:600,padding:"3px 8px",borderRadius:8,background:"#f1f5f9",color:"#334155",whiteSpace:"nowrap",flexShrink:0 }}>
-                              {driver.fullName}
-                            </span>
-                          )}
-                          {/* Expand arrow */}
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0,transition:"transform .2s",transform:isExpanded?"rotate(180deg)":"rotate(0)" }}>
-                            <polyline points="6 9 12 15 18 9" />
-                          </svg>
-                        </button>
+            {/* ═══════════════════ ACTIVIDADES TAB ═══════════════════ */}
+            {activeTab === "actividades" && (
+              <section style={{ display:"flex",flexDirection:"column",gap:"12px" }}>
+                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>Mis viajes</p>
 
-                        {/* ── Active trip banner ── */}
-                        {isActive && !isExpanded && (
-                          <div style={{ padding:"0 14px 10px",display:"flex",alignItems:"center",gap:8 }}>
-                            <span style={{ width:6,height:6,borderRadius:"50%",background:"#7c3aed",animation:"vrPulse 1.5s ease-in-out infinite" }} />
-                            <span style={{ fontSize:12,fontWeight:600,color:"#7c3aed" }}>
-                              {trip.status === "PICKED_UP" ? "Viaje en curso" : trip.status === "EN_ROUTE" ? "Conductor en camino" : ""}
-                            </span>
-                          </div>
-                        )}
+                {/* Sub-tabs */}
+                <div style={{ display:"flex",gap:0,background:"#fff",borderRadius:12,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+                  {([
+                    { key: "en_curso" as ActividadesSubTab, label: "En curso", count: enCursoTrips.length },
+                    { key: "historial" as ActividadesSubTab, label: "Historial", count: historialTrips.length },
+                    { key: "pendientes" as ActividadesSubTab, label: "Pendientes", count: pendientesTrips.length },
+                  ]).map((st) => (
+                    <button
+                      key={st.key}
+                      type="button"
+                      onClick={() => { setActividadesSubTab(st.key); setExpandedTripId(null); }}
+                      style={{
+                        flex:1,padding:"10px 4px",border:"none",cursor:"pointer",fontSize:12,fontWeight:actividadesSubTab === st.key ? 700 : 500,
+                        background: actividadesSubTab === st.key ? "rgba(33,208,179,0.1)" : "transparent",
+                        color: actividadesSubTab === st.key ? "#0a7a6b" : "#64748b",
+                        borderBottom: actividadesSubTab === st.key ? "2px solid #21D0B3" : "2px solid transparent",
+                      }}
+                    >
+                      {st.label} {st.count > 0 && <span style={{ fontSize:10,fontWeight:700,background:actividadesSubTab === st.key ? "#21D0B3" : "#e2e8f0",color:actividadesSubTab === st.key ? "#fff" : "#64748b",borderRadius:10,padding:"1px 6px",marginLeft:3 }}>{st.count}</span>}
+                    </button>
+                  ))}
+                </div>
 
-                        {/* ── Rate prompt (completed, no rating) ── */}
-                        {canRate && !isExpanded && ratingTripId !== trip.id && (
-                          <div style={{ padding:"0 14px 10px" }}>
-                            <button type="button" onClick={() => setRatingTripId(trip.id)} style={{
-                              display:"flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:10,
-                              border:"1px solid rgba(33,208,179,0.3)",background:"rgba(33,208,179,0.06)",
-                              color:"#0a7a6b",fontSize:12,fontWeight:600,cursor:"pointer",
-                            }}>
-                              ⭐ Evaluar conductor
-                            </button>
-                          </div>
-                        )}
-
-                        {/* ── Rating stars (completed, no rating) ── */}
-                        {isCompleted && !trip.driverRating && ratingTripId === trip.id && (
-                          <div style={{ padding:"0 14px 14px",display:"flex",flexDirection:"column",alignItems:"center",gap:10 }}>
-                            <p style={{ fontSize:13,fontWeight:600,color:"#0f172a",margin:0 }}>
-                              ¿Cómo fue tu viaje?
-                            </p>
-                            <div style={{ display:"flex",gap:4 }}>
-                              {[1,2,3,4,5].map((star) => (
-                                <button key={star} type="button" onClick={() => setRatingStars(star)} style={{ background:"none",border:"none",cursor:"pointer",padding:2 }}>
-                                  <svg width="32" height="32" viewBox="0 0 24 24" fill={ratingStars >= star ? "#FBBF24" : "none"} stroke={ratingStars >= star ? "#F59E0B" : "#CBD5E1"} strokeWidth="1.5">
-                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                                  </svg>
-                                </button>
-                              ))}
-                            </div>
-                            <textarea
-                              value={ratingComment}
-                              onChange={(e) => setRatingComment(e.target.value)}
-                              placeholder="Comentario opcional..."
-                              rows={2}
-                              style={{ width:"100%",padding:10,borderRadius:10,border:"1px solid #e2e8f0",fontSize:13,resize:"none",outline:"none",boxSizing:"border-box",fontFamily:"inherit" }}
-                            />
-                            <div style={{ display:"flex",gap:8,width:"100%" }}>
-                              <button type="button" onClick={() => submitRating(trip.id)} disabled={ratingStars === 0 || ratingLoading}
-                                style={{ flex:1,padding:10,borderRadius:10,border:"none",background:ratingStars > 0 ? "linear-gradient(135deg,#34F3C6,#21D0B3)" : "#e2e8f0",color:ratingStars > 0 ? "#0d1b3e" : "#94a3b8",fontSize:13,fontWeight:700,cursor:ratingStars > 0 ? "pointer" : "not-allowed" }}>
-                                {ratingLoading ? "..." : "Enviar"}
-                              </button>
-                              <button type="button" onClick={() => { setRatingTripId(null); setRatingStars(0); setRatingComment(""); }}
-                                style={{ padding:"10px 14px",borderRadius:10,border:"1px solid #e2e8f0",background:"#f8fafc",color:"#64748b",fontSize:13,fontWeight:600,cursor:"pointer" }}>
-                                Omitir
-                              </button>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* ── Rating already given ── */}
-                        {trip.driverRating && !isExpanded && (
-                          <div style={{ padding:"0 14px 10px",display:"flex",alignItems:"center",gap:4 }}>
-                            {Array.from({ length: trip.driverRating }, (_, i) => (
-                              <svg key={i} width="14" height="14" viewBox="0 0 24 24" fill="#FBBF24" stroke="#F59E0B" strokeWidth="1.5">
-                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                              </svg>
-                            ))}
-                            <span style={{ fontSize:11,color:"#94a3b8",marginLeft:4 }}>Evaluado</span>
-                          </div>
-                        )}
-
-                        {/* ── Expanded details ── */}
-                        {isExpanded && (
-                          <div style={{ padding:"0 14px 14px",display:"flex",flexDirection:"column",gap:8 }}>
-                            {/* Info rows */}
-                            <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:6 }}>
-                              <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Origen</p>
-                                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0",lineHeight:1.3 }}>{trip.origin || "Pendiente"}</p>
-                              </div>
-                              <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Destino</p>
-                                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0",lineHeight:1.3 }}>{trip.destination || venue?.name || "Pendiente"}</p>
-                              </div>
-                              <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Conductor</p>
-                                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{driver?.fullName || "Pendiente"}</p>
-                                {driver?.phone && <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0" }}>{driver.phone}</p>}
-                              </div>
-                              <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Vehículo</p>
-                                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{vehicle?.plate || "Pendiente"}</p>
-                                {vehicle && <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0" }}>{[vehicle.type, vehicle.brand, vehicle.model].filter(Boolean).join(" · ")}</p>}
-                              </div>
-                              <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Personas</p>
-                                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{trip.passengerCount || "-"}</p>
-                              </div>
-                              <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Tipo</p>
-                                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{vehicleTypeLabel(trip.requestedVehicleType)}</p>
-                              </div>
-                            </div>
-                            {trip.notes && (
-                              <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Notas</p>
-                                <p style={{ fontSize:12.5,color:"#334155",margin:"3px 0 0",lineHeight:1.4 }}>{trip.notes}</p>
-                              </div>
-                            )}
-
-                            {/* Map for scheduled and active trips */}
-                            {(isActive || trip.status === "SCHEDULED") && (
-                              <div style={{ borderRadius:12,overflow:"hidden",border:"1px solid rgba(33,208,179,0.25)" }}>
-                                <TripMap
-                                  origin={trip.origin}
-                                  destination={trip.destination || venue?.name}
-                                  driverPosition={coords ? { lat: coords.lat, lng: coords.lng } : null}
-                                  userPosition={userPos || (trip.passengerLat && trip.passengerLng ? { lat: trip.passengerLat, lng: trip.passengerLng } : null)}
-                                  height={200}
-                                />
-                                <div style={{ padding:"8px 10px",background:"rgba(33,208,179,0.06)",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
-                                  <span style={{ fontSize:12,fontWeight:700,color:"#0a7a6b" }}>
-                                    {trip.status === "PICKED_UP" ? "🚗 Viaje en curso" : trip.status === "EN_ROUTE" ? "🚗 Conductor en camino" : "📍 Ruta programada"}
-                                  </span>
-                                  {coords && (
-                                    <a
-                                      href={buildDirectionsLink(coords.lat, coords.lng, trip.origin)}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      style={{ fontSize:11,color:"#21D0B3",fontWeight:600 }}
-                                    >
-                                      Abrir en Maps →
-                                    </a>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Action buttons */}
-                            {editable && (
-                              <div style={{ display:"flex",gap:8,marginTop:4 }}>
-                                <button type="button" onClick={() => startEditingTrip(trip)}
-                                  style={{ flex:1,padding:"8px 12px",borderRadius:10,border:"1px solid #e2e8f0",background:"#f8fafc",color:"#334155",fontSize:12,fontWeight:600,cursor:"pointer" }}>
-                                  Modificar
-                                </button>
-                                <button type="button" onClick={() => cancelTrip(trip)}
-                                  style={{ padding:"8px 12px",borderRadius:10,border:"1px solid #fecaca",background:"#fef2f2",color:"#dc2626",fontSize:12,fontWeight:600,cursor:"pointer" }}>
-                                  Cancelar
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        )}
+                {/* En curso */}
+                {actividadesSubTab === "en_curso" && (
+                  <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+                    {enCursoTrips.length === 0 ? (
+                      <div style={{ textAlign:"center",padding:"28px 16px",borderRadius:16,border:"1px dashed rgba(33,208,179,0.3)",background:"#fafcfb" }}>
+                        <p style={{ fontSize:15,fontWeight:700,color:"#0f172a",margin:"0 0 4px" }}>Sin viajes en curso</p>
+                        <p style={{ fontSize:12.5,color:"#64748b",margin:0 }}>Los viajes activos apareceran aqui.</p>
                       </div>
-                    );
-                  })
+                    ) : enCursoTrips.map(renderTripCard)}
+                  </div>
                 )}
 
-                {trips.length > 0 && hasMoreTrips && (
-                  <button
-                    type="button"
-                    onClick={() => setVisibleTripsCount((c) => c + 5)}
-                    style={{ padding:"10px",borderRadius:12,border:"1px solid #e2e8f0",background:"#f8fafc",color:"#64748b",fontSize:12.5,fontWeight:600,cursor:"pointer",textAlign:"center" }}
-                  >
-                    Ver más ({trips.length - visibleTripsCount} restantes)
-                  </button>
+                {/* Historial */}
+                {actividadesSubTab === "historial" && (
+                  <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+                    {historialTrips.length === 0 ? (
+                      <div style={{ textAlign:"center",padding:"28px 16px",borderRadius:16,border:"1px dashed rgba(33,208,179,0.3)",background:"#fafcfb" }}>
+                        <p style={{ fontSize:15,fontWeight:700,color:"#0f172a",margin:"0 0 4px" }}>Sin viajes completados</p>
+                        <p style={{ fontSize:12.5,color:"#64748b",margin:0 }}>Tu historial aparecera aqui.</p>
+                      </div>
+                    ) : historialTrips.map(renderTripCard)}
+                  </div>
+                )}
+
+                {/* Pendientes */}
+                {actividadesSubTab === "pendientes" && (
+                  <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+                    {pendientesTrips.length === 0 ? (
+                      <div style={{ textAlign:"center",padding:"28px 16px",borderRadius:16,border:"1px dashed rgba(33,208,179,0.3)",background:"#fafcfb" }}>
+                        <p style={{ fontSize:15,fontWeight:700,color:"#0f172a",margin:"0 0 4px" }}>Sin solicitudes pendientes</p>
+                        <p style={{ fontSize:12.5,color:"#64748b",margin:0 }}>Tus solicitudes pendientes apareceran aqui.</p>
+                      </div>
+                    ) : pendientesTrips.map(renderTripCard)}
+                  </div>
                 )}
               </section>
             )}
+
+            {/* ═══════════════════ PREMIACIONES TAB ═══════════════════ */}
+            {activeTab === "premiaciones" && (
+              <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "#21D0B3", margin: 0 }}>Tus premiaciones</p>
+                {premiaciones.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "28px 16px", borderRadius: 16, border: "1px dashed rgba(33,208,179,0.3)", background: "#fafcfb" }}>
+                    <p style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", margin: "0 0 4px" }}>Sin premiaciones asignadas</p>
+                    <p style={{ fontSize: 12, color: "#64748b", margin: 0 }}>Cuando te designemos como premiador de una ceremonia aparecerá aquí.</p>
+                  </div>
+                ) : premiaciones.map((p) => {
+                  const roleLabel: Record<string, { label: string; color: string }> = {
+                    GOLD: { label: "Medalla de Oro", color: "#eab308" },
+                    SILVER: { label: "Medalla de Plata", color: "#94a3b8" },
+                    BRONZE: { label: "Medalla de Bronce", color: "#b45309" },
+                    AUTHORITY: { label: "Autoridad", color: "#8b5cf6" },
+                    AWARDER: { label: "Premiador", color: "#14b8a6" },
+                  };
+                  const a = p.myAssignment;
+                  const r = (a && roleLabel[a.role]) || roleLabel.AWARDER;
+                  return (
+                    <div key={p.id} style={{ background: "#fff", border: "1px solid #e2e8f0", borderLeft: `4px solid ${r.color}`, borderRadius: 14, padding: "14px 16px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6, gap: 8 }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", margin: 0 }}>{p.title}</p>
+                          {p.discipline && <p style={{ fontSize: 11, color: "#64748b", margin: "2px 0 0" }}>{p.discipline}</p>}
+                        </div>
+                        <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 99, background: `${r.color}15`, color: r.color, flexShrink: 0 }}>{r.label}</span>
+                      </div>
+                      <div style={{ fontSize: 12, color: "#475569", display: "flex", flexDirection: "column", gap: 4, marginTop: 8 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /></svg>
+                          {new Date(p.scheduled_at).toLocaleString("es-CL", { dateStyle: "full", timeStyle: "short" })}
+                        </div>
+                        {(p.venue_name || p.location_detail) && (
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
+                            {[p.venue_name, p.location_detail].filter(Boolean).join(" — ")}
+                          </div>
+                        )}
+                        {p.notes && <p style={{ margin: "4px 0 0", fontSize: 11.5, color: "#64748b" }}>{p.notes}</p>}
+                      </div>
+                      {a && (
+                        <div style={{ marginTop: 12, display: "flex", gap: 6, alignItems: "center" }}>
+                          {a.confirmed_at ? (
+                            <span style={{ fontSize: 11, fontWeight: 700, color: "#10b981" }}>✓ Asistencia confirmada</span>
+                          ) : a.declined_at ? (
+                            <span style={{ fontSize: 11, fontWeight: 700, color: "#ef4444" }}>✗ Declinaste</span>
+                          ) : (
+                            <>
+                              <button type="button" onClick={() => confirmAwarder(p.id, a.id, "CONFIRM")} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: "#10b981", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Confirmar</button>
+                              <button type="button" onClick={() => confirmAwarder(p.id, a.id, "DECLINE")} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Declinar</button>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </section>
+            )}
+
+            {/* ═══════════════════ SEDES TAB ═══════════════════ */}
+            {activeTab === "sedes" && (
+              <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
+                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>Sedes del evento</p>
+                {venues.map(v => {
+                  const isOpen = expandedItemId === `venue-${v.id}`;
+                  return (
+                    <div key={v.id} style={{ background:"#fff",borderRadius:12,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+                      <button
+                        type="button"
+                        onClick={() => setExpandedItemId(isOpen ? null : `venue-${v.id}`)}
+                        style={{ width:"100%",display:"flex",alignItems:"center",gap:10,padding:"12px 14px",background:"none",border:"none",cursor:"pointer",textAlign:"left" }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}>
+                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                        </svg>
+                        <div style={{ flex:1,minWidth:0 }}>
+                          <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>{v.name}</p>
+                          {v.address && <p style={{ fontSize:12,color:"#64748b",margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{v.address}</p>}
+                        </div>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0,transition:"transform .2s",transform:isOpen?"rotate(180deg)":"rotate(0)" }}>
+                          <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                      </button>
+                      {isOpen && (
+                        <div style={{ padding:"0 14px 14px",display:"flex",flexDirection:"column",gap:8 }}>
+                          {v.photoUrl && (
+                            <img src={v.photoUrl} alt={v.name || "Sede"} style={{ width:"100%",height:140,objectFit:"cover",borderRadius:10 }} />
+                          )}
+                          {v.address && (
+                            <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                              <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Direccion</p>
+                              <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0",lineHeight:1.3 }}>{v.address}</p>
+                            </div>
+                          )}
+                          {(v.commune || v.region) && (
+                            <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:6 }}>
+                              {v.commune && (
+                                <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                                  <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Comuna</p>
+                                  <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{v.commune}</p>
+                                </div>
+                              )}
+                              {v.region && (
+                                <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                                  <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Region</p>
+                                  <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{v.region}</p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {renderMapEmbed(v.address, v.commune)}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                {venues.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:20 }}>No hay sedes registradas</p>}
+              </div>
+            )}
+
+            {/* ═══════════════════ HOTELES TAB ═══════════════════ */}
+            {activeTab === "hoteles" && (
+              <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
+                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>Alojamientos</p>
+                {accommodations.map(acc => {
+                  const isOpen = expandedItemId === `acc-${acc.id}`;
+                  return (
+                    <div key={acc.id} style={{ background:"#fff",borderRadius:12,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+                      <button
+                        type="button"
+                        onClick={() => setExpandedItemId(isOpen ? null : `acc-${acc.id}`)}
+                        style={{ width:"100%",display:"flex",alignItems:"center",gap:10,padding:"12px 14px",background:"none",border:"none",cursor:"pointer",textAlign:"left" }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}>
+                          <path d="M3 22V8l9-6 9 6v14"/><path d="M9 22V12h6v10"/>
+                        </svg>
+                        <div style={{ flex:1,minWidth:0 }}>
+                          <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>{acc.name || "Hotel"}</p>
+                          {acc.city && <p style={{ fontSize:12,color:"#64748b",margin:"2px 0 0" }}>{[acc.city, acc.country].filter(Boolean).join(", ")}</p>}
+                        </div>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0,transition:"transform .2s",transform:isOpen?"rotate(180deg)":"rotate(0)" }}>
+                          <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                      </button>
+                      {isOpen && (
+                        <div style={{ padding:"0 14px 14px",display:"flex",flexDirection:"column",gap:8 }}>
+                          {acc.address && (
+                            <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                              <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Direccion</p>
+                              <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0",lineHeight:1.3 }}>{acc.address}</p>
+                            </div>
+                          )}
+                          <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:6 }}>
+                            {acc.city && (
+                              <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Ciudad</p>
+                                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{acc.city}</p>
+                              </div>
+                            )}
+                            {acc.country && (
+                              <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Pais</p>
+                                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{acc.country}</p>
+                              </div>
+                            )}
+                            {acc.checkIn && (
+                              <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Check-in</p>
+                                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{formatDateTime(acc.checkIn)}</p>
+                              </div>
+                            )}
+                            {acc.checkOut && (
+                              <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Check-out</p>
+                                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{formatDateTime(acc.checkOut)}</p>
+                              </div>
+                            )}
+                            {acc.roomType && (
+                              <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Habitacion</p>
+                                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{acc.roomType}</p>
+                              </div>
+                            )}
+                            {acc.contactPhone && (
+                              <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Telefono</p>
+                                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{acc.contactPhone}</p>
+                              </div>
+                            )}
+                          </div>
+                          {renderMapEmbed(acc.address, acc.city)}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                {accommodations.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:20 }}>No hay alojamientos registrados</p>}
+              </div>
+            )}
+
+            {/* ═══════════════════ CALENDARIO TAB ═══════════════════ */}
+            {activeTab === "calendario" && (
+              <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
+                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>Calendario deportivo</p>
+
+                {/* Month nav */}
+                <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",background:"#fff",borderRadius:12,border:"1px solid #e2e8f0",padding:"10px 14px" }}>
+                  <button type="button" onClick={() => setCalMonthCursor(new Date(calYear, calMonth - 1, 1))}
+                    style={{ background:"none",border:"none",cursor:"pointer",padding:4,display:"flex",alignItems:"center" }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0f172a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                  </button>
+                  <span style={{ fontSize:14,fontWeight:700,color:"#0f172a",textTransform:"capitalize" }}>{calMonthLabel}</span>
+                  <button type="button" onClick={() => setCalMonthCursor(new Date(calYear, calMonth + 1, 1))}
+                    style={{ background:"none",border:"none",cursor:"pointer",padding:4,display:"flex",alignItems:"center" }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0f172a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                </div>
+
+                {/* Day grid */}
+                <div style={{ background:"#fff",borderRadius:12,border:"1px solid #e2e8f0",padding:"10px 8px" }}>
+                  {/* Header */}
+                  <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:4 }}>
+                    {DAY_NAMES.map((d, i) => (
+                      <div key={i} style={{ textAlign:"center",fontSize:10,fontWeight:700,color:"#94a3b8",padding:"4px 0",textTransform:"uppercase" }}>{d}</div>
+                    ))}
+                  </div>
+                  {/* Cells */}
+                  <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2 }}>
+                    {calGrid.map((day, i) => {
+                      if (day === null) return <div key={i} />;
+                      const hasEvent = calDaysWithEvents.has(day);
+                      const isSelected = calSelectedDay === day;
+                      const today = new Date();
+                      const isToday = today.getFullYear() === calYear && today.getMonth() === calMonth && today.getDate() === day;
+                      return (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => setCalSelectedDay(isSelected ? null : day)}
+                          style={{
+                            display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,
+                            padding:"6px 0",borderRadius:8,border:"none",cursor:"pointer",
+                            background: isSelected ? "#21D0B3" : isToday ? "rgba(33,208,179,0.1)" : "transparent",
+                            color: isSelected ? "#fff" : "#0f172a",
+                            fontWeight: isToday ? 800 : 500,fontSize:13,
+                          }}
+                        >
+                          {day}
+                          {hasEvent && (
+                            <span style={{ width:5,height:5,borderRadius:"50%",background: isSelected ? "#fff" : "#21D0B3" }} />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Selected day events */}
+                {calSelectedDay !== null && (
+                  <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
+                    <p style={{ fontSize:11,fontWeight:700,color:"#64748b",margin:0 }}>
+                      {calSelectedDay} de {calMonthCursor.toLocaleDateString("es-CL", { month: "long" })}
+                    </p>
+                    {calSelectedDayEvents.length === 0 ? (
+                      <p style={{ fontSize:12.5,color:"#94a3b8",margin:0,padding:"10px 0" }}>Sin actividades este dia</p>
+                    ) : (
+                      calSelectedDayEvents.map((ce) => {
+                        const parentName = ce.parentId ? (disciplineParents.find((p) => p.id === ce.parentId)?.name || "") : "";
+                        return (
+                          <div key={ce.id} style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 10px",borderRadius:10,background:"#fff",border:"1px solid #e2e8f0" }}>
+                            <span style={{ width:8,height:8,borderRadius:"50%",background:"#21D0B3",flexShrink:0 }} />
+                            <div style={{ flex:1,minWidth:0 }}>
+                              <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                                {ce.name}{parentName ? ` · ${parentName}` : ""}
+                              </p>
+                              <p style={{ fontSize:10.5,color:"#64748b",margin:"1px 0 0" }}>
+                                {new Date(ce.scheduledAt!).toLocaleTimeString("es-CL",{ hour:"2-digit",minute:"2-digit" })}
+                                {ce.venueName ? ` · ${ce.venueName}` : ""}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ═══════════════════ CUENTA TAB ═══════════════════ */}
+            {activeTab === "cuenta" && (
+              <div style={{ display:"flex",flexDirection:"column",gap:12 }}>
+                {/* Profile card */}
+                <div className="vr-card" style={{ display:"flex",flexDirection:"column",gap:"10px",borderLeft:"4px solid #21D0B3" }}>
+                  <div style={{ display:"flex",alignItems:"center",gap:"10px" }}>
+                    {(athlete.metadata?.photoUrl as string)?.startsWith("http") ? (
+                      <img src={athlete.metadata!.photoUrl as string} alt={athlete.fullName || ""} style={{ width:48,height:48,borderRadius:"50%",objectFit:"cover",flexShrink:0,boxShadow:"0 3px 12px rgba(33,208,179,0.3)",border:"2px solid #21D0B3" }} />
+                    ) : (
+                      <div style={{ width:48,height:48,borderRadius:"50%",background:"linear-gradient(135deg,#21D0B3,#062240)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"16px",fontWeight:900,color:"#fff",boxShadow:"0 3px 12px rgba(33,208,179,0.3)",flexShrink:0 }}>
+                        {(athlete.fullName || "?").split(" ").slice(0,2).map(w=>w[0]||"").join("").toUpperCase()}
+                      </div>
+                    )}
+                    <div style={{ minWidth:0,flex:1 }}>
+                      <h2 style={{ fontSize:"17px",fontWeight:800,color:"#0f172a",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{athlete.fullName || athlete.id}</h2>
+                      <div style={{ display:"flex",flexWrap:"wrap",gap:"4px",marginTop:4 }}>
+                        <span style={{ fontSize:"10px",fontWeight:600,padding:"2px 8px",borderRadius:"10px",background:"linear-gradient(135deg,rgba(33,208,179,0.12),rgba(33,208,179,0.06))",color:"#0a7a6b",border:"1px solid rgba(33,208,179,0.3)" }}>
+                          {events[athlete.eventId || ""]?.name || "-"}
+                        </span>
+                        <span style={{ fontSize:"10px",fontWeight:600,padding:"2px 8px",borderRadius:"10px",background:"#f1f5f9",color:"#334155",border:"1px solid #dde3ed" }}>
+                          {delegations[athlete.delegationId || ""]?.countryCode || "-"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Info rows */}
+                  <div style={{ display:"flex",flexDirection:"column",gap:6,marginTop:4 }}>
+                    {([
+                      ["Nombre completo", athlete.fullName || "-"],
+                      ["Evento", events[athlete.eventId || ""]?.name || "-"],
+                      ["Delegacion", delegations[athlete.delegationId || ""]?.countryCode || "-"],
+                      ["Tipo de usuario", athlete.userType || "-"],
+                      ["ID", athlete.id?.slice(-6) || "-"],
+                    ] as [string, string][]).map(([label, value]) => (
+                      <div key={label} style={{ display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 10px",borderRadius:8,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                        <span style={{ fontSize:11,fontWeight:600,color:"#94a3b8",textTransform:"uppercase",letterSpacing:"0.08em" }}>{label}</span>
+                        <span style={{ fontSize:12.5,fontWeight:600,color:"#0f172a" }}>{value}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Stats row */}
+                  <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"6px",marginTop:4 }}>
+                    {([
+                      { label:"Solicit.", value:requestStats.requested, color:"#0f172a" },
+                      { label:"Program.", value:requestStats.scheduled, color:"#21D0B3" },
+                      { label:"Activas", value:requestStats.active, color:"#f59e0b" },
+                      { label:"Cerradas", value:requestStats.completed, color:"#10b981" },
+                    ] as const).map(s => (
+                      <div key={s.label} style={{ textAlign:"center",padding:"8px 4px",borderRadius:"10px",background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                        <div style={{ fontSize:"8px",fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"#94a3b8" }}>{s.label}</div>
+                        <div style={{ fontSize:"20px",fontWeight:700,color:s.color,marginTop:"2px" }}>{s.value}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Credential button */}
+                <button type="button" onClick={async () => {
+                  try {
+                    const evName = events[athlete.eventId || ""]?.name || "Seven Arena";
+                    const qrData = `Participante: ${athlete.fullName}\nID: ${athlete.id.slice(-6)}\nDelegación: ${delegations[athlete.delegationId || ""]?.countryCode || "—"}`;
+                    const qrDataUrl = await QRCode.toDataURL(qrData, { width: 200, margin: 1 });
+                    const html = buildCredentialHtml({
+                      eventName: evName,
+                      fullName: athlete.fullName || "",
+                      roleLabel: athlete.userType || "PARTICIPANTE",
+                      credentialCode: athlete.id.slice(-6).toUpperCase(),
+                      statusLabel: "ACTIVE",
+                      issuedAtLabel: new Date().toLocaleDateString("es-CL"),
+                      issuerLabel: "Seven Arena",
+                      subjectId: athlete.id,
+                      countryTag: delegations[athlete.delegationId || ""]?.countryCode || "",
+                      photoUrl: "",
+                      qrDataUrl,
+                    });
+                    const w = window.open("", "_blank", "width=450,height=700");
+                    if (w) { w.document.write(html); w.document.close(); }
+                  } catch { notify.push("No se pudo generar la credencial", "❌"); }
+                }}
+                  style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:"linear-gradient(135deg,#041a2e,#062240)",color:"#21D0B3",fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8 }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
+                  Ver credencial digital
+                </button>
+
+                {/* Logout button */}
+                <button type="button" onClick={logout}
+                  style={{ width:"100%",padding:"14px",borderRadius:14,border:"1px solid #fecaca",background:"#fef2f2",color:"#dc2626",fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8 }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+                  </svg>
+                  Cerrar sesion
+                </button>
+              </div>
+            )}
+
           </section>
           </div>
+
+          {/* Bottom tab bar — 6 tabs */}
+          <div style={{ position:"fixed",bottom:0,left:0,right:0,display:"flex",background:"#fff",borderTop:"1px solid #e2e8f0",zIndex:100,paddingBottom:"env(safe-area-inset-bottom)" }}>
+            {([
+              { key: "solicitud" as PortalTab, label: "Solicitud", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> },
+              { key: "actividades" as PortalTab, label: "Actividades", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> },
+              { key: "premiaciones" as PortalTab, label: "Premios", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg> },
+              { key: "sedes" as PortalTab, label: "Sedes", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> },
+              { key: "hoteles" as PortalTab, label: "Hoteles", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 22V8l9-6 9 6v14"/><path d="M9 22V12h6v10"/></svg> },
+              { key: "calendario" as PortalTab, label: "Calendario", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> },
+              { key: "cuenta" as PortalTab, label: "Cuenta", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
+            ]).map(tab => (
+              <button key={tab.key} onClick={() => setActiveTab(tab.key)} style={{ flex:1,padding:"6px 0 4px",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:1 }}>
+                {tab.icon(activeTab===tab.key ? "#21D0B3" : "#94a3b8")}
+                <span style={{ fontSize:9,fontWeight:activeTab===tab.key?700:500,color:activeTab===tab.key?"#21D0B3":"#94a3b8" }}>{tab.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {athlete && (
+            <AssistanceChat
+              originType="athlete"
+              originId={athlete.id}
+              originName={athlete.fullName || "Participante VIP"}
+              eventId={athlete.eventId || null}
+            />
+          )}
         </div>
       )}
 
@@ -1269,10 +2096,7 @@ export default function VehicleRequestPortalPage() {
               onClick={(e) => e.stopPropagation()}
               style={{ background:"#fff",borderRadius:20,padding:"28px 24px",maxWidth:340,width:"100%",textAlign:"center",boxShadow:"0 20px 60px rgba(0,0,0,0.2)" }}
             >
-              <p style={{ fontSize:32,margin:"0 0 4px" }}>
-                {ratingStars === 0 ? "🚗" : ratingStars <= 2 ? "😕" : ratingStars <= 3 ? "🙂" : ratingStars <= 4 ? "😊" : "🤩"}
-              </p>
-              <p style={{ fontSize:16,fontWeight:700,color:"#0f172a",margin:"0 0 4px" }}>¿Cómo fue tu viaje?</p>
+              <p style={{ fontSize:16,fontWeight:700,color:"#0f172a",margin:"0 0 4px" }}>Como fue tu viaje?</p>
               {rDriver?.fullName && <p style={{ fontSize:13,color:"#64748b",margin:"0 0 16px" }}>Conductor: {rDriver.fullName}</p>}
 
               <div style={{ display:"flex",justifyContent:"center",gap:6,marginBottom:16 }}>
@@ -1296,7 +2120,7 @@ export default function VehicleRequestPortalPage() {
 
               <button type="button" onClick={() => submitRating(rTrip.id)} disabled={ratingStars === 0 || ratingLoading}
                 style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:ratingStars > 0 ? "linear-gradient(135deg,#34F3C6,#21D0B3)" : "#e2e8f0",color:ratingStars > 0 ? "#0d1b3e" : "#94a3b8",fontSize:15,fontWeight:700,cursor:ratingStars > 0 ? "pointer" : "not-allowed",opacity:ratingLoading ? 0.7 : 1 }}>
-                {ratingLoading ? "Enviando..." : "Enviar evaluación"}
+                {ratingLoading ? "Enviando..." : "Enviar evaluacion"}
               </button>
               <button type="button" onClick={dismissRating}
                 style={{ marginTop:8,background:"none",border:"none",color:"#94a3b8",fontSize:13,cursor:"pointer",padding:8 }}>
@@ -1313,6 +2137,7 @@ export default function VehicleRequestPortalPage() {
           tripId={activeChatTrip.id}
           senderType="PASSENGER"
           senderName={athlete.fullName || "Pasajero"}
+          tripStatus={activeChatTrip.status}
           onNewMessage={(name, content) => notify.push(`${name}: ${content.slice(0, 80)}`, "💬")}
         />
       )}

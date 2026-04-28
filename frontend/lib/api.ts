@@ -79,8 +79,9 @@ function apiCandidates() {
       candidates.push(`https://localhost:3001`);
       candidates.push(`http://localhost:3001`);
     } else {
-      // Accessing from network (e.g., mobile device) — use same host/protocol as frontend
+      // Accessing from network (e.g., mobile device) — try both protocols
       candidates.push(`${proto}://${host}:3000`);
+      candidates.push(`${proto === "https" ? "http" : "https"}://${host}:3000`);
       candidates.push(`${proto}://${host}:3001`);
       candidates.push(`${proto}://${host}:3002`);
     }
@@ -101,6 +102,12 @@ async function fetchWithBaseFallback(path: string, options: RequestInit) {
     const url = `${base}${path}`;
     try {
       const response = await fetch(url, options);
+      // Reject HTML responses — means we hit the frontend, not the API
+      const ct = response.headers.get("content-type") || "";
+      if (ct.includes("text/html") && !path.includes("/sofia/ask-stream")) {
+        networkErrors.push(`${base}: responded with HTML (not API)`);
+        continue;
+      }
       preferredBase = base;
       return { response, base };
     } catch (error) {
@@ -181,7 +188,13 @@ export async function login(email: string, password: string) {
     setTokens({ accessToken, refreshToken });
   }
 
-  const payload = (await response.json()) as { user?: StoredAuthUser };
+  const text = await response.text();
+  let payload: { user?: StoredAuthUser } = {};
+  try {
+    payload = JSON.parse(text);
+  } catch {
+    throw new Error(`Respuesta inesperada del servidor de login (${base})`);
+  }
   setStoredUser(payload.user ?? null);
   return payload;
 }

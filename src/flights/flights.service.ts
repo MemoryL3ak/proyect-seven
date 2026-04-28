@@ -33,12 +33,11 @@ export class FlightsService {
 
   private async fetchAviationStack(
     flightNumber: string,
+    flightDate?: string,
   ): Promise<Record<string, unknown>[]> {
     const apiKey = process.env.AVIATIONSTACK_API_KEY;
     if (!apiKey)
-      throw new InternalServerErrorException(
-        'Missing AVIATIONSTACK_API_KEY configuration',
-      );
+      throw new InternalServerErrorException('Missing AVIATIONSTACK_API_KEY configuration');
 
     const normalized = (flightNumber ?? '').replace(/\s+/g, '').toUpperCase();
     if (!normalized)
@@ -53,6 +52,9 @@ export class FlightsService {
       if (!digits)
         throw new InternalServerErrorException('Invalid flight number format');
       url.searchParams.set('flight_number', digits);
+    }
+    if (flightDate) {
+      url.searchParams.set('flight_date', flightDate);
     }
 
     const response = await fetch(url.toString());
@@ -102,13 +104,38 @@ export class FlightsService {
     };
   }
 
-  async trackFlight(flightNumber: string) {
-    const data = await this.fetchAviationStack(flightNumber);
+  async trackFlight(flightNumber: string, flightDate?: string) {
+    const data = await this.fetchAviationStack(flightNumber, flightDate);
     const normalized = (flightNumber ?? '').replace(/\s+/g, '').toUpperCase();
     if (!data.length)
-      throw new NotFoundException(`No data found for flight ${normalized}`);
+      throw new NotFoundException(
+        `No se encontró información para el vuelo ${normalized}. Verifica que el número de vuelo sea correcto (ej: LA180, AA900).`,
+      );
 
-    const row = data[0] as any;
+    const nowMs = Date.now();
+    const targetDate = flightDate || new Date().toISOString().slice(0, 10);
+    const targetMs = new Date(targetDate).getTime();
+
+    // Prioritize: 1) active/scheduled flights, 2) future flights, 3) closest to target date
+    const sorted = [...data].sort((a: any, b: any) => {
+      const statusA = a.flight_status ?? '';
+      const statusB = b.flight_status ?? '';
+      const isActiveA = ['active', 'scheduled'].includes(statusA);
+      const isActiveB = ['active', 'scheduled'].includes(statusB);
+      // Active/scheduled flights first
+      if (isActiveA && !isActiveB) return -1;
+      if (!isActiveA && isActiveB) return 1;
+      // Then prefer future flights over past
+      const dateA = new Date(a.flight_date || '').getTime();
+      const dateB = new Date(b.flight_date || '').getTime();
+      const isFutureA = dateA >= targetMs;
+      const isFutureB = dateB >= targetMs;
+      if (isFutureA && !isFutureB) return -1;
+      if (!isFutureA && isFutureB) return 1;
+      // Finally, closest to target date
+      return Math.abs(dateA - targetMs) - Math.abs(dateB - targetMs);
+    });
+    const row = sorted[0] as any;
     const dep = row.departure ?? {};
     const arr = row.arrival ?? {};
     const live = row.live ?? null;
@@ -120,7 +147,6 @@ export class FlightsService {
       airlineIata: row.airline?.iata ?? null,
       flightStatus: row.flight_status ?? null,
       flightDate: row.flight_date ?? null,
-      // Departure
       depAirport: dep.airport ?? null,
       depIata: dep.iata ?? null,
       depCity: dep.city ?? null,
@@ -130,7 +156,6 @@ export class FlightsService {
       depActual: dep.actual ?? null,
       depGate: dep.gate ?? null,
       depDelayMinutes: dep.delay ?? null,
-      // Arrival
       arrAirport: arr.airport ?? null,
       arrIata: arr.iata ?? null,
       arrCity: arr.city ?? null,
@@ -140,7 +165,6 @@ export class FlightsService {
       arrActual: arr.actual ?? null,
       arrBaggage: arr.baggage ?? null,
       arrDelayMinutes: arr.delay ?? null,
-      // Live position
       liveUpdated: live?.updated ?? null,
       liveLatitude: live?.latitude ?? null,
       liveLongitude: live?.longitude ?? null,

@@ -1,5 +1,5 @@
 import type { Response } from 'express';
-import { Controller, Post, Get, Patch, Body, Param, Res, Put } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Delete, Body, Param, Res, Put } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ChangeTemporaryPasswordDto, CreateUserDto, LoginUserDto } from './dto/users.dto';
 
@@ -20,6 +20,11 @@ export class AuthController {
   @Put('users/:id')
   async updateUser(@Param('id') id: string, @Body() body: { name?: string; role?: string; password?: string }) {
     return this.authService.updateUser(id, body);
+  }
+
+  @Delete('users/:id')
+  async deleteUser(@Param('id') id: string) {
+    return this.authService.deleteUser(id);
   }
 
   @Patch('users/:id/confirm-email')

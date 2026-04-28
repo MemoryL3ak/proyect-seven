@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { apiFetch } from "@/lib/api";
 import { filterValidatedAthletes } from "@/lib/athletes";
+import { getSupabase } from "@/lib/supabase";
 import { useI18n } from "@/lib/i18n";
 import type { TrackingMarker } from "@/components/LiveTrackingMap";
 
@@ -248,8 +249,54 @@ export default function VehiclePositionsPage() {
 
   useEffect(() => {
     loadData();
-    const timer = setInterval(loadData, 15000);
-    return () => clearInterval(timer);
+
+    // Supabase Realtime subscription — pushes every new GPS row instantly,
+    // no polling of /vehicle-positions needed.
+    const supabase = getSupabase();
+    const channel = supabase
+      .channel("vehicle-positions-admin")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "telemetry",
+          table: "vehicle_positions",
+        },
+        (payload) => {
+          const row = payload.new as {
+            id: string;
+            driver_id: string;
+            vehicle_id: string | null;
+            timestamp: string;
+            lat: number | null;
+            lng: number | null;
+          };
+          if (row.lat == null || row.lng == null) return;
+          const key = row.driver_id || row.vehicle_id;
+          if (!key) return;
+          setPositions((prev) => {
+            const current = prev[key];
+            if (current && new Date(row.timestamp) <= new Date(current.timestamp)) {
+              return prev;
+            }
+            return {
+              ...prev,
+              [key]: { lat: row.lat!, lng: row.lng!, timestamp: row.timestamp },
+            };
+          });
+          setLastUpdated(new Date());
+        },
+      )
+      .subscribe();
+
+    // Low-frequency refresh for trip/driver/vehicle changes (these don't
+    // come through Realtime yet). Kept as a safety net.
+    const timer = setInterval(loadData, 30000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(timer);
+    };
   }, []);
 
   const orderedTrips = useMemo(() => {

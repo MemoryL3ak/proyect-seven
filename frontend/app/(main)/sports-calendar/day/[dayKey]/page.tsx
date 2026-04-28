@@ -47,11 +47,17 @@ type TripOption = {
   startedAt?: string | null;
   completedAt?: string | null;
   athleteIds?: string[];
+  passengerCount?: number | null;
+  vehiclePlate?: string | null;
+  requestedVehicleType?: string | null;
+  committeeValidated?: boolean;
 };
 type DriverOption = {
   id: string;
   userId?: string | null;
   fullName?: string | null;
+  vehicleId?: string | null;
+  metadata?: Record<string, unknown> | null;
 };
 type VehicleOption = {
   id: string;
@@ -132,10 +138,16 @@ function tripStatusClass(value?: string | null) {
 }
 
 function tripTypeLabel(value?: string | null) {
-  if (value === "TRANSFER_IN_OUT") return "Transfer";
-  if (value === "DISPOSICION_12H") return "Disposicion 12 h";
-  if (value === "IDA_VUELTA") return "Ida y vuelta";
-  return value || "Traslado";
+  const labels: Record<string, string> = {
+    TRANSFER_IN_OUT: "Transfer",
+    DISPOSICION_12H: "Disposición 12h",
+    IDA_VUELTA: "Ida y vuelta",
+    VIAJE_IDA: "Viaje de ida",
+    VIAJE_IDA_REGRESO: "Ida y regreso",
+    VIAJE_REGRESO: "Viaje de regreso",
+    PORTAL_REQUEST: "Solicitud portal",
+  };
+  return labels[value ?? ""] || "Traslado";
 }
 
 function formatDateLong(value: string) {
@@ -195,6 +207,8 @@ export default function SportsCalendarDayDetailPage() {
   const [vehicles, setVehicles] = useState<VehicleOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dayTab, setDayTab] = useState<"terrestre" | "llegadas" | "agenda" | "aerea" | "retiros">("terrestre");
+  const [validating, setValidating] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -208,7 +222,7 @@ export default function SportsCalendarDayDetailPage() {
         });
         if (eventId) params.set("eventId", eventId);
 
-        const [entryData, eventData, delegationData, disciplineData, athleteData, flightData, tripData, driverData, vehicleData] = await Promise.all([
+        const [entryData, eventData, delegationData, disciplineData, athleteData, flightData, tripData, driverData, vehicleData, participantData] = await Promise.all([
           apiFetch<SportsEvent[]>(`/sports-calendar/events?${params.toString()}`),
           apiFetch<EventOption[]>("/events"),
           apiFetch<DelegationOption[]>("/delegations"),
@@ -218,6 +232,7 @@ export default function SportsCalendarDayDetailPage() {
           apiFetch<TripOption[]>("/trips"),
           apiFetch<DriverOption[]>("/drivers"),
           apiFetch<VehicleOption[]>("/transports"),
+          apiFetch<any[]>("/provider-participants").catch(() => []),
         ]);
 
         setEntries(Array.isArray(entryData) ? entryData : []);
@@ -227,7 +242,11 @@ export default function SportsCalendarDayDetailPage() {
         setAthletes(filterValidatedAthletes(Array.isArray(athleteData) ? athleteData : []));
         setFlights(Array.isArray(flightData) ? flightData : []);
         setTrips(Array.isArray(tripData) ? tripData : []);
-        setDrivers(Array.isArray(driverData) ? driverData : []);
+        // Merge provider participant drivers into drivers list
+        const participantDrivers: DriverOption[] = (Array.isArray(participantData) ? participantData : [])
+          .filter((p: any) => p.metadata?.isDriver === true || p.metadata?.isDriver === "true")
+          .map((p: any) => ({ id: p.id, fullName: p.fullName, metadata: p.metadata }));
+        setDrivers([...(Array.isArray(driverData) ? driverData : []), ...participantDrivers]);
         setVehicles(Array.isArray(vehicleData) ? vehicleData : []);
       } catch (err) {
         setError(err instanceof Error ? err.message : "No se pudo cargar el detalle del dia.");
@@ -355,15 +374,22 @@ export default function SportsCalendarDayDetailPage() {
         if (delegationId && !linkedDelegations.includes(delegationId)) return null;
 
         const driver = trip.driverId ? driverMap[trip.driverId] : undefined;
-        const vehicle = trip.vehicleId ? vehicleMap[trip.vehicleId] : undefined;
+        let vehicle = trip.vehicleId ? vehicleMap[trip.vehicleId] : undefined;
+        // Try to resolve vehicle from driver if not directly on trip
+        if (!vehicle && driver?.vehicleId) vehicle = vehicleMap[driver.vehicleId];
         const vehicleParts = [vehicle?.plate, vehicle?.type, [vehicle?.brand, vehicle?.model].filter(Boolean).join(" ")].filter(Boolean);
+        // Fallback to driver metadata for participant drivers
+        const driverPlate = !vehicleParts.length && driver?.metadata ? String((driver.metadata as any).vehiclePatente ?? "") : "";
+        const vehicleTypeLabel: Record<string, string> = { SEDAN: "Sedán", SUV: "SUV", VAN_10: "Van 10", VAN_15: "Van 15-17", VAN_19: "Van 19", MINIBUS: "Minibus", BUS: "Bus" };
+        const reqType = trip.requestedVehicleType ? (vehicleTypeLabel[trip.requestedVehicleType] ?? trip.requestedVehicleType) : "";
+        const paxCount = linkedAthletes.length || trip.passengerCount || 0;
 
         return {
           ...trip,
           linkedAthletes,
           linkedDelegations,
-          driverName: driver?.fullName || trip.driverId || "-",
-          vehicleLabel: vehicleParts.length ? vehicleParts.join(" · ") : trip.vehicleId || "-",
+          driverName: driver?.fullName || "-",
+          vehicleLabel: vehicleParts.length ? vehicleParts.join(" · ") : driverPlate || reqType || "-",
           timeLabel: formatDateTime(trip.startedAt || trip.scheduledAt || trip.completedAt),
         };
       })
@@ -458,17 +484,152 @@ export default function SportsCalendarDayDetailPage() {
         {error ? <p className="text-sm text-rose-600">{error}</p> : null}
       </div>
 
+      {/* ── Tab navigation ── */}
+      {!loading && (
+        <div style={{ display: "flex", gap: 0, background: "#fff", borderRadius: 14, border: "1px solid #e2e8f0", overflow: "hidden", boxShadow: "0 1px 4px rgba(15,23,42,0.04)" }}>
+          {([
+            { key: "terrestre" as const, label: "Op. Terrestre", count: transportAssignments.length, color: "#a78bfa" },
+            { key: "llegadas" as const, label: "Llegadas", count: arrivals.length, color: "#38bdf8" },
+            { key: "agenda" as const, label: "Agenda Operativa", count: dayEntries.length, color: "#21D0B3" },
+            { key: "aerea" as const, label: "Op. Aérea", count: flightsOfDay.length, color: "#fb923c" },
+            { key: "retiros" as const, label: "Retiros", count: departures.length, color: "#f472b6" },
+          ]).map((tab) => (
+            <button key={tab.key} type="button" onClick={() => setDayTab(tab.key)}
+              style={{
+                flex: 1, padding: "12px 8px", border: "none", cursor: "pointer",
+                background: dayTab === tab.key ? `${tab.color}10` : "transparent",
+                borderBottom: dayTab === tab.key ? `3px solid ${tab.color}` : "3px solid transparent",
+                fontSize: 11, fontWeight: dayTab === tab.key ? 800 : 600,
+                color: dayTab === tab.key ? tab.color : "#64748b",
+                transition: "all 150ms ease", display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+              }}>
+              {tab.label}
+              <span style={{
+                fontSize: 10, fontWeight: 800, padding: "1px 7px", borderRadius: 99,
+                background: dayTab === tab.key ? `${tab.color}18` : "#f1f5f9",
+                color: dayTab === tab.key ? tab.color : "#94a3b8",
+              }}>{tab.count}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       {loading ? <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "20px", padding: "32px", fontSize: "13px", color: "#94a3b8" }}>Cargando detalle del dia...</div> : null}
 
       {!loading ? (
-        <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-          <div className="space-y-4">
-            {/* Recepcion del dia */}
+        <section className="space-y-4">
+
+          {/* ═══ TAB: Operación Terrestre ═══ */}
+          {dayTab === "terrestre" && (
+            <div className="space-y-4">
+              {/* Committee validation button */}
+              <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 18, padding: "18px 20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+                <div>
+                  <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#94a3b8", margin: 0 }}>Validación Comité Organizador</p>
+                  <p style={{ fontSize: 13, color: "#64748b", margin: "4px 0 0" }}>
+                    {transportAssignments.filter((t: any) => t.committeeValidated).length} de {transportAssignments.length} viajes validados
+                  </p>
+                </div>
+                <button type="button" disabled={validating || transportAssignments.length === 0}
+                  onClick={async () => {
+                    setValidating(true);
+                    try {
+                      const unvalidated = transportAssignments.filter((t: any) => !t.committeeValidated);
+                      for (const trip of unvalidated) {
+                        await apiFetch(`/trips/${trip.id}`, {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ committeeValidated: true, committeeValidatedBy: "Comité Organizador" }),
+                        });
+                      }
+                      // Reload
+                      const bounds = isoBounds(dayKey);
+                      const p = new URLSearchParams({ from: bounds.start, to: bounds.end });
+                      if (eventId) p.set("eventId", eventId);
+                      const fresh = await apiFetch<TripOption[]>("/trips");
+                      setTrips(Array.isArray(fresh) ? fresh : []);
+                    } catch { /* silent */ }
+                    setValidating(false);
+                  }}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 8,
+                    padding: "12px 24px", borderRadius: 14, border: "none", cursor: transportAssignments.length === 0 ? "not-allowed" : "pointer",
+                    background: transportAssignments.every((t: any) => t.committeeValidated)
+                      ? "linear-gradient(135deg, #22c55e, #16a34a)"
+                      : "linear-gradient(135deg, #f59e0b, #d97706)",
+                    color: "#fff", fontSize: 13, fontWeight: 800,
+                    boxShadow: transportAssignments.every((t: any) => t.committeeValidated)
+                      ? "0 4px 16px rgba(34,197,94,0.3)"
+                      : "0 4px 16px rgba(245,158,11,0.3)",
+                    transition: "all 200ms ease",
+                    opacity: validating ? 0.7 : 1,
+                  }}>
+                  {transportAssignments.every((t: any) => t.committeeValidated) ? (
+                    <><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg> Validado</>
+                  ) : validating ? "Validando..." : (
+                    <><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg> Validar actividades del día</>
+                  )}
+                </button>
+              </div>
+
+              {/* Transport cards */}
+              <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 20, padding: 20, boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#94a3b8" }}>Operación terrestre</span>
+                <h2 style={{ marginTop: 4, fontSize: 20, fontWeight: 800, color: "#0f172a" }}>Transportes asignados</h2>
+                <div className="mt-4 space-y-3">
+                  {transportAssignments.length === 0 ? <p style={{ fontSize: 13, color: "#94a3b8" }}>No hay transportes asociados a las delegaciones del día.</p> : null}
+                  {transportAssignments.map((trip) => (
+                    <div key={trip.id} style={{ borderRadius: 14, border: `1px solid ${(trip as any).committeeValidated ? "rgba(34,197,94,0.3)" : "#e2e8f0"}`, borderLeft: `3px solid ${(trip as any).committeeValidated ? "#22c55e" : "#a78bfa"}`, background: (trip as any).committeeValidated ? "rgba(34,197,94,0.03)" : "#f8fafc", padding: 14 }}>
+                      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+                        <div>
+                          <p style={{ fontSize: 15, fontWeight: 700, color: "#0f172a" }}>{tripTypeLabel(trip.tripType)}</p>
+                          <p style={{ fontSize: 12, color: "#64748b" }}>{trip.origin || "Origen por confirmar"} → {trip.destination || "Destino por confirmar"}</p>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          {(trip as any).committeeValidated && (
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.25)", borderRadius: 99, padding: "3px 10px", fontSize: 10, fontWeight: 700, color: "#22c55e" }}>
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                              Validado
+                            </span>
+                          )}
+                          <span className={`rounded-full px-3 py-1 text-[11px] font-semibold ${tripStatusClass(trip.status)}`}>{tripStatusLabel(trip.status)}</span>
+                        </div>
+                      </div>
+                      <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, fontSize: 12, color: "#475569" }}>
+                        <p><strong>Hora:</strong> {trip.timeLabel}</p>
+                        <p><strong>Chofer:</strong> {trip.driverName}</p>
+                        <p><strong>Vehículo:</strong> {trip.vehicleLabel}</p>
+                        <p><strong>Personas:</strong> {trip.linkedAthletes.length || (trip as any).passengerCount || 0}</p>
+                      </div>
+                      <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 4 }}>
+                        {trip.linkedDelegations.map((item) => (
+                          <span key={`${trip.id}-${item}`} style={{ borderRadius: 99, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)", padding: "2px 8px", fontSize: 10, fontWeight: 700, color: "#6366f1" }}>{delegationLabel(delegations, item)}</span>
+                        ))}
+                      </div>
+                      {trip.linkedAthletes.length > 0 && (
+                        <div style={{ marginTop: 10, borderTop: "1px solid #e2e8f0", paddingTop: 10 }}>
+                          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#94a3b8" }}>Pasajeros asociados</p>
+                          <div style={{ marginTop: 6, display: "flex", flexWrap: "wrap", gap: 6 }}>
+                            {trip.linkedAthletes.map((athlete) => (
+                              <span key={`${trip.id}-${athlete.id}`} style={{ borderRadius: 99, background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.2)", padding: "2px 8px", fontSize: 11, fontWeight: 600, color: "#21D0B3" }}>{athlete.fullName || athlete.id}</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ═══ TAB: Llegadas ═══ */}
+          {dayTab === "llegadas" && (
             <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "20px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
                 <div>
-                  <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#94a3b8" }}>Llegadas por delegacion</span>
-                  <h2 style={{ marginTop: "4px", fontSize: "20px", fontWeight: 800, color: "#0f172a" }}>Recepcion del dia</h2>
+                  <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#94a3b8" }}>Llegadas por delegación</span>
+                  <h2 style={{ marginTop: "4px", fontSize: "20px", fontWeight: 800, color: "#0f172a" }}>Recepción del día</h2>
                 </div>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", background: "rgba(56,189,248,0.1)", border: "1px solid rgba(56,189,248,0.25)", borderRadius: "99px", padding: "4px 12px", fontSize: "11px", fontWeight: 700, color: "#0ea5e9" }}>{arrivals.length} personas</span>
               </div>
@@ -510,8 +671,10 @@ export default function SportsCalendarDayDetailPage() {
                 ))}
               </div>
             </div>
+          )}
 
-            {/* Cronograma del dia */}
+          {/* ═══ TAB: Agenda Operativa ═══ */}
+          {dayTab === "agenda" && (
             <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "20px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
               <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#94a3b8" }}>Agenda operativa</span>
               <h2 style={{ marginTop: "4px", fontSize: "20px", fontWeight: 800, color: "#0f172a" }}>Cronograma del dia</h2>
@@ -567,57 +730,10 @@ export default function SportsCalendarDayDetailPage() {
                 ))}
               </div>
             </div>
-          </div>
+          )}
 
-          <div className="space-y-4">
-            {/* Transportes */}
-            <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "20px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
-              <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#94a3b8" }}>Operacion terrestre</span>
-              <h2 style={{ marginTop: "4px", fontSize: "20px", fontWeight: 800, color: "#0f172a" }}>Transportes asignados</h2>
-              <div className="mt-4 space-y-3">
-                {transportAssignments.length === 0 ? <p style={{ fontSize: "13px", color: "#94a3b8" }}>No hay transportes asociados a las delegaciones del dia.</p> : null}
-                {transportAssignments.map((trip) => (
-                  <div key={trip.id} style={{ borderRadius: "14px", border: "1px solid #e2e8f0", borderLeft: "3px solid #a78bfa", background: "#f8fafc", padding: "14px" }}>
-                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
-                      <div>
-                        <p style={{ fontSize: "15px", fontWeight: 700, color: "#0f172a" }}>{tripTypeLabel(trip.tripType)}</p>
-                        <p style={{ fontSize: "12px", color: "#64748b" }}>{trip.origin || "Origen por confirmar"} → {trip.destination || "Destino por confirmar"}</p>
-                      </div>
-                      <span className={`rounded-full px-3 py-1 text-[11px] font-semibold ${tripStatusClass(trip.status)}`}>
-                        {tripStatusLabel(trip.status)}
-                      </span>
-                    </div>
-                    <div style={{ marginTop: "10px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px", fontSize: "12px", color: "#475569" }}>
-                      <p><strong>Hora:</strong> {trip.timeLabel}</p>
-                      <p><strong>Chofer:</strong> {trip.driverName}</p>
-                      <p><strong>Vehiculo:</strong> {trip.vehicleLabel}</p>
-                      <p><strong>Personas:</strong> {trip.linkedAthletes.length}</p>
-                    </div>
-                    <div style={{ marginTop: "8px", display: "flex", flexWrap: "wrap", gap: "4px" }}>
-                      {trip.linkedDelegations.map((item) => (
-                        <span key={`${trip.id}-${item}`} style={{ borderRadius: "99px", background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: "#6366f1" }}>
-                          {delegationLabel(delegations, item)}
-                        </span>
-                      ))}
-                    </div>
-                    {trip.linkedAthletes.length ? (
-                      <div style={{ marginTop: "10px", borderTop: "1px solid #e2e8f0", paddingTop: "10px" }}>
-                        <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#94a3b8" }}>Pasajeros asociados</p>
-                        <div style={{ marginTop: "6px", display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                          {trip.linkedAthletes.map((athlete) => (
-                            <span key={`${trip.id}-${athlete.id}`} style={{ borderRadius: "99px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.2)", padding: "2px 8px", fontSize: "11px", fontWeight: 600, color: "#21D0B3" }}>
-                              {athlete.fullName || athlete.id}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    ) : null}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Vuelos */}
+          {/* ═══ TAB: Operación Aérea ═══ */}
+          {dayTab === "aerea" && (
             <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "20px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
               <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#94a3b8" }}>Operación aérea</span>
               <h2 style={{ marginTop: "4px", fontSize: "20px", fontWeight: 800, color: "#0f172a" }}>Vuelos del dia</h2>
@@ -644,8 +760,10 @@ export default function SportsCalendarDayDetailPage() {
                 ))}
               </div>
             </div>
+          )}
 
-            {/* Retiros */}
+          {/* ═══ TAB: Retiros ═══ */}
+          {dayTab === "retiros" && (
             <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "20px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
               <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#94a3b8" }}>Retiros</span>
               <h2 style={{ marginTop: "4px", fontSize: "20px", fontWeight: 800, color: "#0f172a" }}>Salidas del dia</h2>
@@ -668,7 +786,8 @@ export default function SportsCalendarDayDetailPage() {
                 ))}
               </div>
             </div>
-          </div>
+          )}
+
         </section>
       ) : null}
     </div>

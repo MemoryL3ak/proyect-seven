@@ -8,16 +8,18 @@ async function bootstrap() {
   const certDir = path.resolve(process.cwd(), 'frontend', 'certificates');
   const keyPath = path.join(certDir, 'localhost-key.pem');
   const certPath = path.join(certDir, 'localhost.pem');
-  const httpsOptions = fs.existsSync(keyPath) && fs.existsSync(certPath)
+  // Skip HTTPS if explicitly disabled (useful for LAN/mobile testing)
+  const disableHttps = process.env.NO_HTTPS === '1' || process.env.NO_HTTPS === 'true';
+  const httpsOptions = !disableHttps && fs.existsSync(keyPath) && fs.existsSync(certPath)
     ? { key: fs.readFileSync(keyPath), cert: fs.readFileSync(certPath) }
     : undefined;
 
   const app = await NestFactory.create(AppModule, {
-    bodyParser: true,
+    bodyParser: false,
     ...(httpsOptions ? { httpsOptions } : {}),
   });
-  app.use(require('express').json({ limit: '5mb' }));
-  app.use(require('express').urlencoded({ limit: '5mb', extended: true }));
+  app.use(require('express').json({ limit: '50mb' }));
+  app.use(require('express').urlencoded({ limit: '50mb', extended: true }));
   const allowedOrigins = new Set([
     'http://localhost:3000',
     'http://localhost:3001',

@@ -95,6 +95,27 @@ export class Trip {
   @Column({ name: 'passenger_lng', type: 'float', nullable: true })
   passengerLng?: number | null;
 
+  @Column({ name: 'is_round_trip', type: 'boolean', default: false })
+  isRoundTrip: boolean;
+
+  @Column({ name: 'parent_trip_id', type: 'uuid', nullable: true })
+  parentTripId?: string | null;
+
+  @Column({ name: 'leg_type', length: 20, type: 'varchar', nullable: true })
+  legType?: string | null;
+
+  @Column({ name: 'committee_validated', type: 'boolean', default: false })
+  committeeValidated: boolean;
+
+  @Column({ name: 'committee_validated_at', type: 'timestamptz', nullable: true })
+  committeeValidatedAt?: Date | null;
+
+  @Column({ name: 'committee_validated_by', length: 150, type: 'varchar', nullable: true })
+  committeeValidatedBy?: string | null;
+
+  @Column({ type: 'jsonb', default: () => "'{}'::jsonb" })
+  metadata: Record<string, unknown>;
+
   athleteIds?: string[];
 
   athleteNames?: string[];

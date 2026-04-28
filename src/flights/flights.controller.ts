@@ -32,8 +32,11 @@ export class FlightsController {
   }
 
   @Get('track')
-  trackFlight(@Query('flightNumber') flightNumber: string) {
-    return this.flightsService.trackFlight(flightNumber);
+  trackFlight(
+    @Query('flightNumber') flightNumber: string,
+    @Query('flightDate') flightDate?: string,
+  ) {
+    return this.flightsService.trackFlight(flightNumber, flightDate);
   }
 
   @Get(':id')

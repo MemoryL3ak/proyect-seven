@@ -219,6 +219,7 @@ export default function ResourceScreen({
   refreshKey,
   onDataChanged,
   onEditRequested,
+  onEditCancelled,
   viewMode = "both",
   athleteScope = "validated",
   queryParams,
@@ -228,6 +229,7 @@ export default function ResourceScreen({
   refreshKey?: number;
   onDataChanged?: () => void;
   onEditRequested?: (id: string) => void;
+  onEditCancelled?: () => void;
   viewMode?: "both" | "form" | "table";
   athleteScope?: "all" | "validated";
   queryParams?: Record<string, string>;
@@ -245,6 +247,7 @@ export default function ResourceScreen({
   const [items, setItems] = useState<Record<string, any>[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(() => buildInitial(config.fields));
   const [editingId, setEditingId] = useState<string | null>(null);
   const [participantEditingId, setParticipantEditingId] = useState<string | null>(
@@ -266,6 +269,7 @@ export default function ResourceScreen({
   const [athleteStatusFilter, setAthleteStatusFilter] = useState<"all" | "validated" | "pending">("all");
   const [andSearch, setAndSearch] = useState("");
   const [andTripFilter, setAndTripFilter] = useState<"all" | "ARRIVAL" | "DEPARTURE">("all");
+  const [phoneDropdownOpen, setPhoneDropdownOpen] = useState(false);
   const [driverOptions, setDriverOptions] = useState<Option[]>([]);
   const [driverUserOptions, setDriverUserOptions] = useState<Option[]>([]);
   const [athleteOptions, setAthleteOptions] = useState<Option[]>([]);
@@ -632,12 +636,15 @@ export default function ResourceScreen({
   const loadDisciplines = async () => {
     try {
       const data = await apiFetch<Record<string, any>[]>("/disciplines");
-      const options = (data || []).map((discipline) => ({
-        label: discipline.name ?? discipline.id,
-        value: discipline.id,
-        category: discipline.category,
-        gender: discipline.gender
-      }));
+      // Only show parent disciplines (not pruebas/children which have parentId)
+      const options = (data || [])
+        .filter((discipline) => !discipline.parentId)
+        .map((discipline) => ({
+          label: discipline.name ?? discipline.id,
+          value: discipline.id,
+          category: discipline.category,
+          gender: discipline.gender
+        }));
       setDisciplineOptions(options);
     } catch (err) {
       setDisciplineOptions([]);
@@ -752,30 +759,43 @@ export default function ResourceScreen({
       setDriverLookup(lookup);
       // Regular drivers: indexed by userId (linked auth user)
       // Provider participant choferes: no userId, use their own id
-      const resolvePlate = (driver: any) => {
+      const CAPACITY_BY_TYPE: Record<string, number> = {
+        SEDAN: 4, sedan: 4, "sedán": 4, SUV: 6, suv: 6,
+        VAN_10: 10, van_10: 10, VAN_15: 17, van_15: 17, VAN_19: 19, van_19: 19,
+        VAN: 10, van: 10, MINIBUS: 33, minibus: 33, "minibús": 33, MINI_BUS: 33,
+        BUS: 64, bus: 64, camioneta: 6, furgon: 6, "furgón": 6,
+      };
+      const resolveVehicleInfo = (driver: any) => {
         if (driver.vehicleId) {
           const v = vehicleLookup[driver.vehicleId];
-          if (v?.plate) return v.plate;
+          const vType = v?.type ?? null;
+          const cap = (v?.capacity && v.capacity > 0) ? v.capacity : (vType ? CAPACITY_BY_TYPE[vType] ?? null : null);
+          return { plate: v?.plate ?? null, capacity: cap, vehicleType: vType };
         }
         const meta = driver.metadata ?? {};
-        return meta.vehiclePatente ?? meta.vehiclePlate ?? null;
+        const vType = (meta.vehicleTipo as string) ?? (meta.vehicleType as string) ?? null;
+        const cap = meta.vehicleCapacity ? Number(meta.vehicleCapacity) : (vType ? CAPACITY_BY_TYPE[vType] ?? null : null);
+        return { plate: meta.vehiclePatente ?? meta.vehiclePlate ?? null, capacity: cap, vehicleType: vType };
       };
       const userOptions = [
         ...(data || [])
           .filter((driver) => driver.userId)
           .map((driver) => {
-            const plate = resolvePlate(driver);
+            const vi = resolveVehicleInfo(driver);
             return {
-              label: plate ? `${driver.fullName ?? driver.userId} · ${plate}` : (driver.fullName ?? driver.userId),
+              label: vi.plate ? `${driver.fullName ?? driver.userId} · ${vi.plate}` : (driver.fullName ?? driver.userId),
               value: driver.userId,
+              capacity: vi.capacity,
+              vehicleType: vi.vehicleType,
             };
           }),
         ...participantDrivers.map((p) => {
-          const meta = (p.metadata ?? {}) as Record<string, unknown>;
-          const plate = meta.vehiclePatente ?? meta.vehiclePlate ?? null;
+          const vi = resolveVehicleInfo(p);
           return {
-            label: plate ? `${p.fullName ?? p.id} · ${plate}` : (p.fullName ?? p.id),
+            label: vi.plate ? `${p.fullName ?? p.id} · ${vi.plate}` : (p.fullName ?? p.id),
             value: p.id,
+            capacity: vi.capacity,
+            vehicleType: vi.vehicleType,
           };
         }),
       ];
@@ -934,39 +954,41 @@ export default function ResourceScreen({
     if (!isTrips) return;
     const tripType = String(form.tripType ?? "");
     const vehicleId = String(form.vehicleId ?? "");
-    if (!tripType || !vehicleId) return;
-    const vehicleType = vehicleLookup[vehicleId]?.type;
-    if (!vehicleType) return;
+    const requestedVType = String(form.requestedVehicleType ?? "");
+    const vehicleType = vehicleId ? vehicleLookup[vehicleId]?.type : requestedVType;
+    if (!tripType || !vehicleType) return;
     const costs: Record<string, Record<string, number>> = {
       TRANSFER_IN_OUT: {
-      SEDAN: 45000,
-        VAN: 70000,
-        MINI_BUS: 150000,
-        BUS: 180000
+        SEDAN: 45000, SUV: 55000, VAN_10: 70000, VAN_15: 85000, VAN_19: 95000, MINIBUS: 150000, BUS: 180000,
+        VAN: 70000, MINI_BUS: 150000,
       },
       DISPOSICION_12H: {
-      SEDAN: 120000,
-        VAN: 180000,
-        MINI_BUS: 300000,
-        BUS: 400000
+        SEDAN: 120000, SUV: 140000, VAN_10: 180000, VAN_15: 200000, VAN_19: 220000, MINIBUS: 300000, BUS: 400000,
+        VAN: 180000, MINI_BUS: 300000,
       },
       IDA_VUELTA: {
-      SEDAN: 70000,
-        VAN: 110000,
-        MINI_BUS: 160000,
-        BUS: 190000
-      }
+        SEDAN: 70000, SUV: 80000, VAN_10: 110000, VAN_15: 125000, VAN_19: 135000, MINIBUS: 160000, BUS: 190000,
+        VAN: 110000, MINI_BUS: 160000,
+      },
+      VIAJE_IDA: {
+        SEDAN: 45000, SUV: 55000, VAN_10: 70000, VAN_15: 85000, VAN_19: 95000, MINIBUS: 150000, BUS: 180000,
+        VAN: 70000, MINI_BUS: 150000,
+      },
+      VIAJE_IDA_REGRESO: {
+        SEDAN: 70000, SUV: 80000, VAN_10: 110000, VAN_15: 125000, VAN_19: 135000, MINIBUS: 160000, BUS: 190000,
+        VAN: 110000, MINI_BUS: 160000,
+      },
     };
     const nextCost = costs[tripType]?.[vehicleType];
     if (!nextCost) return;
     setForm((prev) => ({ ...prev, tripCost: formatCurrencyCLP(nextCost) }));
-  }, [form.tripType, form.vehicleId, isTrips, vehicleLookup]);
+  }, [form.tripType, form.vehicleId, form.requestedVehicleType, isTrips, vehicleLookup]);
 
   useEffect(() => {
     if (needsDrivers) {
       loadDrivers();
     }
-  }, [needsDrivers]);
+  }, [needsDrivers, vehicleLookup]);
   useEffect(() => {
     if (needsHotelRooms) {
       loadHotelRooms();
@@ -1008,8 +1030,12 @@ export default function ResourceScreen({
     const selected = form.requesterAthleteId as string | undefined;
     if (!selected) return;
     const athlete = (athleteOptions as any[]).find((o) => o.value === selected);
-    if (athlete?.userType) {
-      setForm((prev) => ({ ...prev, clientType: athlete.userType }));
+    if (athlete) {
+      setForm((prev) => ({
+        ...prev,
+        ...(athlete.userType ? { clientType: athlete.userType } : {}),
+        ...(athlete.delegationId ? { delegationId: athlete.delegationId } : {}),
+      }));
     }
   }, [config.endpoint, form.requesterAthleteId, athleteOptions]);
 
@@ -1158,6 +1184,26 @@ export default function ResourceScreen({
       if (missingRequired.length > 0) {
         setError(`${t("Faltan campos obligatorios")}: ${missingRequired.join(", ")}`);
         return;
+      }
+
+      // RUT chileno validation
+      if (config.endpoint === "/athletes" && (form.countryCode as string) === "CHL") {
+        const rutRaw = ((form.rut as string) ?? "").replace(/[.\-\s]/g, "").toUpperCase();
+        if (rutRaw) {
+          const body = rutRaw.slice(0, -1);
+          const dv = rutRaw.slice(-1);
+          let sum = 0, mul = 2;
+          for (let i = body.length - 1; i >= 0; i--) {
+            sum += Number(body[i]) * mul;
+            mul = mul === 7 ? 2 : mul + 1;
+          }
+          const expected = 11 - (sum % 11);
+          const dvExpected = expected === 11 ? "0" : expected === 10 ? "K" : String(expected);
+          if (dv !== dvExpected) {
+            setError(t("El RUT ingresado no es válido. Verifica el dígito verificador."));
+            return;
+          }
+        }
       }
 
       if (config.endpoint === "/accommodations") {
@@ -1453,54 +1499,14 @@ export default function ResourceScreen({
       let finalPayload = { ...payload };
       if (config.endpoint === "/events") {
         const previousConfig = readEventAndConfig((payload as any).config).raw;
-        const andExpectedByDisciplineDelegation: Record<string, Record<string, number>> = {};
-        Object.entries(eventCapacityMatrix).forEach(([disciplineId, row]) => {
-          const nextRow: Record<string, number> = {};
-          Object.entries(row || {}).forEach(([delegationId, raw]) => {
-            const n = Number(raw);
-            if (Number.isFinite(n) && n >= 0) nextRow[delegationId] = n;
-          });
-          if (Object.keys(nextRow).length > 0) {
-            andExpectedByDisciplineDelegation[disciplineId] = nextRow;
-          }
-        });
-        const andExpectedByDiscipline: Record<string, number> = {};
-        Object.entries(andExpectedByDisciplineDelegation).forEach(([disciplineId, row]) => {
-          const total = Object.values(row).reduce((sum, n) => sum + Number(n || 0), 0);
-          if (Number.isFinite(total) && total >= 0) andExpectedByDiscipline[disciplineId] = total;
-        });
-        Object.entries(eventCapacityTotals).forEach(([disciplineId, raw]) => {
-          if (andExpectedByDiscipline[disciplineId] !== undefined) return;
-          const n = Number(raw);
-          if (Number.isFinite(n) && n >= 0) andExpectedByDiscipline[disciplineId] = n;
-        });
 
         const disciplineCategory = String(form.disciplineCategory ?? "").trim();
         const disciplineGender = String(form.disciplineGender ?? "").trim();
 
+        // Los cupos (expectedCapacities) ya no se registran desde aquí —
+        // se gestionan exclusivamente desde el módulo Deportes.
         finalPayload = {
           ...finalPayload,
-          expectedCapacities: Object.entries(andExpectedByDisciplineDelegation).flatMap(
-            ([disciplineId, row]) =>
-              Object.entries(row)
-                .map(([delegationKey, expectedCount]) => {
-                  const delegationOption = delegationOptions.find(
-                    (option) => String(option.value) === String(delegationKey),
-                  );
-                  const resolvedDelegationCode = String(
-                    delegationOption?.label ?? delegationKey,
-                  )
-                    .trim()
-                    .toUpperCase();
-
-                  return {
-                    disciplineId,
-                    delegationCode: resolvedDelegationCode,
-                    expectedCount: Number(expectedCount) || 0,
-                  };
-                })
-                .filter((item) => item.delegationCode.length === 3),
-          ),
           config: {
             ...previousConfig,
             ...(disciplineCategory
@@ -1508,9 +1514,7 @@ export default function ResourceScreen({
               : { disciplineCategory: undefined }),
             ...(disciplineGender
               ? { disciplineGender }
-              : { disciplineGender: undefined }),
-            andExpectedByDiscipline,
-            andExpectedByDisciplineDelegation
+              : { disciplineGender: undefined })
           }
         };
         if (finalPayload.config && typeof finalPayload.config === "object") {
@@ -1646,8 +1650,29 @@ export default function ResourceScreen({
         }
       }
 
+      if (config.endpoint === "/athletes") {
+        const photoDataUrl = form.photoDataUrl as string | undefined;
+        const athleteId = editingId ?? result?.id;
+        // Only upload if it's a new base64 image, not an existing URL
+        const isNewPhoto = photoDataUrl && photoDataUrl.startsWith("data:");
+        if (isNewPhoto && athleteId) {
+          try {
+            await apiFetch(`/athletes/${athleteId}/photo`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ dataUrl: photoDataUrl })
+            });
+          } catch (photoErr) {
+            console.error("Error subiendo foto:", photoErr);
+            setError(t("Registro guardado pero la foto no se pudo subir. Intenta de nuevo."));
+          }
+        }
+      }
+
+      const wasEditing = !!editingId;
       setForm(buildInitial(config.fields));
       setEditingId(null);
+      onEditCancelled?.();
       if (config.endpoint === "/events") {
         setEventCapacityTotals({});
         setEventCapacityMatrix({});
@@ -1655,6 +1680,8 @@ export default function ResourceScreen({
         setEventPlannerDelegationCode(DELEGATION_COUNTRY_OPTIONS[0]?.value ?? "");
         setEventPlannerExpectedValue("");
       }
+      setSuccessMsg(wasEditing ? t("Registro actualizado correctamente") : t("Registro creado correctamente"));
+      setTimeout(() => setSuccessMsg(null), 4000);
       loadItems();
       onDataChanged?.();
     } catch (err) {
@@ -1765,6 +1792,13 @@ export default function ResourceScreen({
           next[field.key] = String(roomInventory[roomMap[field.key]] ?? 0);
           return;
         }
+      }
+
+      // Load existing photo from metadata before other checks
+      if ((config.endpoint === "/athletes" || config.endpoint === "/drivers") && field.key === "photoDataUrl") {
+        const meta = item.metadata as Record<string, unknown> | null;
+        next[field.key] = (meta?.photoUrl as string) || item.photoUrl || "";
+        return;
       }
 
       const value = item[field.key];
@@ -2132,7 +2166,21 @@ export default function ResourceScreen({
     if (source === "venues") return venueOptions;
     if (source === "vehicles") return vehicleOptions;
     if (source === "drivers") return driverOptions;
-    if (source === "driverUsers") return driverUserOptions;
+    if (source === "driverUsers") {
+      if (config.endpoint === "/trips") {
+        const paxCount = Number(form.passengerCount as string) || 0;
+        const reqVehicleType = String(form.requestedVehicleType ?? "");
+        const CAPACITY_ORDER: Record<string, number> = { SEDAN: 4, SUV: 6, VAN_10: 10, VAN_15: 17, VAN_19: 19, MINIBUS: 33, BUS: 64 };
+        const minCapacity = CAPACITY_ORDER[reqVehicleType] ?? 0;
+        const effectiveMin = Math.max(paxCount, minCapacity);
+        if (effectiveMin > 0) {
+          return (driverUserOptions as any[]).filter(
+            (opt) => !opt.capacity || opt.capacity >= effectiveMin
+          );
+        }
+      }
+      return driverUserOptions;
+    }
     if (source === "hotelExtras") return hotelExtraOptions;
     if (source === "hotelRooms") return hotelRoomOptions;
     if (source === "hotelBeds") return hotelBedOptions;
@@ -2287,6 +2335,7 @@ export default function ResourceScreen({
               onClick={() => {
                 setEditingId(null);
                 setForm(buildInitial(config.fields));
+                onEditCancelled?.();
                 if (config.endpoint === "/events") {
                   setEventCapacityTotals({});
                   setEventCapacityMatrix({});
@@ -2298,6 +2347,17 @@ export default function ResourceScreen({
             </button>
           )}
         </div>
+
+        {/* Visa warning */}
+        {config.endpoint === "/athletes" && (form.visaRequired as string) === "true" && (
+          <div style={{ padding: "12px 16px", borderRadius: "12px", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)", display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
+            <span style={{ fontSize: "20px" }}>⚠️</span>
+            <div>
+              <p style={{ fontSize: "13px", fontWeight: 700, color: "#92400e", margin: 0 }}>{t("Atención: Visa requerida")}</p>
+              <p style={{ fontSize: "12px", color: "#b45309", margin: "2px 0 0" }}>{t("Este participante requiere visa para ingresar al país. Asegúrate de gestionar la documentación correspondiente.")}</p>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
           {(() => {
@@ -2456,9 +2516,12 @@ export default function ResourceScreen({
                         if (config.endpoint === "/drivers" && field.key === "vehicleType") {
                           const capacityByType: Record<string, number> = {
                             SEDAN: 4,
-                            VAN: 8,
-                            MINI_BUS: 16,
-                            BUS: 40
+                            SUV: 6,
+                            VAN_10: 10,
+                            VAN_15: 17,
+                            VAN_19: 19,
+                            MINIBUS: 33,
+                            BUS: 64
                           };
                           setForm({
                             ...form,
@@ -2578,15 +2641,98 @@ export default function ResourceScreen({
                         );
                       })}
                     </div>
+                  ) : field.type === "phone" ? (
+                    (() => {
+                      const PHONE_CODES = [
+                        { code: "+56", iso: "cl", country: "Chile" },
+                        { code: "+54", iso: "ar", country: "Argentina" },
+                        { code: "+591", iso: "bo", country: "Bolivia" },
+                        { code: "+55", iso: "br", country: "Brasil" },
+                        { code: "+57", iso: "co", country: "Colombia" },
+                        { code: "+593", iso: "ec", country: "Ecuador" },
+                        { code: "+595", iso: "py", country: "Paraguay" },
+                        { code: "+51", iso: "pe", country: "Perú" },
+                        { code: "+598", iso: "uy", country: "Uruguay" },
+                        { code: "+58", iso: "ve", country: "Venezuela" },
+                        { code: "+52", iso: "mx", country: "México" },
+                        { code: "+1", iso: "us", country: "USA" },
+                        { code: "+34", iso: "es", country: "España" },
+                        { code: "+33", iso: "fr", country: "Francia" },
+                        { code: "+49", iso: "de", country: "Alemania" },
+                        { code: "+39", iso: "it", country: "Italia" },
+                        { code: "+44", iso: "gb", country: "Reino Unido" },
+                      ];
+                      const fullVal = (form[field.key] as string) || "";
+                      const matchedCode = PHONE_CODES.find(pc => fullVal.startsWith(pc.code));
+                      const currentCode = matchedCode?.code || "+56";
+                      const currentNumber = matchedCode ? fullVal.slice(matchedCode.code.length).trim() : fullVal;
+                      const currentEntry = PHONE_CODES.find(pc => pc.code === currentCode) || PHONE_CODES[0];
+                      return (
+                        <div style={{ display: "flex", gap: "6px", position: "relative" }}>
+                          {/* Custom dropdown trigger */}
+                          <button
+                            type="button"
+                            className="input"
+                            onClick={() => setPhoneDropdownOpen(!phoneDropdownOpen)}
+                            style={{ width: "140px", flexShrink: 0, fontSize: "13px", display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", textAlign: "left", padding: "0 10px" }}
+                          >
+                            <img src={`https://flagcdn.com/w40/${currentEntry.iso}.png`} alt={currentEntry.country} width={22} height={16} style={{ borderRadius: "3px", flexShrink: 0, objectFit: "cover" }} />
+                            <span style={{ fontWeight: 600 }}>{currentEntry.code}</span>
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" style={{ marginLeft: "auto", flexShrink: 0 }}><polyline points="6 9 12 15 18 9"/></svg>
+                          </button>
+                          {/* Dropdown list */}
+                          {phoneDropdownOpen && (
+                            <>
+                              <div style={{ position: "fixed", inset: 0, zIndex: 50 }} onClick={() => setPhoneDropdownOpen(false)} />
+                              <div style={{ position: "absolute", top: "100%", left: 0, marginTop: "4px", zIndex: 51, background: "#fff", border: "1px solid #e2e8f0", borderRadius: "12px", boxShadow: "0 8px 30px rgba(15,23,42,0.15)", maxHeight: "240px", overflowY: "auto", width: "220px" }}>
+                                {PHONE_CODES.map(pc => (
+                                  <button
+                                    key={pc.code}
+                                    type="button"
+                                    onClick={() => {
+                                      setForm({ ...form, [field.key]: `${pc.code} ${currentNumber}` });
+                                      setPhoneDropdownOpen(false);
+                                    }}
+                                    style={{ width: "100%", display: "flex", alignItems: "center", gap: "8px", padding: "8px 12px", border: "none", background: pc.code === currentCode ? "rgba(33,208,179,0.08)" : "transparent", cursor: "pointer", fontSize: "13px", color: "#0f172a", textAlign: "left" }}
+                                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#f8fafc"; }}
+                                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = pc.code === currentCode ? "rgba(33,208,179,0.08)" : "transparent"; }}
+                                  >
+                                    <img src={`https://flagcdn.com/w40/${pc.iso}.png`} alt={pc.country} width={22} height={16} style={{ borderRadius: "3px", flexShrink: 0, objectFit: "cover" }} />
+                                    <span style={{ flex: 1 }}>{pc.country}</span>
+                                    <span style={{ fontWeight: 600, color: "#64748b", fontSize: "12px" }}>{pc.code}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            </>
+                          )}
+                          <input
+                            className="input flex-1"
+                            type="tel"
+                            value={currentNumber}
+                            placeholder={field.placeholder || "912345678"}
+                            onChange={(e) => {
+                              setForm({ ...form, [field.key]: `${currentCode} ${e.target.value}` });
+                            }}
+                          />
+                        </div>
+                      );
+                    })()
                   ) : field.type === "places" ? (
                     <PlacesAutocompleteInput
                       className={`input ${field.readOnly ? "opacity-60" : ""}`}
                       value={(form[field.key] as string) || ""}
                       onChange={(val) => setForm({ ...form, [field.key]: val })}
+                      onPlaceDetails={config.endpoint === "/venues" && field.key === "address" ? (details) => {
+                        setForm(prev => ({
+                          ...prev,
+                          ...(details.region ? { region: details.region } : {}),
+                          ...(details.commune ? { commune: details.commune } : {}),
+                        }));
+                      } : undefined}
                       placeholder={field.placeholder}
                     />
                   ) : field.type === "file" ? (
-                    <div className="flex flex-wrap items-center gap-3">
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                       <input
                         id={`file-${field.key}`}
                         className="sr-only"
@@ -2609,12 +2755,23 @@ export default function ResourceScreen({
                           reader.readAsDataURL(file);
                         }}
                       />
-                      <label htmlFor={`file-${field.key}`} className="btn btn-ghost cursor-pointer">
-                        Seleccionar imagen
+                      {/* Preview */}
+                      <label htmlFor={`file-${field.key}`} className="cursor-pointer" style={{ width: "52px", height: "52px", borderRadius: "12px", border: form[field.key] ? "2px solid #21D0B3" : "2px dashed #e2e8f0", background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0, transition: "border-color 0.15s" }}>
+                        {form[field.key] ? (
+                          <img src={form[field.key] as string} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        ) : (
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                        )}
                       </label>
-                      <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-                        {form[field.key] ? t("Imagen seleccionada") : t("Sin imagen seleccionada")}
-                      </span>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        <label htmlFor={`file-${field.key}`} className="cursor-pointer" style={{ fontSize: "12px", fontWeight: 600, padding: "5px 14px", borderRadius: "8px", border: "none", color: "#fff", background: form[field.key] ? "#64748b" : "linear-gradient(135deg, #21D0B3, #14AE98)", display: "inline-flex", alignItems: "center", gap: "5px", boxShadow: form[field.key] ? "none" : "0 2px 8px rgba(33,208,179,0.25)" }}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                          {form[field.key] ? "Cambiar foto" : "Subir foto"}
+                        </label>
+                        <span style={{ fontSize: "10px", color: form[field.key] ? "#10b981" : "#94a3b8" }}>
+                          {form[field.key] ? "✓ Foto cargada" : "JPG, PNG — máx 5MB"}
+                        </span>
+                      </div>
                     </div>
                   ) : (
                     <input
@@ -2704,6 +2861,25 @@ export default function ResourceScreen({
                       {t("Calculado automáticamente desde habitaciones")}
                     </span>
                   )}
+                  {config.endpoint === "/athletes" && field.key === "rut" && (() => {
+                    const rutRaw = ((form.rut as string) ?? "").replace(/[.\-\s]/g, "").toUpperCase();
+                    if (!rutRaw || rutRaw.length < 2) return null;
+                    const body = rutRaw.slice(0, -1);
+                    const dv = rutRaw.slice(-1);
+                    if (!/^\d+$/.test(body)) return <span style={{ fontSize: "11px", color: "#ef4444" }}>RUT debe contener solo números y dígito verificador</span>;
+                    let sum = 0, mul = 2;
+                    for (let i = body.length - 1; i >= 0; i--) { sum += Number(body[i]) * mul; mul = mul === 7 ? 2 : mul + 1; }
+                    const expected = 11 - (sum % 11);
+                    const dvExpected = expected === 11 ? "0" : expected === 10 ? "K" : String(expected);
+                    if (dv !== dvExpected) return <span style={{ fontSize: "11px", color: "#ef4444", display: "flex", alignItems: "center", gap: "4px" }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                      RUT inválido — dígito verificador incorrecto (esperado: {dvExpected})
+                    </span>;
+                    return <span style={{ fontSize: "11px", color: "#10b981", display: "flex", alignItems: "center", gap: "4px" }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+                      RUT válido
+                    </span>;
+                  })()}
                 </label>
               );
             };
@@ -3064,15 +3240,12 @@ export default function ResourceScreen({
                           {t("Configuración deportiva")}
                         </p>
                         <p className="mt-1 text-sm" style={{color:"var(--text-muted)"}}>
-                          {t("Define disciplinas del evento y su capacidad esperada de registro AND.")}
+                          {t("Define las disciplinas que participarán en el evento. Los cupos por delegación se gestionan desde el módulo Deportes.")}
                         </p>
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <span style={{ borderRadius: "99px", border: "1px solid var(--border)", background: "var(--elevated)", padding: "2px 12px", fontSize: "11px", color: "var(--text-muted)" }}>
                           {selectedDisciplineIds.length} disciplinas
-                        </span>
-                        <span style={{ borderRadius: "99px", border: "1px solid rgba(33,208,179,0.35)", background: "rgba(33,208,179,0.1)", padding: "2px 12px", fontSize: "11px", fontWeight: 700, color: "var(--brand)" }}>
-                          Total esperado {totalExpected}
                         </span>
                       </div>
                     </div>
@@ -3081,7 +3254,7 @@ export default function ResourceScreen({
                       {renderKeys(["disciplineCategory", "disciplineGender"])}
                     </div>
 
-                    <div className="mt-4 grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+                    <div className="mt-4">
                       <div style={{ borderRadius: "12px", border: "1px solid var(--border)", background: "var(--surface)", borderTop: "2px solid var(--brand)", padding: "16px" }}>
                         <div className="mb-3">
                           <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--brand)", marginBottom: "3px" }}>
@@ -3092,119 +3265,9 @@ export default function ResourceScreen({
                           </p>
                         </div>
                         {renderKeys(["disciplineIds"])}
-                      </div>
-
-                      <div style={{ borderRadius: "12px", border: "1px solid var(--border)", background: "var(--surface)", borderTop: "2px solid #1FCDFF", padding: "16px" }}>
-                        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                          <div>
-                            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#1FCDFF", marginBottom: "3px" }}>Planificación AND</p>
-                            <p className="text-sm font-semibold" style={{ color: "var(--text)" }}>Capacidad esperada por delegación y disciplina</p>
-                          </div>
-                          <span style={{ borderRadius: "99px", border: "1px solid rgba(31,205,255,0.35)", background: "rgba(31,205,255,0.1)", padding: "2px 12px", fontSize: "11px", fontWeight: 700, color: "#1FCDFF" }}>
-                            Total esperado {totalExpected}
-                          </span>
-                        </div>
-
-                        {selectedDisciplineIds.length === 0 ? (
-                          <div style={{ borderRadius: "8px", border: "1px dashed var(--border-strong)", background: "transparent", padding: "16px" }}>
-                            <p className="text-xs" style={{color:"var(--text-muted)"}}>
-                              {t("Selecciona disciplinas para definir la capacidad esperada AND.")}
-                            </p>
-                          </div>
-                        ) : (
-                          <div className="space-y-3">
-                            <div className="grid gap-2 md:grid-cols-[1fr_1fr_140px_auto]">
-                              <StyledSelect
-                                value={plannerDisciplineId}
-                                onChange={(e) => setEventPlannerDisciplineId(e.target.value)}
-                              >
-                                <option value="">{t("Selecciona disciplina")}</option>
-                                {selectedDisciplineOptions.map((option) => (
-                                  <option key={option.value} value={option.value}>
-                                    {String(option.label || option.value)}
-                                  </option>
-                                ))}
-                              </StyledSelect>
-                              <StyledSelect
-                                value={eventPlannerDelegationCode}
-                                onChange={(e) => setEventPlannerDelegationCode(e.target.value)}
-                              >
-                                {DELEGATION_COUNTRY_OPTIONS.map((option) => (
-                                  <option key={option.value} value={option.value}>
-                                    {option.value} · {option.label}
-                                  </option>
-                                ))}
-                              </StyledSelect>
-                              <input
-                                className="input text-right"
-                                type="number"
-                                min={0}
-                                step={1}
-                                placeholder="Capacidad"
-                                value={eventPlannerExpectedValue}
-                                onChange={(e) => setEventPlannerExpectedValue(e.target.value)}
-                              />
-                              <button
-                                type="button"
-                                className="btn btn-primary"
-                                onClick={() => {
-                                  if (!plannerDisciplineOption) return;
-                                  const normalized = eventPlannerExpectedValue.trim();
-                                  const n = Number(normalized);
-                                  if (!normalized || !Number.isFinite(n) || n < 0) return;
-                                  setEventCapacityMatrix((prev) => ({
-                                    ...prev,
-                                    [plannerDisciplineOption.value]: {
-                                      ...(prev[plannerDisciplineOption.value] || {}),
-                                      [eventPlannerDelegationCode]: String(Math.round(n)),
-                                    },
-                                  }));
-                                  setEventPlannerExpectedValue("");
-                                }}
-                                disabled={!plannerDisciplineOption}
-                              >
-                                {t("Asignar")}
-                              </button>
-                            </div>
-
-                            {plannerDisciplineOption ? (
-                              <div style={{ borderRadius: "10px", border: "1px solid var(--border)", background: "var(--surface)", padding: "12px" }}>
-                                <p className="text-xs uppercase tracking-[0.16em]" style={{color:"var(--text-muted)"}}>
-                                  {t("Detalle disciplina")} · {String(plannerDisciplineOption.label || plannerDisciplineOption.value)}
-                                </p>
-                                <div className="mt-2 max-h-52 overflow-auto space-y-1.5">
-                                  {DELEGATION_COUNTRY_OPTIONS.map((country) => {
-                                    const value = plannerRow[country.value];
-                                    if (value === undefined || value === "") return null;
-                                    return (
-                                      <div key={`${plannerDisciplineOption.value}-${country.value}`} className="flex items-center justify-between px-2.5 py-1.5 text-sm" style={{ borderRadius: "6px", border: "1px solid var(--border)", background: "var(--elevated)" }}>
-                                        <span style={{color:"var(--text)"}}>{country.value} · {country.label}</span>
-                                        <span className="font-semibold" style={{ color: "var(--brand)" }}>{value}</span>
-                                      </div>
-                                    );
-                                  })}
-                                  {Object.keys(plannerRow).length === 0 ? (
-                                    <p className="text-xs" style={{color:"var(--text-muted)"}}>{t("Sin capacidad asignada para esta disciplina.")}</p>
-                                  ) : null}
-                                </div>
-                              </div>
-                            ) : null}
-
-                            <div style={{ borderRadius: "10px", border: "1px solid var(--border)", background: "var(--surface)", padding: "12px" }}>
-                              <p className="text-xs uppercase tracking-[0.16em]" style={{color:"var(--text-muted)"}}>{t("Resumen por disciplina")}</p>
-                              <div className="mt-2 space-y-1.5">
-                                {selectedDisciplineOptions.map((option) => (
-                                  <div key={`sum-${option.value}`} className="flex items-center justify-between text-sm">
-                                    <span style={{color:"var(--text)"}}>{String(option.label || option.value)}</span>
-                                    <span className="font-semibold" style={{ color: "var(--brand)" }}>
-                                      {expectedByDisciplineFromMatrix[option.value] ?? 0}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        )}
+                        <p className="mt-3 text-xs" style={{ color: "var(--text-muted)", background: "var(--elevated)", padding: "8px 12px", borderRadius: "8px" }}>
+                          {t("Los cupos por delegación y disciplina se configuran desde el módulo Deportes, al editar cada prueba.")}
+                        </p>
                       </div>
                     </div>
                   </section>
@@ -3248,6 +3311,12 @@ export default function ResourceScreen({
             </button>
           </div>
         </form>
+        {successMsg && (
+          <div style={{ marginTop: "12px", padding: "10px 16px", borderRadius: "10px", background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.25)", display: "flex", alignItems: "center", gap: "8px", animation: "fadeIn 0.3s ease" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+            <span style={{ fontSize: "13px", fontWeight: 600, color: "#065f46" }}>{successMsg}</span>
+          </div>
+        )}
         {error && <p className="text-sm text-rose-400 mt-3">{error}</p>}
       </section>
       ) : null}
@@ -3279,6 +3348,9 @@ export default function ResourceScreen({
         ) : config.endpoint === "/delegations" ? (() => {
           const searchLower = andSearch.toLowerCase();
           const filtered = items.filter((item) => {
+            // Only show validated participants in AND view
+            const isValidated = item.participantStatus === "PERSONAL_DATA_VALIDATED" || (item.participantMetadata as any)?.personalDataValidated === true;
+            if (!isValidated) return false;
             const nameMatch = !andSearch || (item.participantFullName ?? "").toLowerCase().includes(searchLower);
             const trip = (item.participantTripType ?? "").toUpperCase();
             const tripMatch =
@@ -3520,16 +3592,23 @@ export default function ResourceScreen({
                       alignItems: "flex-start",
                       gap: "12px",
                     }}>
-                      {/* Avatar */}
-                      <div style={{
-                        width: "40px", height: "40px", borderRadius: "50%", flexShrink: 0,
-                        background: isVal ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.12)",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: "13px", fontWeight: 700,
-                        color: isVal ? "#059669" : "#b45309",
-                      }}>
-                        {initials}
-                      </div>
+                      {/* Avatar / Photo */}
+                      {(() => {
+                        const photoUrl = (item.metadata as any)?.photoUrl || item.photoUrl;
+                        return photoUrl && typeof photoUrl === "string" && photoUrl.startsWith("http") ? (
+                          <img src={photoUrl} alt={item.fullName ?? ""} style={{ width: "40px", height: "40px", borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: `2px solid ${isVal ? "#10b981" : "#f59e0b"}` }} />
+                        ) : (
+                          <div style={{
+                            width: "40px", height: "40px", borderRadius: "50%", flexShrink: 0,
+                            background: isVal ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.12)",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            fontSize: "13px", fontWeight: 700,
+                            color: isVal ? "#059669" : "#b45309",
+                          }}>
+                            {initials}
+                          </div>
+                        );
+                      })()}
                       {/* Main info */}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "4px" }}>
@@ -3677,6 +3756,12 @@ export default function ResourceScreen({
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+        {successMsg && (
+          <div style={{ marginTop: "12px", padding: "10px 16px", borderRadius: "10px", background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.25)", display: "flex", alignItems: "center", gap: "8px", animation: "fadeIn 0.3s ease" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+            <span style={{ fontSize: "13px", fontWeight: 600, color: "#065f46" }}>{successMsg}</span>
           </div>
         )}
         {error && <p className="text-sm text-rose-400 mt-3">{error}</p>}

@@ -62,6 +62,16 @@ export class AuthService {
     return { user: data.user };
   }
 
+  async deleteUser(id: string): Promise<{ message: string }> {
+    const { error } = await this.supabase.auth.admin.deleteUser(id);
+    if (error) {
+      this.logger.error('deleteUser error', JSON.stringify(error));
+      throw new BadRequestException(error.message || 'Error deleting user');
+    }
+    this.logger.log(`User deleted: ${id}`);
+    return { message: 'Usuario eliminado correctamente' };
+  }
+
   async listUsers(): Promise<{ users: User[] }> {
     const { data, error } = await this.supabase.auth.admin.listUsers();
     if (error) {
@@ -73,7 +83,7 @@ export class AuthService {
 
   async updateUser(
     id: string,
-    data: { name?: string; role?: string; password?: string },
+    data: { name?: string; role?: string; password?: string; modules?: string[] },
   ): Promise<{ user: User }> {
     const { data: result, error } = await this.supabase.auth.admin.updateUserById(id, {
       ...(data.password ? { password: data.password } : {}),
@@ -81,6 +91,7 @@ export class AuthService {
       user_metadata: {
         ...(data.name ? { name: data.name } : {}),
         ...(data.role ? { role: data.role } : {}),
+        ...(data.modules ? { modules: data.modules } : {}),
         ...(data.password
           ? {
               forcePasswordChange: true,

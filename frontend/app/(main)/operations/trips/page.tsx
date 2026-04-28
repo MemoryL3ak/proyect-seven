@@ -94,6 +94,7 @@ type Trip = {
   eventId?: string | null;
   driverId?: string | null;
   vehicleId?: string | null;
+  vehiclePlate?: string | null;
   requesterAthleteId?: string | null;
   destinationVenueId?: string | null;
   requestedVehicleType?: string | null;
@@ -111,6 +112,11 @@ type Trip = {
   athleteIds?: string[];
   athleteNames?: string[];
   updatedAt?: string | null;
+  isRoundTrip?: boolean;
+  parentTripId?: string | null;
+  legType?: string | null;
+  childTrips?: Trip[];
+  metadata?: Record<string, unknown> | null;
 };
 
 type EventItem = { id: string; name?: string | null };
@@ -131,6 +137,8 @@ type DriverItem = {
   userId?: string | null;
   fullName?: string | null;
   phone?: string | null;
+  vehicleId?: string | null;
+  metadata?: Record<string, unknown> | null;
 };
 type VehicleItem = {
   id: string;
@@ -174,10 +182,16 @@ const STATUS_COLORS: Record<string, { accent: string; chipBg: string; chipBorder
 };
 
 const VEHICLE_TYPE_LABELS: Record<string, string> = {
-  SEDAN: "Sedan / SUV",
+  SEDAN: "Sedán",
+  AUTO: "Sedán",
+  SUV: "SUV",
+  VAN_10: "Van 10",
+  VAN_15: "Van 15-17",
+  VAN_19: "Van 19",
   VAN: "Van",
-  MINI_BUS: "Mini Bus",
-  BUS: "Bus"
+  MINIBUS: "Minibus",
+  MINI_BUS: "Minibus",
+  BUS: "Bus",
 };
 
 const PORTAL_CLIENT_TYPES = new Set(["VIP", "T1"]);
@@ -302,6 +316,7 @@ export default function TripsPage() {
     if (ok > 0) { setImportFile(null); setImportRows([]); await loadData(true); }
   };
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
+  const [logTrip, setLogTrip] = useState<Trip | null>(null);
   const knownRequestedIdsRef = useRef<Set<string>>(new Set());
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -462,8 +477,7 @@ export default function TripsPage() {
   const completedTrips = useMemo(
     () =>
       filteredTrips
-        .filter((trip) => trip.status === "DROPPED_OFF" || trip.status === "COMPLETED")
-        .slice(0, 8),
+        .filter((trip) => trip.status === "DROPPED_OFF" || trip.status === "COMPLETED" || trip.status === "CANCELLED"),
     [filteredTrips]
   );
   const portalVipTrips = useMemo(
@@ -515,15 +529,26 @@ export default function TripsPage() {
 
   const resolveVehicle = (trip: Trip) => {
     const vehicle = trip.vehicleId ? vehicles[trip.vehicleId] : null;
-    if (!vehicle) return t("Por asignar");
-    return [vehicle.plate, [vehicle.brand, vehicle.model].filter(Boolean).join(" ") || vehicle.type]
-      .filter(Boolean)
-      .join(" · ");
+    if (vehicle) {
+      return [vehicle.plate, [vehicle.brand, vehicle.model].filter(Boolean).join(" ") || vehicle.type]
+        .filter(Boolean)
+        .join(" · ");
+    }
+    if (trip.vehiclePlate) return trip.vehiclePlate;
+    // Try to get vehicle info from driver
+    const driver = trip.driverId ? drivers[trip.driverId] : null;
+    if (driver?.vehicleId) {
+      const v = vehicles[driver.vehicleId];
+      if (v) return [v.plate, [v.brand, v.model].filter(Boolean).join(" ") || v.type].filter(Boolean).join(" · ");
+    }
+    const meta = driver?.metadata as Record<string, unknown> | undefined;
+    if (meta?.vehiclePatente) return String(meta.vehiclePatente);
+    return t("Por asignar");
   };
 
   const resolveDriver = (trip: Trip) => {
     const driver = trip.driverId ? drivers[trip.driverId] : null;
-    return driver?.fullName || t("Pendiente de despacho");
+    return driver?.fullName || t("Pendiente asignación");
   };
 
   const resolveRequestedVehicleType = (trip: Trip) =>
@@ -574,12 +599,14 @@ export default function TripsPage() {
       padding: "12px 14px",
     };
 
+    const hasDriver = !!trip.driverId;
+
     return (
       <article
         key={trip.id}
         style={{
-          background: pal.cardBg,
-          border: `1px solid ${pal.cardBorder}`,
+          background: hasDriver ? pal.cardBg : "#fffbeb",
+          border: `1px solid ${hasDriver ? pal.cardBorder : "#fde68a"}`,
           borderLeft: `4px solid ${sc.accent}`,
           borderRadius: "20px",
           padding: "18px 20px",
@@ -614,6 +641,12 @@ export default function TripsPage() {
                   Portal
                 </span>
               )}
+              {trip.isRoundTrip && (
+                <span style={{ background: "rgba(20,184,166,0.1)", border: "1px solid rgba(20,184,166,0.3)", borderRadius: "99px", padding: "3px 10px", fontSize: "11px", fontWeight: 700, color: "#14b8a6", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                  Ida y vuelta
+                </span>
+              )}
               {isFresh && (
                 <span style={{ background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.3)", borderRadius: "99px", padding: "3px 10px", fontSize: "11px", fontWeight: 700, color: "#10b981", display: "inline-flex", alignItems: "center", gap: "5px" }}>
                   <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#10b981", animation: "pulse 1.5s infinite", display: "inline-block" }} />
@@ -638,8 +671,8 @@ export default function TripsPage() {
         <div className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-4">
           {[
             { label: "Origen", value: safeText(trip.origin), sub: null, icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> },
-            { label: "Sede destino", value: buildVenueAddress(venue), sub: null, icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg> },
-            { label: "Despacho", value: resolveDriver(trip), sub: resolveVehicle(trip), icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> },
+            { label: "Sede destino", value: venue?.name || safeText(trip.destination), sub: venue ? buildVenueAddress(venue) : null, icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg> },
+            { label: "Vehículo", value: resolveDriver(trip), sub: resolveVehicle(trip), icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> },
             { label: "Servicio", value: `${trip.passengerCount || 0} persona(s)`, sub: `Solicitado ${formatDateTime(trip.requestedAt)}${etaMinutes !== null ? ` · ${etaMinutes >= 0 ? `en ${etaMinutes} min` : `${Math.abs(etaMinutes)} min atrasado`}` : ""}`, icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg> },
           ].map((chip) => (
             <div key={chip.label} style={infoChipStyle}>
@@ -652,6 +685,53 @@ export default function TripsPage() {
             </div>
           ))}
         </div>
+
+        {trip.isRoundTrip && trip.childTrips && trip.childTrips.length > 0 && (
+          <div className="mt-4" style={{ borderRadius: "16px", border: "1px solid rgba(20,184,166,0.25)", background: "rgba(20,184,166,0.04)", padding: "14px 16px" }}>
+            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "#14b8a6", marginBottom: "10px" }}>Tramo de regreso</p>
+            {trip.childTrips.map((child) => {
+              const childSc = STATUS_COLORS[child.status ?? "REQUESTED"] ?? STATUS_COLORS.REQUESTED;
+              const childTone = statusTone(child.status);
+              const childVenue = child.destinationVenueId ? venues[child.destinationVenueId] : null;
+              return (
+                <div key={child.id} className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+                  {[
+                    { label: "Estado regreso", value: t(childTone.label), icon: <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: childSc.accent, display: "inline-block" }} /> },
+                    { label: "Programación regreso", value: formatDateTime(child.scheduledAt), icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> },
+                    { label: "Origen regreso", value: safeText(child.origin), icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> },
+                    { label: "Destino regreso", value: childVenue ? buildVenueAddress(childVenue) : safeText(child.destination), icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg> },
+                    { label: "Conductor regreso", value: child.driverId ? (drivers[child.driverId]?.fullName || "Asignado") : t("Por asignar"), icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg> },
+                    { label: "Vehículo regreso", value: child.vehicleId ? resolveVehicle(child) : t("Por asignar"), icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> },
+                  ].map((chip) => (
+                    <div key={chip.label} style={{ background: pal.cardBg, border: `1px solid ${pal.cardBorder}`, borderRadius: "14px", padding: "10px 12px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "5px", marginBottom: "4px" }}>
+                        {chip.icon}
+                        <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: pal.labelColor }}>{chip.label}</p>
+                      </div>
+                      <p style={{ fontSize: "13px", fontWeight: 600, color: pal.textPrimary }}>{chip.value}</p>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+            <div className="mt-2 flex gap-2">
+              {trip.childTrips.map((child) => (
+                <button
+                  key={child.id}
+                  type="button"
+                  onClick={() => {
+                    setShowAdminEditor(true);
+                    setActiveTab("editor");
+                    setSelectedTripId(child.id);
+                  }}
+                  style={{ background: "rgba(20,184,166,0.1)", border: "1px solid rgba(20,184,166,0.3)", borderRadius: "99px", padding: "6px 14px", fontSize: "12px", fontWeight: 600, color: "#14b8a6", cursor: "pointer" }}
+                >
+                  Gestionar regreso
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm">
           <p style={{ fontSize: "13px", color: pal.textMuted, maxWidth: "600px" }}>
@@ -675,12 +755,10 @@ export default function TripsPage() {
                 Gestionar solicitud
               </button>
             )}
-            <Link
-              href="/portal/vehicle-request"
-              style={{ background: pal.cardBg, border: `1px solid ${pal.cardBorder}`, borderRadius: "99px", padding: "7px 16px", fontSize: "13px", fontWeight: 600, color: pal.textMuted, textDecoration: "none" }}
-            >
-              Abrir portal usuario
-            </Link>
+            <button type="button" onClick={() => setLogTrip(trip)}
+              style={{ background: pal.cardBg, border: `1px solid ${pal.cardBorder}`, borderRadius: "99px", padding: "7px 16px", fontSize: "13px", fontWeight: 600, color: pal.textMuted, cursor: "pointer" }}>
+              Ver bitácora
+            </button>
           </div>
         </div>
       </article>
@@ -931,7 +1009,7 @@ export default function TripsPage() {
                     const venue = trip.destinationVenueId ? venues[trip.destinationVenueId] : null;
                     return (
                       <div key={trip.id} style={{
-                        display: "grid", gridTemplateColumns: "140px 1fr 1fr 1fr 1fr",
+                        display: "grid", gridTemplateColumns: "120px 1fr 1fr 1fr 1fr auto",
                         gap: "12px", alignItems: "center",
                         padding: "12px 16px",
                         background: i % 2 === 0 ? pal.cardBg : "#fafafa",
@@ -945,6 +1023,11 @@ export default function TripsPage() {
                         <span style={{ fontSize: "13px", color: pal.textMuted }}>{venue?.name || trip.destination || "-"}</span>
                         <span style={{ fontSize: "13px", color: pal.textMuted }}>{resolveDriver(trip)}</span>
                         <span style={{ fontSize: "12px", color: pal.labelColor, fontVariantNumeric: "tabular-nums" }}>{formatDateTime(trip.completedAt || trip.updatedAt)}</span>
+                        <button type="button" onClick={() => setLogTrip(trip)}
+                          style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "5px 12px", borderRadius: "8px", border: "1px solid #e2e8f0", background: "#f8fafc", color: "#475569", fontSize: "11px", fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                          Ver bitácora
+                        </button>
                       </div>
                     );
                   })}
@@ -1180,8 +1263,76 @@ export default function TripsPage() {
           <ResourceScreen config={resources.trips} externalEditingId={selectedTripId} />
         </section>
       )}
+      {/* ── Modal Bitácora ── */}
+      {logTrip && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setLogTrip(null)}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: "#fff", borderRadius: "20px", width: "100%", maxWidth: "480px", maxHeight: "80vh", display: "flex", flexDirection: "column", boxShadow: "0 8px 40px rgba(15,23,42,0.2)" }}>
+            {/* Header */}
+            <div style={{ padding: "20px 24px 14px", borderBottom: "1px solid #f1f5f9", flexShrink: 0 }}>
+              <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "#21D0B3", margin: "0 0 4px" }}>Bitácora del viaje</p>
+              <p style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a", margin: 0 }}>{resolveRequester(logTrip)} → {logTrip.destination || "Sin destino"}</p>
+            </div>
+            {/* Log entries */}
+            <div style={{ flex: 1, overflowY: "auto", padding: "16px 24px" }}>
+              {(() => {
+                const log = Array.isArray((logTrip.metadata as any)?.log) ? (logTrip.metadata as any).log as { action: string; by: string; at: string; detail?: string }[] : [];
+                const ACTION_LABELS: Record<string, { label: string; color: string }> = {
+                  CREATED: { label: "Solicitud creada", color: "#3b82f6" },
+                  MODIFIED: { label: "Modificado por usuario", color: "#f59e0b" },
+                  CANCELLED: { label: "Cancelado por usuario", color: "#ef4444" },
+                  DRIVER_ASSIGNED: { label: "Conductor asignado", color: "#10b981" },
+                  VEHICLE_ASSIGNED: { label: "Vehículo asignado", color: "#10b981" },
+                  STATUS_CHANGED: { label: "Estado actualizado", color: "#8b5cf6" },
+                  SCHEDULE_CHANGED: { label: "Horario modificado", color: "#0ea5e9" },
+                  VEHICLE_TYPE_CHANGED: { label: "Tipo vehículo cambiado", color: "#f59e0b" },
+                  PASSENGER_COUNT_CHANGED: { label: "Pasajeros modificados", color: "#f59e0b" },
+                };
+                if (log.length === 0) {
+                  return (
+                    <div style={{ textAlign: "center", padding: "32px 0", color: "#94a3b8" }}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round" style={{ margin: "0 auto 8px", display: "block" }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      <p style={{ fontSize: "13px", margin: 0 }}>Sin registros en la bitácora</p>
+                    </div>
+                  );
+                }
+                return (
+                  <div style={{ position: "relative", paddingLeft: "20px" }}>
+                    {/* Timeline line */}
+                    <div style={{ position: "absolute", left: "5px", top: "4px", bottom: "4px", width: "2px", background: "#e2e8f0", borderRadius: "1px" }} />
+                    {log.map((entry, i) => {
+                      const info = ACTION_LABELS[entry.action] ?? { label: entry.action, color: "#64748b" };
+                      const date = new Date(entry.at);
+                      const timeStr = !isNaN(date.getTime()) ? date.toLocaleString("es-CL", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
+                      return (
+                        <div key={i} style={{ position: "relative", marginBottom: i < log.length - 1 ? "16px" : 0 }}>
+                          {/* Dot */}
+                          <div style={{ position: "absolute", left: "-20px", top: "2px", width: "12px", height: "12px", borderRadius: "50%", background: "#fff", border: `2px solid ${info.color}`, zIndex: 1 }} />
+                          <div>
+                            <p style={{ fontSize: "13px", fontWeight: 600, color: info.color, margin: "0 0 2px" }}>{info.label}</p>
+                            {entry.detail && <p style={{ fontSize: "11px", color: "#64748b", margin: "0 0 2px", background: "#f1f5f9", borderRadius: "4px", padding: "2px 8px", display: "inline-block" }}>{entry.detail}</p>}
+                            <div style={{ display: "flex", gap: "8px", alignItems: "center", marginTop: "2px" }}>
+                              <span style={{ fontSize: "11px", color: "#94a3b8" }}>{entry.by}</span>
+                              <span style={{ fontSize: "10px", color: "#cbd5e1" }}>•</span>
+                              <span style={{ fontSize: "11px", color: "#94a3b8" }}>{timeStr}</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+            {/* Footer */}
+            <div style={{ padding: "12px 24px", borderTop: "1px solid #f1f5f9", flexShrink: 0, textAlign: "center" }}>
+              <button type="button" onClick={() => setLogTrip(null)}
+                style={{ padding: "10px 32px", borderRadius: "12px", border: "none", background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 10px rgba(33,208,179,0.3)" }}>
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
-

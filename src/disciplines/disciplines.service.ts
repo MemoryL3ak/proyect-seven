@@ -74,7 +74,7 @@ export class DisciplinesService {
       row.parent_id = dto.parentId || null;
     }
     if (dto.scheduledAt !== undefined) {
-      row.scheduled_at = dto.scheduledAt ? new Date(dto.scheduledAt) : null;
+      row.scheduled_at = dto.scheduledAt || null;
     }
     if (dto.venueName !== undefined) {
       row.venue_name = dto.venueName || null;
