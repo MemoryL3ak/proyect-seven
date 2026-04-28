@@ -4,15 +4,9 @@ import {
   Logger,
   UnauthorizedException,
 } from '@nestjs/common';
-import { Session, SupabaseClient, User } from '@supabase/supabase-js';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 export type MobileLoginResult =
-  | {
-      kind: 'admin';
-      user: User;
-      session: Session;
-      requiresPasswordChange: boolean;
-    }
   | {
       kind: 'athlete';
       athleteId: string;
@@ -39,121 +33,101 @@ export class MobileAuthService {
     @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
   ) {}
 
-  async login(input: { email: string; secret: string }): Promise<MobileLoginResult> {
-    const email = String(input.email || '').trim().toLowerCase();
-    const secret = String(input.secret || '').trim();
+  async login(input: { code: string }): Promise<MobileLoginResult> {
+    const code = String(input.code || '').trim().toLowerCase();
 
-    if (!email || !secret) {
-      throw new UnauthorizedException('Credenciales inválidas');
+    if (!code || code.length < 6) {
+      throw new UnauthorizedException('Código inválido');
     }
 
-    const adminResult = await this.tryAdminLogin(email, secret);
-    if (adminResult) return adminResult;
-
-    const athleteResult = await this.tryAthleteLogin(email, secret);
+    const athleteResult = await this.tryAthleteByCode(code);
     if (athleteResult) return athleteResult;
 
-    const driverResult = await this.tryDriverLogin(email, secret);
+    const driverResult = await this.tryDriverByCode(code);
     if (driverResult) return driverResult;
 
-    throw new UnauthorizedException('Credenciales inválidas');
+    throw new UnauthorizedException('Código inválido');
   }
 
-  private async tryAdminLogin(
-    email: string,
-    password: string,
-  ): Promise<Extract<MobileLoginResult, { kind: 'admin' }> | null> {
-    if (password.length < 8) return null;
-
-    const { data, error } = await this.supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error || !data.user || !data.session) {
-      return null;
-    }
-
-    const metadata = (data.user.user_metadata || {}) as Record<string, unknown>;
-    const requiresPasswordChange = Boolean(
-      metadata.forcePasswordChange ?? metadata.force_password_change,
-    );
-
-    return {
-      kind: 'admin',
-      user: data.user,
-      session: data.session,
-      requiresPasswordChange,
-    };
-  }
-
-  private async tryAthleteLogin(
-    email: string,
-    secret: string,
+  private async tryAthleteByCode(
+    code: string,
   ): Promise<Extract<MobileLoginResult, { kind: 'athlete' }> | null> {
     const { data, error } = await this.supabase
       .schema('core')
       .from('athletes')
-      .select('id, full_name, email')
-      .ilike('email', email)
-      .maybeSingle();
+      .select('id, full_name, email');
 
     if (error) {
       this.logger.error('Athlete lookup error', JSON.stringify(error));
       return null;
     }
-    if (!data) return null;
 
-    const expectedCode = String(data.id).slice(-6).toLowerCase();
-    if (secret.toLowerCase() !== expectedCode) return null;
+    const matches = (data ?? []).filter(
+      (row) => String(row.id).slice(-6).toLowerCase() === code,
+    );
 
+    if (matches.length === 0) return null;
+    if (matches.length > 1) {
+      this.logger.warn(
+        `Code collision in athletes for ${code} (${matches.length} matches)`,
+      );
+      return null;
+    }
+
+    const match = matches[0];
     return {
       kind: 'athlete',
-      athleteId: data.id,
+      athleteId: match.id,
       profile: {
-        id: data.id,
-        fullName: data.full_name,
-        email: data.email ?? null,
+        id: match.id,
+        fullName: match.full_name,
+        email: match.email ?? null,
       },
     };
   }
 
-  private async tryDriverLogin(
-    email: string,
-    secret: string,
+  private async tryDriverByCode(
+    code: string,
   ): Promise<Extract<MobileLoginResult, { kind: 'driver' }> | null> {
+    // 1. transport.drivers
     const { data: driverData, error: driverError } = await this.supabase
       .schema('transport')
       .from('drivers')
-      .select('id, full_name, email')
-      .ilike('email', email)
-      .maybeSingle();
+      .select('id, full_name, email');
 
     if (driverError) {
       this.logger.error('Driver lookup error', JSON.stringify(driverError));
     }
 
-    if (driverData) {
-      const expectedCode = String(driverData.id).slice(-6).toLowerCase();
-      if (secret.toLowerCase() === expectedCode) {
-        return {
-          kind: 'driver',
-          driverId: driverData.id,
-          profile: {
-            id: driverData.id,
-            fullName: driverData.full_name,
-            email: driverData.email ?? null,
-          },
-        };
-      }
+    const driverMatches = (driverData ?? []).filter(
+      (row) => String(row.id).slice(-6).toLowerCase() === code,
+    );
+
+    if (driverMatches.length > 1) {
+      this.logger.warn(
+        `Code collision in drivers for ${code} (${driverMatches.length} matches)`,
+      );
+      return null;
     }
 
+    if (driverMatches.length === 1) {
+      const match = driverMatches[0];
+      return {
+        kind: 'driver',
+        driverId: match.id,
+        profile: {
+          id: match.id,
+          fullName: match.full_name,
+          email: match.email ?? null,
+        },
+      };
+    }
+
+    // 2. core.provider_participants flagged as driver
     const { data: participantData, error: participantError } = await this.supabase
       .schema('core')
       .from('provider_participants')
-      .select('id, full_name, email, metadata')
-      .ilike('email', email)
-      .maybeSingle();
+      .select('id, full_name, email, metadata');
 
     if (participantError) {
       this.logger.error(
@@ -162,22 +136,29 @@ export class MobileAuthService {
       );
       return null;
     }
-    if (!participantData) return null;
 
-    const meta = (participantData.metadata ?? {}) as Record<string, unknown>;
-    const isDriver = meta.isDriver === true || meta.isDriver === 'true';
-    if (!isDriver) return null;
+    const participantMatches = (participantData ?? []).filter((row) => {
+      if (String(row.id).slice(-6).toLowerCase() !== code) return false;
+      const meta = (row.metadata ?? {}) as Record<string, unknown>;
+      return meta.isDriver === true || meta.isDriver === 'true';
+    });
 
-    const expectedCode = String(participantData.id).slice(-6).toLowerCase();
-    if (secret.toLowerCase() !== expectedCode) return null;
+    if (participantMatches.length === 0) return null;
+    if (participantMatches.length > 1) {
+      this.logger.warn(
+        `Code collision in provider_participants for ${code} (${participantMatches.length} matches)`,
+      );
+      return null;
+    }
 
+    const match = participantMatches[0];
     return {
       kind: 'driver',
-      driverId: participantData.id,
+      driverId: match.id,
       profile: {
-        id: participantData.id,
-        fullName: participantData.full_name,
-        email: participantData.email ?? null,
+        id: match.id,
+        fullName: match.full_name,
+        email: match.email ?? null,
       },
     };
   }

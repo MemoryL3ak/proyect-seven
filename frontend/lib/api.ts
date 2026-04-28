@@ -213,11 +213,6 @@ export async function changeTemporaryPassword(
 
 export type MobileLoginPayload =
   | {
-      kind: "admin";
-      user: StoredAuthUser;
-      requiresPasswordChange: boolean;
-    }
-  | {
       kind: "athlete";
       athleteId: string;
       profile: { id: string; fullName: string; email: string | null };
@@ -228,12 +223,12 @@ export type MobileLoginPayload =
       profile: { id: string; fullName: string; email: string | null };
     };
 
-export async function mobileLogin(email: string, secret: string): Promise<MobileLoginPayload> {
+export async function mobileLogin(code: string): Promise<MobileLoginPayload> {
   const { response, base } = await fetchWithBaseFallback("/m/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     cache: "no-store",
-    body: JSON.stringify({ email, secret }),
+    body: JSON.stringify({ code }),
   });
 
   if (!response.ok) {
@@ -251,19 +246,9 @@ export async function mobileLogin(email: string, secret: string): Promise<Mobile
     } catch {
       /* not JSON */
     }
-    throw new Error(message || `No se pudo iniciar sesión (${base}/m/auth/login)`);
+    throw new Error(message || `Código inválido`);
   }
 
   const payload = (await response.json()) as MobileLoginPayload;
-
-  if (payload.kind === "admin") {
-    const accessToken = response.headers.get("Authorization")?.replace("Bearer ", "");
-    const refreshToken = response.headers.get("x-refresh-token") || undefined;
-    if (accessToken) {
-      setTokens({ accessToken, refreshToken });
-    }
-    setStoredUser(payload.user ?? null);
-  }
-
   return payload;
 }
