@@ -1460,13 +1460,13 @@ export default function UserPortalPage() {
         </div>{/* end tab content */}
 
         {/* ── Bottom tab bar ── */}
-        <div style={{ position:"fixed",bottom:0,left:0,right:0,display:"flex",background:"#fff",borderTop:"1px solid #e2e8f0",zIndex:100,paddingBottom:"env(safe-area-inset-bottom)" }}>
+        <div style={{ position:"fixed",bottom:0,left:0,right:0,display:"flex",background:"#fff",borderTop:"1px solid #e2e8f0",zIndex:100,paddingTop:6,paddingBottom:6,boxShadow:"0 -2px 12px rgba(0,0,0,0.06)" }}>
           {portalTabs.map(tab => (
             <button key={tab.key} type="button" onClick={() => setActiveTab(tab.key)}
-              style={{ flex:1,padding:"8px 0 6px",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2,
+              style={{ flex:1,padding:"4px 0 2px",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,
                 color:activeTab===tab.key?"#21D0B3":"#94a3b8" }}>
               <span style={{ display:"flex" }}>{tab.icon}</span>
-              <span style={{ fontSize:9,fontWeight:activeTab===tab.key?700:500 }}>{tab.label}</span>
+              <span style={{ fontSize:9.5,fontWeight:activeTab===tab.key?700:500,letterSpacing:"-0.005em" }}>{tab.label}</span>
             </button>
           ))}
         </div>

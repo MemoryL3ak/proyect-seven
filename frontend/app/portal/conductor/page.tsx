@@ -893,7 +893,7 @@ export default function DriverPortalPage() {
             .dc-banner-tag{display:flex;align-items:center;gap:8px;}
             .dc-banner-tag span{font-size:10px;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:rgba(33,208,179,0.9);}
             .dc-content{max-width:920px;margin:0 auto;padding:24px 16px 90px;position:relative;z-index:1;}
-            .dc-bottom-tabs{position:fixed;bottom:0;left:0;right:0;z-index:50;background:#fff;border-top:1px solid #e2e8f0;display:flex;padding:4px 0 calc(4px + env(safe-area-inset-bottom,0px));box-shadow:0 -2px 12px rgba(0,0,0,0.06);}
+            .dc-bottom-tabs{position:fixed;bottom:0;left:0;right:0;z-index:50;background:#fff;border-top:1px solid #e2e8f0;display:flex;padding:6px 0;box-shadow:0 -2px 12px rgba(0,0,0,0.06);}
             .dc-tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 4px;background:none;border:none;cursor:pointer;font-size:10px;font-weight:600;transition:color .15s;-webkit-tap-highlight-color:transparent;}
             .dc-profile-card{background:#fff;border-radius:24px;border:1px solid rgba(226,232,240,0.8);padding:24px 28px;margin-bottom:20px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;animation:dc-in .4s cubic-bezier(0.16,1,0.3,1) both;box-shadow:0 4px 24px rgba(0,0,0,0.06);position:relative;overflow:hidden;}
             .dc-profile-body{display:flex;align-items:center;gap:20px;min-width:0;}

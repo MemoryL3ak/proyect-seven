@@ -168,7 +168,7 @@ export default function AssistanceChat({
         type="button"
         onClick={() => setOpen((p) => !p)}
         style={{
-          position: "fixed", bottom: 20, right: 20, zIndex: 40,
+          position: "fixed", bottom: 72, right: 16, zIndex: 110,
           width: open ? "48px" : "auto",
           padding: open ? 0 : "14px 20px",
           height: "48px",
@@ -194,9 +194,9 @@ export default function AssistanceChat({
       {open && (
         <div
           style={{
-            position: "fixed", bottom: 80, right: 20, zIndex: 45,
+            position: "fixed", bottom: 132, right: 16, zIndex: 115,
             width: "min(400px, calc(100vw - 40px))",
-            height: "min(580px, calc(100vh - 120px))",
+            height: "min(580px, calc(100dvh - 180px))",
             background: "#ffffff",
             borderRadius: "20px",
             boxShadow: "0 24px 64px rgba(15,23,42,0.32)",

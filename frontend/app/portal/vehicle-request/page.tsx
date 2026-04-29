@@ -2054,7 +2054,7 @@ export default function VehicleRequestPortalPage() {
           </div>
 
           {/* Bottom tab bar — 6 tabs */}
-          <div style={{ position:"fixed",bottom:0,left:0,right:0,display:"flex",background:"#fff",borderTop:"1px solid #e2e8f0",zIndex:100,paddingBottom:"env(safe-area-inset-bottom)" }}>
+          <div style={{ position:"fixed",bottom:0,left:0,right:0,display:"flex",background:"#fff",borderTop:"1px solid #e2e8f0",zIndex:100,paddingTop:6,paddingBottom:6,boxShadow:"0 -2px 12px rgba(0,0,0,0.06)" }}>
             {([
               { key: "solicitud" as PortalTab, label: "Solicitud", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> },
               { key: "actividades" as PortalTab, label: "Actividades", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> },
