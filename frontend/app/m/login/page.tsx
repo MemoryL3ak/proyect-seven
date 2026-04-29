@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { mobileLogin } from "@/lib/api";
 import { getMobileSession, markFromApp, setMobileSession, postToReactNative } from "@/lib/mobile-auth";
 
@@ -263,6 +264,19 @@ export default function MobileLoginPage() {
         >
           {loading ? "Ingresando..." : "Iniciar sesión"}
         </button>
+
+        <Link
+          href="/m/recover"
+          style={{
+            color: "rgba(255,255,255,0.6)",
+            fontSize: "13.5px",
+            textAlign: "center",
+            textDecoration: "none",
+            marginTop: "-4px",
+          }}
+        >
+          ¿Olvidaste tu código? <span style={{ color: "#34F3C6", fontWeight: 600 }}>Recupéralo o regístrate</span>
+        </Link>
       </div>
     </div>
   );

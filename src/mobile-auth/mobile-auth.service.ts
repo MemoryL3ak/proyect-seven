@@ -26,6 +26,11 @@ export type MobileLoginResult =
       };
     };
 
+export type MobileRecoverResult = {
+  status: 'ok';
+  message: string;
+};
+
 @Injectable()
 export class MobileAuthService {
   constructor(
@@ -47,6 +52,99 @@ export class MobileAuthService {
     if (driverResult) return driverResult;
 
     throw new UnauthorizedException('Código inválido');
+  }
+
+  async recover(input: { email: string }): Promise<MobileRecoverResult> {
+    const email = String(input.email || '').trim().toLowerCase();
+
+    const genericMessage =
+      'Si tu correo está registrado te enviaremos tu código. ' +
+      'Si no estás registrado un administrador revisará tu solicitud.';
+
+    const athlete = await this.findAthleteByEmail(email);
+    if (athlete) {
+      const code = String(athlete.id).slice(-6).toLowerCase();
+      this.logger.log(
+        `Recover requested by athlete ${athlete.id} (${email}) — code ${code}`,
+      );
+      return { status: 'ok', message: genericMessage };
+    }
+
+    const driver = await this.findDriverByEmail(email);
+    if (driver) {
+      const code = String(driver.id).slice(-6).toLowerCase();
+      this.logger.log(
+        `Recover requested by driver ${driver.id} (${email}) — code ${code}`,
+      );
+      return { status: 'ok', message: genericMessage };
+    }
+
+    this.logger.log(`Recover/registration request from unknown email ${email}`);
+    return { status: 'ok', message: genericMessage };
+  }
+
+  private async findAthleteByEmail(
+    email: string,
+  ): Promise<{ id: string; full_name: string; email: string | null } | null> {
+    if (!email) return null;
+    const { data, error } = await this.supabase
+      .schema('core')
+      .from('athletes')
+      .select('id, full_name, email')
+      .ilike('email', email)
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      this.logger.error('Athlete email lookup error', JSON.stringify(error));
+      return null;
+    }
+    return data ?? null;
+  }
+
+  private async findDriverByEmail(
+    email: string,
+  ): Promise<{ id: string; full_name: string; email: string | null } | null> {
+    if (!email) return null;
+    const { data: driver, error: driverError } = await this.supabase
+      .schema('transport')
+      .from('drivers')
+      .select('id, full_name, email')
+      .ilike('email', email)
+      .limit(1)
+      .maybeSingle();
+
+    if (driverError) {
+      this.logger.error('Driver email lookup error', JSON.stringify(driverError));
+    }
+    if (driver) return driver;
+
+    const { data: participant, error: participantError } = await this.supabase
+      .schema('core')
+      .from('provider_participants')
+      .select('id, full_name, email, metadata')
+      .ilike('email', email)
+      .limit(1)
+      .maybeSingle();
+
+    if (participantError) {
+      this.logger.error(
+        'Participant email lookup error',
+        JSON.stringify(participantError),
+      );
+      return null;
+    }
+    if (!participant) return null;
+
+    const meta = (participant.metadata ?? {}) as Record<string, unknown>;
+    if (meta.isDriver === true || meta.isDriver === 'true') {
+      return {
+        id: participant.id,
+        full_name: participant.full_name,
+        email: participant.email ?? null,
+      };
+    }
+    return null;
   }
 
   private async tryAthleteByCode(

@@ -252,3 +252,38 @@ export async function mobileLogin(code: string): Promise<MobileLoginPayload> {
   const payload = (await response.json()) as MobileLoginPayload;
   return payload;
 }
+
+export type MobileRecoverPayload = {
+  status: "ok";
+  message: string;
+};
+
+export async function mobileRecover(email: string): Promise<MobileRecoverPayload> {
+  const { response, base } = await fetchWithBaseFallback("/m/auth/recover", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    cache: "no-store",
+    body: JSON.stringify({ email }),
+  });
+
+  if (!response.ok) {
+    const contentType = response.headers.get("content-type") || "";
+    if (contentType.includes("text/html")) {
+      throw new Error(`Endpoint de recuperación no encontrado en API (${base}/m/auth/recover)`);
+    }
+    const text = await response.text();
+    let message = text;
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed?.message) {
+        message = Array.isArray(parsed.message) ? parsed.message.join(", ") : String(parsed.message);
+      }
+    } catch {
+      /* not JSON */
+    }
+    throw new Error(message || `No se pudo procesar la solicitud`);
+  }
+
+  const payload = (await response.json()) as MobileRecoverPayload;
+  return payload;
+}
