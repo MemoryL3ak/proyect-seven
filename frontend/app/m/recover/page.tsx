@@ -49,7 +49,7 @@ export default function MobileRecoverPage() {
           style={{ height: 88, width: "auto", objectFit: "contain", marginBottom: "16px" }}
         />
         <h1 style={{ fontSize: "22px", fontWeight: 700, color: "#f1f5f9", margin: 0 }}>
-          ¿Olvidaste tu código?
+          Recordarme mi código
         </h1>
         <p
           style={{
@@ -60,8 +60,7 @@ export default function MobileRecoverPage() {
             maxWidth: "300px",
           }}
         >
-          Ingresa tu correo y te enviaremos tu código. Si aún no estás registrado,
-          un administrador revisará tu solicitud.
+          Ingresa tu correo y te enviaremos tu código de acceso.
         </p>
       </div>
 
@@ -180,7 +179,7 @@ export default function MobileRecoverPage() {
                 boxShadow: "0 4px 20px rgba(52,243,198,0.35)",
               }}
             >
-              {loading ? "Enviando..." : "Enviar solicitud"}
+              {loading ? "Enviando..." : "Enviarme mi código"}
             </button>
 
             <Link

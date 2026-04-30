@@ -58,8 +58,7 @@ export class MobileAuthService {
     const email = String(input.email || '').trim().toLowerCase();
 
     const genericMessage =
-      'Si tu correo está registrado te enviaremos tu código. ' +
-      'Si no estás registrado un administrador revisará tu solicitud.';
+      'Si tu correo está registrado, te enviaremos tu código de acceso en breve.';
 
     const athlete = await this.findAthleteByEmail(email);
     if (athlete) {
@@ -79,7 +78,7 @@ export class MobileAuthService {
       return { status: 'ok', message: genericMessage };
     }
 
-    this.logger.log(`Recover/registration request from unknown email ${email}`);
+    this.logger.log(`Recover request from unknown email ${email}`);
     return { status: 'ok', message: genericMessage };
   }
 

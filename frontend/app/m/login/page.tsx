@@ -275,7 +275,7 @@ export default function MobileLoginPage() {
             marginTop: "-4px",
           }}
         >
-          ¿Olvidaste tu código? <span style={{ color: "#34F3C6", fontWeight: 600 }}>Recupéralo o regístrate</span>
+          <span style={{ color: "#34F3C6", fontWeight: 600 }}>Recordarme mi código</span>
         </Link>
       </div>
     </div>
