@@ -218,7 +218,6 @@ export default function DriverPortalPage() {
   const loadTrips = async (overrideId?: string) => {
     const id = overrideId || driverId;
     if (!id) return;
-    if (overrideId) setDriverId(overrideId);
     setLoading(true);
     setError(null);
     setIdError(null);
@@ -261,17 +260,22 @@ export default function DriverPortalPage() {
 
       const normalizedInput = id.trim().toLowerCase();
       const driverMatch = allDrivers.find((driver) => {
-        const id = driver.id ?? "";
-        const userId = driver.userId ?? "";
-        const last6 = id.slice(-6).toLowerCase();
-        const last6User = userId.slice(-6).toLowerCase();
+        const driverIdLower = (driver.id ?? "").toLowerCase();
+        const userIdLower = (driver.userId ?? "").toLowerCase();
         return (
-          normalizedInput === last6 ||
-          normalizedInput === last6User
+          normalizedInput === driverIdLower ||
+          normalizedInput === userIdLower ||
+          normalizedInput === driverIdLower.slice(-6) ||
+          normalizedInput === userIdLower.slice(-6)
         );
       });
       setDriverProfile(driverMatch ?? null);
-      if (driverMatch) { try { sessionStorage.setItem("portal_conductor_id", driverId.trim()); } catch {} }
+      if (driverMatch) {
+        try {
+          const visibleCode = driverMatch.id.slice(-6).toLowerCase();
+          sessionStorage.setItem("portal_conductor_id", visibleCode);
+        } catch {}
+      }
       if (!driverMatch) {
         setIdError(t("El ID ingresado no corresponde a un conductor registrado."));
         setTrips([]);
