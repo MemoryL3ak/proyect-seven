@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { mobileLogin } from "@/lib/api";
 import { getMobileSession, markFromApp, setMobileSession, postToReactNative } from "@/lib/mobile-auth";
-import BridgeDemoButtons from "@/components/BridgeDemoButtons";
 
 const CODE_LENGTH = 6;
 
@@ -278,8 +277,6 @@ export default function MobileLoginPage() {
         >
           <span style={{ color: "#34F3C6", fontWeight: 600 }}>Recordarme mi código</span>
         </Link>
-
-        <BridgeDemoButtons />
       </div>
     </div>
   );

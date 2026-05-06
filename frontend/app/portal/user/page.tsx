@@ -9,6 +9,8 @@ import TripMap from "@/components/TripMap";
 import NotificationBell, { useNotifications } from "@/components/NotificationBell";
 import TripChat from "@/components/TripChat";
 import AssistanceChat from "@/components/AssistanceChat";
+import DevicePermissionsSection from "@/components/DevicePermissionsSection";
+import MyLocationMap from "@/components/MyLocationMap";
 import { buildCredentialHtml } from "@/lib/credential-template";
 import QRCode from "qrcode";
 
@@ -1449,6 +1451,10 @@ export default function UserPortalPage() {
               Ficha de salud
               {healthRecord ? <span style={{ fontSize:10,padding:"2px 8px",borderRadius:6,background:"rgba(33,208,179,0.1)",color:"#0a7a6b" }}>Completada</span> : <span style={{ fontSize:10,padding:"2px 8px",borderRadius:6,background:"#FEF3C7",color:"#92400E" }}>Pendiente</span>}
             </a>
+            {/* My location demo (only visible inside the mobile app) */}
+            <MyLocationMap />
+            {/* Device permissions (only visible inside the mobile app) */}
+            <DevicePermissionsSection />
             {/* Logout */}
             <button type="button" onClick={() => { setAthlete(null); setAthleteId(""); try { sessionStorage.removeItem("portal_user_id"); } catch {} }}
               style={{ width:"100%",padding:12,borderRadius:12,border:"1px solid #e2e8f0",background:"#fff",color:"#ef4444",fontSize:13,fontWeight:600,cursor:"pointer" }}>

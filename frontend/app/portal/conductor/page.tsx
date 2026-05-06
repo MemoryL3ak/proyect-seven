@@ -9,6 +9,7 @@ import { useI18n } from "@/lib/i18n";
 import NotificationBell, { useNotifications } from "@/components/NotificationBell";
 import TripChat from "@/components/TripChat";
 import AssistanceChat from "@/components/AssistanceChat";
+import DevicePermissionsSection from "@/components/DevicePermissionsSection";
 import QRCode from "qrcode";
 import { buildCredentialHtml } from "@/lib/credential-template";
 
@@ -1803,6 +1804,9 @@ export default function DriverPortalPage() {
                     })}
                   </div>
                 </div>
+
+                {/* Device permissions (only visible inside the mobile app) */}
+                <DevicePermissionsSection />
               </div>
             )}
 
