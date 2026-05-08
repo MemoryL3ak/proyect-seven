@@ -1,11 +1,17 @@
 import { isAvailable, request, send } from "./native-bridge";
 
-export type PermissionKind = "notifications" | "location";
+export type PermissionKind =
+  | "notifications"
+  | "location"
+  | "camera"
+  | "gallery";
 export type PermissionState = "granted" | "denied" | "undetermined" | "blocked";
 
 export type PermissionsStatus = {
   notifications: PermissionState;
   location: PermissionState;
+  camera: PermissionState;
+  gallery: PermissionState;
 };
 
 export function isNativeAvailable(): boolean {

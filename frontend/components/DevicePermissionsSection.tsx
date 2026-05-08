@@ -31,6 +31,18 @@ const ITEMS: ItemConfig[] = [
     description: "Rutas y traslados cercanos a tu posición actual.",
     icon: "📍",
   },
+  {
+    kind: "camera",
+    title: "Cámara",
+    description: "Tomar fotos de credenciales, documentos o evidencias.",
+    icon: "📷",
+  },
+  {
+    kind: "gallery",
+    title: "Galería",
+    description: "Subir fotos o documentos guardados en tu dispositivo.",
+    icon: "🖼️",
+  },
 ];
 
 const STATE_LABEL: Record<PermissionState, string> = {
@@ -266,7 +278,20 @@ export function DevicePermissionsBanner({
   const defaultMessage =
     kind === "location"
       ? "Activá la ubicación para ver rutas y traslados cercanos."
-      : "Activá las notificaciones para no perderte cambios en tus traslados.";
+      : kind === "camera"
+        ? "Activá la cámara para tomar fotos de credenciales y documentos."
+        : kind === "gallery"
+          ? "Activá la galería para subir fotos guardadas en tu dispositivo."
+          : "Activá las notificaciones para no perderte cambios en tus traslados.";
+
+  const bannerIcon =
+    kind === "location"
+      ? "📍"
+      : kind === "camera"
+        ? "📷"
+        : kind === "gallery"
+          ? "🖼️"
+          : "🔔";
 
   return (
     <div
@@ -280,7 +305,7 @@ export function DevicePermissionsBanner({
         gap: 10,
       }}
     >
-      <span style={{ fontSize: 18 }}>{kind === "location" ? "📍" : "🔔"}</span>
+      <span style={{ fontSize: 18 }}>{bannerIcon}</span>
       <p
         style={{
           flex: 1,
