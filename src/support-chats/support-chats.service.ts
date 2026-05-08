@@ -167,7 +167,9 @@ export class SupportChatsService {
           {
             title: 'Asistencia',
             body: preview || 'Un agente respondió tu solicitud',
-            data: { url: portalUrl, chatId, kind: 'support-chat' },
+            emoji: '🛟',
+            kind: 'support-chat',
+            data: { url: portalUrl, chatId },
           },
         );
       }

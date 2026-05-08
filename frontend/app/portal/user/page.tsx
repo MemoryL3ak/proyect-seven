@@ -185,7 +185,7 @@ export default function UserPortalPage() {
   const [calMonthCursor, setCalMonthCursor] = useState(() => new Date());
   const [calSelectedDay, setCalSelectedDay] = useState<number | null>(null);
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
-  const notify = useNotifications();
+  const notify = useNotifications({ userKind: "athlete", userId: athlete?.id ?? null });
 
   const isChief = athlete?.isDelegationLead === true;
   const portalTabs = useMemo(() => {

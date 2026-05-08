@@ -77,27 +77,37 @@ export class TripsService {
   ) {}
 
   /**
-   * Mapeo de status nuevo → texto de push para el atleta solicitante.
+   * Mapeo de status nuevo → texto y emoji de push para el atleta solicitante.
    * Los status no listados no disparan push (ej: REQUESTED, COMPLETED).
    */
   private statusPushForAthlete(
     newStatus: string,
-  ): { title: string; body: string } | null {
+  ): { title: string; body: string; emoji: string } | null {
     switch (newStatus) {
       case 'CONFIRMED':
         return {
           title: 'Viaje confirmado',
           body: 'Tu conductor confirmó el viaje',
+          emoji: '✅',
         };
       case 'EN_ROUTE':
         return {
           title: 'Conductor en camino',
           body: 'Tu conductor está en camino a buscarte',
+          emoji: '🚖',
         };
       case 'PICKED_UP':
-        return { title: 'Viaje en curso', body: 'Estás en camino al destino' };
+        return {
+          title: 'Viaje en curso',
+          body: 'Estás en camino al destino',
+          emoji: '🚗',
+        };
       case 'DROPPED_OFF':
-        return { title: 'Llegaste a destino', body: '¡Buen viaje!' };
+        return {
+          title: 'Llegaste a destino',
+          body: '¡Buen viaje!',
+          emoji: '📍',
+        };
       default:
         return null;
     }
@@ -105,7 +115,13 @@ export class TripsService {
 
   private firePush(
     audience: { userKind: 'driver' | 'athlete'; userId: string },
-    payload: { title: string; body: string; data?: Record<string, unknown> },
+    payload: {
+      title: string;
+      body: string;
+      data?: Record<string, unknown>;
+      kind?: string;
+      emoji?: string;
+    },
   ): void {
     void this.pushService.send(audience, payload);
   }
@@ -483,6 +499,8 @@ export class TripsService {
           body: outboundData.origin
             ? `Origen: ${outboundData.origin}`
             : 'Tienes un nuevo viaje pendiente',
+          emoji: '🚕',
+          kind: 'trip-assigned',
           data: { url: '/portal/conductor', tripId: outboundData.id },
         },
       );
@@ -696,6 +714,8 @@ export class TripsService {
           body: data.origin
             ? `Origen: ${data.origin}`
             : 'Tienes un nuevo viaje pendiente',
+          emoji: '🚕',
+          kind: 'trip-assigned',
           data: { url: '/portal/conductor', tripId: id },
         },
       );
@@ -712,7 +732,11 @@ export class TripsService {
       if (msg) {
         this.firePush(
           { userKind: 'athlete', userId: currentTrip.requesterAthleteId },
-          { ...msg, data: { url: '/portal/user', tripId: id } },
+          {
+            ...msg,
+            kind: 'trip-status',
+            data: { url: '/portal/user', tripId: id, status: finalStatus },
+          },
         );
       }
     }
@@ -794,10 +818,11 @@ export class TripsService {
           {
             title: senderName || (senderType === 'DRIVER' ? 'Conductor' : 'Pasajero'),
             body: preview,
+            emoji: '💬',
+            kind: 'trip-chat',
             data: {
               url: recipientKind === 'driver' ? '/portal/conductor' : '/portal/user',
               tripId,
-              kind: 'trip-chat',
             },
           },
         );

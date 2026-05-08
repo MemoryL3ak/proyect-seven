@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { RegisterTokenDto } from './dto/register-token.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
 
@@ -18,6 +19,10 @@ export type PushPayload = {
   title: string;
   body: string;
   data?: Record<string, unknown>;
+  /** Tipo lógico del evento — se persiste en core.notifications.kind. */
+  kind?: string;
+  /** Emoji opcional para la campanita. */
+  emoji?: string;
 };
 
 type ExpoMessage = {
@@ -36,6 +41,7 @@ export class PushNotificationsService {
 
   constructor(
     @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async register(dto: RegisterTokenDto) {
@@ -86,10 +92,22 @@ export class PushNotificationsService {
   }
 
   /**
-   * Manda un push a todos los dispositivos del audience. No throwea si Expo
-   * rechaza algún token — se loguea y se sigue.
+   * Manda un push a todos los dispositivos del audience y persiste la
+   * notificación en core.notifications para que aparezca en la campanita
+   * dentro del portal. No throwea si Expo rechaza algún token — se loguea
+   * y se sigue.
    */
   async send(audience: PushAudience, payload: PushPayload): Promise<void> {
+    // Persistir primero en el inbox para que la campanita la muestre incluso
+    // si la entrega vía Expo falla o el usuario no tiene tokens registrados.
+    await this.notifications.insert(audience, {
+      title: payload.title,
+      body: payload.body,
+      emoji: payload.emoji ?? null,
+      kind: payload.kind ?? null,
+      data: payload.data ?? {},
+    });
+
     const tokens = await this.listTokens(audience);
     if (tokens.length === 0) return;
 

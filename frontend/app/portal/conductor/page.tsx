@@ -182,7 +182,7 @@ export default function DriverPortalPage() {
       return next;
     });
   };
-  const driverNotify = useNotifications();
+  const driverNotify = useNotifications({ userKind: "driver", userId: driverProfile?.id ?? null });
   const ratedTripIds = useRef<Set<string>>(new Set());
   const tripsRef = useRef<Trip[]>([]);
 

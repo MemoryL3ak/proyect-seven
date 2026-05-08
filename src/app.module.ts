@@ -34,6 +34,7 @@ import { AccessControlModule } from './access-control/access-control.module';
 import { PremiacionesModule } from './premiaciones/premiaciones.module';
 import { SupportChatsModule } from './support-chats/support-chats.module';
 import { PushNotificationsModule } from './push-notifications/push-notifications.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -89,6 +90,7 @@ import { PushNotificationsModule } from './push-notifications/push-notifications
     PremiacionesModule,
     SupportChatsModule,
     PushNotificationsModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
