@@ -10,7 +10,7 @@ import NotificationBell, { useNotifications } from "@/components/NotificationBel
 import TripChat from "@/components/TripChat";
 import AssistanceChat from "@/components/AssistanceChat";
 import DevicePermissionsSection from "@/components/DevicePermissionsSection";
-import MyLocationMap from "@/components/MyLocationMap";
+import PushTokenSync from "@/components/PushTokenSync";
 import { buildCredentialHtml } from "@/lib/credential-template";
 import QRCode from "qrcode";
 
@@ -787,6 +787,7 @@ export default function UserPortalPage() {
 
   return (
     <div style={{ minHeight:"100vh", background:"#eef1f8", position:"relative", overflow:"hidden" }}>
+      <PushTokenSync userKind="athlete" userId={athlete?.id || null} />
       <style>{`
         @keyframes db-in{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
         @keyframes db-badge{from{opacity:0;transform:scale(0.85)}to{opacity:1;transform:scale(1)}}
@@ -1451,8 +1452,6 @@ export default function UserPortalPage() {
               Ficha de salud
               {healthRecord ? <span style={{ fontSize:10,padding:"2px 8px",borderRadius:6,background:"rgba(33,208,179,0.1)",color:"#0a7a6b" }}>Completada</span> : <span style={{ fontSize:10,padding:"2px 8px",borderRadius:6,background:"#FEF3C7",color:"#92400E" }}>Pendiente</span>}
             </a>
-            {/* My location demo (only visible inside the mobile app) */}
-            <MyLocationMap />
             {/* Device permissions (only visible inside the mobile app) */}
             <DevicePermissionsSection />
             {/* Logout */}

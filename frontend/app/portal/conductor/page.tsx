@@ -10,6 +10,7 @@ import NotificationBell, { useNotifications } from "@/components/NotificationBel
 import TripChat from "@/components/TripChat";
 import AssistanceChat from "@/components/AssistanceChat";
 import DevicePermissionsSection from "@/components/DevicePermissionsSection";
+import PushTokenSync from "@/components/PushTokenSync";
 import QRCode from "qrcode";
 import { buildCredentialHtml } from "@/lib/credential-template";
 
@@ -758,6 +759,7 @@ export default function DriverPortalPage() {
 
   return (
     <>
+      <PushTokenSync userKind="driver" userId={driverProfile?.id || null} />
       {!sessionChecked && !driverProfile && (
         <div style={{ minHeight: "100vh", background: "#020c18", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div style={{ width: 36, height: 36, borderRadius: "50%", border: "3px solid rgba(33,208,179,0.25)", borderTopColor: "#21D0B3", animation: "pc-spin 0.8s linear infinite" }} />

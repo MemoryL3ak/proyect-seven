@@ -33,6 +33,7 @@ import { MobileAuthModule } from './mobile-auth/mobile-auth.module';
 import { AccessControlModule } from './access-control/access-control.module';
 import { PremiacionesModule } from './premiaciones/premiaciones.module';
 import { SupportChatsModule } from './support-chats/support-chats.module';
+import { PushNotificationsModule } from './push-notifications/push-notifications.module';
 
 @Module({
   imports: [
@@ -87,6 +88,7 @@ import { SupportChatsModule } from './support-chats/support-chats.module';
     AccessControlModule,
     PremiacionesModule,
     SupportChatsModule,
+    PushNotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
