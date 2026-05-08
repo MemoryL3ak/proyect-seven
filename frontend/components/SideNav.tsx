@@ -97,7 +97,8 @@ const navSections: NavSection[] = [
   {
     title: "Administración", icon: "admin",
     items: [
-      { href: "/admin/usuarios", label: "Gestión de Usuarios", icon: "users-admin" }
+      { href: "/admin/usuarios", label: "Gestión de Usuarios", icon: "users-admin" },
+      { href: "/admin/notificaciones", label: "Notificaciones Push", icon: "bell" }
     ]
   },
   { title: "Ayuda", icon: "help", href: "/ayuda" }
@@ -129,6 +130,7 @@ function Icon({ name, className }: { name: string; className?: string }) {
     case "help": return (<svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="12" cy="12" r="9" /><path d="M9.5 9.5a2.5 2.5 0 0 1 5 .5c0 1.5-2.5 2-2.5 3.5" /><circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none" /></svg>);
     case "flight": return (<svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21 4 19 2c-2-2-4-2-5.5-.5L10 5 1.8 6.2l2.4 2.4L9 9l-4.5 4.5L5 15l2-1 1 2-1 2 2 .5 4.5-4.5.8 4.7 2.4 2.5z" /></svg>);
     case "and": return (<svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3" /><rect x="9" y="11" width="14" height="10" rx="2" /><path d="M13 16l2 2 4-4" /></svg>);
+    case "bell": return (<svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>);
     default: return null;
   }
 }
@@ -208,6 +210,7 @@ const HREF_TO_MODULE: Record<string, string> = {
   "/portal/vehicle-request": "portales",
   "/portal/access-control": "portales",
   "/admin/usuarios": "admin.usuarios",
+  "/admin/notificaciones": "admin.notificaciones",
   "/ayuda": "_always",
 };
 

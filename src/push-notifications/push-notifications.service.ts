@@ -77,6 +77,83 @@ export class PushNotificationsService {
     return { ok: true };
   }
 
+  /**
+   * Lista los destinatarios con al menos un token registrado, enriquecidos
+   * con el nombre del atleta/conductor para el panel de envío manual.
+   */
+  async listRecipients() {
+    const { data: tokens, error } = await this.supabase
+      .schema('core')
+      .from('device_tokens')
+      .select('user_kind, user_id, platform, last_active_at')
+      .order('last_active_at', { ascending: false });
+    if (error) {
+      this.logger.error(`listRecipients failed: ${error.message}`);
+      return [];
+    }
+
+    type Entry = {
+      userKind: string;
+      userId: string;
+      platforms: Set<string>;
+      lastActiveAt: string;
+    };
+    const byUser = new Map<string, Entry>();
+    for (const t of tokens ?? []) {
+      const key = `${t.user_kind}:${t.user_id}`;
+      const existing = byUser.get(key);
+      if (!existing) {
+        byUser.set(key, {
+          userKind: t.user_kind,
+          userId: t.user_id,
+          platforms: new Set([t.platform]),
+          lastActiveAt: t.last_active_at,
+        });
+      } else {
+        existing.platforms.add(t.platform);
+      }
+    }
+
+    const entries = Array.from(byUser.values());
+    const athleteIds = entries
+      .filter((e) => e.userKind === 'athlete')
+      .map((e) => e.userId);
+    const driverIds = entries
+      .filter((e) => e.userKind === 'driver')
+      .map((e) => e.userId);
+
+    const names = new Map<string, string>();
+
+    if (athleteIds.length > 0) {
+      const { data } = await this.supabase
+        .schema('core')
+        .from('athletes')
+        .select('id, full_name')
+        .in('id', athleteIds);
+      for (const a of (data ?? []) as { id: string; full_name: string }[]) {
+        names.set(`athlete:${a.id}`, a.full_name);
+      }
+    }
+    if (driverIds.length > 0) {
+      const { data } = await this.supabase
+        .schema('transport')
+        .from('drivers')
+        .select('id, full_name')
+        .in('id', driverIds);
+      for (const d of (data ?? []) as { id: string; full_name: string }[]) {
+        names.set(`driver:${d.id}`, d.full_name);
+      }
+    }
+
+    return entries.map((e) => ({
+      userKind: e.userKind,
+      userId: e.userId,
+      fullName: names.get(`${e.userKind}:${e.userId}`) ?? null,
+      platforms: Array.from(e.platforms),
+      lastActiveAt: e.lastActiveAt,
+    }));
+  }
+
   async listTokens(audience: PushAudience): Promise<string[]> {
     const { data, error } = await this.supabase
       .schema('core')

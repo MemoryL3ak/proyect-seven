@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import {
   RegisterTokenDto,
   UnregisterTokenDto,
@@ -17,6 +17,11 @@ export class PushNotificationsController {
   @Post('unregister')
   unregister(@Body() dto: UnregisterTokenDto) {
     return this.service.unregister(dto.expoToken);
+  }
+
+  @Get('recipients')
+  recipients() {
+    return this.service.listRecipients();
   }
 
   /**
