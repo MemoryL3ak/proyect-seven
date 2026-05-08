@@ -80,7 +80,9 @@ export default function AdminNotificacionesPage() {
           userId: selected.userId,
           title: title.trim(),
           body: body.trim(),
-          data: { url: selected.userKind === "driver" ? "/portal/conductor" : "/portal/user", emoji },
+          emoji,
+          kind: "manual",
+          data: { url: selected.userKind === "driver" ? "/portal/conductor" : "/portal/user" },
         }),
       });
       setResult({ kind: "ok", at: Date.now() });

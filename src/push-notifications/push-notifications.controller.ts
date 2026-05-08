@@ -25,8 +25,8 @@ export class PushNotificationsController {
   }
 
   /**
-   * Endpoint de prueba para QA: permite disparar un push a un user específico
-   * sin esperar a un evento de dominio. No expone audiencias masivas.
+   * Endpoint de prueba para QA y panel admin: permite disparar un push a un
+   * user específico sin esperar a un evento de dominio.
    */
   @Post('test')
   async test(
@@ -36,6 +36,8 @@ export class PushNotificationsController {
       userId: string;
       title?: string;
       body?: string;
+      emoji?: string;
+      kind?: string;
       data?: Record<string, unknown>;
     },
   ) {
@@ -44,6 +46,8 @@ export class PushNotificationsController {
       {
         title: dto.title ?? 'Prueba',
         body: dto.body ?? 'Push de prueba desde Seven Arena',
+        emoji: dto.emoji,
+        kind: dto.kind ?? 'manual',
         data: dto.data,
       },
     );
