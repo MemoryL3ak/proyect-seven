@@ -118,7 +118,7 @@ export default function VehiclePositionsPage() {
   const [venues, setVenues] = useState<Record<string, VenueItem>>({});
   const [positions, setPositions] = useState<Record<string, { lat: number; lng: number; timestamp: string }>>({});
   const [completedAlerts, setCompletedAlerts] = useState<Array<{ tripId: string; driverName: string; destination: string; ts: Date }>>([]);
-  const [activeView, setActiveView] = useState<"tracking" | "table">("tracking");
+  const [activeView, setActiveView] = useState<"tracking" | "drivers" | "table">("tracking");
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -339,6 +339,48 @@ export default function VehiclePositionsPage() {
       .filter((m): m is TrackingMarker => m !== null);
   }, [activeTrips, positions, vehicles, drivers, venues]);
 
+  // Drivers with a GPS fix in the last 5 min — treat them as "connected" for
+  // the live-drivers tab regardless of whether they have an active trip.
+  const connectedDrivers = useMemo(() => {
+    const cutoff = Date.now() - 5 * 60 * 1000;
+    return Object.entries(positions)
+      .map(([driverId, pos]) => {
+        const driver = drivers[driverId];
+        if (!driver) return null;
+        const ageMs = Date.now() - new Date(pos.timestamp).getTime();
+        if (Number.isNaN(ageMs) || new Date(pos.timestamp).getTime() < cutoff) return null;
+        return { driver, position: pos, ageMs };
+      })
+      .filter((x): x is { driver: DriverItem; position: { lat: number; lng: number; timestamp: string }; ageMs: number } => x !== null)
+      .sort((a, b) => a.ageMs - b.ageMs);
+  }, [positions, drivers]);
+
+  const connectedMarkers = useMemo<TrackingMarker[]>(() => {
+    return connectedDrivers.map(({ driver, position }) => {
+      const trip = activeTrips.find((t) => t.driverId === driver.id);
+      const sc = trip
+        ? STATUS_COLORS[trip.status ?? "EN_ROUTE"] ?? STATUS_COLORS.EN_ROUTE
+        : { accent: "#21D0B3", chipBg: "rgba(33,208,179,0.14)", chipBorder: "rgba(33,208,179,0.3)" };
+      const vehicle = trip?.vehicleId ? vehicles[trip.vehicleId] : null;
+      const venue = trip?.destinationVenueId ? venues[trip.destinationVenueId] : null;
+      return {
+        // The map keys markers by tripId — use the driver id as a stable key
+        // when there is no trip so connected drivers without trips also render.
+        tripId: trip?.id ?? `driver-${driver.id}`,
+        lat: position.lat,
+        lng: position.lng,
+        driverName: driver.fullName || "Conductor",
+        vehiclePlate: vehicle?.plate || trip?.vehiclePlate || "Sin vehículo",
+        statusLabel: trip ? (STATUS_LABEL[trip.status ?? ""] || trip.status || "") : "Sin viaje",
+        accent: sc.accent,
+        origin: trip?.origin || "—",
+        destination: venue?.name || trip?.destination || "—",
+        elapsedMin: trip?.startedAt ? Math.floor((Date.now() - new Date(trip.startedAt).getTime()) / 60000) : null,
+        gpsTime: new Date(position.timestamp).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" }),
+      } satisfies TrackingMarker;
+    });
+  }, [connectedDrivers, activeTrips, vehicles, venues]);
+
   const tripStats = useMemo(() => {
     const active = trips.filter((tr) => ["EN_ROUTE", "PICKED_UP"].includes(tr.status ?? "")).length;
     const scheduled = trips.filter((tr) => tr.status === "SCHEDULED").length;
@@ -497,9 +539,10 @@ export default function VehiclePositionsPage() {
 
       {/* ── View tabs */}
       <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "6px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
-        <div className="grid gap-2 grid-cols-2">
+        <div className="grid gap-2 grid-cols-3">
           {([
-            { key: "tracking" as const, label: "Tracking en vivo", count: activeTrips.length },
+            { key: "tracking" as const, label: "Tracking de viajes", count: activeTrips.length },
+            { key: "drivers" as const, label: "Conductores en vivo", count: connectedDrivers.length },
             { key: "table" as const, label: "Todos los viajes", count: orderedTrips.length },
           ]).map((tab) => {
             const selected = activeView === tab.key;
@@ -687,6 +730,91 @@ export default function VehiclePositionsPage() {
                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.56 9"/><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="currentColor"/></svg>
                             Sin señal</span>
                         )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* ── Drivers live view */}
+      {activeView === "drivers" && (
+        <section className="space-y-4">
+          {connectedDrivers.length === 0 ? (
+            <div style={{
+              borderRadius: "20px", border: "1px dashed #cbd5e1", background: "#ffffff",
+              padding: "72px 24px", textAlign: "center" as const,
+              boxShadow: "0 1px 4px rgba(15,23,42,0.05)",
+            }}>
+              <span style={{ color: "#cbd5e1", display: "flex", justifyContent: "center", marginBottom: "16px" }}>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              </span>
+              <p style={{ fontWeight: 800, fontSize: "18px", color: "#0f172a" }}>Ningún conductor enviando GPS ahora</p>
+              <p style={{ fontSize: "14px", marginTop: "6px", color: "#64748b" }}>Los conductores aparecerán aquí en cuanto la app reporte posición.</p>
+            </div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "16px", alignItems: "start" }} className="xl:grid-cols-[1fr_340px] md:!grid-cols-1">
+              <div style={{
+                borderRadius: "20px",
+                overflow: "hidden",
+                border: "1px solid #e2e8f0",
+                boxShadow: "0 1px 8px rgba(15,23,42,0.08)",
+                position: "relative",
+              }}>
+                <div style={{ position: "absolute", top: "12px", left: "12px", zIndex: 1000 }}>
+                  <span style={{
+                    display: "inline-flex", alignItems: "center", gap: "6px",
+                    background: "rgba(0,0,0,0.6)", borderRadius: "99px", padding: "5px 12px",
+                    backdropFilter: "blur(6px)",
+                  }}>
+                    <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#21D0B3", animation: "pulse 1.5s infinite", display: "inline-block" }} />
+                    <span style={{ fontSize: "11px", fontWeight: 700, color: "#ffffff", letterSpacing: "0.1em" }}>
+                      {connectedMarkers.length} conductor(es) en línea
+                    </span>
+                  </span>
+                </div>
+                <LiveTrackingMap
+                  markers={connectedMarkers}
+                  height={560}
+                  isDark={false}
+                  selectedTripId={selectedTripId}
+                />
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxHeight: "580px", overflowY: "auto", paddingRight: "2px" }}>
+                {connectedDrivers.map(({ driver, position, ageMs }) => {
+                  const trip = activeTrips.find((t) => t.driverId === driver.id);
+                  const ageSec = Math.floor(ageMs / 1000);
+                  const ageLabel = ageSec < 60 ? `hace ${ageSec}s` : `hace ${Math.floor(ageSec / 60)}m`;
+                  const markerId = trip?.id ?? `driver-${driver.id}`;
+                  return (
+                    <div key={driver.id} style={{
+                      background: selectedTripId === markerId ? "#f0fdfa" : "#ffffff",
+                      border: selectedTripId === markerId ? "2px solid #14b8a6" : "1px solid #e2e8f0",
+                      borderLeft: `4px solid #21D0B3`,
+                      borderRadius: "14px",
+                      padding: "12px 14px",
+                      boxShadow: selectedTripId === markerId ? "0 0 8px rgba(20,184,166,0.3)" : "0 1px 4px rgba(15,23,42,0.06)",
+                      cursor: "pointer",
+                    }}
+                      onClick={() => setSelectedTripId(selectedTripId === markerId ? null : markerId)}
+                    >
+                      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "6px", marginBottom: "6px" }}>
+                        <div style={{ minWidth: 0 }}>
+                          <p style={{ fontSize: "13px", fontWeight: 800, color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {driver.fullName || "Conductor"}
+                          </p>
+                          <p style={{ fontSize: "11px", color: "#64748b", marginTop: "1px" }}>
+                            {trip ? `Viaje: ${STATUS_LABEL[trip.status ?? ""] || trip.status}` : "Sin viaje activo"}
+                          </p>
+                        </div>
+                        <span style={{ fontSize: "10px", color: "#10b981", fontWeight: 700 }}>{ageLabel}</span>
+                      </div>
+                      <div style={{ fontSize: "10px", color: "#94a3b8" }}>
+                        {position.lat.toFixed(5)}, {position.lng.toFixed(5)} · GPS {new Date(position.timestamp).toLocaleTimeString("es-CL")}
                       </div>
                     </div>
                   );
