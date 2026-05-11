@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { loadGoogleMaps, type LatLng } from "@/lib/google-maps";
 
 export type TrackingMarker = {
   tripId: string;
@@ -16,43 +17,38 @@ export type TrackingMarker = {
   gpsTime: string;
 };
 
+export type DestinationPin = {
+  tripId: string;
+  lat: number;
+  lng: number;
+  label: string;
+  accent: string;
+};
+
+export type RoutePath = {
+  tripId: string;
+  path: LatLng[];
+  accent: string;
+};
+
 type Props = {
   markers: TrackingMarker[];
+  destinations?: DestinationPin[];
+  routes?: RoutePath[];
   height?: number;
   isDark?: boolean;
   selectedTripId?: string | null;
 };
 
-const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
-
-function loadGoogleMaps(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (typeof window === "undefined") return;
-    if ((window as any).google?.maps?.Map) { resolve(); return; }
-    const existing = document.getElementById("google-maps-script");
-    if (existing) {
-      existing.addEventListener("load", () => resolve());
-      existing.addEventListener("error", reject);
-      return;
-    }
-    const script = document.createElement("script");
-    script.id = "google-maps-script";
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=places`;
-    script.async = true;
-    script.defer = true;
-    script.onload = () => resolve();
-    script.onerror = reject;
-    document.head.appendChild(script);
-  });
-}
-
 function getInitials(name: string): string {
-  return name
-    .split(" ")
-    .slice(0, 2)
-    .map((w) => w[0] ?? "")
-    .join("")
-    .toUpperCase() || "?";
+  return (
+    name
+      .split(" ")
+      .slice(0, 2)
+      .map((w) => w[0] ?? "")
+      .join("")
+      .toUpperCase() || "?"
+  );
 }
 
 function createDriverCarIcon(initials: string, accent: string): string {
@@ -62,12 +58,9 @@ function createDriverCarIcon(initials: string, accent: string): string {
         <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.35"/>
       </filter>
     </defs>
-    <!-- Pointer -->
     <path d="M32 68 L24 52 L40 52 Z" fill="${accent}" opacity="0.9"/>
-    <!-- Circle background -->
     <circle cx="32" cy="28" r="26" fill="${accent}" filter="url(%23ds)"/>
     <circle cx="32" cy="28" r="23" fill="#062240"/>
-    <!-- Car body -->
     <g transform="translate(14,16)">
       <rect x="4" y="10" width="28" height="11" rx="3" fill="${accent}" opacity="0.9"/>
       <path d="M7 10 L11 3 L25 3 L29 10" fill="${accent}" opacity="0.6"/>
@@ -76,16 +69,38 @@ function createDriverCarIcon(initials: string, accent: string): string {
       <rect x="1" y="13" width="3" height="2" rx="1" fill="#FFD700" opacity="0.8"/>
       <rect x="32" y="13" width="3" height="2" rx="1" fill="#FF4444" opacity="0.8"/>
     </g>
-    <!-- Initials -->
     <text x="32" y="35" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" font-weight="900" fill="#fff" letter-spacing="0.5">${initials}</text>
   </svg>`;
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
-export default function LiveTrackingMap({ markers, height = 560, selectedTripId }: Props) {
+function createDestinationFlagIcon(accent: string): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="44" height="56" viewBox="0 0 44 56">
+    <defs>
+      <filter id="ds2" x="-20%" y="-10%" width="140%" height="130%">
+        <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.3"/>
+      </filter>
+    </defs>
+    <circle cx="22" cy="20" r="18" fill="${accent}" filter="url(%23ds2)"/>
+    <circle cx="22" cy="20" r="15" fill="#fff"/>
+    <path d="M22 52 L17 38 L27 38 Z" fill="${accent}"/>
+    <path d="M14 11 L14 30 M14 11 L28 11 L25 17 L28 23 L14 23" fill="${accent}" stroke="${accent}" stroke-width="2" stroke-linejoin="round"/>
+  </svg>`;
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
+export default function LiveTrackingMap({
+  markers,
+  destinations = [],
+  routes = [],
+  height = 560,
+  selectedTripId,
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const gmMarkersRef = useRef<Record<string, any>>({});
+  const gmDestinationsRef = useRef<Record<string, any>>({});
+  const gmRoutesRef = useRef<Record<string, any>>({});
   const infoWindowRef = useRef<any>(null);
   const didFitRef = useRef(false);
 
@@ -115,13 +130,17 @@ export default function LiveTrackingMap({ markers, height = 560, selectedTripId 
     return () => {
       cancelled = true;
       Object.values(gmMarkersRef.current).forEach((m: any) => m.setMap(null));
+      Object.values(gmDestinationsRef.current).forEach((m: any) => m.setMap(null));
+      Object.values(gmRoutesRef.current).forEach((p: any) => p.setMap(null));
       gmMarkersRef.current = {};
+      gmDestinationsRef.current = {};
+      gmRoutesRef.current = {};
       mapRef.current = null;
       didFitRef.current = false;
     };
   }, []);
 
-  // Update markers
+  // Update driver markers
   useEffect(() => {
     if (!mapRef.current) return;
     const google = (window as any).google;
@@ -129,7 +148,6 @@ export default function LiveTrackingMap({ markers, height = 560, selectedTripId 
 
     const currentIds = new Set(markers.map((m) => m.tripId));
 
-    // Remove stale markers
     Object.keys(gmMarkersRef.current).forEach((id) => {
       if (!currentIds.has(id)) {
         gmMarkersRef.current[id].setMap(null);
@@ -137,16 +155,13 @@ export default function LiveTrackingMap({ markers, height = 560, selectedTripId 
       }
     });
 
-    // Add or update markers
     markers.forEach((m) => {
       const initials = getInitials(m.driverName);
       const pos = { lat: m.lat, lng: m.lng };
 
       if (gmMarkersRef.current[m.tripId]) {
-        // Update existing marker position
         gmMarkersRef.current[m.tripId].setPosition(pos);
       } else {
-        // Create new marker
         const marker = new google.maps.Marker({
           position: pos,
           map: mapRef.current,
@@ -196,10 +211,82 @@ export default function LiveTrackingMap({ markers, height = 560, selectedTripId 
     if (markers.length > 0 && !didFitRef.current) {
       const bounds = new google.maps.LatLngBounds();
       markers.forEach((m) => bounds.extend({ lat: m.lat, lng: m.lng }));
+      destinations.forEach((d) => bounds.extend({ lat: d.lat, lng: d.lng }));
       mapRef.current.fitBounds(bounds, { top: 60, right: 60, bottom: 60, left: 60 });
       didFitRef.current = true;
     }
-  }, [markers]);
+  }, [markers, destinations]);
+
+  // Update destination pins
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const google = (window as any).google;
+    if (!google?.maps) return;
+
+    const currentIds = new Set(destinations.map((d) => d.tripId));
+
+    Object.keys(gmDestinationsRef.current).forEach((id) => {
+      if (!currentIds.has(id)) {
+        gmDestinationsRef.current[id].setMap(null);
+        delete gmDestinationsRef.current[id];
+      }
+    });
+
+    destinations.forEach((d) => {
+      const pos = { lat: d.lat, lng: d.lng };
+      if (gmDestinationsRef.current[d.tripId]) {
+        gmDestinationsRef.current[d.tripId].setPosition(pos);
+      } else {
+        const marker = new google.maps.Marker({
+          position: pos,
+          map: mapRef.current,
+          icon: {
+            url: createDestinationFlagIcon(d.accent),
+            scaledSize: new google.maps.Size(44, 56),
+            anchor: new google.maps.Point(22, 52),
+          },
+          title: d.label,
+          zIndex: 5,
+        });
+        gmDestinationsRef.current[d.tripId] = marker;
+      }
+    });
+  }, [destinations]);
+
+  // Update route polylines
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const google = (window as any).google;
+    if (!google?.maps) return;
+
+    const currentIds = new Set(routes.map((r) => r.tripId));
+
+    Object.keys(gmRoutesRef.current).forEach((id) => {
+      if (!currentIds.has(id)) {
+        gmRoutesRef.current[id].setMap(null);
+        delete gmRoutesRef.current[id];
+      }
+    });
+
+    routes.forEach((r) => {
+      const existing = gmRoutesRef.current[r.tripId];
+      if (existing) {
+        existing.setPath(r.path);
+        existing.setOptions({ strokeColor: r.accent });
+      } else {
+        const polyline = new google.maps.Polyline({
+          path: r.path,
+          map: mapRef.current,
+          geodesic: true,
+          strokeColor: r.accent,
+          strokeOpacity: 0.85,
+          strokeWeight: 5,
+          zIndex: 2,
+        });
+        gmRoutesRef.current[r.tripId] = polyline;
+      }
+    });
+  }, [routes]);
 
   // Highlight selected marker and pan to it
   useEffect(() => {
@@ -218,6 +305,16 @@ export default function LiveTrackingMap({ markers, height = 560, selectedTripId 
         anchor: new google.maps.Point(isSelected ? 40 : 32, isSelected ? 90 : 68),
       });
       gm.setZIndex(isSelected ? 100 : 10);
+    });
+
+    // Emphasize the selected trip's route
+    Object.entries(gmRoutesRef.current).forEach(([tripId, polyline]) => {
+      const isSelected = tripId === selectedTripId;
+      polyline.setOptions({
+        strokeWeight: isSelected ? 7 : 5,
+        strokeOpacity: isSelected ? 1 : 0.6,
+        zIndex: isSelected ? 4 : 2,
+      });
     });
 
     if (selectedTripId) {
