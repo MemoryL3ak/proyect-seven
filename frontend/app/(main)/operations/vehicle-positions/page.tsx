@@ -301,9 +301,48 @@ export default function VehiclePositionsPage() {
     // come through Realtime yet). Kept as a safety net.
     const timer = setInterval(loadData, 30000);
 
+    // Fast position-only refresh — backup for environments where Supabase
+    // Realtime isn't connected, and a snappier feel in the demo. Cheap call:
+    // /vehicle-positions returns small rows.
+    const positionsTimer = setInterval(async () => {
+      try {
+        const data = await apiFetch<PositionItem[]>("/vehicle-positions");
+        const latestByDriver: Record<string, { lat: number; lng: number; timestamp: string }> = {};
+        (data || []).forEach((pos) => {
+          const key = pos.driverId || pos.vehicleId;
+          if (!key) return;
+          const coordinates = (pos.location as any)?.coordinates;
+          const lat = coordinates ? coordinates[1] : (pos.location as any)?.lat;
+          const lng = coordinates ? coordinates[0] : (pos.location as any)?.lng;
+          if (lat === undefined || lng === undefined) return;
+          const current = latestByDriver[key];
+          if (!current || new Date(pos.timestamp) > new Date(current.timestamp)) {
+            latestByDriver[key] = { lat, lng, timestamp: pos.timestamp };
+          }
+        });
+        setPositions((prev) => {
+          // Merge: keep entries that haven't changed, replace those with newer fixes.
+          let changed = false;
+          const next: typeof prev = { ...prev };
+          for (const [key, fresh] of Object.entries(latestByDriver)) {
+            const current = next[key];
+            if (!current || new Date(fresh.timestamp) > new Date(current.timestamp)) {
+              next[key] = fresh;
+              changed = true;
+            }
+          }
+          if (changed) setLastUpdated(new Date());
+          return changed ? next : prev;
+        });
+      } catch {
+        // ignore — next tick will retry.
+      }
+    }, 3000);
+
     return () => {
       supabase.removeChannel(channel);
       clearInterval(timer);
+      clearInterval(positionsTimer);
     };
   }, []);
 

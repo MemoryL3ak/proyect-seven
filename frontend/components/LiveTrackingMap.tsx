@@ -207,8 +207,19 @@ export default function LiveTrackingMap({
       }
     });
 
-    // Fit bounds on first load with data
-    if (markers.length > 0 && !didFitRef.current) {
+    // With a single driver visible, follow them: snap-zoom on first sight,
+    // pan smoothly afterwards so the marker stays centered as they move.
+    if (markers.length === 1) {
+      const m = markers[0];
+      const target = { lat: m.lat, lng: m.lng };
+      if (!didFitRef.current) {
+        mapRef.current.setCenter(target);
+        if (mapRef.current.getZoom() < 15) mapRef.current.setZoom(16);
+        didFitRef.current = true;
+      } else {
+        mapRef.current.panTo(target);
+      }
+    } else if (markers.length > 1 && !didFitRef.current) {
       const bounds = new google.maps.LatLngBounds();
       markers.forEach((m) => bounds.extend({ lat: m.lat, lng: m.lng }));
       destinations.forEach((d) => bounds.extend({ lat: d.lat, lng: d.lng }));
