@@ -10,6 +10,7 @@ import NotificationBell, { useNotifications } from "@/components/NotificationBel
 import TripChat from "@/components/TripChat";
 import AssistanceChat from "@/components/AssistanceChat";
 import DevicePermissionsSection from "@/components/DevicePermissionsSection";
+import TrackingToggle from "@/components/TrackingToggle";
 import PushTokenSync from "@/components/PushTokenSync";
 import QRCode from "qrcode";
 import { buildCredentialHtml } from "@/lib/credential-template";
@@ -1806,6 +1807,9 @@ export default function DriverPortalPage() {
                     })}
                   </div>
                 </div>
+
+                {/* Manual GPS tracking toggle (only visible inside the mobile app) */}
+                <TrackingToggle driverId={driverProfile?.id ?? null} />
 
                 {/* Device permissions (only visible inside the mobile app) */}
                 <DevicePermissionsSection />
