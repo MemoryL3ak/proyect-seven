@@ -3,6 +3,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { isAvailable, on, request } from "@/lib/native-bridge";
 
+type PushState = {
+  lastAttemptAt: number | null;
+  lastSuccessAt: number | null;
+  lastStatus: number | null;
+  lastError: string | null;
+};
 type StartResult = {
   ok: boolean;
   foreground: string;
@@ -11,7 +17,11 @@ type StartResult = {
   immediate: boolean;
   running: boolean;
 };
-type StatusResult = { running: boolean; gpsServices: boolean };
+type StatusResult = {
+  running: boolean;
+  gpsServices: boolean;
+  lastPush?: PushState;
+};
 
 type Props = {
   driverId: string | null;
@@ -21,6 +31,7 @@ export default function TrackingToggle({ driverId }: Props) {
   const [native, setNative] = useState<boolean | null>(null);
   const [running, setRunning] = useState<boolean | null>(null);
   const [gpsServices, setGpsServices] = useState<boolean | null>(null);
+  const [lastPush, setLastPush] = useState<PushState | null>(null);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
 
@@ -36,6 +47,7 @@ export default function TrackingToggle({ driverId }: Props) {
       });
       setRunning(res.running);
       setGpsServices(res.gpsServices);
+      if (res.lastPush) setLastPush(res.lastPush);
     } catch {
       setRunning(false);
       setGpsServices(null);
@@ -55,6 +67,7 @@ export default function TrackingToggle({ driverId }: Props) {
       if (!data) return;
       if (typeof data.running === "boolean") setRunning(data.running);
       if (typeof data.gpsServices === "boolean") setGpsServices(data.gpsServices);
+      if (data.lastPush) setLastPush(data.lastPush);
     });
     return () => off();
   }, []);
@@ -270,6 +283,44 @@ export default function TrackingToggle({ driverId }: Props) {
           >
             {feedback}
           </p>
+        )}
+        {lastPush && (lastPush.lastAttemptAt || lastPush.lastError) && (
+          <div
+            style={{
+              marginTop: 10,
+              padding: "8px 10px",
+              borderRadius: 8,
+              background: lastPush.lastError ? "rgba(239,68,68,0.08)" : "#f8fafc",
+              border: `1px solid ${
+                lastPush.lastError ? "rgba(239,68,68,0.25)" : "#e2e8f0"
+              }`,
+              fontSize: 11,
+              lineHeight: 1.5,
+              color: lastPush.lastError ? "#991b1b" : "#475569",
+            }}
+          >
+            <p style={{ margin: 0, fontWeight: 700 }}>
+              Diagnóstico de red
+            </p>
+            <p style={{ margin: "2px 0 0" }}>
+              Último intento:{" "}
+              {lastPush.lastAttemptAt
+                ? new Date(lastPush.lastAttemptAt).toLocaleTimeString("es-CL")
+                : "—"}
+            </p>
+            <p style={{ margin: "2px 0 0" }}>
+              Último envío OK:{" "}
+              {lastPush.lastSuccessAt
+                ? new Date(lastPush.lastSuccessAt).toLocaleTimeString("es-CL")
+                : "—"}
+            </p>
+            {lastPush.lastError && (
+              <p style={{ margin: "2px 0 0" }}>
+                Error: <strong>{lastPush.lastError}</strong>
+                {lastPush.lastStatus ? ` (HTTP ${lastPush.lastStatus})` : ""}
+              </p>
+            )}
+          </div>
         )}
       </div>
     </div>
