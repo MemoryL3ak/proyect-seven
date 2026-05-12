@@ -1,16 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { isAvailable, request } from "@/lib/native-bridge";
+import { isAvailable, on, request } from "@/lib/native-bridge";
 
 type StartResult = {
   ok: boolean;
   foreground: string;
   background: string;
+  gpsServices: boolean;
   immediate: boolean;
   running: boolean;
 };
-type StatusResult = { running: boolean };
+type StatusResult = { running: boolean; gpsServices: boolean };
 
 type Props = {
   driverId: string | null;
@@ -19,6 +20,7 @@ type Props = {
 export default function TrackingToggle({ driverId }: Props) {
   const [native, setNative] = useState<boolean | null>(null);
   const [running, setRunning] = useState<boolean | null>(null);
+  const [gpsServices, setGpsServices] = useState<boolean | null>(null);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
 
@@ -33,14 +35,29 @@ export default function TrackingToggle({ driverId }: Props) {
         timeoutMs: 3000,
       });
       setRunning(res.running);
+      setGpsServices(res.gpsServices);
     } catch {
       setRunning(false);
+      setGpsServices(null);
     }
   }, []);
 
   useEffect(() => {
     void refreshStatus();
   }, [refreshStatus]);
+
+  // The native shell pings us when the OS GPS toggle flips so the chip
+  // updates without waiting for the next tracking.status round-trip.
+  useEffect(() => {
+    if (!isAvailable()) return;
+    const off = on("tracking.statusChanged", (payload) => {
+      const data = payload as Partial<StatusResult> | undefined;
+      if (!data) return;
+      if (typeof data.running === "boolean") setRunning(data.running);
+      if (typeof data.gpsServices === "boolean") setGpsServices(data.gpsServices);
+    });
+    return () => off();
+  }, []);
 
   const handleStart = async () => {
     if (!driverId) {
@@ -55,12 +72,19 @@ export default function TrackingToggle({ driverId }: Props) {
         { driverId },
         { timeoutMs: 30_000 },
       );
+      setGpsServices(res.gpsServices);
       if (!res.ok) {
-        setFeedback(
-          res.foreground !== "granted"
-            ? "Tenés que aceptar el permiso de ubicación primero."
-            : "No se pudo iniciar el tracking.",
-        );
+        if (res.foreground !== "granted") {
+          setFeedback(
+            "Tenés que aceptar el permiso de ubicación. Si te aparece bloqueado, abrí Ajustes de la app.",
+          );
+        } else if (!res.gpsServices) {
+          setFeedback(
+            "El GPS del sistema está apagado. Activalo en el panel desplegable o tocá de nuevo para que aparezca el diálogo.",
+          );
+        } else {
+          setFeedback("No se pudo iniciar el tracking.");
+        }
         setRunning(false);
         return;
       }
@@ -100,6 +124,33 @@ export default function TrackingToggle({ driverId }: Props) {
   if (native === false) return null;
 
   const isOn = running === true;
+  const gpsOff = gpsServices === false;
+  const transmitting = isOn && gpsServices === true;
+
+  let chipLabel: string;
+  let chipBg: string;
+  let chipColor: string;
+  if (transmitting) {
+    chipLabel = "● Transmitiendo";
+    chipBg = "rgba(33,208,179,0.14)";
+    chipColor = "#0a7a6b";
+  } else if (isOn && gpsOff) {
+    chipLabel = "GPS apagado";
+    chipBg = "rgba(234,179,8,0.16)";
+    chipColor = "#92400e";
+  } else {
+    chipLabel = "Inactivo";
+    chipBg = "#f1f5f9";
+    chipColor = "#64748b";
+  }
+
+  const btnLabel = busy
+    ? "Procesando…"
+    : isOn
+      ? "Detener tracking"
+      : gpsOff
+        ? "Activar GPS y enviar ubicación"
+        : "Activar GPS y enviar ubicación";
 
   return (
     <div
@@ -147,11 +198,11 @@ export default function TrackingToggle({ driverId }: Props) {
             fontWeight: 700,
             padding: "3px 8px",
             borderRadius: 6,
-            background: isOn ? "rgba(33,208,179,0.14)" : "#f1f5f9",
-            color: isOn ? "#0a7a6b" : "#64748b",
+            background: chipBg,
+            color: chipColor,
           }}
         >
-          {isOn ? "● Activo" : "Inactivo"}
+          {chipLabel}
         </span>
       </div>
 
@@ -165,40 +216,55 @@ export default function TrackingToggle({ driverId }: Props) {
           }}
         >
           Tocá el botón para activar el GPS y empezar a enviar tu posición en
-          tiempo real. La app va a pedirte permiso de ubicación si no lo aceptaste
-          antes.
+          tiempo real. La app va a pedirte permiso de ubicación y, si hace
+          falta, te va a mostrar el diálogo para encender el GPS sin salir.
         </p>
+        {isOn && gpsOff && (
+          <p
+            style={{
+              margin: "0 0 10px",
+              padding: "8px 10px",
+              borderRadius: 8,
+              background: "rgba(234,179,8,0.12)",
+              border: "1px solid rgba(234,179,8,0.35)",
+              fontSize: 11.5,
+              color: "#92400e",
+              lineHeight: 1.45,
+            }}
+          >
+            El tracking está armado pero el GPS del sistema está apagado. No se
+            están enviando posiciones al admin. Tocá el botón para que el
+            sistema te pida encenderlo.
+          </p>
+        )}
         <button
           type="button"
           disabled={busy || !driverId}
-          onClick={isOn ? handleStop : handleStart}
+          onClick={isOn && !gpsOff ? handleStop : handleStart}
           style={{
             width: "100%",
             padding: "12px 16px",
             borderRadius: 10,
             border: "none",
-            background: isOn
-              ? "#fee2e2"
-              : "linear-gradient(135deg,#21D0B3,#14AE98)",
-            color: isOn ? "#b91c1c" : "#fff",
+            background:
+              isOn && !gpsOff
+                ? "#fee2e2"
+                : "linear-gradient(135deg,#21D0B3,#14AE98)",
+            color: isOn && !gpsOff ? "#b91c1c" : "#fff",
             fontSize: 13,
             fontWeight: 700,
             cursor: busy ? "wait" : "pointer",
             opacity: busy ? 0.7 : 1,
           }}
         >
-          {busy
-            ? "Procesando…"
-            : isOn
-              ? "Detener tracking"
-              : "Activar GPS y enviar ubicación"}
+          {isOn && !gpsOff ? "Detener tracking" : btnLabel}
         </button>
         {feedback && (
           <p
             style={{
               margin: "10px 0 0",
               fontSize: 11.5,
-              color: isOn ? "#0a7a6b" : "#475569",
+              color: transmitting ? "#0a7a6b" : "#475569",
               lineHeight: 1.5,
             }}
           >

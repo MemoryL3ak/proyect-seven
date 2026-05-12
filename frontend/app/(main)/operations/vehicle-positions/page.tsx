@@ -122,6 +122,10 @@ export default function VehiclePositionsPage() {
   const [delegations, setDelegations] = useState<Record<string, DelegationItem>>({});
   const [venues, setVenues] = useState<Record<string, VenueItem>>({});
   const [positions, setPositions] = useState<Record<string, { lat: number; lng: number; timestamp: string }>>({});
+  // Drives recomputation of the recency window (`connectedDrivers`, "Con GPS")
+  // even when no fresh positions arrive — otherwise a driver that stops
+  // pushing would stay on the live tab forever.
+  const [nowTick, setNowTick] = useState(() => Date.now());
   const [completedAlerts, setCompletedAlerts] = useState<Array<{ tripId: string; driverName: string; destination: string; ts: Date }>>([]);
   const [activeView, setActiveView] = useState<"live" | "table">("live");
   const [destinationCoords, setDestinationCoords] = useState<Record<string, LatLng>>({});
@@ -129,6 +133,9 @@ export default function VehiclePositionsPage() {
   const [tripRouteMeta, setTripRouteMeta] = useState<Record<string, { distanceKm: number; durationMin: number }>>({});
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  // Only the very first load should blank the KPIs to "—". Subsequent
+  // refreshes keep the previous values on screen to avoid flicker.
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const knownActiveIdsRef = useRef<Set<string>>(new Set());
@@ -248,6 +255,7 @@ export default function VehiclePositionsPage() {
       setPositions(latestByDriver);
 
       setLastUpdated(new Date());
+      setHasLoadedOnce(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("No se pudo cargar"));
     } finally {
@@ -339,10 +347,15 @@ export default function VehiclePositionsPage() {
       }
     }, 3000);
 
+    // Heartbeat — re-evaluates the 15s recency window so a driver who stops
+    // pushing is moved out of "Con GPS" within ~3s of crossing the threshold.
+    const tickTimer = setInterval(() => setNowTick(Date.now()), 3000);
+
     return () => {
       supabase.removeChannel(channel);
       clearInterval(timer);
       clearInterval(positionsTimer);
+      clearInterval(tickTimer);
     };
   }, []);
 
@@ -447,21 +460,24 @@ export default function VehiclePositionsPage() {
       .filter((r): r is RoutePath => r !== null);
   }, [activeTripsForRoutes, tripRoutes]);
 
-  // Drivers with a GPS fix in the last 5 min — treat them as "connected" for
-  // the live view regardless of whether they have an active trip.
+  // Drivers with a GPS fix in the last 15 s — treat them as "connected" for
+  // the live view regardless of whether they have an active trip. We push
+  // every 3s, so 15s tolerates 4-5 dropped requests before evicting; that
+  // keeps the map clean when a driver disconnects or kills the app.
   const connectedDrivers = useMemo(() => {
-    const cutoff = Date.now() - 5 * 60 * 1000;
+    const cutoff = nowTick - 15 * 1000;
     return Object.entries(positions)
       .map(([driverId, pos]) => {
         const driver = drivers[driverId];
         if (!driver) return null;
-        const ageMs = Date.now() - new Date(pos.timestamp).getTime();
-        if (Number.isNaN(ageMs) || new Date(pos.timestamp).getTime() < cutoff) return null;
+        const ts = new Date(pos.timestamp).getTime();
+        const ageMs = nowTick - ts;
+        if (Number.isNaN(ageMs) || ts < cutoff) return null;
         return { driver, position: pos, ageMs };
       })
       .filter((x): x is { driver: DriverItem; position: { lat: number; lng: number; timestamp: string }; ageMs: number } => x !== null)
       .sort((a, b) => a.ageMs - b.ageMs);
-  }, [positions, drivers]);
+  }, [positions, drivers, nowTick]);
 
   const connectedMarkers = useMemo<TrackingMarker[]>(() => {
     return connectedDrivers.map(({ driver, position }) => {
@@ -493,21 +509,15 @@ export default function VehiclePositionsPage() {
     const active = trips.filter((tr) => ["EN_ROUTE", "PICKED_UP"].includes(tr.status ?? "")).length;
     const scheduled = trips.filter((tr) => tr.status === "SCHEDULED").length;
     const completed = trips.filter((tr) => ["COMPLETED", "DROPPED_OFF"].includes(tr.status ?? "")).length;
-    // Only count drivers with a FRESH GPS fix (last 5 min) — historical rows
-    // in vehicle_positions would otherwise mark every old driver as "Con GPS".
-    const cutoff = Date.now() - 5 * 60 * 1000;
-    const activeDriverIds = new Set(
-      trips
-        .filter((tr) => ["EN_ROUTE", "PICKED_UP"].includes(tr.status ?? ""))
-        .map((tr) => tr.driverId)
-        .filter(Boolean)
-    );
-    const withPosition = Object.entries(positions).filter(([id, p]) => {
-      if (!activeDriverIds.has(id)) return false;
-      return new Date(p.timestamp).getTime() >= cutoff;
-    }).length;
+    // Only count drivers with a FRESH GPS fix (last 30 s) — historical rows
+    // in vehicle_positions would otherwise mark every old driver as "Con GPS",
+    // and a driver who disabled GPS mid-trip would still show as live.
+    // "Con GPS" = any driver whose last fix is within the live recency
+    // window, regardless of trip state. A driver can be transmitting
+    // before/after a trip and still deserves to be counted.
+    const withPosition = connectedDrivers.length;
     return { active, scheduled, completed, withPosition, total: trips.length };
-  }, [trips, positions]);
+  }, [trips, connectedDrivers]);
 
   const resolveDelegations = (trip: Trip) => {
     const ids = (trip.athleteIds || [])
@@ -642,7 +652,7 @@ export default function VehiclePositionsPage() {
                 <span style={{ fontSize: "10px", color: pal.chipLabel, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em" }}>{stat.label}</span>
               </div>
               <p style={{ fontSize: "1.5rem", fontWeight: 800, color: stat.color, lineHeight: 1 }}>
-                {loading ? "—" : stat.value}
+                {hasLoadedOnce ? stat.value : "—"}
               </p>
             </div>
           ))}
