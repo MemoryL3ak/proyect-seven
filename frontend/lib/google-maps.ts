@@ -132,6 +132,44 @@ export function haversineMeters(a: LatLng, b: LatLng): number {
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
+// ---- Snap to Roads ------------------------------------------------------
+
+// Snaps a sequence of GPS fixes onto the nearest road network. Used to
+// clean up live tracking trails — raw GPS in cities has ±20-50m of jitter
+// so the marker path "jumps between houses". This rewrites the path onto
+// the actual streets the driver is following.
+//
+// `interpolate=true` asks Google to also fill in road segments between
+// successive points, which gives a continuous line even when the GPS
+// fixes are spaced several seconds apart.
+//
+// Roads API limit: max 100 points per request. We never send more.
+// Cost: ~$10 per 1000 requests; caller should debounce.
+export async function snapToRoads(points: LatLng[]): Promise<LatLng[] | null> {
+  if (points.length === 0) return null;
+  const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  if (!key) return null;
+  const trimmed = points.slice(-100);
+  const path = trimmed.map((p) => `${p.lat},${p.lng}`).join("|");
+  const url = `https://roads.googleapis.com/v1/snapToRoads?path=${encodeURIComponent(path)}&interpolate=true&key=${key}`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = (await res.json()) as {
+      snappedPoints?: Array<{ location: { latitude: number; longitude: number } }>;
+    };
+    if (!data.snappedPoints || data.snappedPoints.length === 0) return null;
+    return data.snappedPoints.map((p) => ({
+      lat: p.location.latitude,
+      lng: p.location.longitude,
+    }));
+  } catch {
+    return null;
+  }
+}
+
+// ---- Directions ---------------------------------------------------------
+
 // Returns route from origin to destination. Cached by `key` (e.g. tripId).
 // If `origin` has drifted more than ~250m from the cached origin we drop the
 // cache so the polyline keeps tracking the driver as they move.

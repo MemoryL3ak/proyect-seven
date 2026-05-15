@@ -376,22 +376,12 @@ export default function LiveTrackingMap({
           path: t.path,
           map: mapRef.current,
           geodesic: true,
-          strokeOpacity: 0,
-          // Dashed style via repeated dot icons — Google's standard
-          // recipe for "follow-the-bouncing-ball" polylines.
-          icons: [
-            {
-              icon: {
-                path: google.maps.SymbolPath.CIRCLE,
-                fillOpacity: 1,
-                fillColor: t.accent,
-                strokeOpacity: 0,
-                scale: 3,
-              },
-              offset: '0',
-              repeat: '14px',
-            },
-          ],
+          strokeColor: t.accent,
+          // Solid stroke, slightly thinner than the Directions route so
+          // the suggested path still reads as the "plan" and the trail
+          // as "actual travelled".
+          strokeOpacity: 0.95,
+          strokeWeight: 4,
           zIndex: 1,
         });
         gmTrailsRef.current[t.tripId] = polyline;

@@ -12,7 +12,7 @@ import type {
   TrackingMarker,
   TrailPath,
 } from "@/components/LiveTrackingMap";
-import { geocodeAddress, getDirections, type LatLng } from "@/lib/google-maps";
+import { geocodeAddress, getDirections, snapToRoads, type LatLng } from "@/lib/google-maps";
 
 const LiveTrackingMap = dynamic(() => import("@/components/LiveTrackingMap"), { ssr: false });
 
@@ -141,6 +141,10 @@ export default function VehiclePositionsPage() {
   // bloat memory; drivers that drop off the map get their trail cleared
   // alongside their position entry.
   const [trails, setTrails] = useState<Record<string, { lat: number; lng: number }[]>>({});
+  // Same path but rewritten by Google's Roads API so the line follows
+  // streets instead of jumping between houses from GPS jitter. Falls
+  // back to the raw trail when the snap call fails or the key isn't set.
+  const [snappedTrails, setSnappedTrails] = useState<Record<string, LatLng[]>>({});
   const TRAIL_LIMIT = 200;
   // Minimum movement (in degrees, ~3m at the equator) to append a new
   // point to the trail. Filters out GPS jitter while parked so the line
@@ -458,6 +462,41 @@ export default function VehiclePositionsPage() {
     });
   }, [positions]);
 
+  // Periodically rewrite each driver's raw trail onto the real road
+  // network. Runs every 8s — Roads API costs ~$0.01 per call so doing
+  // it on every fix would be wasteful, and a few seconds of "raw" trail
+  // tail is invisible alongside the marker animation. Skips drivers
+  // whose raw trail hasn't grown since the last snap to avoid pointless
+  // calls.
+  const lastSnappedLengthRef = useRef<Record<string, number>>({});
+  useEffect(() => {
+    let cancelled = false;
+    const snap = async () => {
+      for (const [driverId, raw] of Object.entries(trails)) {
+        if (cancelled) return;
+        if (raw.length < 2) continue;
+        const prevLen = lastSnappedLengthRef.current[driverId] ?? 0;
+        if (raw.length === prevLen) continue;
+        // Send the last 80 points (under the API's 100 cap) so we keep
+        // the historical part stable but still extend the snapped line
+        // as new fixes come in.
+        const window = raw.slice(-80);
+        const snapped = await snapToRoads(window);
+        if (cancelled) return;
+        if (snapped && snapped.length > 0) {
+          setSnappedTrails((prev) => ({ ...prev, [driverId]: snapped }));
+          lastSnappedLengthRef.current[driverId] = raw.length;
+        }
+      }
+    };
+    void snap();
+    const timer = setInterval(snap, 8000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [trails]);
+
   const activeTripsForRoutes = useMemo(
     () => trips.filter((t) => ["EN_ROUTE", "PICKED_UP"].includes(t.status ?? "")),
     [trips],
@@ -598,7 +637,12 @@ export default function VehiclePositionsPage() {
   const liveTrails = useMemo<TrailPath[]>(() => {
     return trackedDrivers
       .map(({ driver, online }) => {
-        const path = trails[driver.id];
+        // Prefer the snapped version when we have one — it follows the
+        // actual streets. Fall back to the raw trail until Roads API
+        // catches up on the first cycle.
+        const snapped = snappedTrails[driver.id];
+        const raw = trails[driver.id];
+        const path = snapped && snapped.length >= 2 ? snapped : raw;
         if (!path || path.length < 2) return null;
         const trip = activeTrips.find((t) => t.driverId === driver.id);
         const tripId = trip?.id ?? `driver-${driver.id}`;
@@ -608,7 +652,7 @@ export default function VehiclePositionsPage() {
         return { tripId, path, accent } satisfies TrailPath;
       })
       .filter((t): t is TrailPath => t !== null);
-  }, [trackedDrivers, trails, activeTrips]);
+  }, [trackedDrivers, trails, snappedTrails, activeTrips]);
 
   const trackedMarkers = useMemo<TrackingMarker[]>(() => {
     return trackedDrivers.map(({ driver, position, online }) => {
