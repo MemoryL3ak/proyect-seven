@@ -65,7 +65,20 @@ type PositionItem = {
   vehicleId?: string;
   driverId?: string;
   timestamp: string;
+  // Server-side wall-clock time when the row was persisted. We prefer this
+  // over `timestamp` for online/offline decisions because device clocks can
+  // be skewed (Venezuela field test had a phone 32 min behind server time).
+  createdAt?: string;
   location?: { coordinates?: [number, number] } | { lat?: number; lng?: number };
+};
+
+type StoredPosition = {
+  lat: number;
+  lng: number;
+  // Device clock — shown to the user as "GPS hh:mm".
+  timestamp: string;
+  // Server clock — drives the green/red online state.
+  receivedAt: string;
 };
 
 const statusLabel: Record<string, string> = {
@@ -121,7 +134,7 @@ export default function VehiclePositionsPage() {
   const [athletes, setAthletes] = useState<Record<string, AthleteItem>>({});
   const [delegations, setDelegations] = useState<Record<string, DelegationItem>>({});
   const [venues, setVenues] = useState<Record<string, VenueItem>>({});
-  const [positions, setPositions] = useState<Record<string, { lat: number; lng: number; timestamp: string }>>({});
+  const [positions, setPositions] = useState<Record<string, StoredPosition>>({});
   // Drives recomputation of the recency window (`connectedDrivers`, "Con GPS")
   // even when no fresh positions arrive — otherwise a driver that stops
   // pushing would stay on the live tab forever.
@@ -239,7 +252,7 @@ export default function VehiclePositionsPage() {
         }, {})
       );
 
-      const latestByDriver: Record<string, { lat: number; lng: number; timestamp: string }> = {};
+      const latestByDriver: Record<string, StoredPosition> = {};
       (positionData || []).forEach((pos) => {
         const key = pos.driverId || pos.vehicleId;
         if (!key) return;
@@ -247,20 +260,23 @@ export default function VehiclePositionsPage() {
         const lat = coordinates ? coordinates[1] : (pos.location as any)?.lat;
         const lng = coordinates ? coordinates[0] : (pos.location as any)?.lng;
         if (lat === undefined || lng === undefined) return;
+        const receivedAt = pos.createdAt || pos.timestamp;
         const current = latestByDriver[key];
-        if (!current || new Date(pos.timestamp) > new Date(current.timestamp)) {
-          latestByDriver[key] = { lat, lng, timestamp: pos.timestamp };
+        if (!current || new Date(receivedAt) > new Date(current.receivedAt)) {
+          latestByDriver[key] = { lat, lng, timestamp: pos.timestamp, receivedAt };
         }
       });
       // Merge: realtime can deliver a fresh row in the gap between request
       // start and request end — replacing the whole map would lose it. Keep
       // any in-memory entry that is newer than what /vehicle-positions
-      // returned for that driver.
+      // returned for that driver. We compare server `receivedAt`, not device
+      // `timestamp` — a phone with a skewed clock could otherwise overwrite
+      // a fresh fix with an "older-looking" one that's actually newer.
       setPositions((prev) => {
         const next: typeof prev = { ...latestByDriver };
         for (const [key, fresh] of Object.entries(prev)) {
           const incoming = next[key];
-          if (!incoming || new Date(fresh.timestamp) > new Date(incoming.timestamp)) {
+          if (!incoming || new Date(fresh.receivedAt) > new Date(incoming.receivedAt)) {
             next[key] = fresh;
           }
         }
@@ -297,20 +313,38 @@ export default function VehiclePositionsPage() {
             driver_id: string;
             vehicle_id: string | null;
             timestamp: string;
-            lat: number | null;
-            lng: number | null;
+            created_at: string;
+            // PostGIS columns arrive as WKB hex over realtime — we can't
+            // decode them client-side. We extract coordinates from the JSON
+            // representation if Supabase sends one, otherwise we wait for
+            // the next polling cycle (which uses ST_AsGeoJSON server-side).
+            location?: unknown;
+            lat?: number | null;
+            lng?: number | null;
           };
-          if (row.lat == null || row.lng == null) return;
+          // Accept either the dedicated lat/lng columns (older schema) or
+          // a GeoJSON location payload (newer paths).
+          let lat: number | null = row.lat ?? null;
+          let lng: number | null = row.lng ?? null;
+          if ((lat == null || lng == null) && row.location && typeof row.location === 'object') {
+            const coords = (row.location as { coordinates?: [number, number] }).coordinates;
+            if (coords && Array.isArray(coords)) {
+              lng = coords[0];
+              lat = coords[1];
+            }
+          }
+          if (lat == null || lng == null) return;
           const key = row.driver_id || row.vehicle_id;
           if (!key) return;
+          const receivedAt = row.created_at || row.timestamp;
           setPositions((prev) => {
             const current = prev[key];
-            if (current && new Date(row.timestamp) <= new Date(current.timestamp)) {
+            if (current && new Date(receivedAt) <= new Date(current.receivedAt)) {
               return prev;
             }
             return {
               ...prev,
-              [key]: { lat: row.lat!, lng: row.lng!, timestamp: row.timestamp },
+              [key]: { lat: lat!, lng: lng!, timestamp: row.timestamp, receivedAt },
             };
           });
           setLastUpdated(new Date());
@@ -328,7 +362,7 @@ export default function VehiclePositionsPage() {
     const positionsTimer = setInterval(async () => {
       try {
         const data = await apiFetch<PositionItem[]>("/vehicle-positions");
-        const latestByDriver: Record<string, { lat: number; lng: number; timestamp: string }> = {};
+        const latestByDriver: Record<string, StoredPosition> = {};
         (data || []).forEach((pos) => {
           const key = pos.driverId || pos.vehicleId;
           if (!key) return;
@@ -336,18 +370,21 @@ export default function VehiclePositionsPage() {
           const lat = coordinates ? coordinates[1] : (pos.location as any)?.lat;
           const lng = coordinates ? coordinates[0] : (pos.location as any)?.lng;
           if (lat === undefined || lng === undefined) return;
+          const receivedAt = pos.createdAt || pos.timestamp;
           const current = latestByDriver[key];
-          if (!current || new Date(pos.timestamp) > new Date(current.timestamp)) {
-            latestByDriver[key] = { lat, lng, timestamp: pos.timestamp };
+          if (!current || new Date(receivedAt) > new Date(current.receivedAt)) {
+            latestByDriver[key] = { lat, lng, timestamp: pos.timestamp, receivedAt };
           }
         });
         setPositions((prev) => {
-          // Merge: keep entries that haven't changed, replace those with newer fixes.
+          // Merge: keep entries that haven't changed, replace those with newer
+          // fixes. Comparison uses server `receivedAt` so a skewed device
+          // clock can't make an actually-newer fix look "older".
           let changed = false;
           const next: typeof prev = { ...prev };
           for (const [key, fresh] of Object.entries(latestByDriver)) {
             const current = next[key];
-            if (!current || new Date(fresh.timestamp) > new Date(current.timestamp)) {
+            if (!current || new Date(fresh.receivedAt) > new Date(current.receivedAt)) {
               next[key] = fresh;
               changed = true;
             }
@@ -358,11 +395,12 @@ export default function VehiclePositionsPage() {
       } catch {
         // ignore — next tick will retry.
       }
-    }, 3000);
+    }, 2000);
 
-    // Heartbeat — re-evaluates the 15s recency window so a driver who stops
-    // pushing is moved out of "Con GPS" within ~3s of crossing the threshold.
-    const tickTimer = setInterval(() => setNowTick(Date.now()), 3000);
+    // Heartbeat — re-evaluates the 15s recency window every second so a
+    // driver who stops pushing flips to red within ~1s of crossing the
+    // threshold. Cheap: only re-runs the trackedDrivers memo.
+    const tickTimer = setInterval(() => setNowTick(Date.now()), 1000);
 
     return () => {
       supabase.removeChannel(channel);
@@ -484,14 +522,17 @@ export default function VehiclePositionsPage() {
       .map(([driverId, pos]) => {
         const driver = drivers[driverId];
         if (!driver) return null;
-        const ts = new Date(pos.timestamp).getTime();
+        // Use server `receivedAt` for recency — device clocks can be skewed
+        // (field test had a phone 32 min behind, which made every marker
+        // look "old" and stuck red even while positions kept arriving).
+        const ts = new Date(pos.receivedAt).getTime();
         if (Number.isNaN(ts) || ts < staleCutoff) return null;
         const ageMs = nowTick - ts;
         const online = ts >= onlineCutoff;
         return { driver, position: pos, ageMs, online };
       })
       .filter(
-        (x): x is { driver: DriverItem; position: { lat: number; lng: number; timestamp: string }; ageMs: number; online: boolean } =>
+        (x): x is { driver: DriverItem; position: StoredPosition; ageMs: number; online: boolean } =>
           x !== null,
       )
       .sort((a, b) => (Number(b.online) - Number(a.online)) || a.ageMs - b.ageMs);

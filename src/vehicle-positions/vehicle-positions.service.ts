@@ -130,11 +130,39 @@ export class VehiclePositionsService {
     return this.toEntity(data as VehiclePositionRow);
   }
 
+  // Returns only the latest fix per driver, within the recent window.
+  // The admin polls this every 1-3s; returning the full history (tens of
+  // thousands of rows) was the main cause of perceived "non-realtime" lag
+  // during field testing — most of the time was serialization + transport,
+  // not DB work.
   async findAll() {
     try {
-      return await this.vehiclePositionRepository.find({
-        order: { timestamp: 'DESC' },
-      });
+      const rows = await this.vehiclePositionRepository.query(
+        `SELECT DISTINCT ON (driver_id)
+           id,
+           event_id,
+           vehicle_id,
+           driver_id,
+           "timestamp",
+           ST_AsGeoJSON(location)::json AS location,
+           speed,
+           heading,
+           created_at
+         FROM telemetry.vehicle_positions
+         WHERE created_at > NOW() - INTERVAL '30 minutes'
+         ORDER BY driver_id, "timestamp" DESC`,
+      );
+      return rows.map((row: VehiclePositionRow) => ({
+        id: row.id,
+        eventId: row.event_id,
+        vehicleId: row.vehicle_id,
+        driverId: row.driver_id,
+        timestamp: new Date(row.timestamp),
+        location: row.location,
+        speed: row.speed,
+        heading: row.heading,
+        createdAt: new Date(row.created_at),
+      }));
     } catch (error) {
       throw new InternalServerErrorException(
         error instanceof Error
