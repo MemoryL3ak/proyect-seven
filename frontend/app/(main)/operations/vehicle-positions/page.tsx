@@ -10,6 +10,7 @@ import type {
   DestinationPin,
   RoutePath,
   TrackingMarker,
+  TrailPath,
 } from "@/components/LiveTrackingMap";
 import { geocodeAddress, getDirections, type LatLng } from "@/lib/google-maps";
 
@@ -135,6 +136,16 @@ export default function VehiclePositionsPage() {
   const [delegations, setDelegations] = useState<Record<string, DelegationItem>>({});
   const [venues, setVenues] = useState<Record<string, VenueItem>>({});
   const [positions, setPositions] = useState<Record<string, StoredPosition>>({});
+  // Per-driver breadcrumb trail of where they've actually been since the
+  // admin opened the page. Capped per driver so a long session doesn't
+  // bloat memory; drivers that drop off the map get their trail cleared
+  // alongside their position entry.
+  const [trails, setTrails] = useState<Record<string, { lat: number; lng: number }[]>>({});
+  const TRAIL_LIMIT = 200;
+  // Minimum movement (in degrees, ~3m at the equator) to append a new
+  // point to the trail. Filters out GPS jitter while parked so the line
+  // doesn't look like a static blob.
+  const TRAIL_MIN_DELTA = 0.00003;
   // Drives recomputation of the recency window (`connectedDrivers`, "Con GPS")
   // even when no fresh positions arrive — otherwise a driver that stops
   // pushing would stay on the live tab forever.
@@ -410,6 +421,43 @@ export default function VehiclePositionsPage() {
     };
   }, []);
 
+  // Append new positions to the per-driver trail. Runs whenever `positions`
+  // changes; only writes when the new fix is noticeably different from the
+  // last trail point to keep the line clean. Also drops trails for drivers
+  // who no longer have a current position (their session ended).
+  useEffect(() => {
+    setTrails((prev) => {
+      let changed = false;
+      const next: Record<string, { lat: number; lng: number }[]> = {};
+      for (const [driverId, pos] of Object.entries(positions)) {
+        const existing = prev[driverId] ?? [];
+        const last = existing[existing.length - 1];
+        const moved =
+          !last ||
+          Math.abs(last.lat - pos.lat) > TRAIL_MIN_DELTA ||
+          Math.abs(last.lng - pos.lng) > TRAIL_MIN_DELTA;
+        if (moved) {
+          const appended = [...existing, { lat: pos.lat, lng: pos.lng }];
+          next[driverId] = appended.length > TRAIL_LIMIT
+            ? appended.slice(appended.length - TRAIL_LIMIT)
+            : appended;
+          changed = true;
+        } else {
+          next[driverId] = existing;
+        }
+      }
+      // Drop trails for drivers that fell off the positions map (stale).
+      for (const driverId of Object.keys(prev)) {
+        if (!positions[driverId]) {
+          changed = true;
+          continue;
+        }
+        if (!next[driverId]) next[driverId] = prev[driverId];
+      }
+      return changed ? next : prev;
+    });
+  }, [positions]);
+
   const activeTripsForRoutes = useMemo(
     () => trips.filter((t) => ["EN_ROUTE", "PICKED_UP"].includes(t.status ?? "")),
     [trips],
@@ -543,6 +591,24 @@ export default function VehiclePositionsPage() {
     () => trackedDrivers.filter((d) => d.online),
     [trackedDrivers],
   );
+
+  // Build the per-driver breadcrumb trails to render under the markers.
+  // We use the active trip id when there is one (so the polyline keys
+  // match the markers), otherwise the synthetic `driver-${id}` key.
+  const liveTrails = useMemo<TrailPath[]>(() => {
+    return trackedDrivers
+      .map(({ driver, online }) => {
+        const path = trails[driver.id];
+        if (!path || path.length < 2) return null;
+        const trip = activeTrips.find((t) => t.driverId === driver.id);
+        const tripId = trip?.id ?? `driver-${driver.id}`;
+        // Trail color follows the marker so the visual story stays
+        // consistent: green while connected, red while in the no-signal state.
+        const accent = online ? "#10b981" : "#ef4444";
+        return { tripId, path, accent } satisfies TrailPath;
+      })
+      .filter((t): t is TrailPath => t !== null);
+  }, [trackedDrivers, trails, activeTrips]);
 
   const trackedMarkers = useMemo<TrackingMarker[]>(() => {
     return trackedDrivers.map(({ driver, position, online }) => {
@@ -841,6 +907,7 @@ export default function VehiclePositionsPage() {
                 markers={trackedMarkers}
                 destinations={liveDestinations}
                 routes={liveRoutes}
+                trails={liveTrails}
                 height={560}
                 isDark={false}
                 selectedTripId={selectedTripId}

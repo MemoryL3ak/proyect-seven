@@ -31,10 +31,20 @@ export type RoutePath = {
   accent: string;
 };
 
+// Trail of points the driver has actually traveled (built up live from
+// incoming GPS fixes). Distinct from `routes`, which is the Google
+// Directions suggested path between origin and destination.
+export type TrailPath = {
+  tripId: string;
+  path: LatLng[];
+  accent: string;
+};
+
 type Props = {
   markers: TrackingMarker[];
   destinations?: DestinationPin[];
   routes?: RoutePath[];
+  trails?: TrailPath[];
   height?: number;
   isDark?: boolean;
   selectedTripId?: string | null;
@@ -93,6 +103,7 @@ export default function LiveTrackingMap({
   markers,
   destinations = [],
   routes = [],
+  trails = [],
   height = 560,
   selectedTripId,
 }: Props) {
@@ -102,10 +113,51 @@ export default function LiveTrackingMap({
   // Last accent applied to each marker — drives icon re-generation when the
   // online/offline color flips (green → red and back).
   const markerAccentRef = useRef<Record<string, string>>({});
+  // Per-marker animation state — used to interpolate the marker between
+  // the previous GPS fix and the new one so movement looks fluid instead
+  // of "teleporting" every 2-3 seconds.
+  const markerAnimRef = useRef<Record<string, { rafId: number; from: { lat: number; lng: number }; to: { lat: number; lng: number }; startedAt: number }>>({});
   const gmDestinationsRef = useRef<Record<string, any>>({});
   const gmRoutesRef = useRef<Record<string, any>>({});
+  const gmTrailsRef = useRef<Record<string, any>>({});
   const infoWindowRef = useRef<any>(null);
   const didFitRef = useRef(false);
+
+  // Smoothly animates a marker from its current position to `to`. Cancels
+  // any in-flight animation for the same marker so we don't double up.
+  // 1500 ms matches the typical interval between successive fixes (~3s)
+  // less a small margin so the marker arrives just before the next one.
+  const ANIM_DURATION_MS = 1500;
+  const animateMarker = (markerId: string, marker: any, from: { lat: number; lng: number }, to: { lat: number; lng: number }) => {
+    const prev = markerAnimRef.current[markerId];
+    if (prev) cancelAnimationFrame(prev.rafId);
+    const startedAt = performance.now();
+    const step = (now: number) => {
+      const elapsed = now - startedAt;
+      const t = Math.min(1, elapsed / ANIM_DURATION_MS);
+      // ease-out cubic: starts fast, settles gently.
+      const eased = 1 - Math.pow(1 - t, 3);
+      const lat = from.lat + (to.lat - from.lat) * eased;
+      const lng = from.lng + (to.lng - from.lng) * eased;
+      marker.setPosition({ lat, lng });
+      if (t < 1) {
+        markerAnimRef.current[markerId] = {
+          rafId: requestAnimationFrame(step),
+          from,
+          to,
+          startedAt,
+        };
+      } else {
+        delete markerAnimRef.current[markerId];
+      }
+    };
+    markerAnimRef.current[markerId] = {
+      rafId: requestAnimationFrame(step),
+      from,
+      to,
+      startedAt,
+    };
+  };
 
   // Init map once
   useEffect(() => {
@@ -132,12 +184,16 @@ export default function LiveTrackingMap({
 
     return () => {
       cancelled = true;
+      Object.values(markerAnimRef.current).forEach((a) => cancelAnimationFrame(a.rafId));
       Object.values(gmMarkersRef.current).forEach((m: any) => m.setMap(null));
       Object.values(gmDestinationsRef.current).forEach((m: any) => m.setMap(null));
       Object.values(gmRoutesRef.current).forEach((p: any) => p.setMap(null));
+      Object.values(gmTrailsRef.current).forEach((p: any) => p.setMap(null));
+      markerAnimRef.current = {};
       gmMarkersRef.current = {};
       gmDestinationsRef.current = {};
       gmRoutesRef.current = {};
+      gmTrailsRef.current = {};
       mapRef.current = null;
       didFitRef.current = false;
     };
@@ -153,6 +209,9 @@ export default function LiveTrackingMap({
 
     Object.keys(gmMarkersRef.current).forEach((id) => {
       if (!currentIds.has(id)) {
+        const inflight = markerAnimRef.current[id];
+        if (inflight) cancelAnimationFrame(inflight.rafId);
+        delete markerAnimRef.current[id];
         gmMarkersRef.current[id].setMap(null);
         delete gmMarkersRef.current[id];
         delete markerAccentRef.current[id];
@@ -164,11 +223,21 @@ export default function LiveTrackingMap({
       const pos = { lat: m.lat, lng: m.lng };
 
       if (gmMarkersRef.current[m.tripId]) {
-        gmMarkersRef.current[m.tripId].setPosition(pos);
+        const existing = gmMarkersRef.current[m.tripId];
+        const currentPos = existing.getPosition?.();
+        const from = currentPos
+          ? { lat: currentPos.lat(), lng: currentPos.lng() }
+          : pos;
+        // Only animate if the new fix is actually somewhere new — avoids a
+        // spurious 1.5s tween every poll when the driver is parked.
+        const moved = Math.abs(from.lat - pos.lat) > 1e-7 || Math.abs(from.lng - pos.lng) > 1e-7;
+        if (moved) {
+          animateMarker(m.tripId, existing, from, pos);
+        }
         // Re-generate the icon when the color changes — disconnection turns
         // the marker red without removing it, reconnection turns it back green.
         if (markerAccentRef.current[m.tripId] !== m.accent) {
-          gmMarkersRef.current[m.tripId].setIcon({
+          existing.setIcon({
             url: createDriverCarIcon(initials, m.accent),
             scaledSize: new google.maps.Size(64, 72),
             anchor: new google.maps.Point(32, 68),
@@ -278,6 +347,57 @@ export default function LiveTrackingMap({
       }
     });
   }, [destinations]);
+
+  // Update live trails — the actual breadcrumb path each driver has
+  // traveled since they entered our view. Distinct from the Directions
+  // route (`routes` below): dashed line, thinner, lower z-index so the
+  // suggested route still reads as the "plan" and the trail as "actual".
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const google = (window as any).google;
+    if (!google?.maps) return;
+
+    const currentIds = new Set(trails.map((t) => t.tripId));
+
+    Object.keys(gmTrailsRef.current).forEach((id) => {
+      if (!currentIds.has(id)) {
+        gmTrailsRef.current[id].setMap(null);
+        delete gmTrailsRef.current[id];
+      }
+    });
+
+    trails.forEach((t) => {
+      const existing = gmTrailsRef.current[t.tripId];
+      if (existing) {
+        existing.setPath(t.path);
+        existing.setOptions({ strokeColor: t.accent });
+      } else {
+        const polyline = new google.maps.Polyline({
+          path: t.path,
+          map: mapRef.current,
+          geodesic: true,
+          strokeOpacity: 0,
+          // Dashed style via repeated dot icons — Google's standard
+          // recipe for "follow-the-bouncing-ball" polylines.
+          icons: [
+            {
+              icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                fillOpacity: 1,
+                fillColor: t.accent,
+                strokeOpacity: 0,
+                scale: 3,
+              },
+              offset: '0',
+              repeat: '14px',
+            },
+          ],
+          zIndex: 1,
+        });
+        gmTrailsRef.current[t.tripId] = polyline;
+      }
+    });
+  }, [trails]);
 
   // Update route polylines
   useEffect(() => {
