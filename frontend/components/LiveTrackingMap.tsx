@@ -99,6 +99,9 @@ export default function LiveTrackingMap({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const gmMarkersRef = useRef<Record<string, any>>({});
+  // Last accent applied to each marker — drives icon re-generation when the
+  // online/offline color flips (green → red and back).
+  const markerAccentRef = useRef<Record<string, string>>({});
   const gmDestinationsRef = useRef<Record<string, any>>({});
   const gmRoutesRef = useRef<Record<string, any>>({});
   const infoWindowRef = useRef<any>(null);
@@ -152,6 +155,7 @@ export default function LiveTrackingMap({
       if (!currentIds.has(id)) {
         gmMarkersRef.current[id].setMap(null);
         delete gmMarkersRef.current[id];
+        delete markerAccentRef.current[id];
       }
     });
 
@@ -161,6 +165,16 @@ export default function LiveTrackingMap({
 
       if (gmMarkersRef.current[m.tripId]) {
         gmMarkersRef.current[m.tripId].setPosition(pos);
+        // Re-generate the icon when the color changes — disconnection turns
+        // the marker red without removing it, reconnection turns it back green.
+        if (markerAccentRef.current[m.tripId] !== m.accent) {
+          gmMarkersRef.current[m.tripId].setIcon({
+            url: createDriverCarIcon(initials, m.accent),
+            scaledSize: new google.maps.Size(64, 72),
+            anchor: new google.maps.Point(32, 68),
+          });
+          markerAccentRef.current[m.tripId] = m.accent;
+        }
       } else {
         const marker = new google.maps.Marker({
           position: pos,
@@ -204,6 +218,7 @@ export default function LiveTrackingMap({
         });
 
         gmMarkersRef.current[m.tripId] = marker;
+        markerAccentRef.current[m.tripId] = m.accent;
       }
     });
 

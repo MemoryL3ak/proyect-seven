@@ -252,7 +252,20 @@ export default function VehiclePositionsPage() {
           latestByDriver[key] = { lat, lng, timestamp: pos.timestamp };
         }
       });
-      setPositions(latestByDriver);
+      // Merge: realtime can deliver a fresh row in the gap between request
+      // start and request end — replacing the whole map would lose it. Keep
+      // any in-memory entry that is newer than what /vehicle-positions
+      // returned for that driver.
+      setPositions((prev) => {
+        const next: typeof prev = { ...latestByDriver };
+        for (const [key, fresh] of Object.entries(prev)) {
+          const incoming = next[key];
+          if (!incoming || new Date(fresh.timestamp) > new Date(incoming.timestamp)) {
+            next[key] = fresh;
+          }
+        }
+        return next;
+      });
 
       setLastUpdated(new Date());
       setHasLoadedOnce(true);
@@ -460,31 +473,43 @@ export default function VehiclePositionsPage() {
       .filter((r): r is RoutePath => r !== null);
   }, [activeTripsForRoutes, tripRoutes]);
 
-  // Drivers with a GPS fix in the last 15 s — treat them as "connected" for
-  // the live view regardless of whether they have an active trip. We push
-  // every 3s, so 15s tolerates 4-5 dropped requests before evicting; that
-  // keeps the map clean when a driver disconnects or kills the app.
-  const connectedDrivers = useMemo(() => {
-    const cutoff = nowTick - 15 * 1000;
+  // Drivers we track on the live map. We keep showing a driver for 5 minutes
+  // after their last fix so a brief connection drop doesn't make the marker
+  // disappear — only the color changes (green ↔ red). Anything older than
+  // 5 min is treated as a session that ended and is removed from the map.
+  const trackedDrivers = useMemo(() => {
+    const onlineCutoff = nowTick - 15 * 1000;
+    const staleCutoff = nowTick - 5 * 60 * 1000;
     return Object.entries(positions)
       .map(([driverId, pos]) => {
         const driver = drivers[driverId];
         if (!driver) return null;
         const ts = new Date(pos.timestamp).getTime();
+        if (Number.isNaN(ts) || ts < staleCutoff) return null;
         const ageMs = nowTick - ts;
-        if (Number.isNaN(ageMs) || ts < cutoff) return null;
-        return { driver, position: pos, ageMs };
+        const online = ts >= onlineCutoff;
+        return { driver, position: pos, ageMs, online };
       })
-      .filter((x): x is { driver: DriverItem; position: { lat: number; lng: number; timestamp: string }; ageMs: number } => x !== null)
-      .sort((a, b) => a.ageMs - b.ageMs);
+      .filter(
+        (x): x is { driver: DriverItem; position: { lat: number; lng: number; timestamp: string }; ageMs: number; online: boolean } =>
+          x !== null,
+      )
+      .sort((a, b) => (Number(b.online) - Number(a.online)) || a.ageMs - b.ageMs);
   }, [positions, drivers, nowTick]);
 
-  const connectedMarkers = useMemo<TrackingMarker[]>(() => {
-    return connectedDrivers.map(({ driver, position }) => {
+  // Only the online slice — used for "Con GPS" KPI and the live count chip.
+  const connectedDrivers = useMemo(
+    () => trackedDrivers.filter((d) => d.online),
+    [trackedDrivers],
+  );
+
+  const trackedMarkers = useMemo<TrackingMarker[]>(() => {
+    return trackedDrivers.map(({ driver, position, online }) => {
       const trip = activeTrips.find((t) => t.driverId === driver.id);
-      const sc = trip
-        ? STATUS_COLORS[trip.status ?? "EN_ROUTE"] ?? STATUS_COLORS.EN_ROUTE
-        : { accent: "#21D0B3", chipBg: "rgba(33,208,179,0.14)", chipBorder: "rgba(33,208,179,0.3)" };
+      // Connection status drives the marker color: green when actively
+      // receiving GPS, red when we haven't heard from the driver in >15s.
+      // This wins over the trip status color so a disconnection is obvious.
+      const accent = online ? "#10b981" : "#ef4444";
       const vehicle = trip?.vehicleId ? vehicles[trip.vehicleId] : null;
       const venue = trip?.destinationVenueId ? venues[trip.destinationVenueId] : null;
       return {
@@ -495,15 +520,17 @@ export default function VehiclePositionsPage() {
         lng: position.lng,
         driverName: driver.fullName || "Conductor",
         vehiclePlate: vehicle?.plate || trip?.vehiclePlate || "Sin vehículo",
-        statusLabel: trip ? (STATUS_LABEL[trip.status ?? ""] || trip.status || "") : "Sin viaje",
-        accent: sc.accent,
+        statusLabel: online
+          ? (trip ? (STATUS_LABEL[trip.status ?? ""] || trip.status || "En línea") : "En línea")
+          : "Sin señal",
+        accent,
         origin: trip?.origin || "—",
         destination: venue?.name || trip?.destination || "—",
         elapsedMin: trip?.startedAt ? Math.floor((Date.now() - new Date(trip.startedAt).getTime()) / 60000) : null,
         gpsTime: new Date(position.timestamp).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" }),
       } satisfies TrackingMarker;
     });
-  }, [connectedDrivers, activeTrips, vehicles, venues]);
+  }, [trackedDrivers, activeTrips, vehicles, venues]);
 
   const tripStats = useMemo(() => {
     const active = trips.filter((tr) => ["EN_ROUTE", "PICKED_UP"].includes(tr.status ?? "")).length;
@@ -665,7 +692,7 @@ export default function VehiclePositionsPage() {
       <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "6px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div className="grid gap-2 grid-cols-2">
           {([
-            { key: "live" as const, label: "Tracking en vivo", count: connectedDrivers.length },
+            { key: "live" as const, label: "Tracking en vivo", count: trackedDrivers.length },
             { key: "table" as const, label: "Todos los viajes", count: orderedTrips.length },
           ]).map((tab) => {
             const selected = activeView === tab.key;
@@ -733,130 +760,142 @@ export default function VehiclePositionsPage() {
             </div>
           )}
 
-          {connectedDrivers.length === 0 ? (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "16px", alignItems: "start" }} className="xl:grid-cols-[1fr_340px] md:!grid-cols-1">
+
+            {/* Map — always rendered, even when no drivers are connected. */}
             <div style={{
-              borderRadius: "20px", border: "1px dashed #cbd5e1", background: "#ffffff",
-              padding: "72px 24px", textAlign: "center" as const,
-              boxShadow: "0 1px 4px rgba(15,23,42,0.05)",
+              borderRadius: "20px",
+              overflow: "hidden",
+              border: "1px solid #e2e8f0",
+              boxShadow: "0 1px 8px rgba(15,23,42,0.08)",
+              position: "relative",
             }}>
-              <span style={{ color: "#cbd5e1", display: "flex", justifyContent: "center", marginBottom: "16px" }}>
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-              </span>
-              <p style={{ fontWeight: 800, fontSize: "18px", color: "#0f172a" }}>Sin conductores enviando GPS ahora</p>
-              <p style={{ fontSize: "14px", marginTop: "6px", color: "#64748b" }}>Cuando un conductor entre y prenda el GPS, va a aparecer aquí en el mapa. Si tiene un viaje activo se dibuja también el destino y la ruta.</p>
-            </div>
-          ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "16px", alignItems: "start" }} className="xl:grid-cols-[1fr_340px] md:!grid-cols-1">
-
-              {/* Map */}
-              <div style={{
-                borderRadius: "20px",
-                overflow: "hidden",
-                border: "1px solid #e2e8f0",
-                boxShadow: "0 1px 8px rgba(15,23,42,0.08)",
-                position: "relative",
-              }}>
-                <div style={{ position: "absolute", top: "12px", left: "12px", zIndex: 1000 }}>
-                  <span style={{
-                    display: "inline-flex", alignItems: "center", gap: "6px",
-                    background: "rgba(0,0,0,0.6)", borderRadius: "99px", padding: "5px 12px",
-                    backdropFilter: "blur(6px)",
-                  }}>
-                    <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#10b981", animation: "pulse 1.5s infinite", display: "inline-block" }} />
-                    <span style={{ fontSize: "11px", fontWeight: 700, color: "#ffffff", letterSpacing: "0.1em" }}>
-                      {connectedMarkers.length} en línea · {liveRoutes.length} con ruta activa
-                    </span>
+              <div style={{ position: "absolute", top: "12px", left: "12px", zIndex: 1000 }}>
+                <span style={{
+                  display: "inline-flex", alignItems: "center", gap: "6px",
+                  background: "rgba(0,0,0,0.6)", borderRadius: "99px", padding: "5px 12px",
+                  backdropFilter: "blur(6px)",
+                }}>
+                  <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: connectedDrivers.length > 0 ? "#10b981" : "#94a3b8", animation: "pulse 1.5s infinite", display: "inline-block" }} />
+                  <span style={{ fontSize: "11px", fontWeight: 700, color: "#ffffff", letterSpacing: "0.1em" }}>
+                    {connectedDrivers.length} en línea · {trackedDrivers.length - connectedDrivers.length} sin señal · {liveRoutes.length} con ruta
                   </span>
-                </div>
-                <LiveTrackingMap
-                  markers={connectedMarkers}
-                  destinations={liveDestinations}
-                  routes={liveRoutes}
-                  height={560}
-                  isDark={false}
-                  selectedTripId={selectedTripId}
-                />
+                </span>
               </div>
+              {trackedDrivers.length === 0 && (
+                <div style={{
+                  position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
+                  zIndex: 999, background: "rgba(255,255,255,0.94)",
+                  border: "1px solid #e2e8f0", borderRadius: "14px",
+                  padding: "18px 22px", textAlign: "center" as const, maxWidth: "320px",
+                  boxShadow: "0 8px 24px rgba(15,23,42,0.12)",
+                }}>
+                  <p style={{ fontWeight: 800, fontSize: "14px", color: "#0f172a" }}>Sin conductores enviando GPS ahora</p>
+                  <p style={{ fontSize: "12px", marginTop: "4px", color: "#64748b", lineHeight: 1.5 }}>
+                    Cuando un conductor entre y prenda el GPS, va a aparecer en el mapa.
+                  </p>
+                </div>
+              )}
+              <LiveTrackingMap
+                markers={trackedMarkers}
+                destinations={liveDestinations}
+                routes={liveRoutes}
+                height={560}
+                isDark={false}
+                selectedTripId={selectedTripId}
+              />
+            </div>
 
-              {/* Sidebar — one card per connected driver */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxHeight: "580px", overflowY: "auto", paddingRight: "2px" }}>
-                {connectedDrivers.map(({ driver, position, ageMs }) => {
-                  const trip = activeTripsForRoutes.find((t) => t.driverId === driver.id);
-                  const sc = trip
-                    ? STATUS_COLORS[trip.status ?? "EN_ROUTE"] ?? STATUS_COLORS.EN_ROUTE
-                    : { accent: "#21D0B3", chipBg: "rgba(33,208,179,0.14)", chipBorder: "rgba(33,208,179,0.3)" };
-                  const vehicle = trip?.vehicleId ? vehicles[trip.vehicleId] : null;
-                  const venue = trip?.destinationVenueId ? venues[trip.destinationVenueId] : null;
-                  const ageSec = Math.floor(ageMs / 1000);
-                  const ageLabel = ageSec < 60 ? `hace ${ageSec}s` : `hace ${Math.floor(ageSec / 60)}m`;
-                  const markerId = trip?.id ?? `driver-${driver.id}`;
-                  const routeMeta = trip ? tripRouteMeta[trip.id] : null;
-                  const elapsedMs = trip?.startedAt ? Date.now() - new Date(trip.startedAt).getTime() : null;
-                  const elapsedMin = elapsedMs !== null ? Math.floor(elapsedMs / 60000) : null;
+            {/* Sidebar — one card per tracked driver (online + offline). */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxHeight: "580px", overflowY: "auto", paddingRight: "2px" }}>
+              {trackedDrivers.length === 0 && (
+                <div style={{
+                  borderRadius: "14px", border: "1px dashed #cbd5e1", background: "#ffffff",
+                  padding: "20px 16px", textAlign: "center" as const,
+                  fontSize: "12px", color: "#64748b", lineHeight: 1.5,
+                }}>
+                  Esperando conductores. Al activar el GPS desde la app aparecerán aquí.
+                </div>
+              )}
+              {trackedDrivers.map(({ driver, position, ageMs, online }) => {
+                const trip = activeTripsForRoutes.find((t) => t.driverId === driver.id);
+                const accent = online ? "#10b981" : "#ef4444";
+                const chipBg = online ? "rgba(16,185,129,0.14)" : "rgba(239,68,68,0.12)";
+                const chipBorder = online ? "rgba(16,185,129,0.3)" : "rgba(239,68,68,0.3)";
+                const vehicle = trip?.vehicleId ? vehicles[trip.vehicleId] : null;
+                const venue = trip?.destinationVenueId ? venues[trip.destinationVenueId] : null;
+                const ageSec = Math.floor(ageMs / 1000);
+                const ageLabel = ageSec < 60 ? `hace ${ageSec}s` : `hace ${Math.floor(ageSec / 60)}m`;
+                const markerId = trip?.id ?? `driver-${driver.id}`;
+                const routeMeta = trip ? tripRouteMeta[trip.id] : null;
+                const elapsedMs = trip?.startedAt ? Date.now() - new Date(trip.startedAt).getTime() : null;
+                const elapsedMin = elapsedMs !== null ? Math.floor(elapsedMs / 60000) : null;
 
-                  return (
-                    <div key={driver.id} style={{
-                      background: selectedTripId === markerId ? "#f0fdfa" : "#ffffff",
-                      border: selectedTripId === markerId ? "2px solid #14b8a6" : "1px solid #e2e8f0",
-                      borderLeft: `4px solid ${sc.accent}`,
-                      borderRadius: "14px",
-                      padding: "12px 14px",
-                      boxShadow: selectedTripId === markerId ? "0 0 8px rgba(20,184,166,0.3)" : "0 1px 4px rgba(15,23,42,0.06)",
-                      cursor: "pointer",
-                    }}
-                      onClick={() => setSelectedTripId(selectedTripId === markerId ? null : markerId)}
-                    >
-                      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "6px", marginBottom: "8px" }}>
-                        <div style={{ minWidth: 0 }}>
-                          <p style={{ fontSize: "13px", fontWeight: 800, color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {driver.fullName || "Conductor"}
-                          </p>
-                          <p style={{ fontSize: "11px", color: "#64748b", marginTop: "1px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {trip
-                              ? (vehicle ? [vehicle.plate, vehicle.type].filter(Boolean).join(" · ") : (trip.vehiclePlate || "Sin vehículo"))
-                              : "Conectado · sin viaje"}
-                          </p>
-                        </div>
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "3px", flexShrink: 0 }}>
-                          <span style={{
-                            display: "inline-flex", alignItems: "center", gap: "4px",
-                            background: sc.chipBg, border: `1px solid ${sc.chipBorder}`,
-                            borderRadius: "99px", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: sc.accent,
-                          }}>
-                            <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: sc.accent, animation: "pulse 1.5s infinite", display: "inline-block" }} />
-                            {trip ? (STATUS_LABEL[trip.status ?? ""] || trip.status) : "En línea"}
-                          </span>
-                          <span style={{ fontSize: "10px", color: "#64748b" }}>{ageLabel}</span>
-                        </div>
+                return (
+                  <div key={driver.id} style={{
+                    background: selectedTripId === markerId ? "#f0fdfa" : "#ffffff",
+                    border: selectedTripId === markerId ? "2px solid #14b8a6" : "1px solid #e2e8f0",
+                    borderLeft: `4px solid ${accent}`,
+                    borderRadius: "14px",
+                    padding: "12px 14px",
+                    boxShadow: selectedTripId === markerId ? "0 0 8px rgba(20,184,166,0.3)" : "0 1px 4px rgba(15,23,42,0.06)",
+                    cursor: "pointer",
+                    opacity: online ? 1 : 0.85,
+                  }}
+                    onClick={() => setSelectedTripId(selectedTripId === markerId ? null : markerId)}
+                  >
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "6px", marginBottom: "8px" }}>
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ fontSize: "13px", fontWeight: 800, color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {driver.fullName || "Conductor"}
+                        </p>
+                        <p style={{ fontSize: "11px", color: "#64748b", marginTop: "1px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {trip
+                            ? (vehicle ? [vehicle.plate, vehicle.type].filter(Boolean).join(" · ") : (trip.vehiclePlate || "Sin vehículo"))
+                            : online ? "Conectado · sin viaje" : "Sin señal · esperando reconexión"}
+                        </p>
                       </div>
-
-                      {trip && (
-                        <>
-                          <div style={{ fontSize: "11px", color: "#64748b", lineHeight: 1.5, display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2.2" strokeLinecap="round"><path d="M12 22s6-6 6-11a6 6 0 0 0-12 0c0 5 6 11 6 11z"/><circle cx="12" cy="11" r="2"/></svg>
-                            <span>{trip.origin || "Origen"}</span>
-                            <span style={{ color: "#cbd5e1" }}>→</span>
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h2M14 7h2M8 11h2M14 11h2"/></svg>
-                            <span>{venue?.name || trip.destination || "Destino"}</span>
-                          </div>
-                          {routeMeta && (
-                            <div style={{ marginTop: "6px", fontSize: "10px", color: "#0f766e", fontWeight: 600 }}>
-                              Ruta: {routeMeta.distanceKm.toFixed(1)} km · ~{routeMeta.durationMin} min
-                              {elapsedMin !== null ? ` · iniciado hace ${elapsedMin}m` : ""}
-                            </div>
-                          )}
-                        </>
-                      )}
-
-                      <div style={{ marginTop: "6px", fontSize: "10px", color: "#94a3b8" }}>
-                        {position.lat.toFixed(5)}, {position.lng.toFixed(5)} · GPS {new Date(position.timestamp).toLocaleTimeString("es-CL")}
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "3px", flexShrink: 0 }}>
+                        <span style={{
+                          display: "inline-flex", alignItems: "center", gap: "4px",
+                          background: chipBg, border: `1px solid ${chipBorder}`,
+                          borderRadius: "99px", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: accent,
+                        }}>
+                          <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: accent, animation: online ? "pulse 1.5s infinite" : "none", display: "inline-block" }} />
+                          {online
+                            ? (trip ? (STATUS_LABEL[trip.status ?? ""] || trip.status || "En línea") : "En línea")
+                            : "Sin señal"}
+                        </span>
+                        <span style={{ fontSize: "10px", color: "#64748b" }}>{ageLabel}</span>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+
+                    {trip && (
+                      <>
+                        <div style={{ fontSize: "11px", color: "#64748b", lineHeight: 1.5, display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2.2" strokeLinecap="round"><path d="M12 22s6-6 6-11a6 6 0 0 0-12 0c0 5 6 11 6 11z"/><circle cx="12" cy="11" r="2"/></svg>
+                          <span>{trip.origin || "Origen"}</span>
+                          <span style={{ color: "#cbd5e1" }}>→</span>
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h2M14 7h2M8 11h2M14 11h2"/></svg>
+                          <span>{venue?.name || trip.destination || "Destino"}</span>
+                        </div>
+                        {routeMeta && (
+                          <div style={{ marginTop: "6px", fontSize: "10px", color: "#0f766e", fontWeight: 600 }}>
+                            Ruta: {routeMeta.distanceKm.toFixed(1)} km · ~{routeMeta.durationMin} min
+                            {elapsedMin !== null ? ` · iniciado hace ${elapsedMin}m` : ""}
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    <div style={{ marginTop: "6px", fontSize: "10px", color: "#94a3b8" }}>
+                      {position.lat.toFixed(5)}, {position.lng.toFixed(5)} · GPS {new Date(position.timestamp).toLocaleTimeString("es-CL")}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          )}
+          </div>
         </section>
       )}
 

@@ -8,6 +8,7 @@ type PushState = {
   lastSuccessAt: number | null;
   lastStatus: number | null;
   lastError: string | null;
+  queueSize?: number;
 };
 type StartResult = {
   ok: boolean;
@@ -318,6 +319,11 @@ export default function TrackingToggle({ driverId }: Props) {
               <p style={{ margin: "2px 0 0" }}>
                 Error: <strong>{lastPush.lastError}</strong>
                 {lastPush.lastStatus ? ` (HTTP ${lastPush.lastStatus})` : ""}
+              </p>
+            )}
+            {typeof lastPush.queueSize === "number" && lastPush.queueSize > 0 && (
+              <p style={{ margin: "2px 0 0" }}>
+                En cola para reenviar al recuperar red: <strong>{lastPush.queueSize}</strong>
               </p>
             )}
           </div>
