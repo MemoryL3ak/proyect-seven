@@ -285,6 +285,9 @@ export default function UserPortalPage() {
   const [premDisciplineFilter, setPremDisciplineFilter] = useState("");
   const [premVenueFilter, setPremVenueFilter] = useState("");
   const [premSearchQuery, setPremSearchQuery] = useState("");
+  const [premView, setPremView] = useState<"list" | "calendar">("calendar");
+  const [premCalCursor, setPremCalCursor] = useState(() => new Date());
+  const [premCalSelectedKey, setPremCalSelectedKey] = useState<string | null>(null);
   // Coupons tab state
   const [couponTab, setCouponTab] = useState<"available" | "mine">("available");
   const [couponsAvailable, setCouponsAvailable] = useState<Coupon[]>([]);
