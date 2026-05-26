@@ -1,8 +1,12 @@
 -- ============================================================================
 -- DEMO — Menús del día de hoy y mañana para el portal de participantes/VIP
 -- ============================================================================
--- Inserta 8 menús (Desayuno, Almuerzo, Cena, Once × 2 días) para poblar la
+-- Inserta 8 menús (Desayuno, Almuerzo×2, Cena × 2 días) para poblar la
 -- pestaña "Comida" en /portal/user y /portal/vehicle-request.
+--
+-- NOTA: la tabla logistics.food_menus tiene un check constraint que solo
+-- permite meal_type IN ('DESAYUNO','ALMUERZO','CENA'). Si querés agregar
+-- 'ONCE' necesitás alterar el constraint primero.
 --
 -- Las fechas se calculan desde la zona horaria de Chile (-04:00) para que
 -- "hoy" coincida con lo que ve el frontend, aunque el server esté en UTC.
@@ -42,12 +46,6 @@ values
    'Salmón a la plancha, puré rústico de papas con perejil, vegetales asados y postre de tres leches. [Seed demo food menus]',
    'ESTANDAR'),
 
-  ((now() at time zone 'America/Santiago')::date,
-   'ONCE',
-   'Once tradicional chilena',
-   'Sopaipillas, queso, palta, jamón, café, té y kuchen de manzana casero. [Seed demo food menus]',
-   'ESTANDAR'),
-
 -- Mañana (zona Chile)
   ((now() at time zone 'America/Santiago')::date + interval '1 day',
    'DESAYUNO',
@@ -73,7 +71,7 @@ values
    'Penne integral con vegetales de la estación, pesto de albahaca casero, queso parmesano y pan de masa madre. [Seed demo food menus]',
    'VEGETARIANO');
 
--- Verificación: deberían aparecer 9 filas con el marcador
+-- Verificación: deberían aparecer 8 filas con el marcador
 select date, meal_type, title, dietary_type
 from logistics.food_menus
 where description like '%[Seed demo food menus]%'
