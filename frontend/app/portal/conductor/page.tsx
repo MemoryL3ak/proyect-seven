@@ -331,6 +331,7 @@ export default function DriverPortalPage() {
   };
 
   const [showLocationBlockedModal, setShowLocationBlockedModal] = useState(false);
+  const [credentialHtml, setCredentialHtml] = useState<string | null>(null);
 
   const requestLocationPermission = (): Promise<boolean> => {
     return new Promise((resolve) => {
@@ -1698,8 +1699,7 @@ export default function DriverPortalPage() {
                         photoUrl: driverProfile.photoUrl || ((driverProfile.metadata as any)?.photoUrl as string) || ((driverProfile.metadata as any)?.photo_url as string) || ((driverProfile.metadata as any)?.avatar as string) || ((driverProfile.metadata as any)?.avatarUrl as string) || ((driverProfile.metadata as any)?.imageUrl as string) || ((driverProfile.metadata as any)?.image_url as string) || null,
                         qrDataUrl,
                       });
-                      const w = window.open("", "_blank", "width=450,height=700");
-                      if (w) { w.document.write(html); w.document.close(); }
+                      setCredentialHtml(html);
                     } catch { driverNotify.push("No se pudo generar la credencial", "❌"); }
                   }}
                     style={{ width:"100%",padding:12,borderRadius:12,border:"none",background:"linear-gradient(135deg,#041a2e,#062240)",color:"#21D0B3",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8 }}>
@@ -1922,6 +1922,35 @@ export default function DriverPortalPage() {
       )}
 
       {/* ── Location blocked modal ── */}
+      {credentialHtml && (
+        <div onClick={() => setCredentialHtml(null)}
+          style={{ position:"fixed",inset:0,zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:16,background:"rgba(2,12,24,0.78)",backdropFilter:"blur(6px)" }}>
+          <div onClick={(e) => e.stopPropagation()}
+            style={{ background:"#fff",borderRadius:20,width:"100%",maxWidth:480,maxHeight:"95vh",display:"flex",flexDirection:"column",overflow:"hidden",boxShadow:"0 24px 80px rgba(0,0,0,0.5)" }}>
+            <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",borderBottom:"1px solid #e2e8f0",background:"linear-gradient(135deg,#041a2e,#062240)",color:"#fff" }}>
+              <div>
+                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>Credencial digital</p>
+                <p style={{ fontSize:14,fontWeight:700,margin:"2px 0 0" }}>{driverProfile?.fullName || "Conductor"}</p>
+              </div>
+              <div style={{ display:"flex",gap:8 }}>
+                <button type="button" onClick={() => {
+                  const w = window.open("", "_blank", "width=480,height=760");
+                  if (w) { w.document.write(credentialHtml); w.document.close(); }
+                }}
+                  title="Abrir en ventana / Imprimir"
+                  style={{ width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",color:"#21D0B3",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                </button>
+                <button type="button" onClick={() => setCredentialHtml(null)}
+                  style={{ width:34,height:34,borderRadius:10,border:"1px solid rgba(255,255,255,0.2)",background:"rgba(255,255,255,0.08)",color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,lineHeight:1 }}>×</button>
+              </div>
+            </div>
+            <iframe srcDoc={credentialHtml} title="Credencial"
+              style={{ flex:1,width:"100%",minHeight:"60vh",border:"none",background:"#fff" }} />
+          </div>
+        </div>
+      )}
+
       {showLocationBlockedModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div style={{ background:"#fff",borderRadius:"24px",width:"100%",maxWidth:"380px",padding:"32px 28px",boxShadow:"0 8px 40px rgba(15,23,42,0.2)",textAlign:"center" }}>
