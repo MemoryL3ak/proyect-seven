@@ -80,7 +80,104 @@ type Venue = { id: string; eventId?: string | null; name?: string | null; addres
 type Accommodation = { id: string; eventId?: string | null; name?: string | null; address?: string | null; city?: string | null; country?: string | null; checkIn?: string | null; checkOut?: string | null; roomType?: string | null; contactPhone?: string | null };
 type FoodLocation = { id: string; accommodationId?: string | null; name: string; description?: string | null; capacity?: number | null; clientTypes: string[] };
 type FoodMenu = { id: string; date: string; mealType: string; title: string; description?: string | null; dietaryType?: string | null; accommodationId?: string | null };
-type PortalTab = "itinerario" | "actividades" | "calendario" | "sedes" | "alimentacion" | "delegacion" | "cuenta";
+type PremAwarder = {
+  id?: string;
+  athleteId: string;
+  role?: string | null;
+  confirmedAt?: string | null;
+  declinedAt?: string | null;
+};
+type Premiacion = {
+  id: string;
+  title: string;
+  discipline?: string | null;
+  disciplineId?: string | null;
+  scheduledAt: string;
+  venueName?: string | null;
+  locationDetail?: string | null;
+  status: "PROGRAMADA" | "REALIZADA" | string;
+  notes?: string | null;
+  awarders?: PremAwarder[] | null;
+};
+type PortalTab = "itinerario" | "actividades" | "calendario" | "premiaciones" | "sedes" | "alimentacion" | "delegacion" | "cupones" | "cuenta";
+
+type Coupon = {
+  id: string;
+  code: string;
+  title: string;
+  description?: string | null;
+  category: string;
+  discountType?: string;
+  discountValue?: number | null;
+  termsAndConditions?: string | null;
+  partnerName?: string | null;
+  partnerLogoUrl?: string | null;
+  partnerAddress?: string | null;
+  validFrom?: string | null;
+  validUntil?: string | null;
+  perUserLimit?: number | null;
+  imageUrl?: string | null;
+};
+
+type CouponClaim = {
+  id: string;
+  couponId: string;
+  uniqueCode: string;
+  qrToken: string;
+  status: "CLAIMED" | "REDEEMED" | "EXPIRED" | "REVOKED";
+  claimedAt: string;
+  expiresAt: string;
+  redeemedAt?: string | null;
+  redemptionLocation?: string | null;
+  coupon?: Coupon;
+};
+
+const COUPON_CATEGORIES: Record<string, { label: string; color: string; bg: string }> = {
+  COMIDA: { label: "Comida", color: "#c78c00", bg: "#fff4d6" },
+  ENTRETENIMIENTO: { label: "Entretenimiento", color: "#5e3aab", bg: "#f4f0fb" },
+  TIENDA: { label: "Tienda", color: "#2e7d32", bg: "#e7f5ec" },
+  OTHER: { label: "Otros", color: "#5e6b7a", bg: "#eef1f6" },
+};
+
+const COUPON_STATUS_META: Record<string, { label: string; color: string; bg: string }> = {
+  CLAIMED: { label: "Activo", color: "#1f4e8c", bg: "#e3edfa" },
+  REDEEMED: { label: "Canjeado", color: "#2e7d32", bg: "#e7f5ec" },
+  EXPIRED: { label: "Expirado", color: "#b3231b", bg: "#fde2e2" },
+  REVOKED: { label: "Anulado", color: "#5e6b7a", bg: "#eef1f6" },
+};
+
+function couponDiscountDisplay(c: Coupon) {
+  switch (c.discountType) {
+    case "PERCENTAGE":
+      return c.discountValue ? `${c.discountValue}% OFF` : "Descuento";
+    case "AMOUNT":
+      return c.discountValue
+        ? `$${Number(c.discountValue).toLocaleString("es-CL")}`
+        : "Descuento";
+    case "FREE":
+      return "GRATIS";
+    default:
+      return c.discountValue?.toString() || "Beneficio";
+  }
+}
+
+const fmtCouponDate = (iso?: string | null) =>
+  iso ? new Date(iso).toLocaleDateString("es-CL", { day: "2-digit", month: "short" }) : "-";
+
+const fmtCouponFull = (iso?: string | null) =>
+  iso ? new Date(iso).toLocaleString("es-CL", {
+    day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
+  }) : "-";
+
+function couponTimeLeft(iso: string): string {
+  const diff = new Date(iso).getTime() - Date.now();
+  if (diff <= 0) return "Expirado";
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  if (h > 24) return `${Math.floor(h / 24)}d ${h % 24}h`;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
 
 const countryLabels: Record<string, string> = {
   ARG:"Argentina",BOL:"Bolivia",BRA:"Brasil",CHL:"Chile",COL:"Colombia",
@@ -185,6 +282,23 @@ export default function UserPortalPage() {
   const [calMonthCursor, setCalMonthCursor] = useState(() => new Date());
   const [calSelectedDay, setCalSelectedDay] = useState<number | null>(null);
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
+  // Premiaciones tab state
+  const [premiaciones, setPremiaciones] = useState<Premiacion[]>([]);
+  const [premStatusFilter, setPremStatusFilter] = useState<"" | "PROGRAMADA" | "REALIZADA">("");
+  const [premDisciplineFilter, setPremDisciplineFilter] = useState("");
+  const [premVenueFilter, setPremVenueFilter] = useState("");
+  const [premSearchQuery, setPremSearchQuery] = useState("");
+  const [premView, setPremView] = useState<"list" | "calendar">("calendar");
+  const [premCalCursor, setPremCalCursor] = useState(() => new Date());
+  const [premCalSelectedKey, setPremCalSelectedKey] = useState<string | null>(null);
+  // Coupons tab state
+  const [couponTab, setCouponTab] = useState<"available" | "mine">("available");
+  const [couponsAvailable, setCouponsAvailable] = useState<Coupon[]>([]);
+  const [couponClaims, setCouponClaims] = useState<CouponClaim[]>([]);
+  const [couponClaiming, setCouponClaiming] = useState<string | null>(null);
+  const [activeClaim, setActiveClaim] = useState<CouponClaim | null>(null);
+  const [couponQrDataUrl, setCouponQrDataUrl] = useState<string>("");
+  const [couponError, setCouponError] = useState<string | null>(null);
   const notify = useNotifications({ userKind: "athlete", userId: athlete?.id ?? null });
 
   const isChief = athlete?.isDelegationLead === true;
@@ -193,12 +307,14 @@ export default function UserPortalPage() {
       { key:"itinerario", label:"Itinerario", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="5" r="3"/><line x1="12" y1="8" x2="12" y2="16"/><circle cx="12" cy="19" r="3"/></svg> },
       { key:"actividades", label:"Actividades", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> },
       { key:"calendario", label:"Calendario", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> },
+      { key:"premiaciones", label:"Premios", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg> },
       { key:"sedes", label:"Sedes", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg> },
       { key:"alimentacion", label:"Comida", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg> },
       { key:"delegacion", label:"Delegación", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg> },
+      { key:"cupones", label:"Cupones", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v2a3 3 0 010 6v2a2 2 0 002 2h14a2 2 0 002-2v-2a3 3 0 010-6V7a2 2 0 00-2-2H5a2 2 0 00-2 2z"/><line x1="13" y1="5" x2="13" y2="7"/><line x1="13" y1="11" x2="13" y2="13"/><line x1="13" y1="17" x2="13" y2="19"/></svg> },
       { key:"cuenta", label:"Cuenta", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
     ];
-    if (!isChief) return all.filter(t => ["actividades","calendario","sedes","alimentacion","cuenta"].includes(t.key));
+    if (!isChief) return all.filter(t => ["actividades","calendario","premiaciones","sedes","alimentacion","cupones","cuenta"].includes(t.key));
     return all;
   }, [isChief]);
 
@@ -328,6 +444,12 @@ export default function UserPortalPage() {
         );
       } catch { setCalendarEvents([]); setDisciplineParents([]); }
 
+      // Load premiaciones (no role/client-type filter — all premiaciones visible)
+      try {
+        const prems = await apiFetch<Premiacion[]>("/premiaciones");
+        setPremiaciones(Array.isArray(prems) ? prems : []);
+      } catch { setPremiaciones([]); }
+
       // Load venues, accommodations, food locations and menus
       try {
         const [venueData, accomData, foodLocData, foodMenuData] = await Promise.all([
@@ -406,6 +528,73 @@ export default function UserPortalPage() {
       setRequestError(message || t("No se pudo actualizar"));
     } finally { setRequestLoading(false); }
   };
+
+  // ── Coupons: load available + claims when athlete is known ──
+  const loadCoupons = async (athleteId: string, userType: string) => {
+    setCouponError(null);
+    try {
+      const [list, claims] = await Promise.all([
+        apiFetch<Coupon[]>(`/coupons/for-user?userType=${encodeURIComponent(userType || "ATHLETE")}`),
+        apiFetch<CouponClaim[]>(`/coupons/claims/mine?userId=${encodeURIComponent(athleteId)}`),
+      ]);
+      setCouponsAvailable(Array.isArray(list) ? list : []);
+      setCouponClaims(Array.isArray(claims) ? claims : []);
+    } catch (err) {
+      setCouponError(err instanceof Error ? err.message : "No se pudieron cargar los cupones");
+    }
+  };
+
+  useEffect(() => {
+    if (!athlete?.id) return;
+    loadCoupons(athlete.id, athlete.userType || "ATHLETE");
+  }, [athlete?.id, athlete?.userType]);
+
+  const visibleCouponsAvailable = useMemo(() => {
+    return couponsAvailable.map((c) => {
+      const activeClaims = couponClaims.filter(
+        (m) => m.couponId === c.id && (m.status === "CLAIMED" || m.status === "REDEEMED"),
+      );
+      const limit = c.perUserLimit || 1;
+      return { ...c, _used: activeClaims.length, _exhausted: activeClaims.length >= limit };
+    });
+  }, [couponsAvailable, couponClaims]);
+
+  const claimCoupon = async (couponId: string) => {
+    if (!athlete?.id) return;
+    setCouponClaiming(couponId);
+    setCouponError(null);
+    try {
+      const result = await apiFetch<CouponClaim>(`/coupons/${couponId}/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: athlete.id,
+          userType: athlete.userType || "ATHLETE",
+          userName: athlete.fullName || undefined,
+        }),
+      });
+      const coupon = couponsAvailable.find((c) => c.id === couponId);
+      setActiveClaim({ ...result, coupon });
+      await loadCoupons(athlete.id, athlete.userType || "ATHLETE");
+    } catch (err) {
+      setCouponError(err instanceof Error ? err.message : "Error reclamando");
+    } finally {
+      setCouponClaiming(null);
+    }
+  };
+
+  useEffect(() => {
+    if (!activeClaim) {
+      setCouponQrDataUrl("");
+      return;
+    }
+    QRCode.toDataURL(activeClaim.qrToken, {
+      width: 320,
+      margin: 2,
+      color: { dark: "#1f2937", light: "#ffffff" },
+      errorCorrectionLevel: "M",
+    }).then(setCouponQrDataUrl).catch(() => setCouponQrDataUrl(""));
+  }, [activeClaim]);
 
   const submitRating = async () => {
     if (!trip || ratingStars === 0) return;
@@ -1141,6 +1330,359 @@ export default function UserPortalPage() {
           );
         })()}
 
+        {/* ─── Premiaciones tab ─── */}
+        {activeTab === "premiaciones" && (() => {
+          const fmtKey = (iso?: string | null) => iso ? new Date(iso).toISOString().slice(0,10) : "";
+          const fmtTime = (iso?: string | null) => iso ? new Date(iso).toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"}) : "";
+          const fmtDateLong = (iso?: string | null) => {
+            if (!iso) return "";
+            const d = new Date(iso + "T00:00:00");
+            return d.toLocaleDateString("es-CL",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+          };
+          const q = premSearchQuery.trim().toLowerCase();
+          const visible = premiaciones
+            .filter(p => premStatusFilter ? p.status === premStatusFilter : true)
+            .filter(p => premDisciplineFilter ? String(p.discipline||"").toLowerCase() === premDisciplineFilter.toLowerCase() : true)
+            .filter(p => premVenueFilter ? String(p.venueName||"").toLowerCase() === premVenueFilter.toLowerCase() : true)
+            .filter(p => {
+              if (!q) return true;
+              return (
+                String(p.title||"").toLowerCase().includes(q) ||
+                String(p.discipline||"").toLowerCase().includes(q) ||
+                String(p.venueName||"").toLowerCase().includes(q) ||
+                String(p.locationDetail||"").toLowerCase().includes(q) ||
+                String(p.notes||"").toLowerCase().includes(q)
+              );
+            })
+            .sort((a,b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
+          const totalProg = premiaciones.filter(p => p.status === "PROGRAMADA").length;
+          const totalReal = premiaciones.filter(p => p.status === "REALIZADA").length;
+          const disciplineOpts = Array.from(new Set(premiaciones.map(p => p.discipline).filter(Boolean) as string[])).sort();
+          const venueOpts = Array.from(new Set(premiaciones.map(p => p.venueName).filter(Boolean) as string[])).sort();
+          const grouped = new Map<string, Premiacion[]>();
+          visible.forEach(p => {
+            const k = fmtKey(p.scheduledAt);
+            if (!grouped.has(k)) grouped.set(k, []);
+            grouped.get(k)!.push(p);
+          });
+          const days = Array.from(grouped.entries()).sort(([a],[b]) => a.localeCompare(b));
+          const hasFilters = !!(premStatusFilter || premDisciplineFilter || premVenueFilter || premSearchQuery);
+          const clearAll = () => { setPremStatusFilter(""); setPremDisciplineFilter(""); setPremVenueFilter(""); setPremSearchQuery(""); };
+
+          // Calendar view data
+          const calY = premCalCursor.getFullYear();
+          const calM = premCalCursor.getMonth();
+          const monthLabel = premCalCursor.toLocaleDateString("es-CL",{month:"long",year:"numeric"});
+          const firstDayOfMonth = new Date(calY, calM, 1).getDay();
+          const daysInMonth = new Date(calY, calM + 1, 0).getDate();
+          const offset = (firstDayOfMonth + 6) % 7; // Monday-first
+          const calCells: (number | null)[] = Array(offset).fill(null);
+          for (let dd = 1; dd <= daysInMonth; dd++) calCells.push(dd);
+          while (calCells.length % 7 !== 0) calCells.push(null);
+          const itemsByDay = new Map<number, Premiacion[]>();
+          visible.forEach(p => {
+            const d = new Date(p.scheduledAt);
+            if (d.getFullYear() === calY && d.getMonth() === calM) {
+              const dn = d.getDate();
+              if (!itemsByDay.has(dn)) itemsByDay.set(dn, []);
+              itemsByDay.get(dn)!.push(p);
+            }
+          });
+          const monthKey = `${calY}-${String(calM+1).padStart(2,"0")}`;
+          const selectedDayNum = premCalSelectedKey && premCalSelectedKey.startsWith(monthKey + "-")
+            ? parseInt(premCalSelectedKey.split("-")[2], 10) : null;
+          const selectedItems = selectedDayNum ? (itemsByDay.get(selectedDayNum) || []) : [];
+          const today = new Date();
+          const isCurrentMonth = today.getFullYear() === calY && today.getMonth() === calM;
+          const todayNum = isCurrentMonth ? today.getDate() : null;
+          const calDayNames = ["L","M","M","J","V","S","D"];
+
+          const renderPremCard = (p: Premiacion) => {
+            const isDone = p.status === "REALIZADA";
+            const accent = isDone ? "#2e7d32" : "#c78c00";
+            const cnt = (p.awarders||[]).length;
+            return (
+              <article key={p.id}
+                style={{ background:isDone ? "linear-gradient(135deg,#f7fcf8 0%,#ffffff 70%)" : "linear-gradient(135deg,#fffbf2 0%,#ffffff 70%)",
+                  borderRadius:14,border:`1px solid ${isDone?"#cfe9d6":"#f0deb0"}`,borderLeft:`4px solid ${accent}`,padding:"12px 14px" }}>
+                <div style={{ display:"flex",alignItems:"flex-start",gap:10 }}>
+                  <div style={{ width:38,height:38,borderRadius:11,flexShrink:0,
+                    background: isDone ? "linear-gradient(135deg,#e7f5ec 0%,#cfe9d6 100%)" : "linear-gradient(135deg,#fff4d6 0%,rgba(245,200,66,0.5) 100%)",
+                    color: isDone ? "#2e7d32" : "#a87800",
+                    border:`1px solid ${isDone?"#2e7d3233":"#c78c0033"}`,
+                    display:"flex",alignItems:"center",justifyContent:"center",
+                    boxShadow:`0 2px 8px ${isDone?"rgba(46,125,50,0.18)":"rgba(199,140,0,0.22)"}` }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg>
+                  </div>
+                  <div style={{ flex:1,minWidth:0 }}>
+                    <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0,lineHeight:1.3 }}>{p.title}</p>
+                    <div style={{ display:"flex",flexWrap:"wrap",gap:"4px 10px",marginTop:4 }}>
+                      <span style={{ display:"inline-flex",alignItems:"center",gap:3,fontSize:11,color:"#334155",fontWeight:600 }}>
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        {fmtTime(p.scheduledAt)}
+                      </span>
+                      {p.discipline && (
+                        <span style={{ display:"inline-flex",alignItems:"center",gap:3,fontSize:11,color:"#64748b" }}>
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9a6 6 0 0 0 12 0H6z"/><line x1="12" y1="15" x2="12" y2="21"/><line x1="8" y1="21" x2="16" y2="21"/></svg>
+                          {p.discipline}
+                        </span>
+                      )}
+                      {p.venueName && (
+                        <span style={{ display:"inline-flex",alignItems:"center",gap:3,fontSize:11,color:"#64748b" }}>
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                          {p.venueName}{p.locationDetail ? ` · ${p.locationDetail}` : ""}
+                        </span>
+                      )}
+                    </div>
+                    {p.notes && <p style={{ fontSize:11,color:"#64748b",margin:"6px 0 0",fontStyle:"italic",lineHeight:1.4 }}>{p.notes}</p>}
+                  </div>
+                  <span style={{ flexShrink:0,display:"inline-flex",alignItems:"center",gap:5,fontSize:9,padding:"3px 9px",borderRadius:20,fontWeight:800,letterSpacing:"0.06em",textTransform:"uppercase",
+                    background:isDone?"#e7f5ec":"#fff4d6",
+                    color:isDone?"#1e5125":"#7a4a00",
+                    border:`1px solid ${isDone?"#2e7d3233":"#c78c0033"}` }}>
+                    <span style={{ width:5,height:5,borderRadius:"50%",background:accent,animation:isDone?"none":"pulse 1.8s infinite" }} />
+                    {isDone?"Realizada":"Programada"}
+                  </span>
+                </div>
+                {cnt > 0 && (
+                  <div style={{ marginTop:10,paddingTop:10,borderTop:"1px dashed #e2e8f0",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap" }}>
+                    <span style={{ fontSize:10,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"#94a3b8" }}>Entregadores</span>
+                    {(() => {
+                      const counts: Record<string, number> = {};
+                      (p.awarders||[]).forEach(a => { const r = String(a.role||"AWARDER").toUpperCase(); counts[r] = (counts[r]||0)+1; });
+                      const roleMeta: Record<string,{label:string;color:string;bg:string}> = {
+                        GOLD:{label:"Oro",color:"#7a4a00",bg:"#fef3c7"},
+                        SILVER:{label:"Plata",color:"#475569",bg:"#f1f5f9"},
+                        BRONZE:{label:"Bronce",color:"#7c2d12",bg:"#fed7aa"},
+                        AUTHORITY:{label:"Autoridad",color:"#1e40af",bg:"#dbeafe"},
+                        AWARDER:{label:"Entregador",color:"#475569",bg:"#f1f5f9"},
+                      };
+                      return Object.entries(counts).map(([r,n]) => {
+                        const m = roleMeta[r] || roleMeta.AWARDER;
+                        return (
+                          <span key={r} style={{ fontSize:10,padding:"3px 8px",borderRadius:10,background:m.bg,color:m.color,fontWeight:700 }}>{m.label} · {n}</span>
+                        );
+                      });
+                    })()}
+                  </div>
+                )}
+              </article>
+            );
+          };
+
+          return (
+            <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+              <div style={{ background:"linear-gradient(135deg,#fffbf2 0%,#ffffff 70%)",borderRadius:14,border:"1px solid #f0deb0",padding:"14px 16px",display:"flex",alignItems:"center",gap:12 }}>
+                <div style={{ width:42,height:42,borderRadius:12,background:"linear-gradient(135deg,#d4a017 0%,#f5c842 50%,#e3a808 100%)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",flexShrink:0,boxShadow:"0 4px 12px rgba(199,140,0,0.35)" }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg>
+                </div>
+                <div style={{ flex:1,minWidth:0 }}>
+                  <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:"#a87800",margin:0 }}>Premiaciones</p>
+                  <p style={{ fontSize:13,color:"#7a4a00",margin:"2px 0 0",fontWeight:600 }}>{premiaciones.length} ceremonias · {totalProg} programadas · {totalReal} realizadas</p>
+                </div>
+              </div>
+
+              <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",padding:"10px",display:"flex",flexDirection:"column",gap:8 }}>
+                {/* View toggle */}
+                <div style={{ display:"flex",gap:0,background:"#f1f5f9",borderRadius:10,padding:3 }}>
+                  {([
+                    { v:"calendar" as const, label:"Calendario", icon:(
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    )},
+                    { v:"list" as const, label:"Lista", icon:(
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                    )},
+                  ]).map(opt => {
+                    const active = premView === opt.v;
+                    return (
+                      <button key={opt.v} type="button" onClick={() => setPremView(opt.v)}
+                        style={{ flex:1,padding:"7px 10px",borderRadius:8,border:"none",cursor:"pointer",
+                          background:active ? "#fff" : "transparent",
+                          color:active ? "#7a4a00" : "#64748b",
+                          fontSize:12,fontWeight:700,
+                          boxShadow:active ? "0 1px 3px rgba(15,23,42,0.1)" : "none",
+                          display:"inline-flex",alignItems:"center",justifyContent:"center",gap:6,
+                          transition:"all .15s" }}>
+                        {opt.icon}
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div style={{ position:"relative" }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position:"absolute",top:"50%",left:10,transform:"translateY(-50%)",pointerEvents:"none" }}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <input type="text" value={premSearchQuery} onChange={e => setPremSearchQuery(e.target.value)} placeholder="Buscar premiación, disciplina, sede..."
+                    style={{ width:"100%",padding:"9px 10px 9px 32px",borderRadius:10,border:"1px solid #e2e8f0",fontSize:13,outline:"none",background:"#f8fafc",boxSizing:"border-box" }} />
+                </div>
+                <div style={{ display:"flex",gap:6,flexWrap:"wrap" }}>
+                  {([
+                    { v:"" as const, label:"Todas", count:premiaciones.length },
+                    { v:"PROGRAMADA" as const, label:"Programadas", count:totalProg },
+                    { v:"REALIZADA" as const, label:"Realizadas", count:totalReal },
+                  ]).map(opt => {
+                    const active = premStatusFilter === opt.v;
+                    const isDone = opt.v === "REALIZADA";
+                    const isProg = opt.v === "PROGRAMADA";
+                    return (
+                      <button key={opt.v||"all"} type="button" onClick={() => setPremStatusFilter(opt.v)}
+                        style={{ padding:"6px 11px",borderRadius:20,border:active ? `1px solid ${isDone?"#2e7d32":isProg?"#c78c00":"#21D0B3"}` : "1px solid #e2e8f0",
+                          background:active ? (isDone?"#e7f5ec":isProg?"#fff4d6":"rgba(33,208,179,0.12)") : "#fff",
+                          color:active ? (isDone?"#1e5125":isProg?"#7a4a00":"#0a7a6b") : "#475569",
+                          fontSize:11,fontWeight:700,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6,letterSpacing:"0.02em" }}>
+                        {opt.label}
+                        <span style={{ fontSize:9,padding:"1px 6px",borderRadius:10,background:active?"rgba(255,255,255,0.6)":"#f1f5f9",color:active ? (isDone?"#1e5125":isProg?"#7a4a00":"#0a7a6b") : "#64748b" }}>{opt.count}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {(disciplineOpts.length > 0 || venueOpts.length > 0) && (
+                  <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:6 }}>
+                    {disciplineOpts.length > 0 && (
+                      <select value={premDisciplineFilter} onChange={e => setPremDisciplineFilter(e.target.value)}
+                        style={{ padding:"8px 10px",borderRadius:10,border:"1px solid #e2e8f0",fontSize:12,background:"#f8fafc",color:"#0f172a",outline:"none",fontWeight:500 }}>
+                        <option value="">Todas las disciplinas</option>
+                        {disciplineOpts.map(d => <option key={d} value={d}>{d}</option>)}
+                      </select>
+                    )}
+                    {venueOpts.length > 0 && (
+                      <select value={premVenueFilter} onChange={e => setPremVenueFilter(e.target.value)}
+                        style={{ padding:"8px 10px",borderRadius:10,border:"1px solid #e2e8f0",fontSize:12,background:"#f8fafc",color:"#0f172a",outline:"none",fontWeight:500 }}>
+                        <option value="">Todas las sedes</option>
+                        {venueOpts.map(v => <option key={v} value={v}>{v}</option>)}
+                      </select>
+                    )}
+                  </div>
+                )}
+                {hasFilters && (
+                  <button type="button" onClick={clearAll}
+                    style={{ alignSelf:"flex-start",padding:"4px 10px",borderRadius:8,border:"1px solid #fecaca",background:"#fef2f2",color:"#b91c1c",fontSize:11,fontWeight:600,cursor:"pointer" }}>
+                    Limpiar filtros
+                  </button>
+                )}
+              </div>
+
+              {/* Calendar view */}
+              {premView === "calendar" && (
+                <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+                  <div style={{ background:"#fff",borderRadius:14,border:"1px solid #f0deb0",padding:"12px",boxShadow:"0 1px 3px rgba(199,140,0,0.06)" }}>
+                    <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10 }}>
+                      <button type="button" onClick={() => { setPremCalCursor(new Date(calY, calM - 1, 1)); setPremCalSelectedKey(null); }}
+                        style={{ width:30,height:30,borderRadius:8,border:"1px solid #f0deb0",background:"#fffbf2",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a87800" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                      </button>
+                      <div style={{ display:"flex",flexDirection:"column",alignItems:"center" }}>
+                        <span style={{ fontSize:14,fontWeight:800,color:"#7a4a00",textTransform:"capitalize",letterSpacing:"-0.01em" }}>{monthLabel}</span>
+                        <span style={{ fontSize:9,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"#c78c00",marginTop:2 }}>{itemsByDay.size} día{itemsByDay.size === 1 ? "" : "s"} con premiaciones</span>
+                      </div>
+                      <button type="button" onClick={() => { setPremCalCursor(new Date(calY, calM + 1, 1)); setPremCalSelectedKey(null); }}
+                        style={{ width:30,height:30,borderRadius:8,border:"1px solid #f0deb0",background:"#fffbf2",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a87800" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                      </button>
+                    </div>
+                    <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:3,textAlign:"center" }}>
+                      {calDayNames.map((dn,i) => <div key={i} style={{ fontSize:9,fontWeight:800,color:"#94a3b8",letterSpacing:"0.1em",padding:"4px 0" }}>{dn}</div>)}
+                      {calCells.map((dn,i) => {
+                        if (!dn) return <div key={`empty-${i}`} />;
+                        const dayKey = `${calY}-${String(calM+1).padStart(2,"0")}-${String(dn).padStart(2,"0")}`;
+                        const dayItems = itemsByDay.get(dn) || [];
+                        const hasItems = dayItems.length > 0;
+                        const isSelected = premCalSelectedKey === dayKey;
+                        const isToday = todayNum === dn;
+                        const anyDone = dayItems.some(p => p.status === "REALIZADA");
+                        const anyProg = dayItems.some(p => p.status === "PROGRAMADA");
+                        return (
+                          <button key={dayKey} type="button" onClick={() => setPremCalSelectedKey(isSelected ? null : dayKey)}
+                            style={{ aspectRatio:"1",borderRadius:8,border:isSelected ? "2px solid #d4a017" : isToday ? "1.5px solid #d4a017" : "1px solid transparent",
+                              background:isSelected ? "linear-gradient(135deg,#d4a017 0%,#f5c842 100%)"
+                                : hasItems ? "linear-gradient(135deg,#fff4d6 0%,#fffbf2 100%)"
+                                : "#fff",
+                              color:isSelected ? "#fff" : isToday ? "#7a4a00" : hasItems ? "#0f172a" : "#0f172a",
+                              fontSize:12,fontWeight:isSelected||isToday?800:hasItems?700:500,cursor:"pointer",position:"relative",
+                              boxShadow:isSelected ? "0 3px 8px rgba(199,140,0,0.35)" : hasItems ? "0 1px 2px rgba(199,140,0,0.1)" : "none",
+                              transition:"all .15s",padding:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2 }}>
+                            <span>{dn}</span>
+                            {hasItems && !isSelected && (
+                              <div style={{ display:"flex",gap:2,alignItems:"center" }}>
+                                {anyProg && <span style={{ width:4,height:4,borderRadius:"50%",background:"#c78c00" }} />}
+                                {anyDone && <span style={{ width:4,height:4,borderRadius:"50%",background:"#2e7d32" }} />}
+                                {dayItems.length > 2 && <span style={{ fontSize:8,fontWeight:800,color:"#c78c00",marginLeft:1 }}>+{dayItems.length-2}</span>}
+                              </div>
+                            )}
+                            {isSelected && hasItems && (
+                              <span style={{ fontSize:8,fontWeight:800,padding:"1px 5px",borderRadius:8,background:"rgba(255,255,255,0.3)",color:"#fff" }}>{dayItems.length}</span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {/* Legend */}
+                    <div style={{ display:"flex",alignItems:"center",gap:14,marginTop:10,paddingTop:10,borderTop:"1px dashed #f0deb0",justifyContent:"center" }}>
+                      <span style={{ display:"inline-flex",alignItems:"center",gap:5,fontSize:10,color:"#7a4a00",fontWeight:600 }}>
+                        <span style={{ width:6,height:6,borderRadius:"50%",background:"#c78c00" }} />Programada
+                      </span>
+                      <span style={{ display:"inline-flex",alignItems:"center",gap:5,fontSize:10,color:"#1e5125",fontWeight:600 }}>
+                        <span style={{ width:6,height:6,borderRadius:"50%",background:"#2e7d32" }} />Realizada
+                      </span>
+                      {todayNum && (
+                        <span style={{ display:"inline-flex",alignItems:"center",gap:5,fontSize:10,color:"#7a4a00",fontWeight:600 }}>
+                          <span style={{ width:8,height:8,borderRadius:4,border:"1.5px solid #d4a017",background:"#fff" }} />Hoy
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Selected day items */}
+                  {selectedDayNum ? (
+                    selectedItems.length > 0 ? (
+                      <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
+                        <div style={{ padding:"6px 10px",borderRadius:10,background:"linear-gradient(135deg,#fff4d6 0%,#fffbf2 100%)",display:"flex",alignItems:"center",gap:8,border:"1px solid #f0deb0" }}>
+                          <div style={{ width:6,height:6,borderRadius:"50%",background:"#d4a017",boxShadow:"0 0 6px #d4a017" }} />
+                          <p style={{ fontSize:11,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",color:"#7a4a00",margin:0 }}>{fmtDateLong(premCalSelectedKey!)}</p>
+                          <span style={{ marginLeft:"auto",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:"#fff",color:"#a87800",border:"1px solid #f0deb0" }}>{selectedItems.length}</span>
+                        </div>
+                        {selectedItems.map(p => renderPremCard(p))}
+                      </div>
+                    ) : (
+                      <div style={{ background:"#fff",borderRadius:14,border:"1px dashed #e2e8f0",padding:"20px",textAlign:"center" }}>
+                        <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>Sin premiaciones este día</p>
+                      </div>
+                    )
+                  ) : (
+                    <div style={{ background:"#fff",borderRadius:14,border:"1px dashed #e2e8f0",padding:"20px",textAlign:"center" }}>
+                      <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>Seleccioná un día para ver sus premiaciones</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* List view */}
+              {premView === "list" && (
+                visible.length === 0 ? (
+                  <div style={{ background:"#fff",borderRadius:14,border:"1px dashed #e2e8f0",padding:"28px 20px",textAlign:"center" }}>
+                    <p style={{ fontSize:32,margin:"0 0 8px" }}>🏆</p>
+                    <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>
+                      {hasFilters ? "No hay premiaciones con esos filtros" : "Sin premiaciones cargadas"}
+                    </p>
+                  </div>
+                ) : (
+                  <div style={{ display:"flex",flexDirection:"column",gap:14 }}>
+                    {days.map(([day, items]) => (
+                      <div key={day} style={{ display:"flex",flexDirection:"column",gap:6 }}>
+                        <div style={{ position:"sticky",top:0,zIndex:2,background:"linear-gradient(180deg,#f8fafc 0%,rgba(248,250,252,0.92) 100%)",backdropFilter:"blur(6px)",padding:"6px 10px",borderRadius:10,display:"flex",alignItems:"center",gap:8,border:"1px solid #e2e8f0" }}>
+                          <div style={{ width:6,height:6,borderRadius:"50%",background:"#d4a017",boxShadow:"0 0 6px #d4a017" }} />
+                          <p style={{ fontSize:11,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",color:"#7a4a00",margin:0 }}>{fmtDateLong(day)}</p>
+                          <span style={{ marginLeft:"auto",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:"#fff",color:"#a87800",border:"1px solid #f0deb0" }}>{items.length}</span>
+                        </div>
+                        {items.map(p => renderPremCard(p))}
+                      </div>
+                    ))}
+                  </div>
+                )
+              )}
+            </div>
+          );
+        })()}
+
         {/* ─── Sedes tab ─── */}
         {activeTab === "sedes" && (
           <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
@@ -1393,6 +1935,221 @@ export default function UserPortalPage() {
           </div>
         )}
 
+        {/* ─── Cupones tab ─── */}
+        {activeTab === "cupones" && (
+          <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+            {/* Sub-tabs */}
+            <div className="rounded-2xl p-1 flex gap-1" style={{ background:"#fff", border:"1px solid #e2e8f0", boxShadow:"0 1px 4px rgba(15,23,42,0.05)" }}>
+              <button type="button" onClick={() => setCouponTab("available")}
+                className="flex-1 py-2.5 px-3 rounded-xl text-sm font-bold transition-all inline-flex items-center justify-center gap-2"
+                style={{
+                  background: couponTab === "available" ? "linear-gradient(135deg,#21D0B3 0%,#15B09A 100%)" : "transparent",
+                  color: couponTab === "available" ? "#fff" : "#64748b",
+                  boxShadow: couponTab === "available" ? "0 4px 14px rgba(33,208,179,0.32)" : "none",
+                  border: "none", cursor: "pointer", letterSpacing: "0.01em",
+                }}>
+                Disponibles
+                <span className="text-[10px] rounded-full font-bold px-2 py-0.5"
+                  style={{
+                    background: couponTab === "available" ? "rgba(255,255,255,0.25)" : "#f1f5f9",
+                    color: couponTab === "available" ? "#fff" : "#64748b",
+                  }}>
+                  {visibleCouponsAvailable.filter((c) => !c._exhausted).length}
+                </span>
+              </button>
+              <button type="button" onClick={() => setCouponTab("mine")}
+                className="flex-1 py-2.5 px-3 rounded-xl text-sm font-bold transition-all inline-flex items-center justify-center gap-2"
+                style={{
+                  background: couponTab === "mine" ? "linear-gradient(135deg,#21D0B3 0%,#15B09A 100%)" : "transparent",
+                  color: couponTab === "mine" ? "#fff" : "#64748b",
+                  boxShadow: couponTab === "mine" ? "0 4px 14px rgba(33,208,179,0.32)" : "none",
+                  border: "none", cursor: "pointer", letterSpacing: "0.01em",
+                }}>
+                Mis cupones
+                <span className="text-[10px] rounded-full font-bold px-2 py-0.5"
+                  style={{
+                    background: couponTab === "mine" ? "rgba(255,255,255,0.25)" : "#f1f5f9",
+                    color: couponTab === "mine" ? "#fff" : "#64748b",
+                  }}>
+                  {couponClaims.filter((m) => m.status === "CLAIMED").length}
+                </span>
+              </button>
+            </div>
+
+            {couponError && (
+              <div style={{ borderRadius:14, padding:"10px 14px", background:"#fde2e2", border:"1px solid #fca5a5", color:"#7a1313", fontSize:13 }}>
+                {couponError}
+              </div>
+            )}
+
+            {couponTab === "available" ? (
+              visibleCouponsAvailable.length === 0 ? (
+                <div style={{ padding:24, textAlign:"center", background:"#fff", borderRadius:14, border:"1px solid #e2e8f0" }}>
+                  <p style={{ fontSize:14, fontWeight:600, color:"#0f172a", margin:0 }}>No hay cupones disponibles</p>
+                  <p style={{ fontSize:12, color:"#94a3b8", margin:"6px 0 0" }}>Volvé a chequear más tarde, vamos a estar agregando beneficios durante el evento.</p>
+                </div>
+              ) : (
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))", gap:12 }}>
+                  {visibleCouponsAvailable.map((c) => {
+                    const cat = COUPON_CATEGORIES[c.category] || COUPON_CATEGORIES.OTHER;
+                    const exhausted = c._exhausted;
+                    return (
+                      <article key={c.id}
+                        style={{
+                          background:"#fff", borderRadius:18, overflow:"hidden",
+                          border:"1px solid rgba(15,23,42,0.06)",
+                          boxShadow: exhausted ? "0 1px 4px rgba(15,23,42,0.06)" : "0 4px 16px rgba(15,23,42,0.08)",
+                          opacity: exhausted ? 0.6 : 1,
+                        }}>
+                        <div style={{ position:"relative", width:"100%", aspectRatio:"16/9", background:`linear-gradient(135deg, ${cat.color}30 0%, ${cat.color}60 100%)` }}>
+                          {c.imageUrl && (
+                            <img src={c.imageUrl} alt={c.title} loading="lazy"
+                              style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }}
+                              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                          )}
+                          <div style={{ position:"absolute", inset:0, pointerEvents:"none", background:"linear-gradient(to top, rgba(15,23,42,0.65) 0%, rgba(15,23,42,0.2) 35%, transparent 60%)" }} />
+                          <span style={{
+                            position:"absolute", top:10, left:10,
+                            display:"inline-flex", alignItems:"center", gap:5,
+                            background:"rgba(255,255,255,0.92)", color:cat.color,
+                            padding:"3px 9px", borderRadius:99, fontSize:10, fontWeight:800,
+                            textTransform:"uppercase", letterSpacing:"0.05em",
+                            boxShadow:"0 2px 6px rgba(0,0,0,0.12)",
+                          }}>
+                            <span style={{ width:5, height:5, borderRadius:"50%", background:cat.color }} />
+                            {cat.label}
+                          </span>
+                          <div style={{
+                            position:"absolute", top:10, right:10,
+                            background:`linear-gradient(135deg, ${cat.color} 0%, ${cat.color}d0 100%)`,
+                            color:"#fff", padding:"6px 12px", borderRadius:14, fontSize:15, fontWeight:800,
+                            boxShadow:`0 6px 18px ${cat.color}66`,
+                          }}>
+                            {couponDiscountDisplay(c)}
+                          </div>
+                          {c.partnerName && (
+                            <div style={{ position:"absolute", bottom:10, left:10, right:10, display:"flex", alignItems:"center", gap:8 }}>
+                              {c.partnerLogoUrl ? (
+                                <img src={c.partnerLogoUrl} alt={c.partnerName} loading="lazy"
+                                  style={{ width:28, height:28, borderRadius:"50%", background:"#fff", padding:2, border:"2px solid rgba(255,255,255,0.95)", boxShadow:"0 3px 8px rgba(0,0,0,0.22)", objectFit:"contain" }}
+                                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                              ) : (
+                                <div style={{ width:28, height:28, borderRadius:"50%", background:"#fff", color:cat.color, fontSize:10, fontWeight:800, display:"flex", alignItems:"center", justifyContent:"center", border:"2px solid rgba(255,255,255,0.95)", boxShadow:"0 3px 8px rgba(0,0,0,0.22)" }}>
+                                  {c.partnerName.slice(0,2).toUpperCase()}
+                                </div>
+                              )}
+                              <span style={{ color:"#fff", fontWeight:700, fontSize:13, textShadow:"0 1px 3px rgba(0,0,0,0.55)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                                {c.partnerName}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ padding:"12px 14px 4px" }}>
+                          <p style={{ fontSize:14, fontWeight:700, color:"#0f172a", margin:0, lineHeight:1.25 }}>{c.title}</p>
+                          {c.description && (
+                            <p style={{ fontSize:11.5, color:"#64748b", margin:"6px 0 0", lineHeight:1.4, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" as any, overflow:"hidden" }}>
+                              {c.description}
+                            </p>
+                          )}
+                          <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginTop:8 }}>
+                            {c.validUntil && (
+                              <span style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:10.5, color:"#64748b", fontWeight:500 }}>
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                Hasta {fmtCouponDate(c.validUntil)}
+                              </span>
+                            )}
+                            {c.partnerAddress && (
+                              <span style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:10.5, color:"#64748b", fontWeight:500, maxWidth:170, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                {c.partnerAddress}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <button type="button" disabled={exhausted || couponClaiming === c.id} onClick={() => claimCoupon(c.id)}
+                          style={{
+                            width:"100%", marginTop:10, padding:"12px 0", border:"none", fontSize:13, fontWeight:800, color:"#fff",
+                            background: exhausted ? "linear-gradient(135deg,#94a3b8 0%,#64748b 100%)" : `linear-gradient(135deg, ${cat.color} 0%, ${cat.color}dd 100%)`,
+                            cursor: exhausted ? "not-allowed" : "pointer", letterSpacing:"0.02em",
+                            display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
+                          }}>
+                          {exhausted ? (
+                            <>
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                              Ya lo reclamaste
+                            </>
+                          ) : couponClaiming === c.id ? (
+                            <>Reclamando…</>
+                          ) : (
+                            <>
+                              Reclamar cupón
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                            </>
+                          )}
+                        </button>
+                      </article>
+                    );
+                  })}
+                </div>
+              )
+            ) : couponClaims.length === 0 ? (
+              <div style={{ padding:24, textAlign:"center", background:"#fff", borderRadius:14, border:"1px solid #e2e8f0" }}>
+                <p style={{ fontSize:14, fontWeight:600, color:"#0f172a", margin:0 }}>Todavía no reclamaste ningún cupón</p>
+                <p style={{ fontSize:12, color:"#94a3b8", margin:"6px 0 0" }}>Andá a la pestaña Disponibles y reclamá los que quieras.</p>
+              </div>
+            ) : (
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                {couponClaims.map((c) => {
+                  const coupon = c.coupon;
+                  const cat = coupon ? (COUPON_CATEGORIES[coupon.category] || COUPON_CATEGORIES.OTHER) : COUPON_CATEGORIES.OTHER;
+                  const statusMeta = COUPON_STATUS_META[c.status];
+                  return (
+                    <article key={c.id} style={{ background:"#fff", borderRadius:14, overflow:"hidden", border:"1px solid #e2e8f0", borderLeft:`5px solid ${cat.color}` }}>
+                      <button type="button" onClick={() => c.status === "CLAIMED" && setActiveClaim(c)}
+                        style={{ width:"100%", textAlign:"left", padding:"12px 14px", background:"none", border:"none", cursor: c.status === "CLAIMED" ? "pointer" : "default" }}>
+                        <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:12 }}>
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
+                              <span style={{ fontSize:10, padding:"2px 8px", borderRadius:99, fontWeight:700, background: statusMeta.bg, color: statusMeta.color }}>
+                                {statusMeta.label}
+                              </span>
+                              {coupon?.partnerName && (
+                                <span style={{ fontSize:11, color:"#64748b" }}>{coupon.partnerName}</span>
+                              )}
+                            </div>
+                            <p style={{ fontSize:13.5, fontWeight:700, color:"#0f172a", margin:0, lineHeight:1.25 }}>{coupon?.title || "Cupón"}</p>
+                            <p style={{ fontSize:11, fontFamily:"ui-monospace, SFMono-Regular, monospace", color:"#64748b", margin:"4px 0 0", letterSpacing:"0.04em" }}>
+                              {c.uniqueCode}
+                            </p>
+                          </div>
+                          <div style={{ textAlign:"right", flexShrink:0 }}>
+                            <p style={{ fontSize:18, fontWeight:800, color:cat.color, margin:0 }}>
+                              {coupon ? couponDiscountDisplay(coupon) : "—"}
+                            </p>
+                            {c.status === "CLAIMED" && (
+                              <p style={{ fontSize:10.5, fontWeight:600, color:"#c78c00", margin:"2px 0 0" }}>
+                                Expira en {couponTimeLeft(c.expiresAt)}
+                              </p>
+                            )}
+                            {c.status === "REDEEMED" && c.redeemedAt && (
+                              <p style={{ fontSize:10.5, color:"#64748b", margin:"2px 0 0" }}>
+                                Canjeado {fmtCouponDate(c.redeemedAt)}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        {c.status === "CLAIMED" && (
+                          <p style={{ fontSize:11, fontWeight:600, color:"#1f4e8c", margin:"8px 0 0" }}>Tocá para mostrar el QR</p>
+                        )}
+                      </button>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ─── Cuenta tab ─── */}
         {activeTab === "cuenta" && (
           <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
@@ -1424,6 +2181,13 @@ export default function UserPortalPage() {
                 const evName = event?.name || "Seven Arena";
                 const qrData = `Participante: ${athlete.fullName}\nID: ${athlete.id.slice(-6)}\nDelegación: ${delegation?.countryCode || "—"}`;
                 const qrDataUrl = await QRCode.toDataURL(qrData, { width:200, margin:1 });
+                const meta = (athlete.metadata || {}) as Record<string, unknown>;
+                const photoKeys = ["photoUrl","photo_url","avatar","avatarUrl","imageUrl","image_url"];
+                let photoUrl: string | null = null;
+                for (const k of photoKeys) {
+                  const v = meta[k];
+                  if (typeof v === "string" && v.trim()) { photoUrl = v.trim(); break; }
+                }
                 const html = buildCredentialHtml({
                   eventName: evName,
                   fullName: athlete.fullName,
@@ -1434,10 +2198,10 @@ export default function UserPortalPage() {
                   issuerLabel: "Seven Arena",
                   subjectId: athlete.id,
                   countryTag: athlete.countryCode || delegation?.countryCode || "",
-                  photoUrl: "",
+                  photoUrl,
                   qrDataUrl,
                 });
-                const w = window.open("","_blank","width=450,height=700");
+                const w = window.open("","_blank");
                 if (w) { w.document.write(html); w.document.close(); }
               } catch { notify.push("No se pudo generar la credencial","❌"); }
             }}
@@ -1927,6 +2691,69 @@ export default function UserPortalPage() {
                 style={{ marginTop:8,background:"none",border:"none",color:"#94a3b8",fontSize:13,cursor:"pointer",padding:8 }}>
                 Omitir
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Coupon QR modal ── */}
+        {activeClaim && (
+          <div style={{ position:"fixed", inset:0, zIndex:150, display:"flex", alignItems:"flex-end", justifyContent:"center", padding:0, background:"rgba(0,0,0,0.65)" }}
+            onClick={() => setActiveClaim(null)}>
+            <div style={{ background:"#fff", borderRadius:"24px 24px 0 0", width:"100%", maxWidth:480, maxHeight:"95vh", overflowY:"auto" }}
+              onClick={(e) => e.stopPropagation()}>
+              <div style={{ display:"flex", justifyContent:"center", padding:"12px 0 4px" }}>
+                <div style={{ width:40, height:4, borderRadius:4, background:"#e2e8f0" }} />
+              </div>
+              <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", padding:"8px 20px 12px", borderBottom:"1px solid #f1f5f9" }}>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <p style={{ fontSize:10, fontWeight:700, letterSpacing:"0.2em", textTransform:"uppercase", color:"#64748b", margin:0 }}>Tu cupón</p>
+                  <h2 style={{ fontSize:18, fontWeight:800, color:"#0f172a", margin:"2px 0 0", lineHeight:1.2 }}>{activeClaim.coupon?.title}</h2>
+                  {activeClaim.coupon?.partnerName && (
+                    <p style={{ fontSize:12, color:"#64748b", margin:"3px 0 0" }}>{activeClaim.coupon.partnerName}</p>
+                  )}
+                </div>
+                <button type="button" onClick={() => setActiveClaim(null)}
+                  style={{ width:32, height:32, borderRadius:"50%", border:"1px solid #e2e8f0", background:"#f8fafc", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0, fontSize:18, lineHeight:1 }}>×</button>
+              </div>
+              <div style={{ padding:20, display:"flex", flexDirection:"column", gap:16 }}>
+                <div style={{ display:"flex", justifyContent:"center" }}>
+                  {couponQrDataUrl ? (
+                    <div style={{ padding:16, background:"#fff", borderRadius:16, boxShadow:"0 4px 20px rgba(0,0,0,0.08)" }}>
+                      <img src={couponQrDataUrl} alt="QR del cupón" style={{ width:240, height:240 }} />
+                    </div>
+                  ) : (
+                    <div style={{ width:264, height:264, background:"#f1f5f9", borderRadius:16, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                      <span style={{ fontSize:13, color:"#94a3b8" }}>Generando QR…</span>
+                    </div>
+                  )}
+                </div>
+                <div style={{ textAlign:"center" }}>
+                  <p style={{ fontSize:11, textTransform:"uppercase", letterSpacing:"0.1em", color:"#64748b", margin:"0 0 4px" }}>Código de respaldo</p>
+                  <p style={{ fontSize:22, fontFamily:"ui-monospace, SFMono-Regular, monospace", fontWeight:800, letterSpacing:"0.1em", color:"#1f4e8c", margin:0 }}>{activeClaim.uniqueCode}</p>
+                  <p style={{ fontSize:11, color:"#94a3b8", margin:"4px 0 0" }}>Si el QR no escanea, dictá este código al comercio.</p>
+                </div>
+                <div style={{ padding:12, borderRadius:12, background:"linear-gradient(135deg,#fff8e1 0%,#fff4d6 100%)" }}>
+                  <p style={{ fontSize:12, fontWeight:700, color:"#c78c00", margin:"0 0 4px" }}>Cómo canjearlo</p>
+                  <ol style={{ fontSize:12, color:"#7a5800", margin:0, paddingLeft:18, lineHeight:1.5 }}>
+                    <li>Andá al local del comercio.</li>
+                    <li>Mostrá esta pantalla con el QR.</li>
+                    <li>El comercio lo escaneará y aplicará el descuento.</li>
+                  </ol>
+                </div>
+                <div style={{ fontSize:12, color:"#64748b", display:"flex", flexDirection:"column", gap:3 }}>
+                  <p style={{ margin:0 }}>📅 Reclamado el {fmtCouponFull(activeClaim.claimedAt)}</p>
+                  <p style={{ margin:0 }}>⏱️ Expira el {fmtCouponFull(activeClaim.expiresAt)} <strong>({couponTimeLeft(activeClaim.expiresAt)} restantes)</strong></p>
+                  {activeClaim.coupon?.partnerAddress && (
+                    <p style={{ margin:0 }}>📍 {activeClaim.coupon.partnerAddress}</p>
+                  )}
+                </div>
+                {activeClaim.coupon?.termsAndConditions && (
+                  <details style={{ fontSize:12 }}>
+                    <summary style={{ cursor:"pointer", fontWeight:600, color:"#64748b" }}>Términos y condiciones</summary>
+                    <p style={{ marginTop:6, lineHeight:1.5, color:"#64748b" }}>{activeClaim.coupon.termsAndConditions}</p>
+                  </details>
+                )}
+              </div>
             </div>
           </div>
         )}

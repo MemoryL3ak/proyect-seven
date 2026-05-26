@@ -315,14 +315,45 @@ export function buildCredentialHtml(input: CredentialTemplateInput) {
       .muted {
         color: #64748b;
       }
+      @page { size: A4 landscape; margin: 8mm; }
       @media print {
-        body { padding: 0; background: #fff; }
-        .sheet { box-shadow: none; border-radius: 0; border: none; max-width: none; gap: 0; grid-template-columns: 1fr; }
-        .card { border: none; border-radius: 0; min-height: 100vh; box-shadow: none; page-break-after: always; }
-        .card:last-child { page-break-after: auto; }
+        body { padding: 0; background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .sheet { box-shadow: none; border-radius: 0; border: none; max-width: none; gap: 8mm; grid-template-columns: 1fr 1fr; }
+        .card { border: 1px solid #c7d2e2; border-radius: 12px; min-height: 0; height: auto; box-shadow: none; break-inside: avoid; page-break-inside: avoid; }
       }
       @media (max-width: 980px) {
         .sheet { grid-template-columns: 1fr; }
+      }
+      @media (max-width: 640px) {
+        body { padding: 12px; }
+        .sheet { gap: 14px; }
+        .card { min-height: 0; border-radius: 14px; }
+        .left-strip { width: 64px; padding: 14px 0 12px; }
+        .country { font-size: 28px; }
+        .vertical { font-size: 20px; }
+        .front, .back { padding: 14px 14px 14px 78px; }
+        .front-header, .back-header { margin-bottom: 6px; }
+        .top-right-logo { width: 78px; height: 32px; }
+        .gov-logo { width: 74px; height: 32px; }
+        .photo { width: 150px; height: 180px; margin: 6px auto 10px; border-radius: 8px; }
+        .photo-fallback { font-size: 11px; }
+        .name { font-size: 22px; line-height: 1.1; }
+        .role { font-size: 13px; margin-top: 6px; max-width: 100%; }
+        .meta { font-size: 11px; width: 100%; margin-top: 10px; }
+        .front-qr-wrap { margin: 10px auto 8px; width: 100%; }
+        .qr-panel { padding: 8px; border-radius: 12px; }
+        .qr-image { padding: 4px; border-radius: 8px; }
+        .qr-label { font-size: 10px; margin-top: 6px; }
+        .qr-empty { min-height: 110px; font-size: 10px; }
+        .access-row { gap: 5px; }
+        .access-pill { min-width: 30px; height: 26px; font-size: 14px; padding: 0 6px; border-radius: 7px; }
+        .sponsors { font-size: 10px; margin-top: 10px; }
+        .legend-grid { gap: 8px 14px; margin-bottom: 12px; }
+        .legend-item { font-size: 11px; gap: 6px; }
+        .legend-code { min-width: 38px; height: 26px; font-size: 14px; padding: 0 6px; border-radius: 8px; }
+        .notice { font-size: 13px; padding: 10px 4px; margin-bottom: 12px; }
+        .social { font-size: 14px; }
+        .social .small { font-size: 11px; margin-top: 2px; }
       }
     </style>
   </head>

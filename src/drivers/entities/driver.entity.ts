@@ -44,6 +44,9 @@ export class Driver {
   @Column({ name: 'access_types', type: 'text', array: true, default: () => "'{}'::text[]" })
   accessTypes: string[];
 
+  @Column({ name: 'allowed_client_types', type: 'text', array: true, default: () => "'{}'::text[]" })
+  allowedClientTypes: string[];
+
   @Column({ name: 'accreditation_status', type: 'text', default: 'PENDING' })
   accreditationStatus: string;
 

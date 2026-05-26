@@ -16,6 +16,46 @@ type AwarderRow = any;
 export class PremiacionesService {
   constructor(@Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient) {}
 
+  /** Convierte una fila snake_case del DB a camelCase para el frontend. */
+  private fromRow(row: PremiacionRow | null | undefined): any {
+    if (!row) return row;
+    const awarders = Array.isArray(row.awarders)
+      ? row.awarders.map((a: AwarderRow) => this.fromAwarder(a))
+      : undefined;
+    return {
+      id: row.id,
+      eventId: row.event_id,
+      sportsEventId: row.sports_event_id,
+      title: row.title,
+      discipline: row.discipline,
+      disciplineId: row.discipline_id,
+      scheduledAt: row.scheduled_at,
+      venueId: row.venue_id,
+      venueName: row.venue_name,
+      locationDetail: row.location_detail,
+      status: row.status,
+      notes: row.notes,
+      metadata: row.metadata,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      ...(awarders !== undefined ? { awarders } : {}),
+    };
+  }
+
+  private fromAwarder(a: AwarderRow): any {
+    return {
+      id: a.id,
+      premiacionId: a.premiacion_id,
+      athleteId: a.athlete_id,
+      role: a.role,
+      confirmedAt: a.confirmed_at,
+      declinedAt: a.declined_at,
+      notes: a.notes,
+      metadata: a.metadata,
+      createdAt: a.created_at,
+    };
+  }
+
   private toRow(dto: CreatePremiacionDto | UpdatePremiacionDto) {
     const row: Record<string, unknown> = {};
     if (dto.eventId !== undefined) row.event_id = dto.eventId ?? null;
@@ -113,7 +153,7 @@ export class PremiacionesService {
       );
     }
 
-    return result;
+    return result.map((p) => this.fromRow(p));
   }
 
   async findOne(id: string) {
@@ -133,7 +173,7 @@ export class PremiacionesService {
       .eq('premiacion_id', id);
     if (awardersError) throw new InternalServerErrorException(awardersError.message);
 
-    return { ...data, awarders: awardersData ?? [] };
+    return this.fromRow({ ...data, awarders: awardersData ?? [] });
   }
 
   async update(id: string, dto: UpdatePremiacionDto) {

@@ -1,11 +1,29 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
+import { BulkFromScheduleDto } from './dto/bulk-from-schedule.dto';
+import { AutoAssignDriversDto } from './dto/auto-assign-drivers.dto';
 import { TripsService } from './trips.service';
+import { TripsScheduleService } from './trips-schedule.service';
 
 @Controller('trips')
 export class TripsController {
-  constructor(private readonly tripsService: TripsService) {}
+  constructor(
+    private readonly tripsService: TripsService,
+    private readonly scheduleService: TripsScheduleService,
+  ) {}
+
+  /* ─── Operatividad diaria ─── */
+
+  @Post('bulk-from-schedule')
+  bulkFromSchedule(@Body() dto: BulkFromScheduleDto) {
+    return this.scheduleService.bulkFromSchedule(dto);
+  }
+
+  @Post('auto-assign-drivers')
+  autoAssignDrivers(@Body() dto: AutoAssignDriversDto) {
+    return this.scheduleService.autoAssignDrivers(dto);
+  }
 
   @Post()
   create(@Body() createTripDto: CreateTripDto) {

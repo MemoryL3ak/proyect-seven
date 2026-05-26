@@ -1,0 +1,1556 @@
+Servicios de Transporte de Pasajeros Juegos Panamericanos y Parapanamericanos 2023
+Empresa Bvan Traveling 2023
+
+GLOSARIO
+
+TIPO DE BUSES
+
+CATEGORÍA
+
+ACRÓNIMO
+
+CAPACIDAD DE ASIENTOS
+
+Área Operaciones
+
+M1
+
+10 a 19
+
+Área Operaciones
+
+M2
+
+20 a 30
+
+Área Operaciones
+
+M3
+
+31 a 40
+
+Área Operaciones
+
+M4
+
+Superior a 40
+
+Área Operaciones
+
+M5
+
+Accesibilidad universal
+
+CATEGORÍA
+
+ACRÓNIMO
+
+Áreas Funcionales
+
+ACR
+
+Áreas Funcionales
+
+BRS
+
+Áreas Funcionales
+
+CER
+
+Áreas Funcionales
+
+LOG
+
+Áreas Funcionales
+
+SEC
+
+Áreas Funcionales
+
+SEQ
+
+Áreas Funcionales
+
+TRA
+
+Deporte Panamericano ARC
+
+Deporte Panamericano ARS
+
+Deporte Panamericano ATH
+
+Deporte Panamericano BBL
+
+Deporte Panamericano BDM
+
+Deporte Panamericano BK3
+
+Deporte Panamericano BKB
+
+Deporte Panamericano BKG
+
+Deporte Panamericano BMF
+
+Deporte Panamericano BMX
+
+Deporte Panamericano BOX
+
+Deporte Panamericano BWL
+
+Deporte Panamericano CLB
+
+Deporte Panamericano CRD
+
+ESPAÑOL
+
+INGLÉS
+
+Acreditación
+
+Accreditation
+
+Servicios de transmisión Broadcast Services
+
+Ceremonias
+
+Ceremonies
+
+Logística
+
+Logistics
+
+Seguridad
+
+Security
+
+Equipamiento deportivo Sport Equipment
+
+Transporte
+
+Transport
+
+Tiro con Arco Patinaje – Artístico Atletismo
+
+Archery
+Roller skating - Artistic Skating
+Athletics
+
+Béisbol
+
+Baseball
+
+Bádminton
+
+Badminton
+
+Básquetbol 3x3
+
+Basketball 3x3
+
+Básquetbol
+
+Basketball
+
+Breaking
+
+Breaking
+
+Ciclismo - BMX Freestyle Cycling - BMX Freestyle
+
+Ciclismo - Carrera BMX Cycling - BMX Racing
+
+Boxeo
+
+Boxing
+
+Bowling
+
+Bowling
+
+Escalada deportiva
+
+Sport Climbing
+
+Ciclismo – Ruta
+
+Cycling – Road
+
+Deporte Panamericano Deporte Panamericano Deporte Panamericano Deporte Panamericano Deporte Panamericano Deporte Panamericano Deporte Panamericano Deporte Panamericano Deporte Panamericano Deporte Panamericano Deporte Panamericano Deporte Panamericano Deporte Panamericano Deporte Panamericano Deporte Panamericano Deporte Panamericano Deporte Panamericano Deporte Panamericano Deporte Panamericano Deporte Panamericano Deporte Panamericano Deporte Panamericano Deporte Panamericano Deporte Panamericano Deporte Panamericano Deporte Panamericano Deporte Panamericano Deporte Panamericano Deporte Panamericano Deporte Panamericano
+
+CSL CSP CTR DIV EDR EJP EVE FBL FEN GAR GLF GRY GTR HBL HOC JUD KTE MPN MTB OWS PEL ROW RQL RUG SAL SBL SHO SKB SQU SRF
+
+Canotaje – Slalom
+
+Canoe – Slalom
+
+Canotaje – Velocidad
+
+Canoe – Sprint
+
+Ciclismo – Pista
+
+Cycling – Track
+
+Acuáticos – Clavados
+
+Aquatics – Diving
+
+Ecuestre – Adiestramiento Equestrian – Dressage
+
+Ecuestre – Salto
+
+Equestrian – Jumping
+
+Equestrian - Equestrian Ecuestre - Evento completo Eventing
+
+Fútbol
+
+Football
+
+Esgrima
+
+Fencing
+
+Gimnasia – Artística
+
+Gymnastics, Artistic
+
+Golf
+
+Golf
+
+Gimnasia – Rítmica
+
+Gymnastics, Rhythmic
+
+Gimnasia – Trampolín
+
+Gymnastics, Trampoline
+
+Balonmano
+
+Handball
+
+Hockey césped
+
+Field Hockey
+
+Judo
+
+Judo
+
+Karate
+
+Karate
+
+Pentatlón moderno
+
+Modern Pentathlon
+
+Ciclismo - Mountain bike Cycling - Mountain Bike
+
+Aquatics - Open Water Acuáticos - Aguas abiertas Swimming
+
+Pelota vasca
+
+Basque Pelota
+
+Remo
+
+Rowing
+
+Racquetball
+
+Racquetball
+
+Rugby 7
+
+Rugby 7
+
+Vela
+
+Sailing
+
+Sóftbol
+
+Softball
+
+Tiro
+
+Shooting
+
+Roller Skating – Patinaje – Skateboarding Skateboarding
+
+Squash
+
+Squash
+
+Surf
+
+Surfing
+
+Deporte Panamericano
+
+SSK
+
+Deporte Panamericano
+
+SWA
+
+Deporte Panamericano
+
+SWM
+
+Deporte Panamericano
+
+TEN
+
+Deporte Panamericano
+
+TKW
+
+Deporte Panamericano
+
+TRI
+
+Deporte Panamericano
+
+TTE
+
+Deporte Panamericano
+
+VBV
+
+Deporte Panamericano
+
+VVO
+
+Deporte Panamericano
+
+WLF
+
+Deporte Panamericano
+
+WPO
+
+Deporte Panamericano
+
+WRE
+
+Deporte Panamericano
+
+WSK
+
+Deporte Parapanamericano PARC
+
+Deporte Parapanamericano PATH
+
+Deporte Parapanamericano PBDM
+
+Deporte Parapanamericano PBOC
+
+Deporte Parapanamericano PCRD
+
+Deporte Parapanamericano PCTR
+
+Deporte Parapanamericano PFB5
+
+Deporte Parapanamericano PFB7
+
+Deporte Parapanamericano PGBL
+
+Deporte Parapanamericano PJUD
+
+Deporte Parapanamericano PPWL
+
+Deporte Parapanamericano PSHO
+
+Deporte Parapanamericano PSWM
+
+Deporte Parapanamericano PTKW
+
+Deporte Parapanamericano PTTE
+
+Deporte Parapanamericano PWBK
+
+Deporte Parapanamericano PWRU
+
+Patinaje – Velocidad
+
+Roller Skating - Speed Skating
+
+Acuáticos - Natación artística Aquatics - Artistic Swimming
+
+Acuáticos – Natación
+
+Aquatics – Swimming
+
+Tenis
+
+Tennis
+
+Taekwondo
+
+Taekwondo
+
+Triatlón
+
+Triathlon
+
+Tenis de Mesa
+
+Table Tennis
+
+Vóleibol – Playa
+
+Volleyball – Beach
+
+Vóleibol
+
+Volleyball
+
+Levantamiento de pesas
+
+Weightlifting
+
+Acuáticos - Polo acuático
+
+Aquatics - Water Polo
+
+Lucha
+
+Wrestling
+
+Esquí acuático
+
+Water Ski
+
+Para tiro con arco
+
+Para archery
+
+Para atletismo
+
+Para athletics
+
+Para bádminton
+
+Para bádminton
+
+Boccia
+
+Boccia
+
+Para ciclismo – Ruta
+
+Para cycling – Road
+
+Para ciclismo – Pista
+
+Para cycling – Track
+
+Fútbol para ciegos
+
+Blind football
+
+Fútbol PC
+
+CP Football
+
+Gólbol
+
+Goalball
+
+Judo
+
+Judo
+
+Para powerlifting
+
+Para powerlifting
+
+Tiro Para deportivo
+
+Shooting Para sport
+
+Para natación
+
+Para swimming
+
+Para taekwondo
+
+Para taekwondo
+
+Para tenis de mesa
+
+Para table tennis
+
+Baloncesto en silla de ruedas Wheelchair basketball
+
+Rugby en silla de ruedas
+
+Wheelchair rugby
+
+Deporte Parapanamericano
+Hotel Hotel Hotel Hotel Hotel Hotel
+Hotel Hotel Hotel Hotel Hotel Hotel Hotel Hotel Hotel Hotel Hotel Hotel Hotel Hotel
+Hotel Hotel Hotel Hotel Recintos Recintos Sedes Sedes Sedes Sedes Sedes Sedes Sedes
+
+PWTE
+
+Tenis en silla de ruedas
+
+Wheelchair tennis
+
+HAC Hotel Alma Cruz (Santiago - Oficiales Técnicos)
+
+Hotel Alma Cruz
+
+HBP Buda Lodge Pichilemu (Pichilemu - Oficiales Técnicos) Buda Lodge Pichilemu
+
+HBW
+
+Best Western Marina Del Rey (Viña del Mar - Oficiales Técnicos)
+
+Best Western Marina Del Rey
+
+HCA Centro Recreativo Asmar (Algarrobo - Atletas)
+
+Centro Recreativo Asmar
+
+HCP Hotel Capital (Santiago - Observadores)
+
+Hotel Capital
+
+HES
+
+Enjoy Santiago - Hotel del Valle (Los Andes - Atletas y
+
+Oficiales Técnicos)
+
+Enjoy Santiago - Hotel del Valle
+
+HGQ
+
+Hospedaje Groom en Escuela Ecuestre (Quillota Grooms)
+
+Hospedaje Groom en Escuela Ecuestre
+
+HGV Hotel Gala (Viña del Mar - Atletas)
+
+Hotel Gala
+
+HHV
+
+Hippocampus Viña del mar Resort (Viña del Mar Atletas)
+
+Hippocampus Viña del mar Resort
+
+HIC Hotel ICON (Santiago - Oficiales Técnicos)
+
+Hotel ICON
+
+HLP Lomas De Pinares (Pichilemu - Atletas)
+
+Lomas De Pinares
+
+HMC
+
+MDS Hotel Concepción (Concepción - Oficiales Técnicos)
+
+MDS Hotel Concepción
+
+HME Hotel Mercure (Santiago - Oficiales Técnicos)
+
+Hotel Mercure
+
+HMV
+
+Mantagua Village Hotel & Cabañas (Viña del Mar Atletas)
+
+Mantagua Village Hotel & Cabañas
+
+HNI Novotel Vitacura (Santiago - Oficiales Técnicos)
+
+Novotel Vitacura
+
+HNO Hotel Nodo (Santiago - Prensa CON)
+
+Hotel Nodo
+
+HNP Novotel Providencia (Santiago - Oficiales Técnicos)
+
+Novotel Providencia
+
+HNV Novotel Viña del Mar (Viña del Mar - Atletas)
+
+Novotel Viña del Mar
+
+HOQ Open Hotel Quillota (Quillota - Oficiales Técnicos)
+
+Open Hotel Quillota
+
+HPS HPV
+
+Hotel Plaza San Francisco (Santiago - Oficiales Técnicos)
+Pullman Vina del Mar San Martín (Viña del Mar Atletas)
+
+Hotel Plaza San Francisco Pullman Viña del Mar San Martín
+
+HSH Hotel Sheraton (Quillota - Familia)
+
+Hotel Sheraton
+
+HSM Sheraton Miramar (Santiago - Oficiales Técnicos)
+
+Sheraton Miramar
+
+HTM Cabañas Tinajas del Mar (Pichilemu - Atletas)
+
+Cabañas Tinajas del Mar
+
+AEN Estadio Nacional
+
+Estadio Nacional
+
+BPP Parque Peñalolén
+
+Parque Peñalolén
+
+AAT Centro Atlético Mario Recordón
+
+Centro Atlético Mario Recordón
+
+ACA Centro Acuático
+
+Centro Acuático
+
+ACN Coliseo del Estadio Nacional Julio Martínez
+
+Coliseo del Estadio Nacional Julio Martínez
+
+ACO Centro de Deportes Colectivos
+
+Centro de Deportes Colectivos
+
+ACP Centro de Deportes Paralímpicos
+
+Centro de Deportes Paralímpicos
+
+PBC Parque Bicentenario de Cerrillos
+
+Parque Bicentenario de Cerrillos
+
+ACS Centro Deportivo Sur
+
+Centro Deportivo Sur
+
+Sedes Sedes Sedes Sedes Sedes Sedes Sedes Sedes Sedes Sedes Sedes Sedes Sedes Sedes Sedes Sedes Sedes Sedes Sedes Sedes Sedes Sedes Sedes Sedes Sedes Sedes Sedes Sedes Sedes Sedes Sedes Sedes Sedes Sedes Sedes Sedes Sedes Sedes Sedes Sedes Sedes Sedes
+
+ADC AEX AHC SOC AP1 APA ARA ATE BCH EPQ BCO BCX BTA BVE BVP CEE CEM CPW CSA DBS DBW DCM DES DLE DLM DLP DLF DPO DVO ECN EEE EES EPS EPV EQU FIM FLG FLM FPL FPT FRA GFH
+
+Centro de Deportes de Contacto Explanada de los Deportes Urbanos Centro Deportivo de Hockey Césped Centro de Operaciones de Seguridad Polideportivo 1 Patinódromo Centro Deportivo de las Raquetas Centro Deportivo de Tenis Gimnasio Chimkowe Playa El Quisco Centro de Entrenamiento Olímpico Pista BMX Centro de Tiro con Arco Velódromo Centro de Vóleibol Playa Estadio Español Escuela Militar Prince of Wales Country Club Club Deportivo Universidad Católica Centro de Béisbol y Sóftbol Centro de Bowling Explanada Campo de Marte Muros de Escalada Parque Cerrillos Centro Deportivo Comunitario Lo Espejo Bellas Artes Estadio Municipal de La Pintana Estadio Bicentenario Municipal de La Florida Arena Parque O'Higgins Centro Deportivo de Vóleibol Cofradía Náutica del Pacífico Estadio Elías Figueroa Estadio Sausalito Playa El Sol Gimnasio Polideportivo de Viña del Mar Escuela de Equitación Regimiento Granaderos Calles de Isla de Maipo Laguna Grande San Pedro de la Paz Laguna Los Morros Punta de Lobos Polígono de Tiro de Pudahuel Río Aconcagua Hotel de la Familia Panamericana y Parapanamericana
+
+Centro de Deportes de Contacto Explanada de los Deportes Urbanos Centro Deportivo de Hockey Césped Security Operation Center Polideportivo 1 Patinódromo Centro Deportivo de las Raquetas Centro Deportivo de Tenis Gimnasio Chimkowe Playa El Quisco Centro de Entrenamiento Olímpico Pista BMX Centro de Tiro con Arco Velódromo Centro de Vóleibol Playa Estadio Español Escuela Militar Prince of Wales Country Club Club Deportivo Universidad Católica Centro de Béisbol y Sóftbol Centro de Bowling Explanada Campo de Marte Muros de Escalada Parque Cerrillos Centro Deportivo Comunitario Lo Espejo Bellas Artes Estadio Municipal de La Pintana Estadio Bicentenario Municipal de La Florida Arena Parque O'Higgins Centro Deportivo de Vóleibol Cofradía Náutica del Pacífico Estadio Elías Figueroa Estadio Sausalito Playa El Sol Gimnasio Polideportivo de Viña del Mar Escuela de Equitación Regimiento Granaderos Calles de Isla de Maipo Laguna Grande San Pedro de la Paz Laguna Los Morros Punta de Lobos Polígono de Tiro de Pudahuel Río Aconcagua Panam and Parapan Family Hotel
+
+Sedes IBC Sedes LDC Sedes MAC Sedes MOC Sedes MPC Sedes CCP Sedes SCL Sedes TAN Sedes TCC Sedes TEV Sedes TFR Sedes TGM Sedes TMA Sedes TNM Sedes TOC Sedes TPC Sedes TROC Sedes TSB Sedes TSR Sedes TVM Sedes UAC Sedes VLP
+
+Centro Internacional de Transmisión Sede de Logística y Distribución Centro de Acreditación de Medios Centro Principal de Operaciones
+
+International Broadcasting Center
+Logistic and Distribution Center
+Centro de Acreditación de Medios
+Main Operationl Center
+
+Centro Principal de Prensa
+
+Main Press Center
+
+Aeropuerto Internacional Carriel Sur – Concepción
+
+Aeropuerto Internacional Carriel Sur – Concepción
+
+Aeropuerto Internacional Arturo Merino Benítez
+Campus Antumapu, Universidad de Chile (2 canchas)
+Escuela de Carabineros, Cerrillos (1 cancha)
+
+Aeropuerto Internacional Arturo Merino Benítez
+Campus Antumapu, Universidad de Chile (2 canchas)
+Escuela de Carabineros, Cerrillos (1 cancha)
+
+Centro Deportivo Everton, Viña del Mar (2 canchas)
+
+Centro Deportivo Everton, Viña del Mar (2 canchas)
+
+Complejo Funcionarios Reñaca Alto
+Polideportivo Juan Gómez Millas, Universidad de Chile Complejo Deportivo Mantagua, Valparaíso (2 canchas) Polideportivo Nicolás Massú, Villa Alemana (1 cancha)
+
+Complejo Funcionarios Reñaca Alto
+Polideportivo Juan Gómez Millas, Universidad de Chile
+Complejo Deportivo Mantagua, Valparaíso (2 canchas)
+Polideportivo Nicolás Massú, Villa Alemana (1 cancha)
+
+Centro de Operaciones Tecnológicas
+
+Technology Operation Center
+
+Piscina Parque Cousiño
+
+Piscina Parque Cousiño
+
+Centro de Operaciones de Transporte
+
+Transport Operation Center
+
+Estadio Santiago Bueras, Maipú (1 cancha)
+Centro Deportivo Comunitario San Ramón (1 cancha) Universidad de Viña del Mar, Campus Rodelillo (1 cancha)
+Centro de Acreditaciones y Uniformes
+Villa Panamericana y Parapanamericana
+
+Estadio Santiago Bueras, Maipú (1 cancha)
+Centro Deportivo Comunitario San Ramón (1 cancha)
+Universidad de Viña del Mar, Campus Rodelillo (1 cancha)
+Uniforms and Accreditation Center
+Pan American and Parapan American Village
+
+CONCEPTOS
+ANTIGÜEDAD: ES EL RESULTADO DE RESTAR AL AÑO ACTUAL AL AÑO DE FABRICACIÓN DEL VEHÍCULO ANOTADO EN EL REGISTRO NACIONAL DE VEHÍCULOS MOTORIZADOS QUE LLEVA EL SERVICIO DE REGISTRO CIVIL E IDENTIFICACIÓN.
+CLÚSTER: AGRUPACIÓN DE RECINTOS UBICADOS EN SECTORES O COMUNAS ALEDAÑAS.
+VILLA PANAMERICANA: CORRESPONDE AL LUGAR DE HOSPEDAJE DE LOS ATLETAS, OFICIALES Y PERSONAL DE LOS EQUIPOS QUE PARTICIPAN TANTO EN LOS JUEGOS PANAMERICANOS COMO EN LOS JUEGOS PARAPANAMERICANOS, UBICADA EN LA INTERSECCIÓN DE PEDRO AGUIRRE CERDA CON DEPARTAMENTAL, EN LA COMUNA DE CERRILLOS, REGIÓN METROPOLITANA.
+VILLAS SATÉLITES: CORRESPONDE A LOS HOSPEDAJES UBICADOS FUERA DE LA REGIÓN METROPOLITANA. RECINTOS DE COMPETENCIA: RECINTO DEPORTIVO DONDE SE DESARROLLAN LAS ACTIVIDADES DEPORTIVAS DE COMPETENCIA.
+RECINTOS DE ENTRENAMIENTO: RECINTO DEPORTIVO DONDE SE DESARROLLAN LAS ACTIVIDADES DE ENTRENAMIENTOHOTELES OFICIALES DE OFICIALES TÉCNICOS: ALMACRUZ, MERCURE Y SAN FRANCISCO EN LA COMUNA DE SANTIAGO; NOVOTEL PROVIDENCIA EN LA COMUNA DE PROVIDENCIA; NOVOTEL VITACURA EN LA COMUNA DE VITACURA E ICON EN LA COMUNA DE LAS CONDES.
+HOTELES OFICIALES DE MEDIOS: HOTEL NODO, CAPITAL HOTEL BELLET, HOTEL DIEGO DE ALMAGRO, HOTEL TORREMAYOR Y PANAMERICANA HOTEL, TODOS UBICADOS EN PROVIDENCIA.
+HOTEL OFICIAL DE LA FAMILIA: HOTEL SHERATON.
+VAPP: ACREDITACIÓN PARA LOS VEHÍCULOS QUE SE UTILICEN DURANTE LOS JUEGOS PANAMERICANOS Y PARAPANAMERICANOS, CUYO PORTE ES OBLIGATORIO PARA INGRESAR A LOS RECINTOS DEPORTIVOS.
+GRÁFICA: CORRESPONDE A LA IMAGEN CORPORATIVA DE LOS JUEGOS A INSTALAR EN LOS VEHÍCULOS
+PIAC: ACREDITACIÓN Y TARJETA DE IDENTIDAD PARA PERSONAS, QUE SE UTILIZARÁ DURANTE LOS JUEGOS, LA QUE DEBE SIEMPRE PORTARSE.
+MPC: CENTRO DE MEDIOS Y TELEVISIÓN
+PLAN DE OPERACIÓN PRELIMINAR: CORRESPONDE A LOS ARCHIVOS EXCEL ADJUNTOS DE ESTE PROCESO PARA LO CUAL EL OFERENTE DEBE TOMAR COMO BASE PARA CONFECCIONAR ESTE PLAN SOLICITADO.
+
+CORDINADOR REGIONAL
+RESPONSABILIDADES Y FUNCIONES:
+VELAR POR LA CORRECTA EJECUCIÓN DEL EVENTO EN TODO ÁMBITO, YA SEAN ASPECTOS GENERALES COMO ESPECÍFICOS. COMUNICACIÓN FLUIDA CON LOS ENCARGADOS DE SEDE. SUPERVISIÓN DE LA PERMANENCIA Y FUNCIONES DE LOS ENCARGADOS DE SEDE. CONTACTO PERMANENTE Y SEGUIMIENTO DE LAS RUTAS DE CADA CHOFER/CONDUCTOR. VISITA A LOS RECINTOS DEPORTIVOS Y HOTELES EN CADA COMUNA. REALIZAR SEGUIMIENTO A LOS COMPROMISOS DE TRABAJO DE CADA COORDINADOR DE SEDE. VELAR POR EL CUMPLIMIENTO DE LOS CONTRATOS/SERVICIOS CONTRATADOS CONOCER LAS RUTAS DIARIAS, CANTIDAD DE DELEGACIONES POR RECINTO, CANTIDAD DE DEPORTISTAS POR DELEGACIÓN, ETC. AL TÉRMINO DE CADA JORNADA DEBERÁ REALIZAR UN REPORTE AL ENCARGADO GENERAL DE REGIONES. VELAR POR EL CUMPLIMIENTO DE LOS HORARIOS Y RUTAS DE CADA TRASLADO. REALIZAR OTRAS LABORES QUE SEAN INHERENTES AL CARGO Y QUE SEA SOLICITADA POR SU JEFATURA DIRECTA.
+
+COORDINADOR SEDE
+RESPONSABILIDADES Y FUNCIONES:
+COMUNICACIÓN FLUIDA CON EL COORDINADOR DE LA REGIÓN. GARANTIZAR QUE LA PLANIFICACIÓN DE TRASLADOS DIARIOS SE CUMPLAN EN LOS HORARIOS Y TIEMPOS DEFINIDOS. MANTENER EL CONTACTO CON LOS CHOFERES/CONDUCTORES CORRESPONDIENTE A SUS SEDES. CONOCER EL PROGRAMA DE COMPETENCIA DIARIO. GARANTIZAR Y RESGUARDAR EL USO DE LOS ESTACIONAMIENTOS DISPONIBLES PARA LOS VEHÍCULOS DE LA EMPRESA. COMUNICACIÓN FLUIDA CON EL ENCARGADO DE RECINTO. RESPETAR POLÍTICAS DE PROCEDIMIENTOS Y CANALES DE COMUNICACIÓN. PERMANECER EN EL RECINTO DEPORTIVO DURANTE TODO EL PERIODO QUE DURE LA COMPETENCIA. CHEQUEAR LA SALIDA Y LLEGADA DE LAS DELEGACIONES A SUS RESPECTIVOS HOTELES. SUPERVISAR DIARIAMENTE LAS CREDENCIALES DE LOS CHOFERES/CONDUCTORES Y VEHÍCULOS A LA LLEGADA EN CADA RECINTO. PROACTIVIDAD. AL TÉRMINO DE CADA JORNADA RETROALIMENTAR AL ENCARGADO REGIONAL SOBRE LOS POSIBLES PROBLEMAS OCASIONADOS DURANTE EL DÍA. LLEVAR UN REGISTRO DIARIOS DE LAS VUELTAS Y TRASLADOS DE LOS CHOFERES/CONDUCTORES.
+
+V REGIÓN
+COORDINADOR REGIONAL: RODRIGO BARTOLUCCI
+CONTACTO: +56 9 92273790
+APOYO COORDINACIÓN: TAMARA MORALES
+CONTACTO: +56 9 30296234
+SEDES: VALPARAÍSO, VIÑA DEL MAR, QUILLOTA, ALGARROBO, EL QUISCO
+DISCIPLINAS: FÚTBOL, BALONMANO, VELA, TRIATLÓN, ECUESTRE.
+
+CRONOGRAMA GENERAL
+
+RECINTOS DEPORTIVOS
+
+Disciplina
+
+Recinto Deportivo
+
+Dirección
+
+Responsable Contacto
+
+Futbol Competencia
+
+1.- Estadio Elías Figueroa2.- Estadio Sausalito
+
+1.- Fco. Hontaneda #1310 Playa Ancha2.Circunvalación Laguna Sausalito s/n
+
+Rodrigo Bartolucci
+
++56 9 92273790
+
+Futbol Entrenamiento
+
+1.- Complejo Everton Reñaca Alto2.Complejo Santiago Wanders Mantagua3.Complejo Funcionarios Reñaca Alto
+
+1.- Calle Alemania, Viña del Mar2.- Quintero, Valparaíso3.- Avda. Alemania Reñaca Alto
+
+Rodrigo Bartolucci
+
+Balonmano Competencia
+Balonmano Entrenamiento
+
+Polideportivo de Viña del Mar
+
+Padre Hurtado #300 Viña del Mar
+
+Tamara Morales
+
+1.- Polideportivo Nicolas Massu 2.-Universidad Viña del Mar
+
+1.- Asunción #701, Villa Alemana2.- Diego Portales #90, Rodelillo Viña del Mar
+
+Tamara Morales
+
+Triatlón Competencia
+
+Playa El Sol
+
+Avda. San Martin s/n
+
+Rodrigo Bartolucci
+
+Triatlón Entrenamiento Colegio Alemán
+
+1.- Álvarez #2950 Viña del Mar
+
+Rodrigo Bartolucci
+
+Ecuestre Competencia Escuela Caballería
+
+Larraguibel s/n San Isidro
+
+Ricardo Guerra
+
+Ecuestre Entrenamiento Escuela Caballería
+
+Larraguibel s/n San Isidro
+
+Ricardo Guerra
+
+Vela Competencia
+
+Cofradía
+
+José Toribio Merino #3877 Algarrobo
+
+Diego Farias
+
++56 9 92273790
++56 9 30296234 +56 9 30296234 +56 9 92273790 +56 9 92273790 +56 9 88427497 +56 9 88427497 +56992109501
+
+1.- RUTA ESTADIO ELIAS FIGUEROA - HIPPOCAMPUS
+2.- RUTA ESTADIO ELIAS FIGUEROA – HOTEL BEST WESTER
+
+3.- POLIDEPORTIVO – HOTEL BEST WESTER
+4.- POLIDEPORTIVO VIÑA DEL MAR – HOTEL PULLAMN
+
+5.- POLIDEPORTIVO VIÑA DEL MAR – HOTEL MANTAGUA
+6.- POLIDEPORTIVO VIÑA DEL MAR – HOTEL NOVOTEL
+
+7.- POLIDEPORTIVO VIÑA DEL MAR – HOTEL BEST WESTER
+8.- PLAYA EL SOL – HOTEL BEST WESTER
+
+9.- PLAYA EL SOL – HOTEL GALA
+10.- ESCUELA CABALLERÍA – HOSTERÍA EL COPIHUE
+
+11.- ESCUELA CABALLERÍA – HOTEL PIEMONTE
+12.- ESCUELA CABALLERÍA – HOTEL PARADAOR DE DARWIN
+
+13.- COFRADÍA- ASMAR
+14.- COFRADÍA – HOTEL HUALLILEMU
+
+15.- RIO ACONCAGUA – HOTEL ENJOY
+
+Disciplina
+Futbol Femenino Futbol Masculino Balonmano Femenino Balonmano Masculino Triatlón Ecuestre Vela
+
+HOTELERÍA
+
+Hotel
+
+Dirección
+
+Cliente
+
+1.- Best Western2.- Hippocampus
+
+1.- Ecuador #299, Viña del Mar2.Las pimpinelas #763, Concón
+
+1.- Oficiales técnicos2.- Atletas y ofíciales de equipo
+
+1.- Best Western2.- Hippocampus
+
+1.- Ecuador #299, Viña del Mar2.Las pimpinelas #763, Concón
+
+1.- Oficiales técnicos2.- Atletas y ofíciales de equipo
+
+1.- Best Western 2.- Novotel 3.Pullman
+
+1.- Ecuador #299, Viña del Mar2.6 norte #745 Viña del Mar3.Avda. San Martin #667
+
+1.- Oficiales técnicos2.- Atletas y oficiales de equipo3.- Atletas y oficiales de equipo
+
+1.- Best Western2.- Mantagua
+
+1.- Ecuador #299, Viña del Mar2.Ruta Concón hacia Quintero F30E
+
+1.- Oficiales técnicos2.- Atletas y oficiales de apoyo
+
+1.- Hotel Gala2.- Best Western
+
+1.- Arlegui #237, Viña del Mar2.Ecuador #299, Viña del Mar
+
+1.- Oficiales técnico, oficiales de equipos y atletas2.- Oficiales técnicos
+
+1.- Hotel Piemonte 2.- Hostería El Copihues3.- Cabañas Parador de Darwin
+
+1.- Avda. El granizo #6327, Olmué2.- Diego Portales #2203, Olmué 3.- La gruta #2501, Olmué
+
+1.- Atletas2.- Oficiales Técnicos3.- Oficiales Técnicos
+
+1.- Hotel Huallilemu2.- ASMAR
+
+1.- Avda., Andes #116 El Quisco2.Los abogados #3401, Algarrobo
+
+1.- Atletas2.- Oficiales Técnicos y oficiales de apoyo
+
+VI REGIÓN
+COORDINADOR REGIONAL: ELIARA KLEIN CONTACTO: +56982771134 DISCIPLINA: SURF
+
+CRONOGRAMA GENERAL
+
+RECINTOS DEPORTIVOS
+
+Disciplina
+
+Recinto Deportivo
+
+Dirección
+
+Responsable
+
+Contacto
+
+Surf
+
+Playa Punta de Lobos
+
+Punta de Lobos, Pichilemu
+
+Eliara Klein
+
++569827711 34
+
+1.- PUNTA DE LOBOS – HOTEL BUDA
+2.- PUNTA DE LOBOS – HOTEL LOMAS DE PINARES
+
+3.- PUNTA DE LOBOS – HOTEL RANCHO DE PINARES
+4.- PUNTA DE LOBOS – HOTEL TINAJAS DE MAR
+
+HOTELERÍA
+
+Disciplina Surf
+
+Hotel
+
+Dirección Cliente
+
+1.- Buda Lodge 2.- Tinajas del Mar 3.- Lomas de Pinares 4.- Ranchos de Pinares
+
+1.- Evaristo merino #1080, Pichilemu 2.-Camino a punta de lobos 3.- Bucalemu #3011, Cahuil, Pichilemu
+
+1.- Oficiales técnicos 2.- Atletas y oficiales de equipo 3.- Atletas y oficiales de equipo
+
+VIII REGIÓN
+COORDINADOR REGIONAL: JOSÉ HERMOSILLA CONTACTO: +56 9 75465078
+APOYO COORDINACIÓN: DAVID FLORES CONTACTO: +56979318289
+DISCIPLINA: CONOTAJE VELOCIDAD, REMO
+
+CRONOGRAMA GENERAL
+
+RECINTOS DEPORTIVOS
+
+Disciplina Remo Canotaje
+
+Recinto Deportivo
+
+Dirección
+
+Laguna Grande San Pedro de la Paz
+
+San Pedro de la Paz, Bio-Bio
+
+Laguna Grande San Pedro de la Paz
+
+San Pedro de la Paz, Bio- Bio
+
+Responsable Contacto
+
+José Hermosilla
+
++56 9 75465078
+
+José Hermosilla
+
++56 9 75465078
+
+1.- LAGUNA SAN PEDRO – HOTEL SONESTA
+2.- LAGUNA SAN PEDRO – HOTEL EL ARAUCANO
+
+3.- LAGUNA SAN PEDRO – HOTEL MERCURE
+
+HOTELERÍA
+
+Disciplina
+
+Hotel
+
+Dirección
+
+Cliente
+
+Remo
+
+1.- MDS Ex Sonesta 2.- Hotel Araucano 3.- Hotel Mercure
+
+Canotaje
+
+1.- .- MDS Ex Sonesta2.- Hotel Araucano
+
+1.- Calle A#809, Brisas del Sol, Concepción 2.Caupolicán #521, Concepción 3.- Cochrane Poniente 75, Concepción
+
+1.- Oficiales técnicos2.Atletas y oficiales de equipo3.- .- Atletas y oficiales de equipo
+
+1.- Calle A#809, Brisas del Sol, Concepción 2.Caupolicán #521, Concepción
+
+1.- Oficiales técnicos2.Atletas y oficiales de equipo
+
+REGIÓN METROPOLITANA
+COORDINADOR REGIONAL: DANIELA MOLINA
+DISCIPLINA: Aguas Abiertas, Atletismo, Clavados, Natación Artística, Polo Acuático, Badminton, Atletismo Estadio, Gimnasia Artística, Esquí Acuático, Basquetbol, Basquetbol 3x3, Ciclismo, Esgrima, Boxeo, Bowling, Breaking, Natación, Patinaje, Hockey, Gimnasia Rítmica, Taekwondo, Tenis de Mesa, Pelota Vasca, Gimnasia Trampolín, Pentatlón, Judo, Skatebording, Karate, Tenis, Levantamiento, Lucha, Patinaje, Voleibol, Racquetbol, Squash, Rugby, Voleibol Playa, Tiro con Arco, Escalada, Softbol, Beisbol, Golf.
+Estadio Nacional
+COORDINADOR ESTADIO: LUNA HERNÁNDEZ CONTACTO: +56 921763083 APOYO COORDINACIÓN: FELIPE SÁNCHEZ CONTACTO: 3504978923
+
+Disciplina
+
+Coordinador
+
+Contacto
+
+Clavados
+
+Natación Artística
+
+José Bustamante 56984618868
+
+Polo Acuático Patricio Curipan 56 972271785
+
+Atletismo Estadio
+
+David Valdes
+
+56965683449
+
+Basquetbol Masculino
+
+Javier Cortes
+
+56993639261
+
+Básquetbol Femenino
+
+Mario Lagos
+
+56989800841
+
+Esgrima
+
+Luis Cancino
+
+56984342019
+
+Natación
+
+Antonio Ortiz
+
+56986023306
+
+Patinaje Velocidad
+
+Marco Henríquez 56951532124
+
+Hockey Femenino /Masc
+
+Francisco Celis 56988421172
+
+Gimnasia Rítmica
+
+Camila Gutiérrez 56957228559
+
+Entrenamiento 16 – 19 oct 27 -30 oct 20 – 03 nov 26oct – 04 nov
+
+Competencia 20 – 25 oct 31 oct /02- 03 nov 20oct – 04 nov 30 oct – 04 nov
+
+27oct – 04 nov
+
+31oct – 04 nov
+
+21- 24 oct 26oct -03 nov 17-20 oct 31oct -03 nov
+
+25 – 29 oct 30oct – 04 nov 21 – 25 oct 04 -05 nov
+
+30oct – 02 nov
+
+03– 05 nov
+
+28oct – 02nov
+
+01-04nov
+
+Taekwondo Feliz Henríquez
+Poomsae /Kyorugi
+
+56994195640
+
+Gimnasia Artística Daniel Santander 996409163
+Masculina
+
+Gimnasia Trampolín
+
+Matías Luna
+
+56952060204
+
+Judo
+
+Víctor Muñoz
+
+56961937525
+
+Skatebording
+
+Víctor Muñoz
+
+56961937525
+
+Karate KataKumite
+
+Mario Calderón 56966377616
+
+Tenis
+
+Cristian Silva
+
+56993568920
+
+Racquetball
+
+Cristian olivares 56954992798
+
+Squash
+
+Cristian olivares 56954992798
+
+17 – 20 oct
+
+21 – 24 oct
+
+17 oct-04 nov
+
+17 oct-04 nov
+
+30oct – 02 nov 03- 04 nov
+
+24 – 27 oct 16 – 20 oct
+
+28 – 31 oct 21 – 22 oct
+
+30 oct – 02 nov 03 – 05 nov
+
+19oct – 22oct 17 – 20 oct 27 – 31 oct
+
+23 – 29 oct 21 – 26 oct 03 – 05 nov
+
+1.- VILLA PANAMERICANA – ESTADIO NACIONAL
+
+CALLE ISLA MAIPO
+
+Disciplina Coordinador Contacto Entrenamiento
+
+Competencia
+
+Ciclismo Ruta
+
+Marco Henríquez
+
+818 629 7316
+
+21 y 28 oct
+
+22 y 29
+
+2.- VILLA PANAMERICANA – ISLA MAIPO
+
+SANTIAGO - LA MONEDA
+
+Disciplina
+
+Coordinador
+
+Ciclismo Ruta
+
+Marco Henríquez
+
+Contacto 818 629 7316
+
+Entrenamiento Competencia
+
+21 y 28 oct
+
+22 y 29
+
+3.- VILLA PANAMERICANA – LA MONEDA
+
+CENTRO DE BOWLING
+
+Disciplina Bowling
+
+Coordinador
+
+Contacto
+
+Entrenamiento Competencia
+
+Isabel Olguin
+
+56993431751
+
+29 oct – 31oct 01 – 04 nov
+
+4.- VILLA PANAMERICANA – CENTRO BOWLING (LA FLORIDA)
+
+CENTRO ENTRENAMIENTO OLÍMPICO
+
+Disciplina Badminton Boxeo Tenis de Mesa Lucha Masc/ Fem
+
+Coordinador Marcos Flores
+Isabel Olguin
+Pablo Vial Feliz Henríquez
+
+Contacto 56977932118 56993431751 56981981290 56994195640
+
+Entrenamiento 17 – 20 oct 17 – 26 oct 25oct – 05nov 27oct-03nov
+
+Competencia 21 – 25 oct 19 – 27 oct 29oct – 05 nov 01-04 nov
+
+5.- VILLA PANAMERICANA – CEO
+ESCUELA MILITAR
+
+Disciplina Pentatlón
+
+Coordinador
+
+Contacto
+
+Scarlett Osorio 56947702897
+
+Entrenamiento Competencia
+
+17 – 20 y 24oct
+
+21- 23-25 -27 oct
+
+6.- VILLA PANAMERICANA ESCUELA MILITAR
+
+ESTADIO ESPAÑOL
+
+Disciplina
+Basquetbol 3x3 Pelota Vasca
+
+Coordinador
+Marcela Valenzuela
+Marco Flores
+
+Contacto 56963484984 56977932118
+
+Entrenamiento
+
+Competencia
+
+17-20 oct
+
+21 – 23 oct
+
+27 – 30 oct
+
+31oct – 05 nov
+
+7.- VILLA PANAMERICANA – ESTADIO ESPAÑOL
+
+ESTADIO LA PINTANA
+
+Disciplina Coordinador
+
+Contacto
+
+Entrenamiento Competencia
+
+Rugby
+
+Tomas Hormazábal 56945896360 30oct – 02 nov 03 – 04 nov
+
+8.- VILLA PANAMERICANA – ESTADIO LA PINTANA
+
+EXPLANADA DEPORTES URBANOS
+
+Disciplina
+Ciclismo Frestyle
+
+Coordinador
+
+Contacto
+
+Entrenamiento Competencia
+
+Víctor Muñoz
+
+56961937525
+
+02 – 04 nov
+
+05 nov
+
+10.- VILLA PANAMERICANA – GIMNASIO CHIMKOWE
+
+LAGUNA LOS MORROS
+
+Disciplina
+Aguas Abiertas
+Esquí Acuático
+
+Coordinador Contacto
+
+Entrenamiento Competencia
+
+Laura Paulo
+
+56934966706 25 – 28 oct
+
+29 oct
+
+Laura Paulo
+
+56934966706 18-20oct
+
+21-24oct
+
+12.- VILLA PANAMERICANA – LAGUNA LOS MORROS
+
+PARQUE BICENTENARIO CERRILLOS
+
+Disciplina Escalada Softbol Beisbol
+
+Coordinador
+
+Contacto
+
+Bernardita Matías 56958184993
+
+José Calfuqueo
+
+56965728271
+
+Minerva Navarrete 56988100000
+
+Entrenamiento 17 – 20 oct 26oct – 02 nov 17 oct -28oct
+
+Competencia 21 – 24 oct 26oct – 04 nov 19 – 28 oct
+
+13.- VILLA PANAMERICANA . PARQUE BICENTENARIO (BEISBOL Y SOFTBOL)
+14.- VILLA PANAMERICANA – PARQUE CERRILLOS (ESCALADA)
+PARQUE O’HIGGINS
+
+Disciplina
+
+Coordinador
+
+Contacto
+
+Atletismo Maratón / Marcha
+
+Ruth Suazo
+
+56991899095
+
+Voleibol Masculino
+
+Sebastián Vásquez
+
+569 93311460
+
+Voleibol Femenino
+
+Sebastián Vásquez 569 93311460
+
+Entrenamiento Competencia
+
+21oct - 28 oct
+
+22/29 oct y 04 nov
+
+27oct – 04 nov 30oct -04nov
+
+18 oct– 26 oct
+
+21oct – 26 oct
+
+15.- VILLA PANAMERICANA – PARQUE O´HIGGINS
+
+PARQUE PEÑALOLÉN
+
+Disciplina
+
+Coordinador
+
+Contacto
+
+Entrenamiento
+
+Competencia
+
+Ciclismo Racing
+
+Paola Ahumada
+
+56993311667
+
+17oct- 20 oct
+
+21 – 22 oct
+
+Ciclismo Pista
+
+Camila Gutiérrez
+
+56957228559
+
+20oct – 23 oct
+
+24 oct – 27 oct
+
+Patinaje Artístico Paola Ahumada
+
+56993311667
+
+31 oct – 04 nov
+
+03 – 04nov
+
+Voleibol Playa
+
+Tomas Hormazábal
+
+56945896360
+
+17 – 19 oct
+
+21 – 27 oct
+
+Tiro con Arco
+
+Scarlett Osorio
+
+56947702897
+
+28 oct – 04 nov
+
+05 nov
+
+16.- VILLA PANAMERICANA – PARQUE PEÑALOLEN
+
+PRINCE OF WALES COUNTRY CLUB
+
+Disciplina Golf
+
+Coordinador Contacto
+
+Entrenamiento Competencia
+
+Daniela Dorner
+
+56956839092 30oct – 01 nov 02 – 05 nov
+
+17.- VILLA PANAMERICANA . PRINCE OF WALES COUNTRY CLUB
+
+SAN CARLOS DE APOQUINDO
+
+Disciplina
+
+Coordinador
+
+Ciclismo Mountain Bike
+
+Pablo Vial
+
+Contacto 56981981290
+
+Entrenamiento Competencia
+
+17- 20oct
+
+21oct
+
+18.- VILLA PANAMERICANA . SAN CARLOS DE APOQUINDO
+
+POLÍGONO DE TIRO PUDAHUEL
+
+Disciplina Tiro
+
+Coordinador
+
+Contacto Entrenamiento Competencia
+
+Francisca Madrid
+
+17 – 25 oct
+
+21 – 27 oct
+
+19.- VILLA PANAMERICANA – POLÍGONO DE TIRO PUDAHUEL
+
+HOTELERÍA
+1.- Hotel Almacruz
+
+HOTELERÍA
+2.- Hotel San Francisco
+
+HOTELERÍA
+3.- Hotel Mercure
+
+HOTELERÍA
+4.- Hotel Panamericana
+
+HOTELERÍA
+5.- Hotel Capital Bellet
+
+HOTELERÍA
+6.- Hotel Intercontinental
+
+HOTELERÍA
+7.- Hotel Nodo Las Condes
+
+HOTELERÍA
+8.- Hotel Torremayor Lyon
+
+HOTELERÍA
+9.- Hotel Pullman El Bosque
+
+HOTELERÍA
+10.- Hotel Novotel Providencia
+
+HOTELERÍA
+11.- Hotel Novotel Las Condes
+
+HOTELERÍA
+12.- Hotel Icon
+
+HOTELERÍA
+13.- Hotel Mandarin Oriental
+
+HOTELERÍA
+14.- Hotel Marriot
+
+HOTELERÍA
+15.- Hotel Sheraton
+
+HOTELERÍA
+16.- Hotel Four Point by Sheraton
+
+

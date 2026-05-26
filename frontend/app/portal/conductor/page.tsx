@@ -650,6 +650,40 @@ export default function DriverPortalPage() {
     return () => clearInterval(interval);
   }, [driverProfile?.id]);
 
+  // Heartbeat de presencia: avisa al backend que la app del conductor está
+  // abierta, aunque el chofer no tenga ningún viaje en curso.
+  useEffect(() => {
+    const profile = driverProfile as { id?: string; eventId?: string | null } | null;
+    if (!profile?.id) return;
+
+    const sendHeartbeat = () => {
+      apiFetch("/driver-presence/heartbeat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          driverId: profile.id,
+          eventId: profile.eventId ?? undefined,
+          platform: "web",
+          userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+        }),
+      }).catch(() => {
+        /* presencia es best-effort, no interrumpe al conductor */
+      });
+    };
+
+    sendHeartbeat();
+    const interval = setInterval(sendHeartbeat, 30000);
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") sendHeartbeat();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [driverProfile?.id]);
+
   const getTripAthleteIds = (trip: Trip) => {
     const ids = new Set<string>(trip.athleteIds || []);
     if (trip.requesterAthleteId) ids.add(trip.requesterAthleteId);
@@ -1671,7 +1705,7 @@ export default function DriverPortalPage() {
                         providerLabel: prov?.name || "",
                         countryTag: "CHL",
                         accessTypes: driverProfile.accessTypes || [],
-                        photoUrl: driverProfile.photoUrl || "",
+                        photoUrl: driverProfile.photoUrl || ((driverProfile.metadata as any)?.photoUrl as string) || ((driverProfile.metadata as any)?.photo_url as string) || ((driverProfile.metadata as any)?.avatar as string) || ((driverProfile.metadata as any)?.avatarUrl as string) || ((driverProfile.metadata as any)?.imageUrl as string) || ((driverProfile.metadata as any)?.image_url as string) || null,
                         qrDataUrl,
                       });
                       const w = window.open("", "_blank", "width=450,height=700");

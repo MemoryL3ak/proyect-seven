@@ -521,6 +521,21 @@ export const resources: Record<string, ResourceConfig> = {
           { label: "RD - Recintos Deportivos", value: "RD" }
         ]
       },
+      {
+        key: "allowedClientTypes",
+        label: "Tipos de cliente permitidos",
+        type: "multiselect",
+        options: [
+          { label: "TF — Oficiales Técnicos", value: "TF" },
+          { label: "TM — Medios / Prensa", value: "TM" },
+          { label: "TA — Team Atleta", value: "TA" },
+          { label: "VIP", value: "VIP" },
+          { label: "T1", value: "T1" },
+          { label: "Familia Parapan", value: "FAMILIA_PARAPAN" },
+          { label: "Comité Organizador", value: "COMITE_ORGANIZADOR" },
+          { label: "Proveedores", value: "PROVEEDORES" }
+        ]
+      },
       { key: "phone", label: "Teléfono", type: "text" },
       { key: "vehiclePlate", label: "Patente", type: "text", required: true },
       {
@@ -884,9 +899,11 @@ export const resources: Record<string, ResourceConfig> = {
       },
       { key: "hotelId", label: "Hotel / Villa", type: "select", required: true, optionsSource: "accommodations" },
       { key: "roomId", label: "Habitación", type: "select", optionsSource: "hotelRooms" },
-      { key: "preCheckinAt", label: "Pre check-in", type: "datetime" },
+      { key: "preCheckinAt", label: "Pre-ingreso (días antes)", type: "datetime" },
+      { key: "earlyCheckinAt", label: "Early check-in (mismo día, antes)", type: "datetime" },
       { key: "checkinAt", label: "Check-in", type: "datetime" },
       { key: "checkoutAt", label: "Check-out", type: "datetime" },
+      { key: "lateCheckoutAt", label: "Late check-out (mismo día, después)", type: "datetime" },
       {
         key: "status",
         label: "Estado",

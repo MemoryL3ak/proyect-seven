@@ -35,6 +35,9 @@ import { PremiacionesModule } from './premiaciones/premiaciones.module';
 import { SupportChatsModule } from './support-chats/support-chats.module';
 import { PushNotificationsModule } from './push-notifications/push-notifications.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { WorkforceModule } from './workforce/workforce.module';
+import { CouponsModule } from './coupons/coupons.module';
+import { DriverPresenceModule } from './driver-presence/driver-presence.module';
 
 @Module({
   imports: [
@@ -91,6 +94,9 @@ import { NotificationsModule } from './notifications/notifications.module';
     SupportChatsModule,
     PushNotificationsModule,
     NotificationsModule,
+    WorkforceModule,
+    CouponsModule,
+    DriverPresenceModule,
   ],
   controllers: [AppController],
   providers: [AppService],

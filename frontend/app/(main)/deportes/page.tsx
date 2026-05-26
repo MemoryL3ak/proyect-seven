@@ -487,7 +487,7 @@ export default function DeportesPage() {
       venueId: premiacion.venueId || undefined,
       locationDetail: premiacion.locationDetail || undefined,
       notes: premiacion.notes || undefined,
-      status: "SCHEDULED",
+      status: "PROGRAMADA",
       awarders: premiacion.awarders.filter((a) => a.athleteId),
     };
     if (premiacion.id) {

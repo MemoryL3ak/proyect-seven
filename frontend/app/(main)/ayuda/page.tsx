@@ -3,6 +3,14 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
+import {
+  CUADERNO_CATEGORIES,
+  CUADERNO_ENTRIES,
+  CUADERNO_INFO,
+  type CuadernoCategoryKey,
+  type CuadernoEntry,
+  type CuadernoLocale,
+} from "@/lib/cuadernoCargo";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type Locale = "es" | "en" | "pt";
@@ -671,7 +679,8 @@ export default function AyudaPage() {
 
   const [search, setSearch] = useState("");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [activeSection, setActiveSection] = useState<"modulos" | "faq" | "inicio">("inicio");
+  const [activeSection, setActiveSection] = useState<"modulos" | "faq" | "inicio" | "cuaderno">("inicio");
+  const [cuadernoCat, setCuadernoCat] = useState<CuadernoCategoryKey | "all">("all");
 
   const loc = locale as Locale;
   const MODULES = MODULES_DATA[loc];
@@ -690,6 +699,14 @@ export default function AyudaPage() {
     (f) =>
       f.q.toLowerCase().includes(search.toLowerCase()) ||
       f.a.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const searchLower = search.toLowerCase();
+  const filteredCuaderno = CUADERNO_ENTRIES.filter(
+    (e) =>
+      e.term.toLowerCase().includes(searchLower) ||
+      e.detail.toLowerCase().includes(searchLower) ||
+      (e.tags ?? []).some((tg) => tg.toLowerCase().includes(searchLower))
   );
 
   function TabBtn({ id, label, icon }: { id: typeof activeSection; label: string; icon: React.ReactNode }) {
@@ -760,6 +777,9 @@ export default function AyudaPage() {
               />
               <TabBtn id="faq" label={t("Preguntas frecuentes")}
                 icon={<svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>}
+              />
+              <TabBtn id="cuaderno" label={t("Cuaderno de Cargo")}
+                icon={<svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>}
               />
             </div>
             <Link
@@ -846,6 +866,11 @@ export default function AyudaPage() {
         </section>
       )}
 
+      {/* ── Cuaderno de Cargo ────────────────────────────────────────────────── */}
+      {!search && activeSection === "cuaderno" && (
+        <CuadernoSection loc={loc} cat={cuadernoCat} setCat={setCuadernoCat} t={t} />
+      )}
+
       {/* ── Search results ──────────────────────────────────────────────────── */}
       {search && (
         <section style={{ background: cBg, border: `1px solid ${cBorder}`, borderRadius: "20px", padding: "24px 28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
@@ -860,12 +885,22 @@ export default function AyudaPage() {
             </div>
           )}
           {filteredFaq.length > 0 && (
-            <div>
+            <div style={{ marginBottom: filteredCuaderno.length > 0 ? 28 : 0 }}>
               <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: tFaint, margin: "0 0 12px" }}>{t("Preguntas frecuentes")} ({filteredFaq.length})</p>
               <FaqSection faq={filteredFaq} open={openFaq} setOpen={setOpenFaq} />
             </div>
           )}
-          {filteredModules.length === 0 && filteredFaq.length === 0 && (
+          {filteredCuaderno.length > 0 && (
+            <div>
+              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: tFaint, margin: "0 0 12px" }}>{t("Cuaderno de Cargo")} ({filteredCuaderno.length})</p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
+                {filteredCuaderno.map((entry, i) => (
+                  <CuadernoCard key={`${entry.term}-${i}`} entry={entry} loc={loc} highlight={search} />
+                ))}
+              </div>
+            </div>
+          )}
+          {filteredModules.length === 0 && filteredFaq.length === 0 && filteredCuaderno.length === 0 && (
             <div style={{ textAlign: "center", padding: "48px 0", color: tMuted }}>
               <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
                 <svg width={40} height={40} viewBox="0 0 24 24" fill="none" stroke={tFaint} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -971,5 +1006,131 @@ function Highlight({ text, term }: { text: string; term: string }) {
       </mark>
       {text.slice(idx + term.length)}
     </>
+  );
+}
+
+// ── Cuaderno de Cargo ────────────────────────────────────────────────────────
+
+function cuadernoCategoryOf(key: CuadernoCategoryKey) {
+  return CUADERNO_CATEGORIES.find((c) => c.key === key) ?? CUADERNO_CATEGORIES[0];
+}
+
+function CuadernoCard({ entry, loc, highlight }: { entry: CuadernoEntry; loc: CuadernoLocale; highlight?: string }) {
+  const cat = cuadernoCategoryOf(entry.category);
+  return (
+    <div style={{ background: cBg, border: `1px solid ${cBorder}`, borderLeft: `3px solid ${cat.color}`, borderRadius: 12, padding: "13px 15px" }}>
+      <span style={{ display: "inline-block", fontSize: 9.5, fontWeight: 700, color: "#fff", background: cat.color, padding: "2px 7px", borderRadius: 6, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 7 }}>
+        {cat.label[loc]}
+      </span>
+      <p style={{ fontSize: 13.5, fontWeight: 700, color: tPrim, margin: "0 0 4px", lineHeight: 1.35 }}>
+        {highlight ? <Highlight text={entry.term} term={highlight} /> : entry.term}
+      </p>
+      <p style={{ fontSize: 12, color: tMuted, margin: 0, lineHeight: 1.6 }}>
+        {highlight ? <Highlight text={entry.detail} term={highlight} /> : entry.detail}
+      </p>
+    </div>
+  );
+}
+
+function CuadernoChip({
+  selected, onClick, label, count, color,
+}: { selected: boolean; onClick: () => void; label: string; count: number; color: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        display: "inline-flex", alignItems: "center", gap: 6,
+        padding: "6px 11px", borderRadius: 99, fontSize: 12, fontWeight: 600,
+        cursor: "pointer",
+        border: `1px solid ${selected ? color : cBorder}`,
+        background: selected ? `${color}15` : "transparent",
+        color: selected ? color : tMuted,
+        transition: "all 150ms ease",
+      }}
+    >
+      <span style={{ width: 7, height: 7, borderRadius: "50%", background: color, flexShrink: 0 }} />
+      <span>{label}</span>
+      <span style={{
+        fontSize: 10.5, fontWeight: 700,
+        color: selected ? color : tFaint,
+        background: selected ? `${color}22` : "#f1f5f9",
+        borderRadius: 6, padding: "1px 6px",
+      }}>
+        {count}
+      </span>
+    </button>
+  );
+}
+
+function CuadernoSection({
+  loc, cat, setCat, t,
+}: {
+  loc: CuadernoLocale;
+  cat: CuadernoCategoryKey | "all";
+  setCat: (c: CuadernoCategoryKey | "all") => void;
+  t: (s: string) => string;
+}) {
+  const counts: Record<string, number> = {};
+  CUADERNO_ENTRIES.forEach((e) => { counts[e.category] = (counts[e.category] ?? 0) + 1; });
+
+  const allLabel = loc === "en" ? "All" : "Todas";
+  const visibleCats = cat === "all" ? CUADERNO_CATEGORIES : CUADERNO_CATEGORIES.filter((c) => c.key === cat);
+
+  return (
+    <section style={{ background: cBg, border: `1px solid ${cBorder}`, borderRadius: "20px", padding: "24px 28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 16 }}>
+        <div style={{ width: 38, height: 38, borderRadius: 10, background: `${acc}15`, border: `1px solid ${acc}30`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <svg width={19} height={19} viewBox="0 0 24 24" fill="none" stroke={acc} strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 016.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
+          </svg>
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h2 style={{ fontSize: 15, fontWeight: 700, color: tPrim, margin: "0 0 3px" }}>{CUADERNO_INFO.title}</h2>
+          <p style={{ fontSize: 12.5, color: tMuted, margin: 0, lineHeight: 1.55 }}>{CUADERNO_INFO.desc[loc]}</p>
+        </div>
+      </div>
+
+      {/* Filter help line */}
+      <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: tFaint, margin: "0 0 9px" }}>
+        {t("Filtrar por sección")}
+      </p>
+
+      {/* Category chips */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 22 }}>
+        <CuadernoChip selected={cat === "all"} onClick={() => setCat("all")} label={allLabel} count={CUADERNO_ENTRIES.length} color={acc} />
+        {CUADERNO_CATEGORIES.map((c) => (
+          <CuadernoChip
+            key={c.key}
+            selected={cat === c.key}
+            onClick={() => setCat(c.key)}
+            label={c.label[loc]}
+            count={counts[c.key] ?? 0}
+            color={c.color}
+          />
+        ))}
+      </div>
+
+      {/* Entries grouped by category */}
+      {visibleCats.map((c) => {
+        const entries = CUADERNO_ENTRIES.filter((e) => e.category === c.key);
+        if (entries.length === 0) return null;
+        return (
+          <div key={c.key} style={{ marginBottom: 22 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 11 }}>
+              <span style={{ width: 9, height: 9, borderRadius: 3, background: c.color, flexShrink: 0 }} />
+              <h3 style={{ fontSize: 13, fontWeight: 700, color: tPrim, margin: 0 }}>{c.label[loc]}</h3>
+              <span style={{ fontSize: 11, fontWeight: 600, color: tFaint }}>· {entries.length}</span>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
+              {entries.map((entry, i) => (
+                <CuadernoCard key={`${entry.term}-${i}`} entry={entry} loc={loc} />
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </section>
   );
 }

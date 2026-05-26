@@ -15,8 +15,10 @@ type HotelAssignmentRow = {
   hotel_id: string;
   room_id: string | null;
   pre_checkin_at: string | null;
+  early_checkin_at: string | null;
   checkin_at: string | null;
   checkout_at: string | null;
+  late_checkout_at: string | null;
   status: string;
   created_at: string;
   updated_at: string;
@@ -84,8 +86,10 @@ export class HotelAssignmentsService {
     if (dto.hotelId !== undefined) row.hotel_id = dto.hotelId;
     if (dto.roomId !== undefined) row.room_id = dto.roomId ?? null;
     if (dto.preCheckinAt !== undefined) row.pre_checkin_at = dto.preCheckinAt ?? null;
+    if (dto.earlyCheckinAt !== undefined) row.early_checkin_at = dto.earlyCheckinAt ?? null;
     if (dto.checkinAt !== undefined) row.checkin_at = dto.checkinAt ?? null;
     if (dto.checkoutAt !== undefined) row.checkout_at = dto.checkoutAt ?? null;
+    if (dto.lateCheckoutAt !== undefined) row.late_checkout_at = dto.lateCheckoutAt ?? null;
     if (dto.status !== undefined) row.status = dto.status;
     return row;
   }
@@ -97,8 +101,10 @@ export class HotelAssignmentsService {
       hotelId: row.hotel_id,
       roomId: row.room_id,
       preCheckinAt: row.pre_checkin_at ? new Date(row.pre_checkin_at) : null,
+      earlyCheckinAt: row.early_checkin_at ? new Date(row.early_checkin_at) : null,
       checkinAt: row.checkin_at ? new Date(row.checkin_at) : null,
       checkoutAt: row.checkout_at ? new Date(row.checkout_at) : null,
+      lateCheckoutAt: row.late_checkout_at ? new Date(row.late_checkout_at) : null,
       status: row.status,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
@@ -152,10 +158,12 @@ export class HotelAssignmentsService {
           hotel_id,
           room_id,
           pre_checkin_at,
+          early_checkin_at,
           checkin_at,
           checkout_at,
+          late_checkout_at,
           status
-        ) values ($1, $2, $3, $4, $5, $6, $7)
+        ) values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         returning *
       `,
         [
@@ -163,8 +171,10 @@ export class HotelAssignmentsService {
           dto.hotelId,
           dto.roomId ?? null,
           dto.preCheckinAt ?? null,
+          dto.earlyCheckinAt ?? null,
           dto.checkinAt ?? null,
           dto.checkoutAt ?? null,
+          dto.lateCheckoutAt ?? null,
           dto.status ?? 'ASSIGNED',
         ],
       )) as HotelAssignmentRow[];

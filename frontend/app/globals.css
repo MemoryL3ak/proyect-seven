@@ -456,6 +456,217 @@ label > *:first-child {
 .animate-scale-in { animation: scaleIn 200ms cubic-bezier(0.4,0,0.2,1) both; }
 
 /* ─────────────────────────────────────────────────────────────
+   PREMIUM EFFECTS — reusable polish for admin pages
+───────────────────────────────────────────────────────────── */
+@keyframes fadeUpSoft {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes shimmerLine {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes orbFloatSlow {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%       { transform: translate(20px, -15px) scale(1.1); }
+}
+@keyframes scalePopSoft {
+  0%   { opacity: 0; transform: scale(0.92); }
+  60%  { transform: scale(1.03); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes countPulse {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.06); }
+}
+
+.anim-fade-up-soft  { animation: fadeUpSoft 500ms cubic-bezier(0.16,1,0.3,1) both; }
+.anim-scale-pop     { animation: scalePopSoft 500ms cubic-bezier(0.34,1.56,0.64,1) both; }
+.anim-orb-slow      { animation: orbFloatSlow 12s ease-in-out infinite; }
+.anim-count-pulse   { animation: countPulse 400ms ease-out; }
+
+/* Shimmer line — pega esto como overlay en top:0 de cualquier card */
+.shimmer-top {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(33,208,179,0.6) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmerLine 3s linear infinite;
+  pointer-events: none;
+}
+
+/* Premium card — surface con borde shimmer y hover más expresivo */
+.surface-premium {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(15,23,42,0.06), 0 1px 3px rgba(15,23,42,0.04);
+  transition: all 220ms cubic-bezier(0.4,0,0.2,1);
+  position: relative;
+  overflow: hidden;
+}
+.surface-premium:hover {
+  box-shadow: 0 10px 28px rgba(15,23,42,0.1), 0 2px 6px rgba(33,208,179,0.08);
+  border-color: rgba(33,208,179,0.25);
+  transform: translateY(-2px);
+}
+
+/* Strip de gradient TEAL visible arriba de cards principales (3px) */
+.accent-strip-top::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #21D0B3 0%, #34F3C6 50%, #1FCDFF 100%);
+  background-size: 200% 100%;
+  animation: gradientShift 6s ease infinite;
+  z-index: 5;
+}
+
+/* Strip dorado para premiaciones */
+.accent-strip-gold::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #d4a017 0%, #e3a808 30%, #f5c842 60%, #d4a017 100%);
+  background-size: 200% 100%;
+  animation: gradientShift 6s ease infinite;
+  z-index: 5;
+}
+
+/* Mesh background animado para hero sections / empty states */
+.mesh-bg {
+  position: relative;
+  overflow: hidden;
+}
+.mesh-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(33,208,179,0.12) 0%, transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(31,205,255,0.10) 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(212,160,23,0.08) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Anillos orbitales animados */
+@keyframes spin-orbit {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes ring-pulse {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.1); }
+}
+.orbit-ring {
+  position: absolute;
+  border: 2px dashed rgba(33,208,179,0.25);
+  border-radius: 50%;
+  animation: spin-orbit 30s linear infinite;
+}
+.orbit-ring-gold {
+  border-color: rgba(212,160,23,0.3);
+}
+.pulse-ring {
+  position: absolute;
+  border: 2px solid rgba(33,208,179,0.4);
+  border-radius: 50%;
+  animation: ring-pulse 3s ease-in-out infinite;
+}
+
+/* Particles flotantes */
+@keyframes particle-float {
+  0%, 100% { transform: translate(0, 0); opacity: 0.4; }
+  33% { transform: translate(20px, -30px); opacity: 0.8; }
+  66% { transform: translate(-15px, -50px); opacity: 0.6; }
+}
+.particle {
+  position: absolute;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #34F3C6, #21D0B3);
+  box-shadow: 0 0 12px rgba(52,243,198,0.8);
+  animation: particle-float 6s ease-in-out infinite;
+}
+.particle-gold {
+  background: linear-gradient(135deg, #f5c842, #d4a017);
+  box-shadow: 0 0 12px rgba(245,200,66,0.8);
+}
+
+/* Gradient text */
+.text-gradient-teal {
+  background: linear-gradient(135deg, #21D0B3 0%, #1FCDFF 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.text-gradient-trophy {
+  background: linear-gradient(135deg, #d4a017 0%, #f5c842 50%, #d4a017 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradientShift 4s ease infinite;
+}
+
+/* Floating animation suave */
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+.anim-float { animation: float-slow 4s ease-in-out infinite; }
+
+/* Hero icon — para empty states grandes */
+.hero-icon-wrap {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  margin: 0 auto;
+}
+.hero-icon-core {
+  position: absolute;
+  inset: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 20px 60px rgba(212,160,23,0.5),
+    0 8px 20px rgba(0,0,0,0.15),
+    inset 0 2px 4px rgba(255,255,255,0.3);
+  z-index: 3;
+  animation: float-slow 4s ease-in-out infinite;
+}
+
+/* Ambient orb decorations (para fondos sutiles dentro de cards) */
+.ambient-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+  pointer-events: none;
+  opacity: 0.4;
+}
+
+/* Hover scale para íconos */
+.icon-bounce { transition: transform 250ms cubic-bezier(0.4,0,0.2,1); }
+.surface-premium:hover .icon-bounce { transform: scale(1.08) rotate(-3deg); }
+
+/* Stagger reusable */
+.stagger > * { animation: fadeUpSoft 500ms cubic-bezier(0.16,1,0.3,1) both; }
+.stagger > *:nth-child(1) { animation-delay: 0.05s; }
+.stagger > *:nth-child(2) { animation-delay: 0.10s; }
+.stagger > *:nth-child(3) { animation-delay: 0.15s; }
+.stagger > *:nth-child(4) { animation-delay: 0.20s; }
+.stagger > *:nth-child(5) { animation-delay: 0.25s; }
+.stagger > *:nth-child(6) { animation-delay: 0.30s; }
+.stagger > *:nth-child(7) { animation-delay: 0.35s; }
+.stagger > *:nth-child(8) { animation-delay: 0.40s; }
+
+/* ─────────────────────────────────────────────────────────────
    GLOBAL OVERRIDES — pages that still use old Tailwind classes
    Now for light theme these map to proper light values
 ───────────────────────────────────────────────────────────── */

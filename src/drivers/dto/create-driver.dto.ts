@@ -81,6 +81,23 @@ export class CreateDriverDto {
   @IsIn(['C', 'TR', 'H', 'R', 'A', 'RD'], { each: true })
   accessTypes?: string[];
 
+  @IsArray()
+  @IsOptional()
+  @IsIn(
+    [
+      'TF',
+      'TM',
+      'TA',
+      'VIP',
+      'T1',
+      'FAMILIA_PARAPAN',
+      'COMITE_ORGANIZADOR',
+      'PROVEEDORES',
+    ],
+    { each: true },
+  )
+  allowedClientTypes?: string[];
+
   @IsString()
   @IsOptional()
   accreditationStatus?: string;

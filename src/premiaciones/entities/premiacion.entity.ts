@@ -38,7 +38,7 @@ export class Premiacion {
   @Column({ name: 'location_detail', type: 'text', nullable: true })
   locationDetail?: string | null;
 
-  @Column({ type: 'text', default: 'SCHEDULED' })
+  @Column({ type: 'text', default: 'PROGRAMADA' })
   status: string;
 
   @Column({ type: 'text', nullable: true })
