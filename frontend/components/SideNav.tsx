@@ -230,7 +230,6 @@ const HREF_TO_MODULE: Record<string, string> = {
   "/portal/vehicle-request": "portales",
   "/portal/access-control": "portales",
   "/portal/partner": "portales",
-  "/portal/coupons": "portales",
   "/admin/usuarios": "admin.usuarios",
   "/operations/sofia-actions": "_always",
   "/inicio-guiado": "_always",
