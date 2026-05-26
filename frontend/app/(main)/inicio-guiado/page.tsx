@@ -347,7 +347,7 @@ const TASKS: Task[] = [
 
   // Operaciones
   { key: "t-incidents", title: "Centro de incidencias", description: "Recibí, asigná y resolvé tickets de soporte de los portales.", href: "/operations/support-chats", goal: "monitor_incidents" },
-  { key: "t-premiaciones", title: "Calendario de premiaciones", description: "Agendá ceremonias, asigná entregadores y confirmá asistencia.", href: "/operations/premiaciones", goal: "premiaciones" },
+  { key: "t-premiaciones", title: "Calendario de premiaciones", description: "Consultá ceremonias, entregadores y horarios desde el portal del participante.", href: "/portal/user", goal: "premiaciones" },
   { key: "t-coupons", title: "Catálogo de cupones", description: "Definí beneficios, partners y revisá los canjes desde el portal del comercio.", href: "/operations/coupons", goal: "coupons" },
   { key: "t-workforce", title: "Gestionar workforce", description: "Personal contratado, voluntariado, catálogo del kit y entregas validadas.", href: "/operations/workforce", goal: "workforce" },
 ];

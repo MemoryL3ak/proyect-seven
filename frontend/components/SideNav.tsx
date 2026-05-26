@@ -92,7 +92,6 @@ const navSections: NavSection[] = [
   { title: "Deportes", icon: "sports-rings", href: "/deportes" },
   { title: "Sede", icon: "pin", href: "/sede" },
   { title: "Calendario Operacional", icon: "calendar", href: "/sports-calendar" },
-  { title: "Calendario Premiaciones", icon: "calendar", href: "/operations/premiaciones" },
   {
     title: "Cupones", icon: "ticket",
     items: [
@@ -223,7 +222,6 @@ const HREF_TO_MODULE: Record<string, string> = {
   "/deportes": "deportes",
   "/sede": "sede",
   "/sports-calendar": "calendario",
-  "/operations/premiaciones": "calendario",
   "/operations/workforce": "operacion.viajes",
   "/operations/coupons": "operacion.viajes",
   "/accreditations": "acreditaciones",
