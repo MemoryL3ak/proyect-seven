@@ -2704,6 +2704,13 @@ export default function VehicleRequestPortalPage() {
                     const evName = events[athlete.eventId || ""]?.name || "Seven Arena";
                     const qrData = `Participante: ${athlete.fullName}\nID: ${athlete.id.slice(-6)}\nDelegación: ${delegations[athlete.delegationId || ""]?.countryCode || "—"}`;
                     const qrDataUrl = await QRCode.toDataURL(qrData, { width: 200, margin: 1 });
+                    const meta = (athlete.metadata || {}) as Record<string, unknown>;
+                    const photoKeys = ["photoUrl","photo_url","avatar","avatarUrl","imageUrl","image_url"];
+                    let photoUrl: string | null = null;
+                    for (const k of photoKeys) {
+                      const v = meta[k];
+                      if (typeof v === "string" && v.trim()) { photoUrl = v.trim(); break; }
+                    }
                     const html = buildCredentialHtml({
                       eventName: evName,
                       fullName: athlete.fullName || "",
@@ -2714,7 +2721,7 @@ export default function VehicleRequestPortalPage() {
                       issuerLabel: "Seven Arena",
                       subjectId: athlete.id,
                       countryTag: delegations[athlete.delegationId || ""]?.countryCode || "",
-                      photoUrl: "",
+                      photoUrl,
                       qrDataUrl,
                     });
                     const w = window.open("", "_blank", "width=450,height=700");

@@ -1695,7 +1695,7 @@ export default function DriverPortalPage() {
                         providerLabel: prov?.name || "",
                         countryTag: "CHL",
                         accessTypes: driverProfile.accessTypes || [],
-                        photoUrl: driverProfile.photoUrl || "",
+                        photoUrl: driverProfile.photoUrl || ((driverProfile.metadata as any)?.photoUrl as string) || ((driverProfile.metadata as any)?.photo_url as string) || ((driverProfile.metadata as any)?.avatar as string) || ((driverProfile.metadata as any)?.avatarUrl as string) || ((driverProfile.metadata as any)?.imageUrl as string) || ((driverProfile.metadata as any)?.image_url as string) || null,
                         qrDataUrl,
                       });
                       const w = window.open("", "_blank", "width=450,height=700");
