@@ -1335,6 +1335,108 @@ export default function UserPortalPage() {
           const days = Array.from(grouped.entries()).sort(([a],[b]) => a.localeCompare(b));
           const hasFilters = !!(premStatusFilter || premDisciplineFilter || premVenueFilter || premSearchQuery);
           const clearAll = () => { setPremStatusFilter(""); setPremDisciplineFilter(""); setPremVenueFilter(""); setPremSearchQuery(""); };
+
+          // Calendar view data
+          const calY = premCalCursor.getFullYear();
+          const calM = premCalCursor.getMonth();
+          const monthLabel = premCalCursor.toLocaleDateString("es-CL",{month:"long",year:"numeric"});
+          const firstDayOfMonth = new Date(calY, calM, 1).getDay();
+          const daysInMonth = new Date(calY, calM + 1, 0).getDate();
+          const offset = (firstDayOfMonth + 6) % 7; // Monday-first
+          const calCells: (number | null)[] = Array(offset).fill(null);
+          for (let dd = 1; dd <= daysInMonth; dd++) calCells.push(dd);
+          while (calCells.length % 7 !== 0) calCells.push(null);
+          const itemsByDay = new Map<number, Premiacion[]>();
+          visible.forEach(p => {
+            const d = new Date(p.scheduledAt);
+            if (d.getFullYear() === calY && d.getMonth() === calM) {
+              const dn = d.getDate();
+              if (!itemsByDay.has(dn)) itemsByDay.set(dn, []);
+              itemsByDay.get(dn)!.push(p);
+            }
+          });
+          const monthKey = `${calY}-${String(calM+1).padStart(2,"0")}`;
+          const selectedDayNum = premCalSelectedKey && premCalSelectedKey.startsWith(monthKey + "-")
+            ? parseInt(premCalSelectedKey.split("-")[2], 10) : null;
+          const selectedItems = selectedDayNum ? (itemsByDay.get(selectedDayNum) || []) : [];
+          const today = new Date();
+          const isCurrentMonth = today.getFullYear() === calY && today.getMonth() === calM;
+          const todayNum = isCurrentMonth ? today.getDate() : null;
+          const calDayNames = ["L","M","M","J","V","S","D"];
+
+          const renderPremCard = (p: Premiacion) => {
+            const isDone = p.status === "REALIZADA";
+            const accent = isDone ? "#2e7d32" : "#c78c00";
+            const cnt = (p.awarders||[]).length;
+            return (
+              <article key={p.id}
+                style={{ background:isDone ? "linear-gradient(135deg,#f7fcf8 0%,#ffffff 70%)" : "linear-gradient(135deg,#fffbf2 0%,#ffffff 70%)",
+                  borderRadius:14,border:`1px solid ${isDone?"#cfe9d6":"#f0deb0"}`,borderLeft:`4px solid ${accent}`,padding:"12px 14px" }}>
+                <div style={{ display:"flex",alignItems:"flex-start",gap:10 }}>
+                  <div style={{ width:38,height:38,borderRadius:11,flexShrink:0,
+                    background: isDone ? "linear-gradient(135deg,#e7f5ec 0%,#cfe9d6 100%)" : "linear-gradient(135deg,#fff4d6 0%,rgba(245,200,66,0.5) 100%)",
+                    color: isDone ? "#2e7d32" : "#a87800",
+                    border:`1px solid ${isDone?"#2e7d3233":"#c78c0033"}`,
+                    display:"flex",alignItems:"center",justifyContent:"center",
+                    boxShadow:`0 2px 8px ${isDone?"rgba(46,125,50,0.18)":"rgba(199,140,0,0.22)"}` }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg>
+                  </div>
+                  <div style={{ flex:1,minWidth:0 }}>
+                    <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0,lineHeight:1.3 }}>{p.title}</p>
+                    <div style={{ display:"flex",flexWrap:"wrap",gap:"4px 10px",marginTop:4 }}>
+                      <span style={{ display:"inline-flex",alignItems:"center",gap:3,fontSize:11,color:"#334155",fontWeight:600 }}>
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        {fmtTime(p.scheduledAt)}
+                      </span>
+                      {p.discipline && (
+                        <span style={{ display:"inline-flex",alignItems:"center",gap:3,fontSize:11,color:"#64748b" }}>
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9a6 6 0 0 0 12 0H6z"/><line x1="12" y1="15" x2="12" y2="21"/><line x1="8" y1="21" x2="16" y2="21"/></svg>
+                          {p.discipline}
+                        </span>
+                      )}
+                      {p.venueName && (
+                        <span style={{ display:"inline-flex",alignItems:"center",gap:3,fontSize:11,color:"#64748b" }}>
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                          {p.venueName}{p.locationDetail ? ` · ${p.locationDetail}` : ""}
+                        </span>
+                      )}
+                    </div>
+                    {p.notes && <p style={{ fontSize:11,color:"#64748b",margin:"6px 0 0",fontStyle:"italic",lineHeight:1.4 }}>{p.notes}</p>}
+                  </div>
+                  <span style={{ flexShrink:0,display:"inline-flex",alignItems:"center",gap:5,fontSize:9,padding:"3px 9px",borderRadius:20,fontWeight:800,letterSpacing:"0.06em",textTransform:"uppercase",
+                    background:isDone?"#e7f5ec":"#fff4d6",
+                    color:isDone?"#1e5125":"#7a4a00",
+                    border:`1px solid ${isDone?"#2e7d3233":"#c78c0033"}` }}>
+                    <span style={{ width:5,height:5,borderRadius:"50%",background:accent,animation:isDone?"none":"pulse 1.8s infinite" }} />
+                    {isDone?"Realizada":"Programada"}
+                  </span>
+                </div>
+                {cnt > 0 && (
+                  <div style={{ marginTop:10,paddingTop:10,borderTop:"1px dashed #e2e8f0",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap" }}>
+                    <span style={{ fontSize:10,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"#94a3b8" }}>Entregadores</span>
+                    {(() => {
+                      const counts: Record<string, number> = {};
+                      (p.awarders||[]).forEach(a => { const r = String(a.role||"AWARDER").toUpperCase(); counts[r] = (counts[r]||0)+1; });
+                      const roleMeta: Record<string,{label:string;color:string;bg:string}> = {
+                        GOLD:{label:"Oro",color:"#7a4a00",bg:"#fef3c7"},
+                        SILVER:{label:"Plata",color:"#475569",bg:"#f1f5f9"},
+                        BRONZE:{label:"Bronce",color:"#7c2d12",bg:"#fed7aa"},
+                        AUTHORITY:{label:"Autoridad",color:"#1e40af",bg:"#dbeafe"},
+                        AWARDER:{label:"Entregador",color:"#475569",bg:"#f1f5f9"},
+                      };
+                      return Object.entries(counts).map(([r,n]) => {
+                        const m = roleMeta[r] || roleMeta.AWARDER;
+                        return (
+                          <span key={r} style={{ fontSize:10,padding:"3px 8px",borderRadius:10,background:m.bg,color:m.color,fontWeight:700 }}>{m.label} · {n}</span>
+                        );
+                      });
+                    })()}
+                  </div>
+                )}
+              </article>
+            );
+          };
+
           return (
             <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
               <div style={{ background:"linear-gradient(135deg,#fffbf2 0%,#ffffff 70%)",borderRadius:14,border:"1px solid #f0deb0",padding:"14px 16px",display:"flex",alignItems:"center",gap:12 }}>
@@ -1348,6 +1450,32 @@ export default function UserPortalPage() {
               </div>
 
               <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",padding:"10px",display:"flex",flexDirection:"column",gap:8 }}>
+                {/* View toggle */}
+                <div style={{ display:"flex",gap:0,background:"#f1f5f9",borderRadius:10,padding:3 }}>
+                  {([
+                    { v:"calendar" as const, label:"Calendario", icon:(
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    )},
+                    { v:"list" as const, label:"Lista", icon:(
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                    )},
+                  ]).map(opt => {
+                    const active = premView === opt.v;
+                    return (
+                      <button key={opt.v} type="button" onClick={() => setPremView(opt.v)}
+                        style={{ flex:1,padding:"7px 10px",borderRadius:8,border:"none",cursor:"pointer",
+                          background:active ? "#fff" : "transparent",
+                          color:active ? "#7a4a00" : "#64748b",
+                          fontSize:12,fontWeight:700,
+                          boxShadow:active ? "0 1px 3px rgba(15,23,42,0.1)" : "none",
+                          display:"inline-flex",alignItems:"center",justifyContent:"center",gap:6,
+                          transition:"all .15s" }}>
+                        {opt.icon}
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
                 <div style={{ position:"relative" }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position:"absolute",top:"50%",left:10,transform:"translateY(-50%)",pointerEvents:"none" }}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                   <input type="text" value={premSearchQuery} onChange={e => setPremSearchQuery(e.target.value)} placeholder="Buscar premiación, disciplina, sede..."
@@ -1400,97 +1528,123 @@ export default function UserPortalPage() {
                 )}
               </div>
 
-              {visible.length === 0 ? (
-                <div style={{ background:"#fff",borderRadius:14,border:"1px dashed #e2e8f0",padding:"28px 20px",textAlign:"center" }}>
-                  <p style={{ fontSize:32,margin:"0 0 8px" }}>🏆</p>
-                  <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>
-                    {hasFilters ? "No hay premiaciones con esos filtros" : "Sin premiaciones cargadas"}
-                  </p>
-                </div>
-              ) : (
-                <div style={{ display:"flex",flexDirection:"column",gap:14 }}>
-                  {days.map(([day, items]) => (
-                    <div key={day} style={{ display:"flex",flexDirection:"column",gap:6 }}>
-                      <div style={{ position:"sticky",top:0,zIndex:2,background:"linear-gradient(180deg,#f8fafc 0%,rgba(248,250,252,0.92) 100%)",backdropFilter:"blur(6px)",padding:"6px 10px",borderRadius:10,display:"flex",alignItems:"center",gap:8,border:"1px solid #e2e8f0" }}>
-                        <div style={{ width:6,height:6,borderRadius:"50%",background:"#d4a017",boxShadow:"0 0 6px #d4a017" }} />
-                        <p style={{ fontSize:11,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",color:"#7a4a00",margin:0 }}>{fmtDateLong(day)}</p>
-                        <span style={{ marginLeft:"auto",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:"#fff",color:"#a87800",border:"1px solid #f0deb0" }}>{items.length}</span>
+              {/* Calendar view */}
+              {premView === "calendar" && (
+                <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+                  <div style={{ background:"#fff",borderRadius:14,border:"1px solid #f0deb0",padding:"12px",boxShadow:"0 1px 3px rgba(199,140,0,0.06)" }}>
+                    <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10 }}>
+                      <button type="button" onClick={() => { setPremCalCursor(new Date(calY, calM - 1, 1)); setPremCalSelectedKey(null); }}
+                        style={{ width:30,height:30,borderRadius:8,border:"1px solid #f0deb0",background:"#fffbf2",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a87800" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                      </button>
+                      <div style={{ display:"flex",flexDirection:"column",alignItems:"center" }}>
+                        <span style={{ fontSize:14,fontWeight:800,color:"#7a4a00",textTransform:"capitalize",letterSpacing:"-0.01em" }}>{monthLabel}</span>
+                        <span style={{ fontSize:9,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"#c78c00",marginTop:2 }}>{itemsByDay.size} día{itemsByDay.size === 1 ? "" : "s"} con premiaciones</span>
                       </div>
-                      {items.map(p => {
-                        const isDone = p.status === "REALIZADA";
-                        const accent = isDone ? "#2e7d32" : "#c78c00";
-                        const cnt = (p.awarders||[]).length;
+                      <button type="button" onClick={() => { setPremCalCursor(new Date(calY, calM + 1, 1)); setPremCalSelectedKey(null); }}
+                        style={{ width:30,height:30,borderRadius:8,border:"1px solid #f0deb0",background:"#fffbf2",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a87800" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                      </button>
+                    </div>
+                    <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:3,textAlign:"center" }}>
+                      {calDayNames.map((dn,i) => <div key={i} style={{ fontSize:9,fontWeight:800,color:"#94a3b8",letterSpacing:"0.1em",padding:"4px 0" }}>{dn}</div>)}
+                      {calCells.map((dn,i) => {
+                        if (!dn) return <div key={`empty-${i}`} />;
+                        const dayKey = `${calY}-${String(calM+1).padStart(2,"0")}-${String(dn).padStart(2,"0")}`;
+                        const dayItems = itemsByDay.get(dn) || [];
+                        const hasItems = dayItems.length > 0;
+                        const isSelected = premCalSelectedKey === dayKey;
+                        const isToday = todayNum === dn;
+                        const anyDone = dayItems.some(p => p.status === "REALIZADA");
+                        const anyProg = dayItems.some(p => p.status === "PROGRAMADA");
                         return (
-                          <article key={p.id}
-                            style={{ background:isDone ? "linear-gradient(135deg,#f7fcf8 0%,#ffffff 70%)" : "linear-gradient(135deg,#fffbf2 0%,#ffffff 70%)",
-                              borderRadius:14,border:`1px solid ${isDone?"#cfe9d6":"#f0deb0"}`,borderLeft:`4px solid ${accent}`,padding:"12px 14px" }}>
-                            <div style={{ display:"flex",alignItems:"flex-start",gap:10 }}>
-                              <div style={{ width:38,height:38,borderRadius:11,flexShrink:0,
-                                background: isDone ? "linear-gradient(135deg,#e7f5ec 0%,#cfe9d6 100%)" : "linear-gradient(135deg,#fff4d6 0%,rgba(245,200,66,0.5) 100%)",
-                                color: isDone ? "#2e7d32" : "#a87800",
-                                border:`1px solid ${isDone?"#2e7d3233":"#c78c0033"}`,
-                                display:"flex",alignItems:"center",justifyContent:"center",
-                                boxShadow:`0 2px 8px ${isDone?"rgba(46,125,50,0.18)":"rgba(199,140,0,0.22)"}` }}>
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg>
-                              </div>
-                              <div style={{ flex:1,minWidth:0 }}>
-                                <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0,lineHeight:1.3 }}>{p.title}</p>
-                                <div style={{ display:"flex",flexWrap:"wrap",gap:"4px 10px",marginTop:4 }}>
-                                  <span style={{ display:"inline-flex",alignItems:"center",gap:3,fontSize:11,color:"#334155",fontWeight:600 }}>
-                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                                    {fmtTime(p.scheduledAt)}
-                                  </span>
-                                  {p.discipline && (
-                                    <span style={{ display:"inline-flex",alignItems:"center",gap:3,fontSize:11,color:"#64748b" }}>
-                                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9a6 6 0 0 0 12 0H6z"/><line x1="12" y1="15" x2="12" y2="21"/><line x1="8" y1="21" x2="16" y2="21"/></svg>
-                                      {p.discipline}
-                                    </span>
-                                  )}
-                                  {p.venueName && (
-                                    <span style={{ display:"inline-flex",alignItems:"center",gap:3,fontSize:11,color:"#64748b" }}>
-                                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                                      {p.venueName}{p.locationDetail ? ` · ${p.locationDetail}` : ""}
-                                    </span>
-                                  )}
-                                </div>
-                                {p.notes && <p style={{ fontSize:11,color:"#64748b",margin:"6px 0 0",fontStyle:"italic",lineHeight:1.4 }}>{p.notes}</p>}
-                              </div>
-                              <span style={{ flexShrink:0,display:"inline-flex",alignItems:"center",gap:5,fontSize:9,padding:"3px 9px",borderRadius:20,fontWeight:800,letterSpacing:"0.06em",textTransform:"uppercase",
-                                background:isDone?"#e7f5ec":"#fff4d6",
-                                color:isDone?"#1e5125":"#7a4a00",
-                                border:`1px solid ${isDone?"#2e7d3233":"#c78c0033"}` }}>
-                                <span style={{ width:5,height:5,borderRadius:"50%",background:accent,animation:isDone?"none":"pulse 1.8s infinite" }} />
-                                {isDone?"Realizada":"Programada"}
-                              </span>
-                            </div>
-                            {cnt > 0 && (
-                              <div style={{ marginTop:10,paddingTop:10,borderTop:"1px dashed #e2e8f0",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap" }}>
-                                <span style={{ fontSize:10,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"#94a3b8" }}>Entregadores</span>
-                                {(() => {
-                                  const counts: Record<string, number> = {};
-                                  (p.awarders||[]).forEach(a => { const r = String(a.role||"AWARDER").toUpperCase(); counts[r] = (counts[r]||0)+1; });
-                                  const roleMeta: Record<string,{label:string;color:string;bg:string}> = {
-                                    GOLD:{label:"Oro",color:"#7a4a00",bg:"#fef3c7"},
-                                    SILVER:{label:"Plata",color:"#475569",bg:"#f1f5f9"},
-                                    BRONZE:{label:"Bronce",color:"#7c2d12",bg:"#fed7aa"},
-                                    AUTHORITY:{label:"Autoridad",color:"#1e40af",bg:"#dbeafe"},
-                                    AWARDER:{label:"Entregador",color:"#475569",bg:"#f1f5f9"},
-                                  };
-                                  return Object.entries(counts).map(([r,n]) => {
-                                    const m = roleMeta[r] || roleMeta.AWARDER;
-                                    return (
-                                      <span key={r} style={{ fontSize:10,padding:"3px 8px",borderRadius:10,background:m.bg,color:m.color,fontWeight:700 }}>{m.label} · {n}</span>
-                                    );
-                                  });
-                                })()}
+                          <button key={dayKey} type="button" onClick={() => setPremCalSelectedKey(isSelected ? null : dayKey)}
+                            style={{ aspectRatio:"1",borderRadius:8,border:isSelected ? "2px solid #d4a017" : isToday ? "1.5px solid #d4a017" : "1px solid transparent",
+                              background:isSelected ? "linear-gradient(135deg,#d4a017 0%,#f5c842 100%)"
+                                : hasItems ? "linear-gradient(135deg,#fff4d6 0%,#fffbf2 100%)"
+                                : "#fff",
+                              color:isSelected ? "#fff" : isToday ? "#7a4a00" : hasItems ? "#0f172a" : "#0f172a",
+                              fontSize:12,fontWeight:isSelected||isToday?800:hasItems?700:500,cursor:"pointer",position:"relative",
+                              boxShadow:isSelected ? "0 3px 8px rgba(199,140,0,0.35)" : hasItems ? "0 1px 2px rgba(199,140,0,0.1)" : "none",
+                              transition:"all .15s",padding:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2 }}>
+                            <span>{dn}</span>
+                            {hasItems && !isSelected && (
+                              <div style={{ display:"flex",gap:2,alignItems:"center" }}>
+                                {anyProg && <span style={{ width:4,height:4,borderRadius:"50%",background:"#c78c00" }} />}
+                                {anyDone && <span style={{ width:4,height:4,borderRadius:"50%",background:"#2e7d32" }} />}
+                                {dayItems.length > 2 && <span style={{ fontSize:8,fontWeight:800,color:"#c78c00",marginLeft:1 }}>+{dayItems.length-2}</span>}
                               </div>
                             )}
-                          </article>
+                            {isSelected && hasItems && (
+                              <span style={{ fontSize:8,fontWeight:800,padding:"1px 5px",borderRadius:8,background:"rgba(255,255,255,0.3)",color:"#fff" }}>{dayItems.length}</span>
+                            )}
+                          </button>
                         );
                       })}
                     </div>
-                  ))}
+                    {/* Legend */}
+                    <div style={{ display:"flex",alignItems:"center",gap:14,marginTop:10,paddingTop:10,borderTop:"1px dashed #f0deb0",justifyContent:"center" }}>
+                      <span style={{ display:"inline-flex",alignItems:"center",gap:5,fontSize:10,color:"#7a4a00",fontWeight:600 }}>
+                        <span style={{ width:6,height:6,borderRadius:"50%",background:"#c78c00" }} />Programada
+                      </span>
+                      <span style={{ display:"inline-flex",alignItems:"center",gap:5,fontSize:10,color:"#1e5125",fontWeight:600 }}>
+                        <span style={{ width:6,height:6,borderRadius:"50%",background:"#2e7d32" }} />Realizada
+                      </span>
+                      {todayNum && (
+                        <span style={{ display:"inline-flex",alignItems:"center",gap:5,fontSize:10,color:"#7a4a00",fontWeight:600 }}>
+                          <span style={{ width:8,height:8,borderRadius:4,border:"1.5px solid #d4a017",background:"#fff" }} />Hoy
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Selected day items */}
+                  {selectedDayNum ? (
+                    selectedItems.length > 0 ? (
+                      <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
+                        <div style={{ padding:"6px 10px",borderRadius:10,background:"linear-gradient(135deg,#fff4d6 0%,#fffbf2 100%)",display:"flex",alignItems:"center",gap:8,border:"1px solid #f0deb0" }}>
+                          <div style={{ width:6,height:6,borderRadius:"50%",background:"#d4a017",boxShadow:"0 0 6px #d4a017" }} />
+                          <p style={{ fontSize:11,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",color:"#7a4a00",margin:0 }}>{fmtDateLong(premCalSelectedKey!)}</p>
+                          <span style={{ marginLeft:"auto",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:"#fff",color:"#a87800",border:"1px solid #f0deb0" }}>{selectedItems.length}</span>
+                        </div>
+                        {selectedItems.map(p => renderPremCard(p))}
+                      </div>
+                    ) : (
+                      <div style={{ background:"#fff",borderRadius:14,border:"1px dashed #e2e8f0",padding:"20px",textAlign:"center" }}>
+                        <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>Sin premiaciones este día</p>
+                      </div>
+                    )
+                  ) : (
+                    <div style={{ background:"#fff",borderRadius:14,border:"1px dashed #e2e8f0",padding:"20px",textAlign:"center" }}>
+                      <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>Seleccioná un día para ver sus premiaciones</p>
+                    </div>
+                  )}
                 </div>
+              )}
+
+              {/* List view */}
+              {premView === "list" && (
+                visible.length === 0 ? (
+                  <div style={{ background:"#fff",borderRadius:14,border:"1px dashed #e2e8f0",padding:"28px 20px",textAlign:"center" }}>
+                    <p style={{ fontSize:32,margin:"0 0 8px" }}>🏆</p>
+                    <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>
+                      {hasFilters ? "No hay premiaciones con esos filtros" : "Sin premiaciones cargadas"}
+                    </p>
+                  </div>
+                ) : (
+                  <div style={{ display:"flex",flexDirection:"column",gap:14 }}>
+                    {days.map(([day, items]) => (
+                      <div key={day} style={{ display:"flex",flexDirection:"column",gap:6 }}>
+                        <div style={{ position:"sticky",top:0,zIndex:2,background:"linear-gradient(180deg,#f8fafc 0%,rgba(248,250,252,0.92) 100%)",backdropFilter:"blur(6px)",padding:"6px 10px",borderRadius:10,display:"flex",alignItems:"center",gap:8,border:"1px solid #e2e8f0" }}>
+                          <div style={{ width:6,height:6,borderRadius:"50%",background:"#d4a017",boxShadow:"0 0 6px #d4a017" }} />
+                          <p style={{ fontSize:11,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",color:"#7a4a00",margin:0 }}>{fmtDateLong(day)}</p>
+                          <span style={{ marginLeft:"auto",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:"#fff",color:"#a87800",border:"1px solid #f0deb0" }}>{items.length}</span>
+                        </div>
+                        {items.map(p => renderPremCard(p))}
+                      </div>
+                    ))}
+                  </div>
+                )
               )}
             </div>
           );
