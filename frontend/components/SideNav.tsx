@@ -41,9 +41,11 @@ const navSections: NavSection[] = [
       {
         title: "Transporte", icon: "route",
         items: [
+          { href: "/operations/daily-transport", label: "Operatividad Diaria", icon: "calendar" },
           { href: "/operations/vehicle-positions", label: "Tracking de Viajes", icon: "pin" },
           { href: "/operations/trips", label: "Viajes", icon: "route" },
-          { href: "/operations/driver-heatmap", label: "Panel Conductores", icon: "driver" }
+          { href: "/operations/driver-heatmap", label: "Panel Conductores", icon: "driver" },
+          { href: "/operations/driver-monitoring", label: "Monitoreo de Conductores", icon: "driver" }
         ]
       },
       {
@@ -77,6 +79,12 @@ const navSections: NavSection[] = [
         items: [
           { href: "/operations/support-chats", label: "Centro de Incidencias", icon: "portal" }
         ]
+      },
+      {
+        title: "Workforce", icon: "users",
+        items: [
+          { href: "/operations/workforce", label: "Staff & Voluntarios", icon: "users" }
+        ]
       }
     ]
   },
@@ -84,6 +92,14 @@ const navSections: NavSection[] = [
   { title: "Deportes", icon: "sports-rings", href: "/deportes" },
   { title: "Sede", icon: "pin", href: "/sede" },
   { title: "Calendario Operacional", icon: "calendar", href: "/sports-calendar" },
+  { title: "Calendario Premiaciones", icon: "calendar", href: "/operations/premiaciones" },
+  {
+    title: "Cupones", icon: "ticket",
+    items: [
+      { href: "/operations/coupons", label: "Administrar cupones", icon: "ticket" },
+      { href: "/portal/partner", label: "Portal Partner", icon: "scan" }
+    ]
+  },
   { title: "Acreditación", icon: "shield", href: "/accreditations" },
   {
     title: "Portales", icon: "portal",
@@ -97,9 +113,11 @@ const navSections: NavSection[] = [
   {
     title: "Administración", icon: "admin",
     items: [
-      { href: "/admin/usuarios", label: "Gestión de Usuarios", icon: "users-admin" }
+      { href: "/admin/usuarios", label: "Gestión de Usuarios", icon: "users-admin" },
+      { href: "/operations/sofia-actions", label: "Acciones de SofIA", icon: "admin" }
     ]
   },
+  { title: "Inicio guiado", icon: "stack", href: "/inicio-guiado" },
   { title: "Ayuda", icon: "help", href: "/ayuda" }
 ];
 
@@ -129,6 +147,7 @@ function Icon({ name, className }: { name: string; className?: string }) {
     case "help": return (<svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="12" cy="12" r="9" /><path d="M9.5 9.5a2.5 2.5 0 0 1 5 .5c0 1.5-2.5 2-2.5 3.5" /><circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none" /></svg>);
     case "flight": return (<svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21 4 19 2c-2-2-4-2-5.5-.5L10 5 1.8 6.2l2.4 2.4L9 9l-4.5 4.5L5 15l2-1 1 2-1 2 2 .5 4.5-4.5.8 4.7 2.4 2.5z" /></svg>);
     case "and": return (<svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3" /><rect x="9" y="11" width="14" height="10" rx="2" /><path d="M13 16l2 2 4-4" /></svg>);
+    case "ticket": return (<svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v2a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2z" /><path d="M13 5v2M13 11v2M13 17v2" /></svg>);
     default: return null;
   }
 }
@@ -180,9 +199,11 @@ const HREF_TO_MODULE: Record<string, string> = {
   "/operacion/and": "operacion.and",
   "/operacion/cumplimiento-and": "operacion.cumplimiento",
   "/operations/flights": "operacion.and",
+  "/operations/daily-transport": "operacion.viajes",
   "/operations/vehicle-positions": "operacion.tracking",
   "/operations/trips": "operacion.viajes",
   "/operations/driver-heatmap": "operacion.viajes",
+  "/operations/driver-monitoring": "operacion.tracking",
   "/operations/hotel-tracking": "hoteleria.tracking",
   "/masters/accommodations": "hoteleria.hoteles",
   "/masters/hotel-rooms": "hoteleria.habitaciones",
@@ -202,12 +223,19 @@ const HREF_TO_MODULE: Record<string, string> = {
   "/deportes": "deportes",
   "/sede": "sede",
   "/sports-calendar": "calendario",
+  "/operations/premiaciones": "calendario",
+  "/operations/workforce": "operacion.viajes",
+  "/operations/coupons": "operacion.viajes",
   "/accreditations": "acreditaciones",
   "/portal/user": "portales",
   "/portal/conductor": "portales",
   "/portal/vehicle-request": "portales",
   "/portal/access-control": "portales",
+  "/portal/partner": "portales",
+  "/portal/coupons": "portales",
   "/admin/usuarios": "admin.usuarios",
+  "/operations/sofia-actions": "_always",
+  "/inicio-guiado": "_always",
   "/ayuda": "_always",
 };
 

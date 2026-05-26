@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SofiaController } from './sofia.controller';
 import { SofiaService } from './sofia.service';
+import { DriverPresenceModule } from '../driver-presence/driver-presence.module';
 import { Event } from '../events/entities/event.entity';
 import { Delegation } from '../delegations/entities/delegation.entity';
 import { Athlete } from '../athletes/entities/athlete.entity';
@@ -25,6 +26,7 @@ import { Provider } from '../providers/entities/provider.entity';
       Flight,
       Provider,
     ]),
+    DriverPresenceModule,
   ],
   controllers: [SofiaController],
   providers: [SofiaService],

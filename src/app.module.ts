@@ -32,6 +32,9 @@ import { ProviderParticipantsModule } from './provider-participants/provider-par
 import { AccessControlModule } from './access-control/access-control.module';
 import { PremiacionesModule } from './premiaciones/premiaciones.module';
 import { SupportChatsModule } from './support-chats/support-chats.module';
+import { WorkforceModule } from './workforce/workforce.module';
+import { CouponsModule } from './coupons/coupons.module';
+import { DriverPresenceModule } from './driver-presence/driver-presence.module';
 
 @Module({
   imports: [
@@ -78,6 +81,9 @@ import { SupportChatsModule } from './support-chats/support-chats.module';
     AccessControlModule,
     PremiacionesModule,
     SupportChatsModule,
+    WorkforceModule,
+    CouponsModule,
+    DriverPresenceModule,
   ],
   controllers: [AppController],
   providers: [AppService],

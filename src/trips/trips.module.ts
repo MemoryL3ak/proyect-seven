@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { SupabaseProvider } from '@/supabase/provider';
 import { TripsController } from './trips.controller';
 import { TripsService } from './trips.service';
+import { TripsScheduleService } from './trips-schedule.service';
 import { Trip } from './entities/trip.entity';
 import { TripMessage } from './entities/trip-message.entity';
 import { ProviderRate } from '../providers/entities/provider-rate.entity';
@@ -10,6 +11,6 @@ import { ProviderRate } from '../providers/entities/provider-rate.entity';
 @Module({
   imports: [TypeOrmModule.forFeature([Trip, TripMessage, ProviderRate])],
   controllers: [TripsController],
-  providers: [TripsService, SupabaseProvider],
+  providers: [TripsService, TripsScheduleService, SupabaseProvider],
 })
 export class TripsModule {}

@@ -28,6 +28,7 @@ type DriverRow = {
   vehicle_id: string | null;
   photo_url: string | null;
   access_types: string[] | null;
+  allowed_client_types: string[] | null;
   accreditation_status: string;
   accreditation_validated_at: string | null;
   accreditation_validated_by: string | null;
@@ -106,6 +107,21 @@ export class DriversService {
         .map((item) => String(item || '').toUpperCase())
         .filter((item) => ['C', 'TR', 'H', 'R', 'A', 'RD'].includes(item));
     }
+    if (dto.allowedClientTypes !== undefined) {
+      const allowed = [
+        'TF',
+        'TM',
+        'TA',
+        'VIP',
+        'T1',
+        'FAMILIA_PARAPAN',
+        'COMITE_ORGANIZADOR',
+        'PROVEEDORES',
+      ];
+      row.allowed_client_types = (dto.allowedClientTypes ?? [])
+        .map((item) => String(item || '').toUpperCase())
+        .filter((item) => allowed.includes(item));
+    }
     if (dto.accreditationStatus !== undefined) {
       row.accreditation_status = dto.accreditationStatus;
     }
@@ -154,6 +170,7 @@ export class DriversService {
       vehicleId: row.vehicle_id,
       photoUrl: row.photo_url,
       accessTypes: row.access_types ?? [],
+      allowedClientTypes: row.allowed_client_types ?? [],
       accreditationStatus: row.accreditation_status,
       accreditationValidatedAt: row.accreditation_validated_at
         ? new Date(row.accreditation_validated_at)

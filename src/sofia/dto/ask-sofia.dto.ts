@@ -8,4 +8,9 @@ export class AskSofiaDto {
   @IsString()
   @IsOptional()
   previousResponseId?: string;
+
+  /** Idioma de la interfaz: 'es' | 'en' | 'pt'. Default 'es'. */
+  @IsString()
+  @IsOptional()
+  locale?: string;
 }
