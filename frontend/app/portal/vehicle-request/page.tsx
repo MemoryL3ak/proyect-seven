@@ -305,6 +305,12 @@ export default function VehicleRequestPortalPage() {
   const [activeTab, setActiveTab] = useState<PortalTab>("solicitud");
   const [actividadesSubTab, setActividadesSubTab] = useState<ActividadesSubTab>("en_curso");
   const [premiaciones, setPremiaciones] = useState<PremiacionVIP[]>([]);
+  const [premView, setPremView] = useState<"calendar" | "list">("calendar");
+  const [premCalCursor, setPremCalCursor] = useState(() => new Date());
+  const [premCalSelectedKey, setPremCalSelectedKey] = useState<string | null>(null);
+  const [premStatusFilter, setPremStatusFilter] = useState<"" | "PROGRAMADA" | "REALIZADA">("");
+  const [premRoleFilter, setPremRoleFilter] = useState<string>("");
+  const [premAttendanceFilter, setPremAttendanceFilter] = useState<"" | "CONFIRMED" | "PENDING" | "DECLINED">("");
   const [visibleTripsCount, setVisibleTripsCount] = useState(5);
 
   const [loading, setLoading] = useState(false);
@@ -1678,65 +1684,408 @@ export default function VehicleRequestPortalPage() {
             )}
 
             {/* ═══════════════════ PREMIACIONES TAB ═══════════════════ */}
-            {activeTab === "premiaciones" && (
-              <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "#21D0B3", margin: 0 }}>Tus premiaciones</p>
-                {premiaciones.length === 0 ? (
-                  <div style={{ textAlign: "center", padding: "28px 16px", borderRadius: 16, border: "1px dashed rgba(33,208,179,0.3)", background: "#fafcfb" }}>
-                    <p style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", margin: "0 0 4px" }}>Sin premiaciones asignadas</p>
-                    <p style={{ fontSize: 12, color: "#64748b", margin: 0 }}>Cuando te designemos como premiador de una ceremonia aparecerá aquí.</p>
-                  </div>
-                ) : premiaciones.map((p) => {
-                  const roleLabel: Record<string, { label: string; color: string }> = {
-                    GOLD: { label: "Medalla de Oro", color: "#eab308" },
-                    SILVER: { label: "Medalla de Plata", color: "#94a3b8" },
-                    BRONZE: { label: "Medalla de Bronce", color: "#b45309" },
-                    AUTHORITY: { label: "Autoridad", color: "#8b5cf6" },
-                    AWARDER: { label: "Premiador", color: "#14b8a6" },
-                  };
+            {activeTab === "premiaciones" && (() => {
+              const ROLE_META: Record<string, { label: string; color: string; bg: string; ring: string }> = {
+                GOLD:      { label: "Medalla de Oro",   color: "#a87800", bg: "linear-gradient(135deg,#fff4d6 0%,#fde68a 100%)", ring: "#eab308" },
+                SILVER:    { label: "Medalla de Plata", color: "#475569", bg: "linear-gradient(135deg,#f1f5f9 0%,#cbd5e1 100%)", ring: "#94a3b8" },
+                BRONZE:    { label: "Medalla de Bronce",color: "#7c2d12", bg: "linear-gradient(135deg,#fed7aa 0%,#fdba74 100%)", ring: "#b45309" },
+                AUTHORITY: { label: "Autoridad",        color: "#5b21b6", bg: "linear-gradient(135deg,#ede9fe 0%,#c4b5fd 100%)", ring: "#8b5cf6" },
+                AWARDER:   { label: "Premiador",        color: "#0f766e", bg: "linear-gradient(135deg,#ccfbf1 0%,#5eead4 100%)", ring: "#14b8a6" },
+              };
+              const fmtKey = (iso?: string | null) => iso ? new Date(iso).toISOString().slice(0,10) : "";
+              const fmtTime = (iso?: string | null) => iso ? new Date(iso).toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"}) : "";
+              const fmtDateLong = (key?: string | null) => {
+                if (!key) return "";
+                const d = new Date(key + "T00:00:00");
+                return d.toLocaleDateString("es-CL",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+              };
+              const calY = premCalCursor.getFullYear();
+              const calM = premCalCursor.getMonth();
+              const monthLabel = premCalCursor.toLocaleDateString("es-CL",{month:"long",year:"numeric"});
+              const firstDayOfMonth = new Date(calY, calM, 1).getDay();
+              const daysInMonth = new Date(calY, calM + 1, 0).getDate();
+              const offset = (firstDayOfMonth + 6) % 7;
+              const calCells: (number | null)[] = Array(offset).fill(null);
+              for (let dd = 1; dd <= daysInMonth; dd++) calCells.push(dd);
+              while (calCells.length % 7 !== 0) calCells.push(null);
+              const today = new Date();
+              const isCurrentMonth = today.getFullYear() === calY && today.getMonth() === calM;
+              const todayNum = isCurrentMonth ? today.getDate() : null;
+              const calDayNames = ["L","M","M","J","V","S","D"];
+
+              // Apply filters
+              const visible = premiaciones.filter(p => {
+                if (premStatusFilter && p.status !== premStatusFilter) return false;
+                const role = (p.myAssignment?.role || "AWARDER").toUpperCase();
+                if (premRoleFilter && role !== premRoleFilter) return false;
+                if (premAttendanceFilter) {
                   const a = p.myAssignment;
-                  const r = (a && roleLabel[a.role]) || roleLabel.AWARDER;
-                  return (
-                    <div key={p.id} style={{ background: "#fff", border: "1px solid #e2e8f0", borderLeft: `4px solid ${r.color}`, borderRadius: 14, padding: "14px 16px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6, gap: 8 }}>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", margin: 0 }}>{p.title}</p>
-                          {p.discipline && <p style={{ fontSize: 11, color: "#64748b", margin: "2px 0 0" }}>{p.discipline}</p>}
-                        </div>
-                        <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 99, background: `${r.color}15`, color: r.color, flexShrink: 0 }}>{r.label}</span>
+                  const attendance = a?.confirmed_at ? "CONFIRMED" : a?.declined_at ? "DECLINED" : "PENDING";
+                  if (premAttendanceFilter !== attendance) return false;
+                }
+                return true;
+              });
+
+              const totalProg = premiaciones.filter(p => p.status === "PROGRAMADA").length;
+              const totalReal = premiaciones.filter(p => p.status === "REALIZADA").length;
+              const countConfirmed = premiaciones.filter(p => p.myAssignment?.confirmed_at).length;
+              const countPending = premiaciones.filter(p => p.myAssignment && !p.myAssignment.confirmed_at && !p.myAssignment.declined_at).length;
+              const roleOptions = Array.from(new Set(premiaciones.map(p => (p.myAssignment?.role || "AWARDER").toUpperCase())));
+
+              const itemsByDay = new Map<number, PremiacionVIP[]>();
+              visible.forEach(p => {
+                const d = new Date(p.scheduled_at);
+                if (d.getFullYear() === calY && d.getMonth() === calM) {
+                  const dn = d.getDate();
+                  if (!itemsByDay.has(dn)) itemsByDay.set(dn, []);
+                  itemsByDay.get(dn)!.push(p);
+                }
+              });
+              const monthKey = `${calY}-${String(calM+1).padStart(2,"0")}`;
+              const selectedDayNum = premCalSelectedKey && premCalSelectedKey.startsWith(monthKey + "-")
+                ? parseInt(premCalSelectedKey.split("-")[2], 10) : null;
+              const selectedItems = selectedDayNum ? (itemsByDay.get(selectedDayNum) || []) : [];
+
+              const grouped = new Map<string, PremiacionVIP[]>();
+              visible.forEach(p => {
+                const k = fmtKey(p.scheduled_at);
+                if (!grouped.has(k)) grouped.set(k, []);
+                grouped.get(k)!.push(p);
+              });
+              const days = Array.from(grouped.entries()).sort(([a],[b]) => a.localeCompare(b));
+
+              const hasFilters = !!(premStatusFilter || premRoleFilter || premAttendanceFilter);
+              const clearAll = () => { setPremStatusFilter(""); setPremRoleFilter(""); setPremAttendanceFilter(""); };
+
+              const renderPremCard = (p: PremiacionVIP) => {
+                const a = p.myAssignment;
+                const role = (a?.role || "AWARDER").toUpperCase();
+                const r = ROLE_META[role] || ROLE_META.AWARDER;
+                const isDone = p.status === "REALIZADA";
+                const attendance: "CONFIRMED" | "DECLINED" | "PENDING" = a?.confirmed_at ? "CONFIRMED" : a?.declined_at ? "DECLINED" : "PENDING";
+                return (
+                  <article key={p.id}
+                    style={{ position:"relative",background:"#fff",border:"1px solid #e2e8f0",borderLeft:`4px solid ${r.ring}`,borderRadius:16,padding:"14px 16px",boxShadow:"0 1px 4px rgba(15,23,42,0.06)",overflow:"hidden" }}>
+                    {/* Decorative glow */}
+                    <div style={{ position:"absolute",top:-40,right:-40,width:140,height:140,borderRadius:"50%",background:r.bg,opacity:0.25,pointerEvents:"none" }} />
+                    <div style={{ position:"relative",display:"flex",alignItems:"flex-start",gap:12 }}>
+                      <div style={{ width:42,height:42,borderRadius:12,flexShrink:0,background:r.bg,border:`1.5px solid ${r.ring}40`,display:"flex",alignItems:"center",justifyContent:"center",color:r.ring,boxShadow:`0 4px 12px ${r.ring}30` }}>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg>
                       </div>
-                      <div style={{ fontSize: 12, color: "#475569", display: "flex", flexDirection: "column", gap: 4, marginTop: 8 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /></svg>
-                          {new Date(p.scheduled_at).toLocaleString("es-CL", { dateStyle: "full", timeStyle: "short" })}
+                      <div style={{ flex:1,minWidth:0 }}>
+                        <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8 }}>
+                          <p style={{ fontSize:14.5,fontWeight:800,color:"#0f172a",margin:0,lineHeight:1.3 }}>{p.title}</p>
+                          <span style={{ flexShrink:0,display:"inline-flex",alignItems:"center",gap:4,fontSize:10,padding:"3px 9px",borderRadius:99,background:r.bg,color:r.color,fontWeight:800,letterSpacing:"0.02em",border:`1px solid ${r.ring}40` }}>{r.label}</span>
                         </div>
-                        {(p.venue_name || p.location_detail) && (
-                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
-                            {[p.venue_name, p.location_detail].filter(Boolean).join(" — ")}
+                        {p.discipline && <p style={{ fontSize:11.5,color:"#0ea5c8",margin:"2px 0 0",fontWeight:600 }}>{p.discipline}</p>}
+                        <div style={{ display:"flex",flexWrap:"wrap",gap:"4px 12px",marginTop:6 }}>
+                          <span style={{ display:"inline-flex",alignItems:"center",gap:4,fontSize:11.5,color:"#334155",fontWeight:600 }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            {fmtTime(p.scheduled_at)}
+                          </span>
+                          {(p.venue_name || p.location_detail) && (
+                            <span style={{ display:"inline-flex",alignItems:"center",gap:4,fontSize:11,color:"#64748b" }}>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                              {[p.venue_name, p.location_detail].filter(Boolean).join(" — ")}
+                            </span>
+                          )}
+                          <span style={{ display:"inline-flex",alignItems:"center",gap:4,fontSize:10,fontWeight:800,padding:"2px 8px",borderRadius:99,letterSpacing:"0.06em",textTransform:"uppercase",
+                            background:isDone?"#e7f5ec":"#fff4d6",color:isDone?"#1e5125":"#7a4a00",border:`1px solid ${isDone?"#2e7d3233":"#c78c0033"}` }}>
+                            <span style={{ width:5,height:5,borderRadius:"50%",background:isDone?"#2e7d32":"#c78c00",animation:isDone?"none":"pulse 1.8s infinite" }} />
+                            {isDone?"Realizada":"Programada"}
+                          </span>
+                        </div>
+                        {p.notes && <p style={{ margin:"8px 0 0",fontSize:11.5,color:"#64748b",fontStyle:"italic",lineHeight:1.45,padding:"6px 10px",background:"#f8fafc",borderRadius:8,borderLeft:"2px solid #cbd5e1" }}>{p.notes}</p>}
+                      </div>
+                    </div>
+                    {/* Attendance row */}
+                    {a && (
+                      <div style={{ position:"relative",marginTop:12,paddingTop:10,borderTop:"1px dashed #e2e8f0" }}>
+                        {attendance === "CONFIRMED" ? (
+                          <div style={{ display:"inline-flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:99,background:"linear-gradient(135deg,#dcfce7 0%,#bbf7d0 100%)",color:"#166534",fontSize:11.5,fontWeight:800,border:"1px solid #86efac" }}>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            Asistencia confirmada
+                          </div>
+                        ) : attendance === "DECLINED" ? (
+                          <div style={{ display:"inline-flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:99,background:"#fee2e2",color:"#991b1b",fontSize:11.5,fontWeight:800,border:"1px solid #fca5a5" }}>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            Declinaste
+                          </div>
+                        ) : (
+                          <div style={{ display:"flex",alignItems:"center",gap:8,flexWrap:"wrap" }}>
+                            <span style={{ fontSize:10,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:"#a87800" }}>Confirmá tu asistencia</span>
+                            <div style={{ display:"flex",gap:6,marginLeft:"auto" }}>
+                              <button type="button" onClick={() => confirmAwarder(p.id, a.id, "CONFIRM")}
+                                style={{ padding:"7px 14px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#10b981 0%,#059669 100%)",color:"#fff",fontSize:11.5,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 8px rgba(16,185,129,0.3)",display:"inline-flex",alignItems:"center",gap:5 }}>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                Confirmar
+                              </button>
+                              <button type="button" onClick={() => confirmAwarder(p.id, a.id, "DECLINE")}
+                                style={{ padding:"7px 14px",borderRadius:10,border:"1px solid #fca5a5",background:"#fff",color:"#b91c1c",fontSize:11.5,fontWeight:700,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:5 }}>
+                                Declinar
+                              </button>
+                            </div>
                           </div>
                         )}
-                        {p.notes && <p style={{ margin: "4px 0 0", fontSize: 11.5, color: "#64748b" }}>{p.notes}</p>}
                       </div>
-                      {a && (
-                        <div style={{ marginTop: 12, display: "flex", gap: 6, alignItems: "center" }}>
-                          {a.confirmed_at ? (
-                            <span style={{ fontSize: 11, fontWeight: 700, color: "#10b981" }}>✓ Asistencia confirmada</span>
-                          ) : a.declined_at ? (
-                            <span style={{ fontSize: 11, fontWeight: 700, color: "#ef4444" }}>✗ Declinaste</span>
+                    )}
+                  </article>
+                );
+              };
+
+              return (
+                <section style={{ display:"flex",flexDirection:"column",gap:10 }}>
+                  {/* Premium header with stats */}
+                  <div style={{ position:"relative",background:"linear-gradient(135deg,#fffbf2 0%,#fff4d6 50%,#ffffff 100%)",borderRadius:16,border:"1px solid #f0deb0",padding:"14px 16px",overflow:"hidden" }}>
+                    <div style={{ position:"absolute",top:-30,right:-30,width:140,height:140,borderRadius:"50%",background:"radial-gradient(circle,rgba(245,200,66,0.25),transparent 70%)",pointerEvents:"none" }} />
+                    <div style={{ position:"relative",display:"flex",alignItems:"center",gap:12 }}>
+                      <div style={{ width:46,height:46,borderRadius:13,background:"linear-gradient(135deg,#d4a017 0%,#f5c842 50%,#e3a808 100%)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",flexShrink:0,boxShadow:"0 6px 16px rgba(199,140,0,0.4)" }}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg>
+                      </div>
+                      <div style={{ flex:1,minWidth:0 }}>
+                        <p style={{ fontSize:10,fontWeight:800,letterSpacing:"0.2em",textTransform:"uppercase",color:"#a87800",margin:0 }}>Tus premiaciones</p>
+                        <p style={{ fontSize:14,color:"#7a4a00",margin:"2px 0 0",fontWeight:700 }}>{premiaciones.length} asignacion{premiaciones.length===1?"":"es"}</p>
+                      </div>
+                    </div>
+                    {premiaciones.length > 0 && (
+                      <div style={{ position:"relative",display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginTop:12 }}>
+                        {[
+                          { label:"Programadas", value:totalProg, color:"#c78c00", bg:"#fff4d6" },
+                          { label:"Realizadas",  value:totalReal, color:"#1e5125", bg:"#e7f5ec" },
+                          { label:"Confirmadas", value:countConfirmed, color:"#166534", bg:"#dcfce7" },
+                          { label:"Pendientes",  value:countPending, color:"#9a3412", bg:"#fed7aa" },
+                        ].map(s => (
+                          <div key={s.label} style={{ background:s.bg,borderRadius:10,padding:"8px 6px",textAlign:"center",border:`1px solid ${s.color}22` }}>
+                            <p style={{ fontSize:18,fontWeight:900,color:s.color,margin:0,lineHeight:1 }}>{s.value}</p>
+                            <p style={{ fontSize:9,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",color:s.color,margin:"3px 0 0",opacity:0.85 }}>{s.label}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {premiaciones.length === 0 ? (
+                    <div style={{ textAlign:"center",padding:"36px 20px",borderRadius:16,border:"1px dashed #f0deb0",background:"linear-gradient(135deg,#fffbf2 0%,#ffffff 100%)" }}>
+                      <p style={{ fontSize:36,margin:"0 0 8px" }}>🏆</p>
+                      <p style={{ fontSize:14,fontWeight:800,color:"#7a4a00",margin:"0 0 4px" }}>Sin premiaciones asignadas</p>
+                      <p style={{ fontSize:12,color:"#a87800",margin:0 }}>Cuando te designemos como premiador de una ceremonia aparecerá aquí.</p>
+                    </div>
+                  ) : (
+                    <>
+                      {/* View toggle + filters */}
+                      <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",padding:"10px",display:"flex",flexDirection:"column",gap:8 }}>
+                        <div style={{ display:"flex",gap:0,background:"#f1f5f9",borderRadius:10,padding:3 }}>
+                          {([
+                            { v:"calendar" as const, label:"Calendario", icon:(<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>)},
+                            { v:"list" as const, label:"Lista", icon:(<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>)},
+                          ]).map(opt => {
+                            const active = premView === opt.v;
+                            return (
+                              <button key={opt.v} type="button" onClick={() => setPremView(opt.v)}
+                                style={{ flex:1,padding:"7px 10px",borderRadius:8,border:"none",cursor:"pointer",
+                                  background:active ? "#fff" : "transparent",
+                                  color:active ? "#7a4a00" : "#64748b",
+                                  fontSize:12,fontWeight:700,
+                                  boxShadow:active ? "0 1px 3px rgba(15,23,42,0.1)" : "none",
+                                  display:"inline-flex",alignItems:"center",justifyContent:"center",gap:6,
+                                  transition:"all .15s" }}>
+                                {opt.icon}
+                                {opt.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {/* Status chips */}
+                        <div style={{ display:"flex",gap:6,flexWrap:"wrap" }}>
+                          {([
+                            { v:"" as const, label:"Estado", count:premiaciones.length },
+                            { v:"PROGRAMADA" as const, label:"Prog.", count:totalProg },
+                            { v:"REALIZADA" as const, label:"Real.", count:totalReal },
+                          ]).map(opt => {
+                            const active = premStatusFilter === opt.v;
+                            const isDone = opt.v === "REALIZADA";
+                            const isProg = opt.v === "PROGRAMADA";
+                            return (
+                              <button key={opt.v||"all-st"} type="button" onClick={() => setPremStatusFilter(opt.v)}
+                                style={{ padding:"5px 10px",borderRadius:20,border:active ? `1px solid ${isDone?"#2e7d32":isProg?"#c78c00":"#21D0B3"}` : "1px solid #e2e8f0",
+                                  background:active ? (isDone?"#e7f5ec":isProg?"#fff4d6":"rgba(33,208,179,0.12)") : "#fff",
+                                  color:active ? (isDone?"#1e5125":isProg?"#7a4a00":"#0a7a6b") : "#475569",
+                                  fontSize:10.5,fontWeight:700,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:5 }}>
+                                {opt.label} <span style={{ fontSize:9,padding:"1px 5px",borderRadius:10,background:active?"rgba(255,255,255,0.6)":"#f1f5f9",color:active ? (isDone?"#1e5125":isProg?"#7a4a00":"#0a7a6b") : "#64748b" }}>{opt.count}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {/* Attendance chips */}
+                        <div style={{ display:"flex",gap:6,flexWrap:"wrap" }}>
+                          {([
+                            { v:"" as const, label:"Asistencia", count:premiaciones.length },
+                            { v:"CONFIRMED" as const, label:"Confirmadas", count:countConfirmed },
+                            { v:"PENDING" as const, label:"Pendientes", count:countPending },
+                            { v:"DECLINED" as const, label:"Declinadas", count:premiaciones.filter(p => p.myAssignment?.declined_at).length },
+                          ]).map(opt => {
+                            const active = premAttendanceFilter === opt.v;
+                            const cMap: Record<string, [string,string,string]> = {
+                              CONFIRMED: ["#dcfce7","#166534","#86efac"],
+                              PENDING:   ["#fed7aa","#9a3412","#fdba74"],
+                              DECLINED:  ["#fee2e2","#991b1b","#fca5a5"],
+                            };
+                            const [bg,fg,br] = cMap[opt.v] || ["rgba(33,208,179,0.12)","#0a7a6b","#21D0B3"];
+                            return (
+                              <button key={opt.v||"all-at"} type="button" onClick={() => setPremAttendanceFilter(opt.v)}
+                                style={{ padding:"5px 10px",borderRadius:20,border:active ? `1px solid ${br}` : "1px solid #e2e8f0",
+                                  background:active ? bg : "#fff",
+                                  color:active ? fg : "#475569",
+                                  fontSize:10.5,fontWeight:700,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:5 }}>
+                                {opt.label} <span style={{ fontSize:9,padding:"1px 5px",borderRadius:10,background:active?"rgba(255,255,255,0.6)":"#f1f5f9",color:active ? fg : "#64748b" }}>{opt.count}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {/* Role filter */}
+                        {roleOptions.length > 1 && (
+                          <div style={{ display:"flex",gap:6,flexWrap:"wrap" }}>
+                            {[{ v:"", label:"Todos los roles" } as { v:string; label:string }, ...roleOptions.map(r => ({ v:r, label:(ROLE_META[r]||ROLE_META.AWARDER).label }))].map(opt => {
+                              const active = premRoleFilter === opt.v;
+                              const meta = opt.v ? (ROLE_META[opt.v]||ROLE_META.AWARDER) : null;
+                              return (
+                                <button key={opt.v||"all-r"} type="button" onClick={() => setPremRoleFilter(opt.v)}
+                                  style={{ padding:"5px 10px",borderRadius:20,border:active && meta ? `1px solid ${meta.ring}` : "1px solid #e2e8f0",
+                                    background:active && meta ? meta.bg : active ? "rgba(33,208,179,0.12)" : "#fff",
+                                    color:active && meta ? meta.color : active ? "#0a7a6b" : "#475569",
+                                    fontSize:10.5,fontWeight:700,cursor:"pointer" }}>
+                                  {opt.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                        {hasFilters && (
+                          <button type="button" onClick={clearAll}
+                            style={{ alignSelf:"flex-start",padding:"4px 10px",borderRadius:8,border:"1px solid #fecaca",background:"#fef2f2",color:"#b91c1c",fontSize:11,fontWeight:600,cursor:"pointer" }}>
+                            Limpiar filtros
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Calendar view */}
+                      {premView === "calendar" && (
+                        <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+                          <div style={{ background:"#fff",borderRadius:14,border:"1px solid #f0deb0",padding:"12px",boxShadow:"0 1px 3px rgba(199,140,0,0.06)" }}>
+                            <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10 }}>
+                              <button type="button" onClick={() => { setPremCalCursor(new Date(calY, calM - 1, 1)); setPremCalSelectedKey(null); }}
+                                style={{ width:30,height:30,borderRadius:8,border:"1px solid #f0deb0",background:"#fffbf2",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a87800" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                              </button>
+                              <div style={{ display:"flex",flexDirection:"column",alignItems:"center" }}>
+                                <span style={{ fontSize:14,fontWeight:800,color:"#7a4a00",textTransform:"capitalize",letterSpacing:"-0.01em" }}>{monthLabel}</span>
+                                <span style={{ fontSize:9,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"#c78c00",marginTop:2 }}>{itemsByDay.size} día{itemsByDay.size===1?"":"s"} con premiaciones</span>
+                              </div>
+                              <button type="button" onClick={() => { setPremCalCursor(new Date(calY, calM + 1, 1)); setPremCalSelectedKey(null); }}
+                                style={{ width:30,height:30,borderRadius:8,border:"1px solid #f0deb0",background:"#fffbf2",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a87800" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                              </button>
+                            </div>
+                            <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:3,textAlign:"center" }}>
+                              {calDayNames.map((dn,i) => <div key={i} style={{ fontSize:9,fontWeight:800,color:"#94a3b8",letterSpacing:"0.1em",padding:"4px 0" }}>{dn}</div>)}
+                              {calCells.map((dn,i) => {
+                                if (!dn) return <div key={`empty-${i}`} />;
+                                const dayKey = `${calY}-${String(calM+1).padStart(2,"0")}-${String(dn).padStart(2,"0")}`;
+                                const dayItems = itemsByDay.get(dn) || [];
+                                const hasItems = dayItems.length > 0;
+                                const isSelected = premCalSelectedKey === dayKey;
+                                const isToday = todayNum === dn;
+                                const anyConfirmed = dayItems.some(p => p.myAssignment?.confirmed_at);
+                                const anyPending = dayItems.some(p => p.myAssignment && !p.myAssignment.confirmed_at && !p.myAssignment.declined_at);
+                                return (
+                                  <button key={dayKey} type="button" onClick={() => setPremCalSelectedKey(isSelected ? null : dayKey)}
+                                    style={{ aspectRatio:"1",borderRadius:8,border:isSelected ? "2px solid #d4a017" : isToday ? "1.5px solid #d4a017" : "1px solid transparent",
+                                      background:isSelected ? "linear-gradient(135deg,#d4a017 0%,#f5c842 100%)"
+                                        : hasItems ? "linear-gradient(135deg,#fff4d6 0%,#fffbf2 100%)"
+                                        : "#fff",
+                                      color:isSelected ? "#fff" : isToday ? "#7a4a00" : "#0f172a",
+                                      fontSize:12,fontWeight:isSelected||isToday?800:hasItems?700:500,cursor:"pointer",position:"relative",
+                                      boxShadow:isSelected ? "0 3px 8px rgba(199,140,0,0.35)" : hasItems ? "0 1px 2px rgba(199,140,0,0.1)" : "none",
+                                      transition:"all .15s",padding:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2 }}>
+                                    <span>{dn}</span>
+                                    {hasItems && !isSelected && (
+                                      <div style={{ display:"flex",gap:2,alignItems:"center" }}>
+                                        {anyPending && <span style={{ width:4,height:4,borderRadius:"50%",background:"#c78c00" }} />}
+                                        {anyConfirmed && <span style={{ width:4,height:4,borderRadius:"50%",background:"#10b981" }} />}
+                                        {dayItems.length > 2 && <span style={{ fontSize:8,fontWeight:800,color:"#c78c00",marginLeft:1 }}>+{dayItems.length-2}</span>}
+                                      </div>
+                                    )}
+                                    {isSelected && hasItems && (
+                                      <span style={{ fontSize:8,fontWeight:800,padding:"1px 5px",borderRadius:8,background:"rgba(255,255,255,0.3)",color:"#fff" }}>{dayItems.length}</span>
+                                    )}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                            <div style={{ display:"flex",alignItems:"center",gap:14,marginTop:10,paddingTop:10,borderTop:"1px dashed #f0deb0",justifyContent:"center" }}>
+                              <span style={{ display:"inline-flex",alignItems:"center",gap:5,fontSize:10,color:"#7a4a00",fontWeight:600 }}>
+                                <span style={{ width:6,height:6,borderRadius:"50%",background:"#c78c00" }} />Pendiente
+                              </span>
+                              <span style={{ display:"inline-flex",alignItems:"center",gap:5,fontSize:10,color:"#166534",fontWeight:600 }}>
+                                <span style={{ width:6,height:6,borderRadius:"50%",background:"#10b981" }} />Confirmada
+                              </span>
+                              {todayNum && (
+                                <span style={{ display:"inline-flex",alignItems:"center",gap:5,fontSize:10,color:"#7a4a00",fontWeight:600 }}>
+                                  <span style={{ width:8,height:8,borderRadius:4,border:"1.5px solid #d4a017",background:"#fff" }} />Hoy
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          {selectedDayNum ? (
+                            selectedItems.length > 0 ? (
+                              <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
+                                <div style={{ padding:"6px 10px",borderRadius:10,background:"linear-gradient(135deg,#fff4d6 0%,#fffbf2 100%)",display:"flex",alignItems:"center",gap:8,border:"1px solid #f0deb0" }}>
+                                  <div style={{ width:6,height:6,borderRadius:"50%",background:"#d4a017",boxShadow:"0 0 6px #d4a017" }} />
+                                  <p style={{ fontSize:11,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",color:"#7a4a00",margin:0 }}>{fmtDateLong(premCalSelectedKey!)}</p>
+                                  <span style={{ marginLeft:"auto",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:"#fff",color:"#a87800",border:"1px solid #f0deb0" }}>{selectedItems.length}</span>
+                                </div>
+                                {selectedItems.map(renderPremCard)}
+                              </div>
+                            ) : (
+                              <div style={{ background:"#fff",borderRadius:14,border:"1px dashed #e2e8f0",padding:"20px",textAlign:"center" }}>
+                                <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>Sin premiaciones este día</p>
+                              </div>
+                            )
                           ) : (
-                            <>
-                              <button type="button" onClick={() => confirmAwarder(p.id, a.id, "CONFIRM")} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: "#10b981", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Confirmar</button>
-                              <button type="button" onClick={() => confirmAwarder(p.id, a.id, "DECLINE")} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Declinar</button>
-                            </>
+                            <div style={{ background:"#fff",borderRadius:14,border:"1px dashed #e2e8f0",padding:"20px",textAlign:"center" }}>
+                              <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>Seleccioná un día para ver tus premiaciones</p>
+                            </div>
                           )}
                         </div>
                       )}
-                    </div>
-                  );
-                })}
-              </section>
-            )}
+
+                      {/* List view */}
+                      {premView === "list" && (
+                        visible.length === 0 ? (
+                          <div style={{ background:"#fff",borderRadius:14,border:"1px dashed #e2e8f0",padding:"28px 20px",textAlign:"center" }}>
+                            <p style={{ fontSize:32,margin:"0 0 8px" }}>🔍</p>
+                            <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>No hay premiaciones con esos filtros</p>
+                          </div>
+                        ) : (
+                          <div style={{ display:"flex",flexDirection:"column",gap:14 }}>
+                            {days.map(([day, items]) => (
+                              <div key={day} style={{ display:"flex",flexDirection:"column",gap:6 }}>
+                                <div style={{ position:"sticky",top:0,zIndex:2,background:"linear-gradient(180deg,#f8fafc 0%,rgba(248,250,252,0.92) 100%)",backdropFilter:"blur(6px)",padding:"6px 10px",borderRadius:10,display:"flex",alignItems:"center",gap:8,border:"1px solid #e2e8f0" }}>
+                                  <div style={{ width:6,height:6,borderRadius:"50%",background:"#d4a017",boxShadow:"0 0 6px #d4a017" }} />
+                                  <p style={{ fontSize:11,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",color:"#7a4a00",margin:0 }}>{fmtDateLong(day)}</p>
+                                  <span style={{ marginLeft:"auto",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:"#fff",color:"#a87800",border:"1px solid #f0deb0" }}>{items.length}</span>
+                                </div>
+                                {items.map(renderPremCard)}
+                              </div>
+                            ))}
+                          </div>
+                        )
+                      )}
+                    </>
+                  )}
+                </section>
+              );
+            })()}
 
             {/* ═══════════════════ SEDES TAB ═══════════════════ */}
             {activeTab === "sedes" && (
