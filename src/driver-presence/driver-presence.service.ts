@@ -28,6 +28,8 @@ export interface DriverPresenceRow {
   lat: number | null;
   lng: number | null;
   gpsTimestamp: string | null;
+  allowedClientTypes: string[];
+  disciplines: string[];
 }
 
 @Injectable()
@@ -87,16 +89,17 @@ export class DriverPresenceService {
   async list(eventId?: string): Promise<DriverPresenceRow[]> {
     const rows = (await this.dataSource.query(
       `select
-         d.id            as driver_id,
-         d.full_name     as full_name,
-         d.status        as driver_status,
-         d.event_id      as event_id,
-         d.phone         as phone,
-         s.started_at    as session_started_at,
-         s.last_seen_at  as last_seen_at,
-         s.heartbeats    as heartbeats,
-         s.platform      as platform,
-         s.app_version   as app_version,
+         d.id                    as driver_id,
+         d.full_name             as full_name,
+         d.status                as driver_status,
+         d.event_id              as event_id,
+         d.phone                 as phone,
+         d.allowed_client_types  as allowed_client_types,
+         s.started_at            as session_started_at,
+         s.last_seen_at          as last_seen_at,
+         s.heartbeats            as heartbeats,
+         s.platform              as platform,
+         s.app_version           as app_version,
          (s.last_seen_at is not null and s.ended_at is null
           and s.last_seen_at > now() - interval '${ONLINE_WINDOW}') as online,
          extract(epoch from (now() - s.last_seen_at))::int as seconds_since_seen,
@@ -106,7 +109,8 @@ export class DriverPresenceService {
          g.lat          as gps_lat,
          g.lng          as gps_lng,
          g.timestamp    as gps_timestamp,
-         extract(epoch from (now() - g.timestamp))::int as gps_age
+         extract(epoch from (now() - g.timestamp))::int as gps_age,
+         coalesce(disc.disciplines, '{}'::text[]) as disciplines
        from transport.drivers d
        left join lateral (
          select * from transport.driver_sessions ds
@@ -121,6 +125,18 @@ export class DriverPresenceService {
          order by vp.timestamp desc
          limit 1
        ) g on true
+       left join lateral (
+         select array_agg(distinct dx.name) filter (where dx.name is not null) as disciplines
+         from transport.trips tr
+         left join transport.trip_athletes ta on ta.trip_id = tr.id
+         left join core.athletes a on a.id = ta.athlete_id
+         left join core.disciplines dx on dx.id = a.discipline_id
+         where tr.driver_id = d.id
+           and (
+             tr.scheduled_at::date = (now() at time zone 'America/Santiago')::date
+             or tr.status in ('EN_ROUTE','PICKED_UP')
+           )
+       ) disc on true
        where ($1::uuid is null or d.event_id = $1)
        order by online desc nulls last, s.last_seen_at desc nulls last, d.full_name asc`,
       [eventId ?? null],
@@ -144,6 +160,8 @@ export class DriverPresenceService {
       lat: r.gps_lat != null ? Number(r.gps_lat) : null,
       lng: r.gps_lng != null ? Number(r.gps_lng) : null,
       gpsTimestamp: r.gps_timestamp ?? null,
+      allowedClientTypes: Array.isArray(r.allowed_client_types) ? r.allowed_client_types : [],
+      disciplines: Array.isArray(r.disciplines) ? r.disciplines : [],
     }));
   }
 

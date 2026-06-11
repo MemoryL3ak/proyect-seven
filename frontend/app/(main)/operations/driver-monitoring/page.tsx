@@ -36,6 +36,8 @@ type PresenceDriver = {
   lat: number | null;
   lng: number | null;
   gpsTimestamp: string | null;
+  allowedClientTypes: string[];
+  disciplines: string[];
 };
 
 type Snapshot = {
@@ -43,6 +45,8 @@ type Snapshot = {
   stats: { totalDrivers: number; onlineNow: number; driversToday: number; sessionsToday: number };
   drivers: PresenceDriver[];
 };
+
+type OccupancyFilter = "" | "BUSY" | "FREE";
 
 function ago(seconds: number | null): string {
   if (seconds == null) return "—";
@@ -52,10 +56,40 @@ function ago(seconds: number | null): string {
   return `hace ${Math.floor(seconds / 86400)} d`;
 }
 
+function initials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("") || "?";
+}
+
+const CLIENT_TYPE_META: Record<string, { label: string; bg: string; color: string; border: string }> = {
+  VIP: { label: "VIP", bg: "#fef3c7", color: "#7a4a00", border: "#fcd34d" },
+  TA: { label: "TA", bg: "#dbeafe", color: "#1e40af", border: "#93c5fd" },
+  PRENSA: { label: "Prensa", bg: "#ede9fe", color: "#5b21b6", border: "#c4b5fd" },
+  OFICIAL: { label: "Oficial", bg: "#fee2e2", color: "#991b1b", border: "#fca5a5" },
+  STAFF: { label: "Staff", bg: "#e0f2fe", color: "#075985", border: "#7dd3fc" },
+  ATHLETE: { label: "Atleta", bg: "#dcfce7", color: "#166534", border: "#86efac" },
+};
+
+function clientTypeChip(type: string) {
+  const meta = CLIENT_TYPE_META[type.toUpperCase()] || {
+    label: type, bg: "#f1f5f9", color: "#475569", border: "#cbd5e1",
+  };
+  return meta;
+}
+
 export default function DriverMonitoringPage() {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Filters
+  const [clientTypeFilter, setClientTypeFilter] = useState<string>("");
+  const [occupancyFilter, setOccupancyFilter] = useState<OccupancyFilter>("");
+  const [disciplineFilter, setDisciplineFilter] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   const load = useCallback(async () => {
     try {
@@ -78,9 +112,39 @@ export default function DriverMonitoringPage() {
   const stats = snapshot?.stats ?? { totalDrivers: 0, onlineNow: 0, driversToday: 0, sessionsToday: 0 };
   const drivers = snapshot?.drivers ?? [];
 
+  // Distinct values for dropdowns
+  const clientTypeOptions = useMemo(() => {
+    const set = new Set<string>();
+    drivers.forEach((d) => (d.allowedClientTypes || []).forEach((c) => set.add(c)));
+    return Array.from(set).sort();
+  }, [drivers]);
+
+  const disciplineOptions = useMemo(() => {
+    const set = new Set<string>();
+    drivers.forEach((d) => (d.disciplines || []).forEach((dx) => set.add(dx)));
+    return Array.from(set).sort();
+  }, [drivers]);
+
+  // Apply filters
+  const visibleDrivers = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return drivers.filter((d) => {
+      if (clientTypeFilter && !(d.allowedClientTypes || []).includes(clientTypeFilter)) return false;
+      if (disciplineFilter && !(d.disciplines || []).includes(disciplineFilter)) return false;
+      if (occupancyFilter === "BUSY" && d.activeTrips === 0) return false;
+      if (occupancyFilter === "FREE" && d.activeTrips > 0) return false;
+      if (q) {
+        const matchesName = d.fullName.toLowerCase().includes(q);
+        const matchesPlatform = (d.platform || "").toLowerCase().includes(q);
+        if (!matchesName && !matchesPlatform) return false;
+      }
+      return true;
+    });
+  }, [drivers, clientTypeFilter, disciplineFilter, occupancyFilter, searchQuery]);
+
   const markers = useMemo<PresenceMarker[]>(
     () =>
-      drivers
+      visibleDrivers
         .filter((d) => d.lat != null && d.lng != null)
         .map((d) => ({
           id: d.driverId,
@@ -101,16 +165,29 @@ export default function DriverMonitoringPage() {
           activeTrips: d.activeTrips,
           platform: d.platform,
         })),
-    [drivers],
+    [visibleDrivers],
   );
 
+  const busyCount = useMemo(() => drivers.filter((d) => d.activeTrips > 0).length, [drivers]);
+  const freeCount = useMemo(() => drivers.filter((d) => d.activeTrips === 0).length, [drivers]);
+  const hasFilters = !!(clientTypeFilter || occupancyFilter || disciplineFilter || searchQuery);
+  const clearFilters = () => {
+    setClientTypeFilter("");
+    setOccupancyFilter("");
+    setDisciplineFilter("");
+    setSearchQuery("");
+  };
+
   const exportCsv = () => {
-    if (drivers.length === 0) return;
+    if (visibleDrivers.length === 0) return;
     downloadCSV(
       `monitoreo-conductores-${new Date().toISOString().slice(0, 10)}`,
-      drivers.map((d) => ({
+      visibleDrivers.map((d) => ({
         conductor: d.fullName,
         estado: d.online ? "Conectado" : "Desconectado",
+        ocupacion: d.activeTrips > 0 ? "Ocupado" : "Desocupado",
+        tipo_cliente: (d.allowedClientTypes || []).join(" | "),
+        disciplinas: (d.disciplines || []).join(" | "),
         ultima_conexion: d.lastSeenAt ? new Date(d.lastSeenAt).toLocaleString("es-CL") : "Nunca",
         inicio_sesion: d.sessionStartedAt ? new Date(d.sessionStartedAt).toLocaleString("es-CL") : "—",
         latidos: d.heartbeats ?? 0,
@@ -148,7 +225,7 @@ export default function DriverMonitoringPage() {
           <button
             type="button"
             onClick={exportCsv}
-            disabled={drivers.length === 0}
+            disabled={visibleDrivers.length === 0}
             className="btn btn-ghost"
           >
             <UploadIcon size={15} className="inline-block mr-1.5 -mt-0.5" />
@@ -197,29 +274,219 @@ export default function DriverMonitoringPage() {
         </section>
       )}
 
+      {/* Filters bar */}
       {drivers.length > 0 && (
-        <section className="surface rounded-2xl p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
+        <section
+          className="rounded-2xl p-4"
+          style={{
+            background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+            border: "1px solid #e2e8f0",
+            boxShadow: "0 1px 4px rgba(15,23,42,0.04)",
+          }}
+        >
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Search */}
+            <div style={{ position: "relative", flex: "1 1 200px", minWidth: 180 }}>
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#94a3b8"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ position: "absolute", top: "50%", left: 12, transform: "translateY(-50%)", pointerEvents: "none" }}
+              >
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Buscar conductor o plataforma..."
+                style={{
+                  width: "100%",
+                  padding: "9px 12px 9px 34px",
+                  borderRadius: 10,
+                  border: "1px solid #e2e8f0",
+                  fontSize: 13,
+                  outline: "none",
+                  background: "#fff",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+
+            {/* Occupancy chips */}
+            <div style={{ display: "flex", gap: 6 }}>
+              {([
+                { v: "" as OccupancyFilter, label: "Todos", count: drivers.length, color: "#21D0B3", bg: "rgba(33,208,179,0.12)", fg: "#0a7a6b" },
+                { v: "BUSY" as OccupancyFilter, label: "Ocupados", count: busyCount, color: "#7c3aed", bg: "#ede9fe", fg: "#5b21b6" },
+                { v: "FREE" as OccupancyFilter, label: "Desocupados", count: freeCount, color: "#0ea5c8", bg: "#e0f7fa", fg: "#0e7490" },
+              ]).map((opt) => {
+                const active = occupancyFilter === opt.v;
+                return (
+                  <button
+                    key={opt.v || "all"}
+                    type="button"
+                    onClick={() => setOccupancyFilter(opt.v)}
+                    style={{
+                      padding: "7px 12px",
+                      borderRadius: 20,
+                      border: active ? `1px solid ${opt.color}` : "1px solid #e2e8f0",
+                      background: active ? opt.bg : "#fff",
+                      color: active ? opt.fg : "#475569",
+                      fontSize: 11.5,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      letterSpacing: "0.02em",
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    {opt.label}
+                    <span
+                      style={{
+                        fontSize: 9,
+                        padding: "1px 7px",
+                        borderRadius: 10,
+                        background: active ? "rgba(255,255,255,0.7)" : "#f1f5f9",
+                        color: active ? opt.fg : "#64748b",
+                      }}
+                    >
+                      {opt.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Dropdowns */}
+            {clientTypeOptions.length > 0 && (
+              <select
+                value={clientTypeFilter}
+                onChange={(e) => setClientTypeFilter(e.target.value)}
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: 10,
+                  border: "1px solid #e2e8f0",
+                  fontSize: 12.5,
+                  background: "#fff",
+                  color: "#0f172a",
+                  fontWeight: 500,
+                  outline: "none",
+                  cursor: "pointer",
+                  minWidth: 150,
+                }}
+              >
+                <option value="">Todos los tipos cliente</option>
+                {clientTypeOptions.map((c) => (
+                  <option key={c} value={c}>
+                    {CLIENT_TYPE_META[c.toUpperCase()]?.label ?? c}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {disciplineOptions.length > 0 && (
+              <select
+                value={disciplineFilter}
+                onChange={(e) => setDisciplineFilter(e.target.value)}
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: 10,
+                  border: "1px solid #e2e8f0",
+                  fontSize: 12.5,
+                  background: "#fff",
+                  color: "#0f172a",
+                  fontWeight: 500,
+                  outline: "none",
+                  cursor: "pointer",
+                  minWidth: 170,
+                }}
+              >
+                <option value="">Todas las disciplinas</option>
+                {disciplineOptions.map((dx) => (
+                  <option key={dx} value={dx}>{dx}</option>
+                ))}
+              </select>
+            )}
+
+            {hasFilters && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                style={{
+                  padding: "7px 12px",
+                  borderRadius: 8,
+                  border: "1px solid #fecaca",
+                  background: "#fef2f2",
+                  color: "#b91c1c",
+                  fontSize: 11.5,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 5,
+                }}
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                Limpiar
+              </button>
+            )}
+          </div>
+
+          {hasFilters && (
+            <p
+              style={{
+                marginTop: 10,
+                fontSize: 11.5,
+                color: "#64748b",
+                fontWeight: 500,
+              }}
+            >
+              Mostrando <strong style={{ color: "#0f172a" }}>{visibleDrivers.length}</strong> de {drivers.length} conductores
+            </p>
+          )}
+        </section>
+      )}
+
+      {visibleDrivers.length > 0 && (
+        <section
+          className="rounded-2xl overflow-hidden"
+          style={{
+            background: "#fff",
+            border: "1px solid #e2e8f0",
+            boxShadow: "0 1px 4px rgba(15,23,42,0.04)",
+          }}
+        >
+          <div className="flex items-center justify-between p-4" style={{ borderBottom: "1px solid #f1f5f9" }}>
+            <h2 className="text-sm font-semibold uppercase tracking-wider" style={{ color: "#475569" }}>
               Mapa de conductores
             </h2>
-            <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+            <span className="text-xs" style={{ color: "#94a3b8" }}>
               {markers.length} con señal GPS
             </span>
           </div>
           {markers.length === 0 ? (
             <div
-              className="rounded-xl flex items-center justify-center text-center px-4"
+              className="rounded-xl flex items-center justify-center text-center px-4 m-4"
               style={{ height: 280, background: "#f1f5f9" }}
             >
-              <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+              <p className="text-sm" style={{ color: "#94a3b8" }}>
                 Ningún conductor tiene una posición GPS registrada todavía.
                 <br />
                 El mapa se poblará cuando la app de un conductor reporte su ubicación.
               </p>
             </div>
           ) : (
-            <DriverPresenceMap markers={markers} height={420} />
+            <div style={{ padding: 16 }}>
+              <DriverPresenceMap markers={markers} height={420} />
+            </div>
           )}
         </section>
       )}
@@ -234,80 +501,334 @@ export default function DriverMonitoringPage() {
           title="No hay conductores registrados"
           description="Cuando un conductor abra el Portal Conductor, su sesión aparecerá acá en tiempo real, haya iniciado un viaje o no."
         />
+      ) : visibleDrivers.length === 0 ? (
+        <section
+          className="rounded-2xl p-8 text-center"
+          style={{
+            background: "#fff",
+            border: "1px dashed #e2e8f0",
+          }}
+        >
+          <p style={{ fontSize: 32, margin: "0 0 8px" }}>🔍</p>
+          <p style={{ fontSize: 14, fontWeight: 600, color: "#475569", margin: 0 }}>
+            No hay conductores que coincidan con los filtros
+          </p>
+          <p style={{ fontSize: 12, color: "#94a3b8", margin: "6px 0 0" }}>
+            Probá quitar algún filtro o cambiar los criterios de búsqueda.
+          </p>
+        </section>
       ) : (
-        <div className="surface rounded-2xl overflow-hidden">
+        <div
+          className="rounded-2xl overflow-hidden"
+          style={{
+            background: "#fff",
+            border: "1px solid #e2e8f0",
+            boxShadow: "0 1px 4px rgba(15,23,42,0.04)",
+          }}
+        >
+          {/* Table header bar */}
+          <div
+            className="flex items-center justify-between p-4"
+            style={{ borderBottom: "1px solid #f1f5f9" }}
+          >
+            <h2
+              className="text-sm font-semibold uppercase tracking-wider"
+              style={{ color: "#475569" }}
+            >
+              Detalle de conductores
+            </h2>
+            <span style={{ fontSize: 11.5, color: "#94a3b8", fontWeight: 500 }}>
+              {visibleDrivers.length} {visibleDrivers.length === 1 ? "conductor" : "conductores"}
+            </span>
+          </div>
+
           <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead style={{ backgroundColor: "#1f4e8c", color: "#fff" }}>
-                <tr>
-                  <th className="p-3 text-left">Conductor</th>
-                  <th className="p-3 text-left">Estado</th>
-                  <th className="p-3 text-left">Última conexión</th>
-                  <th className="p-3 text-left">Sesión</th>
-                  <th className="p-3 text-left">Viajes activos</th>
-                  <th className="p-3 text-left">GPS</th>
+            <table className="w-full" style={{ fontSize: 12.5, borderCollapse: "separate", borderSpacing: 0 }}>
+              <thead>
+                <tr
+                  style={{
+                    background: "linear-gradient(135deg,#f8fafc 0%,#f1f5f9 100%)",
+                    borderBottom: "2px solid #e2e8f0",
+                  }}
+                >
+                  {[
+                    "Conductor",
+                    "Estado",
+                    "Ocupación",
+                    "Tipo cliente",
+                    "Disciplinas",
+                    "Última conexión",
+                    "Sesión",
+                    "GPS",
+                  ].map((h) => (
+                    <th
+                      key={h}
+                      className="p-3 text-left"
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 800,
+                        letterSpacing: "0.08em",
+                        textTransform: "uppercase",
+                        color: "#64748b",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {drivers.map((d, i) => {
+                {visibleDrivers.map((d, i) => {
                   const gpsActive = d.gpsAgeSeconds != null && d.gpsAgeSeconds < 600;
+                  const isBusy = d.activeTrips > 0;
                   return (
-                    <tr key={d.driverId} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                      <td className="p-3 font-medium whitespace-nowrap">{d.fullName}</td>
-                      <td className="p-3 whitespace-nowrap">
+                    <tr
+                      key={d.driverId}
+                      style={{
+                        borderBottom: i === visibleDrivers.length - 1 ? "none" : "1px solid #f1f5f9",
+                        background: i % 2 === 0 ? "#fff" : "#fafbfc",
+                        transition: "background 0.15s",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = "#f0fdf4";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = i % 2 === 0 ? "#fff" : "#fafbfc";
+                      }}
+                    >
+                      {/* Conductor (avatar + nombre) */}
+                      <td className="p-3" style={{ whiteSpace: "nowrap" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <div
+                            style={{
+                              width: 34,
+                              height: 34,
+                              borderRadius: "50%",
+                              background: d.online
+                                ? "linear-gradient(135deg, #21D0B3 0%, #15B09A 100%)"
+                                : "linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%)",
+                              color: "#fff",
+                              fontSize: 11,
+                              fontWeight: 800,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              letterSpacing: "0.04em",
+                              boxShadow: d.online
+                                ? "0 2px 8px rgba(33,208,179,0.35)"
+                                : "0 1px 3px rgba(15,23,42,0.1)",
+                              flexShrink: 0,
+                            }}
+                          >
+                            {initials(d.fullName)}
+                          </div>
+                          <div style={{ minWidth: 0 }}>
+                            <p style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", margin: 0, lineHeight: 1.2 }}>
+                              {d.fullName}
+                            </p>
+                            {d.platform && (
+                              <p style={{ fontSize: 10.5, color: "#94a3b8", margin: "2px 0 0", textTransform: "capitalize" }}>
+                                {d.platform}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Estado conexión */}
+                      <td className="p-3" style={{ whiteSpace: "nowrap" }}>
                         <span
-                          className="inline-flex items-center text-[10px] px-2 py-0.5 rounded-full font-medium"
-                          style={
-                            d.online
-                              ? { backgroundColor: "#e7f5ec", color: "#2e7d32" }
-                              : { backgroundColor: "#eef1f6", color: "#5e6b7a" }
-                          }
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 5,
+                            fontSize: 10.5,
+                            padding: "4px 10px",
+                            borderRadius: 99,
+                            fontWeight: 700,
+                            letterSpacing: "0.02em",
+                            background: d.online ? "linear-gradient(135deg,#dcfce7,#bbf7d0)" : "#eef1f6",
+                            color: d.online ? "#166534" : "#5e6b7a",
+                            border: `1px solid ${d.online ? "#86efac" : "#cbd5e1"}`,
+                          }}
                         >
                           <span
                             style={{
-                              display: "inline-block",
                               width: 6,
                               height: 6,
                               borderRadius: "50%",
-                              marginRight: 5,
-                              background: d.online ? "#2e7d32" : "#94a3b8",
+                              background: d.online ? "#10b981" : "#94a3b8",
+                              animation: d.online ? "pulse 1.8s infinite" : "none",
                             }}
                           />
                           {d.online ? "Conectado" : "Desconectado"}
                         </span>
                       </td>
-                      <td className="p-3 whitespace-nowrap" style={{ color: "var(--text-muted)" }}>
-                        {ago(d.secondsSinceSeen)}
-                      </td>
-                      <td className="p-3 whitespace-nowrap" style={{ color: "var(--text-muted)" }}>
-                        {d.sessionStartedAt ? (
-                          <>
-                            {new Date(d.sessionStartedAt).toLocaleTimeString("es-CL", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                            <span> · {d.heartbeats ?? 0} latidos</span>
-                            {d.platform && <span> · {d.platform}</span>}
-                          </>
-                        ) : (
-                          "Nunca usó la app"
-                        )}
-                      </td>
-                      <td className="p-3">
-                        {d.activeTrips > 0 ? (
+
+                      {/* Ocupación */}
+                      <td className="p-3" style={{ whiteSpace: "nowrap" }}>
+                        {isBusy ? (
                           <span
-                            className="text-[10px] px-2 py-0.5 rounded-full font-medium"
-                            style={{ backgroundColor: "#e3edfa", color: "#1f4e8c" }}
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 5,
+                              fontSize: 10.5,
+                              padding: "4px 10px",
+                              borderRadius: 99,
+                              fontWeight: 700,
+                              background: "linear-gradient(135deg,#ede9fe,#ddd6fe)",
+                              color: "#5b21b6",
+                              border: "1px solid #c4b5fd",
+                            }}
                           >
-                            {d.activeTrips} en curso
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 17H3v-6l2.5-5h11L19 11v6h-2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg>
+                            {d.activeTrips} {d.activeTrips === 1 ? "viaje" : "viajes"}
                           </span>
                         ) : (
-                          <span style={{ color: "var(--text-muted)" }}>—</span>
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 5,
+                              fontSize: 10.5,
+                              padding: "4px 10px",
+                              borderRadius: 99,
+                              fontWeight: 700,
+                              background: "#e0f7fa",
+                              color: "#0e7490",
+                              border: "1px solid #67e8f9",
+                            }}
+                          >
+                            Disponible
+                          </span>
                         )}
                       </td>
-                      <td className="p-3 whitespace-nowrap">
-                        <span style={{ color: gpsActive ? "#2e7d32" : "#94a3b8", fontWeight: 600 }}>
-                          {gpsActive ? "● Reportando" : "○ Sin señal"}
+
+                      {/* Tipo cliente chips */}
+                      <td className="p-3">
+                        {(d.allowedClientTypes || []).length === 0 ? (
+                          <span style={{ color: "#cbd5e1", fontSize: 11 }}>—</span>
+                        ) : (
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, maxWidth: 200 }}>
+                            {d.allowedClientTypes.map((ct) => {
+                              const meta = clientTypeChip(ct);
+                              return (
+                                <span
+                                  key={ct}
+                                  style={{
+                                    fontSize: 9.5,
+                                    padding: "2px 7px",
+                                    borderRadius: 6,
+                                    fontWeight: 700,
+                                    background: meta.bg,
+                                    color: meta.color,
+                                    border: `1px solid ${meta.border}`,
+                                    letterSpacing: "0.04em",
+                                    textTransform: "uppercase",
+                                  }}
+                                >
+                                  {meta.label}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Disciplinas */}
+                      <td className="p-3">
+                        {(d.disciplines || []).length === 0 ? (
+                          <span style={{ color: "#cbd5e1", fontSize: 11 }}>—</span>
+                        ) : (
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, maxWidth: 220 }}>
+                            {d.disciplines.slice(0, 3).map((dx) => (
+                              <span
+                                key={dx}
+                                style={{
+                                  fontSize: 10,
+                                  padding: "2px 7px",
+                                  borderRadius: 6,
+                                  fontWeight: 600,
+                                  background: "#f0f9ff",
+                                  color: "#0369a1",
+                                  border: "1px solid #bae6fd",
+                                }}
+                              >
+                                {dx}
+                              </span>
+                            ))}
+                            {d.disciplines.length > 3 && (
+                              <span
+                                title={d.disciplines.slice(3).join(", ")}
+                                style={{
+                                  fontSize: 10,
+                                  padding: "2px 7px",
+                                  borderRadius: 6,
+                                  fontWeight: 700,
+                                  background: "#f1f5f9",
+                                  color: "#475569",
+                                  border: "1px solid #cbd5e1",
+                                }}
+                              >
+                                +{d.disciplines.length - 3}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Última conexión */}
+                      <td className="p-3" style={{ color: "#475569", whiteSpace: "nowrap", fontSize: 11.5 }}>
+                        {ago(d.secondsSinceSeen)}
+                      </td>
+
+                      {/* Sesión */}
+                      <td className="p-3" style={{ color: "#475569", whiteSpace: "nowrap", fontSize: 11.5 }}>
+                        {d.sessionStartedAt ? (
+                          <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                            <span style={{ fontWeight: 600, color: "#334155" }}>
+                              {new Date(d.sessionStartedAt).toLocaleTimeString("es-CL", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                            <span style={{ fontSize: 10, color: "#94a3b8" }}>
+                              {d.heartbeats ?? 0} latidos
+                            </span>
+                          </div>
+                        ) : (
+                          <span style={{ color: "#94a3b8", fontStyle: "italic" }}>Nunca usó la app</span>
+                        )}
+                      </td>
+
+                      {/* GPS */}
+                      <td className="p-3" style={{ whiteSpace: "nowrap" }}>
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 5,
+                            fontSize: 11,
+                            padding: "3px 8px",
+                            borderRadius: 6,
+                            fontWeight: 700,
+                            background: gpsActive ? "#dcfce7" : "#f1f5f9",
+                            color: gpsActive ? "#166534" : "#94a3b8",
+                            border: `1px solid ${gpsActive ? "#86efac" : "#cbd5e1"}`,
+                          }}
+                        >
+                          <span
+                            style={{
+                              width: 6,
+                              height: 6,
+                              borderRadius: "50%",
+                              background: gpsActive ? "#10b981" : "#cbd5e1",
+                              boxShadow: gpsActive ? "0 0 6px #10b981" : "none",
+                            }}
+                          />
+                          {gpsActive ? "Reportando" : "Sin señal"}
                         </span>
                       </td>
                     </tr>
