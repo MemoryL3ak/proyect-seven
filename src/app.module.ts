@@ -35,6 +35,8 @@ import { SupportChatsModule } from './support-chats/support-chats.module';
 import { WorkforceModule } from './workforce/workforce.module';
 import { CouponsModule } from './coupons/coupons.module';
 import { DriverPresenceModule } from './driver-presence/driver-presence.module';
+import { FleetModule } from './fleet/fleet.module';
+import { TripRequestsModule } from './trip-requests/trip-requests.module';
 
 @Module({
   imports: [
@@ -84,6 +86,8 @@ import { DriverPresenceModule } from './driver-presence/driver-presence.module';
     WorkforceModule,
     CouponsModule,
     DriverPresenceModule,
+    FleetModule,
+    TripRequestsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

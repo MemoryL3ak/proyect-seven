@@ -24,7 +24,8 @@ const navSections: NavSection[] = [
     items: [
       { href: "/registro/eventos", label: "Registro Evento", icon: "calendar" },
       { href: "/registro/participantes", label: "Inscripción Participantes", icon: "users" },
-      { href: "/registro/proveedores", label: "Proveedores", icon: "provider" }
+      { href: "/registro/proveedores", label: "Proveedores", icon: "provider" },
+      { href: "/clientes", label: "Clientes", icon: "users" }
     ]
   },
   {
@@ -42,10 +43,19 @@ const navSections: NavSection[] = [
         title: "Transporte", icon: "route",
         items: [
           { href: "/operations/daily-transport", label: "Operatividad Diaria", icon: "calendar" },
+          { href: "/sports-calendar", label: "Calendario Operacional", icon: "calendar" },
           { href: "/operations/vehicle-positions", label: "Tracking de Viajes", icon: "pin" },
           { href: "/operations/trips", label: "Viajes", icon: "route" },
+          { href: "/operations/trip-requests", label: "Solicitudes (T1/VIP)", icon: "ticket" },
+          { href: "/operations/fleet", label: "Flota (disponibilidad)", icon: "driver" },
           { href: "/operations/driver-heatmap", label: "Panel Conductores", icon: "driver" },
           { href: "/operations/driver-monitoring", label: "Monitoreo de Conductores", icon: "driver" }
+        ]
+      },
+      {
+        title: "Sede", icon: "pin",
+        items: [
+          { href: "/sede", label: "Sede", icon: "pin" }
         ]
       },
       {
@@ -88,14 +98,11 @@ const navSections: NavSection[] = [
       }
     ]
   },
-  { title: "Clientes", icon: "users", href: "/clientes" },
   { title: "Deportes", icon: "sports-rings", href: "/deportes" },
-  { title: "Sede", icon: "pin", href: "/sede" },
-  { title: "Calendario Operacional", icon: "calendar", href: "/sports-calendar" },
   {
-    title: "Cupones", icon: "ticket",
+    title: "Beneficios", icon: "ticket",
     items: [
-      { href: "/operations/coupons", label: "Administrar cupones", icon: "ticket" },
+      { href: "/operations/coupons", label: "Administrar beneficios", icon: "ticket" },
       { href: "/portal/partner", label: "Portal Partner", icon: "scan" }
     ]
   },
@@ -202,6 +209,7 @@ const HREF_TO_MODULE: Record<string, string> = {
   "/operations/vehicle-positions": "operacion.tracking",
   "/operations/trips": "operacion.viajes",
   "/operations/driver-heatmap": "operacion.viajes",
+  "/operations/fleet": "operacion.viajes",
   "/operations/driver-monitoring": "operacion.tracking",
   "/operations/hotel-tracking": "hoteleria.tracking",
   "/masters/accommodations": "hoteleria.hoteles",

@@ -158,8 +158,8 @@ export default function CouponsAdminPage() {
   return (
     <div className="min-w-0 space-y-6 overflow-x-hidden">
       <PageHeader
-        title="Cupones de descuento"
-        description="Sistema de cupones con QR para atletas, VIPs y staff. El atleta los reclama desde su portal y los presenta en el comercio."
+        title="Beneficios"
+        description="Sistema de beneficios con QR para atletas, VIPs y staff. El atleta los reclama desde su portal y los presenta en el comercio."
         icon={<TicketIcon size={24} />}
         iconBg="linear-gradient(135deg, #d4a017 0%, #e3a808 100%)"
       />

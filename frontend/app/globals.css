@@ -1275,3 +1275,50 @@ input[type="number"]::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
+
+/* ─────────────────────────────────────────────────────────────
+   DYNAMIC CALENDAR — efectos compartidos (sports-calendar + deportes)
+───────────────────────────────────────────────────────────── */
+/* Punto pulsante para actividades EN VIVO */
+@keyframes liveDotPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220,38,38,0.55); }
+  50%      { transform: scale(1.15); box-shadow: 0 0 0 5px rgba(220,38,38,0); }
+}
+.live-dot {
+  display: inline-block;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #dc2626;
+  animation: liveDotPulse 1.4s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+/* Mini-tarjeta de actividad dentro de celdas del calendario */
+.cal-entry {
+  position: relative;
+  cursor: pointer;
+  transition: transform 140ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 140ms ease, filter 140ms ease;
+  animation: fadeUp 280ms cubic-bezier(0.16,1,0.3,1) both;
+}
+.cal-entry:hover {
+  transform: translateY(-1px) scale(1.015);
+  filter: brightness(1.02);
+  z-index: 5;
+}
+
+/* Celda de día del calendario — hover expresivo */
+.cal-day-cell {
+  transition: background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+.cal-day-cell:hover {
+  box-shadow: 0 6px 18px rgba(15,23,42,0.10);
+  transform: translateY(-2px);
+  z-index: 4;
+}
+
+/* Badge circular del día de hoy */
+.cal-today-badge {
+  background: linear-gradient(135deg, #21D0B3, #1eb19a);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(33,208,179,0.45);
+}

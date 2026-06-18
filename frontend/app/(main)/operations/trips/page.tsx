@@ -196,6 +196,32 @@ const VEHICLE_TYPE_LABELS: Record<string, string> = {
 
 const PORTAL_CLIENT_TYPES = new Set(["VIP", "T1"]);
 
+/**
+ * Clasifica el origen de un viaje en uno de 3 buckets de operación:
+ *  - PORTAL: solicitudes desde el portal de clientes (VIP/T1)
+ *  - DAILY:  cargados desde la operatividad diaria (Excel/CSV) — traen fleetAcronym
+ *  - MANUAL: creados a mano por un operador del comité
+ */
+type TripSource = "PORTAL" | "DAILY" | "MANUAL";
+const classifyTripSource = (t: { tripType?: string | null; metadata?: Record<string, unknown> | null }): TripSource => {
+  if (t.tripType === "PORTAL_REQUEST") return "PORTAL";
+  const fleet = (t.metadata as any)?.fleet_acronym ?? (t as any).fleetAcronym;
+  if (fleet) return "DAILY";
+  // Heurística: si el tripType corresponde a tipos conocidos del bulk-import
+  if (t.tripType === "VIAJE_IDA" || t.tripType === "VIAJE_IDA_REGRESO" || t.tripType === "DISPOSICION_12H") {
+    // Se considera "manual" sólo si no hay marcador de carga masiva
+    return "MANUAL";
+  }
+  return "MANUAL";
+};
+
+const SOURCE_META: Record<TripSource | "", { label: string; color: string; bg: string; border: string; icon: string }> = {
+  "": { label: "Todos", color: "#0f172a", bg: "#fff", border: "#e2e8f0", icon: "✦" },
+  PORTAL: { label: "VIP / T1", color: "#7c3aed", bg: "rgba(168,85,247,0.10)", border: "rgba(168,85,247,0.35)", icon: "♕" },
+  DAILY: { label: "Operatividad Diaria", color: "#0ea5c8", bg: "rgba(14,165,200,0.10)", border: "rgba(14,165,200,0.35)", icon: "📋" },
+  MANUAL: { label: "Gestión Manual", color: "#21D0B3", bg: "rgba(33,208,179,0.10)", border: "rgba(33,208,179,0.35)", icon: "✋" },
+};
+
 const STATUS_FLOW = ["REQUESTED", "SCHEDULED", "EN_ROUTE", "PICKED_UP", "COMPLETED"] as const;
 
 const formatDateTime = (value?: string | null) =>
@@ -256,6 +282,23 @@ export default function TripsPage() {
   const [freshRequestIds, setFreshRequestIds] = useState<string[]>([]);
   const [showAdminEditor, setShowAdminEditor] = useState(false);
   const [activeTab, setActiveTab] = useState<"dispatch" | "active" | "history" | "portal" | "editor" | "import">("dispatch");
+  // Filtro primario por ORIGEN — el principal eje de organización
+  const [tripSource, setTripSource] = useState<"" | "PORTAL" | "DAILY" | "MANUAL">("");
+  // Filtro por conductor (solicitado)
+  const [selectedDriverId, setSelectedDriverId] = useState<string>("");
+
+  // Si el usuario aterriza en una tab obsoleta (portal/editor) la mando a dispatch
+  useEffect(() => {
+    if (activeTab === "portal") {
+      setActiveTab("dispatch");
+      setTripSource("PORTAL");
+    } else if (activeTab === "editor") {
+      setActiveTab("dispatch");
+      setTripSource("MANUAL");
+      setShowAdminEditor(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Bulk import state
   const [importFile, setImportFile] = useState<File | null>(null);
@@ -429,6 +472,8 @@ export default function TripsPage() {
     return trips
       .filter((trip) => !selectedEventId || trip.eventId === selectedEventId)
       .filter((trip) => !selectedClientType || trip.clientType === selectedClientType)
+      .filter((trip) => !tripSource || classifyTripSource(trip) === tripSource)
+      .filter((trip) => !selectedDriverId || trip.driverId === selectedDriverId)
       .filter((trip) => {
         if (!term) return true;
         const requester = trip.requesterAthleteId ? athletes[trip.requesterAthleteId]?.fullName : "";
@@ -457,7 +502,7 @@ export default function TripsPage() {
         const bTime = new Date(b.requestedAt || b.updatedAt || b.scheduledAt || 0).getTime();
         return bTime - aTime;
       });
-  }, [athletes, delegations, drivers, search, selectedClientType, selectedEventId, trips, vehicles, venues]);
+  }, [athletes, delegations, drivers, search, selectedClientType, selectedEventId, trips, vehicles, venues, tripSource, selectedDriverId]);
 
   const incomingRequests = useMemo(
     () => filteredTrips.filter((trip) => trip.status === "REQUESTED"),
@@ -488,6 +533,25 @@ export default function TripsPage() {
           PORTAL_CLIENT_TYPES.has(trip.clientType || "")
       ),
     [filteredTrips]
+  );
+
+  // Conteos por origen (sobre el universo SIN filtro de origen, para mostrar siempre el total real)
+  const sourceCounts = useMemo(() => {
+    const base = trips
+      .filter((trip) => !selectedEventId || trip.eventId === selectedEventId)
+      .filter((trip) => !selectedClientType || trip.clientType === selectedClientType)
+      .filter((trip) => !selectedDriverId || trip.driverId === selectedDriverId);
+    return {
+      ALL: base.length,
+      PORTAL: base.filter((t) => classifyTripSource(t) === "PORTAL").length,
+      DAILY: base.filter((t) => classifyTripSource(t) === "DAILY").length,
+      MANUAL: base.filter((t) => classifyTripSource(t) === "MANUAL").length,
+    };
+  }, [trips, selectedEventId, selectedClientType, selectedDriverId]);
+
+  const driverOptions = useMemo(
+    () => Object.values(drivers).sort((a, b) => (a.fullName || "").localeCompare(b.fullName || "")),
+    [drivers],
   );
 
   const kpis = useMemo(() => {
@@ -564,12 +628,11 @@ export default function TripsPage() {
     { label: t("Portal de solicitudes"), value: kpis.portalTrips }
   ];
 
+  // Tabs simplificadas: solo el estado del viaje. El "origen" se controla con el selector superior.
   const tabs = [
     { key: "dispatch" as const, label: t("Por asignar"), count: incomingRequests.length + scheduledQueue.length },
     { key: "active" as const, label: t("Activos"), count: activeTrips.length },
     { key: "history" as const, label: t("Historial"), count: completedTrips.length },
-    { key: "portal" as const, label: t("Solicitudes VIP / T1"), count: portalVipTrips.length },
-    { key: "editor" as const, label: t("Gestión manual"), count: filteredTrips.length },
     { key: "import" as const, label: t("Importación masiva"), count: 0 },
   ];
 
@@ -807,75 +870,253 @@ export default function TripsPage() {
           </div>
         </section>
       )}
-      <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {summaryCards.map((card, i) => (
-            <article key={card.label} style={{
-              background: pal.cardBg,
-              border: `1px solid ${pal.cardBorder}`,
-              borderTop: `3px solid ${pal.kpi[i]}`,
-              borderRadius: "20px",
-              padding: "18px 20px",
-              boxShadow: pal.shadow,
-            }}>
-              <div className="flex items-center justify-between mb-3">
-                <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: pal.labelColor }}>{card.label}</span>
-                <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: pal.kpi[i], boxShadow: `0 0 6px ${pal.kpi[i]}88`, display: "inline-block" }} />
-              </div>
-              <p style={{ fontSize: "2.4rem", fontWeight: 800, color: pal.kpi[i], lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
-                {loading ? "—" : card.value}
-              </p>
-            </article>
-          ))}
-        </div>
-        <article style={{ background: pal.filterBg, border: `1px solid ${pal.filterBorder}`, borderRadius: "20px", padding: "20px", boxShadow: pal.shadow }}>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: pal.labelColor }}>{t("Filtro operativo")}</p>
-              <h3 style={{ marginTop: "4px", fontWeight: 700, fontSize: "18px", color: pal.textPrimary }}>{t("Vista de asignación")}</h3>
+      {/* ── KPIs: una sola fila horizontal (sin layout mixto) */}
+      <section className="grid gap-3 grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
+        {summaryCards.map((card, i) => (
+          <article key={card.label} style={{
+            background: "#fff",
+            border: "1px solid #e2e8f0",
+            borderTop: `3px solid ${pal.kpi[i]}`,
+            borderRadius: 16,
+            padding: "14px 16px",
+            boxShadow: "0 1px 4px rgba(15,23,42,0.06)",
+          }}>
+            <div className="flex items-center justify-between mb-2">
+              <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "#64748b", lineHeight: 1.2 }}>
+                {card.label}
+              </span>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: pal.kpi[i], boxShadow: `0 0 5px ${pal.kpi[i]}88`, flexShrink: 0 }} />
             </div>
+            <p style={{ fontSize: "1.85rem", fontWeight: 800, color: pal.kpi[i], lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
+              {loading ? "—" : card.value}
+            </p>
+          </article>
+        ))}
+      </section>
+
+      {/* ── Filtros: una sola card con grid horizontal */}
+      <section style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, padding: 16, boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+        <div className="grid gap-3 grid-cols-1 md:grid-cols-2 xl:grid-cols-4">
+          <label className="text-sm block">
+            <span className="block mb-1">{t("Evento")}</span>
+            <select className="input" value={selectedEventId} onChange={(event) => setSelectedEventId(event.target.value)}>
+              <option value="">{t("Todos los eventos")}</option>
+              {eventOptions.map((eventItem) => (
+                <option key={eventItem.id} value={eventItem.id}>{eventItem.name || eventItem.id}</option>
+              ))}
+            </select>
+          </label>
+          <label className="text-sm block">
+            <span className="block mb-1">{t("Tipo de cliente")}</span>
+            <select className="input" value={selectedClientType} onChange={(event) => setSelectedClientType(event.target.value)}>
+              <option value="">{t("Todos los clientes")}</option>
+              {CLIENT_TYPE_OPTIONS.map(({ value, label }) => (
+                <option key={value} value={value}>{t(label)}</option>
+              ))}
+            </select>
+          </label>
+          <label className="text-sm block">
+            <span className="block mb-1">{t("Conductor")}</span>
+            <select className="input" value={selectedDriverId} onChange={(e) => setSelectedDriverId(e.target.value)}>
+              <option value="">{t("Todos los conductores")}</option>
+              {driverOptions.map((d) => (
+                <option key={d.id} value={d.id}>{d.fullName}</option>
+              ))}
+            </select>
+          </label>
+          <label className="text-sm block">
+            <span className="block mb-1">{t("Buscar")}</span>
+            <input className="input" placeholder={t("Solicitante, sede, patente…")} value={search} onChange={(event) => setSearch(event.target.value)} />
+          </label>
+        </div>
+        {error && <p className="mt-3 text-sm" style={{ color: "#ef4444" }}>{error}</p>}
+      </section>
+
+      {/* ── NAVEGACIÓN PRIMARIA: ORIGEN DEL VIAJE ──
+          Segmented control en estilo light, consistente con el resto del admin. */}
+      <section
+        className="surface rounded-2xl p-3"
+        style={{
+          background: "#fff",
+          border: "1px solid #e2e8f0",
+          boxShadow: "0 1px 4px rgba(15,23,42,0.06)",
+        }}
+      >
+        <p style={{
+          fontSize: 10, fontWeight: 800, letterSpacing: "0.22em",
+          textTransform: "uppercase", color: "#64748b",
+          padding: "0 6px 8px",
+        }}>
+          Origen del viaje
+        </p>
+        <div style={{ display: "flex", alignItems: "stretch", gap: 6 }}>
+          {(["", "PORTAL", "DAILY", "MANUAL"] as const).map((src) => {
+            const meta = SOURCE_META[src];
+            const count = src === ""
+              ? sourceCounts.ALL
+              : src === "PORTAL" ? sourceCounts.PORTAL
+              : src === "DAILY" ? sourceCounts.DAILY
+              : sourceCounts.MANUAL;
+            const active = tripSource === src;
+            return (
+              <button
+                key={src || "ALL"}
+                type="button"
+                onClick={() => setTripSource(src)}
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "12px 14px",
+                  borderRadius: 12,
+                  background: active ? meta.bg : "#fff",
+                  color: active ? meta.color : "#475569",
+                  border: active
+                    ? `1.5px solid ${meta.color}`
+                    : "1px solid #e2e8f0",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                  boxShadow: active ? `0 4px 12px ${meta.color}30` : "none",
+                  textAlign: "left",
+                }}
+                onMouseEnter={e => {
+                  if (!active) {
+                    e.currentTarget.style.background = "#f8fafc";
+                    e.currentTarget.style.borderColor = "#cbd5e1";
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (!active) {
+                    e.currentTarget.style.background = "#fff";
+                    e.currentTarget.style.borderColor = "#e2e8f0";
+                  }
+                }}
+              >
+                <span style={{
+                  fontSize: 18,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 32, height: 32,
+                  borderRadius: 8,
+                  background: active ? meta.color : meta.bg,
+                  color: active ? "#fff" : meta.color,
+                  flexShrink: 0,
+                }}>{meta.icon}</span>
+                <div style={{ flex: 1, minWidth: 0, lineHeight: 1.2 }}>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: active ? meta.color : "#0f172a" }}>
+                    {meta.label}
+                  </div>
+                  <div style={{
+                    fontSize: 10,
+                    fontWeight: 600,
+                    letterSpacing: "0.06em",
+                    textTransform: "uppercase",
+                    color: "#94a3b8",
+                    marginTop: 2,
+                  }}>
+                    {src === "" ? "Todos los viajes" : src === "PORTAL" ? "Desde portal" : src === "DAILY" ? "Excel diario" : "Creados a mano"}
+                  </div>
+                </div>
+                <span style={{
+                  fontSize: 12,
+                  fontWeight: 800,
+                  padding: "3px 9px",
+                  borderRadius: 99,
+                  background: active ? meta.color : "#f1f5f9",
+                  color: active ? "#fff" : "#475569",
+                  minWidth: 28,
+                  textAlign: "center",
+                  flexShrink: 0,
+                }}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, padding: 16, boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+        {/* Banda compacta: chips de status + acciones */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 12 }}>
+          <div className="flex items-center gap-2 flex-wrap">
+            {tabs.map((tab) => {
+              const selected = activeTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => {
+                    setActiveTab(tab.key);
+                    setShowAdminEditor(false);
+                    setSelectedTripId(null);
+                  }}
+                  className="inline-flex items-center gap-2 text-xs font-bold rounded-full transition-all"
+                  style={{
+                    padding: "7px 14px",
+                    background: selected ? "linear-gradient(135deg, #21D0B3, #1eb19a)" : "#f1f5f9",
+                    color: selected ? "#fff" : "#475569",
+                    boxShadow: selected ? "0 2px 8px rgba(33,208,179,0.35)" : "none",
+                  }}>
+                  {t(tab.label)}
+                  <span style={{
+                    fontSize: 10,
+                    fontWeight: 800,
+                    padding: "1px 7px",
+                    borderRadius: 99,
+                    background: selected ? "rgba(255,255,255,0.25)" : "#fff",
+                    color: selected ? "#fff" : "#64748b",
+                    minWidth: 20,
+                    textAlign: "center",
+                  }}>
+                    {tab.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             <button
               type="button"
               onClick={() => {
-                setShowAdminEditor((value) => !value);
-                setActiveTab("editor");
+                setActiveTab("dispatch");
+                setShowAdminEditor(true);
+                setSelectedTripId(null);
+                setTripSource("MANUAL");
               }}
-              style={{ border: `1px solid ${pal.btnBorder}`, borderRadius: "99px", padding: "8px 16px", fontSize: "13px", fontWeight: 600, color: pal.btnColor, background: "transparent", cursor: "pointer" }}
+              className="inline-flex items-center gap-1 text-xs font-bold rounded-lg"
+              style={{
+                padding: "7px 14px",
+                background: "linear-gradient(135deg, #21D0B3 0%, #15B09A 100%)",
+                color: "#fff", border: "none", cursor: "pointer",
+                boxShadow: "0 2px 8px rgba(33,208,179,0.35)",
+              }}
             >
-              {showAdminEditor ? "Ocultar editor" : "Abrir editor manual"}
+              + Nuevo manual
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("import")}
+              className="inline-flex items-center gap-1 text-xs font-bold rounded-lg"
+              style={{
+                padding: "7px 14px",
+                background: "#fff", color: "#475569",
+                border: "1px solid #cbd5e1", cursor: "pointer",
+              }}
+            >
+              ⬆ Importar
             </button>
           </div>
-          <div className="mt-4 grid gap-3 md:grid-cols-3">
-            <div>
-              <label style={{ display: "block", marginBottom: "6px", fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: pal.labelColor }}>{t("Evento")}</label>
-              <select className="input h-12 w-full rounded-2xl" value={selectedEventId} onChange={(event) => setSelectedEventId(event.target.value)}>
-                <option value="">{t("Todos los eventos")}</option>
-                {eventOptions.map((eventItem) => (
-                  <option key={eventItem.id} value={eventItem.id}>{eventItem.name || eventItem.id}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label style={{ display: "block", marginBottom: "6px", fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: pal.labelColor }}>{t("Tipo de cliente")}</label>
-              <select className="input h-12 w-full rounded-2xl" value={selectedClientType} onChange={(event) => setSelectedClientType(event.target.value)}>
-                <option value="">{t("Todos los clientes")}</option>
-                {CLIENT_TYPE_OPTIONS.map(({ value, label }) => (
-                  <option key={value} value={value}>{t(label)}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label style={{ display: "block", marginBottom: "6px", fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: pal.labelColor }}>{t("Buscar")}</label>
-              <input className="input h-12 w-full rounded-2xl" placeholder={t("Solicitante, delegacion, sede, conductor o patente")} value={search} onChange={(event) => setSearch(event.target.value)} />
-            </div>
-          </div>
-          {error && <p className="mt-4 text-sm" style={{ color: "#ef4444" }}>{error}</p>}
-        </article>
-      </section>
+        </div>
 
-      <section style={{ background: pal.filterBg, border: `1px solid ${pal.filterBorder}`, borderRadius: "24px", padding: "20px", boxShadow: pal.shadow }}>
-        <div style={{ background: "#f8fafc", border: `1px solid ${pal.cardBorder}`, borderRadius: "16px", padding: "6px" }}>
-          <div className="grid gap-2 md:grid-cols-3 xl:grid-cols-6">
+        {/* Dummy div para mantener compatibilidad con el .map() de tabs (ya no lo usamos así) */}
+        <div style={{ display: "none" }}>
+          <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
           {tabs.map((tab) => {
             const selected = activeTab === tab.key;
             return (
@@ -884,13 +1125,8 @@ export default function TripsPage() {
                 type="button"
                 onClick={() => {
                   setActiveTab(tab.key);
-                  if (tab.key !== "editor") {
-                    setShowAdminEditor(false);
-                    setSelectedTripId(null);
-                  }
-                  if (tab.key === "editor") {
-                    setShowAdminEditor(true);
-                  }
+                  setShowAdminEditor(false);
+                  setSelectedTripId(null);
                 }}
                 style={{
                   display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px",

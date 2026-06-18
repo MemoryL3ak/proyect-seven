@@ -65,7 +65,22 @@ export default function PartnerScannerPage() {
   const [error, setError] = useState<string | null>(null);
   const [redeeming, setRedeeming] = useState(false);
   const [redeemedBy, setRedeemedBy] = useState("");
-  const [stats, setStats] = useState<{ totalRedemptions: number; todayRedemptions: number } | null>(null);
+  const [stats, setStats] = useState<{
+    totalRedemptions: number;
+    todayRedemptions: number;
+    eligibleCoupons: number;
+    pendingClaims: number;
+    stockRemaining: number | null;
+  } | null>(null);
+  const [recentRedemptions, setRecentRedemptions] = useState<Array<{
+    id: string;
+    uniqueCode: string;
+    userName?: string | null;
+    userType?: string | null;
+    redeemedAt: string;
+    redeemedBy?: string | null;
+    coupon?: { title: string; discountType?: string; discountValue?: number | null; category?: string };
+  }>>([]);
 
   const scannerRef = useRef<any>(null);
   const containerId = "partner-qr-reader";
@@ -78,13 +93,25 @@ export default function PartnerScannerPage() {
     }
     setPartner(stored);
     loadStats();
+    loadRecentRedemptions();
   }, []);
+
+  const loadRecentRedemptions = async () => {
+    try {
+      const r = await partnerFetch<typeof recentRedemptions>("/coupon-partners/me/redemptions");
+      setRecentRedemptions(Array.isArray(r) ? r : []);
+    } catch { /* no-op */ }
+  };
 
   const loadStats = async () => {
     try {
-      const s = await partnerFetch<{ totalRedemptions: number; todayRedemptions: number }>(
-        "/coupon-partners/me/stats",
-      );
+      const s = await partnerFetch<{
+        totalRedemptions: number;
+        todayRedemptions: number;
+        eligibleCoupons: number;
+        pendingClaims: number;
+        stockRemaining: number | null;
+      }>("/coupon-partners/me/stats");
       setStats(s);
     } catch { /* no-op */ }
   };
@@ -154,6 +181,7 @@ export default function PartnerScannerPage() {
       });
       setMode("success");
       loadStats();
+      loadRecentRedemptions();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error confirmando canje");
       setMode("error");
@@ -313,22 +341,55 @@ export default function PartnerScannerPage() {
         </div>
       </header>
 
-      <main className="relative z-10 max-w-2xl mx-auto px-4 py-5 space-y-4">
+      <main className="relative z-10 max-w-5xl mx-auto px-4 py-5 space-y-4">
 
-        {/* Stats cards */}
-        {stats && (
-          <div className="grid grid-cols-2 gap-3">
-            <StatCard label="Canjes hoy" value={stats.todayRedemptions} color="#34F3C6" />
-            <StatCard label="Total acumulado" value={stats.totalRedemptions} color="#a78bfa" />
-          </div>
-        )}
+        {/* Stats cards — siempre visibles (placeholders 0 si aún no cargó) */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <StatCard label="Canjes hoy" value={stats?.todayRedemptions ?? 0} color="#34F3C6" />
+          <StatCard label="Total acumulado" value={stats?.totalRedemptions ?? 0} color="#a78bfa" />
+          <StatCard
+            label="Beneficios"
+            value={stats?.eligibleCoupons ?? 0}
+            color="#1FCDFF"
+            hint="habilitados"
+          />
+          <StatCard
+            label="Por validar"
+            value={stats?.pendingClaims ?? 0}
+            color="#fcd34d"
+            hint="reclamados sin canjear"
+          />
+          <StatCard
+            label="Stock"
+            value={stats?.stockRemaining === null ? "∞" : (stats?.stockRemaining ?? 0)}
+            color={
+              !stats || stats.stockRemaining === null
+                ? "#21D0B3"
+                : stats.stockRemaining === 0
+                ? "#ef4444"
+                : stats.stockRemaining < 10
+                ? "#f59e0b"
+                : "#21D0B3"
+            }
+            hint={
+              stats?.stockRemaining === null
+                ? "ilimitado"
+                : stats?.stockRemaining === 0
+                ? "agotado"
+                : "disponibles"
+            }
+          />
+        </div>
 
         {/* Pantalla principal según modo */}
         {mode === "idle" && (
-          <IdleScreen
-            onScan={() => setMode("scanning")}
-            onManual={() => setMode("manual")}
-          />
+          <div className="grid gap-4 md:grid-cols-[1fr_1fr]">
+            <IdleScreen
+              onScan={() => setMode("scanning")}
+              onManual={() => setMode("manual")}
+            />
+            <RecentRedemptionsCard items={recentRedemptions} onRefresh={loadRecentRedemptions} />
+          </div>
         )}
 
         {mode === "scanning" && (
@@ -383,7 +444,14 @@ export default function PartnerScannerPage() {
 
 // ── Componentes ─────────────────────────────────────────────────────────────
 
-function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
+function StatCard({
+  label, value, color, hint,
+}: {
+  label: string;
+  value: number | string;
+  color: string;
+  hint?: string;
+}) {
   return (
     <div className="rounded-2xl p-4 relative overflow-hidden anim-fade-up transition-all hover:scale-[1.02]"
       style={{
@@ -394,16 +462,21 @@ function StatCard({ label, value, color }: { label: string; value: number; color
       }}>
       <div className="absolute top-0 right-0 w-24 h-24 rounded-full"
         style={{ background: `${color}25`, filter: "blur(24px)" }} />
-      {/* Shimmer line arriba */}
       <div className="absolute top-0 left-0 right-0 h-[1px] shimmer-line opacity-50" />
       <div className="relative z-10">
         <p className="text-[10px] uppercase tracking-widest font-bold"
           style={{ color: "rgba(255,255,255,0.55)" }}>
           {label}
         </p>
-        <p key={value} className="text-3xl font-bold mt-1 anim-count" style={{ color }}>
+        <p key={String(value)} className="text-3xl font-bold mt-1 anim-count" style={{ color }}>
           {value}
         </p>
+        {hint && (
+          <p className="text-[10px] mt-0.5"
+            style={{ color: "rgba(255,255,255,0.45)" }}>
+            {hint}
+          </p>
+        )}
       </div>
     </div>
   );
@@ -790,6 +863,139 @@ function ResultScreen({
         }}>
         {isSuccess ? "Validar otro cupón →" : "Reintentar"}
       </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Card: Canjes recientes (panel derecho del dashboard) ────────────────────
+
+function RecentRedemptionsCard({
+  items,
+  onRefresh,
+}: {
+  items: Array<{
+    id: string;
+    uniqueCode: string;
+    userName?: string | null;
+    userType?: string | null;
+    redeemedAt: string;
+    redeemedBy?: string | null;
+    coupon?: { title: string; discountType?: string; discountValue?: number | null; category?: string };
+  }>;
+  onRefresh: () => void;
+}) {
+  const fmtRelative = (iso: string) => {
+    const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+    if (diff < 60) return "hace unos segundos";
+    if (diff < 3600) return `hace ${Math.floor(diff / 60)} min`;
+    if (diff < 86400) return `hace ${Math.floor(diff / 3600)} h`;
+    return new Date(iso).toLocaleDateString("es-CL", { day: "2-digit", month: "short" });
+  };
+
+  const discountText = (c?: { discountType?: string; discountValue?: number | null }) => {
+    if (!c) return "";
+    if (c.discountType === "PERCENTAGE" && c.discountValue) return `${c.discountValue}% OFF`;
+    if (c.discountType === "AMOUNT" && c.discountValue) return `$${Number(c.discountValue).toLocaleString("es-CL")}`;
+    if (c.discountType === "FREE") return "GRATIS";
+    return "";
+  };
+
+  return (
+    <div className="rounded-3xl overflow-hidden anim-fade-up relative"
+      style={{
+        background: "rgba(255,255,255,0.97)",
+        backdropFilter: "blur(20px)",
+        boxShadow: "0 20px 60px rgba(0,0,0,0.4), 0 0 0 1px rgba(33,208,179,0.1), inset 0 1px 0 rgba(255,255,255,0.6)",
+      }}>
+      <div className="absolute top-0 left-0 right-0 h-[1px] shimmer-line" />
+
+      {/* Header */}
+      <div className="p-4 border-b flex items-center justify-between"
+        style={{ borderColor: "#eef1f6" }}>
+        <div>
+          <p className="text-[10px] uppercase tracking-widest font-bold" style={{ color: TEAL }}>
+            Actividad reciente
+          </p>
+          <h3 className="text-lg font-bold mt-0.5" style={{ color: "#0d1e3a" }}>
+            Últimos canjes
+          </h3>
+        </div>
+        <button type="button"
+          onClick={onRefresh}
+          className="text-xs font-medium px-2.5 py-1.5 rounded-lg"
+          style={{ background: "#f1f5f9", color: "#475569" }}
+          title="Refrescar">
+          ↻
+        </button>
+      </div>
+
+      {/* Lista */}
+      <div className="overflow-y-auto" style={{ maxHeight: 480 }}>
+        {items.length === 0 ? (
+          <div className="p-8 text-center">
+            <div className="w-14 h-14 rounded-full mx-auto mb-3 flex items-center justify-center"
+              style={{ background: "rgba(33,208,179,0.1)" }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={TEAL}
+                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 7v2a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2z" />
+              </svg>
+            </div>
+            <p className="text-sm font-semibold" style={{ color: "#0d1e3a" }}>
+              Sin canjes aún
+            </p>
+            <p className="text-xs mt-1" style={{ color: "#5e6b7a" }}>
+              Cuando valides el primer cupón aparecerá acá.
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y" style={{ borderColor: "#eef1f6" }}>
+            {items.map((r) => (
+              <div key={r.id} className="p-3 flex items-start gap-3 hover:bg-gray-50 transition-colors">
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                  style={{
+                    background: "linear-gradient(135deg, #2e7d32 0%, #4caf50 100%)",
+                    color: "#fff",
+                  }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="text-sm font-semibold truncate" style={{ color: "#0d1e3a" }}>
+                      {r.coupon?.title || "Cupón"}
+                    </p>
+                    {discountText(r.coupon) && (
+                      <span className="text-xs font-bold flex-shrink-0" style={{ color: "#2e7d32" }}>
+                        {discountText(r.coupon)}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs mt-0.5 truncate" style={{ color: "#5e6b7a" }}>
+                    {r.userName || "Anónimo"}
+                    {r.userType && <span className="ml-1.5 text-[10px] font-mono">· {r.userType}</span>}
+                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded"
+                      style={{ background: "#eef1f6", color: "#475569" }}>
+                      {r.uniqueCode}
+                    </span>
+                    <span className="text-[10px]" style={{ color: "#94a3b8" }}>
+                      {fmtRelative(r.redeemedAt)}
+                    </span>
+                    {r.redeemedBy && (
+                      <span className="text-[10px] italic" style={{ color: "#94a3b8" }}>
+                        · por {r.redeemedBy}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

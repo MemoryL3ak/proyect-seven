@@ -24,6 +24,8 @@ export interface DriverPresenceRow {
   platform: string | null;
   appVersion: string | null;
   activeTrips: number;
+  /** Viajes asignados al conductor para la fecha consultada (default: hoy en zona Chile). */
+  dayTripCount: number;
   gpsAgeSeconds: number | null;
   lat: number | null;
   lng: number | null;
@@ -86,7 +88,9 @@ export class DriverPresenceService {
   }
 
   /** Lista todos los conductores con su estado de presencia. */
-  async list(eventId?: string): Promise<DriverPresenceRow[]> {
+  async list(eventId?: string, date?: string): Promise<DriverPresenceRow[]> {
+    // Validación de formato YYYY-MM-DD; si es inválido se usa "hoy" en zona Chile.
+    const safeDate = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null;
     const rows = (await this.dataSource.query(
       `select
          d.id                    as driver_id,
@@ -106,6 +110,7 @@ export class DriverPresenceService {
          (select count(*)::int from transport.trips t
             where t.driver_id = d.id
               and t.status in ('EN_ROUTE','PICKED_UP')) as active_trips,
+         coalesce(day_trips.day_trip_count, 0) as day_trip_count,
          g.lat          as gps_lat,
          g.lng          as gps_lng,
          g.timestamp    as gps_timestamp,
@@ -126,20 +131,31 @@ export class DriverPresenceService {
          limit 1
        ) g on true
        left join lateral (
+         select count(*)::int as day_trip_count
+         from transport.trips tr
+         where tr.driver_id = d.id
+           and tr.scheduled_at::date = coalesce(
+             $2::date,
+             (now() at time zone 'America/Santiago')::date
+           )
+       ) day_trips on true
+       left join lateral (
+         -- Disciplinas únicas de los participantes en los viajes asignados
+         -- al conductor en la fecha seleccionada (o "hoy" si no se pasa).
          select array_agg(distinct dx.name) filter (where dx.name is not null) as disciplines
          from transport.trips tr
          left join transport.trip_athletes ta on ta.trip_id = tr.id
          left join core.athletes a on a.id = ta.athlete_id
          left join core.disciplines dx on dx.id = a.discipline_id
          where tr.driver_id = d.id
-           and (
-             tr.scheduled_at::date = (now() at time zone 'America/Santiago')::date
-             or tr.status in ('EN_ROUTE','PICKED_UP')
+           and tr.scheduled_at::date = coalesce(
+             $2::date,
+             (now() at time zone 'America/Santiago')::date
            )
        ) disc on true
        where ($1::uuid is null or d.event_id = $1)
        order by online desc nulls last, s.last_seen_at desc nulls last, d.full_name asc`,
-      [eventId ?? null],
+      [eventId ?? null, safeDate],
     )) as Array<Record<string, any>>;
 
     return rows.map((r) => ({
@@ -156,6 +172,7 @@ export class DriverPresenceService {
       platform: r.platform ?? null,
       appVersion: r.app_version ?? null,
       activeTrips: Number(r.active_trips ?? 0),
+      dayTripCount: Number(r.day_trip_count ?? 0),
       gpsAgeSeconds: r.gps_age != null ? Number(r.gps_age) : null,
       lat: r.gps_lat != null ? Number(r.gps_lat) : null,
       lng: r.gps_lng != null ? Number(r.gps_lng) : null,
@@ -193,20 +210,20 @@ export class DriverPresenceService {
   }
 
   /** Snapshot combinado (lista + stats) para el feed en vivo. */
-  async snapshot(eventId?: string) {
-    const [drivers, stats] = await Promise.all([this.list(eventId), this.stats(eventId)]);
+  async snapshot(eventId?: string, date?: string) {
+    const [drivers, stats] = await Promise.all([this.list(eventId, date), this.stats(eventId)]);
     return { ts: new Date().toISOString(), stats, drivers };
   }
 
   /** Stream SSE: emite un snapshot cada 8 segundos. */
-  liveStream(eventId?: string): Subject<unknown> {
+  liveStream(eventId?: string, date?: string): Subject<unknown> {
     const subject = new Subject<unknown>();
     let stopped = false;
 
     const tick = async () => {
       if (stopped) return;
       try {
-        subject.next(await this.snapshot(eventId));
+        subject.next(await this.snapshot(eventId, date));
       } catch (err) {
         this.logger.error(`driver-presence liveStream error: ${err}`);
       }

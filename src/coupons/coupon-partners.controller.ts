@@ -84,6 +84,12 @@ export class CouponPartnersController {
     return this.partners.myStats(req.partner.id);
   }
 
+  @Get('me/redemptions')
+  @UseGuards(PartnerAuthGuard)
+  myRedemptions(@Req() req: any) {
+    return this.partners.myRedemptions(req.partner.id, 20);
+  }
+
   @Post('me/validate')
   @UseGuards(PartnerAuthGuard)
   validate(@Body() body: { token: string }, @Req() req: any) {

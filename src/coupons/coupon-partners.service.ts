@@ -191,22 +191,84 @@ export class CouponPartnersService {
     return this.sanitize(partner as Row);
   }
 
+  // ── Canjes recientes del partner ───────────────────────────────────────────
+
+  async myRedemptions(partnerId: string, limit = 20) {
+    const { data, error } = await this.supabase
+      .from('coupon_claims')
+      .select('*, coupons:coupon_id(title, partner_name, discount_type, discount_value, category)')
+      .eq('redeemed_partner_id', partnerId)
+      .eq('status', 'REDEEMED')
+      .order('redeemed_at', { ascending: false })
+      .limit(limit);
+    this.throwIfError(error, 'Error obteniendo canjes recientes');
+    return ((data as Row[]) || []).map((r) => {
+      const cam = camelize(r) as any;
+      if ((r as any).coupons) cam.coupon = camelize((r as any).coupons as Row);
+      delete cam.coupons;
+      return cam;
+    });
+  }
+
   // ── Métricas del partner ───────────────────────────────────────────────────
 
   async myStats(partnerId: string) {
-    const { data, error } = await this.supabase
+    const { data: redeemed, error: errR } = await this.supabase
       .from('coupon_claims')
       .select('status, redeemed_at')
       .eq('redeemed_partner_id', partnerId);
-    this.throwIfError(error, 'Error obteniendo métricas');
-    const rows = (data as Row[]) || [];
+    this.throwIfError(errR, 'Error obteniendo redenciones del partner');
+    const rowsR = (redeemed as Row[]) || [];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+
+    const totalRedemptions = rowsR.length;
+    const todayRedemptions = rowsR.filter(
+      (r) => r.redeemed_at && new Date(r.redeemed_at as string) >= today,
+    ).length;
+
+    // Beneficios visibles para este partner: si tiene allowed_coupon_ids → solo esos;
+    // si está vacío → puede canjear TODOS los activos.
+    const { data: partnerRow } = await this.supabase
+      .from('coupon_partners')
+      .select('allowed_coupon_ids')
+      .eq('id', partnerId)
+      .maybeSingle();
+    const allowed = ((partnerRow as any)?.allowed_coupon_ids as string[] | null) || [];
+
+    let couponsQ = this.supabase.from('coupons').select('id, max_redemptions').eq('status', 'ACTIVE');
+    if (allowed.length > 0) couponsQ = couponsQ.in('id', allowed);
+    const { data: coupons } = await couponsQ;
+    const couponList = (coupons as Row[]) || [];
+    const eligibleIds = couponList.map((c) => String(c.id));
+
+    // Reclamados/canjeados por cupón → para calcular cuántos quedan disponibles
+    let claimsCount = 0;
+    let stockRemaining: number | null = 0;
+    if (eligibleIds.length > 0) {
+      const { count: cl } = await this.supabase
+        .from('coupon_claims')
+        .select('*', { count: 'exact', head: true })
+        .in('coupon_id', eligibleIds)
+        .in('status', ['CLAIMED', 'REDEEMED']);
+      claimsCount = cl ?? 0;
+
+      // Stock total = suma de max_redemptions (null = "ilimitado")
+      let anyUnlimited = false;
+      let stockTotal = 0;
+      for (const c of couponList) {
+        if (c.max_redemptions == null) anyUnlimited = true;
+        else stockTotal += Number(c.max_redemptions);
+      }
+      stockRemaining = anyUnlimited ? null : Math.max(0, stockTotal - claimsCount);
+    }
+
     return {
-      totalRedemptions: rows.length,
-      todayRedemptions: rows.filter(
-        (r) => r.redeemed_at && new Date(r.redeemed_at as string) >= today,
-      ).length,
+      totalRedemptions,
+      todayRedemptions,
+      eligibleCoupons: eligibleIds.length,
+      pendingClaims: Math.max(0, claimsCount - totalRedemptions),
+      stockRemaining,
     };
   }
 }

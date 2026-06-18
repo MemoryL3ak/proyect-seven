@@ -32,6 +32,8 @@ type PresenceDriver = {
   platform: string | null;
   appVersion: string | null;
   activeTrips: number;
+  /** Viajes asignados al conductor para la fecha consultada. */
+  dayTripCount: number;
   gpsAgeSeconds: number | null;
   lat: number | null;
   lng: number | null;
@@ -39,6 +41,19 @@ type PresenceDriver = {
   allowedClientTypes: string[];
   disciplines: string[];
 };
+
+function todayChile(): string {
+  // Hoy en zona Chile como YYYY-MM-DD
+  const fmt = new Intl.DateTimeFormat("es-CL", {
+    timeZone: "America/Santiago",
+    year: "numeric", month: "2-digit", day: "2-digit",
+  });
+  const parts = fmt.formatToParts(new Date());
+  const y = parts.find(p => p.type === "year")?.value;
+  const m = parts.find(p => p.type === "month")?.value;
+  const d = parts.find(p => p.type === "day")?.value;
+  return `${y}-${m}-${d}`;
+}
 
 type Snapshot = {
   ts: string;
@@ -86,14 +101,19 @@ export default function DriverMonitoringPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   // Filters
+  const today = useMemo(() => todayChile(), []);
+  const [selectedDate, setSelectedDate] = useState<string>(today);
   const [clientTypeFilter, setClientTypeFilter] = useState<string>("");
   const [occupancyFilter, setOccupancyFilter] = useState<OccupancyFilter>("");
   const [disciplineFilter, setDisciplineFilter] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
+  const isToday = selectedDate === today;
+
   const load = useCallback(async () => {
     try {
-      const data = await apiFetch<Snapshot>("/driver-presence/snapshot");
+      const url = `/driver-presence/snapshot?date=${encodeURIComponent(selectedDate)}`;
+      const data = await apiFetch<Snapshot>(url);
       setSnapshot(data);
       setError(null);
     } catch (err) {
@@ -101,13 +121,16 @@ export default function DriverMonitoringPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedDate]);
 
   useEffect(() => {
+    setLoading(true);
     load();
+    // Polling solo si la fecha es hoy (snapshots de fechas pasadas no cambian)
+    if (!isToday) return;
     const interval = setInterval(load, 8000);
     return () => clearInterval(interval);
-  }, [load]);
+  }, [load, isToday]);
 
   const stats = snapshot?.stats ?? { totalDrivers: 0, onlineNow: 0, driversToday: 0, sessionsToday: 0 };
   const drivers = snapshot?.drivers ?? [];
@@ -186,6 +209,7 @@ export default function DriverMonitoringPage() {
         conductor: d.fullName,
         estado: d.online ? "Conectado" : "Desconectado",
         ocupacion: d.activeTrips > 0 ? "Ocupado" : "Desocupado",
+        viajes_del_dia: d.dayTripCount,
         tipo_cliente: (d.allowedClientTypes || []).join(" | "),
         disciplinas: (d.disciplines || []).join(" | "),
         ultima_conexion: d.lastSeenAt ? new Date(d.lastSeenAt).toLocaleString("es-CL") : "Nunca",
@@ -205,21 +229,41 @@ export default function DriverMonitoringPage() {
         description="Seguimiento en vivo de los conductores que tienen la aplicación abierta, hayan iniciado un viaje o no. Detecta presencia, sesiones y actividad de la app."
         icon={<TruckIcon size={24} />}
         meta={
-          <span
-            className="inline-flex items-center gap-2 text-xs font-semibold rounded-full px-3 py-1"
-            style={{ background: "#e7f5ec", color: "#1eb19a" }}
-          >
+          isToday ? (
             <span
-              style={{
-                width: 7,
-                height: 7,
-                borderRadius: "50%",
-                background: "#21D0B3",
-                boxShadow: "0 0 0 3px rgba(33,208,179,0.25)",
-              }}
-            />
-            En vivo · se actualiza cada 8 s
-          </span>
+              className="inline-flex items-center gap-2 text-xs font-semibold rounded-full px-3 py-1"
+              style={{ background: "#e7f5ec", color: "#1eb19a" }}
+            >
+              <span
+                style={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: "50%",
+                  background: "#21D0B3",
+                  boxShadow: "0 0 0 3px rgba(33,208,179,0.25)",
+                  animation: "pulse 1.8s infinite",
+                }}
+              />
+              En vivo · se actualiza cada 8 s
+            </span>
+          ) : (
+            <span
+              className="inline-flex items-center gap-2 text-xs font-semibold rounded-full px-3 py-1"
+              style={{ background: "#fef3c7", color: "#7a4a00" }}
+            >
+              <span
+                style={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: "50%",
+                  background: "#d4a017",
+                }}
+              />
+              Histórico · snapshot del {new Date(selectedDate + "T12:00:00").toLocaleDateString("es-CL", {
+                day: "2-digit", month: "short", year: "numeric",
+              })}
+            </span>
+          )
         }
         action={
           <button
@@ -274,186 +318,29 @@ export default function DriverMonitoringPage() {
         </section>
       )}
 
-      {/* Filters bar */}
-      {drivers.length > 0 && (
-        <section
-          className="rounded-2xl p-4"
-          style={{
-            background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
-            border: "1px solid #e2e8f0",
-            boxShadow: "0 1px 4px rgba(15,23,42,0.04)",
-          }}
-        >
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Search */}
-            <div style={{ position: "relative", flex: "1 1 200px", minWidth: 180 }}>
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#94a3b8"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{ position: "absolute", top: "50%", left: 12, transform: "translateY(-50%)", pointerEvents: "none" }}
-              >
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Buscar conductor o plataforma..."
-                style={{
-                  width: "100%",
-                  padding: "9px 12px 9px 34px",
-                  borderRadius: 10,
-                  border: "1px solid #e2e8f0",
-                  fontSize: 13,
-                  outline: "none",
-                  background: "#fff",
-                  boxSizing: "border-box",
-                }}
-              />
-            </div>
-
-            {/* Occupancy chips */}
-            <div style={{ display: "flex", gap: 6 }}>
-              {([
-                { v: "" as OccupancyFilter, label: "Todos", count: drivers.length, color: "#21D0B3", bg: "rgba(33,208,179,0.12)", fg: "#0a7a6b" },
-                { v: "BUSY" as OccupancyFilter, label: "Ocupados", count: busyCount, color: "#7c3aed", bg: "#ede9fe", fg: "#5b21b6" },
-                { v: "FREE" as OccupancyFilter, label: "Desocupados", count: freeCount, color: "#0ea5c8", bg: "#e0f7fa", fg: "#0e7490" },
-              ]).map((opt) => {
-                const active = occupancyFilter === opt.v;
-                return (
-                  <button
-                    key={opt.v || "all"}
-                    type="button"
-                    onClick={() => setOccupancyFilter(opt.v)}
-                    style={{
-                      padding: "7px 12px",
-                      borderRadius: 20,
-                      border: active ? `1px solid ${opt.color}` : "1px solid #e2e8f0",
-                      background: active ? opt.bg : "#fff",
-                      color: active ? opt.fg : "#475569",
-                      fontSize: 11.5,
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 6,
-                      letterSpacing: "0.02em",
-                      transition: "all 0.15s",
-                    }}
-                  >
-                    {opt.label}
-                    <span
-                      style={{
-                        fontSize: 9,
-                        padding: "1px 7px",
-                        borderRadius: 10,
-                        background: active ? "rgba(255,255,255,0.7)" : "#f1f5f9",
-                        color: active ? opt.fg : "#64748b",
-                      }}
-                    >
-                      {opt.count}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Dropdowns */}
-            {clientTypeOptions.length > 0 && (
-              <select
-                value={clientTypeFilter}
-                onChange={(e) => setClientTypeFilter(e.target.value)}
-                style={{
-                  padding: "8px 12px",
-                  borderRadius: 10,
-                  border: "1px solid #e2e8f0",
-                  fontSize: 12.5,
-                  background: "#fff",
-                  color: "#0f172a",
-                  fontWeight: 500,
-                  outline: "none",
-                  cursor: "pointer",
-                  minWidth: 150,
-                }}
-              >
-                <option value="">Todos los tipos cliente</option>
-                {clientTypeOptions.map((c) => (
-                  <option key={c} value={c}>
-                    {CLIENT_TYPE_META[c.toUpperCase()]?.label ?? c}
-                  </option>
-                ))}
-              </select>
-            )}
-
-            {disciplineOptions.length > 0 && (
-              <select
-                value={disciplineFilter}
-                onChange={(e) => setDisciplineFilter(e.target.value)}
-                style={{
-                  padding: "8px 12px",
-                  borderRadius: 10,
-                  border: "1px solid #e2e8f0",
-                  fontSize: 12.5,
-                  background: "#fff",
-                  color: "#0f172a",
-                  fontWeight: 500,
-                  outline: "none",
-                  cursor: "pointer",
-                  minWidth: 170,
-                }}
-              >
-                <option value="">Todas las disciplinas</option>
-                {disciplineOptions.map((dx) => (
-                  <option key={dx} value={dx}>{dx}</option>
-                ))}
-              </select>
-            )}
-
-            {hasFilters && (
-              <button
-                type="button"
-                onClick={clearFilters}
-                style={{
-                  padding: "7px 12px",
-                  borderRadius: 8,
-                  border: "1px solid #fecaca",
-                  background: "#fef2f2",
-                  color: "#b91c1c",
-                  fontSize: 11.5,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 5,
-                }}
-              >
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                Limpiar
-              </button>
-            )}
-          </div>
-
-          {hasFilters && (
-            <p
-              style={{
-                marginTop: 10,
-                fontSize: 11.5,
-                color: "#64748b",
-                fontWeight: 500,
-              }}
-            >
-              Mostrando <strong style={{ color: "#0f172a" }}>{visibleDrivers.length}</strong> de {drivers.length} conductores
-            </p>
-          )}
-        </section>
-      )}
+      {/* Filters bar — siempre visible para que se pueda cambiar la fecha aunque no haya drivers */}
+      <FiltersBar
+        selectedDate={selectedDate}
+        setSelectedDate={(d) => { setSelectedDate(d); setDisciplineFilter(""); }}
+        today={today}
+        isToday={isToday}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        occupancyFilter={occupancyFilter}
+        setOccupancyFilter={setOccupancyFilter}
+        clientTypeFilter={clientTypeFilter}
+        setClientTypeFilter={setClientTypeFilter}
+        disciplineFilter={disciplineFilter}
+        setDisciplineFilter={setDisciplineFilter}
+        clientTypeOptions={clientTypeOptions}
+        disciplineOptions={disciplineOptions}
+        totalCount={drivers.length}
+        busyCount={busyCount}
+        freeCount={freeCount}
+        visibleCount={visibleDrivers.length}
+        hasFilters={hasFilters}
+        clearFilters={clearFilters}
+      />
 
       {visibleDrivers.length > 0 && (
         <section
@@ -555,6 +442,7 @@ export default function DriverMonitoringPage() {
                     "Conductor",
                     "Estado",
                     "Ocupación",
+                    isToday ? "Viajes hoy" : "Viajes del día",
                     "Tipo cliente",
                     "Disciplinas",
                     "Última conexión",
@@ -706,6 +594,32 @@ export default function DriverMonitoringPage() {
                         )}
                       </td>
 
+                      {/* Viajes del día (dayTripCount) */}
+                      <td className="p-3" style={{ whiteSpace: "nowrap" }}>
+                        {d.dayTripCount === 0 ? (
+                          <span style={{ color: "#cbd5e1", fontSize: 12, fontWeight: 600 }}>0</span>
+                        ) : (
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 4,
+                              fontSize: 11.5,
+                              padding: "3px 9px",
+                              borderRadius: 8,
+                              fontWeight: 800,
+                              background: d.dayTripCount >= 5
+                                ? "linear-gradient(135deg,#fef3c7,#fde68a)"
+                                : "linear-gradient(135deg,#dbeafe,#bfdbfe)",
+                              color: d.dayTripCount >= 5 ? "#7a4a00" : "#1e40af",
+                              border: d.dayTripCount >= 5 ? "1px solid #fcd34d" : "1px solid #93c5fd",
+                            }}
+                          >
+                            {d.dayTripCount}
+                          </span>
+                        )}
+                      </td>
+
                       {/* Tipo cliente chips */}
                       <td className="p-3">
                         {(d.allowedClientTypes || []).length === 0 ? (
@@ -840,5 +754,217 @@ export default function DriverMonitoringPage() {
         </div>
       )}
     </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// FiltersBar — barra de filtros en 2 filas claras
+// ────────────────────────────────────────────────────────────────────────────
+
+type FiltersBarProps = {
+  selectedDate: string;
+  setSelectedDate: (d: string) => void;
+  today: string;
+  isToday: boolean;
+  searchQuery: string;
+  setSearchQuery: (s: string) => void;
+  occupancyFilter: OccupancyFilter;
+  setOccupancyFilter: (o: OccupancyFilter) => void;
+  clientTypeFilter: string;
+  setClientTypeFilter: (s: string) => void;
+  disciplineFilter: string;
+  setDisciplineFilter: (s: string) => void;
+  clientTypeOptions: string[];
+  disciplineOptions: string[];
+  totalCount: number;
+  busyCount: number;
+  freeCount: number;
+  visibleCount: number;
+  hasFilters: boolean;
+  clearFilters: () => void;
+};
+
+function FiltersBar(p: FiltersBarProps) {
+  return (
+    <section className="surface rounded-2xl p-5 space-y-3">
+      {/* Una sola grilla responsiva — todos los filtros se ven al mismo tiempo */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+        {/* Fecha */}
+        <label className="text-sm block">
+          <span className="block mb-1">Fecha</span>
+          <input
+            type="date"
+            className="input"
+            value={p.selectedDate}
+            max={p.today}
+            onChange={(e) => p.setSelectedDate(e.target.value || p.today)}
+            style={{
+              borderColor: p.isToday ? "var(--brand)" : "#fcd34d",
+              background: p.isToday ? "rgba(33,208,179,0.04)" : "#fffbeb",
+              fontWeight: 600,
+            }}
+          />
+        </label>
+
+        {/* Buscar */}
+        <label className="text-sm block md:col-span-2">
+          <span className="block mb-1">Buscar</span>
+          <input
+            type="text"
+            className="input"
+            placeholder="Nombre del conductor o plataforma…"
+            value={p.searchQuery}
+            onChange={(e) => p.setSearchQuery(e.target.value)}
+          />
+        </label>
+
+        {/* Tipo cliente */}
+        <label className="text-sm block">
+          <span className="block mb-1">Tipo cliente</span>
+          <select
+            className="input"
+            value={p.clientTypeFilter}
+            onChange={(e) => p.setClientTypeFilter(e.target.value)}
+            disabled={p.clientTypeOptions.length === 0}
+            style={{
+              borderColor: p.clientTypeFilter ? "var(--brand)" : undefined,
+              fontWeight: p.clientTypeFilter ? 600 : 400,
+              opacity: p.clientTypeOptions.length === 0 ? 0.6 : 1,
+            }}
+          >
+            <option value="">
+              {p.clientTypeOptions.length === 0
+                ? "Sin tipos disponibles"
+                : "Todos los tipos"}
+            </option>
+            {p.clientTypeOptions.map((c) => (
+              <option key={c} value={c}>
+                {CLIENT_TYPE_META[c.toUpperCase()]?.label ?? c}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {/* Disciplina */}
+        <label className="text-sm block">
+          <span className="block mb-1">
+            Disciplina
+            {p.disciplineOptions.length > 0 && (
+              <span
+                className="ml-1.5 inline-block"
+                style={{
+                  fontSize: 9,
+                  padding: "1px 6px",
+                  borderRadius: 8,
+                  background: "rgba(33,208,179,0.15)",
+                  color: "var(--brand)",
+                  fontWeight: 700,
+                  letterSpacing: 0,
+                  textTransform: "none",
+                }}
+              >
+                {p.disciplineOptions.length}
+              </span>
+            )}
+          </span>
+          <select
+            className="input"
+            value={p.disciplineFilter}
+            onChange={(e) => p.setDisciplineFilter(e.target.value)}
+            disabled={p.disciplineOptions.length === 0}
+            style={{
+              borderColor: p.disciplineFilter ? "var(--brand)" : undefined,
+              fontWeight: p.disciplineFilter ? 600 : 400,
+              opacity: p.disciplineOptions.length === 0 ? 0.6 : 1,
+            }}
+          >
+            <option value="">
+              {p.disciplineOptions.length === 0
+                ? `Sin disciplinas ${p.isToday ? "hoy" : "este día"}`
+                : "Todas las disciplinas"}
+            </option>
+            {p.disciplineOptions.map((dx) => (
+              <option key={dx} value={dx}>
+                {dx}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      {/* Chips de ocupación + estado del filtro + limpiar */}
+      <div className="flex flex-wrap items-center gap-2 pt-1">
+        {([
+          { v: "" as OccupancyFilter, label: "Todos", count: p.totalCount },
+          { v: "BUSY" as OccupancyFilter, label: "Ocupados", count: p.busyCount },
+          { v: "FREE" as OccupancyFilter, label: "Desocupados", count: p.freeCount },
+        ]).map((opt) => {
+          const active = p.occupancyFilter === opt.v;
+          return (
+            <button
+              key={opt.v || "all"}
+              type="button"
+              onClick={() => p.setOccupancyFilter(opt.v)}
+              className="text-xs font-medium px-3 py-1.5 rounded-full transition-all inline-flex items-center gap-1.5"
+              style={{
+                background: active
+                  ? "linear-gradient(135deg, #21D0B3 0%, #15B09A 100%)"
+                  : "#eef1f6",
+                color: active ? "#fff" : "#475569",
+                boxShadow: active ? "0 1px 4px rgba(33,208,179,0.3)" : "none",
+              }}
+            >
+              {opt.label}
+              <span
+                style={{
+                  fontSize: 10,
+                  padding: "1px 6px",
+                  borderRadius: 10,
+                  background: active ? "rgba(255,255,255,0.25)" : "#fff",
+                  color: active ? "#fff" : "#64748b",
+                  fontWeight: 700,
+                }}
+              >
+                {opt.count}
+              </span>
+            </button>
+          );
+        })}
+
+        {/* Spacer + estado/limpiar */}
+        <div className="flex-1" />
+
+        {p.hasFilters ? (
+          <>
+            <span
+              className="text-xs"
+              style={{ color: "var(--text-muted)" }}
+            >
+              <strong style={{ color: "#0f172a" }}>{p.visibleCount}</strong> de {p.totalCount}
+            </span>
+            <button
+              type="button"
+              onClick={p.clearFilters}
+              className="btn btn-ghost text-xs"
+              style={{ padding: "5px 10px" }}
+            >
+              Limpiar
+            </button>
+          </>
+        ) : (
+          !p.isToday && (
+            <button
+              type="button"
+              onClick={() => p.setSelectedDate(p.today)}
+              className="btn btn-ghost text-xs"
+              style={{ padding: "5px 10px" }}
+              title="Volver a hoy"
+            >
+              ← Volver a hoy
+            </button>
+          )
+        )}
+      </div>
+    </section>
   );
 }

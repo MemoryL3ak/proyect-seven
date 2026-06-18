@@ -209,6 +209,12 @@ export default function DeportesPage() {
   const [pruebaModal, setPruebaModal] = useState<null | { editing?: Discipline; parentId: string }>(null);
   const [calMonthCursor, setCalMonthCursor] = useState(() => { const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); return d; });
   const [calSelectedDay, setCalSelectedDay] = useState(() => new Date());
+  const [calView, setCalView] = useState<"month" | "week" | "day" | "table">("month");
+  const [calDayModalOpen, setCalDayModalOpen] = useState(false);
+  const [calVenueFilter, setCalVenueFilter] = useState<string>("");
+  const [calCategoryFilter, setCalCategoryFilter] = useState<string>("");
+  const [calDisciplineFilter, setCalDisciplineFilter] = useState<string>("");
+  const [calQuickSearch, setCalQuickSearch] = useState<string>("");
   const [pruebaForm, setPruebaForm] = useState(EMPTY_PRUEBA);
   const [premiacion, setPremiacion] = useState<PremiacionForm>(EMPTY_PREMIACION);
   const vipAthletes = useMemo(
@@ -924,13 +930,52 @@ export default function DeportesPage() {
         </section>
       )}
 
-      {/* ── Calendario tab */}
+      {/* ── Calendario tab ── (rediseñado con vistas, KPIs y filtros) */}
       {tab === "calendario" && (() => {
-        const calendarPruebas = disciplines
+        const allCalendarPruebas = disciplines
           .filter(d => d.parentId && d.scheduledAt && (selectedEventId ? d.eventId === selectedEventId : true))
           .sort((a, b) => new Date(a.scheduledAt!).getTime() - new Date(b.scheduledAt!).getTime());
 
+        // Aplicar filtros
+        const calendarPruebas = allCalendarPruebas.filter(d => {
+          if (calVenueFilter && (d.venueName || "") !== calVenueFilter) return false;
+          if (calCategoryFilter && (d.category || "") !== calCategoryFilter) return false;
+          if (calDisciplineFilter && (d.parentId || "") !== calDisciplineFilter) return false;
+          if (calQuickSearch.trim()) {
+            const q = calQuickSearch.trim().toLowerCase();
+            const text = `${d.name} ${d.venueName || ""}`.toLowerCase();
+            if (!text.includes(q)) return false;
+          }
+          return true;
+        });
+
         const parentMap = new Map(disciplines.filter(d => !d.parentId).map(d => [d.id, d.name ?? d.id]));
+
+        // Disciplinas con pruebas agendadas (para el filtro de disciplina)
+        const disciplineList = Array.from(
+          new Map(
+            allCalendarPruebas
+              .filter(d => d.parentId)
+              .map(d => [d.parentId as string, parentMap.get(d.parentId as string) || (d.parentId as string)]),
+          ).entries(),
+        ).sort((a, b) => a[1].localeCompare(b[1]));
+
+        // Sedes únicas con paleta de colores estilo Excel
+        const VENUE_PALETTE = [
+          { bg: "linear-gradient(135deg,#fecaca,#fda4af)", fg: "#7f1d1d", ring: "#dc2626" }, // rojo
+          { bg: "linear-gradient(135deg,#fde68a,#fcd34d)", fg: "#78350f", ring: "#d97706" }, // amarillo
+          { bg: "linear-gradient(135deg,#bfdbfe,#93c5fd)", fg: "#1e3a8a", ring: "#1d4ed8" }, // azul
+          { bg: "linear-gradient(135deg,#a7f3d0,#6ee7b7)", fg: "#064e3b", ring: "#059669" }, // verde
+          { bg: "linear-gradient(135deg,#ddd6fe,#c4b5fd)", fg: "#4c1d95", ring: "#7c3aed" }, // violeta
+          { bg: "linear-gradient(135deg,#fbcfe8,#f9a8d4)", fg: "#831843", ring: "#db2777" }, // rosa
+          { bg: "linear-gradient(135deg,#a5f3fc,#67e8f9)", fg: "#164e63", ring: "#0891b2" }, // cyan
+        ];
+        const venueList = Array.from(new Set(allCalendarPruebas.map(d => d.venueName).filter(Boolean) as string[])).sort();
+        const venueColorMap = new Map(venueList.map((v, i) => [v, VENUE_PALETTE[i % VENUE_PALETTE.length]]));
+        const venueColor = (name?: string | null) =>
+          (name && venueColorMap.get(name)) || VENUE_PALETTE[6];
+
+        const categoryList = Array.from(new Set(allCalendarPruebas.map(d => d.category).filter(Boolean) as string[])).sort();
 
         // Group by ISO day key
         const byDay = new Map<string, typeof calendarPruebas>();
@@ -940,13 +985,23 @@ export default function DeportesPage() {
           byDay.get(day)!.push(d);
         });
 
-        // Month grid helpers
+        // KPIs del mes mostrado
+        const now = Date.now();
+        const next24h = now + 86400000;
+        const kpiTotal = calendarPruebas.length;
+        const kpiToday = calendarPruebas.filter(d => d.scheduledAt!.slice(0, 10) === new Date().toISOString().slice(0, 10)).length;
+        const kpiUpcoming = calendarPruebas.filter(d => {
+          const t = new Date(d.scheduledAt!).getTime();
+          return t >= now && t <= next24h;
+        }).length;
+        const kpiVenues = venueList.length;
+
         const WEEK = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
         const buildGrid = (cursor: Date) => {
           const y = cursor.getFullYear(), m = cursor.getMonth();
           const first = new Date(y, m, 1);
-          const startDow = (first.getDay() + 6) % 7; // Mon=0
+          const startDow = (first.getDay() + 6) % 7;
           const days: Date[] = [];
           for (let i = -startDow; days.length < 42; i++) {
             days.push(new Date(y, m, 1 + i));
@@ -954,116 +1009,581 @@ export default function DeportesPage() {
           return days;
         };
 
+        const buildWeek = (cursor: Date) => {
+          const d = new Date(cursor);
+          const jsDay = d.getDay();
+          const monday = new Date(d);
+          monday.setDate(d.getDate() - ((jsDay + 6) % 7));
+          monday.setHours(0, 0, 0, 0);
+          return Array.from({ length: 7 }, (_, i) => {
+            const day = new Date(monday);
+            day.setDate(monday.getDate() + i);
+            return day;
+          });
+        };
+
         const grid = buildGrid(calMonthCursor);
+        const week = buildWeek(calSelectedDay);
         const todayKey = new Date().toISOString().slice(0, 10);
         const curMonth = calMonthCursor.getMonth();
         const monthStr = new Intl.DateTimeFormat("es-CL", { month: "long", year: "numeric" }).format(calMonthCursor);
 
-        // Selected day detail
         const selectedDayKey = calSelectedDay.toISOString().slice(0, 10);
         const selectedItems = byDay.get(selectedDayKey) || [];
         const selectedDayLabel = new Intl.DateTimeFormat("es-CL", { weekday: "long", day: "2-digit", month: "long" }).format(calSelectedDay);
 
-        return (
-          <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "20px", overflow: "hidden", boxShadow: pal.cardShadow }}>
-            {/* Month navigation */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: "1px solid #f1f5f9" }}>
-              <button onClick={() => setCalMonthCursor(d => new Date(d.getFullYear(), d.getMonth() - 1, 1))}
-                style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "#64748b", fontSize: 18 }}>
-                ◀
-              </button>
-              <span style={{ fontSize: 15, fontWeight: 700, color: "#0f172a", textTransform: "capitalize" }}>{monthStr}</span>
-              <button onClick={() => setCalMonthCursor(d => new Date(d.getFullYear(), d.getMonth() + 1, 1))}
-                style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "#64748b", fontSize: 18 }}>
-                ▶
-              </button>
-            </div>
+        const navPrev = () => {
+          if (calView === "month") setCalMonthCursor(d => new Date(d.getFullYear(), d.getMonth() - 1, 1));
+          else if (calView === "week") setCalSelectedDay(d => { const x = new Date(d); x.setDate(x.getDate() - 7); return x; });
+          else setCalSelectedDay(d => { const x = new Date(d); x.setDate(x.getDate() - 1); return x; });
+        };
+        const navNext = () => {
+          if (calView === "month") setCalMonthCursor(d => new Date(d.getFullYear(), d.getMonth() + 1, 1));
+          else if (calView === "week") setCalSelectedDay(d => { const x = new Date(d); x.setDate(x.getDate() + 7); return x; });
+          else setCalSelectedDay(d => { const x = new Date(d); x.setDate(x.getDate() + 1); return x; });
+        };
 
-            {/* Week header */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", borderBottom: "1px solid #f1f5f9" }}>
-              {WEEK.map(d => (
-                <div key={d} style={{ textAlign: "center", padding: "6px 0", fontSize: 10, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.08em", textTransform: "uppercase" }}>{d}</div>
+        return (
+          <div className="space-y-4">
+            {/* KPIs */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[
+                { label: "Pruebas totales", value: kpiTotal, color: "#21D0B3", bg: "rgba(33,208,179,0.10)" },
+                { label: "Hoy", value: kpiToday, color: "#1FCDFF", bg: "rgba(31,205,255,0.10)" },
+                { label: "Próximas 24h", value: kpiUpcoming, color: kpiUpcoming > 0 ? "#d97706" : "#94a3b8", bg: kpiUpcoming > 0 ? "rgba(245,158,11,0.10)" : "#f1f5f9" },
+                { label: "Sedes activas", value: kpiVenues, color: "#7c3aed", bg: "rgba(124,58,237,0.10)" },
+              ].map(k => (
+                <div key={k.label} className="rounded-2xl p-4 relative overflow-hidden"
+                  style={{ background: "#fff", border: "1px solid #e2e8f0", boxShadow: "0 1px 4px rgba(15,23,42,0.06)", borderLeft: `4px solid ${k.color}` }}>
+                  <div style={{ position: "absolute", top: -20, right: -20, width: 80, height: 80, borderRadius: "50%", background: k.bg, filter: "blur(20px)" }} />
+                  <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: "#64748b", position: "relative" }}>
+                    {k.label}
+                  </p>
+                  <p style={{ fontSize: 28, fontWeight: 800, color: k.color, lineHeight: 1.1, marginTop: 4, position: "relative" }}>
+                    {k.value}
+                  </p>
+                </div>
               ))}
             </div>
 
-            {/* Day cells */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)" }}>
-              {grid.map((day, i) => {
-                const dk = day.toISOString().slice(0, 10);
-                const isCurrentMonth = day.getMonth() === curMonth;
-                const isToday = dk === todayKey;
-                const isSelected = dk === selectedDayKey;
-                const events = byDay.get(dk) || [];
-                const hasEvents = events.length > 0;
-                return (
-                  <button key={i} type="button"
-                    onClick={() => setCalSelectedDay(new Date(day))}
-                    style={{
-                      position: "relative", padding: "8px 4px", minHeight: 52,
-                      background: isSelected ? "rgba(33,208,179,0.1)" : "transparent",
-                      border: "1px solid #f8fafc", cursor: "pointer",
-                      opacity: isCurrentMonth ? 1 : 0.3,
-                    }}>
-                    <span style={{
-                      display: "inline-flex", alignItems: "center", justifyContent: "center",
-                      width: 26, height: 26, borderRadius: "50%",
-                      fontSize: 12, fontWeight: isToday || isSelected ? 800 : 500,
-                      background: isToday ? "#21D0B3" : "transparent",
-                      color: isToday ? "#fff" : isSelected ? "#0a7a6b" : "#0f172a",
-                    }}>
-                      {day.getDate()}
-                    </span>
-                    {hasEvents && (
-                      <div style={{ display: "flex", gap: 2, justifyContent: "center", marginTop: 2 }}>
-                        {events.slice(0, 3).map((_, ei) => (
-                          <span key={ei} style={{ width: 5, height: 5, borderRadius: "50%", background: "#21D0B3" }} />
-                        ))}
-                        {events.length > 3 && <span style={{ fontSize: 8, color: "#94a3b8", lineHeight: "5px" }}>+</span>}
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Selected day detail */}
-            <div style={{ borderTop: "1px solid #e2e8f0", padding: "14px 18px" }}>
-              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#21D0B3", margin: "0 0 10px" }}>
-                {selectedDayLabel} · {selectedItems.length} prueba{selectedItems.length !== 1 ? "s" : ""}
-              </p>
-              {selectedItems.length === 0 ? (
-                <p style={{ fontSize: 12.5, color: "#94a3b8", margin: 0 }}>Sin pruebas este día</p>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  {selectedItems.map(prueba => {
-                    const time = new Date(prueba.scheduledAt!).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
-                    const catColor = CATEGORY_COLORS[prueba.category ?? ""] ?? "#94a3b8";
+            {/* Toolbar: vista + búsqueda + filtros */}
+            <section className="surface rounded-2xl p-4 space-y-3">
+              <div className="flex flex-wrap items-center gap-3">
+                {/* Vista toggle */}
+                <div className="flex gap-1 p-1 rounded-xl" style={{ background: "#f1f5f9" }}>
+                  {(["month", "week", "day", "table"] as const).map(v => {
+                    const active = calView === v;
                     return (
-                      <div key={prueba.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 10, background: "#f8fafc", border: "1px solid #f1f5f9" }}>
-                        <span style={{ fontSize: 13, fontWeight: 800, color: "#21D0B3", flexShrink: 0, minWidth: 50 }}>{time}</span>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{ fontSize: 12.5, fontWeight: 600, color: "#0f172a", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{prueba.name}</p>
-                          <p style={{ fontSize: 10.5, color: "#64748b", margin: "1px 0 0" }}>
-                            {parentMap.get(prueba.parentId!) ?? ""}{prueba.venueName ? ` · ${prueba.venueName}` : ""}
-                          </p>
-                        </div>
-                        {prueba.category && (
-                          <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 6, background: `${catColor}15`, color: catColor, flexShrink: 0 }}>
-                            {categoryLabel(prueba.category)}
-                          </span>
-                        )}
-                        <button onClick={() => openEditPrueba(prueba)} style={{ background: "none", border: "none", cursor: "pointer", color: "#cbd5e1", padding: 4, flexShrink: 0 }}>
-                          <svg style={{ width: 12, height: 12 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </button>
-                      </div>
+                      <button key={v} type="button" onClick={() => setCalView(v)}
+                        className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+                        style={{
+                          background: active ? "linear-gradient(135deg, #21D0B3, #1eb19a)" : "transparent",
+                          color: active ? "#fff" : "#475569",
+                          boxShadow: active ? "0 2px 6px rgba(33,208,179,0.35)" : "none",
+                        }}>
+                        {v === "month" ? "Mes" : v === "week" ? "Semana" : v === "day" ? "Día" : "Tabla"}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button onClick={navPrev} className="btn btn-ghost text-xs">←</button>
+                  <button onClick={() => { const n = new Date(); setCalMonthCursor(new Date(n.getFullYear(), n.getMonth(), 1)); setCalSelectedDay(n); }} className="btn btn-ghost text-xs">Hoy</button>
+                  <button onClick={navNext} className="btn btn-ghost text-xs">→</button>
+                </div>
+
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", textTransform: "capitalize", flex: 1 }}>
+                  {calView === "month" ? monthStr
+                    : calView === "week" ? `Sem. del ${week[0].toLocaleDateString("es-CL", { day: "2-digit", month: "short" })} al ${week[6].toLocaleDateString("es-CL", { day: "2-digit", month: "short" })}`
+                    : calView === "day" ? selectedDayLabel
+                    : `${calendarPruebas.length} pruebas en agenda`}
+                </h3>
+
+                {/* Filtro de disciplina */}
+                {disciplineList.length > 0 && (
+                  <StyledSelect wrapperStyle={{ maxWidth: 220 }}
+                    value={calDisciplineFilter} onChange={(e) => setCalDisciplineFilter(e.target.value)}>
+                    <option value="">{t("Todas las disciplinas")}</option>
+                    {disciplineList.map(([id, name]) => (
+                      <option key={id} value={id}>{name}</option>
+                    ))}
+                  </StyledSelect>
+                )}
+
+                {/* Búsqueda rápida */}
+                <input className="input" style={{ maxWidth: 240 }} placeholder="Buscar prueba o sede…"
+                  value={calQuickSearch} onChange={(e) => setCalQuickSearch(e.target.value)} />
+              </div>
+
+              {/* Chips: sedes (color-coded) */}
+              {venueList.length > 0 && (
+                <div className="flex flex-wrap gap-2 items-center">
+                  <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#64748b", marginRight: 4 }}>Sede:</span>
+                  <button type="button"
+                    onClick={() => setCalVenueFilter("")}
+                    className="text-xs font-bold px-3 py-1 rounded-full transition-all"
+                    style={{
+                      background: !calVenueFilter ? "linear-gradient(135deg, #21D0B3, #1eb19a)" : "#eef1f6",
+                      color: !calVenueFilter ? "#fff" : "#475569",
+                    }}>
+                    Todas
+                  </button>
+                  {venueList.map(v => {
+                    const pal = venueColor(v);
+                    const active = calVenueFilter === v;
+                    const count = allCalendarPruebas.filter(d => d.venueName === v).length;
+                    return (
+                      <button key={v} type="button"
+                        onClick={() => setCalVenueFilter(active ? "" : v)}
+                        className="text-xs font-bold px-3 py-1 rounded-full transition-all inline-flex items-center gap-1.5"
+                        style={{
+                          background: active ? pal.bg : "#fff",
+                          color: pal.fg,
+                          border: `1.5px solid ${pal.ring}${active ? "" : "44"}`,
+                          boxShadow: active ? `0 2px 8px ${pal.ring}55` : "none",
+                        }}>
+                        {v}
+                        <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 99, background: active ? "rgba(255,255,255,0.5)" : pal.bg, color: pal.fg, fontWeight: 800 }}>
+                          {count}
+                        </span>
+                      </button>
                     );
                   })}
                 </div>
               )}
-            </div>
-          </section>
+
+              {/* Chips: categoría */}
+              {categoryList.length > 0 && (
+                <div className="flex flex-wrap gap-2 items-center">
+                  <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#64748b", marginRight: 4 }}>Categoría:</span>
+                  <button type="button" onClick={() => setCalCategoryFilter("")}
+                    className="text-xs font-bold px-3 py-1 rounded-full transition-all"
+                    style={{
+                      background: !calCategoryFilter ? "linear-gradient(135deg, #21D0B3, #1eb19a)" : "#eef1f6",
+                      color: !calCategoryFilter ? "#fff" : "#475569",
+                    }}>
+                    Todas
+                  </button>
+                  {categoryList.map(cat => {
+                    const color = CATEGORY_COLORS[cat] ?? "#64748b";
+                    const active = calCategoryFilter === cat;
+                    return (
+                      <button key={cat} type="button"
+                        onClick={() => setCalCategoryFilter(active ? "" : cat)}
+                        className="text-xs font-bold px-3 py-1 rounded-full transition-all"
+                        style={{
+                          background: active ? color : `${color}15`,
+                          color: active ? "#fff" : color,
+                          border: `1.5px solid ${color}${active ? "" : "44"}`,
+                          boxShadow: active ? `0 2px 8px ${color}55` : "none",
+                        }}>
+                        {categoryLabel(cat)}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+
+            {/* ── VISTA MES (celdas grandes con mini-cards color-coded) */}
+            {calView === "month" && (
+              <section className="relative accent-strip-top animate-fade-up" style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 20, overflow: "hidden", boxShadow: pal.cardShadow }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", paddingTop: 4 }}>
+                  {WEEK.map(d => (
+                    <div key={d} style={{ textAlign: "center", padding: "10px 0", fontSize: 11, fontWeight: 800, color: "#475569", letterSpacing: "0.1em", textTransform: "uppercase" }}>{d}</div>
+                  ))}
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)" }}>
+                  {grid.map((day, i) => {
+                    const dk = day.toISOString().slice(0, 10);
+                    const isCurrentMonth = day.getMonth() === curMonth;
+                    const isToday = dk === todayKey;
+                    const isSelected = dk === selectedDayKey;
+                    const events = byDay.get(dk) || [];
+                    return (
+                      <div key={i}
+                        className="cal-day-cell"
+                        onClick={() => { setCalSelectedDay(new Date(day)); setCalDayModalOpen(true); }}
+                        style={{
+                          minHeight: 110, padding: 6, cursor: "pointer",
+                          background: isSelected ? "linear-gradient(160deg,rgba(33,208,179,0.10),rgba(33,208,179,0.03))" : isToday ? "linear-gradient(160deg,rgba(31,205,255,0.08),#fff)" : "#fff",
+                          border: "1px solid #f1f5f9",
+                          opacity: isCurrentMonth ? 1 : 0.4,
+                        }}>
+                        <div className="flex items-center justify-between">
+                          <span style={{
+                            display: "inline-flex", alignItems: "center", justifyContent: "center",
+                            width: 22, height: 22, borderRadius: "50%",
+                            fontSize: 11, fontWeight: isToday ? 800 : 600,
+                            background: isToday ? "linear-gradient(135deg, #21D0B3, #1eb19a)" : "transparent",
+                            color: isToday ? "#fff" : isCurrentMonth ? "#0f172a" : "#94a3b8",
+                            boxShadow: isToday ? "0 2px 6px rgba(33,208,179,0.4)" : "none",
+                          }}>{day.getDate()}</span>
+                          {events.length > 0 && (
+                            <span style={{ fontSize: 9, fontWeight: 800, color: "#64748b" }}>
+                              {events.length}
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-1 space-y-1">
+                          {events.slice(0, 3).map(ev => {
+                            const pal2 = venueColor(ev.venueName);
+                            const time = new Date(ev.scheduledAt!).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
+                            return (
+                              <div key={ev.id}
+                                className="cal-entry"
+                                onClick={(e) => { e.stopPropagation(); openEditPrueba(ev); }}
+                                style={{
+                                background: pal2.bg,
+                                color: pal2.fg,
+                                borderLeft: `3px solid ${pal2.ring}`,
+                                padding: "2px 5px",
+                                borderRadius: 4,
+                                fontSize: 9.5,
+                                fontWeight: 700,
+                                lineHeight: 1.3,
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                              }}>
+                                <span style={{ opacity: 0.7 }}>{time}</span> {ev.name}
+                              </div>
+                            );
+                          })}
+                          {events.length > 3 && (
+                            <p style={{ fontSize: 9, fontWeight: 700, color: "#94a3b8", textAlign: "center", paddingTop: 1 }}>
+                              +{events.length - 3} más
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
+            {/* ── VISTA SEMANA */}
+            {calView === "week" && (
+              <section className="relative accent-strip-top animate-fade-up" style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 20, overflow: "hidden", boxShadow: pal.cardShadow }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", paddingTop: 4 }}>
+                  {week.map(day => {
+                    const dk = day.toISOString().slice(0, 10);
+                    const isToday = dk === todayKey;
+                    const isSelected = dk === selectedDayKey;
+                    const events = byDay.get(dk) || [];
+                    return (
+                      <div key={dk}
+                        onClick={() => { setCalSelectedDay(new Date(day)); setCalDayModalOpen(true); }}
+                        style={{
+                          minHeight: 360, padding: 10, cursor: "pointer",
+                          background: isSelected ? "rgba(33,208,179,0.05)" : "#fff",
+                          borderLeft: `1px solid #f1f5f9`,
+                          borderTop: isToday ? "3px solid #21D0B3" : "1px solid #f1f5f9",
+                        }}>
+                        <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: isToday ? "#21D0B3" : "#94a3b8" }}>
+                          {WEEK[(day.getDay() + 6) % 7]}
+                        </p>
+                        <p style={{ fontSize: 24, fontWeight: 800, color: isToday ? "#21D0B3" : "#0f172a", lineHeight: 1 }}>
+                          {day.getDate()}
+                        </p>
+                        <p style={{ fontSize: 10, color: "#94a3b8" }}>
+                          {events.length} prueba{events.length !== 1 ? "s" : ""}
+                        </p>
+                        <div className="mt-3 space-y-1.5">
+                          {events.map(ev => {
+                            const pal2 = venueColor(ev.venueName);
+                            const time = new Date(ev.scheduledAt!).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
+                            return (
+                              <div key={ev.id}
+                                className="cal-entry"
+                                onClick={(e) => { e.stopPropagation(); openEditPrueba(ev); }}
+                                style={{
+                                  background: pal2.bg, color: pal2.fg,
+                                  borderLeft: `3px solid ${pal2.ring}`,
+                                  padding: "6px 8px", borderRadius: 6,
+                                  fontSize: 10.5, fontWeight: 700, lineHeight: 1.3, cursor: "pointer",
+                                }}>
+                                <p style={{ fontSize: 9, opacity: 0.7, fontWeight: 800 }}>{time}</p>
+                                <p style={{ marginTop: 1 }}>{ev.name}</p>
+                                {ev.venueName && (
+                                  <p style={{ fontSize: 9, marginTop: 2, opacity: 0.85 }}>📍 {ev.venueName}</p>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
+            {/* ── VISTA DÍA (timeline horaria) */}
+            {calView === "day" && (
+              <section className="relative accent-strip-top animate-fade-up" style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 20, padding: 18, overflow: "hidden", boxShadow: pal.cardShadow }}>
+                {selectedItems.length === 0 ? (
+                  <div style={{ padding: "48px 16px", textAlign: "center" }}>
+                    <p style={{ fontSize: 48, marginBottom: 8 }}>📅</p>
+                    <p style={{ fontSize: 14, fontWeight: 700, color: "#475569" }}>Sin pruebas para este día</p>
+                    <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>Probá con otra fecha o sacá los filtros.</p>
+                  </div>
+                ) : (
+                  <div style={{ display: "grid", gridTemplateColumns: "60px 1fr", gap: 4 }}>
+                    {Array.from({ length: 16 }, (_, i) => i + 7).map(h => {
+                      const items = selectedItems.filter(ev => new Date(ev.scheduledAt!).getHours() === h);
+                      return (
+                        <div key={h} style={{ display: "contents" }}>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textAlign: "right", paddingRight: 8, paddingTop: 4, borderRight: "1px solid #f1f5f9" }}>
+                            {String(h).padStart(2, "0")}:00
+                          </div>
+                          <div style={{ minHeight: 36, padding: "2px 0 4px", borderBottom: "1px solid #f8fafc" }}>
+                            {items.length === 0 && <div style={{ height: 1, background: "#fafbfc" }} />}
+                            {items.map(ev => {
+                              const pal2 = venueColor(ev.venueName);
+                              const time = new Date(ev.scheduledAt!).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
+                              return (
+                                <div key={ev.id}
+                                  className="cal-entry"
+                                  onClick={() => openEditPrueba(ev)}
+                                  style={{
+                                    background: pal2.bg, color: pal2.fg,
+                                    borderLeft: `4px solid ${pal2.ring}`,
+                                    padding: "6px 10px", borderRadius: 8, marginBottom: 4,
+                                    cursor: "pointer", display: "flex", alignItems: "center", gap: 10,
+                                    boxShadow: `0 2px 8px ${pal2.ring}22`,
+                                  }}>
+                                  <span style={{ fontSize: 12, fontWeight: 800, opacity: 0.85, minWidth: 44 }}>{time}</span>
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <p style={{ fontSize: 12, fontWeight: 700, margin: 0 }}>{ev.name}</p>
+                                    <p style={{ fontSize: 10, opacity: 0.85, margin: "2px 0 0" }}>
+                                      {parentMap.get(ev.parentId!) ?? ""}{ev.venueName ? ` · 📍 ${ev.venueName}` : ""}
+                                    </p>
+                                  </div>
+                                  {ev.category && (
+                                    <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 8px", borderRadius: 99, background: "rgba(255,255,255,0.5)" }}>
+                                      {categoryLabel(ev.category)}
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
+            )}
+
+            {/* ── VISTA TABLA (estilo Excel) */}
+            {calView === "table" && (
+              <section className="relative accent-strip-top animate-fade-up" style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 20, overflow: "hidden", boxShadow: pal.cardShadow }}>
+                {calendarPruebas.length === 0 ? (
+                  <div style={{ padding: 48, textAlign: "center" }}>
+                    <p style={{ fontSize: 14, color: "#94a3b8" }}>Sin pruebas que coincidan con los filtros</p>
+                  </div>
+                ) : (
+                  <div style={{ overflowX: "auto" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                      <thead>
+                        <tr style={{ background: "linear-gradient(135deg, #0f172a, #1e293b)", color: "#fff" }}>
+                          {["N°", "Día", "Hora", "Prueba", "Deporte", "Categoría", "Recinto"].map(h => (
+                            <th key={h} style={{
+                              padding: "10px 12px", textAlign: "left",
+                              fontSize: 10, fontWeight: 800, letterSpacing: "0.08em",
+                              textTransform: "uppercase",
+                              borderRight: "1px solid rgba(255,255,255,0.1)",
+                            }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {calendarPruebas.map((ev, i) => {
+                          const pal2 = venueColor(ev.venueName);
+                          const dt = new Date(ev.scheduledAt!);
+                          const dateStr = dt.toLocaleDateString("es-CL", { day: "2-digit", month: "short" });
+                          const time = dt.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
+                          const catColor = CATEGORY_COLORS[ev.category ?? ""] ?? "#64748b";
+                          return (
+                            <tr key={ev.id}
+                              onClick={() => openEditPrueba(ev)}
+                              style={{
+                                background: i % 2 === 0 ? "#fff" : "#fafbfc",
+                                borderBottom: "1px solid #f1f5f9",
+                                cursor: "pointer",
+                                transition: "background 0.1s",
+                              }}
+                              onMouseEnter={e => (e.currentTarget.style.background = "#f0fdfa")}
+                              onMouseLeave={e => (e.currentTarget.style.background = i % 2 === 0 ? "#fff" : "#fafbfc")}>
+                              <td style={{ padding: "10px 12px", fontWeight: 800, color: "#64748b", textAlign: "center", minWidth: 40 }}>{i + 1}</td>
+                              <td style={{ padding: "10px 12px", fontWeight: 700, color: "#0f172a" }}>{dateStr}</td>
+                              <td style={{ padding: "10px 12px", fontWeight: 800, color: "#21D0B3", fontFamily: "monospace" }}>{time}</td>
+                              <td style={{ padding: "10px 12px", fontWeight: 600, color: "#0f172a" }}>{ev.name}</td>
+                              <td style={{ padding: "10px 12px", color: "#64748b" }}>{parentMap.get(ev.parentId!) ?? "—"}</td>
+                              <td style={{ padding: "10px 12px" }}>
+                                {ev.category ? (
+                                  <span style={{
+                                    fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 99,
+                                    background: `${catColor}15`, color: catColor, border: `1px solid ${catColor}40`,
+                                  }}>
+                                    {categoryLabel(ev.category)}
+                                  </span>
+                                ) : <span style={{ color: "#cbd5e1" }}>—</span>}
+                              </td>
+                              <td style={{ padding: "8px 12px" }}>
+                                {ev.venueName ? (
+                                  <span style={{
+                                    display: "inline-block",
+                                    padding: "4px 10px", borderRadius: 6,
+                                    background: pal2.bg, color: pal2.fg,
+                                    fontWeight: 800, fontSize: 11,
+                                    border: `1.5px solid ${pal2.ring}`,
+                                    whiteSpace: "nowrap",
+                                  }}>
+                                    {ev.venueName}
+                                  </span>
+                                ) : <span style={{ color: "#cbd5e1" }}>—</span>}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+            )}
+
+            {/* Detalle del día (visible siempre que NO sea vista día/tabla) */}
+            {(calView === "month" || calView === "week") && (
+              <section style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, padding: 16, boxShadow: pal.cardShadow }}>
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div>
+                    <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: "#21D0B3", margin: 0 }}>
+                      {selectedDayLabel} · {selectedItems.length} prueba{selectedItems.length !== 1 ? "s" : ""}
+                    </p>
+                  </div>
+                  {selectedItems.length > 0 && (
+                    <button onClick={() => setCalView("day")} className="btn btn-ghost text-xs">
+                      Ver agenda del día →
+                    </button>
+                  )}
+                </div>
+                {selectedItems.length === 0 ? (
+                  <p style={{ fontSize: 12.5, color: "#94a3b8", marginTop: 8 }}>Sin pruebas este día</p>
+                ) : (
+                  <div className="mt-3 grid gap-2 md:grid-cols-2">
+                    {selectedItems.map(prueba => {
+                      const pal2 = venueColor(prueba.venueName);
+                      const time = new Date(prueba.scheduledAt!).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
+                      return (
+                        <div key={prueba.id}
+                          onClick={() => openEditPrueba(prueba)}
+                          style={{
+                            display: "flex", alignItems: "center", gap: 10,
+                            padding: 10, borderRadius: 12,
+                            background: pal2.bg, color: pal2.fg,
+                            borderLeft: `4px solid ${pal2.ring}`,
+                            cursor: "pointer", transition: "transform 0.1s",
+                            boxShadow: `0 1px 4px ${pal2.ring}22`,
+                          }}
+                          onMouseEnter={e => (e.currentTarget.style.transform = "translateY(-1px)")}
+                          onMouseLeave={e => (e.currentTarget.style.transform = "translateY(0)")}>
+                          <span style={{ fontSize: 13, fontWeight: 800, minWidth: 50, fontFamily: "monospace" }}>{time}</span>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontSize: 13, fontWeight: 700, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{prueba.name}</p>
+                            <p style={{ fontSize: 10.5, opacity: 0.85, margin: "2px 0 0" }}>
+                              {parentMap.get(prueba.parentId!) ?? ""}{prueba.venueName ? ` · 📍 ${prueba.venueName}` : ""}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
+            )}
+
+            {/* Popup dinámico del día */}
+            {calDayModalOpen && (
+              <div
+                className="animate-fade-in"
+                style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, background: "rgba(15,23,42,0.55)", backdropFilter: "blur(5px)" }}
+                onClick={() => setCalDayModalOpen(false)}
+              >
+                <div
+                  className="anim-scale-pop"
+                  onClick={(e) => e.stopPropagation()}
+                  style={{ width: "100%", maxWidth: 560, maxHeight: "88vh", display: "flex", flexDirection: "column", background: "#fff", borderRadius: 20, overflow: "hidden", boxShadow: "0 24px 60px rgba(15,23,42,0.35)" }}
+                >
+                  {/* Header */}
+                  <div style={{ position: "relative", padding: "18px 20px", background: "linear-gradient(135deg, #21D0B3 0%, #1FCDFF 100%)", overflow: "hidden" }}>
+                    <div className="ambient-orb" style={{ width: 160, height: 160, top: -60, right: -40, background: "radial-gradient(circle, rgba(255,255,255,0.35) 0%, transparent 65%)" }} />
+                    <div className="relative flex items-start justify-between gap-3">
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.22em", textTransform: "uppercase", color: "rgba(255,255,255,0.85)" }}>Agenda del día</p>
+                        <h3 style={{ marginTop: 2, fontSize: 18, fontWeight: 800, color: "#fff", textTransform: "capitalize", lineHeight: 1.2 }}>{selectedDayLabel}</h3>
+                        <p style={{ marginTop: 4, fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.9)" }}>
+                          {selectedItems.length} {selectedItems.length === 1 ? "prueba" : "pruebas"}
+                        </p>
+                      </div>
+                      <button type="button" onClick={() => setCalDayModalOpen(false)} aria-label="Cerrar"
+                        style={{ flexShrink: 0, width: 32, height: 32, borderRadius: 10, border: "none", cursor: "pointer", background: "rgba(255,255,255,0.2)", color: "#fff", fontSize: 18, fontWeight: 700, lineHeight: 1 }}>
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Cuerpo */}
+                  <div className="stagger" style={{ padding: 16, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10 }}>
+                    {selectedItems.length === 0 ? (
+                      <div style={{ padding: "32px 16px", textAlign: "center" }}>
+                        <p style={{ fontSize: 40, marginBottom: 6 }}>📅</p>
+                        <p style={{ fontSize: 14, fontWeight: 700, color: "#475569" }}>Sin pruebas para este día</p>
+                        <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>Probá con otra fecha o sacá los filtros.</p>
+                      </div>
+                    ) : selectedItems.map((prueba) => {
+                      const pal2 = venueColor(prueba.venueName);
+                      const time = new Date(prueba.scheduledAt!).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
+                      return (
+                        <div key={prueba.id}
+                          className="cal-entry"
+                          onClick={() => { openEditPrueba(prueba); setCalDayModalOpen(false); }}
+                          style={{ background: pal2.bg, color: pal2.fg, borderLeft: `4px solid ${pal2.ring}`, borderRadius: 12, padding: "12px 14px", boxShadow: `0 2px 10px ${pal2.ring}22`, display: "flex", alignItems: "center", gap: 12 }}>
+                          <span style={{ fontSize: 14, fontWeight: 800, minWidth: 52, fontFamily: "monospace" }}>{time}</span>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontSize: 13.5, fontWeight: 700, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{prueba.name}</p>
+                            <p style={{ fontSize: 11, opacity: 0.85, margin: "2px 0 0" }}>
+                              {parentMap.get(prueba.parentId!) ?? ""}{prueba.venueName ? ` · 📍 ${prueba.venueName}` : ""}
+                            </p>
+                          </div>
+                          {prueba.category && (
+                            <span style={{ flexShrink: 0, fontSize: 9, fontWeight: 800, padding: "3px 9px", borderRadius: 99, background: "rgba(255,255,255,0.55)" }}>
+                              {categoryLabel(prueba.category)}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Footer */}
+                  <div style={{ padding: "12px 16px", borderTop: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", gap: 10, background: "#f8fafc" }}>
+                    <button type="button" className="btn btn-ghost" onClick={() => setCalDayModalOpen(false)}>Cerrar</button>
+                    {selectedItems.length > 0 && (
+                      <button type="button" className="btn btn-primary" onClick={() => { setCalDayModalOpen(false); setCalView("day"); }}>
+                        Ver agenda del día →
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         );
       })()}
 
