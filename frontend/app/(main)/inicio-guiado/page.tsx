@@ -323,32 +323,32 @@ type Task = {
 
 const TASKS: Task[] = [
   // Admin
-  { key: "t-event", title: "Configurar el evento principal", description: "Definí nombre, fechas, sede y disciplinas. Es el contenedor de toda la operación.", href: "/registro/eventos", goal: "create_event" },
-  { key: "t-athletes-import", title: "Importar participantes", description: "Subí el Excel con atletas. Descargá la plantilla desde la sección de Inscripción.", href: "/registro/participantes", goal: "import_athletes" },
-  { key: "t-users", title: "Crear cuentas para tu equipo", description: "Asigná roles (Admin, Supervisor, Operador, Coordinador) y módulos por usuario.", href: "/admin/usuarios", goal: "manage_users" },
+  { key: "t-event", title: "Configurar el evento principal", description: "Define nombre, fechas, sede y disciplinas. Es el contenedor de toda la operación.", href: "/registro/eventos", goal: "create_event" },
+  { key: "t-athletes-import", title: "Importar participantes", description: "Sube el Excel con atletas. Descarga la plantilla desde la sección de Inscripción.", href: "/registro/participantes", goal: "import_athletes" },
+  { key: "t-users", title: "Crear cuentas para tu equipo", description: "Asigna roles (Admin, Supervisor, Operador, Coordinador) y módulos por usuario.", href: "/admin/usuarios", goal: "manage_users" },
   { key: "t-dashboard", title: "Revisar dashboards", description: "Comercial (presupuestos) y Operacional (viajes/hoteles/salud en tiempo real).", href: "/dashboard/operacional", goal: "view_dashboard" },
 
   // Transporte
-  { key: "t-daily", title: "Importar planilla operativa", description: "Subí el Excel del cronograma diario. Descargá la plantilla con el formato esperado.", href: "/operations/daily-transport", goal: "import_schedule" },
-  { key: "t-assign", title: "Auto-asignar conductores", description: "Corré la asignación con restricciones (tipo flota, cliente, capacidad, sillas de ruedas).", href: "/operations/daily-transport", goal: "auto_assign" },
+  { key: "t-daily", title: "Importar planilla operativa", description: "Sube el Excel del cronograma diario. Descarga la plantilla con el formato esperado.", href: "/operations/daily-transport", goal: "import_schedule" },
+  { key: "t-assign", title: "Auto-asignar conductores", description: "Corre la asignación con restricciones (tipo flota, cliente, capacidad, sillas de ruedas).", href: "/operations/daily-transport", goal: "auto_assign" },
   { key: "t-monitor", title: "Monitorear conductores conectados", description: "Ver quién tiene la app abierta, su GPS en vivo y los viajes activos.", href: "/operations/driver-monitoring", goal: "monitor_drivers" },
   { key: "t-tracking", title: "Tracking en vivo de viajes", description: "Mapa con todos los vehículos en ruta, alertas de retrasos y GPS atrasado.", href: "/operations/vehicle-positions", goal: "tracking_realtime" },
 
   // Hotelería
-  { key: "t-hotels", title: "Cargar hoteles y habitaciones", description: "Definí los alojamientos del evento, las habitaciones disponibles y sus tipos.", href: "/masters/accommodations", goal: "setup_hotels" },
-  { key: "t-rooms", title: "Asignar habitaciones", description: "Distribuí atletas en habitaciones — individual o automática por tipo.", href: "/operations/hotel-assignments", goal: "assign_rooms" },
-  { key: "t-keys", title: "Entregar llaves con firma", description: "Registrá entregas y devoluciones de llaves con firma digital.", href: "/operations/hotel-keys", goal: "manage_keys" },
+  { key: "t-hotels", title: "Cargar hoteles y habitaciones", description: "Define los alojamientos del evento, las habitaciones disponibles y sus tipos.", href: "/masters/accommodations", goal: "setup_hotels" },
+  { key: "t-rooms", title: "Asignar habitaciones", description: "Distribuye atletas en habitaciones — individual o automática por tipo.", href: "/operations/hotel-assignments", goal: "assign_rooms" },
+  { key: "t-keys", title: "Entregar llaves con firma", description: "Registra entregas y devoluciones de llaves con firma digital.", href: "/operations/hotel-keys", goal: "manage_keys" },
   { key: "t-extras", title: "Reservar salones y extras", description: "Coordina salones para reuniones y servicios adicionales (lavandería, gym).", href: "/operations/hotel-extras", goal: "hotel_extras" },
 
   // Acreditación
-  { key: "t-credentials", title: "Emitir credenciales QR", description: "Generá credenciales personalizadas con QR para cada participante.", href: "/accreditations", goal: "generate_credentials" },
+  { key: "t-credentials", title: "Emitir credenciales QR", description: "Genera credenciales personalizadas con QR para cada participante.", href: "/accreditations", goal: "generate_credentials" },
   { key: "t-scanner", title: "Configurar el scanner de acceso", description: "El portal de control de acceso lee QR y valida permisos en tiempo real.", href: "/portal/access-control", goal: "qr_scanner" },
   { key: "t-access", title: "Definir tipos de acceso", description: "Campo (C), Tribuna (TR), Hotel (H), Reuniones (R), Restringidas (A), Dirección (RD).", href: "/accreditations", goal: "manage_access" },
 
   // Operaciones
-  { key: "t-incidents", title: "Centro de incidencias", description: "Recibí, asigná y resolvé tickets de soporte de los portales.", href: "/operations/support-chats", goal: "monitor_incidents" },
-  { key: "t-premiaciones", title: "Calendario de premiaciones", description: "Consultá ceremonias, entregadores y horarios desde el portal del participante.", href: "/portal/user", goal: "premiaciones" },
-  { key: "t-coupons", title: "Catálogo de cupones", description: "Definí beneficios, partners y revisá los canjes desde el portal del comercio.", href: "/operations/coupons", goal: "coupons" },
+  { key: "t-incidents", title: "Centro de incidencias", description: "Recibe, asigna y resuelve tickets de soporte de los portales.", href: "/operations/support-chats", goal: "monitor_incidents" },
+  { key: "t-premiaciones", title: "Calendario de premiaciones", description: "Consulta ceremonias, entregadores y horarios desde el portal del participante.", href: "/portal/user", goal: "premiaciones" },
+  { key: "t-coupons", title: "Catálogo de cupones", description: "Define beneficios, partners y revisa los canjes desde el portal del comercio.", href: "/operations/coupons", goal: "coupons" },
   { key: "t-workforce", title: "Gestionar workforce", description: "Personal contratado, voluntariado, catálogo del kit y entregas validadas.", href: "/operations/workforce", goal: "workforce" },
 ];
 
@@ -359,12 +359,12 @@ const TIPS_BY_ROLE: Record<RoleKey, Array<{ icon: string; text: string }>> = {
     { icon: "📈", text: "El dashboard comercial se actualiza solo cuando ingresás los montos licitados de los conductores." },
   ],
   transport: [
-    { icon: "📥", text: "En 'Operatividad Diaria' tenés un botón para descargar la plantilla con todas las columnas que reconoce el importador." },
+    { icon: "📥", text: "En 'Operatividad Diaria' tienes un botón para descargar la plantilla con todas las columnas que reconoce el importador." },
     { icon: "⚙️", text: "La auto-asignación respeta tipo de flota, capacidad, sillas de ruedas, ventana horaria y máx. viajes por chofer." },
     { icon: "📍", text: "El portal del conductor usa Wake Lock para mantener el GPS activo aunque la pantalla se apague." },
   ],
   hotel: [
-    { icon: "🛏️", text: "Podés asignar habitaciones manualmente o usar la asignación automática por tipo de habitación." },
+    { icon: "🛏️", text: "Puedes asignar habitaciones manualmente o usar la asignación automática por tipo de habitación." },
     { icon: "✍️", text: "La entrega de llaves queda registrada con firma digital — útil para auditorías." },
     { icon: "📅", text: "Early/late check-in se gestiona desde la misma ficha de la asignación, sin doble entrada." },
   ],
@@ -374,12 +374,12 @@ const TIPS_BY_ROLE: Record<RoleKey, Array<{ icon: string; text: string }>> = {
     { icon: "🛡️", text: "Cada credencial puede combinar múltiples tipos de acceso (C+TR+H, por ejemplo)." },
   ],
   operations: [
-    { icon: "🆘", text: "El Centro de Incidencias recibe tickets de los portales (conductor, atleta) y los podés asignar al equipo." },
+    { icon: "🆘", text: "El Centro de Incidencias recibe tickets de los portales (conductor, atleta) y los puedes asignar al equipo." },
     { icon: "🏆", text: "Las premiaciones tienen estados (Programada/Realizada) y soportan multi-entregador con confirmación." },
-    { icon: "🖨️", text: "En Workforce podés imprimir códigos de barra de los productos del kit para inventario." },
+    { icon: "🖨️", text: "En Workforce puedes imprimir códigos de barra de los productos del kit para inventario." },
   ],
   other: [
-    { icon: "🌐", text: "Cambiá el idioma en la parte inferior del menú lateral — soporta ES/EN/PT." },
+    { icon: "🌐", text: "Cambia el idioma en la parte inferior del menú lateral — soporta ES/EN/PT." },
     { icon: "🌙", text: "4 temas visuales disponibles: Light, Dark, Obsidian y Atlas." },
     { icon: "💬", text: "El widget de SofIA en la esquina inferior derecha responde cualquier consulta operativa." },
   ],
@@ -877,12 +877,12 @@ export default function OnboardingPage() {
                 : <span className="ob-shimmer-text">¡Todo listo!</span>}
             </h1>
             <p className="mt-1.5 text-sm md:text-base max-w-xl" style={{ color: "rgba(241,245,249,0.65)" }}>
-              {state.step === 0 && "Te llevamos en menos de 3 minutos por los módulos que necesitás. Personalizado, sin manuales."}
-              {state.step === 1 && "Vamos a recomendarte tareas y atajos según tu rol — podés cambiarlo después en cualquier momento."}
-              {state.step === 2 && "Elegí lo que querés resolver primero. Las tareas se ajustan a tu selección."}
-              {state.step === 3 && `Estos son tus próximos pasos. Marcá cada uno cuando lo termines — guardamos tu progreso.`}
+              {state.step === 0 && "Te llevamos en menos de 3 minutos por los módulos que necesitas. Personalizado, sin manuales."}
+              {state.step === 1 && "Vamos a recomendarte tareas y atajos según tu rol — puedes cambiarlo después en cualquier momento."}
+              {state.step === 2 && "Elige lo que quieres resolver primero. Las tareas se ajustan a tu selección."}
+              {state.step === 3 && `Estos son tus próximos pasos. Marca cada uno cuando lo termines — guardamos tu progreso.`}
               {state.step === 4 && "Trucos para que aproveches al máximo la plataforma."}
-              {state.step === 5 && "Tenés todo lo que necesitás. Volvé acá cuando quieras revisar tu progreso."}
+              {state.step === 5 && "Tienes todo lo que necesitas. Vuelve acá cuando quieras revisar tu progreso."}
             </p>
           </div>
 

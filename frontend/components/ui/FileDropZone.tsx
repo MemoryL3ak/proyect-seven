@@ -14,7 +14,7 @@ type FileDropZoneProps = {
 export default function FileDropZone({
   accept = ".csv,.xls,.xlsx",
   onFile,
-  hint = "Arrastrá un archivo o hacé click para seleccionar",
+  hint = "Arrastra un archivo o haz click para seleccionar",
   selectedFileName,
   selectedDetail,
   disabled = false,

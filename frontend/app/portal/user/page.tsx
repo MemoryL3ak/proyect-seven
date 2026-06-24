@@ -278,6 +278,11 @@ export default function UserPortalPage() {
   const [actSubTab, setActSubTab] = useState<"curso" | "historial">("curso");
   const [calMonthCursor, setCalMonthCursor] = useState(() => new Date());
   const [calSelectedDay, setCalSelectedDay] = useState<number | null>(null);
+  const [calView, setCalView] = useState<"agenda" | "mes">("agenda");
+  const [calTypeFilter, setCalTypeFilter] = useState<string>("");
+  const [calDiscFilter, setCalDiscFilter] = useState<string>("");
+  const calAutoJumped = useRef(false);
+  const calDiscAutoSet = useRef(false);
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   // Premiaciones tab state
   const [premiaciones, setPremiaciones] = useState<Premiacion[]>([]);
@@ -298,6 +303,32 @@ export default function UserPortalPage() {
   const [couponError, setCouponError] = useState<string | null>(null);
   const [credentialHtml, setCredentialHtml] = useState<string | null>(null);
   const notify = useNotifications();
+
+  // Al cargar las actividades por primera vez, posiciona el calendario en el mes
+  // de la próxima actividad (o la más cercana) para no abrir en un mes vacío.
+  useEffect(() => {
+    if (calAutoJumped.current) return;
+    const dates: number[] = [];
+    calendarEvents.forEach((e) => { if (e.scheduledAt) { const t = new Date(e.scheduledAt).getTime(); if (!Number.isNaN(t)) dates.push(t); } });
+    premiaciones.forEach((p) => { if (p.scheduledAt) { const t = new Date(p.scheduledAt).getTime(); if (!Number.isNaN(t)) dates.push(t); } });
+    if (dates.length === 0) return;
+    const now = Date.now();
+    const future = dates.filter((t) => t >= now).sort((a, b) => a - b);
+    const target = future.length ? future[0] : Math.max(...dates);
+    const td = new Date(target);
+    setCalMonthCursor(new Date(td.getFullYear(), td.getMonth(), 1));
+    calAutoJumped.current = true;
+  }, [calendarEvents, premiaciones]);
+
+  // Por defecto, el atleta ve solo su disciplina (evita el "scroll infinito"
+  // con todas las disciplinas). Se puede cambiar a "Todas" desde el filtro.
+  useEffect(() => {
+    if (calDiscAutoSet.current) return;
+    if (athlete?.disciplineId) {
+      setCalDiscFilter(athlete.disciplineId);
+      calDiscAutoSet.current = true;
+    }
+  }, [athlete?.disciplineId]);
 
   const isChief = athlete?.isDelegationLead === true;
   const portalTabs = useMemo(() => {
@@ -1244,52 +1275,277 @@ export default function UserPortalPage() {
           const y = calMonthCursor.getFullYear(), m = calMonthCursor.getMonth();
           const cells = getMonthGrid(calMonthCursor);
           const monthLabel = calMonthCursor.toLocaleDateString("es-CL",{month:"long",year:"numeric"});
-          const eventsInMonth = calendarEvents.filter(e => { const d = new Date(e.scheduledAt!); return d.getFullYear()===y && d.getMonth()===m; });
-          const daysWithEvents = new Set(eventsInMonth.map(e => new Date(e.scheduledAt!).getDate()));
-          const selectedEvents = calSelectedDay ? eventsInMonth.filter(e => new Date(e.scheduledAt!).getDate()===calSelectedDay) : [];
+
+          // ── Tipos de actividad (paleta como leyenda de referencia)
+          type CalType = "ENTRENAMIENTO" | "COMPETENCIA" | "MEDICO" | "VIAJE" | "CEREMONIA" | "DESCANSO";
+          const TYPE_CFG: Record<CalType,{ label:string; color:string; soft:string; icon:string }> = {
+            ENTRENAMIENTO: { label:"Entrenamiento", color:"#16a34a", soft:"#dcfce7", icon:"🏃" },
+            COMPETENCIA:   { label:"Competencia",   color:"#dc2626", soft:"#fee2e2", icon:"🏅" },
+            MEDICO:        { label:"Médico",        color:"#7c3aed", soft:"#ede9fe", icon:"➕" },
+            VIAJE:         { label:"Viaje",         color:"#ea580c", soft:"#ffedd5", icon:"✈️" },
+            CEREMONIA:     { label:"Ceremonia",     color:"#eab308", soft:"#fef9c3", icon:"🏆" },
+            DESCANSO:      { label:"Descanso",      color:"#2563eb", soft:"#dbeafe", icon:"🛌" },
+          };
+          const classifyEvent = (name?: string | null): CalType => {
+            const t = (name || "").toLowerCase();
+            if (/(entrenamiento|práctica|practica|activación|activacion|reconocimiento)/.test(t)) return "ENTRENAMIENTO";
+            if (/(descanso|libre)/.test(t)) return "DESCANSO";
+            if (/(médic|medic|control|evaluación|evaluacion)/.test(t)) return "MEDICO";
+            if (/(viaje|traslado|regreso|llegada)/.test(t)) return "VIAJE";
+            if (/(ceremon|premiac|inaugur|clausura)/.test(t)) return "CEREMONIA";
+            return "COMPETENCIA";
+          };
+
+          // ── Universo de actividades: competencias/calendario + premiaciones
+          type CalItem = { id:string; type:CalType; date:Date; title:string; subtitle?:string; venue?:string; discId?:string|null };
+          const items: CalItem[] = [];
+          calendarEvents.forEach(ev => {
+            if (!ev.scheduledAt) return;
+            const d = new Date(ev.scheduledAt); if (Number.isNaN(d.getTime())) return;
+            const parent = disciplineParents.find(p => p.id===ev.parentId);
+            items.push({
+              id:`ce-${ev.id}`, type:classifyEvent(ev.name),
+              date:d, title:ev.name || parent?.name || "Actividad",
+              subtitle: parent?.name && ev.name!==parent.name ? parent.name : undefined,
+              venue: ev.venueName || undefined,
+              discId: ev.parentId || null,
+            });
+          });
+          premiaciones.forEach(p => {
+            if (!p.scheduledAt) return;
+            const d = new Date(p.scheduledAt); if (Number.isNaN(d.getTime())) return;
+            items.push({
+              id:`pr-${p.id}`, type:"CEREMONIA",
+              date:d, title:p.title || "Ceremonia de premiación",
+              subtitle: p.discipline || undefined,
+              venue: p.venueName || p.locationDetail || undefined,
+              discId: p.disciplineId || null,
+            });
+          });
+
+          // Opciones de disciplina (deportes con actividades) para el filtro
+          const discOptions = Array.from(
+            new Map(
+              items
+                .filter(i => i.discId)
+                .map(i => {
+                  const name = disciplineParents.find(p => p.id===i.discId)?.name
+                    || calendarEvents.find(c => c.id===i.discId)?.name
+                    || i.subtitle || "Disciplina";
+                  return [i.discId as string, name] as const;
+                }),
+            ).entries(),
+          ).sort((a,b) => a[1].localeCompare(b[1]));
+
+          const typed = items.filter(i =>
+            (!calTypeFilter || i.type===calTypeFilter) &&
+            (!calDiscFilter || i.discId===calDiscFilter),
+          );
+          const inMonth = typed.filter(i => i.date.getFullYear()===y && i.date.getMonth()===m);
+          const daysWithEvents = new Set(inMonth.map(i => i.date.getDate()));
+          const agenda = (calSelectedDay ? inMonth.filter(i => i.date.getDate()===calSelectedDay) : inMonth)
+            .sort((a,b) => a.date.getTime()-b.date.getTime());
+
+          // Agrupar por día para la columna de agenda
+          const byDay = new Map<number, CalItem[]>();
+          agenda.forEach(i => { const k=i.date.getDate(); byDay.set(k,[...(byDay.get(k)??[]),i]); });
+          const agendaDays = Array.from(byDay.keys()).sort((a,b)=>a-b);
+
+          // Próxima competencia (a futuro)
+          const now = new Date();
+          const nextComp = items
+            .filter(i => i.type==="COMPETENCIA" && i.date.getTime()>=now.getTime())
+            .sort((a,b)=>a.date.getTime()-b.date.getTime())[0];
+
+          const fmtDow = (d:Date) => d.toLocaleDateString("es-CL",{weekday:"short"}).replace(".","").toUpperCase();
+          const fmtMon = (d:Date) => d.toLocaleDateString("es-CL",{month:"short"}).replace(".","").toUpperCase();
+
           return (
-            <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
-              <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",padding:"12px" }}>
-                <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10 }}>
-                  <button type="button" onClick={() => setCalMonthCursor(new Date(y,m-1,1))} style={{ background:"none",border:"none",cursor:"pointer",padding:4 }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
-                  </button>
-                  <span style={{ fontSize:14,fontWeight:700,color:"#0f172a",textTransform:"capitalize" }}>{monthLabel}</span>
-                  <button type="button" onClick={() => setCalMonthCursor(new Date(y,m+1,1))} style={{ background:"none",border:"none",cursor:"pointer",padding:4 }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
-                  </button>
-                </div>
-                <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,textAlign:"center" }}>
-                  {DAY_NAMES.map(d => <div key={d} style={{ fontSize:9,fontWeight:700,color:"#94a3b8",padding:4 }}>{d}</div>)}
-                  {cells.map((day,i) => (
-                    <button key={i} type="button" disabled={!day} onClick={() => day && setCalSelectedDay(calSelectedDay===day?null:day)}
-                      style={{ padding:"6px 0",borderRadius:8,border:"none",cursor:day?"pointer":"default",fontSize:12,fontWeight:calSelectedDay===day?800:500,
-                        background:calSelectedDay===day?"#21D0B3":day?"#fff":"transparent",
-                        color:calSelectedDay===day?"#fff":day?"#0f172a":"transparent",position:"relative" }}>
-                      {day || ""}
-                      {day && daysWithEvents.has(day) && calSelectedDay!==day && <div style={{ position:"absolute",bottom:2,left:"50%",transform:"translateX(-50%)",width:4,height:4,borderRadius:"50%",background:"#21D0B3" }} />}
+            <div style={{ display:"flex",flexWrap:"wrap",gap:14,alignItems:"flex-start" }}>
+              {/* ════ Columna principal: agenda ════ */}
+              <div style={{ flex:"1 1 340px",minWidth:0,display:"flex",flexDirection:"column",gap:12 }}>
+                {/* Barra de control: navegación mes + toggle vista */}
+                <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",padding:"12px 14px",display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"space-between",gap:10 }}>
+                  <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+                    <button type="button" onClick={() => { setCalMonthCursor(new Date()); setCalSelectedDay(null); }} style={{ fontSize:12,fontWeight:700,color:"#0f172a",background:"#f1f5f9",border:"1px solid #e2e8f0",borderRadius:8,padding:"6px 12px",cursor:"pointer" }}>Hoy</button>
+                    <button type="button" onClick={() => { setCalMonthCursor(new Date(y,m-1,1)); setCalSelectedDay(null); }} style={{ background:"#fff",border:"1px solid #e2e8f0",borderRadius:8,cursor:"pointer",padding:6,display:"inline-flex" }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
                     </button>
-                  ))}
+                    <button type="button" onClick={() => { setCalMonthCursor(new Date(y,m+1,1)); setCalSelectedDay(null); }} style={{ background:"#fff",border:"1px solid #e2e8f0",borderRadius:8,cursor:"pointer",padding:6,display:"inline-flex" }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
+                    <span style={{ fontSize:14,fontWeight:800,color:"#0f172a",textTransform:"capitalize" }}>{monthLabel}</span>
+                  </div>
+                  <div style={{ display:"flex",background:"#f1f5f9",borderRadius:10,padding:3,gap:2 }}>
+                    {(["agenda","mes"] as const).map(v => (
+                      <button key={v} type="button" onClick={() => setCalView(v)}
+                        style={{ fontSize:12,fontWeight:700,padding:"5px 14px",borderRadius:8,border:"none",cursor:"pointer",textTransform:"capitalize",
+                          background: calView===v ? "#21D0B3" : "transparent", color: calView===v ? "#fff" : "#475569" }}>
+                        {v}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-              {calSelectedDay && selectedEvents.length > 0 && (
-                <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
-                  {selectedEvents.map(ev => {
-                    const parent = disciplineParents.find(p => p.id===ev.parentId);
-                    return (
-                      <div key={ev.id} style={{ background:"#fff",borderRadius:12,border:"1px solid #e2e8f0",padding:"10px 14px" }}>
-                        <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0 }}>{ev.name || parent?.name || "–"}</p>
-                        {parent?.name && ev.name !== parent.name && <p style={{ fontSize:11,color:"#21D0B3",margin:"2px 0 0",fontWeight:600 }}>{parent.name}</p>}
-                        <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0" }}>
-                          {new Date(ev.scheduledAt!).toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})}
-                          {ev.venueName && ` · ${ev.venueName}`}
-                        </p>
+
+                {/* Vista MES: cuadrícula */}
+                {calView==="mes" && (
+                  <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",padding:"12px" }}>
+                    <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4,textAlign:"center" }}>
+                      {["L","M","M","J","V","S","D"].map((d,i) => <div key={i} style={{ fontSize:10,fontWeight:700,color:"#94a3b8",padding:4 }}>{d}</div>)}
+                      {cells.map((day,i) => {
+                        const dayItems = day ? inMonth.filter(it => it.date.getDate()===day) : [];
+                        const isSel = calSelectedDay===day;
+                        return (
+                          <button key={i} type="button" disabled={!day} onClick={() => day && setCalSelectedDay(isSel?null:day)}
+                            style={{ minHeight:64,padding:"4px",borderRadius:10,border: isSel?"2px solid #21D0B3":"1px solid #eef2f7",cursor:day?"pointer":"default",
+                              background:isSel?"#f0fdfa":day?"#fff":"transparent",display:"flex",flexDirection:"column",alignItems:"flex-start",gap:3 }}>
+                            <span style={{ fontSize:12,fontWeight:isSel?800:600,color:day?"#0f172a":"transparent" }}>{day||""}</span>
+                            <div style={{ display:"flex",flexWrap:"wrap",gap:2 }}>
+                              {dayItems.slice(0,3).map(it => <span key={it.id} style={{ width:6,height:6,borderRadius:"50%",background:TYPE_CFG[it.type].color }} />)}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Vista AGENDA: lista por día con chip de fecha */}
+                {calView==="agenda" && (
+                  <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden auto",maxHeight:"calc(100vh - 240px)" }}>
+                    {agendaDays.length===0 ? (
+                      <div style={{ padding:"40px 16px",textAlign:"center" }}>
+                        <p style={{ fontSize:34,margin:0 }}>📅</p>
+                        <p style={{ fontSize:14,fontWeight:700,color:"#475569",margin:"8px 0 0" }}>Sin actividades {calSelectedDay?"este día":"este mes"}</p>
+                        <p style={{ fontSize:12,color:"#94a3b8",margin:"4px 0 0" }}>{calTypeFilter?"Prueba quitando el filtro de tipo.":"Navega entre los meses para ver más."}</p>
                       </div>
-                    );
-                  })}
+                    ) : agendaDays.map((dayNum, di) => {
+                      const dayDate = new Date(y,m,dayNum);
+                      const isToday = dayDate.toDateString()===now.toDateString();
+                      return (
+                        <div key={dayNum} style={{ display:"flex",gap:0,borderTop: di===0?"none":"1px solid #f1f5f9" }}>
+                          {/* Chip de fecha */}
+                          <div style={{ flex:"0 0 64px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-start",padding:"14px 0",background:isToday?"#f0fdfa":"#f8fafc",borderRight:"1px solid #f1f5f9" }}>
+                            <span style={{ fontSize:10,fontWeight:800,letterSpacing:"0.08em",color:isToday?"#0e9384":"#94a3b8" }}>{fmtDow(dayDate)}</span>
+                            <span style={{ fontSize:22,fontWeight:800,color:isToday?"#0e9384":"#0f172a",lineHeight:1.1 }}>{dayNum}</span>
+                            <span style={{ fontSize:9,fontWeight:700,color:"#94a3b8" }}>{fmtMon(dayDate)}</span>
+                          </div>
+                          {/* Actividades del día */}
+                          <div style={{ flex:1,minWidth:0,display:"flex",flexDirection:"column" }}>
+                            {byDay.get(dayNum)!.sort((a,b)=>a.date.getTime()-b.date.getTime()).map((it, ii) => {
+                              const cfg = TYPE_CFG[it.type];
+                              return (
+                                <div key={it.id} style={{ display:"flex",alignItems:"center",gap:10,padding:"12px 14px",borderTop: ii===0?"none":"1px solid #f8fafc" }}>
+                                  <span style={{ flexShrink:0,fontSize:12,fontWeight:700,color:"#64748b",width:42 }}>{it.date.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})}</span>
+                                  <span style={{ flexShrink:0,width:34,height:34,borderRadius:10,background:cfg.soft,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:16 }}>{cfg.icon}</span>
+                                  <div style={{ flex:1,minWidth:0 }}>
+                                    <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{it.title}</p>
+                                    <p style={{ fontSize:11,color:"#94a3b8",margin:"1px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                                      {it.subtitle ? it.subtitle : cfg.label}{it.venue ? ` · 📍 ${it.venue}` : ""}
+                                    </p>
+                                  </div>
+                                  <span style={{ flexShrink:0,fontSize:10,fontWeight:800,padding:"3px 9px",borderRadius:99,background:cfg.soft,color:cfg.color }}>{cfg.label}</span>
+                                  {it.type==="COMPETENCIA" && (
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="#eab308" stroke="#eab308" strokeWidth="1"><polygon points="12 2 15 9 22 9.5 17 14 18.5 21 12 17.5 5.5 21 7 14 2 9.5 9 9"/></svg>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* ════ Columna lateral ════ */}
+              <div style={{ flex:"0 1 260px",minWidth:230,display:"flex",flexDirection:"column",gap:12 }}>
+                {/* Mini calendario */}
+                <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",padding:"12px" }}>
+                  <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8 }}>
+                    <button type="button" onClick={() => { setCalMonthCursor(new Date(y,m-1,1)); setCalSelectedDay(null); }} style={{ background:"none",border:"none",cursor:"pointer",padding:2 }}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
+                    </button>
+                    <span style={{ fontSize:13,fontWeight:700,color:"#0f172a",textTransform:"capitalize" }}>{monthLabel}</span>
+                    <button type="button" onClick={() => { setCalMonthCursor(new Date(y,m+1,1)); setCalSelectedDay(null); }} style={{ background:"none",border:"none",cursor:"pointer",padding:2 }}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
+                  </div>
+                  <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,textAlign:"center" }}>
+                    {["L","M","M","J","V","S","D"].map((d,i) => <div key={i} style={{ fontSize:9,fontWeight:700,color:"#94a3b8",padding:3 }}>{d}</div>)}
+                    {cells.map((day,i) => {
+                      const isSel = calSelectedDay===day;
+                      const dayItems = day ? inMonth.filter(it => it.date.getDate()===day) : [];
+                      return (
+                        <button key={i} type="button" disabled={!day} onClick={() => day && setCalSelectedDay(isSel?null:day)}
+                          style={{ padding:"5px 0",borderRadius:8,border:"none",cursor:day?"pointer":"default",fontSize:12,fontWeight:isSel?800:500,
+                            background:isSel?"#21D0B3":day?"#fff":"transparent",color:isSel?"#fff":day?"#0f172a":"transparent",position:"relative" }}>
+                          {day || ""}
+                          {day && daysWithEvents.has(day) && !isSel && (
+                            <div style={{ position:"absolute",bottom:1,left:"50%",transform:"translateX(-50%)",display:"flex",gap:1 }}>
+                              {Array.from(new Set(dayItems.map(it=>it.type))).slice(0,3).map(tp => <span key={tp} style={{ width:4,height:4,borderRadius:"50%",background:TYPE_CFG[tp].color }} />)}
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              )}
-              {calSelectedDay && selectedEvents.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:12 }}>Sin actividades este día</p>}
+
+                {/* Filtros */}
+                <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",padding:"12px 14px" }}>
+                  <p style={{ fontSize:10,fontWeight:800,letterSpacing:"0.14em",textTransform:"uppercase",color:"#94a3b8",margin:"0 0 8px" }}>Filtros</p>
+                  <label style={{ fontSize:11,fontWeight:600,color:"#64748b" }}>Tipo de evento</label>
+                  <select value={calTypeFilter} onChange={(e)=>setCalTypeFilter(e.target.value)}
+                    style={{ width:"100%",marginTop:4,padding:"7px 10px",borderRadius:8,border:"1px solid #e2e8f0",fontSize:12,color:"#0f172a",background:"#fff" }}>
+                    <option value="">Todos</option>
+                    {(Object.keys(TYPE_CFG) as CalType[]).map(tp => <option key={tp} value={tp}>{TYPE_CFG[tp].label}</option>)}
+                  </select>
+                  {discOptions.length > 0 && (
+                    <>
+                      <label style={{ fontSize:11,fontWeight:600,color:"#64748b",display:"block",marginTop:10 }}>Disciplina</label>
+                      <select value={calDiscFilter} onChange={(e)=>setCalDiscFilter(e.target.value)}
+                        style={{ width:"100%",marginTop:4,padding:"7px 10px",borderRadius:8,border:"1px solid #e2e8f0",fontSize:12,color:"#0f172a",background:"#fff" }}>
+                        <option value="">Todas las disciplinas</option>
+                        {discOptions.map(([id,name]) => <option key={id} value={id}>{name}</option>)}
+                      </select>
+                    </>
+                  )}
+                  {(calTypeFilter || calDiscFilter || calSelectedDay) && (
+                    <button type="button" onClick={()=>{ setCalTypeFilter(""); setCalDiscFilter(""); setCalSelectedDay(null); }}
+                      style={{ marginTop:10,width:"100%",fontSize:11,fontWeight:700,color:"#dc2626",background:"#fef2f2",border:"1px solid #fecaca",borderRadius:8,padding:"6px",cursor:"pointer" }}>
+                      ✕ Limpiar filtros
+                    </button>
+                  )}
+                </div>
+
+                {/* Leyenda */}
+                <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",padding:"12px 14px" }}>
+                  <p style={{ fontSize:10,fontWeight:800,letterSpacing:"0.14em",textTransform:"uppercase",color:"#94a3b8",margin:"0 0 8px" }}>Leyenda</p>
+                  <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
+                    {(Object.keys(TYPE_CFG) as CalType[]).map(tp => (
+                      <button key={tp} type="button" onClick={()=>setCalTypeFilter(calTypeFilter===tp?"":tp)}
+                        style={{ display:"flex",alignItems:"center",gap:8,background:"none",border:"none",cursor:"pointer",padding:0,opacity: calTypeFilter && calTypeFilter!==tp ? 0.4 : 1 }}>
+                        <span style={{ width:10,height:10,borderRadius:"50%",background:TYPE_CFG[tp].color }} />
+                        <span style={{ fontSize:12,fontWeight:600,color:"#334155" }}>{TYPE_CFG[tp].label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Próxima competencia */}
+                {nextComp && (
+                  <div style={{ background:"linear-gradient(135deg,#fff1f2,#ffffff)",borderRadius:14,border:"1px solid #fecdd3",padding:"14px" }}>
+                    <p style={{ fontSize:10,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:"#e11d48",margin:0 }}>Próxima competencia</p>
+                    <p style={{ fontSize:14,fontWeight:800,color:"#0f172a",margin:"6px 0 2px" }}>{nextComp.title}</p>
+                    <p style={{ fontSize:12,color:"#64748b",margin:0 }}>
+                      {nextComp.date.toLocaleDateString("es-CL",{day:"2-digit",month:"long"})} · {nextComp.date.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})}
+                    </p>
+                    {nextComp.venue && <p style={{ fontSize:12,color:"#64748b",margin:"2px 0 0" }}>📍 {nextComp.venue}</p>}
+                  </div>
+                )}
+              </div>
             </div>
           );
         })()}
@@ -1613,7 +1869,7 @@ export default function UserPortalPage() {
                     )
                   ) : (
                     <div style={{ background:"#fff",borderRadius:14,border:"1px dashed #e2e8f0",padding:"20px",textAlign:"center" }}>
-                      <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>Seleccioná un día para ver sus premiaciones</p>
+                      <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>Selecciona un día para ver sus premiaciones</p>
                     </div>
                   )}
                 </div>
@@ -1950,7 +2206,7 @@ export default function UserPortalPage() {
               visibleCouponsAvailable.length === 0 ? (
                 <div style={{ padding:24, textAlign:"center", background:"#fff", borderRadius:14, border:"1px solid #e2e8f0" }}>
                   <p style={{ fontSize:14, fontWeight:600, color:"#0f172a", margin:0 }}>No hay cupones disponibles</p>
-                  <p style={{ fontSize:12, color:"#94a3b8", margin:"6px 0 0" }}>Volvé a chequear más tarde, vamos a estar agregando beneficios durante el evento.</p>
+                  <p style={{ fontSize:12, color:"#94a3b8", margin:"6px 0 0" }}>Vuelve a chequear más tarde, vamos a estar agregando beneficios durante el evento.</p>
                 </div>
               ) : (
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))", gap:12 }}>
@@ -2059,7 +2315,7 @@ export default function UserPortalPage() {
             ) : couponClaims.length === 0 ? (
               <div style={{ padding:24, textAlign:"center", background:"#fff", borderRadius:14, border:"1px solid #e2e8f0" }}>
                 <p style={{ fontSize:14, fontWeight:600, color:"#0f172a", margin:0 }}>Todavía no reclamaste ningún cupón</p>
-                <p style={{ fontSize:12, color:"#94a3b8", margin:"6px 0 0" }}>Andá a la pestaña Disponibles y reclamá los que quieras.</p>
+                <p style={{ fontSize:12, color:"#94a3b8", margin:"6px 0 0" }}>Ve a la pestaña Disponibles y reclama los que quieras.</p>
               </div>
             ) : (
               <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
@@ -2103,7 +2359,7 @@ export default function UserPortalPage() {
                           </div>
                         </div>
                         {c.status === "CLAIMED" && (
-                          <p style={{ fontSize:11, fontWeight:600, color:"#1f4e8c", margin:"8px 0 0" }}>Tocá para mostrar el QR</p>
+                          <p style={{ fontSize:11, fontWeight:600, color:"#1f4e8c", margin:"8px 0 0" }}>Toca para mostrar el QR</p>
                         )}
                       </button>
                     </article>
@@ -2696,8 +2952,8 @@ export default function UserPortalPage() {
                 <div style={{ padding:12, borderRadius:12, background:"linear-gradient(135deg,#fff8e1 0%,#fff4d6 100%)" }}>
                   <p style={{ fontSize:12, fontWeight:700, color:"#c78c00", margin:"0 0 4px" }}>Cómo canjearlo</p>
                   <ol style={{ fontSize:12, color:"#7a5800", margin:0, paddingLeft:18, lineHeight:1.5 }}>
-                    <li>Andá al local del comercio.</li>
-                    <li>Mostrá esta pantalla con el QR.</li>
+                    <li>Ve al local del comercio.</li>
+                    <li>Muestra esta pantalla con el QR.</li>
                     <li>El comercio lo escaneará y aplicará el descuento.</li>
                   </ol>
                 </div>

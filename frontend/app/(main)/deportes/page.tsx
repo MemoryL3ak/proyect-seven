@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { useI18n } from "@/lib/i18n";
@@ -209,8 +209,9 @@ export default function DeportesPage() {
   const [pruebaModal, setPruebaModal] = useState<null | { editing?: Discipline; parentId: string }>(null);
   const [calMonthCursor, setCalMonthCursor] = useState(() => { const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); return d; });
   const [calSelectedDay, setCalSelectedDay] = useState(() => new Date());
-  const [calView, setCalView] = useState<"month" | "week" | "day" | "table">("month");
+  const [calView, setCalView] = useState<"gantt" | "month" | "week" | "day" | "table">("gantt");
   const [calDayModalOpen, setCalDayModalOpen] = useState(false);
+  const [ganttBar, setGanttBar] = useState<null | { title: string; cat: string; color: string; events: Discipline[] }>(null);
   const [calVenueFilter, setCalVenueFilter] = useState<string>("");
   const [calCategoryFilter, setCalCategoryFilter] = useState<string>("");
   const [calDisciplineFilter, setCalDisciplineFilter] = useState<string>("");
@@ -250,6 +251,26 @@ export default function DeportesPage() {
   };
 
   useEffect(() => { load(); }, []);
+
+  // Al cargar las pruebas por primera vez, posiciona el calendario en el mes
+  // de la próxima prueba (o la más cercana) para no abrir en un mes vacío.
+  const calAutoJumped = useRef(false);
+  useEffect(() => {
+    if (calAutoJumped.current) return;
+    const pruebas = disciplines.filter(
+      (d) => d.parentId && d.scheduledAt && (selectedEventId ? d.eventId === selectedEventId : true),
+    );
+    if (pruebas.length === 0) return;
+    const now = Date.now();
+    const sorted = [...pruebas].sort(
+      (a, b) => new Date(a.scheduledAt!).getTime() - new Date(b.scheduledAt!).getTime(),
+    );
+    const target = sorted.find((d) => new Date(d.scheduledAt!).getTime() >= now) || sorted[0];
+    const td = new Date(target.scheduledAt!);
+    setCalMonthCursor(new Date(td.getFullYear(), td.getMonth(), 1));
+    setCalSelectedDay(td);
+    calAutoJumped.current = true;
+  }, [disciplines, selectedEventId]);
 
   const selectedEvent = useMemo(
     () => events.find((item) => item.id === selectedEventId) || null,
@@ -1033,12 +1054,12 @@ export default function DeportesPage() {
         const selectedDayLabel = new Intl.DateTimeFormat("es-CL", { weekday: "long", day: "2-digit", month: "long" }).format(calSelectedDay);
 
         const navPrev = () => {
-          if (calView === "month") setCalMonthCursor(d => new Date(d.getFullYear(), d.getMonth() - 1, 1));
+          if (calView === "month" || calView === "gantt") setCalMonthCursor(d => new Date(d.getFullYear(), d.getMonth() - 1, 1));
           else if (calView === "week") setCalSelectedDay(d => { const x = new Date(d); x.setDate(x.getDate() - 7); return x; });
           else setCalSelectedDay(d => { const x = new Date(d); x.setDate(x.getDate() - 1); return x; });
         };
         const navNext = () => {
-          if (calView === "month") setCalMonthCursor(d => new Date(d.getFullYear(), d.getMonth() + 1, 1));
+          if (calView === "month" || calView === "gantt") setCalMonthCursor(d => new Date(d.getFullYear(), d.getMonth() + 1, 1));
           else if (calView === "week") setCalSelectedDay(d => { const x = new Date(d); x.setDate(x.getDate() + 7); return x; });
           else setCalSelectedDay(d => { const x = new Date(d); x.setDate(x.getDate() + 1); return x; });
         };
@@ -1071,7 +1092,7 @@ export default function DeportesPage() {
               <div className="flex flex-wrap items-center gap-3">
                 {/* Vista toggle */}
                 <div className="flex gap-1 p-1 rounded-xl" style={{ background: "#f1f5f9" }}>
-                  {(["month", "week", "day", "table"] as const).map(v => {
+                  {(["gantt", "month", "week", "day", "table"] as const).map(v => {
                     const active = calView === v;
                     return (
                       <button key={v} type="button" onClick={() => setCalView(v)}
@@ -1081,7 +1102,7 @@ export default function DeportesPage() {
                           color: active ? "#fff" : "#475569",
                           boxShadow: active ? "0 2px 6px rgba(33,208,179,0.35)" : "none",
                         }}>
-                        {v === "month" ? "Mes" : v === "week" ? "Semana" : v === "day" ? "Día" : "Tabla"}
+                        {v === "gantt" ? "Gantt" : v === "month" ? "Mes" : v === "week" ? "Semana" : v === "day" ? "Día" : "Tabla"}
                       </button>
                     );
                   })}
@@ -1094,7 +1115,8 @@ export default function DeportesPage() {
                 </div>
 
                 <h3 style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", textTransform: "capitalize", flex: 1 }}>
-                  {calView === "month" ? monthStr
+                  {calView === "gantt" ? monthStr
+                    : calView === "month" ? monthStr
                     : calView === "week" ? `Sem. del ${week[0].toLocaleDateString("es-CL", { day: "2-digit", month: "short" })} al ${week[6].toLocaleDateString("es-CL", { day: "2-digit", month: "short" })}`
                     : calView === "day" ? selectedDayLabel
                     : `${calendarPruebas.length} pruebas en agenda`}
@@ -1185,6 +1207,170 @@ export default function DeportesPage() {
                 </div>
               )}
             </section>
+
+            {/* ── VISTA GANTT (disciplinas en filas, días en columnas, barras por fase) */}
+            {calView === "gantt" && (() => {
+              type GCat = "CLASIFICATORIA" | "FINAL" | "TRAINING" | "CEREMONY" | "PRUEBA";
+              const GCAT: Record<GCat, { label: string; bar: string; border: string; text: string; dot: string }> = {
+                CLASIFICATORIA: { label: "Clasificatorias", bar: "#dbeafe", border: "#3b82f6", text: "#1e3a8a", dot: "#3b82f6" },
+                FINAL:          { label: "Finales",         bar: "#dcfce7", border: "#22c55e", text: "#14532d", dot: "#22c55e" },
+                TRAINING:       { label: "Entrenamientos",  bar: "#fef3c7", border: "#f59e0b", text: "#78350f", dot: "#f59e0b" },
+                CEREMONY:       { label: "Ceremonias",      bar: "#f3e8ff", border: "#a855f7", text: "#581c87", dot: "#a855f7" },
+                PRUEBA:         { label: "Pruebas",         bar: "#ccfbf1", border: "#14b8a6", text: "#115e59", dot: "#14b8a6" },
+              };
+              const classifyCat = (name?: string | null): GCat => {
+                const tx = (name || "").toLowerCase();
+                if (/final/.test(tx)) return "FINAL";
+                if (/clasif|elimin|series|semi|repechaje/.test(tx)) return "CLASIFICATORIA";
+                if (/entren|práctic|practic|reconoc|activac/.test(tx)) return "TRAINING";
+                if (/ceremon|premiac|inaugur|clausura/.test(tx)) return "CEREMONY";
+                return "PRUEBA";
+              };
+
+              // Días del mes actual como columnas
+              const gy = calMonthCursor.getFullYear(), gm = calMonthCursor.getMonth();
+              const N = new Date(gy, gm + 1, 0).getDate();
+              const days = Array.from({ length: N }, (_, i) => new Date(gy, gm, i + 1));
+              const keyOf = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+              const idxOf = new Map(days.map((d, i) => [keyOf(d), i] as const));
+
+              // Filas por disciplina (parent), solo pruebas visibles del mes
+              const DISC_PALETTE = [
+                "#dc2626", "#d97706", "#1d4ed8", "#059669", "#7c3aed", "#db2777", "#0891b2", "#65a30d",
+              ];
+              const rowMap = new Map<string, { name: string; evs: typeof calendarPruebas }>();
+              calendarPruebas.forEach(d => {
+                const local = new Date(d.scheduledAt!);
+                if (local.getFullYear() !== gy || local.getMonth() !== gm) return;
+                const pid = d.parentId || "—";
+                const pname = parentMap.get(pid) || pid;
+                if (!rowMap.has(pid)) rowMap.set(pid, { name: pname, evs: [] });
+                rowMap.get(pid)!.evs.push(d);
+              });
+
+              type Bar = { cat: GCat; start: number; span: number; lane: number; label: string; count: number; events: typeof calendarPruebas };
+              const rows = Array.from(rowMap.entries()).map(([pid, data], ri) => {
+                const byCat = new Map<GCat, Map<number, typeof calendarPruebas>>();
+                data.evs.forEach(e => {
+                  const idx = idxOf.get(keyOf(new Date(e.scheduledAt!)));
+                  if (idx === undefined) return;
+                  const cat = classifyCat(e.name);
+                  if (!byCat.has(cat)) byCat.set(cat, new Map());
+                  const m = byCat.get(cat)!;
+                  m.set(idx, [...(m.get(idx) ?? []), e]);
+                });
+                const rawBars: Array<Omit<Bar, "lane">> = [];
+                byCat.forEach((m, cat) => {
+                  const idxs = Array.from(m.keys()).sort((a, b) => a - b);
+                  let i = 0;
+                  while (i < idxs.length) {
+                    let j = i;
+                    while (j + 1 < idxs.length && idxs[j + 1] === idxs[j] + 1) j++;
+                    let count = 0;
+                    const names = new Set<string>();
+                    const evs: typeof calendarPruebas = [];
+                    for (let dd = i; dd <= j; dd++) {
+                      const list = m.get(idxs[dd]) ?? [];
+                      count += list.length;
+                      list.forEach(e => { if (e.name) names.add(e.name); evs.push(e); });
+                    }
+                    const label = names.size === 1 ? Array.from(names)[0] : GCAT[cat].label;
+                    rawBars.push({ cat, start: idxs[i], span: idxs[j] - idxs[i] + 1, label, count, events: evs });
+                    i = j + 1;
+                  }
+                });
+                rawBars.sort((a, b) => a.start - b.start || b.span - a.span);
+                const laneEnds: number[] = [];
+                const bars: Bar[] = rawBars.map(b => {
+                  let lane = laneEnds.findIndex(end => end < b.start);
+                  if (lane === -1) { lane = laneEnds.length; laneEnds.push(0); }
+                  laneEnds[lane] = b.start + b.span - 1;
+                  return { ...b, lane };
+                });
+                return { pid, name: data.name, color: DISC_PALETTE[ri % DISC_PALETTE.length], bars, lanes: Math.max(1, laneEnds.length) };
+              }).sort((a, b) => a.name.localeCompare(b.name));
+
+              const COL_MIN = 44, BAR_H = 24, LANE_GAP = 4, HEADER_H = 52, NAME_W = 200;
+              const rowH = (lanes: number) => lanes * BAR_H + (lanes - 1) * LANE_GAP + 16;
+              const todayK = keyOf(new Date());
+
+              return (
+                <section className="relative accent-strip-top animate-fade-up" style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 20, padding: 16, boxShadow: pal.cardShadow }}>
+                  {/* Leyenda */}
+                  <div className="flex flex-wrap gap-3 mb-3">
+                    {(["CLASIFICATORIA", "FINAL", "TRAINING", "CEREMONY", "PRUEBA"] as GCat[]).map(cat => (
+                      <span key={cat} className="inline-flex items-center gap-1.5" style={{ fontSize: 11, fontWeight: 500, color: "#64748b" }}>
+                        <span style={{ width: 10, height: 10, borderRadius: "50%", background: GCAT[cat].dot, display: "inline-block" }} />
+                        {GCAT[cat].label}
+                      </span>
+                    ))}
+                  </div>
+
+                  {rows.length === 0 ? (
+                    <div className="p-12 text-center rounded-2xl" style={{ background: "linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)", border: "1px dashed #e2e8f0" }}>
+                      <p style={{ fontSize: 34, margin: 0 }}>📅</p>
+                      <p className="text-sm font-semibold mt-2" style={{ color: "#475569" }}>Sin pruebas en {monthStr}</p>
+                      <p className="text-xs mt-1" style={{ color: "#94a3b8" }}>Usa ← → para cambiar de mes o carga pruebas en la pestaña Pruebas.</p>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", border: "1px solid #e2e8f0", borderRadius: 14, overflow: "hidden", background: "#fff" }}>
+                      {/* Columna de disciplinas */}
+                      <div style={{ flex: `0 0 ${NAME_W}px`, borderRight: "1px solid #e2e8f0", background: "#fff" }}>
+                        <div style={{ height: HEADER_H, display: "flex", alignItems: "center", padding: "0 14px", fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "#94a3b8", borderBottom: "1px solid #e2e8f0", background: "#f8fafc" }}>
+                          Disciplina
+                        </div>
+                        {rows.map((r, i) => (
+                          <div key={r.pid} style={{ height: rowH(r.lanes), display: "flex", alignItems: "center", gap: 8, padding: "0 12px", borderBottom: i < rows.length - 1 ? "1px solid #f1f5f9" : "none", background: i % 2 === 0 ? "#fff" : "#fafbfc" }}>
+                            <span style={{ flexShrink: 0, width: 26, height: 26, borderRadius: "50%", background: `${r.color}14`, color: r.color, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600 }}>
+                              {r.name.slice(0, 2).toUpperCase()}
+                            </span>
+                            <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: "#334155", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</span>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15 9 22 9.3 16.5 14 18.5 21 12 17 5.5 21 7.5 14 2 9.3 9 9" /></svg>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Grilla de días + barras */}
+                      <div style={{ flex: 1, overflowX: "auto" }}>
+                        <div style={{ minWidth: N * COL_MIN }}>
+                          <div style={{ height: HEADER_H, display: "grid", gridTemplateColumns: `repeat(${N}, minmax(${COL_MIN}px, 1fr))`, borderBottom: "1px solid #e2e8f0", background: "#f8fafc" }}>
+                            {days.map((d, i) => {
+                              const k = keyOf(d);
+                              const isToday = k === todayK;
+                              const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+                              return (
+                                <div key={k} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", borderLeft: i === 0 ? "none" : "1px solid #eef2f7", background: isToday ? "rgba(33,208,179,0.12)" : isWeekend ? "#f1f5f9" : "transparent" }}>
+                                  <span style={{ fontSize: 9, fontWeight: 500, letterSpacing: "0.04em", textTransform: "uppercase", color: isToday ? "#0e9384" : "#94a3b8" }}>{["DO", "LU", "MA", "MI", "JU", "VI", "SA"][d.getDay()]}</span>
+                                  <span style={{ fontSize: 13, fontWeight: 600, color: isToday ? "#0e9384" : "#334155" }}>{d.getDate()}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          {rows.map((r, ri) => {
+                            const gridLines = `repeating-linear-gradient(to right, transparent 0, transparent calc(${100 / N}% - 1px), #eef2f7 calc(${100 / N}% - 1px), #eef2f7 ${100 / N}%)`;
+                            return (
+                              <div key={r.pid} style={{ position: "relative", height: rowH(r.lanes), borderBottom: ri < rows.length - 1 ? "1px solid #f1f5f9" : "none", background: ri % 2 === 0 ? "#fff" : "#fafbfc", backgroundImage: gridLines, display: "grid", gridTemplateColumns: `repeat(${N}, minmax(${COL_MIN}px, 1fr))`, gridTemplateRows: `repeat(${r.lanes}, ${BAR_H}px)`, alignContent: "center", rowGap: LANE_GAP, padding: "8px 0" }}>
+                                {r.bars.map((bar, bi) => {
+                                  const meta = GCAT[bar.cat];
+                                  return (
+                                    <div key={bi} title={`${bar.label} · ${bar.count} prueba(s) — clic para ver detalle`}
+                                      onClick={() => setGanttBar({ title: r.name, cat: meta.label, color: meta.border, events: [...bar.events].sort((a, b) => new Date(a.scheduledAt!).getTime() - new Date(b.scheduledAt!).getTime()) })}
+                                      style={{ cursor: "pointer", gridColumn: `${bar.start + 1} / span ${bar.span}`, gridRow: bar.lane + 1, background: meta.bar, border: `1px solid ${meta.border}`, borderLeft: `3px solid ${meta.border}`, borderRadius: 7, height: BAR_H, display: "flex", alignItems: "center", gap: 4, padding: "0 8px", margin: "0 2px", overflow: "hidden", boxShadow: "0 1px 2px rgba(15,23,42,0.06)" }}>
+                                      <span style={{ fontSize: 11, fontWeight: 500, color: meta.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{bar.label}</span>
+                                      {bar.cat === "FINAL" && <span style={{ flexShrink: 0 }}>🏅</span>}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </section>
+              );
+            })()}
 
             {/* ── VISTA MES (celdas grandes con mini-cards color-coded) */}
             {calView === "month" && (
@@ -1328,7 +1514,7 @@ export default function DeportesPage() {
                   <div style={{ padding: "48px 16px", textAlign: "center" }}>
                     <p style={{ fontSize: 48, marginBottom: 8 }}>📅</p>
                     <p style={{ fontSize: 14, fontWeight: 700, color: "#475569" }}>Sin pruebas para este día</p>
-                    <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>Probá con otra fecha o sacá los filtros.</p>
+                    <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>Prueba con otra fecha o saca los filtros.</p>
                   </div>
                 ) : (
                   <div style={{ display: "grid", gridTemplateColumns: "60px 1fr", gap: 4 }}>
@@ -1544,7 +1730,7 @@ export default function DeportesPage() {
                       <div style={{ padding: "32px 16px", textAlign: "center" }}>
                         <p style={{ fontSize: 40, marginBottom: 6 }}>📅</p>
                         <p style={{ fontSize: 14, fontWeight: 700, color: "#475569" }}>Sin pruebas para este día</p>
-                        <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>Probá con otra fecha o sacá los filtros.</p>
+                        <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>Prueba con otra fecha o saca los filtros.</p>
                       </div>
                     ) : selectedItems.map((prueba) => {
                       const pal2 = venueColor(prueba.venueName);
@@ -1579,6 +1765,77 @@ export default function DeportesPage() {
                         Ver agenda del día →
                       </button>
                     )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── Modal: detalle de una barra del Gantt ── */}
+            {ganttBar && (
+              <div
+                className="animate-fade-in"
+                style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, background: "rgba(15,23,42,0.55)", backdropFilter: "blur(5px)" }}
+                onClick={() => setGanttBar(null)}
+              >
+                <div
+                  className="anim-scale-pop"
+                  onClick={(e) => e.stopPropagation()}
+                  style={{ width: "100%", maxWidth: 560, maxHeight: "88vh", display: "flex", flexDirection: "column", background: "#fff", borderRadius: 20, overflow: "hidden", boxShadow: "0 24px 60px rgba(15,23,42,0.35)" }}
+                >
+                  {/* Header */}
+                  <div style={{ position: "relative", padding: "18px 20px", background: `linear-gradient(135deg, ${ganttBar.color} 0%, ${ganttBar.color}cc 100%)`, overflow: "hidden" }}>
+                    <div className="ambient-orb" style={{ width: 160, height: 160, top: -60, right: -40, background: "radial-gradient(circle, rgba(255,255,255,0.30) 0%, transparent 65%)" }} />
+                    <div className="relative flex items-start justify-between gap-3">
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "rgba(255,255,255,0.85)" }}>{ganttBar.cat}</p>
+                        <h3 style={{ marginTop: 2, fontSize: 18, fontWeight: 700, color: "#fff", lineHeight: 1.2 }}>{ganttBar.title}</h3>
+                        <p style={{ marginTop: 4, fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,0.9)" }}>
+                          {ganttBar.events.length} {ganttBar.events.length === 1 ? "prueba" : "pruebas"}
+                        </p>
+                      </div>
+                      <button type="button" onClick={() => setGanttBar(null)} aria-label="Cerrar"
+                        style={{ flexShrink: 0, width: 32, height: 32, borderRadius: 10, border: "none", cursor: "pointer", background: "rgba(255,255,255,0.2)", color: "#fff", fontSize: 18, fontWeight: 700, lineHeight: 1 }}>
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Cuerpo */}
+                  <div className="stagger" style={{ padding: 16, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10 }}>
+                    {ganttBar.events.map((prueba) => {
+                      const pal2 = venueColor(prueba.venueName);
+                      const dt = new Date(prueba.scheduledAt!);
+                      const fecha = dt.toLocaleDateString("es-CL", { weekday: "short", day: "2-digit", month: "short" });
+                      const hora = dt.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
+                      return (
+                        <div key={prueba.id}
+                          className="cal-entry"
+                          onClick={() => { openEditPrueba(prueba); setGanttBar(null); }}
+                          style={{ background: pal2.bg, color: pal2.fg, borderLeft: `4px solid ${pal2.ring}`, borderRadius: 12, padding: "12px 14px", boxShadow: `0 2px 10px ${pal2.ring}22`, display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
+                          <div style={{ minWidth: 60, textAlign: "center" }}>
+                            <p style={{ fontSize: 11, fontWeight: 600, margin: 0, textTransform: "capitalize" }}>{fecha}</p>
+                            <p style={{ fontSize: 13, fontWeight: 700, margin: 0, fontFamily: "monospace" }}>{hora}</p>
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontSize: 13.5, fontWeight: 600, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{prueba.name}</p>
+                            <p style={{ fontSize: 11, opacity: 0.85, margin: "2px 0 0" }}>
+                              {parentMap.get(prueba.parentId!) ?? ""}{prueba.venueName ? ` · 📍 ${prueba.venueName}` : ""}
+                            </p>
+                          </div>
+                          {prueba.category && (
+                            <span style={{ flexShrink: 0, fontSize: 9, fontWeight: 700, padding: "3px 9px", borderRadius: 99, background: "rgba(255,255,255,0.55)" }}>
+                              {categoryLabel(prueba.category)}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Footer */}
+                  <div style={{ padding: "12px 16px", borderTop: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", gap: 10, background: "#f8fafc", alignItems: "center" }}>
+                    <span style={{ fontSize: 11, color: "#94a3b8" }}>Toca una prueba para editarla</span>
+                    <button type="button" className="btn btn-ghost" onClick={() => setGanttBar(null)}>Cerrar</button>
                   </div>
                 </div>
               </div>

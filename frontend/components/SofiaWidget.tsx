@@ -1214,7 +1214,8 @@ export default function SofiaWidget() {
           {/* Messages */}
           <div
             style={{
-              maxHeight: "52vh",
+              minHeight: "min(460px, 58vh)",
+              maxHeight: "72vh",
               overflowY: "auto",
               padding: "16px 18px",
               display: "flex",
@@ -1251,7 +1252,7 @@ export default function SofiaWidget() {
                   </div>
                   <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 13, lineHeight: 1.6, margin: 0 }}>
                     Consulto datos, <strong style={{ color: "#21D0B3" }}>ejecuto acciones</strong>, genero
-                    pronósticos y abro paneles en tiempo real. Probá:
+                    pronósticos y abro paneles en tiempo real. Prueba:
                   </p>
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 12 }}>

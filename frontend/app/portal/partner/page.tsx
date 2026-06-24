@@ -28,7 +28,7 @@ export default function PartnerLoginPage() {
 
   const submit = async () => {
     if (!code.trim() || !pin.trim()) {
-      setError("Ingresá código y PIN");
+      setError("Ingresa código y PIN");
       return;
     }
     setError(null);

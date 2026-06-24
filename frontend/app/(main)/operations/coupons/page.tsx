@@ -327,7 +327,7 @@ function CatalogTab({
         <EmptyStateBox
           icon={<TicketIcon size={36} />}
           title="No hay cupones cargados"
-          description="Creá el primer cupón para que aparezca en la app de tus atletas, VIPs y staff."
+          description="Crea el primer cupón para que aparezca en la app de tus atletas, VIPs y staff."
           action={
             <button className="btn btn-primary" type="button" onClick={() => openModal()}>
               <PlusIcon size={16} className="inline-block mr-1" />
@@ -604,7 +604,7 @@ function PartnersTab({
         <EmptyStateBox
           icon={<UsersIcon size={36} />}
           title="No hay partners cargados"
-          description="Creá el primer comercio para habilitarle el acceso al scanner de QR."
+          description="Crea el primer comercio para habilitarle el acceso al scanner de QR."
           action={
             <button className="btn btn-primary" type="button" onClick={() => openModal()}>
               <PlusIcon size={16} className="inline-block mr-1" />

@@ -520,7 +520,7 @@ function IdleScreen({ onScan, onManual }: { onScan: () => void; onManual: () => 
             Validar cupón
           </h2>
           <p className="text-sm mt-2 max-w-xs mx-auto" style={{ color: "#5e6b7a" }}>
-            Escaneá el QR del atleta con la cámara o ingresá el código manualmente.
+            Escanea el QR del atleta con la cámara o ingresa el código manualmente.
           </p>
         </div>
 
@@ -626,7 +626,7 @@ function ScannerScreen({
           className="text-xs font-medium underline"
           style={{ color: TEAL }}
           onClick={onManual}>
-          ¿El QR no escanea? Ingresá el código a mano
+          ¿El QR no escanea? Ingresa el código a mano
         </button>
       </div>
     </div>

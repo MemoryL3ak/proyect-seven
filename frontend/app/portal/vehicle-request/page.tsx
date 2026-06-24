@@ -1957,7 +1957,7 @@ export default function VehicleRequestPortalPage() {
                           </div>
                         ) : (
                           <div style={{ display:"flex",alignItems:"center",gap:8,flexWrap:"wrap" }}>
-                            <span style={{ fontSize:10,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:"#a87800" }}>Confirmá tu asistencia</span>
+                            <span style={{ fontSize:10,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:"#a87800" }}>Confirma tu asistencia</span>
                             <div style={{ display:"flex",gap:6,marginLeft:"auto" }}>
                               <button type="button" onClick={() => confirmAwarder(p.id, a.id, "CONFIRM")}
                                 style={{ padding:"7px 14px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#10b981 0%,#059669 100%)",color:"#fff",fontSize:11.5,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 8px rgba(16,185,129,0.3)",display:"inline-flex",alignItems:"center",gap:5 }}>
@@ -2197,7 +2197,7 @@ export default function VehicleRequestPortalPage() {
                             )
                           ) : (
                             <div style={{ background:"#fff",borderRadius:14,border:"1px dashed #e2e8f0",padding:"20px",textAlign:"center" }}>
-                              <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>Seleccioná un día para ver tus premiaciones</p>
+                              <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>Selecciona un día para ver tus premiaciones</p>
                             </div>
                           )}
                         </div>
@@ -2275,7 +2275,7 @@ export default function VehicleRequestPortalPage() {
                     <div style={{ padding:24,textAlign:"center",background:"#fff",borderRadius:14,border:"1px solid #e2e8f0" }}>
                       <p style={{ fontSize:32,margin:"0 0 8px" }}>🎟️</p>
                       <p style={{ fontSize:14,fontWeight:600,color:"#0f172a",margin:0 }}>No hay cupones disponibles</p>
-                      <p style={{ fontSize:12,color:"#94a3b8",margin:"6px 0 0" }}>Volvé a chequear más tarde, vamos a estar agregando beneficios.</p>
+                      <p style={{ fontSize:12,color:"#94a3b8",margin:"6px 0 0" }}>Vuelve a chequear más tarde, vamos a estar agregando beneficios.</p>
                     </div>
                   ) : (
                     <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:12 }}>
@@ -2368,7 +2368,7 @@ export default function VehicleRequestPortalPage() {
                   <div style={{ padding:24,textAlign:"center",background:"#fff",borderRadius:14,border:"1px solid #e2e8f0" }}>
                     <p style={{ fontSize:32,margin:"0 0 8px" }}>🎟️</p>
                     <p style={{ fontSize:14,fontWeight:600,color:"#0f172a",margin:0 }}>Todavía no reclamaste ningún cupón</p>
-                    <p style={{ fontSize:12,color:"#94a3b8",margin:"6px 0 0" }}>Andá a la pestaña Disponibles y reclamá los que quieras.</p>
+                    <p style={{ fontSize:12,color:"#94a3b8",margin:"6px 0 0" }}>Ve a la pestaña Disponibles y reclama los que quieras.</p>
                   </div>
                 ) : (
                   <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
@@ -2412,7 +2412,7 @@ export default function VehicleRequestPortalPage() {
                               </div>
                             </div>
                             {c.status === "CLAIMED" && (
-                              <p style={{ fontSize:11,fontWeight:600,color:"#1f4e8c",margin:"8px 0 0" }}>Tocá para mostrar el QR</p>
+                              <p style={{ fontSize:11,fontWeight:600,color:"#1f4e8c",margin:"8px 0 0" }}>Toca para mostrar el QR</p>
                             )}
                           </button>
                         </article>
@@ -3049,8 +3049,8 @@ export default function VehicleRequestPortalPage() {
               <div style={{ padding:12,borderRadius:12,background:"linear-gradient(135deg,#fff8e1 0%,#fff4d6 100%)" }}>
                 <p style={{ fontSize:12,fontWeight:700,color:"#c78c00",margin:"0 0 4px" }}>Cómo canjearlo</p>
                 <ol style={{ fontSize:12,color:"#7a5800",margin:0,paddingLeft:18,lineHeight:1.5 }}>
-                  <li>Andá al local del comercio.</li>
-                  <li>Mostrá esta pantalla con el QR.</li>
+                  <li>Ve al local del comercio.</li>
+                  <li>Muestra esta pantalla con el QR.</li>
                   <li>El comercio lo escaneará y aplicará el descuento.</li>
                 </ol>
               </div>

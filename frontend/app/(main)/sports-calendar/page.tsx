@@ -922,7 +922,7 @@ export default function SportsCalendarPage() {
     <div className="space-y-5 min-w-0 overflow-x-hidden">
       <PageHeader
         title="Calendario Deportivo"
-        description="Programación de llegadas, entrenamientos, pruebas y retiros. Filtrá por tipo, sede, delegación o disciplina."
+        description="Programación de llegadas, entrenamientos, pruebas y retiros. Filtra por tipo, sede, delegación o disciplina."
         icon={<CalendarIcon size={26} />}
         iconBg="linear-gradient(135deg, #1FCDFF 0%, #1f4e8c 100%)"
         accentStrip="teal"
@@ -1487,7 +1487,7 @@ export default function SportsCalendarPage() {
                   <div className="p-12 text-center rounded-2xl" style={{ background: "linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)", border: "1px dashed #e2e8f0" }}>
                     <CalendarIcon size={36} color="#cbd5e1" />
                     <p className="text-sm font-semibold mt-3" style={{ color: "#475569" }}>Sin actividades para mostrar</p>
-                    <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Ajustá los filtros o cargá actividades en el calendario.</p>
+                    <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Ajusta los filtros o carga actividades en el calendario.</p>
                   </div>
                 ) : (
                   <div style={{ display: "flex", border: "1px solid #e2e8f0", borderRadius: 14, overflow: "hidden", background: "#fff" }}>

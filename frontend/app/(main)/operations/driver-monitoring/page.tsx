@@ -401,7 +401,7 @@ export default function DriverMonitoringPage() {
             No hay conductores que coincidan con los filtros
           </p>
           <p style={{ fontSize: 12, color: "#94a3b8", margin: "6px 0 0" }}>
-            Probá quitar algún filtro o cambiar los criterios de búsqueda.
+            Prueba quitar algún filtro o cambiar los criterios de búsqueda.
           </p>
         </section>
       ) : (

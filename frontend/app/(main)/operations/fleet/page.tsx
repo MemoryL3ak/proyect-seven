@@ -148,7 +148,7 @@ export default function FleetAvailabilityPage() {
     <div className="min-w-0 space-y-5 overflow-x-hidden">
       <PageHeader
         title="Flota"
-        description="Conductores y vehículos. Registrá nuevos o mirá la disponibilidad en tiempo real para asignar viajes."
+        description="Conductores y vehículos. Registra nuevos o mira la disponibilidad en tiempo real para asignar viajes."
         icon={<TruckIcon size={26} />}
         iconBg="linear-gradient(135deg, #21D0B3 0%, #1f4e8c 100%)"
         accentStrip="teal"
@@ -483,14 +483,14 @@ function CrudSection({
             className="btn btn-primary text-sm"
             onClick={() => setModalOpen(true)}
             disabled={noEventSelected}
-            title={noEventSelected ? "Seleccioná un evento primero" : ""}
+            title={noEventSelected ? "Selecciona un evento primero" : ""}
           >
             + {section === "drivers" ? "Nuevo conductor" : "Nuevo vehículo"}
           </button>
         </div>
         {noEventSelected && (
           <p className="text-xs mt-2" style={{ color: "var(--text-muted)" }}>
-            Seleccioná un evento para poder registrar nuevos {section === "drivers" ? "conductores" : "vehículos"}.
+            Selecciona un evento para poder registrar nuevos {section === "drivers" ? "conductores" : "vehículos"}.
           </p>
         )}
         {error && (
@@ -953,7 +953,7 @@ function DriverColumn({ drivers, filter, setFilter, counts }: {
         {drivers.length === 0 ? (
           <div className="p-8 text-center">
             <p className="text-sm font-semibold" style={{ color: "#475569" }}>Sin conductores</p>
-            <p className="text-xs mt-1" style={{ color: "#94a3b8" }}>Probá quitando filtros</p>
+            <p className="text-xs mt-1" style={{ color: "#94a3b8" }}>Prueba quitando filtros</p>
           </div>
         ) : drivers.map(d => {
           const meta = DRIVER_AVAILABILITY_META[d.availability];
@@ -1044,7 +1044,7 @@ function VehicleColumn({ vehicles, filter, setFilter, counts }: {
         {vehicles.length === 0 ? (
           <div className="p-8 text-center">
             <p className="text-sm font-semibold" style={{ color: "#475569" }}>Sin vehículos</p>
-            <p className="text-xs mt-1" style={{ color: "#94a3b8" }}>Probá quitando filtros</p>
+            <p className="text-xs mt-1" style={{ color: "#94a3b8" }}>Prueba quitando filtros</p>
           </div>
         ) : vehicles.map(v => {
           const meta = VEHICLE_AVAILABILITY_META[v.availability];

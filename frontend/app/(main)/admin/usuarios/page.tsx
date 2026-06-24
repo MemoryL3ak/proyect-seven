@@ -1191,7 +1191,7 @@ export default function UsuariosPage() {
                   </div>
                   <p style={{ fontSize: "11.5px", color: pal.mTextFaint, margin: "6px 0 0" }}>
                     {editingUser
-                      ? "Generá una nueva contraseña y compartila con el usuario."
+                      ? "Genera una nueva contraseña y compártela con el usuario."
                       : "Esta contraseña temporal debe ser cambiada en el primer inicio de sesión."}
                   </p>
               </div>

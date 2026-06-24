@@ -20,6 +20,7 @@ export default function TopBar({ onMenuOpen }: { onMenuOpen?: () => void }) {
   const labelMap: Record<string, string> = {
     dashboard: "Dashboard",
     comercial: "Dashboard Comercial",
+    commercial: "Dashboard Comercial",
     operacional: "Dashboard Operacional",
     registro: "Registro",
     inscripcion: "Inscripción",

@@ -407,7 +407,7 @@ export default function DailyTransportPage() {
     <div className="min-w-0 space-y-6 overflow-x-hidden">
       <PageHeader
         title="Operatividad diaria — Transporte"
-        description="Importá horarios desde planilla, auto-asigná conductores respetando restricciones, y revisá el día operativo completo."
+        description="Importa horarios desde planilla, auto-asigna conductores respetando restricciones, y revisa el día operativo completo."
         icon={<TruckIcon size={24} />}
         meta={
           <div className="flex items-center gap-2">
@@ -487,7 +487,7 @@ export default function DailyTransportPage() {
                 ? "Importando…"
                 : rows.length > 0
                   ? `Importar ${rows.length} fila(s)`
-                  : "Seleccioná un archivo primero"}
+                  : "Selecciona un archivo primero"}
             </button>
           </div>
           {rows.length > 0 && (
@@ -703,7 +703,7 @@ export default function DailyTransportPage() {
             <EmptyStateBox
               icon={<CalendarIcon size={36} />}
               title="No hay viajes para esta fecha"
-              description="Cambiá de fecha o importá una planilla en la pestaña anterior para ver los viajes operativos del día."
+              description="Cambia de fecha o importa una planilla en la pestaña anterior para ver los viajes operativos del día."
               action={
                 <button className="btn btn-primary" type="button" onClick={() => setTab("import")}>
                   <UploadIcon size={14} className="inline-block mr-1" />

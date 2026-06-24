@@ -283,7 +283,7 @@ export default function WorkforcePage() {
                   {dashboard.deliveries.pending} entrega(s) pendientes de validación
                 </p>
                 <p className="text-xs mt-0.5" style={{ color: "#7a4a00" }}>
-                  Andá a la pestaña <strong>Entregas</strong> para revisarlas.
+                  Ve a la pestaña <strong>Entregas</strong> para revisarlas.
                 </p>
               </div>
             </section>
@@ -301,7 +301,7 @@ export default function WorkforcePage() {
             label="Personas registradas"
             sub={persons.length > 0
               ? `${persons.length} ${persons.length === 1 ? "persona" : "personas"} · ${persons.filter(p => p.personType === "STAFF").length} staff · ${persons.filter(p => p.personType === "VOLUNTEER").length} voluntarios`
-              : "Cargá la primera persona del equipo"}
+              : "Carga la primera persona del equipo"}
             action={
               <button className="btn btn-primary" type="button" onClick={() => setModal({ type: "person", data: {} })}>
                 <PlusIcon size={15} className="inline-block mr-1.5 -mt-0.5" />
@@ -442,7 +442,7 @@ export default function WorkforcePage() {
             label="Catálogo de productos"
             sub={products.length > 0
               ? `${products.length} ${products.length === 1 ? "producto" : "productos"} · stock total ${products.reduce((s, p) => s + (p.stockQuantity || 0), 0)} unidades · ${products.filter(p => !!p.barcode).length} con código`
-              : "Definí qué se entrega en el kit"}
+              : "Define qué se entrega en el kit"}
             action={
               <div className="inline-flex items-center gap-2 flex-wrap">
                 {products.some((p) => !!p.barcode) && (
@@ -476,7 +476,7 @@ export default function WorkforcePage() {
             <EmptyStateBox
               icon={<PackageIcon size={36} />}
               title="Sin productos en el catálogo"
-              description="Cargá los productos del kit que se entregan al staff (polera, polerón, pantalón, etc.). Cada uno con su costo, tallas y código de barras."
+              description="Carga los productos del kit que se entregan al staff (polera, polerón, pantalón, etc.). Cada uno con su costo, tallas y código de barras."
               variant="warning"
               action={
                 <button className="btn btn-primary" type="button"
@@ -639,7 +639,7 @@ export default function WorkforcePage() {
             label="Registro de entregas"
             sub={deliveries.length > 0
               ? `${deliveries.length} entregas · ${deliveries.filter((d) => d.validatedAt).length} validadas · ${deliveries.filter((d) => !d.validatedAt).length} pendientes`
-              : "Registrá cuando una persona recibe productos del kit"}
+              : "Registra cuando una persona recibe productos del kit"}
             action={
               <button className="btn btn-primary" type="button"
                 onClick={() => setModal({ type: "delivery", data: { quantity: 1 } })}>
@@ -1197,7 +1197,7 @@ function printBarcodeLabels(items: Array<{ name: string; barcode: string; catego
 
   const win = window.open("", "_blank", "width=900,height=700");
   if (!win) {
-    alert("No se pudo abrir la ventana de impresión. Habilitá los pop-ups y volvé a intentar.");
+    alert("No se pudo abrir la ventana de impresión. Habilita los pop-ups y vuelve a intentar.");
     return;
   }
   win.document.open();
