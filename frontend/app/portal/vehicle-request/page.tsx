@@ -99,7 +99,10 @@ type Accommodation = {
 type EventItem = { id: string; name?: string | null };
 type DelegationItem = { id: string; countryCode?: string | null };
 type AccessRequestResponse = { message?: string };
-type PortalTab = "solicitud" | "actividades" | "premiaciones" | "cupones" | "sedes" | "hoteles" | "calendario" | "cuenta";
+type PortalTab = "solicitud" | "actividades" | "premiaciones" | "cupones" | "sedes" | "hoteles" | "alimentacion" | "calendario" | "cuenta";
+
+type FoodLocation = { id: string; accommodationId?: string | null; name: string; description?: string | null; capacity?: number | null; clientTypes?: string[] };
+type FoodMenu = { id: string; date: string; mealType: string; title: string; description?: string | null; dietaryType?: string | null; accommodationId?: string | null };
 
 type Coupon = {
   id: string;
@@ -343,6 +346,8 @@ export default function VehicleRequestPortalPage() {
   const [events, setEvents] = useState<Record<string, EventItem>>({});
   const [delegations, setDelegations] = useState<Record<string, DelegationItem>>({});
   const [venues, setVenues] = useState<Venue[]>([]);
+  const [foodLocations, setFoodLocations] = useState<FoodLocation[]>([]);
+  const [foodMenus, setFoodMenus] = useState<FoodMenu[]>([]);
   const [trips, setTrips] = useState<Trip[]>([]);
   const [drivers, setDrivers] = useState<Record<string, Driver>>({});
   const [vehicles, setVehicles] = useState<Record<string, Vehicle>>({});
@@ -400,7 +405,7 @@ export default function VehicleRequestPortalPage() {
   const [calSelectedDay, setCalSelectedDay] = useState<number | null>(null);
 
   const loadPortal = async (matchedAthlete: Athlete) => {
-    const [tripData, venueData, driverData, vehicleData, eventData, delegationData, accommodationData] = await Promise.all([
+    const [tripData, venueData, driverData, vehicleData, eventData, delegationData, accommodationData, foodLocData, foodMenuData] = await Promise.all([
       apiFetch<Trip[]>("/trips"),
       apiFetch<Venue[]>("/venues"),
       apiFetch<Driver[]>("/drivers"),
@@ -408,7 +413,12 @@ export default function VehicleRequestPortalPage() {
       apiFetch<EventItem[]>("/events"),
       apiFetch<DelegationItem[]>("/delegations"),
       apiFetch<Accommodation[]>("/accommodations").catch(() => [] as Accommodation[]),
+      apiFetch<FoodLocation[]>("/food-locations").catch(() => [] as FoodLocation[]),
+      apiFetch<FoodMenu[]>("/food-menus").catch(() => [] as FoodMenu[]),
     ]);
+    // Alimentación visible para todos — sin filtrar por clientType
+    setFoodLocations(foodLocData || []);
+    setFoodMenus(foodMenuData || []);
 
     setTrips(
       (tripData || [])
@@ -558,6 +568,22 @@ export default function VehicleRequestPortalPage() {
 
   const logout = () => {
     try { sessionStorage.removeItem("portal_vr_id"); } catch {}
+    setAthlete(null);
+    setTrips([]);
+    setVenues([]);
+    setFoodLocations([]);
+    setFoodMenus([]);
+    setDrivers({});
+    setVehicles({});
+    setAccommodations([]);
+    setSelectedVenueId("");
+    setRequestedTime("");
+    setPassengerCount("1");
+    setNotes("");
+    setEditingTripId(null);
+    setMessage(null);
+    setError(null);
+    setUserCode("");
     mobileAwareLogout();
   };
 
@@ -2537,6 +2563,135 @@ export default function VehicleRequestPortalPage() {
               </div>
             )}
 
+            {/* ═══════════════════ ALIMENTACIÓN TAB ═══════════════════ */}
+            {activeTab === "alimentacion" && (
+              <div style={{ display:"flex",flexDirection:"column",gap:14 }}>
+                {/* Today's menu */}
+                {(() => {
+                  const today = new Date().toISOString().slice(0,10);
+                  const todayMenus = foodMenus.filter(fm => fm.date === today);
+                  const mealOrder = ["DESAYUNO","ALMUERZO","CENA","ONCE"];
+                  const sorted = todayMenus.sort((a,b) => mealOrder.indexOf(a.mealType) - mealOrder.indexOf(b.mealType));
+                  const mealStyle = (type: string) => {
+                    if (type === "DESAYUNO") return { bg:"#FEF3C7", color:"#92400E", border:"#FDE68A", icon:"☀️", label:"Desayuno" };
+                    if (type === "ALMUERZO") return { bg:"#DBEAFE", color:"#1E40AF", border:"#BFDBFE", icon:"🍽️", label:"Almuerzo" };
+                    if (type === "CENA") return { bg:"#E0E7FF", color:"#3730A3", border:"#C7D2FE", icon:"🌙", label:"Cena" };
+                    return { bg:"#F1F5F9", color:"#475569", border:"#E2E8F0", icon:"🍴", label:type };
+                  };
+                  return (
+                    <div style={{ background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)" }}>
+                      <div style={{ padding:"14px 16px",background:"linear-gradient(135deg,rgba(33,208,179,0.08),rgba(33,208,179,0.02))",borderBottom:"1px solid #e2e8f0",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+                        <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+                          <div style={{ width:32,height:32,borderRadius:10,background:"rgba(33,208,179,0.12)",display:"flex",alignItems:"center",justifyContent:"center" }}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+                          </div>
+                          <div>
+                            <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>Menú de hoy</p>
+                            <p style={{ fontSize:11,color:"#64748b",margin:0,textTransform:"capitalize" }}>{new Date().toLocaleDateString("es-CL",{weekday:"long",day:"numeric",month:"long"})}</p>
+                          </div>
+                        </div>
+                      </div>
+                      {sorted.length > 0 ? sorted.map((fm, i) => {
+                        const m = mealStyle(fm.mealType);
+                        return (
+                          <div key={fm.id} style={{ padding:"14px 16px",borderTop:i>0?"1px solid #f1f5f9":"none",display:"flex",gap:12,alignItems:"flex-start" }}>
+                            <div style={{ width:40,height:40,borderRadius:10,background:m.bg,border:`1px solid ${m.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0 }}>{m.icon}</div>
+                            <div style={{ flex:1,minWidth:0 }}>
+                              <div style={{ display:"flex",alignItems:"center",gap:6,flexWrap:"wrap" }}>
+                                <span style={{ fontSize:10,fontWeight:800,padding:"2px 8px",borderRadius:6,textTransform:"uppercase",letterSpacing:"0.05em",background:m.bg,color:m.color }}>{m.label}</span>
+                                {fm.dietaryType && fm.dietaryType !== "ESTANDAR" && (
+                                  <span style={{ fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:6,background:"#f0fdf4",color:"#166534",border:"1px solid #bbf7d0" }}>{fm.dietaryType}</span>
+                                )}
+                              </div>
+                              <p style={{ fontSize:15,fontWeight:700,color:"#0f172a",margin:"5px 0 0" }}>{fm.title}</p>
+                              {fm.description && <p style={{ fontSize:12,color:"#64748b",margin:"3px 0 0",lineHeight:1.4 }}>{fm.description}</p>}
+                            </div>
+                          </div>
+                        );
+                      }) : (
+                        <div style={{ padding:20,textAlign:"center" }}>
+                          <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>No hay menú programado para hoy</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* Tomorrow's menu */}
+                {(() => {
+                  const tomorrow = new Date();
+                  tomorrow.setDate(tomorrow.getDate() + 1);
+                  const tKey = tomorrow.toISOString().slice(0,10);
+                  const tMenus = foodMenus.filter(fm => fm.date === tKey);
+                  const mealOrder = ["DESAYUNO","ALMUERZO","CENA","ONCE"];
+                  const sorted = tMenus.sort((a,b) => mealOrder.indexOf(a.mealType) - mealOrder.indexOf(b.mealType));
+                  const mealStyle = (type: string) => {
+                    if (type === "DESAYUNO") return { bg:"#FEF3C7", color:"#92400E", border:"#FDE68A", icon:"☀️", label:"Desayuno" };
+                    if (type === "ALMUERZO") return { bg:"#DBEAFE", color:"#1E40AF", border:"#BFDBFE", icon:"🍽️", label:"Almuerzo" };
+                    if (type === "CENA") return { bg:"#E0E7FF", color:"#3730A3", border:"#C7D2FE", icon:"🌙", label:"Cena" };
+                    return { bg:"#F1F5F9", color:"#475569", border:"#E2E8F0", icon:"🍴", label:type };
+                  };
+                  return (
+                    <div style={{ background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)",opacity:0.85 }}>
+                      <div style={{ padding:"12px 16px",background:"#f8fafc",borderBottom:"1px solid #e2e8f0",display:"flex",alignItems:"center",gap:8 }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        <div>
+                          <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0 }}>Menú de mañana</p>
+                          <p style={{ fontSize:11,color:"#94a3b8",margin:0,textTransform:"capitalize" }}>{tomorrow.toLocaleDateString("es-CL",{weekday:"long",day:"numeric",month:"long"})}</p>
+                        </div>
+                      </div>
+                      {sorted.length > 0 ? sorted.map((fm, i) => {
+                        const m = mealStyle(fm.mealType);
+                        return (
+                          <div key={fm.id} style={{ padding:"12px 16px",borderTop:i>0?"1px solid #f1f5f9":"none",display:"flex",gap:12,alignItems:"flex-start" }}>
+                            <div style={{ width:36,height:36,borderRadius:8,background:m.bg,border:`1px solid ${m.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0 }}>{m.icon}</div>
+                            <div style={{ flex:1,minWidth:0 }}>
+                              <span style={{ fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:6,textTransform:"uppercase",letterSpacing:"0.05em",background:m.bg,color:m.color }}>{m.label}</span>
+                              <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:"4px 0 0" }}>{fm.title}</p>
+                              {fm.description && <p style={{ fontSize:12,color:"#64748b",margin:"2px 0 0",lineHeight:1.4 }}>{fm.description}</p>}
+                            </div>
+                          </div>
+                        );
+                      }) : (
+                        <div style={{ padding:16,textAlign:"center" }}>
+                          <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>Menú pendiente de programar</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* Food locations */}
+                {foodLocations.length > 0 ? (
+                  <div style={{ background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)" }}>
+                    <div style={{ padding:"14px 16px",background:"linear-gradient(135deg,rgba(33,208,179,0.06),rgba(31,205,255,0.04))",borderBottom:"1px solid #e2e8f0" }}>
+                      <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0 }}>Lugares de comida</p>
+                      </div>
+                    </div>
+                    {foodLocations.map((fl, i) => (
+                      <div key={fl.id} style={{ padding:"12px 16px",borderTop:i>0?"1px solid #f1f5f9":"none",display:"flex",alignItems:"center",gap:12 }}>
+                        <div style={{ width:36,height:36,borderRadius:10,background:"rgba(33,208,179,0.08)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+                        </div>
+                        <div style={{ flex:1,minWidth:0 }}>
+                          <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>{fl.name}</p>
+                          {fl.description && <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0",lineHeight:1.3 }}>{fl.description}</p>}
+                        </div>
+                        {fl.capacity && <span style={{ fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:8,background:"#f1f5f9",color:"#475569",flexShrink:0 }}>{fl.capacity} pax</span>}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ background:"#fff",borderRadius:16,border:"1px dashed #e2e8f0",padding:24,textAlign:"center" }}>
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round" style={{ margin:"0 auto 8px" }}><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+                    <p style={{ fontSize:13,fontWeight:600,color:"#94a3b8",margin:0 }}>No hay lugares de comida cargados</p>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* ═══════════════════ CALENDARIO TAB ═══════════════════ */}
             {activeTab === "calendario" && (
               <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
@@ -2741,6 +2896,7 @@ export default function VehicleRequestPortalPage() {
               { key: "cupones" as PortalTab, label: "Cupones", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v2a3 3 0 010 6v2a2 2 0 002 2h14a2 2 0 002-2v-2a3 3 0 010-6V7a2 2 0 00-2-2H5a2 2 0 00-2 2z"/><line x1="13" y1="5" x2="13" y2="7"/><line x1="13" y1="11" x2="13" y2="13"/><line x1="13" y1="17" x2="13" y2="19"/></svg> },
               { key: "sedes" as PortalTab, label: "Sedes", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> },
               { key: "hoteles" as PortalTab, label: "Hoteles", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 22V8l9-6 9 6v14"/><path d="M9 22V12h6v10"/></svg> },
+              { key: "alimentacion" as PortalTab, label: "Comida", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg> },
               { key: "calendario" as PortalTab, label: "Calendario", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> },
               { key: "cuenta" as PortalTab, label: "Cuenta", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
             ]).map(tab => (

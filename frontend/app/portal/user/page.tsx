@@ -461,12 +461,8 @@ export default function UserPortalPage() {
         ]);
         setVenues((venueData || []).filter(v => !data.eventId || v.eventId === data.eventId));
         setAllAccommodations(accomData || []);
-        const athleteClientType = data.userType || "";
-        setFoodLocations(
-          (foodLocData || []).filter(fl =>
-            !fl.clientTypes || fl.clientTypes.length === 0 || fl.clientTypes.includes(athleteClientType)
-          ),
-        );
+        // Alimentación visible para todos — sin filtrar por clientType
+        setFoodLocations(foodLocData || []);
         setFoodMenus(foodMenuData || []);
       } catch { /* ignore */ }
 
@@ -1870,7 +1866,7 @@ export default function UserPortalPage() {
                 <div style={{ padding:"14px 16px",background:"linear-gradient(135deg,rgba(33,208,179,0.06),rgba(31,205,255,0.04))",borderBottom:"1px solid #e2e8f0" }}>
                   <div style={{ display:"flex",alignItems:"center",gap:8 }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                    <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0 }}>Tus lugares de comida</p>
+                    <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0 }}>Lugares de comida</p>
                   </div>
                 </div>
                 {foodLocations.map((fl, i) => (
