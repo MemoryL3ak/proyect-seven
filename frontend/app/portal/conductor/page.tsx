@@ -10,7 +10,7 @@ import NotificationBell, { useNotifications } from "@/components/NotificationBel
 import TripChat from "@/components/TripChat";
 import AssistanceChat from "@/components/AssistanceChat";
 import DevicePermissionsSection from "@/components/DevicePermissionsSection";
-import TrackingToggle from "@/components/TrackingToggle";
+import { isAvailable as isNativeAvailable, request as nativeRequest } from "@/lib/native-bridge";
 import PushTokenSync from "@/components/PushTokenSync";
 import QRCode from "qrcode";
 import { buildCredentialHtml } from "@/lib/credential-template";
@@ -495,6 +495,26 @@ export default function DriverPortalPage() {
   const getTripById = (tripId: string | null) =>
     tripId ? trips.find((trip) => trip.id === tripId) ?? null : null;
 
+  // App-open tracking: inside the mobile app, make sure the native background
+  // tracker is running for this driver as soon as they reach the portal — this
+  // replaces the old manual toggle. The driver then transmits the whole time
+  // the app is open, which is what the driver-monitoring panel needs. We never
+  // stop it here (the native shell stops it on logout), and we don't gate it on
+  // trips. Permissions already granted won't re-prompt on later mounts. Pure-web
+  // drivers (no native shell) fall back to the browser-geolocation effect below
+  // during active trips.
+  const trackingArmedRef = useRef(false);
+  useEffect(() => {
+    if (!isNativeAvailable()) return;
+    const driverId = driverProfile?.id;
+    if (!driverId || trackingArmedRef.current) return;
+    trackingArmedRef.current = true;
+    nativeRequest("tracking.start", { driverId }, { timeoutMs: 30_000 }).catch(() => {
+      // Let a later render retry (e.g. after the driver grants permission).
+      trackingArmedRef.current = false;
+    });
+  }, [driverProfile?.id]);
+
   // Wake Lock: keep screen awake while tracking (prevents browser suspension)
   useEffect(() => {
     if (!trackingTripId) return;
@@ -526,9 +546,13 @@ export default function DriverPortalPage() {
     };
   }, [trackingTripId]);
 
-  // GPS tracking: send position every 5s + watchPosition + visibility resume
+  // GPS tracking: send position every 5s + watchPosition + visibility resume.
+  // Inside the mobile app the native shell tracks continuously (from login), so
+  // we skip this browser path there to avoid duplicate points. It only runs for
+  // pure-web drivers, keeping their active trip covered.
   useEffect(() => {
     if (!trackingTripId) return;
+    if (isNativeAvailable()) return;
     const trip = getTripById(trackingTripId);
     if (!trip) return;
 
@@ -1842,8 +1866,8 @@ export default function DriverPortalPage() {
                   </div>
                 </div>
 
-                {/* Manual GPS tracking toggle (only visible inside the mobile app) */}
-                <TrackingToggle driverId={driverProfile?.id ?? null} />
+                {/* El tracking ya no se activa manualmente: la app lo arranca
+                    sola al iniciar sesión y transmite mientras esté abierta. */}
 
                 {/* Device permissions (only visible inside the mobile app) */}
                 <DevicePermissionsSection />
