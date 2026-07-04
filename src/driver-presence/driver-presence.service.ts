@@ -92,15 +92,22 @@ export class DriverPresenceService {
          d.id            as driver_id,
          d.full_name     as full_name,
          d.status        as driver_status,
-         d.event_id      as event_id,
+         g.event_id      as event_id,
          d.phone         as phone,
          s.started_at    as session_started_at,
          s.last_seen_at  as last_seen_at,
          s.heartbeats    as heartbeats,
          s.platform      as platform,
          s.app_version   as app_version,
-         (s.last_seen_at is not null and s.ended_at is null
-          and s.last_seen_at > now() - interval '${ONLINE_WINDOW}') as online,
+         -- "Online" if a recent heartbeat OR a recent GPS fix. Drivers keyed in
+         -- core.provider_participants transmit position without a driver_session
+         -- row, so GPS freshness alone must count as connected.
+         (
+           (s.last_seen_at is not null and s.ended_at is null
+            and s.last_seen_at > now() - interval '${ONLINE_WINDOW}')
+           or (g.timestamp is not null
+            and g.timestamp > now() - interval '${ONLINE_WINDOW}')
+         ) as online,
          extract(epoch from (now() - s.last_seen_at))::int as seconds_since_seen,
          (select count(*)::int from transport.trips t
             where t.driver_id = d.id
@@ -111,7 +118,10 @@ export class DriverPresenceService {
          g.lng          as gps_lng,
          g.timestamp    as gps_timestamp,
          extract(epoch from (now() - g.timestamp))::int as gps_age
-       from transport.drivers d
+       -- Drivers live in core.provider_participants flagged isDriver; the legacy
+       -- transport.drivers table is essentially empty, so sourcing from it hid
+       -- every real driver from the monitor.
+       from core.provider_participants d
        left join lateral (
          select * from transport.driver_sessions ds
          where ds.driver_id = d.id
@@ -128,13 +138,14 @@ export class DriverPresenceService {
          limit 1
        ) tr on true
        left join lateral (
-         select vp.lat, vp.lng, vp.timestamp
+         select vp.lat, vp.lng, vp.timestamp, vp.event_id
          from telemetry.vehicle_positions vp
          where vp.driver_id = d.id
          order by vp.timestamp desc
          limit 1
        ) g on true
-       where ($1::uuid is null or d.event_id = $1)
+       where d.metadata->>'isDriver' = 'true'
+         and ($1::uuid is null or g.event_id = $1)
        order by online desc nulls last, s.last_seen_at desc nulls last, d.full_name asc`,
       [eventId ?? null],
     )) as Array<Record<string, any>>;
@@ -166,19 +177,31 @@ export class DriverPresenceService {
   async stats(eventId?: string) {
     const rows = (await this.dataSource.query(
       `select
-         (select count(*)::int from transport.drivers
-            where ($1::uuid is null or event_id = $1)) as total_drivers,
-         (select count(distinct driver_id)::int from transport.driver_sessions
-            where ended_at is null
-              and last_seen_at > now() - interval '${ONLINE_WINDOW}'
-              and ($1::uuid is null or event_id = $1)) as online_now,
-         (select count(distinct driver_id)::int from transport.driver_sessions
-            where started_at::date = now()::date
-              and ($1::uuid is null or event_id = $1)) as drivers_today,
+         (select count(*)::int from core.provider_participants
+            where metadata->>'isDriver' = 'true') as total_drivers,
+         -- Online = fresh heartbeat OR fresh GPS fix (see list()).
+         (select count(*)::int from core.provider_participants d
+            where d.metadata->>'isDriver' = 'true'
+              and (
+                exists (select 1 from transport.driver_sessions ds
+                         where ds.driver_id = d.id and ds.ended_at is null
+                           and ds.last_seen_at > now() - interval '${ONLINE_WINDOW}')
+                or exists (select 1 from telemetry.vehicle_positions vp
+                            where vp.driver_id = d.id
+                              and vp.timestamp > now() - interval '${ONLINE_WINDOW}')
+              )) as online_now,
+         -- Active today = opened the app (session) or sent a fix today.
+         (select count(*)::int from core.provider_participants d
+            where d.metadata->>'isDriver' = 'true'
+              and (
+                exists (select 1 from transport.driver_sessions ds
+                         where ds.driver_id = d.id and ds.started_at::date = now()::date)
+                or exists (select 1 from telemetry.vehicle_positions vp
+                            where vp.driver_id = d.id and vp.created_at::date = now()::date)
+              )) as drivers_today,
          (select count(*)::int from transport.driver_sessions
-            where started_at::date = now()::date
-              and ($1::uuid is null or event_id = $1)) as sessions_today`,
-      [eventId ?? null],
+            where started_at::date = now()::date) as sessions_today`,
+      [],
     )) as Array<Record<string, any>>;
     const r = rows[0] || {};
     return {
