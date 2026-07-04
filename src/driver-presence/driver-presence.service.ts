@@ -24,6 +24,8 @@ export interface DriverPresenceRow {
   platform: string | null;
   appVersion: string | null;
   activeTrips: number;
+  activeTripId: string | null;
+  activeTripStatus: string | null;
   gpsAgeSeconds: number | null;
   lat: number | null;
   lng: number | null;
@@ -103,6 +105,8 @@ export class DriverPresenceService {
          (select count(*)::int from transport.trips t
             where t.driver_id = d.id
               and t.status in ('EN_ROUTE','PICKED_UP')) as active_trips,
+         tr.id          as active_trip_id,
+         tr.status      as active_trip_status,
          g.lat          as gps_lat,
          g.lng          as gps_lng,
          g.timestamp    as gps_timestamp,
@@ -114,6 +118,15 @@ export class DriverPresenceService {
          order by ds.last_seen_at desc
          limit 1
        ) s on true
+       left join lateral (
+         -- The driver's active trip; prefer PICKED_UP (passenger aboard) over
+         -- EN_ROUTE (heading to pickup) when somehow both exist.
+         select t.id, t.status from transport.trips t
+         where t.driver_id = d.id
+           and t.status in ('EN_ROUTE','PICKED_UP')
+         order by (t.status = 'PICKED_UP') desc, t.updated_at desc nulls last
+         limit 1
+       ) tr on true
        left join lateral (
          select vp.lat, vp.lng, vp.timestamp
          from telemetry.vehicle_positions vp
@@ -140,6 +153,8 @@ export class DriverPresenceService {
       platform: r.platform ?? null,
       appVersion: r.app_version ?? null,
       activeTrips: Number(r.active_trips ?? 0),
+      activeTripId: r.active_trip_id ?? null,
+      activeTripStatus: r.active_trip_status ?? null,
       gpsAgeSeconds: r.gps_age != null ? Number(r.gps_age) : null,
       lat: r.gps_lat != null ? Number(r.gps_lat) : null,
       lng: r.gps_lng != null ? Number(r.gps_lng) : null,

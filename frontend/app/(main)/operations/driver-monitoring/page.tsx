@@ -33,11 +33,23 @@ type PresenceDriver = {
   platform: string | null;
   appVersion: string | null;
   activeTrips: number;
+  // The driver's active trip (heading to pickup or passenger aboard), if any.
+  activeTripId: string | null;
+  activeTripStatus: string | null;
   gpsAgeSeconds: number | null;
   lat: number | null;
   lng: number | null;
   gpsTimestamp: string | null;
 };
+
+// Turns a trip status into the label shown on the map/list. Falls back to a
+// generic "En viaje" when we only know the driver has an active trip.
+function tripLabel(status: string | null, activeTrips: number): string | null {
+  if (status === "EN_ROUTE") return "Va en camino";
+  if (status === "PICKED_UP") return "Pasajero a bordo";
+  if (activeTrips > 0) return "En viaje";
+  return null;
+}
 
 type Snapshot = {
   ts: string;
@@ -225,15 +237,20 @@ export default function DriverMonitoringPage() {
             ageMs = d.gpsAgeSeconds != null ? d.gpsAgeSeconds * 1000 : Infinity;
           }
           if (lat == null || lng == null || ageMs > SHOW_WINDOW_MS) return null;
-          // Green = actively sending right now; grey = has a recent-ish last
+          // Reporting = actively sending right now; grey = has a recent-ish last
           // known spot but isn't currently transmitting.
           const reporting = ageMs < LIVE_WINDOW_MS;
+          // "En viaje" (green) only when live AND on an active trip, so a green
+          // pin always means a driver we're tracking in real time.
+          const onTrip = reporting && d.activeTrips > 0;
           return {
             id: d.driverId,
             lat,
             lng,
             name: d.fullName,
             online: reporting,
+            onTrip,
+            tripLabel: tripLabel(d.activeTripStatus, d.activeTrips),
             lastSeen: ago(d.secondsSinceSeen),
             gpsTime:
               gpsTimestamp != null
@@ -250,6 +267,20 @@ export default function DriverMonitoringPage() {
         })
         .filter((m): m is PresenceMarker => m !== null),
     [drivers, livePositions, nowTick],
+  );
+
+  // Drivers on an active trip float to the top of the list so operators see
+  // who's actually rolling first. Stable otherwise (backend order preserved).
+  const sortedDrivers = useMemo(
+    () =>
+      [...drivers].sort(
+        (a, b) => (b.activeTrips > 0 ? 1 : 0) - (a.activeTrips > 0 ? 1 : 0),
+      ),
+    [drivers],
+  );
+  const onTripCount = useMemo(
+    () => drivers.filter((d) => d.activeTrips > 0).length,
+    [drivers],
   );
 
   const exportCsv = () => {
@@ -353,6 +384,14 @@ export default function DriverMonitoringPage() {
             </h2>
             <span className="text-xs" style={{ color: "var(--text-muted)" }}>
               {markers.length} con señal GPS
+              {onTripCount > 0 && (
+                <>
+                  {" · "}
+                  <span style={{ color: "#059669", fontWeight: 700 }}>
+                    {onTripCount} en viaje
+                  </span>
+                </>
+              )}
             </span>
           </div>
           {markers.length === 0 ? (
@@ -397,7 +436,7 @@ export default function DriverMonitoringPage() {
                 </tr>
               </thead>
               <tbody>
-                {drivers.map((d, i) => {
+                {sortedDrivers.map((d, i) => {
                   // Same freshness source as the map: a live fix (realtime/poll)
                   // if we have one, otherwise the snapshot's GPS age.
                   const live = livePositions[d.driverId];
@@ -407,30 +446,51 @@ export default function DriverMonitoringPage() {
                       ? d.gpsAgeSeconds * 1000
                       : Infinity;
                   const gpsActive = gpsAgeMs < LIVE_WINDOW_MS;
+                  const onTrip = d.activeTrips > 0;
+                  const tripText = tripLabel(d.activeTripStatus, d.activeTrips);
                   return (
                     <tr key={d.driverId} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                       <td className="p-3 font-medium whitespace-nowrap">{d.fullName}</td>
                       <td className="p-3 whitespace-nowrap">
-                        <span
-                          className="inline-flex items-center text-[10px] px-2 py-0.5 rounded-full font-medium"
-                          style={
-                            d.online
-                              ? { backgroundColor: "#e7f5ec", color: "#2e7d32" }
-                              : { backgroundColor: "#eef1f6", color: "#5e6b7a" }
-                          }
-                        >
+                        {onTrip ? (
                           <span
-                            style={{
-                              display: "inline-block",
-                              width: 6,
-                              height: 6,
-                              borderRadius: "50%",
-                              marginRight: 5,
-                              background: d.online ? "#2e7d32" : "#94a3b8",
-                            }}
-                          />
-                          {d.online ? "Conectado" : "Desconectado"}
-                        </span>
+                            className="inline-flex items-center text-[10px] px-2 py-0.5 rounded-full font-medium"
+                            style={{ backgroundColor: "#dcfce7", color: "#059669" }}
+                          >
+                            <span
+                              style={{
+                                display: "inline-block",
+                                width: 6,
+                                height: 6,
+                                borderRadius: "50%",
+                                marginRight: 5,
+                                background: "#10b981",
+                              }}
+                            />
+                            {tripText ?? "En viaje"}
+                          </span>
+                        ) : (
+                          <span
+                            className="inline-flex items-center text-[10px] px-2 py-0.5 rounded-full font-medium"
+                            style={
+                              d.online
+                                ? { backgroundColor: "#e3edfa", color: "#1f4e8c" }
+                                : { backgroundColor: "#eef1f6", color: "#5e6b7a" }
+                            }
+                          >
+                            <span
+                              style={{
+                                display: "inline-block",
+                                width: 6,
+                                height: 6,
+                                borderRadius: "50%",
+                                marginRight: 5,
+                                background: d.online ? "#2563eb" : "#94a3b8",
+                              }}
+                            />
+                            {d.online ? "En línea" : "Desconectado"}
+                          </span>
+                        )}
                       </td>
                       <td className="p-3 whitespace-nowrap" style={{ color: "var(--text-muted)" }}>
                         {ago(d.secondsSinceSeen)}
@@ -449,13 +509,14 @@ export default function DriverMonitoringPage() {
                           "Nunca usó la app"
                         )}
                       </td>
-                      <td className="p-3">
-                        {d.activeTrips > 0 ? (
+                      <td className="p-3 whitespace-nowrap">
+                        {onTrip ? (
                           <span
                             className="text-[10px] px-2 py-0.5 rounded-full font-medium"
-                            style={{ backgroundColor: "#e3edfa", color: "#1f4e8c" }}
+                            style={{ backgroundColor: "#dcfce7", color: "#059669" }}
                           >
-                            {d.activeTrips} en curso
+                            {tripText ?? "En viaje"}
+                            {d.activeTrips > 1 ? ` · ${d.activeTrips}` : ""}
                           </span>
                         ) : (
                           <span style={{ color: "var(--text-muted)" }}>—</span>

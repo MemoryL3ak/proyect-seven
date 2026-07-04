@@ -8,11 +8,31 @@ export type PresenceMarker = {
   lng: number;
   name: string;
   online: boolean;
+  // True when the driver is currently on an active trip (heading to pickup or
+  // with the passenger aboard). Drives the "En viaje" green highlight.
+  onTrip: boolean;
+  // Human label for the trip state ("Va en camino", "Pasajero a bordo"…).
+  tripLabel: string | null;
   lastSeen: string;
   gpsTime: string;
   activeTrips: number;
   platform: string | null;
 };
+
+// Marker accent per state: on an active trip = green, online-only = blue,
+// stale/last-known = grey. Kept in one place so the pin icon, the info window
+// and the zIndex all agree.
+function markerAccent(m: PresenceMarker): string {
+  if (m.onTrip) return "#10b981";
+  if (m.online) return "#2563eb";
+  return "#94a3b8";
+}
+
+function markerStatusLabel(m: PresenceMarker): string {
+  if (m.onTrip) return m.tripLabel || "En viaje";
+  if (m.online) return "En línea";
+  return "Desconectado";
+}
 
 type Props = {
   markers: PresenceMarker[];
@@ -171,7 +191,9 @@ export default function DriverPresenceMap({ markers, height = 420 }: Props) {
 
     markers.forEach((m) => {
       const initials = getInitials(m.name);
-      const accent = m.online ? "#10b981" : "#94a3b8";
+      const accent = markerAccent(m);
+      const statusLabel = markerStatusLabel(m);
+      const zIndex = m.onTrip ? 30 : m.online ? 20 : 10;
       const pos = { lat: m.lat, lng: m.lng };
 
       const html = `
@@ -180,7 +202,7 @@ export default function DriverPresenceMap({ markers, height = 420 }: Props) {
             <div style="width:32px;height:32px;border-radius:50%;background:${accent};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#fff;">${initials}</div>
             <div>
               <div style="font-weight:800;font-size:14px;color:#0f172a;">${m.name}</div>
-              <div style="font-size:11px;font-weight:700;color:${accent};">${m.online ? "Conectado" : "Desconectado"}</div>
+              <div style="font-size:11px;font-weight:700;color:${accent};">${statusLabel}</div>
             </div>
           </div>
           <div style="font-size:12px;background:#f8fafc;border-radius:8px;padding:8px 10px;line-height:1.8;">
@@ -210,7 +232,7 @@ export default function DriverPresenceMap({ markers, height = 420 }: Props) {
             scaledSize: new google.maps.Size(56, 68),
             anchor: new google.maps.Point(28, 66),
           });
-          marker.setZIndex(m.online ? 20 : 10);
+          marker.setZIndex(zIndex);
           markerAccentRef.current[m.id] = accent;
         }
         marker.__html = html;
@@ -224,7 +246,7 @@ export default function DriverPresenceMap({ markers, height = 420 }: Props) {
             anchor: new google.maps.Point(28, 66),
           },
           title: m.name,
-          zIndex: m.online ? 20 : 10,
+          zIndex,
         });
         marker.__html = html;
         marker.addListener("click", () => {

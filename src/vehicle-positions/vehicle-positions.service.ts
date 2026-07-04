@@ -16,6 +16,7 @@ type VehiclePositionRow = {
   event_id: string;
   vehicle_id: string | null;
   driver_id: string;
+  trip_id: string | null;
   timestamp: string;
   location: unknown;
   speed: number | null;
@@ -43,6 +44,9 @@ export class VehiclePositionsService {
     if ((dto as any).driverId !== undefined) {
       row.driver_id = (dto as any).driverId;
     }
+    if ((dto as any).tripId !== undefined) {
+      row.trip_id = (dto as any).tripId ?? null;
+    }
     if (dto.timestamp !== undefined) {
       row.timestamp = dto.timestamp;
     }
@@ -65,6 +69,7 @@ export class VehiclePositionsService {
       eventId: row.event_id,
       vehicleId: row.vehicle_id,
       driverId: row.driver_id,
+      tripId: row.trip_id,
       timestamp: new Date(row.timestamp),
       location: row.location,
       speed: row.speed,
@@ -73,11 +78,41 @@ export class VehiclePositionsService {
     };
   }
 
+  // Resolves the driver's currently-active trip (heading to pickup or with the
+  // passenger on board) so each fix can be tagged with it. Returns null when the
+  // driver has no active trip — the position is still stored, just untagged.
+  private async resolveActiveTripId(driverId: string): Promise<string | null> {
+    try {
+      const rows = (await this.vehiclePositionRepository.query(
+        `SELECT id
+           FROM transport.trips
+          WHERE driver_id = $1
+            AND status IN ('EN_ROUTE','PICKED_UP')
+          ORDER BY updated_at DESC NULLS LAST
+          LIMIT 1`,
+        [driverId],
+      )) as Array<{ id: string }>;
+      return rows[0]?.id ?? null;
+    } catch {
+      // Never let trip resolution block storing the position.
+      return null;
+    }
+  }
+
   async create(createVehiclePositionDto: CreateVehiclePositionDto) {
+    const row = this.toRow(createVehiclePositionDto);
+    // Tag the fix with the driver's active trip unless the caller already did.
+    // Done here (server-side) so the mobile app doesn't need to track trips.
+    if (row.trip_id === undefined && createVehiclePositionDto.driverId) {
+      row.trip_id = await this.resolveActiveTripId(
+        createVehiclePositionDto.driverId,
+      );
+    }
+
     const { data, error } = await this.supabase
       .schema('telemetry')
       .from('vehicle_positions')
-      .insert(this.toRow(createVehiclePositionDto))
+      .insert(row)
       .select('*')
       .single();
 
@@ -143,6 +178,7 @@ export class VehiclePositionsService {
            event_id,
            vehicle_id,
            driver_id,
+           trip_id,
            "timestamp",
            ST_AsGeoJSON(location)::json AS location,
            speed,
@@ -157,6 +193,7 @@ export class VehiclePositionsService {
         eventId: row.event_id,
         vehicleId: row.vehicle_id,
         driverId: row.driver_id,
+        tripId: row.trip_id,
         timestamp: new Date(row.timestamp),
         location: row.location,
         speed: row.speed,
@@ -168,6 +205,47 @@ export class VehiclePositionsService {
         error instanceof Error
           ? error.message
           : 'Error fetching vehicle positions',
+      );
+    }
+  }
+
+  // Full ordered breadcrumb of a trip — the raw material to redraw the route
+  // the driver actually took. Ascending by timestamp so the path is in order.
+  async findByTrip(tripId: string) {
+    try {
+      const rows = (await this.vehiclePositionRepository.query(
+        `SELECT id,
+                event_id,
+                vehicle_id,
+                driver_id,
+                trip_id,
+                "timestamp",
+                ST_AsGeoJSON(location)::json AS location,
+                speed,
+                heading,
+                created_at
+           FROM telemetry.vehicle_positions
+          WHERE trip_id = $1
+          ORDER BY "timestamp" ASC`,
+        [tripId],
+      )) as VehiclePositionRow[];
+      return rows.map((row) => ({
+        id: row.id,
+        eventId: row.event_id,
+        vehicleId: row.vehicle_id,
+        driverId: row.driver_id,
+        tripId: row.trip_id,
+        timestamp: new Date(row.timestamp),
+        location: row.location,
+        speed: row.speed,
+        heading: row.heading,
+        createdAt: new Date(row.created_at),
+      }));
+    } catch (error) {
+      throw new InternalServerErrorException(
+        error instanceof Error
+          ? error.message
+          : 'Error fetching trip breadcrumb',
       );
     }
   }
