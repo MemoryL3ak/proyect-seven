@@ -1,5 +1,8 @@
 -- Trip Requests: solicitudes de viaje T1/VIP generadas desde la app.
 -- Tabla independiente para gestionar estas solicitudes por separado de transport.trips.
+create extension if not exists pgcrypto;   -- para gen_random_uuid()
+create schema if not exists transport;     -- por si el schema aún no existe
+
 create table if not exists transport.trip_requests (
   id                     uuid primary key default gen_random_uuid(),
   event_id               uuid not null,

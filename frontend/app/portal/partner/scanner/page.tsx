@@ -203,7 +203,7 @@ export default function PartnerScannerPage() {
 
   return (
     <div className="min-h-screen relative overflow-hidden"
-      style={{ background: "linear-gradient(175deg, #0d1e3a 0%, #1a2d4f 50%, #0d1e3a 100%)" }}>
+      style={{ background: "linear-gradient(175deg, #eef2f8 0%, #f6f8fc 45%, #e9eef6 100%)" }}>
 
       <style jsx global>{`
         @keyframes float-orb-1 {
@@ -285,7 +285,7 @@ export default function PartnerScannerPage() {
       {/* Grid pattern sutil */}
       <div style={{
         position: "fixed", inset: 0, zIndex: 0,
-        backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px)",
+        backgroundImage: "radial-gradient(circle, rgba(15,23,42,0.04) 1px, transparent 1px)",
         backgroundSize: "30px 30px",
         pointerEvents: "none",
         maskImage: "radial-gradient(ellipse at center, black 20%, transparent 75%)",
@@ -294,28 +294,28 @@ export default function PartnerScannerPage() {
       {/* Header sticky con logo */}
       <header className="sticky top-0 z-20 backdrop-blur-md"
         style={{
-          background: "rgba(13,30,58,0.85)",
-          borderBottom: "1px solid rgba(255,255,255,0.08)",
+          background: "rgba(255,255,255,0.9)",
+          borderBottom: "1px solid #e2e8f0",
         }}>
         {/* Shimmer line abajo del header */}
         <div className="absolute bottom-0 left-0 right-0 h-[1px] shimmer-line" />
         <div className="max-w-2xl mx-auto px-5 py-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <img
-              src="/branding/LOGO-SEVEN-3.png"
+              src="/branding/LOGO-SEVEN-1.png"
               alt="Seven Arena"
               style={{
-                height: "38px", width: "auto", flexShrink: 0,
-                filter: `drop-shadow(0 0 8px ${TEAL}50)`,
+                height: "34px", width: "auto", flexShrink: 0,
+                filter: "drop-shadow(0 2px 6px rgba(15,23,42,0.12))",
               }}
             />
             <div className="min-w-0">
               <p className="text-[9px] font-bold tracking-[0.25em] uppercase"
-                style={{ color: TEAL_MID }}>Partner</p>
-              <h1 className="text-sm font-bold truncate" style={{ color: "#ffffff" }}>
+                style={{ color: "#0e9384" }}>Partner</p>
+              <h1 className="text-sm font-bold truncate" style={{ color: "#0d1e3a" }}>
                 {partner?.name || "..."}
               </h1>
-              <p className="text-[10px] font-mono" style={{ color: "rgba(255,255,255,0.5)" }}>
+              <p className="text-[10px] font-mono" style={{ color: "#64748b" }}>
                 {partner?.code}
               </p>
             </div>
@@ -323,17 +323,17 @@ export default function PartnerScannerPage() {
           <button type="button"
             className="text-xs font-medium px-3 py-1.5 rounded-lg transition-all flex-shrink-0 btn-press"
             style={{
-              color: "rgba(255,255,255,0.7)",
-              background: "rgba(255,255,255,0.06)",
-              border: "1px solid rgba(255,255,255,0.1)",
+              color: "#475569",
+              background: "#f1f5f9",
+              border: "1px solid #e2e8f0",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = "rgba(255,255,255,0.12)";
-              e.currentTarget.style.color = "#fff";
+              e.currentTarget.style.background = "#e6ebf2";
+              e.currentTarget.style.color = "#0d1e3a";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = "rgba(255,255,255,0.06)";
-              e.currentTarget.style.color = "rgba(255,255,255,0.7)";
+              e.currentTarget.style.background = "#f1f5f9";
+              e.currentTarget.style.color = "#475569";
             }}
             onClick={logout}>
             Salir
@@ -455,17 +455,17 @@ function StatCard({
   return (
     <div className="rounded-2xl p-4 relative overflow-hidden anim-fade-up transition-all hover:scale-[1.02]"
       style={{
-        background: "rgba(255,255,255,0.05)",
-        border: "1px solid rgba(255,255,255,0.1)",
-        backdropFilter: "blur(10px)",
+        background: "#ffffff",
+        border: "1px solid #e2e8f0",
+        borderTop: `3px solid ${color}`,
+        boxShadow: "0 1px 4px rgba(15,23,42,0.06)",
         cursor: "default",
       }}>
       <div className="absolute top-0 right-0 w-24 h-24 rounded-full"
-        style={{ background: `${color}25`, filter: "blur(24px)" }} />
-      <div className="absolute top-0 left-0 right-0 h-[1px] shimmer-line opacity-50" />
+        style={{ background: `${color}18`, filter: "blur(24px)" }} />
       <div className="relative z-10">
         <p className="text-[10px] uppercase tracking-widest font-bold"
-          style={{ color: "rgba(255,255,255,0.55)" }}>
+          style={{ color: "#64748b" }}>
           {label}
         </p>
         <p key={String(value)} className="text-3xl font-bold mt-1 anim-count" style={{ color }}>
@@ -473,7 +473,7 @@ function StatCard({
         </p>
         {hint && (
           <p className="text-[10px] mt-0.5"
-            style={{ color: "rgba(255,255,255,0.45)" }}>
+            style={{ color: "#94a3b8" }}>
             {hint}
           </p>
         )}
@@ -488,7 +488,7 @@ function IdleScreen({ onScan, onManual }: { onScan: () => void; onManual: () => 
       style={{
         background: "rgba(255,255,255,0.97)",
         backdropFilter: "blur(20px)",
-        boxShadow: "0 20px 60px rgba(0,0,0,0.4), 0 0 0 1px rgba(33,208,179,0.1), inset 0 1px 0 rgba(255,255,255,0.6)",
+        boxShadow: "0 4px 16px rgba(15,23,42,0.08), 0 0 0 1px rgba(33,208,179,0.10)",
       }}>
       {/* Shimmer line arriba */}
       <div className="absolute top-0 left-0 right-0 h-[1px] shimmer-line" />
@@ -587,7 +587,7 @@ function ScannerScreen({
       style={{
         background: "rgba(255,255,255,0.97)",
         backdropFilter: "blur(20px)",
-        boxShadow: "0 20px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.6)",
+        boxShadow: "0 4px 16px rgba(15,23,42,0.08), 0 0 0 1px #eef1f6",
       }}>
       <div className="absolute top-0 left-0 right-0 h-[1px] shimmer-line z-10" />
       <div className="px-5 py-3.5 border-b flex items-center justify-between"
@@ -646,7 +646,7 @@ function ManualScreen({
       style={{
         background: "rgba(255,255,255,0.97)",
         backdropFilter: "blur(20px)",
-        boxShadow: "0 20px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.6)",
+        boxShadow: "0 4px 16px rgba(15,23,42,0.08), 0 0 0 1px #eef1f6",
       }}>
       <div className="absolute top-0 left-0 right-0 h-[1px] shimmer-line" />
       <div>
@@ -718,7 +718,7 @@ function PreviewScreen({
       style={{
         background: "rgba(255,255,255,0.97)",
         backdropFilter: "blur(20px)",
-        boxShadow: "0 20px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.6)",
+        boxShadow: "0 4px 16px rgba(15,23,42,0.08), 0 0 0 1px #eef1f6",
       }}>
       <div className="p-5 relative overflow-hidden"
         style={{ background: `linear-gradient(135deg, ${TEAL} 0%, #1eb19a 100%)` }}>
@@ -831,7 +831,7 @@ function ResultScreen({
       style={{
         background: "rgba(255,255,255,0.97)",
         backdropFilter: "blur(20px)",
-        boxShadow: "0 20px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.6)",
+        boxShadow: "0 4px 16px rgba(15,23,42,0.08), 0 0 0 1px #eef1f6",
       }}>
       <div className="absolute top-0 left-0 right-0 h-[1px] shimmer-line" />
       {/* Halo del color del resultado */}
@@ -906,7 +906,7 @@ function RecentRedemptionsCard({
       style={{
         background: "rgba(255,255,255,0.97)",
         backdropFilter: "blur(20px)",
-        boxShadow: "0 20px 60px rgba(0,0,0,0.4), 0 0 0 1px rgba(33,208,179,0.1), inset 0 1px 0 rgba(255,255,255,0.6)",
+        boxShadow: "0 4px 16px rgba(15,23,42,0.08), 0 0 0 1px rgba(33,208,179,0.10)",
       }}>
       <div className="absolute top-0 left-0 right-0 h-[1px] shimmer-line" />
 

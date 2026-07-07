@@ -32,10 +32,10 @@ export default function FilterChips({
             className="text-xs font-medium px-3 py-1.5 rounded-full transition-all"
             style={{
               background: active
-                ? "linear-gradient(135deg, #1f4e8c 0%, #2d6aa8 100%)"
+                ? "linear-gradient(135deg, #21D0B3 0%, #1eb19a 100%)"
                 : "#eef1f6",
-              color: active ? "#fff" : "#1f4e8c",
-              boxShadow: active ? "0 1px 4px rgba(31, 78, 140, 0.25)" : "none",
+              color: active ? "#fff" : "#475569",
+              boxShadow: active ? "0 1px 4px rgba(33, 208, 179, 0.30)" : "none",
             }}
           >
             {o.label}

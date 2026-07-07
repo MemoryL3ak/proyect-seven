@@ -293,7 +293,7 @@ export default function PartnerLoginPage() {
 
             <p className="text-[11px] text-center pt-2 border-t"
               style={{ color: "#5e6b7a", borderColor: "#eef1f6" }}>
-              ¿Sin credenciales? Contactá al comité organizador.
+              ¿Sin credenciales? Contacta al comité organizador.
             </p>
           </div>
         )}

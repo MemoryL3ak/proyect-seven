@@ -112,6 +112,49 @@ const fmtDateTimeLocal = (iso?: string | null) =>
 const categoryMeta = (cat: string) =>
   CATEGORIES.find((c) => c.value === cat) || CATEGORIES[3];
 
+// Lee una imagen, la redimensiona (máx. 800px) y la comprime a JPEG,
+// devolviendo un data URL liviano para guardar en imageUrl.
+async function compressImageToDataUrl(file: File, maxDim = 800, quality = 0.8): Promise<string> {
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const i = new Image();
+    i.onload = () => resolve(i);
+    i.onerror = reject;
+    i.src = dataUrl;
+  });
+  const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+  const w = Math.max(1, Math.round(img.width * scale));
+  const h = Math.max(1, Math.round(img.height * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return dataUrl;
+  ctx.drawImage(img, 0, 0, w, h);
+  return canvas.toDataURL("image/jpeg", quality);
+}
+
+// Imagen de la tarjeta con fallback: si la URL no carga, muestra el placeholder
+// (ícono de la categoría) en vez del ícono de imagen rota del navegador.
+function CouponImage({ src, alt, color, bg }: { src?: string | null; alt: string; color: string; bg: string }) {
+  const [failed, setFailed] = useState(false);
+  const showImg = src && !failed;
+  return (
+    <div style={{ height: 132, background: showImg ? "#f1f5f9" : `linear-gradient(135deg, ${bg}, #ffffff)`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      {showImg ? (
+        <img src={src as string} alt={alt} onError={() => setFailed(true)}
+          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+      ) : (
+        <TicketIcon size={40} color={color} />
+      )}
+    </div>
+  );
+}
+
 function discountDisplay(c: Coupon) {
   switch (c.discountType) {
     case "PERCENTAGE":
@@ -237,6 +280,7 @@ function CatalogTab({
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState<Partial<Coupon>>({});
   const [saving, setSaving] = useState(false);
+  const [imgLoading, setImgLoading] = useState(false);
 
   const visible = useMemo(() => coupons
     .filter((c) => (categoryFilter ? c.category === categoryFilter : true))
@@ -344,6 +388,7 @@ function CatalogTab({
             return (
               <article key={c.id} className="surface rounded-2xl overflow-hidden"
                 style={{ borderTop: `5px solid ${cat.color}`, opacity: isActive && !expired ? 1 : 0.6 }}>
+                <CouponImage src={c.imageUrl} alt={c.title} color={cat.color} bg={cat.bg} />
                 <div className="p-4 space-y-2">
                   <div className="flex items-start justify-between gap-2">
                     <span className="text-[10px] px-2 py-0.5 rounded-full font-medium"
@@ -445,6 +490,47 @@ function CatalogTab({
                 <input type="text" className="input" value={form.partnerAddress || ""}
                   onChange={(e) => setField("partnerAddress", e.target.value)} />
               </Field>
+              <Field label="Imagen referencial" className="md:col-span-2">
+                <div className="flex items-start gap-3">
+                  <div style={{ width: 104, height: 78, borderRadius: 10, overflow: "hidden", background: "#f1f5f9", border: "1px solid #e2e8f0", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {form.imageUrl ? (
+                      <img src={form.imageUrl} alt="Vista previa"
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      <span style={{ fontSize: 10, color: "#94a3b8" }}>Sin imagen</span>
+                    )}
+                  </div>
+                  <div className="flex-1 space-y-2 min-w-0">
+                    <input type="file" accept="image/*" className="text-xs block"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setImgLoading(true);
+                        try {
+                          setField("imageUrl", await compressImageToDataUrl(file) as any);
+                        } catch {
+                          setError("No se pudo procesar la imagen.");
+                        } finally {
+                          setImgLoading(false);
+                          e.target.value = "";
+                        }
+                      }} />
+                    <input type="text" className="input"
+                      placeholder="…o pega una URL de imagen"
+                      value={form.imageUrl && !form.imageUrl.startsWith("data:") ? form.imageUrl : ""}
+                      onChange={(e) => setField("imageUrl", (e.target.value || null) as any)} />
+                    <div className="flex items-center gap-2">
+                      {imgLoading && (
+                        <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>Procesando imagen…</span>
+                      )}
+                      {form.imageUrl && !imgLoading && (
+                        <button type="button" className="btn btn-ghost text-xs py-1 px-2"
+                          onClick={() => setField("imageUrl", null as any)}>Quitar imagen</button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </Field>
               <Field label="Válido desde">
                 <input type="datetime-local" className="input"
                   value={fmtDateTimeLocal(form.validFrom)}
@@ -485,7 +571,7 @@ function CatalogTab({
                   })}
                 </div>
                 <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>
-                  Si no seleccionás ninguno, el cupón es visible para todos.
+                  Si no seleccionas ninguno, el cupón es visible para todos.
                 </p>
               </Field>
               <Field label="Términos y condiciones" className="md:col-span-2">

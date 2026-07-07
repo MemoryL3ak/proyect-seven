@@ -37,10 +37,10 @@ export default function Tabs<T extends string>({
             className="relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all"
             style={{
               background: active
-                ? "linear-gradient(135deg, #1f4e8c 0%, #2d6aa8 100%)"
+                ? "linear-gradient(135deg, #21D0B3 0%, #1eb19a 100%)"
                 : "transparent",
               color: active ? "#fff" : "var(--text-muted)",
-              boxShadow: active ? "0 2px 8px rgba(31, 78, 140, 0.25)" : "none",
+              boxShadow: active ? "0 2px 8px rgba(33, 208, 179, 0.30)" : "none",
             }}
           >
             {t.icon && (
@@ -55,8 +55,8 @@ export default function Tabs<T extends string>({
                 style={{
                   background: active
                     ? "rgba(255,255,255,0.25)"
-                    : "rgba(31, 78, 140, 0.1)",
-                  color: active ? "#fff" : "#1f4e8c",
+                    : "rgba(33, 208, 179, 0.12)",
+                  color: active ? "#fff" : "#1eb19a",
                   minWidth: "18px",
                   textAlign: "center",
                 }}
