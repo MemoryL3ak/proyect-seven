@@ -3,11 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { apiFetch } from "@/lib/api";
+import { getMobileSession, mobileAwareLogout } from "@/lib/mobile-auth";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { useI18n } from "@/lib/i18n";
 import NotificationBell, { useNotifications } from "@/components/NotificationBell";
 import TripChat from "@/components/TripChat";
 import AssistanceChat from "@/components/AssistanceChat";
+import DevicePermissionsSection from "@/components/DevicePermissionsSection";
+import { isAvailable as isNativeAvailable, request as nativeRequest } from "@/lib/native-bridge";
+import PushTokenSync from "@/components/PushTokenSync";
 import QRCode from "qrcode";
 import { buildCredentialHtml } from "@/lib/credential-template";
 
@@ -179,7 +183,7 @@ export default function DriverPortalPage() {
       return next;
     });
   };
-  const driverNotify = useNotifications();
+  const driverNotify = useNotifications({ userKind: "driver", userId: driverProfile?.id ?? null });
   const ratedTripIds = useRef<Set<string>>(new Set());
   const tripsRef = useRef<Trip[]>([]);
 
@@ -192,22 +196,31 @@ export default function DriverPortalPage() {
     }).catch(() => {});
   }, []);
 
-  // Restore session on mount
+  // Restore session on mount: prefer mobile-app session, fallback to web sessionStorage
   useEffect(() => {
+    if (driverProfile) {
+      setSessionChecked(true);
+      return;
+    }
+    const session = getMobileSession();
+    if (session?.kind === "driver" && session.driverId) {
+      loadTrips(session.driverId).finally(() => setSessionChecked(true));
+      return;
+    }
     try {
       const saved = sessionStorage.getItem("portal_conductor_id");
-      if (saved && !driverProfile) {
+      if (saved) {
         loadTrips(saved).finally(() => setSessionChecked(true));
       } else {
         setSessionChecked(true);
       }
     } catch { setSessionChecked(true); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadTrips = async (overrideId?: string) => {
     const id = overrideId || driverId;
     if (!id) return;
-    if (overrideId) setDriverId(overrideId);
     setLoading(true);
     setError(null);
     setIdError(null);
@@ -250,17 +263,22 @@ export default function DriverPortalPage() {
 
       const normalizedInput = id.trim().toLowerCase();
       const driverMatch = allDrivers.find((driver) => {
-        const id = driver.id ?? "";
-        const userId = driver.userId ?? "";
-        const last6 = id.slice(-6).toLowerCase();
-        const last6User = userId.slice(-6).toLowerCase();
+        const driverIdLower = (driver.id ?? "").toLowerCase();
+        const userIdLower = (driver.userId ?? "").toLowerCase();
         return (
-          normalizedInput === last6 ||
-          normalizedInput === last6User
+          normalizedInput === driverIdLower ||
+          normalizedInput === userIdLower ||
+          normalizedInput === driverIdLower.slice(-6) ||
+          normalizedInput === userIdLower.slice(-6)
         );
       });
       setDriverProfile(driverMatch ?? null);
-      if (driverMatch) { try { sessionStorage.setItem("portal_conductor_id", driverId.trim()); } catch {} }
+      if (driverMatch) {
+        try {
+          const visibleCode = driverMatch.id.slice(-6).toLowerCase();
+          sessionStorage.setItem("portal_conductor_id", visibleCode);
+        } catch {}
+      }
       if (!driverMatch) {
         setIdError(t("El ID ingresado no corresponde a un conductor registrado."));
         setTrips([]);
@@ -477,6 +495,26 @@ export default function DriverPortalPage() {
   const getTripById = (tripId: string | null) =>
     tripId ? trips.find((trip) => trip.id === tripId) ?? null : null;
 
+  // App-open tracking: inside the mobile app, make sure the native background
+  // tracker is running for this driver as soon as they reach the portal — this
+  // replaces the old manual toggle. The driver then transmits the whole time
+  // the app is open, which is what the driver-monitoring panel needs. We never
+  // stop it here (the native shell stops it on logout), and we don't gate it on
+  // trips. Permissions already granted won't re-prompt on later mounts. Pure-web
+  // drivers (no native shell) fall back to the browser-geolocation effect below
+  // during active trips.
+  const trackingArmedRef = useRef(false);
+  useEffect(() => {
+    if (!isNativeAvailable()) return;
+    const driverId = driverProfile?.id;
+    if (!driverId || trackingArmedRef.current) return;
+    trackingArmedRef.current = true;
+    nativeRequest("tracking.start", { driverId }, { timeoutMs: 30_000 }).catch(() => {
+      // Let a later render retry (e.g. after the driver grants permission).
+      trackingArmedRef.current = false;
+    });
+  }, [driverProfile?.id]);
+
   // Wake Lock: keep screen awake while tracking (prevents browser suspension)
   useEffect(() => {
     if (!trackingTripId) return;
@@ -508,9 +546,13 @@ export default function DriverPortalPage() {
     };
   }, [trackingTripId]);
 
-  // GPS tracking: send position every 5s + watchPosition + visibility resume
+  // GPS tracking: send position every 5s + watchPosition + visibility resume.
+  // Inside the mobile app the native shell tracks continuously (from login), so
+  // we skip this browser path there to avoid duplicate points. It only runs for
+  // pure-web drivers, keeping their active trip covered.
   useEffect(() => {
     if (!trackingTripId) return;
+    if (isNativeAvailable()) return;
     const trip = getTripById(trackingTripId);
     if (!trip) return;
 
@@ -777,19 +819,11 @@ export default function DriverPortalPage() {
 
   return (
     <>
+      <PushTokenSync userKind="driver" userId={driverProfile?.id || null} />
       {!sessionChecked && !driverProfile && (
-        <div style={{ minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"linear-gradient(135deg,#020c18 0%,#0a1628 50%,#041220 100%)",position:"relative",overflow:"hidden" }}>
-          <div style={{ position:"absolute",top:"-20%",right:"-10%",width:"50vw",height:"50vw",borderRadius:"50%",background:"radial-gradient(circle,rgba(33,208,179,0.08) 0%,transparent 70%)",pointerEvents:"none" }} />
-          <div style={{ position:"absolute",bottom:"-15%",left:"-10%",width:"40vw",height:"40vw",borderRadius:"50%",background:"radial-gradient(circle,rgba(31,205,255,0.06) 0%,transparent 70%)",pointerEvents:"none" }} />
-          <div style={{ position:"relative",zIndex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:20 }}>
-            <img src="/branding/LOGO-SEVEN-1.png" alt="Seven Arena" style={{ height:48,width:"auto",objectFit:"contain",filter:"drop-shadow(0 0 24px rgba(33,208,179,0.4)) drop-shadow(0 4px 12px rgba(0,0,0,0.6))",marginBottom:8 }} />
-            <div style={{ width:44,height:44,position:"relative" }}>
-              <div style={{ position:"absolute",inset:0,border:"3px solid rgba(33,208,179,0.15)",borderRadius:"50%" }} />
-              <div style={{ position:"absolute",inset:0,border:"3px solid transparent",borderTopColor:"#21D0B3",borderRadius:"50%",animation:"sa-spin 0.9s cubic-bezier(0.4,0,0.2,1) infinite" }} />
-            </div>
-            <p style={{ fontSize:13,fontWeight:600,color:"rgba(255,255,255,0.5)",margin:0,letterSpacing:"0.03em" }}>Cargando portal...</p>
-          </div>
-          <style>{`@keyframes sa-spin { to { transform: rotate(360deg); } }`}</style>
+        <div style={{ minHeight: "100vh", background: "#020c18", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ width: 36, height: 36, borderRadius: "50%", border: "3px solid rgba(33,208,179,0.25)", borderTopColor: "#21D0B3", animation: "pc-spin 0.8s linear infinite" }} />
+          <style>{`@keyframes pc-spin{to{transform:rotate(360deg)}}`}</style>
         </div>
       )}
       {sessionChecked && !driverProfile && (
@@ -917,7 +951,7 @@ export default function DriverPortalPage() {
             .dc-banner-tag{display:flex;align-items:center;gap:8px;}
             .dc-banner-tag span{font-size:10px;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:rgba(33,208,179,0.9);}
             .dc-content{max-width:920px;margin:0 auto;padding:24px 16px 90px;position:relative;z-index:1;}
-            .dc-bottom-tabs{position:fixed;bottom:0;left:0;right:0;z-index:50;background:#fff;border-top:1px solid #e2e8f0;display:flex;padding:4px 0 calc(4px + env(safe-area-inset-bottom,0px));box-shadow:0 -2px 12px rgba(0,0,0,0.06);}
+            .dc-bottom-tabs{position:fixed;bottom:0;left:0;right:0;z-index:50;background:#fff;border-top:1px solid #e2e8f0;display:flex;padding:6px 0;box-shadow:0 -2px 12px rgba(0,0,0,0.06);}
             .dc-tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 4px;background:none;border:none;cursor:pointer;font-size:10px;font-weight:600;transition:color .15s;-webkit-tap-highlight-color:transparent;}
             .dc-profile-card{background:#fff;border-radius:24px;border:1px solid rgba(226,232,240,0.8);padding:24px 28px;margin-bottom:20px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;animation:dc-in .4s cubic-bezier(0.16,1,0.3,1) both;box-shadow:0 4px 24px rgba(0,0,0,0.06);position:relative;overflow:hidden;}
             .dc-profile-body{display:flex;align-items:center;gap:20px;min-width:0;}
@@ -976,7 +1010,7 @@ export default function DriverPortalPage() {
                     <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
                   </svg>
                 </button>
-                <button type="button" onClick={() => { try { sessionStorage.removeItem("portal_conductor_id"); } catch {} setDriverProfile(null); setDriverId(""); setTrips([]); }}
+                <button type="button" onClick={() => { try { sessionStorage.removeItem("portal_conductor_id"); } catch {} mobileAwareLogout(); }}
                   style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(255,255,255,0.15)",background:"rgba(255,255,255,0.08)",cursor:"pointer",flexShrink:0 }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
@@ -1831,6 +1865,12 @@ export default function DriverPortalPage() {
                     })}
                   </div>
                 </div>
+
+                {/* El tracking ya no se activa manualmente: la app lo arranca
+                    sola al iniciar sesión y transmite mientras esté abierta. */}
+
+                {/* Device permissions (only visible inside the mobile app) */}
+                <DevicePermissionsSection />
               </div>
             )}
 

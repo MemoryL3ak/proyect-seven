@@ -1,5 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { VehiclePosition } from './entities/vehicle-position.entity';
 import { VehiclePositionsController } from './vehicle-positions.controller';
 import { VehiclePositionsService } from './vehicle-positions.service';
 
@@ -14,6 +16,10 @@ describe('VehiclePositionsController', () => {
         {
           provide: 'SUPABASE_CLIENT',
           useValue: {} as SupabaseClient,
+        },
+        {
+          provide: getRepositoryToken(VehiclePosition),
+          useValue: { query: jest.fn() },
         },
       ],
     }).compile();

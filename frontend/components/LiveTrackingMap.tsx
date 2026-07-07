@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { loadGoogleMaps, type LatLng } from "@/lib/google-maps";
 
 export type TrackingMarker = {
   tripId: string;
@@ -16,43 +17,48 @@ export type TrackingMarker = {
   gpsTime: string;
 };
 
+export type DestinationPin = {
+  tripId: string;
+  lat: number;
+  lng: number;
+  label: string;
+  accent: string;
+};
+
+export type RoutePath = {
+  tripId: string;
+  path: LatLng[];
+  accent: string;
+};
+
+// Trail of points the driver has actually traveled (built up live from
+// incoming GPS fixes). Distinct from `routes`, which is the Google
+// Directions suggested path between origin and destination.
+export type TrailPath = {
+  tripId: string;
+  path: LatLng[];
+  accent: string;
+};
+
 type Props = {
   markers: TrackingMarker[];
+  destinations?: DestinationPin[];
+  routes?: RoutePath[];
+  trails?: TrailPath[];
   height?: number;
   isDark?: boolean;
   selectedTripId?: string | null;
 };
 
-const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
-
-function loadGoogleMaps(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (typeof window === "undefined") return;
-    if ((window as any).google?.maps?.Map) { resolve(); return; }
-    const existing = document.getElementById("google-maps-script");
-    if (existing) {
-      existing.addEventListener("load", () => resolve());
-      existing.addEventListener("error", reject);
-      return;
-    }
-    const script = document.createElement("script");
-    script.id = "google-maps-script";
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=places`;
-    script.async = true;
-    script.defer = true;
-    script.onload = () => resolve();
-    script.onerror = reject;
-    document.head.appendChild(script);
-  });
-}
-
 function getInitials(name: string): string {
-  return name
-    .split(" ")
-    .slice(0, 2)
-    .map((w) => w[0] ?? "")
-    .join("")
-    .toUpperCase() || "?";
+  return (
+    name
+      .split(" ")
+      .slice(0, 2)
+      .map((w) => w[0] ?? "")
+      .join("")
+      .toUpperCase() || "?"
+  );
 }
 
 function createDriverCarIcon(initials: string, accent: string): string {
@@ -62,12 +68,9 @@ function createDriverCarIcon(initials: string, accent: string): string {
         <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.35"/>
       </filter>
     </defs>
-    <!-- Pointer -->
     <path d="M32 68 L24 52 L40 52 Z" fill="${accent}" opacity="0.9"/>
-    <!-- Circle background -->
     <circle cx="32" cy="28" r="26" fill="${accent}" filter="url(%23ds)"/>
     <circle cx="32" cy="28" r="23" fill="#062240"/>
-    <!-- Car body -->
     <g transform="translate(14,16)">
       <rect x="4" y="10" width="28" height="11" rx="3" fill="${accent}" opacity="0.9"/>
       <path d="M7 10 L11 3 L25 3 L29 10" fill="${accent}" opacity="0.6"/>
@@ -76,18 +79,85 @@ function createDriverCarIcon(initials: string, accent: string): string {
       <rect x="1" y="13" width="3" height="2" rx="1" fill="#FFD700" opacity="0.8"/>
       <rect x="32" y="13" width="3" height="2" rx="1" fill="#FF4444" opacity="0.8"/>
     </g>
-    <!-- Initials -->
     <text x="32" y="35" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" font-weight="900" fill="#fff" letter-spacing="0.5">${initials}</text>
   </svg>`;
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
-export default function LiveTrackingMap({ markers, height = 560, selectedTripId }: Props) {
+function createDestinationFlagIcon(accent: string): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="44" height="56" viewBox="0 0 44 56">
+    <defs>
+      <filter id="ds2" x="-20%" y="-10%" width="140%" height="130%">
+        <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.3"/>
+      </filter>
+    </defs>
+    <circle cx="22" cy="20" r="18" fill="${accent}" filter="url(%23ds2)"/>
+    <circle cx="22" cy="20" r="15" fill="#fff"/>
+    <path d="M22 52 L17 38 L27 38 Z" fill="${accent}"/>
+    <path d="M14 11 L14 30 M14 11 L28 11 L25 17 L28 23 L14 23" fill="${accent}" stroke="${accent}" stroke-width="2" stroke-linejoin="round"/>
+  </svg>`;
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
+export default function LiveTrackingMap({
+  markers,
+  destinations = [],
+  routes = [],
+  trails = [],
+  height = 560,
+  selectedTripId,
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const gmMarkersRef = useRef<Record<string, any>>({});
+  // Last accent applied to each marker — drives icon re-generation when the
+  // online/offline color flips (green → red and back).
+  const markerAccentRef = useRef<Record<string, string>>({});
+  // Per-marker animation state — used to interpolate the marker between
+  // the previous GPS fix and the new one so movement looks fluid instead
+  // of "teleporting" every 2-3 seconds.
+  const markerAnimRef = useRef<Record<string, { rafId: number; from: { lat: number; lng: number }; to: { lat: number; lng: number }; startedAt: number }>>({});
+  const gmDestinationsRef = useRef<Record<string, any>>({});
+  const gmRoutesRef = useRef<Record<string, any>>({});
+  const gmTrailsRef = useRef<Record<string, any>>({});
   const infoWindowRef = useRef<any>(null);
   const didFitRef = useRef(false);
+
+  // Smoothly animates a marker from its current position to `to`. Cancels
+  // any in-flight animation for the same marker so we don't double up.
+  // 1500 ms matches the typical interval between successive fixes (~3s)
+  // less a small margin so the marker arrives just before the next one.
+  const ANIM_DURATION_MS = 1500;
+  const animateMarker = (markerId: string, marker: any, from: { lat: number; lng: number }, to: { lat: number; lng: number }) => {
+    const prev = markerAnimRef.current[markerId];
+    if (prev) cancelAnimationFrame(prev.rafId);
+    const startedAt = performance.now();
+    const step = (now: number) => {
+      const elapsed = now - startedAt;
+      const t = Math.min(1, elapsed / ANIM_DURATION_MS);
+      // ease-out cubic: starts fast, settles gently.
+      const eased = 1 - Math.pow(1 - t, 3);
+      const lat = from.lat + (to.lat - from.lat) * eased;
+      const lng = from.lng + (to.lng - from.lng) * eased;
+      marker.setPosition({ lat, lng });
+      if (t < 1) {
+        markerAnimRef.current[markerId] = {
+          rafId: requestAnimationFrame(step),
+          from,
+          to,
+          startedAt,
+        };
+      } else {
+        delete markerAnimRef.current[markerId];
+      }
+    };
+    markerAnimRef.current[markerId] = {
+      rafId: requestAnimationFrame(step),
+      from,
+      to,
+      startedAt,
+    };
+  };
 
   // Init map once
   useEffect(() => {
@@ -114,14 +184,22 @@ export default function LiveTrackingMap({ markers, height = 560, selectedTripId 
 
     return () => {
       cancelled = true;
+      Object.values(markerAnimRef.current).forEach((a) => cancelAnimationFrame(a.rafId));
       Object.values(gmMarkersRef.current).forEach((m: any) => m.setMap(null));
+      Object.values(gmDestinationsRef.current).forEach((m: any) => m.setMap(null));
+      Object.values(gmRoutesRef.current).forEach((p: any) => p.setMap(null));
+      Object.values(gmTrailsRef.current).forEach((p: any) => p.setMap(null));
+      markerAnimRef.current = {};
       gmMarkersRef.current = {};
+      gmDestinationsRef.current = {};
+      gmRoutesRef.current = {};
+      gmTrailsRef.current = {};
       mapRef.current = null;
       didFitRef.current = false;
     };
   }, []);
 
-  // Update markers
+  // Update driver markers
   useEffect(() => {
     if (!mapRef.current) return;
     const google = (window as any).google;
@@ -129,24 +207,44 @@ export default function LiveTrackingMap({ markers, height = 560, selectedTripId 
 
     const currentIds = new Set(markers.map((m) => m.tripId));
 
-    // Remove stale markers
     Object.keys(gmMarkersRef.current).forEach((id) => {
       if (!currentIds.has(id)) {
+        const inflight = markerAnimRef.current[id];
+        if (inflight) cancelAnimationFrame(inflight.rafId);
+        delete markerAnimRef.current[id];
         gmMarkersRef.current[id].setMap(null);
         delete gmMarkersRef.current[id];
+        delete markerAccentRef.current[id];
       }
     });
 
-    // Add or update markers
     markers.forEach((m) => {
       const initials = getInitials(m.driverName);
       const pos = { lat: m.lat, lng: m.lng };
 
       if (gmMarkersRef.current[m.tripId]) {
-        // Update existing marker position
-        gmMarkersRef.current[m.tripId].setPosition(pos);
+        const existing = gmMarkersRef.current[m.tripId];
+        const currentPos = existing.getPosition?.();
+        const from = currentPos
+          ? { lat: currentPos.lat(), lng: currentPos.lng() }
+          : pos;
+        // Only animate if the new fix is actually somewhere new — avoids a
+        // spurious 1.5s tween every poll when the driver is parked.
+        const moved = Math.abs(from.lat - pos.lat) > 1e-7 || Math.abs(from.lng - pos.lng) > 1e-7;
+        if (moved) {
+          animateMarker(m.tripId, existing, from, pos);
+        }
+        // Re-generate the icon when the color changes — disconnection turns
+        // the marker red without removing it, reconnection turns it back green.
+        if (markerAccentRef.current[m.tripId] !== m.accent) {
+          existing.setIcon({
+            url: createDriverCarIcon(initials, m.accent),
+            scaledSize: new google.maps.Size(64, 72),
+            anchor: new google.maps.Point(32, 68),
+          });
+          markerAccentRef.current[m.tripId] = m.accent;
+        }
       } else {
-        // Create new marker
         const marker = new google.maps.Marker({
           position: pos,
           map: mapRef.current,
@@ -189,17 +287,142 @@ export default function LiveTrackingMap({ markers, height = 560, selectedTripId 
         });
 
         gmMarkersRef.current[m.tripId] = marker;
+        markerAccentRef.current[m.tripId] = m.accent;
       }
     });
 
-    // Fit bounds on first load with data
-    if (markers.length > 0 && !didFitRef.current) {
+    // With a single driver visible, follow them: snap-zoom on first sight,
+    // pan smoothly afterwards so the marker stays centered as they move.
+    if (markers.length === 1) {
+      const m = markers[0];
+      const target = { lat: m.lat, lng: m.lng };
+      if (!didFitRef.current) {
+        mapRef.current.setCenter(target);
+        if (mapRef.current.getZoom() < 15) mapRef.current.setZoom(16);
+        didFitRef.current = true;
+      } else {
+        mapRef.current.panTo(target);
+      }
+    } else if (markers.length > 1 && !didFitRef.current) {
       const bounds = new google.maps.LatLngBounds();
       markers.forEach((m) => bounds.extend({ lat: m.lat, lng: m.lng }));
+      destinations.forEach((d) => bounds.extend({ lat: d.lat, lng: d.lng }));
       mapRef.current.fitBounds(bounds, { top: 60, right: 60, bottom: 60, left: 60 });
       didFitRef.current = true;
     }
-  }, [markers]);
+  }, [markers, destinations]);
+
+  // Update destination pins
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const google = (window as any).google;
+    if (!google?.maps) return;
+
+    const currentIds = new Set(destinations.map((d) => d.tripId));
+
+    Object.keys(gmDestinationsRef.current).forEach((id) => {
+      if (!currentIds.has(id)) {
+        gmDestinationsRef.current[id].setMap(null);
+        delete gmDestinationsRef.current[id];
+      }
+    });
+
+    destinations.forEach((d) => {
+      const pos = { lat: d.lat, lng: d.lng };
+      if (gmDestinationsRef.current[d.tripId]) {
+        gmDestinationsRef.current[d.tripId].setPosition(pos);
+      } else {
+        const marker = new google.maps.Marker({
+          position: pos,
+          map: mapRef.current,
+          icon: {
+            url: createDestinationFlagIcon(d.accent),
+            scaledSize: new google.maps.Size(44, 56),
+            anchor: new google.maps.Point(22, 52),
+          },
+          title: d.label,
+          zIndex: 5,
+        });
+        gmDestinationsRef.current[d.tripId] = marker;
+      }
+    });
+  }, [destinations]);
+
+  // Update live trails — the actual breadcrumb path each driver has
+  // traveled since they entered our view. Distinct from the Directions
+  // route (`routes` below): dashed line, thinner, lower z-index so the
+  // suggested route still reads as the "plan" and the trail as "actual".
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const google = (window as any).google;
+    if (!google?.maps) return;
+
+    const currentIds = new Set(trails.map((t) => t.tripId));
+
+    Object.keys(gmTrailsRef.current).forEach((id) => {
+      if (!currentIds.has(id)) {
+        gmTrailsRef.current[id].setMap(null);
+        delete gmTrailsRef.current[id];
+      }
+    });
+
+    trails.forEach((t) => {
+      const existing = gmTrailsRef.current[t.tripId];
+      if (existing) {
+        existing.setPath(t.path);
+        existing.setOptions({ strokeColor: t.accent });
+      } else {
+        const polyline = new google.maps.Polyline({
+          path: t.path,
+          map: mapRef.current,
+          geodesic: true,
+          strokeColor: t.accent,
+          // Solid stroke, slightly thinner than the Directions route so
+          // the suggested path still reads as the "plan" and the trail
+          // as "actual travelled".
+          strokeOpacity: 0.95,
+          strokeWeight: 4,
+          zIndex: 1,
+        });
+        gmTrailsRef.current[t.tripId] = polyline;
+      }
+    });
+  }, [trails]);
+
+  // Update route polylines
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const google = (window as any).google;
+    if (!google?.maps) return;
+
+    const currentIds = new Set(routes.map((r) => r.tripId));
+
+    Object.keys(gmRoutesRef.current).forEach((id) => {
+      if (!currentIds.has(id)) {
+        gmRoutesRef.current[id].setMap(null);
+        delete gmRoutesRef.current[id];
+      }
+    });
+
+    routes.forEach((r) => {
+      const existing = gmRoutesRef.current[r.tripId];
+      if (existing) {
+        existing.setPath(r.path);
+        existing.setOptions({ strokeColor: r.accent });
+      } else {
+        const polyline = new google.maps.Polyline({
+          path: r.path,
+          map: mapRef.current,
+          geodesic: true,
+          strokeColor: r.accent,
+          strokeOpacity: 0.85,
+          strokeWeight: 5,
+          zIndex: 2,
+        });
+        gmRoutesRef.current[r.tripId] = polyline;
+      }
+    });
+  }, [routes]);
 
   // Highlight selected marker and pan to it
   useEffect(() => {
@@ -218,6 +441,16 @@ export default function LiveTrackingMap({ markers, height = 560, selectedTripId 
         anchor: new google.maps.Point(isSelected ? 40 : 32, isSelected ? 90 : 68),
       });
       gm.setZIndex(isSelected ? 100 : 10);
+    });
+
+    // Emphasize the selected trip's route
+    Object.entries(gmRoutesRef.current).forEach(([tripId, polyline]) => {
+      const isSelected = tripId === selectedTripId;
+      polyline.setOptions({
+        strokeWeight: isSelected ? 7 : 5,
+        strokeOpacity: isSelected ? 1 : 0.6,
+        zIndex: isSelected ? 4 : 2,
+      });
     });
 
     if (selectedTripId) {

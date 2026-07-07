@@ -40,7 +40,10 @@ async function bootstrap() {
     'https://seven.management',
     'https://www.seven.management',
     'https://sevenarena.app',
-    'https://www.sevenarena.app'
+    'https://www.sevenarena.app',
+    'https://sa.boazmag.live',
+    'https://www.sa.boazmag.live',
+    'https://sa-api.boazmag.live'
   ]);
   app.enableCors({
     origin: (origin, callback) => {

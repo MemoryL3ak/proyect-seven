@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { apiFetch } from "@/lib/api";
+import { getSupabase } from "@/lib/supabase";
 import { downloadCSV } from "@/lib/export";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiCard from "@/components/ui/KpiCard";
@@ -34,6 +35,9 @@ type PresenceDriver = {
   activeTrips: number;
   /** Viajes asignados al conductor para la fecha consultada. */
   dayTripCount: number;
+  // The driver's active trip (heading to pickup or passenger aboard), if any.
+  activeTripId: string | null;
+  activeTripStatus: string | null;
   gpsAgeSeconds: number | null;
   lat: number | null;
   lng: number | null;
@@ -55,6 +59,15 @@ function todayChile(): string {
   return `${y}-${m}-${d}`;
 }
 
+// Turns a trip status into the label shown on the map/list. Falls back to a
+// generic "En viaje" when we only know the driver has an active trip.
+function tripLabel(status: string | null, activeTrips: number): string | null {
+  if (status === "EN_ROUTE") return "Va en camino";
+  if (status === "PICKED_UP") return "Pasajero a bordo";
+  if (activeTrips > 0) return "En viaje";
+  return null;
+}
+
 type Snapshot = {
   ts: string;
   stats: { totalDrivers: number; onlineNow: number; driversToday: number; sessionsToday: number };
@@ -62,6 +75,39 @@ type Snapshot = {
 };
 
 type OccupancyFilter = "" | "BUSY" | "FREE";
+
+type PositionItem = {
+  id: string;
+  vehicleId?: string;
+  driverId?: string;
+  timestamp: string;
+  // Server wall-clock when persisted. Preferred over `timestamp` for
+  // freshness decisions — device clocks can be skewed.
+  createdAt?: string;
+  location?: { coordinates?: [number, number] } | { lat?: number; lng?: number };
+};
+
+type LivePosition = {
+  lat: number;
+  lng: number;
+  timestamp: string; // device clock (shown as "GPS hh:mm")
+  receivedAt: string; // server clock (drives freshness)
+};
+
+// A driver counts as "reporting live" (green) when their freshest fix is under
+// this old. Beyond it, the marker stays on the map but greys out.
+const LIVE_WINDOW_MS = 30 * 1000;
+// Keep showing a driver's marker until their last fix is this stale.
+const SHOW_WINDOW_MS = 10 * 60 * 1000;
+
+function pickCoords(pos: PositionItem): { lat: number; lng: number } | null {
+  const loc = pos.location as any;
+  const coords = loc?.coordinates;
+  const lat = coords ? coords[1] : loc?.lat;
+  const lng = coords ? coords[0] : loc?.lng;
+  if (lat == null || lng == null) return null;
+  return { lat, lng };
+}
 
 function ago(seconds: number | null): string {
   if (seconds == null) return "—";
@@ -110,6 +156,24 @@ export default function DriverMonitoringPage() {
 
   const isToday = selectedDate === today;
 
+  // Freshest live position per driver, fed by Supabase Realtime + a fast poll.
+  // These override the (slower, DB-join) coordinates from the presence snapshot
+  // so the map moves in real time.
+  const [livePositions, setLivePositions] = useState<Record<string, LivePosition>>({});
+  // Re-evaluates freshness windows every second so a driver who stops sending
+  // greys out within ~1s of crossing the threshold.
+  const [nowTick, setNowTick] = useState(() => Date.now());
+
+  // Merges a fresh fix in only when it's newer (by server clock) than what we
+  // already hold for that driver — protects against out-of-order delivery.
+  const mergePosition = useCallback((driverId: string, next: LivePosition) => {
+    setLivePositions((prev) => {
+      const current = prev[driverId];
+      if (current && new Date(next.receivedAt) <= new Date(current.receivedAt)) return prev;
+      return { ...prev, [driverId]: next };
+    });
+  }, []);
+
   const load = useCallback(async () => {
     try {
       const url = `/driver-presence/snapshot?date=${encodeURIComponent(selectedDate)}`;
@@ -131,6 +195,78 @@ export default function DriverMonitoringPage() {
     const interval = setInterval(load, 8000);
     return () => clearInterval(interval);
   }, [load, isToday]);
+
+  // Live GPS layer: Supabase Realtime pushes every new position the instant it
+  // lands; a fast poll backs it up where Realtime isn't connected. This is the
+  // same mechanism the trip-tracking module uses, applied here to ALL drivers.
+  useEffect(() => {
+    const supabase = getSupabase();
+    const channel = supabase
+      .channel("driver-monitoring-positions")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "telemetry", table: "vehicle_positions" },
+        (payload) => {
+          const row = payload.new as {
+            driver_id: string;
+            vehicle_id: string | null;
+            timestamp: string;
+            created_at: string;
+            location?: unknown;
+            lat?: number | null;
+            lng?: number | null;
+          };
+          let lat: number | null = row.lat ?? null;
+          let lng: number | null = row.lng ?? null;
+          if ((lat == null || lng == null) && row.location && typeof row.location === "object") {
+            const coords = (row.location as { coordinates?: [number, number] }).coordinates;
+            if (coords && Array.isArray(coords)) {
+              lng = coords[0];
+              lat = coords[1];
+            }
+          }
+          const driverId = row.driver_id;
+          if (lat == null || lng == null || !driverId) return;
+          mergePosition(driverId, {
+            lat,
+            lng,
+            timestamp: row.timestamp,
+            receivedAt: row.created_at || row.timestamp,
+          });
+        },
+      )
+      .subscribe();
+
+    // Fast position-only poll — backup for when Realtime isn't connected and a
+    // snappier feel. Cheap: /vehicle-positions returns small rows.
+    const positionsTimer = setInterval(async () => {
+      try {
+        const data = await apiFetch<PositionItem[]>("/vehicle-positions");
+        (data || []).forEach((pos) => {
+          const driverId = pos.driverId;
+          if (!driverId) return;
+          const c = pickCoords(pos);
+          if (!c) return;
+          mergePosition(driverId, {
+            lat: c.lat,
+            lng: c.lng,
+            timestamp: pos.timestamp,
+            receivedAt: pos.createdAt || pos.timestamp,
+          });
+        });
+      } catch {
+        // ignore — next tick retries.
+      }
+    }, 2500);
+
+    const tickTimer = setInterval(() => setNowTick(Date.now()), 1000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(positionsTimer);
+      clearInterval(tickTimer);
+    };
+  }, [mergePosition]);
 
   const stats = snapshot?.stats ?? { totalDrivers: 0, onlineNow: 0, driversToday: 0, sessionsToday: 0 };
   const drivers = snapshot?.drivers ?? [];
@@ -167,28 +303,63 @@ export default function DriverMonitoringPage() {
 
   const markers = useMemo<PresenceMarker[]>(
     () =>
+      // Respect the active filters (Ariel's filter bar) while keeping the live
+      // GPS layer: prefer the freshest realtime/poll fix, fall back to the
+      // snapshot's DB-join coordinates so a driver still appears on load.
       visibleDrivers
-        .filter((d) => d.lat != null && d.lng != null)
-        .map((d) => ({
-          id: d.driverId,
-          lat: d.lat as number,
-          lng: d.lng as number,
-          name: d.fullName,
-          online: d.online,
-          lastSeen: ago(d.secondsSinceSeen),
-          gpsTime:
-            d.gpsTimestamp != null
-              ? new Date(d.gpsTimestamp).toLocaleString("es-CL", {
-                  day: "2-digit",
-                  month: "2-digit",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })
-              : "—",
-          activeTrips: d.activeTrips,
-          platform: d.platform,
-        })),
-    [visibleDrivers],
+        .map((d) => {
+          const live = livePositions[d.driverId];
+          let lat: number | null = null;
+          let lng: number | null = null;
+          let gpsTimestamp: string | null = null;
+          let ageMs = Infinity;
+          if (live) {
+            lat = live.lat;
+            lng = live.lng;
+            gpsTimestamp = live.timestamp;
+            ageMs = nowTick - new Date(live.receivedAt).getTime();
+          } else if (d.lat != null && d.lng != null) {
+            lat = d.lat;
+            lng = d.lng;
+            gpsTimestamp = d.gpsTimestamp;
+            ageMs = d.gpsAgeSeconds != null ? d.gpsAgeSeconds * 1000 : Infinity;
+          }
+          if (lat == null || lng == null || ageMs > SHOW_WINDOW_MS) return null;
+          // Reporting = actively sending right now; grey = has a recent-ish last
+          // known spot but isn't currently transmitting.
+          const reporting = ageMs < LIVE_WINDOW_MS;
+          // "En viaje" (green) only when live AND on an active trip, so a green
+          // pin always means a driver we're tracking in real time.
+          const onTrip = reporting && d.activeTrips > 0;
+          return {
+            id: d.driverId,
+            lat,
+            lng,
+            name: d.fullName,
+            online: reporting,
+            onTrip,
+            tripLabel: tripLabel(d.activeTripStatus, d.activeTrips),
+            lastSeen: ago(d.secondsSinceSeen),
+            gpsTime:
+              gpsTimestamp != null
+                ? new Date(gpsTimestamp).toLocaleString("es-CL", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                : "—",
+            activeTrips: d.activeTrips,
+            platform: d.platform,
+          } as PresenceMarker;
+        })
+        .filter((m): m is PresenceMarker => m !== null),
+    [visibleDrivers, livePositions, nowTick],
+  );
+
+  const onTripCount = useMemo(
+    () => drivers.filter((d) => d.activeTrips > 0).length,
+    [drivers],
   );
 
   const busyCount = useMemo(() => drivers.filter((d) => d.activeTrips > 0).length, [drivers]);
@@ -357,6 +528,14 @@ export default function DriverMonitoringPage() {
             </h2>
             <span className="text-xs" style={{ color: "#94a3b8" }}>
               {markers.length} con señal GPS
+              {onTripCount > 0 && (
+                <>
+                  {" · "}
+                  <span style={{ color: "#059669", fontWeight: 700 }}>
+                    {onTripCount} en viaje
+                  </span>
+                </>
+              )}
             </span>
           </div>
           {markers.length === 0 ? (
@@ -470,6 +649,7 @@ export default function DriverMonitoringPage() {
                 {visibleDrivers.map((d, i) => {
                   const gpsActive = d.gpsAgeSeconds != null && d.gpsAgeSeconds < 600;
                   const isBusy = d.activeTrips > 0;
+                  const tripText = tripLabel(d.activeTripStatus, d.activeTrips);
                   return (
                     <tr
                       key={d.driverId}
@@ -572,7 +752,7 @@ export default function DriverMonitoringPage() {
                             }}
                           >
                             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 17H3v-6l2.5-5h11L19 11v6h-2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg>
-                            {d.activeTrips} {d.activeTrips === 1 ? "viaje" : "viajes"}
+                            {tripText ?? `${d.activeTrips} ${d.activeTrips === 1 ? "viaje" : "viajes"}`}
                           </span>
                         ) : (
                           <span

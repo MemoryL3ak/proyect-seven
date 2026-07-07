@@ -8,11 +8,31 @@ export type PresenceMarker = {
   lng: number;
   name: string;
   online: boolean;
+  // True when the driver is currently on an active trip (heading to pickup or
+  // with the passenger aboard). Drives the "En viaje" green highlight.
+  onTrip: boolean;
+  // Human label for the trip state ("Va en camino", "Pasajero a bordo"…).
+  tripLabel: string | null;
   lastSeen: string;
   gpsTime: string;
   activeTrips: number;
   platform: string | null;
 };
+
+// Marker accent per state: on an active trip = green, online-only = blue,
+// stale/last-known = grey. Kept in one place so the pin icon, the info window
+// and the zIndex all agree.
+function markerAccent(m: PresenceMarker): string {
+  if (m.onTrip) return "#10b981";
+  if (m.online) return "#2563eb";
+  return "#94a3b8";
+}
+
+function markerStatusLabel(m: PresenceMarker): string {
+  if (m.onTrip) return m.tripLabel || "En viaje";
+  if (m.online) return "En línea";
+  return "Desconectado";
+}
 
 type Props = {
   markers: PresenceMarker[];
@@ -75,8 +95,48 @@ export default function DriverPresenceMap({ markers, height = 420 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const gmMarkersRef = useRef<Record<string, any>>({});
+  // Last accent applied per marker — drives icon regeneration only when the
+  // online/offline color actually flips (the markers array re-renders every
+  // second from the freshness tick, so we must not rebuild icons each time).
+  const markerAccentRef = useRef<Record<string, string>>({});
+  // Per-marker animation state — interpolates a marker between its previous
+  // fix and the new one so movement looks fluid instead of "teleporting"
+  // every realtime push. Mirrors LiveTrackingMap's approach.
+  const markerAnimRef = useRef<
+    Record<string, { rafId: number; from: { lat: number; lng: number }; to: { lat: number; lng: number } }>
+  >({});
   const infoWindowRef = useRef<any>(null);
   const didFitRef = useRef(false);
+
+  // Smoothly animates a marker to `to`, cancelling any in-flight tween for the
+  // same marker. 1200 ms sits just under the typical gap between GPS fixes so
+  // the marker arrives shortly before the next one lands.
+  const ANIM_DURATION_MS = 1200;
+  const animateMarker = (
+    markerId: string,
+    marker: any,
+    from: { lat: number; lng: number },
+    to: { lat: number; lng: number },
+  ) => {
+    const prev = markerAnimRef.current[markerId];
+    if (prev) cancelAnimationFrame(prev.rafId);
+    const startedAt = performance.now();
+    const step = (now: number) => {
+      const elapsed = now - startedAt;
+      const t = Math.min(1, elapsed / ANIM_DURATION_MS);
+      // ease-out cubic: starts fast, settles gently.
+      const eased = 1 - Math.pow(1 - t, 3);
+      const lat = from.lat + (to.lat - from.lat) * eased;
+      const lng = from.lng + (to.lng - from.lng) * eased;
+      marker.setPosition({ lat, lng });
+      if (t < 1) {
+        markerAnimRef.current[markerId] = { rafId: requestAnimationFrame(step), from, to };
+      } else {
+        delete markerAnimRef.current[markerId];
+      }
+    };
+    markerAnimRef.current[markerId] = { rafId: requestAnimationFrame(step), from, to };
+  };
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -102,7 +162,9 @@ export default function DriverPresenceMap({ markers, height = 420 }: Props) {
 
     return () => {
       cancelled = true;
+      Object.values(markerAnimRef.current).forEach((a) => cancelAnimationFrame(a.rafId));
       Object.values(gmMarkersRef.current).forEach((m: any) => m.setMap(null));
+      markerAnimRef.current = {};
       gmMarkersRef.current = {};
       mapRef.current = null;
       didFitRef.current = false;
@@ -118,14 +180,20 @@ export default function DriverPresenceMap({ markers, height = 420 }: Props) {
 
     Object.keys(gmMarkersRef.current).forEach((id) => {
       if (!currentIds.has(id)) {
+        const inflight = markerAnimRef.current[id];
+        if (inflight) cancelAnimationFrame(inflight.rafId);
+        delete markerAnimRef.current[id];
         gmMarkersRef.current[id].setMap(null);
         delete gmMarkersRef.current[id];
+        delete markerAccentRef.current[id];
       }
     });
 
     markers.forEach((m) => {
       const initials = getInitials(m.name);
-      const accent = m.online ? "#10b981" : "#94a3b8";
+      const accent = markerAccent(m);
+      const statusLabel = markerStatusLabel(m);
+      const zIndex = m.onTrip ? 30 : m.online ? 20 : 10;
       const pos = { lat: m.lat, lng: m.lng };
 
       const html = `
@@ -134,7 +202,7 @@ export default function DriverPresenceMap({ markers, height = 420 }: Props) {
             <div style="width:32px;height:32px;border-radius:50%;background:${accent};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#fff;">${initials}</div>
             <div>
               <div style="font-weight:800;font-size:14px;color:#0f172a;">${m.name}</div>
-              <div style="font-size:11px;font-weight:700;color:${accent};">${m.online ? "Conectado" : "Desconectado"}</div>
+              <div style="font-size:11px;font-weight:700;color:${accent};">${statusLabel}</div>
             </div>
           </div>
           <div style="font-size:12px;background:#f8fafc;border-radius:8px;padding:8px 10px;line-height:1.8;">
@@ -148,12 +216,25 @@ export default function DriverPresenceMap({ markers, height = 420 }: Props) {
 
       if (gmMarkersRef.current[m.id]) {
         const marker = gmMarkersRef.current[m.id];
-        marker.setPosition(pos);
-        marker.setIcon({
-          url: createPinIcon(initials, accent),
-          scaledSize: new google.maps.Size(56, 68),
-          anchor: new google.maps.Point(28, 66),
-        });
+        const currentPos = marker.getPosition?.();
+        const from = currentPos ? { lat: currentPos.lat(), lng: currentPos.lng() } : pos;
+        // Only animate when the fix actually moved — avoids a spurious tween
+        // on every refresh when a driver is parked.
+        const moved = Math.abs(from.lat - pos.lat) > 1e-7 || Math.abs(from.lng - pos.lng) > 1e-7;
+        if (moved) {
+          animateMarker(m.id, marker, from, pos);
+        } else {
+          marker.setPosition(pos);
+        }
+        if (markerAccentRef.current[m.id] !== accent) {
+          marker.setIcon({
+            url: createPinIcon(initials, accent),
+            scaledSize: new google.maps.Size(56, 68),
+            anchor: new google.maps.Point(28, 66),
+          });
+          marker.setZIndex(zIndex);
+          markerAccentRef.current[m.id] = accent;
+        }
         marker.__html = html;
       } else {
         const marker = new google.maps.Marker({
@@ -165,7 +246,7 @@ export default function DriverPresenceMap({ markers, height = 420 }: Props) {
             anchor: new google.maps.Point(28, 66),
           },
           title: m.name,
-          zIndex: m.online ? 20 : 10,
+          zIndex,
         });
         marker.__html = html;
         marker.addListener("click", () => {
@@ -173,6 +254,7 @@ export default function DriverPresenceMap({ markers, height = 420 }: Props) {
           infoWindowRef.current.open(mapRef.current, marker);
         });
         gmMarkersRef.current[m.id] = marker;
+        markerAccentRef.current[m.id] = accent;
       }
     });
 

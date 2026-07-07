@@ -12,6 +12,7 @@ import { UpdateTripDto } from './dto/update-trip.dto';
 import { Trip } from './entities/trip.entity';
 import { TripMessage } from './entities/trip-message.entity';
 import { ProviderRate } from '../providers/entities/provider-rate.entity';
+import { PushNotificationsService } from '../push-notifications/push-notifications.service';
 
 type TripRow = {
   id: string;
@@ -72,7 +73,58 @@ export class TripsService {
     private readonly messageRepository: Repository<TripMessage>,
     @InjectRepository(ProviderRate)
     private readonly rateRepository: Repository<ProviderRate>,
+    private readonly pushService: PushNotificationsService,
   ) {}
+
+  /**
+   * Mapeo de status nuevo → texto y emoji de push para el atleta solicitante.
+   * Los status no listados no disparan push (ej: REQUESTED, COMPLETED).
+   */
+  private statusPushForAthlete(
+    newStatus: string,
+  ): { title: string; body: string; emoji: string } | null {
+    switch (newStatus) {
+      case 'CONFIRMED':
+        return {
+          title: 'Viaje confirmado',
+          body: 'Tu conductor confirmó el viaje',
+          emoji: '✅',
+        };
+      case 'EN_ROUTE':
+        return {
+          title: 'Conductor en camino',
+          body: 'Tu conductor está en camino a buscarte',
+          emoji: '🚖',
+        };
+      case 'PICKED_UP':
+        return {
+          title: 'Viaje en curso',
+          body: 'Estás en camino al destino',
+          emoji: '🚗',
+        };
+      case 'DROPPED_OFF':
+        return {
+          title: 'Llegaste a destino',
+          body: '¡Buen viaje!',
+          emoji: '📍',
+        };
+      default:
+        return null;
+    }
+  }
+
+  private firePush(
+    audience: { userKind: 'driver' | 'athlete'; userId: string },
+    payload: {
+      title: string;
+      body: string;
+      data?: Record<string, unknown>;
+      kind?: string;
+      emoji?: string;
+    },
+  ): void {
+    void this.pushService.send(audience, payload);
+  }
 
   private toRow(dto: CreateTripDto | UpdateTripDto) {
     const row: Record<string, unknown> = {};
@@ -438,6 +490,22 @@ export class TripsService {
       await this.setTripAthletes(outboundData.id, createTripDto.athleteIds);
     }
 
+    // SA-37: notify driver when assigned at creation time.
+    if (outboundData.driver_id) {
+      this.firePush(
+        { userKind: 'driver', userId: outboundData.driver_id },
+        {
+          title: 'Nuevo viaje asignado',
+          body: outboundData.origin
+            ? `Origen: ${outboundData.origin}`
+            : 'Tienes un nuevo viaje pendiente',
+          emoji: '🚕',
+          kind: 'trip-assigned',
+          data: { url: '/portal/conductor', tripId: outboundData.id },
+        },
+      );
+    }
+
     // Auto-create return trip when round trip
     if (createTripDto.isRoundTrip) {
       const returnRow = this.toRow({
@@ -632,6 +700,47 @@ export class TripsService {
       await this.setTripAthletes(id, updateTripDto.athleteIds);
     }
 
+    // SA-37: notify driver when newly assigned through update.
+    const newDriverId =
+      updateTripDto.driverId !== undefined ? updateTripDto.driverId : null;
+    if (
+      newDriverId &&
+      newDriverId !== currentTrip.driverId
+    ) {
+      this.firePush(
+        { userKind: 'driver', userId: newDriverId },
+        {
+          title: 'Nuevo viaje asignado',
+          body: data.origin
+            ? `Origen: ${data.origin}`
+            : 'Tienes un nuevo viaje pendiente',
+          emoji: '🚕',
+          kind: 'trip-assigned',
+          data: { url: '/portal/conductor', tripId: id },
+        },
+      );
+    }
+
+    // SA-37: notify athlete on status transitions that matter for the trip.
+    const finalStatus = (data as TripRow).status;
+    if (
+      finalStatus &&
+      finalStatus !== currentTrip.status &&
+      currentTrip.requesterAthleteId
+    ) {
+      const msg = this.statusPushForAthlete(finalStatus);
+      if (msg) {
+        this.firePush(
+          { userKind: 'athlete', userId: currentTrip.requesterAthleteId },
+          {
+            ...msg,
+            kind: 'trip-status',
+            data: { url: '/portal/user', tripId: id, status: finalStatus },
+          },
+        );
+      }
+    }
+
     return this.findOne(id);
   }
 
@@ -693,6 +802,35 @@ export class TripsService {
       senderName,
       content: content.slice(0, 1000),
     });
-    return this.messageRepository.save(message);
+    const saved = await this.messageRepository.save(message);
+
+    // SA-37: notify the other side of the chat with a preview of the message.
+    try {
+      const trip = await this.findOne(tripId);
+      const recipientKind: 'driver' | 'athlete' =
+        senderType === 'DRIVER' ? 'athlete' : 'driver';
+      const recipientId =
+        recipientKind === 'driver' ? trip.driverId : trip.requesterAthleteId;
+      if (recipientId) {
+        const preview = content.length > 60 ? `${content.slice(0, 57)}…` : content;
+        this.firePush(
+          { userKind: recipientKind, userId: recipientId },
+          {
+            title: senderName || (senderType === 'DRIVER' ? 'Conductor' : 'Pasajero'),
+            body: preview,
+            emoji: '💬',
+            kind: 'trip-chat',
+            data: {
+              url: recipientKind === 'driver' ? '/portal/conductor' : '/portal/user',
+              tripId,
+            },
+          },
+        );
+      }
+    } catch {
+      // si findOne falla u otro problema, no romper el flujo del mensaje.
+    }
+
+    return saved;
   }
 }

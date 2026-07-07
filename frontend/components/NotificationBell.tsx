@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
+import { apiFetch } from "@/lib/api";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -15,22 +16,91 @@ export type AppNotification = {
   read: boolean;
 };
 
+type ServerNotificationRow = {
+  id: string;
+  user_kind: string;
+  user_id: string;
+  title: string;
+  body: string;
+  emoji: string | null;
+  kind: string | null;
+  data: Record<string, unknown>;
+  read_at: string | null;
+  created_at: string;
+};
+
+export type UserKind = "athlete" | "driver" | "admin" | "provider_participant";
+
+export type UseNotificationsOptions = {
+  /** Type of user — when set together with userId, the bell pulls from
+   *  the API and persists across reloads. Without this, the bell stays
+   *  fully in-memory (legacy mode). */
+  userKind?: UserKind;
+  userId?: string | null;
+  /** Polling interval in ms. Default 30s. */
+  pollIntervalMs?: number;
+};
+
+const DEFAULT_POLL_MS = 30_000;
+const SERVER_PREFIX = "srv:";
+
+function rowToNotification(row: ServerNotificationRow): AppNotification {
+  return {
+    id: `${SERVER_PREFIX}${row.id}`,
+    message: row.body || row.title,
+    emoji: row.emoji ?? "🔔",
+    timestamp: new Date(row.created_at).getTime(),
+    read: row.read_at !== null,
+  };
+}
+
 /* ------------------------------------------------------------------ */
 /*  Hook: useNotifications                                             */
 /* ------------------------------------------------------------------ */
 
-export function useNotifications() {
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+export function useNotifications(opts: UseNotificationsOptions = {}) {
+  const { userKind, userId, pollIntervalMs = DEFAULT_POLL_MS } = opts;
+  const serverMode = !!(userKind && userId);
+
+  // Local-only entries created via push(). Survive only as long as the
+  // component tree lives — same as legacy behavior.
+  const [localNotifs, setLocalNotifs] = useState<AppNotification[]>([]);
+  // Server-backed entries pulled from the inbox.
+  const [serverNotifs, setServerNotifs] = useState<AppNotification[]>([]);
+
+  const refresh = useCallback(async () => {
+    if (!serverMode) return;
+    try {
+      const rows = await apiFetch<ServerNotificationRow[]>(
+        `/notifications?userKind=${encodeURIComponent(userKind!)}&userId=${encodeURIComponent(userId!)}`,
+      );
+      setServerNotifs(rows.map(rowToNotification));
+    } catch {
+      // Polling errors are silent — try again next tick.
+    }
+  }, [serverMode, userKind, userId]);
+
+  useEffect(() => {
+    if (!serverMode) {
+      setServerNotifs([]);
+      return;
+    }
+    void refresh();
+    const id = setInterval(() => {
+      void refresh();
+    }, pollIntervalMs);
+    return () => clearInterval(id);
+  }, [serverMode, refresh, pollIntervalMs]);
 
   const push = useCallback((message: string, emoji: string) => {
     const n: AppNotification = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      id: `local:${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       message,
       emoji,
       timestamp: Date.now(),
       read: false,
     };
-    setNotifications((prev) => [n, ...prev].slice(0, 50));
+    setLocalNotifs((prev) => [n, ...prev].slice(0, 50));
 
     if (
       typeof window !== "undefined" &&
@@ -44,17 +114,52 @@ export function useNotifications() {
     }
   }, []);
 
-  const markAllRead = useCallback(() => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  }, []);
+  const markAllRead = useCallback(async () => {
+    setLocalNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
+    if (serverMode) {
+      // Optimistic: mark visually first, then sync.
+      setServerNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
+      try {
+        await apiFetch("/notifications/mark-read", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userKind, userId }),
+        });
+      } catch {
+        // If the call fails, the next poll re-syncs reality.
+        void refresh();
+      }
+    }
+  }, [serverMode, userKind, userId, refresh]);
 
-  const clear = useCallback(() => {
-    setNotifications([]);
-  }, []);
+  const clear = useCallback(async () => {
+    setLocalNotifs([]);
+    if (serverMode) {
+      setServerNotifs([]);
+      try {
+        await apiFetch("/notifications/clear", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userKind, userId }),
+        });
+      } catch {
+        void refresh();
+      }
+    }
+  }, [serverMode, userKind, userId, refresh]);
+
+  // Merge + dedupe + sort by timestamp desc.
+  const notifications = useMemo(() => {
+    const map = new Map<string, AppNotification>();
+    for (const n of [...serverNotifs, ...localNotifs]) {
+      map.set(n.id, n);
+    }
+    return Array.from(map.values()).sort((a, b) => b.timestamp - a.timestamp);
+  }, [serverNotifs, localNotifs]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  return { notifications, unreadCount, push, markAllRead, clear };
+  return { notifications, unreadCount, push, markAllRead, clear, refresh };
 }
 
 /* ------------------------------------------------------------------ */
@@ -220,11 +325,12 @@ export default function NotificationBell({
                 const isSuccess = e === "✅" || e === "ok" || e === "done";
                 const isStar = e === "⭐" || e === "star";
                 const isChat = e === "💬" || e === "chat";
-                const isCar = e === "🚖" || e === "🚗" || e === "car";
+                const isCar = e === "🚖" || e === "🚗" || e === "🚕" || e === "car";
                 const isPin = e === "📍" || e === "pin" || e === "location";
                 const isWarning = e.includes("⚠") || e === "warning";
                 const isCamera = e === "📷" || e === "camera" || e === "photo";
                 const isCal = e === "📅" || e === "cal" || e === "calendar";
+                const isSupport = e === "🛟" || e === "support";
                 const bg = isError ? "rgba(239,68,68,0.08)" : isStar ? "rgba(245,158,11,0.08)" : isWarning ? "rgba(245,158,11,0.08)" : "rgba(33,208,179,0.08)";
                 return (
                   <span style={{ flexShrink:0, width:30, height:30, borderRadius:8, background:bg, display:"flex", alignItems:"center", justifyContent:"center" }}>
@@ -246,6 +352,8 @@ export default function NotificationBell({
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
                     ) : isCal ? (
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    ) : isSupport ? (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><path d="M4.93 4.93l4.24 4.24M14.83 14.83l4.24 4.24M14.83 9.17l4.24-4.24M14.83 9.17l3.53-3.53M4.93 19.07l4.24-4.24"/></svg>
                     ) : (
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
                     )}

@@ -19,6 +19,11 @@ export class VehiclePosition {
   @Column({ name: 'driver_id', type: 'uuid' })
   driverId: string;
 
+  // The driver's active trip at the moment this fix was recorded, if any.
+  // Stamped server-side at ingest so the app doesn't need to know the trip.
+  @Column({ name: 'trip_id', type: 'uuid', nullable: true })
+  tripId?: string | null;
+
   @Column({ name: 'timestamp', type: 'timestamptz' })
   timestamp: Date;
 

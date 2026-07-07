@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import PlacesAutocompleteInput from "@/components/PlacesAutocompleteInput";
 import { apiFetch } from "@/lib/api";
+import { getMobileSession, mobileAwareLogout } from "@/lib/mobile-auth";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import NotificationBell, { useNotifications } from "@/components/NotificationBell";
 import TripChat from "@/components/TripChat";
@@ -506,47 +507,44 @@ export default function VehicleRequestPortalPage() {
     }
   };
 
+  // Restore session on mount: prefer ?athleteId query, then mobile-app session, then sessionStorage.
   useEffect(() => {
     if (autoLoginRef.current) return;
     const params = new URLSearchParams(window.location.search);
-    const athleteId = params.get("athleteId");
-    if (!athleteId) return;
+    const queryAthleteId = params.get("athleteId");
+    const mobileSession = getMobileSession();
+    const sessionAthleteId =
+      mobileSession?.kind === "athlete" ? mobileSession.athleteId : null;
+    let saved: string | null = null;
+    try {
+      saved = sessionStorage.getItem("portal_vr_id");
+    } catch {}
+    const athleteId = queryAthleteId || sessionAthleteId || saved;
+    if (!athleteId) {
+      setSessionChecked(true);
+      return;
+    }
     autoLoginRef.current = true;
     (async () => {
       setLoading(true);
       try {
         const data = await apiFetch<Athlete>(`/athletes/${athleteId}`);
-        if (data) {
+        if (data?.id) {
           setAthlete(data);
           setActiveTab("solicitud");
           try { sessionStorage.setItem("portal_vr_id", data.id); } catch {}
           await loadPortal(data);
+        } else {
+          try { sessionStorage.removeItem("portal_vr_id"); } catch {}
         }
-      } catch {} finally { setLoading(false); }
-    })();
-  }, []);
-
-  // Restore session on mount
-  useEffect(() => {
-    if (autoLoginRef.current || athlete) return;
-    try {
-      const saved = sessionStorage.getItem("portal_vr_id");
-      if (!saved) { setSessionChecked(true); return; }
-      autoLoginRef.current = true;
-      (async () => {
-        setLoading(true);
-        try {
-          const data = await apiFetch<Athlete>(`/athletes/${saved}`);
-          if (data?.id) {
-            setAthlete(data);
-            setActiveTab("solicitud");
-            await loadPortal(data);
-          } else { sessionStorage.removeItem("portal_vr_id"); }
-        } catch { sessionStorage.removeItem("portal_vr_id"); }
+      } catch {
+        try { sessionStorage.removeItem("portal_vr_id"); } catch {}
+      } finally {
         setLoading(false);
         setSessionChecked(true);
-      })();
-    } catch { setSessionChecked(true); }
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const requestAccess = async () => {
@@ -586,6 +584,7 @@ export default function VehicleRequestPortalPage() {
     setMessage(null);
     setError(null);
     setUserCode("");
+    mobileAwareLogout();
   };
 
   const resetRequestForm = () => {
@@ -2889,7 +2888,7 @@ export default function VehicleRequestPortalPage() {
           </div>
 
           {/* Bottom tab bar — 6 tabs */}
-          <div style={{ position:"fixed",bottom:0,left:0,right:0,display:"flex",background:"#fff",borderTop:"1px solid #e2e8f0",zIndex:100,paddingBottom:"env(safe-area-inset-bottom)" }}>
+          <div style={{ position:"fixed",bottom:0,left:0,right:0,display:"flex",background:"#fff",borderTop:"1px solid #e2e8f0",zIndex:100,paddingTop:6,paddingBottom:6,boxShadow:"0 -2px 12px rgba(0,0,0,0.06)" }}>
             {([
               { key: "solicitud" as PortalTab, label: "Solicitud", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> },
               { key: "actividades" as PortalTab, label: "Actividades", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> },

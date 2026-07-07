@@ -13,6 +13,12 @@ export class CreateVehiclePositionDto {
   @IsNotEmpty()
   driverId: string;
 
+  // Optional: if the caller doesn't supply it, the service resolves the
+  // driver's active trip and stamps it automatically.
+  @IsString()
+  @IsOptional()
+  tripId?: string;
+
   @IsISO8601()
   timestamp: string;
 

@@ -2,12 +2,15 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { apiFetch } from "@/lib/api";
+import { getMobileSession, mobileAwareLogout } from "@/lib/mobile-auth";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { useI18n } from "@/lib/i18n";
 import TripMap from "@/components/TripMap";
 import NotificationBell, { useNotifications } from "@/components/NotificationBell";
 import TripChat from "@/components/TripChat";
 import AssistanceChat from "@/components/AssistanceChat";
+import DevicePermissionsSection from "@/components/DevicePermissionsSection";
+import PushTokenSync from "@/components/PushTokenSync";
 import { buildCredentialHtml } from "@/lib/credential-template";
 import QRCode from "qrcode";
 
@@ -302,7 +305,7 @@ export default function UserPortalPage() {
   const [couponQrDataUrl, setCouponQrDataUrl] = useState<string>("");
   const [couponError, setCouponError] = useState<string | null>(null);
   const [credentialHtml, setCredentialHtml] = useState<string | null>(null);
-  const notify = useNotifications();
+  const notify = useNotifications({ userKind: "athlete", userId: athlete?.id ?? null });
 
   // Al cargar las actividades por primera vez, posiciona el calendario en el mes
   // de la próxima actividad (o la más cercana) para no abrir en un mes vacío.
@@ -377,6 +380,7 @@ export default function UserPortalPage() {
   }
   const prevTripStatus = useRef<string | null>(null);
   const arrivedNotified = useRef<string | null>(null); // tracks which segment was already notified
+  const [bootCheckDone, setBootCheckDone] = useState(false);
 
   const loadAthlete = async (directId?: string) => {
     if (!directId && !athleteId) return;
@@ -697,6 +701,22 @@ export default function UserPortalPage() {
     );
   };
 
+  // Mobile-app auto-login: skip code gate when a mobile session is present.
+  // While we're checking, we hide the gate UI to avoid the flash before the dashboard renders.
+  useEffect(() => {
+    if (athlete) {
+      setBootCheckDone(true);
+      return;
+    }
+    const session = getMobileSession();
+    if (session?.kind === "athlete" && session.athleteId) {
+      void loadAthlete(session.athleteId).finally(() => setBootCheckDone(true));
+    } else {
+      setBootCheckDone(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Show rating when trip completes (outside polling, catches any missed state)
   useEffect(() => {
     if (!trip) return;
@@ -825,6 +845,18 @@ export default function UserPortalPage() {
     { key: "hotelCheckinAt" as const, label: t("Hotel check-in"), ts: athlete?.hotelCheckinAt },
     { key: "hotelCheckoutAt" as const, label: t("Hotel check-out"), ts: athlete?.hotelCheckoutAt },
   ];
+
+  /* ══════════════════════════════════════════════════════════
+     BOOT LOADER (mobile auto-login in progress)
+  ══════════════════════════════════════════════════════════ */
+  if (!athlete && !bootCheckDone) {
+    return (
+      <div style={{ minHeight: "100vh", background: "#020c18", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ width: 36, height: 36, borderRadius: "50%", border: "3px solid rgba(33,208,179,0.25)", borderTopColor: "#21D0B3", animation: "pu-spin 0.8s linear infinite" }} />
+        <style>{`@keyframes pu-spin{to{transform:rotate(360deg)}}`}</style>
+      </div>
+    );
+  }
 
   /* ══════════════════════════════════════════════════════════
      LOGIN SCREEN
@@ -972,6 +1004,7 @@ export default function UserPortalPage() {
 
   return (
     <div style={{ minHeight:"100vh", background:"#eef1f8", position:"relative", overflow:"hidden" }}>
+      <PushTokenSync userKind="athlete" userId={athlete?.id || null} />
       <style>{`
         @keyframes db-in{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
         @keyframes db-badge{from{opacity:0;transform:scale(0.85)}to{opacity:1;transform:scale(1)}}
@@ -1087,7 +1120,7 @@ export default function UserPortalPage() {
                 <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
               </svg>
             </button>
-            <button type="button" onClick={() => { setAthlete(null); setAthleteId(""); try { sessionStorage.removeItem("portal_user_id"); } catch {} }}
+            <button type="button" onClick={() => { try { sessionStorage.removeItem("portal_user_id"); } catch {} mobileAwareLogout(); }}
               style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(255,255,255,0.15)",background:"rgba(255,255,255,0.08)",cursor:"pointer",flexShrink:0 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
@@ -2435,6 +2468,8 @@ export default function UserPortalPage() {
               Ficha de salud
               {healthRecord ? <span style={{ fontSize:10,padding:"2px 8px",borderRadius:6,background:"rgba(33,208,179,0.1)",color:"#0a7a6b" }}>Completada</span> : <span style={{ fontSize:10,padding:"2px 8px",borderRadius:6,background:"#FEF3C7",color:"#92400E" }}>Pendiente</span>}
             </a>
+            {/* Device permissions (only visible inside the mobile app) */}
+            <DevicePermissionsSection />
             {/* Logout */}
             <button type="button" onClick={() => { setAthlete(null); setAthleteId(""); try { sessionStorage.removeItem("portal_user_id"); } catch {} }}
               style={{ width:"100%",padding:12,borderRadius:12,border:"1px solid #e2e8f0",background:"#fff",color:"#ef4444",fontSize:13,fontWeight:600,cursor:"pointer" }}>
@@ -2446,13 +2481,13 @@ export default function UserPortalPage() {
         </div>{/* end tab content */}
 
         {/* ── Bottom tab bar ── */}
-        <div style={{ position:"fixed",bottom:0,left:0,right:0,display:"flex",background:"#fff",borderTop:"1px solid #e2e8f0",zIndex:100,paddingBottom:"env(safe-area-inset-bottom)" }}>
+        <div style={{ position:"fixed",bottom:0,left:0,right:0,display:"flex",background:"#fff",borderTop:"1px solid #e2e8f0",zIndex:100,paddingTop:6,paddingBottom:6,boxShadow:"0 -2px 12px rgba(0,0,0,0.06)" }}>
           {portalTabs.map(tab => (
             <button key={tab.key} type="button" onClick={() => setActiveTab(tab.key)}
-              style={{ flex:1,padding:"8px 0 6px",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2,
+              style={{ flex:1,padding:"4px 0 2px",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,
                 color:activeTab===tab.key?"#21D0B3":"#94a3b8" }}>
               <span style={{ display:"flex" }}>{tab.icon}</span>
-              <span style={{ fontSize:9,fontWeight:activeTab===tab.key?700:500 }}>{tab.label}</span>
+              <span style={{ fontSize:9.5,fontWeight:activeTab===tab.key?700:500,letterSpacing:"-0.005em" }}>{tab.label}</span>
             </button>
           ))}
         </div>
