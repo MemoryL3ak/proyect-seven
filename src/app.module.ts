@@ -29,9 +29,12 @@ import { HotelExtraReservationsModule } from './hotel-extra-reservations/hotel-e
 import { FoodLocationsModule } from './food-locations/food-locations.module';
 import { FoodMenusModule } from './food-menus/food-menus.module';
 import { ProviderParticipantsModule } from './provider-participants/provider-participants.module';
+import { MobileAuthModule } from './mobile-auth/mobile-auth.module';
 import { AccessControlModule } from './access-control/access-control.module';
 import { PremiacionesModule } from './premiaciones/premiaciones.module';
 import { SupportChatsModule } from './support-chats/support-chats.module';
+import { PushNotificationsModule } from './push-notifications/push-notifications.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { WorkforceModule } from './workforce/workforce.module';
 import { CouponsModule } from './coupons/coupons.module';
 import { DriverPresenceModule } from './driver-presence/driver-presence.module';
@@ -46,13 +49,20 @@ import { TripRequestsModule } from './trip-requests/trip-requests.module';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        url: configService.get<string>('DATABASE_URL'),
-        entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: configService.get<string>('DB_SYNCHRONIZE') === 'true',
-        migrations: [__dirname + '/migrations/*{.ts,.js}'],
-      }),
+      useFactory: (configService: ConfigService) => {
+        const url = configService.get<string>('DATABASE_URL') ?? '';
+        const needsSsl =
+          configService.get<string>('DB_SSL') === 'true' ||
+          /supabase\.(co|com)/.test(url);
+        return {
+          type: 'postgres',
+          url,
+          entities: [__dirname + '/**/*.entity{.ts,.js}'],
+          synchronize: configService.get<string>('DB_SYNCHRONIZE') === 'true',
+          migrations: [__dirname + '/migrations/*{.ts,.js}'],
+          ssl: needsSsl ? { rejectUnauthorized: false } : false,
+        };
+      },
     }),
     AuthModule,
     TransportsModule,
@@ -80,9 +90,12 @@ import { TripRequestsModule } from './trip-requests/trip-requests.module';
     SportsCalendarModule,
     AccreditationsModule,
     VenuesModule,
+    MobileAuthModule,
     AccessControlModule,
     PremiacionesModule,
     SupportChatsModule,
+    PushNotificationsModule,
+    NotificationsModule,
     WorkforceModule,
     CouponsModule,
     DriverPresenceModule,

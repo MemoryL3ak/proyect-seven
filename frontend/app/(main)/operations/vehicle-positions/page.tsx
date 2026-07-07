@@ -6,7 +6,13 @@ import { apiFetch } from "@/lib/api";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { getSupabase } from "@/lib/supabase";
 import { useI18n } from "@/lib/i18n";
-import type { TrackingMarker } from "@/components/LiveTrackingMap";
+import type {
+  DestinationPin,
+  RoutePath,
+  TrackingMarker,
+  TrailPath,
+} from "@/components/LiveTrackingMap";
+import { geocodeAddress, getDirections, snapToRoads, type LatLng } from "@/lib/google-maps";
 
 const LiveTrackingMap = dynamic(() => import("@/components/LiveTrackingMap"), { ssr: false });
 
@@ -60,7 +66,20 @@ type PositionItem = {
   vehicleId?: string;
   driverId?: string;
   timestamp: string;
+  // Server-side wall-clock time when the row was persisted. We prefer this
+  // over `timestamp` for online/offline decisions because device clocks can
+  // be skewed (Venezuela field test had a phone 32 min behind server time).
+  createdAt?: string;
   location?: { coordinates?: [number, number] } | { lat?: number; lng?: number };
+};
+
+type StoredPosition = {
+  lat: number;
+  lng: number;
+  // Device clock — shown to the user as "GPS hh:mm".
+  timestamp: string;
+  // Server clock — drives the green/red online state.
+  receivedAt: string;
 };
 
 const statusLabel: Record<string, string> = {
@@ -116,11 +135,35 @@ export default function VehiclePositionsPage() {
   const [athletes, setAthletes] = useState<Record<string, AthleteItem>>({});
   const [delegations, setDelegations] = useState<Record<string, DelegationItem>>({});
   const [venues, setVenues] = useState<Record<string, VenueItem>>({});
-  const [positions, setPositions] = useState<Record<string, { lat: number; lng: number; timestamp: string }>>({});
+  const [positions, setPositions] = useState<Record<string, StoredPosition>>({});
+  // Per-driver breadcrumb trail of where they've actually been since the
+  // admin opened the page. Capped per driver so a long session doesn't
+  // bloat memory; drivers that drop off the map get their trail cleared
+  // alongside their position entry.
+  const [trails, setTrails] = useState<Record<string, { lat: number; lng: number }[]>>({});
+  // Same path but rewritten by Google's Roads API so the line follows
+  // streets instead of jumping between houses from GPS jitter. Falls
+  // back to the raw trail when the snap call fails or the key isn't set.
+  const [snappedTrails, setSnappedTrails] = useState<Record<string, LatLng[]>>({});
+  const TRAIL_LIMIT = 200;
+  // Minimum movement (in degrees, ~3m at the equator) to append a new
+  // point to the trail. Filters out GPS jitter while parked so the line
+  // doesn't look like a static blob.
+  const TRAIL_MIN_DELTA = 0.00003;
+  // Drives recomputation of the recency window (`connectedDrivers`, "Con GPS")
+  // even when no fresh positions arrive — otherwise a driver that stops
+  // pushing would stay on the live tab forever.
+  const [nowTick, setNowTick] = useState(() => Date.now());
   const [completedAlerts, setCompletedAlerts] = useState<Array<{ tripId: string; driverName: string; destination: string; ts: Date }>>([]);
-  const [activeView, setActiveView] = useState<"tracking" | "table">("tracking");
+  const [activeView, setActiveView] = useState<"live" | "table">("live");
+  const [destinationCoords, setDestinationCoords] = useState<Record<string, LatLng>>({});
+  const [tripRoutes, setTripRoutes] = useState<Record<string, LatLng[]>>({});
+  const [tripRouteMeta, setTripRouteMeta] = useState<Record<string, { distanceKm: number; durationMin: number }>>({});
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  // Only the very first load should blank the KPIs to "—". Subsequent
+  // refreshes keep the previous values on screen to avoid flicker.
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const knownActiveIdsRef = useRef<Set<string>>(new Set());
@@ -224,7 +267,7 @@ export default function VehiclePositionsPage() {
         }, {})
       );
 
-      const latestByDriver: Record<string, { lat: number; lng: number; timestamp: string }> = {};
+      const latestByDriver: Record<string, StoredPosition> = {};
       (positionData || []).forEach((pos) => {
         const key = pos.driverId || pos.vehicleId;
         if (!key) return;
@@ -232,14 +275,31 @@ export default function VehiclePositionsPage() {
         const lat = coordinates ? coordinates[1] : (pos.location as any)?.lat;
         const lng = coordinates ? coordinates[0] : (pos.location as any)?.lng;
         if (lat === undefined || lng === undefined) return;
+        const receivedAt = pos.createdAt || pos.timestamp;
         const current = latestByDriver[key];
-        if (!current || new Date(pos.timestamp) > new Date(current.timestamp)) {
-          latestByDriver[key] = { lat, lng, timestamp: pos.timestamp };
+        if (!current || new Date(receivedAt) > new Date(current.receivedAt)) {
+          latestByDriver[key] = { lat, lng, timestamp: pos.timestamp, receivedAt };
         }
       });
-      setPositions(latestByDriver);
+      // Merge: realtime can deliver a fresh row in the gap between request
+      // start and request end — replacing the whole map would lose it. Keep
+      // any in-memory entry that is newer than what /vehicle-positions
+      // returned for that driver. We compare server `receivedAt`, not device
+      // `timestamp` — a phone with a skewed clock could otherwise overwrite
+      // a fresh fix with an "older-looking" one that's actually newer.
+      setPositions((prev) => {
+        const next: typeof prev = { ...latestByDriver };
+        for (const [key, fresh] of Object.entries(prev)) {
+          const incoming = next[key];
+          if (!incoming || new Date(fresh.receivedAt) > new Date(incoming.receivedAt)) {
+            next[key] = fresh;
+          }
+        }
+        return next;
+      });
 
       setLastUpdated(new Date());
+      setHasLoadedOnce(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("No se pudo cargar"));
     } finally {
@@ -268,20 +328,38 @@ export default function VehiclePositionsPage() {
             driver_id: string;
             vehicle_id: string | null;
             timestamp: string;
-            lat: number | null;
-            lng: number | null;
+            created_at: string;
+            // PostGIS columns arrive as WKB hex over realtime — we can't
+            // decode them client-side. We extract coordinates from the JSON
+            // representation if Supabase sends one, otherwise we wait for
+            // the next polling cycle (which uses ST_AsGeoJSON server-side).
+            location?: unknown;
+            lat?: number | null;
+            lng?: number | null;
           };
-          if (row.lat == null || row.lng == null) return;
+          // Accept either the dedicated lat/lng columns (older schema) or
+          // a GeoJSON location payload (newer paths).
+          let lat: number | null = row.lat ?? null;
+          let lng: number | null = row.lng ?? null;
+          if ((lat == null || lng == null) && row.location && typeof row.location === 'object') {
+            const coords = (row.location as { coordinates?: [number, number] }).coordinates;
+            if (coords && Array.isArray(coords)) {
+              lng = coords[0];
+              lat = coords[1];
+            }
+          }
+          if (lat == null || lng == null) return;
           const key = row.driver_id || row.vehicle_id;
           if (!key) return;
+          const receivedAt = row.created_at || row.timestamp;
           setPositions((prev) => {
             const current = prev[key];
-            if (current && new Date(row.timestamp) <= new Date(current.timestamp)) {
+            if (current && new Date(receivedAt) <= new Date(current.receivedAt)) {
               return prev;
             }
             return {
               ...prev,
-              [key]: { lat: row.lat!, lng: row.lng!, timestamp: row.timestamp },
+              [key]: { lat: lat!, lng: lng!, timestamp: row.timestamp, receivedAt },
             };
           });
           setLastUpdated(new Date());
@@ -293,11 +371,186 @@ export default function VehiclePositionsPage() {
     // come through Realtime yet). Kept as a safety net.
     const timer = setInterval(loadData, 30000);
 
+    // Fast position-only refresh — backup for environments where Supabase
+    // Realtime isn't connected, and a snappier feel in the demo. Cheap call:
+    // /vehicle-positions returns small rows.
+    const positionsTimer = setInterval(async () => {
+      try {
+        const data = await apiFetch<PositionItem[]>("/vehicle-positions");
+        const latestByDriver: Record<string, StoredPosition> = {};
+        (data || []).forEach((pos) => {
+          const key = pos.driverId || pos.vehicleId;
+          if (!key) return;
+          const coordinates = (pos.location as any)?.coordinates;
+          const lat = coordinates ? coordinates[1] : (pos.location as any)?.lat;
+          const lng = coordinates ? coordinates[0] : (pos.location as any)?.lng;
+          if (lat === undefined || lng === undefined) return;
+          const receivedAt = pos.createdAt || pos.timestamp;
+          const current = latestByDriver[key];
+          if (!current || new Date(receivedAt) > new Date(current.receivedAt)) {
+            latestByDriver[key] = { lat, lng, timestamp: pos.timestamp, receivedAt };
+          }
+        });
+        setPositions((prev) => {
+          // Merge: keep entries that haven't changed, replace those with newer
+          // fixes. Comparison uses server `receivedAt` so a skewed device
+          // clock can't make an actually-newer fix look "older".
+          let changed = false;
+          const next: typeof prev = { ...prev };
+          for (const [key, fresh] of Object.entries(latestByDriver)) {
+            const current = next[key];
+            if (!current || new Date(fresh.receivedAt) > new Date(current.receivedAt)) {
+              next[key] = fresh;
+              changed = true;
+            }
+          }
+          if (changed) setLastUpdated(new Date());
+          return changed ? next : prev;
+        });
+      } catch {
+        // ignore — next tick will retry.
+      }
+    }, 2000);
+
+    // Heartbeat — re-evaluates the 15s recency window every second so a
+    // driver who stops pushing flips to red within ~1s of crossing the
+    // threshold. Cheap: only re-runs the trackedDrivers memo.
+    const tickTimer = setInterval(() => setNowTick(Date.now()), 1000);
+
     return () => {
       supabase.removeChannel(channel);
       clearInterval(timer);
+      clearInterval(positionsTimer);
+      clearInterval(tickTimer);
     };
   }, []);
+
+  // Append new positions to the per-driver trail. Runs whenever `positions`
+  // changes; only writes when the new fix is noticeably different from the
+  // last trail point to keep the line clean. Also drops trails for drivers
+  // who no longer have a current position (their session ended).
+  useEffect(() => {
+    setTrails((prev) => {
+      let changed = false;
+      const next: Record<string, { lat: number; lng: number }[]> = {};
+      for (const [driverId, pos] of Object.entries(positions)) {
+        const existing = prev[driverId] ?? [];
+        const last = existing[existing.length - 1];
+        const moved =
+          !last ||
+          Math.abs(last.lat - pos.lat) > TRAIL_MIN_DELTA ||
+          Math.abs(last.lng - pos.lng) > TRAIL_MIN_DELTA;
+        if (moved) {
+          const appended = [...existing, { lat: pos.lat, lng: pos.lng }];
+          next[driverId] = appended.length > TRAIL_LIMIT
+            ? appended.slice(appended.length - TRAIL_LIMIT)
+            : appended;
+          changed = true;
+        } else {
+          next[driverId] = existing;
+        }
+      }
+      // Drop trails for drivers that fell off the positions map (stale).
+      for (const driverId of Object.keys(prev)) {
+        if (!positions[driverId]) {
+          changed = true;
+          continue;
+        }
+        if (!next[driverId]) next[driverId] = prev[driverId];
+      }
+      return changed ? next : prev;
+    });
+  }, [positions]);
+
+  // Periodically rewrite each driver's raw trail onto the real road
+  // network. Runs every 8s — Roads API costs ~$0.01 per call so doing
+  // it on every fix would be wasteful, and a few seconds of "raw" trail
+  // tail is invisible alongside the marker animation. Skips drivers
+  // whose raw trail hasn't grown since the last snap to avoid pointless
+  // calls.
+  const lastSnappedLengthRef = useRef<Record<string, number>>({});
+  useEffect(() => {
+    let cancelled = false;
+    const snap = async () => {
+      for (const [driverId, raw] of Object.entries(trails)) {
+        if (cancelled) return;
+        if (raw.length < 2) continue;
+        const prevLen = lastSnappedLengthRef.current[driverId] ?? 0;
+        if (raw.length === prevLen) continue;
+        // Send the last 80 points (under the API's 100 cap) so we keep
+        // the historical part stable but still extend the snapped line
+        // as new fixes come in.
+        const window = raw.slice(-80);
+        const snapped = await snapToRoads(window);
+        if (cancelled) return;
+        if (snapped && snapped.length > 0) {
+          setSnappedTrails((prev) => ({ ...prev, [driverId]: snapped }));
+          lastSnappedLengthRef.current[driverId] = raw.length;
+        }
+      }
+    };
+    void snap();
+    const timer = setInterval(snap, 8000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [trails]);
+
+  const activeTripsForRoutes = useMemo(
+    () => trips.filter((t) => ["EN_ROUTE", "PICKED_UP"].includes(t.status ?? "")),
+    [trips],
+  );
+
+  // Geocode destination venues lazily as active trips appear. Cached in
+  // localStorage by venueId so we don't re-hit Google after a reload.
+  useEffect(() => {
+    activeTripsForRoutes.forEach((trip) => {
+      const venueId = trip.destinationVenueId;
+      if (!venueId) return;
+      if (destinationCoords[venueId]) return;
+      const venue = venues[venueId];
+      if (!venue) return;
+      const query = [venue.name, venue.address, venue.commune, "Chile"]
+        .filter(Boolean)
+        .join(", ");
+      if (!query) return;
+      geocodeAddress(venueId, query).then((coords) => {
+        if (!coords) return;
+        setDestinationCoords((prev) =>
+          prev[venueId] ? prev : { ...prev, [venueId]: coords },
+        );
+      });
+    });
+  }, [activeTripsForRoutes, venues, destinationCoords]);
+
+  // Compute driving directions per trip once we have both ends. Re-computes
+  // automatically when the driver drifts (handled inside getDirections).
+  useEffect(() => {
+    activeTripsForRoutes.forEach((trip) => {
+      const venueId = trip.destinationVenueId;
+      if (!venueId) return;
+      const dest = destinationCoords[venueId];
+      if (!dest) return;
+      const origin = positions[trip.driverId];
+      if (!origin) return;
+      getDirections(
+        trip.id,
+        { lat: origin.lat, lng: origin.lng },
+        dest,
+      ).then((res) => {
+        if (!res) return;
+        setTripRoutes((prev) => ({ ...prev, [trip.id]: res.path }));
+        setTripRouteMeta((prev) => ({
+          ...prev,
+          [trip.id]: {
+            distanceKm: res.distanceMeters / 1000,
+            durationMin: Math.round(res.durationSec / 60),
+          },
+        }));
+      });
+    });
+  }, [activeTripsForRoutes, destinationCoords, positions]);
 
   const orderedTrips = useMemo(() => {
     return [...trips].sort((a, b) => {
@@ -312,46 +565,137 @@ export default function VehiclePositionsPage() {
     [trips]
   );
 
-  const trackingMarkers = useMemo<TrackingMarker[]>(() => {
-    return activeTrips
+  // Unified live data: every driver with a fresh GPS fix, augmented with
+  // destination + route info when they are on an active trip.
+  const liveDestinations = useMemo<DestinationPin[]>(() => {
+    return activeTripsForRoutes
       .map((trip) => {
-        const position = positions[trip.driverId] || positions[trip.vehicleId];
-        if (!position) return null;
-        const vehicle = trip.vehicleId ? vehicles[trip.vehicleId] : null;
-        const driver = drivers[trip.driverId];
-        const venue = trip.destinationVenueId ? venues[trip.destinationVenueId] : null;
+        const venueId = trip.destinationVenueId;
+        if (!venueId) return null;
+        const coords = destinationCoords[venueId];
+        if (!coords) return null;
+        const venue = venues[venueId];
         const sc = STATUS_COLORS[trip.status ?? "EN_ROUTE"] ?? STATUS_COLORS.EN_ROUTE;
-        const elapsedMs = trip.startedAt ? Date.now() - new Date(trip.startedAt).getTime() : null;
         return {
           tripId: trip.id,
-          lat: position.lat,
-          lng: position.lng,
-          driverName: driver?.fullName || "Conductor",
-          vehiclePlate: vehicle?.plate || trip.vehiclePlate || trip.vehicleId,
-          statusLabel: STATUS_LABEL[trip.status ?? ""] || trip.status || "",
+          lat: coords.lat,
+          lng: coords.lng,
+          label: venue?.name || trip.destination || "Destino",
           accent: sc.accent,
-          origin: trip.origin || "Origen",
-          destination: venue?.name || trip.destination || "Destino",
-          elapsedMin: elapsedMs !== null ? Math.floor(elapsedMs / 60000) : null,
-          gpsTime: new Date(position.timestamp).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" }),
-        } satisfies TrackingMarker;
+        } satisfies DestinationPin;
       })
-      .filter((m): m is TrackingMarker => m !== null);
-  }, [activeTrips, positions, vehicles, drivers, venues]);
+      .filter((d): d is DestinationPin => d !== null);
+  }, [activeTripsForRoutes, destinationCoords, venues]);
+
+  const liveRoutes = useMemo<RoutePath[]>(() => {
+    return activeTripsForRoutes
+      .map((trip) => {
+        const path = tripRoutes[trip.id];
+        if (!path || path.length === 0) return null;
+        const sc = STATUS_COLORS[trip.status ?? "EN_ROUTE"] ?? STATUS_COLORS.EN_ROUTE;
+        return { tripId: trip.id, path, accent: sc.accent } satisfies RoutePath;
+      })
+      .filter((r): r is RoutePath => r !== null);
+  }, [activeTripsForRoutes, tripRoutes]);
+
+  // Drivers we track on the live map. We keep showing a driver for 5 minutes
+  // after their last fix so a brief connection drop doesn't make the marker
+  // disappear — only the color changes (green ↔ red). Anything older than
+  // 5 min is treated as a session that ended and is removed from the map.
+  const trackedDrivers = useMemo(() => {
+    const onlineCutoff = nowTick - 15 * 1000;
+    const staleCutoff = nowTick - 5 * 60 * 1000;
+    return Object.entries(positions)
+      .map(([driverId, pos]) => {
+        const driver = drivers[driverId];
+        if (!driver) return null;
+        // Use server `receivedAt` for recency — device clocks can be skewed
+        // (field test had a phone 32 min behind, which made every marker
+        // look "old" and stuck red even while positions kept arriving).
+        const ts = new Date(pos.receivedAt).getTime();
+        if (Number.isNaN(ts) || ts < staleCutoff) return null;
+        const ageMs = nowTick - ts;
+        const online = ts >= onlineCutoff;
+        return { driver, position: pos, ageMs, online };
+      })
+      .filter(
+        (x): x is { driver: DriverItem; position: StoredPosition; ageMs: number; online: boolean } =>
+          x !== null,
+      )
+      .sort((a, b) => (Number(b.online) - Number(a.online)) || a.ageMs - b.ageMs);
+  }, [positions, drivers, nowTick]);
+
+  // Only the online slice — used for "Con GPS" KPI and the live count chip.
+  const connectedDrivers = useMemo(
+    () => trackedDrivers.filter((d) => d.online),
+    [trackedDrivers],
+  );
+
+  // Build the per-driver breadcrumb trails to render under the markers.
+  // We use the active trip id when there is one (so the polyline keys
+  // match the markers), otherwise the synthetic `driver-${id}` key.
+  const liveTrails = useMemo<TrailPath[]>(() => {
+    return trackedDrivers
+      .map(({ driver, online }) => {
+        // Prefer the snapped version when we have one — it follows the
+        // actual streets. Fall back to the raw trail until Roads API
+        // catches up on the first cycle.
+        const snapped = snappedTrails[driver.id];
+        const raw = trails[driver.id];
+        const path = snapped && snapped.length >= 2 ? snapped : raw;
+        if (!path || path.length < 2) return null;
+        const trip = activeTrips.find((t) => t.driverId === driver.id);
+        const tripId = trip?.id ?? `driver-${driver.id}`;
+        // Trail color follows the marker so the visual story stays
+        // consistent: green while connected, red while in the no-signal state.
+        const accent = online ? "#10b981" : "#ef4444";
+        return { tripId, path, accent } satisfies TrailPath;
+      })
+      .filter((t): t is TrailPath => t !== null);
+  }, [trackedDrivers, trails, snappedTrails, activeTrips]);
+
+  const trackedMarkers = useMemo<TrackingMarker[]>(() => {
+    return trackedDrivers.map(({ driver, position, online }) => {
+      const trip = activeTrips.find((t) => t.driverId === driver.id);
+      // Connection status drives the marker color: green when actively
+      // receiving GPS, red when we haven't heard from the driver in >15s.
+      // This wins over the trip status color so a disconnection is obvious.
+      const accent = online ? "#10b981" : "#ef4444";
+      const vehicle = trip?.vehicleId ? vehicles[trip.vehicleId] : null;
+      const venue = trip?.destinationVenueId ? venues[trip.destinationVenueId] : null;
+      return {
+        // The map keys markers by tripId — use the driver id as a stable key
+        // when there is no trip so connected drivers without trips also render.
+        tripId: trip?.id ?? `driver-${driver.id}`,
+        lat: position.lat,
+        lng: position.lng,
+        driverName: driver.fullName || "Conductor",
+        vehiclePlate: vehicle?.plate || trip?.vehiclePlate || "Sin vehículo",
+        statusLabel: online
+          ? (trip ? (STATUS_LABEL[trip.status ?? ""] || trip.status || "En línea") : "En línea")
+          : "Sin señal",
+        accent,
+        origin: trip?.origin || "—",
+        destination: venue?.name || trip?.destination || "—",
+        elapsedMin: trip?.startedAt ? Math.floor((Date.now() - new Date(trip.startedAt).getTime()) / 60000) : null,
+        gpsTime: new Date(position.timestamp).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" }),
+      } satisfies TrackingMarker;
+    });
+  }, [trackedDrivers, activeTrips, vehicles, venues]);
 
   const tripStats = useMemo(() => {
     const active = trips.filter((tr) => ["EN_ROUTE", "PICKED_UP"].includes(tr.status ?? "")).length;
     const scheduled = trips.filter((tr) => tr.status === "SCHEDULED").length;
     const completed = trips.filter((tr) => ["COMPLETED", "DROPPED_OFF"].includes(tr.status ?? "")).length;
-    const activeDriverIds = new Set(
-      trips
-        .filter((tr) => ["EN_ROUTE", "PICKED_UP"].includes(tr.status ?? ""))
-        .map((tr) => tr.driverId)
-        .filter(Boolean)
-    );
-    const withPosition = Object.keys(positions).filter((id) => activeDriverIds.has(id)).length;
+    // Only count drivers with a FRESH GPS fix (last 30 s) — historical rows
+    // in vehicle_positions would otherwise mark every old driver as "Con GPS",
+    // and a driver who disabled GPS mid-trip would still show as live.
+    // "Con GPS" = any driver whose last fix is within the live recency
+    // window, regardless of trip state. A driver can be transmitting
+    // before/after a trip and still deserves to be counted.
+    const withPosition = connectedDrivers.length;
     return { active, scheduled, completed, withPosition, total: trips.length };
-  }, [trips, positions]);
+  }, [trips, connectedDrivers]);
 
   const resolveDelegations = (trip: Trip) => {
     const ids = (trip.athleteIds || [])
@@ -486,7 +830,7 @@ export default function VehiclePositionsPage() {
                 <span style={{ fontSize: "10px", color: pal.chipLabel, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em" }}>{stat.label}</span>
               </div>
               <p style={{ fontSize: "1.5rem", fontWeight: 800, color: stat.color, lineHeight: 1 }}>
-                {loading ? "—" : stat.value}
+                {hasLoadedOnce ? stat.value : "—"}
               </p>
             </div>
           ))}
@@ -499,7 +843,7 @@ export default function VehiclePositionsPage() {
       <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "6px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div className="grid gap-2 grid-cols-2">
           {([
-            { key: "tracking" as const, label: "Tracking en vivo", count: activeTrips.length },
+            { key: "live" as const, label: "Tracking en vivo", count: trackedDrivers.length },
             { key: "table" as const, label: "Todos los viajes", count: orderedTrips.length },
           ]).map((tab) => {
             const selected = activeView === tab.key;
@@ -530,8 +874,8 @@ export default function VehiclePositionsPage() {
         </div>
       </section>
 
-      {/* ── Tracking view */}
-      {activeView === "tracking" && (
+      {/* ── Live tracking view (unified) */}
+      {activeView === "live" && (
         <section className="space-y-4">
           {/* Completion alerts */}
           {completedAlerts.length > 0 && (
@@ -567,133 +911,143 @@ export default function VehiclePositionsPage() {
             </div>
           )}
 
-          {/* Big map + sidebar */}
-          {activeTrips.length === 0 ? (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "16px", alignItems: "start" }} className="xl:grid-cols-[1fr_340px] md:!grid-cols-1">
+
+            {/* Map — always rendered, even when no drivers are connected. */}
             <div style={{
-              borderRadius: "20px", border: "1px dashed #cbd5e1", background: "#ffffff",
-              padding: "72px 24px", textAlign: "center" as const,
-              boxShadow: "0 1px 4px rgba(15,23,42,0.05)",
+              borderRadius: "20px",
+              overflow: "hidden",
+              border: "1px solid #e2e8f0",
+              boxShadow: "0 1px 8px rgba(15,23,42,0.08)",
+              position: "relative",
             }}>
-              <span style={{ color: "#cbd5e1", display: "flex", justifyContent: "center", marginBottom: "16px" }}>
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-              </span>
-              <p style={{ fontWeight: 800, fontSize: "18px", color: "#0f172a" }}>Sin viajes activos en este momento</p>
-              <p style={{ fontSize: "14px", marginTop: "6px", color: "#64748b" }}>Las rutas aparecerán aquí automáticamente al iniciarse.</p>
-            </div>
-          ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "16px", alignItems: "start" }} className="xl:grid-cols-[1fr_340px] md:!grid-cols-1">
-
-              {/* Map */}
-              <div style={{
-                borderRadius: "20px",
-                overflow: "hidden",
-                border: "1px solid #e2e8f0",
-                boxShadow: "0 1px 8px rgba(15,23,42,0.08)",
-                position: "relative",
-              }}>
-                {/* Live badge over map */}
-                <div style={{ position: "absolute", top: "12px", left: "12px", zIndex: 1000 }}>
-                  <span style={{
-                    display: "inline-flex", alignItems: "center", gap: "6px",
-                    background: "rgba(0,0,0,0.6)", borderRadius: "99px", padding: "5px 12px",
-                    backdropFilter: "blur(6px)",
-                  }}>
-                    <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#10b981", animation: "pulse 1.5s infinite", display: "inline-block" }} />
-                    <span style={{ fontSize: "11px", fontWeight: 700, color: "#ffffff", letterSpacing: "0.1em" }}>
-                      {trackingMarkers.length} vehículo(s) en mapa
-                    </span>
+              <div style={{ position: "absolute", top: "12px", left: "12px", zIndex: 1000 }}>
+                <span style={{
+                  display: "inline-flex", alignItems: "center", gap: "6px",
+                  background: "rgba(0,0,0,0.6)", borderRadius: "99px", padding: "5px 12px",
+                  backdropFilter: "blur(6px)",
+                }}>
+                  <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: connectedDrivers.length > 0 ? "#10b981" : "#94a3b8", animation: "pulse 1.5s infinite", display: "inline-block" }} />
+                  <span style={{ fontSize: "11px", fontWeight: 700, color: "#ffffff", letterSpacing: "0.1em" }}>
+                    {connectedDrivers.length} en línea · {trackedDrivers.length - connectedDrivers.length} sin señal · {liveRoutes.length} con ruta
                   </span>
-                </div>
-                <LiveTrackingMap
-                  markers={trackingMarkers}
-                  height={560}
-                  isDark={false}
-                  selectedTripId={selectedTripId}
-                />
+                </span>
               </div>
+              {trackedDrivers.length === 0 && (
+                <div style={{
+                  position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
+                  zIndex: 999, background: "rgba(255,255,255,0.94)",
+                  border: "1px solid #e2e8f0", borderRadius: "14px",
+                  padding: "18px 22px", textAlign: "center" as const, maxWidth: "320px",
+                  boxShadow: "0 8px 24px rgba(15,23,42,0.12)",
+                }}>
+                  <p style={{ fontWeight: 800, fontSize: "14px", color: "#0f172a" }}>Sin conductores enviando GPS ahora</p>
+                  <p style={{ fontSize: "12px", marginTop: "4px", color: "#64748b", lineHeight: 1.5 }}>
+                    Cuando un conductor entre y prenda el GPS, va a aparecer en el mapa.
+                  </p>
+                </div>
+              )}
+              <LiveTrackingMap
+                markers={trackedMarkers}
+                destinations={liveDestinations}
+                routes={liveRoutes}
+                trails={liveTrails}
+                height={560}
+                isDark={false}
+                selectedTripId={selectedTripId}
+              />
+            </div>
 
-              {/* Sidebar: trip list */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxHeight: "580px", overflowY: "auto", paddingRight: "2px" }}>
-                {activeTrips.map((trip) => {
-                  const sc = STATUS_COLORS[trip.status ?? "EN_ROUTE"] ?? STATUS_COLORS.EN_ROUTE;
-                  const vehicle = trip.vehicleId ? vehicles[trip.vehicleId] : null;
-                  const driver = drivers[trip.driverId];
-                  const venue = trip.destinationVenueId ? venues[trip.destinationVenueId] : null;
-                  const position = positions[trip.driverId] || (trip.vehicleId ? positions[trip.vehicleId] : null);
-                  const elapsedMs = trip.startedAt ? Date.now() - new Date(trip.startedAt).getTime() : null;
-                  const elapsedMin = elapsedMs !== null ? Math.floor(elapsedMs / 60000) : null;
+            {/* Sidebar — one card per tracked driver (online + offline). */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxHeight: "580px", overflowY: "auto", paddingRight: "2px" }}>
+              {trackedDrivers.length === 0 && (
+                <div style={{
+                  borderRadius: "14px", border: "1px dashed #cbd5e1", background: "#ffffff",
+                  padding: "20px 16px", textAlign: "center" as const,
+                  fontSize: "12px", color: "#64748b", lineHeight: 1.5,
+                }}>
+                  Esperando conductores. Al activar el GPS desde la app aparecerán aquí.
+                </div>
+              )}
+              {trackedDrivers.map(({ driver, position, ageMs, online }) => {
+                const trip = activeTripsForRoutes.find((t) => t.driverId === driver.id);
+                const accent = online ? "#10b981" : "#ef4444";
+                const chipBg = online ? "rgba(16,185,129,0.14)" : "rgba(239,68,68,0.12)";
+                const chipBorder = online ? "rgba(16,185,129,0.3)" : "rgba(239,68,68,0.3)";
+                const vehicle = trip?.vehicleId ? vehicles[trip.vehicleId] : null;
+                const venue = trip?.destinationVenueId ? venues[trip.destinationVenueId] : null;
+                const ageSec = Math.floor(ageMs / 1000);
+                const ageLabel = ageSec < 60 ? `hace ${ageSec}s` : `hace ${Math.floor(ageSec / 60)}m`;
+                const markerId = trip?.id ?? `driver-${driver.id}`;
+                const routeMeta = trip ? tripRouteMeta[trip.id] : null;
+                const elapsedMs = trip?.startedAt ? Date.now() - new Date(trip.startedAt).getTime() : null;
+                const elapsedMin = elapsedMs !== null ? Math.floor(elapsedMs / 60000) : null;
 
-                  return (
-                    <div key={trip.id} style={{
-                      background: selectedTripId === trip.id ? "#f0fdfa" : "#ffffff",
-                      border: selectedTripId === trip.id ? "2px solid #14b8a6" : "1px solid #e2e8f0",
-                      borderLeft: `4px solid ${sc.accent}`,
-                      borderRadius: "14px",
-                      padding: "12px 14px",
-                      boxShadow: selectedTripId === trip.id ? "0 0 8px rgba(20,184,166,0.3)" : "0 1px 4px rgba(15,23,42,0.06)",
-                      transition: "transform 120ms ease",
-                      cursor: position ? "pointer" : "default",
-                    }}
-                      onClick={() => { if (position) setSelectedTripId(selectedTripId === trip.id ? null : trip.id); }}
-                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateX(2px)"; }}
-                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = ""; }}
-                    >
-                      {/* Header row */}
-                      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "6px", marginBottom: "8px" }}>
-                        <div style={{ minWidth: 0 }}>
-                          <p style={{ fontSize: "13px", fontWeight: 800, color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {driver?.fullName || "Conductor pendiente"}
-                          </p>
-                          <p style={{ fontSize: "11px", color: "#64748b", marginTop: "1px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {vehicle ? [vehicle.plate, vehicle.type].filter(Boolean).join(" · ") : (trip.vehiclePlate || "Sin vehículo")}
-                          </p>
-                        </div>
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "3px", flexShrink: 0 }}>
-                          <span style={{
-                            display: "inline-flex", alignItems: "center", gap: "4px",
-                            background: sc.chipBg, border: `1px solid ${sc.chipBorder}`,
-                            borderRadius: "99px", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: sc.accent,
-                          }}>
-                            <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: sc.accent, animation: "pulse 1.5s infinite", display: "inline-block" }} />
-                            {STATUS_LABEL[trip.status ?? ""] || trip.status}
-                          </span>
-                          {elapsedMin !== null && (
-                            <span style={{ fontSize: "10px", color: "#64748b" }}>{elapsedMin}m</span>
-                          )}
-                        </div>
+                return (
+                  <div key={driver.id} style={{
+                    background: selectedTripId === markerId ? "#f0fdfa" : "#ffffff",
+                    border: selectedTripId === markerId ? "2px solid #14b8a6" : "1px solid #e2e8f0",
+                    borderLeft: `4px solid ${accent}`,
+                    borderRadius: "14px",
+                    padding: "12px 14px",
+                    boxShadow: selectedTripId === markerId ? "0 0 8px rgba(20,184,166,0.3)" : "0 1px 4px rgba(15,23,42,0.06)",
+                    cursor: "pointer",
+                    opacity: online ? 1 : 0.85,
+                  }}
+                    onClick={() => setSelectedTripId(selectedTripId === markerId ? null : markerId)}
+                  >
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "6px", marginBottom: "8px" }}>
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ fontSize: "13px", fontWeight: 800, color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {driver.fullName || "Conductor"}
+                        </p>
+                        <p style={{ fontSize: "11px", color: "#64748b", marginTop: "1px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {trip
+                            ? (vehicle ? [vehicle.plate, vehicle.type].filter(Boolean).join(" · ") : (trip.vehiclePlate || "Sin vehículo"))
+                            : online ? "Conectado · sin viaje" : "Sin señal · esperando reconexión"}
+                        </p>
                       </div>
-
-                      {/* Route */}
-                      <div style={{ fontSize: "11px", color: "#64748b", lineHeight: 1.5, display: "flex", alignItems: "center", gap: "6px" }}>
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2.2" strokeLinecap="round"><path d="M12 22s6-6 6-11a6 6 0 0 0-12 0c0 5 6 11 6 11z"/><circle cx="12" cy="11" r="2"/></svg>
-                        <span>{trip.origin || "Origen"}</span>
-                        <span style={{ color: "#cbd5e1" }}>→</span>
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h2M14 7h2M8 11h2M14 11h2"/></svg>
-                        <span>{venue?.name || trip.destination || "Destino"}</span>
-                      </div>
-
-                      {/* Footer */}
-                      <div style={{ marginTop: "8px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "6px" }}>
-                        <span style={{ fontSize: "10px", color: "#64748b" }}>
-                          {trip.passengerCount || 0} pax · {resolveDelegations(trip)}
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "3px", flexShrink: 0 }}>
+                        <span style={{
+                          display: "inline-flex", alignItems: "center", gap: "4px",
+                          background: chipBg, border: `1px solid ${chipBorder}`,
+                          borderRadius: "99px", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: accent,
+                        }}>
+                          <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: accent, animation: online ? "pulse 1.5s infinite" : "none", display: "inline-block" }} />
+                          {online
+                            ? (trip ? (STATUS_LABEL[trip.status ?? ""] || trip.status || "En línea") : "En línea")
+                            : "Sin señal"}
                         </span>
-                        {position ? (
-                          <span style={{ fontSize: "10px", color: "#10b981", fontWeight: 600, display: "flex", alignItems: "center", gap: "4px" }}>
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="currentColor"/></svg>
-                            GPS activo
-                          </span>
-                        ) : (
-                          <span style={{ fontSize: "10px", color: "#94a3b8", display: "flex", alignItems: "center", gap: "4px" }}>
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.56 9"/><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="currentColor"/></svg>
-                            Sin señal</span>
-                        )}
+                        <span style={{ fontSize: "10px", color: "#64748b" }}>{ageLabel}</span>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+
+                    {trip && (
+                      <>
+                        <div style={{ fontSize: "11px", color: "#64748b", lineHeight: 1.5, display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2.2" strokeLinecap="round"><path d="M12 22s6-6 6-11a6 6 0 0 0-12 0c0 5 6 11 6 11z"/><circle cx="12" cy="11" r="2"/></svg>
+                          <span>{trip.origin || "Origen"}</span>
+                          <span style={{ color: "#cbd5e1" }}>→</span>
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h2M14 7h2M8 11h2M14 11h2"/></svg>
+                          <span>{venue?.name || trip.destination || "Destino"}</span>
+                        </div>
+                        {routeMeta && (
+                          <div style={{ marginTop: "6px", fontSize: "10px", color: "#0f766e", fontWeight: 600 }}>
+                            Ruta: {routeMeta.distanceKm.toFixed(1)} km · ~{routeMeta.durationMin} min
+                            {elapsedMin !== null ? ` · iniciado hace ${elapsedMin}m` : ""}
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    <div style={{ marginTop: "6px", fontSize: "10px", color: "#94a3b8" }}>
+                      {position.lat.toFixed(5)}, {position.lng.toFixed(5)} · GPS {new Date(position.timestamp).toLocaleTimeString("es-CL")}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          )}
+          </div>
         </section>
       )}
 

@@ -10,10 +10,14 @@ import {
   SendMessageDto,
   UpdateChatDto,
 } from './dto/create-chat.dto';
+import { PushNotificationsService } from '../push-notifications/push-notifications.service';
 
 @Injectable()
 export class SupportChatsService {
-  constructor(@Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient) {}
+  constructor(
+    @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
+    private readonly pushService: PushNotificationsService,
+  ) {}
 
   async create(dto: CreateChatDto) {
     const row = {
@@ -148,9 +152,39 @@ export class SupportChatsService {
           agentName: dto.senderName,
         });
       }
+
+      // SA-37: notify the user who opened the chat that an agent replied.
+      const originKind = this.mapOriginToUserKind(current.origin_type);
+      if (originKind && current.origin_id) {
+        const preview =
+          (dto.content ?? '').length > 60
+            ? `${(dto.content ?? '').slice(0, 57)}…`
+            : (dto.content ?? '');
+        const portalUrl =
+          originKind === 'driver' ? '/portal/conductor' : '/portal/user';
+        void this.pushService.send(
+          { userKind: originKind, userId: current.origin_id as string },
+          {
+            title: 'Asistencia',
+            body: preview || 'Un agente respondió tu solicitud',
+            emoji: '🛟',
+            kind: 'support-chat',
+            data: { url: portalUrl, chatId },
+          },
+        );
+      }
     }
 
     return data;
+  }
+
+  private mapOriginToUserKind(
+    originType: string | null | undefined,
+  ): 'driver' | 'athlete' | 'provider_participant' | null {
+    if (originType === 'driver') return 'driver';
+    if (originType === 'athlete') return 'athlete';
+    if (originType === 'provider_participant') return 'provider_participant';
+    return null;
   }
 
   async listMessages(chatId: string, includeInternal = true) {
