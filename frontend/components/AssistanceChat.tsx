@@ -9,6 +9,11 @@ type AssistanceChatProps = {
   originName: string;
   eventId?: string | null;
   label?: string;
+  /** Muestra el botón flotante propio. Ponlo en false para controlar la apertura desde afuera (ej: un botón en el header). */
+  showLauncher?: boolean;
+  /** Modo controlado: si se pasa, el estado abierto/cerrado lo maneja el padre. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 };
 
 type Chat = {
@@ -60,8 +65,15 @@ const timeShort = (iso: string) => {
 
 export default function AssistanceChat({
   originType, originId, originName, eventId, label = "Asistencia",
+  showLauncher = true, open: openProp, onOpenChange,
 }: AssistanceChatProps) {
-  const [open, setOpen] = useState(false);
+  const [openInternal, setOpenInternal] = useState(false);
+  const open = openProp !== undefined ? openProp : openInternal;
+  const setOpen = (v: boolean | ((p: boolean) => boolean)) => {
+    const next = typeof v === "function" ? (v as (p: boolean) => boolean)(open) : v;
+    if (openProp === undefined) setOpenInternal(next);
+    onOpenChange?.(next);
+  };
   const [chats, setChats] = useState<Chat[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -163,7 +175,8 @@ export default function AssistanceChat({
 
   return (
     <>
-      {/* Floating button */}
+      {/* Floating button (solo cuando no se controla desde afuera) */}
+      {showLauncher && (
       <button
         type="button"
         onClick={() => setOpen((p) => !p)}
@@ -189,6 +202,7 @@ export default function AssistanceChat({
           </>
         )}
       </button>
+      )}
 
       {/* Panel */}
       {open && (
@@ -213,11 +227,16 @@ export default function AssistanceChat({
                   {view === "chat" ? (active?.subject || "Conversación") : view === "new" ? "Nueva incidencia" : "Mis incidencias"}
                 </p>
               </div>
-              {view !== "list" && (
-                <button type="button" onClick={backToList} style={{ background: "rgba(255,255,255,0.18)", color: "#fff", border: "none", borderRadius: "8px", padding: "4px 10px", fontSize: "11px", fontWeight: 700, cursor: "pointer" }}>
-                  ← Volver
-                </button>
-              )}
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                {view !== "list" && (
+                  <button type="button" onClick={backToList} style={{ background: "rgba(255,255,255,0.18)", color: "#fff", border: "none", borderRadius: "8px", padding: "4px 10px", fontSize: "11px", fontWeight: 700, cursor: "pointer" }}>
+                    ← Volver
+                  </button>
+                )}
+                {!showLauncher && (
+                  <button type="button" onClick={() => setOpen(false)} aria-label="Cerrar" style={{ background: "rgba(255,255,255,0.18)", color: "#fff", border: "none", borderRadius: "8px", width: 28, height: 28, fontSize: 17, lineHeight: 1, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
+                )}
+              </div>
             </div>
           </div>
 

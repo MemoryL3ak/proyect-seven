@@ -2,6 +2,8 @@
 
 Documento descriptivo de las funcionalidades operativas de la plataforma Seven Arena, orientada a la gestión integral de servicios para eventos deportivos de gran escala (Juegos Panamericanos 2026). Cada módulo se describe en términos de su funcionalidad operativa y de los mecanismos de registro y administración asociados.
 
+> **Versión 3.0 — Julio 2026.** Esta edición incorpora la **puesta en marcha de la aplicación móvil nativa** y su infraestructura asociada: autenticación móvil por código con recuperación por correo, puente de comunicación nativo entre la aplicación web y el contenedor móvil, notificaciones push remotas con bandeja de notificaciones integrada, gestión de permisos del dispositivo y seguimiento GPS nativo en segundo plano (secciones 24 a 29). Los módulos previos se mantienen sin cambios.
+
 ---
 
 ## 1. Gestión de Participantes y Delegaciones
@@ -616,3 +618,123 @@ Como complemento a la plataforma web de administración, los cuatro portales de 
 - Gestión de **versiones y actualizaciones automáticas** mediante los mecanismos nativos de cada tienda.
 - Ambiente de **pruebas internas** (TestFlight para iOS, Internal Testing para Android) previo a la publicación pública de cada versión.
 - **Documentación técnica y funcional completa** del proyecto disponible para el proveedor a cargo del desarrollo (referencia: documento *Seven Arena — Documentación Técnica y Funcional de Portales Móviles*).
+
+---
+
+## 24. Autenticación Móvil por Código (App Nativa)
+
+Permite a los usuarios finales de la aplicación móvil (atletas y conductores) iniciar sesión de forma simple y segura mediante un código personal, sin necesidad de gestionar contraseñas, y recuperar dicho código de manera autónoma cuando no lo recuerden.
+
+### a) Funcionalidad
+
+- **Inicio de sesión por código personal de 6 caracteres**, derivado de forma determinística del identificador único del participante (los últimos 6 caracteres de su ID). El usuario no necesita crear ni memorizar una contraseña.
+- **Resolución automática del perfil** a partir del código ingresado: el sistema identifica si el código corresponde a un **atleta** (dirigiéndolo al portal de usuario) o a un **conductor** (dirigiéndolo al portal del conductor), buscando en los registros de atletas, conductores y participantes de proveedor marcados como conductor.
+- **Detección de colisiones**: si un mismo código coincidiera con más de un participante, el acceso se rechaza para evitar ambigüedad, garantizando que cada sesión quede asociada a una única persona.
+- **Recuperación de código por correo electrónico**: desde la pantalla de inicio de sesión, la opción "Recordarme mi código" permite al usuario ingresar su correo registrado y recibir su código de acceso.
+- **Respuesta neutra por privacidad**: la recuperación siempre responde con un mensaje genérico de confirmación, sin revelar si el correo está o no registrado en el sistema, evitando la enumeración de cuentas.
+- **Persistencia de la sesión** en el dispositivo, de modo que el usuario permanece autenticado entre aperturas sucesivas de la aplicación y es redirigido automáticamente a su portal.
+- **Cierre de sesión consciente del origen**: cuando la sesión proviene de la aplicación móvil, el cierre de sesión devuelve al usuario a la pantalla de inicio de sesión de la app, diferenciándola del cierre de sesión de la plataforma web de administración.
+
+### b) Módulo de registro
+
+- El código de acceso se genera automáticamente a partir del identificador del participante ya registrado en la plataforma central; no requiere carga ni configuración adicional.
+- Cada intento de recuperación queda registrado en la bitácora del servidor para fines de auditoría y detección de uso anómalo.
+- La sesión activa se almacena localmente en el dispositivo, sin exponer credenciales sensibles.
+
+---
+
+## 25. Puente Nativo (Web ⇆ Contenedor Móvil)
+
+La aplicación móvil de Seven Arena se ejecuta como una aplicación web moderna alojada dentro de un **contenedor nativo** (WebView), lo que permite reutilizar íntegramente la lógica y las vistas de los portales web y, al mismo tiempo, acceder a las capacidades nativas del dispositivo. La comunicación entre ambas capas se realiza mediante un **puente de mensajería estructurado**.
+
+### a) Funcionalidad
+
+- **Canal de comunicación bidireccional** entre la aplicación web (portales) y el contenedor nativo, mediante mensajes con un formato de sobre versionado que asegura compatibilidad entre versiones de la app.
+- **Modelo de solicitud/respuesta** con identificador de correlación y tiempo máximo de espera: la capa web puede solicitar información al dispositivo (por ejemplo, la ubicación actual o el estado de permisos) y recibir la respuesta de forma asíncrona y controlada.
+- **Modelo de eventos (suscripción)**: el contenedor nativo puede notificar de forma proactiva a la aplicación web ante cambios relevantes (por ejemplo, activación o desactivación del GPS del sistema, o el toque de una notificación push).
+- **Degradación transparente**: cuando la misma aplicación web se abre en un navegador de escritorio (fuera del contenedor nativo), el puente se detecta como no disponible y las funciones nativas simplemente no se ofrecen, sin generar errores.
+- **Operaciones soportadas** a través del puente: obtención del token de notificaciones push, inicio/detención/consulta del seguimiento GPS, consulta y solicitud de permisos del dispositivo, obtención de la ubicación puntual, apertura de los ajustes del sistema y enrutamiento ante el toque de una notificación.
+
+### b) Módulo de registro
+
+- El contrato de mensajes del puente (tipos, formato y ejemplos) está documentado técnicamente para el proveedor de desarrollo del contenedor nativo.
+- No requiere configuración por parte del usuario final; el puente se inicializa automáticamente al cargar la aplicación dentro del contenedor.
+
+---
+
+## 26. Notificaciones Push Remotas
+
+Permite hacer llegar avisos a los usuarios de la aplicación móvil directamente en su dispositivo, incluso con la aplicación cerrada, para eventos operativos relevantes (asignación de viajes, mensajes, recordatorios, alertas), y ofrece al equipo operativo una herramienta de envío manual.
+
+### a) Funcionalidad
+
+- **Registro del dispositivo**: al iniciar sesión en la aplicación móvil, el dispositivo obtiene un token de notificaciones y lo registra automáticamente en la plataforma, asociado al usuario, la plataforma (iOS/Android), la versión de la app y el nombre del dispositivo.
+- **Entrega de notificaciones push** a todos los dispositivos activos de un usuario mediante el servicio de mensajería de Expo, con sonido y prioridad alta.
+- **Persistencia previa en la bandeja**: cada notificación se guarda primero en la bandeja del usuario (para que aparezca en la campana del portal) y luego se despacha al dispositivo, de modo que el aviso no se pierde aunque la entrega push falle o el usuario no tenga dispositivos registrados.
+- **Enrutamiento al tocar la notificación** (*deep linking*): al pulsar una notificación, la aplicación abre directamente la pantalla correspondiente indicada en el contenido del aviso.
+- **Limpieza automática de tokens caducados**: cuando el servicio de mensajería informa que un token ya no es válido (dispositivo desinstalado o token expirado), el sistema lo elimina automáticamente del registro.
+- **Panel administrativo de envío manual**: el equipo operativo dispone de una vista que lista todos los destinatarios con dispositivos registrados (con su nombre, tipo, plataformas y última actividad) y permite componer y enviar una notificación puntual (título, mensaje y emoji) a un usuario específico, útil para pruebas y comunicaciones dirigidas.
+
+### b) Módulo de registro
+
+- Persistencia de los tokens de dispositivo en la base de datos, con actualización de la última actividad en cada registro y unicidad por token.
+- Persistencia de cada notificación enviada, asociada al usuario destinatario, con su título, cuerpo, emoji, tipo lógico y datos de enrutamiento.
+- Registro de los resultados de entrega y de los errores devueltos por el servicio de mensajería para diagnóstico.
+
+---
+
+## 27. Bandeja de Notificaciones del Usuario (Campana)
+
+Complementa a las notificaciones push con una **bandeja de entrada persistente** dentro de cada portal, accesible mediante el ícono de campana, que conserva el historial de avisos aunque el usuario no haya visto la notificación en el momento en que llegó.
+
+### a) Funcionalidad
+
+- **Listado de notificaciones** del usuario ordenado de la más reciente a la más antigua, con título, cuerpo, emoji representativo y marca de tiempo.
+- **Indicador de no leídas** en la campana, con la cantidad de notificaciones pendientes de lectura.
+- **Marcado como leídas** de forma individual o masiva.
+- **Vaciado de la bandeja** por parte del usuario.
+- **Consistencia con el push**: toda notificación push enviada al usuario queda también disponible en su bandeja, garantizando que ningún aviso se pierda.
+
+### b) Módulo de registro
+
+- Persistencia de todas las notificaciones en la base de datos, asociadas al usuario destinatario, con registro de la fecha de creación y de la fecha de lectura.
+- Consulta filtrada por tipo de usuario e identificador para servir la bandeja de cada persona.
+
+---
+
+## 28. Gestión de Permisos del Dispositivo
+
+Permite al usuario de la aplicación móvil consultar y otorgar de forma clara y guiada los permisos que la aplicación necesita para funcionar (notificaciones, ubicación, cámara y galería), respetando el control del usuario sobre su dispositivo.
+
+### a) Funcionalidad
+
+- **Panel de permisos** dentro de la sección de cuenta del portal, con una fila por cada permiso relevante (notificaciones, ubicación, cámara, galería), su descripción en lenguaje claro y su estado actual (activado, sin activar o bloqueado en ajustes).
+- **Solicitud guiada del permiso**: al presionar "Activar", la aplicación dispara el diálogo nativo del sistema para conceder el permiso correspondiente.
+- **Acceso directo a los ajustes del sistema**: cuando un permiso está bloqueado a nivel de sistema operativo, la aplicación ofrece abrir directamente la pantalla de ajustes del dispositivo para habilitarlo.
+- **Actualización automática del estado**: al regresar a la aplicación después de modificar un permiso en los ajustes, el panel refresca el estado sin necesidad de reiniciar la app.
+- **Avisos contextuales**: en las pantallas que requieren un permiso específico (por ejemplo, la cámara para subir una fotografía), se muestra un aviso puntual invitando a activarlo, con la acción directa correspondiente.
+
+### b) Módulo de registro
+
+- La consulta y solicitud de permisos se resuelven en tiempo real contra el sistema operativo del dispositivo a través del puente nativo; no se persiste información en la plataforma central.
+
+---
+
+## 29. Seguimiento GPS Nativo del Conductor (Segundo Plano)
+
+Amplía el seguimiento GPS de la operación de transporte con las capacidades nativas del dispositivo, permitiendo el envío continuo y confiable de la posición del conductor incluso con la aplicación minimizada o la pantalla apagada, y ofreciendo al conductor visibilidad y control sobre el estado de su transmisión.
+
+### a) Funcionalidad
+
+- **Interruptor de seguimiento** en el portal del conductor: el conductor activa o detiene con un solo toque el envío de su ubicación al centro de control.
+- **Solicitud automática y ordenada de permisos**: al activar, la aplicación solicita el permiso de ubicación (incluyendo el permiso de segundo plano cuando está disponible) y, si el GPS del sistema está apagado, guía al conductor para encenderlo sin salir de la aplicación.
+- **Envío de posición en segundo plano**, manteniendo la transmisión con la app minimizada o la pantalla apagada cuando el permiso de segundo plano ha sido concedido; en caso contrario, opera mientras la app permanece abierta.
+- **Indicador de estado en tiempo real** mediante un distintivo visual: *Transmitiendo* (activo y enviando), *GPS apagado* (armado pero sin señal del sistema) o *Inactivo*.
+- **Diagnóstico de red integrado**: la pantalla muestra la hora del último intento de envío, la hora del último envío exitoso, los errores de red y la cantidad de posiciones en cola pendientes de reenvío.
+- **Resiliencia ante conectividad intermitente**: las posiciones capturadas mientras no hay red se acumulan en el dispositivo y se reenvían automáticamente al restablecerse la conexión.
+- **Reflejo inmediato en el sistema operativo**: si el conductor apaga o enciende el GPS del sistema, el estado del interruptor se actualiza en el momento gracias a los avisos del contenedor nativo.
+
+### b) Módulo de registro
+
+- Cada posición recibida se persiste en el histórico de posiciones de vehículos de la plataforma, alimentando el mapa operativo en tiempo real, el monitoreo de conductores y la trazabilidad del viaje (ver secciones 9 y 10).
+- El diagnóstico de red se calcula y muestra en el dispositivo; el histórico de posiciones queda disponible para auditoría en la plataforma central.

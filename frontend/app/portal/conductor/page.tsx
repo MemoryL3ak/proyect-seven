@@ -169,6 +169,10 @@ export default function DriverPortalPage() {
   const [pickupError, setPickupError] = useState<string | null>(null);
   const [trackingTripId, setTrackingTripId] = useState<string | null>(null);
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
+  const [assistOpen, setAssistOpen] = useState(false);
+  const [historyTrip, setHistoryTrip] = useState<Trip | null>(null);
+  const [historyPositions, setHistoryPositions] = useState<{ lat: number; lng: number }[]>([]);
+  const [historyRouteLoading, setHistoryRouteLoading] = useState(false);
   const [seenTripIds, setSeenTripIds] = useState<Set<string>>(() => {
     try { const saved = localStorage.getItem("conductor_seen_trips"); return saved ? new Set(JSON.parse(saved)) : new Set(); } catch { return new Set(); }
   });
@@ -778,11 +782,68 @@ export default function DriverPortalPage() {
       statusFilter === "todos" ? isActive :
       true;
     return matchesType && matchesDestination && matchesStatus;
+  }).sort((a, b) => {
+    // El viaje que el conductor tomó (en curso) va primero; el resto por hora programada ascendente.
+    const takenRank = (t: Trip) => (t.status === "EN_ROUTE" || t.status === "PICKED_UP" ? 0 : 1);
+    const ra = takenRank(a);
+    const rb = takenRank(b);
+    if (ra !== rb) return ra - rb;
+    const timeOf = (t: Trip) =>
+      t.scheduledAt ? new Date(t.scheduledAt).getTime()
+      : t.startedAt ? new Date(t.startedAt).getTime()
+      : Infinity;
+    return timeOf(a) - timeOf(b);
   });
 
   const buildMapsLink = (value?: string | null) => {
     if (!value) return "#";
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(value)}`;
+  };
+
+  // ── Historial: distancia real recorrida y duración ──
+  const haversineKm = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
+    const R = 6371;
+    const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+    const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+    const s =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+    return 2 * R * Math.asin(Math.min(1, Math.sqrt(s)));
+  };
+  const routeKm = (pts: { lat: number; lng: number }[]) => {
+    let total = 0;
+    for (let i = 1; i < pts.length; i++) total += haversineKm(pts[i - 1], pts[i]);
+    return total;
+  };
+  const formatDuration = (startIso?: string | null, endIso?: string | null) => {
+    if (!startIso || !endIso) return "—";
+    const ms = new Date(endIso).getTime() - new Date(startIso).getTime();
+    if (!Number.isFinite(ms) || ms <= 0) return "—";
+    const min = Math.round(ms / 60000);
+    const h = Math.floor(min / 60);
+    const m = min % 60;
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  };
+  const openHistoryDetail = async (trip: Trip) => {
+    setHistoryTrip(trip);
+    setHistoryPositions([]);
+    setHistoryRouteLoading(true);
+    try {
+      const rows = await apiFetch<Array<{ location?: { coordinates?: number[] } | null }>>(
+        `/vehicle-positions/by-trip/${trip.id}`,
+      );
+      const pts = (rows || [])
+        .map((r) => {
+          const c = r.location?.coordinates;
+          return Array.isArray(c) && c.length >= 2 ? { lat: Number(c[1]), lng: Number(c[0]) } : null;
+        })
+        .filter((p): p is { lat: number; lng: number } => !!p && Number.isFinite(p.lat) && Number.isFinite(p.lng));
+      setHistoryPositions(pts);
+    } catch {
+      setHistoryPositions([]);
+    } finally {
+      setHistoryRouteLoading(false);
+    }
   };
 
   const requestAccess = async () => {
@@ -940,6 +1001,8 @@ export default function DriverPortalPage() {
           <style>{`
             @keyframes dc-in{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
             @keyframes dc-glow{0%,100%{opacity:0.4}50%{opacity:0.8}}
+            @keyframes dc-ping{0%{box-shadow:0 0 0 0 rgba(52,243,198,0.6)}70%{box-shadow:0 0 0 10px rgba(52,243,198,0)}100%{box-shadow:0 0 0 0 rgba(52,243,198,0)}}
+            @keyframes pc-shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
             .dc-card{animation:dc-in .5s cubic-bezier(0.16,1,0.3,1) both;background:#fff;border:1px solid rgba(226,232,240,0.8);border-radius:24px;padding:24px;position:relative;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.05);transition:box-shadow .3s,border-color .3s,transform .3s;}
             .dc-card:nth-child(1){animation-delay:0.07s}.dc-card:nth-child(2){animation-delay:0.14s}.dc-card:nth-child(3){animation-delay:0.21s}
             .dc-card:hover{box-shadow:0 8px 32px rgba(33,208,179,0.14);border-color:rgba(33,208,179,0.28);transform:translateY(-2px);}
@@ -1004,6 +1067,12 @@ export default function DriverPortalPage() {
                   onMarkAllRead={driverNotify.markAllRead}
                   onClear={driverNotify.clear}
                 />
+                <button type="button" onClick={() => setAssistOpen((p) => !p)} title="Asistencia"
+                  style={{ position:"relative",display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:`1px solid ${assistOpen ? "rgba(52,243,198,0.7)" : "rgba(33,208,179,0.4)"}`,background: assistOpen ? "linear-gradient(135deg,rgba(52,243,198,0.28),rgba(33,208,179,0.18))" : "rgba(33,208,179,0.12)",cursor:"pointer",flexShrink:0,transition:"all .15s" }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
+                  </svg>
+                </button>
                 <button type="button" onClick={() => loadTrips()} disabled={loading}
                   style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",cursor:"pointer",flexShrink:0,opacity:loading?0.5:1 }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1024,6 +1093,40 @@ export default function DriverPortalPage() {
 
             {/* ─── TAB: Actividades ─── */}
             {activeTab === "actividades" && (<>
+
+            {/* ── Banner "En viaje" (viaje en curso) ── */}
+            {(() => {
+              const enViaje = trips.find((tp) => tp.status === "EN_ROUTE" || tp.status === "PICKED_UP");
+              if (!enViaje) return null;
+              const enCurso = enViaje.status === "PICKED_UP";
+              return (
+                <button type="button" onClick={() => { setSelectedTripId(enViaje.id); markTripSeen(enViaje.id); }}
+                  style={{ width:"100%",textAlign:"left",display:"flex",alignItems:"center",gap:12,padding:"14px 16px",marginBottom:16,borderRadius:18,border:"1px solid rgba(52,243,198,0.35)",cursor:"pointer",
+                    background:"linear-gradient(135deg,#062240 0%,#0a3356 55%,#062240 100%)",boxShadow:"0 8px 28px rgba(6,34,64,0.35)",position:"relative",overflow:"hidden" }}>
+                  <span style={{ position:"absolute",inset:0,backgroundImage:"linear-gradient(90deg,transparent,rgba(52,243,198,0.10),transparent)",backgroundSize:"200% 100%",animation:"pc-shimmer 2.4s linear infinite",pointerEvents:"none" }} />
+                  <span style={{ position:"relative",flexShrink:0,width:44,height:44,borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(52,243,198,0.15)",border:"1px solid rgba(52,243,198,0.4)" }}>
+                    <span style={{ position:"absolute",width:10,height:10,borderRadius:"50%",background:"#34F3C6",boxShadow:"0 0 0 rgba(52,243,198,0.6)",animation:"dc-ping 1.6s ease-out infinite",top:8,right:8 }} />
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#34F3C6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M5 17h-2v-6l2-5h9l4 5h3a1 1 0 0 1 1 1v5h-2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/>
+                    </svg>
+                  </span>
+                  <span style={{ position:"relative",flex:1,minWidth:0 }}>
+                    <span style={{ display:"flex",alignItems:"center",gap:8 }}>
+                      <span style={{ fontSize:10,fontWeight:800,letterSpacing:"0.18em",textTransform:"uppercase",color:"#34F3C6" }}>● En viaje</span>
+                      <span style={{ fontSize:9.5,fontWeight:700,padding:"2px 8px",borderRadius:"99px",background:"rgba(52,243,198,0.15)",border:"1px solid rgba(52,243,198,0.3)",color:"#a8f5e0" }}>
+                        {enCurso ? "En curso" : "En ruta a recoger"}
+                      </span>
+                    </span>
+                    <span style={{ display:"block",fontSize:14,fontWeight:700,color:"#fff",margin:"4px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                      {isDisposicion(enViaje) ? "Disposición 12h" : `${enViaje.origin?.split(",")[0] || "—"} → ${enViaje.destination?.split(",")[0] || "—"}`}
+                    </span>
+                  </span>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2" strokeLinecap="round" style={{ position:"relative",flexShrink:0 }}>
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </button>
+              );
+            })()}
 
             {/* Profile card */}
             <div className="dc-profile-card">
@@ -1534,100 +1637,34 @@ export default function DriverPortalPage() {
                     ) : (
                       <div style={{ display:"flex",flexDirection:"column" }}>
                         {completed.map((trip) => {
-                          const veh = trip.vehicleId ? vehicles[trip.vehicleId] : null;
-                          const isOpen = selectedTripId === trip.id;
                           const completedDate = trip.completedAt || trip.startedAt;
-                          const passengerCount = getTripAthleteIds(trip).length;
                           return (
-                            <div key={trip.id} style={{ borderTop:"1px solid #f1f5f9" }}>
-                              {/* Row */}
-                              <button type="button" onClick={() => setSelectedTripId(isOpen ? null : trip.id)}
-                                style={{ width:"100%",display:"flex",alignItems:"center",gap:8,padding:"10px 14px",background:"none",border:"none",cursor:"pointer",textAlign:"left" }}>
-                                <span style={{ width:8,height:8,borderRadius:"50%",background:"#21D0B3",flexShrink:0 }} />
-                                <div style={{ flex:1,minWidth:0 }}>
-                                  <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
-                                    {(trip.origin?.split(",")[0] || "—")} → {(trip.destination?.split(",")[0] || "—")}
-                                  </p>
-                                  <p style={{ fontSize:10,color:"#94a3b8",margin:"1px 0 0" }}>
-                                    {completedDate ? new Date(completedDate).toLocaleDateString("es-CL",{ day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit" }) : "—"}
-                                  </p>
-                                </div>
-                                {trip.driverRating && (
-                                  <div style={{ display:"flex",alignItems:"center",gap:2,flexShrink:0 }}>
-                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="#FBBF24" stroke="#F59E0B" strokeWidth="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                                    <span style={{ fontSize:10,fontWeight:700,color:"#f59e0b" }}>{trip.driverRating}</span>
-                                  </div>
-                                )}
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" style={{ flexShrink:0,transition:"transform .15s",transform:isOpen?"rotate(180deg)":"rotate(0)" }}>
-                                  <polyline points="6 9 12 15 18 9" />
-                                </svg>
-                              </button>
-                              {/* Detail */}
-                              {isOpen && (
-                                <div style={{ padding:"0 14px 14px",display:"flex",flexDirection:"column",gap:8 }}>
-                                  {/* Route detail */}
-                                  <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:6 }}>
-                                    <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                                      <p style={{ fontSize:9,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.08em" }}>Origen</p>
-                                      <p style={{ fontSize:12,fontWeight:600,color:"#0f172a",margin:"2px 0 0",lineHeight:1.3 }}>{trip.origin || "—"}</p>
-                                    </div>
-                                    <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                                      <p style={{ fontSize:9,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.08em" }}>Destino</p>
-                                      <p style={{ fontSize:12,fontWeight:600,color:"#0f172a",margin:"2px 0 0",lineHeight:1.3 }}>{trip.destination || "—"}</p>
-                                    </div>
-                                  </div>
-                                  {/* Info grid */}
-                                  <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6 }}>
-                                    <div style={{ padding:"6px 8px",borderRadius:8,background:"#f8fafc",border:"1px solid #f1f5f9",textAlign:"center" }}>
-                                      <p style={{ fontSize:8,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase" }}>Vehículo</p>
-                                      <p style={{ fontSize:11,fontWeight:600,color:"#0f172a",margin:"1px 0 0" }}>{veh?.plate?.toUpperCase() || "—"}</p>
-                                    </div>
-                                    <div style={{ padding:"6px 8px",borderRadius:8,background:"#f8fafc",border:"1px solid #f1f5f9",textAlign:"center" }}>
-                                      <p style={{ fontSize:8,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase" }}>Costo</p>
-                                      <p style={{ fontSize:11,fontWeight:700,color:"#0a7a6b",margin:"1px 0 0" }}>{trip.tripCost ? `$${Number(trip.tripCost).toLocaleString("es-CL")}` : "—"}</p>
-                                    </div>
-                                    <div style={{ padding:"6px 8px",borderRadius:8,background:"#f8fafc",border:"1px solid #f1f5f9",textAlign:"center" }}>
-                                      <p style={{ fontSize:8,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase" }}>Pasajeros</p>
-                                      <p style={{ fontSize:11,fontWeight:600,color:"#0f172a",margin:"1px 0 0" }}>{passengerCount || "—"}</p>
-                                    </div>
-                                  </div>
-                                  {/* Delegations */}
-                                  {resolveDelegations(trip) !== "-" && (
-                                    <div style={{ padding:"6px 10px",borderRadius:8,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                                      <p style={{ fontSize:9,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase" }}>Delegación</p>
-                                      <p style={{ fontSize:11,fontWeight:600,color:"#0f172a",margin:"1px 0 0" }}>{resolveDelegations(trip)}</p>
-                                    </div>
-                                  )}
-                                  {/* Times */}
-                                  <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:6 }}>
-                                    <div style={{ padding:"6px 10px",borderRadius:8,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                                      <p style={{ fontSize:9,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase" }}>Inicio</p>
-                                      <p style={{ fontSize:11,fontWeight:600,color:"#0f172a",margin:"1px 0 0" }}>{trip.startedAt ? formatDate(trip.startedAt) : "—"}</p>
-                                    </div>
-                                    <div style={{ padding:"6px 10px",borderRadius:8,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                                      <p style={{ fontSize:9,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase" }}>Fin</p>
-                                      <p style={{ fontSize:11,fontWeight:600,color:"#0f172a",margin:"1px 0 0" }}>{trip.completedAt ? formatDate(trip.completedAt) : "—"}</p>
-                                    </div>
-                                  </div>
-                                  {/* Rating */}
-                                  {trip.driverRating ? (
-                                    <div style={{ padding:"8px 10px",borderRadius:10,background:"#FFFBEB",border:"1px solid #FDE68A",display:"flex",alignItems:"center",gap:8 }}>
-                                      <span style={{ fontSize:16 }}>{"⭐".repeat(trip.driverRating)}</span>
-                                      {trip.ratingComment && <span style={{ fontSize:11,color:"#92400E",fontStyle:"italic",flex:1 }}>"{trip.ratingComment}"</span>}
-                                    </div>
-                                  ) : (
-                                    <p style={{ fontSize:11,color:"#94a3b8",margin:0,textAlign:"center" }}>Sin evaluación</p>
-                                  )}
-                                  {/* Notes */}
-                                  {trip.notes && (
-                                    <div style={{ padding:"6px 10px",borderRadius:8,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                                      <p style={{ fontSize:9,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase" }}>Notas</p>
-                                      <p style={{ fontSize:11,color:"#334155",margin:"1px 0 0" }}>{trip.notes}</p>
-                                    </div>
-                                  )}
+                            <button key={trip.id} type="button" onClick={() => openHistoryDetail(trip)}
+                              style={{ width:"100%",display:"flex",alignItems:"center",gap:8,padding:"11px 14px",background:"none",border:"none",borderTop:"1px solid #f1f5f9",cursor:"pointer",textAlign:"left",transition:"background .15s" }}
+                              onMouseEnter={(e)=>{(e.currentTarget as HTMLElement).style.background="#f8fafc";}}
+                              onMouseLeave={(e)=>{(e.currentTarget as HTMLElement).style.background="transparent";}}>
+                              <span style={{ width:8,height:8,borderRadius:"50%",background:"#21D0B3",flexShrink:0 }} />
+                              <div style={{ flex:1,minWidth:0 }}>
+                                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                                  {(trip.origin?.split(",")[0] || "—")} → {(trip.destination?.split(",")[0] || "—")}
+                                </p>
+                                <p style={{ fontSize:10,color:"#94a3b8",margin:"1px 0 0" }}>
+                                  {completedDate ? new Date(completedDate).toLocaleDateString("es-CL",{ day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit" }) : "—"}
+                                </p>
+                              </div>
+                              {trip.driverRating && (
+                                <div style={{ display:"flex",alignItems:"center",gap:2,flexShrink:0 }}>
+                                  <svg width="11" height="11" viewBox="0 0 24 24" fill="#FBBF24" stroke="#F59E0B" strokeWidth="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                  <span style={{ fontSize:10,fontWeight:700,color:"#f59e0b" }}>{trip.driverRating}</span>
                                 </div>
                               )}
-                            </div>
+                              {trip.tripCost != null && (
+                                <span style={{ fontSize:10.5,fontWeight:700,color:"#0a7a6b",flexShrink:0 }}>{formatCurrencyCLP(trip.tripCost)}</span>
+                              )}
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="2" strokeLinecap="round" style={{ flexShrink:0 }}>
+                                <polyline points="9 18 15 12 9 6" />
+                              </svg>
+                            </button>
                           );
                         })}
                       </div>
@@ -1958,6 +1995,9 @@ export default function DriverPortalPage() {
           originType="driver"
           originId={driverProfile.id}
           originName={driverProfile.fullName || "Conductor"}
+          showLauncher={false}
+          open={assistOpen}
+          onOpenChange={setAssistOpen}
         />
       )}
 
@@ -1990,6 +2030,122 @@ export default function DriverPortalPage() {
           </div>
         </div>
       )}
+
+      {/* ── Detalle de viaje realizado (historial) ── */}
+      {historyTrip && (() => {
+        const trip = historyTrip;
+        const veh = trip.vehicleId ? vehicles[trip.vehicleId] : null;
+        const pax = getTripAthleteIds(trip).length;
+        const km = historyPositions.length >= 2 ? routeKm(historyPositions) : null;
+        const close = () => { setHistoryTrip(null); setHistoryPositions([]); };
+        const stat = (label: string, value: string, color = "#0f172a") => (
+          <div style={{ padding:"10px 8px",borderRadius:12,background:"#f8fafc",border:"1px solid #f1f5f9",textAlign:"center" }}>
+            <p style={{ fontSize:8.5,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.08em" }}>{label}</p>
+            <p style={{ fontSize:15,fontWeight:800,color,margin:"3px 0 0" }}>{value}</p>
+          </div>
+        );
+        return (
+          <div onClick={close}
+            style={{ position:"fixed",inset:0,zIndex:200,display:"flex",alignItems:"flex-end",justifyContent:"center",padding:0,background:"rgba(2,12,24,0.7)",backdropFilter:"blur(6px)" }}>
+            <div onClick={(e) => e.stopPropagation()}
+              style={{ background:"#fff",borderRadius:"24px 24px 0 0",width:"100%",maxWidth:520,maxHeight:"92vh",display:"flex",flexDirection:"column",overflow:"hidden",boxShadow:"0 -8px 60px rgba(0,0,0,0.5)",animation:"dc-in .3s cubic-bezier(0.16,1,0.3,1) both" }}>
+              {/* Header */}
+              <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:10,padding:"16px 18px 12px",borderBottom:"1px solid #f1f5f9",background:"linear-gradient(135deg,#041a2e,#062240)",color:"#fff",flexShrink:0 }}>
+                <div style={{ minWidth:0 }}>
+                  <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:"#34F3C6",margin:0 }}>Viaje realizado</p>
+                  <p style={{ fontSize:15,fontWeight:800,margin:"3px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                    {(trip.origin?.split(",")[0] || "—")} → {(trip.destination?.split(",")[0] || "—")}
+                  </p>
+                  <p style={{ fontSize:11,color:"rgba(255,255,255,0.6)",margin:"2px 0 0" }}>
+                    {trip.completedAt ? formatDate(trip.completedAt) : (trip.startedAt ? formatDate(trip.startedAt) : "—")}
+                  </p>
+                </div>
+                <button type="button" onClick={close}
+                  style={{ flexShrink:0,width:32,height:32,borderRadius:10,border:"1px solid rgba(255,255,255,0.2)",background:"rgba(255,255,255,0.08)",color:"#fff",cursor:"pointer",fontSize:19,lineHeight:1,display:"flex",alignItems:"center",justifyContent:"center" }}>×</button>
+              </div>
+
+              {/* Body */}
+              <div style={{ flex:1,overflowY:"auto",padding:"14px 16px 24px",display:"flex",flexDirection:"column",gap:12 }}>
+                {/* Mapa de la ruta */}
+                <div style={{ borderRadius:14,overflow:"hidden",border:"1px solid #e2e8f0",position:"relative" }}>
+                  <TripMap origin={trip.origin} destination={trip.destination} height={200} />
+                  <span style={{ position:"absolute",top:8,left:8,zIndex:5,fontSize:9,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:"#0a7a6b",background:"rgba(255,255,255,0.9)",border:"1px solid rgba(33,208,179,0.3)",borderRadius:8,padding:"3px 8px" }}>Ruta del viaje</span>
+                </div>
+
+                {/* Stats principales */}
+                <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8 }}>
+                  {stat("Distancia", km != null ? `${km.toFixed(1)} km` : (historyRouteLoading ? "…" : "—"), "#0f172a")}
+                  {stat("Valor", trip.tripCost != null ? formatCurrencyCLP(trip.tripCost) : "—", "#0a7a6b")}
+                  {stat("Duración", formatDuration(trip.startedAt, trip.completedAt), "#0f172a")}
+                  {stat("Pasajeros", pax ? String(pax) : "—", "#0f172a")}
+                </div>
+                {km == null && !historyRouteLoading && (
+                  <p style={{ fontSize:10.5,color:"#94a3b8",margin:"-4px 0 0",textAlign:"center" }}>
+                    Sin registro GPS para calcular la distancia de este viaje.
+                  </p>
+                )}
+
+                {/* Origen / Destino */}
+                <div style={{ display:"flex",gap:10,alignItems:"stretch",padding:"12px 14px",borderRadius:14,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                  <div style={{ display:"flex",flexDirection:"column",alignItems:"center",paddingTop:3 }}>
+                    <span style={{ width:9,height:9,borderRadius:"50%",background:"#21D0B3",flexShrink:0 }} />
+                    <div style={{ width:2,flex:1,background:"linear-gradient(180deg,#21D0B3,#ef4444)",margin:"3px 0",opacity:0.35,borderRadius:1,minHeight:18 }} />
+                    <span style={{ width:9,height:9,borderRadius:"50%",background:"#ef4444",flexShrink:0 }} />
+                  </div>
+                  <div style={{ flex:1,minWidth:0,display:"flex",flexDirection:"column",justifyContent:"space-between",gap:8 }}>
+                    <div>
+                      <p style={{ fontSize:9,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.08em" }}>Origen</p>
+                      <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"1px 0 0",lineHeight:1.3 }}>{trip.origin || "—"}</p>
+                    </div>
+                    <div>
+                      <p style={{ fontSize:9,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.08em" }}>Destino</p>
+                      <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"1px 0 0",lineHeight:1.3 }}>{trip.destination || "—"}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tiempos + vehículo + delegación */}
+                <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:8 }}>
+                  <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                    <p style={{ fontSize:9,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase" }}>Inicio</p>
+                    <p style={{ fontSize:11.5,fontWeight:600,color:"#0f172a",margin:"1px 0 0" }}>{trip.startedAt ? formatDate(trip.startedAt) : "—"}</p>
+                  </div>
+                  <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                    <p style={{ fontSize:9,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase" }}>Fin</p>
+                    <p style={{ fontSize:11.5,fontWeight:600,color:"#0f172a",margin:"1px 0 0" }}>{trip.completedAt ? formatDate(trip.completedAt) : "—"}</p>
+                  </div>
+                  <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                    <p style={{ fontSize:9,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase" }}>Vehículo</p>
+                    <p style={{ fontSize:11.5,fontWeight:600,color:"#0f172a",margin:"1px 0 0" }}>{veh?.plate?.toUpperCase() || "—"}</p>
+                  </div>
+                  <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                    <p style={{ fontSize:9,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase" }}>Delegación</p>
+                    <p style={{ fontSize:11.5,fontWeight:600,color:"#0f172a",margin:"1px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{resolveDelegations(trip) !== "-" ? resolveDelegations(trip) : "—"}</p>
+                  </div>
+                </div>
+
+                {/* Rating */}
+                {trip.driverRating ? (
+                  <div style={{ padding:"10px 12px",borderRadius:12,background:"#FFFBEB",border:"1px solid #FDE68A",display:"flex",alignItems:"center",gap:10 }}>
+                    <span style={{ fontSize:18 }}>{"⭐".repeat(trip.driverRating)}</span>
+                    {trip.ratingComment && <span style={{ fontSize:12,color:"#92400E",fontStyle:"italic",flex:1 }}>&ldquo;{trip.ratingComment}&rdquo;</span>}
+                  </div>
+                ) : (
+                  <p style={{ fontSize:11.5,color:"#94a3b8",margin:0,textAlign:"center" }}>Sin evaluación del pasajero</p>
+                )}
+
+                {/* Notas */}
+                {trip.notes && (
+                  <div style={{ padding:"8px 12px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                    <p style={{ fontSize:9,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase" }}>Notas</p>
+                    <p style={{ fontSize:12,color:"#334155",margin:"2px 0 0",lineHeight:1.4 }}>{trip.notes}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {showLocationBlockedModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">

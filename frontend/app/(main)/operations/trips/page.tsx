@@ -6,6 +6,7 @@ import * as XLSX from "xlsx";
 import Link from "next/link";
 import PageHeader from "@/components/PageHeader";
 import ResourceScreen from "@/components/ResourceScreen";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { apiFetch } from "@/lib/api";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { resources } from "@/lib/resources";
@@ -224,6 +225,9 @@ const SOURCE_META: Record<TripSource | "", { label: string; color: string; bg: s
 
 const STATUS_FLOW = ["REQUESTED", "SCHEDULED", "EN_ROUTE", "PICKED_UP", "COMPLETED"] as const;
 
+// Estados en los que un viaje sigue "vivo" y por tanto puede cancelarse.
+const CANCELLABLE_STATUSES = new Set(["REQUESTED", "SCHEDULED", "EN_ROUTE", "PICKED_UP"]);
+
 const formatDateTime = (value?: string | null) =>
   value
     ? new Date(value).toLocaleString("es-CL", {
@@ -360,6 +364,8 @@ export default function TripsPage() {
   };
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
   const [logTrip, setLogTrip] = useState<Trip | null>(null);
+  const [pendingAction, setPendingAction] = useState<{ trip: Trip; kind: "cancel" | "delete" } | null>(null);
+  const [actionBusy, setActionBusy] = useState(false);
   const knownRequestedIdsRef = useRef<Set<string>>(new Set());
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -437,6 +443,47 @@ export default function TripsPage() {
       setError(err instanceof Error ? err.message : t("No se pudo cargar"));
     } finally {
       if (!silent) setLoading(false);
+    }
+  };
+
+  // Cancela (status → CANCELLED, queda en bitácora) o elimina definitivamente el
+  // viaje seleccionado. Al eliminar un viaje de ida y vuelta se borra primero el
+  // tramo de regreso para no dejar registros huérfanos.
+  const runPendingAction = async () => {
+    if (!pendingAction || actionBusy) return;
+    const { trip, kind } = pendingAction;
+    setActionBusy(true);
+    setError(null);
+    try {
+      if (kind === "cancel") {
+        await apiFetch(`/trips/${trip.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status: "CANCELLED",
+            metadata: {
+              log: [{ action: "CANCELLED", by: "Operador", at: new Date().toISOString() }],
+            },
+          }),
+        });
+      } else {
+        for (const child of trip.childTrips ?? []) {
+          await apiFetch(`/trips/${child.id}`, { method: "DELETE" });
+        }
+        await apiFetch(`/trips/${trip.id}`, { method: "DELETE" });
+      }
+      setPendingAction(null);
+      await loadData(true);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : kind === "cancel"
+            ? "No se pudo cancelar el viaje."
+            : "No se pudo eliminar el viaje.",
+      );
+    } finally {
+      setActionBusy(false);
     }
   };
 
@@ -822,11 +869,29 @@ export default function TripsPage() {
               style={{ background: pal.cardBg, border: `1px solid ${pal.cardBorder}`, borderRadius: "99px", padding: "7px 16px", fontSize: "13px", fontWeight: 600, color: pal.textMuted, cursor: "pointer" }}>
               Ver bitácora
             </button>
+            {CANCELLABLE_STATUSES.has(trip.status || "") && (
+              <button type="button" onClick={() => setPendingAction({ trip, kind: "cancel" })}
+                style={{ background: "#fff", border: "1px solid rgba(245,158,11,0.5)", borderRadius: "99px", padding: "7px 16px", fontSize: "13px", fontWeight: 600, color: "#d97706", cursor: "pointer" }}>
+                Cancelar
+              </button>
+            )}
+            <button type="button" onClick={() => setPendingAction({ trip, kind: "delete" })}
+              style={{ background: "#fff", border: "1px solid rgba(239,68,68,0.4)", borderRadius: "99px", padding: "7px 16px", fontSize: "13px", fontWeight: 600, color: "#ef4444", cursor: "pointer" }}>
+              Eliminar
+            </button>
           </div>
         </div>
       </article>
     );
   };
+
+  const confirmTrip = pendingAction?.trip ?? null;
+  const confirmIsCancel = pendingAction?.kind === "cancel";
+  const confirmMessage = !confirmTrip
+    ? ""
+    : confirmIsCancel
+      ? `Se cancelará el viaje de ${resolveRequester(confirmTrip)}${confirmTrip.destination ? ` → ${confirmTrip.destination}` : ""}. El viaje queda registrado como cancelado en la bitácora y, si tiene conductor asignado, se le notificará. ¿Continuar?`
+      : `Se eliminará definitivamente el viaje de ${resolveRequester(confirmTrip)}${(confirmTrip.childTrips?.length ?? 0) > 0 ? ", incluido su tramo de regreso," : ""} y no se podrá recuperar. ¿Eliminar?`;
 
   return (
     <div className="space-y-6">
@@ -1084,7 +1149,7 @@ export default function TripsPage() {
             <button
               type="button"
               onClick={() => {
-                setActiveTab("dispatch");
+                setActiveTab("editor");
                 setShowAdminEditor(true);
                 setSelectedTripId(null);
                 setTripSource("MANUAL");
@@ -1490,7 +1555,7 @@ export default function TripsPage() {
             </div>
             <button
               type="button"
-              onClick={() => { setShowAdminEditor(false); setSelectedTripId(null); }}
+              onClick={() => { setShowAdminEditor(false); setSelectedTripId(null); setActiveTab("dispatch"); }}
               style={{ display: "inline-flex", alignItems: "center", borderRadius: "99px", border: "1px solid #e2e8f0", padding: "6px 16px", fontSize: "13px", fontWeight: 600, color: "#475569", background: "#ffffff", cursor: "pointer" }}
             >
               Cerrar editor
@@ -1569,6 +1634,20 @@ export default function TripsPage() {
           </div>
         </div>
       )}
+
+      {/* ── Confirmación de cancelar / eliminar viaje ── */}
+      <ConfirmDialog
+        open={!!pendingAction}
+        danger
+        title={confirmIsCancel ? "Cancelar viaje" : "Eliminar viaje"}
+        message={confirmMessage}
+        confirmLabel={
+          actionBusy ? "Procesando…" : confirmIsCancel ? "Cancelar viaje" : "Eliminar"
+        }
+        cancelLabel="Volver"
+        onConfirm={runPendingAction}
+        onCancel={() => { if (!actionBusy) setPendingAction(null); }}
+      />
     </div>
   );
 }

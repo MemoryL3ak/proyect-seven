@@ -12,7 +12,7 @@ import type {
   TrackingMarker,
   TrailPath,
 } from "@/components/LiveTrackingMap";
-import { geocodeAddress, getDirections, snapToRoads, type LatLng } from "@/lib/google-maps";
+import { geocodeAddress, getDirections, haversineMeters, snapToRoads, type LatLng } from "@/lib/google-maps";
 
 const LiveTrackingMap = dynamic(() => import("@/components/LiveTrackingMap"), { ssr: false });
 
@@ -22,6 +22,7 @@ type Trip = {
   driverId: string;
   vehicleId: string;
   vehiclePlate?: string | null;
+  requesterAthleteId?: string | null;
   origin?: string | null;
   destination?: string | null;
   destinationVenueId?: string | null;
@@ -34,6 +35,10 @@ type Trip = {
   passengerCount?: number | null;
   athleteIds?: string[];
   athleteNames?: string[];
+  tripCost?: number | null;
+  driverRating?: number | null;
+  ratingComment?: string | null;
+  notes?: string | null;
 };
 
 type EventItem = { id: string; name?: string | null };
@@ -54,6 +59,7 @@ const STATUS_COLORS: Record<string, { accent: string; chipBg: string; chipBorder
   SCHEDULED:  { accent: "#3b82f6", chipBg: "rgba(59,130,246,0.12)",  chipBorder: "rgba(59,130,246,0.3)"  },
   COMPLETED:  { accent: "#64748b", chipBg: "rgba(100,116,139,0.1)",  chipBorder: "rgba(100,116,139,0.25)" },
   DROPPED_OFF:{ accent: "#14b8a6", chipBg: "rgba(20,184,166,0.12)",  chipBorder: "rgba(20,184,166,0.3)"  },
+  CANCELLED:  { accent: "#ef4444", chipBg: "rgba(239,68,68,0.1)",    chipBorder: "rgba(239,68,68,0.28)"  },
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -87,7 +93,8 @@ const statusLabel: Record<string, string> = {
   SCHEDULED: "Programado",
   PICKED_UP: "Recogido",
   DROPPED_OFF: "Dejado en hotel",
-  COMPLETED: "Completado"
+  COMPLETED: "Completado",
+  CANCELLED: "Cancelado",
 };
 
 const countryLabels: Record<string, string> = {
@@ -160,6 +167,13 @@ export default function VehiclePositionsPage() {
   const [tripRoutes, setTripRoutes] = useState<Record<string, LatLng[]>>({});
   const [tripRouteMeta, setTripRouteMeta] = useState<Record<string, { distanceKm: number; durationMin: number }>>({});
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
+  const [detailTrip, setDetailTrip] = useState<Trip | null>(null);
+  const [detailPositions, setDetailPositions] = useState<LatLng[]>([]);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [routeImgFailed, setRouteImgFailed] = useState(false);
+  const [tableSearch, setTableSearch] = useState("");
+  const [tableStatus, setTableStatus] = useState("");
+  const [tableClient, setTableClient] = useState("");
   const [loading, setLoading] = useState(false);
   // Only the very first load should blank the KPIs to "—". Subsequent
   // refreshes keep the previous values on screen to avoid flicker.
@@ -552,13 +566,40 @@ export default function VehiclePositionsPage() {
     });
   }, [activeTripsForRoutes, destinationCoords, positions]);
 
+  const tripWhen = (t: Trip) => {
+    const d = t.completedAt || t.startedAt || t.scheduledAt;
+    return d ? new Date(d).getTime() : 0;
+  };
   const orderedTrips = useMemo(() => {
-    return [...trips].sort((a, b) => {
-      const aTime = a.scheduledAt ? new Date(a.scheduledAt).getTime() : 0;
-      const bTime = b.scheduledAt ? new Date(b.scheduledAt).getTime() : 0;
-      return bTime - aTime;
-    });
+    return [...trips].sort((a, b) => tripWhen(b) - tripWhen(a));
   }, [trips]);
+
+  // ── Filtros de la tabla "Todos los viajes" ──
+  const statusCounts = useMemo(() => {
+    const m: Record<string, number> = {};
+    trips.forEach((t) => { const s = t.status || "SCHEDULED"; m[s] = (m[s] || 0) + 1; });
+    return m;
+  }, [trips]);
+  const tableClientOptions = useMemo(() => {
+    const set = new Set<string>();
+    trips.forEach((t) => { if (t.clientType) set.add(t.clientType); });
+    return Array.from(set).sort();
+  }, [trips]);
+  const visibleTrips = useMemo(() => {
+    const q = tableSearch.trim().toLowerCase();
+    return orderedTrips.filter((t) => {
+      if (tableStatus && (t.status || "SCHEDULED") !== tableStatus) return false;
+      if (tableClient && (t.clientType || "") !== tableClient) return false;
+      if (q) {
+        const driver = drivers[t.driverId]?.fullName || "";
+        const vehicle = t.vehicleId ? (vehicles[t.vehicleId]?.plate || "") : "";
+        const hay = [t.origin, t.destination, driver, vehicle, t.tripType, t.clientType]
+          .filter(Boolean).join(" ").toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [orderedTrips, tableSearch, tableStatus, tableClient, drivers, vehicles]);
 
   const activeTrips = useMemo(
     () => trips.filter((t) => ["EN_ROUTE", "PICKED_UP"].includes(t.status ?? "")),
@@ -734,6 +775,68 @@ export default function VehiclePositionsPage() {
 
   const buildGoogleMapsLink = (lat: number, lng: number) =>
     `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+
+  // ── Detalle de viaje: ruta realizada (breadcrumb GPS), km y valor ──
+  const openTripDetail = async (trip: Trip) => {
+    setDetailTrip(trip);
+    setDetailPositions([]);
+    setRouteImgFailed(false);
+    setDetailLoading(true);
+    try {
+      const rows = await apiFetch<Array<{ location?: { coordinates?: number[] } | null }>>(
+        `/vehicle-positions/by-trip/${trip.id}`,
+      );
+      const pts = (rows || [])
+        .map((r) => {
+          const c = r.location?.coordinates;
+          return Array.isArray(c) && c.length >= 2 ? { lat: Number(c[1]), lng: Number(c[0]) } : null;
+        })
+        .filter((p): p is LatLng => !!p && Number.isFinite(p.lat) && Number.isFinite(p.lng));
+      setDetailPositions(pts);
+    } catch {
+      setDetailPositions([]);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+  const routeKmFromPts = (pts: LatLng[]) => {
+    let m = 0;
+    for (let i = 1; i < pts.length; i++) m += haversineMeters(pts[i - 1], pts[i]);
+    return m / 1000;
+  };
+  // Imagen de la ruta realizada vía Google Static Maps (submuestrea a <=100 puntos).
+  const buildStaticRoute = (pts: LatLng[]): string | null => {
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    if (!apiKey || pts.length < 2) return null;
+    const step = Math.ceil(pts.length / 100);
+    const sampled = pts.filter((_, i) => i % step === 0);
+    const last = pts[pts.length - 1];
+    if (sampled[sampled.length - 1] !== last) sampled.push(last);
+    const path = sampled.map((p) => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`).join("|");
+    const start = pts[0];
+    return (
+      `https://maps.googleapis.com/maps/api/staticmap?size=640x360&scale=2` +
+      `&path=color:0x21D0B3ff|weight:4|${path}` +
+      `&markers=color:0x21D0B3|label:A|${start.lat},${start.lng}` +
+      `&markers=color:0xef4444|label:B|${last.lat},${last.lng}` +
+      `&key=${apiKey}`
+    );
+  };
+  // Fallback: mapa embebido de la ruta planificada origen→destino (siempre disponible con la embed key).
+  const buildDirectionsEmbed = (origin?: string | null, destination?: string | null): string | null => {
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    if (!apiKey || !origin || !destination) return null;
+    return `https://www.google.com/maps/embed/v1/directions?key=${apiKey}&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&mode=driving`;
+  };
+  const formatDuration = (startIso?: string | null, endIso?: string | null) => {
+    if (!startIso || !endIso) return "—";
+    const ms = new Date(endIso).getTime() - new Date(startIso).getTime();
+    if (!Number.isFinite(ms) || ms <= 0) return "—";
+    const min = Math.round(ms / 60000);
+    const h = Math.floor(min / 60);
+    const m = min % 60;
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  };
 
   // Brand palette — matches app light design system
   const pal = {
@@ -1054,98 +1157,246 @@ export default function VehiclePositionsPage() {
       {/* ── Table view */}
       {activeView === "table" && (
         <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "24px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
-          <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#0f172a", marginBottom: "16px" }}>{t("Todos los viajes")}</h2>
-          {orderedTrips.length === 0 ? (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
+            <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#0f172a", margin: 0 }}>{t("Todos los viajes")}</h2>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "#64748b", fontVariantNumeric: "tabular-nums" }}>
+              {visibleTrips.length === trips.length ? `${trips.length} viajes` : `${visibleTrips.length} de ${trips.length}`}
+            </span>
+          </div>
+
+          {/* ── Filtros ── */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <div style={{ position: "relative", flex: 1, minWidth: 200 }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                <input value={tableSearch} onChange={(e) => setTableSearch(e.target.value)} placeholder="Buscar origen, destino, conductor, patente…"
+                  style={{ width: "100%", padding: "9px 12px 9px 34px", fontSize: 13, borderRadius: 10, border: "1px solid #e2e8f0", outline: "none", background: "#f8fafc", color: "#0f172a", boxSizing: "border-box" }} />
+              </div>
+              <select value={tableClient} onChange={(e) => setTableClient(e.target.value)}
+                style={{ padding: "9px 12px", fontSize: 13, borderRadius: 10, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#0f172a", cursor: "pointer" }}>
+                <option value="">Todos los clientes</option>
+                {tableClientOptions.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+              {(tableSearch || tableStatus || tableClient) && (
+                <button type="button" onClick={() => { setTableSearch(""); setTableStatus(""); setTableClient(""); }}
+                  style={{ padding: "9px 14px", fontSize: 12.5, fontWeight: 600, borderRadius: 10, border: "1px solid #e2e8f0", background: "#fff", color: "#ef4444", cursor: "pointer" }}>
+                  Limpiar
+                </button>
+              )}
+            </div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {[{ key: "", label: "Todos", accent: "#14b8a6", count: trips.length }].concat(
+                Object.keys(statusCounts).map((s) => ({ key: s, label: statusLabel[s] || s, accent: (STATUS_COLORS[s] ?? STATUS_COLORS.SCHEDULED).accent, count: statusCounts[s] }))
+              ).map((chip) => {
+                const active = tableStatus === chip.key;
+                return (
+                  <button key={chip.key || "all"} type="button" onClick={() => setTableStatus(chip.key)}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 11px", borderRadius: 99, fontSize: 12, fontWeight: 700, cursor: "pointer",
+                      background: active ? chip.accent : "#f1f5f9", color: active ? "#fff" : "#475569", border: `1px solid ${active ? chip.accent : "#e2e8f0"}`, transition: "all .15s" }}>
+                    {!active && <span style={{ width: 7, height: 7, borderRadius: "50%", background: chip.accent, display: "inline-block" }} />}
+                    {chip.label}
+                    <span style={{ fontSize: 10.5, fontWeight: 800, padding: "1px 6px", borderRadius: 99, background: active ? "rgba(255,255,255,0.25)" : "#fff", color: active ? "#fff" : "#64748b" }}>{chip.count}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {trips.length === 0 ? (
             <p style={{ fontSize: "14px", color: "#64748b" }}>{t("Sin viajes registrados.")}</p>
+          ) : visibleTrips.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "44px 20px", color: "#94a3b8" }}>
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.6" strokeLinecap="round" style={{ margin: "0 auto 10px", display: "block" }}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              <p style={{ fontSize: 13, margin: 0 }}>Ningún viaje coincide con los filtros.</p>
+            </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>{t("Viaje")}</th>
-                    <th>{t("Evento")}</th>
-                    <th>{t("Conductor")}</th>
-                    <th>{t("Vehículo")}</th>
-                    <th>{t("Mapa")}</th>
-                    <th>{t("Tipo")}</th>
-                    <th>{t("Cliente")}</th>
-                    <th>{t("Origen")}</th>
-                    <th>{t("Destino")}</th>
-                    <th>{t("Delegación")}</th>
-                    <th>{t("Participantes")}</th>
-                    <th>{t("Programación")}</th>
-                    <th>{t("Inicio")}</th>
-                    <th>{t("Cierre")}</th>
-                    <th>{t("Estado")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {orderedTrips.map((trip) => {
-                    const event = trip.eventId ? events[trip.eventId] : null;
-                    const driver = drivers[trip.driverId];
-                    const vehicle = trip.vehicleId ? vehicles[trip.vehicleId] : null;
-                    const position = positions[trip.driverId] || (trip.vehicleId ? positions[trip.vehicleId] : null);
-                    return (
-                      <tr key={trip.id}>
-                        <td>{trip.id}</td>
-                        <td>{event?.name || trip.eventId || "-"}</td>
-                        <td>{driver?.fullName || trip.driverId}</td>
-                        <td>
-                          {vehicle?.plate || trip.vehicleId}
-                          {vehicle?.type ? ` (${vehicle.type})` : ""}
-                          {vehicle?.brand || vehicle?.model
-                            ? ` · ${[vehicle?.brand, vehicle?.model].filter(Boolean).join(" ")}`
-                            : ""}
-                        </td>
-                        <td>
-                          {position ? (
-                            <div className="flex flex-col gap-2">
-                              <button
-                                type="button"
-                                className="w-56 h-36 rounded-2xl overflow-hidden transition"
-                                style={{ border: "1px solid var(--border)" }}
-                                onClick={() =>
-                                  setMapPreview({ lat: position.lat, lng: position.lng, title: vehicle?.plate || trip.vehicleId })
-                                }
-                              >
-                                <iframe
-                                  title={`map-${trip.id}`}
-                                  src={buildMapEmbed(position.lat, position.lng)}
-                                  className="w-full h-full"
-                                  loading="lazy"
-                                />
-                              </button>
-                              <a
-                                className="text-xs font-semibold hover:underline"
-                                style={{ color: "var(--brand)" }}
-                                href={buildGoogleMapsLink(position.lat, position.lng)}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                {t("Ver en Google Maps")}
-                              </a>
-                            </div>
-                          ) : "-"}
-                        </td>
-                        <td>{formatTripType(trip.tripType)}</td>
-                        <td>{trip.clientType || "-"}</td>
-                        <td>{trip.origin || "-"}</td>
-                        <td>{trip.destination || "-"}</td>
-                        <td>{resolveDelegations(trip)}</td>
-                        <td>{resolveAthletes(trip)}</td>
-                        <td>{formatDate(trip.scheduledAt)}</td>
-                        <td>{formatDate(trip.startedAt)}</td>
-                        <td>{formatDate(trip.completedAt)}</td>
-                        <td>{statusLabel[trip.status || "SCHEDULED"] || trip.status}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              {visibleTrips.map((trip) => {
+                const driver = drivers[trip.driverId];
+                const vehicle = trip.vehicleId ? vehicles[trip.vehicleId] : null;
+                const sc = STATUS_COLORS[trip.status ?? "SCHEDULED"] ?? STATUS_COLORS.SCHEDULED;
+                const originShort = trip.origin?.split(",")[0] || "—";
+                const destShort = trip.destination?.split(",")[0] || "—";
+                const when = trip.completedAt || trip.startedAt || trip.scheduledAt;
+                const meta = [
+                  driver?.fullName || "Sin conductor",
+                  vehicle?.plate ? vehicle.plate.toUpperCase() : null,
+                  formatTripType(trip.tripType),
+                  trip.clientType || null,
+                ].filter(Boolean).join("  ·  ");
+                return (
+                  <button key={trip.id} type="button" onClick={() => openTripDetail(trip)}
+                    style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", textAlign: "left", padding: "13px 16px", borderRadius: 14, border: "1px solid #e2e8f0", borderLeft: `4px solid ${sc.accent}`, background: "#fff", cursor: "pointer", transition: "all .15s" }}
+                    onMouseEnter={(e) => { const el = e.currentTarget as HTMLElement; el.style.background = "#f8fafc"; el.style.borderColor = "#cbd5e1"; el.style.borderLeftColor = sc.accent; el.style.transform = "translateX(2px)"; }}
+                    onMouseLeave={(e) => { const el = e.currentTarget as HTMLElement; el.style.background = "#fff"; el.style.borderColor = "#e2e8f0"; el.style.borderLeftColor = sc.accent; el.style.transform = ""; }}>
+                    <span style={{ flexShrink: 0, width: 10, height: 10, borderRadius: "50%", background: sc.accent, boxShadow: `0 0 0 4px ${sc.chipBg}` }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
+                          {originShort} <span style={{ color: "#94a3b8", fontWeight: 400 }}>→</span> {destShort}
+                        </span>
+                        <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 99, background: sc.chipBg, border: `1px solid ${sc.chipBorder}`, color: sc.accent }}>
+                          {statusLabel[trip.status || "SCHEDULED"] || trip.status}
+                        </span>
+                      </div>
+                      <p style={{ fontSize: 12, color: "#64748b", margin: "4px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{meta}</p>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 14, flexShrink: 0 }}>
+                      <div style={{ textAlign: "right" }}>
+                        <p style={{ fontSize: 11.5, color: "#475569", margin: 0, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{formatDate(when)}</p>
+                        {trip.tripCost != null && (
+                          <p style={{ fontSize: 12.5, fontWeight: 800, color: "#0a7a6b", margin: "2px 0 0" }}>${Number(trip.tripCost).toLocaleString("es-CL")}</p>
+                        )}
+                      </div>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0 }}><polyline points="9 18 15 12 9 6" /></svg>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           )}
         </section>
       )}
+
+      {/* ── Detalle de viaje realizado (ruta, km, valor) ── */}
+      {detailTrip && (() => {
+        const trip = detailTrip;
+        const driver = drivers[trip.driverId];
+        const vehicle = trip.vehicleId ? vehicles[trip.vehicleId] : null;
+        const venue = trip.destinationVenueId ? venues[trip.destinationVenueId] : null;
+        const event = trip.eventId ? events[trip.eventId] : null;
+        const km = detailPositions.length >= 2 ? routeKmFromPts(detailPositions) : null;
+        const routeImg = buildStaticRoute(detailPositions);
+        const pax = trip.athleteIds?.length || trip.passengerCount || 0;
+        // Pasajero(s): el solicitante del portal (requester) y/o los participantes vinculados.
+        const paxNames = Array.from(new Set([
+          ...(trip.requesterAthleteId && athletes[trip.requesterAthleteId]?.fullName ? [athletes[trip.requesterAthleteId]!.fullName as string] : []),
+          ...(trip.athleteNames && trip.athleteNames.length > 0
+            ? trip.athleteNames
+            : (trip.athleteIds || []).map((id) => athletes[id]?.fullName).filter((n): n is string => Boolean(n))),
+        ]));
+        const sc = STATUS_COLORS[trip.status ?? "COMPLETED"] ?? STATUS_COLORS.COMPLETED;
+        const close = () => { setDetailTrip(null); setDetailPositions([]); };
+        const stat = (label: string, value: string, color = "#0f172a") => (
+          <div style={{ padding: "12px 8px", borderRadius: "14px", background: "#f8fafc", border: "1px solid #f1f5f9", textAlign: "center" }}>
+            <p style={{ fontSize: "9px", fontWeight: 700, color: "#94a3b8", margin: 0, textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</p>
+            <p style={{ fontSize: "18px", fontWeight: 800, color, margin: "4px 0 0", fontVariantNumeric: "tabular-nums" }}>{value}</p>
+          </div>
+        );
+        const field = (label: string, value: string) => (
+          <div style={{ padding: "8px 10px", borderRadius: "10px", background: "#f8fafc", border: "1px solid #f1f5f9" }}>
+            <p style={{ fontSize: "9px", fontWeight: 700, color: "#94a3b8", margin: 0, textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</p>
+            <p style={{ fontSize: "12.5px", fontWeight: 600, color: "#0f172a", margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis" }}>{value}</p>
+          </div>
+        );
+        return (
+          <div onClick={close}
+            style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(15,23,42,0.5)", padding: "16px", backdropFilter: "blur(6px)" }}>
+            <div onClick={(e) => e.stopPropagation()}
+              style={{ background: "#ffffff", width: "100%", maxWidth: "620px", maxHeight: "92vh", borderRadius: "22px", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 24px 72px rgba(15,23,42,0.28)" }}>
+              {/* Header */}
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", padding: "18px 22px 14px", background: "linear-gradient(135deg,#041a2e,#062240)", color: "#fff", flexShrink: 0 }}>
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", color: "#34F3C6", margin: 0 }}>Detalle del viaje</p>
+                  <h3 style={{ fontSize: "17px", fontWeight: 800, margin: "4px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {(trip.origin?.split(",")[0] || "—")} → {(venue?.name || trip.destination?.split(",")[0] || "—")}
+                  </h3>
+                  <span style={{ display: "inline-block", marginTop: "6px", fontSize: "10px", fontWeight: 700, padding: "3px 10px", borderRadius: "99px", background: sc.chipBg, border: `1px solid ${sc.chipBorder}`, color: sc.accent }}>
+                    {statusLabel[trip.status || "SCHEDULED"] || trip.status}
+                  </span>
+                </div>
+                <button type="button" onClick={close}
+                  style={{ flexShrink: 0, width: 34, height: 34, borderRadius: "10px", border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.08)", color: "#fff", cursor: "pointer", fontSize: "20px", lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
+              </div>
+
+              {/* Body */}
+              <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 22px", display: "flex", flexDirection: "column", gap: "14px" }}>
+                {/* Ruta realizada */}
+                {(() => {
+                  const dirEmbed = buildDirectionsEmbed(trip.origin, trip.destination);
+                  const showImg = routeImg && !routeImgFailed;
+                  const isReal = !!showImg;
+                  return (
+                    <div style={{ borderRadius: "14px", overflow: "hidden", border: "1px solid #e2e8f0", background: "#eef2f7", position: "relative" }}>
+                      {showImg ? (
+                        <img src={routeImg!} alt="Ruta realizada" onError={() => setRouteImgFailed(true)} style={{ width: "100%", display: "block" }} />
+                      ) : dirEmbed ? (
+                        <iframe title={`route-${trip.id}`} src={dirEmbed} style={{ width: "100%", height: 300, border: "none", display: "block" }} loading="lazy" />
+                      ) : (
+                        <div style={{ height: 180, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 8, color: "#94a3b8", fontSize: "13px", textAlign: "center", padding: "0 20px" }}>
+                          {detailLoading ? (
+                            <><div style={{ width: 26, height: 26, borderRadius: "50%", border: "3px solid rgba(33,208,179,0.25)", borderTopColor: "#21D0B3", animation: "vp-spin 0.8s linear infinite" }} /><span>Cargando recorrido…</span></>
+                          ) : (
+                            <><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.8" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span>Sin recorrido GPS registrado para este viaje.</span></>
+                          )}
+                        </div>
+                      )}
+                      <span style={{ position: "absolute", top: 8, left: 8, fontSize: "9px", fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "#0a7a6b", background: "rgba(255,255,255,0.92)", border: "1px solid rgba(33,208,179,0.3)", borderRadius: 8, padding: "3px 8px" }}>
+                        {isReal ? "Ruta realizada" : "Ruta estimada"}
+                      </span>
+                    </div>
+                  );
+                })()}
+
+                {/* Stats */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "8px" }}>
+                  {stat("Distancia", km != null ? `${km.toFixed(1)} km` : (detailLoading ? "…" : "—"))}
+                  {stat("Valor", trip.tripCost != null ? `$${Number(trip.tripCost).toLocaleString("es-CL")}` : "—", "#0a7a6b")}
+                  {stat("Duración", formatDuration(trip.startedAt, trip.completedAt))}
+                  {stat("Pasajeros", (paxNames.length || pax) ? String(paxNames.length || pax) : "—")}
+                </div>
+
+                {/* Origen / Destino */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                  {field("Origen", trip.origin || "—")}
+                  {field("Destino", venue?.name || trip.destination || "—")}
+                </div>
+
+                {/* Conductor / vehículo / delegación / participantes */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                  {field("Conductor", driver?.fullName || trip.driverId || "—")}
+                  {field("Vehículo", [vehicle?.plate, vehicle?.type].filter(Boolean).join(" · ") || trip.vehicleId || "—")}
+                  {field("Delegación", resolveDelegations(trip) !== "-" ? resolveDelegations(trip) : "—")}
+                  {field("Pasajero(s)", paxNames.length ? paxNames.join(", ") : "—")}
+                </div>
+
+                {/* Tiempos */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
+                  {field("Programación", formatDate(trip.scheduledAt))}
+                  {field("Inicio", formatDate(trip.startedAt))}
+                  {field("Cierre", formatDate(trip.completedAt))}
+                </div>
+
+                {/* Evento + rating */}
+                {event?.name && field("Evento", event.name)}
+                {trip.driverRating ? (
+                  <div style={{ padding: "10px 12px", borderRadius: "12px", background: "#FFFBEB", border: "1px solid #FDE68A", display: "flex", alignItems: "center", gap: "10px" }}>
+                    <span style={{ fontSize: "18px" }}>{"⭐".repeat(trip.driverRating)}</span>
+                    {trip.ratingComment && <span style={{ fontSize: "12px", color: "#92400E", fontStyle: "italic", flex: 1 }}>&ldquo;{trip.ratingComment}&rdquo;</span>}
+                  </div>
+                ) : null}
+                {trip.notes && field("Notas", trip.notes)}
+              </div>
+
+              {/* Footer */}
+              <div style={{ flexShrink: 0, padding: "12px 18px", borderTop: "1px solid #f1f5f9", display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+                {detailPositions.length > 0 && (
+                  <a href={buildGoogleMapsLink(detailPositions[detailPositions.length - 1].lat, detailPositions[detailPositions.length - 1].lng)}
+                    target="_blank" rel="noreferrer"
+                    style={{ padding: "9px 16px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "#fff", color: "#475569", fontSize: "13px", fontWeight: 600, textDecoration: "none" }}>
+                    Ver en Google Maps
+                  </a>
+                )}
+                <button type="button" onClick={close}
+                  style={{ padding: "9px 20px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg,#21D0B3,#14AE98)", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
+                  Cerrar
+                </button>
+              </div>
+            </div>
+            <style>{`@keyframes vp-spin{to{transform:rotate(360deg)}}`}</style>
+          </div>
+        );
+      })()}
 
       {mapPreview && (
         <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(15,23,42,0.4)", padding: "16px", backdropFilter: "blur(4px)" }}>

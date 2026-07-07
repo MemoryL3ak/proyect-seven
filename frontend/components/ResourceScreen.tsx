@@ -2239,6 +2239,30 @@ export default function ResourceScreen({
     }
   };
 
+  // Columnas cuyo valor se muestra como chip de estado con color.
+  const STATUS_KEYS = new Set(["status", "estado", "state", "accreditationStatus", "paymentStatus"]);
+  const STATUS_BADGE: Record<string, { bg: string; color: string }> = {
+    COMPLETED: { bg: "rgba(100,116,139,0.12)", color: "#475569" },
+    DROPPED_OFF: { bg: "rgba(20,184,166,0.12)", color: "#0f766e" },
+    CANCELLED: { bg: "rgba(239,68,68,0.1)", color: "#dc2626" },
+    CANCELED: { bg: "rgba(239,68,68,0.1)", color: "#dc2626" },
+    SCHEDULED: { bg: "rgba(59,130,246,0.12)", color: "#2563eb" },
+    REQUESTED: { bg: "rgba(245,158,11,0.14)", color: "#b45309" },
+    EN_ROUTE: { bg: "rgba(16,185,129,0.12)", color: "#059669" },
+    PICKED_UP: { bg: "rgba(34,211,238,0.16)", color: "#0891b2" },
+    APPROVED: { bg: "rgba(16,185,129,0.12)", color: "#059669" },
+    CREDENTIAL_ISSUED: { bg: "rgba(16,185,129,0.12)", color: "#059669" },
+    PENDING: { bg: "rgba(245,158,11,0.14)", color: "#b45309" },
+    REJECTED: { bg: "rgba(239,68,68,0.1)", color: "#dc2626" },
+    ACTIVE: { bg: "rgba(16,185,129,0.12)", color: "#059669" },
+    INACTIVE: { bg: "rgba(148,163,184,0.16)", color: "#64748b" },
+    AVAILABLE: { bg: "rgba(16,185,129,0.12)", color: "#059669" },
+    ASSIGNED: { bg: "rgba(59,130,246,0.12)", color: "#2563eb" },
+    CONFIRMED: { bg: "rgba(16,185,129,0.12)", color: "#059669" },
+  };
+  const statusTone = (raw: string) =>
+    STATUS_BADGE[raw.toUpperCase()] ?? { bg: "rgba(148,163,184,0.14)", color: "#475569" };
+
   const resolveDisplayValue = (fieldKey: string, item: Record<string, any>) => {
     const value = item[fieldKey];
     const field = config.fields.find((item) => item.key === fieldKey);
@@ -3719,23 +3743,54 @@ export default function ResourceScreen({
           );
         })() : (
           <div className="max-h-[70vh] overflow-auto rounded-2xl" style={{ border: "1px solid var(--border)" }}>
-            <table className="table">
+            <style>{`
+              .rs-data-table tbody tr:nth-child(even){background:rgba(148,163,184,0.045);}
+              .rs-data-table tbody tr:hover{background:rgba(31,205,255,0.08);}
+              .rs-data-table tbody tr{transition:background .12s ease;}
+              .rs-data-table td{vertical-align:middle;}
+              .rs-cell{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+            `}</style>
+            <table className="table rs-data-table">
               <thead>
                 <tr>
                   {columns.map((col) => (
-                    <th key={col.key} className="sticky top-0 z-10" style={{ background: "linear-gradient(to bottom, #eaf4fb, #e8f0f8)", color: "#1FCDFF", fontSize: "10px", letterSpacing: "0.16em", textTransform: "uppercase", borderBottom: "2px solid rgba(31,205,255,0.25)", fontWeight: 700 }}>
+                    <th key={col.key} className="sticky top-0 z-10" style={{ background: "linear-gradient(to bottom, #eaf4fb, #e8f0f8)", color: "#0e7490", fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", borderBottom: "2px solid rgba(31,205,255,0.25)", fontWeight: 700 }}>
                       {col.label}
                     </th>
                   ))}
-                  <th className="sticky top-0 z-10" style={{ background: "linear-gradient(to bottom, #eaf4fb, #e8f0f8)", color: "#1FCDFF", fontSize: "10px", letterSpacing: "0.16em", textTransform: "uppercase", borderBottom: "2px solid rgba(31,205,255,0.25)", fontWeight: 700 }}>{t("Acciones")}</th>
+                  <th className="sticky top-0 z-10" style={{ background: "linear-gradient(to bottom, #eaf4fb, #e8f0f8)", color: "#0e7490", fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", borderBottom: "2px solid rgba(31,205,255,0.25)", fontWeight: 700 }}>{t("Acciones")}</th>
                 </tr>
               </thead>
               <tbody>
                 {items.map((item) => (
                   <tr key={item.id ?? JSON.stringify(item)}>
-                    {columns.map((col) => (
-                      <td key={col.key}>{resolveDisplayValue(col.key, item)}</td>
-                    ))}
+                    {columns.map((col) => {
+                      const display = resolveDisplayValue(col.key, item);
+                      const titleText =
+                        typeof display === "string" || typeof display === "number"
+                          ? String(display)
+                          : undefined;
+                      const isStatus =
+                        STATUS_KEYS.has(col.key) &&
+                        typeof display === "string" &&
+                        display !== "-" &&
+                        display.trim() !== "";
+                      if (isStatus) {
+                        const tone = statusTone(String(item[col.key] ?? display));
+                        return (
+                          <td key={col.key} title={titleText}>
+                            <span style={{ display: "inline-block", fontSize: "11px", fontWeight: 700, padding: "3px 10px", borderRadius: "99px", whiteSpace: "nowrap", background: tone.bg, color: tone.color }}>
+                              {display}
+                            </span>
+                          </td>
+                        );
+                      }
+                      return (
+                        <td key={col.key} title={titleText}>
+                          <div className="rs-cell">{display}</div>
+                        </td>
+                      );
+                    })}
                     <td className="flex gap-2">
                       <button
                         className="btn btn-ghost"
