@@ -370,6 +370,29 @@ export default function VehicleRequestPortalPage() {
   const [editingTripId, setEditingTripId] = useState<string | null>(null);
   const [locationPermission, setLocationPermission] = useState<"granted" | "prompt" | "denied" | null>(null);
   const [activeTab, setActiveTab] = useState<PortalTab>("solicitud");
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [assistOpen, setAssistOpen] = useState(false);
+  const { vipPrimary, vipOverflow } = useMemo(() => {
+    const all = [
+      { key: "solicitud" as PortalTab, label: "Solicitud", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> },
+      { key: "actividades" as PortalTab, label: "Actividades", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> },
+      { key: "premiaciones" as PortalTab, label: "Premios", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg> },
+      { key: "cupones" as PortalTab, label: "Cupones", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v2a3 3 0 010 6v2a2 2 0 002 2h14a2 2 0 002-2v-2a3 3 0 010-6V7a2 2 0 00-2-2H5a2 2 0 00-2 2z"/><line x1="13" y1="5" x2="13" y2="7"/><line x1="13" y1="11" x2="13" y2="13"/><line x1="13" y1="17" x2="13" y2="19"/></svg> },
+      { key: "sedes" as PortalTab, label: "Sedes", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> },
+      { key: "hoteles" as PortalTab, label: "Hoteles", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 22V8l9-6 9 6v14"/><path d="M9 22V12h6v10"/></svg> },
+      { key: "alimentacion" as PortalTab, label: "Comida", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg> },
+      { key: "calendario" as PortalTab, label: "Calendario", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> },
+      { key: "cuenta" as PortalTab, label: "Cuenta", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
+    ];
+    const MAX_PRIMARY = 4;
+    const PRIORITY = ["solicitud", "actividades", "calendario", "cuenta", "alimentacion", "sedes", "hoteles", "premiaciones", "cupones"];
+    const ranked = [...all].sort((a, b) => PRIORITY.indexOf(a.key) - PRIORITY.indexOf(b.key));
+    const primaryKeys = new Set(ranked.slice(0, MAX_PRIMARY).map((t) => t.key));
+    return {
+      vipPrimary: all.filter((t) => primaryKeys.has(t.key)),
+      vipOverflow: all.filter((t) => !primaryKeys.has(t.key)),
+    };
+  }, []);
   const [actividadesSubTab, setActividadesSubTab] = useState<ActividadesSubTab>("en_curso");
   const [premiaciones, setPremiaciones] = useState<PremiacionVIP[]>([]);
   const [premView, setPremView] = useState<"calendar" | "list">("calendar");
@@ -1565,6 +1588,12 @@ export default function VehicleRequestPortalPage() {
                   onMarkAllRead={notify.markAllRead}
                   onClear={notify.clear}
                 />
+                <button type="button" onClick={() => setAssistOpen((p) => !p)} title="Asistencia"
+                  style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:`1px solid ${assistOpen ? "rgba(52,243,198,0.7)" : "rgba(33,208,179,0.4)"}`,background: assistOpen ? "linear-gradient(135deg,rgba(52,243,198,0.28),rgba(33,208,179,0.18))" : "rgba(33,208,179,0.12)",cursor:"pointer",flexShrink:0,transition:"all .15s" }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
+                  </svg>
+                </button>
                 <button type="button" onClick={() => athlete && loadPortal(athlete)} disabled={loading}
                   style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",cursor:"pointer",flexShrink:0,opacity:loading?0.5:1 }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -2887,25 +2916,57 @@ export default function VehicleRequestPortalPage() {
           </section>
           </div>
 
-          {/* Bottom tab bar — 6 tabs */}
+          {/* Bottom tab bar — 4 fijas + Más */}
           <div style={{ position:"fixed",bottom:0,left:0,right:0,display:"flex",background:"#fff",borderTop:"1px solid #e2e8f0",zIndex:100,paddingTop:6,paddingBottom:6,boxShadow:"0 -2px 12px rgba(0,0,0,0.06)" }}>
-            {([
-              { key: "solicitud" as PortalTab, label: "Solicitud", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> },
-              { key: "actividades" as PortalTab, label: "Actividades", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> },
-              { key: "premiaciones" as PortalTab, label: "Premios", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg> },
-              { key: "cupones" as PortalTab, label: "Cupones", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v2a3 3 0 010 6v2a2 2 0 002 2h14a2 2 0 002-2v-2a3 3 0 010-6V7a2 2 0 00-2-2H5a2 2 0 00-2 2z"/><line x1="13" y1="5" x2="13" y2="7"/><line x1="13" y1="11" x2="13" y2="13"/><line x1="13" y1="17" x2="13" y2="19"/></svg> },
-              { key: "sedes" as PortalTab, label: "Sedes", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> },
-              { key: "hoteles" as PortalTab, label: "Hoteles", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 22V8l9-6 9 6v14"/><path d="M9 22V12h6v10"/></svg> },
-              { key: "alimentacion" as PortalTab, label: "Comida", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg> },
-              { key: "calendario" as PortalTab, label: "Calendario", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> },
-              { key: "cuenta" as PortalTab, label: "Cuenta", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
-            ]).map(tab => (
+            {vipPrimary.map(tab => (
               <button key={tab.key} onClick={() => setActiveTab(tab.key)} style={{ flex:1,padding:"6px 0 4px",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:1 }}>
                 {tab.icon(activeTab===tab.key ? "#21D0B3" : "#94a3b8")}
                 <span style={{ fontSize:9,fontWeight:activeTab===tab.key?700:500,color:activeTab===tab.key?"#21D0B3":"#94a3b8" }}>{tab.label}</span>
               </button>
             ))}
+            {vipOverflow.length > 0 && (() => {
+              const activeOverflow = vipOverflow.find(tp => tp.key === activeTab);
+              const on = !!activeOverflow || moreOpen;
+              const col = on ? "#21D0B3" : "#94a3b8";
+              return (
+                <button type="button" onClick={() => setMoreOpen(true)} style={{ flex:1,padding:"6px 0 4px",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:1 }}>
+                  {activeOverflow ? activeOverflow.icon(col) : (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={col} strokeWidth="1.8" strokeLinecap="round"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+                  )}
+                  <span style={{ fontSize:9,fontWeight: on ? 700 : 500,color: col }}>{activeOverflow ? activeOverflow.label : "Más"}</span>
+                </button>
+              );
+            })()}
           </div>
+
+          {/* ── Hoja "Más" (secciones agrupadas) ── */}
+          {moreOpen && (
+            <div onClick={() => setMoreOpen(false)}
+              style={{ position:"fixed",inset:0,zIndex:120,display:"flex",alignItems:"flex-end",background:"rgba(2,12,24,0.5)",backdropFilter:"blur(4px)" }}>
+              <div onClick={(e) => e.stopPropagation()}
+                style={{ width:"100%",background:"#fff",borderRadius:"22px 22px 0 0",padding:"10px 16px calc(20px + env(safe-area-inset-bottom,0px))",boxShadow:"0 -10px 40px rgba(0,0,0,0.25)",animation:"vr-sheet .25s cubic-bezier(0.16,1,0.3,1) both" }}>
+                <div style={{ width:40,height:4,borderRadius:99,background:"#e2e8f0",margin:"0 auto 12px" }} />
+                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:"#94a3b8",margin:"0 0 12px" }}>Más secciones</p>
+                <div style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10 }}>
+                  {vipOverflow.map(tab => {
+                    const on = activeTab === tab.key;
+                    return (
+                      <button key={tab.key} type="button" onClick={() => { setActiveTab(tab.key); setMoreOpen(false); }}
+                        style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:8,padding:"16px 8px",borderRadius:16,cursor:"pointer",
+                          background: on ? "rgba(33,208,179,0.1)" : "#f8fafc",
+                          border:`1px solid ${on ? "rgba(33,208,179,0.4)" : "#eef2f7"}` }}>
+                        <span style={{ width:44,height:44,borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",
+                          background: on ? "linear-gradient(135deg,#34F3C6,#21D0B3)" : "#fff",
+                          border:`1px solid ${on ? "transparent" : "#e2e8f0"}` }}>{tab.icon(on ? "#fff" : "#64748b")}</span>
+                        <span style={{ fontSize:12,fontWeight: on ? 700 : 600,color: on ? "#0a7a6b" : "#334155" }}>{tab.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <style>{`@keyframes vr-sheet{from{transform:translateY(100%)}to{transform:translateY(0)}}`}</style>
+            </div>
+          )}
 
           {athlete && (
             <AssistanceChat
@@ -2913,6 +2974,9 @@ export default function VehicleRequestPortalPage() {
               originId={athlete.id}
               originName={athlete.fullName || "Participante VIP"}
               eventId={athlete.eventId || null}
+              showLauncher={false}
+              open={assistOpen}
+              onOpenChange={setAssistOpen}
             />
           )}
         </div>

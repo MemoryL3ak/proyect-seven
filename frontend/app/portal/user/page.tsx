@@ -278,6 +278,8 @@ export default function UserPortalPage() {
   const [foodLocations, setFoodLocations] = useState<FoodLocation[]>([]);
   const [foodMenus, setFoodMenus] = useState<FoodMenu[]>([]);
   const [activeTab, setActiveTab] = useState<PortalTab>("itinerario");
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [assistOpen, setAssistOpen] = useState(false);
   const [actSubTab, setActSubTab] = useState<"curso" | "historial">("curso");
   const [calMonthCursor, setCalMonthCursor] = useState(() => new Date());
   const [calSelectedDay, setCalSelectedDay] = useState<number | null>(null);
@@ -349,6 +351,22 @@ export default function UserPortalPage() {
     if (!isChief) return all.filter(t => ["actividades","calendario","premiaciones","sedes","alimentacion","cupones","cuenta"].includes(t.key));
     return all;
   }, [isChief]);
+
+  // La barra inferior muestra hasta 4 pestañas fijas + "Más"; el resto se agrupa
+  // en una hoja inferior. Orden de prioridad para elegir cuáles quedan fijas.
+  const { primaryTabs, overflowTabs } = useMemo(() => {
+    const MAX_PRIMARY = 4;
+    const PRIORITY = ["itinerario", "actividades", "calendario", "delegacion", "alimentacion", "sedes", "cuenta", "premiaciones", "cupones"];
+    if (portalTabs.length <= MAX_PRIMARY + 1) {
+      return { primaryTabs: portalTabs, overflowTabs: [] as typeof portalTabs };
+    }
+    const ranked = [...portalTabs].sort((a, b) => PRIORITY.indexOf(a.key) - PRIORITY.indexOf(b.key));
+    const primaryKeys = new Set(ranked.slice(0, MAX_PRIMARY).map((t) => t.key));
+    return {
+      primaryTabs: portalTabs.filter((t) => primaryKeys.has(t.key)),
+      overflowTabs: portalTabs.filter((t) => !primaryKeys.has(t.key)),
+    };
+  }, [portalTabs]);
 
   // Restore session on mount
   useEffect(() => {
@@ -1114,6 +1132,12 @@ export default function UserPortalPage() {
               onMarkAllRead={notify.markAllRead}
               onClear={notify.clear}
             />
+            <button type="button" onClick={() => setAssistOpen((p) => !p)} title="Asistencia"
+              style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:`1px solid ${assistOpen ? "rgba(52,243,198,0.7)" : "rgba(33,208,179,0.4)"}`,background: assistOpen ? "linear-gradient(135deg,rgba(52,243,198,0.28),rgba(33,208,179,0.18))" : "rgba(33,208,179,0.12)",cursor:"pointer",flexShrink:0,transition:"all .15s" }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
+              </svg>
+            </button>
             <button type="button" onClick={() => loadAthlete()} disabled={loading}
               style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",cursor:"pointer",flexShrink:0,opacity:loading?0.5:1 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -2482,7 +2506,7 @@ export default function UserPortalPage() {
 
         {/* ── Bottom tab bar ── */}
         <div style={{ position:"fixed",bottom:0,left:0,right:0,display:"flex",background:"#fff",borderTop:"1px solid #e2e8f0",zIndex:100,paddingTop:6,paddingBottom:6,boxShadow:"0 -2px 12px rgba(0,0,0,0.06)" }}>
-          {portalTabs.map(tab => (
+          {primaryTabs.map(tab => (
             <button key={tab.key} type="button" onClick={() => setActiveTab(tab.key)}
               style={{ flex:1,padding:"4px 0 2px",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,
                 color:activeTab===tab.key?"#21D0B3":"#94a3b8" }}>
@@ -2490,7 +2514,53 @@ export default function UserPortalPage() {
               <span style={{ fontSize:9.5,fontWeight:activeTab===tab.key?700:500,letterSpacing:"-0.005em" }}>{tab.label}</span>
             </button>
           ))}
+          {overflowTabs.length > 0 && (() => {
+            const activeOverflow = overflowTabs.find(tp => tp.key === activeTab);
+            const on = !!activeOverflow || moreOpen;
+            return (
+              <button type="button" onClick={() => setMoreOpen(true)}
+                style={{ flex:1,padding:"4px 0 2px",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,
+                  color: on ? "#21D0B3" : "#94a3b8" }}>
+                <span style={{ display:"flex" }}>
+                  {activeOverflow ? activeOverflow.icon : (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+                  )}
+                </span>
+                <span style={{ fontSize:9.5,fontWeight: on ? 700 : 500,letterSpacing:"-0.005em" }}>{activeOverflow ? activeOverflow.label : "Más"}</span>
+              </button>
+            );
+          })()}
         </div>
+
+        {/* ── Hoja "Más" (secciones agrupadas) ── */}
+        {moreOpen && (
+          <div onClick={() => setMoreOpen(false)}
+            style={{ position:"fixed",inset:0,zIndex:120,display:"flex",alignItems:"flex-end",background:"rgba(2,12,24,0.5)",backdropFilter:"blur(4px)" }}>
+            <div onClick={(e) => e.stopPropagation()}
+              style={{ width:"100%",background:"#fff",borderRadius:"22px 22px 0 0",padding:"10px 16px calc(20px + env(safe-area-inset-bottom,0px))",boxShadow:"0 -10px 40px rgba(0,0,0,0.25)",animation:"pu-sheet .25s cubic-bezier(0.16,1,0.3,1) both" }}>
+              <div style={{ width:40,height:4,borderRadius:99,background:"#e2e8f0",margin:"0 auto 12px" }} />
+              <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:"#94a3b8",margin:"0 0 12px" }}>Más secciones</p>
+              <div style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10 }}>
+                {overflowTabs.map(tab => {
+                  const on = activeTab === tab.key;
+                  return (
+                    <button key={tab.key} type="button" onClick={() => { setActiveTab(tab.key); setMoreOpen(false); }}
+                      style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:8,padding:"16px 8px",borderRadius:16,cursor:"pointer",
+                        background: on ? "rgba(33,208,179,0.1)" : "#f8fafc",
+                        border:`1px solid ${on ? "rgba(33,208,179,0.4)" : "#eef2f7"}` }}>
+                      <span style={{ width:44,height:44,borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",
+                        background: on ? "linear-gradient(135deg,#34F3C6,#21D0B3)" : "#fff",
+                        color: on ? "#fff" : "#64748b",
+                        border:`1px solid ${on ? "transparent" : "#e2e8f0"}` }}>{tab.icon}</span>
+                      <span style={{ fontSize:12,fontWeight: on ? 700 : 600,color: on ? "#0a7a6b" : "#334155" }}>{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <style>{`@keyframes pu-sheet{from{transform:translateY(100%)}to{transform:translateY(0)}}`}</style>
+          </div>
+        )}
 
         {/* KEEP EXISTING: old info cards grid removed, but keep modals/chat below */}
         <div style={{ display:"none" }}>
@@ -3057,6 +3127,9 @@ export default function UserPortalPage() {
             originId={athlete.id}
             originName={athlete.fullName || "Participante"}
             eventId={athlete.eventId || null}
+            showLauncher={false}
+            open={assistOpen}
+            onOpenChange={setAssistOpen}
           />
         )}
 

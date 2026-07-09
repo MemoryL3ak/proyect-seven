@@ -3681,7 +3681,17 @@ export default function ResourceScreen({
                           )}
                         </div>
                         {/* Detail row */}
-                        <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+                        <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", alignItems: "center" }}>
+                          {item.id && (
+                            <span
+                              title={t("Código para iniciar sesión del participante en la app (clic para copiar)")}
+                              onClick={(e) => { e.stopPropagation(); try { void navigator.clipboard?.writeText(String(item.id).slice(-6).toUpperCase()); } catch { /* noop */ } }}
+                              style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", padding: "2px 9px", borderRadius: "6px", background: "rgba(33,208,179,0.12)", color: "#0a7a6b", border: "1px solid rgba(33,208,179,0.3)", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "5px" }}
+                            >
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3 21 2M18 5l2 2M15.5 7.5l2 2"/></svg>
+                              {String(item.id).slice(-6).toUpperCase()}
+                            </span>
+                          )}
                           {item.passportNumber && (
                             <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
                               <span style={{ fontWeight: 600 }}>{t("Pasaporte")}: </span>{item.passportNumber}
