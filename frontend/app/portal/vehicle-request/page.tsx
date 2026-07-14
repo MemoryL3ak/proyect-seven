@@ -56,6 +56,7 @@ type Trip = {
   eventId?: string | null;
   requesterAthleteId?: string | null;
   destinationVenueId?: string | null;
+  destinationHotelId?: string | null;
   requestedVehicleType?: string | null;
   passengerCount?: number | null;
   driverId?: string | null;
@@ -213,7 +214,7 @@ const VEHICLE_TYPES = [
   { label: "Van 15-17 — 17 Pasajeros", value: "VAN_15", maxPax: 17 },
   { label: "Van 19 — 19 Pasajeros", value: "VAN_19", maxPax: 19 },
   { label: "Minibus — 33 Pasajeros", value: "MINIBUS", maxPax: 33 },
-  { label: "Bus — 64 Pasajeros", value: "BUS", maxPax: 64 },
+  { label: "Bus — 45 Pasajeros", value: "BUS", maxPax: 45 },
 ] as const;
 
 const statusMeta: Record<string, { label: string; tone: string; panel: string }> = {
@@ -320,6 +321,33 @@ function buildDirectionsLink(lat: number, lng: number, destination?: string | nu
 
 const DAY_NAMES = ["L", "M", "M", "J", "V", "S", "D"];
 
+// ── Categorías del calendario deportivo (mismo criterio que la plataforma) ──
+type GCat = "CLASIFICATORIA" | "FINAL" | "TRAINING" | "CEREMONY" | "PRUEBA";
+const GCAT: Record<GCat, { label: string; bar: string; border: string; text: string; dot: string }> = {
+  CLASIFICATORIA: { label: "Clasificatorias", bar: "#dbeafe", border: "#3b82f6", text: "#1e3a8a", dot: "#3b82f6" },
+  FINAL:          { label: "Finales",         bar: "#dcfce7", border: "#22c55e", text: "#14532d", dot: "#22c55e" },
+  TRAINING:       { label: "Entrenamientos",  bar: "#fef3c7", border: "#f59e0b", text: "#78350f", dot: "#f59e0b" },
+  CEREMONY:       { label: "Ceremonias",      bar: "#f3e8ff", border: "#a855f7", text: "#581c87", dot: "#a855f7" },
+  PRUEBA:         { label: "Pruebas",         bar: "#ccfbf1", border: "#14b8a6", text: "#115e59", dot: "#14b8a6" },
+};
+function classifyCat(name?: string | null): GCat {
+  const tx = (name || "").toLowerCase();
+  if (/final/.test(tx)) return "FINAL";
+  if (/clasif|elimin|series|semi|repechaje/.test(tx)) return "CLASIFICATORIA";
+  if (/entren|práctic|practic|reconoc|activac/.test(tx)) return "TRAINING";
+  if (/ceremon|premiac|inaugur|clausura/.test(tx)) return "CEREMONY";
+  return "PRUEBA";
+}
+function calKeyOf(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+function startOfWeek(d: Date) {
+  const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const dow = (x.getDay() + 6) % 7; // lunes = 0
+  x.setDate(x.getDate() - dow);
+  return x;
+}
+
 function getMonthGrid(year: number, month: number) {
   const firstDay = new Date(year, month, 1);
   let startDow = firstDay.getDay() - 1;
@@ -361,6 +389,8 @@ export default function VehicleRequestPortalPage() {
   const [selectedVehicleType, setSelectedVehicleType] = useState<string>("SEDAN");
   const [originAddress, setOriginAddress] = useState("");
   const [selectedVenueId, setSelectedVenueId] = useState("");
+  const [destinationType, setDestinationType] = useState<"SEDE" | "HOTEL">("SEDE");
+  const [selectedHotelId, setSelectedHotelId] = useState("");
   const [requestedTime, setRequestedTime] = useState("");
   const [passengerCount, setPassengerCount] = useState("1");
   const [notes, setNotes] = useState("");
@@ -426,6 +456,10 @@ export default function VehicleRequestPortalPage() {
   // Calendar state
   const [calMonthCursor, setCalMonthCursor] = useState(() => new Date());
   const [calSelectedDay, setCalSelectedDay] = useState<number | null>(null);
+  // Vistas del calendario deportivo (como en la plataforma): gantt / semana / día
+  const [calView, setCalView] = useState<"gantt" | "week" | "day">("gantt");
+  const [calCursor, setCalCursor] = useState(() => new Date());
+  const [ganttDetail, setGanttDetail] = useState<null | { title: string; events: CalendarEvent[] }>(null);
 
   const loadPortal = async (matchedAthlete: Athlete) => {
     const [tripData, venueData, driverData, vehicleData, eventData, delegationData, accommodationData, foodLocData, foodMenuData] = await Promise.all([
@@ -513,7 +547,8 @@ export default function VehicleRequestPortalPage() {
     try {
       const athleteList = await apiFetch<Athlete[]>("/athletes");
       const validatedAthletes = filterValidatedAthletes(athleteList || []);
-      const match = validatedAthletes.find((item) => item.id?.slice(-6) === normalized);
+      const normalizedLower = normalized.toLowerCase();
+      const match = validatedAthletes.find((item) => item.id?.slice(-6).toLowerCase() === normalizedLower);
       if (!match) {
         setError("No encontramos un usuario con ese codigo.");
         setAthlete(null);
@@ -614,6 +649,8 @@ export default function VehicleRequestPortalPage() {
     setSelectedVehicleType("SEDAN");
     setOriginAddress("");
     setSelectedVenueId("");
+    setDestinationType("SEDE");
+    setSelectedHotelId("");
     setRequestedTime("");
     setPassengerCount("1");
     setNotes("");
@@ -660,6 +697,8 @@ export default function VehicleRequestPortalPage() {
     setSelectedVehicleType(trip.requestedVehicleType || "SEDAN");
     setOriginAddress(normalizeOriginAddress(trip.origin));
     setSelectedVenueId(trip.destinationVenueId || "");
+    setDestinationType(trip.destinationHotelId ? "HOTEL" : "SEDE");
+    setSelectedHotelId(trip.destinationHotelId || "");
     setRequestedTime(
       trip.scheduledAt && !Number.isNaN(new Date(trip.scheduledAt).getTime())
         ? toDateTimeLocalInput(trip.scheduledAt)
@@ -683,8 +722,12 @@ export default function VehicleRequestPortalPage() {
   const submitRequest = async (event: FormEvent) => {
     event.preventDefault();
     if (!athlete) return;
-    if (!selectedVenueId) {
+    if (destinationType === "SEDE" && !selectedVenueId) {
       setError("Selecciona la sede destino.");
+      return;
+    }
+    if (destinationType === "HOTEL" && !selectedHotelId) {
+      setError("Selecciona el hotel destino.");
       return;
     }
     if (!originAddress.trim()) {
@@ -714,6 +757,10 @@ export default function VehicleRequestPortalPage() {
     setMessage(null);
     try {
       const venue = venues.find((item) => item.id === selectedVenueId);
+      const hotel = accommodations.find((item) => item.id === selectedHotelId);
+      const destinationLabel = destinationType === "HOTEL"
+        ? ([hotel?.address, hotel?.city, hotel?.country].filter(Boolean).join(", ") || hotel?.name || "Hotel solicitado")
+        : ([venue?.address, venue?.commune, venue?.region, "Chile"].filter(Boolean).join(", ") || venue?.name || "Sede solicitada");
       const payload = {
         eventId: athlete.eventId,
         requesterAthleteId: athlete.id,
@@ -722,8 +769,9 @@ export default function VehicleRequestPortalPage() {
         clientType: athlete.userType || "ATHLETE",
         requestedVehicleType: selectedVehicleType,
         passengerCount: normalizedPassengerCount,
-        destinationVenueId: selectedVenueId,
-        destination: [venue?.address, venue?.commune, venue?.region, "Chile"].filter(Boolean).join(", ") || venue?.name || "Sede solicitada",
+        destinationVenueId: destinationType === "SEDE" ? selectedVenueId : undefined,
+        destinationHotelId: destinationType === "HOTEL" ? selectedHotelId : undefined,
+        destination: destinationLabel,
         origin: originAddress.trim(),
         status: "REQUESTED",
         requestedAt: editingTripId ? undefined : new Date().toISOString(),
@@ -741,7 +789,7 @@ export default function VehicleRequestPortalPage() {
         isRoundTrip,
         ...(isRoundTrip ? {
           returnScheduledAt: new Date(returnTime).toISOString(),
-          returnOrigin: [venue?.address, venue?.commune, venue?.region, "Chile"].filter(Boolean).join(", ") || venue?.name || "Sede solicitada",
+          returnOrigin: destinationLabel,
           returnDestination: returnVenueId
             ? (() => { const rv = venues.find((v) => v.id === returnVenueId); return [rv?.address, rv?.commune, rv?.region, "Chile"].filter(Boolean).join(", ") || rv?.name || "Destino regreso"; })()
             : originAddress.trim(),
@@ -1112,6 +1160,32 @@ export default function VehicleRequestPortalPage() {
       return d.getFullYear() === calYear && d.getMonth() === calMonth && d.getDate() === calSelectedDay;
     });
   }, [calendarEvents, calYear, calMonth, calSelectedDay]);
+
+  const parentNameMap = useMemo(
+    () => new Map(disciplineParents.map((p) => [p.id, p.name || ""])),
+    [disciplineParents],
+  );
+
+  // Eventos del día apuntado por calCursor (vista Día)
+  const calCursorDayEvents = useMemo(() => {
+    const k = calKeyOf(calCursor);
+    return calendarEvents
+      .filter((ce) => ce.scheduledAt && calKeyOf(new Date(ce.scheduledAt)) === k)
+      .sort((a, b) => new Date(a.scheduledAt!).getTime() - new Date(b.scheduledAt!).getTime());
+  }, [calendarEvents, calCursor]);
+
+  // Días de la semana de calCursor con sus eventos (vista Semana)
+  const calWeekDays = useMemo(() => {
+    const start = startOfWeek(calCursor);
+    return Array.from({ length: 7 }, (_, i) => {
+      const day = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+      const k = calKeyOf(day);
+      const events = calendarEvents
+        .filter((ce) => ce.scheduledAt && calKeyOf(new Date(ce.scheduledAt)) === k)
+        .sort((a, b) => new Date(a.scheduledAt!).getTime() - new Date(b.scheduledAt!).getTime());
+      return { day, events };
+    });
+  }, [calendarEvents, calCursor]);
 
   // ── Trip card renderer (shared between sub-tabs) ──
   const renderTripCard = (trip: Trip) => {
@@ -1505,6 +1579,11 @@ export default function VehicleRequestPortalPage() {
                   onChange={(e) => setUserCode(e.target.value)}
                   placeholder="Codigo de usuario"
                   onKeyDown={(e) => e.key === "Enter" && login()}
+                  inputMode="text"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  autoComplete="off"
+                  spellCheck={false}
                   style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(33,208,179,0.2)", color: "#ffffff", borderRadius: "12px" }}
                 />
                 <button
@@ -1617,6 +1696,56 @@ export default function VehicleRequestPortalPage() {
             {message && message !== "SOLICITUD_ENVIADA" ? <p className="text-sm text-emerald-600">{message}</p> : null}
             {error ? <p className="text-sm text-rose-600">{error}</p> : null}
 
+            {/* ═══ Banner de viaje en curso ═══ */}
+            {enCursoTrips.length > 0 && (
+              <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
+                {enCursoTrips.map((trip) => {
+                  const drv = trip.driverId ? drivers[trip.driverId] : null;
+                  const veh = trip.vehicleId ? vehicles[trip.vehicleId] : null;
+                  const enRoute = trip.status === "EN_ROUTE";
+                  const headline = enRoute ? "Tu conductor está en camino" : "Viaje en curso";
+                  const dest = venues.find((v) => v.id === trip.destinationVenueId)?.name || trip.destination || "tu destino";
+                  return (
+                    <div key={trip.id}
+                      style={{ position:"relative",overflow:"hidden",borderRadius:16,padding:"14px 16px",
+                        background:"linear-gradient(135deg,#062240 0%,#0a3356 55%,#062240 100%)",
+                        border:"1px solid rgba(33,208,179,0.35)",boxShadow:"0 6px 24px rgba(6,34,64,0.35)" }}>
+                      <div style={{ position:"absolute",bottom:0,left:0,right:0,height:2,background:"linear-gradient(90deg,transparent,#21D0B3 40%,#34F3C6 50%,#21D0B3 60%,transparent)",animation:"vr-glow 3s ease-in-out infinite" }} />
+                      <div style={{ display:"flex",alignItems:"center",gap:12 }}>
+                        <span style={{ position:"relative",flexShrink:0,width:40,height:40,borderRadius:12,background:"rgba(33,208,179,0.15)",display:"flex",alignItems:"center",justifyContent:"center" }}>
+                          <span style={{ position:"absolute",top:6,right:6,width:8,height:8,borderRadius:"50%",background:"#34F3C6",boxShadow:"0 0 8px #34F3C6",animation:"vrPulse 1.4s ease-in-out infinite" }} />
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34F3C6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                        </span>
+                        <div style={{ flex:1,minWidth:0 }}>
+                          <p style={{ fontSize:9.5,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#34F3C6",margin:0 }}>
+                            {enRoute ? "En ruta a recogerte" : `Rumbo a ${dest}`}
+                          </p>
+                          <p style={{ fontSize:14.5,fontWeight:800,color:"#fff",margin:"1px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{headline}</p>
+                          {drv && (
+                            <p style={{ fontSize:11.5,color:"rgba(255,255,255,0.7)",margin:"3px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                              🧑 {drv.fullName || "Conductor"}{veh ? ` · ${[veh.plate, veh.brand, veh.model].filter(Boolean).join(" ")}` : ""}
+                            </p>
+                          )}
+                        </div>
+                        <div style={{ display:"flex",flexDirection:"column",gap:6,flexShrink:0 }}>
+                          <button type="button" onClick={() => { setActiveTab("actividades"); setActividadesSubTab("en_curso"); }}
+                            style={{ padding:"8px 14px",borderRadius:10,border:"none",cursor:"pointer",fontSize:12,fontWeight:700,background:"linear-gradient(135deg,#34F3C6,#21D0B3)",color:"#062240",whiteSpace:"nowrap" }}>
+                            Ver viaje
+                          </button>
+                          {drv?.phone && (
+                            <a href={`tel:${drv.phone}`}
+                              style={{ padding:"6px 14px",borderRadius:10,border:"1px solid rgba(52,243,198,0.4)",cursor:"pointer",fontSize:11.5,fontWeight:700,background:"rgba(33,208,179,0.12)",color:"#34F3C6",textAlign:"center",textDecoration:"none" }}>
+                              Llamar
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
             {/* Success modal */}
             {message === "SOLICITUD_ENVIADA" && (
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -1695,23 +1824,49 @@ export default function VehicleRequestPortalPage() {
                     </div>
 
                     <div>
-                      <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>Sede destino</label>
-                      <select className="input" value={selectedVenueId} onChange={(e) => setSelectedVenueId(e.target.value)}
-                        style={{ width:"100%",height:40,fontSize:13,borderRadius:10 }}>
-                        <option value="">Selecciona una sede</option>
-                        {venues.map((venue) => (
-                          <option key={venue.id} value={venue.id}>
-                            {venue.name}{venue.address ? ` — ${venue.address}` : ""}
-                          </option>
+                      <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>Tipo de destino</label>
+                      <div style={{ display:"flex",gap:6,marginBottom:8 }}>
+                        {([["SEDE","Sede"],["HOTEL","Hotel"]] as const).map(([v,label]) => (
+                          <button key={v} type="button" onClick={() => setDestinationType(v)}
+                            style={{ flex:1,height:36,borderRadius:10,cursor:"pointer",fontSize:12.5,fontWeight:700,
+                              border: destinationType === v ? "1.5px solid #21D0B3" : "1px solid #e2e8f0",
+                              background: destinationType === v ? "rgba(33,208,179,0.1)" : "#fff",
+                              color: destinationType === v ? "#0e9384" : "#64748b" }}>
+                            {label}
+                          </button>
                         ))}
-                      </select>
+                      </div>
+                      {destinationType === "SEDE" ? (
+                        <select className="input" value={selectedVenueId} onChange={(e) => setSelectedVenueId(e.target.value)}
+                          style={{ width:"100%",height:40,fontSize:13,borderRadius:10 }}>
+                          <option value="">Selecciona una sede</option>
+                          {venues.map((venue) => (
+                            <option key={venue.id} value={venue.id}>
+                              {venue.name}{venue.address ? ` — ${venue.address}` : ""}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <select className="input" value={selectedHotelId} onChange={(e) => setSelectedHotelId(e.target.value)}
+                          style={{ width:"100%",height:40,fontSize:13,borderRadius:10 }}>
+                          <option value="">Selecciona un hotel</option>
+                          {accommodations.map((acc) => (
+                            <option key={acc.id} value={acc.id}>
+                              {acc.name}{acc.address ? ` — ${acc.address}` : ""}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      {destinationType === "HOTEL" && accommodations.length === 0 && (
+                        <p style={{ fontSize:11,color:"#94a3b8",margin:"4px 0 0" }}>No hay hoteles registrados.</p>
+                      )}
                     </div>
 
                     <div>
                       <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>Fecha y hora</label>
                       <input className="input" type="datetime-local" value={requestedTime}
                         onChange={(e) => setRequestedTime(e.target.value)}
-                        style={{ width:"100%",height:40,fontSize:13,borderRadius:10 }} />
+                        style={{ width:"100%",height:40,fontSize:13,borderRadius:10,boxSizing:"border-box",WebkitAppearance:"none",appearance:"none" }} />
                     </div>
 
                     <div>
@@ -1746,7 +1901,7 @@ export default function VehicleRequestPortalPage() {
                           <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>Fecha y hora de regreso</label>
                           <input className="input" type="datetime-local" value={returnTime}
                             onChange={(e) => setReturnTime(e.target.value)}
-                            style={{ width:"100%",height:40,fontSize:13,borderRadius:10 }} />
+                            style={{ width:"100%",height:40,fontSize:13,borderRadius:10,boxSizing:"border-box",WebkitAppearance:"none",appearance:"none" }} />
                         </div>
                         <div>
                           <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>Destino de regreso (opcional)</label>
@@ -2726,85 +2881,241 @@ export default function VehicleRequestPortalPage() {
               <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
                 <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>Calendario deportivo</p>
 
-                {/* Month nav */}
-                <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",background:"#fff",borderRadius:12,border:"1px solid #e2e8f0",padding:"10px 14px" }}>
-                  <button type="button" onClick={() => setCalMonthCursor(new Date(calYear, calMonth - 1, 1))}
-                    style={{ background:"none",border:"none",cursor:"pointer",padding:4,display:"flex",alignItems:"center" }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0f172a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-                  </button>
-                  <span style={{ fontSize:14,fontWeight:700,color:"#0f172a",textTransform:"capitalize" }}>{calMonthLabel}</span>
-                  <button type="button" onClick={() => setCalMonthCursor(new Date(calYear, calMonth + 1, 1))}
-                    style={{ background:"none",border:"none",cursor:"pointer",padding:4,display:"flex",alignItems:"center" }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0f172a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-                  </button>
+                {/* Selector de vista */}
+                <div style={{ display:"flex",gap:4,background:"#e2e8f0",borderRadius:12,padding:4 }}>
+                  {([["gantt","Gantt"],["week","Semana"],["day","Día"]] as const).map(([v,label]) => (
+                    <button key={v} type="button" onClick={() => setCalView(v)}
+                      style={{ flex:1,padding:"8px 0",borderRadius:9,border:"none",cursor:"pointer",fontSize:12.5,fontWeight:700,
+                        background: calView === v ? "#fff" : "transparent",
+                        color: calView === v ? "#0f172a" : "#94a3b8",
+                        boxShadow: calView === v ? "0 1px 3px rgba(15,23,42,0.08)" : "none" }}>
+                      {label}
+                    </button>
+                  ))}
                 </div>
 
-                {/* Day grid */}
-                <div style={{ background:"#fff",borderRadius:12,border:"1px solid #e2e8f0",padding:"10px 8px" }}>
-                  {/* Header */}
-                  <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:4 }}>
-                    {DAY_NAMES.map((d, i) => (
-                      <div key={i} style={{ textAlign:"center",fontSize:10,fontWeight:700,color:"#94a3b8",padding:"4px 0",textTransform:"uppercase" }}>{d}</div>
-                    ))}
+                {/* ── Navegación (mes para Gantt, día/semana para las otras) ── */}
+                {calView === "gantt" ? (
+                  <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",background:"#fff",borderRadius:12,border:"1px solid #e2e8f0",padding:"10px 14px" }}>
+                    <button type="button" onClick={() => setCalMonthCursor(new Date(calYear, calMonth - 1, 1))}
+                      style={{ background:"none",border:"none",cursor:"pointer",padding:4,display:"flex",alignItems:"center" }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0f172a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                    </button>
+                    <span style={{ fontSize:14,fontWeight:700,color:"#0f172a",textTransform:"capitalize" }}>{calMonthLabel}</span>
+                    <button type="button" onClick={() => setCalMonthCursor(new Date(calYear, calMonth + 1, 1))}
+                      style={{ background:"none",border:"none",cursor:"pointer",padding:4,display:"flex",alignItems:"center" }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0f172a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
                   </div>
-                  {/* Cells */}
-                  <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2 }}>
-                    {calGrid.map((day, i) => {
-                      if (day === null) return <div key={i} />;
-                      const hasEvent = calDaysWithEvents.has(day);
-                      const isSelected = calSelectedDay === day;
-                      const today = new Date();
-                      const isToday = today.getFullYear() === calYear && today.getMonth() === calMonth && today.getDate() === day;
+                ) : (
+                  <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",background:"#fff",borderRadius:12,border:"1px solid #e2e8f0",padding:"10px 14px" }}>
+                    <button type="button" onClick={() => setCalCursor((d) => { const x = new Date(d); x.setDate(x.getDate() - (calView === "week" ? 7 : 1)); return x; })}
+                      style={{ background:"none",border:"none",cursor:"pointer",padding:4,display:"flex",alignItems:"center" }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0f172a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                    </button>
+                    <span style={{ fontSize:13.5,fontWeight:700,color:"#0f172a",textTransform:"capitalize",textAlign:"center" }}>
+                      {calView === "week"
+                        ? `Sem. ${calWeekDays[0].day.toLocaleDateString("es-CL",{ day:"2-digit",month:"short" })} – ${calWeekDays[6].day.toLocaleDateString("es-CL",{ day:"2-digit",month:"short" })}`
+                        : calCursor.toLocaleDateString("es-CL",{ weekday:"long",day:"2-digit",month:"long" })}
+                    </span>
+                    <button type="button" onClick={() => setCalCursor((d) => { const x = new Date(d); x.setDate(x.getDate() + (calView === "week" ? 7 : 1)); return x; })}
+                      style={{ background:"none",border:"none",cursor:"pointer",padding:4,display:"flex",alignItems:"center" }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0f172a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
+                  </div>
+                )}
+
+                {/* ══════════ VISTA GANTT ══════════ */}
+                {calView === "gantt" && (() => {
+                  const N = new Date(calYear, calMonth + 1, 0).getDate();
+                  const days = Array.from({ length: N }, (_, i) => new Date(calYear, calMonth, i + 1));
+                  // Filas por disciplina (parent)
+                  const rowMap = new Map<string, { name: string; byDay: Map<number, CalendarEvent[]> }>();
+                  calendarEvents.forEach((ce) => {
+                    if (!ce.scheduledAt) return;
+                    const d = new Date(ce.scheduledAt);
+                    if (d.getFullYear() !== calYear || d.getMonth() !== calMonth) return;
+                    const pid = ce.parentId || "—";
+                    const pname = parentNameMap.get(pid) || ce.name || pid;
+                    if (!rowMap.has(pid)) rowMap.set(pid, { name: pname, byDay: new Map() });
+                    const byDay = rowMap.get(pid)!.byDay;
+                    const dd = d.getDate();
+                    byDay.set(dd, [...(byDay.get(dd) ?? []), ce]);
+                  });
+                  const rows = Array.from(rowMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+                  const COL = 30, NAME_W = 104, todayK = calKeyOf(new Date());
+                  if (rows.length === 0) {
+                    return (
+                      <div style={{ padding:"32px 16px",textAlign:"center",background:"#fff",borderRadius:12,border:"1px dashed #e2e8f0" }}>
+                        <p style={{ fontSize:28,margin:0 }}>📅</p>
+                        <p style={{ fontSize:13,fontWeight:600,color:"#475569",margin:"6px 0 0" }}>Sin actividades en {calMonthLabel}</p>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
+                      {/* Leyenda */}
+                      <div style={{ display:"flex",flexWrap:"wrap",gap:10 }}>
+                        {(["CLASIFICATORIA","FINAL","TRAINING","CEREMONY","PRUEBA"] as GCat[]).map((c) => (
+                          <span key={c} style={{ display:"inline-flex",alignItems:"center",gap:5,fontSize:10.5,color:"#64748b" }}>
+                            <span style={{ width:9,height:9,borderRadius:"50%",background:GCAT[c].dot }} />{GCAT[c].label}
+                          </span>
+                        ))}
+                      </div>
+                      <div style={{ display:"flex",background:"#fff",border:"1px solid #e2e8f0",borderRadius:12,overflow:"hidden" }}>
+                        {/* Columna disciplinas */}
+                        <div style={{ flex:`0 0 ${NAME_W}px`,borderRight:"1px solid #e2e8f0" }}>
+                          <div style={{ height:34,borderBottom:"1px solid #e2e8f0",background:"#f8fafc" }} />
+                          {rows.map((r, i) => (
+                            <div key={i} style={{ height:38,display:"flex",alignItems:"center",padding:"0 10px",borderBottom: i < rows.length-1 ? "1px solid #f1f5f9" : "none" }}>
+                              <span style={{ fontSize:11.5,fontWeight:600,color:"#334155",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{r.name}</span>
+                            </div>
+                          ))}
+                        </div>
+                        {/* Grilla días */}
+                        <div style={{ flex:1,overflowX:"auto",WebkitOverflowScrolling:"touch" as any }}>
+                          <div style={{ minWidth:N*COL }}>
+                            {/* Header días */}
+                            <div style={{ height:34,display:"grid",gridTemplateColumns:`repeat(${N},${COL}px)`,borderBottom:"1px solid #e2e8f0",background:"#f8fafc" }}>
+                              {days.map((d) => {
+                                const isToday = calKeyOf(d) === todayK;
+                                const wknd = d.getDay() === 0 || d.getDay() === 6;
+                                return (
+                                  <div key={d.getDate()} style={{ display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background: isToday ? "rgba(33,208,179,0.12)" : wknd ? "#f1f5f9" : "transparent" }}>
+                                    <span style={{ fontSize:8,fontWeight:600,color: isToday ? "#0e9384" : "#94a3b8",textTransform:"uppercase" }}>{["DO","LU","MA","MI","JU","VI","SA"][d.getDay()]}</span>
+                                    <span style={{ fontSize:11,fontWeight:700,color: isToday ? "#0e9384" : "#334155" }}>{d.getDate()}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            {/* Filas */}
+                            {rows.map((r, ri) => (
+                              <div key={ri} style={{ height:38,display:"grid",gridTemplateColumns:`repeat(${N},${COL}px)`,borderBottom: ri < rows.length-1 ? "1px solid #f1f5f9" : "none",alignItems:"center" }}>
+                                {days.map((d) => {
+                                  const evs = r.byDay.get(d.getDate());
+                                  if (!evs || evs.length === 0) return <div key={d.getDate()} />;
+                                  const cat = classifyCat(evs[0].name);
+                                  const meta = GCAT[cat];
+                                  return (
+                                    <button key={d.getDate()} type="button"
+                                      onClick={() => setGanttDetail({ title: `${r.name} · ${d.toLocaleDateString("es-CL",{ day:"2-digit",month:"short" })}`, events: [...evs].sort((a,b)=>new Date(a.scheduledAt!).getTime()-new Date(b.scheduledAt!).getTime()) })}
+                                      style={{ height:22,margin:"0 3px",borderRadius:6,border:`1px solid ${meta.border}`,background:meta.bar,color:meta.text,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,padding:0 }}>
+                                      {evs.length > 1 ? evs.length : ""}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* ══════════ VISTA SEMANA ══════════ */}
+                {calView === "week" && (
+                  <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
+                    {calWeekDays.map(({ day, events }) => {
+                      const isToday = calKeyOf(day) === calKeyOf(new Date());
                       return (
-                        <button
-                          key={i}
-                          type="button"
-                          onClick={() => setCalSelectedDay(isSelected ? null : day)}
-                          style={{
-                            display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,
-                            padding:"6px 0",borderRadius:8,border:"none",cursor:"pointer",
-                            background: isSelected ? "#21D0B3" : isToday ? "rgba(33,208,179,0.1)" : "transparent",
-                            color: isSelected ? "#fff" : "#0f172a",
-                            fontWeight: isToday ? 800 : 500,fontSize:13,
-                          }}
-                        >
-                          {day}
-                          {hasEvent && (
-                            <span style={{ width:5,height:5,borderRadius:"50%",background: isSelected ? "#fff" : "#21D0B3" }} />
+                        <div key={calKeyOf(day)} style={{ background:"#fff",borderRadius:12,border:`1px solid ${isToday ? "#21D0B3" : "#e2e8f0"}`,padding:"10px 12px" }}>
+                          <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom: events.length ? 6 : 0 }}>
+                            <span style={{ fontSize:12.5,fontWeight:700,color: isToday ? "#0e9384" : "#0f172a",textTransform:"capitalize" }}>
+                              {day.toLocaleDateString("es-CL",{ weekday:"long",day:"2-digit",month:"short" })}
+                            </span>
+                            {events.length > 0 && (
+                              <span style={{ fontSize:10,fontWeight:700,color:"#64748b",background:"#f1f5f9",borderRadius:20,padding:"2px 8px" }}>{events.length}</span>
+                            )}
+                          </div>
+                          {events.length === 0 ? (
+                            <span style={{ fontSize:11.5,color:"#cbd5e1" }}>—</span>
+                          ) : (
+                            <div style={{ display:"flex",flexDirection:"column",gap:5 }}>
+                              {events.map((ce) => {
+                                const meta = GCAT[classifyCat(ce.name)];
+                                const parentName = ce.parentId ? (parentNameMap.get(ce.parentId) || "") : "";
+                                return (
+                                  <div key={ce.id} style={{ display:"flex",alignItems:"center",gap:8 }}>
+                                    <span style={{ width:8,height:8,borderRadius:"50%",background:meta.dot,flexShrink:0 }} />
+                                    <span style={{ fontSize:11,fontWeight:700,color:"#0f172a",flexShrink:0 }}>
+                                      {new Date(ce.scheduledAt!).toLocaleTimeString("es-CL",{ hour:"2-digit",minute:"2-digit" })}
+                                    </span>
+                                    <span style={{ fontSize:11.5,color:"#334155",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                                      {ce.name}{parentName ? ` · ${parentName}` : ""}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
                           )}
-                        </button>
+                        </div>
                       );
                     })}
                   </div>
-                </div>
+                )}
 
-                {/* Selected day events */}
-                {calSelectedDay !== null && (
+                {/* ══════════ VISTA DÍA ══════════ */}
+                {calView === "day" && (
                   <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
-                    <p style={{ fontSize:11,fontWeight:700,color:"#64748b",margin:0 }}>
-                      {calSelectedDay} de {calMonthCursor.toLocaleDateString("es-CL", { month: "long" })}
-                    </p>
-                    {calSelectedDayEvents.length === 0 ? (
-                      <p style={{ fontSize:12.5,color:"#94a3b8",margin:0,padding:"10px 0" }}>Sin actividades este dia</p>
+                    {calCursorDayEvents.length === 0 ? (
+                      <div style={{ padding:"28px 16px",textAlign:"center",background:"#fff",borderRadius:12,border:"1px dashed #e2e8f0" }}>
+                        <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>Sin actividades este día</p>
+                      </div>
                     ) : (
-                      calSelectedDayEvents.map((ce) => {
-                        const parentName = ce.parentId ? (disciplineParents.find((p) => p.id === ce.parentId)?.name || "") : "";
+                      calCursorDayEvents.map((ce) => {
+                        const meta = GCAT[classifyCat(ce.name)];
+                        const parentName = ce.parentId ? (parentNameMap.get(ce.parentId) || "") : "";
                         return (
-                          <div key={ce.id} style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 10px",borderRadius:10,background:"#fff",border:"1px solid #e2e8f0" }}>
-                            <span style={{ width:8,height:8,borderRadius:"50%",background:"#21D0B3",flexShrink:0 }} />
-                            <div style={{ flex:1,minWidth:0 }}>
-                              <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
-                                {ce.name}{parentName ? ` · ${parentName}` : ""}
-                              </p>
-                              <p style={{ fontSize:10.5,color:"#64748b",margin:"1px 0 0" }}>
+                          <div key={ce.id} style={{ display:"flex",gap:10,padding:"10px 12px",borderRadius:12,background:"#fff",border:"1px solid #e2e8f0",borderLeft:`4px solid ${meta.border}` }}>
+                            <div style={{ display:"flex",flexDirection:"column",alignItems:"center",flexShrink:0,minWidth:44 }}>
+                              <span style={{ fontSize:13,fontWeight:800,color:"#0f172a" }}>
                                 {new Date(ce.scheduledAt!).toLocaleTimeString("es-CL",{ hour:"2-digit",minute:"2-digit" })}
-                                {ce.venueName ? ` · ${ce.venueName}` : ""}
-                              </p>
+                              </span>
+                              <span style={{ fontSize:9,fontWeight:700,color:meta.text,background:meta.bar,borderRadius:6,padding:"1px 6px",marginTop:3 }}>{meta.label}</span>
+                            </div>
+                            <div style={{ flex:1,minWidth:0 }}>
+                              <p style={{ fontSize:13,fontWeight:600,color:"#0f172a",margin:0 }}>{ce.name}</p>
+                              {(parentName || ce.venueName) && (
+                                <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0" }}>
+                                  {[parentName, ce.venueName].filter(Boolean).join(" · ")}
+                                </p>
+                              )}
                             </div>
                           </div>
                         );
                       })
                     )}
+                  </div>
+                )}
+
+                {/* Detalle de celda del Gantt */}
+                {ganttDetail && (
+                  <div onClick={() => setGanttDetail(null)}
+                    style={{ position:"fixed",inset:0,zIndex:60,background:"rgba(15,23,42,0.45)",display:"flex",alignItems:"flex-end",justifyContent:"center" }}>
+                    <div onClick={(e) => e.stopPropagation()}
+                      style={{ background:"#fff",borderTopLeftRadius:18,borderTopRightRadius:18,width:"100%",maxWidth:520,maxHeight:"70vh",overflowY:"auto",padding:"16px 16px 28px" }}>
+                      <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10 }}>
+                        <span style={{ fontSize:14,fontWeight:800,color:"#0f172a",textTransform:"capitalize" }}>{ganttDetail.title}</span>
+                        <button type="button" onClick={() => setGanttDetail(null)} style={{ background:"#f1f5f9",border:"none",borderRadius:8,width:28,height:28,cursor:"pointer",color:"#64748b" }}>✕</button>
+                      </div>
+                      <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
+                        {ganttDetail.events.map((ce) => {
+                          const meta = GCAT[classifyCat(ce.name)];
+                          return (
+                            <div key={ce.id} style={{ display:"flex",gap:10,padding:"10px 12px",borderRadius:10,background:"#f8fafc",border:"1px solid #eef1f6",borderLeft:`4px solid ${meta.border}` }}>
+                              <span style={{ fontSize:12,fontWeight:800,color:"#0f172a",flexShrink:0 }}>
+                                {new Date(ce.scheduledAt!).toLocaleTimeString("es-CL",{ hour:"2-digit",minute:"2-digit" })}
+                              </span>
+                              <div style={{ flex:1,minWidth:0 }}>
+                                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:0 }}>{ce.name}</p>
+                                {ce.venueName && <p style={{ fontSize:10.5,color:"#64748b",margin:"2px 0 0" }}>{ce.venueName}</p>}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>

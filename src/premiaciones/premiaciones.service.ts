@@ -73,26 +73,66 @@ export class PremiacionesService {
   }
 
   private async syncAwarders(premiacionId: string, awarders: AwarderInputDto[]) {
-    // Replace strategy: delete all + insert new (simple for MVP)
-    const { error: delError } = await this.supabase
+    // Estrategia upsert: preserva las confirmaciones/rechazos de los
+    // entregadores que siguen asignados. Sólo se eliminan los que salen y se
+    // insertan los nuevos, sin tocar confirmed_at/declined_at de los que quedan.
+    const { data: existingData, error: exError } = await this.supabase
       .schema('core')
       .from('premiacion_awarders')
-      .delete()
+      .select('*')
       .eq('premiacion_id', premiacionId);
-    if (delError) throw new InternalServerErrorException(delError.message);
+    if (exError) throw new InternalServerErrorException(exError.message);
 
-    if (!awarders.length) return;
-    const rows = awarders.map((a) => ({
-      premiacion_id: premiacionId,
-      athlete_id: a.athleteId,
-      role: a.role ?? 'AWARDER',
-      notes: a.notes ?? null,
-    }));
-    const { error: insError } = await this.supabase
-      .schema('core')
-      .from('premiacion_awarders')
-      .insert(rows);
-    if (insError) throw new InternalServerErrorException(insError.message);
+    const existing = (existingData ?? []) as AwarderRow[];
+    const existingByAthlete = new Map<string, AwarderRow>();
+    existing.forEach((a) => existingByAthlete.set(a.athlete_id, a));
+    const desiredIds = new Set(awarders.map((a) => a.athleteId));
+
+    // 1. Eliminar los entregadores que ya no están en la lista deseada.
+    const toRemove = existing
+      .filter((a) => !desiredIds.has(a.athlete_id))
+      .map((a) => a.id);
+    if (toRemove.length) {
+      const { error } = await this.supabase
+        .schema('core')
+        .from('premiacion_awarders')
+        .delete()
+        .in('id', toRemove);
+      if (error) throw new InternalServerErrorException(error.message);
+    }
+
+    // 2. Insertar los entregadores nuevos (sin confirmación previa).
+    const toInsert = awarders
+      .filter((a) => !existingByAthlete.has(a.athleteId))
+      .map((a) => ({
+        premiacion_id: premiacionId,
+        athlete_id: a.athleteId,
+        role: a.role ?? 'AWARDER',
+        notes: a.notes ?? null,
+      }));
+    if (toInsert.length) {
+      const { error } = await this.supabase
+        .schema('core')
+        .from('premiacion_awarders')
+        .insert(toInsert);
+      if (error) throw new InternalServerErrorException(error.message);
+    }
+
+    // 3. Actualizar rol/notas de los que permanecen (sin perder confirmación).
+    for (const a of awarders) {
+      const ex = existingByAthlete.get(a.athleteId);
+      if (!ex) continue;
+      const nextRole = a.role ?? 'AWARDER';
+      const nextNotes = a.notes ?? null;
+      if (ex.role !== nextRole || (ex.notes ?? null) !== nextNotes) {
+        const { error } = await this.supabase
+          .schema('core')
+          .from('premiacion_awarders')
+          .update({ role: nextRole, notes: nextNotes })
+          .eq('id', ex.id);
+        if (error) throw new InternalServerErrorException(error.message);
+      }
+    }
   }
 
   async create(dto: CreatePremiacionDto) {

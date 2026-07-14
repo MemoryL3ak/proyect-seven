@@ -98,7 +98,13 @@ const navSections: NavSection[] = [
       }
     ]
   },
-  { title: "Deportes", icon: "sports-rings", href: "/deportes" },
+  {
+    title: "Deportes", icon: "sports-rings",
+    items: [
+      { href: "/deportes", label: "Planificación deportiva", icon: "sports-rings" },
+      { href: "/deportes/premiaciones", label: "Premiaciones", icon: "trophy" }
+    ]
+  },
   {
     title: "Beneficios", icon: "ticket",
     items: [
@@ -156,6 +162,7 @@ function Icon({ name, className }: { name: string; className?: string }) {
     case "and": return (<svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3" /><rect x="9" y="11" width="14" height="10" rx="2" /><path d="M13 16l2 2 4-4" /></svg>);
     case "bell": return (<svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>);
     case "ticket": return (<svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v2a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2z" /><path d="M13 5v2M13 11v2M13 17v2" /></svg>);
+    case "trophy": return (<svg className={clsx(base, className)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2z" /></svg>);
     default: return null;
   }
 }
@@ -230,6 +237,7 @@ const HREF_TO_MODULE: Record<string, string> = {
   "/operations/support-chats": "_always",
   "/clientes": "clientes",
   "/deportes": "deportes",
+  "/deportes/premiaciones": "deportes",
   "/sede": "sede",
   "/sports-calendar": "calendario",
   "/operations/workforce": "operacion.viajes",

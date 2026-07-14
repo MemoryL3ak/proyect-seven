@@ -29,6 +29,7 @@ export default function TopBar({ onMenuOpen }: { onMenuOpen?: () => void }) {
     cumplimiento: "Cumplimiento",
     clientes: "Clientes",
     deportes: "Deportes",
+    premiaciones: "Premiaciones",
     sede: "Sede",
     food: "Alimentación",
     cenas: "Cenas",

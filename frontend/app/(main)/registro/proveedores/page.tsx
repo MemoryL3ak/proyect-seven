@@ -92,7 +92,7 @@ const FLEET_TYPES = [
   { value: "VAN_15", label: "Van", passengers: "15 a 17" },
   { value: "VAN_19", label: "Van", passengers: "19" },
   { value: "MINIBUS", label: "Minibus", passengers: "20 a 33" },
-  { value: "BUS", label: "Bus", passengers: "40 a 64" },
+  { value: "BUS", label: "Bus", passengers: "40 a 45" },
 ] as const;
 
 const SERVICE_TYPES = [

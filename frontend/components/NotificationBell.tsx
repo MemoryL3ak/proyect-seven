@@ -14,6 +14,8 @@ export type AppNotification = {
   emoji: string;
   timestamp: number;
   read: boolean;
+  /** Destino al pinchar la notificación (módulo/contexto relacionado). */
+  href?: string;
 };
 
 type ServerNotificationRow = {
@@ -44,6 +46,19 @@ export type UseNotificationsOptions = {
 const DEFAULT_POLL_MS = 30_000;
 const SERVER_PREFIX = "srv:";
 
+/** Deriva el destino de navegación a partir del `data` de la notificación. */
+function hrefFromData(data: Record<string, unknown> | null | undefined): string | undefined {
+  if (!data) return undefined;
+  const rawUrl = typeof data.url === "string" ? data.url : undefined;
+  if (!rawUrl) return undefined;
+  let href = rawUrl;
+  // Adjunta el contexto (viaje) como query para que el destino pueda abrirlo.
+  if (typeof data.tripId === "string" && data.tripId) {
+    href += (href.includes("?") ? "&" : "?") + `tripId=${encodeURIComponent(data.tripId)}`;
+  }
+  return href;
+}
+
 function rowToNotification(row: ServerNotificationRow): AppNotification {
   return {
     id: `${SERVER_PREFIX}${row.id}`,
@@ -51,6 +66,7 @@ function rowToNotification(row: ServerNotificationRow): AppNotification {
     emoji: row.emoji ?? "🔔",
     timestamp: new Date(row.created_at).getTime(),
     read: row.read_at !== null,
+    href: hrefFromData(row.data),
   };
 }
 
@@ -220,6 +236,14 @@ export default function NotificationBell({
     setOpen((v) => !v);
   };
 
+  const handleNotifClick = (n: AppNotification) => {
+    if (!n.href) return;
+    setOpen(false);
+    if (typeof window !== "undefined") {
+      window.location.href = n.href;
+    }
+  };
+
   const formatTime = (ts: number) => {
     const diff = Math.floor((Date.now() - ts) / 1000);
     if (diff < 60) return "ahora";
@@ -312,11 +336,15 @@ export default function NotificationBell({
           notifications.map((n) => (
             <div
               key={n.id}
+              onClick={() => handleNotifClick(n)}
+              role={n.href ? "button" : undefined}
+              tabIndex={n.href ? 0 : undefined}
               style={{
                 display: "flex", alignItems: "center", gap: 10,
                 padding: "10px 12px",
                 borderBottom: "1px solid #f8fafc",
                 background: n.read ? "transparent" : "rgba(33,208,179,0.04)",
+                cursor: n.href ? "pointer" : "default",
               }}
             >
               {(() => {
@@ -377,6 +405,11 @@ export default function NotificationBell({
                   background: "#21D0B3", flexShrink: 0,
                   boxShadow: "0 0 6px rgba(33,208,179,0.5)",
                 }} />
+              )}
+              {n.href && (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
               )}
             </div>
           ))

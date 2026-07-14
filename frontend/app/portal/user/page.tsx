@@ -283,7 +283,8 @@ export default function UserPortalPage() {
   const [actSubTab, setActSubTab] = useState<"curso" | "historial">("curso");
   const [calMonthCursor, setCalMonthCursor] = useState(() => new Date());
   const [calSelectedDay, setCalSelectedDay] = useState<number | null>(null);
-  const [calView, setCalView] = useState<"agenda" | "mes">("agenda");
+  const [calView, setCalView] = useState<"agenda" | "mes" | "gantt" | "semana" | "dia">("agenda");
+  const [calCursor, setCalCursor] = useState(() => new Date());
   const [calTypeFilter, setCalTypeFilter] = useState<string>("");
   const [calDiscFilter, setCalDiscFilter] = useState<string>("");
   const calAutoJumped = useRef(false);
@@ -334,6 +335,18 @@ export default function UserPortalPage() {
       calDiscAutoSet.current = true;
     }
   }, [athlete?.disciplineId]);
+
+  // El VIP entregador confirma o rechaza su asistencia a una premiación.
+  const confirmAwarder = async (premiacionId: string, awarderId: string, decision: "CONFIRM" | "DECLINE") => {
+    try {
+      const endpoint = decision === "CONFIRM" ? "confirm" : "decline";
+      await apiFetch(`/premiaciones/${premiacionId}/awarders/${awarderId}/${endpoint}`, { method: "PATCH" });
+      const data = await apiFetch<Premiacion[]>("/premiaciones");
+      setPremiaciones(Array.isArray(data) ? data : []);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "No se pudo actualizar la confirmación.");
+    }
+  };
 
   const isChief = athlete?.isDelegationLead === true;
   const portalTabs = useMemo(() => {
@@ -973,6 +986,7 @@ export default function UserPortalPage() {
               <span style={{ fontSize:"11px",fontWeight:600,letterSpacing:"0.12em",textTransform:"uppercase",color:"rgba(255,255,255,0.4)",display:"block",marginBottom:"8px" }}>{t("Código de acceso")}</span>
               <input className="pu-input" value={athleteId} onChange={(e) => setAthleteId(e.target.value)} onKeyDown={(e) => e.key==="Enter" && loadAthlete()}
                 placeholder={t("Ingresa tu código")}
+                inputMode="text" autoCapitalize="none" autoCorrect="off" autoComplete="off" spellCheck={false}
                 style={{ width:"100%",padding:"16px",borderRadius:"14px",border:"1px solid rgba(33,208,179,0.2)",background:"rgba(255,255,255,0.05)",color:"rgba(255,255,255,0.9)",fontSize:"15px",outline:"none",fontWeight:500,boxSizing:"border-box",transition:"border-color .2s,box-shadow .2s" }} />
             </div>
             <button type="button" onClick={() => loadAthlete()} disabled={loading}
@@ -1193,6 +1207,38 @@ export default function UserPortalPage() {
         {/* ── TAB CONTENT ── */}
         <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
 
+        {/* ═══ Banner de viaje en curso ═══ */}
+        {trip && ["EN_ROUTE","PICKED_UP"].includes(trip.status ?? "") && (
+          <div style={{ position:"relative",overflow:"hidden",borderRadius:16,padding:"14px 16px",
+            background:"linear-gradient(135deg,#062240 0%,#0a3356 55%,#062240 100%)",
+            border:"1px solid rgba(33,208,179,0.35)",boxShadow:"0 6px 24px rgba(6,34,64,0.35)" }}>
+            <div style={{ position:"absolute",bottom:0,left:0,right:0,height:2,background:"linear-gradient(90deg,transparent,#21D0B3 40%,#34F3C6 50%,#21D0B3 60%,transparent)" }} />
+            <div style={{ display:"flex",alignItems:"center",gap:12 }}>
+              <span style={{ position:"relative",flexShrink:0,width:40,height:40,borderRadius:12,background:"rgba(33,208,179,0.15)",display:"flex",alignItems:"center",justifyContent:"center" }}>
+                <span style={{ position:"absolute",top:6,right:6,width:8,height:8,borderRadius:"50%",background:"#34F3C6",boxShadow:"0 0 8px #34F3C6" }} />
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34F3C6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+              </span>
+              <div style={{ flex:1,minWidth:0 }}>
+                <p style={{ fontSize:9.5,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#34F3C6",margin:0 }}>
+                  {trip.status==="EN_ROUTE" ? "En ruta a recogerte" : `Rumbo a ${trip.destination || "tu destino"}`}
+                </p>
+                <p style={{ fontSize:14.5,fontWeight:800,color:"#fff",margin:"1px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                  {trip.status==="EN_ROUTE" ? "Tu conductor está en camino" : "Viaje en curso"}
+                </p>
+                {driver && (
+                  <p style={{ fontSize:11.5,color:"rgba(255,255,255,0.7)",margin:"3px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                    🧑 {driver.fullName || "Conductor"}
+                  </p>
+                )}
+              </div>
+              <button type="button" onClick={() => setActiveTab("actividades")}
+                style={{ flexShrink:0,padding:"9px 16px",borderRadius:10,border:"none",cursor:"pointer",fontSize:12,fontWeight:700,background:"linear-gradient(135deg,#34F3C6,#21D0B3)",color:"#062240",whiteSpace:"nowrap" }}>
+                Ver viaje
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* ─── Itinerario tab (chief only) ─── */}
         {activeTab === "itinerario" && isChief && (
           <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
@@ -1408,6 +1454,24 @@ export default function UserPortalPage() {
           agenda.forEach(i => { const k=i.date.getDate(); byDay.set(k,[...(byDay.get(k)??[]),i]); });
           const agendaDays = Array.from(byDay.keys()).sort((a,b)=>a-b);
 
+          // ── Datos para vistas Semana / Día / Gantt (respetan los filtros activos) ──
+          const keyOf = (d:Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+          const dayEvents = (d:Date) => typed.filter(i => keyOf(i.date)===keyOf(d)).sort((a,b)=>a.date.getTime()-b.date.getTime());
+          const cursorDayItems = dayEvents(calCursor);
+          const weekStart = (() => { const x=new Date(calCursor.getFullYear(),calCursor.getMonth(),calCursor.getDate()); const dow=(x.getDay()+6)%7; x.setDate(x.getDate()-dow); return x; })();
+          const weekDays = Array.from({length:7},(_,i)=>{ const day=new Date(weekStart.getFullYear(),weekStart.getMonth(),weekStart.getDate()+i); return { day, events: dayEvents(day) }; });
+          const gN = new Date(y,m+1,0).getDate();
+          const gDays = Array.from({length:gN},(_,i)=>new Date(y,m,i+1));
+          const gRowMap = new Map<string,{ name:string; byDay:Map<number,CalItem[]> }>();
+          typed.filter(i => i.date.getFullYear()===y && i.date.getMonth()===m).forEach(i => {
+            const pid = i.discId || "—";
+            const pname = disciplineParents.find(p=>p.id===pid)?.name || i.subtitle || i.title || "Actividad";
+            if(!gRowMap.has(pid)) gRowMap.set(pid,{ name:pname, byDay:new Map() });
+            const bd = gRowMap.get(pid)!.byDay; const dd=i.date.getDate();
+            bd.set(dd,[...(bd.get(dd)??[]),i]);
+          });
+          const gRows = Array.from(gRowMap.values()).sort((a,b)=>a.name.localeCompare(b.name));
+
           // Próxima competencia (a futuro)
           const now = new Date();
           const nextComp = items
@@ -1423,22 +1487,33 @@ export default function UserPortalPage() {
               <div style={{ flex:"1 1 340px",minWidth:0,display:"flex",flexDirection:"column",gap:12 }}>
                 {/* Barra de control: navegación mes + toggle vista */}
                 <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",padding:"12px 14px",display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"space-between",gap:10 }}>
-                  <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-                    <button type="button" onClick={() => { setCalMonthCursor(new Date()); setCalSelectedDay(null); }} style={{ fontSize:12,fontWeight:700,color:"#0f172a",background:"#f1f5f9",border:"1px solid #e2e8f0",borderRadius:8,padding:"6px 12px",cursor:"pointer" }}>Hoy</button>
-                    <button type="button" onClick={() => { setCalMonthCursor(new Date(y,m-1,1)); setCalSelectedDay(null); }} style={{ background:"#fff",border:"1px solid #e2e8f0",borderRadius:8,cursor:"pointer",padding:6,display:"inline-flex" }}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
-                    </button>
-                    <button type="button" onClick={() => { setCalMonthCursor(new Date(y,m+1,1)); setCalSelectedDay(null); }} style={{ background:"#fff",border:"1px solid #e2e8f0",borderRadius:8,cursor:"pointer",padding:6,display:"inline-flex" }}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
-                    </button>
-                    <span style={{ fontSize:14,fontWeight:800,color:"#0f172a",textTransform:"capitalize" }}>{monthLabel}</span>
-                  </div>
-                  <div style={{ display:"flex",background:"#f1f5f9",borderRadius:10,padding:3,gap:2 }}>
-                    {(["agenda","mes"] as const).map(v => (
+                  {(() => {
+                    const dayWeek = calView==="semana" || calView==="dia";
+                    const step = calView==="semana" ? 7 : 1;
+                    const shift = (dir:number) => setCalCursor(d => { const x=new Date(d); x.setDate(x.getDate()+dir*step); return x; });
+                    const label = !dayWeek ? monthLabel
+                      : calView==="semana"
+                        ? `Sem. ${weekDays[0].day.toLocaleDateString("es-CL",{day:"2-digit",month:"short"})} – ${weekDays[6].day.toLocaleDateString("es-CL",{day:"2-digit",month:"short"})}`
+                        : calCursor.toLocaleDateString("es-CL",{weekday:"long",day:"2-digit",month:"long"});
+                    return (
+                      <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+                        <button type="button" onClick={() => { if(dayWeek){ setCalCursor(new Date()); } else { setCalMonthCursor(new Date()); setCalSelectedDay(null); } }} style={{ fontSize:12,fontWeight:700,color:"#0f172a",background:"#f1f5f9",border:"1px solid #e2e8f0",borderRadius:8,padding:"6px 12px",cursor:"pointer" }}>Hoy</button>
+                        <button type="button" onClick={() => { if(dayWeek){ shift(-1); } else { setCalMonthCursor(new Date(y,m-1,1)); setCalSelectedDay(null); } }} style={{ background:"#fff",border:"1px solid #e2e8f0",borderRadius:8,cursor:"pointer",padding:6,display:"inline-flex" }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
+                        </button>
+                        <button type="button" onClick={() => { if(dayWeek){ shift(1); } else { setCalMonthCursor(new Date(y,m+1,1)); setCalSelectedDay(null); } }} style={{ background:"#fff",border:"1px solid #e2e8f0",borderRadius:8,cursor:"pointer",padding:6,display:"inline-flex" }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+                        </button>
+                        <span style={{ fontSize:14,fontWeight:800,color:"#0f172a",textTransform:"capitalize" }}>{label}</span>
+                      </div>
+                    );
+                  })()}
+                  <div style={{ display:"flex",flexWrap:"wrap",background:"#f1f5f9",borderRadius:10,padding:3,gap:2 }}>
+                    {([["gantt","Gantt"],["semana","Semana"],["dia","Día"],["agenda","Agenda"],["mes","Mes"]] as const).map(([v,label]) => (
                       <button key={v} type="button" onClick={() => setCalView(v)}
-                        style={{ fontSize:12,fontWeight:700,padding:"5px 14px",borderRadius:8,border:"none",cursor:"pointer",textTransform:"capitalize",
+                        style={{ fontSize:12,fontWeight:700,padding:"5px 12px",borderRadius:8,border:"none",cursor:"pointer",
                           background: calView===v ? "#21D0B3" : "transparent", color: calView===v ? "#fff" : "#475569" }}>
-                        {v}
+                        {label}
                       </button>
                     ))}
                   </div>
@@ -1512,6 +1587,97 @@ export default function UserPortalPage() {
                         </div>
                       );
                     })}
+                  </div>
+                )}
+
+                {/* Vista GANTT: disciplinas × días del mes */}
+                {calView==="gantt" && (
+                  gRows.length===0 ? (
+                    <div style={{ background:"#fff",borderRadius:14,border:"1px dashed #e2e8f0",padding:"32px 16px",textAlign:"center" }}>
+                      <p style={{ fontSize:28,margin:0 }}>📅</p>
+                      <p style={{ fontSize:13,fontWeight:700,color:"#475569",margin:"6px 0 0" }}>Sin actividades este mes</p>
+                    </div>
+                  ) : (
+                    <div style={{ display:"flex",background:"#fff",border:"1px solid #e2e8f0",borderRadius:14,overflow:"hidden" }}>
+                      <div style={{ flex:"0 0 104px",borderRight:"1px solid #e2e8f0" }}>
+                        <div style={{ height:34,borderBottom:"1px solid #e2e8f0",background:"#f8fafc" }} />
+                        {gRows.map((r,i)=>(
+                          <div key={i} style={{ height:38,display:"flex",alignItems:"center",padding:"0 10px",borderBottom: i<gRows.length-1?"1px solid #f1f5f9":"none" }}>
+                            <span style={{ fontSize:11.5,fontWeight:600,color:"#334155",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{r.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ flex:1,overflowX:"auto" }}>
+                        <div style={{ minWidth:gN*30 }}>
+                          <div style={{ height:34,display:"grid",gridTemplateColumns:`repeat(${gN},30px)`,borderBottom:"1px solid #e2e8f0",background:"#f8fafc" }}>
+                            {gDays.map(d=>{ const isToday=keyOf(d)===keyOf(now); const wknd=d.getDay()===0||d.getDay()===6; return (
+                              <div key={d.getDate()} style={{ display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:isToday?"rgba(33,208,179,0.12)":wknd?"#f1f5f9":"transparent" }}>
+                                <span style={{ fontSize:8,fontWeight:600,color:isToday?"#0e9384":"#94a3b8" }}>{["DO","LU","MA","MI","JU","VI","SA"][d.getDay()]}</span>
+                                <span style={{ fontSize:11,fontWeight:700,color:isToday?"#0e9384":"#334155" }}>{d.getDate()}</span>
+                              </div>
+                            ); })}
+                          </div>
+                          {gRows.map((r,ri)=>(
+                            <div key={ri} style={{ height:38,display:"grid",gridTemplateColumns:`repeat(${gN},30px)`,borderBottom: ri<gRows.length-1?"1px solid #f1f5f9":"none",alignItems:"center" }}>
+                              {gDays.map(d=>{ const evs=r.byDay.get(d.getDate()); if(!evs||!evs.length) return <div key={d.getDate()} />; const cfg=TYPE_CFG[evs[0].type]; return (
+                                <button key={d.getDate()} type="button" onClick={()=>{ setCalCursor(new Date(d)); setCalView("dia"); }}
+                                  style={{ height:22,margin:"0 3px",borderRadius:6,border:`1px solid ${cfg.color}`,background:cfg.soft,color:cfg.color,cursor:"pointer",fontSize:10,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",padding:0 }}>
+                                  {evs.length>1?evs.length:""}
+                                </button>
+                              ); })}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                )}
+
+                {/* Vista SEMANA */}
+                {calView==="semana" && (
+                  <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
+                    {weekDays.map(({day,events})=>{ const isToday=keyOf(day)===keyOf(now); return (
+                      <div key={keyOf(day)} style={{ background:"#fff",borderRadius:12,border:`1px solid ${isToday?"#21D0B3":"#e2e8f0"}`,padding:"10px 12px" }}>
+                        <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom: events.length?6:0 }}>
+                          <span style={{ fontSize:12.5,fontWeight:700,color:isToday?"#0e9384":"#0f172a",textTransform:"capitalize" }}>{day.toLocaleDateString("es-CL",{weekday:"long",day:"2-digit",month:"short"})}</span>
+                          {events.length>0 && <span style={{ fontSize:10,fontWeight:700,color:"#64748b",background:"#f1f5f9",borderRadius:20,padding:"2px 8px" }}>{events.length}</span>}
+                        </div>
+                        {events.length===0 ? <span style={{ fontSize:11.5,color:"#cbd5e1" }}>—</span> : (
+                          <div style={{ display:"flex",flexDirection:"column",gap:5 }}>
+                            {events.map(it=>{ const cfg=TYPE_CFG[it.type]; return (
+                              <div key={it.id} style={{ display:"flex",alignItems:"center",gap:8 }}>
+                                <span style={{ width:8,height:8,borderRadius:"50%",background:cfg.color,flexShrink:0 }} />
+                                <span style={{ fontSize:11,fontWeight:700,color:"#0f172a",flexShrink:0 }}>{it.date.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})}</span>
+                                <span style={{ fontSize:11.5,color:"#334155",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{it.title}{it.subtitle?` · ${it.subtitle}`:""}</span>
+                              </div>
+                            ); })}
+                          </div>
+                        )}
+                      </div>
+                    ); })}
+                  </div>
+                )}
+
+                {/* Vista DÍA */}
+                {calView==="dia" && (
+                  <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
+                    {cursorDayItems.length===0 ? (
+                      <div style={{ background:"#fff",borderRadius:14,border:"1px dashed #e2e8f0",padding:"28px 16px",textAlign:"center" }}>
+                        <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>Sin actividades este día</p>
+                      </div>
+                    ) : cursorDayItems.map(it=>{ const cfg=TYPE_CFG[it.type]; return (
+                      <div key={it.id} style={{ display:"flex",gap:10,padding:"10px 12px",borderRadius:12,background:"#fff",border:"1px solid #e2e8f0",borderLeft:`4px solid ${cfg.color}` }}>
+                        <div style={{ display:"flex",flexDirection:"column",alignItems:"center",flexShrink:0,minWidth:46 }}>
+                          <span style={{ fontSize:13,fontWeight:800,color:"#0f172a" }}>{it.date.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})}</span>
+                          <span style={{ fontSize:15,marginTop:2 }}>{cfg.icon}</span>
+                        </div>
+                        <div style={{ flex:1,minWidth:0 }}>
+                          <p style={{ fontSize:13,fontWeight:600,color:"#0f172a",margin:0 }}>{it.title}</p>
+                          {(it.subtitle||it.venue) && <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0" }}>{[it.subtitle,it.venue].filter(Boolean).join(" · ")}</p>}
+                          <span style={{ display:"inline-block",marginTop:4,fontSize:10,fontWeight:800,padding:"2px 8px",borderRadius:99,background:cfg.soft,color:cfg.color }}>{cfg.label}</span>
+                        </div>
+                      </div>
+                    ); })}
                   </div>
                 )}
               </div>
@@ -1743,6 +1909,40 @@ export default function UserPortalPage() {
                     })()}
                   </div>
                 )}
+                {/* Confirmación de asistencia — solo si soy entregador de esta premiación */}
+                {(() => {
+                  const mine = (p.awarders||[]).find(a => a.athleteId === athlete?.id && a.id);
+                  if (!mine) return null;
+                  if (mine.confirmedAt) {
+                    return (
+                      <div style={{ marginTop:10,paddingTop:10,borderTop:"1px dashed #e2e8f0",display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,flexWrap:"wrap" }}>
+                        <span style={{ fontSize:12.5,fontWeight:700,color:"#059669",display:"inline-flex",alignItems:"center",gap:6 }}>✓ Confirmaste tu asistencia</span>
+                        <button type="button" onClick={()=>confirmAwarder(p.id, mine.id!, "DECLINE")}
+                          style={{ fontSize:11,fontWeight:600,color:"#dc2626",background:"none",border:"none",cursor:"pointer",textDecoration:"underline",padding:0 }}>Ya no puedo asistir</button>
+                      </div>
+                    );
+                  }
+                  if (mine.declinedAt) {
+                    return (
+                      <div style={{ marginTop:10,paddingTop:10,borderTop:"1px dashed #e2e8f0",display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,flexWrap:"wrap" }}>
+                        <span style={{ fontSize:12.5,fontWeight:700,color:"#dc2626",display:"inline-flex",alignItems:"center",gap:6 }}>✕ Rechazaste la asistencia</span>
+                        <button type="button" onClick={()=>confirmAwarder(p.id, mine.id!, "CONFIRM")}
+                          style={{ fontSize:11,fontWeight:600,color:"#059669",background:"none",border:"none",cursor:"pointer",textDecoration:"underline",padding:0 }}>Confirmar asistencia</button>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div style={{ marginTop:10,paddingTop:10,borderTop:"1px dashed #e2e8f0" }}>
+                      <span style={{ fontSize:10,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:"#a87800" }}>Confirma tu asistencia</span>
+                      <div style={{ display:"flex",gap:8,marginTop:6 }}>
+                        <button type="button" onClick={()=>confirmAwarder(p.id, mine.id!, "CONFIRM")}
+                          style={{ flex:1,padding:"9px",borderRadius:10,border:"none",cursor:"pointer",fontSize:13,fontWeight:700,color:"#fff",background:"linear-gradient(135deg,#21D0B3,#15B09A)" }}>Confirmar</button>
+                        <button type="button" onClick={()=>confirmAwarder(p.id, mine.id!, "DECLINE")}
+                          style={{ flex:1,padding:"9px",borderRadius:10,border:"1px solid #fecaca",cursor:"pointer",fontSize:13,fontWeight:700,color:"#dc2626",background:"#fef2f2" }}>No puedo</button>
+                      </div>
+                    </div>
+                  );
+                })()}
               </article>
             );
           };

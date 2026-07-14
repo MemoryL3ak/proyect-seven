@@ -4,45 +4,56 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import PageHeader from "@/components/ui/PageHeader";
 import { TicketIcon, SearchIcon, RefreshIcon, CheckIcon, AlertIcon } from "@/components/ui/Icons";
+import { normalizeClientType, clientTypeLabel } from "@/lib/clientTypes";
 
-type TripRequest = {
+/**
+ * Solicitudes de viaje generadas desde la app (portal del pasajero).
+ * Se gestionan sobre la tabla real de viajes (`/trips`), de modo que asignar
+ * un conductor aquí notifica al conductor y el pasajero ve el estado en su app.
+ */
+type Trip = {
   id: string;
-  eventId: string;
-  clientType: "T1" | "VIP";
+  eventId?: string | null;
+  clientType?: string | null;
+  tripType?: string | null;
   status: string;
-  requesterAthleteId: string | null;
-  origin: string | null;
-  destination: string | null;
-  requestedVehicleType: string | null;
-  passengerCount: number | null;
-  notes: string | null;
-  passengerLat: number | null;
-  passengerLng: number | null;
-  scheduledAt: string | null;
-  requestedAt: string | null;
-  driverId: string | null;
-  vehicleId: string | null;
-  vehiclePlate: string | null;
-  createdAt: string;
-  updatedAt: string;
+  requesterAthleteId?: string | null;
+  origin?: string | null;
+  destination?: string | null;
+  requestedVehicleType?: string | null;
+  passengerCount?: number | null;
+  notes?: string | null;
+  scheduledAt?: string | null;
+  requestedAt?: string | null;
+  createdAt?: string | null;
+  driverId?: string | null;
+  vehicleId?: string | null;
+  vehiclePlate?: string | null;
 };
 
 type EventItem = { id: string; name?: string | null };
 type DriverItem = { id: string; fullName?: string | null; full_name?: string | null };
 type VehicleItem = { id: string; plate?: string | null };
 
+/** Tipos de viaje originados en la app del pasajero. */
+const PORTAL_TRIP_TYPES = new Set(["PORTAL_REQUEST", "VIAJE_IDA", "VIAJE_IDA_REGRESO"]);
+
 const STATUS_META: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  REQUESTED: { label: "Pendiente",  color: "#b45309", bg: "#fef3c7", border: "#fcd34d" },
-  SCHEDULED: { label: "Agendada",   color: "#7c3aed", bg: "#ede9fe", border: "#c4b5fd" },
-  CANCELLED: { label: "Cancelada",  color: "#dc2626", bg: "#fee2e2", border: "#fca5a5" },
+  REQUESTED:   { label: "Pendiente",   color: "#b45309", bg: "#fef3c7", border: "#fcd34d" },
+  SCHEDULED:   { label: "Agendada",    color: "#7c3aed", bg: "#ede9fe", border: "#c4b5fd" },
+  EN_ROUTE:    { label: "En ruta",     color: "#4338ca", bg: "#e0e7ff", border: "#a5b4fc" },
+  PICKED_UP:   { label: "En curso",    color: "#6d28d9", bg: "#f3e8ff", border: "#d8b4fe" },
+  DROPPED_OFF: { label: "En destino",  color: "#0e7490", bg: "#cffafe", border: "#67e8f9" },
+  COMPLETED:   { label: "Completada",  color: "#15803d", bg: "#dcfce7", border: "#86efac" },
+  CANCELLED:   { label: "Cancelada",   color: "#dc2626", bg: "#fee2e2", border: "#fca5a5" },
 };
 
-const CLIENT_META: Record<TripRequest["clientType"], { color: string; bg: string; border: string }> = {
+const CLIENT_META: Record<string, { color: string; bg: string; border: string }> = {
   T1:  { color: "#1f4e8c", bg: "#dbeafe", border: "#93c5fd" },
   VIP: { color: "#92400e", bg: "#fef3c7", border: "#fbbf24" },
 };
 
-function fmtDate(value: string | null): string {
+function fmtDate(value: string | null | undefined): string {
   if (!value) return "—";
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "—";
@@ -54,7 +65,7 @@ function driverName(d: DriverItem): string {
 }
 
 export default function TripRequestsPage() {
-  const [requests, setRequests] = useState<TripRequest[]>([]);
+  const [trips, setTrips] = useState<Trip[]>([]);
   const [events, setEvents] = useState<EventItem[]>([]);
   const [drivers, setDrivers] = useState<DriverItem[]>([]);
   const [vehicles, setVehicles] = useState<VehicleItem[]>([]);
@@ -62,20 +73,21 @@ export default function TripRequestsPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [selectedEventId, setSelectedEventId] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"" | "REQUESTED" | "SCHEDULED" | "CANCELLED">("");
+  const [statusFilter, setStatusFilter] = useState<string>("");
   const [clientFilter, setClientFilter] = useState<"" | "T1" | "VIP">("");
   const [search, setSearch] = useState("");
 
   // Asignación
-  const [assigning, setAssigning] = useState<TripRequest | null>(null);
+  const [assigning, setAssigning] = useState<Trip | null>(null);
   const [assignDriverId, setAssignDriverId] = useState("");
   const [assignVehicleId, setAssignVehicleId] = useState("");
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const data = await apiFetch<TripRequest[]>("/trip-requests");
-      setRequests(data);
+      const data = await apiFetch<Trip[]>("/trips");
+      // Sólo solicitudes originadas en la app del pasajero.
+      setTrips((data ?? []).filter((t) => PORTAL_TRIP_TYPES.has(t.tripType ?? "")));
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudieron cargar las solicitudes.");
@@ -109,14 +121,15 @@ export default function TripRequestsPage() {
 
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return requests.filter((r) => {
+    return trips.filter((r) => {
+      const client = normalizeClientType(r.clientType);
       if (selectedEventId && r.eventId !== selectedEventId) return false;
       if (statusFilter && r.status !== statusFilter) return false;
-      if (clientFilter && r.clientType !== clientFilter) return false;
+      if (clientFilter && client !== clientFilter) return false;
       if (q && !`${r.origin ?? ""} ${r.destination ?? ""} ${r.notes ?? ""} ${r.vehiclePlate ?? ""}`.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [requests, selectedEventId, statusFilter, clientFilter, search]);
+  }, [trips, selectedEventId, statusFilter, clientFilter, search]);
 
   const summary = useMemo(() => {
     const base = visible;
@@ -124,17 +137,17 @@ export default function TripRequestsPage() {
       total: base.length,
       pending: base.filter((r) => r.status === "REQUESTED").length,
       scheduled: base.filter((r) => r.status === "SCHEDULED").length,
-      t1: base.filter((r) => r.clientType === "T1").length,
-      vip: base.filter((r) => r.clientType === "VIP").length,
+      t1: base.filter((r) => normalizeClientType(r.clientType) === "T1").length,
+      vip: base.filter((r) => normalizeClientType(r.clientType) === "VIP").length,
     };
   }, [visible]);
 
   const driverLabel = useCallback(
-    (id: string | null) => (id ? drivers.find((d) => d.id === id) : null),
+    (id: string | null | undefined) => (id ? drivers.find((d) => d.id === id) : null),
     [drivers],
   );
 
-  function openAssign(r: TripRequest) {
+  function openAssign(r: Trip) {
     setAssigning(r);
     setAssignDriverId(r.driverId ?? "");
     setAssignVehicleId(r.vehicleId ?? "");
@@ -149,7 +162,7 @@ export default function TripRequestsPage() {
     setSaving(true);
     try {
       const plate = assignVehicleId ? vehicles.find((v) => v.id === assignVehicleId)?.plate ?? undefined : undefined;
-      await apiFetch(`/trip-requests/${assigning.id}/assign`, {
+      await apiFetch(`/trips/${assigning.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -167,10 +180,14 @@ export default function TripRequestsPage() {
     }
   }
 
-  async function cancelRequest(r: TripRequest) {
+  async function cancelRequest(r: Trip) {
     if (!window.confirm("¿Cancelar esta solicitud de viaje?")) return;
     try {
-      await apiFetch(`/trip-requests/${r.id}/cancel`, { method: "PATCH" });
+      await apiFetch(`/trips/${r.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "CANCELLED" }),
+      });
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo cancelar la solicitud.");
@@ -181,7 +198,7 @@ export default function TripRequestsPage() {
     <div className="min-w-0 space-y-5 overflow-x-hidden">
       <PageHeader
         title="Solicitudes de Viaje"
-        description="Solicitudes T1 y VIP generadas desde la app. Se gestionan de forma independiente del resto de viajes."
+        description="Solicitudes T1 y VIP generadas desde la app. Al asignar un conductor aquí, se notifica al conductor y el pasajero ve el estado en su app."
         icon={<TicketIcon size={26} />}
         iconBg="linear-gradient(135deg, #21D0B3 0%, #1f4e8c 100%)"
         accentStrip="teal"
@@ -233,10 +250,13 @@ export default function TripRequestsPage() {
           <option value="">Todos los eventos</option>
           {events.map((ev) => <option key={ev.id} value={ev.id}>{ev.name ?? ev.id}</option>)}
         </select>
-        <select className="input max-w-[170px]" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}>
+        <select className="input max-w-[170px]" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
           <option value="">Todos los estados</option>
           <option value="REQUESTED">Pendiente</option>
           <option value="SCHEDULED">Agendada</option>
+          <option value="EN_ROUTE">En ruta</option>
+          <option value="PICKED_UP">En curso</option>
+          <option value="COMPLETED">Completada</option>
           <option value="CANCELLED">Cancelada</option>
         </select>
         <select className="input max-w-[140px]" value={clientFilter} onChange={(e) => setClientFilter(e.target.value as typeof clientFilter)}>
@@ -274,14 +294,16 @@ export default function TripRequestsPage() {
                 <tr><td colSpan={7} className="px-4 py-10 text-center" style={{ color: "#94a3b8" }}>No hay solicitudes que coincidan con los filtros.</td></tr>
               ) : visible.map((r) => {
                 const sm = STATUS_META[r.status] ?? { label: r.status, color: "#475569", bg: "#f1f5f9", border: "#cbd5e1" };
-                const cm = CLIENT_META[r.clientType];
+                const client = normalizeClientType(r.clientType);
+                const cm = CLIENT_META[client] ?? { color: "#475569", bg: "#f1f5f9", border: "#cbd5e1" };
                 const dr = driverLabel(r.driverId);
+                const canManage = r.status === "REQUESTED" || r.status === "SCHEDULED";
                 return (
                   <tr key={r.id} style={{ borderTop: "1px solid #eef2f7" }}>
                     <td className="px-4 py-3">
                       <span className="inline-flex items-center text-xs font-bold rounded-full px-2.5 py-0.5"
                         style={{ color: cm.color, background: cm.bg, border: `1px solid ${cm.border}` }}>
-                        {r.clientType}
+                        {clientTypeLabel(r.clientType)}
                       </span>
                     </td>
                     <td className="px-4 py-3" style={{ color: "#334155" }}>
@@ -303,7 +325,7 @@ export default function TripRequestsPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right whitespace-nowrap">
-                      {r.status !== "CANCELLED" && (
+                      {canManage && (
                         <>
                           <button type="button" className="btn btn-ghost text-xs" onClick={() => openAssign(r)}>
                             {r.status === "SCHEDULED" ? "Reasignar" : "Asignar"}
@@ -327,7 +349,7 @@ export default function TripRequestsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(15,23,42,0.45)" }}>
           <div className="surface rounded-2xl p-5 w-full max-w-md space-y-4">
             <div>
-              <h3 className="text-lg font-bold" style={{ color: "#1f4e8c" }}>Asignar solicitud {assigning.clientType}</h3>
+              <h3 className="text-lg font-bold" style={{ color: "#1f4e8c" }}>Asignar solicitud {clientTypeLabel(assigning.clientType)}</h3>
               <p className="text-xs" style={{ color: "#94a3b8" }}>{assigning.origin ?? "—"} → {assigning.destination ?? "—"}</p>
             </div>
             <label className="block text-sm">

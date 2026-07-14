@@ -763,7 +763,7 @@ export default function ResourceScreen({
         SEDAN: 4, sedan: 4, "sedán": 4, SUV: 6, suv: 6,
         VAN_10: 10, van_10: 10, VAN_15: 17, van_15: 17, VAN_19: 19, van_19: 19,
         VAN: 10, van: 10, MINIBUS: 33, minibus: 33, "minibús": 33, MINI_BUS: 33,
-        BUS: 64, bus: 64, camioneta: 6, furgon: 6, "furgón": 6,
+        BUS: 45, bus: 45, camioneta: 6, furgon: 6, "furgón": 6,
       };
       const resolveVehicleInfo = (driver: any) => {
         if (driver.vehicleId) {
@@ -2170,7 +2170,7 @@ export default function ResourceScreen({
       if (config.endpoint === "/trips") {
         const paxCount = Number(form.passengerCount as string) || 0;
         const reqVehicleType = String(form.requestedVehicleType ?? "");
-        const CAPACITY_ORDER: Record<string, number> = { SEDAN: 4, SUV: 6, VAN_10: 10, VAN_15: 17, VAN_19: 19, MINIBUS: 33, BUS: 64 };
+        const CAPACITY_ORDER: Record<string, number> = { SEDAN: 4, SUV: 6, VAN_10: 10, VAN_15: 17, VAN_19: 19, MINIBUS: 33, BUS: 45 };
         const minCapacity = CAPACITY_ORDER[reqVehicleType] ?? 0;
         const effectiveMin = Math.max(paxCount, minCapacity);
         if (effectiveMin > 0) {
@@ -2545,7 +2545,7 @@ export default function ResourceScreen({
                             VAN_15: 17,
                             VAN_19: 19,
                             MINIBUS: 33,
-                            BUS: 64
+                            BUS: 45
                           };
                           setForm({
                             ...form,
