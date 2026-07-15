@@ -451,6 +451,7 @@ export default function VehicleRequestPortalPage() {
   const [ratingComment, setRatingComment] = useState("");
   const [ratingLoading, setRatingLoading] = useState(false);
   const [expandedTripId, setExpandedTripId] = useState<string | null>(null);
+  const [tripModal, setTripModal] = useState<Trip | null>(null);
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
 
   // Calendar state
@@ -1728,7 +1729,7 @@ export default function VehicleRequestPortalPage() {
                           )}
                         </div>
                         <div style={{ display:"flex",flexDirection:"column",gap:6,flexShrink:0 }}>
-                          <button type="button" onClick={() => { setActiveTab("actividades"); setActividadesSubTab("en_curso"); }}
+                          <button type="button" onClick={() => setTripModal(trip)}
                             style={{ padding:"8px 14px",borderRadius:10,border:"none",cursor:"pointer",fontSize:12,fontWeight:700,background:"linear-gradient(135deg,#34F3C6,#21D0B3)",color:"#062240",whiteSpace:"nowrap" }}>
                             Ver viaje
                           </button>
@@ -1745,6 +1746,126 @@ export default function VehicleRequestPortalPage() {
                 })}
               </div>
             )}
+
+            {/* ═══ Popup detalle de viaje ═══ */}
+            {tripModal && (() => {
+              const t = tripModal;
+              const drv = t.driverId ? drivers[t.driverId] : null;
+              const veh = t.vehicleId ? vehicles[t.vehicleId] : null;
+              const st = statusMeta[t.status || "REQUESTED"] || statusMeta.REQUESTED;
+              const vname = venues.find((v) => v.id === t.destinationVenueId)?.name || t.destination || "Destino pendiente";
+              const pos = t.vehicleId ? positionsByVehicle[t.vehicleId] : null;
+              const coords = extractCoords(pos);
+              const isActive = t.status === "EN_ROUTE" || t.status === "PICKED_UP";
+              const liveLabel = t.status === "PICKED_UP" ? "Viaje en curso" : t.status === "EN_ROUTE" ? "Tu conductor está en camino" : st.label;
+              const Field = ({ label, value, sub }: { label: string; value: string; sub?: string | null }) => (
+                <div style={{ padding:"9px 11px",borderRadius:12,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                  <p style={{ fontSize:9.5,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{label}</p>
+                  <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:"3px 0 0",lineHeight:1.3 }}>{value}</p>
+                  {sub && <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0" }}>{sub}</p>}
+                </div>
+              );
+              return (
+                <div onClick={() => setTripModal(null)}
+                  style={{ position:"fixed",inset:0,zIndex:120,background:"rgba(6,15,30,0.55)",backdropFilter:"blur(3px)",display:"flex",alignItems:"flex-end",justifyContent:"center",padding:0 }}>
+                  <div onClick={(e) => e.stopPropagation()}
+                    style={{ background:"#fff",borderTopLeftRadius:22,borderTopRightRadius:22,width:"100%",maxWidth:520,maxHeight:"92vh",overflowY:"auto",boxShadow:"0 -12px 48px rgba(6,15,30,0.4)" }}>
+                    {/* Header */}
+                    <div style={{ position:"sticky",top:0,zIndex:2,padding:"16px 18px 14px",background:"linear-gradient(135deg,#041a2e 0%,#0a3356 60%,#062240 100%)",overflow:"hidden" }}>
+                      <div style={{ position:"absolute",bottom:0,left:0,right:0,height:2,background:"linear-gradient(90deg,transparent,#21D0B3 40%,#34F3C6 50%,#21D0B3 60%,transparent)" }} />
+                      <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:10 }}>
+                        <div style={{ minWidth:0 }}>
+                          <p style={{ fontSize:9.5,fontWeight:700,letterSpacing:"0.16em",textTransform:"uppercase",color:"#34F3C6",margin:0 }}>Detalle del viaje</p>
+                          <p style={{ fontSize:17,fontWeight:800,color:"#fff",margin:"3px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{vname}</p>
+                          <span style={{ display:"inline-flex",alignItems:"center",gap:6,marginTop:8,fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:99,background:"rgba(52,243,198,0.14)",color:"#34F3C6",border:"1px solid rgba(52,243,198,0.3)" }}>
+                            {isActive && <span style={{ width:7,height:7,borderRadius:"50%",background:"#34F3C6",boxShadow:"0 0 8px #34F3C6",animation:"vrPulse 1.4s ease-in-out infinite" }} />}
+                            {liveLabel}
+                          </span>
+                        </div>
+                        <button type="button" onClick={() => setTripModal(null)} aria-label="Cerrar"
+                          style={{ flexShrink:0,width:30,height:30,borderRadius:9,border:"1px solid rgba(255,255,255,0.2)",background:"rgba(255,255,255,0.1)",color:"#fff",cursor:"pointer",fontSize:16,lineHeight:1 }}>×</button>
+                      </div>
+                    </div>
+
+                    <div style={{ padding:"14px 16px 22px",display:"flex",flexDirection:"column",gap:10 }}>
+                      {/* Ruta */}
+                      <div style={{ display:"flex",flexDirection:"column",gap:0,padding:"12px 14px",borderRadius:14,background:"#f8fafc",border:"1px solid #eef1f6" }}>
+                        <div style={{ display:"flex",alignItems:"flex-start",gap:10 }}>
+                          <div style={{ display:"flex",flexDirection:"column",alignItems:"center",paddingTop:3 }}>
+                            <span style={{ width:9,height:9,borderRadius:"50%",background:"#21D0B3" }} />
+                            <span style={{ width:2,height:26,background:"#cbd5e1",margin:"2px 0" }} />
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="#ef4444" stroke="#ef4444"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5" fill="#fff"/></svg>
+                          </div>
+                          <div style={{ flex:1,minWidth:0,display:"flex",flexDirection:"column",gap:14 }}>
+                            <div><p style={{ fontSize:9.5,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Origen</p><p style={{ fontSize:13,fontWeight:600,color:"#0f172a",margin:"2px 0 0",lineHeight:1.3 }}>{t.origin || "Pendiente"}</p></div>
+                            <div><p style={{ fontSize:9.5,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Destino</p><p style={{ fontSize:13,fontWeight:600,color:"#0f172a",margin:"2px 0 0",lineHeight:1.3 }}>{t.destination || vname}</p></div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Mapa en vivo */}
+                      {(isActive || t.status === "SCHEDULED") && (
+                        <div style={{ borderRadius:14,overflow:"hidden",border:"1px solid rgba(33,208,179,0.25)" }}>
+                          <TripMap
+                            origin={t.origin}
+                            destination={t.destination || vname}
+                            driverPosition={coords ? { lat: coords.lat, lng: coords.lng } : null}
+                            userPosition={userPos || (t.passengerLat && t.passengerLng ? { lat: t.passengerLat, lng: t.passengerLng } : null)}
+                            height={190}
+                          />
+                          {coords && (
+                            <a href={buildDirectionsLink(coords.lat, coords.lng, t.origin)} target="_blank" rel="noreferrer"
+                              style={{ display:"block",padding:"9px 12px",background:"rgba(33,208,179,0.08)",fontSize:12,fontWeight:700,color:"#0a7a6b",textAlign:"center",textDecoration:"none" }}>
+                              📍 Seguir en Google Maps
+                            </a>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Datos */}
+                      <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:8 }}>
+                        <Field label="Conductor" value={drv?.fullName || "Por asignar"} sub={drv?.phone || null} />
+                        <Field label="Vehículo" value={veh?.plate || "Por asignar"} sub={veh ? [veh.brand, veh.model].filter(Boolean).join(" ") || veh.type : null} />
+                        <Field label="Fecha y hora" value={formatDateTime(t.scheduledAt || t.requestedAt)} />
+                        <Field label="Tipo de vehículo" value={vehicleTypeLabel(t.requestedVehicleType)} />
+                        <Field label="Personas" value={String(t.passengerCount || "-")} />
+                        <Field label="Estado" value={st.label} />
+                      </div>
+
+                      {t.notes && (
+                        <div style={{ padding:"9px 11px",borderRadius:12,background:"#fffbeb",border:"1px solid #fde68a" }}>
+                          <p style={{ fontSize:9.5,fontWeight:700,color:"#b45309",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Notas</p>
+                          <p style={{ fontSize:12.5,color:"#92400e",margin:"3px 0 0",lineHeight:1.4 }}>{t.notes.replace(/^\[Portal\]\s*/, "")}</p>
+                        </div>
+                      )}
+
+                      {/* Tiempos */}
+                      {(t.requestedAt || t.startedAt || t.completedAt) && (
+                        <div style={{ display:"flex",flexDirection:"column",gap:4,padding:"10px 12px",borderRadius:12,background:"#f8fafc",border:"1px solid #eef1f6" }}>
+                          {t.requestedAt && <div style={{ display:"flex",justifyContent:"space-between" }}><span style={{ fontSize:11,color:"#64748b" }}>Solicitado</span><span style={{ fontSize:11.5,fontWeight:600,color:"#0f172a" }}>{formatDateTime(t.requestedAt)}</span></div>}
+                          {t.startedAt && <div style={{ display:"flex",justifyContent:"space-between" }}><span style={{ fontSize:11,color:"#64748b" }}>Inicio</span><span style={{ fontSize:11.5,fontWeight:600,color:"#0f172a" }}>{formatDateTime(t.startedAt)}</span></div>}
+                          {t.completedAt && <div style={{ display:"flex",justifyContent:"space-between" }}><span style={{ fontSize:11,color:"#64748b" }}>Fin</span><span style={{ fontSize:11.5,fontWeight:600,color:"#0f172a" }}>{formatDateTime(t.completedAt)}</span></div>}
+                        </div>
+                      )}
+
+                      {/* Acciones */}
+                      <div style={{ display:"flex",gap:8,marginTop:2 }}>
+                        {drv?.phone && (
+                          <a href={`tel:${drv.phone}`}
+                            style={{ flex:1,padding:"12px",borderRadius:12,textAlign:"center",textDecoration:"none",fontSize:13,fontWeight:700,background:"linear-gradient(135deg,#34F3C6,#21D0B3)",color:"#062240" }}>
+                            📞 Llamar conductor
+                          </a>
+                        )}
+                        <button type="button" onClick={() => { setTripModal(null); setActiveTab("actividades"); setActividadesSubTab("en_curso"); }}
+                          style={{ flex:1,padding:"12px",borderRadius:12,border:"1px solid #e2e8f0",background:"#fff",color:"#334155",fontSize:13,fontWeight:700,cursor:"pointer" }}>
+                          Ver en Actividades
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Success modal */}
             {message === "SOLICITUD_ENVIADA" && (

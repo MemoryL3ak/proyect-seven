@@ -1237,7 +1237,7 @@ export default function UserPortalPage() {
                   </p>
                 )}
               </div>
-              <button type="button" onClick={() => setActiveTab("actividades")}
+              <button type="button" onClick={() => setShowTripModal(true)}
                 style={{ flexShrink:0,padding:"9px 16px",borderRadius:10,border:"none",cursor:"pointer",fontSize:12,fontWeight:700,background:"linear-gradient(135deg,#34F3C6,#21D0B3)",color:"#062240",whiteSpace:"nowrap" }}>
                 Ver viaje
               </button>
