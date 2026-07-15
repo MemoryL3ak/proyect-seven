@@ -950,6 +950,8 @@ export const resources: Record<string, ResourceConfig> = {
       { key: "tower", label: "Torre", type: "text", showWhen: { field: "accommodationType", value: "VILLA" } },
       { key: "name", label: "Nombre", type: "text", required: true },
       { key: "address", label: "Dirección", type: "text" },
+      { key: "checkIn", label: "Check-in", type: "datetime" },
+      { key: "checkOut", label: "Check-out", type: "datetime" },
       { key: "roomSingle", label: "Habitaciones Single", type: "number", transient: true },
       { key: "roomDouble", label: "Habitaciones Double", type: "number", transient: true },
       { key: "roomTriple", label: "Habitaciones Triple", type: "number", transient: true },

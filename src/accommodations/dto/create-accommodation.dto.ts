@@ -1,4 +1,4 @@
-import { IsInt, IsNotEmpty, IsObject, IsOptional, IsString, Min } from 'class-validator';
+import { IsInt, IsISO8601, IsNotEmpty, IsObject, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreateAccommodationDto {
   @IsString()
@@ -37,4 +37,12 @@ export class CreateAccommodationDto {
   @IsObject()
   @IsOptional()
   bedInventory?: Record<string, number>;
+
+  @IsISO8601()
+  @IsOptional()
+  checkIn?: string | null;
+
+  @IsISO8601()
+  @IsOptional()
+  checkOut?: string | null;
 }

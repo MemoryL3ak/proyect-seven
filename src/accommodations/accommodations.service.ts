@@ -19,6 +19,8 @@ type AccommodationRow = {
   total_capacity: number;
   room_inventory: Record<string, number> | string | null;
   bed_inventory: Record<string, number> | string | null;
+  check_in: string | null;
+  check_out: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -122,6 +124,8 @@ export class AccommodationsService {
       totalCapacity: row.total_capacity,
       roomInventory: parseJsonObject(row.room_inventory),
       bedInventory: parseJsonObject(row.bed_inventory),
+      checkIn: row.check_in ?? null,
+      checkOut: row.check_out ?? null,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
     };
@@ -166,6 +170,14 @@ export class AccommodationsService {
     if (dto.bedInventory !== undefined) {
       set.push(`bed_inventory = $${index++}::jsonb`);
       params.push(JSON.stringify(dto.bedInventory ?? {}));
+    }
+    if (dto.checkIn !== undefined) {
+      set.push(`check_in = $${index++}`);
+      params.push(dto.checkIn ?? null);
+    }
+    if (dto.checkOut !== undefined) {
+      set.push(`check_out = $${index++}`);
+      params.push(dto.checkOut ?? null);
     }
     if (dto.geoLocation !== undefined) {
       if (dto.geoLocation === null) {
@@ -381,6 +393,8 @@ export class AccommodationsService {
       placeholders.push(optionalField('total_capacity', createDto.totalCapacity ?? 0));
       placeholders.push(optionalField('room_inventory', JSON.stringify(createDto.roomInventory ?? {}), '::jsonb'));
       placeholders.push(optionalField('bed_inventory', JSON.stringify(createDto.bedInventory ?? {}), '::jsonb'));
+      if (createDto.checkIn !== undefined) placeholders.push(optionalField('check_in', createDto.checkIn ?? null));
+      if (createDto.checkOut !== undefined) placeholders.push(optionalField('check_out', createDto.checkOut ?? null));
 
       const rows = (await this.dataSource.query(
         `

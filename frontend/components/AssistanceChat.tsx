@@ -44,6 +44,7 @@ type Message = {
 const CATEGORIES = [
   { value: "QUERY", label: "Consulta general" },
   { value: "INCIDENT", label: "Incidencia" },
+  { value: "FLIGHT_CHANGE", label: "Cambio de vuelo" },
   { value: "LOST_ITEM", label: "Objeto perdido" },
   { value: "EMERGENCY", label: "Emergencia" },
   { value: "OTHER", label: "Otro" },

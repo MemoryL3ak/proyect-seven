@@ -328,13 +328,19 @@ export default function UserPortalPage() {
 
   // Por defecto, el atleta ve solo su disciplina (evita el "scroll infinito"
   // con todas las disciplinas). Se puede cambiar a "Todas" desde el filtro.
+  // El jefe de delegación está asociado al país: ve TODAS las disciplinas de
+  // su delegación por defecto (no se auto-filtra a la suya).
   useEffect(() => {
     if (calDiscAutoSet.current) return;
+    if (athlete?.isDelegationLead === true) {
+      calDiscAutoSet.current = true; // jefe: sin auto-filtro → todas las disciplinas
+      return;
+    }
     if (athlete?.disciplineId) {
       setCalDiscFilter(athlete.disciplineId);
       calDiscAutoSet.current = true;
     }
-  }, [athlete?.disciplineId]);
+  }, [athlete?.disciplineId, athlete?.isDelegationLead]);
 
   // El VIP entregador confirma o rechaza su asistencia a una premiación.
   const confirmAwarder = async (premiacionId: string, awarderId: string, decision: "CONFIRM" | "DECLINE") => {
@@ -1271,6 +1277,19 @@ export default function UserPortalPage() {
                     <div style={{ display:"flex",flexWrap:"wrap",gap:4 }}>
                       {hotelRoom_ && <span style={{ fontSize:10,padding:"3px 8px",borderRadius:6,background:"#f0fdf8",color:"#0a7a6b",border:"1px solid rgba(33,208,179,0.2)",fontWeight:600 }}>Hab. {hotelRoom_}</span>}
                       {hotelBed_ && <span style={{ fontSize:10,padding:"3px 8px",borderRadius:6,background:"#f1f5f9",color:"#475569",border:"1px solid #e2e8f0" }}>Cama {hotelBed_}</span>}
+                    </div>
+                    {/* Info de check-in / check-out */}
+                    <div style={{ marginTop:10,display:"flex",flexDirection:"column",gap:4,borderTop:"1px solid #f1f5f9",paddingTop:8 }}>
+                      <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+                        <span style={{ fontSize:11,color:"#64748b" }}>Check-in</span>
+                        <span style={{ fontSize:11.5,fontWeight:700,color: hotelAssignment?.checkinAt ? "#0a7a6b" : "#94a3b8" }}>{hotelAssignment?.checkinAt ? fmt(hotelAssignment.checkinAt) : "Pendiente"}</span>
+                      </div>
+                      <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+                        <span style={{ fontSize:11,color:"#64748b" }}>Check-out</span>
+                        <span style={{ fontSize:11.5,fontWeight:700,color: hotelAssignment?.checkoutAt ? "#d97706" : "#94a3b8" }}>
+                          {hotelAssignment?.checkoutAt ? fmt(hotelAssignment.checkoutAt) : "Pendiente"}
+                        </span>
+                      </div>
                     </div>
                   </>
                 ) : <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>Sin hotel asignado</p>}

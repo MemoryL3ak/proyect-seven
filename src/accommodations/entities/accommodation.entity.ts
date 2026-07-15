@@ -44,6 +44,12 @@ export class Accommodation {
   @Column({ name: 'bed_inventory', type: 'jsonb', default: () => "'{}'::jsonb" })
   bedInventory: Record<string, number>;
 
+  @Column({ name: 'check_in', type: 'timestamptz', nullable: true })
+  checkIn?: Date | string | null;
+
+  @Column({ name: 'check_out', type: 'timestamptz', nullable: true })
+  checkOut?: Date | string | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
