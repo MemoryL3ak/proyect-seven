@@ -289,6 +289,7 @@ export default function UserPortalPage() {
   const [calDiscFilter, setCalDiscFilter] = useState<string>("");
   const calAutoJumped = useRef(false);
   const calDiscAutoSet = useRef(false);
+  const ganttScrollKey = useRef("");
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   // Premiaciones tab state
   const [premiaciones, setPremiaciones] = useState<Premiacion[]>([]);
@@ -1636,28 +1637,45 @@ export default function UserPortalPage() {
                           </div>
                         ))}
                       </div>
-                      <div style={{ flex:1,overflowX:"auto" }}>
-                        <div style={{ minWidth:gN*30 }}>
-                          <div style={{ height:34,display:"grid",gridTemplateColumns:`repeat(${gN},30px)`,borderBottom:"1px solid #e2e8f0",background:"#f8fafc" }}>
-                            {gDays.map(d=>{ const isToday=keyOf(d)===keyOf(now); const wknd=d.getDay()===0||d.getDay()===6; return (
-                              <div key={d.getDate()} style={{ display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:isToday?"rgba(33,208,179,0.12)":wknd?"#f1f5f9":"transparent" }}>
-                                <span style={{ fontSize:8,fontWeight:600,color:isToday?"#0e9384":"#94a3b8" }}>{["DO","LU","MA","MI","JU","VI","SA"][d.getDay()]}</span>
-                                <span style={{ fontSize:11,fontWeight:700,color:isToday?"#0e9384":"#334155" }}>{d.getDate()}</span>
+                      {(() => {
+                        // Auto-scroll al primer día con actividad (una vez por mes)
+                        const firstActiveDay = gRows.reduce((min, r) => {
+                          const ks = Array.from(r.byDay.keys());
+                          return ks.length ? Math.min(min, ...ks) : min;
+                        }, Infinity);
+                        return (
+                          <div style={{ flex:1,overflowX:"auto",WebkitOverflowScrolling:"touch" as any }}
+                            ref={(el) => {
+                              if (!el) return;
+                              const key = `${y}-${m}`;
+                              if (ganttScrollKey.current === key) return;
+                              ganttScrollKey.current = key;
+                              if (Number.isFinite(firstActiveDay)) el.scrollLeft = Math.max(0, (firstActiveDay - 2) * 30);
+                            }}>
+                            <div style={{ minWidth:gN*30 }}>
+                              <div style={{ height:34,display:"grid",gridTemplateColumns:`repeat(${gN},30px)`,borderBottom:"1px solid #e2e8f0",background:"#f8fafc" }}>
+                                {gDays.map(d=>{ const isToday=keyOf(d)===keyOf(now); const wknd=d.getDay()===0||d.getDay()===6; return (
+                                  <div key={d.getDate()} style={{ display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:isToday?"rgba(33,208,179,0.12)":wknd?"#f1f5f9":"transparent" }}>
+                                    <span style={{ fontSize:8,fontWeight:600,color:isToday?"#0e9384":"#94a3b8" }}>{["DO","LU","MA","MI","JU","VI","SA"][d.getDay()]}</span>
+                                    <span style={{ fontSize:11,fontWeight:700,color:isToday?"#0e9384":"#334155" }}>{d.getDate()}</span>
+                                  </div>
+                                ); })}
                               </div>
-                            ); })}
-                          </div>
-                          {gRows.map((r,ri)=>(
-                            <div key={ri} style={{ height:38,display:"grid",gridTemplateColumns:`repeat(${gN},30px)`,borderBottom: ri<gRows.length-1?"1px solid #f1f5f9":"none",alignItems:"center" }}>
-                              {gDays.map(d=>{ const evs=r.byDay.get(d.getDate()); if(!evs||!evs.length) return <div key={d.getDate()} />; const cfg=TYPE_CFG[evs[0].type]; return (
-                                <button key={d.getDate()} type="button" onClick={()=>{ setCalCursor(new Date(d)); setCalView("dia"); }}
-                                  style={{ height:22,margin:"0 3px",borderRadius:6,border:`1px solid ${cfg.color}`,background:cfg.soft,color:cfg.color,cursor:"pointer",fontSize:10,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",padding:0 }}>
-                                  {evs.length>1?evs.length:""}
-                                </button>
-                              ); })}
+                              {gRows.map((r,ri)=>(
+                                <div key={ri} style={{ height:38,display:"grid",gridTemplateColumns:`repeat(${gN},30px)`,borderBottom: ri<gRows.length-1?"1px solid #f1f5f9":"none",alignItems:"center" }}>
+                                  {gDays.map(d=>{ const evs=r.byDay.get(d.getDate()); if(!evs||!evs.length) return <div key={d.getDate()} />; const cfg=TYPE_CFG[evs[0].type]; return (
+                                    <button key={d.getDate()} type="button" onClick={()=>{ setCalCursor(new Date(d)); setCalView("dia"); }}
+                                      title={`${evs.length} actividad(es) · ${d.toLocaleDateString("es-CL",{day:"2-digit",month:"short"})}`}
+                                      style={{ height:24,margin:"0 2px",borderRadius:6,border:"none",background:cfg.color,color:"#fff",cursor:"pointer",fontSize:10.5,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",padding:0,boxShadow:"0 1px 2px rgba(15,23,42,0.15)" }}>
+                                      {evs.length>1?evs.length:"•"}
+                                    </button>
+                                  ); })}
+                                </div>
+                              ))}
                             </div>
-                          ))}
-                        </div>
-                      </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   )
                 )}

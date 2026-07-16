@@ -461,6 +461,7 @@ export default function VehicleRequestPortalPage() {
   const [calView, setCalView] = useState<"gantt" | "week" | "day">("gantt");
   const [calCursor, setCalCursor] = useState(() => new Date());
   const [ganttDetail, setGanttDetail] = useState<null | { title: string; events: CalendarEvent[] }>(null);
+  const ganttScrollKey = useRef("");
 
   const loadPortal = async (matchedAthlete: Athlete) => {
     const [tripData, venueData, driverData, vehicleData, eventData, delegationData, accommodationData, foodLocData, foodMenuData] = await Promise.all([
@@ -3094,7 +3095,20 @@ export default function VehicleRequestPortalPage() {
                           ))}
                         </div>
                         {/* Grilla días */}
-                        <div style={{ flex:1,overflowX:"auto",WebkitOverflowScrolling:"touch" as any }}>
+                        {(() => {
+                        const firstActiveDay = rows.reduce((min, r) => {
+                          const ks = Array.from(r.byDay.keys());
+                          return ks.length ? Math.min(min, ...ks) : min;
+                        }, Infinity);
+                        return (
+                        <div style={{ flex:1,overflowX:"auto",WebkitOverflowScrolling:"touch" as any }}
+                          ref={(el) => {
+                            if (!el) return;
+                            const key = `${calYear}-${calMonth}`;
+                            if (ganttScrollKey.current === key) return;
+                            ganttScrollKey.current = key;
+                            if (Number.isFinite(firstActiveDay)) el.scrollLeft = Math.max(0, (firstActiveDay - 2) * COL);
+                          }}>
                           <div style={{ minWidth:N*COL }}>
                             {/* Header días */}
                             <div style={{ height:34,display:"grid",gridTemplateColumns:`repeat(${N},${COL}px)`,borderBottom:"1px solid #e2e8f0",background:"#f8fafc" }}>
@@ -3120,8 +3134,9 @@ export default function VehicleRequestPortalPage() {
                                   return (
                                     <button key={d.getDate()} type="button"
                                       onClick={() => setGanttDetail({ title: `${r.name} · ${d.toLocaleDateString("es-CL",{ day:"2-digit",month:"short" })}`, events: [...evs].sort((a,b)=>new Date(a.scheduledAt!).getTime()-new Date(b.scheduledAt!).getTime()) })}
-                                      style={{ height:22,margin:"0 3px",borderRadius:6,border:`1px solid ${meta.border}`,background:meta.bar,color:meta.text,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,padding:0 }}>
-                                      {evs.length > 1 ? evs.length : ""}
+                                      title={`${evs.length} actividad(es) · ${d.toLocaleDateString("es-CL",{ day:"2-digit",month:"short" })}`}
+                                      style={{ height:24,margin:"0 2px",borderRadius:6,border:"none",background:meta.border,color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10.5,fontWeight:800,padding:0,boxShadow:"0 1px 2px rgba(15,23,42,0.15)" }}>
+                                      {evs.length > 1 ? evs.length : "•"}
                                     </button>
                                   );
                                 })}
@@ -3129,6 +3144,8 @@ export default function VehicleRequestPortalPage() {
                             ))}
                           </div>
                         </div>
+                        );
+                        })()}
                       </div>
                     </div>
                   );
