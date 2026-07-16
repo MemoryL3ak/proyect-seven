@@ -121,15 +121,25 @@ export default function DriverHeatmapPage() {
     return { dayStart: start, dayEnd: end };
   }, [selectedDate]);
 
+  /* ─── ¿Se está viendo el día de hoy? ─── */
+  const isViewingToday = useMemo(() => {
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    return selectedDate === todayStr;
+  }, [selectedDate]);
+
   /* ─── Today's trips ─── */
   const dayTrips = useMemo(() =>
     trips.filter((tr) => {
+      // Los viajes en curso (en ruta / en curso) siempre cuentan para HOY,
+      // aunque su hora programada no caiga en el día seleccionado.
+      if (isViewingToday && (tr.status === "EN_ROUTE" || tr.status === "PICKED_UP")) return true;
       const raw = tr.scheduledAt || tr.startedAt;
       if (!raw) return false;
       const d = new Date(raw);
       return d >= dayStart && d <= dayEnd;
     }),
-  [trips, dayStart, dayEnd]);
+  [trips, dayStart, dayEnd, isViewingToday]);
 
   /* ─── Active driver IDs for the day ─── */
   const activeDriverIds = useMemo(() => {
@@ -148,7 +158,8 @@ export default function DriverHeatmapPage() {
     for (const tr of dayTrips) {
       if (!tr.driverId) continue;
       if (!map.has(tr.driverId)) map.set(tr.driverId, new Map());
-      const hour = new Date(tr.scheduledAt || tr.startedAt!).getHours();
+      const rawTime = tr.scheduledAt || tr.startedAt;
+      const hour = rawTime ? new Date(rawTime).getHours() : new Date().getHours();
       const hm = map.get(tr.driverId)!;
       if (!hm.has(hour)) hm.set(hour, []);
       hm.get(hour)!.push(tr);
