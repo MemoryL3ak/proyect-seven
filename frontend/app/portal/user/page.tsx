@@ -314,9 +314,19 @@ export default function UserPortalPage() {
   // de la próxima actividad (o la más cercana) para no abrir en un mes vacío.
   useEffect(() => {
     if (calAutoJumped.current) return;
+    // Los no-jefes ven su propia disciplina por defecto: saltamos a un mes que
+    // tenga actividades de ESA disciplina, para no abrir en un mes vacío.
+    const chief = athlete?.isDelegationLead === true;
+    const discId = athlete?.disciplineId;
     const dates: number[] = [];
-    calendarEvents.forEach((e) => { if (e.scheduledAt) { const t = new Date(e.scheduledAt).getTime(); if (!Number.isNaN(t)) dates.push(t); } });
-    premiaciones.forEach((p) => { if (p.scheduledAt) { const t = new Date(p.scheduledAt).getTime(); if (!Number.isNaN(t)) dates.push(t); } });
+    calendarEvents.forEach((e) => {
+      if (!chief && discId && e.parentId !== discId) return;
+      if (e.scheduledAt) { const t = new Date(e.scheduledAt).getTime(); if (!Number.isNaN(t)) dates.push(t); }
+    });
+    premiaciones.forEach((p) => {
+      if (!chief && discId && p.disciplineId !== discId) return;
+      if (p.scheduledAt) { const t = new Date(p.scheduledAt).getTime(); if (!Number.isNaN(t)) dates.push(t); }
+    });
     if (dates.length === 0) return;
     const now = Date.now();
     const future = dates.filter((t) => t >= now).sort((a, b) => a - b);
@@ -324,7 +334,7 @@ export default function UserPortalPage() {
     const td = new Date(target);
     setCalMonthCursor(new Date(td.getFullYear(), td.getMonth(), 1));
     calAutoJumped.current = true;
-  }, [calendarEvents, premiaciones]);
+  }, [calendarEvents, premiaciones, athlete?.isDelegationLead, athlete?.disciplineId]);
 
   // Por defecto, el atleta ve solo su disciplina (evita el "scroll infinito"
   // con todas las disciplinas). Se puede cambiar a "Todas" desde el filtro.
@@ -1545,7 +1555,7 @@ export default function UserPortalPage() {
                       {["L","M","M","J","V","S","D"].map((d,i) => <div key={i} style={{ fontSize:10,fontWeight:700,color:"#94a3b8",padding:4 }}>{d}</div>)}
                       {cells.map((day,i) => {
                         const dayItems = day ? inMonth.filter(it => it.date.getDate()===day) : [];
-                        const isSel = calSelectedDay===day;
+                        const isSel = day !== null && calSelectedDay===day;
                         return (
                           <button key={i} type="button" disabled={!day} onClick={() => day && setCalSelectedDay(isSel?null:day)}
                             style={{ minHeight:64,padding:"4px",borderRadius:10,border: isSel?"2px solid #21D0B3":"1px solid #eef2f7",cursor:day?"pointer":"default",
@@ -1717,7 +1727,7 @@ export default function UserPortalPage() {
                   <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,textAlign:"center" }}>
                     {["L","M","M","J","V","S","D"].map((d,i) => <div key={i} style={{ fontSize:9,fontWeight:700,color:"#94a3b8",padding:3 }}>{d}</div>)}
                     {cells.map((day,i) => {
-                      const isSel = calSelectedDay===day;
+                      const isSel = day !== null && calSelectedDay===day;
                       const dayItems = day ? inMonth.filter(it => it.date.getDate()===day) : [];
                       return (
                         <button key={i} type="button" disabled={!day} onClick={() => day && setCalSelectedDay(isSel?null:day)}

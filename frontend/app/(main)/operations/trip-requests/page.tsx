@@ -105,13 +105,38 @@ export default function TripRequestsPage() {
   useEffect(() => {
     (async () => {
       try {
-        const [ev, dr, ve] = await Promise.all([
+        const [ev, dr, pp, ve] = await Promise.all([
           apiFetch<EventItem[]>("/events"),
           apiFetch<DriverItem[]>("/drivers"),
+          apiFetch<Record<string, unknown>[]>("/provider-participants").catch(() => [] as Record<string, unknown>[]),
           apiFetch<VehicleItem[]>("/transports"),
         ]);
         setEvents(ev ?? []);
-        setDrivers(dr ?? []);
+        // Los choferes reales incluyen los de la tabla `drivers` y los
+        // participantes de proveedor marcados como conductores.
+        const participantDrivers: DriverItem[] = (pp ?? [])
+          .filter((p) => {
+            const meta = (p.metadata ?? {}) as Record<string, unknown>;
+            return meta.isDriver === true || meta.isDriver === "true";
+          })
+          .map((p) => ({
+            id: String(p.id),
+            fullName: (p.fullName as string) ?? (p.full_name as string) ?? String(p.id),
+          }));
+        // Deduplicar: un chofer puede estar en ambas fuentes (misma persona).
+        // Los choferes se registran directamente en el proveedor, así que esa
+        // es la identidad autoritativa (con la que entran a su portal): se
+        // prioriza el participante de proveedor y se descarta el duplicado de
+        // la tabla `drivers` por nombre.
+        const norm = (s?: string | null) => String(s ?? "").trim().toLowerCase();
+        const seen = new Set<string>();
+        const dedupedDrivers = [...participantDrivers, ...(dr ?? [])].filter((d) => {
+          const key = norm(d.fullName ?? d.full_name) || `id:${d.id}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        setDrivers(dedupedDrivers);
         setVehicles(ve ?? []);
       } catch {
         /* catálogos opcionales para la asignación */
