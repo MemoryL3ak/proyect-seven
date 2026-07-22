@@ -45,6 +45,14 @@ type TripRow = {
   is_round_trip: boolean;
   parent_trip_id: string | null;
   leg_type: string | null;
+  fleet_acronym: string | null;
+  wheelchair_count: number | null;
+  trip_date: string | null;
+  presentation_at: string | null;
+  return_at: string | null;
+  travel_time_minutes: number | null;
+  discipline: string | null;
+  activity: string | null;
   committee_validated: boolean;
   committee_validated_at: string | null;
   committee_validated_by: string | null;
@@ -305,6 +313,14 @@ export class TripsService {
       isRoundTrip: row.is_round_trip ?? false,
       parentTripId: row.parent_trip_id,
       legType: row.leg_type,
+      fleetAcronym: row.fleet_acronym,
+      wheelchairCount: row.wheelchair_count,
+      tripDate: row.trip_date,
+      presentationAt: row.presentation_at ? new Date(row.presentation_at) : null,
+      returnAt: row.return_at ? new Date(row.return_at) : null,
+      travelTimeMinutes: row.travel_time_minutes,
+      discipline: row.discipline,
+      activity: row.activity,
       committeeValidated: row.committee_validated ?? false,
       committeeValidatedAt: row.committee_validated_at ? new Date(row.committee_validated_at) : null,
       committeeValidatedBy: row.committee_validated_by,
@@ -410,6 +426,40 @@ export class TripsService {
       throw new InternalServerErrorException(
         insertError.message || 'Error assigning trip athletes',
       );
+    }
+  }
+
+  /** Resuelve un driverId (o userId) a un nombre legible para la bitácora. */
+  private async resolveDriverLabel(driverId?: string | null): Promise<string> {
+    if (!driverId) return 'removido';
+    try {
+      const { data } = await this.supabase
+        .schema('transport')
+        .from('drivers')
+        .select('full_name')
+        .or(`id.eq.${driverId},user_id.eq.${driverId}`)
+        .limit(1);
+      return data?.[0]?.full_name || driverId;
+    } catch {
+      return driverId;
+    }
+  }
+
+  /** Resuelve un vehicleId a patente/marca para la bitácora. */
+  private async resolveVehicleLabel(vehicleId?: string | null): Promise<string> {
+    if (!vehicleId) return 'removido';
+    try {
+      const { data } = await this.supabase
+        .schema('transport')
+        .from('vehicles')
+        .select('plate, brand, model')
+        .eq('id', vehicleId)
+        .maybeSingle();
+      if (!data) return vehicleId;
+      const desc = [data.brand, data.model].filter(Boolean).join(' ');
+      return [data.plate, desc].filter(Boolean).join(' · ') || vehicleId;
+    } catch {
+      return vehicleId;
     }
   }
 
@@ -625,10 +675,10 @@ export class TripsService {
     const by = 'Sistema';
 
     if (updateTripDto.driverId !== undefined && updateTripDto.driverId !== currentTrip.driverId) {
-      autoEntries.push({ action: 'DRIVER_ASSIGNED', by, at: now, detail: updateTripDto.driverId || 'removido' });
+      autoEntries.push({ action: 'DRIVER_ASSIGNED', by, at: now, detail: await this.resolveDriverLabel(updateTripDto.driverId) });
     }
     if (updateTripDto.vehicleId !== undefined && updateTripDto.vehicleId !== currentTrip.vehicleId) {
-      autoEntries.push({ action: 'VEHICLE_ASSIGNED', by, at: now, detail: updateTripDto.vehicleId || 'removido' });
+      autoEntries.push({ action: 'VEHICLE_ASSIGNED', by, at: now, detail: await this.resolveVehicleLabel(updateTripDto.vehicleId) });
     }
     if (updateTripDto.status !== undefined && updateTripDto.status !== currentTrip.status) {
       autoEntries.push({ action: 'STATUS_CHANGED', by, at: now, detail: `${currentTrip.status} → ${updateTripDto.status}` });

@@ -104,6 +104,33 @@ export class Trip {
   @Column({ name: 'leg_type', length: 20, type: 'varchar', nullable: true })
   legType?: string | null;
 
+  // Campos de la operatividad diaria (importación de planilla). Sin estos
+  // @Column el repositorio no los devolvía y la "Vista del día" mostraba
+  // Flota / Sillas de rueda vacíos.
+  @Column({ name: 'fleet_acronym', length: 20, type: 'varchar', nullable: true })
+  fleetAcronym?: string | null;
+
+  @Column({ name: 'wheelchair_count', type: 'int', nullable: true })
+  wheelchairCount?: number | null;
+
+  @Column({ name: 'trip_date', type: 'date', nullable: true })
+  tripDate?: string | null;
+
+  @Column({ name: 'presentation_at', type: 'timestamptz', nullable: true })
+  presentationAt?: Date | null;
+
+  @Column({ name: 'return_at', type: 'timestamptz', nullable: true })
+  returnAt?: Date | null;
+
+  @Column({ name: 'travel_time_minutes', type: 'int', nullable: true })
+  travelTimeMinutes?: number | null;
+
+  @Column({ length: 100, type: 'varchar', nullable: true })
+  discipline?: string | null;
+
+  @Column({ length: 100, type: 'varchar', nullable: true })
+  activity?: string | null;
+
   @Column({ name: 'committee_validated', type: 'boolean', default: false })
   committeeValidated: boolean;
 
