@@ -835,11 +835,15 @@ export class TripsScheduleService {
             ? (p.metadata as Record<string, unknown>)
             : {};
         const tipo = String(meta.vehicleTipo ?? '').trim().toUpperCase() || null;
+        // Tipos de cliente declarados en Registro → Proveedores (default TA al
+        // registrar). Lista vacía = sin restricción (choferes antiguos).
+        const declaredTypes = Array.isArray(meta.allowedClientTypes)
+          ? (meta.allowedClientTypes as unknown[]).map((v) => String(v).toUpperCase()).filter(Boolean)
+          : [];
         profiles.push({
           id: p.id as string,
           fullName: (p.full_name as string) ?? '',
-          // Sin tipos declarados = sin restricción de tipo de cliente.
-          allowedClientTypes: [],
+          allowedClientTypes: declaredTypes,
           vehicleId: null,
           vehicleType: tipo,
           // Capacidad desconocida (0 = no se aplica el tope de PAX).

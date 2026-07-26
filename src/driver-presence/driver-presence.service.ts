@@ -100,10 +100,16 @@ export class DriverPresenceService {
          d.status        as driver_status,
          g.event_id      as event_id,
          d.phone         as phone,
-         -- provider_participants no tiene allowed_client_types (era de la tabla
-         -- legacy transport.drivers); el tipo de cliente se deriva de los viajes
-         -- asignados al conductor en la fecha consultada.
-         coalesce(day_trips.client_types, '{}'::text[]) as allowed_client_types,
+         -- Tipos de cliente: primero los declarados en el registro del chofer
+         -- (metadata.allowedClientTypes, default TA); si no hay, se derivan del
+         -- historial de viajes. Vacío = sin restricción.
+         coalesce(
+           case when jsonb_typeof(d.metadata->'allowedClientTypes') = 'array'
+                then (select array_agg(x) from jsonb_array_elements_text(d.metadata->'allowedClientTypes') x)
+           end,
+           ct.client_types,
+           '{}'::text[]
+         ) as allowed_client_types,
          s.started_at    as session_started_at,
          s.last_seen_at  as last_seen_at,
          s.heartbeats    as heartbeats,
@@ -157,9 +163,7 @@ export class DriverPresenceService {
          limit 1
        ) g on true
        left join lateral (
-         select count(*)::int as day_trip_count,
-                array_agg(distinct tr.client_type)
-                  filter (where tr.client_type is not null) as client_types
+         select count(*)::int as day_trip_count
          from transport.trips tr
          where tr.driver_id = d.id
            and tr.scheduled_at::date = coalesce(
@@ -167,6 +171,13 @@ export class DriverPresenceService {
              (now() at time zone 'America/Santiago')::date
            )
        ) day_trips on true
+       left join lateral (
+         -- Tipos de cliente que el conductor ha atendido (todo su historial).
+         select array_agg(distinct t2.client_type)
+                  filter (where t2.client_type is not null) as client_types
+         from transport.trips t2
+         where t2.driver_id = d.id
+       ) ct on true
        left join lateral (
          -- Disciplinas únicas de los participantes en los viajes asignados
          -- al conductor en la fecha seleccionada (o "hoy" si no se pasa).

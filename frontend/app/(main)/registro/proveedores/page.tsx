@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import CountrySelect from "@/components/CountrySelect";
+import { CLIENT_TYPE_OPTIONS } from "@/lib/clientTypes";
 
 // ── Type/subtype catalogue ──────────────────────────────────────────────────
 type TypeEntry = { label: string; subtypes: string[]; color: string; bg: string };
@@ -221,6 +222,8 @@ const EMPTY_PARTICIPANT_FORM = {
   departureTime: "",
   observations: "",
   isDriver: false,
+  // Tipos de cliente que el chofer puede transportar — TA por defecto.
+  allowedClientTypes: ["TA"] as string[],
   vehicleMarca: "",
   vehicleModelo: "",
   vehicleAno: "",
@@ -510,6 +513,9 @@ export default function ProveedoresPage() {
       departureTime: p.departureTime ? p.departureTime.slice(0, 16) : "",
       observations: p.observations ?? "",
       isDriver: p.metadata?.isDriver === true,
+      allowedClientTypes: Array.isArray(p.metadata?.allowedClientTypes) && (p.metadata!.allowedClientTypes as string[]).length > 0
+        ? (p.metadata!.allowedClientTypes as string[]).map(String)
+        : ["TA"],
       vehicleMarca: (p.metadata?.vehicleMarca as string) ?? "",
       vehicleModelo: (p.metadata?.vehicleModelo as string) ?? "",
       vehicleAno: (p.metadata?.vehicleAno as string) ?? "",
@@ -551,6 +557,7 @@ export default function ProveedoresPage() {
           ...(participantModal?.editing?.metadata ?? {}),
           isDriver: participantForm.isDriver,
           ...(participantForm.isDriver ? {
+            allowedClientTypes: participantForm.allowedClientTypes.length > 0 ? participantForm.allowedClientTypes : ["TA"],
             vehicleMarca: participantForm.vehicleMarca || null,
             vehicleModelo: participantForm.vehicleModelo || null,
             vehicleAno: participantForm.vehicleAno || null,
@@ -1616,6 +1623,47 @@ export default function ProveedoresPage() {
                   </button>
 
                   {participantForm.isDriver && (<>
+                    {/* Tipos de cliente que puede transportar */}
+                    <div style={{ marginTop: "16px" }}>
+                      <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: "4px" }}>
+                        Tipos de cliente que puede transportar
+                      </p>
+                      <p style={{ fontSize: "11px", color: "var(--text-muted)", marginBottom: "10px" }}>
+                        La auto-asignación solo le entregará servicios de estos tipos. Por defecto: TA (Deportista).
+                      </p>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                        {CLIENT_TYPE_OPTIONS.map(o => {
+                          const sel = participantForm.allowedClientTypes.includes(o.value);
+                          return (
+                            <button
+                              key={o.value}
+                              type="button"
+                              onClick={() => setParticipantForm(f => ({
+                                ...f,
+                                allowedClientTypes: sel
+                                  ? f.allowedClientTypes.filter(v => v !== o.value)
+                                  : [...f.allowedClientTypes, o.value],
+                              }))}
+                              style={{
+                                fontSize: "11px", fontWeight: 700, padding: "5px 12px", borderRadius: "99px",
+                                cursor: "pointer", transition: "all 0.15s",
+                                background: sel ? "#21D0B3" : "var(--elevated)",
+                                color: sel ? "#fff" : "var(--text-muted)",
+                                border: `1px solid ${sel ? "#21D0B3" : "var(--border)"}`,
+                              }}
+                            >
+                              {sel ? "✓ " : ""}{o.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {participantForm.allowedClientTypes.length === 0 && (
+                        <p style={{ fontSize: "11px", color: "#f59e0b", marginTop: "8px" }}>
+                          ⚠ Sin tipos seleccionados se guardará con TA (Deportista) por defecto.
+                        </p>
+                      )}
+                    </div>
+
                     {/* Vehículo */}
                     <div style={{ marginTop: "16px" }}>
                       <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: "10px" }}>

@@ -357,6 +357,7 @@ export default function DriverMonitoringPage() {
                 : "—",
             activeTrips: d.activeTrips,
             platform: d.platform,
+            clientTypes: d.allowedClientTypes || [],
           } as PresenceMarker;
         })
         .filter((m): m is PresenceMarker => m !== null),

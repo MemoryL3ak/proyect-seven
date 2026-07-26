@@ -17,7 +17,38 @@ export type PresenceMarker = {
   gpsTime: string;
   activeTrips: number;
   platform: string | null;
+  // Tipos de cliente que el conductor puede transportar (VIP, T1, TA, …).
+  clientTypes: string[];
 };
+
+// Colores de chip por tipo de cliente — mismos tonos que la tabla de monitoreo.
+const CLIENT_TYPE_CHIP: Record<string, { label: string; bg: string; color: string; border: string }> = {
+  VIP: { label: "VIP", bg: "#fef3c7", color: "#7a4a00", border: "#fcd34d" },
+  T1: { label: "T1", bg: "#fee2e2", color: "#991b1b", border: "#fca5a5" },
+  TA: { label: "TA", bg: "#dbeafe", color: "#1e40af", border: "#93c5fd" },
+  TF: { label: "TF", bg: "#e0f2fe", color: "#075985", border: "#7dd3fc" },
+  TM: { label: "TM", bg: "#ede9fe", color: "#5b21b6", border: "#c4b5fd" },
+  FAMILIA_PARAPAN: { label: "Familia Parapan", bg: "#fce7f3", color: "#9d174d", border: "#f9a8d4" },
+  COMITE_ORGANIZADOR: { label: "Comité Org.", bg: "#e0f2fe", color: "#075985", border: "#7dd3fc" },
+  PROVEEDORES: { label: "Proveedores", bg: "#f1f5f9", color: "#334155", border: "#cbd5e1" },
+};
+
+function clientTypeChipsHtml(types: string[]): string {
+  if (!types || types.length === 0) {
+    // Sin tipos declarados = el conductor puede tomar cualquier tipo de
+    // cliente (misma regla que usa el motor de auto-asignación).
+    return `<span style="display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;">
+      <span style="width:6px;height:6px;border-radius:50%;background:#10b981;"></span>
+      Todos los tipos · sin restricción declarada
+    </span>`;
+  }
+  return types
+    .map((t) => {
+      const c = CLIENT_TYPE_CHIP[String(t).toUpperCase()] ?? { label: t, bg: "#f1f5f9", color: "#475569", border: "#cbd5e1" };
+      return `<span style="display:inline-block;font-size:9.5px;font-weight:700;padding:3px 8px;border-radius:99px;background:${c.bg};color:${c.color};border:1px solid ${c.border};letter-spacing:0.04em;text-transform:uppercase;margin:2px 4px 0 0;">${c.label}</span>`;
+    })
+    .join("");
+}
 
 // Marker accent per state: on an active trip = green, online-only = blue,
 // stale/last-known = grey. Kept in one place so the pin icon, the info window
@@ -196,20 +227,31 @@ export default function DriverPresenceMap({ markers, height = 420 }: Props) {
       const zIndex = m.onTrip ? 30 : m.online ? 20 : 10;
       const pos = { lat: m.lat, lng: m.lng };
 
+      const statRow = (label: string, value: string) => `
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:5px 0;">
+          <span style="font-size:11px;color:#64748b;white-space:nowrap;">${label}</span>
+          <span style="font-size:11.5px;font-weight:700;color:#0f172a;text-align:right;">${value}</span>
+        </div>`;
       const html = `
-        <div style="font-family:system-ui,sans-serif;min-width:210px;padding:4px 0;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-            <div style="width:32px;height:32px;border-radius:50%;background:${accent};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#fff;">${initials}</div>
-            <div>
-              <div style="font-weight:800;font-size:14px;color:#0f172a;">${m.name}</div>
-              <div style="font-size:11px;font-weight:700;color:${accent};">${statusLabel}</div>
+        <div style="font-family:system-ui,sans-serif;min-width:230px;max-width:270px;padding:2px 2px 4px;">
+          <div style="display:flex;align-items:center;gap:10px;padding-bottom:9px;border-bottom:1px solid #eef2f7;">
+            <div style="width:36px;height:36px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,${accent},${accent}cc);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#fff;box-shadow:0 2px 6px ${accent}55;">${initials}</div>
+            <div style="min-width:0;">
+              <div style="font-weight:800;font-size:14px;color:#0f172a;line-height:1.2;">${m.name}</div>
+              <div style="display:inline-flex;align-items:center;gap:5px;margin-top:2px;font-size:10px;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;color:${accent};">
+                <span style="width:6px;height:6px;border-radius:50%;background:${accent};"></span>${statusLabel}
+              </div>
             </div>
           </div>
-          <div style="font-size:12px;background:#f8fafc;border-radius:8px;padding:8px 10px;line-height:1.8;">
-            <div><span style="color:#64748b;">Última conexión:</span> <b>${m.lastSeen}</b></div>
-            <div><span style="color:#64748b;">GPS:</span> <b>${m.gpsTime}</b></div>
-            <div><span style="color:#64748b;">Viajes activos:</span> <b>${m.activeTrips}</b></div>
-            ${m.platform ? `<div><span style="color:#64748b;">Plataforma:</span> <b>${m.platform}</b></div>` : ""}
+          <div style="padding:6px 0 2px;">
+            ${statRow("Última conexión", m.lastSeen)}
+            ${statRow("Señal GPS", m.gpsTime)}
+            ${statRow("Viajes activos", String(m.activeTrips))}
+            ${m.platform ? statRow("Plataforma", m.platform) : ""}
+          </div>
+          <div style="margin-top:6px;padding-top:8px;border-top:1px solid #eef2f7;">
+            <div style="font-size:9.5px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:#94a3b8;margin-bottom:5px;">Tipos de cliente</div>
+            ${clientTypeChipsHtml(m.clientTypes)}
           </div>
         </div>
       `;
