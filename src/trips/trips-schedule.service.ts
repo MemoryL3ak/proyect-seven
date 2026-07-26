@@ -91,6 +91,8 @@ type DriverProfile = {
 type TripCandidate = {
   id: string;
   eventId: string;
+  origin: string | null;
+  destination: string | null;
   clientType: string | null;
   fleetAcronym: string | null;
   passengerCount: number;
@@ -174,13 +176,99 @@ export class TripsScheduleService {
     return v === 'RETURN' || v === 'RETORNO' || v === 'REGRESO' || v === 'VUELTA';
   }
 
+  /** Extrae el nombre de la columna faltante desde el error de PostgREST. */
+  private missingColumnFrom(
+    error: { message?: string } | null | undefined,
+  ): string | null {
+    const m = (error?.message ?? '').match(/Could not find the '([^']+)' column/);
+    return m ? m[1] : null;
+  }
+
+  /** Descripción corta de un viaje candidato para los resultados de asignación. */
+  private describeCandidate(t: TripCandidate): string {
+    const date = t.scheduledAt.toISOString().slice(0, 10);
+    const time = t.scheduledAt.toISOString().slice(11, 16);
+    const route = [t.origin ?? '¿origen?', t.destination ?? '¿destino?'].join(' → ');
+    const extras = [
+      t.clientType,
+      t.legType === 'RETURN' ? 'vuelta' : 'ida',
+      t.passengerCount ? `${t.passengerCount} pax` : null,
+    ]
+      .filter(Boolean)
+      .join(' · ');
+    return `${date} ${time} · ${route}${extras ? ` (${extras})` : ''}`;
+  }
+
+  /**
+   * Equivalencia entre el acrónimo de flota de la planilla (M1/M4/M5) y el tipo
+   * de vehículo registrado (VAN/BUS/…): antes se comparaban por igualdad literal
+   * y nunca coincidían, dejando todos los viajes sin chofer compatible.
+   */
+  private fleetMatches(fleetAcronym: string, vehicleType: string): boolean {
+    const fleet = fleetAcronym.trim().toUpperCase();
+    const type = vehicleType.trim().toUpperCase();
+    if (!fleet || !type) return true;
+    if (type === fleet) return true;
+    const EQUIV: Record<string, RegExp> = {
+      M1: /^(VAN(?!.*ADAPT)|SUV|AUTO|SEDAN)/,
+      M4: /BUS/,
+      M5: /(M5|ADAPT)/,
+    };
+    const re = EQUIV[fleet];
+    return re ? re.test(type) : false;
+  }
+
+  /** Descripción corta de un viaje para resultados legibles por el operador. */
+  private describeTripRow(tripRow: Record<string, unknown>): string {
+    const date = String(tripRow.trip_date ?? '');
+    const time = String(tripRow.scheduled_at ?? '').slice(11, 16);
+    const route = [tripRow.origin ?? '¿origen?', tripRow.destination ?? '¿destino?'].join(' → ');
+    const extras = [
+      tripRow.client_type ?? null,
+      tripRow.passenger_count ? `${tripRow.passenger_count} pax` : null,
+    ]
+      .filter(Boolean)
+      .join(' · ');
+    return `${date} ${time} · ${route}${extras ? ` (${extras})` : ''}`;
+  }
+
   // ─────────────────────────────────────────────────────────────────────────
   // 1) Bulk import desde CSV / XLSX
   // ─────────────────────────────────────────────────────────────────────────
 
   async bulkFromSchedule(dto: BulkFromScheduleDto) {
-    const created: Array<{ index: number; id: string }> = [];
+    const created: Array<{ index: number; id: string; label: string }> = [];
     const skipped: Array<{ index: number; reason: string }> = [];
+    const warnings: string[] = [];
+    // Columnas que la base desplegada no tiene (desfase de esquema). Se detectan
+    // en el primer insert que falla y se omiten en el resto de las filas; antes
+    // esto hacía fallar TODAS las filas con un error críptico de PostgREST y la
+    // importación terminaba en 0 viajes creados.
+    const droppedColumns = new Set<string>();
+
+    const insertTrip = async (
+      row: Record<string, unknown>,
+    ): Promise<{ id: string } | { failure: string }> => {
+      let payload: Record<string, unknown> = { ...row };
+      droppedColumns.forEach((c) => delete payload[c]);
+      for (let attempt = 0; attempt < 12; attempt++) {
+        const { data, error } = await this.supabase
+          .schema('transport')
+          .from('trips')
+          .insert(payload)
+          .select('id')
+          .single();
+        if (!error && data) return { id: (data as { id: string }).id };
+        const missing = this.missingColumnFrom(error);
+        if (!missing || !(missing in payload)) {
+          return { failure: error?.message || 'Error desconocido al insertar' };
+        }
+        droppedColumns.add(missing);
+        payload = { ...payload };
+        delete payload[missing];
+      }
+      return { failure: 'La base de datos rechazó la fila repetidamente' };
+    };
 
     for (let i = 0; i < dto.rows.length; i++) {
       const row = dto.rows[i];
@@ -239,29 +327,20 @@ export class TripsScheduleService {
           },
         };
 
-        const { data, error } = await this.supabase
-          .schema('transport')
-          .from('trips')
-          .insert(tripRow)
-          .select('id')
-          .single();
-
-        if (error || !data) {
-          skipped.push({
-            index: i,
-            reason: error?.message || 'Error desconocido al insertar',
-          });
+        const inserted = await insertTrip(tripRow);
+        if ('failure' in inserted) {
+          skipped.push({ index: i, reason: inserted.failure });
           continue;
         }
 
-        created.push({ index: i, id: (data as { id: string }).id });
+        created.push({
+          index: i,
+          id: inserted.id,
+          label: this.describeTripRow(tripRow),
+        });
 
         // Si es ida con retorno, crear el viaje de retorno asociado
         if (isRoundTrip && returnAt) {
-          const returnArrival = new Date(
-            returnAt.getTime() +
-              this.parseDurationMinutes(row.travelTime) * 60000,
-          );
           const returnRow: Record<string, unknown> = {
             ...tripRow,
             origin: row.destinationName || row.destinationAddress || null,
@@ -271,13 +350,21 @@ export class TripsScheduleService {
             return_at: null,
             is_round_trip: true,
             leg_type: 'RETURN',
-            parent_trip_id: (data as { id: string }).id,
+            parent_trip_id: inserted.id,
           };
 
-          await this.supabase
-            .schema('transport')
-            .from('trips')
-            .insert(returnRow);
+          const returnInserted = await insertTrip(returnRow);
+          if ('failure' in returnInserted) {
+            warnings.push(
+              `Fila ${i + 1}: la ida se creó pero el viaje de retorno falló (${returnInserted.failure}).`,
+            );
+          } else {
+            created.push({
+              index: i,
+              id: returnInserted.id,
+              label: this.describeTripRow(returnRow),
+            });
+          }
         }
       } catch (err) {
         skipped.push({
@@ -287,9 +374,17 @@ export class TripsScheduleService {
       }
     }
 
+    if (droppedColumns.size > 0) {
+      warnings.push(
+        `La base de datos no tiene la(s) columna(s): ${Array.from(droppedColumns).join(', ')}. ` +
+          'Los viajes se crearon sin esos datos — hay una migración de esquema pendiente.',
+      );
+    }
+
     return {
       created,
       skipped,
+      warnings,
       createdCount: created.length,
       skippedCount: skipped.length,
     };
@@ -314,12 +409,21 @@ export class TripsScheduleService {
       // 1) Cargar viajes objetivo (pendientes de chofer)
       const trips = await this.fetchPendingTrips(dto);
       if (trips.length === 0) {
+        const filtros = [
+          dto.date ? `fecha ${dto.date}` : null,
+          dto.clientType ? `cliente ${dto.clientType}` : null,
+          dto.fleetAcronym ? `flota ${dto.fleetAcronym}` : null,
+        ]
+          .filter(Boolean)
+          .join(' · ');
         return {
           assigned: [],
           unassigned: [],
           assignedCount: 0,
           unassignedCount: 0,
-          message: 'No hay viajes pendientes que coincidan con el filtro',
+          message:
+            `No hay viajes sin chofer${filtros ? ` para ${filtros}` : ''}. ` +
+            'Verifica que la importación creó viajes en esa fecha y que aún no tienen conductor asignado.',
         };
       }
 
@@ -330,7 +434,9 @@ export class TripsScheduleService {
           assigned: [],
           unassigned: trips.map((t) => ({
             tripId: t.id,
-            reason: 'No hay choferes disponibles para este filtro',
+            tripLabel: this.describeCandidate(t),
+            reason:
+              'No hay choferes registrados que pasen este filtro: revisa los conductores de proveedores (Registro → Proveedores) y de la Flota.',
           })),
           assignedCount: 0,
           unassignedCount: trips.length,
@@ -353,10 +459,11 @@ export class TripsScheduleService {
 
       const assigned: Array<{
         tripId: string;
+        tripLabel: string;
         driverId: string;
         driverName: string;
       }> = [];
-      const unassigned: Array<{ tripId: string; reason: string }> = [];
+      const unassigned: Array<{ tripId: string; tripLabel: string; reason: string }> = [];
 
       // 5) Procesar primero los OUTBOUND para poder priorizar el mismo chofer
       //    en el RETURN correspondiente
@@ -375,18 +482,39 @@ export class TripsScheduleService {
         const winStart = tripStart - bufferMinutes * 60000;
         const winEnd = tripEnd + bufferMinutes * 60000;
 
+        // Contadores de rechazo por regla, para explicar exactamente por qué
+        // un viaje quedó sin chofer en vez del genérico "sin compatible".
+        const rejections = {
+          clientType: 0,
+          fleet: 0,
+          capacity: 0,
+          wheelchair: 0,
+          quota: 0,
+          busy: 0,
+        };
+
         const candidates = drivers.filter((d) => {
-          // a) Client type
-          if (enforceClientTypeMatch && trip.clientType) {
-            if (!d.allowedClientTypes.includes(trip.clientType)) return false;
+          // a) Client type — un chofer sin tipos declarados (choferes de
+          //    proveedor) se considera sin restricción; los de Flota declaran
+          //    VIP/T1 y por tanto solo toman esos viajes.
+          if (
+            enforceClientTypeMatch &&
+            trip.clientType &&
+            d.allowedClientTypes.length > 0 &&
+            !d.allowedClientTypes.includes(trip.clientType)
+          ) {
+            rejections.clientType++;
+            return false;
           }
-          // b) Fleet type
-          if (enforceFleetTypeMatch && trip.fleetAcronym && d.vehicleType) {
-            if (
-              d.vehicleType.toUpperCase() !== trip.fleetAcronym.toUpperCase()
-            ) {
-              return false;
-            }
+          // b) Fleet type (equivalencia M1/M4/M5 ↔ tipo de vehículo)
+          if (
+            enforceFleetTypeMatch &&
+            trip.fleetAcronym &&
+            d.vehicleType &&
+            !this.fleetMatches(trip.fleetAcronym, d.vehicleType)
+          ) {
+            rejections.fleet++;
+            return false;
           }
           // c) Capacity
           if (
@@ -395,6 +523,7 @@ export class TripsScheduleService {
             d.vehicleCapacity > 0 &&
             trip.passengerCount > d.vehicleCapacity
           ) {
+            rejections.capacity++;
             return false;
           }
           // d) Wheelchair
@@ -403,6 +532,7 @@ export class TripsScheduleService {
             trip.wheelchairCount > 0 &&
             !d.isWheelchairCapable
           ) {
+            rejections.wheelchair++;
             return false;
           }
           // e) Cupo diario
@@ -410,6 +540,7 @@ export class TripsScheduleService {
             maxTripsPerDriver !== null &&
             (driverTripCount.get(d.id) ?? 0) >= maxTripsPerDriver
           ) {
+            rejections.quota++;
             return false;
           }
           // f) No solapar agenda
@@ -417,13 +548,31 @@ export class TripsScheduleService {
           const overlaps = windows.some(
             (w) => !(winEnd <= w.start || winStart >= w.end),
           );
-          if (overlaps) return false;
+          if (overlaps) {
+            rejections.busy++;
+            return false;
+          }
 
           return true;
         });
 
         if (candidates.length === 0) {
-          return { reason: 'Sin chofer compatible (revisar restricciones)' };
+          const parts: string[] = [];
+          if (rejections.clientType)
+            parts.push(`${rejections.clientType} sin permiso para cliente ${trip.clientType}`);
+          if (rejections.fleet)
+            parts.push(`${rejections.fleet} con vehículo incompatible con flota ${trip.fleetAcronym}`);
+          if (rejections.capacity)
+            parts.push(`${rejections.capacity} sin capacidad para ${trip.passengerCount} pax`);
+          if (rejections.wheelchair)
+            parts.push(`${rejections.wheelchair} sin vehículo adaptado (viaje con silla de ruedas)`);
+          if (rejections.quota)
+            parts.push(`${rejections.quota} en su tope diario de viajes`);
+          if (rejections.busy)
+            parts.push(`${rejections.busy} con la agenda ocupada en ese horario (buffer ${bufferMinutes} min)`);
+          return {
+            reason: `Ninguno de los ${drivers.length} choferes calza: ${parts.join(', ') || 'sin candidatos'}`,
+          };
         }
 
         // Estrategia
@@ -479,6 +628,7 @@ export class TripsScheduleService {
         if ('driverId' in result) {
           assigned.push({
             tripId: trip.id,
+            tripLabel: this.describeCandidate(trip),
             driverId: result.driverId,
             driverName: result.driverName,
           });
@@ -486,7 +636,11 @@ export class TripsScheduleService {
             outboundAssignment.set(trip.id, result.driverId);
           }
         } else {
-          unassigned.push({ tripId: trip.id, reason: result.reason });
+          unassigned.push({
+            tripId: trip.id,
+            tripLabel: this.describeCandidate(trip),
+            reason: result.reason,
+          });
         }
       }
 
@@ -499,23 +653,43 @@ export class TripsScheduleService {
         if ('driverId' in result) {
           assigned.push({
             tripId: trip.id,
+            tripLabel: this.describeCandidate(trip),
             driverId: result.driverId,
             driverName: result.driverName,
           });
         } else {
-          unassigned.push({ tripId: trip.id, reason: result.reason });
+          unassigned.push({
+            tripId: trip.id,
+            tripLabel: this.describeCandidate(trip),
+            reason: result.reason,
+          });
         }
       }
 
-      // 6) Persistir si no es dryRun
+      // 6) Persistir si no es dryRun. El enum trip_status de la BD no tiene
+      //    'ASSIGNED': la asignación se expresa con driver_id y el viaje se
+      //    mantiene/mueve a SCHEDULED. Cualquier fallo del UPDATE se degrada a
+      //    "sin asignar" con el motivo, en vez de perderse en silencio.
       if (!dryRun) {
+        const persisted: typeof assigned = [];
         for (const a of assigned) {
-          await this.supabase
+          const { error: updateError } = await this.supabase
             .schema('transport')
             .from('trips')
-            .update({ driver_id: a.driverId, status: 'ASSIGNED' })
+            .update({ driver_id: a.driverId, status: 'SCHEDULED' })
             .eq('id', a.tripId);
+          if (updateError) {
+            unassigned.push({
+              tripId: a.tripId,
+              tripLabel: a.tripLabel,
+              reason: `La base de datos rechazó la asignación: ${updateError.message}`,
+            });
+          } else {
+            persisted.push(a);
+          }
         }
+        assigned.length = 0;
+        assigned.push(...persisted);
       }
 
       // 7) Auditoría
@@ -554,7 +728,7 @@ export class TripsScheduleService {
       .schema('transport')
       .from('trips')
       .select(
-        'id, event_id, client_type, fleet_acronym, passenger_count, wheelchair_count, scheduled_at, return_at, presentation_at, travel_time_minutes, is_round_trip, parent_trip_id, leg_type, driver_id, trip_date',
+        'id, event_id, origin, destination, client_type, fleet_acronym, passenger_count, wheelchair_count, scheduled_at, return_at, presentation_at, travel_time_minutes, is_round_trip, parent_trip_id, leg_type, driver_id, trip_date',
       )
       .is('driver_id', null);
 
@@ -574,6 +748,8 @@ export class TripsScheduleService {
     return (data as Array<Record<string, unknown>>).map((r) => ({
       id: r.id as string,
       eventId: (r.event_id as string) ?? '',
+      origin: (r.origin as string) ?? null,
+      destination: (r.destination as string) ?? null,
       clientType: (r.client_type as string) ?? null,
       fleetAcronym: (r.fleet_acronym as string) ?? null,
       passengerCount: Number(r.passenger_count ?? 0),
@@ -642,11 +818,41 @@ export class TripsScheduleService {
       };
     });
 
+    // Los choferes operativos del día a día son los participantes de proveedor
+    // marcados como conductores (la tabla transport.drivers es la Flota propia,
+    // exclusiva VIP/T1). Sin este pool la auto-asignación no tenía candidatos.
+    const { data: ppRows, error: ppError } = await this.supabase
+      .schema('core')
+      .from('provider_participants')
+      .select('id, full_name, metadata')
+      .eq('metadata->>isDriver', 'true');
+    if (!ppError && Array.isArray(ppRows)) {
+      const knownIds = new Set(profiles.map((p) => p.id));
+      (ppRows as Array<Record<string, unknown>>).forEach((p) => {
+        if (knownIds.has(p.id as string)) return;
+        const meta =
+          p.metadata && typeof p.metadata === 'object'
+            ? (p.metadata as Record<string, unknown>)
+            : {};
+        const tipo = String(meta.vehicleTipo ?? '').trim().toUpperCase() || null;
+        profiles.push({
+          id: p.id as string,
+          fullName: (p.full_name as string) ?? '',
+          // Sin tipos declarados = sin restricción de tipo de cliente.
+          allowedClientTypes: [],
+          vehicleId: null,
+          vehicleType: tipo,
+          // Capacidad desconocida (0 = no se aplica el tope de PAX).
+          vehicleCapacity: 0,
+          vehiclePlate: String(meta.vehiclePatente ?? '').trim() || null,
+          isWheelchairCapable: tipo != null && /(M5|ADAPT)/.test(tipo),
+        });
+      });
+    }
+
     if (fleetAcronym) {
       return profiles.filter(
-        (p) =>
-          !p.vehicleType ||
-          p.vehicleType.toUpperCase() === fleetAcronym.toUpperCase(),
+        (p) => !p.vehicleType || this.fleetMatches(fleetAcronym, p.vehicleType),
       );
     }
     return profiles;
@@ -662,6 +868,8 @@ export class TripsScheduleService {
       .select(
         'id, driver_id, scheduled_at, return_at, presentation_at, travel_time_minutes, status',
       )
+      // Nota: el enum trip_status de la BD NO tiene 'ASSIGNED' — un viaje
+      // asignado sigue en SCHEDULED con driver_id seteado.
       .in('driver_id', driverIds)
       .in('status', ['REQUESTED', 'SCHEDULED', 'EN_ROUTE', 'PICKED_UP']);
 

@@ -60,7 +60,7 @@ const ALL_MODULES: AppModule[] = [
   { id: "clientes", label: "Clientes", group: "Clientes", icon: "🤝" },
   { id: "deportes", label: "Deportes", group: "Deportes", icon: "🏅" },
   { id: "sede", label: "Sede", group: "Sede", icon: "📍" },
-  { id: "calendario", label: "Calendario Deportivo", group: "Calendario", icon: "📆" },
+  { id: "calendario", label: "Calendario Operacional", group: "Calendario", icon: "📆" },
   { id: "acreditaciones", label: "Acreditaciones", group: "Acreditaciones", icon: "🎫" },
   { id: "portales", label: "Portales", group: "Portales", icon: "🌐" },
   { id: "admin.usuarios", label: "Gestión de Usuarios", group: "Administración", icon: "👥" },

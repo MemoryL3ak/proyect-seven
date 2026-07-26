@@ -7,7 +7,7 @@ import { filterValidatedAthletes } from "@/lib/athletes";
 import StyledSelect from "@/components/StyledSelect";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiCard from "@/components/ui/KpiCard";
-import { CalendarIcon, TrophyIcon, AlertIcon, CheckIcon, FilterIcon, SearchIcon } from "@/components/ui/Icons";
+import { CalendarIcon, TruckIcon, AlertIcon, CheckIcon, FilterIcon, SearchIcon } from "@/components/ui/Icons";
 
 type EventOption = { id: string; name: string };
 type VenueOption = { id: string; name: string; address?: string | null; eventId?: string | null };
@@ -681,28 +681,30 @@ export default function SportsCalendarPage() {
       .sort((a, b) => new Date(a.startAtUtc).getTime() - new Date(b.startAtUtc).getTime());
   }, [entries, derivedAndCalendarEntries, scheduleTypeFilter, quickSearch, venueOptions, delegationOptions]);
 
-  // KPIs sobre el universo visible
+  // KPIs orientados a la operación: qué hay que ejecutar hoy, qué viene en las
+  // próximas 24 h, cuántos movimientos requieren traslado y qué sedes operan.
   const calendarKpis = useMemo(() => {
     const now = Date.now();
     const next24h = now + 86400000;
-    let competitions = 0;
-    let trainings = 0;
-    let arrivals = 0;
+    const todayKey = isoDayKey(new Date());
+    let today = 0;
     let upcomingSoon = 0;
+    let transfers = 0;
+    const activeVenues = new Set<string>();
     calendarDisplayEntries.forEach((e) => {
       const tipo = getMetaString(e.metadata, "scheduleType");
-      if (tipo === "COMPETITION") competitions++;
-      else if (tipo === "TRAINING") trainings++;
-      else if (tipo === "ARRIVAL" || tipo === "DEPARTURE") arrivals++;
+      // Llegadas y retiros son los movimientos que exigen coordinar transporte.
+      if (tipo === "ARRIVAL" || tipo === "DEPARTURE") transfers++;
+      if (isoDayKey(e.startAtUtc) === todayKey) today++;
       const ts = new Date(e.startAtUtc).getTime();
       if (ts >= now && ts <= next24h) upcomingSoon++;
+      if (e.venue) activeVenues.add(e.venue);
     });
     return {
-      total: calendarDisplayEntries.length,
-      competitions,
-      trainings,
-      arrivals,
+      today,
       upcomingSoon,
+      transfers,
+      venuesInUse: activeVenues.size,
     };
   }, [calendarDisplayEntries]);
 
@@ -921,7 +923,7 @@ export default function SportsCalendarPage() {
   return (
     <div className="space-y-5 min-w-0 overflow-x-hidden">
       <PageHeader
-        title="Calendario Deportivo"
+        title="Calendario Operacional"
         description="Programación de llegadas, entrenamientos, pruebas y retiros. Filtra por tipo, sede, delegación o disciplina."
         icon={<CalendarIcon size={26} />}
         iconBg="linear-gradient(135deg, #1FCDFF 0%, #1f4e8c 100%)"
@@ -939,19 +941,21 @@ export default function SportsCalendarPage() {
         }
       />
 
-      {/* KPIs */}
+      {/* KPIs de operación */}
       <section className="grid grid-cols-2 md:grid-cols-4 gap-3 stagger">
-        <KpiCard label="Total programado" value={calendarKpis.total}
+        <KpiCard label="Actividades hoy" value={calendarKpis.today}
+          detail={calendarKpis.today > 0 ? "en ejecución hoy" : "sin operación hoy"}
           icon={<CalendarIcon size={18} />} accent="blue" />
-        <KpiCard label="Pruebas" value={calendarKpis.competitions}
-          detail="competiciones programadas"
-          icon={<TrophyIcon size={18} />} accent="green" />
-        <KpiCard label="Entrenamientos" value={calendarKpis.trainings}
-          icon={<CheckIcon size={18} />} accent="amber" />
         <KpiCard label="Próximas 24h" value={calendarKpis.upcomingSoon}
-          detail={calendarKpis.upcomingSoon > 0 ? "Atención inmediata" : "Sin actividad pronto"}
+          detail={calendarKpis.upcomingSoon > 0 ? "requieren coordinación" : "sin actividad próxima"}
           icon={<AlertIcon size={18} />}
           accent={calendarKpis.upcomingSoon > 0 ? "red" : "neutral"} />
+        <KpiCard label="Llegadas y retiros" value={calendarKpis.transfers}
+          detail="movimientos con traslado"
+          icon={<TruckIcon size={18} />} accent="amber" />
+        <KpiCard label="Sedes en uso" value={calendarKpis.venuesInUse}
+          detail="recintos con actividad programada"
+          icon={<CheckIcon size={18} />} accent="green" />
       </section>
 
       {/* Selector de vista + filtros principales */}

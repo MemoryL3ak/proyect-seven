@@ -140,6 +140,16 @@ type DriverItem = {
   phone?: string | null;
   vehicleId?: string | null;
   metadata?: Record<string, unknown> | null;
+  /** true = conductor de la Flota propia (VIP/T1); se descarta en Viajes. */
+  isFleet?: boolean;
+};
+
+type ParticipantItem = {
+  id: string;
+  fullName?: string | null;
+  full_name?: string | null;
+  phone?: string | null;
+  metadata?: Record<string, unknown> | null;
 };
 type VehicleItem = {
   id: string;
@@ -165,6 +175,7 @@ type StatusTone = {
 const STATUS_TONES: Record<string, StatusTone> = {
   REQUESTED: { label: "Solicitado", chip: "", panel: "" },
   SCHEDULED: { label: "Programado", chip: "", panel: "" },
+  ASSIGNED: { label: "Asignado", chip: "", panel: "" },
   EN_ROUTE: { label: "En ruta a recoger", chip: "", panel: "" },
   PICKED_UP: { label: "En curso", chip: "", panel: "" },
   DROPPED_OFF: { label: "Dejado en hotel", chip: "", panel: "" },
@@ -175,6 +186,7 @@ const STATUS_TONES: Record<string, StatusTone> = {
 const STATUS_COLORS: Record<string, { accent: string; chipBg: string; chipBorder: string; pulse: boolean }> = {
   REQUESTED:  { accent: "#f59e0b", chipBg: "rgba(245,158,11,0.12)",  chipBorder: "rgba(245,158,11,0.3)",  pulse: false },
   SCHEDULED:  { accent: "#3b82f6", chipBg: "rgba(59,130,246,0.12)",  chipBorder: "rgba(59,130,246,0.3)",  pulse: false },
+  ASSIGNED:   { accent: "#eab308", chipBg: "rgba(234,179,8,0.12)",   chipBorder: "rgba(234,179,8,0.3)",   pulse: false },
   EN_ROUTE:   { accent: "#10b981", chipBg: "rgba(16,185,129,0.12)",  chipBorder: "rgba(16,185,129,0.3)",  pulse: true  },
   PICKED_UP:  { accent: "#10b981", chipBg: "rgba(16,185,129,0.12)",  chipBorder: "rgba(16,185,129,0.3)",  pulse: true  },
   DROPPED_OFF:{ accent: "#14b8a6", chipBg: "rgba(20,184,166,0.12)",  chipBorder: "rgba(20,184,166,0.3)",  pulse: false },
@@ -223,10 +235,10 @@ const SOURCE_META: Record<TripSource | "", { label: string; color: string; bg: s
   MANUAL: { label: "Gestión Manual", color: "#21D0B3", bg: "rgba(33,208,179,0.10)", border: "rgba(33,208,179,0.35)", icon: "✋" },
 };
 
-const STATUS_FLOW = ["REQUESTED", "SCHEDULED", "EN_ROUTE", "PICKED_UP", "COMPLETED"] as const;
+const STATUS_FLOW = ["REQUESTED", "SCHEDULED", "ASSIGNED", "EN_ROUTE", "PICKED_UP", "COMPLETED"] as const;
 
 // Estados en los que un viaje sigue "vivo" y por tanto puede cancelarse.
-const CANCELLABLE_STATUSES = new Set(["REQUESTED", "SCHEDULED", "EN_ROUTE", "PICKED_UP"]);
+const CANCELLABLE_STATUSES = new Set(["REQUESTED", "SCHEDULED", "ASSIGNED", "EN_ROUTE", "PICKED_UP"]);
 
 const formatDateTime = (value?: string | null) =>
   value
@@ -373,7 +385,7 @@ export default function TripsPage() {
     if (!silent) setLoading(true);
     setError(null);
     try {
-      const [tripData, eventData, athleteData, delegationData, driverData, vehicleData, venueData] =
+      const [tripData, eventData, athleteData, delegationData, driverData, vehicleData, venueData, participantData] =
         await Promise.all([
           apiFetch<Trip[]>("/trips"),
           apiFetch<EventItem[]>("/events"),
@@ -381,7 +393,8 @@ export default function TripsPage() {
           apiFetch<DelegationItem[]>("/delegations"),
           apiFetch<DriverItem[]>("/drivers"),
           apiFetch<VehicleItem[]>("/transports"),
-          apiFetch<VenueItem[]>("/venues")
+          apiFetch<VenueItem[]>("/venues"),
+          apiFetch<ParticipantItem[]>("/provider-participants").catch(() => [] as ParticipantItem[])
         ]);
 
       const nextTrips = tripData || [];
@@ -414,13 +427,28 @@ export default function TripsPage() {
           return acc;
         }, {})
       );
-      setDrivers(
-        (driverData || []).reduce<Record<string, DriverItem>>((acc, item) => {
-          acc[item.id] = item;
-          if (item.userId) acc[item.userId] = item;
-          return acc;
-        }, {})
-      );
+      // La tabla `drivers` es la Flota propia (VIP/T1): se mantiene en el mapa
+      // solo para resolver nombres de viajes históricos, pero se descarta del
+      // selector de conductor. Los choferes operativos de Viajes son los
+      // participantes de proveedor marcados como conductores.
+      const driversMap = (driverData || []).reduce<Record<string, DriverItem>>((acc, item) => {
+        const fleetDriver = { ...item, isFleet: true };
+        acc[item.id] = fleetDriver;
+        if (item.userId) acc[item.userId] = fleetDriver;
+        return acc;
+      }, {});
+      (participantData || []).forEach((p) => {
+        const meta = (p.metadata ?? {}) as Record<string, unknown>;
+        if (meta.isDriver !== true && meta.isDriver !== "true") return;
+        driversMap[p.id] = {
+          id: p.id,
+          fullName: p.fullName ?? p.full_name ?? null,
+          phone: p.phone ?? null,
+          metadata: p.metadata ?? null,
+          isFleet: false,
+        };
+      });
+      setDrivers(driversMap);
       setVehicles(
         (vehicleData || []).reduce<Record<string, VehicleItem>>((acc, item) => {
           acc[item.id] = item;
@@ -557,7 +585,28 @@ export default function TripsPage() {
   );
 
   const scheduledQueue = useMemo(
-    () => filteredTrips.filter((trip) => trip.status === "SCHEDULED"),
+    // ASSIGNED = con chofer asignado (auto-asignación de Operatividad Diaria);
+    // sin él, esos viajes no caían en ningún grupo y desaparecían de la vista.
+    () => filteredTrips.filter((trip) => trip.status === "SCHEDULED" || trip.status === "ASSIGNED"),
+    [filteredTrips]
+  );
+
+  // ── Despacho: la vista se organiza por lo operativo (¿tiene chofer?) y no
+  //    por el estado interno. Un viaje "Programado" sin conductor sigue siendo
+  //    trabajo pendiente; uno con conductor está cubierto y listo para salir.
+  const pendingAssignment = useMemo(
+    () =>
+      filteredTrips
+        .filter((trip) => ["REQUESTED", "SCHEDULED", "ASSIGNED"].includes(trip.status || "") && !trip.driverId)
+        .sort((a, b) => new Date(a.scheduledAt || 0).getTime() - new Date(b.scheduledAt || 0).getTime()),
+    [filteredTrips]
+  );
+
+  const readyToGo = useMemo(
+    () =>
+      filteredTrips
+        .filter((trip) => ["SCHEDULED", "ASSIGNED"].includes(trip.status || "") && !!trip.driverId)
+        .sort((a, b) => new Date(a.scheduledAt || 0).getTime() - new Date(b.scheduledAt || 0).getTime()),
     [filteredTrips]
   );
 
@@ -597,7 +646,15 @@ export default function TripsPage() {
   }, [trips, selectedEventId, selectedClientType, selectedDriverId]);
 
   const driverOptions = useMemo(
-    () => Object.values(drivers).sort((a, b) => (a.fullName || "").localeCompare(b.fullName || "")),
+    () => {
+      // En Viajes se descartan los conductores de Flota (exclusivos VIP/T1).
+      const unique = new Map<string, DriverItem>();
+      Object.values(drivers).forEach((d) => {
+        if (d.isFleet) return;
+        unique.set(d.id, d);
+      });
+      return Array.from(unique.values()).sort((a, b) => (a.fullName || "").localeCompare(b.fullName || ""));
+    },
     [drivers],
   );
 
@@ -616,7 +673,12 @@ export default function TripsPage() {
 
   const resolveRequester = (trip: Trip) => {
     const athlete = trip.requesterAthleteId ? athletes[trip.requesterAthleteId] : null;
-    return athlete?.fullName || (trip.athleteNames && trip.athleteNames[0]) || t("Sin solicitante");
+    if (athlete?.fullName) return athlete.fullName;
+    if (trip.athleteNames && trip.athleteNames[0]) return trip.athleteNames[0];
+    // Viajes de planilla o manuales sin solicitante individual: se identifican
+    // por el tipo de cliente en vez de un genérico "Sin solicitante".
+    if (trip.clientType) return t(clientTypeLabel(trip.clientType));
+    return t("Sin solicitante");
   };
 
   const resolveDelegation = (trip: Trip) => {
@@ -662,6 +724,27 @@ export default function TripsPage() {
     return driver?.fullName || t("Pendiente asignación");
   };
 
+  // Bitácora: vuelve legibles los detalles que traen códigos crudos — UUIDs de
+  // conductor/vehículo se resuelven a nombre/patente y los códigos internos de
+  // estado y tipo de vehículo se traducen a su etiqueta.
+  const humanizeLogDetail = (detail: string) => {
+    const UUID_RE = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/g;
+    let out = detail.replace(UUID_RE, (id) => {
+      const driver = drivers[id];
+      if (driver?.fullName) return driver.fullName;
+      const vehicle = vehicles[id];
+      if (vehicle?.plate) return vehicle.plate;
+      return `registro #${id.slice(0, 6)}`;
+    });
+    Object.entries(STATUS_TONES).forEach(([code, tone]) => {
+      out = out.replace(new RegExp(`\\b${code}\\b`, "g"), tone.label);
+    });
+    Object.entries(VEHICLE_TYPE_LABELS).forEach(([code, label]) => {
+      out = out.replace(new RegExp(`\\b${code}\\b`, "g"), label);
+    });
+    return out;
+  };
+
   const resolveRequestedVehicleType = (trip: Trip) =>
     VEHICLE_TYPE_LABELS[trip.requestedVehicleType || ""] || trip.requestedVehicleType || "-";
 
@@ -677,7 +760,7 @@ export default function TripsPage() {
 
   // Tabs simplificadas: solo el estado del viaje. El "origen" se controla con el selector superior.
   const tabs = [
-    { key: "dispatch" as const, label: t("Por asignar"), count: incomingRequests.length + scheduledQueue.length },
+    { key: "dispatch" as const, label: t("Despacho"), count: pendingAssignment.length },
     { key: "active" as const, label: t("Activos"), count: activeTrips.length },
     { key: "history" as const, label: t("Historial"), count: completedTrips.length },
     { key: "import" as const, label: t("Importación masiva"), count: 0 },
@@ -782,7 +865,7 @@ export default function TripsPage() {
           {[
             { label: "Origen", value: safeText(trip.origin), sub: null, icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> },
             { label: "Sede destino", value: venue?.name || safeText(trip.destination), sub: venue ? buildVenueAddress(venue) : null, icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg> },
-            { label: "Vehículo", value: resolveDriver(trip), sub: resolveVehicle(trip), icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> },
+            { label: "Conductor / Vehículo", value: resolveDriver(trip), sub: resolveVehicle(trip), icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> },
             { label: "Servicio", value: `${trip.passengerCount || 0} persona(s)`, sub: `Solicitado ${formatDateTime(trip.requestedAt)}${etaMinutes !== null ? ` · ${etaMinutes >= 0 ? `en ${etaMinutes} min` : `${Math.abs(etaMinutes)} min atrasado`}` : ""}`, icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg> },
           ].map((chip) => (
             <div key={chip.label} style={infoChipStyle}>
@@ -849,7 +932,7 @@ export default function TripsPage() {
             {safeText(trip.notes, "Sin observaciones operativas.")}
           </p>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            {emphasis === "request" && (
+            {(emphasis === "request" || emphasis === "dispatch") && (
               <button
                 type="button"
                 onClick={() => {
@@ -860,9 +943,16 @@ export default function TripsPage() {
                     window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
                   }
                 }}
-                style={{ background: sc.chipBg, border: `1px solid ${sc.chipBorder}`, borderRadius: "99px", padding: "7px 16px", fontSize: "13px", fontWeight: 600, color: sc.accent, cursor: "pointer" }}
+                style={{
+                  background: hasDriver ? sc.chipBg : "linear-gradient(135deg, #f59e0b, #d97706)",
+                  border: hasDriver ? `1px solid ${sc.chipBorder}` : "none",
+                  borderRadius: "99px", padding: "7px 16px", fontSize: "13px", fontWeight: 700,
+                  color: hasDriver ? sc.accent : "#fff",
+                  boxShadow: hasDriver ? "none" : "0 2px 8px rgba(245,158,11,0.35)",
+                  cursor: "pointer",
+                }}
               >
-                Gestionar solicitud
+                {hasDriver ? "Gestionar servicio" : "Asignar conductor"}
               </button>
             )}
             <button type="button" onClick={() => setLogTrip(trip)}
@@ -1105,6 +1195,76 @@ export default function TripsPage() {
         </div>
       </section>
 
+      {/* ── Timeline operativa: estado general de viajes (siempre visible, respeta los filtros) ── */}
+      <section style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, padding: 16, boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div>
+            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase" as const, color: pal.labelColor }}>{t("Timeline operativa")}</p>
+            <h3 style={{ marginTop: "3px", fontWeight: 700, fontSize: "16px", color: pal.textPrimary }}>{t("Estado general de viajes")}</h3>
+          </div>
+          <span style={{ fontSize: "12px", fontWeight: 600, color: pal.textMuted, background: "#f8fafc", border: `1px solid ${pal.cardBorder}`, borderRadius: "99px", padding: "4px 12px" }}>
+            {filteredTrips.length} viajes con los filtros actuales
+          </span>
+        </div>
+        <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
+          {STATUS_FLOW.map((status) => {
+            const sc = STATUS_COLORS[status] ?? STATUS_COLORS.SCHEDULED;
+            const items = filteredTrips.filter((trip) => trip.status === status);
+            const hasItems = items.length > 0;
+            return (
+              <div key={status} style={{
+                background: pal.cardBg,
+                border: `1px solid ${pal.cardBorder}`,
+                borderTop: `3px solid ${sc.accent}`,
+                borderRadius: "16px",
+                padding: "12px",
+                boxShadow: pal.shadow,
+              }}>
+                {/* Column header */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+                  <span style={{ fontSize: "11px", fontWeight: 700, color: sc.accent, textTransform: "uppercase", letterSpacing: "0.1em" }}>
+                    {t(statusTone(status).label)}
+                  </span>
+                  <span style={{
+                    minWidth: "22px", height: "22px", borderRadius: "99px", display: "inline-flex", alignItems: "center", justifyContent: "center",
+                    fontSize: "11px", fontWeight: 800,
+                    background: hasItems ? sc.chipBg : "#f1f5f9",
+                    color: hasItems ? sc.accent : pal.textMuted,
+                    border: hasItems ? `1px solid ${sc.chipBorder}` : `1px solid ${pal.cardBorder}`,
+                  }}>
+                    {items.length}
+                  </span>
+                </div>
+                {/* Mini trip cards */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {items.slice(0, 3).map((trip) => (
+                    <div key={trip.id} style={{
+                      background: "#f8fafc",
+                      border: `1px solid ${pal.cardBorder}`,
+                      borderLeft: `3px solid ${sc.accent}`,
+                      borderRadius: "10px",
+                      padding: "8px 10px",
+                    }}>
+                      <p style={{ fontSize: "12px", fontWeight: 700, color: pal.textPrimary }}>{resolveRequester(trip)}</p>
+                      <p style={{ fontSize: "11px", color: pal.textMuted, marginTop: "2px" }}>{trip.origin || t("Origen pendiente")}</p>
+                      <p style={{ fontSize: "11px", color: pal.labelColor }}>
+                        {trip.destinationVenueId ? venues[trip.destinationVenueId]?.name : trip.destination || t("Destino pendiente")}
+                      </p>
+                    </div>
+                  ))}
+                  {items.length === 0 && (
+                    <p style={{ fontSize: "12px", color: pal.labelColor, textAlign: "center", padding: "12px 0" }}>{t("Sin viajes.")}</p>
+                  )}
+                  {items.length > 3 && (
+                    <p style={{ fontSize: "11px", color: sc.accent, textAlign: "center", fontWeight: 600 }}>+{items.length - 3} más</p>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
       <section style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, padding: 16, boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         {/* Banda compacta: chips de status + acciones */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 12 }}>
@@ -1221,44 +1381,98 @@ export default function TripsPage() {
         </div>
 
         {activeTab === "dispatch" && (
-          <div className="mt-6 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-            <section className="space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase" as const, color: pal.labelColor }}>{t("Ingresos desde portal")}</p>
-                  <h3 style={{ marginTop: "4px", fontWeight: 700, fontSize: "18px", color: "#0f172a" }}>{t("Solicitudes por asignar")}</h3>
-                </div>
-                <span style={{ display: "inline-flex", alignItems: "center", borderRadius: "99px", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)", padding: "6px 16px", fontSize: "13px", fontWeight: 600, color: "#d97706" }}>
-                  {incomingRequests.length} en cola
-                </span>
+          <div className="mt-6 space-y-5">
+            {/* ── Resumen del despacho: qué falta y qué está cubierto ── */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div style={{
+                borderRadius: "16px", padding: "14px 18px",
+                background: pendingAssignment.length > 0 ? "linear-gradient(135deg, #fffbeb, #fef3c7)" : "#f0fdf4",
+                border: `1px solid ${pendingAssignment.length > 0 ? "#fcd34d" : "#86efac"}`,
+              }}>
+                <p style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.18em", textTransform: "uppercase", color: pendingAssignment.length > 0 ? "#b45309" : "#166534" }}>
+                  Asignación pendiente
+                </p>
+                <p style={{ fontSize: "28px", fontWeight: 800, lineHeight: 1.1, marginTop: 4, color: pendingAssignment.length > 0 ? "#d97706" : "#16a34a" }}>
+                  {pendingAssignment.length}
+                </p>
+                <p style={{ fontSize: "11px", color: pendingAssignment.length > 0 ? "#92400e" : "#166534", marginTop: 2 }}>
+                  {pendingAssignment.length > 0 ? "servicios a la espera de conductor" : "programación completamente cubierta"}
+                </p>
               </div>
-              {incomingRequests.length === 0 ? (
-                <div style={{ borderRadius: "20px", border: `1px dashed ${pal.cardBorder}`, background: pal.cardBg, padding: "48px 24px", textAlign: "center" as const, color: pal.textMuted, fontSize: "14px" }}>
-                  No hay solicitudes nuevas en espera. El panel seguira escuchando entradas del portal.
-                </div>
-              ) : (
-                incomingRequests.map((trip) => renderTripCard(trip, "request"))
-              )}
-            </section>
+              <div style={{ borderRadius: "16px", padding: "14px 18px", background: "#f0fdf4", border: "1px solid #bbf7d0" }}>
+                <p style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.18em", textTransform: "uppercase", color: "#166534" }}>
+                  Servicios confirmados
+                </p>
+                <p style={{ fontSize: "28px", fontWeight: 800, lineHeight: 1.1, marginTop: 4, color: "#16a34a" }}>
+                  {readyToGo.length}
+                </p>
+                <p style={{ fontSize: "11px", color: "#166534", marginTop: 2 }}>con conductor · pasan a Activos al iniciar</p>
+              </div>
+              <div style={{ borderRadius: "16px", padding: "14px 18px", background: "#fff", border: `1px solid ${pal.cardBorder}` }}>
+                <p style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.18em", textTransform: "uppercase", color: pal.labelColor }}>
+                  Próxima salida por cubrir
+                </p>
+                <p style={{ fontSize: "28px", fontWeight: 800, lineHeight: 1.1, marginTop: 4, color: pal.textPrimary }}>
+                  {pendingAssignment[0] ? formatClock(pendingAssignment[0].scheduledAt) : "—"}
+                </p>
+                <p style={{ fontSize: "11px", color: pal.textMuted, marginTop: 2 }}>
+                  {pendingAssignment[0]
+                    ? `${formatDateTime(pendingAssignment[0].scheduledAt)} · ${pendingAssignment[0].destination || "sin destino"}`
+                    : "sin salidas pendientes de cobertura"}
+                </p>
+              </div>
+            </div>
 
-            <section className="space-y-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase" as const, color: pal.labelColor }}>{t("Programacion")}</p>
-                  <h3 style={{ marginTop: "4px", fontWeight: 700, fontSize: "18px", color: "#0f172a" }}>{t("Servicios asignados")}</h3>
+            {/* ── Dos colas: pendientes de chofer vs cubiertos ── */}
+            <div className="grid gap-6 xl:grid-cols-2">
+              <section className="space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase" as const, color: "#b45309" }}>Cola de asignación</p>
+                    <h3 style={{ marginTop: "4px", fontWeight: 700, fontSize: "18px", color: "#0f172a" }}>Servicios por asignar</h3>
+                    <p style={{ marginTop: "2px", fontSize: "12px", color: pal.textMuted }}>
+                      Solicitudes del portal, planilla operativa y registros manuales sin conductor, ordenados por hora de salida.
+                    </p>
+                  </div>
+                  <span style={{ display: "inline-flex", alignItems: "center", borderRadius: "99px", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)", padding: "6px 16px", fontSize: "13px", fontWeight: 700, color: "#d97706" }}>
+                    {pendingAssignment.length} pendiente{pendingAssignment.length === 1 ? "" : "s"}
+                  </span>
                 </div>
-                <span style={{ display: "inline-flex", alignItems: "center", borderRadius: "99px", background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.3)", padding: "6px 16px", fontSize: "13px", fontWeight: 600, color: "#3b82f6" }}>
-                  {scheduledQueue.length} viajes
-                </span>
-              </div>
-              {scheduledQueue.length === 0 ? (
-                <div style={{ borderRadius: "20px", border: `1px dashed ${pal.cardBorder}`, background: pal.cardBg, padding: "48px 24px", textAlign: "center" as const, color: pal.textMuted, fontSize: "14px" }}>
-                  No hay viajes programados pendientes de salida.
+                {pendingAssignment.length === 0 ? (
+                  <div style={{ borderRadius: "20px", border: "1px dashed #86efac", background: "#f0fdf4", padding: "48px 24px", textAlign: "center" as const, fontSize: "14px", color: "#166534" }}>
+                    ✓ No hay servicios pendientes de asignación. Las nuevas solicitudes aparecerán aquí automáticamente.
+                  </div>
+                ) : (
+                  <div className="space-y-4" style={{ maxHeight: 1000, overflowY: "auto", paddingRight: 4 }}>
+                    {pendingAssignment.map((trip) => renderTripCard(trip, "request"))}
+                  </div>
+                )}
+              </section>
+
+              <section className="space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase" as const, color: "#166534" }}>Programación confirmada</p>
+                    <h3 style={{ marginTop: "4px", fontWeight: 700, fontSize: "18px", color: "#0f172a" }}>Servicios confirmados</h3>
+                    <p style={{ marginTop: "2px", fontSize: "12px", color: pal.textMuted }}>
+                      Con conductor y vehículo definidos, a la espera del inicio del servicio.
+                    </p>
+                  </div>
+                  <span style={{ display: "inline-flex", alignItems: "center", borderRadius: "99px", background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.3)", padding: "6px 16px", fontSize: "13px", fontWeight: 700, color: "#059669" }}>
+                    {readyToGo.length} confirmado{readyToGo.length === 1 ? "" : "s"}
+                  </span>
                 </div>
-              ) : (
-                scheduledQueue.slice(0, 8).map((trip) => renderTripCard(trip, "dispatch"))
-              )}
-            </section>
+                {readyToGo.length === 0 ? (
+                  <div style={{ borderRadius: "20px", border: `1px dashed ${pal.cardBorder}`, background: pal.cardBg, padding: "48px 24px", textAlign: "center" as const, color: pal.textMuted, fontSize: "14px" }}>
+                    Aún no hay servicios con conductor confirmado. Asigne desde la cola de la izquierda o ejecute la auto-asignación en Operatividad Diaria.
+                  </div>
+                ) : (
+                  <div className="space-y-4" style={{ maxHeight: 1000, overflowY: "auto", paddingRight: 4 }}>
+                    {readyToGo.map((trip) => renderTripCard(trip, "dispatch"))}
+                  </div>
+                )}
+              </section>
+            </div>
           </div>
         )}
 
@@ -1336,72 +1550,6 @@ export default function TripsPage() {
               )}
             </section>
 
-            {/* ── Timeline kanban */}
-            <section>
-              <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-                <div>
-                  <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase" as const, color: pal.labelColor }}>{t("Timeline operativa")}</p>
-                  <h3 style={{ marginTop: "3px", fontWeight: 700, fontSize: "16px", color: pal.textPrimary }}>{t("Estado general de viajes")}</h3>
-                </div>
-              </div>
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-                {STATUS_FLOW.map((status) => {
-                  const sc = STATUS_COLORS[status] ?? STATUS_COLORS.SCHEDULED;
-                  const items = filteredTrips.filter((trip) => trip.status === status);
-                  const hasItems = items.length > 0;
-                  return (
-                    <div key={status} style={{
-                      background: pal.cardBg,
-                      border: `1px solid ${pal.cardBorder}`,
-                      borderTop: `3px solid ${sc.accent}`,
-                      borderRadius: "16px",
-                      padding: "14px",
-                      boxShadow: pal.shadow,
-                    }}>
-                      {/* Column header */}
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
-                        <span style={{ fontSize: "11px", fontWeight: 700, color: sc.accent, textTransform: "uppercase", letterSpacing: "0.1em" }}>
-                          {t(statusTone(status).label)}
-                        </span>
-                        <span style={{
-                          minWidth: "22px", height: "22px", borderRadius: "99px", display: "inline-flex", alignItems: "center", justifyContent: "center",
-                          fontSize: "11px", fontWeight: 800,
-                          background: hasItems ? sc.chipBg : "#f1f5f9",
-                          color: hasItems ? sc.accent : pal.textMuted,
-                          border: hasItems ? `1px solid ${sc.chipBorder}` : `1px solid ${pal.cardBorder}`,
-                        }}>
-                          {items.length}
-                        </span>
-                      </div>
-                      {/* Mini trip cards */}
-                      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                        {items.slice(0, 4).map((trip) => (
-                          <div key={trip.id} style={{
-                            background: "#f8fafc",
-                            border: `1px solid ${pal.cardBorder}`,
-                            borderLeft: `3px solid ${sc.accent}`,
-                            borderRadius: "10px",
-                            padding: "10px 12px",
-                          }}>
-                            <p style={{ fontSize: "12px", fontWeight: 700, color: pal.textPrimary }}>{resolveRequester(trip)}</p>
-                            <p style={{ fontSize: "11px", color: pal.textMuted, marginTop: "2px" }}>{trip.origin || t("Origen pendiente")}</p>
-                            <p style={{ fontSize: "11px", color: pal.labelColor }}>
-                              {trip.destinationVenueId ? venues[trip.destinationVenueId]?.name : trip.destination || t("Destino pendiente")}
-                            </p>
-                          </div>
-                        ))}
-                        {items.length === 0 && (
-                          <p style={{ fontSize: "12px", color: pal.labelColor, textAlign: "center", padding: "16px 0" }}>{t("Sin viajes.")}</p>
-                        )}
-                        {items.length > 4 && (
-                          <p style={{ fontSize: "11px", color: sc.accent, textAlign: "center", fontWeight: 600 }}>+{items.length - 4} más</p>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
           </div>
         )}
       </section>
@@ -1432,7 +1580,7 @@ export default function TripsPage() {
             </div>
           ) : (
             <div className="grid gap-4 xl:grid-cols-2">
-              {["REQUESTED", "SCHEDULED", "EN_ROUTE", "PICKED_UP"].map((status) => {
+              {["REQUESTED", "SCHEDULED", "ASSIGNED", "EN_ROUTE", "PICKED_UP"].map((status) => {
                 const items = portalVipTrips.filter((trip) => trip.status === status);
                 if (items.length === 0) return null;
                 const sc = STATUS_COLORS[status] ?? STATUS_COLORS.SCHEDULED;
@@ -1610,7 +1758,7 @@ export default function TripsPage() {
                           <div style={{ position: "absolute", left: "-20px", top: "2px", width: "12px", height: "12px", borderRadius: "50%", background: "#fff", border: `2px solid ${info.color}`, zIndex: 1 }} />
                           <div>
                             <p style={{ fontSize: "13px", fontWeight: 600, color: info.color, margin: "0 0 2px" }}>{info.label}</p>
-                            {entry.detail && <p style={{ fontSize: "11px", color: "#64748b", margin: "0 0 2px", background: "#f1f5f9", borderRadius: "4px", padding: "2px 8px", display: "inline-block" }}>{entry.detail}</p>}
+                            {entry.detail && <p style={{ fontSize: "11px", color: "#64748b", margin: "0 0 2px", background: "#f1f5f9", borderRadius: "4px", padding: "2px 8px", display: "inline-block" }}>{humanizeLogDetail(entry.detail)}</p>}
                             <div style={{ display: "flex", gap: "8px", alignItems: "center", marginTop: "2px" }}>
                               <span style={{ fontSize: "11px", color: "#94a3b8" }}>{entry.by}</span>
                               <span style={{ fontSize: "10px", color: "#cbd5e1" }}>•</span>

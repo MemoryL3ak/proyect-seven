@@ -101,8 +101,9 @@ export class DriverPresenceService {
          g.event_id      as event_id,
          d.phone         as phone,
          -- provider_participants no tiene allowed_client_types (era de la tabla
-         -- legacy transport.drivers); se expone vacío para no romper el filtro.
-         '{}'::text[]    as allowed_client_types,
+         -- legacy transport.drivers); el tipo de cliente se deriva de los viajes
+         -- asignados al conductor en la fecha consultada.
+         coalesce(day_trips.client_types, '{}'::text[]) as allowed_client_types,
          s.started_at    as session_started_at,
          s.last_seen_at  as last_seen_at,
          s.heartbeats    as heartbeats,
@@ -156,7 +157,9 @@ export class DriverPresenceService {
          limit 1
        ) g on true
        left join lateral (
-         select count(*)::int as day_trip_count
+         select count(*)::int as day_trip_count,
+                array_agg(distinct tr.client_type)
+                  filter (where tr.client_type is not null) as client_types
          from transport.trips tr
          where tr.driver_id = d.id
            and tr.scheduled_at::date = coalesce(

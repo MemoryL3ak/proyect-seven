@@ -128,7 +128,13 @@ function initials(name: string): string {
 
 const CLIENT_TYPE_META: Record<string, { label: string; bg: string; color: string; border: string }> = {
   VIP: { label: "VIP", bg: "#fef3c7", color: "#7a4a00", border: "#fcd34d" },
+  T1: { label: "T1", bg: "#fee2e2", color: "#991b1b", border: "#fca5a5" },
   TA: { label: "TA", bg: "#dbeafe", color: "#1e40af", border: "#93c5fd" },
+  TF: { label: "TF", bg: "#e0f2fe", color: "#075985", border: "#7dd3fc" },
+  TM: { label: "TM", bg: "#ede9fe", color: "#5b21b6", border: "#c4b5fd" },
+  FAMILIA_PARAPAN: { label: "Familia Parapan", bg: "#fce7f3", color: "#9d174d", border: "#f9a8d4" },
+  COMITE_ORGANIZADOR: { label: "Comité Org.", bg: "#e0f2fe", color: "#075985", border: "#7dd3fc" },
+  PROVEEDORES: { label: "Proveedores", bg: "#f1f5f9", color: "#334155", border: "#cbd5e1" },
   PRENSA: { label: "Prensa", bg: "#ede9fe", color: "#5b21b6", border: "#c4b5fd" },
   OFICIAL: { label: "Oficial", bg: "#fee2e2", color: "#991b1b", border: "#fca5a5" },
   STAFF: { label: "Staff", bg: "#e0f2fe", color: "#075985", border: "#7dd3fc" },

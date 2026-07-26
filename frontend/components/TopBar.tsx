@@ -47,7 +47,7 @@ export default function TopBar({ onMenuOpen }: { onMenuOpen?: () => void }) {
     operations: "Operaciones",
     health: "Salud",
     trips: "Viajes",
-    "sports-calendar": "Calendario deportivo",
+    "sports-calendar": "Calendario Operacional",
     day: "Día",
     "driver-heatmap": "Panel Conductores",
     "driver-monitoring": "Monitoreo de Conductores",

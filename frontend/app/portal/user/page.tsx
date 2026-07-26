@@ -1510,6 +1510,9 @@ export default function UserPortalPage() {
 
           const fmtDow = (d:Date) => d.toLocaleDateString("es-CL",{weekday:"short"}).replace(".","").toUpperCase();
           const fmtMon = (d:Date) => d.toLocaleDateString("es-CL",{month:"short"}).replace(".","").toUpperCase();
+          // Capitaliza solo la primera letra ("abril de 2026" → "Abril de 2026");
+          // el textTransform:capitalize producía "Abril De 2026".
+          const cap1 = (s:string) => s.charAt(0).toUpperCase()+s.slice(1);
 
           return (
             <div style={{ display:"flex",flexWrap:"wrap",gap:14,alignItems:"flex-start" }}>
@@ -1520,21 +1523,26 @@ export default function UserPortalPage() {
                   {(() => {
                     const dayWeek = calView==="semana" || calView==="dia";
                     const step = calView==="semana" ? 7 : 1;
-                    const shift = (dir:number) => setCalCursor(d => { const x=new Date(d); x.setDate(x.getDate()+dir*step); return x; });
-                    const label = !dayWeek ? monthLabel
+                    // Toda la navegación mantiene sincronizados AMBOS cursores
+                    // (mes y día): antes la agenda podía quedar en julio con el
+                    // mini calendario en abril y la vista se volvía confusa.
+                    const goToDate = (x:Date) => { setCalCursor(x); setCalMonthCursor(new Date(x.getFullYear(),x.getMonth(),1)); };
+                    const shift = (dir:number) => { const x=new Date(calCursor); x.setDate(x.getDate()+dir*step); goToDate(x); };
+                    const shiftMonth = (dir:number) => { goToDate(new Date(y,m+dir,1)); setCalSelectedDay(null); };
+                    const label = !dayWeek ? cap1(monthLabel)
                       : calView==="semana"
-                        ? `Sem. ${weekDays[0].day.toLocaleDateString("es-CL",{day:"2-digit",month:"short"})} – ${weekDays[6].day.toLocaleDateString("es-CL",{day:"2-digit",month:"short"})}`
-                        : calCursor.toLocaleDateString("es-CL",{weekday:"long",day:"2-digit",month:"long"});
+                        ? `${weekDays[0].day.toLocaleDateString("es-CL",{day:"2-digit",month:"short"})} – ${weekDays[6].day.toLocaleDateString("es-CL",{day:"2-digit",month:"short"})}`
+                        : cap1(calCursor.toLocaleDateString("es-CL",{weekday:"long",day:"2-digit",month:"long"}));
                     return (
                       <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-                        <button type="button" onClick={() => { if(dayWeek){ setCalCursor(new Date()); } else { setCalMonthCursor(new Date()); setCalSelectedDay(null); } }} style={{ fontSize:12,fontWeight:700,color:"#0f172a",background:"#f1f5f9",border:"1px solid #e2e8f0",borderRadius:8,padding:"6px 12px",cursor:"pointer" }}>Hoy</button>
-                        <button type="button" onClick={() => { if(dayWeek){ shift(-1); } else { setCalMonthCursor(new Date(y,m-1,1)); setCalSelectedDay(null); } }} style={{ background:"#fff",border:"1px solid #e2e8f0",borderRadius:8,cursor:"pointer",padding:6,display:"inline-flex" }}>
+                        <button type="button" onClick={() => { const t=new Date(); goToDate(t); setCalSelectedDay(null); }} style={{ fontSize:12,fontWeight:700,color:"#0f172a",background:"#f1f5f9",border:"1px solid #e2e8f0",borderRadius:8,padding:"6px 12px",cursor:"pointer" }}>Hoy</button>
+                        <button type="button" onClick={() => { if(dayWeek){ shift(-1); } else { shiftMonth(-1); } }} style={{ background:"#fff",border:"1px solid #e2e8f0",borderRadius:8,cursor:"pointer",padding:6,display:"inline-flex" }}>
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
                         </button>
-                        <button type="button" onClick={() => { if(dayWeek){ shift(1); } else { setCalMonthCursor(new Date(y,m+1,1)); setCalSelectedDay(null); } }} style={{ background:"#fff",border:"1px solid #e2e8f0",borderRadius:8,cursor:"pointer",padding:6,display:"inline-flex" }}>
+                        <button type="button" onClick={() => { if(dayWeek){ shift(1); } else { shiftMonth(1); } }} style={{ background:"#fff",border:"1px solid #e2e8f0",borderRadius:8,cursor:"pointer",padding:6,display:"inline-flex" }}>
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
                         </button>
-                        <span style={{ fontSize:14,fontWeight:800,color:"#0f172a",textTransform:"capitalize" }}>{label}</span>
+                        <span style={{ fontSize:14,fontWeight:800,color:"#0f172a" }}>{label}</span>
                       </div>
                     );
                   })()}
@@ -1557,18 +1565,47 @@ export default function UserPortalPage() {
                       {cells.map((day,i) => {
                         const dayItems = day ? inMonth.filter(it => it.date.getDate()===day) : [];
                         const isSel = day !== null && calSelectedDay===day;
+                        const isTodayCell = day !== null && new Date(y,m,day).toDateString()===now.toDateString();
                         return (
-                          <button key={i} type="button" disabled={!day} onClick={() => day && setCalSelectedDay(isSel?null:day)}
-                            style={{ minHeight:64,padding:"4px",borderRadius:10,border: isSel?"2px solid #21D0B3":"1px solid #eef2f7",cursor:day?"pointer":"default",
+                          <button key={i} type="button" disabled={!day}
+                            onClick={() => { if(!day) return; setCalSelectedDay(isSel?null:day); setCalCursor(new Date(y,m,day)); }}
+                            style={{ minHeight:64,padding:"4px",borderRadius:10,
+                              border: isSel?"2px solid #21D0B3":isTodayCell?"1px solid #21D0B3":"1px solid #eef2f7",
+                              cursor:day?"pointer":"default",
                               background:isSel?"#f0fdfa":day?"#fff":"transparent",display:"flex",flexDirection:"column",alignItems:"flex-start",gap:3 }}>
-                            <span style={{ fontSize:12,fontWeight:isSel?800:600,color:day?"#0f172a":"transparent" }}>{day||""}</span>
+                            <span style={{ fontSize:12,fontWeight:(isSel||isTodayCell)?800:600,color:day?(isTodayCell?"#0e9384":"#0f172a"):"transparent" }}>{day||""}</span>
                             <div style={{ display:"flex",flexWrap:"wrap",gap:2 }}>
                               {dayItems.slice(0,3).map(it => <span key={it.id} style={{ width:6,height:6,borderRadius:"50%",background:TYPE_CFG[it.type].color }} />)}
+                              {dayItems.length>3 && <span style={{ fontSize:8,fontWeight:800,color:"#94a3b8" }}>+{dayItems.length-3}</span>}
                             </div>
                           </button>
                         );
                       })}
                     </div>
+                    {/* Detalle del día seleccionado, sin salir de la vista Mes */}
+                    {calSelectedDay !== null && (() => {
+                      const selItems = inMonth.filter(it => it.date.getDate()===calSelectedDay).sort((a,b)=>a.date.getTime()-b.date.getTime());
+                      return (
+                        <div style={{ marginTop:12,borderTop:"1px solid #f1f5f9",paddingTop:10 }}>
+                          <p style={{ fontSize:11,fontWeight:800,letterSpacing:"0.1em",textTransform:"uppercase",color:"#0e9384",margin:"0 0 8px" }}>
+                            {cap1(new Date(y,m,calSelectedDay).toLocaleDateString("es-CL",{weekday:"long",day:"2-digit",month:"long"}))}
+                          </p>
+                          {selItems.length===0 ? (
+                            <p style={{ fontSize:12,color:"#94a3b8",margin:0 }}>Sin actividades este día.</p>
+                          ) : (
+                            <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
+                              {selItems.map(it=>{ const cfg=TYPE_CFG[it.type]; return (
+                                <div key={it.id} style={{ display:"flex",alignItems:"center",gap:8,background:"#f8fafc",border:"1px solid #eef2f7",borderLeft:`3px solid ${cfg.color}`,borderRadius:9,padding:"7px 10px" }}>
+                                  <span style={{ fontSize:11,fontWeight:800,color:"#0f172a",flexShrink:0,fontVariantNumeric:"tabular-nums" }}>{it.date.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})}</span>
+                                  <span style={{ flex:1,minWidth:0,fontSize:11.5,fontWeight:600,color:"#334155",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{it.title}{it.venue?` · 📍 ${it.venue}`:""}</span>
+                                  <span style={{ flexShrink:0,fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:99,background:cfg.soft,color:cfg.color }}>{cfg.label}</span>
+                                </div>
+                              ); })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
 
@@ -1601,7 +1638,8 @@ export default function UserPortalPage() {
                                   <span style={{ flexShrink:0,fontSize:12,fontWeight:700,color:"#64748b",width:42 }}>{it.date.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})}</span>
                                   <span style={{ flexShrink:0,width:34,height:34,borderRadius:10,background:cfg.soft,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:16 }}>{cfg.icon}</span>
                                   <div style={{ flex:1,minWidth:0 }}>
-                                    <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{it.title}</p>
+                                    <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0,overflow:"hidden",
+                                      display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical" as any,lineHeight:1.25 }}>{it.title}</p>
                                     <p style={{ fontSize:11,color:"#94a3b8",margin:"1px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
                                       {it.subtitle ? it.subtitle : cfg.label}{it.venue ? ` · 📍 ${it.venue}` : ""}
                                     </p>
@@ -1629,16 +1667,23 @@ export default function UserPortalPage() {
                     </div>
                   ) : (
                     <div style={{ display:"flex",background:"#fff",border:"1px solid #e2e8f0",borderRadius:14,overflow:"hidden" }}>
-                      <div style={{ flex:"0 0 104px",borderRight:"1px solid #e2e8f0" }}>
-                        <div style={{ height:34,borderBottom:"1px solid #e2e8f0",background:"#f8fafc" }} />
-                        {gRows.map((r,i)=>(
-                          <div key={i} style={{ height:38,display:"flex",alignItems:"center",padding:"0 10px",borderBottom: i<gRows.length-1?"1px solid #f1f5f9":"none" }}>
-                            <span style={{ fontSize:11.5,fontWeight:600,color:"#334155",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{r.name}</span>
-                          </div>
-                        ))}
+                      <div style={{ flex:"0 0 128px",borderRight:"1px solid #e2e8f0",boxShadow:"2px 0 6px rgba(15,23,42,0.04)",zIndex:1 }}>
+                        <div style={{ height:40,borderBottom:"1px solid #e2e8f0",background:"#f8fafc",display:"flex",alignItems:"center",padding:"0 10px" }}>
+                          <span style={{ fontSize:9,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:"#94a3b8" }}>Disciplina</span>
+                        </div>
+                        {gRows.map((r,i)=>{
+                          const total = Array.from(r.byDay.values()).reduce((a,evs)=>a+evs.length,0);
+                          return (
+                            <div key={i} style={{ height:44,display:"flex",alignItems:"center",gap:6,padding:"0 10px",borderBottom: i<gRows.length-1?"1px solid #f1f5f9":"none" }}>
+                              <span style={{ flex:1,minWidth:0,fontSize:11.5,fontWeight:700,color:"#334155",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{r.name}</span>
+                              <span style={{ flexShrink:0,fontSize:9,fontWeight:800,color:"#64748b",background:"#f1f5f9",borderRadius:99,padding:"2px 6px" }}>{total}</span>
+                            </div>
+                          );
+                        })}
                       </div>
                       {(() => {
                         // Auto-scroll al primer día con actividad (una vez por mes)
+                        const CELL = 36;
                         const firstActiveDay = gRows.reduce((min, r) => {
                           const ks = Array.from(r.byDay.keys());
                           return ks.length ? Math.min(min, ...ks) : min;
@@ -1650,26 +1695,41 @@ export default function UserPortalPage() {
                               const key = `${y}-${m}`;
                               if (ganttScrollKey.current === key) return;
                               ganttScrollKey.current = key;
-                              if (Number.isFinite(firstActiveDay)) el.scrollLeft = Math.max(0, (firstActiveDay - 2) * 30);
+                              if (Number.isFinite(firstActiveDay)) el.scrollLeft = Math.max(0, (firstActiveDay - 2) * CELL);
                             }}>
-                            <div style={{ minWidth:gN*30 }}>
-                              <div style={{ height:34,display:"grid",gridTemplateColumns:`repeat(${gN},30px)`,borderBottom:"1px solid #e2e8f0",background:"#f8fafc" }}>
+                            <div style={{ minWidth:gN*CELL }}>
+                              <div style={{ height:40,display:"grid",gridTemplateColumns:`repeat(${gN},${CELL}px)`,borderBottom:"1px solid #e2e8f0",background:"#f8fafc" }}>
                                 {gDays.map(d=>{ const isToday=keyOf(d)===keyOf(now); const wknd=d.getDay()===0||d.getDay()===6; return (
-                                  <div key={d.getDate()} style={{ display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:isToday?"rgba(33,208,179,0.12)":wknd?"#f1f5f9":"transparent" }}>
-                                    <span style={{ fontSize:8,fontWeight:600,color:isToday?"#0e9384":"#94a3b8" }}>{["DO","LU","MA","MI","JU","VI","SA"][d.getDay()]}</span>
-                                    <span style={{ fontSize:11,fontWeight:700,color:isToday?"#0e9384":"#334155" }}>{d.getDate()}</span>
+                                  <div key={d.getDate()} style={{ display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:1,
+                                    background:isToday?"rgba(33,208,179,0.14)":wknd?"#f1f5f9":"transparent",
+                                    borderBottom:isToday?"2px solid #21D0B3":"none" }}>
+                                    <span style={{ fontSize:8,fontWeight:700,color:isToday?"#0e9384":"#94a3b8" }}>{["DO","LU","MA","MI","JU","VI","SA"][d.getDay()]}</span>
+                                    <span style={{ fontSize:12,fontWeight:800,color:isToday?"#0e9384":"#334155" }}>{d.getDate()}</span>
                                   </div>
                                 ); })}
                               </div>
                               {gRows.map((r,ri)=>(
-                                <div key={ri} style={{ height:38,display:"grid",gridTemplateColumns:`repeat(${gN},30px)`,borderBottom: ri<gRows.length-1?"1px solid #f1f5f9":"none",alignItems:"center" }}>
-                                  {gDays.map(d=>{ const evs=r.byDay.get(d.getDate()); if(!evs||!evs.length) return <div key={d.getDate()} />; const cfg=TYPE_CFG[evs[0].type]; return (
-                                    <button key={d.getDate()} type="button" onClick={()=>{ setCalCursor(new Date(d)); setCalView("dia"); }}
-                                      title={`${evs.length} actividad(es) · ${d.toLocaleDateString("es-CL",{day:"2-digit",month:"short"})}`}
-                                      style={{ height:24,margin:"0 2px",borderRadius:6,border:"none",background:cfg.color,color:"#fff",cursor:"pointer",fontSize:10.5,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",padding:0,boxShadow:"0 1px 2px rgba(15,23,42,0.15)" }}>
-                                      {evs.length>1?evs.length:"•"}
-                                    </button>
-                                  ); })}
+                                <div key={ri} style={{ height:44,display:"grid",gridTemplateColumns:`repeat(${gN},${CELL}px)`,borderBottom: ri<gRows.length-1?"1px solid #f1f5f9":"none",alignItems:"center" }}>
+                                  {gDays.map(d=>{
+                                    const wknd=d.getDay()===0||d.getDay()===6;
+                                    const evs=r.byDay.get(d.getDate());
+                                    if(!evs||!evs.length) return <div key={d.getDate()} style={{ height:"100%",background:wknd?"#fafbfc":"transparent" }} />;
+                                    const cfg=TYPE_CFG[evs[0].type];
+                                    return (
+                                      <div key={d.getDate()} style={{ height:"100%",display:"flex",alignItems:"center",background:wknd?"#fafbfc":"transparent" }}>
+                                        <button type="button"
+                                          onClick={()=>{ setCalCursor(new Date(d)); setCalMonthCursor(new Date(d.getFullYear(),d.getMonth(),1)); setCalView("dia"); }}
+                                          title={`${evs.length} actividad(es) · ${d.toLocaleDateString("es-CL",{day:"2-digit",month:"short"})}`}
+                                          style={{ flex:1,height:28,margin:"0 3px",borderRadius:8,border:"none",cursor:"pointer",
+                                            background:`linear-gradient(135deg, ${cfg.color}, ${cfg.color}cc)`,color:"#fff",
+                                            fontSize:11,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",gap:2,padding:0,
+                                            boxShadow:`0 2px 5px ${cfg.color}55` }}>
+                                          {evs.length>1?evs.length:""}
+                                          {evs.length===1 && <span style={{ fontSize:10,lineHeight:1 }}>{cfg.icon}</span>}
+                                        </button>
+                                      </div>
+                                    );
+                                  })}
                                 </div>
                               ))}
                             </div>
@@ -1680,22 +1740,37 @@ export default function UserPortalPage() {
                   )
                 )}
 
-                {/* Vista SEMANA */}
+                {/* Vista SEMANA: un solo contenedor; los días sin actividad quedan
+                    como fila compacta en vez de tarjetas vacías con "—". */}
                 {calView==="semana" && (
-                  <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
-                    {weekDays.map(({day,events})=>{ const isToday=keyOf(day)===keyOf(now); return (
-                      <div key={keyOf(day)} style={{ background:"#fff",borderRadius:12,border:`1px solid ${isToday?"#21D0B3":"#e2e8f0"}`,padding:"10px 12px" }}>
-                        <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom: events.length?6:0 }}>
-                          <span style={{ fontSize:12.5,fontWeight:700,color:isToday?"#0e9384":"#0f172a",textTransform:"capitalize" }}>{day.toLocaleDateString("es-CL",{weekday:"long",day:"2-digit",month:"short"})}</span>
-                          {events.length>0 && <span style={{ fontSize:10,fontWeight:700,color:"#64748b",background:"#f1f5f9",borderRadius:20,padding:"2px 8px" }}>{events.length}</span>}
+                  <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+                    {weekDays.map(({day,events},di)=>{ const isToday=keyOf(day)===keyOf(now); return (
+                      <div key={keyOf(day)} style={{ borderTop: di===0?"none":"1px solid #f1f5f9" }}>
+                        <div style={{ display:"flex",alignItems:"center",gap:10,padding: events.length?"10px 14px 6px":"9px 14px",
+                          background:isToday?"rgba(33,208,179,0.06)":"transparent" }}>
+                          <span style={{
+                            flexShrink:0,width:38,height:38,borderRadius:10,display:"inline-flex",flexDirection:"column",
+                            alignItems:"center",justifyContent:"center",lineHeight:1.1,
+                            background:isToday?"#21D0B3":"#f8fafc",border:isToday?"none":"1px solid #eef2f7",
+                          }}>
+                            <span style={{ fontSize:8,fontWeight:800,letterSpacing:"0.08em",color:isToday?"rgba(255,255,255,0.85)":"#94a3b8" }}>{fmtDow(day)}</span>
+                            <span style={{ fontSize:15,fontWeight:800,color:isToday?"#fff":"#0f172a" }}>{day.getDate()}</span>
+                          </span>
+                          <span style={{ flex:1,fontSize:12.5,fontWeight:700,color:isToday?"#0e9384":"#0f172a" }}>
+                            {cap1(day.toLocaleDateString("es-CL",{weekday:"long"}))}
+                            {isToday && <span style={{ marginLeft:6,fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:"#0e9384",background:"rgba(33,208,179,0.14)",borderRadius:99,padding:"2px 7px" }}>HOY</span>}
+                          </span>
+                          {events.length>0
+                            ? <span style={{ fontSize:10,fontWeight:800,color:"#0e9384",background:"rgba(33,208,179,0.12)",borderRadius:20,padding:"2px 9px" }}>{events.length}</span>
+                            : <span style={{ fontSize:10.5,fontWeight:600,color:"#cbd5e1" }}>Sin actividades</span>}
                         </div>
-                        {events.length===0 ? <span style={{ fontSize:11.5,color:"#cbd5e1" }}>—</span> : (
-                          <div style={{ display:"flex",flexDirection:"column",gap:5 }}>
+                        {events.length>0 && (
+                          <div style={{ padding:"0 14px 10px 62px",display:"flex",flexDirection:"column",gap:6 }}>
                             {events.map(it=>{ const cfg=TYPE_CFG[it.type]; return (
-                              <div key={it.id} style={{ display:"flex",alignItems:"center",gap:8 }}>
-                                <span style={{ width:8,height:8,borderRadius:"50%",background:cfg.color,flexShrink:0 }} />
-                                <span style={{ fontSize:11,fontWeight:700,color:"#0f172a",flexShrink:0 }}>{it.date.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})}</span>
-                                <span style={{ fontSize:11.5,color:"#334155",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{it.title}{it.subtitle?` · ${it.subtitle}`:""}</span>
+                              <div key={it.id} style={{ display:"flex",alignItems:"center",gap:8,background:"#f8fafc",border:"1px solid #eef2f7",borderLeft:`3px solid ${cfg.color}`,borderRadius:9,padding:"7px 10px" }}>
+                                <span style={{ fontSize:11,fontWeight:800,color:"#0f172a",flexShrink:0,fontVariantNumeric:"tabular-nums" }}>{it.date.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})}</span>
+                                <span style={{ flex:1,minWidth:0,fontSize:11.5,fontWeight:600,color:"#334155",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{it.title}{it.subtitle?` · ${it.subtitle}`:""}</span>
+                                <span style={{ flexShrink:0,fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:99,background:cfg.soft,color:cfg.color }}>{cfg.label}</span>
                               </div>
                             ); })}
                           </div>
@@ -1731,14 +1806,26 @@ export default function UserPortalPage() {
 
               {/* ════ Columna lateral ════ */}
               <div style={{ flex:"0 1 260px",minWidth:230,display:"flex",flexDirection:"column",gap:12 }}>
-                {/* Mini calendario */}
-                <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",padding:"12px" }}>
+                {/* Próxima competencia — lo más valioso, primero (clave en móvil) */}
+                {nextComp && (
+                  <div style={{ background:"linear-gradient(135deg,#fff1f2,#ffffff)",borderRadius:14,border:"1px solid #fecdd3",padding:"14px" }}>
+                    <p style={{ fontSize:10,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:"#e11d48",margin:0 }}>Próxima competencia</p>
+                    <p style={{ fontSize:14,fontWeight:800,color:"#0f172a",margin:"6px 0 2px" }}>{nextComp.title}</p>
+                    <p style={{ fontSize:12,color:"#64748b",margin:0 }}>
+                      {nextComp.date.toLocaleDateString("es-CL",{day:"2-digit",month:"long"})} · {nextComp.date.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})}
+                    </p>
+                    {nextComp.venue && <p style={{ fontSize:12,color:"#64748b",margin:"2px 0 0" }}>📍 {nextComp.venue}</p>}
+                  </div>
+                )}
+
+                {/* Mini calendario — solo escritorio: en móvil duplica la vista Mes */}
+                <div className="hidden lg:block" style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",padding:"12px" }}>
                   <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8 }}>
-                    <button type="button" onClick={() => { setCalMonthCursor(new Date(y,m-1,1)); setCalSelectedDay(null); }} style={{ background:"none",border:"none",cursor:"pointer",padding:2 }}>
+                    <button type="button" onClick={() => { setCalMonthCursor(new Date(y,m-1,1)); setCalCursor(new Date(y,m-1,1)); setCalSelectedDay(null); }} style={{ background:"none",border:"none",cursor:"pointer",padding:2 }}>
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
                     </button>
-                    <span style={{ fontSize:13,fontWeight:700,color:"#0f172a",textTransform:"capitalize" }}>{monthLabel}</span>
-                    <button type="button" onClick={() => { setCalMonthCursor(new Date(y,m+1,1)); setCalSelectedDay(null); }} style={{ background:"none",border:"none",cursor:"pointer",padding:2 }}>
+                    <span style={{ fontSize:13,fontWeight:700,color:"#0f172a" }}>{cap1(monthLabel)}</span>
+                    <button type="button" onClick={() => { setCalMonthCursor(new Date(y,m+1,1)); setCalCursor(new Date(y,m+1,1)); setCalSelectedDay(null); }} style={{ background:"none",border:"none",cursor:"pointer",padding:2 }}>
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
                     </button>
                   </div>
@@ -1748,7 +1835,8 @@ export default function UserPortalPage() {
                       const isSel = day !== null && calSelectedDay===day;
                       const dayItems = day ? inMonth.filter(it => it.date.getDate()===day) : [];
                       return (
-                        <button key={i} type="button" disabled={!day} onClick={() => day && setCalSelectedDay(isSel?null:day)}
+                        <button key={i} type="button" disabled={!day}
+                          onClick={() => { if(!day) return; setCalSelectedDay(isSel?null:day); setCalCursor(new Date(y,m,day)); }}
                           style={{ padding:"5px 0",borderRadius:8,border:"none",cursor:day?"pointer":"default",fontSize:12,fontWeight:isSel?800:500,
                             background:isSel?"#21D0B3":day?"#fff":"transparent",color:isSel?"#fff":day?"#0f172a":"transparent",position:"relative" }}>
                           {day || ""}
@@ -1804,17 +1892,6 @@ export default function UserPortalPage() {
                   </div>
                 </div>
 
-                {/* Próxima competencia */}
-                {nextComp && (
-                  <div style={{ background:"linear-gradient(135deg,#fff1f2,#ffffff)",borderRadius:14,border:"1px solid #fecdd3",padding:"14px" }}>
-                    <p style={{ fontSize:10,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:"#e11d48",margin:0 }}>Próxima competencia</p>
-                    <p style={{ fontSize:14,fontWeight:800,color:"#0f172a",margin:"6px 0 2px" }}>{nextComp.title}</p>
-                    <p style={{ fontSize:12,color:"#64748b",margin:0 }}>
-                      {nextComp.date.toLocaleDateString("es-CL",{day:"2-digit",month:"long"})} · {nextComp.date.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})}
-                    </p>
-                    {nextComp.venue && <p style={{ fontSize:12,color:"#64748b",margin:"2px 0 0" }}>📍 {nextComp.venue}</p>}
-                  </div>
-                )}
               </div>
             </div>
           );

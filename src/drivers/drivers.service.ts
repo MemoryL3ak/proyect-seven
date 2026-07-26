@@ -108,16 +108,9 @@ export class DriversService {
         .filter((item) => ['C', 'TR', 'H', 'R', 'A', 'RD'].includes(item));
     }
     if (dto.allowedClientTypes !== undefined) {
-      const allowed = [
-        'TF',
-        'TM',
-        'TA',
-        'VIP',
-        'T1',
-        'FAMILIA_PARAPAN',
-        'COMITE_ORGANIZADOR',
-        'PROVEEDORES',
-      ];
+      // La Flota propia (transport.drivers) atiende exclusivamente VIP y T1;
+      // los demás tipos de cliente se cubren con choferes de proveedor.
+      const allowed = ['VIP', 'T1'];
       row.allowed_client_types = (dto.allowedClientTypes ?? [])
         .map((item) => String(item || '').toUpperCase())
         .filter((item) => allowed.includes(item));

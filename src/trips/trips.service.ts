@@ -439,7 +439,16 @@ export class TripsService {
         .select('full_name')
         .or(`id.eq.${driverId},user_id.eq.${driverId}`)
         .limit(1);
-      return data?.[0]?.full_name || driverId;
+      if (data?.[0]?.full_name) return data[0].full_name;
+      // Los choferes de proveedor viven en core.provider_participants; sin este
+      // fallback la bitácora mostraba el UUID crudo en vez del nombre.
+      const { data: participant } = await this.supabase
+        .schema('core')
+        .from('provider_participants')
+        .select('full_name')
+        .eq('id', driverId)
+        .maybeSingle();
+      return participant?.full_name || driverId;
     } catch {
       return driverId;
     }

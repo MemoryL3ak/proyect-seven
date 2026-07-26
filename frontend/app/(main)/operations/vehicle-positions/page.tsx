@@ -1055,14 +1055,14 @@ export default function VehiclePositionsPage() {
                 destinations={liveDestinations}
                 routes={liveRoutes}
                 trails={liveTrails}
-                height={560}
+                height={760}
                 isDark={false}
                 selectedTripId={selectedTripId}
               />
             </div>
 
             {/* Sidebar — one card per tracked driver (online + offline). */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxHeight: "580px", overflowY: "auto", paddingRight: "2px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxHeight: "780px", overflowY: "auto", paddingRight: "2px" }}>
               {trackedDrivers.length === 0 && (
                 <div style={{
                   borderRadius: "14px", border: "1px dashed #cbd5e1", background: "#ffffff",

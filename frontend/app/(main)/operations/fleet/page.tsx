@@ -148,7 +148,7 @@ export default function FleetAvailabilityPage() {
     <div className="min-w-0 space-y-5 overflow-x-hidden">
       <PageHeader
         title="Flota"
-        description="Conductores y vehículos. Registra nuevos o mira la disponibilidad en tiempo real para asignar viajes."
+        description="Conductores y vehículos de la flota propia, exclusiva para clientes VIP y T1. Registra nuevos o mira la disponibilidad en tiempo real para asignar viajes."
         icon={<TruckIcon size={26} />}
         iconBg="linear-gradient(135deg, #21D0B3 0%, #1f4e8c 100%)"
         accentStrip="teal"
@@ -355,15 +355,11 @@ type VehicleRow = {
   status?: string;
 };
 
+// La Flota propia atiende exclusivamente a clientes VIP y T1; el resto de los
+// tipos de cliente se cubre con choferes de proveedor (Registro → Proveedores).
 const CLIENT_TYPE_DRIVER_OPTIONS = [
-  { value: "TF", label: "TF — Familiares" },
-  { value: "TM", label: "TM — Médico" },
-  { value: "TA", label: "TA — Deportistas" },
   { value: "VIP", label: "VIP" },
   { value: "T1", label: "T1 — Autoridades" },
-  { value: "FAMILIA_PARAPAN", label: "Familia Parapan" },
-  { value: "COMITE_ORGANIZADOR", label: "Comité Organizador" },
-  { value: "PROVEEDORES", label: "Proveedores" },
 ];
 
 const ACCESS_TYPE_OPTIONS = [
@@ -639,7 +635,7 @@ function DriverFormModal({ eventId, onClose, onSaved }: {
 }) {
   const [form, setForm] = useState({
     fullName: "", rut: "", email: "", phone: "", licenseNumber: "",
-    allowedClientTypes: [] as string[],
+    allowedClientTypes: ["VIP", "T1"] as string[],
     accessTypes: [] as string[],
   });
   const [saving, setSaving] = useState(false);
@@ -716,7 +712,7 @@ function DriverFormModal({ eventId, onClose, onSaved }: {
 
           <div>
             <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-muted)" }}>
-              Tipos de cliente que puede transportar
+              Tipos de cliente que puede transportar (la Flota atiende solo VIP y T1)
             </p>
             <div className="flex flex-wrap gap-1.5">
               {CLIENT_TYPE_DRIVER_OPTIONS.map(o => {
