@@ -16,6 +16,7 @@ import {
   ClipboardIcon,
   SettingsIcon,
 } from "@/components/ui/Icons";
+import { CLIENT_TYPE_OPTIONS, clientTypeLabel, normalizeClientType } from "@/lib/clientTypes";
 
 type Coupon = {
   id: string;
@@ -86,12 +87,16 @@ const DISCOUNT_TYPES = [
   { value: "TEXT", label: "Descripción libre" },
 ];
 
-const AUDIENCE_OPTIONS = [
-  { value: "ATHLETE", label: "Atletas" },
-  { value: "VIP", label: "VIPs" },
-  { value: "STAFF", label: "Staff" },
-  { value: "DELEGATION_LEAD", label: "Jefes de delegación" },
-];
+/**
+ * La audiencia usa el mismo catálogo de tipos de cliente que el resto de la
+ * plataforma (el campo "Tipo de cliente" del participante). Antes tenía una
+ * lista propia — ATHLETE / STAFF / DELEGATION_LEAD — que no coincidía con
+ * ningún valor real, por lo que los deportistas (TA) no veían beneficios.
+ */
+const AUDIENCE_OPTIONS = CLIENT_TYPE_OPTIONS.map((t) => ({
+  value: t.value as string,
+  label: t.label as string,
+}));
 
 const CLAIM_STATUS_META: Record<string, { label: string; color: string; bg: string }> = {
   CLAIMED: { label: "Activo", color: "#1f4e8c", bg: "#e3edfa" },
@@ -288,10 +293,17 @@ function CatalogTab({
     [coupons, categoryFilter, statusFilter]);
 
   const openModal = (c?: Coupon) => {
-    setForm(c ? { ...c } : {
-      category: "COMIDA", discountType: "PERCENTAGE", perUserLimit: 1,
-      audience: [], status: "ACTIVE",
-    });
+    setForm(c
+      ? {
+          ...c,
+          // Los cupones antiguos guardan ATHLETE/STAFF; se traducen al tipo de
+          // cliente vigente para que los chips aparezcan marcados al editar.
+          audience: Array.from(new Set((c.audience || []).map(normalizeClientType))),
+        }
+      : {
+          category: "COMIDA", discountType: "PERCENTAGE", perUserLimit: 1,
+          audience: [], status: "ACTIVE",
+        });
     setModalOpen(true);
   };
 

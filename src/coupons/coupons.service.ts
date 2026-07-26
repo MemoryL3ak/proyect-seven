@@ -13,6 +13,7 @@ import {
   UpdateCouponDto,
 } from './dto/coupon.dto';
 import { ClaimCouponDto, ConfirmRedeemDto } from './dto/claim.dto';
+import { normalizeAudience, normalizeClientType } from '../shared/client-types';
 
 type Row = Record<string, unknown>;
 
@@ -62,7 +63,8 @@ export class CouponsService {
     if (filters?.eventId) q = q.eq('event_id', filters.eventId);
     if (filters?.category) q = q.eq('category', filters.category);
     if (filters?.status) q = q.eq('status', filters.status);
-    if (filters?.audience) q = q.contains('audience', [filters.audience]);
+    if (filters?.audience)
+      q = q.contains('audience', [normalizeClientType(filters.audience)]);
     const { data, error } = await q.order('created_at', { ascending: false });
     this.throwIfError(error, 'Error listando cupones');
     return (data as Row[]).map(camelize);
@@ -91,9 +93,14 @@ export class CouponsService {
     this.throwIfError(error, 'Error listando cupones para usuario');
     const rows = (data as Row[]).map(camelize);
     const now = Date.now();
+    // La audiencia del cupón y el tipo de cliente del participante se comparan
+    // normalizados: los cupones antiguos apuntan a ATHLETE/STAFF, valores que
+    // ningún participante tiene (los deportistas son TA), y sin esto no verían
+    // ningún beneficio.
+    const tipoUsuario = normalizeClientType(userType);
     return rows.filter((c: any) => {
-      const aud = Array.isArray(c.audience) ? c.audience : [];
-      if (aud.length > 0 && !aud.includes(userType)) return false;
+      const aud = normalizeAudience(c.audience);
+      if (aud.length > 0 && !aud.includes(tipoUsuario)) return false;
       if (c.validFrom && new Date(c.validFrom).getTime() > now) return false;
       if (c.validUntil && new Date(c.validUntil).getTime() < now) return false;
       return true;
@@ -119,7 +126,7 @@ export class CouponsService {
       valid_until: dto.validUntil ?? null,
       max_redemptions: dto.maxRedemptions ?? null,
       per_user_limit: dto.perUserLimit ?? 1,
-      audience: dto.audience ?? [],
+      audience: normalizeAudience(dto.audience),
       status: dto.status ?? 'ACTIVE',
       image_url: dto.imageUrl ?? null,
     };
@@ -149,7 +156,7 @@ export class CouponsService {
     if (dto.validUntil !== undefined) row.valid_until = dto.validUntil ?? null;
     if (dto.maxRedemptions !== undefined) row.max_redemptions = dto.maxRedemptions ?? null;
     if (dto.perUserLimit !== undefined) row.per_user_limit = dto.perUserLimit;
-    if (dto.audience !== undefined) row.audience = dto.audience ?? [];
+    if (dto.audience !== undefined) row.audience = normalizeAudience(dto.audience);
     if (dto.status !== undefined) row.status = dto.status;
     if (dto.imageUrl !== undefined) row.image_url = dto.imageUrl ?? null;
     const { data, error } = await this.supabase
