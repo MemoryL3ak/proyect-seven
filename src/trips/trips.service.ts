@@ -2,6 +2,7 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
@@ -73,6 +74,8 @@ type AthleteRow = {
 
 @Injectable()
 export class TripsService {
+  private readonly logger = new Logger(TripsService.name);
+
   constructor(
     @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
     @InjectRepository(Trip)
@@ -475,22 +478,65 @@ export class TripsService {
   private async lookupClientPrice(driverId: string | undefined | null, fleetType: string | undefined | null, tripType: string | undefined | null): Promise<number | null> {
     if (!driverId || !fleetType || !tripType) return null;
     try {
-      // Get driver's provider
-      const { data: driver } = await this.supabase
-        .schema('core')
+      // El conductor puede ser de flota propia (transport.drivers) o de
+      // proveedor (core.provider_participants), que es donde está la mayor
+      // parte de la operación. Se consultan ambas fuentes.
+      const { data: fleetDriver } = await this.supabase
+        .schema('transport')
         .from('drivers')
         .select('provider_id')
         .eq('id', driverId)
         .maybeSingle();
-      if (!driver?.provider_id) return null;
+
+      let providerId = fleetDriver?.provider_id as string | undefined;
+
+      if (!providerId) {
+        const { data: participant } = await this.supabase
+          .schema('core')
+          .from('provider_participants')
+          .select('provider_id')
+          .eq('id', driverId)
+          .maybeSingle();
+        providerId = participant?.provider_id as string | undefined;
+      }
+
+      if (!providerId) return null;
+
+      // El tipo de vehículo llega en formatos heterogéneos (SEDAN, M3,
+      // "Bus 31-40 asientos"); las tarifas usan un catálogo cerrado.
+      const normalized = this.normalizeFleetType(fleetType);
+      if (!normalized) return null;
 
       const rate = await this.rateRepository.findOne({
-        where: { providerId: driver.provider_id, fleetType, tripType },
+        where: { providerId, fleetType: normalized, tripType },
       });
       return rate ? Number(rate.clientPrice) : null;
-    } catch {
+    } catch (err) {
+      this.logger.warn(
+        `No se pudo resolver la tarifa del viaje: ${err instanceof Error ? err.message : err}`,
+      );
       return null;
     }
+  }
+
+  /**
+   * Traduce el tipo de vehículo del viaje al catálogo de `core.provider_rates`
+   * (AUTO, SUV, VAN_10, VAN_15, VAN_19, MINIBUS, BUS). Debe mantenerse
+   * alineado con `fleet_norm` de TripsFinanceService.
+   */
+  private normalizeFleetType(raw: string): string | null {
+    const v = raw.trim().toUpperCase();
+    if (!v) return null;
+    // MINIBUS antes que BUS: "MINIBUS" contiene "BUS".
+    if (v.includes('MINI') || v === 'M3') return 'MINIBUS';
+    if (v.includes('BUS') || v === 'M4') return 'BUS';
+    if (v.includes('ADAPT') || v === 'M5') return 'VAN_10';
+    if (v.includes('19')) return 'VAN_19';
+    if (v.includes('15') || v.includes('17')) return 'VAN_15';
+    if (v.startsWith('VAN') || v === 'M2') return 'VAN_10';
+    if (v.includes('SUV')) return 'SUV';
+    if (v.includes('SEDAN') || v.includes('SEDÁN') || v.includes('AUTO') || v === 'M1') return 'AUTO';
+    return null;
   }
 
   private async insertTrip(row: Record<string, unknown>) {

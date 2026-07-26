@@ -4,6 +4,7 @@ import { SupabaseProvider } from '@/supabase/provider';
 import { TripsController } from './trips.controller';
 import { TripsService } from './trips.service';
 import { TripsScheduleService } from './trips-schedule.service';
+import { TripsFinanceService } from './trips-finance.service';
 import { Trip } from './entities/trip.entity';
 import { TripMessage } from './entities/trip-message.entity';
 import { ProviderRate } from '../providers/entities/provider-rate.entity';
@@ -15,6 +16,6 @@ import { PushNotificationsModule } from '../push-notifications/push-notification
     PushNotificationsModule,
   ],
   controllers: [TripsController],
-  providers: [TripsService, TripsScheduleService, SupabaseProvider],
+  providers: [TripsService, TripsScheduleService, TripsFinanceService, SupabaseProvider],
 })
 export class TripsModule {}

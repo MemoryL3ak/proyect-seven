@@ -5,12 +5,14 @@ import { BulkFromScheduleDto } from './dto/bulk-from-schedule.dto';
 import { AutoAssignDriversDto } from './dto/auto-assign-drivers.dto';
 import { TripsService } from './trips.service';
 import { TripsScheduleService } from './trips-schedule.service';
+import { TripsFinanceService } from './trips-finance.service';
 
 @Controller('trips')
 export class TripsController {
   constructor(
     private readonly tripsService: TripsService,
     private readonly scheduleService: TripsScheduleService,
+    private readonly financeService: TripsFinanceService,
   ) {}
 
   /* ─── Operatividad diaria ─── */
@@ -33,6 +35,27 @@ export class TripsController {
   @Get()
   findAll(@Query('requesterAthleteId') requesterAthleteId?: string) {
     return this.tripsService.findAll(requesterAthleteId);
+  }
+
+  /* ─── Panel financiero ─── */
+  // Deben declararse antes de `:id`, o Nest resolvería "finance" como un id.
+
+  @Get('finance/summary')
+  financeSummary(
+    @Query('eventId') eventId?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.financeService.summary({ eventId, from, to });
+  }
+
+  @Get('finance/detail')
+  financeDetail(
+    @Query('eventId') eventId?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.financeService.detail({ eventId, from, to });
   }
 
   @Get(':id')
