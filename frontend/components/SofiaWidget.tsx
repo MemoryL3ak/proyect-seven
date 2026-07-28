@@ -1193,16 +1193,17 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
         <div
           style={{
             position: "fixed",
-            bottom: 92,
-            right: 24,
             zIndex: 50,
-            width: 400,
             borderRadius: 20,
             overflow: "hidden",
             background: "linear-gradient(180deg, #1e293b 0%, #263548 100%)",
             border: "1px solid rgba(255,255,255,0.08)",
             boxShadow: "0 24px 64px rgba(0,0,0,0.3), 0 4px 16px rgba(0,0,0,0.15)",
             animation: "sofiaToastIn 0.25s cubic-bezier(0.16,1,0.3,1) both",
+            // Modo portal: panel acotado que deja ver el contenido de atrás.
+            ...(compact
+              ? { bottom: 152, right: 12, width: "min(320px, calc(100vw - 24px))" }
+              : { bottom: 92, right: 24, width: 400 }),
           }}
         >
           {/* Header */}
@@ -1300,8 +1301,8 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
           {/* Messages */}
           <div
             style={{
-              minHeight: "min(460px, 58vh)",
-              maxHeight: "72vh",
+              minHeight: compact ? "min(240px, 32vh)" : "min(460px, 58vh)",
+              maxHeight: compact ? "42vh" : "72vh",
               overflowY: "auto",
               padding: "16px 18px",
               display: "flex",
