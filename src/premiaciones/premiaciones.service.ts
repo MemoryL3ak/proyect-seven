@@ -3,9 +3,11 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { PushNotificationsService } from '../push-notifications/push-notifications.service';
 import { AwarderInputDto, CreatePremiacionDto } from './dto/create-premiacion.dto';
 import { UpdatePremiacionDto } from './dto/update-premiacion.dto';
 
@@ -14,7 +16,70 @@ type AwarderRow = any;
 
 @Injectable()
 export class PremiacionesService {
-  constructor(@Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient) {}
+  private readonly logger = new Logger(PremiacionesService.name);
+
+  constructor(
+    @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
+    private readonly pushService: PushNotificationsService,
+  ) {}
+
+  /** Notifica a los entregadores recién asignados (campanita + push Expo). */
+  private async notifyNewAwarders(premiacionId: string, athleteIds: string[]) {
+    if (!athleteIds.length) return;
+    try {
+      const { data: prem } = await this.supabase
+        .schema('core')
+        .from('premiaciones')
+        .select('title, discipline, scheduled_at, venue_name')
+        .eq('id', premiacionId)
+        .maybeSingle();
+      if (!prem) return;
+
+      const { data: athletes } = await this.supabase
+        .schema('core')
+        .from('athletes')
+        .select('id, user_type')
+        .in('id', athleteIds);
+      const typeById = new Map(
+        (athletes ?? []).map((a: any) => [a.id, String(a.user_type ?? '').toUpperCase()]),
+      );
+
+      const when = prem.scheduled_at
+        ? new Date(prem.scheduled_at).toLocaleString('es-CL', {
+            timeZone: 'America/Santiago',
+            weekday: 'short',
+            day: '2-digit',
+            month: 'short',
+            hour: '2-digit',
+            minute: '2-digit',
+          })
+        : null;
+      const bodyParts = [prem.title, when, prem.venue_name].filter(Boolean);
+
+      for (const athleteId of athleteIds) {
+        const isVip = typeById.get(athleteId) === 'VIP';
+        void this.pushService.send(
+          { userKind: 'athlete', userId: athleteId },
+          {
+            title: 'Nueva premiación asignada',
+            body: bodyParts.join(' · ') || 'Tienes una ceremonia de premiación asignada',
+            emoji: '🏅',
+            kind: 'premiacion-assigned',
+            data: {
+              url: isVip ? '/portal/vehicle-request' : '/portal/user',
+              premiacionId,
+            },
+          },
+        );
+      }
+    } catch (err) {
+      this.logger.warn(
+        `No se pudo notificar la asignación de premiación ${premiacionId}: ${
+          err instanceof Error ? err.message : err
+        }`,
+      );
+    }
+  }
 
   /** Convierte una fila snake_case del DB a camelCase para el frontend. */
   private fromRow(row: PremiacionRow | null | undefined): any {
@@ -116,6 +181,11 @@ export class PremiacionesService {
         .from('premiacion_awarders')
         .insert(toInsert);
       if (error) throw new InternalServerErrorException(error.message);
+      // SA-14: avisar a los entregadores recién asignados.
+      void this.notifyNewAwarders(
+        premiacionId,
+        toInsert.map((a) => a.athlete_id),
+      );
     }
 
     // 3. Actualizar rol/notas de los que permanecen (sin perder confirmación).

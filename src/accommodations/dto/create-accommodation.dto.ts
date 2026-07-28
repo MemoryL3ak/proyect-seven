@@ -21,6 +21,10 @@ export class CreateAccommodationDto {
   @IsOptional()
   address?: string;
 
+  @IsString()
+  @IsOptional()
+  photoUrl?: string | null;
+
   @IsObject()
   @IsOptional()
   geoLocation?: Record<string, unknown>;

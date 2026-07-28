@@ -1650,6 +1650,24 @@ export default function ResourceScreen({
         }
       }
 
+      if (config.endpoint === "/accommodations") {
+        const photoDataUrl = form.photoDataUrl as string | undefined;
+        const accommodationId = editingId ?? result?.id;
+        // Sólo subir si es una imagen nueva en base64, no una URL existente.
+        if (photoDataUrl && photoDataUrl.startsWith("data:") && accommodationId) {
+          try {
+            await apiFetch(`/accommodations/${accommodationId}/photo`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ dataUrl: photoDataUrl })
+            });
+          } catch (photoErr) {
+            console.error("Error subiendo foto:", photoErr);
+            setError(t("Registro guardado pero la foto no se pudo subir. Intenta de nuevo."));
+          }
+        }
+      }
+
       if (config.endpoint === "/athletes") {
         const photoDataUrl = form.photoDataUrl as string | undefined;
         const athleteId = editingId ?? result?.id;
@@ -1795,7 +1813,7 @@ export default function ResourceScreen({
       }
 
       // Load existing photo from metadata before other checks
-      if ((config.endpoint === "/athletes" || config.endpoint === "/drivers") && field.key === "photoDataUrl") {
+      if ((config.endpoint === "/athletes" || config.endpoint === "/drivers" || config.endpoint === "/accommodations") && field.key === "photoDataUrl") {
         const meta = item.metadata as Record<string, unknown> | null;
         next[field.key] = (meta?.photoUrl as string) || item.photoUrl || "";
         return;

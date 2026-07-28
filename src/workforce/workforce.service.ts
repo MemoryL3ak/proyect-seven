@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Inject,
   Injectable,
   InternalServerErrorException,
@@ -124,6 +125,57 @@ export class WorkforceService {
     return { id, deleted: true };
   }
 
+  /**
+   * Carga masiva de personas. Deduplica contra lo existente por RUT (o email
+   * si no hay RUT): las coincidencias se actualizan en vez de duplicarse.
+   */
+  async bulkCreatePersons(dtos: CreatePersonDto[]) {
+    if (!Array.isArray(dtos) || dtos.length === 0) {
+      throw new BadRequestException('La carga masiva requiere al menos una persona');
+    }
+    const { data: existingData, error } = await this.client
+      .from(this.T_PERSONS)
+      .select('id, rut, email');
+    this.throwIfError(error, 'Error leyendo personas existentes');
+    const norm = (v: unknown) => String(v ?? '').trim().toLowerCase().replace(/[.\s-]/g, '');
+    const byRut = new Map<string, string>();
+    const byEmail = new Map<string, string>();
+    (existingData ?? []).forEach((r: any) => {
+      if (r.rut) byRut.set(norm(r.rut), r.id);
+      if (r.email) byEmail.set(norm(r.email), r.id);
+    });
+
+    let created = 0;
+    let updated = 0;
+    const errors: { row: number; message: string }[] = [];
+    for (let i = 0; i < dtos.length; i++) {
+      const dto = dtos[i];
+      try {
+        if (!dto?.fullName || !String(dto.fullName).trim()) {
+          throw new BadRequestException('full_name es obligatorio');
+        }
+        const existingId =
+          (dto.rut ? byRut.get(norm(dto.rut)) : undefined) ??
+          (dto.email ? byEmail.get(norm(dto.email)) : undefined);
+        if (existingId) {
+          await this.updatePerson(existingId, dto);
+          updated++;
+        } else {
+          const person = (await this.createPerson(dto)) as { id?: string };
+          created++;
+          if (dto.rut && person.id) byRut.set(norm(dto.rut), person.id);
+          if (dto.email && person.id) byEmail.set(norm(dto.email), person.id);
+        }
+      } catch (err) {
+        errors.push({
+          row: i + 2, // +2: fila 1 es la cabecera de la plantilla
+          message: err instanceof Error ? err.message : 'Error desconocido',
+        });
+      }
+    }
+    return { created, updated, errors };
+  }
+
   // ── Products ───────────────────────────────────────────────────────────────
 
   async listProducts(filters?: { eventId?: string }) {
@@ -196,6 +248,52 @@ export class WorkforceService {
     const { data, error } = await this.client.from(this.T_PRODUCTS).insert(row).select('*').single();
     this.throwIfError(error, 'Error creando producto');
     return camelize(data as ProductRow);
+  }
+
+  /**
+   * Carga masiva de productos. Deduplica por nombre (case-insensitive):
+   * las coincidencias se actualizan. El barcode siempre se auto-genera.
+   */
+  async bulkCreateProducts(dtos: CreateProductDto[]) {
+    if (!Array.isArray(dtos) || dtos.length === 0) {
+      throw new BadRequestException('La carga masiva requiere al menos un producto');
+    }
+    const { data: existingData, error } = await this.client
+      .from(this.T_PRODUCTS)
+      .select('id, name');
+    this.throwIfError(error, 'Error leyendo productos existentes');
+    const norm = (v: unknown) => String(v ?? '').trim().toLowerCase();
+    const byName = new Map<string, string>();
+    (existingData ?? []).forEach((r: any) => {
+      if (r.name) byName.set(norm(r.name), r.id);
+    });
+
+    let created = 0;
+    let updated = 0;
+    const errors: { row: number; message: string }[] = [];
+    for (let i = 0; i < dtos.length; i++) {
+      const dto = dtos[i];
+      try {
+        if (!dto?.name || !String(dto.name).trim()) {
+          throw new BadRequestException('name es obligatorio');
+        }
+        const existingId = byName.get(norm(dto.name));
+        if (existingId) {
+          await this.updateProduct(existingId, dto);
+          updated++;
+        } else {
+          const product = (await this.createProduct(dto)) as { id?: string };
+          created++;
+          if (product.id) byName.set(norm(dto.name), product.id);
+        }
+      } catch (err) {
+        errors.push({
+          row: i + 2,
+          message: err instanceof Error ? err.message : 'Error desconocido',
+        });
+      }
+    }
+    return { created, updated, errors };
   }
 
   async updateProduct(id: string, dto: UpdateProductDto) {

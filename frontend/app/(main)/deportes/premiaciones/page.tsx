@@ -22,6 +22,7 @@ type Premiacion = {
   discipline?: string | null;
   disciplineId?: string | null;
   scheduledAt: string;
+  venueId?: string | null;
   venueName?: string | null;
   locationDetail?: string | null;
   status: string;
@@ -30,6 +31,7 @@ type Premiacion = {
 };
 type Athlete = { id: string; fullName?: string | null; userType?: string | null };
 type EventItem = { id: string; name: string };
+type Venue = { id: string; name: string; address?: string | null };
 
 type AwarderState = "CONFIRMED" | "DECLINED" | "PENDING";
 const awarderState = (a: Awarder): AwarderState =>
@@ -55,10 +57,43 @@ function fmtDateTime(iso?: string | null) {
   }).format(d);
 }
 
+/** ISO → valor para <input type="datetime-local"> en hora local. */
+function toLocalInput(iso?: string | null) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** Distancia legible hasta la ceremonia ("Hoy", "Mañana", "En 3 días"). */
+function relativeDay(iso: string): string | null {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  const startOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diff = Math.round((startOf(d) - startOf(new Date())) / 86400000);
+  if (diff < 0) return null;
+  if (diff === 0) return "Hoy";
+  if (diff === 1) return "Mañana";
+  return `En ${diff} días`;
+}
+
+const EMPTY_FORM = {
+  title: "",
+  discipline: "",
+  scheduledAt: "",
+  eventId: "",
+  venueId: "",
+  locationDetail: "",
+  notes: "",
+  status: "PROGRAMADA",
+};
+
 export default function PremiacionesPage() {
   const [premiaciones, setPremiaciones] = useState<Premiacion[]>([]);
   const [athletes, setAthletes] = useState<Athlete[]>([]);
   const [events, setEvents] = useState<EventItem[]>([]);
+  const [venues, setVenues] = useState<Venue[]>([]);
   const [eventFilter, setEventFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [disciplineFilter, setDisciplineFilter] = useState("");
@@ -67,23 +102,28 @@ export default function PremiacionesPage() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
-  // Edición de encargados VIP
-  const [editing, setEditing] = useState<Premiacion | null>(null);
-  const [editAwarders, setEditAwarders] = useState<Awarder[]>([]);
+  // Modal crear / editar premiación completa
+  const [formOpen, setFormOpen] = useState(false);
+  const [formEditingId, setFormEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState({ ...EMPTY_FORM });
+  const [formAwarders, setFormAwarders] = useState<Awarder[]>([]);
   const [addAthleteId, setAddAthleteId] = useState("");
-  const [savingEdit, setSavingEdit] = useState(false);
+  const [savingForm, setSavingForm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const load = async () => {
     setLoading(true);
     try {
-      const [prem, ath, ev] = await Promise.all([
+      const [prem, ath, ev, ven] = await Promise.all([
         apiFetch<Premiacion[]>("/premiaciones"),
         apiFetch<Athlete[]>("/athletes").catch(() => []),
         apiFetch<EventItem[]>("/events").catch(() => []),
+        apiFetch<Venue[]>("/venues").catch(() => []),
       ]);
       setPremiaciones(Array.isArray(prem) ? prem : []);
       setAthletes(Array.isArray(ath) ? ath : []);
       setEvents(Array.isArray(ev) ? ev : []);
+      setVenues(Array.isArray(ven) ? ven : []);
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "No se pudieron cargar las premiaciones.");
     } finally {
@@ -103,9 +143,11 @@ export default function PremiacionesPage() {
     [premiaciones],
   );
 
-  const visible = useMemo(() => {
+  // La próxima ceremonia siempre primero: próximas ascendente, pasadas después
+  // (la más reciente primero).
+  const { upcoming, past } = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return premiaciones
+    const filtered = premiaciones
       .filter((p) => (eventFilter ? p.eventId === eventFilter : true))
       .filter((p) => (statusFilter ? p.status === statusFilter : true))
       .filter((p) => (disciplineFilter ? (p.discipline || "") === disciplineFilter : true))
@@ -113,20 +155,27 @@ export default function PremiacionesPage() {
         if (!q) return true;
         const text = `${p.title} ${p.discipline || ""} ${p.venueName || ""} ${p.locationDetail || ""}`.toLowerCase();
         return text.includes(q);
-      })
-      .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
+      });
+    const now = Date.now();
+    const time = (p: Premiacion) => new Date(p.scheduledAt).getTime() || 0;
+    const upcoming = filtered
+      .filter((p) => time(p) >= now && p.status !== "REALIZADA")
+      .sort((a, b) => time(a) - time(b));
+    const past = filtered
+      .filter((p) => time(p) < now || p.status === "REALIZADA")
+      .sort((a, b) => time(b) - time(a));
+    return { upcoming, past };
   }, [premiaciones, eventFilter, statusFilter, disciplineFilter, search]);
 
   const kpis = useMemo(() => {
-    let programadas = 0, realizadas = 0, pendientes = 0, awardersTotal = 0;
+    let programadas = 0, realizadas = 0, pendientes = 0;
     premiaciones.forEach((p) => {
       if (p.status === "REALIZADA") realizadas++; else programadas++;
       (p.awarders || []).forEach((a) => {
-        awardersTotal++;
         if (awarderState(a) === "PENDING") pendientes++;
       });
     });
-    return { total: premiaciones.length, programadas, realizadas, pendientes, awardersTotal };
+    return { total: premiaciones.length, programadas, realizadas, pendientes };
   }, [premiaciones]);
 
   // Candidatos a entregadores: VIP primero; si no hay VIP marcados, todos.
@@ -136,41 +185,99 @@ export default function PremiacionesPage() {
     return [...base].sort((a, b) => (a.fullName || "").localeCompare(b.fullName || ""));
   }, [athletes]);
 
-  const openEdit = (p: Premiacion) => {
-    setEditing(p);
-    setEditAwarders([...(p.awarders || [])]);
+  const openCreate = () => {
+    setFormEditingId(null);
+    setForm({ ...EMPTY_FORM, eventId: eventFilter || (events[0]?.id ?? "") });
+    setFormAwarders([]);
     setAddAthleteId("");
     setMessage(null);
+    setFormOpen(true);
+  };
+
+  const openEdit = (p: Premiacion) => {
+    setFormEditingId(p.id);
+    setForm({
+      title: p.title || "",
+      discipline: p.discipline || "",
+      scheduledAt: toLocalInput(p.scheduledAt),
+      eventId: p.eventId || "",
+      venueId: p.venueId || "",
+      locationDetail: p.locationDetail || "",
+      notes: p.notes || "",
+      status: p.status || "PROGRAMADA",
+    });
+    setFormAwarders([...(p.awarders || [])]);
+    setAddAthleteId("");
+    setMessage(null);
+    setFormOpen(true);
   };
 
   const addAwarder = (athleteId: string) => {
     if (!athleteId) return;
-    setEditAwarders((prev) =>
+    setFormAwarders((prev) =>
       prev.some((a) => a.athleteId === athleteId) ? prev : [...prev, { athleteId }],
     );
     setAddAthleteId("");
   };
 
   const removeAwarder = (athleteId: string) => {
-    setEditAwarders((prev) => prev.filter((a) => a.athleteId !== athleteId));
+    setFormAwarders((prev) => prev.filter((a) => a.athleteId !== athleteId));
   };
 
-  const saveEdit = async () => {
-    if (!editing) return;
-    setSavingEdit(true);
+  const saveForm = async () => {
+    if (!form.title.trim()) { setMessage("El título es obligatorio."); return; }
+    if (!form.scheduledAt) { setMessage("La fecha y hora son obligatorias."); return; }
+    setSavingForm(true);
     setMessage(null);
     try {
-      const updated = await apiFetch<Premiacion>(`/premiaciones/${editing.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ awarders: editAwarders.map((a) => ({ athleteId: a.athleteId })) }),
-      });
-      setPremiaciones((prev) => prev.map((x) => (x.id === editing.id ? { ...x, awarders: updated.awarders ?? [] } : x)));
-      setEditing(null);
+      const venue = venues.find((v) => v.id === form.venueId);
+      const payload = {
+        title: form.title.trim(),
+        discipline: form.discipline.trim() || undefined,
+        scheduledAt: new Date(form.scheduledAt).toISOString(),
+        eventId: form.eventId || undefined,
+        venueId: form.venueId || undefined,
+        venueName: venue?.name || undefined,
+        locationDetail: form.locationDetail.trim() || undefined,
+        notes: form.notes.trim() || undefined,
+        status: form.status,
+        awarders: formAwarders.map((a) => ({ athleteId: a.athleteId, role: a.role || undefined })),
+      };
+      if (formEditingId) {
+        await apiFetch(`/premiaciones/${formEditingId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        await apiFetch(`/premiaciones`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      }
+      setFormOpen(false);
+      await load();
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "No se pudieron guardar los entregadores.");
+      setMessage(err instanceof Error ? err.message : "No se pudo guardar la premiación.");
     } finally {
-      setSavingEdit(false);
+      setSavingForm(false);
+    }
+  };
+
+  const deletePremiacion = async () => {
+    if (!formEditingId) return;
+    if (!window.confirm("¿Eliminar esta premiación? Esta acción no se puede deshacer.")) return;
+    setDeleting(true);
+    setMessage(null);
+    try {
+      await apiFetch(`/premiaciones/${formEditingId}`, { method: "DELETE" });
+      setFormOpen(false);
+      await load();
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "No se pudo eliminar la premiación.");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -192,6 +299,109 @@ export default function PremiacionesPage() {
     }
   };
 
+  const renderCard = (p: Premiacion, isNext: boolean) => {
+    const st = STATUS_META[p.status] || STATUS_META.PROGRAMADA;
+    const awarders = p.awarders || [];
+    const confirmed = awarders.filter((a) => awarderState(a) === "CONFIRMED").length;
+    const rel = p.status !== "REALIZADA" ? relativeDay(p.scheduledAt) : null;
+    return (
+      <article key={p.id} className="surface rounded-2xl p-4 space-y-3"
+        style={{
+          borderTop: `4px solid ${p.status === "REALIZADA" ? "#059669" : isNext ? "#21D0B3" : "#fbbf24"}`,
+          ...(isNext ? { boxShadow: "0 0 0 2px rgba(33,208,179,0.35), 0 10px 24px rgba(15,23,42,0.10)" } : {}),
+        }}>
+        {/* Encabezado */}
+        <div className="flex items-start justify-between gap-2">
+          <div style={{ minWidth: 0 }}>
+            {isNext && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full inline-block mb-1"
+                style={{ background: "rgba(33,208,179,0.14)", color: "#0f9d84", border: "1px solid rgba(33,208,179,0.45)", letterSpacing: "0.08em" }}>
+                ★ PRÓXIMA CEREMONIA
+              </span>
+            )}
+            <p className="font-bold text-[15px] leading-tight" style={{ color: "#0f172a" }}>{p.title}</p>
+            {p.discipline && (
+              <p className="text-xs mt-0.5" style={{ color: "#14b8a6", fontWeight: 600 }}>{p.discipline}</p>
+            )}
+          </div>
+          <button type="button" onClick={() => toggleStatus(p)} disabled={savingId === p.id}
+            className="text-[10px] font-bold px-2.5 py-1 rounded-full transition-all"
+            title="Cambiar estado"
+            style={{ background: st.bg, color: st.color, border: `1px solid ${st.color}33`, cursor: "pointer", whiteSpace: "nowrap" }}>
+            {savingId === p.id ? "…" : st.label}
+          </button>
+        </div>
+
+        {/* Datos */}
+        <div className="text-xs space-y-0.5" style={{ color: "#64748b" }}>
+          <p style={{ color: "#0f172a", fontWeight: 600 }}>
+            🗓 {fmtDateTime(p.scheduledAt)}
+            {rel && (
+              <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded"
+                style={{ background: rel === "Hoy" ? "#fef3c7" : "#eef1f6", color: rel === "Hoy" ? "#b45309" : "#64748b" }}>
+                {rel}
+              </span>
+            )}
+          </p>
+          {(p.venueName || p.locationDetail) && (
+            <p>📍 {[p.venueName, p.locationDetail].filter(Boolean).join(" · ")}</p>
+          )}
+          {p.notes && <p style={{ color: "#94a3b8" }}>📝 {p.notes}</p>}
+        </div>
+
+        {/* Entregadores + confirmación */}
+        <div className="rounded-xl p-3" style={{ background: "#f8fafc", border: "1px solid #eef1f6" }}>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>
+              Entregadores (VIP)
+            </span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+              style={{ background: confirmed === awarders.length && awarders.length > 0 ? "#e7f5ec" : "#eef1f6", color: confirmed === awarders.length && awarders.length > 0 ? "#059669" : "#64748b" }}>
+              {confirmed}/{awarders.length} confirmaron
+            </span>
+          </div>
+          {awarders.length === 0 ? (
+            <p className="text-[11px]" style={{ color: "#94a3b8" }}>Sin entregadores asignados.</p>
+          ) : (
+            <div className="flex flex-col gap-1.5">
+              {awarders.map((a, i) => {
+                const state = awarderState(a);
+                const meta = AWARDER_META[state];
+                return (
+                  <div key={a.id || i} className="flex items-center justify-between gap-2">
+                    <span className="text-[12.5px] truncate" style={{ color: "#0f172a", fontWeight: 500 }}>
+                      {athleteName(a.athleteId)}
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1 flex-shrink-0"
+                      style={{ background: meta.bg, color: meta.color }}
+                      title={state === "CONFIRMED" && a.confirmedAt ? fmtDateTime(a.confirmedAt) : undefined}>
+                      <span>{meta.icon}</span>{meta.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between gap-2">
+          <button type="button" onClick={() => openEdit(p)}
+            className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
+            style={{ background: "#fff7ed", color: "#d97706", border: "1px solid #fed7aa", cursor: "pointer" }}>
+            ✎ Editar premiación
+          </button>
+          {p.disciplineId && (
+            <Link href="/deportes" className="text-xs font-semibold" style={{ color: "#14b8a6" }}>
+              Ver prueba →
+            </Link>
+          )}
+        </div>
+      </article>
+    );
+  };
+
+  const totalVisible = upcoming.length + past.length;
+
   return (
     <div className="space-y-5 min-w-0 overflow-x-hidden">
       <PageHeader
@@ -201,9 +411,9 @@ export default function PremiacionesPage() {
         iconBg="linear-gradient(135deg, #fbbf24 0%, #d97706 100%)"
         accentStrip="gold"
         action={
-          <Link href="/deportes" className="btn btn-primary text-xs">
-            + Nueva desde Pruebas
-          </Link>
+          <button type="button" onClick={openCreate} className="btn btn-primary text-xs">
+            + Nueva premiación
+          </button>
         }
       />
 
@@ -250,163 +460,182 @@ export default function PremiacionesPage() {
         </StyledSelect>
       </section>
 
-      {message && <p className="text-sm" style={{ color: "#b91c1c" }}>{message}</p>}
+      {message && !formOpen && <p className="text-sm" style={{ color: "#b91c1c" }}>{message}</p>}
 
       {/* Lista */}
       {loading ? (
         <p className="text-sm" style={{ color: "#94a3b8" }}>Cargando premiaciones…</p>
-      ) : visible.length === 0 ? (
+      ) : totalVisible === 0 ? (
         <div className="p-12 text-center rounded-2xl" style={{ background: "linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)", border: "1px dashed #e2e8f0" }}>
           <TrophyIcon size={36} color="#cbd5e1" />
           <p className="text-sm font-semibold mt-3" style={{ color: "#475569" }}>No hay premiaciones para mostrar</p>
           <p className="text-xs mt-1" style={{ color: "#94a3b8" }}>
-            Se crean desde <Link href="/deportes" style={{ color: "#14b8a6", fontWeight: 600 }}>Deportes → Pruebas</Link>, activando la sección Premiación de una prueba.
+            Crea la primera con el botón <button type="button" onClick={openCreate} style={{ color: "#14b8a6", fontWeight: 600, cursor: "pointer" }}>+ Nueva premiación</button>.
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-          {visible.map((p) => {
-            const st = STATUS_META[p.status] || STATUS_META.PROGRAMADA;
-            const awarders = p.awarders || [];
-            const confirmed = awarders.filter((a) => awarderState(a) === "CONFIRMED").length;
-            return (
-              <article key={p.id} className="surface rounded-2xl p-4 space-y-3"
-                style={{ borderTop: `4px solid ${p.status === "REALIZADA" ? "#059669" : "#fbbf24"}` }}>
-                {/* Encabezado */}
-                <div className="flex items-start justify-between gap-2">
-                  <div style={{ minWidth: 0 }}>
-                    <p className="font-bold text-[15px] leading-tight" style={{ color: "#0f172a" }}>{p.title}</p>
-                    {p.discipline && (
-                      <p className="text-xs mt-0.5" style={{ color: "#14b8a6", fontWeight: 600 }}>{p.discipline}</p>
-                    )}
-                  </div>
-                  <button type="button" onClick={() => toggleStatus(p)} disabled={savingId === p.id}
-                    className="text-[10px] font-bold px-2.5 py-1 rounded-full transition-all"
-                    title="Cambiar estado"
-                    style={{ background: st.bg, color: st.color, border: `1px solid ${st.color}33`, cursor: "pointer", whiteSpace: "nowrap" }}>
-                    {savingId === p.id ? "…" : st.label}
-                  </button>
-                </div>
-
-                {/* Datos */}
-                <div className="text-xs space-y-0.5" style={{ color: "#64748b" }}>
-                  <p>🗓 {fmtDateTime(p.scheduledAt)}</p>
-                  {(p.venueName || p.locationDetail) && (
-                    <p>📍 {[p.venueName, p.locationDetail].filter(Boolean).join(" · ")}</p>
-                  )}
-                  {p.notes && <p style={{ color: "#94a3b8" }}>📝 {p.notes}</p>}
-                </div>
-
-                {/* Entregadores + confirmación */}
-                <div className="rounded-xl p-3" style={{ background: "#f8fafc", border: "1px solid #eef1f6" }}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>
-                      Entregadores (VIP)
-                    </span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                      style={{ background: confirmed === awarders.length && awarders.length > 0 ? "#e7f5ec" : "#eef1f6", color: confirmed === awarders.length && awarders.length > 0 ? "#059669" : "#64748b" }}>
-                      {confirmed}/{awarders.length} confirmaron
-                    </span>
-                  </div>
-                  {awarders.length === 0 ? (
-                    <p className="text-[11px]" style={{ color: "#94a3b8" }}>Sin entregadores asignados.</p>
-                  ) : (
-                    <div className="flex flex-col gap-1.5">
-                      {awarders.map((a, i) => {
-                        const state = awarderState(a);
-                        const meta = AWARDER_META[state];
-                        return (
-                          <div key={a.id || i} className="flex items-center justify-between gap-2">
-                            <span className="text-[12.5px] truncate" style={{ color: "#0f172a", fontWeight: 500 }}>
-                              {athleteName(a.athleteId)}
-                            </span>
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1 flex-shrink-0"
-                              style={{ background: meta.bg, color: meta.color }}
-                              title={state === "CONFIRMED" && a.confirmedAt ? fmtDateTime(a.confirmedAt) : undefined}>
-                              <span>{meta.icon}</span>{meta.label}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between gap-2">
-                  <button type="button" onClick={() => openEdit(p)}
-                    className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
-                    style={{ background: "#fff7ed", color: "#d97706", border: "1px solid #fed7aa", cursor: "pointer" }}>
-                    ✎ Editar encargados
-                  </button>
-                  <Link href="/deportes" className="text-xs font-semibold" style={{ color: "#14b8a6" }}>
-                    Editar prueba →
-                  </Link>
-                </div>
-              </article>
-            );
-          })}
+        <div className="space-y-5">
+          {upcoming.length > 0 && (
+            <section className="space-y-3">
+              <h2 className="text-xs font-bold uppercase tracking-widest flex items-center gap-2" style={{ color: "#0f9d84" }}>
+                Próximas ceremonias
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(33,208,179,0.12)", color: "#0f9d84" }}>{upcoming.length}</span>
+              </h2>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                {upcoming.map((p, i) => renderCard(p, i === 0))}
+              </div>
+            </section>
+          )}
+          {past.length > 0 && (
+            <section className="space-y-3">
+              <h2 className="text-xs font-bold uppercase tracking-widest flex items-center gap-2" style={{ color: "#94a3b8" }}>
+                Realizadas y pasadas
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "#eef1f6", color: "#64748b" }}>{past.length}</span>
+              </h2>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                {past.map((p) => renderCard(p, false))}
+              </div>
+            </section>
+          )}
         </div>
       )}
 
-      {/* Modal: editar encargados VIP */}
-      {editing && (
+      {/* Modal: crear / editar premiación */}
+      {formOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(15,23,42,0.45)" }}
-          onClick={() => !savingEdit && setEditing(null)}>
-          <div className="surface rounded-2xl p-5 w-full max-w-md space-y-4" onClick={(e) => e.stopPropagation()}>
+          onClick={() => !savingForm && !deleting && setFormOpen(false)}>
+          <div className="surface rounded-2xl p-5 w-full max-w-lg space-y-4" style={{ maxHeight: "92vh", overflowY: "auto" }}
+            onClick={(e) => e.stopPropagation()}>
             <div>
-              <h3 className="text-lg font-bold" style={{ color: "#0f172a" }}>Entregadores VIP</h3>
-              <p className="text-xs" style={{ color: "#94a3b8" }}>{editing.title}{editing.discipline ? ` · ${editing.discipline}` : ""}</p>
+              <h3 className="text-lg font-bold" style={{ color: "#0f172a" }}>
+                {formEditingId ? "Editar premiación" : "Nueva premiación"}
+              </h3>
+              <p className="text-xs" style={{ color: "#94a3b8" }}>
+                {formEditingId ? "Modifica los datos de la ceremonia." : "Programa una ceremonia de premiación."}
+              </p>
             </div>
 
-            {/* Agregar entregador */}
-            <div>
-              <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>Agregar encargado</label>
-              <StyledSelect value={addAthleteId} onChange={(e) => addAwarder(e.target.value)}>
-                <option value="">Selecciona un VIP…</option>
-                {awarderCandidates
-                  .filter((a) => !editAwarders.some((e) => e.athleteId === a.id))
-                  .map((a) => <option key={a.id} value={a.id}>{a.fullName || a.id.slice(0, 8)}</option>)}
-              </StyledSelect>
-            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>Título *</label>
+                <input className="input" placeholder="Ej: Final 100m planos varones"
+                  value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
+              </div>
 
-            {/* Lista actual */}
-            <div className="rounded-xl p-3 space-y-1.5" style={{ background: "#f8fafc", border: "1px solid #eef1f6", maxHeight: 260, overflowY: "auto" }}>
-              {editAwarders.length === 0 ? (
-                <p className="text-[12px]" style={{ color: "#94a3b8" }}>Sin entregadores. Agrega al menos uno.</p>
-              ) : editAwarders.map((a) => {
-                const state = awarderState(a);
-                const meta = AWARDER_META[state];
-                return (
-                  <div key={a.athleteId} className="flex items-center justify-between gap-2">
-                    <span className="text-[13px] truncate" style={{ color: "#0f172a", fontWeight: 500 }}>
-                      {athleteName(a.athleteId)}
-                    </span>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      {a.id && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1"
-                          style={{ background: meta.bg, color: meta.color }}>
-                          <span>{meta.icon}</span>{meta.label}
-                        </span>
-                      )}
-                      <button type="button" onClick={() => removeAwarder(a.athleteId)}
-                        className="text-[11px] font-bold" style={{ color: "#dc2626", cursor: "pointer" }} title="Quitar">
-                        ✕
-                      </button>
-                    </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>Disciplina</label>
+                  <input className="input" placeholder="Ej: Atletismo" list="premiacion-disciplinas"
+                    value={form.discipline} onChange={(e) => setForm((f) => ({ ...f, discipline: e.target.value }))} />
+                  <datalist id="premiacion-disciplinas">
+                    {disciplineOptions.map((d) => <option key={d} value={d} />)}
+                  </datalist>
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>Fecha y hora *</label>
+                  <input className="input" type="datetime-local"
+                    value={form.scheduledAt} onChange={(e) => setForm((f) => ({ ...f, scheduledAt: e.target.value }))} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {events.length > 0 && (
+                  <div>
+                    <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>Evento</label>
+                    <StyledSelect value={form.eventId} onChange={(e) => setForm((f) => ({ ...f, eventId: e.target.value }))}>
+                      <option value="">Sin evento</option>
+                      {events.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+                    </StyledSelect>
                   </div>
-                );
-              })}
+                )}
+                <div>
+                  <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>Sede</label>
+                  <StyledSelect value={form.venueId} onChange={(e) => setForm((f) => ({ ...f, venueId: e.target.value }))}>
+                    <option value="">Sin sede</option>
+                    {venues.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
+                  </StyledSelect>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>Detalle de ubicación</label>
+                  <input className="input" placeholder="Ej: Podio central, pista 1"
+                    value={form.locationDetail} onChange={(e) => setForm((f) => ({ ...f, locationDetail: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>Estado</label>
+                  <StyledSelect value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}>
+                    <option value="PROGRAMADA">Programada</option>
+                    <option value="REALIZADA">Realizada</option>
+                  </StyledSelect>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>Notas</label>
+                <textarea className="input" rows={2} placeholder="Notas internas de la ceremonia…"
+                  value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
+              </div>
+
+              {/* Entregadores */}
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>Entregadores VIP</label>
+                <StyledSelect value={addAthleteId} onChange={(e) => addAwarder(e.target.value)}>
+                  <option value="">Agregar un VIP…</option>
+                  {awarderCandidates
+                    .filter((a) => !formAwarders.some((e) => e.athleteId === a.id))
+                    .map((a) => <option key={a.id} value={a.id}>{a.fullName || a.id.slice(0, 8)}</option>)}
+                </StyledSelect>
+                <div className="rounded-xl p-3 space-y-1.5 mt-2" style={{ background: "#f8fafc", border: "1px solid #eef1f6", maxHeight: 200, overflowY: "auto" }}>
+                  {formAwarders.length === 0 ? (
+                    <p className="text-[12px]" style={{ color: "#94a3b8" }}>Sin entregadores asignados.</p>
+                  ) : formAwarders.map((a) => {
+                    const state = awarderState(a);
+                    const meta = AWARDER_META[state];
+                    return (
+                      <div key={a.athleteId} className="flex items-center justify-between gap-2">
+                        <span className="text-[13px] truncate" style={{ color: "#0f172a", fontWeight: 500 }}>
+                          {athleteName(a.athleteId)}
+                        </span>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {a.id && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1"
+                              style={{ background: meta.bg, color: meta.color }}>
+                              <span>{meta.icon}</span>{meta.label}
+                            </span>
+                          )}
+                          <button type="button" onClick={() => removeAwarder(a.athleteId)}
+                            className="text-[11px] font-bold" style={{ color: "#dc2626", cursor: "pointer" }} title="Quitar">
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="text-[11px] mt-1" style={{ color: "#94a3b8" }}>
+                  Los entregadores nuevos reciben una notificación y empiezan como pendientes; las confirmaciones existentes se conservan.
+                </p>
+              </div>
             </div>
 
-            <p className="text-[11px]" style={{ color: "#94a3b8" }}>
-              Las confirmaciones ya registradas se conservan al guardar. Sólo los entregadores nuevos empiezan como pendientes.
-            </p>
+            {message && <p className="text-sm" style={{ color: "#b91c1c" }}>{message}</p>}
 
-            <div className="flex justify-end gap-2">
-              <button type="button" className="btn btn-ghost text-sm" onClick={() => setEditing(null)} disabled={savingEdit}>Cancelar</button>
-              <button type="button" className="btn btn-primary text-sm" onClick={saveEdit} disabled={savingEdit}>
-                {savingEdit ? "Guardando…" : "Guardar encargados"}
-              </button>
+            <div className="flex items-center justify-between gap-2">
+              {formEditingId ? (
+                <button type="button" onClick={deletePremiacion} disabled={savingForm || deleting}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-lg"
+                  style={{ background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", cursor: "pointer" }}>
+                  {deleting ? "Eliminando…" : "Eliminar"}
+                </button>
+              ) : <span />}
+              <div className="flex gap-2">
+                <button type="button" className="btn btn-ghost text-sm" onClick={() => setFormOpen(false)} disabled={savingForm || deleting}>Cancelar</button>
+                <button type="button" className="btn btn-primary text-sm" onClick={saveForm} disabled={savingForm || deleting}>
+                  {savingForm ? "Guardando…" : formEditingId ? "Guardar cambios" : "Crear premiación"}
+                </button>
+              </div>
             </div>
           </div>
         </div>

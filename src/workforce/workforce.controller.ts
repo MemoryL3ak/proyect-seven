@@ -50,6 +50,11 @@ export class WorkforceController {
     return this.service.createPerson(dto);
   }
 
+  @Post('persons/bulk')
+  bulkCreatePersons(@Body() body: { persons: CreatePersonDto[] }) {
+    return this.service.bulkCreatePersons(body?.persons ?? []);
+  }
+
   @Patch('persons/:id')
   updatePerson(@Param('id') id: string, @Body() dto: UpdatePersonDto) {
     return this.service.updatePerson(id, dto);
@@ -70,6 +75,11 @@ export class WorkforceController {
   @Post('products')
   createProduct(@Body() dto: CreateProductDto) {
     return this.service.createProduct(dto);
+  }
+
+  @Post('products/bulk')
+  bulkCreateProducts(@Body() body: { products: CreateProductDto[] }) {
+    return this.service.bulkCreateProducts(body?.products ?? []);
   }
 
   @Patch('products/:id')

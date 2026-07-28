@@ -7,6 +7,7 @@ import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import { DollarIcon, TruckIcon, UsersIcon, AlertIcon, RefreshIcon, ClipboardIcon } from "@/components/ui/Icons";
 import { CLIENT_TYPE_OPTIONS, clientTypeLabel } from "@/lib/clientTypes";
+import { downloadPDF } from "@/lib/reports";
 
 /* ────────────────────────────────────────────────────────────
    Panel Financiero de Transporte
@@ -236,7 +237,7 @@ export default function TransportFinancePage() {
     } finally {
       setCargando(false);
     }
-  }, [eventId, desde, hasta]);
+  }, [eventId, desde, hasta, tipoCliente, flota, servicio, proveedorId]);
 
   useEffect(() => {
     void cargar();
@@ -306,6 +307,65 @@ export default function TransportFinancePage() {
     a.download = `finanzas-transporte-${hoyChile()}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const exportarPdf = () => {
+    if (!resumen) return;
+    const t = resumen.totales;
+    const filtrosActivos = [
+      eventId ? `Evento: ${eventos.find((e) => e.id === eventId)?.name ?? eventId}` : null,
+      desde || hasta ? `Rango: ${desde || "inicio"} → ${hasta || "hoy"}` : null,
+      tipoCliente ? `Tipo cliente: ${clientTypeLabel(tipoCliente)}` : null,
+      flota ? `Flota: ${FLOTA_LABEL[flota] ?? flota}` : null,
+      servicio ? `Servicio: ${SERVICIO_LABEL[servicio] ?? servicio}` : null,
+      proveedorId ? `Proveedor: ${proveedores.find((p) => p.id === proveedorId)?.name ?? proveedorId}` : null,
+    ].filter(Boolean) as string[];
+
+    const grupo = (titulo: string, etiqueta: (c: string) => string, filas: Grupo[]) => ({
+      title: titulo,
+      headers: ["Categoría", "Viajes", "Km", "Ingreso", "Costo", "Margen", "Margen %"],
+      rows: filas.map((g) => [
+        etiqueta(g.clave), g.viajes, g.km ? g.km.toFixed(1) : "0",
+        clp(g.ingreso), clp(g.costo), clp(g.margen), pct(g.margenPct),
+      ]),
+    });
+
+    downloadPDF("finanzas-transporte", "Panel Financiero de Transporte", [
+      {
+        title: filtrosActivos.length ? `Resumen (${filtrosActivos.join(" · ")})` : "Resumen general",
+        headers: ["Indicador", "Valor"],
+        rows: [
+          ["Viajes", t.viajes],
+          ["Servicios prestados", t.viajesPrestados],
+          ["Pasajeros", t.pasajeros],
+          ["Km recorridos", km(t.kmRecorridos)],
+          ["Ingreso total", clp(t.ingresoTotal)],
+          ["Costo total", clp(t.costoTotal)],
+          ["Margen total", `${clp(t.margenTotal)} (${pct(t.margenPct)})`],
+          ["Ticket promedio", clp(t.ticketPromedio)],
+        ],
+      },
+      {
+        title: "Por proveedor",
+        headers: ["Proveedor", "Viajes", "Ingreso", "Costo", "Margen", "Margen %"],
+        rows: resumen.porProveedor.map((g) => [
+          g.nombre, g.viajes, clp(g.ingreso), clp(g.costo), clp(g.margen), pct(g.margenPct),
+        ]),
+      },
+      grupo("Por flota", (c) => FLOTA_LABEL[c] ?? c, resumen.porFlota),
+      grupo("Por tipo de servicio", (c) => SERVICIO_LABEL[c] ?? c, resumen.porServicio),
+      grupo("Por tipo de cliente", (c) => clientTypeLabel(c), resumen.porTipoCliente),
+      {
+        title: `Detalle de servicios (${ordenado.length})`,
+        headers: ["Fecha", "Estado", "Cliente", "Servicio", "Flota", "Conductor", "Proveedor", "Km", "Ingreso", "Costo", "Margen"],
+        rows: ordenado.map((f) => [
+          f.fecha ?? "", STATUS_LABEL[f.status] ?? f.status, clientTypeLabel(f.clientType),
+          SERVICIO_LABEL[f.servicio] ?? f.servicio, FLOTA_LABEL[f.flota] ?? f.flota,
+          f.conductor, f.proveedor, f.km ? f.km.toFixed(1) : "",
+          clp(f.ingreso), clp(f.costo), clp(f.margen),
+        ]),
+      },
+    ]);
   };
 
   const ordenado = useMemo(() => {
@@ -383,6 +443,9 @@ export default function TransportFinancePage() {
             </button>
             <button className="btn btn-gold" onClick={exportarCsv} disabled={detalle.length === 0}>
               <ClipboardIcon /> Exportar CSV
+            </button>
+            <button className="btn btn-primary" onClick={exportarPdf} disabled={!resumen || sinDatos}>
+              <ClipboardIcon /> Exportar PDF
             </button>
           </div>
         }

@@ -51,6 +51,7 @@ const navSections: NavSection[] = [
           { href: "/operations/fleet", label: "Flota (disponibilidad)", icon: "driver" },
           { href: "/operations/driver-heatmap", label: "Panel Conductores", icon: "driver" },
           { href: "/operations/driver-monitoring", label: "Monitoreo de Conductores", icon: "driver" },
+          { href: "/operations/vip-monitoring", label: "Monitoreo VIP", icon: "pin" },
           { href: "/operations/transport-finance", label: "Panel Financiero", icon: "dollar" }
         ]
       },
@@ -225,6 +226,7 @@ const HREF_TO_MODULE: Record<string, string> = {
   "/operations/driver-heatmap": "operacion.viajes",
   "/operations/fleet": "operacion.viajes",
   "/operations/driver-monitoring": "operacion.tracking",
+  "/operations/vip-monitoring": "operacion.tracking",
   "/operations/hotel-tracking": "hoteleria.tracking",
   "/masters/accommodations": "hoteleria.hoteles",
   "/masters/hotel-rooms": "hoteleria.habitaciones",

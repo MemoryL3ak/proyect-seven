@@ -17,7 +17,7 @@ export function humanizePath(pathname: string, options: HumanizeOptions = {}) {
       if (label) return translate(label);
 
       const normalized = part.replace(/-/g, " ");
-      const capitalized = normalized.charAt(0).toUpperCase() + part.slice(1);
+      const capitalized = normalized.charAt(0).toUpperCase() + normalized.slice(1);
       return translate(capitalized);
     })
     .join(" / ");

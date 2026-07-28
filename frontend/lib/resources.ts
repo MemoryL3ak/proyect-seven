@@ -933,7 +933,9 @@ export const resources: Record<string, ResourceConfig> = {
     ],
     tableHiddenKeys: [
       "id",
-      "totalCapacity"
+      "totalCapacity",
+      "photoUrl",
+      "photoDataUrl"
     ],
     fields: [
       { key: "eventId", label: "Evento", type: "select", required: true, optionsSource: "events" },
@@ -950,6 +952,8 @@ export const resources: Record<string, ResourceConfig> = {
       { key: "tower", label: "Torre", type: "text", showWhen: { field: "accommodationType", value: "VILLA" } },
       { key: "name", label: "Nombre", type: "text", required: true },
       { key: "address", label: "Dirección", type: "text" },
+      { key: "photoDataUrl", label: "Foto del hotel", type: "file", transient: true },
+      { key: "photoUrl", label: "Foto", type: "text", formHidden: true },
       { key: "checkIn", label: "Check-in", type: "datetime" },
       { key: "checkOut", label: "Check-out", type: "datetime" },
       { key: "roomSingle", label: "Habitaciones Single", type: "number", transient: true },

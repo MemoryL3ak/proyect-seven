@@ -18,6 +18,9 @@ export default function VenueMap({ title, query }: { title: string; query: strin
     ? `https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${encodeURIComponent(query)}`
     : null;
   const externalHref = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+  // Ruta de navegación: en el teléfono abre la app de Google Maps con las
+  // indicaciones para llegar desde la ubicación actual.
+  const directionsHref = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(query)}&travelmode=driving`;
 
   return (
     <>
@@ -120,6 +123,8 @@ export default function VenueMap({ title, query }: { title: string; query: strin
                 fontWeight: 700,
                 color: "#fff",
                 margin: 0,
+                flex: 1,
+                minWidth: 0,
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
@@ -127,6 +132,31 @@ export default function VenueMap({ title, query }: { title: string; query: strin
             >
               {title}
             </p>
+            <a
+              href={directionsHref}
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "8px 12px",
+                borderRadius: 10,
+                border: "1px solid rgba(52,243,198,0.4)",
+                background: "rgba(33,208,179,0.15)",
+                color: "#34F3C6",
+                fontSize: 12.5,
+                fontWeight: 700,
+                textDecoration: "none",
+                flexShrink: 0,
+                whiteSpace: "nowrap",
+              }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="3 11 22 2 13 21 11 13 3 11" />
+              </svg>
+              Cómo llegar
+            </a>
           </div>
           {embedSrc ? (
             <iframe src={embedSrc} title={`Mapa de ${title}`} style={{ flex: 1, width: "100%", border: "none" }} allowFullScreen />
@@ -152,6 +182,26 @@ export default function VenueMap({ title, query }: { title: string; query: strin
                 }}
               >
                 Abrir en Google Maps
+              </a>
+              <a
+                href={directionsHref}
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "10px 16px",
+                  borderRadius: 10,
+                  background: "rgba(31,205,255,0.08)",
+                  border: "1px solid rgba(31,205,255,0.3)",
+                  color: "#0369a1",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  textDecoration: "none",
+                }}
+              >
+                Cómo llegar
               </a>
             </div>
           )}

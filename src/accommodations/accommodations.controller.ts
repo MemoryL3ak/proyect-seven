@@ -30,6 +30,11 @@ export class AccommodationsController {
     return this.accommodationsService.update(id, updateAccommodationDto);
   }
 
+  @Post(':id/photo')
+  uploadPhoto(@Param('id') id: string, @Body() body: { dataUrl?: string }) {
+    return this.accommodationsService.uploadPhoto(id, body?.dataUrl ?? '');
+  }
+
   @Patch(':id/sync-rooms')
   syncRooms(
     @Param('id') id: string,

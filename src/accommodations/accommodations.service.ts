@@ -1,8 +1,11 @@
 ﻿import {
+  BadRequestException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { createClient } from '@supabase/supabase-js';
 import { DataSource } from 'typeorm';
 import { CreateAccommodationDto } from './dto/create-accommodation.dto';
 import { UpdateAccommodationDto } from './dto/update-accommodation.dto';
@@ -15,6 +18,7 @@ type AccommodationRow = {
   accommodation_type: string;
   tower: string | null;
   address: string | null;
+  photo_url?: string | null;
   geo_location: unknown | null;
   total_capacity: number;
   room_inventory: Record<string, number> | string | null;
@@ -110,7 +114,45 @@ function calculateTotalCapacityFromInventory(roomInventory: Record<string, numbe
 
 @Injectable()
 export class AccommodationsService {
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(
+    private readonly dataSource: DataSource,
+    private readonly configService: ConfigService,
+  ) {}
+
+  /** Sube la foto del hotel (data URL base64) al storage y guarda photo_url. */
+  async uploadPhoto(id: string, dataUrl: string) {
+    const match = /^data:([^;]+);base64,(.+)$/.exec(dataUrl || '');
+    if (!match) throw new BadRequestException('Invalid photo payload');
+
+    const contentType = match[1];
+    const buffer = Buffer.from(match[2], 'base64');
+    const extension = contentType.split('/')[1] || 'jpg';
+    const path = `${id}/${Date.now()}.${extension}`;
+
+    const supabaseUrl = this.configService.get<string>('SUPABASE_URL');
+    const serviceRoleKey = this.configService.get<string>('SUPABASE_SERVICE_ROLE_KEY');
+    if (!supabaseUrl || !serviceRoleKey) {
+      throw new InternalServerErrorException(
+        'SUPABASE_SERVICE_ROLE_KEY is required to upload accommodation photos',
+      );
+    }
+    const admin = createClient(supabaseUrl, serviceRoleKey);
+
+    const { error } = await admin.storage
+      .from('venue-photos')
+      .upload(`hotels/${path}`, buffer, { contentType, upsert: true });
+    if (error) {
+      throw new InternalServerErrorException(error.message || 'Error uploading accommodation photo');
+    }
+
+    const { data } = admin.storage.from('venue-photos').getPublicUrl(`hotels/${path}`);
+    const publicUrl = data?.publicUrl ?? null;
+    if (!publicUrl) {
+      throw new InternalServerErrorException('Error resolving accommodation photo URL');
+    }
+
+    return this.update(id, { photoUrl: publicUrl });
+  }
 
   private toEntity(row: AccommodationRow): Accommodation {
     return {
@@ -120,6 +162,7 @@ export class AccommodationsService {
       accommodationType: String(row.accommodation_type || 'HOTEL').toUpperCase(),
       tower: row.tower ?? null,
       address: row.address,
+      photoUrl: row.photo_url ?? null,
       geoLocation: row.geo_location,
       totalCapacity: row.total_capacity,
       roomInventory: parseJsonObject(row.room_inventory),
@@ -158,6 +201,10 @@ export class AccommodationsService {
     if (dto.address !== undefined) {
       set.push(`address = $${index++}`);
       params.push(dto.address ?? null);
+    }
+    if (dto.photoUrl !== undefined) {
+      set.push(`photo_url = $${index++}`);
+      params.push(dto.photoUrl ?? null);
     }
     if (dto.totalCapacity !== undefined) {
       set.push(`total_capacity = $${index++}`);
@@ -385,6 +432,9 @@ export class AccommodationsService {
       const placeholders: string[] = ['$1', '$2', '$3'];
       placeholders.push(optionalField('tower', createDto.tower ?? null));
       placeholders.push(optionalField('address', createDto.address ?? null));
+      if (createDto.photoUrl !== undefined) {
+        placeholders.push(optionalField('photo_url', createDto.photoUrl ?? null));
+      }
       if (createDto.geoLocation !== undefined && createDto.geoLocation !== null) {
         columns.push('geo_location');
         placeholders.push(`ST_SetSRID(ST_GeomFromGeoJSON($${index++}), 4326)`);

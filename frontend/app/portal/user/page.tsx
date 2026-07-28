@@ -17,6 +17,7 @@ import CuadernoCargoSection from "@/components/CuadernoCargoSection";
 import EmergencyNumbersSection from "@/components/EmergencyNumbersSection";
 import PushTokenSync from "@/components/PushTokenSync";
 import { buildCredentialHtml } from "@/lib/credential-template";
+import { downloadCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
 import QRCode from "qrcode";
 
 type Athlete = {
@@ -82,7 +83,7 @@ type CalendarEvent = {
 };
 type DisciplineParent = { id: string; name?: string | null };
 type Venue = { id: string; eventId?: string | null; name?: string | null; address?: string | null; region?: string | null; commune?: string | null; photoUrl?: string | null };
-type Accommodation = { id: string; eventId?: string | null; name?: string | null; address?: string | null; city?: string | null; country?: string | null; checkIn?: string | null; checkOut?: string | null; roomType?: string | null; contactPhone?: string | null };
+type Accommodation = { id: string; eventId?: string | null; name?: string | null; address?: string | null; city?: string | null; country?: string | null; checkIn?: string | null; checkOut?: string | null; roomType?: string | null; contactPhone?: string | null; photoUrl?: string | null };
 type FoodLocation = { id: string; accommodationId?: string | null; name: string; description?: string | null; capacity?: number | null; clientTypes: string[] };
 type FoodMenu = { id: string; date: string; mealType: string; title: string; description?: string | null; dietaryType?: string | null; accommodationId?: string | null };
 type PremAwarder = {
@@ -282,7 +283,19 @@ export default function UserPortalPage() {
   const [allAccommodations, setAllAccommodations] = useState<Accommodation[]>([]);
   const [foodLocations, setFoodLocations] = useState<FoodLocation[]>([]);
   const [foodMenus, setFoodMenus] = useState<FoodMenu[]>([]);
-  const [activeTab, setActiveTab] = useState<PortalTab>("itinerario");
+  // El tab activo sobrevive al refresh: se restaura desde sessionStorage.
+  const [activeTab, setActiveTab] = useState<PortalTab>(() => {
+    if (typeof window === "undefined") return "itinerario";
+    try {
+      const saved = sessionStorage.getItem("portal_user_tab") as PortalTab | null;
+      const valid: PortalTab[] = ["itinerario", "actividades", "calendario", "premiaciones", "sedes", "alimentacion", "delegacion", "cupones", "cuenta"];
+      if (saved && valid.includes(saved)) return saved;
+    } catch {}
+    return "itinerario";
+  });
+  useEffect(() => {
+    try { sessionStorage.setItem("portal_user_tab", activeTab); } catch {}
+  }, [activeTab]);
   const [moreOpen, setMoreOpen] = useState(false);
   const [assistOpen, setAssistOpen] = useState(false);
   const [actSubTab, setActSubTab] = useState<"curso" | "historial">("curso");
@@ -314,6 +327,7 @@ export default function UserPortalPage() {
   const [couponQrDataUrl, setCouponQrDataUrl] = useState<string>("");
   const [couponError, setCouponError] = useState<string | null>(null);
   const [credentialHtml, setCredentialHtml] = useState<string | null>(null);
+  const [credentialPdf, setCredentialPdf] = useState<CredentialPdfData | null>(null);
   const notify = useNotifications({ userKind: "athlete", userId: athlete?.id ?? null });
 
   // Al cargar las actividades por primera vez, posiciona el calendario en el mes
@@ -2353,6 +2367,9 @@ export default function UserPortalPage() {
                   </button>
                   {isOpen && (
                     <div style={{ padding:"0 14px 14px",display:"flex",flexDirection:"column",gap:6 }}>
+                      {h.photoUrl && (
+                        <img src={h.photoUrl} alt={h.name || "Hotel"} style={{ width:"100%",height:140,objectFit:"cover",borderRadius:10 }} />
+                      )}
                       {addr && <p style={{ fontSize:12,color:"#334155",margin:0 }}>{addr}</p>}
                       {h.checkIn && <p style={{ fontSize:11,color:"#64748b",margin:0 }}>Check-in: {new Date(h.checkIn).toLocaleDateString("es-CL")}</p>}
                       {h.checkOut && <p style={{ fontSize:11,color:"#64748b",margin:0 }}>Check-out: {new Date(h.checkOut).toLocaleDateString("es-CL")}</p>}
@@ -2814,6 +2831,15 @@ export default function UserPortalPage() {
                     countryTag: athlete.countryCode || delegation?.countryCode || "",
                     photoUrl,
                     qrDataUrl,
+                  });
+                  setCredentialPdf({
+                    eventName: evName,
+                    fullName: athlete.fullName,
+                    roleLabel: athlete.isDelegationLead ? "JEFE DELEGACIÓN" : "PARTICIPANTE",
+                    code: athlete.credentialCode || athlete.id.slice(-6),
+                    countryTag: athlete.countryCode || delegation?.countryCode || undefined,
+                    qrDataUrl,
+                    organization: "Seven Arena",
                   });
                   setCredentialHtml(html);
                 } catch { notify.push("No se pudo generar la credencial","❌"); }
@@ -3431,12 +3457,13 @@ export default function UserPortalPage() {
                 </div>
                 <div style={{ display:"flex",gap:8 }}>
                   <button type="button" onClick={() => {
-                    const w = window.open("", "_blank", "width=480,height=760");
-                    if (w) { w.document.write(credentialHtml); w.document.close(); }
+                    if (!credentialPdf) return;
+                    try { downloadCredentialPdf(credentialPdf); }
+                    catch { notify.push("No se pudo generar el PDF", "❌"); }
                   }}
-                    title="Abrir en ventana / Imprimir"
+                    title="Descargar PDF"
                     style={{ width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",color:"#21D0B3",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                   </button>
                   <button type="button" onClick={() => setCredentialHtml(null)}
                     style={{ width:34,height:34,borderRadius:10,border:"1px solid rgba(255,255,255,0.2)",background:"rgba(255,255,255,0.08)",color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,lineHeight:1 }}>×</button>

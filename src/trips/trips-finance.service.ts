@@ -66,7 +66,21 @@ export class TripsFinanceService {
         select
           f.*,
           coalesce(f.trip_date, (f.scheduled_at at time zone 'America/Santiago')::date) as dia,
-          upper(coalesce(nullif(trim(f.requested_vehicle_type), ''), nullif(trim(f.fleet_acronym), ''), '')) as vt_raw
+          upper(coalesce(nullif(trim(f.requested_vehicle_type), ''), nullif(trim(f.fleet_acronym), ''), '')) as vt_raw,
+          -- Mismo mapeo legacy que shared/client-types.ts: los datos antiguos
+          -- traen ATHLETE/COACH/STAFF..., el vocabulario canónico es TA/TF/etc.
+          case upper(coalesce(nullif(trim(f.client_type), ''), 'SIN TIPO'))
+            when 'ATHLETE' then 'TA'
+            when 'ATLETA' then 'TA'
+            when 'DEPORTISTA' then 'TA'
+            when 'COACH' then 'TF'
+            when 'STAFF' then 'COMITE_ORGANIZADOR'
+            when 'DELEGATION' then 'TF'
+            when 'DELEGATION_LEAD' then 'TF'
+            when 'OTHER' then 'VIP'
+            when 'PROVIDER' then 'PROVEEDORES'
+            else upper(coalesce(nullif(trim(f.client_type), ''), 'SIN TIPO'))
+          end as client_type_norm
         from filtrado f
       ),
       con_flota as (
@@ -102,7 +116,7 @@ export class TripsFinanceService {
         from con_flota c
         left join transport.drivers d           on d.id  = c.driver_id
         left join core.provider_participants pp on pp.id = c.driver_id
-        where ($4::text is null or upper(coalesce(nullif(trim(c.client_type), ''), 'SIN TIPO')) = $4)
+        where ($4::text is null or c.client_type_norm = $4)
           and ($5::text is null or coalesce(c.fleet_norm, 'SIN CLASIFICAR') = $5)
           and ($6::text is null or c.trip_type_norm = $6)
           and ($7::uuid is null or coalesce(d.provider_id, pp.provider_id) = $7)
@@ -173,8 +187,12 @@ export class TripsFinanceService {
   }
 
   /**
-   * Km GPS reales (traza de telemetry.vehicle_positions) del universo
-   * filtrado. Es la consulta más pesada del panel, por eso:
+   * Km recorridos del universo filtrado, viaje a viaje: la traza GPS real
+   * (telemetry.vehicle_positions) cuando el viaje la tiene, y el largo de la
+   * ruta planificada como respaldo. Sumar por viaje evita el problema de
+   * mezclar fuentes con cobertura parcial (antes se tomaba el máximo entre
+   * ambos totales, subestimando cuando unos viajes sólo tenían GPS y otros
+   * sólo ruta). Es la consulta más pesada del panel, por eso:
    * - se ejecuta UNA sola vez por request (no dentro de cada agregado),
    * - corre con statement_timeout propio: si la telemetría es muy grande,
    *   el panel carga igual y los totales caen al largo de ruta planificada.
@@ -189,15 +207,22 @@ export class TripsFinanceService {
         return em.query(
           `${this.baseCte()}
            select
-             coalesce(sum(t.km), 0)::numeric                                    as km,
-             coalesce(sum(t.km) filter (where t.status in ${delivered}), 0)::numeric as km_prestados
+             coalesce(sum(t.km), 0)::numeric                                          as km,
+             coalesce(sum(t.km) filter (where t.status in ${delivered}), 0)::numeric  as km_prestados
            from (
              select c.id, c.status,
-                    st_length(st_makeline(vp.location order by vp."timestamp")::geography) / 1000.0 as km
+                    coalesce(
+                      nullif(g.km_gps, 0),
+                      st_length(c.route_geometry::geography) / 1000.0,
+                      0
+                    ) as km
              from con_conductor c
-             join telemetry.vehicle_positions vp on vp.trip_id = c.id
+             left join lateral (
+               select st_length(st_makeline(vp.location order by vp."timestamp")::geography) / 1000.0 as km_gps
+               from telemetry.vehicle_positions vp
+               where vp.trip_id = c.id
+             ) g on true
              where c.status <> 'CANCELLED'
-             group by c.id, c.status
            ) t`,
           params,
         );
@@ -280,7 +305,7 @@ export class TripsFinanceService {
         this.dataSource.query(
           `${this.baseCte()}
            select
-             coalesce(nullif(client_type, ''), 'SIN TIPO') as clave,
+             client_type_norm as clave,
              count(*)::int                                 as viajes,
              coalesce(sum(ingreso) filter (where status <> 'CANCELLED'), 0)::numeric as ingreso,
              coalesce(sum(costo)   filter (where status <> 'CANCELLED'), 0)::numeric as costo,
@@ -393,11 +418,10 @@ export class TripsFinanceService {
         viajesPrestados: num(t.prestados),
         viajesCancelados: num(t.cancelados),
         pasajeros: num(t.pasajeros),
-        // GPS real cuando está disponible; si no (o si dio timeout), el largo
-        // de las rutas planificadas. Se toma el mayor: ambos son subestimados
-        // cuando su fuente tiene cobertura parcial.
-        kmRecorridos: Math.max(num(t.km_recorridos), kmGps?.km ?? 0),
-        kmPrestados: Math.max(num(t.km_prestados), kmGps?.kmPrestados ?? 0),
+        // Suma por viaje de GPS real con respaldo de ruta planificada; si la
+        // consulta de telemetría falló o dio timeout, el largo de las rutas.
+        kmRecorridos: kmGps ? kmGps.km : num(t.km_recorridos),
+        kmPrestados: kmGps ? kmGps.kmPrestados : num(t.km_prestados),
         ingresoTotal,
         costoTotal,
         margenTotal: ingresoTotal - costoTotal,

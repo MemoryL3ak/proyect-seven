@@ -16,6 +16,7 @@ import SofiaWidget from "@/components/SofiaWidget";
 import VenueMap from "@/components/VenueMap";
 import CredentialQrCard from "@/components/CredentialQrCard";
 import { buildCredentialHtml } from "@/lib/credential-template";
+import { downloadCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
 import QRCode from "qrcode";
 import dynamic from "next/dynamic";
 
@@ -102,6 +103,7 @@ type Accommodation = {
   checkOut?: string | null;
   roomType?: string | null;
   contactPhone?: string | null;
+  photoUrl?: string | null;
 };
 
 type EventItem = { id: string; name?: string | null };
@@ -410,7 +412,19 @@ export default function VehicleRequestPortalPage() {
   const [returnVenueId, setReturnVenueId] = useState("");
   const [editingTripId, setEditingTripId] = useState<string | null>(null);
   const [locationPermission, setLocationPermission] = useState<"granted" | "prompt" | "denied" | null>(null);
-  const [activeTab, setActiveTab] = useState<PortalTab>("solicitud");
+  // El tab activo sobrevive al refresh: se restaura desde sessionStorage.
+  const [activeTab, setActiveTab] = useState<PortalTab>(() => {
+    if (typeof window === "undefined") return "solicitud";
+    try {
+      const saved = sessionStorage.getItem("portal_vr_tab") as PortalTab | null;
+      const valid: PortalTab[] = ["solicitud", "actividades", "premiaciones", "cupones", "sedes", "hoteles", "alimentacion", "calendario", "cuenta"];
+      if (saved && valid.includes(saved)) return saved;
+    } catch {}
+    return "solicitud";
+  });
+  useEffect(() => {
+    try { sessionStorage.setItem("portal_vr_tab", activeTab); } catch {}
+  }, [activeTab]);
   const [moreOpen, setMoreOpen] = useState(false);
   const [assistOpen, setAssistOpen] = useState(false);
   const { vipPrimary, vipOverflow } = useMemo(() => {
@@ -445,8 +459,6 @@ export default function VehicleRequestPortalPage() {
   const [premSearch, setPremSearch] = useState("");
   const [premDisciplineFilter, setPremDisciplineFilter] = useState("");
   const [premVenueFilter, setPremVenueFilter] = useState("");
-  const [premDateFrom, setPremDateFrom] = useState("");
-  const [premDateTo, setPremDateTo] = useState("");
   // Coupons tab state
   const [couponTab, setCouponTab] = useState<"available" | "mine">("available");
   const [couponsAvailable, setCouponsAvailable] = useState<Coupon[]>([]);
@@ -456,6 +468,7 @@ export default function VehicleRequestPortalPage() {
   const [couponQrDataUrl, setCouponQrDataUrl] = useState<string>("");
   const [couponError, setCouponError] = useState<string | null>(null);
   const [credentialHtml, setCredentialHtml] = useState<string | null>(null);
+  const [credentialPdf, setCredentialPdf] = useState<CredentialPdfData | null>(null);
   const [visibleTripsCount, setVisibleTripsCount] = useState(5);
 
   const [loading, setLoading] = useState(false);
@@ -607,7 +620,7 @@ export default function VehicleRequestPortalPage() {
         const data = await apiFetch<Athlete>(`/athletes/${athleteId}`);
         if (data?.id) {
           setAthlete(data);
-          setActiveTab("solicitud");
+          // No se fuerza el tab: al refrescar, el usuario queda donde estaba.
           try { sessionStorage.setItem("portal_vr_id", data.id); } catch {}
           await loadPortal(data);
         } else {
@@ -2189,9 +2202,6 @@ export default function VehicleRequestPortalPage() {
                 }
                 if (premDisciplineFilter && (p.discipline || "") !== premDisciplineFilter) return false;
                 if (premVenueFilter && (p.venue_name || "") !== premVenueFilter) return false;
-                const dayKey = fmtKey(p.scheduled_at);
-                if (premDateFrom && (!dayKey || dayKey < premDateFrom)) return false;
-                if (premDateTo && (!dayKey || dayKey > premDateTo)) return false;
                 if (q) {
                   const haystack = [p.title, p.discipline, p.venue_name, p.location_detail, p.notes]
                     .filter(Boolean).join(" ").toLowerCase();
@@ -2230,11 +2240,10 @@ export default function VehicleRequestPortalPage() {
               });
               const days = Array.from(grouped.entries()).sort(([a],[b]) => a.localeCompare(b));
 
-              const hasFilters = !!(premStatusFilter || premRoleFilter || premAttendanceFilter || premSearch || premDisciplineFilter || premVenueFilter || premDateFrom || premDateTo);
+              const hasFilters = !!(premStatusFilter || premRoleFilter || premAttendanceFilter || premSearch || premDisciplineFilter || premVenueFilter);
               const clearAll = () => {
                 setPremStatusFilter(""); setPremRoleFilter(""); setPremAttendanceFilter("");
                 setPremSearch(""); setPremDisciplineFilter(""); setPremVenueFilter("");
-                setPremDateFrom(""); setPremDateTo("");
               };
 
               const renderPremCard = (p: PremiacionVIP) => {
@@ -2390,93 +2399,59 @@ export default function VehicleRequestPortalPage() {
                           />
                         </div>
 
-                        {/* Disciplina + Sede + Rango de fechas */}
+                        {/* Filtros como listas desplegables: simples y compactos */}
                         <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:6 }}>
-                          {disciplineOptions.length > 0 && (
-                            <select value={premDisciplineFilter} onChange={(e) => setPremDisciplineFilter(e.target.value)}
-                              style={{ padding:"7px 10px",borderRadius:10,border:`1px solid ${premDisciplineFilter?"#c78c00":"#e2e8f0"}`,fontSize:12,color:premDisciplineFilter?"#7a4a00":"#475569",fontWeight:premDisciplineFilter?700:400,background:"#fff" }}>
-                              <option value="">Todas las disciplinas</option>
-                              {disciplineOptions.map(d => <option key={d} value={d}>{d}</option>)}
-                            </select>
-                          )}
-                          {venueOptions.length > 0 && (
-                            <select value={premVenueFilter} onChange={(e) => setPremVenueFilter(e.target.value)}
-                              style={{ padding:"7px 10px",borderRadius:10,border:`1px solid ${premVenueFilter?"#c78c00":"#e2e8f0"}`,fontSize:12,color:premVenueFilter?"#7a4a00":"#475569",fontWeight:premVenueFilter?700:400,background:"#fff" }}>
-                              <option value="">Todas las sedes</option>
-                              {venueOptions.map(v => <option key={v} value={v}>{v}</option>)}
-                            </select>
-                          )}
-                          <input type="date" value={premDateFrom} onChange={(e) => setPremDateFrom(e.target.value)} aria-label="Desde"
-                            style={{ padding:"7px 10px",borderRadius:10,border:`1px solid ${premDateFrom?"#c78c00":"#e2e8f0"}`,fontSize:12,color:"#475569",background:"#fff" }} />
-                          <input type="date" value={premDateTo} onChange={(e) => setPremDateTo(e.target.value)} aria-label="Hasta"
-                            style={{ padding:"7px 10px",borderRadius:10,border:`1px solid ${premDateTo?"#c78c00":"#e2e8f0"}`,fontSize:12,color:"#475569",background:"#fff" }} />
-                        </div>
-
-                        {/* Status chips */}
-                        <div style={{ display:"flex",gap:6,flexWrap:"wrap" }}>
-                          {([
-                            { v:"" as const, label:"Estado", count:premiaciones.length },
-                            { v:"PROGRAMADA" as const, label:"Prog.", count:totalProg },
-                            { v:"REALIZADA" as const, label:"Real.", count:totalReal },
-                          ]).map(opt => {
-                            const active = premStatusFilter === opt.v;
-                            const isDone = opt.v === "REALIZADA";
-                            const isProg = opt.v === "PROGRAMADA";
+                          {(() => {
+                            const selectStyle = (active: boolean) => ({
+                              padding:"8px 10px",borderRadius:10,
+                              border:`1px solid ${active?"#c78c00":"#e2e8f0"}`,
+                              fontSize:12,color:active?"#7a4a00":"#475569",
+                              fontWeight:active?700:400,background:"#fff",width:"100%",
+                            });
                             return (
-                              <button key={opt.v||"all-st"} type="button" onClick={() => setPremStatusFilter(opt.v)}
-                                style={{ padding:"5px 10px",borderRadius:20,border:active ? `1px solid ${isDone?"#2e7d32":isProg?"#c78c00":"#21D0B3"}` : "1px solid #e2e8f0",
-                                  background:active ? (isDone?"#e7f5ec":isProg?"#fff4d6":"rgba(33,208,179,0.12)") : "#fff",
-                                  color:active ? (isDone?"#1e5125":isProg?"#7a4a00":"#0a7a6b") : "#475569",
-                                  fontSize:10.5,fontWeight:700,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:5 }}>
-                                {opt.label} <span style={{ fontSize:9,padding:"1px 5px",borderRadius:10,background:active?"rgba(255,255,255,0.6)":"#f1f5f9",color:active ? (isDone?"#1e5125":isProg?"#7a4a00":"#0a7a6b") : "#64748b" }}>{opt.count}</span>
-                              </button>
+                              <>
+                                {disciplineOptions.length > 0 && (
+                                  <select value={premDisciplineFilter} onChange={(e) => setPremDisciplineFilter(e.target.value)}
+                                    aria-label="Disciplina" style={selectStyle(!!premDisciplineFilter)}>
+                                    <option value="">Disciplina: todas</option>
+                                    {disciplineOptions.map(d => <option key={d} value={d}>{d}</option>)}
+                                  </select>
+                                )}
+                                {venueOptions.length > 0 && (
+                                  <select value={premVenueFilter} onChange={(e) => setPremVenueFilter(e.target.value)}
+                                    aria-label="Sede" style={selectStyle(!!premVenueFilter)}>
+                                    <option value="">Sede: todas</option>
+                                    {venueOptions.map(v => <option key={v} value={v}>{v}</option>)}
+                                  </select>
+                                )}
+                                <select value={premStatusFilter}
+                                  onChange={(e) => setPremStatusFilter(e.target.value as "" | "PROGRAMADA" | "REALIZADA")}
+                                  aria-label="Estado" style={selectStyle(!!premStatusFilter)}>
+                                  <option value="">Estado: todos ({premiaciones.length})</option>
+                                  <option value="PROGRAMADA">Programadas ({totalProg})</option>
+                                  <option value="REALIZADA">Realizadas ({totalReal})</option>
+                                </select>
+                                <select value={premAttendanceFilter}
+                                  onChange={(e) => setPremAttendanceFilter(e.target.value as "" | "CONFIRMED" | "PENDING" | "DECLINED")}
+                                  aria-label="Asistencia" style={selectStyle(!!premAttendanceFilter)}>
+                                  <option value="">Asistencia: todas</option>
+                                  <option value="CONFIRMED">Confirmadas ({countConfirmed})</option>
+                                  <option value="PENDING">Pendientes ({countPending})</option>
+                                  <option value="DECLINED">Declinadas ({premiaciones.filter(p => p.myAssignment?.declined_at).length})</option>
+                                </select>
+                                {roleOptions.length > 1 && (
+                                  <select value={premRoleFilter} onChange={(e) => setPremRoleFilter(e.target.value)}
+                                    aria-label="Rol" style={{ ...selectStyle(!!premRoleFilter), gridColumn:"1 / -1" }}>
+                                    <option value="">Rol: todos</option>
+                                    {roleOptions.map(r => (
+                                      <option key={r} value={r}>{(ROLE_META[r]||ROLE_META.AWARDER).label}</option>
+                                    ))}
+                                  </select>
+                                )}
+                              </>
                             );
-                          })}
+                          })()}
                         </div>
-                        {/* Attendance chips */}
-                        <div style={{ display:"flex",gap:6,flexWrap:"wrap" }}>
-                          {([
-                            { v:"" as const, label:"Asistencia", count:premiaciones.length },
-                            { v:"CONFIRMED" as const, label:"Confirmadas", count:countConfirmed },
-                            { v:"PENDING" as const, label:"Pendientes", count:countPending },
-                            { v:"DECLINED" as const, label:"Declinadas", count:premiaciones.filter(p => p.myAssignment?.declined_at).length },
-                          ]).map(opt => {
-                            const active = premAttendanceFilter === opt.v;
-                            const cMap: Record<string, [string,string,string]> = {
-                              CONFIRMED: ["#dcfce7","#166534","#86efac"],
-                              PENDING:   ["#fed7aa","#9a3412","#fdba74"],
-                              DECLINED:  ["#fee2e2","#991b1b","#fca5a5"],
-                            };
-                            const [bg,fg,br] = cMap[opt.v] || ["rgba(33,208,179,0.12)","#0a7a6b","#21D0B3"];
-                            return (
-                              <button key={opt.v||"all-at"} type="button" onClick={() => setPremAttendanceFilter(opt.v)}
-                                style={{ padding:"5px 10px",borderRadius:20,border:active ? `1px solid ${br}` : "1px solid #e2e8f0",
-                                  background:active ? bg : "#fff",
-                                  color:active ? fg : "#475569",
-                                  fontSize:10.5,fontWeight:700,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:5 }}>
-                                {opt.label} <span style={{ fontSize:9,padding:"1px 5px",borderRadius:10,background:active?"rgba(255,255,255,0.6)":"#f1f5f9",color:active ? fg : "#64748b" }}>{opt.count}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                        {/* Role filter */}
-                        {roleOptions.length > 1 && (
-                          <div style={{ display:"flex",gap:6,flexWrap:"wrap" }}>
-                            {[{ v:"", label:"Todos los roles" } as { v:string; label:string }, ...roleOptions.map(r => ({ v:r, label:(ROLE_META[r]||ROLE_META.AWARDER).label }))].map(opt => {
-                              const active = premRoleFilter === opt.v;
-                              const meta = opt.v ? (ROLE_META[opt.v]||ROLE_META.AWARDER) : null;
-                              return (
-                                <button key={opt.v||"all-r"} type="button" onClick={() => setPremRoleFilter(opt.v)}
-                                  style={{ padding:"5px 10px",borderRadius:20,border:active && meta ? `1px solid ${meta.ring}` : "1px solid #e2e8f0",
-                                    background:active && meta ? meta.bg : active ? "rgba(33,208,179,0.12)" : "#fff",
-                                    color:active && meta ? meta.color : active ? "#0a7a6b" : "#475569",
-                                    fontSize:10.5,fontWeight:700,cursor:"pointer" }}>
-                                  {opt.label}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
                         {hasFilters && (
                           <div style={{ display:"flex",alignItems:"center",gap:8 }}>
                             <button type="button" onClick={clearAll}
@@ -2888,6 +2863,10 @@ export default function VehicleRequestPortalPage() {
                       </button>
                       {isOpen && (
                         <div style={{ padding:"0 14px 14px",display:"flex",flexDirection:"column",gap:8 }}>
+                          {acc.photoUrl && (
+                            <img src={acc.photoUrl} alt={acc.name || "Hotel"}
+                              style={{ width:"100%",height:150,objectFit:"cover",borderRadius:10,border:"1px solid #e2e8f0" }} />
+                          )}
                           {acc.address && (
                             <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
                               <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Direccion</p>
@@ -3442,6 +3421,15 @@ export default function VehicleRequestPortalPage() {
                         photoUrl,
                         qrDataUrl,
                       });
+                      setCredentialPdf({
+                        eventName: evName,
+                        fullName: athlete.fullName || "",
+                        roleLabel: athlete.userType || "PARTICIPANTE",
+                        code: athlete.id.slice(-6),
+                        countryTag: delegations[athlete.delegationId || ""]?.countryCode || undefined,
+                        qrDataUrl,
+                        organization: "Seven Arena",
+                      });
                       setCredentialHtml(html);
                     } catch { notify.push("No se pudo generar la credencial", "❌"); }
                   }}
@@ -3650,12 +3638,13 @@ export default function VehicleRequestPortalPage() {
               </div>
               <div style={{ display:"flex",gap:8 }}>
                 <button type="button" onClick={() => {
-                  const w = window.open("", "_blank", "width=480,height=760");
-                  if (w) { w.document.write(credentialHtml); w.document.close(); }
+                  if (!credentialPdf) return;
+                  try { downloadCredentialPdf(credentialPdf); }
+                  catch { notify.push("No se pudo generar el PDF", "❌"); }
                 }}
-                  title="Abrir en ventana / Imprimir"
+                  title="Descargar PDF"
                   style={{ width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",color:"#21D0B3",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 </button>
                 <button type="button" onClick={() => setCredentialHtml(null)}
                   style={{ width:34,height:34,borderRadius:10,border:"1px solid rgba(255,255,255,0.2)",background:"rgba(255,255,255,0.08)",color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,lineHeight:1 }}>×</button>

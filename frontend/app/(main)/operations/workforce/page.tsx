@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import JsBarcode from "jsbarcode";
+import * as XLSX from "xlsx";
 import { apiFetch } from "@/lib/api";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiCard from "@/components/ui/KpiCard";
@@ -309,6 +310,7 @@ export default function WorkforcePage() {
               </button>
             }
           />
+          <WorkforceBulkImport kind="persons" onDone={loadAll} />
           {persons.length === 0 ? (
             <EmptyStateBox
               icon={<UsersIcon size={36} />}
@@ -324,33 +326,28 @@ export default function WorkforcePage() {
               }
             />
           ) : (
-            <div className="overflow-auto rounded-xl" style={{ border: "1px solid #e2e8f0", position: "relative" }}>
-              <table className="w-full text-xs">
-                <thead style={{ background: "linear-gradient(135deg, #1f4e8c 0%, #2d6aa8 100%)", color: "#fff" }}>
+            <div className="overflow-auto rounded-xl" style={{ border: "1px solid var(--border)", position: "relative" }}>
+              <table className="table w-full text-xs">
+                <thead>
                   <tr>
-                    <th className="p-3 text-left font-semibold tracking-wide">Nombre</th>
-                    <th className="p-3 text-left font-semibold tracking-wide">RUT</th>
-                    <th className="p-3 text-left font-semibold tracking-wide">Tipo</th>
-                    <th className="p-3 text-left font-semibold tracking-wide">Rol</th>
-                    <th className="p-3 text-left font-semibold tracking-wide">Contacto</th>
-                    <th className="p-3 text-right font-semibold tracking-wide">$/día</th>
-                    <th className="p-3 text-right font-semibold tracking-wide">Días</th>
-                    <th className="p-3 text-right font-semibold tracking-wide">Total</th>
-                    <th className="p-3 text-center font-semibold tracking-wide">Acciones</th>
+                    <th className="text-left">Nombre</th>
+                    <th className="text-left">RUT</th>
+                    <th className="text-left">Tipo</th>
+                    <th className="text-left">Rol</th>
+                    <th className="text-left">Contacto</th>
+                    <th className="text-right">$/día</th>
+                    <th className="text-right">Días</th>
+                    <th className="text-right">Total</th>
+                    <th className="text-center">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {persons.map((p, i) => {
+                  {persons.map((p) => {
                     const total = Number(p.dailyRate || 0) * Number(p.daysCount || 0);
                     const isVolunteer = p.personType === "VOLUNTEER";
                     const maxDays = Math.max(1, ...persons.map((x) => x.daysCount || 0));
                     return (
-                      <tr key={p.id}
-                        className={i % 2 === 0 ? "bg-white" : "bg-slate-50/60"}
-                        style={{ transition: "background-color 120ms" }}
-                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = "#f5f3fb"; }}
-                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = ""; }}
-                      >
+                      <tr key={p.id}>
                         <td className="p-3">
                           <div className="flex items-center gap-2.5 min-w-0">
                             <PersonAvatar name={p.fullName} type={p.personType} />
@@ -414,7 +411,7 @@ export default function WorkforcePage() {
                   })}
                 </tbody>
                 <tfoot>
-                  <tr style={{ borderTop: "2px solid #cbd5e1", background: "#f8fafc" }}>
+                  <tr style={{ borderTop: "2px solid var(--border)", background: "var(--elevated)" }}>
                     <td colSpan={7} className="p-3 text-right text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
                       Total nómina mano de obra
                     </td>
@@ -472,6 +469,7 @@ export default function WorkforcePage() {
               </div>
             }
           />
+          <WorkforceBulkImport kind="products" onDone={loadAll} />
           {products.length === 0 ? (
             <EmptyStateBox
               icon={<PackageIcon size={36} />}
@@ -487,34 +485,29 @@ export default function WorkforcePage() {
               }
             />
           ) : (
-            <div className="overflow-auto rounded-xl" style={{ border: "1px solid #e2e8f0" }}>
-              <table className="w-full text-xs">
-                <thead style={{ background: "linear-gradient(135deg, #1f4e8c 0%, #2d6aa8 100%)", color: "#fff" }}>
+            <div className="overflow-auto rounded-xl" style={{ border: "1px solid var(--border)" }}>
+              <table className="table w-full text-xs">
+                <thead>
                   <tr>
-                    <th className="p-3 text-left font-semibold tracking-wide">Producto</th>
-                    <th className="p-3 text-left font-semibold tracking-wide">Categoría</th>
-                    <th className="p-3 text-left font-semibold tracking-wide">Código barras</th>
-                    <th className="p-3 text-left font-semibold tracking-wide">Tallas</th>
-                    <th className="p-3 text-right font-semibold tracking-wide">Stock</th>
-                    <th className="p-3 text-right font-semibold tracking-wide">Costo unit.</th>
-                    <th className="p-3 text-right font-semibold tracking-wide">Valor inventario</th>
-                    <th className="p-3 text-center font-semibold tracking-wide">Acciones</th>
+                    <th className="text-left">Producto</th>
+                    <th className="text-left">Categoría</th>
+                    <th className="text-left">Código barras</th>
+                    <th className="text-left">Tallas</th>
+                    <th className="text-right">Stock</th>
+                    <th className="text-right">Costo unit.</th>
+                    <th className="text-right">Valor inventario</th>
+                    <th className="text-center">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {products.map((p, i) => {
+                  {products.map((p) => {
                     const stock = p.stockQuantity || 0;
                     const inventory = Number(p.unitCost || 0) * stock;
                     const lowStock = stock > 0 && stock < 20;
                     const noStock = stock === 0;
                     const maxStock = Math.max(1, ...products.map((x) => x.stockQuantity || 0));
                     return (
-                      <tr key={p.id}
-                        className={i % 2 === 0 ? "bg-white" : "bg-slate-50/60"}
-                        style={{ transition: "background-color 120ms" }}
-                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = "#fffaf0"; }}
-                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = ""; }}
-                      >
+                      <tr key={p.id}>
                         <td className="p-3">
                           <div className="flex items-center gap-2.5 min-w-0">
                             <div
@@ -611,7 +604,7 @@ export default function WorkforcePage() {
                   })}
                 </tbody>
                 <tfoot>
-                  <tr style={{ borderTop: "2px solid #cbd5e1", background: "#f8fafc" }}>
+                  <tr style={{ borderTop: "2px solid var(--border)", background: "var(--elevated)" }}>
                     <td colSpan={6} className="p-3 text-right text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
                       Valor total de inventario
                     </td>
@@ -663,33 +656,28 @@ export default function WorkforcePage() {
               }
             />
           ) : (
-            <div className="overflow-auto rounded-xl" style={{ border: "1px solid #e2e8f0" }}>
-              <table className="w-full text-xs">
-                <thead style={{ background: "linear-gradient(135deg, #1f4e8c 0%, #2d6aa8 100%)", color: "#fff" }}>
+            <div className="overflow-auto rounded-xl" style={{ border: "1px solid var(--border)" }}>
+              <table className="table w-full text-xs">
+                <thead>
                   <tr>
-                    <th className="p-3 text-left font-semibold tracking-wide">Fecha</th>
-                    <th className="p-3 text-left font-semibold tracking-wide">Persona</th>
-                    <th className="p-3 text-left font-semibold tracking-wide">Producto</th>
-                    <th className="p-3 text-left font-semibold tracking-wide">Talla</th>
-                    <th className="p-3 text-right font-semibold tracking-wide">Cant.</th>
-                    <th className="p-3 text-right font-semibold tracking-wide">Costo</th>
-                    <th className="p-3 text-left font-semibold tracking-wide">Estado</th>
-                    <th className="p-3 text-center font-semibold tracking-wide">Acciones</th>
+                    <th className="text-left">Fecha</th>
+                    <th className="text-left">Persona</th>
+                    <th className="text-left">Producto</th>
+                    <th className="text-left">Talla</th>
+                    <th className="text-right">Cant.</th>
+                    <th className="text-right">Costo</th>
+                    <th className="text-left">Estado</th>
+                    <th className="text-center">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {deliveries.map((d, i) => {
+                  {deliveries.map((d) => {
                     const per = personById.get(d.personId);
                     const prod = productById.get(d.productId);
                     const cost = Number(d.unitCost || 0) * Number(d.quantity || 0);
                     const pending = !d.validatedAt;
                     return (
-                      <tr key={d.id}
-                        className={i % 2 === 0 ? "bg-white" : "bg-slate-50/60"}
-                        style={{ transition: "background-color 120ms" }}
-                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = "#f0fdfb"; }}
-                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = ""; }}
-                      >
+                      <tr key={d.id}>
                         <td className="p-3 whitespace-nowrap">
                           <div className="inline-flex flex-col">
                             <span className="font-semibold" style={{ color: "#0f172a" }}>{fmtDate(d.deliveredAt)}</span>
@@ -763,7 +751,7 @@ export default function WorkforcePage() {
                   })}
                 </tbody>
                 <tfoot>
-                  <tr style={{ borderTop: "2px solid #cbd5e1", background: "#f8fafc" }}>
+                  <tr style={{ borderTop: "2px solid var(--border)", background: "var(--elevated)" }}>
                     <td colSpan={5} className="p-3 text-right text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
                       Total entregado
                     </td>
@@ -1432,5 +1420,150 @@ function Field({ label, children, className }: { label: string; children: React.
       <span className="block text-xs mb-1" style={{ color: "var(--text-muted)" }}>{label}</span>
       {children}
     </label>
+  );
+}
+
+/* ── Carga masiva (personas y productos) ───────────────────────────────────── */
+
+const PERSON_IMPORT_HEADERS = [
+  "full_name", "rut", "email", "phone", "gender", "person_type", "role",
+  "daily_rate", "days_count", "start_date", "end_date", "notes",
+];
+const PRODUCT_IMPORT_HEADERS = [
+  "name", "description", "category", "unit_cost", "stock_quantity", "has_sizes", "available_sizes",
+];
+
+function normalizeImportHeader(h: string) {
+  return String(h || "").trim().toLowerCase().replace(/\s+/g, "_");
+}
+
+function importNumber(v: unknown): number | undefined {
+  const n = Number(String(v ?? "").replace(/[$.\s]/g, "").replace(",", "."));
+  return Number.isFinite(n) ? n : undefined;
+}
+
+function WorkforceBulkImport({ kind, onDone }: { kind: "persons" | "products"; onDone: () => Promise<void> | void }) {
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+  const [rowErrors, setRowErrors] = useState<string[]>([]);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const isPersons = kind === "persons";
+  const headers = isPersons ? PERSON_IMPORT_HEADERS : PRODUCT_IMPORT_HEADERS;
+
+  const downloadTemplate = () => {
+    const ws = XLSX.utils.aoa_to_sheet([headers]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, isPersons ? "Personas" : "Productos");
+    XLSX.writeFile(wb, isPersons ? "plantilla-workforce-personas.xlsx" : "plantilla-workforce-productos.xlsx");
+  };
+
+  const handleFile = async (file: File) => {
+    setBusy(true);
+    setResult(null);
+    setRowErrors([]);
+    try {
+      const buffer = await file.arrayBuffer();
+      const wb = XLSX.read(buffer, { type: "array" });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const raw = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "", raw: false });
+      const rows = raw.map((r) => {
+        const out: Record<string, string> = {};
+        Object.entries(r).forEach(([k, v]) => { out[normalizeImportHeader(k)] = String(v ?? "").trim(); });
+        return out;
+      }).filter((r) => Object.values(r).some((v) => v !== ""));
+      if (rows.length === 0) {
+        setResult("El archivo no tiene filas con datos.");
+        return;
+      }
+
+      if (isPersons) {
+        const persons = rows.map((r) => {
+          const type = r.person_type.toUpperCase();
+          const gender = r.gender.toUpperCase();
+          return {
+            fullName: r.full_name || r.nombre || "",
+            rut: r.rut || undefined,
+            email: r.email || undefined,
+            phone: r.phone || r.telefono || undefined,
+            gender: gender.startsWith("M") && gender !== "MIXED" ? "MALE"
+              : gender.startsWith("F") ? "FEMALE"
+              : gender ? "MIXED" : undefined,
+            personType: type.includes("VOL") ? "VOLUNTEER" : "STAFF",
+            role: r.role || r.rol || undefined,
+            dailyRate: importNumber(r.daily_rate),
+            daysCount: importNumber(r.days_count) !== undefined ? Math.floor(importNumber(r.days_count)!) : undefined,
+            startDate: r.start_date || undefined,
+            endDate: r.end_date || undefined,
+            notes: r.notes || undefined,
+          };
+        });
+        const res = await apiFetch<{ created: number; updated: number; errors: { row: number; message: string }[] }>(
+          "/workforce/persons/bulk",
+          { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ persons }) },
+        );
+        setResult(`Personas: ${res.created} creadas · ${res.updated} actualizadas · ${res.errors.length} con error.`);
+        setRowErrors(res.errors.map((e) => `Fila ${e.row}: ${e.message}`));
+      } else {
+        const products = rows.map((r) => {
+          const cat = r.category.toUpperCase();
+          const sizes = r.available_sizes
+            ? r.available_sizes.split(/[|,;]/).map((s) => s.trim().toUpperCase()).filter(Boolean)
+            : [];
+          return {
+            name: r.name || r.producto || "",
+            description: r.description || undefined,
+            category: cat.startsWith("VEST") || cat === "CLOTHING" ? "CLOTHING"
+              : cat.startsWith("ACC") ? "ACCESSORY"
+              : cat.startsWith("EQ") ? "EQUIPMENT" : undefined,
+            unitCost: importNumber(r.unit_cost),
+            stockQuantity: importNumber(r.stock_quantity) !== undefined ? Math.floor(importNumber(r.stock_quantity)!) : undefined,
+            hasSizes: sizes.length > 0 || ["SI", "SÍ", "TRUE", "1", "YES"].includes(r.has_sizes.toUpperCase()),
+            availableSizes: sizes,
+          };
+        });
+        const res = await apiFetch<{ created: number; updated: number; errors: { row: number; message: string }[] }>(
+          "/workforce/products/bulk",
+          { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ products }) },
+        );
+        setResult(`Productos: ${res.created} creados · ${res.updated} actualizados · ${res.errors.length} con error.`);
+        setRowErrors(res.errors.map((e) => `Fila ${e.row}: ${e.message}`));
+      }
+      await onDone();
+    } catch (err) {
+      setResult(err instanceof Error ? err.message : "No se pudo procesar el archivo.");
+    } finally {
+      setBusy(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  return (
+    <div className="rounded-xl p-3 flex flex-wrap items-center gap-2"
+      style={{ border: "1px dashed var(--border)", background: "var(--elevated)" }}>
+      <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "#21D0B3" }}>
+        Carga masiva
+      </span>
+      <button type="button" className="btn btn-ghost text-xs" onClick={downloadTemplate}>
+        Descargar plantilla
+      </button>
+      <input
+        ref={fileRef}
+        id={`wf-bulk-${kind}`}
+        type="file"
+        accept=".xlsx,.xls,.csv"
+        className="sr-only"
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleFile(f); }}
+      />
+      <label htmlFor={`wf-bulk-${kind}`} className="btn btn-primary text-xs" style={{ cursor: busy ? "wait" : "pointer" }}>
+        {busy ? "Procesando…" : "Subir archivo"}
+      </label>
+      {result && <span className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>{result}</span>}
+      {rowErrors.length > 0 && (
+        <ul className="w-full text-[11px] space-y-0.5 mt-1" style={{ color: "#b3231b" }}>
+          {rowErrors.slice(0, 8).map((e, i) => <li key={i}>{e}</li>)}
+          {rowErrors.length > 8 && <li>… y {rowErrors.length - 8} errores más.</li>}
+        </ul>
+      )}
+    </div>
   );
 }

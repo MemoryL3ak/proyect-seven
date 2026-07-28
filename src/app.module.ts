@@ -40,6 +40,7 @@ import { CouponsModule } from './coupons/coupons.module';
 import { DriverPresenceModule } from './driver-presence/driver-presence.module';
 import { FleetModule } from './fleet/fleet.module';
 import { TripRequestsModule } from './trip-requests/trip-requests.module';
+import { VipMonitoringModule } from './vip-monitoring/vip-monitoring.module';
 
 @Module({
   imports: [
@@ -101,6 +102,7 @@ import { TripRequestsModule } from './trip-requests/trip-requests.module';
     DriverPresenceModule,
     FleetModule,
     TripRequestsModule,
+    VipMonitoringModule,
   ],
   controllers: [AppController],
   providers: [AppService],

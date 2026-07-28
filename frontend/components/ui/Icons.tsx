@@ -44,6 +44,25 @@ export const UsersIcon = (p: IconProps) =>
     p,
   );
 
+export const PinIcon = (p: IconProps) =>
+  svg(
+    <>
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+      <circle cx="12" cy="10" r="3" />
+    </>,
+    p,
+  );
+
+export const RouteIcon = (p: IconProps) =>
+  svg(
+    <>
+      <circle cx="6" cy="19" r="3" />
+      <circle cx="18" cy="5" r="3" />
+      <path d="M12 19h4.5a3.5 3.5 0 0 0 0-7h-9a3.5 3.5 0 0 1 0-7H12" />
+    </>,
+    p,
+  );
+
 export const PackageIcon = (p: IconProps) =>
   svg(
     <>

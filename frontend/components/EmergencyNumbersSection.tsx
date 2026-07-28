@@ -21,6 +21,27 @@ const NUMEROS: EmergencyNumber[] = [
   { label: "Rescate marítimo", number: "137", emoji: "⚓" },
 ];
 
+/**
+ * Marca el número de forma programática. El enlace tel: directo fallaba en
+ * algunos teléfonos (la navegación del portal lo interceptaba y mostraba un
+ * error); asignar location.href dispara el marcador sin pasar por el router.
+ */
+function llamar(number: string) {
+  const tel = `tel:${number.replace(/\s/g, "")}`;
+  try {
+    window.location.href = tel;
+  } catch {
+    try {
+      window.open(tel, "_self");
+    } catch {
+      try {
+        void navigator.clipboard?.writeText(number);
+        window.alert(`No se pudo abrir el marcador. Número copiado: ${number}`);
+      } catch {}
+    }
+  }
+}
+
 export default function EmergencyNumbersSection() {
   return (
     <div
@@ -47,6 +68,11 @@ export default function EmergencyNumbersSection() {
           <a
             key={n.number}
             href={`tel:${n.number.replace(/\s/g, "")}`}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              llamar(n.number);
+            }}
             style={{
               display: "flex",
               alignItems: "center",

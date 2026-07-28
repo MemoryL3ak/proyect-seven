@@ -26,6 +26,9 @@ export class Accommodation {
   @Column({ length: 200, type: 'varchar', nullable: true })
   address?: string | null;
 
+  @Column({ name: 'photo_url', type: 'text', nullable: true })
+  photoUrl?: string | null;
+
   @Column({
     name: 'geo_location',
     type: 'geometry',

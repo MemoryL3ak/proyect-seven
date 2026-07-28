@@ -17,6 +17,7 @@ import { isAvailable as isNativeAvailable, request as nativeRequest } from "@/li
 import PushTokenSync from "@/components/PushTokenSync";
 import QRCode from "qrcode";
 import { buildCredentialHtml } from "@/lib/credential-template";
+import { downloadCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
 
 const TripMap = dynamic(() => import("@/components/TripMap"), {
   ssr: false,
@@ -156,7 +157,18 @@ export default function DriverPortalPage() {
   const [requestLoading, setRequestLoading] = useState(false);
   const [requestError, setRequestError] = useState<string | null>(null);
   const [requestStatus, setRequestStatus] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"actividades" | "reportes" | "cuenta">("actividades");
+  // El tab activo sobrevive al refresh: se restaura desde sessionStorage.
+  const [activeTab, setActiveTab] = useState<"actividades" | "reportes" | "cuenta">(() => {
+    if (typeof window === "undefined") return "actividades";
+    try {
+      const saved = sessionStorage.getItem("portal_conductor_tab");
+      if (saved === "actividades" || saved === "reportes" || saved === "cuenta") return saved;
+    } catch {}
+    return "actividades";
+  });
+  useEffect(() => {
+    try { sessionStorage.setItem("portal_conductor_tab", activeTab); } catch {}
+  }, [activeTab]);
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("hoy");
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -358,6 +370,7 @@ export default function DriverPortalPage() {
 
   const [showLocationBlockedModal, setShowLocationBlockedModal] = useState(false);
   const [credentialHtml, setCredentialHtml] = useState<string | null>(null);
+  const [credentialPdf, setCredentialPdf] = useState<CredentialPdfData | null>(null);
 
   const requestLocationPermission = (): Promise<boolean> => {
     return new Promise((resolve) => {
@@ -1885,6 +1898,15 @@ export default function DriverPortalPage() {
                           photoUrl: driverProfile.photoUrl || ((driverProfile.metadata as any)?.photoUrl as string) || ((driverProfile.metadata as any)?.photo_url as string) || ((driverProfile.metadata as any)?.avatar as string) || ((driverProfile.metadata as any)?.avatarUrl as string) || ((driverProfile.metadata as any)?.imageUrl as string) || ((driverProfile.metadata as any)?.image_url as string) || null,
                           qrDataUrl,
                         });
+                        setCredentialPdf({
+                          eventName,
+                          fullName: driverProfile.fullName || "Conductor",
+                          roleLabel: "CONDUCTOR",
+                          code: driverProfile.credentialCode || driverProfile.id?.slice(-6) || undefined,
+                          countryTag: prov?.name || undefined,
+                          qrDataUrl,
+                          organization: "Seven Arena",
+                        });
                         setCredentialHtml(html);
                       } catch { driverNotify.push("No se pudo generar la credencial", "❌"); }
                     }}
@@ -2174,12 +2196,13 @@ export default function DriverPortalPage() {
               </div>
               <div style={{ display:"flex",gap:8 }}>
                 <button type="button" onClick={() => {
-                  const w = window.open("", "_blank", "width=480,height=760");
-                  if (w) { w.document.write(credentialHtml); w.document.close(); }
+                  if (!credentialPdf) return;
+                  try { downloadCredentialPdf(credentialPdf); }
+                  catch { driverNotify.push("No se pudo generar el PDF", "❌"); }
                 }}
-                  title="Abrir en ventana / Imprimir"
+                  title="Descargar PDF"
                   style={{ width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",color:"#21D0B3",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 </button>
                 <button type="button" onClick={() => setCredentialHtml(null)}
                   style={{ width:34,height:34,borderRadius:10,border:"1px solid rgba(255,255,255,0.2)",background:"rgba(255,255,255,0.08)",color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,lineHeight:1 }}>×</button>
