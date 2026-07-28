@@ -48,10 +48,10 @@ const navSections: NavSection[] = [
           { href: "/operations/vehicle-positions", label: "Tracking de Viajes", icon: "pin" },
           { href: "/operations/trips", label: "Viajes", icon: "route" },
           { href: "/operations/trip-requests", label: "Solicitudes (T1/VIP)", icon: "ticket" },
-          { href: "/operations/transport-finance", label: "Panel Financiero", icon: "dollar" },
           { href: "/operations/fleet", label: "Flota (disponibilidad)", icon: "driver" },
           { href: "/operations/driver-heatmap", label: "Panel Conductores", icon: "driver" },
-          { href: "/operations/driver-monitoring", label: "Monitoreo de Conductores", icon: "driver" }
+          { href: "/operations/driver-monitoring", label: "Monitoreo de Conductores", icon: "driver" },
+          { href: "/operations/transport-finance", label: "Panel Financiero", icon: "dollar" }
         ]
       },
       {

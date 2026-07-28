@@ -107,15 +107,6 @@ export class TripsFinanceService {
           and ($6::text is null or c.trip_type_norm = $6)
           and ($7::uuid is null or coalesce(d.provider_id, pp.provider_id) = $7)
       ),
-      -- Km recorridos: primero la traza GPS real (telemetry.vehicle_positions);
-      -- si el viaje no tiene breadcrumb, se cae al largo de la ruta planificada.
-      km_gps as (
-        select vp.trip_id,
-               st_length(st_makeline(vp.location order by vp."timestamp")::geography) / 1000.0 as km
-        from telemetry.vehicle_positions vp
-        where vp.trip_id in (select id from filtrado)
-        group by vp.trip_id
-      ),
       -- Tarifa de referencia: promedio del catálogo por flota + tipo de
       -- servicio. Cubre viajes sin conductor o con proveedor sin tarifa.
       tarifa_mercado as (
@@ -133,7 +124,10 @@ export class TripsFinanceService {
           tm.client_price   as ref_client,
           tm.provider_price as ref_provider,
           p.name            as provider_name,
-          coalesce(kg.km, st_length(c.route_geometry::geography) / 1000.0, 0) as km_recorridos,
+          -- Km por fila: largo de la ruta planificada (barato). El km GPS real
+          -- se calcula aparte, una sola vez, en kmGpsTotals(): meterlo acá
+          -- lo ejecutaba en las 9 consultas del resumen y saturaba el pool.
+          coalesce(st_length(c.route_geometry::geography) / 1000.0, 0) as km_recorridos,
           -- INGRESO: valor pactado del viaje; si no hay, tarifa del proveedor;
           -- si tampoco, tarifa de referencia.
           coalesce(nullif(c.trip_cost, 0), pr.client_price, tm.client_price) as ingreso,
@@ -147,7 +141,6 @@ export class TripsFinanceService {
           end as origen_valor
         from con_conductor c
         left join core.providers p on p.id = c.provider_id
-        left join km_gps kg on kg.trip_id = c.id
         left join lateral (
           select r.client_price, r.provider_price
           from core.provider_rates r
@@ -179,11 +172,52 @@ export class TripsFinanceService {
     ];
   }
 
+  /**
+   * Km GPS reales (traza de telemetry.vehicle_positions) del universo
+   * filtrado. Es la consulta más pesada del panel, por eso:
+   * - se ejecuta UNA sola vez por request (no dentro de cada agregado),
+   * - corre con statement_timeout propio: si la telemetría es muy grande,
+   *   el panel carga igual y los totales caen al largo de ruta planificada.
+   */
+  private async kmGpsTotals(
+    params: unknown[],
+    delivered: string,
+  ): Promise<{ km: number; kmPrestados: number } | null> {
+    try {
+      const rows = await this.dataSource.transaction(async (em) => {
+        await em.query(`set local statement_timeout = '2500ms'`);
+        return em.query(
+          `${this.baseCte()}
+           select
+             coalesce(sum(t.km), 0)::numeric                                    as km,
+             coalesce(sum(t.km) filter (where t.status in ${delivered}), 0)::numeric as km_prestados
+           from (
+             select c.id, c.status,
+                    st_length(st_makeline(vp.location order by vp."timestamp")::geography) / 1000.0 as km
+             from con_conductor c
+             join telemetry.vehicle_positions vp on vp.trip_id = c.id
+             where c.status <> 'CANCELLED'
+             group by c.id, c.status
+           ) t`,
+          params,
+        );
+      });
+      const r = rows?.[0];
+      if (!r) return null;
+      return { km: Number(r.km ?? 0), kmPrestados: Number(r.km_prestados ?? 0) };
+    } catch (error) {
+      this.logger.warn(
+        `Km GPS no disponibles (se usa el largo de ruta): ${error instanceof Error ? error.message : error}`,
+      );
+      return null;
+    }
+  }
+
   async summary(filters: FinanceFilters = {}) {
     const params = this.params(filters);
     const delivered = `('${DELIVERED.join("','")}')`;
 
-    const [totals, byProvider, byFleet, byTripType, byClientType, daily, topDrivers, unvalued, budget] =
+    const [totals, byProvider, byFleet, byTripType, byClientType, daily, topDrivers, unvalued, budget, kmGps] =
       await Promise.all([
         this.dataSource.query(
           `${this.baseCte()}
@@ -309,6 +343,7 @@ export class TripsFinanceService {
            where bid_amount is not null`,
           [],
         ),
+        this.kmGpsTotals(params, delivered),
       ]);
 
     const t = totals[0] || {};
@@ -358,8 +393,11 @@ export class TripsFinanceService {
         viajesPrestados: num(t.prestados),
         viajesCancelados: num(t.cancelados),
         pasajeros: num(t.pasajeros),
-        kmRecorridos: num(t.km_recorridos),
-        kmPrestados: num(t.km_prestados),
+        // GPS real cuando está disponible; si no (o si dio timeout), el largo
+        // de las rutas planificadas. Se toma el mayor: ambos son subestimados
+        // cuando su fuente tiene cobertura parcial.
+        kmRecorridos: Math.max(num(t.km_recorridos), kmGps?.km ?? 0),
+        kmPrestados: Math.max(num(t.km_prestados), kmGps?.kmPrestados ?? 0),
         ingresoTotal,
         costoTotal,
         margenTotal: ingresoTotal - costoTotal,
