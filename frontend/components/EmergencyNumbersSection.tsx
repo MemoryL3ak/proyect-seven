@@ -1,9 +1,16 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
+
 /**
  * Números de emergencia para la sección "Cuenta" de los portales.
- * Directorio nacional (Chile). Cada fila es un enlace tel: para llamar
- * con un toque desde el teléfono.
+ * Directorio nacional (Chile). Cada fila marca la llamada con un toque.
+ *
+ * El marcado se hace con un iframe oculto en vez de navegar la página:
+ * en los contenedores WebView que no manejan el esquema tel:, navegar el
+ * documento mostraba su página de error ("Sin conexión"). El iframe dispara
+ * el marcador sin tocar la página; si el sistema no lo abre, se muestra un
+ * panel con el número para llamar directo o copiarlo.
  */
 
 type EmergencyNumber = {
@@ -21,28 +28,52 @@ const NUMEROS: EmergencyNumber[] = [
   { label: "Rescate marítimo", number: "137", emoji: "⚓" },
 ];
 
-/**
- * Marca el número de forma programática. El enlace tel: directo fallaba en
- * algunos teléfonos (la navegación del portal lo interceptaba y mostraba un
- * error); asignar location.href dispara el marcador sin pasar por el router.
- */
-function llamar(number: string) {
-  const tel = `tel:${number.replace(/\s/g, "")}`;
-  try {
-    window.location.href = tel;
-  } catch {
-    try {
-      window.open(tel, "_self");
-    } catch {
-      try {
-        void navigator.clipboard?.writeText(number);
-        window.alert(`No se pudo abrir el marcador. Número copiado: ${number}`);
-      } catch {}
-    }
-  }
-}
-
 export default function EmergencyNumbersSection() {
+  const [fallback, setFallback] = useState<EmergencyNumber | null>(null);
+  const [copied, setCopied] = useState(false);
+  const timerRef = useRef<number | null>(null);
+
+  useEffect(() => () => {
+    if (timerRef.current) window.clearTimeout(timerRef.current);
+  }, []);
+
+  const llamar = (n: EmergencyNumber) => {
+    const tel = `tel:${n.number.replace(/\s/g, "")}`;
+    let leftPage = false;
+    const onVis = () => {
+      if (document.visibilityState === "hidden") leftPage = true;
+    };
+    document.addEventListener("visibilitychange", onVis);
+
+    // Iframe oculto: dispara el marcador sin navegar el documento.
+    const frame = document.createElement("iframe");
+    frame.style.display = "none";
+    frame.setAttribute("aria-hidden", "true");
+    try {
+      frame.src = tel;
+      document.body.appendChild(frame);
+    } catch {}
+
+    if (timerRef.current) window.clearTimeout(timerRef.current);
+    timerRef.current = window.setTimeout(() => {
+      document.removeEventListener("visibilitychange", onVis);
+      try { frame.remove(); } catch {}
+      // Si el marcador se abrió, la página pasó a segundo plano. Si seguimos
+      // visibles, el sistema no manejó tel: → mostrar el panel de respaldo.
+      if (!leftPage && document.visibilityState === "visible") {
+        setCopied(false);
+        setFallback(n);
+      }
+    }, 1200);
+  };
+
+  const copiar = async (number: string) => {
+    try {
+      await navigator.clipboard?.writeText(number);
+      setCopied(true);
+    } catch {}
+  };
+
   return (
     <div
       style={{
@@ -71,7 +102,7 @@ export default function EmergencyNumbersSection() {
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              llamar(n.number);
+              llamar(n);
             }}
             style={{
               display: "flex",
@@ -110,6 +141,102 @@ export default function EmergencyNumbersSection() {
           </a>
         ))}
       </div>
+
+      {/* Respaldo: el sistema no abrió el marcador */}
+      {fallback && (
+        <div
+          onClick={() => setFallback(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 400,
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "center",
+            background: "rgba(2,12,24,0.6)",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "#fff",
+              borderRadius: "20px 20px 0 0",
+              width: "100%",
+              maxWidth: 480,
+              padding: "20px 18px 26px",
+              textAlign: "center",
+            }}
+          >
+            <p style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", margin: 0 }}>
+              {fallback.emoji} {fallback.label}
+            </p>
+            <p
+              style={{
+                fontSize: 44,
+                fontWeight: 800,
+                color: "#b91c1c",
+                margin: "8px 0 4px",
+                letterSpacing: "0.06em",
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              {fallback.number}
+            </p>
+            <p style={{ fontSize: 12, color: "#64748b", margin: "0 0 14px" }}>
+              Marca este número desde el teléfono si la llamada no se abre sola.
+            </p>
+            <div style={{ display: "grid", gap: 8 }}>
+              <a
+                href={`tel:${fallback.number}`}
+                style={{
+                  display: "block",
+                  padding: "12px 16px",
+                  borderRadius: 12,
+                  background: "#b91c1c",
+                  color: "#fff",
+                  fontSize: 14,
+                  fontWeight: 800,
+                  textDecoration: "none",
+                }}
+              >
+                Llamar al {fallback.number}
+              </a>
+              <button
+                type="button"
+                onClick={() => copiar(fallback.number)}
+                style={{
+                  padding: "12px 16px",
+                  borderRadius: 12,
+                  border: "1px solid #e2e8f0",
+                  background: "#f8fafc",
+                  color: "#0f172a",
+                  fontSize: 13.5,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                {copied ? "✓ Número copiado" : "Copiar número"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setFallback(null)}
+                style={{
+                  padding: "10px 16px",
+                  borderRadius: 12,
+                  border: "none",
+                  background: "transparent",
+                  color: "#64748b",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
