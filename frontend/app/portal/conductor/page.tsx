@@ -12,6 +12,7 @@ import AssistanceChat from "@/components/AssistanceChat";
 import DevicePermissionsSection from "@/components/DevicePermissionsSection";
 import CuadernoCargoSection from "@/components/CuadernoCargoSection";
 import EmergencyNumbersSection from "@/components/EmergencyNumbersSection";
+import CredentialQrCard from "@/components/CredentialQrCard";
 import { isAvailable as isNativeAvailable, request as nativeRequest } from "@/lib/native-bridge";
 import PushTokenSync from "@/components/PushTokenSync";
 import QRCode from "qrcode";
@@ -1855,34 +1856,39 @@ export default function DriverPortalPage() {
                       {driverProfile.accreditationStatus === "APPROVED" ? "Aprobada" : driverProfile.accreditationStatus === "CREDENTIAL_ISSUED" ? "Emitida" : driverProfile.accreditationStatus || "Pendiente"}
                     </span>
                   </div>
-                  <button type="button" onClick={async () => {
-                    try {
-                      const eventName = Object.values(events)[0]?.name || "Seven Arena";
-                      const prov = driverProfile.providerId ? providers[driverProfile.providerId] : null;
-                      const qrData = `Conductor: ${driverProfile.fullName || "—"}\nRUT: ${driverProfile.rut || "—"}\nCódigo: ${driverProfile.credentialCode || driverProfile.id?.slice(-6)}`;
-                      const qrDataUrl = await QRCode.toDataURL(qrData, { width: 200, margin: 1 });
-                      const html = buildCredentialHtml({
-                        eventName,
-                        fullName: driverProfile.fullName || "Conductor",
-                        roleLabel: "CONDUCTOR",
-                        credentialCode: driverProfile.credentialCode || driverProfile.id?.slice(-6).toUpperCase() || "",
-                        statusLabel: driverProfile.accreditationStatus || "PENDING",
-                        issuedAtLabel: new Date().toLocaleDateString("es-CL"),
-                        issuerLabel: "Seven Arena",
-                        subjectId: driverProfile.id || "",
-                        providerLabel: prov?.name || "",
-                        countryTag: "CHL",
-                        accessTypes: driverProfile.accessTypes || [],
-                        photoUrl: driverProfile.photoUrl || ((driverProfile.metadata as any)?.photoUrl as string) || ((driverProfile.metadata as any)?.photo_url as string) || ((driverProfile.metadata as any)?.avatar as string) || ((driverProfile.metadata as any)?.avatarUrl as string) || ((driverProfile.metadata as any)?.imageUrl as string) || ((driverProfile.metadata as any)?.image_url as string) || null,
-                        qrDataUrl,
-                      });
-                      setCredentialHtml(html);
-                    } catch { driverNotify.push("No se pudo generar la credencial", "❌"); }
-                  }}
-                    style={{ width:"100%",padding:12,borderRadius:12,border:"none",background:"linear-gradient(135deg,#041a2e,#062240)",color:"#21D0B3",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8 }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
-                    Ver credencial digital
-                  </button>
+                  {/* Credencial digital con QR a la vista */}
+                  <CredentialQrCard
+                    qrData={`Conductor: ${driverProfile.fullName || "—"}\nRUT: ${driverProfile.rut || "—"}\nCódigo: ${driverProfile.credentialCode || driverProfile.id?.slice(-6)}`}
+                    name={driverProfile.fullName || "Conductor"}
+                    roleLabel="Conductor"
+                    code={driverProfile.credentialCode || driverProfile.id?.slice(-6) || null}
+                    countryTag={driverProfile.providerId ? providers[driverProfile.providerId]?.name || null : null}
+                    eventName={Object.values(events)[0]?.name || null}
+                    onOpenFull={async () => {
+                      try {
+                        const eventName = Object.values(events)[0]?.name || "Seven Arena";
+                        const prov = driverProfile.providerId ? providers[driverProfile.providerId] : null;
+                        const qrData = `Conductor: ${driverProfile.fullName || "—"}\nRUT: ${driverProfile.rut || "—"}\nCódigo: ${driverProfile.credentialCode || driverProfile.id?.slice(-6)}`;
+                        const qrDataUrl = await QRCode.toDataURL(qrData, { width: 200, margin: 1 });
+                        const html = buildCredentialHtml({
+                          eventName,
+                          fullName: driverProfile.fullName || "Conductor",
+                          roleLabel: "CONDUCTOR",
+                          credentialCode: driverProfile.credentialCode || driverProfile.id?.slice(-6).toUpperCase() || "",
+                          statusLabel: driverProfile.accreditationStatus || "PENDING",
+                          issuedAtLabel: new Date().toLocaleDateString("es-CL"),
+                          issuerLabel: "Seven Arena",
+                          subjectId: driverProfile.id || "",
+                          providerLabel: prov?.name || "",
+                          countryTag: "CHL",
+                          accessTypes: driverProfile.accessTypes || [],
+                          photoUrl: driverProfile.photoUrl || ((driverProfile.metadata as any)?.photoUrl as string) || ((driverProfile.metadata as any)?.photo_url as string) || ((driverProfile.metadata as any)?.avatar as string) || ((driverProfile.metadata as any)?.avatarUrl as string) || ((driverProfile.metadata as any)?.imageUrl as string) || ((driverProfile.metadata as any)?.image_url as string) || null,
+                          qrDataUrl,
+                        });
+                        setCredentialHtml(html);
+                      } catch { driverNotify.push("No se pudo generar la credencial", "❌"); }
+                    }}
+                  />
                 </div>
 
                 {/* Info — single card with rows */}

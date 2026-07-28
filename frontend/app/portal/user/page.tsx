@@ -6,6 +6,7 @@ import { getMobileSession, mobileAwareLogout } from "@/lib/mobile-auth";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { normalizeClientType } from "@/lib/clientTypes";
 import VenueMap from "@/components/VenueMap";
+import CredentialQrCard from "@/components/CredentialQrCard";
 import { useI18n } from "@/lib/i18n";
 import TripMap from "@/components/TripMap";
 import NotificationBell, { useNotifications } from "@/components/NotificationBell";
@@ -2781,39 +2782,43 @@ export default function UserPortalPage() {
                 </div>
               ))}
             </div>
-            {/* Credential */}
-            <button type="button" onClick={async () => {
-              try {
-                const evName = event?.name || "Seven Arena";
-                const qrData = `Participante: ${athlete.fullName}\nID: ${athlete.id.slice(-6)}\nDelegación: ${delegation?.countryCode || "—"}`;
-                const qrDataUrl = await QRCode.toDataURL(qrData, { width:200, margin:1 });
-                const meta = (athlete.metadata || {}) as Record<string, unknown>;
-                const photoKeys = ["photoUrl","photo_url","avatar","avatarUrl","imageUrl","image_url"];
-                let photoUrl: string | null = null;
-                for (const k of photoKeys) {
-                  const v = meta[k];
-                  if (typeof v === "string" && v.trim()) { photoUrl = v.trim(); break; }
-                }
-                const html = buildCredentialHtml({
-                  eventName: evName,
-                  fullName: athlete.fullName,
-                  roleLabel: athlete.isDelegationLead ? "JEFE DELEGACIÓN" : "PARTICIPANTE",
-                  credentialCode: athlete.credentialCode || athlete.id.slice(-6).toUpperCase(),
-                  statusLabel: athlete.accreditationStatus || "PENDING",
-                  issuedAtLabel: new Date().toLocaleDateString("es-CL"),
-                  issuerLabel: "Seven Arena",
-                  subjectId: athlete.id,
-                  countryTag: athlete.countryCode || delegation?.countryCode || "",
-                  photoUrl,
-                  qrDataUrl,
-                });
-                setCredentialHtml(html);
-              } catch { notify.push("No se pudo generar la credencial","❌"); }
-            }}
-              style={{ width:"100%",padding:14,borderRadius:12,border:"none",background:"linear-gradient(135deg,#041a2e,#062240)",color:"#21D0B3",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
-              Ver credencial digital
-            </button>
+            {/* Credencial digital con QR a la vista */}
+            <CredentialQrCard
+              qrData={`Participante: ${athlete.fullName}\nID: ${athlete.id.slice(-6)}\nDelegación: ${delegation?.countryCode || "—"}`}
+              name={athlete.fullName || athlete.id}
+              roleLabel={athlete.isDelegationLead ? "Jefe delegación" : athlete.userType || "Participante"}
+              code={athlete.credentialCode || athlete.id.slice(-6)}
+              countryTag={athlete.countryCode || delegation?.countryCode || null}
+              eventName={event?.name || null}
+              onOpenFull={async () => {
+                try {
+                  const evName = event?.name || "Seven Arena";
+                  const qrData = `Participante: ${athlete.fullName}\nID: ${athlete.id.slice(-6)}\nDelegación: ${delegation?.countryCode || "—"}`;
+                  const qrDataUrl = await QRCode.toDataURL(qrData, { width:200, margin:1 });
+                  const meta = (athlete.metadata || {}) as Record<string, unknown>;
+                  const photoKeys = ["photoUrl","photo_url","avatar","avatarUrl","imageUrl","image_url"];
+                  let photoUrl: string | null = null;
+                  for (const k of photoKeys) {
+                    const v = meta[k];
+                    if (typeof v === "string" && v.trim()) { photoUrl = v.trim(); break; }
+                  }
+                  const html = buildCredentialHtml({
+                    eventName: evName,
+                    fullName: athlete.fullName,
+                    roleLabel: athlete.isDelegationLead ? "JEFE DELEGACIÓN" : "PARTICIPANTE",
+                    credentialCode: athlete.credentialCode || athlete.id.slice(-6).toUpperCase(),
+                    statusLabel: athlete.accreditationStatus || "PENDING",
+                    issuedAtLabel: new Date().toLocaleDateString("es-CL"),
+                    issuerLabel: "Seven Arena",
+                    subjectId: athlete.id,
+                    countryTag: athlete.countryCode || delegation?.countryCode || "",
+                    photoUrl,
+                    qrDataUrl,
+                  });
+                  setCredentialHtml(html);
+                } catch { notify.push("No se pudo generar la credencial","❌"); }
+              }}
+            />
             {/* Health form link */}
             <a href={`/portal/athlete/salud?id=${athlete.id}`}
               style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:8,padding:14,borderRadius:12,background:"#fff",border:"1px solid #e2e8f0",color:"#0f172a",fontSize:13,fontWeight:700,textDecoration:"none" }}>
