@@ -783,7 +783,16 @@ function ArtifactView({ artifact, onUndo }: { artifact: SofiaArtifact; onUndo: (
 /*  Main widget                                                       */
 /* ════════════════════════════════════════════════════════════════ */
 
-export default function SofiaWidget() {
+type SofiaWidgetProps = {
+  /**
+   * Modo portal: botón más pequeño, sin mensaje de bienvenida y arrastrable
+   * (mantener presionado y mover). Pensado para el portal VIP, donde el FAB
+   * completo tapaba demasiado contenido.
+   */
+  compact?: boolean;
+};
+
+export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
   const { t, locale } = useI18n();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<SofiaMessage[]>([]);
@@ -797,13 +806,71 @@ export default function SofiaWidget() {
   const abortRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
+  // Posición del FAB cuando el usuario lo arrastra (modo compacto).
+  // null = posición por defecto (abajo a la derecha).
+  const [fabPos, setFabPos] = useState<{ x: number; y: number } | null>(null);
+  const dragRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    originX: number;
+    originY: number;
+    moved: boolean;
+  } | null>(null);
+  const justDraggedRef = useRef(false);
+  const fabRef = useRef<HTMLDivElement | null>(null);
+
+  const FAB_SIZE = compact ? 56 : 96;
+
+  const clampFab = (x: number, y: number) => ({
+    x: Math.min(Math.max(8, x), window.innerWidth - FAB_SIZE - 8),
+    y: Math.min(Math.max(8, y), window.innerHeight - FAB_SIZE - 8),
+  });
+
+  const handleFabPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!compact) return;
+    const rect = fabRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    dragRef.current = {
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      originX: rect.left,
+      originY: rect.top,
+      moved: false,
+    };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const handleFabPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    const dx = e.clientX - drag.startX;
+    const dy = e.clientY - drag.startY;
+    if (!drag.moved && Math.hypot(dx, dy) < 6) return; // toque, no arrastre
+    drag.moved = true;
+    setFabPos(clampFab(drag.originX + dx, drag.originY + dy));
+  };
+
+  const handleFabPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    dragRef.current = null;
+    if (drag.moved) {
+      // Evitar que el click posterior al arrastre abra/cierre el chat.
+      justDraggedRef.current = true;
+      setTimeout(() => { justDraggedRef.current = false; }, 80);
+    }
+  };
+
   useEffect(() => {
+    if (compact) return; // sin toast de bienvenida en modo portal
     const timer = setTimeout(() => {
       setShowWelcome(true);
       playChime();
     }, 2500);
     return () => clearTimeout(timer);
-  }, []);
+  }, [compact]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -1037,7 +1104,21 @@ export default function SofiaWidget() {
       )}
 
       {/* ── FAB ── */}
-      <div style={{ position: "fixed", bottom: 24, right: 24, zIndex: 40 }}>
+      <div
+        ref={fabRef}
+        onPointerDown={handleFabPointerDown}
+        onPointerMove={handleFabPointerMove}
+        onPointerUp={handleFabPointerUp}
+        onPointerCancel={handleFabPointerUp}
+        style={{
+          position: "fixed",
+          zIndex: 40,
+          ...(fabPos
+            ? { left: fabPos.x, top: fabPos.y }
+            : { bottom: compact ? 88 : 24, right: compact ? 16 : 24 }),
+          touchAction: "none",
+        }}
+      >
         {!open && (
           <div
             style={{
@@ -1053,17 +1134,18 @@ export default function SofiaWidget() {
         <button
           type="button"
           onClick={() => {
+            if (justDraggedRef.current) return;
             setOpen(!open);
             setShowWelcome(false);
           }}
           style={{
             position: "relative",
-            width: 96,
-            height: 96,
+            width: FAB_SIZE,
+            height: FAB_SIZE,
             borderRadius: "50%",
             background: open ? "linear-gradient(135deg, #e2e8f0, #f1f5f9)" : "#30455B",
             border: open ? "1px solid #cbd5e1" : "none",
-            cursor: "pointer",
+            cursor: compact ? "grab" : "pointer",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
@@ -1072,7 +1154,7 @@ export default function SofiaWidget() {
             boxShadow: open
               ? "0 2px 8px rgba(0,0,0,0.1)"
               : "0 4px 24px rgba(48,69,91,0.35), 0 8px 32px rgba(15,23,42,0.2)",
-            transition: "all 200ms ease",
+            transition: dragRef.current ? "none" : "all 200ms ease",
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = "scale(1.08)";
@@ -1086,6 +1168,10 @@ export default function SofiaWidget() {
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
+          ) : compact ? (
+            <div style={{ color: "#fff" }}>
+              <SofiaBotIcon size={30} eyeColor="#21D0B3" />
+            </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
               <div style={{ color: "#fff" }}>

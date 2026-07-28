@@ -3573,7 +3573,7 @@ export default function VehicleRequestPortalPage() {
 
           {/* Registro del token push (app nativa) + asistente de IA */}
           {athlete && <PushTokenSync userKind="athlete" userId={athlete.id} />}
-          {athlete && <SofiaWidget />}
+          {athlete && <SofiaWidget compact />}
         </div>
       )}
 
