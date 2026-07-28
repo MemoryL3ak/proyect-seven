@@ -88,6 +88,7 @@ export default function Page() {
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [capacityByDiscipline, setCapacityByDiscipline] = useState<Map<string, number>>(new Map());
   const [athletesByDiscipline, setAthletesByDiscipline] = useState<Map<string, number>>(new Map());
+  const [kmRecorridos, setKmRecorridos] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -104,6 +105,9 @@ export default function Page() {
           apiFetch<Discipline[]>("/disciplines").catch(() => []),
         ]);
         if (cancelled) return;
+        apiFetch<{ totales?: { kmRecorridos?: number } }>("/trips/finance/summary")
+          .then((r) => { if (!cancelled) setKmRecorridos(r?.totales?.kmRecorridos ?? null); })
+          .catch(() => { if (!cancelled) setKmRecorridos(null); });
         setEventsCount(Array.isArray(events) ? events.length : 0);
         const validAthletes = Array.isArray(athletes) ? filterValidatedAthletes(athletes) : [];
         setAthletesCount(validAthletes.length);
@@ -188,6 +192,7 @@ export default function Page() {
           ["En curso", tripStats.active],
           ["Completados", tripStats.completed],
           ["Total", trips.length],
+          ["Km recorridos", kmRecorridos === null ? "—" : `${Math.round(kmRecorridos)} km`],
         ] as (string | number)[][],
       },
       {
@@ -284,6 +289,7 @@ export default function Page() {
     { label: "Eventos",         value: fmt(eventsCount),            color: BLUE,       iconKey: "eventos",       link: "/deportes" },
     { label: "Hoteles",         value: fmt(accommodationsCount),    color: CHARCOAL,   iconKey: "hoteles",       link: "/masters/accommodations" },
     { label: "Viajes totales",  value: fmt(trips.length),           color: TEAL,       iconKey: "viajes",        link: "/operations/trips" },
+    { label: "Km recorridos",   value: kmRecorridos === null ? "—" : `${fmt(Math.round(kmRecorridos))} km`, color: BLUE, iconKey: "viajes", link: "/operations/transport-finance" },
     { label: "Asignaciones",    value: fmt(hotelAssignments.length),color: BLUE,       iconKey: "asignaciones",  link: "/operations/hotel-assignments" },
     { label: "Ocupación",       value: `${occupancyPct}%`,          color: TEAL_LIGHT, iconKey: "ocupacion",     link: "/operations/hotel-tracking" },
   ];
@@ -310,7 +316,7 @@ export default function Page() {
       </div>
 
       {/* ── KPI row */}
-      <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-4 lg:grid-cols-7">
         {kpis.map((kpi, i) => (
           <Link key={i} href={kpi.link} style={{ textDecoration: "none" }}>
             <div

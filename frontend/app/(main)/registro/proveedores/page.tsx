@@ -1603,7 +1603,7 @@ export default function ProveedoresPage() {
                         <circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>
                       </svg>
                       <span style={{ fontSize: "13px", fontWeight: 600, color: participantForm.isDriver ? "#21D0B3" : "var(--text-muted)" }}>
-                        Es chofer
+                        Es conductor
                       </span>
                     </div>
                     {/* Toggle pill */}

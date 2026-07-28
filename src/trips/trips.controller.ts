@@ -45,8 +45,12 @@ export class TripsController {
     @Query('eventId') eventId?: string,
     @Query('from') from?: string,
     @Query('to') to?: string,
+    @Query('clientType') clientType?: string,
+    @Query('fleet') fleet?: string,
+    @Query('service') service?: string,
+    @Query('providerId') providerId?: string,
   ) {
-    return this.financeService.summary({ eventId, from, to });
+    return this.financeService.summary({ eventId, from, to, clientType, fleet, service, providerId });
   }
 
   @Get('finance/detail')
@@ -54,8 +58,12 @@ export class TripsController {
     @Query('eventId') eventId?: string,
     @Query('from') from?: string,
     @Query('to') to?: string,
+    @Query('clientType') clientType?: string,
+    @Query('fleet') fleet?: string,
+    @Query('service') service?: string,
+    @Query('providerId') providerId?: string,
   ) {
-    return this.financeService.detail({ eventId, from, to });
+    return this.financeService.detail({ eventId, from, to, clientType, fleet, service, providerId });
   }
 
   @Get(':id')

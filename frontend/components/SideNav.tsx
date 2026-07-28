@@ -32,11 +32,12 @@ const navSections: NavSection[] = [
     title: "Operación", icon: "route",
     groups: [
       {
-        title: "Arribos & Llegadas", icon: "and",
+        title: "Arribos & Salidas", icon: "and",
         items: [
           { href: "/operacion/and", label: "AND", icon: "and" },
           { href: "/operacion/cumplimiento-and", label: "Cumplimiento AND", icon: "shield" },
-          { href: "/operations/flights", label: "Monitor de Vuelos", icon: "flight" }
+          { href: "/operations/flights", label: "Monitor de Vuelos", icon: "flight" },
+          { href: "/operacion/salidas", label: "Monitoreo de Salidas", icon: "flight" }
         ]
       },
       {
@@ -216,6 +217,7 @@ const HREF_TO_MODULE: Record<string, string> = {
   "/operacion/and": "operacion.and",
   "/operacion/cumplimiento-and": "operacion.cumplimiento",
   "/operations/flights": "operacion.and",
+  "/operacion/salidas": "operacion.and",
   "/operations/daily-transport": "operacion.viajes",
   "/operations/vehicle-positions": "operacion.tracking",
   "/operations/trips": "operacion.viajes",

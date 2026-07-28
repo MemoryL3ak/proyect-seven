@@ -181,7 +181,7 @@ const ROLES: Array<{
   {
     key: "transport",
     label: "Coordinador de transporte",
-    desc: "Cronograma diario, asignación de choferes, tracking en tiempo real y panel de conductores.",
+    desc: "Cronograma diario, asignación de conductores, tracking en tiempo real y panel de conductores.",
     color: "#1f4e8c",
     bgGradient: "linear-gradient(135deg, #eef4fb 0%, #ffffff 60%)",
     iconBg: "linear-gradient(135deg, #2d6aa8 0%, #1f4e8c 100%)",
@@ -354,13 +354,13 @@ const TASKS: Task[] = [
 
 const TIPS_BY_ROLE: Record<RoleKey, Array<{ icon: string; text: string }>> = {
   admin: [
-    { icon: "🤖", text: "SofIA puede crear viajes, asignar choferes y generar reportes con solo pedírselo en lenguaje natural." },
+    { icon: "🤖", text: "SofIA puede crear viajes, asignar conductores y generar reportes con solo pedírselo en lenguaje natural." },
     { icon: "🔑", text: "Cada usuario ve solo los módulos asignados. Configurás esto en Administración → Gestión de Usuarios." },
     { icon: "📈", text: "El dashboard comercial se actualiza solo cuando ingresás los montos licitados de los conductores." },
   ],
   transport: [
     { icon: "📥", text: "En 'Operatividad Diaria' tienes un botón para descargar la plantilla con todas las columnas que reconoce el importador." },
-    { icon: "⚙️", text: "La auto-asignación respeta tipo de flota, capacidad, sillas de ruedas, ventana horaria y máx. viajes por chofer." },
+    { icon: "⚙️", text: "La auto-asignación respeta tipo de flota, capacidad, sillas de ruedas, ventana horaria y máx. viajes por conductor." },
     { icon: "📍", text: "El portal del conductor usa Wake Lock para mantener el GPS activo aunque la pantalla se apague." },
   ],
   hotel: [

@@ -50,6 +50,20 @@ export class DriversController {
     return this.driversService.uploadDocument(id, payload.key, payload.dataUrl);
   }
 
+  @Post(':id/journey-photo')
+  uploadJourneyPhoto(
+    @Param('id') id: string,
+    @Body() payload: { kind: 'START' | 'END'; date: string; dataUrl: string; tripId?: string },
+  ) {
+    return this.driversService.uploadJourneyPhoto(
+      id,
+      payload.kind,
+      payload.date,
+      payload.dataUrl,
+      payload.tripId,
+    );
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.driversService.remove(id);

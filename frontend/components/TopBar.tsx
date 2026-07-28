@@ -41,6 +41,7 @@ export default function TopBar({ onMenuOpen }: { onMenuOpen?: () => void }) {
     masters: isHotelMaster ? "Hotelería" : "Maestros",
     accommodations: "Hoteles",
     "and-compliance": "Cumplimiento AND",
+    salidas: "Monitoreo de Salidas",
     "hotel-rooms": "Habitaciones",
     "hotel-assignments": "Asignaciones hotel",
     "hotel-keys": "Gestión de llaves",

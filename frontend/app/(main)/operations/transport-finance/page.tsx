@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import KpiCard from "@/components/ui/KpiCard";
+import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import { DollarIcon, TruckIcon, UsersIcon, AlertIcon, RefreshIcon, ClipboardIcon } from "@/components/ui/Icons";
-import { clientTypeLabel } from "@/lib/clientTypes";
+import { CLIENT_TYPE_OPTIONS, clientTypeLabel } from "@/lib/clientTypes";
 
 /* ────────────────────────────────────────────────────────────
    Panel Financiero de Transporte
@@ -20,6 +21,7 @@ type Grupo = {
   margen: number;
   margenPct: number;
   ticketPromedio: number;
+  km: number;
 };
 
 type Resumen = {
@@ -42,6 +44,8 @@ type Resumen = {
     ingresoAnulado: number;
     ticketPromedio: number;
     costoPorPasajero: number;
+    kmRecorridos: number;
+    kmPrestados: number;
   };
   calidadDatos: { sinValorizar: number; porReferencia: number; cobertura: number };
   presupuesto: {
@@ -68,7 +72,7 @@ type Resumen = {
   porFlota: Grupo[];
   porServicio: Grupo[];
   porTipoCliente: Grupo[];
-  serieDiaria: { fecha: string; viajes: number; ingreso: number; costo: number; margen: number }[];
+  serieDiaria: { fecha: string; viajes: number; ingreso: number; costo: number; margen: number; km: number }[];
   topConductores: {
     driverId: string;
     nombre: string;
@@ -78,6 +82,7 @@ type Resumen = {
     costo: number;
     margen: number;
     ticketPromedio: number;
+    km: number;
   }[];
   viajesSinTarifa: {
     id: string;
@@ -105,6 +110,7 @@ type Detalle = {
   origen: string;
   destino: string;
   pasajeros: number;
+  km: number;
   ingreso: number;
   costo: number;
   margen: number;
@@ -112,6 +118,7 @@ type Detalle = {
 };
 
 type EventItem = { id: string; name?: string | null };
+type ProviderItem = { id: string; name?: string | null };
 
 /* ── Formato ── */
 const clp = (n: number) =>
@@ -126,6 +133,9 @@ const clpCorto = (n: number) => {
 };
 
 const pct = (n: number, dec = 1) => `${(n || 0).toFixed(dec).replace(".", ",")}%`;
+
+const km = (n: number) =>
+  `${(n || 0).toLocaleString("es-CL", { maximumFractionDigits: n >= 100 ? 0 : 1 })} km`;
 
 const FLOTA_LABEL: Record<string, string> = {
   AUTO: "Sedán / Auto",
@@ -188,10 +198,15 @@ export default function TransportFinancePage() {
   const [resumen, setResumen] = useState<Resumen | null>(null);
   const [detalle, setDetalle] = useState<Detalle[]>([]);
   const [eventos, setEventos] = useState<EventItem[]>([]);
+  const [proveedores, setProveedores] = useState<ProviderItem[]>([]);
   const [eventId, setEventId] = useState("");
   const [preset, setPreset] = useState<Preset>("todo");
   const [desde, setDesde] = useState("");
   const [hasta, setHasta] = useState("");
+  const [tipoCliente, setTipoCliente] = useState("");
+  const [flota, setFlota] = useState("");
+  const [servicio, setServicio] = useState("");
+  const [proveedorId, setProveedorId] = useState("");
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [vista, setVista] = useState<"resumen" | "detalle" | "calidad">("resumen");
@@ -204,6 +219,10 @@ export default function TransportFinancePage() {
     if (eventId) qs.set("eventId", eventId);
     if (desde) qs.set("from", desde);
     if (hasta) qs.set("to", hasta);
+    if (tipoCliente) qs.set("clientType", tipoCliente);
+    if (flota) qs.set("fleet", flota);
+    if (servicio) qs.set("service", servicio);
+    if (proveedorId) qs.set("providerId", proveedorId);
     const sufijo = qs.toString() ? `?${qs}` : "";
     try {
       const [r, d] = await Promise.all([
@@ -227,7 +246,20 @@ export default function TransportFinancePage() {
     apiFetch<EventItem[]>("/events")
       .then((e) => setEventos(Array.isArray(e) ? e : []))
       .catch(() => setEventos([]));
+    apiFetch<ProviderItem[]>("/providers")
+      .then((p) => setProveedores(Array.isArray(p) ? p : []))
+      .catch(() => setProveedores([]));
   }, []);
+
+  const hayFiltros = Boolean(eventId || desde || hasta || tipoCliente || flota || servicio || proveedorId);
+  const limpiarFiltros = () => {
+    setEventId("");
+    setTipoCliente("");
+    setFlota("");
+    setServicio("");
+    setProveedorId("");
+    aplicarPreset("todo");
+  };
 
   const aplicarPreset = (p: Preset) => {
     setPreset(p);
@@ -253,7 +285,7 @@ export default function TransportFinancePage() {
     if (filas.length === 0) return;
     const cab = [
       "Fecha", "Estado", "Tipo cliente", "Servicio", "Flota", "Conductor",
-      "Proveedor", "Origen", "Destino", "Pasajeros", "Ingreso", "Costo", "Margen", "Origen del valor",
+      "Proveedor", "Origen", "Destino", "Pasajeros", "Km", "Ingreso", "Costo", "Margen", "Origen del valor",
     ];
     const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
     const cuerpo = filas.map((f) =>
@@ -261,6 +293,7 @@ export default function TransportFinancePage() {
         f.fecha ?? "", STATUS_LABEL[f.status] ?? f.status, f.clientType,
         SERVICIO_LABEL[f.servicio] ?? f.servicio, FLOTA_LABEL[f.flota] ?? f.flota,
         f.conductor, f.proveedor, f.origen, f.destino, f.pasajeros,
+        f.km ? f.km.toFixed(1).replace(".", ",") : "",
         Math.round(f.ingreso), Math.round(f.costo), Math.round(f.margen),
         ORIGEN_VALOR_META[f.origenValor]?.label ?? f.origenValor,
       ].map(esc).join(";"),
@@ -334,76 +367,109 @@ export default function TransportFinancePage() {
   return (
     <div className="p-4 md:p-6 space-y-5">
       {/* ══ Encabezado ══ */}
-      <header
-        className="rounded-2xl p-5 md:p-6 relative overflow-hidden"
-        style={{
-          background: "linear-gradient(135deg, #ffffff 0%, #f4fffe 100%)",
-          border: "1px solid var(--banner-border)",
-          boxShadow: "0 2px 12px rgba(15,23,42,0.05)",
-        }}
-      >
-        {/* Filete de marca a la izquierda */}
-        <div
-          aria-hidden
-          style={{
-            position: "absolute", left: 0, top: 0, bottom: 0, width: 4,
-            background: "linear-gradient(180deg, #34F3C6, #21D0B3)",
-          }}
-        />
-        <div
-          aria-hidden
-          style={{
-            position: "absolute", top: -90, right: -70, width: 260, height: 260,
-            background: "radial-gradient(circle, rgba(33,208,179,0.12) 0%, transparent 68%)",
-          }}
-        />
-        <div className="relative z-10 flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p
-              className="text-[10px] font-bold uppercase mb-1"
-              style={{ letterSpacing: "0.16em", color: "#0f766e" }}
-            >
-              Operación · Transporte
-            </p>
-            <h1 className="text-2xl md:text-3xl font-bold leading-tight" style={{ color: "var(--text)" }}>
-              Panel Financiero de Transporte
-            </h1>
-            <p className="text-sm mt-1.5" style={{ color: "var(--text-muted)", maxWidth: 640 }}>
-              Ingreso facturable, costo de proveedores y margen por servicio. Cada tramo
-              (ida y regreso) se valoriza como un servicio independiente.
-            </p>
+      <PageHeader
+        title="Panel Financiero de Transporte"
+        description="Ingreso facturable, costo de proveedores y margen por servicio. Cada tramo (ida y regreso) se valoriza como un servicio independiente."
+        icon={<DollarIcon size={24} />}
+        meta={
+          <span className="text-[11px]" style={{ color: "var(--text-faint)" }}>
+            Actualizado {new Date(resumen.generadoEn).toLocaleString("es-CL", { timeZone: "America/Santiago" })}
+          </span>
+        }
+        action={
+          <div className="flex gap-2">
+            <button className="btn btn-ghost" onClick={() => { setCargando(true); void cargar(); }}>
+              <RefreshIcon /> Actualizar
+            </button>
+            <button className="btn btn-gold" onClick={exportarCsv} disabled={detalle.length === 0}>
+              <ClipboardIcon /> Exportar CSV
+            </button>
           </div>
+        }
+      />
 
-          <div className="flex flex-col items-end gap-2">
-            <div className="flex gap-2">
-              <button className="btn btn-ghost" onClick={() => { setCargando(true); void cargar(); }}>
-                <RefreshIcon /> Actualizar
-              </button>
-              <button className="btn btn-gold" onClick={exportarCsv} disabled={detalle.length === 0}>
-                <ClipboardIcon /> Exportar CSV
-              </button>
-            </div>
-            <p className="text-[11px]" style={{ color: "var(--text-faint)" }}>
-              Actualizado {new Date(resumen.generadoEn).toLocaleString("es-CL", { timeZone: "America/Santiago" })}
-            </p>
-          </div>
+      {/* ══ Filtros ══ */}
+      <section className="surface rounded-2xl p-5 space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+          <label className="text-sm block">
+            <span className="block mb-1">Evento</span>
+            <select
+              className="input"
+              value={eventId}
+              onChange={(e) => setEventId(e.target.value)}
+              style={{ borderColor: eventId ? "var(--brand)" : undefined, fontWeight: eventId ? 600 : 400 }}
+            >
+              <option value="">Todos los eventos</option>
+              {eventos.map((ev) => (
+                <option key={ev.id} value={ev.id}>{ev.name || "Evento sin nombre"}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="text-sm block">
+            <span className="block mb-1">Tipo cliente</span>
+            <select
+              className="input"
+              value={tipoCliente}
+              onChange={(e) => setTipoCliente(e.target.value)}
+              style={{ borderColor: tipoCliente ? "var(--brand)" : undefined, fontWeight: tipoCliente ? 600 : 400 }}
+            >
+              <option value="">Todos los tipos</option>
+              {CLIENT_TYPE_OPTIONS.map((c) => (
+                <option key={c.value} value={c.value}>{c.label}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="text-sm block">
+            <span className="block mb-1">Flota</span>
+            <select
+              className="input"
+              value={flota}
+              onChange={(e) => setFlota(e.target.value)}
+              style={{ borderColor: flota ? "var(--brand)" : undefined, fontWeight: flota ? 600 : 400 }}
+            >
+              <option value="">Todas las flotas</option>
+              {Object.entries(FLOTA_LABEL)
+                .filter(([clave]) => clave !== "SIN CLASIFICAR")
+                .map(([clave, etiqueta]) => (
+                  <option key={clave} value={clave}>{etiqueta}</option>
+                ))}
+            </select>
+          </label>
+
+          <label className="text-sm block">
+            <span className="block mb-1">Tipo de servicio</span>
+            <select
+              className="input"
+              value={servicio}
+              onChange={(e) => setServicio(e.target.value)}
+              style={{ borderColor: servicio ? "var(--brand)" : undefined, fontWeight: servicio ? 600 : 400 }}
+            >
+              <option value="">Todos los servicios</option>
+              {Object.entries(SERVICIO_LABEL).map(([clave, etiqueta]) => (
+                <option key={clave} value={clave}>{etiqueta}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="text-sm block">
+            <span className="block mb-1">Proveedor</span>
+            <select
+              className="input"
+              value={proveedorId}
+              onChange={(e) => setProveedorId(e.target.value)}
+              style={{ borderColor: proveedorId ? "var(--brand)" : undefined, fontWeight: proveedorId ? 600 : 400 }}
+            >
+              <option value="">Todos los proveedores</option>
+              {proveedores.map((pr) => (
+                <option key={pr.id} value={pr.id}>{pr.name || "Proveedor sin nombre"}</option>
+              ))}
+            </select>
+          </label>
         </div>
 
-        {/* Filtros */}
-        <div className="relative z-10 mt-5 flex flex-wrap items-center gap-2">
-          <select
-            className="input"
-            style={{ maxWidth: 260 }}
-            value={eventId}
-            onChange={(e) => setEventId(e.target.value)}
-            aria-label="Evento"
-          >
-            <option value="">Todos los eventos</option>
-            {eventos.map((ev) => (
-              <option key={ev.id} value={ev.id}>{ev.name || "Evento sin nombre"}</option>
-            ))}
-          </select>
-
+        <div className="flex flex-wrap items-center gap-2">
           <div
             className="flex gap-1 p-1 rounded-lg"
             style={{ background: "var(--elevated)", border: "1px solid var(--border)" }}
@@ -437,8 +503,14 @@ export default function TransportFinancePage() {
             onChange={(e) => { setHasta(e.target.value); setPreset("custom"); }}
             aria-label="Hasta"
           />
+
+          {hayFiltros && (
+            <button className="btn btn-ghost" onClick={limpiarFiltros}>
+              Limpiar filtros
+            </button>
+          )}
         </div>
-      </header>
+      </section>
 
       {sinDatos ? (
         <EmptyState
@@ -488,6 +560,13 @@ export default function TransportFinancePage() {
               detail={`${clpCorto(t.ingresoPrestado)} devengado · ${t.viajesCancelados} cancelados`}
               accent="amber"
               icon={<ClipboardIcon />}
+            />
+            <KpiCard
+              label="Km recorridos"
+              value={km(t.kmRecorridos)}
+              detail={`${km(t.kmPrestados)} en servicios entregados`}
+              accent="neutral"
+              icon={<TruckIcon />}
             />
           </section>
 
@@ -1019,6 +1098,7 @@ function TablaDetalle({
     { campo: "conductor", texto: "Conductor" },
     { campo: "proveedor", texto: "Proveedor" },
     { campo: "pasajeros", texto: "Pax", alinear: "right" },
+    { campo: "km", texto: "Km", alinear: "right" },
     { campo: "ingreso", texto: "Ingreso", alinear: "right" },
     { campo: "costo", texto: "Costo", alinear: "right" },
     { campo: "margen", texto: "Margen", alinear: "right" },
@@ -1077,6 +1157,9 @@ function TablaDetalle({
                   <td className="px-3 py-2.5 whitespace-nowrap" style={{ color: "var(--text)" }}>{f.conductor}</td>
                   <td className="px-3 py-2.5 whitespace-nowrap" style={{ color: "var(--text-muted)" }}>{f.proveedor}</td>
                   <td className="px-3 py-2.5 text-right" style={{ color: "var(--text-muted)" }}>{f.pasajeros || "—"}</td>
+                  <td className="px-3 py-2.5 text-right whitespace-nowrap" style={{ color: "var(--text-muted)" }}>
+                    {f.km > 0 ? km(f.km) : "—"}
+                  </td>
                   <td className="px-3 py-2.5 text-right font-semibold whitespace-nowrap" style={{ color: "var(--text)" }}>
                     {clp(f.ingreso)}
                   </td>

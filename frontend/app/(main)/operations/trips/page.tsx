@@ -216,17 +216,28 @@ const PORTAL_CLIENT_TYPES = new Set(["VIP", "T1"]);
  *  - MANUAL: creados a mano por un operador del comité
  */
 type TripSource = "PORTAL" | "DAILY" | "MANUAL";
-const classifyTripSource = (t: { tripType?: string | null; metadata?: Record<string, unknown> | null }): TripSource => {
+const classifyTripSource = (t: {
+  tripType?: string | null;
+  notes?: string | null;
+  metadata?: Record<string, unknown> | null;
+}): TripSource => {
   if (t.tripType === "PORTAL_REQUEST") return "PORTAL";
+  // El portal VIP crea viajes como VIAJE_IDA / VIAJE_IDA_REGRESO pero siempre
+  // marca la nota con el prefijo "[Portal]".
+  if ((t.notes || "").startsWith("[Portal]")) return "PORTAL";
   const fleet = (t.metadata as any)?.fleet_acronym ?? (t as any).fleetAcronym;
   if (fleet) return "DAILY";
-  // Heurística: si el tripType corresponde a tipos conocidos del bulk-import
-  if (t.tripType === "VIAJE_IDA" || t.tripType === "VIAJE_IDA_REGRESO" || t.tripType === "DISPOSICION_12H") {
-    // Se considera "manual" sólo si no hay marcador de carga masiva
-    return "MANUAL";
-  }
   return "MANUAL";
 };
+
+/** Solicitudes VIP/T1 hechas desde el portal: viven en su propia pestaña. */
+const isPortalVipTrip = (t: {
+  tripType?: string | null;
+  notes?: string | null;
+  clientType?: string | null;
+  metadata?: Record<string, unknown> | null;
+}): boolean =>
+  classifyTripSource(t) === "PORTAL" && PORTAL_CLIENT_TYPES.has(t.clientType || "");
 
 const SOURCE_META: Record<TripSource | "", { label: string; color: string; bg: string; border: string; icon: string }> = {
   "": { label: "Todos", color: "#0f172a", bg: "#fff", border: "#e2e8f0", icon: "✦" },
@@ -579,16 +590,23 @@ export default function TripsPage() {
       });
   }, [athletes, delegations, drivers, search, selectedClientType, selectedEventId, trips, vehicles, venues, tripSource, selectedDriverId]);
 
-  const incomingRequests = useMemo(
-    () => filteredTrips.filter((trip) => trip.status === "REQUESTED"),
+  // Las solicitudes VIP/T1 del portal se gestionan sólo en su pestaña dedicada;
+  // fuera de ella contaminaban el despacho y el historial general.
+  const generalTrips = useMemo(
+    () => filteredTrips.filter((trip) => !isPortalVipTrip(trip)),
     [filteredTrips]
   );
 
+  const incomingRequests = useMemo(
+    () => generalTrips.filter((trip) => trip.status === "REQUESTED"),
+    [generalTrips]
+  );
+
   const scheduledQueue = useMemo(
-    // ASSIGNED = con chofer asignado (auto-asignación de Operatividad Diaria);
+    // ASSIGNED = con conductor asignado (auto-asignación de Operatividad Diaria);
     // sin él, esos viajes no caían en ningún grupo y desaparecían de la vista.
-    () => filteredTrips.filter((trip) => trip.status === "SCHEDULED" || trip.status === "ASSIGNED"),
-    [filteredTrips]
+    () => generalTrips.filter((trip) => trip.status === "SCHEDULED" || trip.status === "ASSIGNED"),
+    [generalTrips]
   );
 
   // ── Despacho: la vista se organiza por lo operativo (¿tiene chofer?) y no
@@ -596,38 +614,33 @@ export default function TripsPage() {
   //    trabajo pendiente; uno con conductor está cubierto y listo para salir.
   const pendingAssignment = useMemo(
     () =>
-      filteredTrips
+      generalTrips
         .filter((trip) => ["REQUESTED", "SCHEDULED", "ASSIGNED"].includes(trip.status || "") && !trip.driverId)
         .sort((a, b) => new Date(a.scheduledAt || 0).getTime() - new Date(b.scheduledAt || 0).getTime()),
-    [filteredTrips]
+    [generalTrips]
   );
 
   const readyToGo = useMemo(
     () =>
-      filteredTrips
+      generalTrips
         .filter((trip) => ["SCHEDULED", "ASSIGNED"].includes(trip.status || "") && !!trip.driverId)
         .sort((a, b) => new Date(a.scheduledAt || 0).getTime() - new Date(b.scheduledAt || 0).getTime()),
-    [filteredTrips]
+    [generalTrips]
   );
 
   const activeTrips = useMemo(
-    () => filteredTrips.filter((trip) => trip.status === "EN_ROUTE" || trip.status === "PICKED_UP"),
-    [filteredTrips]
+    () => generalTrips.filter((trip) => trip.status === "EN_ROUTE" || trip.status === "PICKED_UP"),
+    [generalTrips]
   );
 
   const completedTrips = useMemo(
     () =>
-      filteredTrips
+      generalTrips
         .filter((trip) => trip.status === "DROPPED_OFF" || trip.status === "COMPLETED" || trip.status === "CANCELLED"),
-    [filteredTrips]
+    [generalTrips]
   );
   const portalVipTrips = useMemo(
-    () =>
-      filteredTrips.filter(
-        (trip) =>
-          trip.tripType === "PORTAL_REQUEST" &&
-          PORTAL_CLIENT_TYPES.has(trip.clientType || "")
-      ),
+    () => filteredTrips.filter(isPortalVipTrip),
     [filteredTrips]
   );
 
@@ -927,10 +940,29 @@ export default function TripsPage() {
         )}
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm">
-          <p style={{ fontSize: "13px", color: pal.textMuted, maxWidth: "600px" }}>
-            <span style={{ fontWeight: 700, color: pal.textPrimary }}>Observaciones:</span>{" "}
-            {safeText(trip.notes, "Sin observaciones operativas.")}
-          </p>
+          {trip.notes ? (
+            <p
+              style={{
+                fontSize: "13px",
+                color: "#78350f",
+                maxWidth: "600px",
+                background: "#fffbeb",
+                border: "1px solid #fde68a",
+                borderLeft: "4px solid #f59e0b",
+                borderRadius: 10,
+                padding: "8px 12px",
+                fontWeight: 600,
+              }}
+            >
+              <span style={{ fontWeight: 800, color: "#b45309" }}>⚠ Observación:</span>{" "}
+              {safeText(trip.notes.replace(/^\[Portal\]\s*/, ""), "Sin observaciones operativas.")}
+            </p>
+          ) : (
+            <p style={{ fontSize: "13px", color: pal.textMuted, maxWidth: "600px" }}>
+              <span style={{ fontWeight: 700, color: pal.textPrimary }}>Observaciones:</span>{" "}
+              Sin observaciones operativas.
+            </p>
+          )}
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             {(emphasis === "request" || emphasis === "dispatch") && (
               <button

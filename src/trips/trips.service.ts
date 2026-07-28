@@ -124,6 +124,13 @@ export class TripsService {
     }
   }
 
+  /** Portal donde vive el pasajero: los VIP usan /portal/vehicle-request. */
+  private athletePortalUrl(clientType?: string | null): string {
+    return (clientType || '').trim().toUpperCase() === 'VIP'
+      ? '/portal/vehicle-request'
+      : '/portal/user';
+  }
+
   private firePush(
     audience: { userKind: 'driver' | 'athlete'; userId: string },
     payload: {
@@ -805,6 +812,25 @@ export class TripsService {
       await this.setTripAthletes(id, updateTripDto.athleteIds);
     }
 
+    // Destinatarios pasajeros: el solicitante del portal (VIP) y TODOS los
+    // pasajeros del viaje. Los viajes de la operatividad diaria (TA, TF, …)
+    // no tienen requester_athlete_id — sus pasajeros viven en trip_athletes,
+    // y antes se quedaban sin ninguna notificación.
+    const passengerIds = Array.from(
+      new Set(
+        [
+          currentTrip.requesterAthleteId,
+          ...(currentTrip.athleteIds ?? []),
+          ...(updateTripDto.athleteIds ?? []),
+        ].filter((v): v is string => Boolean(v)),
+      ),
+    );
+    const passengerData = (extra: Record<string, unknown> = {}) => ({
+      url: this.athletePortalUrl(currentTrip.clientType),
+      tripId: id,
+      ...extra,
+    });
+
     // SA-37: notify driver when newly assigned through update.
     const newDriverId =
       updateTripDto.driverId !== undefined ? updateTripDto.driverId : null;
@@ -824,25 +850,39 @@ export class TripsService {
           data: { url: '/portal/conductor', tripId: id },
         },
       );
-    }
 
-    // SA-37: notify athlete on status transitions that matter for the trip.
-    const finalStatus = (data as TripRow).status;
-    if (
-      finalStatus &&
-      finalStatus !== currentTrip.status &&
-      currentTrip.requesterAthleteId
-    ) {
-      const msg = this.statusPushForAthlete(finalStatus);
-      if (msg) {
+      // Aviso a los pasajeros de que su traslado ya tiene conductor.
+      for (const athleteId of passengerIds) {
         this.firePush(
-          { userKind: 'athlete', userId: currentTrip.requesterAthleteId },
+          { userKind: 'athlete', userId: athleteId },
           {
-            ...msg,
+            title: 'Conductor asignado',
+            body: data.origin
+              ? `Tu traslado desde ${data.origin} ya tiene conductor`
+              : 'Tu traslado ya tiene conductor asignado',
+            emoji: '🚕',
             kind: 'trip-status',
-            data: { url: '/portal/user', tripId: id, status: finalStatus },
+            data: passengerData({ status: (data as TripRow).status }),
           },
         );
+      }
+    }
+
+    // SA-37: notify passengers on status transitions that matter for the trip.
+    const finalStatus = (data as TripRow).status;
+    if (finalStatus && finalStatus !== currentTrip.status) {
+      const msg = this.statusPushForAthlete(finalStatus);
+      if (msg) {
+        for (const athleteId of passengerIds) {
+          this.firePush(
+            { userKind: 'athlete', userId: athleteId },
+            {
+              ...msg,
+              kind: 'trip-status',
+              data: passengerData({ status: finalStatus }),
+            },
+          );
+        }
       }
     }
 
@@ -926,7 +966,10 @@ export class TripsService {
             emoji: '💬',
             kind: 'trip-chat',
             data: {
-              url: recipientKind === 'driver' ? '/portal/conductor' : '/portal/user',
+              url:
+                recipientKind === 'driver'
+                  ? '/portal/conductor'
+                  : this.athletePortalUrl(trip.clientType),
               tripId,
             },
           },

@@ -355,7 +355,12 @@ export default function ConductorPortal() {
                 const ev = trip.eventId ? events[trip.eventId] : null;
                 const veh = trip.vehicleId ? vehicles[trip.vehicleId] : null;
                 const statusColor = STATUS_COLORS[trip.status || ''] || '#94a3b8';
-                const isPortalReq = trip.tripType === 'PORTAL_REQUEST';
+                // Solicitudes del portal (VIP/T1) terminan directo en COMPLETED,
+                // sin el paso intermedio DROPPED_OFF ("En destino").
+                const isPortalReq =
+                  trip.tripType === 'PORTAL_REQUEST' ||
+                  (trip.notes || '').startsWith('[Portal]') ||
+                  ['VIP', 'T1'].includes((trip.clientType || '').toUpperCase());
 
                 return (
                   <View key={trip.id} style={s.tripCard}>
@@ -378,6 +383,9 @@ export default function ConductorPortal() {
                       <Text style={s.infoMeta}>🚐 {veh ? [veh.plate, veh.type].filter(Boolean).join(' · ') : '-'}</Text>
                       <Text style={s.infoMeta}>👥 {(trip.athleteIds || []).length} pasajero(s)</Text>
                       <Text style={s.infoMeta}>🏁 Delegación: {resolveDelegations(trip)}</Text>
+                      {trip.requestedAt && <Text style={s.infoMeta}>📨 Solicitado: {formatDate(trip.requestedAt)}</Text>}
+                      {trip.startedAt && <Text style={s.infoMeta}>▶️ Inicio: {formatDate(trip.startedAt)}</Text>}
+                      {trip.completedAt && <Text style={s.infoMeta}>🏁 Terminado: {formatDate(trip.completedAt)}</Text>}
                     </View>
 
                     {/* Origin / Destination */}

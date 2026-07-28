@@ -9,6 +9,7 @@ import {
   ScheduleRowDto,
 } from './dto/bulk-from-schedule.dto';
 import { AutoAssignDriversDto } from './dto/auto-assign-drivers.dto';
+import { PushNotificationsService } from '../push-notifications/push-notifications.service';
 
 const MONTHS_ES: Record<string, number> = {
   ene: 0,
@@ -110,6 +111,7 @@ type TripCandidate = {
 export class TripsScheduleService {
   constructor(
     @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
+    private readonly pushService: PushNotificationsService,
   ) {}
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -690,6 +692,48 @@ export class TripsScheduleService {
         }
         assigned.length = 0;
         assigned.push(...persisted);
+
+        // Notificar la asignación: al conductor y a los pasajeros del viaje.
+        // Los viajes de la operatividad diaria no tienen requester_athlete_id,
+        // así que los pasajeros se resuelven desde trip_athletes.
+        if (assigned.length > 0) {
+          const tripIds = assigned.map((a) => a.tripId);
+          const { data: links } = await this.supabase
+            .schema('transport')
+            .from('trip_athletes')
+            .select('trip_id, athlete_id')
+            .in('trip_id', tripIds);
+          const athletesByTrip = new Map<string, string[]>();
+          (links ?? []).forEach((l: { trip_id: string; athlete_id: string }) => {
+            const current = athletesByTrip.get(l.trip_id) ?? [];
+            current.push(l.athlete_id);
+            athletesByTrip.set(l.trip_id, current);
+          });
+          for (const a of assigned) {
+            void this.pushService.send(
+              { userKind: 'driver', userId: a.driverId },
+              {
+                title: 'Nuevo viaje asignado',
+                body: a.tripLabel || 'Tienes un nuevo viaje pendiente',
+                emoji: '🚕',
+                kind: 'trip-assigned',
+                data: { url: '/portal/conductor', tripId: a.tripId },
+              },
+            );
+            for (const athleteId of athletesByTrip.get(a.tripId) ?? []) {
+              void this.pushService.send(
+                { userKind: 'athlete', userId: athleteId },
+                {
+                  title: 'Conductor asignado',
+                  body: 'Tu traslado ya tiene conductor asignado',
+                  emoji: '🚕',
+                  kind: 'trip-status',
+                  data: { url: '/portal/user', tripId: a.tripId },
+                },
+              );
+            }
+          }
+        }
       }
 
       // 7) Auditoría

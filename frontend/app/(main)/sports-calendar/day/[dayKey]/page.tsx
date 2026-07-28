@@ -597,7 +597,7 @@ export default function SportsCalendarDayDetailPage() {
                       </div>
                       <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, fontSize: 12, color: "#475569" }}>
                         <p><strong>Hora:</strong> {trip.timeLabel}</p>
-                        <p><strong>Chofer:</strong> {trip.driverName}</p>
+                        <p><strong>Conductor:</strong> {trip.driverName}</p>
                         <p><strong>Vehículo:</strong> {trip.vehicleLabel}</p>
                         <p><strong>Personas:</strong> {trip.linkedAthletes.length || (trip as any).passengerCount || 0}</p>
                       </div>

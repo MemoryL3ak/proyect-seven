@@ -84,6 +84,7 @@ export default function AssistanceChat({
   const [newCategory, setNewCategory] = useState("QUERY");
   const [newSubject, setNewSubject] = useState("");
   const [newMessage, setNewMessage] = useState("");
+  const [newFlightNumber, setNewFlightNumber] = useState("");
   const [view, setView] = useState<"list" | "chat" | "new">("list");
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -132,8 +133,12 @@ export default function AssistanceChat({
 
   const createChat = async () => {
     if (!newMessage.trim()) return;
+    // Un cambio de vuelo no se puede gestionar sin el número de vuelo.
+    if (newCategory === "FLIGHT_CHANGE" && !newFlightNumber.trim()) return;
     setCreating(true);
     try {
+      const flight = newFlightNumber.trim().toUpperCase();
+      const isFlightChange = newCategory === "FLIGHT_CHANGE" && flight;
       const chat = await apiFetch<Chat>("/support-chats", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -141,11 +146,16 @@ export default function AssistanceChat({
           originType, originId, originName,
           eventId: eventId || undefined,
           category: newCategory,
-          subject: newSubject.trim() || undefined,
-          initialMessage: newMessage.trim(),
+          subject: isFlightChange
+            ? `Vuelo ${flight}${newSubject.trim() ? ` — ${newSubject.trim()}` : ""}`
+            : newSubject.trim() || undefined,
+          initialMessage: isFlightChange
+            ? `Número de vuelo: ${flight}\n${newMessage.trim()}`
+            : newMessage.trim(),
+          metadata: isFlightChange ? { flightNumber: flight } : undefined,
         }),
       });
-      setNewSubject(""); setNewMessage(""); setNewCategory("QUERY");
+      setNewSubject(""); setNewMessage(""); setNewCategory("QUERY"); setNewFlightNumber("");
       await loadChats();
       openChat(chat.id);
     } catch (e) {
@@ -281,6 +291,22 @@ export default function AssistanceChat({
                   {CATEGORIES.map((c) => (<option key={c.value} value={c.value}>{c.label}</option>))}
                 </select>
               </div>
+              {newCategory === "FLIGHT_CHANGE" && (
+                <div>
+                  <label style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#64748b" }}>Número de vuelo *</label>
+                  <input
+                    value={newFlightNumber}
+                    onChange={(e) => setNewFlightNumber(e.target.value.toUpperCase())}
+                    placeholder="Ej: LA123"
+                    style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid " + (newFlightNumber.trim() ? "#e2e8f0" : "#fcd34d"), fontSize: "13px", marginTop: "4px", background: newFlightNumber.trim() ? "#fff" : "#fffbeb" }}
+                  />
+                  {!newFlightNumber.trim() && (
+                    <p style={{ fontSize: "10.5px", color: "#b45309", margin: "4px 0 0" }}>
+                      Para un cambio de vuelo necesitamos el número de vuelo.
+                    </p>
+                  )}
+                </div>
+              )}
               <div>
                 <label style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#64748b" }}>Asunto (opcional)</label>
                 <input value={newSubject} onChange={(e) => setNewSubject(e.target.value)} placeholder="Ej: Perdí mi acreditación" style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "13px", marginTop: "4px" }} />

@@ -8,6 +8,12 @@ import { filterValidatedAthletes } from "@/lib/athletes";
 import NotificationBell, { useNotifications } from "@/components/NotificationBell";
 import TripChat from "@/components/TripChat";
 import AssistanceChat from "@/components/AssistanceChat";
+import DevicePermissionsSection from "@/components/DevicePermissionsSection";
+import CuadernoCargoSection from "@/components/CuadernoCargoSection";
+import EmergencyNumbersSection from "@/components/EmergencyNumbersSection";
+import PushTokenSync from "@/components/PushTokenSync";
+import SofiaWidget from "@/components/SofiaWidget";
+import VenueMap from "@/components/VenueMap";
 import { buildCredentialHtml } from "@/lib/credential-template";
 import QRCode from "qrcode";
 import dynamic from "next/dynamic";
@@ -362,6 +368,7 @@ function getMonthGrid(year: number, month: number) {
 
 export default function VehicleRequestPortalPage() {
   const autoLoginRef = useRef(false);
+  const deepLinkHandled = useRef(false);
   const [userCode, setUserCode] = useState("");
   const [requestEmail, setRequestEmail] = useState("");
   const [accessRequestStatus, setAccessRequestStatus] = useState<string | null>(null);
@@ -370,7 +377,9 @@ export default function VehicleRequestPortalPage() {
 
   const [athlete, setAthlete] = useState<Athlete | null>(null);
   const [sessionChecked, setSessionChecked] = useState(false);
-  const notify = useNotifications();
+  // Modo servidor: sin userKind/userId el bell queda en memoria local y las
+  // notificaciones del backend (viajes, chats) nunca llegan al VIP.
+  const notify = useNotifications({ userKind: "athlete", userId: athlete?.id ?? null });
   const [events, setEvents] = useState<Record<string, EventItem>>({});
   const [delegations, setDelegations] = useState<Record<string, DelegationItem>>({});
   const [venues, setVenues] = useState<Venue[]>([]);
@@ -385,6 +394,7 @@ export default function VehicleRequestPortalPage() {
 
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [disciplineParents, setDisciplineParents] = useState<DisciplineParent[]>([]);
+  const [calDisciplineFilter, setCalDisciplineFilter] = useState("");
 
   const [selectedVehicleType, setSelectedVehicleType] = useState<string>("SEDAN");
   const [originAddress, setOriginAddress] = useState("");
@@ -406,11 +416,11 @@ export default function VehicleRequestPortalPage() {
     const all = [
       { key: "solicitud" as PortalTab, label: "Solicitud", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> },
       { key: "actividades" as PortalTab, label: "Actividades", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> },
-      { key: "premiaciones" as PortalTab, label: "Premios", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg> },
+      { key: "premiaciones" as PortalTab, label: "Premiaciones", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg> },
       { key: "cupones" as PortalTab, label: "Cupones", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v2a3 3 0 010 6v2a2 2 0 002 2h14a2 2 0 002-2v-2a3 3 0 010-6V7a2 2 0 00-2-2H5a2 2 0 00-2 2z"/><line x1="13" y1="5" x2="13" y2="7"/><line x1="13" y1="11" x2="13" y2="13"/><line x1="13" y1="17" x2="13" y2="19"/></svg> },
       { key: "sedes" as PortalTab, label: "Sedes", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> },
-      { key: "hoteles" as PortalTab, label: "Hoteles", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 22V8l9-6 9 6v14"/><path d="M9 22V12h6v10"/></svg> },
-      { key: "alimentacion" as PortalTab, label: "Comida", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg> },
+      { key: "hoteles" as PortalTab, label: "Mi Hotel", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 22V8l9-6 9 6v14"/><path d="M9 22V12h6v10"/></svg> },
+      { key: "alimentacion" as PortalTab, label: "Alimentación", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg> },
       { key: "calendario" as PortalTab, label: "Calendario", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> },
       { key: "cuenta" as PortalTab, label: "Cuenta", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
     ];
@@ -431,6 +441,11 @@ export default function VehicleRequestPortalPage() {
   const [premStatusFilter, setPremStatusFilter] = useState<"" | "PROGRAMADA" | "REALIZADA">("");
   const [premRoleFilter, setPremRoleFilter] = useState<string>("");
   const [premAttendanceFilter, setPremAttendanceFilter] = useState<"" | "CONFIRMED" | "PENDING" | "DECLINED">("");
+  const [premSearch, setPremSearch] = useState("");
+  const [premDisciplineFilter, setPremDisciplineFilter] = useState("");
+  const [premVenueFilter, setPremVenueFilter] = useState("");
+  const [premDateFrom, setPremDateFrom] = useState("");
+  const [premDateTo, setPremDateTo] = useState("");
   // Coupons tab state
   const [couponTab, setCouponTab] = useState<"available" | "mine">("available");
   const [couponsAvailable, setCouponsAvailable] = useState<Coupon[]>([]);
@@ -1068,6 +1083,19 @@ export default function VehicleRequestPortalPage() {
     return () => window.clearInterval(timer);
   }, [athlete?.id]);
 
+  // Deep-link desde notificaciones: ?tripId= abre el detalle de ese viaje.
+  useEffect(() => {
+    if (deepLinkHandled.current || trips.length === 0) return;
+    const params = new URLSearchParams(window.location.search);
+    const tripId = params.get("tripId");
+    if (!tripId) { deepLinkHandled.current = true; return; }
+    const target = trips.find((t) => t.id === tripId);
+    if (!target) return; // los viajes aún pueden estar cargando
+    deepLinkHandled.current = true;
+    setActiveTab("actividades");
+    setTripModal(target);
+  }, [trips]);
+
   // Check & monitor location permission
   useEffect(() => {
     if (!navigator.permissions) return;
@@ -1142,9 +1170,15 @@ export default function VehicleRequestPortalPage() {
   const calGrid = useMemo(() => getMonthGrid(calYear, calMonth), [calYear, calMonth]);
   const calMonthLabel = calMonthCursor.toLocaleDateString("es-CL", { month: "long", year: "numeric" });
 
+  // Filtro por disciplina (parent) del calendario deportivo
+  const calFilteredEvents = useMemo(
+    () => (calDisciplineFilter ? calendarEvents.filter((ce) => ce.parentId === calDisciplineFilter) : calendarEvents),
+    [calendarEvents, calDisciplineFilter],
+  );
+
   const calDaysWithEvents = useMemo(() => {
     const set = new Set<number>();
-    calendarEvents.forEach((ce) => {
+    calFilteredEvents.forEach((ce) => {
       if (!ce.scheduledAt) return;
       const d = new Date(ce.scheduledAt);
       if (d.getFullYear() === calYear && d.getMonth() === calMonth) {
@@ -1152,16 +1186,16 @@ export default function VehicleRequestPortalPage() {
       }
     });
     return set;
-  }, [calendarEvents, calYear, calMonth]);
+  }, [calFilteredEvents, calYear, calMonth]);
 
   const calSelectedDayEvents = useMemo(() => {
     if (calSelectedDay === null) return [];
-    return calendarEvents.filter((ce) => {
+    return calFilteredEvents.filter((ce) => {
       if (!ce.scheduledAt) return false;
       const d = new Date(ce.scheduledAt);
       return d.getFullYear() === calYear && d.getMonth() === calMonth && d.getDate() === calSelectedDay;
     });
-  }, [calendarEvents, calYear, calMonth, calSelectedDay]);
+  }, [calFilteredEvents, calYear, calMonth, calSelectedDay]);
 
   const parentNameMap = useMemo(
     () => new Map(disciplineParents.map((p) => [p.id, p.name || ""])),
@@ -1171,10 +1205,10 @@ export default function VehicleRequestPortalPage() {
   // Eventos del día apuntado por calCursor (vista Día)
   const calCursorDayEvents = useMemo(() => {
     const k = calKeyOf(calCursor);
-    return calendarEvents
+    return calFilteredEvents
       .filter((ce) => ce.scheduledAt && calKeyOf(new Date(ce.scheduledAt)) === k)
       .sort((a, b) => new Date(a.scheduledAt!).getTime() - new Date(b.scheduledAt!).getTime());
-  }, [calendarEvents, calCursor]);
+  }, [calFilteredEvents, calCursor]);
 
   // Días de la semana de calCursor con sus eventos (vista Semana)
   const calWeekDays = useMemo(() => {
@@ -1182,12 +1216,12 @@ export default function VehicleRequestPortalPage() {
     return Array.from({ length: 7 }, (_, i) => {
       const day = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
       const k = calKeyOf(day);
-      const events = calendarEvents
+      const events = calFilteredEvents
         .filter((ce) => ce.scheduledAt && calKeyOf(new Date(ce.scheduledAt)) === k)
         .sort((a, b) => new Date(a.scheduledAt!).getTime() - new Date(b.scheduledAt!).getTime());
       return { day, events };
     });
-  }, [calendarEvents, calCursor]);
+  }, [calFilteredEvents, calCursor]);
 
   // ── Trip card renderer (shared between sub-tabs) ──
   const renderTripCard = (trip: Trip) => {
@@ -1342,9 +1376,9 @@ export default function VehicleRequestPortalPage() {
               </div>
             </div>
             {trip.notes && (
-              <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Notas</p>
-                <p style={{ fontSize:12.5,color:"#334155",margin:"3px 0 0",lineHeight:1.4 }}>{trip.notes}</p>
+              <div style={{ padding:"10px 12px",borderRadius:10,background:"#fffbeb",border:"1px solid #fde68a",borderLeft:"4px solid #f59e0b" }}>
+                <p style={{ fontSize:10,fontWeight:800,color:"#b45309",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>⚠ Observación</p>
+                <p style={{ fontSize:13,fontWeight:600,color:"#78350f",margin:"3px 0 0",lineHeight:1.4 }}>{trip.notes.replace(/^\[Portal\]\s*/, "")}</p>
               </div>
             )}
 
@@ -1465,32 +1499,11 @@ export default function VehicleRequestPortalPage() {
     );
   };
 
-  // Google Maps embed for venues/hotels
-  const renderMapEmbed = (address: string | null | undefined, extra?: string | null) => {
+  // Mapa de sedes/hoteles: vista previa + pantalla completa con botón Volver.
+  const renderMapEmbed = (address: string | null | undefined, extra?: string | null, title?: string | null) => {
     if (!address) return null;
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     const query = [address, extra].filter(Boolean).join(" ");
-    if (apiKey) {
-      return (
-        <iframe
-          src={`https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${encodeURIComponent(query)}`}
-          style={{ width:"100%",height:180,border:"none",borderRadius:10 }}
-          allowFullScreen
-          loading="lazy"
-        />
-      );
-    }
-    return (
-      <a
-        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`}
-        target="_blank"
-        rel="noreferrer"
-        style={{ display:"inline-flex",alignItems:"center",gap:6,padding:"8px 14px",borderRadius:10,background:"rgba(33,208,179,0.08)",border:"1px solid rgba(33,208,179,0.25)",color:"#0a7a6b",fontSize:12,fontWeight:600,textDecoration:"none",cursor:"pointer" }}
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-        Ver en Google Maps
-      </a>
-    );
+    return <VenueMap title={title || address} query={query} />;
   };
 
   return (
@@ -1877,7 +1890,7 @@ export default function VehicleRequestPortalPage() {
                   </div>
                   <h3 style={{ fontSize:"18px",fontWeight:800,color:"#0f172a",margin:"0 0 8px" }}>Solicitud enviada</h3>
                   <p style={{ fontSize:"13px",color:"#64748b",lineHeight:1.5,margin:"0 0 24px" }}>
-                    Transporte la revisará y asignará un chofer.<br/>
+                    Transporte la revisará y asignará un conductor.<br/>
                     Podrás ver el estado en la pestaña <strong style={{ color:"#0f172a" }}>Actividades</strong>.
                   </p>
                   <button
@@ -2163,6 +2176,7 @@ export default function VehicleRequestPortalPage() {
               const calDayNames = ["L","M","M","J","V","S","D"];
 
               // Apply filters
+              const q = premSearch.trim().toLowerCase();
               const visible = premiaciones.filter(p => {
                 if (premStatusFilter && p.status !== premStatusFilter) return false;
                 const role = (p.myAssignment?.role || "AWARDER").toUpperCase();
@@ -2172,8 +2186,20 @@ export default function VehicleRequestPortalPage() {
                   const attendance = a?.confirmed_at ? "CONFIRMED" : a?.declined_at ? "DECLINED" : "PENDING";
                   if (premAttendanceFilter !== attendance) return false;
                 }
+                if (premDisciplineFilter && (p.discipline || "") !== premDisciplineFilter) return false;
+                if (premVenueFilter && (p.venue_name || "") !== premVenueFilter) return false;
+                const dayKey = fmtKey(p.scheduled_at);
+                if (premDateFrom && (!dayKey || dayKey < premDateFrom)) return false;
+                if (premDateTo && (!dayKey || dayKey > premDateTo)) return false;
+                if (q) {
+                  const haystack = [p.title, p.discipline, p.venue_name, p.location_detail, p.notes]
+                    .filter(Boolean).join(" ").toLowerCase();
+                  if (!haystack.includes(q)) return false;
+                }
                 return true;
               });
+              const disciplineOptions = Array.from(new Set(premiaciones.map(p => p.discipline).filter(Boolean))) as string[];
+              const venueOptions = Array.from(new Set(premiaciones.map(p => p.venue_name).filter(Boolean))) as string[];
 
               const totalProg = premiaciones.filter(p => p.status === "PROGRAMADA").length;
               const totalReal = premiaciones.filter(p => p.status === "REALIZADA").length;
@@ -2203,8 +2229,12 @@ export default function VehicleRequestPortalPage() {
               });
               const days = Array.from(grouped.entries()).sort(([a],[b]) => a.localeCompare(b));
 
-              const hasFilters = !!(premStatusFilter || premRoleFilter || premAttendanceFilter);
-              const clearAll = () => { setPremStatusFilter(""); setPremRoleFilter(""); setPremAttendanceFilter(""); };
+              const hasFilters = !!(premStatusFilter || premRoleFilter || premAttendanceFilter || premSearch || premDisciplineFilter || premVenueFilter || premDateFrom || premDateTo);
+              const clearAll = () => {
+                setPremStatusFilter(""); setPremRoleFilter(""); setPremAttendanceFilter("");
+                setPremSearch(""); setPremDisciplineFilter(""); setPremVenueFilter("");
+                setPremDateFrom(""); setPremDateTo("");
+              };
 
               const renderPremCard = (p: PremiacionVIP) => {
                 const a = p.myAssignment;
@@ -2344,6 +2374,43 @@ export default function VehicleRequestPortalPage() {
                             );
                           })}
                         </div>
+                        {/* Búsqueda */}
+                        <div style={{ position:"relative" }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                            style={{ position:"absolute",left:10,top:"50%",transform:"translateY(-50%)" }}>
+                            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                          </svg>
+                          <input
+                            type="search"
+                            value={premSearch}
+                            onChange={(e) => setPremSearch(e.target.value)}
+                            placeholder="Buscar por ceremonia, disciplina, sede…"
+                            style={{ width:"100%",padding:"8px 10px 8px 32px",borderRadius:10,border:"1px solid #e2e8f0",fontSize:12.5,boxSizing:"border-box" }}
+                          />
+                        </div>
+
+                        {/* Disciplina + Sede + Rango de fechas */}
+                        <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:6 }}>
+                          {disciplineOptions.length > 0 && (
+                            <select value={premDisciplineFilter} onChange={(e) => setPremDisciplineFilter(e.target.value)}
+                              style={{ padding:"7px 10px",borderRadius:10,border:`1px solid ${premDisciplineFilter?"#c78c00":"#e2e8f0"}`,fontSize:12,color:premDisciplineFilter?"#7a4a00":"#475569",fontWeight:premDisciplineFilter?700:400,background:"#fff" }}>
+                              <option value="">Todas las disciplinas</option>
+                              {disciplineOptions.map(d => <option key={d} value={d}>{d}</option>)}
+                            </select>
+                          )}
+                          {venueOptions.length > 0 && (
+                            <select value={premVenueFilter} onChange={(e) => setPremVenueFilter(e.target.value)}
+                              style={{ padding:"7px 10px",borderRadius:10,border:`1px solid ${premVenueFilter?"#c78c00":"#e2e8f0"}`,fontSize:12,color:premVenueFilter?"#7a4a00":"#475569",fontWeight:premVenueFilter?700:400,background:"#fff" }}>
+                              <option value="">Todas las sedes</option>
+                              {venueOptions.map(v => <option key={v} value={v}>{v}</option>)}
+                            </select>
+                          )}
+                          <input type="date" value={premDateFrom} onChange={(e) => setPremDateFrom(e.target.value)} aria-label="Desde"
+                            style={{ padding:"7px 10px",borderRadius:10,border:`1px solid ${premDateFrom?"#c78c00":"#e2e8f0"}`,fontSize:12,color:"#475569",background:"#fff" }} />
+                          <input type="date" value={premDateTo} onChange={(e) => setPremDateTo(e.target.value)} aria-label="Hasta"
+                            style={{ padding:"7px 10px",borderRadius:10,border:`1px solid ${premDateTo?"#c78c00":"#e2e8f0"}`,fontSize:12,color:"#475569",background:"#fff" }} />
+                        </div>
+
                         {/* Status chips */}
                         <div style={{ display:"flex",gap:6,flexWrap:"wrap" }}>
                           {([
@@ -2410,10 +2477,15 @@ export default function VehicleRequestPortalPage() {
                           </div>
                         )}
                         {hasFilters && (
-                          <button type="button" onClick={clearAll}
-                            style={{ alignSelf:"flex-start",padding:"4px 10px",borderRadius:8,border:"1px solid #fecaca",background:"#fef2f2",color:"#b91c1c",fontSize:11,fontWeight:600,cursor:"pointer" }}>
-                            Limpiar filtros
-                          </button>
+                          <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+                            <button type="button" onClick={clearAll}
+                              style={{ padding:"4px 10px",borderRadius:8,border:"1px solid #fecaca",background:"#fef2f2",color:"#b91c1c",fontSize:11,fontWeight:600,cursor:"pointer" }}>
+                              ✕ Limpiar filtros
+                            </button>
+                            <span style={{ fontSize:11,color:"#64748b",fontWeight:600 }}>
+                              {visible.length} de {premiaciones.length} premiacion{premiaciones.length===1?"":"es"}
+                            </span>
+                          </div>
                         )}
                       </div>
 
@@ -2779,7 +2851,7 @@ export default function VehicleRequestPortalPage() {
                               )}
                             </div>
                           )}
-                          {renderMapEmbed(v.address, v.commune)}
+                          {renderMapEmbed(v.address, v.commune, v.name)}
                         </div>
                       )}
                     </div>
@@ -2792,7 +2864,7 @@ export default function VehicleRequestPortalPage() {
             {/* ═══════════════════ HOTELES TAB ═══════════════════ */}
             {activeTab === "hoteles" && (
               <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
-                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>Alojamientos</p>
+                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>Mi Hotel</p>
                 {accommodations.map(acc => {
                   const isOpen = expandedItemId === `acc-${acc.id}`;
                   return (
@@ -2859,7 +2931,7 @@ export default function VehicleRequestPortalPage() {
                               </div>
                             )}
                           </div>
-                          {renderMapEmbed(acc.address, acc.city)}
+                          {renderMapEmbed(acc.address, acc.city, acc.name)}
                         </div>
                       )}
                     </div>
@@ -3016,6 +3088,25 @@ export default function VehicleRequestPortalPage() {
                   ))}
                 </div>
 
+                {/* Filtro por disciplina */}
+                {disciplineParents.length > 0 && (
+                  <div style={{ display:"flex",gap:6,alignItems:"center" }}>
+                    <select value={calDisciplineFilter} onChange={(e) => setCalDisciplineFilter(e.target.value)}
+                      style={{ flex:1,padding:"9px 12px",borderRadius:10,border:`1px solid ${calDisciplineFilter?"#21D0B3":"#e2e8f0"}`,fontSize:12.5,fontWeight:calDisciplineFilter?700:400,color:calDisciplineFilter?"#0a7a6b":"#475569",background:"#fff" }}>
+                      <option value="">Todas las disciplinas</option>
+                      {[...disciplineParents]
+                        .sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "es"))
+                        .map((p) => <option key={p.id} value={p.id}>{p.name || p.id}</option>)}
+                    </select>
+                    {calDisciplineFilter && (
+                      <button type="button" onClick={() => setCalDisciplineFilter("")}
+                        style={{ padding:"9px 12px",borderRadius:10,border:"1px solid #fecaca",background:"#fef2f2",color:"#b91c1c",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0 }}>
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                )}
+
                 {/* ── Navegación (mes para Gantt, día/semana para las otras) ── */}
                 {calView === "gantt" ? (
                   <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",background:"#fff",borderRadius:12,border:"1px solid #e2e8f0",padding:"10px 14px" }}>
@@ -3053,7 +3144,7 @@ export default function VehicleRequestPortalPage() {
                   const days = Array.from({ length: N }, (_, i) => new Date(calYear, calMonth, i + 1));
                   // Filas por disciplina (parent)
                   const rowMap = new Map<string, { name: string; byDay: Map<number, CalendarEvent[]> }>();
-                  calendarEvents.forEach((ce) => {
+                  calFilteredEvents.forEach((ce) => {
                     if (!ce.scheduledAt) return;
                     const d = new Date(ce.scheduledAt);
                     if (d.getFullYear() !== calYear || d.getMonth() !== calMonth) return;
@@ -3351,6 +3442,52 @@ export default function VehicleRequestPortalPage() {
                   Ver credencial digital
                 </button>
 
+                {/* Premiaciones */}
+                <button type="button" onClick={() => setActiveTab("premiaciones")}
+                  style={{ width:"100%",padding:"14px 16px",borderRadius:14,border:"1px solid #fde68a",background:"#fffbeb",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,textAlign:"left" }}>
+                  <span style={{ display:"flex",alignItems:"center",gap:10 }}>
+                    <span aria-hidden style={{ fontSize:18 }}>🏅</span>
+                    <span>
+                      <span style={{ display:"block",fontSize:13.5,fontWeight:700,color:"#7a4a00" }}>Premiaciones</span>
+                      <span style={{ display:"block",fontSize:11.5,color:"#a16207" }}>
+                        {premiaciones.length === 0
+                          ? "Sin premiaciones asignadas"
+                          : `${premiaciones.length} asignada${premiaciones.length === 1 ? "" : "s"}${(() => {
+                              const pendientes = premiaciones.filter(p => p.myAssignment && !p.myAssignment.confirmed_at && !p.myAssignment.declined_at).length;
+                              return pendientes > 0 ? ` · ${pendientes} por confirmar` : "";
+                            })()}`}
+                      </span>
+                    </span>
+                  </span>
+                  <span aria-hidden style={{ color:"#d97706" }}>›</span>
+                </button>
+
+                {/* Ficha de salud */}
+                <a href={`/portal/athlete/salud?id=${athlete.id}`}
+                  style={{ width:"100%",padding:"14px 16px",borderRadius:14,border:"1px solid #bfdbfe",background:"#eff6ff",display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,textDecoration:"none",boxSizing:"border-box" }}>
+                  <span style={{ display:"flex",alignItems:"center",gap:10 }}>
+                    <span aria-hidden style={{ fontSize:18 }}>🩺</span>
+                    <span>
+                      <span style={{ display:"block",fontSize:13.5,fontWeight:700,color:"#1e40af" }}>Ficha de salud</span>
+                      <span style={{ display:"block",fontSize:11.5,color:"#3b82f6" }}>Datos médicos y contacto de emergencia</span>
+                    </span>
+                  </span>
+                  <span style={{ fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:999,
+                    background: (athlete.metadata as Record<string, unknown> | undefined)?.healthRecord ? "#dcfce7" : "#fef9c3",
+                    color: (athlete.metadata as Record<string, unknown> | undefined)?.healthRecord ? "#15803d" : "#a16207" }}>
+                    {(athlete.metadata as Record<string, unknown> | undefined)?.healthRecord ? "Completada" : "Pendiente"}
+                  </span>
+                </a>
+
+                {/* Números de emergencia */}
+                <EmergencyNumbersSection />
+
+                {/* Cuaderno de cargo */}
+                <CuadernoCargoSection />
+
+                {/* Permisos del dispositivo (solo app nativa) */}
+                <DevicePermissionsSection />
+
                 {/* Logout button */}
                 <button type="button" onClick={logout}
                   style={{ width:"100%",padding:"14px",borderRadius:14,border:"1px solid #fecaca",background:"#fef2f2",color:"#dc2626",fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8 }}>
@@ -3428,6 +3565,10 @@ export default function VehicleRequestPortalPage() {
               onOpenChange={setAssistOpen}
             />
           )}
+
+          {/* Registro del token push (app nativa) + asistente de IA */}
+          {athlete && <PushTokenSync userKind="athlete" userId={athlete.id} />}
+          {athlete && <SofiaWidget />}
         </div>
       )}
 

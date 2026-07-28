@@ -10,6 +10,8 @@ import NotificationBell, { useNotifications } from "@/components/NotificationBel
 import TripChat from "@/components/TripChat";
 import AssistanceChat from "@/components/AssistanceChat";
 import DevicePermissionsSection from "@/components/DevicePermissionsSection";
+import CuadernoCargoSection from "@/components/CuadernoCargoSection";
+import EmergencyNumbersSection from "@/components/EmergencyNumbersSection";
 import { isAvailable as isNativeAvailable, request as nativeRequest } from "@/lib/native-bridge";
 import PushTokenSync from "@/components/PushTokenSync";
 import QRCode from "qrcode";
@@ -30,6 +32,7 @@ type Trip = {
   destination?: string | null;
   tripType?: string | null;
   tripCost?: number | null;
+  clientType?: string | null;
   status?: string | null;
   scheduledAt?: string | null;
   startedAt?: string | null;
@@ -378,7 +381,86 @@ export default function DriverPortalPage() {
     });
   };
 
+  /* ── Foto de jornada: se pide al iniciar el primer viaje del día y al
+        terminar el último. El marcador local evita pedirla dos veces. ── */
+  const [journeyPhoto, setJourneyPhoto] = useState<{ kind: "START" | "END"; tripId: string; nextStatus?: string } | null>(null);
+  const [journeyUploading, setJourneyUploading] = useState(false);
+
+  const journeyToday = () =>
+    new Intl.DateTimeFormat("en-CA", { timeZone: "America/Santiago", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  const sameDay = (iso?: string | null) => {
+    if (!iso) return false;
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return false;
+    return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Santiago", year: "numeric", month: "2-digit", day: "2-digit" }).format(d) === journeyToday();
+  };
+  const journeyFlagKey = (kind: "START" | "END") => `journey_photo_${driverProfile?.id || "anon"}_${journeyToday()}_${kind}`;
+  const hasJourneyMark = (kind: "START" | "END") => {
+    try { return Boolean(window.localStorage.getItem(journeyFlagKey(kind))); } catch { return false; }
+  };
+  const setJourneyMark = (kind: "START" | "END", value: string) => {
+    try { window.localStorage.setItem(journeyFlagKey(kind), value); } catch { /* privado */ }
+  };
+
+  /** ¿Quedan más viajes pendientes hoy además de `tripId`? */
+  const isLastTripOfDay = (tripId: string) =>
+    !trips.some(
+      (t) =>
+        t.id !== tripId &&
+        sameDay(t.scheduledAt) &&
+        !["COMPLETED", "DROPPED_OFF", "CANCELLED"].includes(t.status || ""),
+    );
+
+  const uploadJourneyPhoto = async (file: File) => {
+    if (!journeyPhoto || !driverProfile?.id) return;
+    setJourneyUploading(true);
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(new Error("read"));
+        reader.readAsDataURL(file);
+      });
+      await apiFetch(`/drivers/${driverProfile.id}/journey-photo`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind: journeyPhoto.kind, date: journeyToday(), dataUrl, tripId: journeyPhoto.tripId }),
+      });
+      setJourneyMark(journeyPhoto.kind, "uploaded");
+      driverNotify.push(
+        journeyPhoto.kind === "START" ? "Foto de inicio de jornada registrada" : "Foto de término de jornada registrada",
+        "📷",
+      );
+      const next = journeyPhoto.nextStatus;
+      const tripId = journeyPhoto.tripId;
+      setJourneyPhoto(null);
+      if (next) await performUpdateTrip(tripId, next);
+    } catch {
+      driverNotify.push("No se pudo subir la foto. Intenta de nuevo", "❌");
+    } finally {
+      setJourneyUploading(false);
+    }
+  };
+
+  const skipJourneyPhoto = async () => {
+    if (!journeyPhoto) return;
+    setJourneyMark(journeyPhoto.kind, "skipped");
+    const next = journeyPhoto.nextStatus;
+    const tripId = journeyPhoto.tripId;
+    setJourneyPhoto(null);
+    if (next) await performUpdateTrip(tripId, next);
+  };
+
   const updateTrip = async (tripId: string, status: string) => {
+    // Primer viaje del día: pedir la foto de inicio de jornada antes de partir.
+    if (["EN_ROUTE", "PICKED_UP"].includes(status) && driverProfile?.id && !hasJourneyMark("START")) {
+      setJourneyPhoto({ kind: "START", tripId, nextStatus: status });
+      return;
+    }
+    await performUpdateTrip(tripId, status);
+  };
+
+  const performUpdateTrip = async (tripId: string, status: string) => {
     // Request GPS permission before any trip action that requires location
     if (["EN_ROUTE", "PICKED_UP", "DROPPED_OFF", "COMPLETED"].includes(status)) {
       const hasLocation = await requestLocationPermission();
@@ -407,6 +489,15 @@ export default function DriverPortalPage() {
       }
       if (status === "DROPPED_OFF" || status === "COMPLETED") {
         setTrackingTripId((current) => (current === updated.id ? null : current));
+      }
+      // Último viaje del día terminado: pedir la foto de cierre de jornada.
+      if (
+        status === "COMPLETED" &&
+        driverProfile?.id &&
+        !hasJourneyMark("END") &&
+        isLastTripOfDay(tripId)
+      ) {
+        setJourneyPhoto({ kind: "END", tripId });
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : t("No se pudo actualizar"));
@@ -441,7 +532,14 @@ export default function DriverPortalPage() {
     return candidates;
   };
 
-  const isPortalRequest = (trip: Trip) => trip.tripType === "PORTAL_REQUEST";
+  // Solicitudes del portal (VIP/T1): el portal las crea como VIAJE_IDA(_REGRESO)
+  // con nota "[Portal]". Terminan en un solo paso (COMPLETED); sin esto quedaban
+  // colgadas en DROPPED_OFF ("En destino") cuando el conductor no confirmaba
+  // el segundo paso.
+  const isPortalRequest = (trip: Trip) =>
+    trip.tripType === "PORTAL_REQUEST" ||
+    (trip.notes || "").startsWith("[Portal]") ||
+    ["VIP", "T1"].includes((trip.clientType || "").toUpperCase());
   const isDisposicion = (trip: Trip) => trip.tripType === "DISPOSICION_12H";
 
   const confirmPickup = (trip: Trip) => {
@@ -1460,6 +1558,14 @@ export default function DriverPortalPage() {
                               )}
                             </div>
 
+                            {/* Observación de la solicitud — visible y destacada para el conductor */}
+                            {!isDisposicion(trip) && trip.notes && (
+                              <div style={{ padding:"10px 12px",borderRadius:10,background:"#fffbeb",border:"1px solid #fde68a",borderLeft:"4px solid #f59e0b",marginBottom:10 }}>
+                                <p style={{ fontSize:10,fontWeight:800,color:"#b45309",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>⚠ Observación</p>
+                                <p style={{ fontSize:12.5,fontWeight:600,color:"#78350f",margin:"3px 0 0",lineHeight:1.4 }}>{trip.notes.replace(/^\[Portal\]\s*/, "")}</p>
+                              </div>
+                            )}
+
                             {/* Action button */}
                             {isCompleted ? (
                               <div style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:10,borderRadius:12,background:"rgba(33,208,179,0.06)",border:"1px solid rgba(33,208,179,0.15)" }}>
@@ -1906,6 +2012,12 @@ export default function DriverPortalPage() {
                 {/* El tracking ya no se activa manualmente: la app lo arranca
                     sola al iniciar sesión y transmite mientras esté abierta. */}
 
+                {/* Números de emergencia */}
+                <EmergencyNumbersSection />
+
+                {/* Cuaderno de cargo */}
+                <CuadernoCargoSection />
+
                 {/* Device permissions (only visible inside the mobile app) */}
                 <DevicePermissionsSection />
               </div>
@@ -1974,6 +2086,48 @@ export default function DriverPortalPage() {
                 {t("Cancelar")}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Foto de jornada (primer / último viaje del día) ── */}
+      {journeyPhoto && (
+        <div style={{ position:"fixed",inset:0,zIndex:140,background:"rgba(6,15,30,0.6)",backdropFilter:"blur(3px)",display:"flex",alignItems:"center",justifyContent:"center",padding:16 }}>
+          <div style={{ background:"#fff",borderRadius:20,padding:"24px 20px",maxWidth:360,width:"100%",textAlign:"center",boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}>
+            <div style={{ fontSize:40,marginBottom:8 }}>📷</div>
+            <h3 style={{ fontSize:17,fontWeight:800,color:"#0f172a",margin:0 }}>
+              {journeyPhoto.kind === "START" ? "Foto de inicio de jornada" : "Foto de término de jornada"}
+            </h3>
+            <p style={{ fontSize:13,color:"#64748b",margin:"8px 0 16px",lineHeight:1.5 }}>
+              {journeyPhoto.kind === "START"
+                ? "Es tu primer viaje del día: sube una foto del vehículo antes de partir."
+                : "Terminaste tu último viaje del día: sube una foto del vehículo para cerrar la jornada."}
+            </p>
+            <label
+              style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",padding:14,borderRadius:14,border:"none",background: journeyUploading ? "#cbd5e1" : "linear-gradient(135deg,#34F3C6,#21D0B3)",color:"#0d1b3e",fontSize:14,fontWeight:800,cursor: journeyUploading ? "wait" : "pointer",boxSizing:"border-box" }}
+            >
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                disabled={journeyUploading}
+                style={{ display:"none" }}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) void uploadJourneyPhoto(file);
+                  e.target.value = "";
+                }}
+              />
+              {journeyUploading ? "Subiendo…" : "Tomar / subir foto"}
+            </label>
+            <button
+              type="button"
+              onClick={() => void skipJourneyPhoto()}
+              disabled={journeyUploading}
+              style={{ marginTop:10,width:"100%",padding:12,borderRadius:12,border:"1px solid #e2e8f0",background:"#fff",color:"#64748b",fontSize:13,fontWeight:600,cursor:"pointer" }}
+            >
+              Ahora no
+            </button>
           </div>
         </div>
       )}

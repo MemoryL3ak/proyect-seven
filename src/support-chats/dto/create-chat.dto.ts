@@ -29,6 +29,10 @@ export class CreateChatDto {
   @IsOptional()
   @IsString()
   initialMessage?: string;
+
+  /** Contexto extra de la incidencia (ej: { flightNumber } en cambios de vuelo). */
+  @IsOptional()
+  metadata?: Record<string, unknown>;
 }
 
 export class SendMessageDto {

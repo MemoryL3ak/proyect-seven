@@ -120,7 +120,7 @@ export const resources: Record<string, ResourceConfig> = {
   },
   delegations: {
     name: "AND",
-    description: "Arribos & Llegadas: delegación y participantes.",
+    description: "Arribos & Salidas: delegación y participantes.",
     endpoint: "/delegations",
     tableOrder: [
       "eventId",
@@ -391,7 +391,7 @@ export const resources: Record<string, ResourceConfig> = {
         ]
       },
       { key: "participantBusPlate", label: "Patente Bus", type: "text", transient: true },
-      { key: "participantBusDriverName", label: "Nombre Chofer", type: "text", transient: true },
+      { key: "participantBusDriverName", label: "Nombre Conductor", type: "text", transient: true },
       { key: "participantBusCompany", label: "Empresa Bus", type: "text", transient: true },
       { key: "participantHotelAccommodationId", label: "Hotel", type: "select", optionsSource: "accommodations", transient: true },
       {
@@ -766,7 +766,7 @@ export const resources: Record<string, ResourceConfig> = {
         ]
       },
       { key: "busPlate", label: "Patente Bus", type: "text" },
-      { key: "busDriverName", label: "Nombre Chofer", type: "text" },
+      { key: "busDriverName", label: "Nombre Conductor", type: "text" },
       { key: "busCompany", label: "Empresa Bus", type: "text" },
       {
         key: "region",

@@ -4,12 +4,16 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { apiFetch } from "@/lib/api";
 import { getMobileSession, mobileAwareLogout } from "@/lib/mobile-auth";
 import { filterValidatedAthletes } from "@/lib/athletes";
+import { normalizeClientType } from "@/lib/clientTypes";
+import VenueMap from "@/components/VenueMap";
 import { useI18n } from "@/lib/i18n";
 import TripMap from "@/components/TripMap";
 import NotificationBell, { useNotifications } from "@/components/NotificationBell";
 import TripChat from "@/components/TripChat";
 import AssistanceChat from "@/components/AssistanceChat";
 import DevicePermissionsSection from "@/components/DevicePermissionsSection";
+import CuadernoCargoSection from "@/components/CuadernoCargoSection";
+import EmergencyNumbersSection from "@/components/EmergencyNumbersSection";
 import PushTokenSync from "@/components/PushTokenSync";
 import { buildCredentialHtml } from "@/lib/credential-template";
 import QRCode from "qrcode";
@@ -366,21 +370,26 @@ export default function UserPortalPage() {
   };
 
   const isChief = athlete?.isDelegationLead === true;
+  // TA (deportistas): vista simplificada — sin premiaciones, sin asistencia,
+  // sin historial de viajes y con el calendario fijo en su disciplina.
+  // El jefe de delegación conserva la vista completa aunque sea TA.
+  const isTA = !isChief && normalizeClientType(athlete?.userType) === "TA";
   const portalTabs = useMemo(() => {
     const all: { key: PortalTab; label: string; icon: React.ReactNode }[] = [
       { key:"itinerario", label:"Itinerario", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="5" r="3"/><line x1="12" y1="8" x2="12" y2="16"/><circle cx="12" cy="19" r="3"/></svg> },
       { key:"actividades", label:"Actividades", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> },
       { key:"calendario", label:"Calendario", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> },
-      { key:"premiaciones", label:"Premios", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg> },
+      { key:"premiaciones", label:"Premiaciones", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg> },
       { key:"sedes", label:"Sedes", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg> },
-      { key:"alimentacion", label:"Comida", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg> },
+      { key:"alimentacion", label:"Alimentación", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg> },
       { key:"delegacion", label:"Delegación", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg> },
       { key:"cupones", label:"Cupones", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v2a3 3 0 010 6v2a2 2 0 002 2h14a2 2 0 002-2v-2a3 3 0 010-6V7a2 2 0 00-2-2H5a2 2 0 00-2 2z"/><line x1="13" y1="5" x2="13" y2="7"/><line x1="13" y1="11" x2="13" y2="13"/><line x1="13" y1="17" x2="13" y2="19"/></svg> },
       { key:"cuenta", label:"Cuenta", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
     ];
+    if (isTA) return all.filter(t => ["actividades","calendario","sedes","alimentacion","cupones","cuenta"].includes(t.key));
     if (!isChief) return all.filter(t => ["actividades","calendario","premiaciones","sedes","alimentacion","cupones","cuenta"].includes(t.key));
     return all;
-  }, [isChief]);
+  }, [isChief, isTA]);
 
   // La barra inferior muestra hasta 4 pestañas fijas + "Más"; el resto se agrupa
   // en una hoja inferior. Orden de prioridad para elegir cuáles quedan fijas.
@@ -450,7 +459,9 @@ export default function UserPortalPage() {
       }
 
       if (data.userType === "VIP") {
-        window.location.href = `/portal/vehicle-request?athleteId=${data.id}`;
+        // Conservar el contexto de la notificación (?tripId=) en el redirect.
+        const extra = new URLSearchParams(window.location.search).get("tripId");
+        window.location.href = `/portal/vehicle-request?athleteId=${data.id}${extra ? `&tripId=${encodeURIComponent(extra)}` : ""}`;
         return;
       }
 
@@ -1163,12 +1174,14 @@ export default function UserPortalPage() {
               onMarkAllRead={notify.markAllRead}
               onClear={notify.clear}
             />
-            <button type="button" onClick={() => setAssistOpen((p) => !p)} title="Asistencia"
-              style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:`1px solid ${assistOpen ? "rgba(52,243,198,0.7)" : "rgba(33,208,179,0.4)"}`,background: assistOpen ? "linear-gradient(135deg,rgba(52,243,198,0.28),rgba(33,208,179,0.18))" : "rgba(33,208,179,0.12)",cursor:"pointer",flexShrink:0,transition:"all .15s" }}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
-              </svg>
-            </button>
+            {!isTA && (
+              <button type="button" onClick={() => setAssistOpen((p) => !p)} title="Asistencia"
+                style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:`1px solid ${assistOpen ? "rgba(52,243,198,0.7)" : "rgba(33,208,179,0.4)"}`,background: assistOpen ? "linear-gradient(135deg,rgba(52,243,198,0.28),rgba(33,208,179,0.18))" : "rgba(33,208,179,0.12)",cursor:"pointer",flexShrink:0,transition:"all .15s" }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
+                </svg>
+              </button>
+            )}
             <button type="button" onClick={() => loadAthlete()} disabled={loading}
               style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",cursor:"pointer",flexShrink:0,opacity:loading?0.5:1 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1358,18 +1371,21 @@ export default function UserPortalPage() {
         {/* ─── Actividades tab (chief only) ─── */}
         {activeTab === "actividades" && (
           <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
-            <div style={{ display:"flex",gap:6 }}>
-              {(["curso","historial"] as const).map(sub => (
-                <button key={sub} type="button" onClick={() => setActSubTab(sub)}
-                  style={{ flex:1,padding:"8px 0",borderRadius:10,border:"none",fontSize:12,fontWeight:700,cursor:"pointer",
-                    background:actSubTab===sub?"linear-gradient(135deg,#041a2e,#062240)":"#fff",
-                    color:actSubTab===sub?"#21D0B3":"#64748b",
-                    boxShadow:actSubTab===sub?"0 2px 8px rgba(33,208,179,0.2)":"0 1px 4px rgba(0,0,0,0.04)" }}>
-                  {sub === "curso" ? "En curso" : "Historial"}
-                </button>
-              ))}
-            </div>
-            {actSubTab === "curso" && (
+            {/* TA: sólo viajes programados/en curso, sin historial */}
+            {!isTA && (
+              <div style={{ display:"flex",gap:6 }}>
+                {(["curso","historial"] as const).map(sub => (
+                  <button key={sub} type="button" onClick={() => setActSubTab(sub)}
+                    style={{ flex:1,padding:"8px 0",borderRadius:10,border:"none",fontSize:12,fontWeight:700,cursor:"pointer",
+                      background:actSubTab===sub?"linear-gradient(135deg,#041a2e,#062240)":"#fff",
+                      color:actSubTab===sub?"#21D0B3":"#64748b",
+                      boxShadow:actSubTab===sub?"0 2px 8px rgba(33,208,179,0.2)":"0 1px 4px rgba(0,0,0,0.04)" }}>
+                    {sub === "curso" ? "En curso" : "Historial"}
+                  </button>
+                ))}
+              </div>
+            )}
+            {(actSubTab === "curso" || isTA) && (
               trip && ["SCHEDULED","EN_ROUTE","PICKED_UP"].includes(trip.status ?? "") ? (
                 <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",padding:"14px",cursor:"pointer" }} onClick={() => setShowTripModal(true)}>
                   <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:10 }}>
@@ -1386,7 +1402,7 @@ export default function UserPortalPage() {
                 </div>
               ) : <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:20 }}>Sin viajes activos</p>
             )}
-            {actSubTab === "historial" && (() => {
+            {!isTA && actSubTab === "historial" && (() => {
               const completed = trip && ["COMPLETED","DROPPED_OFF"].includes(trip.status ?? "") ? [trip] : [];
               return completed.length > 0 ? (
                 <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
@@ -1860,7 +1876,8 @@ export default function UserPortalPage() {
                     <option value="">Todos</option>
                     {(Object.keys(TYPE_CFG) as CalType[]).map(tp => <option key={tp} value={tp}>{TYPE_CFG[tp].label}</option>)}
                   </select>
-                  {discOptions.length > 0 && (
+                  {/* TA: sin filtro de disciplina — el calendario queda fijo en la suya */}
+                  {!isTA && discOptions.length > 0 && (
                     <>
                       <label style={{ fontSize:11,fontWeight:600,color:"#64748b",display:"block",marginTop:10 }}>Disciplina</label>
                       <select value={calDiscFilter} onChange={(e)=>setCalDiscFilter(e.target.value)}
@@ -1870,8 +1887,8 @@ export default function UserPortalPage() {
                       </select>
                     </>
                   )}
-                  {(calTypeFilter || calDiscFilter || calSelectedDay) && (
-                    <button type="button" onClick={()=>{ setCalTypeFilter(""); setCalDiscFilter(""); setCalSelectedDay(null); }}
+                  {(calTypeFilter || (!isTA && calDiscFilter) || calSelectedDay) && (
+                    <button type="button" onClick={()=>{ setCalTypeFilter(""); if (!isTA) setCalDiscFilter(""); setCalSelectedDay(null); }}
                       style={{ marginTop:10,width:"100%",fontSize:11,fontWeight:700,color:"#dc2626",background:"#fef2f2",border:"1px solid #fecaca",borderRadius:8,padding:"6px",cursor:"pointer" }}>
                       ✕ Limpiar filtros
                     </button>
@@ -2310,13 +2327,7 @@ export default function UserPortalPage() {
                         <img src={v.photoUrl} alt={v.name || "Sede"} style={{ width:"100%",height:140,objectFit:"cover",borderRadius:10 }} />
                       )}
                       {addr && <p style={{ fontSize:12,color:"#334155",margin:0 }}>{addr}</p>}
-                      {addr && process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? (
-                        <iframe src={`https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&q=${encodeURIComponent(addr)}`}
-                          style={{ width:"100%",height:180,border:"none",borderRadius:10 }} allowFullScreen loading="lazy" />
-                      ) : addr ? (
-                        <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}`} target="_blank" rel="noreferrer"
-                          style={{ fontSize:12,color:"#21D0B3",fontWeight:600 }}>Ver en Google Maps</a>
-                      ) : null}
+                      {addr && <VenueMap title={v.name || "Sede"} query={addr} />}
                     </div>
                   )}
                 </div>
@@ -2346,13 +2357,7 @@ export default function UserPortalPage() {
                       {h.checkOut && <p style={{ fontSize:11,color:"#64748b",margin:0 }}>Check-out: {new Date(h.checkOut).toLocaleDateString("es-CL")}</p>}
                       {h.roomType && <p style={{ fontSize:11,color:"#64748b",margin:0 }}>Tipo: {h.roomType}</p>}
                       {h.contactPhone && <p style={{ fontSize:11,color:"#64748b",margin:0 }}>Teléfono: {h.contactPhone}</p>}
-                      {addr && process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? (
-                        <iframe src={`https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&q=${encodeURIComponent(addr)}`}
-                          style={{ width:"100%",height:180,border:"none",borderRadius:10 }} allowFullScreen loading="lazy" />
-                      ) : addr ? (
-                        <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}`} target="_blank" rel="noreferrer"
-                          style={{ fontSize:12,color:"#21D0B3",fontWeight:600 }}>Ver en Google Maps</a>
-                      ) : null}
+                      {addr && <VenueMap title={h.name || "Hotel"} query={addr} />}
                     </div>
                   )}
                 </div>
@@ -2816,6 +2821,10 @@ export default function UserPortalPage() {
               Ficha de salud
               {healthRecord ? <span style={{ fontSize:10,padding:"2px 8px",borderRadius:6,background:"rgba(33,208,179,0.1)",color:"#0a7a6b" }}>Completada</span> : <span style={{ fontSize:10,padding:"2px 8px",borderRadius:6,background:"#FEF3C7",color:"#92400E" }}>Pendiente</span>}
             </a>
+            {/* Números de emergencia */}
+            <EmergencyNumbersSection />
+            {/* Cuaderno de cargo */}
+            <CuadernoCargoSection />
             {/* Device permissions (only visible inside the mobile app) */}
             <DevicePermissionsSection />
             {/* Logout */}
@@ -3445,7 +3454,7 @@ export default function UserPortalPage() {
           />
         )}
 
-        {athlete && (
+        {athlete && !isTA && (
           <AssistanceChat
             originType="athlete"
             originId={athlete.id}

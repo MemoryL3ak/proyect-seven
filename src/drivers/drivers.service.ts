@@ -594,6 +594,70 @@ export class DriversService {
     return this.update(id, { metadata: { ...currentMeta, [key]: publicUrl } } as any);
   }
 
+  /**
+   * Foto de jornada del conductor: se solicita al iniciar el primer viaje del
+   * día (START) y al terminar el último (END). Queda en el bucket de fotos y
+   * referenciada en la metadata del conductor como `jornada_<fecha>_<kind>`.
+   */
+  async uploadJourneyPhoto(
+    id: string,
+    kind: 'START' | 'END',
+    date: string,
+    dataUrl: string,
+    tripId?: string,
+  ) {
+    if (kind !== 'START' && kind !== 'END') {
+      throw new BadRequestException('kind must be START or END');
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date || '')) {
+      throw new BadRequestException('date must be YYYY-MM-DD');
+    }
+    const match = (dataUrl || '').match(/^data:([^;]+);base64,(.+)$/);
+    if (!match) {
+      throw new BadRequestException('Invalid photo payload');
+    }
+
+    const contentType = match[1];
+    const buffer = Buffer.from(match[2], 'base64');
+    const extension = contentType.split('/')[1]?.split('+')[0] || 'jpg';
+    const path = `journey/${id}/${date}-${kind.toLowerCase()}.${extension}`;
+
+    const admin = this.getAdminClient();
+    if (!admin) {
+      throw new InternalServerErrorException(
+        'SUPABASE_SERVICE_ROLE_KEY is required to upload driver photos',
+      );
+    }
+
+    const { error } = await admin.storage
+      .from('driver-photos')
+      .upload(path, buffer, { contentType, upsert: true });
+
+    if (error) {
+      throw new InternalServerErrorException(
+        error.message || 'Error uploading journey photo',
+      );
+    }
+
+    const { data } = admin.storage.from('driver-photos').getPublicUrl(path);
+    const publicUrl = data?.publicUrl ?? null;
+    if (!publicUrl) {
+      throw new InternalServerErrorException('Error resolving journey photo URL');
+    }
+
+    const driver = await this.findOne(id);
+    const currentMeta = (driver as any).metadata ?? {};
+    const metaKey = `jornada_${date}_${kind.toLowerCase()}`;
+    await this.update(id, {
+      metadata: {
+        ...currentMeta,
+        [metaKey]: { url: publicUrl, tripId: tripId ?? null, uploadedAt: new Date().toISOString() },
+      },
+    } as any);
+
+    return { url: publicUrl, key: metaKey };
+  }
+
   async requestAccess(email: string) {
     const normalizedEmail = email.trim().toLowerCase();
 

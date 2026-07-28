@@ -29,6 +29,7 @@ export class SupportChatsService {
       priority: dto.priority ?? 'NORMAL',
       subject: dto.subject ?? null,
       status: 'OPEN',
+      metadata: dto.metadata ?? null,
     };
     const { data, error } = await this.supabase
       .schema('core')

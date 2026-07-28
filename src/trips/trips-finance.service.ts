@@ -19,9 +19,14 @@ export type FinanceFilters = {
   eventId?: string;
   from?: string;
   to?: string;
+  clientType?: string;
+  fleet?: string;
+  service?: string;
+  providerId?: string;
 };
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Estados que representan servicio efectivamente prestado (facturable). */
 const DELIVERED = ['COMPLETED', 'DROPPED_OFF'];
@@ -97,6 +102,19 @@ export class TripsFinanceService {
         from con_flota c
         left join transport.drivers d           on d.id  = c.driver_id
         left join core.provider_participants pp on pp.id = c.driver_id
+        where ($4::text is null or upper(coalesce(nullif(trim(c.client_type), ''), 'SIN TIPO')) = $4)
+          and ($5::text is null or coalesce(c.fleet_norm, 'SIN CLASIFICAR') = $5)
+          and ($6::text is null or c.trip_type_norm = $6)
+          and ($7::uuid is null or coalesce(d.provider_id, pp.provider_id) = $7)
+      ),
+      -- Km recorridos: primero la traza GPS real (telemetry.vehicle_positions);
+      -- si el viaje no tiene breadcrumb, se cae al largo de la ruta planificada.
+      km_gps as (
+        select vp.trip_id,
+               st_length(st_makeline(vp.location order by vp."timestamp")::geography) / 1000.0 as km
+        from telemetry.vehicle_positions vp
+        where vp.trip_id in (select id from filtrado)
+        group by vp.trip_id
       ),
       -- Tarifa de referencia: promedio del catálogo por flota + tipo de
       -- servicio. Cubre viajes sin conductor o con proveedor sin tarifa.
@@ -115,6 +133,7 @@ export class TripsFinanceService {
           tm.client_price   as ref_client,
           tm.provider_price as ref_provider,
           p.name            as provider_name,
+          coalesce(kg.km, st_length(c.route_geometry::geography) / 1000.0, 0) as km_recorridos,
           -- INGRESO: valor pactado del viaje; si no hay, tarifa del proveedor;
           -- si tampoco, tarifa de referencia.
           coalesce(nullif(c.trip_cost, 0), pr.client_price, tm.client_price) as ingreso,
@@ -128,6 +147,7 @@ export class TripsFinanceService {
           end as origen_valor
         from con_conductor c
         left join core.providers p on p.id = c.provider_id
+        left join km_gps kg on kg.trip_id = c.id
         left join lateral (
           select r.client_price, r.provider_price
           from core.provider_rates r
@@ -146,7 +166,17 @@ export class TripsFinanceService {
 
   private params(filters: FinanceFilters) {
     const safe = (d?: string) => (d && ISO_DATE.test(d) ? d : null);
-    return [filters.eventId ?? null, safe(filters.from), safe(filters.to)];
+    const text = (v?: string) => (v && v.trim() ? v.trim().toUpperCase() : null);
+    const uuid = (v?: string) => (v && UUID.test(v) ? v : null);
+    return [
+      uuid(filters.eventId),
+      safe(filters.from),
+      safe(filters.to),
+      text(filters.clientType),
+      text(filters.fleet),
+      text(filters.service),
+      uuid(filters.providerId),
+    ];
   }
 
   async summary(filters: FinanceFilters = {}) {
@@ -164,6 +194,8 @@ export class TripsFinanceService {
              count(*) filter (where origen_valor = 'SIN_VALORIZAR')::int      as sin_valorizar,
              count(*) filter (where origen_valor = 'REFERENCIA')::int         as por_referencia,
              coalesce(sum(passenger_count), 0)::int                           as pasajeros,
+             coalesce(sum(km_recorridos) filter (where status <> 'CANCELLED'), 0)::numeric as km_recorridos,
+             coalesce(sum(km_recorridos) filter (where status in ${delivered}), 0)::numeric as km_prestados,
              coalesce(sum(ingreso) filter (where status <> 'CANCELLED'), 0)::numeric as ingreso_total,
              coalesce(sum(costo)   filter (where status <> 'CANCELLED'), 0)::numeric as costo_total,
              coalesce(sum(ingreso) filter (where status in ${delivered}), 0)::numeric as ingreso_prestado,
@@ -195,7 +227,8 @@ export class TripsFinanceService {
              coalesce(fleet_norm, 'SIN CLASIFICAR') as clave,
              count(*)::int                          as viajes,
              coalesce(sum(ingreso) filter (where status <> 'CANCELLED'), 0)::numeric as ingreso,
-             coalesce(sum(costo)   filter (where status <> 'CANCELLED'), 0)::numeric as costo
+             coalesce(sum(costo)   filter (where status <> 'CANCELLED'), 0)::numeric as costo,
+             coalesce(sum(km_recorridos) filter (where status <> 'CANCELLED'), 0)::numeric as km
            from valorizado group by 1 order by ingreso desc nulls last`,
           params,
         ),
@@ -205,7 +238,8 @@ export class TripsFinanceService {
              trip_type_norm as clave,
              count(*)::int  as viajes,
              coalesce(sum(ingreso) filter (where status <> 'CANCELLED'), 0)::numeric as ingreso,
-             coalesce(sum(costo)   filter (where status <> 'CANCELLED'), 0)::numeric as costo
+             coalesce(sum(costo)   filter (where status <> 'CANCELLED'), 0)::numeric as costo,
+             coalesce(sum(km_recorridos) filter (where status <> 'CANCELLED'), 0)::numeric as km
            from valorizado group by 1 order by ingreso desc nulls last`,
           params,
         ),
@@ -215,7 +249,8 @@ export class TripsFinanceService {
              coalesce(nullif(client_type, ''), 'SIN TIPO') as clave,
              count(*)::int                                 as viajes,
              coalesce(sum(ingreso) filter (where status <> 'CANCELLED'), 0)::numeric as ingreso,
-             coalesce(sum(costo)   filter (where status <> 'CANCELLED'), 0)::numeric as costo
+             coalesce(sum(costo)   filter (where status <> 'CANCELLED'), 0)::numeric as costo,
+             coalesce(sum(km_recorridos) filter (where status <> 'CANCELLED'), 0)::numeric as km
            from valorizado group by 1 order by ingreso desc nulls last`,
           params,
         ),
@@ -225,7 +260,8 @@ export class TripsFinanceService {
              dia::text     as fecha,
              count(*)::int as viajes,
              coalesce(sum(ingreso) filter (where status <> 'CANCELLED'), 0)::numeric as ingreso,
-             coalesce(sum(costo)   filter (where status <> 'CANCELLED'), 0)::numeric as costo
+             coalesce(sum(costo)   filter (where status <> 'CANCELLED'), 0)::numeric as costo,
+             coalesce(sum(km_recorridos) filter (where status <> 'CANCELLED'), 0)::numeric as km
            from valorizado where dia is not null group by 1 order by 1 asc`,
           params,
         ),
@@ -237,7 +273,8 @@ export class TripsFinanceService {
              coalesce(provider_name, '—')                   as proveedor,
              count(*)::int                                  as viajes,
              coalesce(sum(ingreso) filter (where status <> 'CANCELLED'), 0)::numeric as ingreso,
-             coalesce(sum(costo)   filter (where status <> 'CANCELLED'), 0)::numeric as costo
+             coalesce(sum(costo)   filter (where status <> 'CANCELLED'), 0)::numeric as costo,
+             coalesce(sum(km_recorridos) filter (where status <> 'CANCELLED'), 0)::numeric as km
            from valorizado
            where driver_id is not null
            group by driver_id, driver_name, provider_name
@@ -299,19 +336,30 @@ export class TripsFinanceService {
           margen: ingreso - costo,
           margenPct: ingreso > 0 ? ((ingreso - costo) / ingreso) * 100 : 0,
           ticketPromedio: r.viajes ? ingreso / num(r.viajes) : 0,
+          km: num(r.km),
         };
       });
 
     return {
       generadoEn: new Date().toISOString(),
       moneda: 'CLP',
-      filtros: { eventId: filters.eventId ?? null, desde: filters.from ?? null, hasta: filters.to ?? null },
+      filtros: {
+        eventId: filters.eventId ?? null,
+        desde: filters.from ?? null,
+        hasta: filters.to ?? null,
+        clientType: filters.clientType ?? null,
+        fleet: filters.fleet ?? null,
+        service: filters.service ?? null,
+        providerId: filters.providerId ?? null,
+      },
       totales: {
         viajes: num(t.viajes),
         viajesActivos,
         viajesPrestados: num(t.prestados),
         viajesCancelados: num(t.cancelados),
         pasajeros: num(t.pasajeros),
+        kmRecorridos: num(t.km_recorridos),
+        kmPrestados: num(t.km_prestados),
         ingresoTotal,
         costoTotal,
         margenTotal: ingresoTotal - costoTotal,
@@ -370,6 +418,7 @@ export class TripsFinanceService {
           ingreso,
           costo,
           margen: ingreso - costo,
+          km: num(r.km),
         };
       }),
       topConductores: topDrivers.map((r: any) => {
@@ -384,6 +433,7 @@ export class TripsFinanceService {
           costo,
           margen: ingreso - costo,
           ticketPromedio: num(r.viajes) > 0 ? ingreso / num(r.viajes) : 0,
+          km: num(r.km),
         };
       }),
       viajesSinTarifa: unvalued.map((r: any) => ({
@@ -418,6 +468,7 @@ export class TripsFinanceService {
          coalesce(v.origin,'—')                   as origen,
          coalesce(v.destination,'—')              as destino,
          coalesce(v.passenger_count,0)::int       as pasajeros,
+         coalesce(v.km_recorridos,0)::numeric     as km,
          coalesce(v.ingreso,0)::numeric           as ingreso,
          coalesce(v.costo,0)::numeric             as costo,
          (coalesce(v.ingreso,0) - coalesce(v.costo,0))::numeric as margen,
@@ -442,6 +493,7 @@ export class TripsFinanceService {
       origen: r.origen,
       destino: r.destino,
       pasajeros: Number(r.pasajeros ?? 0),
+      km: Number(r.km ?? 0),
       ingreso: Number(r.ingreso ?? 0),
       costo: Number(r.costo ?? 0),
       margen: Number(r.margen ?? 0),

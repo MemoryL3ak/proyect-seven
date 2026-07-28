@@ -215,8 +215,10 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
                   {!isMine(msg) && isFirstInGroup && (
                     <span className="tripchat-sender-name">{msg.senderName}</span>
                   )}
-                  <div className={isMine(msg) ? "tripchat-bubble-mine" : "tripchat-bubble-other"}
-                    style={{ overflowWrap: "anywhere", wordBreak: "normal", whiteSpace: "normal", maxWidth: "100%" }}>
+                  {/* `overflow-wrap: break-word` (de la clase) y no `anywhere`:
+                      `anywhere` colapsa el ancho intrínseco del bubble y parte
+                      mensajes cortos en dos líneas. */}
+                  <div className={isMine(msg) ? "tripchat-bubble-mine" : "tripchat-bubble-other"}>
                     {msg.content}
                   </div>
                   {isLastInGroup && (
@@ -373,6 +375,7 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
         }
 
         .tripchat-sender-name {
+          display: block; /* en línea compartía renglón con el bubble y lo empujaba a una 2ª línea */
           font-size: 10px; font-weight: 700; color: #21D0B3;
           margin: 0 0 2px 2px;
           letter-spacing: 0.02em;
@@ -387,7 +390,7 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
           font-size: 14px; line-height: 1.45;
           overflow-wrap: break-word;
           word-break: normal;
-          white-space: normal;
+          white-space: pre-wrap; /* respeta los saltos de línea que escribe el usuario */
           max-width: 100%;
           box-shadow: 0 1px 4px rgba(33,208,179,0.2);
           animation: tripMsgIn .25s ease-out both;
@@ -401,7 +404,7 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
           font-size: 14px; line-height: 1.45;
           overflow-wrap: break-word;
           word-break: normal;
-          white-space: normal;
+          white-space: pre-wrap; /* respeta los saltos de línea que escribe el usuario */
           max-width: 100%;
           border: 1px solid #edf0f5;
           box-shadow: 0 1px 3px rgba(15,23,42,0.04);
