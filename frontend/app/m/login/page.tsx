@@ -11,34 +11,16 @@ const CODE_LENGTH = 6;
 export default function MobileLoginPage() {
   const router = useRouter();
   const [redirecting, setRedirecting] = useState(true);
-  const [digits, setDigits] = useState<string[]>(() => Array(CODE_LENGTH).fill(""));
-  const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
+  // Un solo input (invisible) maneja todo el código y las casillas son sólo
+  // visuales. Con 6 inputs, cada salto de foco reabría el teclado del sistema
+  // en su layout por defecto y descartaba el cambio manual a numérico; con un
+  // único campo el teclado no se cierra nunca y la capa elegida persiste.
+  const [code, setCode] = useState("");
+  const [focused, setFocused] = useState(false);
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Tipo de teclado de las casillas. Al saltar el foco entre casillas el
-  // sistema reabre el teclado con el layout del inputMode, descartando el
-  // cambio manual del usuario — por eso el modo se elige acá y se aplica a
-  // las 6 casillas (y se recuerda para la próxima vez).
-  const [kbMode, setKbMode] = useState<"text" | "numeric">(() => {
-    try {
-      return window.localStorage.getItem("ml_kb_mode") === "numeric" ? "numeric" : "text";
-    } catch {
-      return "text";
-    }
-  });
 
-  const switchKeyboard = (mode: "text" | "numeric") => {
-    setKbMode(mode);
-    try { window.localStorage.setItem("ml_kb_mode", mode); } catch { /* modo privado */ }
-    // Reabrir el teclado en la casilla activa (o la primera vacía) para que
-    // el nuevo layout aplique de inmediato.
-    const activeIndex = inputsRef.current.findIndex((el) => el === document.activeElement);
-    const firstEmpty = digits.findIndex((d) => !d);
-    const target = activeIndex >= 0 ? activeIndex : firstEmpty >= 0 ? firstEmpty : 0;
-    setTimeout(() => inputsRef.current[target]?.focus(), 30);
-  };
-
-  const code = digits.join("");
   const isComplete = code.length === CODE_LENGTH;
 
   // Auto-redirect on mount if a session is already present (persistencia móvil).
@@ -55,40 +37,18 @@ export default function MobileLoginPage() {
       return;
     }
     setRedirecting(false);
-    // Focus the first input once the form is shown
-    setTimeout(() => inputsRef.current[0]?.focus(), 50);
+    // Focus the input once the form is shown
+    setTimeout(() => inputRef.current?.focus(), 50);
   }, [router]);
 
-  const setDigit = (index: number, value: string) => {
-    const sanitized = value.replace(/[^a-zA-Z0-9]/g, "").slice(0, 1).toLowerCase();
-    setDigits((prev) => {
-      const next = [...prev];
-      next[index] = sanitized;
-      return next;
-    });
-    if (sanitized && index < CODE_LENGTH - 1) {
-      inputsRef.current[index + 1]?.focus();
-    }
+  const handleCodeChange = (value: string) => {
+    setCode(value.replace(/[^a-zA-Z0-9]/g, "").slice(0, CODE_LENGTH).toLowerCase());
   };
 
-  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Backspace" && !digits[index] && index > 0) {
-      inputsRef.current[index - 1]?.focus();
-    }
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && isComplete) {
       void handleSubmit();
     }
-  };
-
-  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
-    const pasted = e.clipboardData.getData("text").replace(/[^a-zA-Z0-9]/g, "").slice(0, CODE_LENGTH).toLowerCase();
-    if (!pasted) return;
-    e.preventDefault();
-    const next = Array(CODE_LENGTH).fill("");
-    for (let i = 0; i < pasted.length; i++) next[i] = pasted[i];
-    setDigits(next);
-    const focusIndex = Math.min(pasted.length, CODE_LENGTH - 1);
-    inputsRef.current[focusIndex]?.focus();
   };
 
   const handleSubmit = async () => {
@@ -138,9 +98,9 @@ export default function MobileLoginPage() {
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Código inválido.");
-      // Clear digits on error so user can re-enter
-      setDigits(Array(CODE_LENGTH).fill(""));
-      setTimeout(() => inputsRef.current[0]?.focus(), 50);
+      // Clear the code on error so user can re-enter
+      setCode("");
+      setTimeout(() => inputRef.current?.focus(), 50);
     } finally {
       setLoading(false);
     }
@@ -225,80 +185,102 @@ export default function MobileLoginPage() {
           >
             Código de acceso
           </label>
-          <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
-            {digits.map((digit, i) => (
-              <input
-                key={i}
-                ref={(el) => {
-                  inputsRef.current[i] = el;
-                }}
-                type="text"
-                inputMode={kbMode}
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                maxLength={1}
-                value={digit}
-                onChange={(e) => setDigit(i, e.target.value)}
-                onKeyDown={(e) => handleKeyDown(i, e)}
-                onPaste={handlePaste}
-                style={{
-                  width: "44px",
-                  height: "54px",
-                  textAlign: "center",
-                  borderRadius: "12px",
-                  border: `1px solid ${digit ? "rgba(52,243,198,0.5)" : "rgba(255,255,255,0.12)"}`,
-                  background: "rgba(255,255,255,0.08)",
-                  color: "#f1f5f9",
-                  fontSize: "22px",
-                  fontWeight: 700,
-                  outline: "none",
-                  transition: "border-color 150ms",
-                  textTransform: "lowercase",
-                }}
-              />
-            ))}
-          </div>
-
-          {/* Selector de teclado: persiste entre casillas y entre sesiones */}
-          <div style={{ display: "flex", justifyContent: "center", marginTop: "12px" }}>
-            <div
-              style={{
-                display: "flex",
-                gap: "2px",
-                padding: "3px",
-                borderRadius: "10px",
-                background: "rgba(255,255,255,0.07)",
-                border: "1px solid rgba(255,255,255,0.1)",
-              }}
-            >
-              {([["numeric", "123"], ["text", "ABC"]] as const).map(([mode, label]) => (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={() => switchKeyboard(mode)}
-                  aria-pressed={kbMode === mode}
-                  style={{
-                    padding: "6px 16px",
-                    borderRadius: "8px",
-                    border: "none",
-                    cursor: "pointer",
-                    fontSize: "12px",
-                    fontWeight: 700,
-                    letterSpacing: "0.06em",
-                    background: kbMode === mode ? "linear-gradient(135deg, #34F3C6, #21D0B3)" : "transparent",
-                    color: kbMode === mode ? "#0d1b3e" : "rgba(255,255,255,0.55)",
-                    transition: "all 150ms",
-                  }}
-                >
-                  {label}
-                </button>
-              ))}
+          {/* Un solo input real (invisible) sobre las casillas visuales: el foco
+              nunca salta, así el teclado del sistema no se reabre y la capa
+              (numérica o texto) que eligió el usuario persiste de forma nativa. */}
+          <div
+            style={{ position: "relative" }}
+            onClick={() => inputRef.current?.focus()}
+          >
+            <div style={{ display: "flex", gap: "8px", justifyContent: "center" }} aria-hidden>
+              {Array.from({ length: CODE_LENGTH }, (_, i) => {
+                const char = code[i] || "";
+                const isActive = focused && i === Math.min(code.length, CODE_LENGTH - 1) && !isComplete;
+                const isCursor = focused && i === code.length;
+                return (
+                  <div
+                    key={i}
+                    style={{
+                      width: "44px",
+                      height: "54px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: "12px",
+                      border: `1px solid ${
+                        isCursor || isActive
+                          ? "rgba(52,243,198,0.8)"
+                          : char
+                          ? "rgba(52,243,198,0.5)"
+                          : "rgba(255,255,255,0.12)"
+                      }`,
+                      boxShadow: isCursor || isActive ? "0 0 0 3px rgba(52,243,198,0.15)" : "none",
+                      background: "rgba(255,255,255,0.08)",
+                      color: "#f1f5f9",
+                      fontSize: "22px",
+                      fontWeight: 700,
+                      transition: "border-color 150ms, box-shadow 150ms",
+                    }}
+                  >
+                    {char || (isCursor ? (
+                      <span
+                        style={{
+                          width: 2,
+                          height: 24,
+                          background: "#34F3C6",
+                          borderRadius: 1,
+                          animation: "ml-caret 1.1s step-end infinite",
+                        }}
+                      />
+                    ) : "")}
+                  </div>
+                );
+              })}
             </div>
+            <input
+              ref={inputRef}
+              type="text"
+              inputMode="text"
+              autoCapitalize="none"
+              autoCorrect="off"
+              autoComplete="one-time-code"
+              spellCheck={false}
+              maxLength={CODE_LENGTH}
+              value={code}
+              onChange={(e) => handleCodeChange(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onFocus={(e) => {
+                setFocused(true);
+                // Mantener el caret al final: el código se edita como flujo.
+                const len = e.currentTarget.value.length;
+                e.currentTarget.setSelectionRange(len, len);
+              }}
+              onBlur={() => setFocused(false)}
+              onSelect={(e) => {
+                const len = e.currentTarget.value.length;
+                if (e.currentTarget.selectionStart !== len) {
+                  e.currentTarget.setSelectionRange(len, len);
+                }
+              }}
+              aria-label="Código de acceso"
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                opacity: 0.01,
+                border: "none",
+                background: "transparent",
+                color: "transparent",
+                caretColor: "transparent",
+                // 16px evita el auto-zoom de iOS al enfocar.
+                fontSize: "16px",
+                textAlign: "center",
+                outline: "none",
+              }}
+            />
           </div>
-          <p style={{ fontSize: "10.5px", color: "rgba(255,255,255,0.35)", textAlign: "center", margin: "6px 0 0" }}>
-            {kbMode === "numeric" ? "Teclado numérico fijo para todo el código" : "Teclado de texto (letras y números)"}
-          </p>
+          <style>{`@keyframes ml-caret{0%,49%{opacity:1}50%,100%{opacity:0}}`}</style>
         </div>
 
         {error && (
