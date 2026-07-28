@@ -28,13 +28,38 @@ const NUMEROS: EmergencyNumber[] = [
   { label: "Rescate marítimo", number: "137", emoji: "⚓" },
 ];
 
+/** Dispara el marcador vía iframe oculto, sin navegar el documento. */
+function dialViaIframe(tel: string) {
+  const frame = document.createElement("iframe");
+  frame.style.display = "none";
+  frame.setAttribute("aria-hidden", "true");
+  try {
+    frame.src = tel;
+    document.body.appendChild(frame);
+    window.setTimeout(() => { try { frame.remove(); } catch {} }, 2000);
+  } catch {}
+}
+
+/**
+ * Segundo intento: ventana nueva. Los contenedores que bloquean tel: en la
+ * navegación de la página suelen derivar las ventanas nuevas al sistema
+ * operativo, que sí abre el marcador.
+ */
+function dialViaWindowOpen(tel: string) {
+  try {
+    const w = window.open(tel, "_blank");
+    // Si el sistema tomó la llamada, la ventana queda huérfana: cerrarla.
+    if (w) window.setTimeout(() => { try { w.close(); } catch {} }, 2000);
+  } catch {}
+}
+
 export default function EmergencyNumbersSection() {
   const [fallback, setFallback] = useState<EmergencyNumber | null>(null);
   const [copied, setCopied] = useState(false);
-  const timerRef = useRef<number | null>(null);
+  const timersRef = useRef<number[]>([]);
 
   useEffect(() => () => {
-    if (timerRef.current) window.clearTimeout(timerRef.current);
+    timersRef.current.forEach((t) => window.clearTimeout(t));
   }, []);
 
   const llamar = (n: EmergencyNumber) => {
@@ -45,26 +70,28 @@ export default function EmergencyNumbersSection() {
     };
     document.addEventListener("visibilitychange", onVis);
 
-    // Iframe oculto: dispara el marcador sin navegar el documento.
-    const frame = document.createElement("iframe");
-    frame.style.display = "none";
-    frame.setAttribute("aria-hidden", "true");
-    try {
-      frame.src = tel;
-      document.body.appendChild(frame);
-    } catch {}
+    timersRef.current.forEach((t) => window.clearTimeout(t));
+    timersRef.current = [];
 
-    if (timerRef.current) window.clearTimeout(timerRef.current);
-    timerRef.current = window.setTimeout(() => {
-      document.removeEventListener("visibilitychange", onVis);
-      try { frame.remove(); } catch {}
-      // Si el marcador se abrió, la página pasó a segundo plano. Si seguimos
-      // visibles, el sistema no manejó tel: → mostrar el panel de respaldo.
-      if (!leftPage && document.visibilityState === "visible") {
-        setCopied(false);
-        setFallback(n);
-      }
-    }, 1200);
+    // Cascada: iframe → ventana nueva → panel de respaldo. Nunca se navega
+    // el documento, así el visor no puede mostrar su página de error.
+    dialViaIframe(tel);
+    timersRef.current.push(
+      window.setTimeout(() => {
+        if (!leftPage && document.visibilityState === "visible") {
+          dialViaWindowOpen(tel);
+        }
+      }, 700),
+      window.setTimeout(() => {
+        document.removeEventListener("visibilitychange", onVis);
+        // Si el marcador se abrió, la página pasó a segundo plano. Si seguimos
+        // visibles, el sistema no manejó tel: → mostrar el panel de respaldo.
+        if (!leftPage && document.visibilityState === "visible") {
+          setCopied(false);
+          setFallback(n);
+        }
+      }, 1800),
+    );
   };
 
   const copiar = async (number: string) => {
@@ -183,24 +210,33 @@ export default function EmergencyNumbersSection() {
               {fallback.number}
             </p>
             <p style={{ fontSize: 12, color: "#64748b", margin: "0 0 14px" }}>
-              Marca este número desde el teléfono si la llamada no se abre sola.
+              Si la llamada no se abre sola, copia el número y márcalo desde el teléfono.
             </p>
             <div style={{ display: "grid", gap: 8 }}>
-              <a
-                href={`tel:${fallback.number}`}
+              <button
+                type="button"
+                onClick={() => {
+                  const tel = `tel:${fallback.number}`;
+                  dialViaIframe(tel);
+                  window.setTimeout(() => {
+                    if (document.visibilityState === "visible") dialViaWindowOpen(tel);
+                  }, 600);
+                }}
                 style={{
                   display: "block",
+                  width: "100%",
                   padding: "12px 16px",
                   borderRadius: 12,
+                  border: "none",
                   background: "#b91c1c",
                   color: "#fff",
                   fontSize: 14,
                   fontWeight: 800,
-                  textDecoration: "none",
+                  cursor: "pointer",
                 }}
               >
                 Llamar al {fallback.number}
-              </a>
+              </button>
               <button
                 type="button"
                 onClick={() => copiar(fallback.number)}
