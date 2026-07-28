@@ -15,6 +15,28 @@ export default function MobileLoginPage() {
   const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Tipo de teclado de las casillas. Al saltar el foco entre casillas el
+  // sistema reabre el teclado con el layout del inputMode, descartando el
+  // cambio manual del usuario — por eso el modo se elige acá y se aplica a
+  // las 6 casillas (y se recuerda para la próxima vez).
+  const [kbMode, setKbMode] = useState<"text" | "numeric">(() => {
+    try {
+      return window.localStorage.getItem("ml_kb_mode") === "numeric" ? "numeric" : "text";
+    } catch {
+      return "text";
+    }
+  });
+
+  const switchKeyboard = (mode: "text" | "numeric") => {
+    setKbMode(mode);
+    try { window.localStorage.setItem("ml_kb_mode", mode); } catch { /* modo privado */ }
+    // Reabrir el teclado en la casilla activa (o la primera vacía) para que
+    // el nuevo layout aplique de inmediato.
+    const activeIndex = inputsRef.current.findIndex((el) => el === document.activeElement);
+    const firstEmpty = digits.findIndex((d) => !d);
+    const target = activeIndex >= 0 ? activeIndex : firstEmpty >= 0 ? firstEmpty : 0;
+    setTimeout(() => inputsRef.current[target]?.focus(), 30);
+  };
 
   const code = digits.join("");
   const isComplete = code.length === CODE_LENGTH;
@@ -211,7 +233,7 @@ export default function MobileLoginPage() {
                   inputsRef.current[i] = el;
                 }}
                 type="text"
-                inputMode="text"
+                inputMode={kbMode}
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck={false}
@@ -237,6 +259,46 @@ export default function MobileLoginPage() {
               />
             ))}
           </div>
+
+          {/* Selector de teclado: persiste entre casillas y entre sesiones */}
+          <div style={{ display: "flex", justifyContent: "center", marginTop: "12px" }}>
+            <div
+              style={{
+                display: "flex",
+                gap: "2px",
+                padding: "3px",
+                borderRadius: "10px",
+                background: "rgba(255,255,255,0.07)",
+                border: "1px solid rgba(255,255,255,0.1)",
+              }}
+            >
+              {([["numeric", "123"], ["text", "ABC"]] as const).map(([mode, label]) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => switchKeyboard(mode)}
+                  aria-pressed={kbMode === mode}
+                  style={{
+                    padding: "6px 16px",
+                    borderRadius: "8px",
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    letterSpacing: "0.06em",
+                    background: kbMode === mode ? "linear-gradient(135deg, #34F3C6, #21D0B3)" : "transparent",
+                    color: kbMode === mode ? "#0d1b3e" : "rgba(255,255,255,0.55)",
+                    transition: "all 150ms",
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <p style={{ fontSize: "10.5px", color: "rgba(255,255,255,0.35)", textAlign: "center", margin: "6px 0 0" }}>
+            {kbMode === "numeric" ? "Teclado numérico fijo para todo el código" : "Teclado de texto (letras y números)"}
+          </p>
         </div>
 
         {error && (
