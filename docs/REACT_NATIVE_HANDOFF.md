@@ -897,3 +897,64 @@ Las apps móviles son **consumidores** de la misma información que el backoffic
 ---
 
 **Fin del documento**
+
+---
+
+# ANEXO — Mensaje de puente `url.open` (requerido por la app nativa)
+
+**Fecha:** 2026-07-28 · **Estado:** el web ya lo emite; falta el handler nativo.
+
+## Problema
+
+El WebView de la app muestra su pantalla de error ("Sin conexión") ante
+cualquier intento de cargar un esquema no-http (`tel:`, `mailto:`, etc.),
+ya sea por navegación del documento, iframe o `window.open`. Por eso los
+números de emergencia del portal no podían marcar la llamada dentro de la app.
+
+## Solución (dos partes)
+
+### 1. Web (ya implementado — `frontend/components/EmergencyNumbersSection.tsx`)
+
+Cuando el puente está disponible (`window.ReactNativeWebView`), el portal ya
+NO intenta cargar `tel:` en el WebView. En su lugar envía por el puente:
+
+```json
+{ "v": 1, "type": "url.open", "payload": { "url": "tel:131" } }
+```
+
+y muestra de inmediato un panel con el número y botón de copiar como respaldo.
+
+### 2. App nativa (seven-arena-app — PENDIENTE)
+
+En el handler de mensajes del puente (donde ya se procesan
+`device.open-settings`, `tracking.start`, `tracking.stop`), agregar:
+
+```ts
+case "url.open": {
+  const url = String((payload as { url?: string })?.url ?? "");
+  // Solo esquemas seguros hacia el SO
+  if (/^(tel:|mailto:|sms:|https?:|geo:|maps:)/i.test(url)) {
+    Linking.openURL(url).catch(() => {});
+  }
+  break;
+}
+```
+
+Además, como defensa general, interceptar los esquemas no-http en el WebView
+para que nunca vuelva a aparecer la pantalla de error:
+
+```tsx
+<WebView
+  onShouldStartLoadWithRequest={(req) => {
+    if (!/^https?:/i.test(req.url)) {
+      Linking.openURL(req.url).catch(() => {});
+      return false; // no cargar en el WebView
+    }
+    return true;
+  }}
+/>
+```
+
+Con el handler nativo instalado, tocar un número de emergencia abre el
+marcador del teléfono directamente; el panel del portal queda solo como
+respaldo visual.

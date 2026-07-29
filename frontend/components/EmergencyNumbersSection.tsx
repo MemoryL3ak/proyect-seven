@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { isAvailable as nativeAvailable, send as nativeSend } from "@/lib/native-bridge";
 
 /**
  * Números de emergencia para la sección "Cuenta" de los portales.
@@ -64,6 +65,27 @@ export default function EmergencyNumbersSection() {
 
   const llamar = (n: EmergencyNumber) => {
     const tel = `tel:${n.number.replace(/\s/g, "")}`;
+
+    // Dentro de la app nativa (WebView) NO se intenta tel: por ninguna vía:
+    // el WebView muestra su pantalla de error ("Sin conexión") ante cualquier
+    // carga de ese esquema, incluso en iframes o ventanas nuevas. Se pide el
+    // marcado al shell nativo por el puente y se muestra el número de
+    // inmediato (con copia) como respaldo garantizado.
+    if (nativeAvailable()) {
+      nativeSend("url.open", { url: tel });
+      setCopied(false);
+      void (async () => {
+        try {
+          await navigator.clipboard?.writeText(n.number);
+          setCopied(true);
+        } catch {}
+      })();
+      setFallback(n);
+      return;
+    }
+
+    // Navegador normal: cascada iframe → ventana nueva → panel de respaldo.
+    // Nunca se navega el documento, así no puede aparecer una página de error.
     let leftPage = false;
     const onVis = () => {
       if (document.visibilityState === "hidden") leftPage = true;
@@ -73,8 +95,6 @@ export default function EmergencyNumbersSection() {
     timersRef.current.forEach((t) => window.clearTimeout(t));
     timersRef.current = [];
 
-    // Cascada: iframe → ventana nueva → panel de respaldo. Nunca se navega
-    // el documento, así el visor no puede mostrar su página de error.
     dialViaIframe(tel);
     timersRef.current.push(
       window.setTimeout(() => {
@@ -217,6 +237,10 @@ export default function EmergencyNumbersSection() {
                 type="button"
                 onClick={() => {
                   const tel = `tel:${fallback.number}`;
+                  if (nativeAvailable()) {
+                    nativeSend("url.open", { url: tel });
+                    return;
+                  }
                   dialViaIframe(tel);
                   window.setTimeout(() => {
                     if (document.visibilityState === "visible") dialViaWindowOpen(tel);
