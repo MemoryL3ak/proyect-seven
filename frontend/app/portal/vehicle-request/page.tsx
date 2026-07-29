@@ -1112,6 +1112,13 @@ export default function VehicleRequestPortalPage() {
     deepLinkHandled.current = true;
     setActiveTab("actividades");
     setTripModal(target);
+    // Limpiar el parámetro de la URL: si queda, un refresh posterior vuelve a
+    // abrir el detalle de la notificación en vez de mantener el tab actual.
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("tripId");
+      window.history.replaceState(window.history.state, "", url.toString());
+    } catch {}
   }, [trips]);
 
   // Check & monitor location permission
