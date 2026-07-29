@@ -22,6 +22,7 @@ type VipRow = {
   trip: {
     id: string;
     status: string;
+    active?: boolean;
     origin?: string | null;
     destination?: string | null;
     scheduledAt?: string | null;
@@ -44,8 +45,13 @@ type Snapshot = {
 type EventItem = { id: string; name?: string | null };
 
 const TRIP_LABEL: Record<string, string> = {
+  REQUESTED: "Viaje solicitado",
+  SCHEDULED: "Viaje programado",
+  ASSIGNED: "Conductor asignado",
   EN_ROUTE: "Vehículo en camino",
   PICKED_UP: "A bordo del vehículo",
+  DROPPED_OFF: "En destino",
+  COMPLETED: "Viaje completado",
 };
 
 function ago(iso?: string | null) {
@@ -97,7 +103,7 @@ export default function VipMonitoringPage() {
   const visibles = useMemo(() => {
     const q = search.trim().toLowerCase();
     return (snapshot?.vips ?? [])
-      .filter((v) => (soloEnViaje ? !!v.trip : true))
+      .filter((v) => (soloEnViaje ? !!v.trip?.active : true))
       .filter((v) => (q ? `${v.fullName} ${v.phone ?? ""}`.toLowerCase().includes(q) : true));
   }, [snapshot, search, soloEnViaje]);
 
@@ -110,8 +116,8 @@ export default function VipMonitoringPage() {
           lat: v.position!.lat,
           lng: v.position!.lng,
           name: v.fullName,
-          online: !!v.trip,
-          onTrip: !!v.trip,
+          online: !!v.trip?.active,
+          onTrip: !!v.trip?.active,
           tripLabel: v.trip ? (TRIP_LABEL[v.trip.status] ?? v.trip.status) : null,
           lastSeen: v.position!.timestamp ? ago(v.position!.timestamp) : "en vivo",
           gpsTime: v.position!.timestamp
@@ -153,7 +159,7 @@ export default function VipMonitoringPage() {
     <div className="p-4 md:p-6 space-y-5">
       <PageHeader
         title="Monitoreo de Usuarios VIP"
-        description="Ubicación en tiempo real de los VIP: GPS del pasajero durante su viaje activo, con respaldo de la posición del vehículo asignado."
+        description="Ubicación permanente de los VIP: el portal reporta el GPS del teléfono mientras está abierto (con o sin viaje), con respaldo del vehículo asignado."
         icon={<PinIcon size={24} />}
         meta={
           snapshot && (
@@ -225,8 +231,9 @@ export default function VipMonitoringPage() {
             style={{ background: "var(--elevated)", border: "1px dashed var(--border)" }}>
             <PinIcon size={28} color="#94a3b8" />
             <p className="text-sm font-semibold" style={{ color: "var(--text-muted)" }}>Sin ubicaciones que mostrar</p>
-            <p className="text-xs" style={{ color: "var(--text-faint)" }}>
-              La ubicación aparece cuando un VIP tiene un viaje activo (en camino o a bordo).
+            <p className="text-xs text-center" style={{ color: "var(--text-faint)", maxWidth: 420 }}>
+              La ubicación aparece cuando el VIP abre su portal con permiso de ubicación
+              (tracking permanente) o cuando va en un vehículo transmitiendo GPS.
             </p>
           </div>
         )}
@@ -261,13 +268,15 @@ export default function VipMonitoringPage() {
                   <td className="px-3 py-2.5 whitespace-nowrap">
                     {v.trip ? (
                       <span className="text-[11px] font-bold px-2 py-0.5 rounded"
-                        style={{ background: "rgba(16,185,129,0.12)", color: "#047857", border: "1px solid rgba(16,185,129,0.4)" }}>
+                        style={v.trip.active
+                          ? { background: "rgba(16,185,129,0.12)", color: "#047857", border: "1px solid rgba(16,185,129,0.4)" }
+                          : { background: "rgba(37,99,235,0.10)", color: "#1e40af", border: "1px solid rgba(37,99,235,0.35)" }}>
                         {TRIP_LABEL[v.trip.status] ?? v.trip.status}
                       </span>
                     ) : (
                       <span className="text-[11px] font-bold px-2 py-0.5 rounded"
                         style={{ background: "var(--elevated)", color: "var(--text-muted)", border: "1px solid var(--border)" }}>
-                        Sin viaje activo
+                        Sin viaje hoy
                       </span>
                     )}
                   </td>

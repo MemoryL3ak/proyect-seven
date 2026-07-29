@@ -12,6 +12,7 @@ import DevicePermissionsSection from "@/components/DevicePermissionsSection";
 import CuadernoCargoSection from "@/components/CuadernoCargoSection";
 import EmergencyNumbersSection from "@/components/EmergencyNumbersSection";
 import PushTokenSync from "@/components/PushTokenSync";
+import VipLocationReporter from "@/components/VipLocationReporter";
 import SofiaWidget from "@/components/SofiaWidget";
 import VenueMap from "@/components/VenueMap";
 import CredentialQrCard from "@/components/CredentialQrCard";
@@ -3564,6 +3565,7 @@ export default function VehicleRequestPortalPage() {
 
           {/* Registro del token push (app nativa) + asistente de IA */}
           {athlete && <PushTokenSync userKind="athlete" userId={athlete.id} />}
+          {athlete && <VipLocationReporter athleteId={athlete.id} />}
           {athlete && <SofiaWidget compact />}
         </div>
       )}
