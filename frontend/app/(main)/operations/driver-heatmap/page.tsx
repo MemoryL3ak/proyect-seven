@@ -182,7 +182,17 @@ export default function DriverHeatmapPage() {
       if (c > maxC) { maxC = c; busiestHour = `${String(h).padStart(2, "0")}:00`; }
     }
     const completed = dayTrips.filter((t) => t.status === "COMPLETED" || t.status === "DROPPED_OFF").length;
-    return { totalTrips: dayTrips.length, activeDrivers: activeDriverIds.length, avgRating, busiestHour, completed };
+    const cancelled = dayTrips.filter((t) => t.status === "CANCELLED").length;
+    return {
+      totalTrips: dayTrips.length,
+      activeDrivers: activeDriverIds.length,
+      avgRating,
+      busiestHour,
+      busiestHourCount: maxC,
+      completed,
+      cancelled,
+      ratingsCount: ratings.length,
+    };
   }, [dayTrips, activeDriverIds]);
 
   /* ─── Driver rankings (all time) ─── */
@@ -272,15 +282,31 @@ export default function DriverHeatmapPage() {
       {/* ── KPI Cards ── */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {[
-          { label: "Viajes del día", value: kpis.totalTrips, color: "#f59e0b" },
-          { label: "Completados", value: kpis.completed, color: "#10b981" },
-          { label: "Conductores activos", value: kpis.activeDrivers, color: "#3b82f6" },
-          { label: "Rating promedio", value: kpis.avgRating !== null ? kpis.avgRating.toFixed(1) + " ★" : "—", color: "#6366f1" },
-          { label: "Hora punta", value: kpis.busiestHour, color: "#ec4899" },
+          {
+            label: "Viajes del día", value: kpis.totalTrips, color: "#f59e0b",
+            detail: kpis.cancelled > 0 ? `${kpis.cancelled} cancelado${kpis.cancelled === 1 ? "" : "s"}` : "sin cancelaciones",
+          },
+          {
+            label: "Completados", value: kpis.completed, color: "#10b981",
+            detail: kpis.totalTrips > 0 ? `${Math.round((kpis.completed / kpis.totalTrips) * 100)}% del día` : "—",
+          },
+          {
+            label: "Conductores activos", value: kpis.activeDrivers, color: "#3b82f6",
+            detail: kpis.activeDrivers > 0 ? `${(kpis.totalTrips / kpis.activeDrivers).toFixed(1)} viajes por conductor` : "sin actividad",
+          },
+          {
+            label: "Rating promedio", value: kpis.avgRating !== null ? kpis.avgRating.toFixed(1) + " ★" : "—", color: "#6366f1",
+            detail: kpis.ratingsCount > 0 ? `sobre ${kpis.ratingsCount} evaluación${kpis.ratingsCount === 1 ? "" : "es"}` : "sin evaluaciones",
+          },
+          {
+            label: "Hora punta", value: kpis.busiestHour, color: "#ec4899",
+            detail: kpis.busiestHourCount > 0 ? `${kpis.busiestHourCount} viaje${kpis.busiestHourCount === 1 ? "" : "s"} en esa hora` : "—",
+          },
         ].map((kpi) => (
           <div key={kpi.label} style={{ background: pal.cardBg, borderRadius: "16px", padding: "16px 18px", borderTop: `3px solid ${kpi.color}`, boxShadow: pal.shadow }}>
             <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: pal.labelColor, margin: "0 0 4px" }}>{kpi.label}</p>
             <p style={{ fontSize: "1.6rem", fontWeight: 800, color: kpi.color, margin: 0, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{kpi.value}</p>
+            <p style={{ fontSize: "10.5px", fontWeight: 600, color: pal.labelColor, margin: "6px 0 0" }}>{kpi.detail}</p>
           </div>
         ))}
       </div>

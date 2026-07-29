@@ -17,7 +17,10 @@ import { isAvailable as isNativeAvailable, request as nativeRequest } from "@/li
 import PushTokenSync from "@/components/PushTokenSync";
 import QRCode from "qrcode";
 import { buildCredentialHtml } from "@/lib/credential-template";
-import { credentialPdfDataUri, downloadCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
+import { downloadCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
+import { persistTab, restoreOnReload } from "@/lib/portal-tab";
+import { claimPortalSession, clearPortalSession } from "@/lib/portal-session";
+import PortalSessionGuard from "@/components/PortalSessionGuard";
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
 
 const TripMap = dynamic(() => import("@/components/TripMap"), {
@@ -158,17 +161,17 @@ export default function DriverPortalPage() {
   const [requestLoading, setRequestLoading] = useState(false);
   const [requestError, setRequestError] = useState<string | null>(null);
   const [requestStatus, setRequestStatus] = useState<string | null>(null);
-  // El tab activo sobrevive al refresh: se restaura desde sessionStorage.
-  const [activeTab, setActiveTab] = useState<"actividades" | "reportes" | "cuenta">(() => {
-    if (typeof window === "undefined") return "actividades";
-    try {
-      const saved = sessionStorage.getItem("portal_conductor_tab");
-      if (saved === "actividades" || saved === "reportes" || saved === "cuenta") return saved;
-    } catch {}
-    return "actividades";
-  });
+  // El home del portal es siempre Actividades; sólo un refresh (F5) restaura
+  // la sección donde estaba el usuario.
+  const [activeTab, setActiveTab] = useState<"actividades" | "reportes" | "cuenta">(() =>
+    restoreOnReload<"actividades" | "reportes" | "cuenta">(
+      "portal_conductor_tab",
+      ["actividades", "reportes", "cuenta"],
+      "actividades",
+    ),
+  );
   useEffect(() => {
-    try { sessionStorage.setItem("portal_conductor_tab", activeTab); } catch {}
+    persistTab("portal_conductor_tab", activeTab);
   }, [activeTab]);
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("hoy");
@@ -299,6 +302,8 @@ export default function DriverPortalPage() {
           const visibleCode = driverMatch.id.slice(-6).toLowerCase();
           sessionStorage.setItem("portal_conductor_id", visibleCode);
         } catch {}
+        // Sesión única: el login manual reclama la sesión para este dispositivo.
+        if (!overrideId) void claimPortalSession("driver", driverMatch.id);
       }
       if (!driverMatch) {
         setIdError(t("El ID ingresado no corresponde a un conductor registrado."));
@@ -995,6 +1000,20 @@ export default function DriverPortalPage() {
   return (
     <>
       <PushTokenSync userKind="driver" userId={driverProfile?.id || null} />
+      {driverProfile && (
+        <PortalSessionGuard
+          kind="driver"
+          userId={driverProfile.id}
+          onInvalid={() => {
+            clearPortalSession("driver", driverProfile.id);
+            try { sessionStorage.removeItem("portal_conductor_id"); } catch {}
+            setActiveTab("actividades");
+            setDriverProfile(null);
+            setTrips([]);
+            setIdError("Tu sesión se cerró porque iniciaste sesión en otro dispositivo.");
+          }}
+        />
+      )}
       {!sessionChecked && !driverProfile && (
         <div style={{ minHeight: "100vh", background: "#020c18", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div style={{ width: 36, height: 36, borderRadius: "50%", border: "3px solid rgba(33,208,179,0.25)", borderTopColor: "#21D0B3", animation: "pc-spin 0.8s linear infinite" }} />
@@ -1187,13 +1206,13 @@ export default function DriverPortalPage() {
                     <path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
                   </svg>
                 </button>
-                <button type="button" onClick={() => loadTrips()} disabled={loading}
+                <button type="button" onClick={() => loadTrips(driverProfile?.id || undefined)} disabled={loading} title="Actualizar"
                   style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",cursor:"pointer",flexShrink:0,opacity:loading?0.5:1 }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
                   </svg>
                 </button>
-                <button type="button" onClick={() => { try { sessionStorage.removeItem("portal_conductor_id"); } catch {} mobileAwareLogout(); }}
+                <button type="button" onClick={() => { try { sessionStorage.removeItem("portal_conductor_id"); } catch {} setActiveTab("actividades"); mobileAwareLogout(); }}
                   style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(255,255,255,0.15)",background:"rgba(255,255,255,0.08)",cursor:"pointer",flexShrink:0 }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
@@ -2200,9 +2219,9 @@ export default function DriverPortalPage() {
                 <button type="button" onClick={() => {
                   if (!credentialPdf) return;
                   try {
-                    // Dentro de la app, doc.save() navegaba el WebView al visor
-                    // del sistema y volver era muy difícil: visor propio con Volver.
-                    if (isNativeAvailable()) setCredentialPdfView(credentialPdfDataUri(credentialPdf));
+                    // Dentro de la app se abre la credencial COMPLETA en un
+                    // visor propio (con Volver y Guardar).
+                    if (isNativeAvailable() && credentialHtml) setCredentialPdfView(credentialHtml);
                     else downloadCredentialPdf(credentialPdf);
                   } catch { driverNotify.push("No se pudo generar el PDF", "❌"); }
                 }}
@@ -2222,11 +2241,11 @@ export default function DriverPortalPage() {
         </div>
       )}
 
-      {/* Visor de la credencial en PDF (app nativa) con botón Volver */}
+      {/* Visor de la credencial completa (app nativa) con Volver y Guardar */}
       {credentialPdfView && (
         <PdfViewerOverlay
-          dataUri={credentialPdfView}
-          title="Credencial (PDF)"
+          srcDoc={credentialPdfView}
+          title="Credencial completa"
           onClose={() => setCredentialPdfView(null)}
           onDownload={() => { if (credentialPdf) { try { downloadCredentialPdf(credentialPdf); } catch {} } }}
         />

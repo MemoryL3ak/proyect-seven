@@ -5,6 +5,7 @@ import PlacesAutocompleteInput from "@/components/PlacesAutocompleteInput";
 import { apiFetch } from "@/lib/api";
 import { getMobileSession, mobileAwareLogout } from "@/lib/mobile-auth";
 import { filterValidatedAthletes } from "@/lib/athletes";
+import { normalizeClientType } from "@/lib/clientTypes";
 import NotificationBell, { useNotifications } from "@/components/NotificationBell";
 import TripChat from "@/components/TripChat";
 import AssistanceChat from "@/components/AssistanceChat";
@@ -17,8 +18,11 @@ import SofiaWidget from "@/components/SofiaWidget";
 import VenueMap from "@/components/VenueMap";
 import CredentialQrCard from "@/components/CredentialQrCard";
 import { buildCredentialHtml } from "@/lib/credential-template";
-import { credentialPdfDataUri, downloadCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
+import { downloadCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
 import { isAvailable as isNativeShell } from "@/lib/native-bridge";
+import { persistTab, restoreOnReload } from "@/lib/portal-tab";
+import { claimPortalSession, clearPortalSession } from "@/lib/portal-session";
+import PortalSessionGuard from "@/components/PortalSessionGuard";
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
 import QRCode from "qrcode";
 import dynamic from "next/dynamic";
@@ -115,7 +119,7 @@ type AccessRequestResponse = { message?: string };
 type PortalTab = "solicitud" | "actividades" | "premiaciones" | "cupones" | "sedes" | "hoteles" | "alimentacion" | "calendario" | "cuenta";
 
 type FoodLocation = { id: string; accommodationId?: string | null; name: string; description?: string | null; capacity?: number | null; clientTypes?: string[] };
-type FoodMenu = { id: string; date: string; mealType: string; title: string; description?: string | null; dietaryType?: string | null; accommodationId?: string | null };
+type FoodMenu = { id: string; date: string; mealType: string; title: string; description?: string | null; dietaryType?: string | null; accommodationId?: string | null; clientTypes?: string[] | null; locationDetail?: string | null };
 
 type Coupon = {
   id: string;
@@ -415,18 +419,17 @@ export default function VehicleRequestPortalPage() {
   const [returnVenueId, setReturnVenueId] = useState("");
   const [editingTripId, setEditingTripId] = useState<string | null>(null);
   const [locationPermission, setLocationPermission] = useState<"granted" | "prompt" | "denied" | null>(null);
-  // El tab activo sobrevive al refresh: se restaura desde sessionStorage.
-  const [activeTab, setActiveTab] = useState<PortalTab>(() => {
-    if (typeof window === "undefined") return "solicitud";
-    try {
-      const saved = sessionStorage.getItem("portal_vr_tab") as PortalTab | null;
-      const valid: PortalTab[] = ["solicitud", "actividades", "premiaciones", "cupones", "sedes", "hoteles", "alimentacion", "calendario", "cuenta"];
-      if (saved && valid.includes(saved)) return saved;
-    } catch {}
-    return "solicitud";
-  });
+  // El home del portal es siempre Solicitud; sólo un refresh (F5) restaura el
+  // tab donde estaba el usuario.
+  const [activeTab, setActiveTab] = useState<PortalTab>(() =>
+    restoreOnReload<PortalTab>(
+      "portal_vr_tab",
+      ["solicitud", "actividades", "premiaciones", "cupones", "sedes", "hoteles", "alimentacion", "calendario", "cuenta"],
+      "solicitud",
+    ),
+  );
   useEffect(() => {
-    try { sessionStorage.setItem("portal_vr_tab", activeTab); } catch {}
+    persistTab("portal_vr_tab", activeTab);
   }, [activeTab]);
   const [moreOpen, setMoreOpen] = useState(false);
   const [assistOpen, setAssistOpen] = useState(false);
@@ -451,7 +454,12 @@ export default function VehicleRequestPortalPage() {
       vipOverflow: all.filter((t) => !primaryKeys.has(t.key)),
     };
   }, []);
-  const [actividadesSubTab, setActividadesSubTab] = useState<ActividadesSubTab>("en_curso");
+  const [actividadesSubTab, setActividadesSubTab] = useState<ActividadesSubTab>(() =>
+    restoreOnReload<ActividadesSubTab>("portal_vr_subtab", ["en_curso", "historial", "pendientes"], "en_curso"),
+  );
+  useEffect(() => {
+    persistTab("portal_vr_subtab", actividadesSubTab);
+  }, [actividadesSubTab]);
   const [premiaciones, setPremiaciones] = useState<PremiacionVIP[]>([]);
   const [premView, setPremView] = useState<"calendar" | "list">("calendar");
   const [premCalCursor, setPremCalCursor] = useState(() => new Date());
@@ -473,6 +481,16 @@ export default function VehicleRequestPortalPage() {
   const [credentialHtml, setCredentialHtml] = useState<string | null>(null);
   const [credentialPdf, setCredentialPdf] = useState<CredentialPdfData | null>(null);
   const [credentialPdfView, setCredentialPdfView] = useState<string | null>(null);
+  // QR de la credencial para validar en los lugares de comida.
+  const [mealQrDataUrl, setMealQrDataUrl] = useState<string>("");
+  useEffect(() => {
+    if (!athlete) { setMealQrDataUrl(""); return; }
+    const qrData = `Participante: ${athlete.fullName}\nID: ${athlete.id.slice(-6)}\nDelegación: ${delegations[athlete.delegationId || ""]?.countryCode || "—"}`;
+    QRCode.toDataURL(qrData, { width: 220, margin: 1, color: { dark: "#062240", light: "#ffffff" } })
+      .then(setMealQrDataUrl)
+      .catch(() => setMealQrDataUrl(""));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [athlete?.id]);
   const [visibleTripsCount, setVisibleTripsCount] = useState(5);
 
   const [loading, setLoading] = useState(false);
@@ -592,6 +610,8 @@ export default function VehicleRequestPortalPage() {
       setAthlete(match);
       setActiveTab("solicitud");
       try { sessionStorage.setItem("portal_vr_id", match.id); } catch {}
+      // Sesión única: este dispositivo pasa a ser la sesión activa.
+      void claimPortalSession("athlete", match.id);
       await loadPortal(match);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo iniciar el portal.");
@@ -624,7 +644,6 @@ export default function VehicleRequestPortalPage() {
         const data = await apiFetch<Athlete>(`/athletes/${athleteId}`);
         if (data?.id) {
           setAthlete(data);
-          // No se fuerza el tab: al refrescar, el usuario queda donde estaba.
           try { sessionStorage.setItem("portal_vr_id", data.id); } catch {}
           await loadPortal(data);
         } else {
@@ -661,6 +680,7 @@ export default function VehicleRequestPortalPage() {
 
   const logout = () => {
     try { sessionStorage.removeItem("portal_vr_id"); } catch {}
+    setActiveTab("solicitud");
     setAthlete(null);
     setTrips([]);
     setVenues([]);
@@ -1121,6 +1141,19 @@ export default function VehicleRequestPortalPage() {
     } catch {}
   }, [trips]);
 
+  // Deep-link desde notificaciones de premiación: ?premiacionId= abre el tab.
+  useEffect(() => {
+    if (!athlete) return;
+    const params = new URLSearchParams(window.location.search);
+    if (!params.get("premiacionId")) return;
+    setActiveTab("premiaciones");
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("premiacionId");
+      window.history.replaceState(window.history.state, "", url.toString());
+    } catch {}
+  }, [athlete]);
+
   // Check & monitor location permission
   useEffect(() => {
     if (!navigator.permissions) return;
@@ -1399,6 +1432,12 @@ export default function VehicleRequestPortalPage() {
                 <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Tipo</p>
                 <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{vehicleTypeLabel(trip.requestedVehicleType)}</p>
               </div>
+              {trip.requestedAt && (
+                <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                  <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Solicitado</p>
+                  <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{formatDateTime(trip.requestedAt)}</p>
+                </div>
+              )}
             </div>
             {trip.notes && (
               <div style={{ padding:"10px 12px",borderRadius:10,background:"#fffbeb",border:"1px solid #fde68a",borderLeft:"4px solid #f59e0b" }}>
@@ -2137,8 +2176,8 @@ export default function VehicleRequestPortalPage() {
                   <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
                     {enCursoTrips.length === 0 ? (
                       <div style={{ textAlign:"center",padding:"28px 16px",borderRadius:16,border:"1px dashed rgba(33,208,179,0.3)",background:"#fafcfb" }}>
-                        <p style={{ fontSize:15,fontWeight:700,color:"#0f172a",margin:"0 0 4px" }}>Sin viajes en curso</p>
-                        <p style={{ fontSize:12.5,color:"#64748b",margin:0 }}>Los viajes activos apareceran aqui.</p>
+                        <p style={{ fontSize:15,fontWeight:700,color:"#0f172a",margin:"0 0 4px" }}>{loading ? "Cargando viajes…" : "Sin viajes en curso"}</p>
+                        <p style={{ fontSize:12.5,color:"#64748b",margin:0 }}>{loading ? "Un momento, estamos actualizando tu información." : "Los viajes activos apareceran aqui."}</p>
                       </div>
                     ) : enCursoTrips.map(renderTripCard)}
                   </div>
@@ -2149,8 +2188,8 @@ export default function VehicleRequestPortalPage() {
                   <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
                     {historialTrips.length === 0 ? (
                       <div style={{ textAlign:"center",padding:"28px 16px",borderRadius:16,border:"1px dashed rgba(33,208,179,0.3)",background:"#fafcfb" }}>
-                        <p style={{ fontSize:15,fontWeight:700,color:"#0f172a",margin:"0 0 4px" }}>Sin viajes completados</p>
-                        <p style={{ fontSize:12.5,color:"#64748b",margin:0 }}>Tu historial aparecera aqui.</p>
+                        <p style={{ fontSize:15,fontWeight:700,color:"#0f172a",margin:"0 0 4px" }}>{loading ? "Cargando historial…" : "Sin viajes completados"}</p>
+                        <p style={{ fontSize:12.5,color:"#64748b",margin:0 }}>{loading ? "Un momento, estamos actualizando tu información." : "Tu historial aparecera aqui."}</p>
                       </div>
                     ) : historialTrips.map(renderTripCard)}
                   </div>
@@ -2161,8 +2200,8 @@ export default function VehicleRequestPortalPage() {
                   <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
                     {pendientesTrips.length === 0 ? (
                       <div style={{ textAlign:"center",padding:"28px 16px",borderRadius:16,border:"1px dashed rgba(33,208,179,0.3)",background:"#fafcfb" }}>
-                        <p style={{ fontSize:15,fontWeight:700,color:"#0f172a",margin:"0 0 4px" }}>Sin solicitudes pendientes</p>
-                        <p style={{ fontSize:12.5,color:"#64748b",margin:0 }}>Tus solicitudes pendientes apareceran aqui.</p>
+                        <p style={{ fontSize:15,fontWeight:700,color:"#0f172a",margin:"0 0 4px" }}>{loading ? "Cargando solicitudes…" : "Sin solicitudes pendientes"}</p>
+                        <p style={{ fontSize:12.5,color:"#64748b",margin:0 }}>{loading ? "Un momento, estamos actualizando tu información." : "Tus solicitudes pendientes apareceran aqui."}</p>
                       </div>
                     ) : pendientesTrips.map(renderTripCard)}
                   </div>
@@ -2367,8 +2406,8 @@ export default function VehicleRequestPortalPage() {
                   {premiaciones.length === 0 ? (
                     <div style={{ textAlign:"center",padding:"36px 20px",borderRadius:16,border:"1px dashed #f0deb0",background:"linear-gradient(135deg,#fffbf2 0%,#ffffff 100%)" }}>
                       <p style={{ fontSize:36,margin:"0 0 8px" }}>🏆</p>
-                      <p style={{ fontSize:14,fontWeight:800,color:"#7a4a00",margin:"0 0 4px" }}>Sin premiaciones asignadas</p>
-                      <p style={{ fontSize:12,color:"#a87800",margin:0 }}>Cuando te designemos como premiador de una ceremonia aparecerá aquí.</p>
+                      <p style={{ fontSize:14,fontWeight:800,color:"#7a4a00",margin:"0 0 4px" }}>{loading ? "Cargando premiaciones…" : "Sin premiaciones asignadas"}</p>
+                      <p style={{ fontSize:12,color:"#a87800",margin:0 }}>{loading ? "Un momento, estamos actualizando tu información." : "Cuando te designemos como premiador de una ceremonia aparecerá aquí."}</p>
                     </div>
                   ) : (
                     <>
@@ -2935,10 +2974,31 @@ export default function VehicleRequestPortalPage() {
             {/* ═══════════════════ ALIMENTACIÓN TAB ═══════════════════ */}
             {activeTab === "alimentacion" && (
               <div style={{ display:"flex",flexDirection:"column",gap:14 }}>
+                {/* Credencial QR para validar en el comedor */}
+                {mealQrDataUrl && (
+                  <div style={{ background:"linear-gradient(135deg,#041a2e,#062240)",borderRadius:16,padding:"16px",display:"flex",alignItems:"center",gap:14 }}>
+                    <div style={{ background:"#fff",borderRadius:12,padding:6,flexShrink:0 }}>
+                      <img src={mealQrDataUrl} alt="QR credencial" style={{ width:96,height:96,display:"block" }} />
+                    </div>
+                    <div style={{ minWidth:0 }}>
+                      <p style={{ fontSize:10,fontWeight:800,letterSpacing:"0.18em",textTransform:"uppercase",color:"#34F3C6",margin:0 }}>Tu credencial</p>
+                      <p style={{ fontSize:14,fontWeight:700,color:"#fff",margin:"4px 0 0",lineHeight:1.3 }}>
+                        Muestra este QR al ingresar al lugar de comida
+                      </p>
+                      <p style={{ fontSize:11.5,color:"rgba(255,255,255,0.65)",margin:"4px 0 0" }}>
+                        Código: <span style={{ fontFamily:"monospace",fontWeight:700,color:"#34F3C6",letterSpacing:"0.15em" }}>{athlete.id.slice(-6).toUpperCase()}</span>
+                      </p>
+                    </div>
+                  </div>
+                )}
                 {/* Today's menu */}
                 {(() => {
                   const today = new Date().toISOString().slice(0,10);
-                  const todayMenus = foodMenus.filter(fm => fm.date === today);
+                  const myType = normalizeClientType(athlete.userType);
+                  const todayMenus = foodMenus.filter(fm => fm.date === today).filter(fm => {
+                    const types = (fm.clientTypes || []).map((t2) => normalizeClientType(t2));
+                    return types.length === 0 || types.includes(myType);
+                  });
                   const mealOrder = ["DESAYUNO","ALMUERZO","CENA","ONCE"];
                   const sorted = todayMenus.sort((a,b) => mealOrder.indexOf(a.mealType) - mealOrder.indexOf(b.mealType));
                   const mealStyle = (type: string) => {
@@ -2974,6 +3034,7 @@ export default function VehicleRequestPortalPage() {
                               </div>
                               <p style={{ fontSize:15,fontWeight:700,color:"#0f172a",margin:"5px 0 0" }}>{fm.title}</p>
                               {fm.description && <p style={{ fontSize:12,color:"#64748b",margin:"3px 0 0",lineHeight:1.4 }}>{fm.description}</p>}
+                              {fm.locationDetail && <p style={{ fontSize:11,color:"#94a3b8",margin:"3px 0 0" }}>📍 {fm.locationDetail}</p>}
                             </div>
                           </div>
                         );
@@ -2991,7 +3052,11 @@ export default function VehicleRequestPortalPage() {
                   const tomorrow = new Date();
                   tomorrow.setDate(tomorrow.getDate() + 1);
                   const tKey = tomorrow.toISOString().slice(0,10);
-                  const tMenus = foodMenus.filter(fm => fm.date === tKey);
+                  const myType = normalizeClientType(athlete.userType);
+                  const tMenus = foodMenus.filter(fm => fm.date === tKey).filter(fm => {
+                    const types = (fm.clientTypes || []).map((t2) => normalizeClientType(t2));
+                    return types.length === 0 || types.includes(myType);
+                  });
                   const mealOrder = ["DESAYUNO","ALMUERZO","CENA","ONCE"];
                   const sorted = tMenus.sort((a,b) => mealOrder.indexOf(a.mealType) - mealOrder.indexOf(b.mealType));
                   const mealStyle = (type: string) => {
@@ -3018,6 +3083,7 @@ export default function VehicleRequestPortalPage() {
                               <span style={{ fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:6,textTransform:"uppercase",letterSpacing:"0.05em",background:m.bg,color:m.color }}>{m.label}</span>
                               <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:"4px 0 0" }}>{fm.title}</p>
                               {fm.description && <p style={{ fontSize:12,color:"#64748b",margin:"2px 0 0",lineHeight:1.4 }}>{fm.description}</p>}
+                              {fm.locationDetail && <p style={{ fontSize:11,color:"#94a3b8",margin:"2px 0 0" }}>📍 {fm.locationDetail}</p>}
                             </div>
                           </div>
                         );
@@ -3030,16 +3096,22 @@ export default function VehicleRequestPortalPage() {
                   );
                 })()}
 
-                {/* Food locations */}
-                {foodLocations.length > 0 ? (
+                {/* Food locations — filtrados por el tipo de cliente del usuario */}
+                {(() => {
+                  const userType = normalizeClientType(athlete.userType);
+                  const myLocations = foodLocations.filter((fl) => {
+                    const types = (fl.clientTypes || []).map((t) => normalizeClientType(t));
+                    return types.length === 0 || types.includes(userType);
+                  });
+                  return myLocations.length > 0 ? (
                   <div style={{ background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)" }}>
                     <div style={{ padding:"14px 16px",background:"linear-gradient(135deg,rgba(33,208,179,0.06),rgba(31,205,255,0.04))",borderBottom:"1px solid #e2e8f0" }}>
                       <div style={{ display:"flex",alignItems:"center",gap:8 }}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                        <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0 }}>Lugares de comida</p>
+                        <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0 }}>Tus lugares de comida</p>
                       </div>
                     </div>
-                    {foodLocations.map((fl, i) => (
+                    {myLocations.map((fl, i) => (
                       <div key={fl.id} style={{ padding:"12px 16px",borderTop:i>0?"1px solid #f1f5f9":"none",display:"flex",alignItems:"center",gap:12 }}>
                         <div style={{ width:36,height:36,borderRadius:10,background:"rgba(33,208,179,0.08)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
@@ -3055,9 +3127,12 @@ export default function VehicleRequestPortalPage() {
                 ) : (
                   <div style={{ background:"#fff",borderRadius:16,border:"1px dashed #e2e8f0",padding:24,textAlign:"center" }}>
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round" style={{ margin:"0 auto 8px" }}><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
-                    <p style={{ fontSize:13,fontWeight:600,color:"#94a3b8",margin:0 }}>No hay lugares de comida cargados</p>
+                    <p style={{ fontSize:13,fontWeight:600,color:"#94a3b8",margin:0 }}>
+                      {loading ? "Cargando lugares de comida…" : "No hay lugares de comida asignados a tu perfil"}
+                    </p>
                   </div>
-                )}
+                  );
+                })()}
               </div>
             )}
 
@@ -3314,22 +3389,45 @@ export default function VehicleRequestPortalPage() {
                   <div onClick={() => setGanttDetail(null)}
                     style={{ position:"fixed",inset:0,zIndex:60,background:"rgba(15,23,42,0.45)",display:"flex",alignItems:"flex-end",justifyContent:"center" }}>
                     <div onClick={(e) => e.stopPropagation()}
-                      style={{ background:"#fff",borderTopLeftRadius:18,borderTopRightRadius:18,width:"100%",maxWidth:520,maxHeight:"70vh",overflowY:"auto",padding:"16px 16px 28px" }}>
-                      <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10 }}>
-                        <span style={{ fontSize:14,fontWeight:800,color:"#0f172a",textTransform:"capitalize" }}>{ganttDetail.title}</span>
-                        <button type="button" onClick={() => setGanttDetail(null)} style={{ background:"#f1f5f9",border:"none",borderRadius:8,width:28,height:28,cursor:"pointer",color:"#64748b" }}>✕</button>
+                      style={{ background:"#fff",borderTopLeftRadius:20,borderTopRightRadius:20,width:"100%",maxWidth:560,minHeight:"45vh",maxHeight:"88vh",overflowY:"auto",padding:"18px 18px 32px",display:"flex",flexDirection:"column" }}>
+                      <div style={{ width:44,height:5,borderRadius:99,background:"#e2e8f0",margin:"0 auto 12px" }} />
+                      <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12 }}>
+                        <span style={{ fontSize:16,fontWeight:800,color:"#0f172a",textTransform:"capitalize" }}>{ganttDetail.title}</span>
+                        <button type="button" onClick={() => setGanttDetail(null)}
+                          style={{ background:"#f1f5f9",border:"none",borderRadius:10,padding:"8px 14px",cursor:"pointer",color:"#475569",fontSize:12.5,fontWeight:700 }}>
+                          ✕ Cerrar
+                        </button>
                       </div>
-                      <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
+                      <p style={{ fontSize:12,color:"#64748b",margin:"0 0 12px" }}>
+                        {ganttDetail.events.length} actividad{ganttDetail.events.length === 1 ? "" : "es"} en este día
+                      </p>
+                      <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
                         {ganttDetail.events.map((ce) => {
                           const meta = GCAT[classifyCat(ce.name)];
+                          const d = ce.scheduledAt ? new Date(ce.scheduledAt) : null;
                           return (
-                            <div key={ce.id} style={{ display:"flex",gap:10,padding:"10px 12px",borderRadius:10,background:"#f8fafc",border:"1px solid #eef1f6",borderLeft:`4px solid ${meta.border}` }}>
-                              <span style={{ fontSize:12,fontWeight:800,color:"#0f172a",flexShrink:0 }}>
-                                {new Date(ce.scheduledAt!).toLocaleTimeString("es-CL",{ hour:"2-digit",minute:"2-digit" })}
-                              </span>
+                            <div key={ce.id} style={{ display:"flex",gap:12,padding:"14px 14px",borderRadius:14,background:"#f8fafc",border:"1px solid #eef1f6",borderLeft:`5px solid ${meta.border}` }}>
+                              <div style={{ flexShrink:0,textAlign:"center",minWidth:52 }}>
+                                <p style={{ fontSize:17,fontWeight:800,color:"#0f172a",margin:0,fontVariantNumeric:"tabular-nums" }}>
+                                  {d ? d.toLocaleTimeString("es-CL",{ hour:"2-digit",minute:"2-digit" }) : "—"}
+                                </p>
+                                {d && (
+                                  <p style={{ fontSize:10,color:"#94a3b8",margin:"2px 0 0",textTransform:"capitalize" }}>
+                                    {d.toLocaleDateString("es-CL",{ weekday:"short" })}
+                                  </p>
+                                )}
+                              </div>
                               <div style={{ flex:1,minWidth:0 }}>
-                                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:0 }}>{ce.name}</p>
-                                {ce.venueName && <p style={{ fontSize:10.5,color:"#64748b",margin:"2px 0 0" }}>{ce.venueName}</p>}
+                                <p style={{ fontSize:14.5,fontWeight:700,color:"#0f172a",margin:0,lineHeight:1.3 }}>{ce.name}</p>
+                                {ce.venueName && (
+                                  <p style={{ fontSize:12,color:"#64748b",margin:"4px 0 0",display:"flex",alignItems:"center",gap:4 }}>
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                    {ce.venueName}
+                                  </p>
+                                )}
+                                <span style={{ display:"inline-block",marginTop:6,fontSize:10,fontWeight:800,padding:"3px 10px",borderRadius:99,background:meta.bar,color:meta.text,border:`1px solid ${meta.border}`,textTransform:"uppercase",letterSpacing:"0.06em" }}>
+                                  {meta.label}
+                                </span>
                               </div>
                             </div>
                           );
@@ -3573,6 +3671,17 @@ export default function VehicleRequestPortalPage() {
           {/* Registro del token push (app nativa) + asistente de IA */}
           {athlete && <PushTokenSync userKind="athlete" userId={athlete.id} />}
           {athlete && <VipLocationReporter athleteId={athlete.id} />}
+          {athlete && (
+            <PortalSessionGuard
+              kind="athlete"
+              userId={athlete.id}
+              onInvalid={() => {
+                clearPortalSession("athlete", athlete.id);
+                logout();
+                setError("Tu sesión se cerró porque iniciaste sesión en otro dispositivo.");
+              }}
+            />
+          )}
           {athlete && <SofiaWidget compact />}
         </div>
       )}
@@ -3652,10 +3761,10 @@ export default function VehicleRequestPortalPage() {
                 <button type="button" onClick={() => {
                   if (!credentialPdf) return;
                   try {
-                    // Dentro de la app, doc.save() navegaba el WebView al visor
-                    // del sistema y volver era muy difícil: se abre un visor
-                    // propio con botón Volver, sin salir del portal.
-                    if (isNativeShell()) setCredentialPdfView(credentialPdfDataUri(credentialPdf));
+                    // Dentro de la app se abre la credencial COMPLETA en un
+                    // visor propio (con Volver y Guardar); doc.save() directo
+                    // navegaba el WebView y era muy difícil volver.
+                    if (isNativeShell() && credentialHtml) setCredentialPdfView(credentialHtml);
                     else downloadCredentialPdf(credentialPdf);
                   } catch { notify.push("No se pudo generar el PDF", "❌"); }
                 }}
@@ -3675,11 +3784,11 @@ export default function VehicleRequestPortalPage() {
         </div>
       )}
 
-      {/* Visor de la credencial en PDF (app nativa) con botón Volver */}
+      {/* Visor de la credencial completa (app nativa) con Volver y Guardar */}
       {credentialPdfView && (
         <PdfViewerOverlay
-          dataUri={credentialPdfView}
-          title="Credencial (PDF)"
+          srcDoc={credentialPdfView}
+          title="Credencial completa"
           onClose={() => setCredentialPdfView(null)}
           onDownload={() => { if (credentialPdf) { try { downloadCredentialPdf(credentialPdf); } catch {} } }}
         />

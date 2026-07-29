@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { mobileLogin } from "@/lib/api";
 import { getMobileSession, markFromApp, setMobileSession, postToReactNative } from "@/lib/mobile-auth";
+import { claimPortalSession } from "@/lib/portal-session";
 
 const CODE_LENGTH = 6;
 
@@ -69,6 +70,8 @@ export default function MobileLoginPage() {
         };
         setMobileSession(session);
         markFromApp();
+        // Sesión única: este dispositivo pasa a ser la sesión activa.
+        void claimPortalSession("athlete", result.athleteId);
         postToReactNative({
           kind: "athlete",
           role: "ATHLETE",
@@ -87,6 +90,8 @@ export default function MobileLoginPage() {
         };
         setMobileSession(session);
         markFromApp();
+        // Sesión única: este dispositivo pasa a ser la sesión activa.
+        void claimPortalSession("driver", result.driverId);
         postToReactNative({
           kind: "driver",
           role: "DRIVER",

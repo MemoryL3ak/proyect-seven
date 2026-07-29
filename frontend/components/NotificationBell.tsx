@@ -52,9 +52,13 @@ function hrefFromData(data: Record<string, unknown> | null | undefined): string 
   const rawUrl = typeof data.url === "string" ? data.url : undefined;
   if (!rawUrl) return undefined;
   let href = rawUrl;
-  // Adjunta el contexto (viaje) como query para que el destino pueda abrirlo.
+  // Adjunta el contexto (viaje / premiación) como query para que el destino
+  // pueda abrir el detalle o el tab correspondiente.
   if (typeof data.tripId === "string" && data.tripId) {
     href += (href.includes("?") ? "&" : "?") + `tripId=${encodeURIComponent(data.tripId)}`;
+  }
+  if (typeof data.premiacionId === "string" && data.premiacionId) {
+    href += (href.includes("?") ? "&" : "?") + `premiacionId=${encodeURIComponent(data.premiacionId)}`;
   }
   return href;
 }

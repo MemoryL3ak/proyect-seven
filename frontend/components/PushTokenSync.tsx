@@ -48,12 +48,21 @@ export default function PushTokenSync({ userKind, userId }: Props) {
   useEffect(() => {
     if (!isAvailable()) return;
     const unsub = on("push.tap", (payload) => {
-      const data = (payload as { url?: unknown } | undefined) ?? {};
+      const data = (payload as { url?: unknown; tripId?: unknown; premiacionId?: unknown } | undefined) ?? {};
       const url = typeof data.url === "string" ? data.url : null;
       if (!url) return;
       // Internal app routes only — never navigate to external URLs from a tap.
       if (url.startsWith("/")) {
-        router.push(url);
+        // Adjunta el contexto (viaje / premiación) igual que la campanita, para
+        // que el portal abra el detalle o el tab correspondiente.
+        let href = url;
+        if (typeof data.tripId === "string" && data.tripId) {
+          href += (href.includes("?") ? "&" : "?") + `tripId=${encodeURIComponent(data.tripId)}`;
+        }
+        if (typeof data.premiacionId === "string" && data.premiacionId) {
+          href += (href.includes("?") ? "&" : "?") + `premiacionId=${encodeURIComponent(data.premiacionId)}`;
+        }
+        router.push(href);
       }
     });
     return unsub;

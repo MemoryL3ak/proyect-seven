@@ -7,25 +7,26 @@ import { useI18n } from "@/lib/i18n";
 type Locale = "es" | "en" | "pt";
 
 const CARDS_DATA: Record<Locale, { title: string; description: string; href: string }[]> = {
+  // Orden cronológico: Desayuno → Almuerzo → Cena.
   es: [
     { title: "Tipos de Alimentación", description: "Distribución de participantes por requerimiento alimentario.", href: "/operations/food/tipos" },
     { title: "Desayuno",              description: "Planificación de menús de desayuno por hotel y fecha.",       href: "/operations/food/desayuno" },
-    { title: "Cenas",                 description: "Planificación de menús nocturnos por hotel y fecha.",         href: "/operations/food/cenas" },
     { title: "Almuerzos",             description: "Planificación de menús de almuerzo por hotel y fecha.",       href: "/operations/food/almuerzos" },
+    { title: "Cenas",                 description: "Planificación de menús nocturnos por hotel y fecha.",         href: "/operations/food/cenas" },
     { title: "Lugares de comida",     description: "Gestión de recintos, aforo y tipos de cliente asignados.",    href: "/operations/food/lugares" },
   ],
   en: [
     { title: "Food Types",     description: "Distribution of participants by dietary requirement.",      href: "/operations/food/tipos" },
     { title: "Breakfast",      description: "Breakfast menu planning by hotel and date.",               href: "/operations/food/desayuno" },
-    { title: "Dinners",        description: "Evening menu planning by hotel and date.",                  href: "/operations/food/cenas" },
     { title: "Lunches",        description: "Lunch menu planning by hotel and date.",                    href: "/operations/food/almuerzos" },
+    { title: "Dinners",        description: "Evening menu planning by hotel and date.",                  href: "/operations/food/cenas" },
     { title: "Food Venues",    description: "Venue management, capacity and assigned client types.",     href: "/operations/food/lugares" },
   ],
   pt: [
     { title: "Tipos de Alimentação",   description: "Distribuição de participantes por requisito alimentar.",                   href: "/operations/food/tipos" },
     { title: "Café da manhã",          description: "Planejamento de cardápios de café da manhã por hotel e data.",             href: "/operations/food/desayuno" },
-    { title: "Jantares",               description: "Planejamento de cardápios noturnos por hotel e data.",                     href: "/operations/food/cenas" },
     { title: "Almoços",                description: "Planejamento de cardápios de almoço por hotel e data.",                   href: "/operations/food/almuerzos" },
+    { title: "Jantares",               description: "Planejamento de cardápios noturnos por hotel e data.",                     href: "/operations/food/cenas" },
     { title: "Locais de alimentação",  description: "Gestão de locais, lotação e tipos de cliente atribuídos.",                href: "/operations/food/lugares" },
   ],
 };

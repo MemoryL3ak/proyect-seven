@@ -171,6 +171,7 @@ export default function VehiclePositionsPage() {
   const [detailPositions, setDetailPositions] = useState<LatLng[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
   const [routeImgFailed, setRouteImgFailed] = useState(false);
+  const [routeExpanded, setRouteExpanded] = useState(false);
   const [tableSearch, setTableSearch] = useState("");
   const [tableStatus, setTableStatus] = useState("");
   const [tableClient, setTableClient] = useState("");
@@ -1276,7 +1277,7 @@ export default function VehiclePositionsPage() {
             : (trip.athleteIds || []).map((id) => athletes[id]?.fullName).filter((n): n is string => Boolean(n))),
         ]));
         const sc = STATUS_COLORS[trip.status ?? "COMPLETED"] ?? STATUS_COLORS.COMPLETED;
-        const close = () => { setDetailTrip(null); setDetailPositions([]); };
+        const close = () => { setDetailTrip(null); setDetailPositions([]); setRouteExpanded(false); };
         const stat = (label: string, value: string, color = "#0f172a") => (
           <div style={{ padding: "12px 8px", borderRadius: "14px", background: "#f8fafc", border: "1px solid #f1f5f9", textAlign: "center" }}>
             <p style={{ fontSize: "9px", fontWeight: 700, color: "#94a3b8", margin: 0, textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</p>
@@ -1293,7 +1294,7 @@ export default function VehiclePositionsPage() {
           <div onClick={close}
             style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(15,23,42,0.5)", padding: "16px", backdropFilter: "blur(6px)" }}>
             <div onClick={(e) => e.stopPropagation()}
-              style={{ background: "#ffffff", width: "100%", maxWidth: "620px", maxHeight: "92vh", borderRadius: "22px", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 24px 72px rgba(15,23,42,0.28)" }}>
+              style={{ background: "#ffffff", width: "100%", maxWidth: "960px", maxHeight: "92vh", borderRadius: "22px", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 24px 72px rgba(15,23,42,0.28)" }}>
               {/* Header */}
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", padding: "18px 22px 14px", background: "linear-gradient(135deg,#041a2e,#062240)", color: "#fff", flexShrink: 0 }}>
                 <div style={{ minWidth: 0 }}>
@@ -1321,7 +1322,7 @@ export default function VehiclePositionsPage() {
                       {showImg ? (
                         <img src={routeImg!} alt="Ruta realizada" onError={() => setRouteImgFailed(true)} style={{ width: "100%", display: "block" }} />
                       ) : dirEmbed ? (
-                        <iframe title={`route-${trip.id}`} src={dirEmbed} style={{ width: "100%", height: 300, border: "none", display: "block" }} loading="lazy" />
+                        <iframe title={`route-${trip.id}`} src={dirEmbed} style={{ width: "100%", height: 460, border: "none", display: "block" }} loading="lazy" />
                       ) : (
                         <div style={{ height: 180, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 8, color: "#94a3b8", fontSize: "13px", textAlign: "center", padding: "0 20px" }}>
                           {detailLoading ? (
@@ -1334,6 +1335,13 @@ export default function VehiclePositionsPage() {
                       <span style={{ position: "absolute", top: 8, left: 8, fontSize: "9px", fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "#0a7a6b", background: "rgba(255,255,255,0.92)", border: "1px solid rgba(33,208,179,0.3)", borderRadius: 8, padding: "3px 8px" }}>
                         {isReal ? "Ruta realizada" : "Ruta estimada"}
                       </span>
+                      {(showImg || dirEmbed) && (
+                        <button type="button" onClick={() => setRouteExpanded(true)}
+                          style={{ position: "absolute", bottom: 8, right: 8, display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 999, border: "none", background: "rgba(4,26,46,0.85)", color: "#34F3C6", fontSize: 11, fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.25)" }}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
+                          Ver más grande
+                        </button>
+                      )}
                     </div>
                   );
                 })()}
@@ -1394,6 +1402,38 @@ export default function VehiclePositionsPage() {
               </div>
             </div>
             <style>{`@keyframes vp-spin{to{transform:rotate(360deg)}}`}</style>
+
+            {/* Ruta a pantalla completa */}
+            {routeExpanded && (() => {
+              const dirEmbed = buildDirectionsEmbed(trip.origin, trip.destination);
+              const showImg = routeImg && !routeImgFailed;
+              return (
+                <div onClick={(e) => e.stopPropagation()}
+                  style={{ position: "fixed", inset: 0, zIndex: 80, background: "#0d1a28", display: "flex", flexDirection: "column" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: "linear-gradient(135deg,#041a2e,#062240)", flexShrink: 0 }}>
+                    <button type="button" onClick={() => setRouteExpanded(false)}
+                      style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 16px", borderRadius: 10, border: "1px solid rgba(52,243,198,0.4)", background: "rgba(33,208,179,0.15)", color: "#34F3C6", fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>
+                      Volver
+                    </button>
+                    <p style={{ fontSize: 13.5, fontWeight: 700, color: "#fff", margin: 0, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {(trip.origin?.split(",")[0] || "—")} → {(venue?.name || trip.destination?.split(",")[0] || "—")}
+                    </p>
+                  </div>
+                  {showImg ? (
+                    <div style={{ flex: 1, overflow: "auto", display: "flex", alignItems: "center", justifyContent: "center", background: "#0d1a28" }}>
+                      <img src={routeImg!} alt="Ruta realizada" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+                    </div>
+                  ) : dirEmbed ? (
+                    <iframe title={`route-full-${trip.id}`} src={dirEmbed} style={{ flex: 1, width: "100%", border: "none" }} loading="lazy" />
+                  ) : (
+                    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", fontSize: 13 }}>
+                      Sin recorrido disponible.
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         );
       })()}

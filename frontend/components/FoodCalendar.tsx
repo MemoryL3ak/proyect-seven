@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { apiFetch } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
+import { CLIENT_TYPE_OPTIONS } from "@/lib/clientTypes";
 
 type MealType = "DESAYUNO" | "ALMUERZO" | "CENA";
 
@@ -14,9 +15,13 @@ type FoodMenu = {
   description?: string;
   dietaryType?: string;
   accommodationId?: string;
+  clientTypes?: string[];
+  venueId?: string;
+  locationDetail?: string;
 };
 
 type Accommodation = { id: string; name: string };
+type Venue = { id: string; name: string };
 
 const MEAL_META: Record<MealType, { label: string; icon: React.ReactNode }> = {
   DESAYUNO: { label: "Desayuno", icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg> },
@@ -69,17 +74,26 @@ function dietaryLabel(key: string | undefined, t: (s: string) => string) {
   return opt ? t(opt.label) : key ?? "";
 }
 
-type FormState = { title: string; description: string; dietaryType: string; accommodationId: string };
-const EMPTY: FormState = { title: "", description: "", dietaryType: "", accommodationId: "" };
+type FormState = {
+  title: string;
+  description: string;
+  dietaryType: string;
+  accommodationId: string;
+  clientTypes: string[];
+  venueId: string;
+  locationDetail: string;
+};
+const EMPTY: FormState = { title: "", description: "", dietaryType: "", accommodationId: "", clientTypes: [], venueId: "", locationDetail: "" };
 
 // ─── Inline form fields ─────────────────────────────────────────────────────
 function MenuFormFields({
-  form, saving, editingId, accommodations, onChange, onSave, onCancel, t,
+  form, saving, editingId, accommodations, venues, onChange, onSave, onCancel, t,
 }: {
   form: FormState;
   saving: boolean;
   editingId: string | null;
   accommodations: Accommodation[];
+  venues: Venue[];
   onChange: (patch: Partial<FormState>) => void;
   onSave: () => void;
   onCancel: () => void;
@@ -113,6 +127,46 @@ function MenuFormFields({
           </select>
         </div>
       )}
+      {venues.length > 0 && (
+        <div>
+          <label style={labelStyle}>{t("Sede")}</label>
+          <select style={fieldStyle} value={form.venueId} onChange={(e) => onChange({ venueId: e.target.value })}>
+            <option value="">{t("Sin especificar")}</option>
+            {venues.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
+          </select>
+        </div>
+      )}
+      <div>
+        <label style={labelStyle}>{t("Detalle del lugar")}</label>
+        <input style={fieldStyle} placeholder={t("Ej: Comedor principal, piso 2")} value={form.locationDetail} onChange={(e) => onChange({ locationDetail: e.target.value })} />
+      </div>
+      <div>
+        <label style={labelStyle}>{t("Tipos de cliente")}</label>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+          {CLIENT_TYPE_OPTIONS.map((ct) => {
+            const active = form.clientTypes.includes(ct.value);
+            return (
+              <button key={ct.value} type="button"
+                onClick={() => onChange({
+                  clientTypes: active
+                    ? form.clientTypes.filter((v) => v !== ct.value)
+                    : [...form.clientTypes, ct.value],
+                })}
+                style={{
+                  padding: "4px 10px", borderRadius: "99px", fontSize: "11px", fontWeight: 700, cursor: "pointer",
+                  border: `1px solid ${active ? "#21D0B3" : "#e2e8f0"}`,
+                  background: active ? "rgba(33,208,179,0.12)" : "#fff",
+                  color: active ? "#0a7a6b" : "#64748b",
+                }}>
+                {ct.label}
+              </button>
+            );
+          })}
+        </div>
+        <p style={{ fontSize: "10.5px", color: "#94a3b8", marginTop: "4px" }}>
+          {t("Sin selección = visible para todos los tipos.")}
+        </p>
+      </div>
       <div style={{ display: "flex", gap: "8px", paddingTop: "4px" }}>
         <button type="button" style={{ flex: 1, padding: "8px", borderRadius: "8px", fontSize: "13px", fontWeight: 600, background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: "#fff", border: "none", cursor: !form.title.trim() || saving ? "not-allowed" : "pointer", opacity: !form.title.trim() || saving ? 0.6 : 1 }} disabled={!form.title.trim() || saving} onClick={onSave}>
           {saving ? t("Guardando…") : editingId ? t("Guardar cambios") : t("Agregar plato")}
@@ -137,6 +191,7 @@ export default function FoodCalendar({ mealType }: { mealType: MealType }) {
   const [currentDate, setCurrentDate] = useState(() => new Date());
   const [menus, setMenus] = useState<FoodMenu[]>([]);
   const [accommodations, setAccommodations] = useState<Accommodation[]>([]);
+  const [venues, setVenues] = useState<Venue[]>([]);
   const [filterAccomm, setFilterAccomm] = useState("");
 
   // Calendar panel
@@ -165,7 +220,8 @@ export default function FoodCalendar({ mealType }: { mealType: MealType }) {
   }, [monthStr, filterAccomm, mealType]);
 
   useEffect(() => { loadMenus(); }, [loadMenus]);
-  useEffect(() => { apiFetch<Accommodation[]>("/accommodations").then((d) => setAccommodations(d ?? [])); }, []);
+  useEffect(() => { apiFetch<Accommodation[]>("/accommodations").then((d) => setAccommodations(d ?? [])).catch(() => setAccommodations([])); }, []);
+  useEffect(() => { apiFetch<Venue[]>("/venues").then((d) => setVenues(d ?? [])).catch(() => setVenues([])); }, []);
 
   // Grid
   const firstDay = new Date(year, month, 1);
@@ -196,14 +252,32 @@ export default function FoodCalendar({ mealType }: { mealType: MealType }) {
 
   function startEdit(m: FoodMenu) {
     setEditingId(m.id);
-    setPanelForm({ title: m.title, description: m.description ?? "", dietaryType: m.dietaryType ?? "", accommodationId: m.accommodationId ?? "" });
+    setPanelForm({
+      title: m.title,
+      description: m.description ?? "",
+      dietaryType: m.dietaryType ?? "",
+      accommodationId: m.accommodationId ?? "",
+      clientTypes: m.clientTypes ?? [],
+      venueId: m.venueId ?? "",
+      locationDetail: m.locationDetail ?? "",
+    });
     setPanelAdding(true);
   }
 
   async function submitPanel() {
     if (!panelForm.title.trim() || !selectedDay) return;
     setPanelSaving(true);
-    const payload = { date: selectedDay, mealType, title: panelForm.title.trim(), description: panelForm.description.trim() || undefined, dietaryType: panelForm.dietaryType || undefined, accommodationId: panelForm.accommodationId || undefined };
+    const payload = {
+      date: selectedDay,
+      mealType,
+      title: panelForm.title.trim(),
+      description: panelForm.description.trim() || undefined,
+      dietaryType: panelForm.dietaryType || undefined,
+      accommodationId: panelForm.accommodationId || undefined,
+      clientTypes: panelForm.clientTypes,
+      venueId: panelForm.venueId || undefined,
+      locationDetail: panelForm.locationDetail.trim() || undefined,
+    };
     try {
       if (editingId) {
         await apiFetch(`/food-menus/${editingId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
@@ -385,6 +459,10 @@ export default function FoodCalendar({ mealType }: { mealType: MealType }) {
                             </span>
                           )}
                           {m.description && <p style={{ fontSize: "11px", color: "#64748b", marginTop: "4px" }}>{m.description}</p>}
+                          {m.locationDetail && <p style={{ fontSize: "10.5px", color: "#94a3b8", marginTop: "3px" }}>📍 {m.locationDetail}</p>}
+                          {(m.clientTypes?.length ?? 0) > 0 && (
+                            <p style={{ fontSize: "10px", color: "#94a3b8", marginTop: "2px" }}>Para: {m.clientTypes!.join(", ")}</p>
+                          )}
                         </div>
                         <div style={{ display: "flex", gap: "8px", flexShrink: 0, marginTop: "2px" }}>
                           <button type="button" onClick={() => startEdit(m)} style={{ fontSize: "11px", color: "#64748b", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>{t("editar")}</button>
@@ -406,6 +484,7 @@ export default function FoodCalendar({ mealType }: { mealType: MealType }) {
                     saving={panelSaving}
                     editingId={editingId}
                     accommodations={accommodations}
+                    venues={venues}
                     onChange={(p) => setPanelForm((f) => ({ ...f, ...p }))}
                     onSave={submitPanel}
                     onCancel={() => { setPanelAdding(false); setEditingId(null); setPanelForm(EMPTY); }}

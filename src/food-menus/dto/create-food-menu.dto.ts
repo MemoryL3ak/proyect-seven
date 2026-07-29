@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsDateString, IsIn } from 'class-validator';
+import { IsArray, IsString, IsOptional, IsDateString, IsIn } from 'class-validator';
 
 export class CreateFoodMenuDto {
   @IsDateString()
@@ -22,4 +22,17 @@ export class CreateFoodMenuDto {
   @IsString()
   @IsOptional()
   accommodationId?: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  clientTypes?: string[];
+
+  @IsString()
+  @IsOptional()
+  venueId?: string;
+
+  @IsString()
+  @IsOptional()
+  locationDetail?: string;
 }

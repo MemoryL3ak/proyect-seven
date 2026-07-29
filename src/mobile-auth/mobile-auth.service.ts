@@ -1,9 +1,11 @@
 import {
+  BadRequestException,
   Inject,
   Injectable,
   Logger,
   UnauthorizedException,
 } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { SupabaseClient } from '@supabase/supabase-js';
 
 export type MobileLoginResult =
@@ -52,6 +54,94 @@ export class MobileAuthService {
     if (driverResult) return driverResult;
 
     throw new UnauthorizedException('Código inválido');
+  }
+
+  // ── Sesión única por usuario ────────────────────────────────────────────────
+  // Sólo puede haber UN dispositivo con sesión activa por usuario: al iniciar
+  // sesión se emite un sessionId nuevo (guardado en la metadata del usuario) y
+  // los demás dispositivos, al validar, detectan que su sessionId quedó
+  // obsoleto y cierran sesión.
+
+  private async sessionTable(kind: string, userId: string): Promise<{ schema: string; table: string } | null> {
+    if (kind === 'athlete') return { schema: 'core', table: 'athletes' };
+    if (kind === 'driver') {
+      // El conductor puede vivir en transport.drivers o en provider_participants.
+      const { data } = await this.supabase
+        .schema('transport')
+        .from('drivers')
+        .select('id')
+        .eq('id', userId)
+        .maybeSingle();
+      if (data) return { schema: 'transport', table: 'drivers' };
+      return { schema: 'core', table: 'provider_participants' };
+    }
+    return null;
+  }
+
+  async claimSession(input: { kind?: string; userId?: string }) {
+    const kind = String(input.kind || '');
+    const userId = String(input.userId || '');
+    if (!userId || !['athlete', 'driver'].includes(kind)) {
+      throw new BadRequestException('kind y userId son obligatorios');
+    }
+    const target = await this.sessionTable(kind, userId);
+    if (!target) throw new BadRequestException('kind inválido');
+
+    const sessionId = randomUUID();
+    try {
+      const { data: row } = await this.supabase
+        .schema(target.schema)
+        .from(target.table)
+        .select('id, metadata')
+        .eq('id', userId)
+        .maybeSingle();
+      if (!row) throw new UnauthorizedException('Usuario no encontrado');
+      const metadata = {
+        ...((row.metadata as Record<string, unknown>) ?? {}),
+        portalSessionId: sessionId,
+        portalSessionAt: new Date().toISOString(),
+      };
+      const { error } = await this.supabase
+        .schema(target.schema)
+        .from(target.table)
+        .update({ metadata })
+        .eq('id', userId);
+      if (error) throw new Error(error.message);
+      return { sessionId };
+    } catch (err) {
+      if (err instanceof UnauthorizedException) throw err;
+      // Si la metadata no se puede escribir, no bloquear el login: se degrada
+      // a comportamiento sin sesión única.
+      this.logger.warn(
+        `No se pudo registrar la sesión de ${kind} ${userId}: ${err instanceof Error ? err.message : err}`,
+      );
+      return { sessionId: null };
+    }
+  }
+
+  async validateSession(input: { kind?: string; userId?: string; sessionId?: string }) {
+    const kind = String(input.kind || '');
+    const userId = String(input.userId || '');
+    const sessionId = String(input.sessionId || '');
+    if (!userId || !sessionId || !['athlete', 'driver'].includes(kind)) {
+      return { valid: true }; // datos incompletos: no forzar logout
+    }
+    const target = await this.sessionTable(kind, userId);
+    if (!target) return { valid: true };
+    try {
+      const { data: row } = await this.supabase
+        .schema(target.schema)
+        .from(target.table)
+        .select('metadata')
+        .eq('id', userId)
+        .maybeSingle();
+      const current = (row?.metadata as Record<string, unknown> | null)?.portalSessionId;
+      // Sin sesión registrada (usuarios antiguos) → válida; distinta → otro
+      // dispositivo inició sesión después.
+      return { valid: !current || current === sessionId };
+    } catch {
+      return { valid: true }; // ante error de lectura, no expulsar al usuario
+    }
   }
 
   async recover(input: { email: string }): Promise<MobileRecoverResult> {

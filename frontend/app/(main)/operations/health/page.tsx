@@ -119,8 +119,8 @@ const KpiIcon = ({ type, color, size = 18 }: { type: KpiIconType; color: string;
 const SHIRT_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
 const DEPENDENCY_OPTIONS = ["Municipal", "Particular subvencionado", "Particular pagado"];
 const HEALTH_SUBSECTIONS = [
-  { id: "record", label: "Ficha" },
   { id: "dashboard", label: "Dashboard" },
+  { id: "record", label: "Ficha" },
   { id: "bulk", label: "Carga masiva" },
 ] as const;
 const HEALTH_BULK_HEADERS = [
@@ -528,7 +528,7 @@ export default function HealthPage() {
   const [record, setRecord] = useState<HealthRecord>(emptyHealthRecord());
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [activeSubsection, setActiveSubsection] = useState<HealthSubsection>("record");
+  const [activeSubsection, setActiveSubsection] = useState<HealthSubsection>("dashboard");
   const bulkFileRef = useRef<HTMLInputElement>(null);
   const [bulkRows, setBulkRows] = useState<BulkHealthRow[]>([]);
   const [bulkFileName, setBulkFileName] = useState<string | null>(null);

@@ -16,12 +16,15 @@ type FoodMenuRow = {
   description: string | null;
   dietary_type: string | null;
   accommodation_id: string | null;
+  client_types: string[] | null;
+  venue_id: string | null;
+  location_detail: string | null;
   created_at: string;
   updated_at: string;
 };
 
 // Columns to select — date cast to text to avoid pg Date-object timezone issues
-const SELECT_COLS = `id, to_char(date, 'YYYY-MM-DD') as date, meal_type, title, description, dietary_type, accommodation_id, created_at, updated_at`;
+const SELECT_COLS = `id, to_char(date, 'YYYY-MM-DD') as date, meal_type, title, description, dietary_type, accommodation_id, client_types, venue_id, location_detail, created_at, updated_at`;
 
 @Injectable()
 export class FoodMenusService {
@@ -36,6 +39,9 @@ export class FoodMenusService {
       description: row.description ?? undefined,
       dietaryType: row.dietary_type ?? undefined,
       accommodationId: row.accommodation_id ?? undefined,
+      clientTypes: row.client_types ?? [],
+      venueId: row.venue_id ?? undefined,
+      locationDetail: row.location_detail ?? undefined,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
     };
@@ -45,8 +51,8 @@ export class FoodMenusService {
     try {
       const rows = (await this.dataSource.query(
         `
-        insert into logistics.food_menus (date, meal_type, title, description, dietary_type, accommodation_id)
-        values ($1, $2, $3, $4, $5, $6)
+        insert into logistics.food_menus (date, meal_type, title, description, dietary_type, accommodation_id, client_types, venue_id, location_detail)
+        values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         returning ${SELECT_COLS}
         `,
         [
@@ -56,6 +62,9 @@ export class FoodMenusService {
           dto.description ?? null,
           dto.dietaryType ?? null,
           dto.accommodationId ?? null,
+          dto.clientTypes ?? [],
+          dto.venueId ?? null,
+          dto.locationDetail ?? null,
         ],
       )) as FoodMenuRow[];
       return this.toEntity(rows[0]);
@@ -120,6 +129,10 @@ export class FoodMenusService {
     if (dto.dietaryType !== undefined) map.dietary_type = dto.dietaryType;
     if (dto.accommodationId !== undefined)
       map.accommodation_id = dto.accommodationId;
+    if (dto.clientTypes !== undefined) map.client_types = dto.clientTypes ?? [];
+    if (dto.venueId !== undefined) map.venue_id = dto.venueId ?? null;
+    if (dto.locationDetail !== undefined)
+      map.location_detail = dto.locationDetail ?? null;
 
     const keys = Object.keys(map);
     if (keys.length === 0) return this.findOne(id);

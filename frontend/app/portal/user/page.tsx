@@ -17,8 +17,11 @@ import CuadernoCargoSection from "@/components/CuadernoCargoSection";
 import EmergencyNumbersSection from "@/components/EmergencyNumbersSection";
 import PushTokenSync from "@/components/PushTokenSync";
 import { buildCredentialHtml } from "@/lib/credential-template";
-import { credentialPdfDataUri, downloadCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
+import { downloadCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
 import { isAvailable as isNativeShell } from "@/lib/native-bridge";
+import { persistTab, restoreOnReload } from "@/lib/portal-tab";
+import { claimPortalSession, clearPortalSession } from "@/lib/portal-session";
+import PortalSessionGuard from "@/components/PortalSessionGuard";
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
 import QRCode from "qrcode";
 
@@ -87,7 +90,7 @@ type DisciplineParent = { id: string; name?: string | null };
 type Venue = { id: string; eventId?: string | null; name?: string | null; address?: string | null; region?: string | null; commune?: string | null; photoUrl?: string | null };
 type Accommodation = { id: string; eventId?: string | null; name?: string | null; address?: string | null; city?: string | null; country?: string | null; checkIn?: string | null; checkOut?: string | null; roomType?: string | null; contactPhone?: string | null; photoUrl?: string | null };
 type FoodLocation = { id: string; accommodationId?: string | null; name: string; description?: string | null; capacity?: number | null; clientTypes: string[] };
-type FoodMenu = { id: string; date: string; mealType: string; title: string; description?: string | null; dietaryType?: string | null; accommodationId?: string | null };
+type FoodMenu = { id: string; date: string; mealType: string; title: string; description?: string | null; dietaryType?: string | null; accommodationId?: string | null; clientTypes?: string[] | null; locationDetail?: string | null };
 type PremAwarder = {
   id?: string;
   athleteId: string;
@@ -285,18 +288,17 @@ export default function UserPortalPage() {
   const [allAccommodations, setAllAccommodations] = useState<Accommodation[]>([]);
   const [foodLocations, setFoodLocations] = useState<FoodLocation[]>([]);
   const [foodMenus, setFoodMenus] = useState<FoodMenu[]>([]);
-  // El tab activo sobrevive al refresh: se restaura desde sessionStorage.
-  const [activeTab, setActiveTab] = useState<PortalTab>(() => {
-    if (typeof window === "undefined") return "itinerario";
-    try {
-      const saved = sessionStorage.getItem("portal_user_tab") as PortalTab | null;
-      const valid: PortalTab[] = ["itinerario", "actividades", "calendario", "premiaciones", "sedes", "alimentacion", "delegacion", "cupones", "cuenta"];
-      if (saved && valid.includes(saved)) return saved;
-    } catch {}
-    return "itinerario";
-  });
+  // El home del portal es siempre Itinerario; sólo un refresh (F5) restaura
+  // la sección donde estaba el usuario.
+  const [activeTab, setActiveTab] = useState<PortalTab>(() =>
+    restoreOnReload<PortalTab>(
+      "portal_user_tab",
+      ["itinerario", "actividades", "calendario", "premiaciones", "sedes", "alimentacion", "delegacion", "cupones", "cuenta"],
+      "itinerario",
+    ),
+  );
   useEffect(() => {
-    try { sessionStorage.setItem("portal_user_tab", activeTab); } catch {}
+    persistTab("portal_user_tab", activeTab);
   }, [activeTab]);
   const [moreOpen, setMoreOpen] = useState(false);
   const [assistOpen, setAssistOpen] = useState(false);
@@ -331,6 +333,30 @@ export default function UserPortalPage() {
   const [credentialHtml, setCredentialHtml] = useState<string | null>(null);
   const [credentialPdf, setCredentialPdf] = useState<CredentialPdfData | null>(null);
   const [credentialPdfView, setCredentialPdfView] = useState<string | null>(null);
+  // QR de la credencial para validar en los lugares de comida.
+  const [mealQrDataUrl, setMealQrDataUrl] = useState<string>("");
+  useEffect(() => {
+    if (!athlete) { setMealQrDataUrl(""); return; }
+    const qrData = `Participante: ${athlete.fullName}\nID: ${athlete.id.slice(-6)}\nDelegación: ${delegation?.countryCode || "—"}`;
+    QRCode.toDataURL(qrData, { width: 220, margin: 1, color: { dark: "#062240", light: "#ffffff" } })
+      .then(setMealQrDataUrl)
+      .catch(() => setMealQrDataUrl(""));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [athlete?.id]);
+
+  // Deep-link desde notificaciones de premiación: ?premiacionId= abre el tab.
+  useEffect(() => {
+    if (!athlete) return;
+    const params = new URLSearchParams(window.location.search);
+    if (!params.get("premiacionId")) return;
+    setActiveTab("premiaciones");
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("premiacionId");
+      window.history.replaceState(window.history.state, "", url.toString());
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [athlete?.id]);
   const notify = useNotifications({ userKind: "athlete", userId: athlete?.id ?? null });
 
   // Al cargar las actividades por primera vez, posiciona el calendario en el mes
@@ -485,6 +511,8 @@ export default function UserPortalPage() {
 
       setAthlete(data);
       try { sessionStorage.setItem("portal_user_id", data.id); } catch {}
+      // Sesión única: el login manual reclama la sesión para este dispositivo.
+      if (!directId) void claimPortalSession("athlete", data.id);
 
       const [flightData, hotelData, vehicleData, tripData, tripsList, eventData, delegationData, assignmentData] = await Promise.all([
         data.arrivalFlightId ? apiFetch<Flight>(`/flights/${data.arrivalFlightId}`) : Promise.resolve(null),
@@ -1083,6 +1111,20 @@ export default function UserPortalPage() {
   return (
     <div style={{ minHeight:"100vh", background:"#eef1f8", position:"relative", overflow:"hidden" }}>
       <PushTokenSync userKind="athlete" userId={athlete?.id || null} />
+      {athlete && (
+        <PortalSessionGuard
+          kind="athlete"
+          userId={athlete.id}
+          onInvalid={() => {
+            clearPortalSession("athlete", athlete.id);
+            try { sessionStorage.removeItem("portal_user_id"); } catch {}
+            setAthlete(null);
+            setAthleteId("");
+            setActiveTab("itinerario");
+            setError("Tu sesión se cerró porque iniciaste sesión en otro dispositivo.");
+          }}
+        />
+      )}
       <style>{`
         @keyframes db-in{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
         @keyframes db-badge{from{opacity:0;transform:scale(0.85)}to{opacity:1;transform:scale(1)}}
@@ -1200,13 +1242,13 @@ export default function UserPortalPage() {
                 </svg>
               </button>
             )}
-            <button type="button" onClick={() => loadAthlete()} disabled={loading}
+            <button type="button" onClick={() => (athlete ? loadAthlete(athlete.id) : loadAthlete())} disabled={loading}
               style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",cursor:"pointer",flexShrink:0,opacity:loading?0.5:1 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
               </svg>
             </button>
-            <button type="button" onClick={() => { try { sessionStorage.removeItem("portal_user_id"); } catch {} mobileAwareLogout(); }}
+            <button type="button" onClick={() => { try { sessionStorage.removeItem("portal_user_id"); } catch {} setActiveTab("itinerario"); mobileAwareLogout(); }}
               style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(255,255,255,0.15)",background:"rgba(255,255,255,0.08)",cursor:"pointer",flexShrink:0 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
@@ -2391,10 +2433,32 @@ export default function UserPortalPage() {
         {activeTab === "alimentacion" && (
           <div style={{ display:"flex",flexDirection:"column",gap:14 }}>
 
+            {/* Credencial QR para validar en el comedor */}
+            {mealQrDataUrl && (
+              <div style={{ background:"linear-gradient(135deg,#041a2e,#062240)",borderRadius:16,padding:"16px",display:"flex",alignItems:"center",gap:14 }}>
+                <div style={{ background:"#fff",borderRadius:12,padding:6,flexShrink:0 }}>
+                  <img src={mealQrDataUrl} alt="QR credencial" style={{ width:96,height:96,display:"block" }} />
+                </div>
+                <div style={{ minWidth:0 }}>
+                  <p style={{ fontSize:10,fontWeight:800,letterSpacing:"0.18em",textTransform:"uppercase",color:"#34F3C6",margin:0 }}>Tu credencial</p>
+                  <p style={{ fontSize:14,fontWeight:700,color:"#fff",margin:"4px 0 0",lineHeight:1.3 }}>
+                    Muestra este QR al ingresar al lugar de comida
+                  </p>
+                  <p style={{ fontSize:11.5,color:"rgba(255,255,255,0.65)",margin:"4px 0 0" }}>
+                    Código: <span style={{ fontFamily:"monospace",fontWeight:700,color:"#34F3C6",letterSpacing:"0.15em" }}>{(athlete.credentialCode || athlete.id.slice(-6)).toUpperCase()}</span>
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Today's menu */}
             {(() => {
               const today = new Date().toISOString().slice(0, 10);
-              const todayMenus = foodMenus.filter((fm) => fm.date === today);
+              const myType = normalizeClientType(athlete.userType);
+              const todayMenus = foodMenus.filter((fm) => fm.date === today).filter((fm) => {
+                const types = (fm.clientTypes || []).map((t2) => normalizeClientType(t2));
+                return types.length === 0 || types.includes(myType);
+              });
               const mealOrder = ["DESAYUNO", "ALMUERZO", "CENA", "ONCE"];
               const sorted = todayMenus.sort((a, b) => mealOrder.indexOf(a.mealType) - mealOrder.indexOf(b.mealType));
               const mealStyle = (type: string) => {
@@ -2432,6 +2496,7 @@ export default function UserPortalPage() {
                           </div>
                           <p style={{ fontSize:15,fontWeight:700,color:"#0f172a",margin:"5px 0 0" }}>{fm.title}</p>
                           {fm.description && <p style={{ fontSize:12,color:"#64748b",margin:"3px 0 0",lineHeight:1.4 }}>{fm.description}</p>}
+                          {fm.locationDetail && <p style={{ fontSize:11,color:"#94a3b8",margin:"3px 0 0" }}>📍 {fm.locationDetail}</p>}
                         </div>
                       </div>
                     );
@@ -2449,7 +2514,11 @@ export default function UserPortalPage() {
               const tomorrow = new Date();
               tomorrow.setDate(tomorrow.getDate() + 1);
               const tomorrowKey = tomorrow.toISOString().slice(0, 10);
-              const tomorrowMenus = foodMenus.filter((fm) => fm.date === tomorrowKey);
+              const myType = normalizeClientType(athlete.userType);
+              const tomorrowMenus = foodMenus.filter((fm) => fm.date === tomorrowKey).filter((fm) => {
+                const types = (fm.clientTypes || []).map((t2) => normalizeClientType(t2));
+                return types.length === 0 || types.includes(myType);
+              });
               const mealOrder = ["DESAYUNO", "ALMUERZO", "CENA", "ONCE"];
               const sorted = tomorrowMenus.sort((a, b) => mealOrder.indexOf(a.mealType) - mealOrder.indexOf(b.mealType));
               const mealStyle = (type: string) => {
@@ -2478,6 +2547,7 @@ export default function UserPortalPage() {
                           <span style={{ fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:6,textTransform:"uppercase",letterSpacing:"0.05em",background:m.bg,color:m.color }}>{m.label}</span>
                           <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:"4px 0 0" }}>{fm.title}</p>
                           {fm.description && <p style={{ fontSize:12,color:"#64748b",margin:"2px 0 0",lineHeight:1.4 }}>{fm.description}</p>}
+                          {fm.locationDetail && <p style={{ fontSize:11,color:"#94a3b8",margin:"2px 0 0" }}>📍 {fm.locationDetail}</p>}
                         </div>
                       </div>
                     );
@@ -2490,16 +2560,27 @@ export default function UserPortalPage() {
               );
             })()}
 
-            {/* Food locations */}
-            {foodLocations.length > 0 && (
+            {/* Food locations — filtrados por tipo de cliente y hotel asignado */}
+            {(() => {
+              const userType = normalizeClientType(athlete.userType);
+              const myHotelId = hotelAssignment?.hotelId || athlete.hotelAccommodationId || null;
+              const myLocations = foodLocations.filter((fl) => {
+                const types = (fl.clientTypes || []).map((t) => normalizeClientType(t));
+                const typeOk = types.length === 0 || types.includes(userType);
+                const hotelOk = !fl.accommodationId || !myHotelId || fl.accommodationId === myHotelId;
+                return typeOk && hotelOk;
+              });
+              return (
+              <>
+              {myLocations.length > 0 && (
               <div style={{ background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)" }}>
                 <div style={{ padding:"14px 16px",background:"linear-gradient(135deg,rgba(33,208,179,0.06),rgba(31,205,255,0.04))",borderBottom:"1px solid #e2e8f0" }}>
                   <div style={{ display:"flex",alignItems:"center",gap:8 }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                    <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0 }}>Lugares de comida</p>
+                    <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0 }}>Tus lugares de comida</p>
                   </div>
                 </div>
-                {foodLocations.map((fl, i) => (
+                {myLocations.map((fl, i) => (
                   <div key={fl.id} style={{ padding:"12px 16px",borderTop:i>0?"1px solid #f1f5f9":"none",display:"flex",alignItems:"center",gap:12 }}>
                     <div style={{ width:36,height:36,borderRadius:10,background:"rgba(33,208,179,0.08)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
@@ -2512,13 +2593,16 @@ export default function UserPortalPage() {
                   </div>
                 ))}
               </div>
-            )}
-            {foodLocations.length === 0 && (
+              )}
+              {myLocations.length === 0 && (
               <div style={{ background:"#fff",borderRadius:16,border:"1px dashed #e2e8f0",padding:24,textAlign:"center" }}>
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round" style={{ margin:"0 auto 8px" }}><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
-                <p style={{ fontSize:13,fontWeight:600,color:"#94a3b8",margin:0 }}>No hay lugares asignados</p>
+                <p style={{ fontSize:13,fontWeight:600,color:"#94a3b8",margin:0 }}>{loading ? "Cargando lugares de comida…" : "No hay lugares asignados a tu perfil"}</p>
               </div>
-            )}
+              )}
+              </>
+              );
+            })()}
 
           </div>
         )}
@@ -2862,7 +2946,7 @@ export default function UserPortalPage() {
             {/* Device permissions (only visible inside the mobile app) */}
             <DevicePermissionsSection />
             {/* Logout */}
-            <button type="button" onClick={() => { setAthlete(null); setAthleteId(""); try { sessionStorage.removeItem("portal_user_id"); } catch {} }}
+            <button type="button" onClick={() => { setAthlete(null); setAthleteId(""); try { sessionStorage.removeItem("portal_user_id"); } catch {} setActiveTab("itinerario"); }}
               style={{ width:"100%",padding:12,borderRadius:12,border:"1px solid #e2e8f0",background:"#fff",color:"#ef4444",fontSize:13,fontWeight:600,cursor:"pointer" }}>
               Cerrar sesión
             </button>
@@ -3462,9 +3546,9 @@ export default function UserPortalPage() {
                   <button type="button" onClick={() => {
                     if (!credentialPdf) return;
                     try {
-                      // Dentro de la app, doc.save() navegaba el WebView al visor
-                      // del sistema y volver era muy difícil: visor propio con Volver.
-                      if (isNativeShell()) setCredentialPdfView(credentialPdfDataUri(credentialPdf));
+                      // Dentro de la app se abre la credencial COMPLETA en un
+                      // visor propio (con Volver y Guardar).
+                      if (isNativeShell() && credentialHtml) setCredentialPdfView(credentialHtml);
                       else downloadCredentialPdf(credentialPdf);
                     } catch { notify.push("No se pudo generar el PDF", "❌"); }
                   }}
@@ -3484,11 +3568,11 @@ export default function UserPortalPage() {
           </div>
         )}
 
-        {/* Visor de la credencial en PDF (app nativa) con botón Volver */}
+        {/* Visor de la credencial completa (app nativa) con Volver y Guardar */}
         {credentialPdfView && (
           <PdfViewerOverlay
-            dataUri={credentialPdfView}
-            title="Credencial (PDF)"
+            srcDoc={credentialPdfView}
+            title="Credencial completa"
             onClose={() => setCredentialPdfView(null)}
             onDownload={() => { if (credentialPdf) { try { downloadCredentialPdf(credentialPdf); } catch {} } }}
           />

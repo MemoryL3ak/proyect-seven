@@ -98,6 +98,7 @@ export default function PremiacionesPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [disciplineFilter, setDisciplineFilter] = useState("");
   const [search, setSearch] = useState("");
+  const [viewMode, setViewMode] = useState<"cards" | "timeline">("cards");
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -281,8 +282,8 @@ export default function PremiacionesPage() {
     }
   };
 
-  const toggleStatus = async (p: Premiacion) => {
-    const next = p.status === "REALIZADA" ? "PROGRAMADA" : "REALIZADA";
+  const changeStatus = async (p: Premiacion, next: string) => {
+    if (next === p.status) return;
     setSavingId(p.id);
     setMessage(null);
     try {
@@ -324,12 +325,14 @@ export default function PremiacionesPage() {
               <p className="text-xs mt-0.5" style={{ color: "#14b8a6", fontWeight: 600 }}>{p.discipline}</p>
             )}
           </div>
-          <button type="button" onClick={() => toggleStatus(p)} disabled={savingId === p.id}
-            className="text-[10px] font-bold px-2.5 py-1 rounded-full transition-all"
+          <select value={p.status} disabled={savingId === p.id}
+            onChange={(e) => changeStatus(p, e.target.value)}
             title="Cambiar estado"
-            style={{ background: st.bg, color: st.color, border: `1px solid ${st.color}33`, cursor: "pointer", whiteSpace: "nowrap" }}>
-            {savingId === p.id ? "…" : st.label}
-          </button>
+            className="text-[10px] font-bold px-2 py-1 rounded-full"
+            style={{ background: st.bg, color: st.color, border: `1px solid ${st.color}55`, cursor: "pointer", whiteSpace: "nowrap", appearance: "auto" }}>
+            <option value="PROGRAMADA">Programada</option>
+            <option value="REALIZADA">Realizada</option>
+          </select>
         </div>
 
         {/* Datos */}
@@ -458,6 +461,20 @@ export default function PremiacionesPage() {
           <option value="PROGRAMADA">Programadas</option>
           <option value="REALIZADA">Realizadas</option>
         </StyledSelect>
+        {/* Toggle de vista */}
+        <div className="flex rounded-lg overflow-hidden" style={{ border: "1px solid #e2e8f0" }}>
+          {([["cards", "Tarjetas"], ["timeline", "Timeline"]] as const).map(([v, label]) => (
+            <button key={v} type="button" onClick={() => setViewMode(v)}
+              className="text-xs font-bold px-3 py-2"
+              style={{
+                background: viewMode === v ? "#0f172a" : "#fff",
+                color: viewMode === v ? "#34F3C6" : "#64748b",
+                border: "none", cursor: "pointer",
+              }}>
+              {label}
+            </button>
+          ))}
+        </div>
       </section>
 
       {message && !formOpen && <p className="text-sm" style={{ color: "#b91c1c" }}>{message}</p>}
@@ -473,6 +490,58 @@ export default function PremiacionesPage() {
             Crea la primera con el botón <button type="button" onClick={openCreate} style={{ color: "#14b8a6", fontWeight: 600, cursor: "pointer" }}>+ Nueva premiación</button>.
           </p>
         </div>
+      ) : viewMode === "timeline" ? (
+        /* Timeline cronológico — mismo estilo que la bitácora de viajes */
+        <section className="surface rounded-2xl p-5">
+          <h2 className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: "#0f9d84" }}>
+            Timeline de premiaciones
+          </h2>
+          <div style={{ position: "relative", paddingLeft: 20 }}>
+            <div style={{ position: "absolute", left: 5, top: 4, bottom: 4, width: 2, background: "#e2e8f0", borderRadius: 1 }} />
+            {(() => {
+              const items = [...[...past].reverse(), ...upcoming];
+              const nextId = upcoming[0]?.id ?? null;
+              return items.map((p, i) => {
+                const isNext = p.id === nextId;
+                const isDone = p.status === "REALIZADA";
+                const color = isDone ? "#059669" : isNext ? "#21D0B3" : "#f59e0b";
+                const awarders = p.awarders || [];
+                const confirmed = awarders.filter((a) => awarderState(a) === "CONFIRMED").length;
+                return (
+                  <div key={p.id} style={{ position: "relative", marginBottom: i < items.length - 1 ? 18 : 0 }}>
+                    <div style={{ position: "absolute", left: -20, top: 2, width: 12, height: 12, borderRadius: "50%", background: "#fff", border: `2px solid ${color}`, zIndex: 1, ...(isNext ? { boxShadow: `0 0 0 3px ${color}33` } : {}) }} />
+                    <p className="text-[13px] font-bold" style={{ color, margin: 0 }}>
+                      {fmtDateTime(p.scheduledAt)}
+                      {isNext && (
+                        <span className="ml-2 text-[9px] font-bold px-1.5 py-0.5 rounded-full align-middle"
+                          style={{ background: "rgba(33,208,179,0.14)", color: "#0f9d84", border: "1px solid rgba(33,208,179,0.45)" }}>
+                          ★ PRÓXIMA
+                        </span>
+                      )}
+                      <span className="ml-2 text-[9px] font-bold px-1.5 py-0.5 rounded-full align-middle"
+                        style={{ background: (STATUS_META[p.status] || STATUS_META.PROGRAMADA).bg, color: (STATUS_META[p.status] || STATUS_META.PROGRAMADA).color }}>
+                        {(STATUS_META[p.status] || STATUS_META.PROGRAMADA).label}
+                      </span>
+                    </p>
+                    <p className="text-sm font-semibold" style={{ color: "#0f172a", margin: "2px 0 0" }}>
+                      {p.title}
+                      {p.discipline && <span className="ml-1.5 text-xs font-semibold" style={{ color: "#14b8a6" }}>· {p.discipline}</span>}
+                    </p>
+                    <p className="text-xs" style={{ color: "#64748b", margin: "2px 0 0" }}>
+                      {[p.venueName, p.locationDetail].filter(Boolean).join(" · ") || "Sin sede definida"}
+                      {awarders.length > 0 && ` · ${confirmed}/${awarders.length} VIP confirmaron`}
+                    </p>
+                    <button type="button" onClick={() => openEdit(p)}
+                      className="text-[11px] font-semibold mt-1"
+                      style={{ color: "#d97706", cursor: "pointer", background: "none", border: "none", padding: 0 }}>
+                      ✎ Editar
+                    </button>
+                  </div>
+                );
+              });
+            })()}
+          </div>
+        </section>
       ) : (
         <div className="space-y-5">
           {upcoming.length > 0 && (

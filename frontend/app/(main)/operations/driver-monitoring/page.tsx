@@ -460,28 +460,28 @@ export default function DriverMonitoringPage() {
         <KpiCard
           label="Conectados ahora"
           value={stats.onlineNow}
-          detail="con la app abierta"
+          detail={`${onTripCount} en viaje · ${freeCount} libres · ${markers.length} con GPS`}
           icon={<UsersIcon size={18} />}
           accent={stats.onlineNow > 0 ? "green" : "neutral"}
         />
         <KpiCard
           label="Conductores totales"
           value={stats.totalDrivers}
-          detail="registrados en el evento"
+          detail={`registrados · ${visibleDrivers.length} visibles con los filtros`}
           icon={<TruckIcon size={18} />}
           accent="blue"
         />
         <KpiCard
           label="Activos hoy"
           value={stats.driversToday}
-          detail="abrieron la app hoy"
+          detail={`abrieron la app hoy (${stats.totalDrivers > 0 ? Math.round((stats.driversToday / stats.totalDrivers) * 100) : 0}% del total)`}
           icon={<CheckIcon size={18} />}
           accent="purple"
         />
         <KpiCard
           label="Sesiones hoy"
           value={stats.sessionsToday}
-          detail="aperturas de la app"
+          detail={`aperturas de la app · ${stats.driversToday > 0 ? (stats.sessionsToday / stats.driversToday).toFixed(1) : "0"} por conductor`}
           icon={<RefreshIcon size={18} />}
           accent="amber"
         />

@@ -120,7 +120,11 @@ type GoalKey =
   | "monitor_incidents"
   | "premiaciones"
   | "coupons"
-  | "workforce";
+  | "workforce"
+  | "finance_panel"
+  | "vip_monitoring"
+  | "departures_monitor"
+  | "salud";
 
 type WizardState = {
   step: number;
@@ -161,7 +165,7 @@ const ROLES: Array<{
     color: "#5e3aab",
     bgGradient: "linear-gradient(135deg, #f4f0fb 0%, #ffffff 60%)",
     iconBg: "linear-gradient(135deg, #7c5ec4 0%, #5e3aab 100%)",
-    suggested: ["create_event", "import_athletes", "manage_users", "view_dashboard"],
+    suggested: ["create_event", "import_athletes", "manage_users", "view_dashboard", "finance_panel"],
     icon: (
       <svg width="34" height="34" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
         <defs>
@@ -185,7 +189,7 @@ const ROLES: Array<{
     color: "#1f4e8c",
     bgGradient: "linear-gradient(135deg, #eef4fb 0%, #ffffff 60%)",
     iconBg: "linear-gradient(135deg, #2d6aa8 0%, #1f4e8c 100%)",
-    suggested: ["import_schedule", "auto_assign", "monitor_drivers", "tracking_realtime"],
+    suggested: ["import_schedule", "auto_assign", "monitor_drivers", "tracking_realtime", "vip_monitoring", "finance_panel"],
     icon: (
       <svg width="36" height="36" viewBox="0 0 36 36" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="10" width="18" height="13" rx="2" fill="rgba(255,255,255,0.18)" stroke="currentColor" />
@@ -252,7 +256,7 @@ const ROLES: Array<{
     color: "#f59e0b",
     bgGradient: "linear-gradient(135deg, #fff4d6 0%, #ffffff 60%)",
     iconBg: "linear-gradient(135deg, #fbbf24 0%, #d97706 100%)",
-    suggested: ["view_dashboard", "monitor_incidents", "premiaciones", "workforce"],
+    suggested: ["view_dashboard", "monitor_incidents", "premiaciones", "workforce", "vip_monitoring", "departures_monitor", "salud"],
     icon: (
       <svg width="34" height="34" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="26" height="20" rx="2" fill="rgba(255,255,255,0.12)" stroke="currentColor" />
@@ -310,6 +314,10 @@ const GOALS: Array<{ key: GoalKey; label: string; emoji: string; tags: RoleKey[]
   { key: "premiaciones",         label: "Coordinar premiaciones",             emoji: "🏆", tags: ["operations"] },
   { key: "coupons",              label: "Administrar cupones y partners",     emoji: "🎟️", tags: ["operations", "other"] },
   { key: "workforce",            label: "Gestionar staff y voluntarios",      emoji: "👷", tags: ["operations"] },
+  { key: "finance_panel",        label: "Controlar finanzas de transporte",   emoji: "💰", tags: ["admin", "transport"] },
+  { key: "vip_monitoring",       label: "Monitorear ubicación de VIP",        emoji: "⭐", tags: ["transport", "operations"] },
+  { key: "departures_monitor",   label: "Monitorear salidas de participantes",emoji: "✈️", tags: ["operations", "admin"] },
+  { key: "salud",                label: "Gestionar fichas de salud",          emoji: "🩺", tags: ["operations", "admin"] },
 ];
 
 type Task = {
@@ -347,9 +355,13 @@ const TASKS: Task[] = [
 
   // Operaciones
   { key: "t-incidents", title: "Centro de incidencias", description: "Recibe, asigna y resuelve tickets de soporte de los portales.", href: "/operations/support-chats", goal: "monitor_incidents" },
-  { key: "t-premiaciones", title: "Calendario de premiaciones", description: "Consulta ceremonias, entregadores y horarios desde el portal del participante.", href: "/portal/user", goal: "premiaciones" },
+  { key: "t-premiaciones", title: "Gestionar premiaciones", description: "Crea ceremonias, asigna entregadores VIP (con notificación push) y sigue las confirmaciones en tarjetas o timeline.", href: "/deportes/premiaciones", goal: "premiaciones" },
   { key: "t-coupons", title: "Catálogo de cupones", description: "Define beneficios, partners y revisa los canjes desde el portal del comercio.", href: "/operations/coupons", goal: "coupons" },
-  { key: "t-workforce", title: "Gestionar workforce", description: "Personal contratado, voluntariado, catálogo del kit y entregas validadas.", href: "/operations/workforce", goal: "workforce" },
+  { key: "t-workforce", title: "Gestionar workforce", description: "Personal, catálogo del kit con carga masiva Excel, entregas por fila y timeline de entregas en el dashboard.", href: "/operations/workforce", goal: "workforce" },
+  { key: "t-finance", title: "Panel Financiero de Transporte", description: "Ingreso, costo y margen por servicio con filtros por evento, cliente, flota y proveedor. Exporta a CSV o PDF.", href: "/operations/transport-finance", goal: "finance_panel" },
+  { key: "t-vip-monitor", title: "Monitoreo de usuarios VIP", description: "Mapa en vivo con la ubicación permanente de cada VIP: GPS del teléfono con respaldo del vehículo asignado.", href: "/operations/vip-monitoring", goal: "vip_monitoring" },
+  { key: "t-salidas", title: "Monitoreo de salidas", description: "Controla los vuelos de salida de los participantes agrupados por día, con KPIs y detalle de vuelo.", href: "/operacion/salidas", goal: "departures_monitor" },
+  { key: "t-salud", title: "Fichas de salud", description: "Dashboard sanitario del evento, fichas por participante y carga masiva de antecedentes médicos.", href: "/operations/health", goal: "salud" },
 ];
 
 const TIPS_BY_ROLE: Record<RoleKey, Array<{ icon: string; text: string }>> = {

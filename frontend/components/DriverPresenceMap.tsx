@@ -19,6 +19,9 @@ export type PresenceMarker = {
   platform: string | null;
   // Tipos de cliente que el conductor puede transportar (VIP, T1, TA, …).
   clientTypes: string[];
+  // Filas extra para el recuadro de detalle (label → valor). Permite que cada
+  // monitor (conductores, VIP…) enriquezca el popup sin tocar este componente.
+  detailRows?: { label: string; value: string }[];
 };
 
 // Colores de chip por tipo de cliente — mismos tonos que la tabla de monitoreo.
@@ -248,6 +251,7 @@ export default function DriverPresenceMap({ markers, height = 420 }: Props) {
             ${statRow("Señal GPS", m.gpsTime)}
             ${statRow("Viajes activos", String(m.activeTrips))}
             ${m.platform ? statRow("Plataforma", m.platform) : ""}
+            ${(m.detailRows ?? []).map((r) => statRow(r.label, r.value)).join("")}
           </div>
           <div style="margin-top:6px;padding-top:8px;border-top:1px solid #eef2f7;">
             <div style="font-size:9.5px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:#94a3b8;margin-bottom:5px;">Tipos de cliente</div>

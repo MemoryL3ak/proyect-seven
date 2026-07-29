@@ -111,22 +111,53 @@ export default function VipMonitoringPage() {
     () =>
       visibles
         .filter((v) => v.position)
-        .map((v) => ({
-          id: v.id,
-          lat: v.position!.lat,
-          lng: v.position!.lng,
-          name: v.fullName,
-          online: !!v.trip?.active,
-          onTrip: !!v.trip?.active,
-          tripLabel: v.trip ? (TRIP_LABEL[v.trip.status] ?? v.trip.status) : null,
-          lastSeen: v.position!.timestamp ? ago(v.position!.timestamp) : "en vivo",
-          gpsTime: v.position!.timestamp
-            ? new Date(v.position!.timestamp).toLocaleTimeString("es-CL")
-            : "GPS del pasajero",
-          activeTrips: v.trip ? 1 : 0,
-          platform: v.position!.source === "PASSENGER" ? "GPS del VIP" : "GPS del vehículo",
-          clientTypes: ["VIP"],
-        })),
+        .map((v) => {
+          const p = v.position!;
+          // "Conectado" = señal GPS fresca (menos de 10 min), tenga o no un
+          // viaje activo: el tracking VIP es permanente.
+          const fresh = !p.timestamp || Date.now() - new Date(p.timestamp).getTime() < 10 * 60_000;
+          const detailRows: { label: string; value: string }[] = [];
+          if (v.phone) detailRows.push({ label: "Teléfono", value: v.phone });
+          detailRows.push({
+            label: "Fuente",
+            value: p.source === "PASSENGER" ? "GPS del VIP" : "GPS del vehículo",
+          });
+          if (v.trip) {
+            detailRows.push({ label: "Viaje", value: TRIP_LABEL[v.trip.status] ?? v.trip.status });
+            const ruta = [v.trip.origin, v.trip.destination].filter(Boolean).join(" → ");
+            if (ruta) detailRows.push({ label: "Ruta", value: ruta });
+            if (v.trip.driverName) detailRows.push({ label: "Conductor", value: v.trip.driverName });
+            if (v.trip.scheduledAt) {
+              detailRows.push({
+                label: "Programado",
+                value: new Date(v.trip.scheduledAt).toLocaleString("es-CL", {
+                  timeZone: "America/Santiago",
+                  day: "2-digit",
+                  month: "short",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }),
+              });
+            }
+          }
+          return {
+            id: v.id,
+            lat: p.lat,
+            lng: p.lng,
+            name: v.fullName,
+            online: fresh,
+            onTrip: !!v.trip?.active,
+            tripLabel: v.trip ? (TRIP_LABEL[v.trip.status] ?? v.trip.status) : null,
+            lastSeen: p.timestamp ? ago(p.timestamp) : "en vivo",
+            gpsTime: p.timestamp
+              ? new Date(p.timestamp).toLocaleTimeString("es-CL")
+              : "GPS del pasajero",
+            activeTrips: v.trip?.active ? 1 : 0,
+            platform: p.source === "PASSENGER" ? "GPS del VIP" : "GPS del vehículo",
+            clientTypes: ["VIP"],
+            detailRows,
+          };
+        }),
     [visibles],
   );
 

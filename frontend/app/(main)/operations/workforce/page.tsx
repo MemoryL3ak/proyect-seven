@@ -112,6 +112,13 @@ export default function WorkforcePage() {
   >(null);
   const [saving, setSaving] = useState(false);
 
+  // Filtros de personas y productos
+  const [personSearch, setPersonSearch] = useState("");
+  const [personTypeFilter, setPersonTypeFilter] = useState("");
+  const [personKitFilter, setPersonKitFilter] = useState("");
+  const [productSearch, setProductSearch] = useState("");
+  const [productCategoryFilter, setProductCategoryFilter] = useState("");
+
   const personById = useMemo(() => {
     const m = new Map<string, Person>();
     persons.forEach((p) => m.set(p.id, p));
@@ -123,6 +130,56 @@ export default function WorkforcePage() {
     products.forEach((p) => m.set(p.id, p));
     return m;
   }, [products]);
+
+  // Personas que ya recibieron al menos un producto del kit
+  const deliveredPersonIds = useMemo(
+    () => new Set(deliveries.map((d) => d.personId)),
+    [deliveries],
+  );
+
+  const visiblePersons = useMemo(() => {
+    const q = personSearch.trim().toLowerCase();
+    return persons.filter((p) => {
+      if (personTypeFilter && p.personType !== personTypeFilter) return false;
+      if (personKitFilter === "CON" && !deliveredPersonIds.has(p.id)) return false;
+      if (personKitFilter === "SIN" && deliveredPersonIds.has(p.id)) return false;
+      if (q) {
+        const text = `${p.fullName} ${p.rut || ""} ${p.role || ""} ${p.email || ""}`.toLowerCase();
+        if (!text.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [persons, personSearch, personTypeFilter, personKitFilter, deliveredPersonIds]);
+
+  // Timeline de entregas de kit agrupado por día (más reciente primero)
+  const deliveryTimeline = useMemo(() => {
+    const byDay = new Map<string, Delivery[]>();
+    deliveries.forEach((d) => {
+      const day = d.deliveredAt ? String(d.deliveredAt).slice(0, 10) : "sin-fecha";
+      if (!byDay.has(day)) byDay.set(day, []);
+      byDay.get(day)!.push(d);
+    });
+    return Array.from(byDay.entries())
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([day, items]) => ({
+        day,
+        count: items.length,
+        validated: items.filter((d) => d.validatedAt).length,
+        value: items.reduce((s, d) => s + Number(d.unitCost || 0) * Number(d.quantity || 0), 0),
+        personNames: Array.from(
+          new Set(items.map((d) => personById.get(d.personId)?.fullName).filter(Boolean)),
+        ) as string[],
+      }));
+  }, [deliveries, personById]);
+
+  const visibleProducts = useMemo(() => {
+    const q = productSearch.trim().toLowerCase();
+    return products.filter((p) => {
+      if (productCategoryFilter && p.category !== productCategoryFilter) return false;
+      if (q && !`${p.name} ${p.description || ""} ${p.barcode || ""}`.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [products, productSearch, productCategoryFilter]);
 
   const loadAll = async () => {
     try {
@@ -265,6 +322,42 @@ export default function WorkforcePage() {
               accent="green"
             />
           </section>
+          {/* Timeline de entregas de kit */}
+          {deliveryTimeline.length > 0 && (
+            <section className="surface rounded-2xl p-5">
+              <h2 className="text-sm font-bold mb-4 flex items-center gap-2" style={{ color: "var(--text)" }}>
+                <ClipboardIcon size={16} /> Timeline de entregas de kit
+              </h2>
+              <div style={{ position: "relative", paddingLeft: 22 }}>
+                <div style={{ position: "absolute", left: 7, top: 6, bottom: 6, width: 2, background: "var(--border)", borderRadius: 2 }} />
+                <div className="space-y-4">
+                  {deliveryTimeline.map((t) => (
+                    <div key={t.day} style={{ position: "relative" }}>
+                      <span style={{
+                        position: "absolute", left: -21, top: 3, width: 12, height: 12, borderRadius: "50%",
+                        background: t.validated === t.count ? "#10b981" : "#f59e0b",
+                        border: "2px solid var(--surface)", boxShadow: "0 0 0 2px var(--border)",
+                      }} />
+                      <p className="text-[13px] font-bold capitalize" style={{ color: "var(--text)", margin: 0 }}>
+                        {t.day === "sin-fecha"
+                          ? "Sin fecha registrada"
+                          : new Date(`${t.day}T12:00:00`).toLocaleDateString("es-CL", { weekday: "long", day: "2-digit", month: "long" })}
+                      </p>
+                      <p className="text-xs" style={{ color: "var(--text-muted)", margin: "2px 0 0" }}>
+                        {t.count} entrega{t.count === 1 ? "" : "s"} · {t.validated} validada{t.validated === 1 ? "" : "s"} · {fmt$(t.value)}
+                      </p>
+                      {t.personNames.length > 0 && (
+                        <p className="text-[11px]" style={{ color: "var(--text-faint)", margin: "2px 0 0" }}>
+                          {t.personNames.slice(0, 4).join(", ")}
+                          {t.personNames.length > 4 ? ` y ${t.personNames.length - 4} más` : ""}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
           {dashboard.deliveries.pending > 0 && (
             <section
               className="rounded-2xl p-4 flex items-start gap-3"
@@ -311,6 +404,28 @@ export default function WorkforcePage() {
             }
           />
           <WorkforceBulkImport kind="persons" onDone={loadAll} />
+          {/* Filtros de personas */}
+          <div className="flex flex-wrap items-center gap-2">
+            <input className="input flex-1 min-w-[200px]" placeholder="Buscar por nombre, RUT, rol o email…"
+              value={personSearch} onChange={(e) => setPersonSearch(e.target.value)} />
+            <select className="input" style={{ maxWidth: 160, borderColor: personTypeFilter ? "var(--brand)" : undefined }}
+              value={personTypeFilter} onChange={(e) => setPersonTypeFilter(e.target.value)}>
+              <option value="">Tipo: todos</option>
+              <option value="STAFF">Staff</option>
+              <option value="VOLUNTEER">Voluntarios</option>
+            </select>
+            <select className="input" style={{ maxWidth: 170, borderColor: personKitFilter ? "var(--brand)" : undefined }}
+              value={personKitFilter} onChange={(e) => setPersonKitFilter(e.target.value)}>
+              <option value="">Kit: todos</option>
+              <option value="CON">Con kit entregado</option>
+              <option value="SIN">Sin kit</option>
+            </select>
+            {(personSearch || personTypeFilter || personKitFilter) && (
+              <span className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
+                {visiblePersons.length} de {persons.length}
+              </span>
+            )}
+          </div>
           {persons.length === 0 ? (
             <EmptyStateBox
               icon={<UsersIcon size={36} />}
@@ -342,17 +457,26 @@ export default function WorkforcePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {persons.map((p) => {
+                  {visiblePersons.map((p) => {
                     const total = Number(p.dailyRate || 0) * Number(p.daysCount || 0);
                     const isVolunteer = p.personType === "VOLUNTEER";
                     const maxDays = Math.max(1, ...persons.map((x) => x.daysCount || 0));
+                    const hasKit = deliveredPersonIds.has(p.id);
                     return (
-                      <tr key={p.id}>
+                      <tr key={p.id} style={hasKit ? { background: "rgba(16,185,129,0.06)" } : undefined}>
                         <td className="p-3">
                           <div className="flex items-center gap-2.5 min-w-0">
                             <PersonAvatar name={p.fullName} type={p.personType} />
                             <div className="min-w-0">
-                              <p className="font-semibold leading-tight truncate" style={{ color: "#0f172a" }}>{p.fullName}</p>
+                              <p className="font-semibold leading-tight truncate" style={{ color: "#0f172a" }}>
+                                {p.fullName}
+                                {hasKit && (
+                                  <span className="ml-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full align-middle"
+                                    style={{ background: "#e7f5ec", color: "#1e5125", border: "1px solid #a7f3d0", whiteSpace: "nowrap" }}>
+                                    ✓ KIT
+                                  </span>
+                                )}
+                              </p>
                               {p.gender && (
                                 <p className="text-[10.5px] mt-0.5" style={{ color: "var(--text-muted)" }}>
                                   {p.gender === "MALE" ? "Masculino" : p.gender === "FEMALE" ? "Femenino" : p.gender}
@@ -400,6 +524,10 @@ export default function WorkforcePage() {
                         </td>
                         <td className="p-3">
                           <div className="inline-flex items-center justify-center gap-1.5">
+                            <IconActionButton variant="validate" title={hasKit ? "Registrar otra entrega" : "Entregar kit"}
+                              onClick={() => setModal({ type: "delivery", data: { personId: p.id, quantity: 1 } })}>
+                              Kit
+                            </IconActionButton>
                             <IconActionButton variant="edit" title="Editar persona"
                               onClick={() => setModal({ type: "person", data: p })} />
                             <IconActionButton variant="delete" title="Eliminar persona"
@@ -470,6 +598,21 @@ export default function WorkforcePage() {
             }
           />
           <WorkforceBulkImport kind="products" onDone={loadAll} />
+          {/* Filtros de productos */}
+          <div className="flex flex-wrap items-center gap-2">
+            <input className="input flex-1 min-w-[200px]" placeholder="Buscar por producto, descripción o código…"
+              value={productSearch} onChange={(e) => setProductSearch(e.target.value)} />
+            <select className="input" style={{ maxWidth: 180, borderColor: productCategoryFilter ? "var(--brand)" : undefined }}
+              value={productCategoryFilter} onChange={(e) => setProductCategoryFilter(e.target.value)}>
+              <option value="">Categoría: todas</option>
+              {PRODUCT_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+            </select>
+            {(productSearch || productCategoryFilter) && (
+              <span className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
+                {visibleProducts.length} de {products.length}
+              </span>
+            )}
+          </div>
           {products.length === 0 ? (
             <EmptyStateBox
               icon={<PackageIcon size={36} />}
@@ -500,7 +643,7 @@ export default function WorkforcePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {products.map((p) => {
+                  {visibleProducts.map((p) => {
                     const stock = p.stockQuantity || 0;
                     const inventory = Number(p.unitCost || 0) * stock;
                     const lowStock = stock > 0 && stock < 20;

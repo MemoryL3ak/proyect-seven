@@ -20,4 +20,16 @@ export class MobileAuthController {
   async recover(@Body() dto: MobileRecoverDto): Promise<MobileRecoverResult> {
     return this.mobileAuthService.recover(dto);
   }
+
+  /** Sesión única: registra este dispositivo como la sesión activa del usuario. */
+  @Post('session/claim')
+  claimSession(@Body() body: { kind?: string; userId?: string }) {
+    return this.mobileAuthService.claimSession(body ?? {});
+  }
+
+  /** Sesión única: valida que este dispositivo siga siendo la sesión activa. */
+  @Post('session/validate')
+  validateSession(@Body() body: { kind?: string; userId?: string; sessionId?: string }) {
+    return this.mobileAuthService.validateSession(body ?? {});
+  }
 }
