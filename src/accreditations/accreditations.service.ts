@@ -202,6 +202,34 @@ export class AccreditationsService {
           error.message || 'Error syncing driver accreditation',
         );
       }
+
+      // Los conductores de la operación real viven en core.provider_participants
+      // (transport.drivers está casi vacía): reflejar la acreditación en su
+      // metadata para que el portal del conductor la vea. Best effort.
+      try {
+        const { data: pp } = await this.supabase
+          .schema('core')
+          .from('provider_participants')
+          .select('id, metadata')
+          .eq('id', accreditation.driverId)
+          .maybeSingle();
+        if (pp) {
+          const metadata = {
+            ...((pp.metadata as Record<string, unknown>) ?? {}),
+            accreditationStatus: accreditation.status,
+            credentialCode: accreditation.credentialCode ?? null,
+            accessTypes: accreditation.accessTypes ?? [],
+            accreditationValidatedAt: accreditation.validatedAt?.toISOString() ?? null,
+          };
+          await this.supabase
+            .schema('core')
+            .from('provider_participants')
+            .update({ metadata })
+            .eq('id', pp.id);
+        }
+      } catch {
+        // La acreditación queda creada igual; el espejo en metadata es opcional.
+      }
     }
   }
 

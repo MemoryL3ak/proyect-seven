@@ -196,13 +196,14 @@ export default function AccreditationsPage() {
     setLoading(true);
     setError(null);
     try {
-      const [eventData, disciplineData, providerData, delegationData, athleteData, driverData, accreditationData] = await Promise.all([
+      const [eventData, disciplineData, providerData, delegationData, athleteData, driverData, participantData, accreditationData] = await Promise.all([
         apiFetch<EventItem[]>("/events"),
         apiFetch<DisciplineItem[]>("/disciplines"),
         apiFetch<ProviderItem[]>("/providers"),
         apiFetch<DelegationItem[]>("/delegations"),
         apiFetch<AthleteItem[]>("/athletes"),
-        apiFetch<DriverItem[]>("/drivers"),
+        apiFetch<DriverItem[]>("/drivers").catch(() => [] as DriverItem[]),
+        apiFetch<Array<Record<string, unknown>>>("/provider-participants").catch(() => []),
         apiFetch<Accreditation[]>("/accreditations"),
       ]);
       setEvents(Array.isArray(eventData) ? eventData : []);
@@ -210,7 +211,38 @@ export default function AccreditationsPage() {
       setProviders(Array.isArray(providerData) ? providerData : []);
       setDelegations(Array.isArray(delegationData) ? delegationData : []);
       setAthletes(filterValidatedAthletes(Array.isArray(athleteData) ? athleteData : []));
-      setDrivers(Array.isArray(driverData) ? driverData : []);
+      // Conductores reales: la operación vive en core.provider_participants
+      // (metadata.isDriver) — transport.drivers está casi vacía. Se combinan
+      // ambas fuentes sin duplicar.
+      const baseDrivers = Array.isArray(driverData) ? driverData : [];
+      const seenIds = new Set(baseDrivers.map((d) => d.id));
+      const participantDrivers: DriverItem[] = (Array.isArray(participantData) ? participantData : [])
+        .filter((p) => {
+          const meta = (p.metadata ?? {}) as Record<string, unknown>;
+          const flag = meta.isDriver;
+          return flag === true || flag === "true";
+        })
+        .filter((p) => !seenIds.has(String(p.id)))
+        .map((p) => {
+          const meta = (p.metadata ?? {}) as Record<string, unknown>;
+          const accessTypes = Array.isArray(meta.accessTypes)
+            ? (meta.accessTypes as string[])
+            : null;
+          return {
+            id: String(p.id),
+            eventId: null,
+            providerId: (p.providerId as string) ?? null,
+            fullName: (p.fullName as string) ?? null,
+            rut: (p.rut as string) ?? null,
+            email: (p.email as string) ?? null,
+            phone: (p.phone as string) ?? null,
+            licenseNumber: null,
+            accessTypes,
+            photoUrl: photoFromMetadata(meta),
+            metadata: meta,
+          };
+        });
+      setDrivers([...baseDrivers, ...participantDrivers]);
       setAccreditations(Array.isArray(accreditationData) ? accreditationData : []);
       if (!selectedEventId && eventData?.length) setSelectedEventId(eventData[0].id);
       setLastUpdated(new Date());
@@ -236,7 +268,12 @@ export default function AccreditationsPage() {
   }, [newSubjectType, newAthleteId, newDriverId, selectedAccreditation, selectedDriver]);
 
   const eventAthletes = useMemo(() => filterValidatedAthletes(athletes).filter((item) => (selectedEventId ? item.eventId === selectedEventId : true)), [athletes, selectedEventId]);
-  const eventDrivers = useMemo(() => drivers.filter((item) => (selectedEventId ? item.eventId === selectedEventId : true)), [drivers, selectedEventId]);
+  // Los conductores sin evento asignado (p.ej. los de proveedor) se muestran
+  // siempre: antes el filtro por evento los ocultaba y la lista salía vacía.
+  const eventDrivers = useMemo(
+    () => drivers.filter((item) => (selectedEventId ? !item.eventId || item.eventId === selectedEventId : true)),
+    [drivers, selectedEventId],
+  );
   const eventDelegations = useMemo(() => delegations.filter((item) => (selectedEventId ? item.eventId === selectedEventId : true)), [delegations, selectedEventId]);
   const andKpiRows = useMemo(() => {
     const scopedAthletes = eventAthletes.filter((item) => (andKpiDelegationId ? item.delegationId === andKpiDelegationId : true));
