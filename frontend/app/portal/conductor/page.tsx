@@ -17,7 +17,8 @@ import { isAvailable as isNativeAvailable, request as nativeRequest } from "@/li
 import PushTokenSync from "@/components/PushTokenSync";
 import QRCode from "qrcode";
 import { buildCredentialHtml } from "@/lib/credential-template";
-import { downloadCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
+import { credentialPdfDataUri, downloadCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
+import PdfViewerOverlay from "@/components/PdfViewerOverlay";
 
 const TripMap = dynamic(() => import("@/components/TripMap"), {
   ssr: false,
@@ -371,6 +372,7 @@ export default function DriverPortalPage() {
   const [showLocationBlockedModal, setShowLocationBlockedModal] = useState(false);
   const [credentialHtml, setCredentialHtml] = useState<string | null>(null);
   const [credentialPdf, setCredentialPdf] = useState<CredentialPdfData | null>(null);
+  const [credentialPdfView, setCredentialPdfView] = useState<string | null>(null);
 
   const requestLocationPermission = (): Promise<boolean> => {
     return new Promise((resolve) => {
@@ -2197,21 +2199,37 @@ export default function DriverPortalPage() {
               <div style={{ display:"flex",gap:8 }}>
                 <button type="button" onClick={() => {
                   if (!credentialPdf) return;
-                  try { downloadCredentialPdf(credentialPdf); }
-                  catch { driverNotify.push("No se pudo generar el PDF", "❌"); }
+                  try {
+                    // Dentro de la app, doc.save() navegaba el WebView al visor
+                    // del sistema y volver era muy difícil: visor propio con Volver.
+                    if (isNativeAvailable()) setCredentialPdfView(credentialPdfDataUri(credentialPdf));
+                    else downloadCredentialPdf(credentialPdf);
+                  } catch { driverNotify.push("No se pudo generar el PDF", "❌"); }
                 }}
                   title="Descargar PDF"
                   style={{ width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",color:"#21D0B3",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 </button>
                 <button type="button" onClick={() => setCredentialHtml(null)}
-                  style={{ width:34,height:34,borderRadius:10,border:"1px solid rgba(255,255,255,0.2)",background:"rgba(255,255,255,0.08)",color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,lineHeight:1 }}>×</button>
+                  style={{ height:34,padding:"0 12px",borderRadius:10,border:"1px solid rgba(255,255,255,0.25)",background:"rgba(255,255,255,0.08)",color:"#fff",cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6,fontSize:12.5,fontWeight:700,lineHeight:1 }}>
+                  <span aria-hidden style={{ fontSize:15 }}>✕</span> Volver
+                </button>
               </div>
             </div>
             <iframe srcDoc={credentialHtml} title="Credencial"
               style={{ flex:1,width:"100%",minHeight:"60vh",border:"none",background:"#fff" }} />
           </div>
         </div>
+      )}
+
+      {/* Visor de la credencial en PDF (app nativa) con botón Volver */}
+      {credentialPdfView && (
+        <PdfViewerOverlay
+          dataUri={credentialPdfView}
+          title="Credencial (PDF)"
+          onClose={() => setCredentialPdfView(null)}
+          onDownload={() => { if (credentialPdf) { try { downloadCredentialPdf(credentialPdf); } catch {} } }}
+        />
       )}
 
       {/* ── Detalle de viaje realizado (historial) ── */}

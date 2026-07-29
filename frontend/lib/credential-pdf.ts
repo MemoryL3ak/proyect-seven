@@ -20,7 +20,7 @@ const NAVY_SOFT: [number, number, number] = [6, 34, 64];
 const TEAL: [number, number, number] = [33, 208, 179];
 const MUTED: [number, number, number] = [148, 163, 184];
 
-export function downloadCredentialPdf(data: CredentialPdfData) {
+function buildCredentialDoc(data: CredentialPdfData): jsPDF {
   // Tarjeta vertical tipo credencial (media carta aprox.).
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: [105, 158] });
   const W = 105;
@@ -94,6 +94,23 @@ export function downloadCredentialPdf(data: CredentialPdfData) {
     doc.text(data.organization, W / 2, 148, { align: "center" });
   }
 
-  const slug = (data.fullName || "credencial").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-  doc.save(`credencial-${slug}.pdf`);
+  return doc;
+}
+
+function slugFor(data: CredentialPdfData): string {
+  return (data.fullName || "credencial").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+
+/** Descarga el PDF (navegadores normales). */
+export function downloadCredentialPdf(data: CredentialPdfData) {
+  buildCredentialDoc(data).save(`credencial-${slugFor(data)}.pdf`);
+}
+
+/**
+ * PDF como data URI, para mostrarlo en un visor propio dentro de la app
+ * nativa: doc.save() en el WebView navegaba la página al visor del sistema
+ * y era muy difícil volver al portal.
+ */
+export function credentialPdfDataUri(data: CredentialPdfData): string {
+  return buildCredentialDoc(data).output("datauristring");
 }
