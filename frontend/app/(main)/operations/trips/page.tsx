@@ -971,9 +971,9 @@ export default function TripsPage() {
                   setShowAdminEditor(true);
                   setActiveTab("editor");
                   setSelectedTripId(trip.id);
-                  if (typeof window !== "undefined") {
-                    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-                  }
+                  setTimeout(() => {
+                    document.getElementById("trip-editor-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }, 120);
                 }}
                 style={{
                   background: hasDriver ? sc.chipBg : "linear-gradient(135deg, #f59e0b, #d97706)",
@@ -1277,9 +1277,11 @@ export default function TripsPage() {
                         setShowAdminEditor(true);
                         setActiveTab("editor");
                         setSelectedTripId(trip.id);
-                        if (typeof window !== "undefined") {
-                          window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-                        }
+                        // El editor se monta tras el re-render; el formulario con el
+                        // viaje cargado queda al inicio de la sección, no al final.
+                        setTimeout(() => {
+                          document.getElementById("trip-editor-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                        }, 120);
                       }}
                       style={{
                         background: "#f8fafc",
@@ -1738,7 +1740,7 @@ export default function TripsPage() {
       )}
 
       {showAdminEditor && activeTab === "editor" && (
-        <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "24px", padding: "24px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+        <section id="trip-editor-section" style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "24px", padding: "24px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div>
               <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase" as const, color: pal.labelColor }}>{t("Gestion manual")}</p>
