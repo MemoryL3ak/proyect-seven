@@ -24,6 +24,7 @@ type AthleteAndItem = {
   eventId?: string | null;
   delegationId?: string | null;
   disciplineId?: string | null;
+  userType?: string | null;
   arrivalTime?: string | null;
   departureTime?: string | null;
 };
@@ -649,8 +650,48 @@ export default function SportsCalendarPage() {
         });
       }
     });
+
+    // Participantes SIN delegación (VIP, proveedores, staff, etc.): sus
+    // llegadas y retiros también deben verse en el calendario. Se agrupan por
+    // tipo de usuario y día para no inundar el mes con un evento por persona.
+    const soloGroups = new Map<string, { label: string; kind: "ARRIVAL" | "DEPARTURE"; at: string; count: number }>();
+    const typeLabel = (t?: string | null) => String(t || "").trim().toUpperCase() || "PARTICIPANTES";
+    scopedAthletes.forEach((athlete) => {
+      if (athlete.delegationId) return;
+      ([["ARRIVAL", athlete.arrivalTime], ["DEPARTURE", athlete.departureTime]] as const).forEach(([kind, time]) => {
+        if (!time) return;
+        const day = String(time).slice(0, 10);
+        const label = typeLabel(athlete.userType);
+        const key = `${kind}|${label}|${day}`;
+        const group = soloGroups.get(key);
+        if (!group) {
+          soloGroups.set(key, { label, kind, at: time, count: 1 });
+        } else {
+          group.count += 1;
+          if (new Date(time) < new Date(group.at)) group.at = time;
+        }
+      });
+    });
+    soloGroups.forEach((group, key) => {
+      const isArrival = group.kind === "ARRIVAL";
+      result.push({
+        id: `solo-${key}`,
+        eventId: selectedEventId || undefined,
+        sport: isArrival ? "Llegada participantes" : "Retiro participantes",
+        league: isArrival ? "Llegada" : "Retiro",
+        startAtUtc: group.at,
+        status: "SCHEDULED",
+        source: "and-derived",
+        metadata: {
+          title: `${isArrival ? "Llegada" : "Retiro"} ${group.label} · ${group.count} persona${group.count === 1 ? "" : "s"}`,
+          scheduleType: group.kind,
+          peopleCount: group.count,
+          derivedFrom: "PARTICIPANTES",
+        },
+      });
+    });
     return result;
-  }, [andDelegationScheduleRows, selectedEventId]);
+  }, [andDelegationScheduleRows, scopedAthletes, selectedEventId]);
   const calendarDisplayEntries = useMemo(() => {
     const term = quickSearch.trim().toLowerCase();
     return [...entries, ...derivedAndCalendarEntries]

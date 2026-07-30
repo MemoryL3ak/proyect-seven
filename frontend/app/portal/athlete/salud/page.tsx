@@ -127,6 +127,238 @@ const STEP_LABELS: Record<Step, string> = {
   firma: "Firma y documento",
 };
 
+// ─── Fecha en español (Día / Mes / Año) ──────────────────────────────────────
+// El <input type="date"> nativo muestra el selector en el idioma del WebView
+// (aparecía en inglés). Con tres selects el formato queda siempre en español.
+
+const MESES_ES = [
+  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+];
+
+function SpanishDateField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const parts = (value || "").split("-").map(Number);
+  const [year, setYear] = useState(parts[0] || 0);
+  const [month, setMonth] = useState(parts[1] || 0);
+  const [day, setDay] = useState(parts[2] || 0);
+
+  // Sincroniza cuando la ficha carga async con una fecha ya guardada.
+  useEffect(() => {
+    const [yy, mm, dd] = (value || "").split("-").map(Number);
+    if (yy && mm && dd) { setYear(yy); setMonth(mm); setDay(dd); }
+  }, [value]);
+
+  useEffect(() => {
+    if (!year || !month || !day) return;
+    const maxDay = new Date(year, month, 0).getDate();
+    const dd = Math.min(day, maxDay);
+    const formatted = `${year}-${String(month).padStart(2, "0")}-${String(dd).padStart(2, "0")}`;
+    if (formatted !== value) onChange(formatted);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [year, month, day]);
+
+  const currentYear = new Date().getFullYear();
+  const years: number[] = [];
+  for (let y = currentYear; y >= currentYear - 100; y--) years.push(y);
+
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr 1fr", gap: 8 }}>
+      <select className="input" value={day || ""} onChange={(ev) => setDay(Number(ev.target.value))} aria-label="Día">
+        <option value="">Día</option>
+        {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => <option key={d} value={d}>{d}</option>)}
+      </select>
+      <select className="input" value={month || ""} onChange={(ev) => setMonth(Number(ev.target.value))} aria-label="Mes">
+        <option value="">Mes</option>
+        {MESES_ES.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
+      </select>
+      <select className="input" value={year || ""} onChange={(ev) => setYear(Number(ev.target.value))} aria-label="Año">
+        <option value="">Año</option>
+        {years.map((y) => <option key={y} value={y}>{y}</option>)}
+      </select>
+    </div>
+  );
+}
+
+// ─── Teléfono con código de país ─────────────────────────────────────────────
+
+const PHONE_COUNTRIES = [
+  { code: "CL", dial: "+56", flag: "🇨🇱", name: "Chile" },
+  { code: "AR", dial: "+54", flag: "🇦🇷", name: "Argentina" },
+  { code: "BO", dial: "+591", flag: "🇧🇴", name: "Bolivia" },
+  { code: "BR", dial: "+55", flag: "🇧🇷", name: "Brasil" },
+  { code: "CO", dial: "+57", flag: "🇨🇴", name: "Colombia" },
+  { code: "EC", dial: "+593", flag: "🇪🇨", name: "Ecuador" },
+  { code: "PY", dial: "+595", flag: "🇵🇾", name: "Paraguay" },
+  { code: "PE", dial: "+51", flag: "🇵🇪", name: "Perú" },
+  { code: "UY", dial: "+598", flag: "🇺🇾", name: "Uruguay" },
+  { code: "VE", dial: "+58", flag: "🇻🇪", name: "Venezuela" },
+  { code: "MX", dial: "+52", flag: "🇲🇽", name: "México" },
+  { code: "US", dial: "+1", flag: "🇺🇸", name: "Estados Unidos" },
+  { code: "ES", dial: "+34", flag: "🇪🇸", name: "España" },
+  { code: "PT", dial: "+351", flag: "🇵🇹", name: "Portugal" },
+  { code: "FR", dial: "+33", flag: "🇫🇷", name: "Francia" },
+  { code: "DE", dial: "+49", flag: "🇩🇪", name: "Alemania" },
+  { code: "IT", dial: "+39", flag: "🇮🇹", name: "Italia" },
+  { code: "GB", dial: "+44", flag: "🇬🇧", name: "Reino Unido" },
+];
+
+/** Separa un teléfono guardado ("+56 912345678") en país + número local. */
+function splitPhone(value: string): { country: string; local: string } {
+  const raw = String(value || "").trim();
+  const byLength = [...PHONE_COUNTRIES].sort((a, b) => b.dial.length - a.dial.length);
+  for (const c of byLength) {
+    if (raw.startsWith(c.dial)) {
+      return { country: c.code, local: raw.slice(c.dial.length).trim() };
+    }
+  }
+  return { country: "CL", local: raw };
+}
+
+function PhoneField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const initial = splitPhone(value);
+  const [country, setCountry] = useState(initial.country);
+  const [local, setLocal] = useState(initial.local);
+
+  useEffect(() => {
+    // Sólo re-sincroniza cuando el valor externo difiere de lo que este campo
+    // ya representa (p. ej. la ficha guardada cargó async). Evita que elegir
+    // país con el número vacío se resetee a Chile.
+    const dial = PHONE_COUNTRIES.find((c) => c.code === country)?.dial ?? "+56";
+    const current = local.trim() ? `${dial} ${local.trim()}` : "";
+    if (value === current) return;
+    const parsed = splitPhone(value);
+    setCountry(parsed.country);
+    setLocal(parsed.local);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+
+  const emit = (nextCountry: string, nextLocal: string) => {
+    const dial = PHONE_COUNTRIES.find((c) => c.code === nextCountry)?.dial ?? "+56";
+    onChange(nextLocal.trim() ? `${dial} ${nextLocal.trim()}` : "");
+  };
+
+  return (
+    <div style={{ display: "flex", gap: 8 }}>
+      <select
+        className="input"
+        style={{ maxWidth: 130, flexShrink: 0 }}
+        value={country}
+        onChange={(ev) => { setCountry(ev.target.value); emit(ev.target.value, local); }}
+        aria-label="País"
+      >
+        {PHONE_COUNTRIES.map((c) => (
+          <option key={c.code} value={c.code}>{c.flag} {c.dial}</option>
+        ))}
+      </select>
+      <input
+        className="input"
+        type="tel"
+        inputMode="tel"
+        value={local}
+        onChange={(ev) => {
+          const clean = ev.target.value.replace(/[^\d\s-]/g, "");
+          setLocal(clean);
+          emit(country, clean);
+        }}
+        placeholder="9 1234 5678"
+      />
+    </div>
+  );
+}
+
+// ─── Dirección con autocompletado (Google Places) ────────────────────────────
+// Al elegir una dirección sugerida se rellenan comuna, ciudad y región.
+
+function loadGoogleMapsApi(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (typeof window === "undefined") return;
+    const w = window as any;
+    if (w.google?.maps?.places) { resolve(); return; }
+    const existing = document.getElementById("google-maps-script");
+    if (existing) {
+      existing.addEventListener("load", () => resolve());
+      existing.addEventListener("error", reject);
+      return;
+    }
+    const script = document.createElement("script");
+    script.id = "google-maps-script";
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ""}&libraries=places&language=es`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => resolve();
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+}
+
+function AddressAutocompleteField({
+  value,
+  onChange,
+  onResolved,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onResolved: (parts: { address: string; commune: string; city: string; region: string }) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const onResolvedRef = useRef(onResolved);
+  onResolvedRef.current = onResolved;
+
+  useEffect(() => {
+    let autocomplete: any = null;
+    let cancelled = false;
+    loadGoogleMapsApi()
+      .then(() => {
+        if (cancelled || !inputRef.current) return;
+        const google = (window as any).google;
+        if (!google?.maps?.places?.Autocomplete) return;
+        autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
+          types: ["address"],
+          fields: ["address_components", "formatted_address"],
+        });
+        autocomplete.addListener("place_changed", () => {
+          const place = autocomplete.getPlace();
+          const comps: any[] = place?.address_components ?? [];
+          const find = (...types: string[]) => {
+            for (const type of types) {
+              const comp = comps.find((cc) => (cc.types || []).includes(type));
+              if (comp?.long_name) return comp.long_name as string;
+            }
+            return "";
+          };
+          const route = find("route");
+          const number = find("street_number");
+          const address = route ? `${route}${number ? ` ${number}` : ""}` : (place?.formatted_address || "");
+          onResolvedRef.current({
+            address,
+            commune: find("administrative_area_level_3", "locality", "sublocality_level_1", "sublocality"),
+            city: find("locality", "administrative_area_level_2"),
+            region: find("administrative_area_level_1"),
+          });
+        });
+      })
+      .catch(() => {
+        // Sin API de Google: el campo funciona como texto libre.
+      });
+    return () => {
+      cancelled = true;
+      const google = (window as any).google;
+      if (autocomplete && google?.maps?.event) google.maps.event.clearInstanceListeners(autocomplete);
+    };
+  }, []);
+
+  return (
+    <input
+      ref={inputRef}
+      className="input"
+      value={value}
+      onChange={(ev) => onChange(ev.target.value)}
+      placeholder="Escribe tu dirección y elige una sugerencia…"
+      autoComplete="off"
+    />
+  );
+}
+
 // ─── Signature Canvas ─────────────────────────────────────────────────────────
 
 function SignatureCanvas({
@@ -553,7 +785,7 @@ function FichaSaludContent() {
                 </label>
                 <label className="space-y-2">
                   <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Fecha de nacimiento</span>
-                  <input className="input" type="date" value={p.birthDate} onChange={(ev) => setP({ birthDate: ev.target.value })} />
+                  <SpanishDateField value={p.birthDate} onChange={(v) => setP({ birthDate: v })} />
                 </label>
                 <label className="space-y-2">
                   <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Talla (cm)</span>
@@ -618,7 +850,19 @@ function FichaSaludContent() {
               <h2 className="text-lg font-semibold" style={{ color: "var(--text)" }}>Información de contacto</h2>
               <label className="space-y-2 block">
                 <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Dirección</span>
-                <input className="input" value={c.address} onChange={(ev) => setC({ address: ev.target.value })} placeholder="Calle 123, Depto 4" />
+                <AddressAutocompleteField
+                  value={c.address}
+                  onChange={(v) => setC({ address: v })}
+                  onResolved={(parts) => setC({
+                    address: parts.address,
+                    ...(parts.commune ? { commune: parts.commune } : {}),
+                    ...(parts.city ? { city: parts.city } : {}),
+                    ...(parts.region ? { region: parts.region } : {}),
+                  })}
+                />
+                <span className="text-xs" style={{ color: "var(--text-faint)" }}>
+                  Al elegir una sugerencia se completan comuna, ciudad y región.
+                </span>
               </label>
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="space-y-2">
@@ -635,7 +879,7 @@ function FichaSaludContent() {
                 </label>
                 <label className="space-y-2">
                   <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Teléfono</span>
-                  <input className="input" type="tel" value={c.phone} onChange={(ev) => setC({ phone: ev.target.value })} placeholder="+56 9 1234 5678" />
+                  <PhoneField value={c.phone} onChange={(v) => setC({ phone: v })} />
                 </label>
                 <label className="space-y-2 sm:col-span-2">
                   <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Correo electrónico</span>
@@ -662,7 +906,7 @@ function FichaSaludContent() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="space-y-2">
                   <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Teléfono</span>
-                  <input className="input" type="tel" value={e.phone} onChange={(ev) => setE({ phone: ev.target.value })} placeholder="+56 9 1234 5678" />
+                  <PhoneField value={e.phone} onChange={(v) => setE({ phone: v })} />
                 </label>
                 <label className="space-y-2">
                   <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Relación</span>

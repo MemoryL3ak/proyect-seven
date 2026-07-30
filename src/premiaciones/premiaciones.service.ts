@@ -81,6 +81,84 @@ export class PremiacionesService {
     }
   }
 
+  // ── Sincronización con el calendario deportivo ──────────────────────────────
+  // Cada premiación se refleja como un evento en core.sports_calendar_events,
+  // enlazado por external_id = "premiacion:<id>": crear la premiación crea el
+  // evento, editarla lo actualiza y eliminarla lo borra. Best-effort: un fallo
+  // aquí nunca rompe la operación sobre la premiación.
+
+  private calendarExternalId(premiacionId: string): string {
+    return `premiacion:${premiacionId}`;
+  }
+
+  private async syncCalendarEvent(p: PremiacionRow) {
+    if (!p?.id || !p?.scheduled_at) return;
+    try {
+      const externalId = this.calendarExternalId(p.id);
+      const row = {
+        event_id: p.event_id ?? null,
+        sport: p.discipline || 'Premiación',
+        league: 'Premiaciones',
+        home_team: null,
+        away_team: null,
+        venue: p.venue_name ?? null,
+        start_at_utc: p.scheduled_at,
+        status: p.status === 'REALIZADA' ? 'FINISHED' : 'SCHEDULED',
+        external_id: externalId,
+        source: 'PREMIACIONES',
+        metadata: {
+          title: `🏅 Premiación · ${p.title}`,
+          premiacionId: p.id,
+          locationDetail: p.location_detail ?? null,
+          scheduleType: 'PREMIACION',
+        },
+      };
+      const { data: existing } = await this.supabase
+        .schema('core')
+        .from('sports_calendar_events')
+        .select('id')
+        .eq('external_id', externalId)
+        .maybeSingle();
+      if (existing?.id) {
+        const { error } = await this.supabase
+          .schema('core')
+          .from('sports_calendar_events')
+          .update(row)
+          .eq('id', existing.id);
+        if (error) throw new Error(error.message);
+      } else {
+        const { error } = await this.supabase
+          .schema('core')
+          .from('sports_calendar_events')
+          .insert(row);
+        if (error) throw new Error(error.message);
+      }
+    } catch (err) {
+      this.logger.warn(
+        `No se pudo sincronizar la premiación ${p.id} con el calendario deportivo: ${
+          err instanceof Error ? err.message : err
+        }`,
+      );
+    }
+  }
+
+  private async removeCalendarEvent(premiacionId: string) {
+    try {
+      const { error } = await this.supabase
+        .schema('core')
+        .from('sports_calendar_events')
+        .delete()
+        .eq('external_id', this.calendarExternalId(premiacionId));
+      if (error) throw new Error(error.message);
+    } catch (err) {
+      this.logger.warn(
+        `No se pudo eliminar del calendario deportivo la premiación ${premiacionId}: ${
+          err instanceof Error ? err.message : err
+        }`,
+      );
+    }
+  }
+
   /** Convierte una fila snake_case del DB a camelCase para el frontend. */
   private fromRow(row: PremiacionRow | null | undefined): any {
     if (!row) return row;
@@ -218,6 +296,8 @@ export class PremiacionesService {
     if (dto.awarders?.length) {
       await this.syncAwarders(data.id, dto.awarders);
     }
+    // La premiación aparece como evento del calendario deportivo.
+    await this.syncCalendarEvent(data);
     return this.findOne(data.id);
   }
 
@@ -302,6 +382,8 @@ export class PremiacionesService {
     if (dto.awarders !== undefined) {
       await this.syncAwarders(id, dto.awarders);
     }
+    // Mantiene el evento del calendario deportivo al día (fecha/estado/sede).
+    await this.syncCalendarEvent(data);
     return this.findOne(id);
   }
 
@@ -315,6 +397,8 @@ export class PremiacionesService {
       .maybeSingle();
     if (error) throw new InternalServerErrorException(error.message);
     if (!data) throw new NotFoundException(`Premiación ${id} no encontrada`);
+    // Retira también su evento del calendario deportivo.
+    await this.removeCalendarEvent(id);
     return { message: 'Eliminada' };
   }
 

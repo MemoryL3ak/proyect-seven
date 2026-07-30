@@ -828,7 +828,7 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
   });
 
   const handleFabPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!compact) return;
+    // Arrastrable en ambos modos: portal (compact) y plataforma web.
     const rect = fabRef.current?.getBoundingClientRect();
     if (!rect) return;
     dragRef.current = {
@@ -856,11 +856,21 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== e.pointerId) return;
     dragRef.current = null;
-    if (drag.moved) {
-      // Evitar que el click posterior al arrastre abra/cierre el chat.
-      justDraggedRef.current = true;
-      setTimeout(() => { justDraggedRef.current = false; }, 80);
+    // Con pointer capture activo, el evento click puede dispararse sobre el
+    // contenedor y no sobre el botón — el chat "no abría". El toggle se
+    // resuelve aquí mismo: soltar sin arrastrar = abrir/cerrar.
+    justDraggedRef.current = true;
+    setTimeout(() => { justDraggedRef.current = false; }, 120);
+    if (!drag.moved) {
+      setOpen((prev) => !prev);
+      setShowWelcome(false);
     }
+  };
+
+  const handleFabPointerCancel = (e: React.PointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    dragRef.current = null;
   };
 
   useEffect(() => {
@@ -1109,7 +1119,7 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
         onPointerDown={handleFabPointerDown}
         onPointerMove={handleFabPointerMove}
         onPointerUp={handleFabPointerUp}
-        onPointerCancel={handleFabPointerUp}
+        onPointerCancel={handleFabPointerCancel}
         style={{
           position: "fixed",
           zIndex: 40,
@@ -1134,6 +1144,8 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
         <button
           type="button"
           onClick={() => {
+            // El toggle normal ocurre en pointerUp; este onClick queda solo
+            // para teclado (Enter/Espacio), donde no hay pointer events.
             if (justDraggedRef.current) return;
             setOpen(!open);
             setShowWelcome(false);
@@ -1145,7 +1157,7 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
             borderRadius: "50%",
             background: open ? "linear-gradient(135deg, #e2e8f0, #f1f5f9)" : "#30455B",
             border: open ? "1px solid #cbd5e1" : "none",
-            cursor: compact ? "grab" : "pointer",
+            cursor: "grab",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
@@ -1201,7 +1213,24 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
             boxShadow: "0 24px 64px rgba(0,0,0,0.3), 0 4px 16px rgba(0,0,0,0.15)",
             animation: "sofiaToastIn 0.25s cubic-bezier(0.16,1,0.3,1) both",
             // Modo portal: panel acotado que deja ver el contenido de atrás.
-            ...(compact
+            // Si el usuario movió el FAB, el panel se abre junto a él.
+            ...(fabPos
+              ? (() => {
+                  const panelWidth = compact ? Math.min(320, window.innerWidth - 24) : 400;
+                  const left = Math.min(
+                    Math.max(12, fabPos.x + FAB_SIZE / 2 - panelWidth / 2),
+                    window.innerWidth - panelWidth - 12,
+                  );
+                  const openUp = fabPos.y > window.innerHeight / 2;
+                  return {
+                    left,
+                    width: panelWidth,
+                    ...(openUp
+                      ? { bottom: Math.max(12, window.innerHeight - fabPos.y + 12) }
+                      : { top: fabPos.y + FAB_SIZE + 12 }),
+                  };
+                })()
+              : compact
               ? { bottom: 152, right: 12, width: "min(320px, calc(100vw - 24px))" }
               : { bottom: 92, right: 24, width: 400 }),
           }}

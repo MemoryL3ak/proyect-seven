@@ -1610,14 +1610,38 @@ const translations: Record<Locale, Record<string, string>> = {
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
+/** Idioma del sistema del dispositivo, si es uno de los soportados. */
+function detectDeviceLocale(): Locale | null {
+  if (typeof navigator === "undefined") return null;
+  const candidates = navigator.languages?.length ? navigator.languages : [navigator.language];
+  for (const raw of candidates || []) {
+    const code = String(raw || "").slice(0, 2).toLowerCase();
+    if (code === "es" || code === "en" || code === "pt") return code as Locale;
+  }
+  return null;
+}
+
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocale] = useState<Locale>("es");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    const isNativeShell = Boolean(
+      (window as unknown as { ReactNativeWebView?: unknown }).ReactNativeWebView,
+    );
+    if (isNativeShell) {
+      // Dentro de la app nativa el idioma NO se elige en la app: sigue la
+      // configuración del sistema del teléfono (iOS/Android), como exige Apple.
+      setLocale(detectDeviceLocale() ?? "es");
+      return;
+    }
     const stored = window.localStorage.getItem("seven.locale");
     if (stored === "es" || stored === "en" || stored === "pt") {
       setLocale(stored);
+    } else {
+      // Primera visita en navegador: parte con el idioma del sistema.
+      const detected = detectDeviceLocale();
+      if (detected) setLocale(detected);
     }
   }, []);
 
