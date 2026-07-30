@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/scan", "/portal", "/api", "/m"];
+// "/credencial" es la página de descarga del PDF de credencial: se abre en el
+// navegador del sistema desde la app (sin cookie de sesión), debe ser pública.
+const PUBLIC_PATHS = ["/login", "/scan", "/portal", "/api", "/m", "/credencial"];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

@@ -529,6 +529,9 @@ export default function HealthPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [activeSubsection, setActiveSubsection] = useState<HealthSubsection>("dashboard");
+  // Detalle de fichas por participante (dashboard)
+  const [fichaFilter, setFichaFilter] = useState<"all" | "con" | "incompleta" | "sin">("all");
+  const [fichaSearch, setFichaSearch] = useState("");
   const bulkFileRef = useRef<HTMLInputElement>(null);
   const [bulkRows, setBulkRows] = useState<BulkHealthRow[]>([]);
   const [bulkFileName, setBulkFileName] = useState<string | null>(null);
@@ -614,22 +617,21 @@ export default function HealthPage() {
   const healthDashboard = useMemo(() => {
     const source = filteredAthletes.map((athlete) => {
       const metadata = athlete.metadata && typeof athlete.metadata === "object" ? athlete.metadata : {};
-      const safe = safeRecord(
-        (metadata as Record<string, unknown>).healthRecord,
-        athlete.fullName ?? "",
-        athlete.passportNumber ?? "",
+      const rawHealth = (metadata as Record<string, unknown>).healthRecord;
+      // Ficha "cargada" = existe un healthRecord guardado (portal o carga
+      // masiva). El fallback de nombre/pasaporte que agrega safeRecord NO
+      // cuenta como ficha: antes inflaba el KPI marcando a todos como listos.
+      const hasRecord = Boolean(
+        rawHealth &&
+        typeof rawHealth === "object" &&
+        !Array.isArray(rawHealth) &&
+        Object.keys(rawHealth as object).length > 0,
       );
-      return { athlete, record: safe, completion: fillRate(safe) };
+      const safe = safeRecord(rawHealth, athlete.fullName ?? "", athlete.passportNumber ?? "");
+      return { athlete, record: safe, completion: hasRecord ? fillRate(safe) : 0, hasRecord };
     });
 
-    const savedRecords = source.filter(({ record, completion }) => {
-      const hasCoreData =
-        Boolean(record.personal.fullName?.trim()) ||
-        Boolean(record.personal.rut?.trim()) ||
-        Boolean(record.sport?.trim()) ||
-        completion > 0;
-      return hasCoreData;
-    });
+    const savedRecords = source.filter((item) => item.hasRecord);
 
     const chronicCounts = new Map<string, number>();
     const allergyCounts = new Map<string, number>();
@@ -695,6 +697,22 @@ export default function HealthPage() {
     return {
       totalAthletes: filteredAthletes.length,
       savedRecords: savedRecords.length,
+      missingRecords: filteredAthletes.length - savedRecords.length,
+      rows: source
+        .map(({ athlete, completion, hasRecord }) => ({
+          id: athlete.id,
+          name: athleteOptionLabel(athlete),
+          delegationId: athlete.delegationId ?? null,
+          disciplineId: athlete.disciplineId ?? null,
+          completion,
+          hasRecord,
+        }))
+        .sort(
+          (a, b) =>
+            Number(a.hasRecord) - Number(b.hasRecord) ||
+            a.completion - b.completion ||
+            a.name.localeCompare(b.name),
+        ),
       specialDietCount,
       celiacCount,
       veganCount,
@@ -1206,7 +1224,7 @@ export default function HealthPage() {
             {/* ── Primary KPI cards */}
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
               {[
-                { label: t("Fichas cargadas"),     value: healthDashboard.savedRecords,    color: "#10b981", icon: "clipboard" as KpiIconType, sub: t("Con info de salud registrada"),    glow: "rgba(16,185,129,0.18)" },
+                { label: t("Fichas cargadas"),     value: healthDashboard.savedRecords,    color: "#10b981", icon: "clipboard" as KpiIconType, sub: `${healthDashboard.missingRecords} ${t("participantes aún sin ficha")}`,    glow: "rgba(16,185,129,0.18)" },
                 { label: t("Alimentación especial"), value: healthDashboard.specialDietCount, color: "#f59e0b", icon: "utensils" as KpiIconType, sub: t("Requerimiento dietario declarado"),  glow: "rgba(245,158,11,0.15)" },
                 { label: t("Alergias"),             value: healthDashboard.allergicCount,  color: "#ef4444", icon: "alert" as KpiIconType, sub: t("Participantes con alergias activas"), glow: "rgba(239,68,68,0.15)"  },
                 { label: t("Enfermedad crónica"),   value: healthDashboard.chronicCount,   color: "#38bdf8", icon: "activity" as KpiIconType, sub: t("Patología crónica declarada"),        glow: "rgba(56,189,248,0.15)" },
@@ -1311,6 +1329,122 @@ export default function HealthPage() {
                   </div>
                 </div>
               ))}
+            </div>
+
+            {/* ── Estado de fichas por participante ── */}
+            <div style={{ marginTop: "20px", background: pal.cardBg, border: `1px solid ${pal.cardBorder}`, borderTop: "3px solid #21D0B3", borderRadius: "18px", padding: "18px", boxShadow: pal.cardShadow }}>
+              <div className="flex flex-wrap items-center justify-between gap-3" style={{ marginBottom: "14px" }}>
+                <div className="flex items-center gap-2">
+                  <KpiIcon type="clipboard" color="#21D0B3" size={16} />
+                  <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "#0f9d84" }}>
+                    {t("Estado de fichas por participante")}
+                  </p>
+                </div>
+                <input
+                  className="input"
+                  style={{ maxWidth: 240 }}
+                  placeholder={t("Buscar participante…")}
+                  value={fichaSearch}
+                  onChange={(ev) => setFichaSearch(ev.target.value)}
+                />
+              </div>
+
+              {/* Chips de filtro con contadores */}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "14px" }}>
+                {([
+                  { key: "all" as const, label: t("Todos"), count: healthDashboard.rows.length, color: "#64748b" },
+                  { key: "con" as const, label: t("Con ficha"), count: healthDashboard.savedRecords, color: "#10b981" },
+                  { key: "incompleta" as const, label: t("Fichas incompletas"), count: healthDashboard.rows.filter((r) => r.hasRecord && r.completion < 100).length, color: "#f59e0b" },
+                  { key: "sin" as const, label: t("Sin ficha"), count: healthDashboard.missingRecords, color: "#ef4444" },
+                ]).map((chip) => {
+                  const active = fichaFilter === chip.key;
+                  return (
+                    <button key={chip.key} type="button" onClick={() => setFichaFilter(chip.key)}
+                      style={{
+                        display: "inline-flex", alignItems: "center", gap: 6,
+                        padding: "6px 12px", borderRadius: "99px", fontSize: "12px", fontWeight: 700, cursor: "pointer",
+                        border: `1px solid ${active ? chip.color : pal.cardBorder}`,
+                        background: active ? `${chip.color}18` : "#fff",
+                        color: active ? chip.color : pal.textMuted,
+                      }}>
+                      {chip.label}
+                      <span style={{ background: active ? chip.color : "#f1f5f9", color: active ? "#fff" : pal.textMuted, borderRadius: "99px", padding: "1px 8px", fontSize: "11px", fontWeight: 800 }}>
+                        {chip.count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {(() => {
+                const term = fichaSearch.trim().toLowerCase();
+                const delegationCode = (id: string | null) =>
+                  (id && delegations.find((d) => d.id === id)?.countryCode) || "—";
+                const disciplineName = (id: string | null) =>
+                  (id && disciplines.find((d) => d.id === id)?.name) || "—";
+                const visibleRows = healthDashboard.rows.filter((row) => {
+                  if (fichaFilter === "con" && !row.hasRecord) return false;
+                  if (fichaFilter === "sin" && row.hasRecord) return false;
+                  if (fichaFilter === "incompleta" && (!row.hasRecord || row.completion >= 100)) return false;
+                  if (term && !row.name.toLowerCase().includes(term)) return false;
+                  return true;
+                });
+                if (visibleRows.length === 0) {
+                  return <p style={{ fontSize: "13px", color: pal.textMuted, textAlign: "center", padding: "20px 0" }}>{t("No hay participantes que coincidan con el filtro.")}</p>;
+                }
+                return (
+                  <div style={{ maxHeight: 420, overflowY: "auto", border: `1px solid ${pal.cardBorder}`, borderRadius: "12px" }}>
+                    <table style={{ width: "100%", fontSize: "13px", borderCollapse: "collapse" }}>
+                      <thead>
+                        <tr style={{ background: pal.rowBg, position: "sticky", top: 0, zIndex: 1 }}>
+                          {[t("Participante"), t("Delegación"), t("Disciplina"), t("Avance"), t("Estado"), ""].map((h, i) => (
+                            <th key={i} style={{ padding: "8px 12px", textAlign: "left", fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: pal.labelColor, whiteSpace: "nowrap" }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {visibleRows.map((row) => (
+                          <tr key={row.id} style={{ borderTop: `1px solid ${pal.cardBorder}` }}>
+                            <td style={{ padding: "8px 12px", fontWeight: 600, color: pal.titleColor }}>{row.name}</td>
+                            <td style={{ padding: "8px 12px", color: pal.textMuted, whiteSpace: "nowrap" }}>{delegationCode(row.delegationId)}</td>
+                            <td style={{ padding: "8px 12px", color: pal.textMuted }}>{disciplineName(row.disciplineId)}</td>
+                            <td style={{ padding: "8px 12px", minWidth: 130 }}>
+                              {row.hasRecord ? (
+                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                  <div style={{ flex: 1, height: 6, borderRadius: 99, background: "#f1f5f9", overflow: "hidden" }}>
+                                    <div style={{ width: `${row.completion}%`, height: "100%", borderRadius: 99, background: row.completion >= 100 ? "#10b981" : row.completion >= 50 ? "#f59e0b" : "#ef4444" }} />
+                                  </div>
+                                  <span style={{ fontSize: "11px", fontWeight: 700, color: pal.textMuted, minWidth: 32, textAlign: "right" }}>{row.completion}%</span>
+                                </div>
+                              ) : (
+                                <span style={{ fontSize: "12px", color: pal.labelColor }}>—</span>
+                              )}
+                            </td>
+                            <td style={{ padding: "8px 12px", whiteSpace: "nowrap" }}>
+                              {row.hasRecord ? (
+                                <span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 10px", borderRadius: "99px", background: row.completion >= 100 ? "rgba(16,185,129,0.12)" : "rgba(245,158,11,0.12)", color: row.completion >= 100 ? "#047857" : "#b45309", border: `1px solid ${row.completion >= 100 ? "rgba(16,185,129,0.4)" : "rgba(245,158,11,0.4)"}` }}>
+                                  {row.completion >= 100 ? t("Completa") : t("Incompleta")}
+                                </span>
+                              ) : (
+                                <span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 10px", borderRadius: "99px", background: "rgba(239,68,68,0.1)", color: "#b91c1c", border: "1px solid rgba(239,68,68,0.35)" }}>
+                                  {t("Sin ficha")}
+                                </span>
+                              )}
+                            </td>
+                            <td style={{ padding: "8px 12px", textAlign: "right", whiteSpace: "nowrap" }}>
+                              <button type="button"
+                                onClick={() => { onPickAthlete(row.id); setActiveSubsection("record"); }}
+                                style={{ fontSize: "12px", fontWeight: 700, color: "#0f9d84", background: "rgba(33,208,179,0.1)", border: "1px solid rgba(33,208,179,0.35)", borderRadius: "8px", padding: "4px 12px", cursor: "pointer" }}>
+                                {row.hasRecord ? t("Ver ficha") : t("Crear ficha")}
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </section>
