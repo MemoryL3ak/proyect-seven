@@ -81,15 +81,36 @@ export async function ensurePortalSession(kind: PortalSessionKind, userId: strin
   }
 }
 
-/** Libera la sesión en el backend y borra el token local (usar al cerrar sesión). */
-export function clearPortalSession(kind: PortalSessionKind, userId: string): void {
+/**
+ * Libera la sesión en el backend y borra el token local (usar al cerrar
+ * sesión). IMPORTANTE: si el logout navega después (mobileAwareLogout),
+ * hay que AWAITEAR esta función antes de navegar — si no, la navegación
+ * aborta el request y la sesión queda "viva" en el backend hasta expirar,
+ * bloqueando el login en cualquier dispositivo. `keepalive` hace que el
+ * request sobreviva a la navegación como segunda línea de defensa, y el
+ * timeout de 1.5 s garantiza que el logout nunca se quede colgado.
+ */
+export async function releasePortalSession(kind: PortalSessionKind, userId: string): Promise<void> {
   let stored: string | null = null;
   try { stored = localStorage.getItem(storageKey(kind, userId)); } catch {}
   try { localStorage.removeItem(storageKey(kind, userId)); } catch {}
   if (!stored) return;
-  void apiFetch("/m/auth/session/release", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ kind, userId, sessionId: stored }),
-  }).catch(() => {});
+  try {
+    await Promise.race([
+      apiFetch("/m/auth/session/release", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind, userId, sessionId: stored }),
+        keepalive: true,
+      }),
+      new Promise((resolve) => setTimeout(resolve, 1500)),
+    ]);
+  } catch {
+    // Sin red / backend antiguo: la sesión expira sola por falta de latido.
+  }
+}
+
+/** Variante fire-and-forget para flujos que NO navegan después. */
+export function clearPortalSession(kind: PortalSessionKind, userId: string): void {
+  void releasePortalSession(kind, userId);
 }

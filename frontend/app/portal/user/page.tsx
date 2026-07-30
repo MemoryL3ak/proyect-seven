@@ -20,7 +20,7 @@ import { buildCredentialHtml } from "@/lib/credential-template";
 import { downloadCredentialPdf, saveCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
 import { isAvailable as isNativeShell } from "@/lib/native-bridge";
 import { clearPersistedTabs, persistTab, restoreOnReload, startTabHeartbeat } from "@/lib/portal-tab";
-import { claimPortalSession, clearPortalSession, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
+import { claimPortalSession, clearPortalSession, releasePortalSession, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
 import PortalSessionGuard from "@/components/PortalSessionGuard";
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
 import QrFullscreenOverlay from "@/components/QrFullscreenOverlay";
@@ -324,6 +324,8 @@ export default function UserPortalPage() {
   const [premVenueFilter, setPremVenueFilter] = useState("");
   const [premSearchQuery, setPremSearchQuery] = useState("");
   const [premView, setPremView] = useState<"list" | "calendar">("calendar");
+  // Premiación destacada al llegar desde una notificación (?premiacionId=).
+  const [premFocusId, setPremFocusId] = useState<string | null>(null);
   const [premCalCursor, setPremCalCursor] = useState(() => new Date());
   const [premCalSelectedKey, setPremCalSelectedKey] = useState<string | null>(null);
   // Coupons tab state
@@ -349,12 +351,16 @@ export default function UserPortalPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [athlete?.id]);
 
-  // Deep-link desde notificaciones de premiación: ?premiacionId= abre el tab.
+  // Deep-link desde notificaciones de premiación: ?premiacionId= abre el tab
+  // y destaca la premiación específica (vista lista + scroll + resaltado).
   useEffect(() => {
     if (!athlete) return;
     const params = new URLSearchParams(window.location.search);
-    if (!params.get("premiacionId")) return;
+    const premId = params.get("premiacionId");
+    if (!premId) return;
     setActiveTab("premiaciones");
+    setPremView("list");
+    setPremFocusId(premId);
     try {
       const url = new URL(window.location.href);
       url.searchParams.delete("premiacionId");
@@ -362,6 +368,17 @@ export default function UserPortalPage() {
     } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [athlete?.id]);
+
+  // Con los datos ya cargados, hace scroll hasta la premiación notificada y
+  // la deja resaltada unos segundos.
+  useEffect(() => {
+    if (!premFocusId || activeTab !== "premiaciones" || premiaciones.length === 0) return;
+    const scrollTimer = window.setTimeout(() => {
+      document.getElementById(`prem-${premFocusId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 350);
+    const clearTimer = window.setTimeout(() => setPremFocusId(null), 8000);
+    return () => { window.clearTimeout(scrollTimer); window.clearTimeout(clearTimer); };
+  }, [premFocusId, activeTab, premiaciones.length]);
   const notify = useNotifications({ userKind: "athlete", userId: athlete?.id ?? null });
 
   // Al cargar las actividades por primera vez, posiciona el calendario en el mes
@@ -1260,13 +1277,13 @@ export default function UserPortalPage() {
                 </svg>
               </button>
             )}
-            <button type="button" onClick={() => (athlete ? loadAthlete(athlete.id) : loadAthlete())} disabled={loading}
+            <button type="button" onClick={() => window.location.reload()} disabled={loading} title="Actualizar"
               style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",cursor:"pointer",flexShrink:0,opacity:loading?0.5:1 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
               </svg>
             </button>
-            <button type="button" onClick={() => { try { sessionStorage.removeItem("portal_user_id"); } catch {} if (athlete) clearPortalSession("athlete", athlete.id); clearPersistedTabs(); setActiveTab("itinerario"); mobileAwareLogout(); }}
+            <button type="button" onClick={async () => { try { sessionStorage.removeItem("portal_user_id"); } catch {} clearPersistedTabs(); setActiveTab("itinerario"); if (athlete) await releasePortalSession("athlete", athlete.id); mobileAwareLogout(); }}
               style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(255,255,255,0.15)",background:"rgba(255,255,255,0.08)",cursor:"pointer",flexShrink:0 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
@@ -2063,10 +2080,12 @@ export default function UserPortalPage() {
             const isDone = p.status === "REALIZADA";
             const accent = isDone ? "#2e7d32" : "#c78c00";
             const cnt = (p.awarders||[]).length;
+            const focused = p.id === premFocusId;
             return (
-              <article key={p.id}
+              <article key={p.id} id={`prem-${p.id}`}
                 style={{ background:isDone ? "linear-gradient(135deg,#f7fcf8 0%,#ffffff 70%)" : "linear-gradient(135deg,#fffbf2 0%,#ffffff 70%)",
-                  borderRadius:14,border:`1px solid ${isDone?"#cfe9d6":"#f0deb0"}`,borderLeft:`4px solid ${accent}`,padding:"12px 14px" }}>
+                  borderRadius:14,border:`1px solid ${focused ? "#21D0B3" : isDone?"#cfe9d6":"#f0deb0"}`,borderLeft:`4px solid ${focused ? "#21D0B3" : accent}`,padding:"12px 14px",
+                  boxShadow: focused ? "0 0 0 3px rgba(33,208,179,0.4), 0 8px 24px rgba(33,208,179,0.25)" : undefined,transition:"box-shadow .4s,border-color .4s" }}>
                 <div style={{ display:"flex",alignItems:"flex-start",gap:10 }}>
                   <div style={{ width:38,height:38,borderRadius:11,flexShrink:0,
                     background: isDone ? "linear-gradient(135deg,#e7f5ec 0%,#cfe9d6 100%)" : "linear-gradient(135deg,#fff4d6 0%,rgba(245,200,66,0.5) 100%)",

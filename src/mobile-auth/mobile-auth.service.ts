@@ -64,7 +64,7 @@ export class MobileAuthService {
   // SESSION_STALE_MS (app cerrada sin logout), otro dispositivo puede reclamar.
   // El logout libera la sesión de inmediato.
 
-  private static readonly SESSION_STALE_MS = 3 * 60 * 1000;
+  private static readonly SESSION_STALE_MS = 2 * 60 * 1000;
 
   private async sessionTable(kind: string, userId: string): Promise<{ schema: string; table: string } | null> {
     if (kind === 'athlete') return { schema: 'core', table: 'athletes' };

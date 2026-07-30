@@ -21,7 +21,7 @@ import { buildCredentialHtml } from "@/lib/credential-template";
 import { downloadCredentialPdf, saveCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
 import { isAvailable as isNativeShell } from "@/lib/native-bridge";
 import { clearPersistedTabs, persistTab, restoreOnReload, startTabHeartbeat } from "@/lib/portal-tab";
-import { claimPortalSession, clearPortalSession, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
+import { claimPortalSession, clearPortalSession, releasePortalSession, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
 import PortalSessionGuard from "@/components/PortalSessionGuard";
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
 import QrFullscreenOverlay from "@/components/QrFullscreenOverlay";
@@ -466,6 +466,8 @@ export default function VehicleRequestPortalPage() {
   }, [actividadesSubTab]);
   const [premiaciones, setPremiaciones] = useState<PremiacionVIP[]>([]);
   const [premView, setPremView] = useState<"calendar" | "list">("calendar");
+  // Premiación destacada al llegar desde una notificación (?premiacionId=).
+  const [premFocusId, setPremFocusId] = useState<string | null>(null);
   const [premCalCursor, setPremCalCursor] = useState(() => new Date());
   const [premCalSelectedKey, setPremCalSelectedKey] = useState<string | null>(null);
   const [premStatusFilter, setPremStatusFilter] = useState<"" | "PROGRAMADA" | "REALIZADA">("");
@@ -690,10 +692,9 @@ export default function VehicleRequestPortalPage() {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    const uid = athlete?.id || null;
     try { sessionStorage.removeItem("portal_vr_id"); } catch {}
-    // Libera la sesión única para que otro dispositivo pueda entrar de inmediato.
-    if (athlete) clearPortalSession("athlete", athlete.id);
     clearPersistedTabs();
     setActiveTab("solicitud");
     setAthlete(null);
@@ -712,6 +713,9 @@ export default function VehicleRequestPortalPage() {
     setMessage(null);
     setError(null);
     setUserCode("");
+    // Libera la sesión única ANTES de navegar: si no se espera, la navegación
+    // aborta el request y la cuenta queda bloqueada hasta que expire el latido.
+    if (uid) await releasePortalSession("athlete", uid);
     mobileAwareLogout();
   };
 
@@ -1156,18 +1160,33 @@ export default function VehicleRequestPortalPage() {
     } catch {}
   }, [trips]);
 
-  // Deep-link desde notificaciones de premiación: ?premiacionId= abre el tab.
+  // Deep-link desde notificaciones de premiación: ?premiacionId= abre el tab
+  // y destaca la premiación específica (vista lista + scroll + resaltado).
   useEffect(() => {
     if (!athlete) return;
     const params = new URLSearchParams(window.location.search);
-    if (!params.get("premiacionId")) return;
+    const premId = params.get("premiacionId");
+    if (!premId) return;
     setActiveTab("premiaciones");
+    setPremView("list");
+    setPremFocusId(premId);
     try {
       const url = new URL(window.location.href);
       url.searchParams.delete("premiacionId");
       window.history.replaceState(window.history.state, "", url.toString());
     } catch {}
   }, [athlete]);
+
+  // Con los datos ya cargados, hace scroll hasta la premiación notificada y
+  // la deja resaltada unos segundos.
+  useEffect(() => {
+    if (!premFocusId || activeTab !== "premiaciones" || premiaciones.length === 0) return;
+    const scrollTimer = window.setTimeout(() => {
+      document.getElementById(`prem-${premFocusId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 350);
+    const clearTimer = window.setTimeout(() => setPremFocusId(null), 8000);
+    return () => { window.clearTimeout(scrollTimer); window.clearTimeout(clearTimer); };
+  }, [premFocusId, activeTab, premiaciones.length]);
 
   // Check & monitor location permission
   useEffect(() => {
@@ -1767,7 +1786,7 @@ export default function VehicleRequestPortalPage() {
                     <path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
                   </svg>
                 </button>
-                <button type="button" onClick={() => athlete && loadPortal(athlete)} disabled={loading}
+                <button type="button" onClick={() => window.location.reload()} disabled={loading} title="Actualizar"
                   style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",cursor:"pointer",flexShrink:0,opacity:loading?0.5:1 }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
@@ -2317,9 +2336,10 @@ export default function VehicleRequestPortalPage() {
                 const r = ROLE_META[role] || ROLE_META.AWARDER;
                 const isDone = p.status === "REALIZADA";
                 const attendance: "CONFIRMED" | "DECLINED" | "PENDING" = a?.confirmed_at ? "CONFIRMED" : a?.declined_at ? "DECLINED" : "PENDING";
+                const focused = p.id === premFocusId;
                 return (
-                  <article key={p.id}
-                    style={{ position:"relative",background:"#fff",border:"1px solid #e2e8f0",borderLeft:`4px solid ${r.ring}`,borderRadius:16,padding:"14px 16px",boxShadow:"0 1px 4px rgba(15,23,42,0.06)",overflow:"hidden" }}>
+                  <article key={p.id} id={`prem-${p.id}`}
+                    style={{ position:"relative",background:"#fff",border:`1px solid ${focused ? "#21D0B3" : "#e2e8f0"}`,borderLeft:`4px solid ${focused ? "#21D0B3" : r.ring}`,borderRadius:16,padding:"14px 16px",boxShadow: focused ? "0 0 0 3px rgba(33,208,179,0.4), 0 8px 24px rgba(33,208,179,0.25)" : "0 1px 4px rgba(15,23,42,0.06)",overflow:"hidden",transition:"box-shadow .4s,border-color .4s" }}>
                     {/* Decorative glow */}
                     <div style={{ position:"absolute",top:-40,right:-40,width:140,height:140,borderRadius:"50%",background:r.bg,opacity:0.25,pointerEvents:"none" }} />
                     <div style={{ position:"relative",display:"flex",alignItems:"flex-start",gap:12 }}>
