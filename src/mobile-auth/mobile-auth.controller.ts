@@ -21,15 +21,25 @@ export class MobileAuthController {
     return this.mobileAuthService.recover(dto);
   }
 
-  /** Sesión única: registra este dispositivo como la sesión activa del usuario. */
+  /**
+   * Sesión única: intenta registrar este dispositivo como la sesión activa.
+   * Si otro dispositivo ya tiene una sesión viva, responde claimed:false
+   * (la sesión existente manda; el nuevo login se rechaza).
+   */
   @Post('session/claim')
-  claimSession(@Body() body: { kind?: string; userId?: string }) {
+  claimSession(@Body() body: { kind?: string; userId?: string; currentSessionId?: string }) {
     return this.mobileAuthService.claimSession(body ?? {});
   }
 
-  /** Sesión única: valida que este dispositivo siga siendo la sesión activa. */
+  /** Sesión única: valida que este dispositivo siga siendo la sesión activa (y late). */
   @Post('session/validate')
   validateSession(@Body() body: { kind?: string; userId?: string; sessionId?: string }) {
     return this.mobileAuthService.validateSession(body ?? {});
+  }
+
+  /** Sesión única: libera la sesión al cerrar sesión. */
+  @Post('session/release')
+  releaseSession(@Body() body: { kind?: string; userId?: string; sessionId?: string }) {
+    return this.mobileAuthService.releaseSession(body ?? {});
   }
 }

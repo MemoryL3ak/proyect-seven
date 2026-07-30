@@ -57,10 +57,14 @@ export class MobileAuthService {
   }
 
   // ── Sesión única por usuario ────────────────────────────────────────────────
-  // Sólo puede haber UN dispositivo con sesión activa por usuario: al iniciar
-  // sesión se emite un sessionId nuevo (guardado en la metadata del usuario) y
-  // los demás dispositivos, al validar, detectan que su sessionId quedó
-  // obsoleto y cierran sesión.
+  // Sólo puede haber UN dispositivo con sesión activa por usuario, y LA SESIÓN
+  // EXISTENTE MANDA: un segundo dispositivo no expulsa a la primera, sino que
+  // su login se rechaza con ACTIVE_ELSEWHERE. La sesión activa refresca su
+  // "latido" (portalSessionAt) en cada validación; si deja de latir por más de
+  // SESSION_STALE_MS (app cerrada sin logout), otro dispositivo puede reclamar.
+  // El logout libera la sesión de inmediato.
+
+  private static readonly SESSION_STALE_MS = 3 * 60 * 1000;
 
   private async sessionTable(kind: string, userId: string): Promise<{ schema: string; table: string } | null> {
     if (kind === 'athlete') return { schema: 'core', table: 'athletes' };
@@ -78,16 +82,16 @@ export class MobileAuthService {
     return null;
   }
 
-  async claimSession(input: { kind?: string; userId?: string }) {
+  async claimSession(input: { kind?: string; userId?: string; currentSessionId?: string }) {
     const kind = String(input.kind || '');
     const userId = String(input.userId || '');
+    const currentSessionId = String(input.currentSessionId || '');
     if (!userId || !['athlete', 'driver'].includes(kind)) {
       throw new BadRequestException('kind y userId son obligatorios');
     }
     const target = await this.sessionTable(kind, userId);
     if (!target) throw new BadRequestException('kind inválido');
 
-    const sessionId = randomUUID();
     try {
       const { data: row } = await this.supabase
         .schema(target.schema)
@@ -96,8 +100,22 @@ export class MobileAuthService {
         .eq('id', userId)
         .maybeSingle();
       if (!row) throw new UnauthorizedException('Usuario no encontrado');
+      const meta = ((row.metadata as Record<string, unknown>) ?? {});
+      const existing = typeof meta.portalSessionId === 'string' ? meta.portalSessionId : '';
+      const at = meta.portalSessionAt ? new Date(String(meta.portalSessionAt)).getTime() : 0;
+      const alive =
+        Number.isFinite(at) && at > 0 && Date.now() - at < MobileAuthService.SESSION_STALE_MS;
+
+      // La sesión existente manda: si otro dispositivo tiene una sesión viva,
+      // este login se rechaza (no se expulsa al primero).
+      if (existing && alive && existing !== currentSessionId) {
+        return { claimed: false, reason: 'ACTIVE_ELSEWHERE', sessionId: null };
+      }
+
+      // Mismo dispositivo (re-login) conserva su sessionId; si no, uno nuevo.
+      const sessionId = existing && existing === currentSessionId ? existing : randomUUID();
       const metadata = {
-        ...((row.metadata as Record<string, unknown>) ?? {}),
+        ...meta,
         portalSessionId: sessionId,
         portalSessionAt: new Date().toISOString(),
       };
@@ -107,15 +125,15 @@ export class MobileAuthService {
         .update({ metadata })
         .eq('id', userId);
       if (error) throw new Error(error.message);
-      return { sessionId };
+      return { claimed: true, sessionId };
     } catch (err) {
       if (err instanceof UnauthorizedException) throw err;
-      // Si la metadata no se puede escribir, no bloquear el login: se degrada
-      // a comportamiento sin sesión única.
+      // Si la metadata no se puede leer/escribir, no bloquear el login: se
+      // degrada a comportamiento sin sesión única.
       this.logger.warn(
         `No se pudo registrar la sesión de ${kind} ${userId}: ${err instanceof Error ? err.message : err}`,
       );
-      return { sessionId: null };
+      return { claimed: true, sessionId: null };
     }
   }
 
@@ -135,12 +153,64 @@ export class MobileAuthService {
         .select('metadata')
         .eq('id', userId)
         .maybeSingle();
-      const current = (row?.metadata as Record<string, unknown> | null)?.portalSessionId;
-      // Sin sesión registrada (usuarios antiguos) → válida; distinta → otro
-      // dispositivo inició sesión después.
-      return { valid: !current || current === sessionId };
+      const meta = (row?.metadata as Record<string, unknown> | null) ?? {};
+      const current = meta.portalSessionId;
+      // Sin sesión registrada (usuarios antiguos) → válida; distinta → la
+      // sesión de este dispositivo fue liberada/expiró y otro la reclamó.
+      const valid = !current || current === sessionId;
+      if (valid && current === sessionId) {
+        // Latido: la sesión activa se mantiene viva mientras el portal valida.
+        const { error } = await this.supabase
+          .schema(target.schema)
+          .from(target.table)
+          .update({ metadata: { ...meta, portalSessionAt: new Date().toISOString() } })
+          .eq('id', userId);
+        if (error) {
+          this.logger.warn(
+            `No se pudo refrescar el latido de sesión de ${kind} ${userId}: ${error.message}`,
+          );
+        }
+      }
+      return { valid };
     } catch {
       return { valid: true }; // ante error de lectura, no expulsar al usuario
+    }
+  }
+
+  /** Libera la sesión al cerrar sesión, para que otro dispositivo pueda entrar. */
+  async releaseSession(input: { kind?: string; userId?: string; sessionId?: string }) {
+    const kind = String(input.kind || '');
+    const userId = String(input.userId || '');
+    const sessionId = String(input.sessionId || '');
+    if (!userId || !sessionId || !['athlete', 'driver'].includes(kind)) {
+      return { ok: true };
+    }
+    const target = await this.sessionTable(kind, userId);
+    if (!target) return { ok: true };
+    try {
+      const { data: row } = await this.supabase
+        .schema(target.schema)
+        .from(target.table)
+        .select('metadata')
+        .eq('id', userId)
+        .maybeSingle();
+      const meta = (row?.metadata as Record<string, unknown> | null) ?? {};
+      // Sólo el dueño de la sesión puede liberarla.
+      if (meta.portalSessionId !== sessionId) return { ok: true };
+      const metadata = { ...meta };
+      delete metadata.portalSessionId;
+      delete metadata.portalSessionAt;
+      await this.supabase
+        .schema(target.schema)
+        .from(target.table)
+        .update({ metadata })
+        .eq('id', userId);
+      return { ok: true };
+    } catch (err) {
+      this.logger.warn(
+        `No se pudo liberar la sesión de ${kind} ${userId}: ${err instanceof Error ? err.message : err}`,
+      );
+      return { ok: false };
     }
   }
 

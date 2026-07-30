@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { mobileLogin } from "@/lib/api";
 import { getMobileSession, markFromApp, setMobileSession, postToReactNative } from "@/lib/mobile-auth";
-import { claimPortalSession } from "@/lib/portal-session";
+import { claimPortalSession, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
 import { clearPersistedTabs } from "@/lib/portal-tab";
 
 const CODE_LENGTH = 6;
@@ -66,6 +66,15 @@ export default function MobileLoginPage() {
       clearPersistedTabs();
 
       if (result.kind === "athlete") {
+        // Sesión única: la sesión existente manda — si otro dispositivo tiene
+        // la sesión viva, este login se rechaza con un mensaje.
+        const claim = await claimPortalSession("athlete", result.athleteId);
+        if (claim.activeElsewhere) {
+          setError(SESSION_ACTIVE_ELSEWHERE_MSG);
+          setCode("");
+          setTimeout(() => inputRef.current?.focus(), 50);
+          return;
+        }
         const session = {
           kind: "athlete" as const,
           athleteId: result.athleteId,
@@ -73,8 +82,6 @@ export default function MobileLoginPage() {
         };
         setMobileSession(session);
         markFromApp();
-        // Sesión única: este dispositivo pasa a ser la sesión activa.
-        void claimPortalSession("athlete", result.athleteId);
         postToReactNative({
           kind: "athlete",
           role: "ATHLETE",
@@ -86,6 +93,15 @@ export default function MobileLoginPage() {
       }
 
       if (result.kind === "driver") {
+        // Sesión única: la sesión existente manda — si otro dispositivo tiene
+        // la sesión viva, este login se rechaza con un mensaje.
+        const claim = await claimPortalSession("driver", result.driverId);
+        if (claim.activeElsewhere) {
+          setError(SESSION_ACTIVE_ELSEWHERE_MSG);
+          setCode("");
+          setTimeout(() => inputRef.current?.focus(), 50);
+          return;
+        }
         const session = {
           kind: "driver" as const,
           driverId: result.driverId,
@@ -93,8 +109,6 @@ export default function MobileLoginPage() {
         };
         setMobileSession(session);
         markFromApp();
-        // Sesión única: este dispositivo pasa a ser la sesión activa.
-        void claimPortalSession("driver", result.driverId);
         postToReactNative({
           kind: "driver",
           role: "DRIVER",

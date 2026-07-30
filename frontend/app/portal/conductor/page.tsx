@@ -19,7 +19,7 @@ import QRCode from "qrcode";
 import { buildCredentialHtml } from "@/lib/credential-template";
 import { downloadCredentialPdf, saveCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
 import { clearPersistedTabs, persistTab, restoreOnReload, startTabHeartbeat } from "@/lib/portal-tab";
-import { claimPortalSession, clearPortalSession } from "@/lib/portal-session";
+import { claimPortalSession, clearPortalSession, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
 import PortalSessionGuard from "@/components/PortalSessionGuard";
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
 
@@ -299,24 +299,32 @@ export default function DriverPortalPage() {
           normalizedInput === userIdLower.slice(-6)
         );
       });
-      setDriverProfile(driverMatch ?? null);
-      if (driverMatch) {
-        try {
-          const visibleCode = driverMatch.id.slice(-6).toLowerCase();
-          sessionStorage.setItem("portal_conductor_id", visibleCode);
-        } catch {}
-        // Sesión única: el login manual reclama la sesión para este dispositivo.
-        if (!overrideId) {
-          void claimPortalSession("driver", driverMatch.id);
-          // Login manual: siempre parte en el home (Actividades).
-          clearPersistedTabs();
-          setActiveTab("actividades");
-        }
-      }
       if (!driverMatch) {
+        setDriverProfile(null);
         setIdError(t("El ID ingresado no corresponde a un conductor registrado."));
         setTrips([]);
         return;
+      }
+      // Sesión única: la sesión existente manda — si otro dispositivo tiene
+      // la sesión viva, este login se rechaza con un mensaje.
+      if (!overrideId) {
+        const claim = await claimPortalSession("driver", driverMatch.id);
+        if (claim.activeElsewhere) {
+          setDriverProfile(null);
+          setIdError(SESSION_ACTIVE_ELSEWHERE_MSG);
+          setTrips([]);
+          return;
+        }
+      }
+      setDriverProfile(driverMatch);
+      try {
+        const visibleCode = driverMatch.id.slice(-6).toLowerCase();
+        sessionStorage.setItem("portal_conductor_id", visibleCode);
+      } catch {}
+      if (!overrideId) {
+        // Login manual: siempre parte en el home (Actividades).
+        clearPersistedTabs();
+        setActiveTab("actividades");
       }
 
       // Request location permission on login
@@ -1019,7 +1027,7 @@ export default function DriverPortalPage() {
             setActiveTab("actividades");
             setDriverProfile(null);
             setTrips([]);
-            setIdError("Tu sesión se cerró porque iniciaste sesión en otro dispositivo.");
+            setIdError("Tu sesión expiró y esta cuenta inició sesión en otro dispositivo.");
           }}
         />
       )}
@@ -1221,7 +1229,7 @@ export default function DriverPortalPage() {
                     <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
                   </svg>
                 </button>
-                <button type="button" onClick={() => { try { sessionStorage.removeItem("portal_conductor_id"); } catch {} clearPersistedTabs(); setActiveTab("actividades"); mobileAwareLogout(); }}
+                <button type="button" onClick={() => { try { sessionStorage.removeItem("portal_conductor_id"); } catch {} if (driverProfile) clearPortalSession("driver", driverProfile.id); clearPersistedTabs(); setActiveTab("actividades"); mobileAwareLogout(); }}
                   style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(255,255,255,0.15)",background:"rgba(255,255,255,0.08)",cursor:"pointer",flexShrink:0 }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>

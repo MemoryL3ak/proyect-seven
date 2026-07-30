@@ -6,8 +6,9 @@ import { ensurePortalSession, type PortalSessionKind } from "@/lib/portal-sessio
 /**
  * Vigila que este dispositivo siga siendo la sesión activa del usuario
  * (sesión única). Valida al montar, cada minuto y al volver a primer plano;
- * si otro dispositivo inició sesión después, dispara onInvalid (el portal
- * cierra sesión con un mensaje).
+ * cada validación además "late" para mantener viva la sesión. Sólo si esta
+ * sesión expiró (dejó de latir) y otro dispositivo la reclamó, dispara
+ * onInvalid (el portal cierra sesión con un mensaje).
  */
 export default function PortalSessionGuard({
   kind,

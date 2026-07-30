@@ -21,9 +21,10 @@ import { buildCredentialHtml } from "@/lib/credential-template";
 import { downloadCredentialPdf, saveCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
 import { isAvailable as isNativeShell } from "@/lib/native-bridge";
 import { clearPersistedTabs, persistTab, restoreOnReload, startTabHeartbeat } from "@/lib/portal-tab";
-import { claimPortalSession, clearPortalSession } from "@/lib/portal-session";
+import { claimPortalSession, clearPortalSession, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
 import PortalSessionGuard from "@/components/PortalSessionGuard";
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
+import QrFullscreenOverlay from "@/components/QrFullscreenOverlay";
 import QRCode from "qrcode";
 import dynamic from "next/dynamic";
 
@@ -486,6 +487,7 @@ export default function VehicleRequestPortalPage() {
   const [credentialPdfView, setCredentialPdfView] = useState<string | null>(null);
   // QR de la credencial para validar en los lugares de comida.
   const [mealQrDataUrl, setMealQrDataUrl] = useState<string>("");
+  const [mealQrZoom, setMealQrZoom] = useState(false);
   useEffect(() => {
     if (!athlete) { setMealQrDataUrl(""); return; }
     const qrData = `Participante: ${athlete.fullName}\nID: ${athlete.id.slice(-6)}\nDelegación: ${delegations[athlete.delegationId || ""]?.countryCode || "—"}`;
@@ -610,12 +612,18 @@ export default function VehicleRequestPortalPage() {
         setAthlete(null);
         return;
       }
+      // Sesión única: la sesión existente manda — si otro dispositivo tiene
+      // la sesión viva, este login se rechaza con un mensaje.
+      const claim = await claimPortalSession("athlete", match.id);
+      if (claim.activeElsewhere) {
+        setError(SESSION_ACTIVE_ELSEWHERE_MSG);
+        setAthlete(null);
+        return;
+      }
       setAthlete(match);
       clearPersistedTabs();
       setActiveTab("solicitud");
       try { sessionStorage.setItem("portal_vr_id", match.id); } catch {}
-      // Sesión única: este dispositivo pasa a ser la sesión activa.
-      void claimPortalSession("athlete", match.id);
       await loadPortal(match);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo iniciar el portal.");
@@ -684,6 +692,8 @@ export default function VehicleRequestPortalPage() {
 
   const logout = () => {
     try { sessionStorage.removeItem("portal_vr_id"); } catch {}
+    // Libera la sesión única para que otro dispositivo pueda entrar de inmediato.
+    if (athlete) clearPortalSession("athlete", athlete.id);
     clearPersistedTabs();
     setActiveTab("solicitud");
     setAthlete(null);
@@ -2982,9 +2992,10 @@ export default function VehicleRequestPortalPage() {
                 {/* Credencial QR para validar en el comedor */}
                 {mealQrDataUrl && (
                   <div style={{ background:"linear-gradient(135deg,#041a2e,#062240)",borderRadius:16,padding:"16px",display:"flex",alignItems:"center",gap:14 }}>
-                    <div style={{ background:"#fff",borderRadius:12,padding:6,flexShrink:0 }}>
+                    <button type="button" onClick={() => setMealQrZoom(true)} title="Ver QR más grande"
+                      style={{ background:"#fff",borderRadius:12,padding:6,flexShrink:0,border:"none",cursor:"pointer" }}>
                       <img src={mealQrDataUrl} alt="QR credencial" style={{ width:96,height:96,display:"block" }} />
-                    </div>
+                    </button>
                     <div style={{ minWidth:0 }}>
                       <p style={{ fontSize:10,fontWeight:800,letterSpacing:"0.18em",textTransform:"uppercase",color:"#34F3C6",margin:0 }}>Tu credencial</p>
                       <p style={{ fontSize:14,fontWeight:700,color:"#fff",margin:"4px 0 0",lineHeight:1.3 }}>
@@ -2993,8 +3004,20 @@ export default function VehicleRequestPortalPage() {
                       <p style={{ fontSize:11.5,color:"rgba(255,255,255,0.65)",margin:"4px 0 0" }}>
                         Código: <span style={{ fontFamily:"monospace",fontWeight:700,color:"#34F3C6",letterSpacing:"0.15em" }}>{athlete.id.slice(-6).toUpperCase()}</span>
                       </p>
+                      <p style={{ fontSize:10.5,color:"rgba(255,255,255,0.45)",margin:"4px 0 0" }}>
+                        Toca el QR para verlo más grande
+                      </p>
                     </div>
                   </div>
+                )}
+                {mealQrZoom && mealQrDataUrl && (
+                  <QrFullscreenOverlay
+                    qrDataUrl={mealQrDataUrl}
+                    code={athlete.id.slice(-6)}
+                    title="Credencial de alimentación"
+                    subtitle="Muestra este QR al ingresar al lugar de comida."
+                    onClose={() => setMealQrZoom(false)}
+                  />
                 )}
                 {/* Today's menu */}
                 {(() => {
@@ -3684,7 +3707,7 @@ export default function VehicleRequestPortalPage() {
               onInvalid={() => {
                 clearPortalSession("athlete", athlete.id);
                 logout();
-                setError("Tu sesión se cerró porque iniciaste sesión en otro dispositivo.");
+                setError("Tu sesión expiró y esta cuenta inició sesión en otro dispositivo.");
               }}
             />
           )}

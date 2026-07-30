@@ -20,9 +20,10 @@ import { buildCredentialHtml } from "@/lib/credential-template";
 import { downloadCredentialPdf, saveCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
 import { isAvailable as isNativeShell } from "@/lib/native-bridge";
 import { clearPersistedTabs, persistTab, restoreOnReload, startTabHeartbeat } from "@/lib/portal-tab";
-import { claimPortalSession, clearPortalSession } from "@/lib/portal-session";
+import { claimPortalSession, clearPortalSession, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
 import PortalSessionGuard from "@/components/PortalSessionGuard";
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
+import QrFullscreenOverlay from "@/components/QrFullscreenOverlay";
 import QRCode from "qrcode";
 
 type Athlete = {
@@ -338,6 +339,7 @@ export default function UserPortalPage() {
   const [credentialPdfView, setCredentialPdfView] = useState<string | null>(null);
   // QR de la credencial para validar en los lugares de comida.
   const [mealQrDataUrl, setMealQrDataUrl] = useState<string>("");
+  const [mealQrZoom, setMealQrZoom] = useState(false);
   useEffect(() => {
     if (!athlete) { setMealQrDataUrl(""); return; }
     const qrData = `Participante: ${athlete.fullName}\nID: ${athlete.id.slice(-6)}\nDelegación: ${delegation?.countryCode || "—"}`;
@@ -512,11 +514,18 @@ export default function UserPortalPage() {
         return;
       }
 
+      // Sesión única: la sesión existente manda — si otro dispositivo tiene
+      // la sesión viva, este login se rechaza con un mensaje.
+      if (!directId) {
+        const claim = await claimPortalSession("athlete", data.id);
+        if (claim.activeElsewhere) {
+          setError(SESSION_ACTIVE_ELSEWHERE_MSG);
+          return;
+        }
+      }
       setAthlete(data);
       try { sessionStorage.setItem("portal_user_id", data.id); } catch {}
-      // Sesión única: el login manual reclama la sesión para este dispositivo.
       if (!directId) {
-        void claimPortalSession("athlete", data.id);
         // Login manual: siempre parte en el home (Itinerario).
         clearPersistedTabs();
         setActiveTab("itinerario");
@@ -1130,7 +1139,7 @@ export default function UserPortalPage() {
             setAthlete(null);
             setAthleteId("");
             setActiveTab("itinerario");
-            setError("Tu sesión se cerró porque iniciaste sesión en otro dispositivo.");
+            setError("Tu sesión expiró y esta cuenta inició sesión en otro dispositivo.");
           }}
         />
       )}
@@ -1257,7 +1266,7 @@ export default function UserPortalPage() {
                 <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
               </svg>
             </button>
-            <button type="button" onClick={() => { try { sessionStorage.removeItem("portal_user_id"); } catch {} clearPersistedTabs(); setActiveTab("itinerario"); mobileAwareLogout(); }}
+            <button type="button" onClick={() => { try { sessionStorage.removeItem("portal_user_id"); } catch {} if (athlete) clearPortalSession("athlete", athlete.id); clearPersistedTabs(); setActiveTab("itinerario"); mobileAwareLogout(); }}
               style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(255,255,255,0.15)",background:"rgba(255,255,255,0.08)",cursor:"pointer",flexShrink:0 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
@@ -2445,9 +2454,10 @@ export default function UserPortalPage() {
             {/* Credencial QR para validar en el comedor */}
             {mealQrDataUrl && (
               <div style={{ background:"linear-gradient(135deg,#041a2e,#062240)",borderRadius:16,padding:"16px",display:"flex",alignItems:"center",gap:14 }}>
-                <div style={{ background:"#fff",borderRadius:12,padding:6,flexShrink:0 }}>
+                <button type="button" onClick={() => setMealQrZoom(true)} title="Ver QR más grande"
+                  style={{ background:"#fff",borderRadius:12,padding:6,flexShrink:0,border:"none",cursor:"pointer" }}>
                   <img src={mealQrDataUrl} alt="QR credencial" style={{ width:96,height:96,display:"block" }} />
-                </div>
+                </button>
                 <div style={{ minWidth:0 }}>
                   <p style={{ fontSize:10,fontWeight:800,letterSpacing:"0.18em",textTransform:"uppercase",color:"#34F3C6",margin:0 }}>Tu credencial</p>
                   <p style={{ fontSize:14,fontWeight:700,color:"#fff",margin:"4px 0 0",lineHeight:1.3 }}>
@@ -2456,8 +2466,20 @@ export default function UserPortalPage() {
                   <p style={{ fontSize:11.5,color:"rgba(255,255,255,0.65)",margin:"4px 0 0" }}>
                     Código: <span style={{ fontFamily:"monospace",fontWeight:700,color:"#34F3C6",letterSpacing:"0.15em" }}>{(athlete.credentialCode || athlete.id.slice(-6)).toUpperCase()}</span>
                   </p>
+                  <p style={{ fontSize:10.5,color:"rgba(255,255,255,0.45)",margin:"4px 0 0" }}>
+                    Toca el QR para verlo más grande
+                  </p>
                 </div>
               </div>
+            )}
+            {mealQrZoom && mealQrDataUrl && (
+              <QrFullscreenOverlay
+                qrDataUrl={mealQrDataUrl}
+                code={athlete.credentialCode || athlete.id.slice(-6)}
+                title="Credencial de alimentación"
+                subtitle="Muestra este QR al ingresar al lugar de comida."
+                onClose={() => setMealQrZoom(false)}
+              />
             )}
 
             {/* Today's menu */}
@@ -2956,7 +2978,7 @@ export default function UserPortalPage() {
             {/* Device permissions (only visible inside the mobile app) */}
             <DevicePermissionsSection />
             {/* Logout */}
-            <button type="button" onClick={() => { setAthlete(null); setAthleteId(""); try { sessionStorage.removeItem("portal_user_id"); } catch {} clearPersistedTabs(); setActiveTab("itinerario"); }}
+            <button type="button" onClick={() => { if (athlete) clearPortalSession("athlete", athlete.id); setAthlete(null); setAthleteId(""); try { sessionStorage.removeItem("portal_user_id"); } catch {} clearPersistedTabs(); setActiveTab("itinerario"); }}
               style={{ width:"100%",padding:12,borderRadius:12,border:"1px solid #e2e8f0",background:"#fff",color:"#ef4444",fontSize:13,fontWeight:600,cursor:"pointer" }}>
               Cerrar sesión
             </button>
