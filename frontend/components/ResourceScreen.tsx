@@ -1181,6 +1181,10 @@ export default function ResourceScreen({
             const depValue = form[field.showWhen.field] as string | undefined;
             if ((depValue ?? "") !== field.showWhen.value) return false;
           }
+          if (field.hideWhen) {
+            const depValue = form[field.hideWhen.field] as string | undefined;
+            if ((depValue ?? "") === field.hideWhen.value) return false;
+          }
           const raw = form[field.key];
           return !raw || (Array.isArray(raw) && raw.length === 0);
         })
@@ -2428,6 +2432,10 @@ export default function ResourceScreen({
                 const depValue = form[field.showWhen.field] as string | undefined;
                 if ((depValue ?? "") !== field.showWhen.value) return null;
               }
+              if (field.hideWhen) {
+                const depValue = form[field.hideWhen.field] as string | undefined;
+                if ((depValue ?? "") === field.hideWhen.value) return null;
+              }
 
               if (config.endpoint === "/athletes") {
                 const country = form.countryCode as string | undefined;
@@ -2543,6 +2551,37 @@ export default function ResourceScreen({
                             setForm({ ...form, roomId: nextValue, bedId: "" });
                             return;
                           }
+                        }
+                        if (config.endpoint === "/trips" && field.key === "tripType") {
+                          // Transfer In: el origen es siempre el aeropuerto.
+                          // Transfer Out: el destino es siempre el aeropuerto.
+                          const AIRPORT = "Aeropuerto Internacional Arturo Merino Benítez, Pudahuel, Santiago, Chile";
+                          if (nextValue === "TRANSFER_IN") {
+                            setForm({ ...form, tripType: nextValue, origin: AIRPORT, originTypeFilter: "", originVenueId: "", originHotelId: "" });
+                            return;
+                          }
+                          if (nextValue === "TRANSFER_OUT") {
+                            setForm({ ...form, tripType: nextValue, destination: AIRPORT, destinationTypeFilter: "", destinationVenueId: "", destinationHotelId: "" });
+                            return;
+                          }
+                          setForm({ ...form, tripType: nextValue });
+                          return;
+                        }
+                        if (config.endpoint === "/trips" && field.key === "originVenueId") {
+                          const venue = venuesRaw.find((v) => v.id === nextValue);
+                          const addr = venue
+                            ? [venue.address, venue.commune, venue.region, "Chile"].filter(Boolean).join(", ") || venue.name || ""
+                            : "";
+                          setForm({ ...form, originVenueId: nextValue, origin: addr });
+                          return;
+                        }
+                        if (config.endpoint === "/trips" && field.key === "originHotelId") {
+                          const hotel = accommodationsRaw.find((h) => h.id === nextValue);
+                          const addr = hotel
+                            ? [hotel.address, hotel.commune, hotel.region, "Chile"].filter(Boolean).join(", ") || hotel.name || ""
+                            : "";
+                          setForm({ ...form, originHotelId: nextValue, origin: addr });
+                          return;
                         }
                         if (config.endpoint === "/trips" && field.key === "destinationVenueId") {
                           const venue = venuesRaw.find((v) => v.id === nextValue);

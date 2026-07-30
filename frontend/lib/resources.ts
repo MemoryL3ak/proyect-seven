@@ -39,6 +39,8 @@ export type FieldDef = {
   defaultValue?: string;
   /** Muestra este campo solo cuando el campo `field` tenga el valor `value` */
   showWhen?: { field: string; value: string };
+  /** Oculta este campo cuando el campo `field` tenga el valor `value` */
+  hideWhen?: { field: string; value: string };
 };
 
 export type ResourceConfig = {
@@ -992,6 +994,9 @@ export const resources: Record<string, ResourceConfig> = {
       "destinationTypeFilter",
       "destinationVenueId",
       "destinationHotelId",
+      "originTypeFilter",
+      "originVenueId",
+      "originHotelId",
       "vehiclePlateDisplay",
       "vehicleId",
       "flightNumber"
@@ -1004,6 +1009,7 @@ export const resources: Record<string, ResourceConfig> = {
         type: "select",
         options: [
           { label: "Transfer In Out", value: "TRANSFER_IN_OUT" },
+          { label: "Transfer In (llegada)", value: "TRANSFER_IN" },
           { label: "Transfer Out (salida)", value: "TRANSFER_OUT" },
           { label: "Disposición 12 horas", value: "DISPOSICION_12H" },
           { label: "Viaje de ida", value: "VIAJE_IDA" },
@@ -1022,10 +1028,38 @@ export const resources: Record<string, ResourceConfig> = {
       },
       { key: "requesterAthleteId", label: "Solicitante", type: "select", optionsSource: "athletes" },
       {
+        key: "originTypeFilter",
+        label: "Tipo de origen",
+        type: "select",
+        transient: true,
+        showWhen: { field: "tripType", value: "TRANSFER_OUT" },
+        options: [
+          { label: "Sede", value: "SEDE" },
+          { label: "Hotel", value: "HOTEL" },
+        ],
+      },
+      {
+        key: "originVenueId",
+        label: "Sede origen",
+        type: "select",
+        transient: true,
+        optionsSource: "venues",
+        showWhen: { field: "originTypeFilter", value: "SEDE" },
+      },
+      {
+        key: "originHotelId",
+        label: "Hotel origen",
+        type: "select",
+        transient: true,
+        optionsSource: "accommodations",
+        showWhen: { field: "originTypeFilter", value: "HOTEL" },
+      },
+      {
         key: "destinationTypeFilter",
         label: "Tipo de destino",
         type: "select",
         transient: true,
+        hideWhen: { field: "tripType", value: "TRANSFER_OUT" },
         options: [
           { label: "Sede", value: "SEDE" },
           { label: "Hotel", value: "HOTEL" },
@@ -1037,6 +1071,7 @@ export const resources: Record<string, ResourceConfig> = {
         type: "select",
         optionsSource: "venues",
         showWhen: { field: "destinationTypeFilter", value: "SEDE" },
+        hideWhen: { field: "tripType", value: "TRANSFER_OUT" },
       },
       {
         key: "destinationHotelId",
@@ -1044,6 +1079,7 @@ export const resources: Record<string, ResourceConfig> = {
         type: "select",
         optionsSource: "accommodations",
         showWhen: { field: "destinationTypeFilter", value: "HOTEL" },
+        hideWhen: { field: "tripType", value: "TRANSFER_OUT" },
       },
       {
         key: "requestedVehicleType",

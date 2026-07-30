@@ -1270,19 +1270,33 @@ export default function TripsPage() {
                 {/* Mini trip cards */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                   {items.slice(0, 3).map((trip) => (
-                    <div key={trip.id} style={{
-                      background: "#f8fafc",
-                      border: `1px solid ${pal.cardBorder}`,
-                      borderLeft: `3px solid ${sc.accent}`,
-                      borderRadius: "10px",
-                      padding: "8px 10px",
-                    }}>
+                    <button
+                      key={trip.id}
+                      type="button"
+                      onClick={() => {
+                        setShowAdminEditor(true);
+                        setActiveTab("editor");
+                        setSelectedTripId(trip.id);
+                        if (typeof window !== "undefined") {
+                          window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+                        }
+                      }}
+                      style={{
+                        background: "#f8fafc",
+                        border: `1px solid ${pal.cardBorder}`,
+                        borderLeft: `3px solid ${sc.accent}`,
+                        borderRadius: "10px",
+                        padding: "8px 10px",
+                        textAlign: "left",
+                        cursor: "pointer",
+                        width: "100%",
+                      }}>
                       <p style={{ fontSize: "12px", fontWeight: 700, color: pal.textPrimary }}>{resolveRequester(trip)}</p>
                       <p style={{ fontSize: "11px", color: pal.textMuted, marginTop: "2px" }}>{trip.origin || t("Origen pendiente")}</p>
                       <p style={{ fontSize: "11px", color: pal.labelColor }}>
                         {trip.destinationVenueId ? venues[trip.destinationVenueId]?.name : trip.destination || t("Destino pendiente")}
                       </p>
-                    </div>
+                    </button>
                   ))}
                   {items.length === 0 && (
                     <p style={{ fontSize: "12px", color: pal.labelColor, textAlign: "center", padding: "12px 0" }}>{t("Sin viajes.")}</p>

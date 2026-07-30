@@ -28,6 +28,20 @@ type AthleteItem = {
   metadata?: Record<string, unknown> | null;
 };
 
+type TripItem = {
+  id: string;
+  eventId?: string | null;
+  tripType?: string | null;
+  clientType?: string | null;
+  requesterAthleteId?: string | null;
+  origin?: string | null;
+  destination?: string | null;
+  status?: string | null;
+  scheduledAt?: string | null;
+  flightNumber?: string | null;
+  metadata?: Record<string, unknown> | null;
+};
+
 type TrackResult = {
   flightNumber: string;
   airlineName: string | null;
@@ -88,6 +102,7 @@ export default function FlightsPage() {
   const [flights, setFlights] = useState<Flight[]>([]);
   const [events, setEvents] = useState<EventItem[]>([]);
   const [athletes, setAthletes] = useState<AthleteItem[]>([]);
+  const [transferInTrips, setTransferInTrips] = useState<TripItem[]>([]);
   const [delegations, setDelegations] = useState<DelegationItem[]>([]);
   const [disciplines, setDisciplines] = useState<DisciplineItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -123,16 +138,23 @@ export default function FlightsPage() {
   const load = async () => {
     setLoading(true);
     try {
-      const [flightData, eventData, athleteData, delegationData, disciplineData] = await Promise.all([
+      const [flightData, eventData, athleteData, delegationData, disciplineData, tripData] = await Promise.all([
         apiFetch<Flight[]>("/flights"),
         apiFetch<EventItem[]>("/events"),
         apiFetch<AthleteItem[]>("/athletes"),
         apiFetch<DelegationItem[]>("/delegations"),
         apiFetch<DisciplineItem[]>("/disciplines"),
+        apiFetch<TripItem[]>("/trips").catch(() => []),
       ]);
       setFlights(flightData ?? []);
       setEvents(eventData ?? []);
       setAthletes(filterValidatedAthletes(athleteData ?? []));
+      // Viajes Transfer In (aeropuerto → hotel/sede): son llegadas a monitorear.
+      setTransferInTrips(
+        (tripData ?? []).filter(
+          (t) => String(t.tripType || "").toUpperCase() === "TRANSFER_IN" && t.status !== "CANCELLED",
+        ),
+      );
       setDelegations(delegationData ?? []);
       setDisciplines(disciplineData ?? []);
       if (!selectedEventId && eventData?.length) setSelectedEventId(eventData[0].id);
@@ -208,6 +230,37 @@ export default function FlightsPage() {
       return true;
     });
   }, [displayFlights, filterStatus]);
+
+  const athleteById = useMemo(() => athletes.reduce<Record<string, AthleteItem>>((acc, a) => { acc[a.id] = a; return acc; }, {}), [athletes]);
+
+  // Transfer In visibles: respetan evento, búsqueda y fecha del monitor.
+  const displayTransferIns = useMemo(() =>
+    transferInTrips
+      .filter(t => {
+        if (selectedEventId && t.eventId !== selectedEventId) return false;
+        const requester = t.requesterAthleteId ? athleteById[t.requesterAthleteId] : null;
+        const flight = t.flightNumber || String((t.metadata as Record<string, unknown> | null)?.flightNumber ?? "");
+        if (searchQuery) {
+          const q = searchQuery.toLowerCase();
+          const haystack = [requester?.fullName, t.destination, t.origin, flight, t.clientType].filter(Boolean).join(" ").toLowerCase();
+          if (!haystack.includes(q)) return false;
+        }
+        if (filterDate) {
+          const day = t.scheduledAt ? new Date(t.scheduledAt).toISOString().slice(0, 10) : "";
+          if (day !== filterDate) return false;
+        }
+        if (filterDelegation) {
+          if (!requester || requester.delegationId !== filterDelegation) return false;
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        const ta = a.scheduledAt ? new Date(a.scheduledAt).getTime() : Number.MAX_SAFE_INTEGER;
+        const tb = b.scheduledAt ? new Date(b.scheduledAt).getTime() : Number.MAX_SAFE_INTEGER;
+        return ta - tb;
+      }),
+    [transferInTrips, selectedEventId, searchQuery, filterDate, filterDelegation, athleteById]
+  );
 
   const lookupAirline = async (flightNum: string) => {
     if (!flightNum.trim()) return;
@@ -346,13 +399,14 @@ export default function FlightsPage() {
         </div>
 
         {/* KPI row */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "12px", marginTop: "20px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: "12px", marginTop: "20px" }}>
           {[
             { label: "Total vuelos", value: stats.total, color: pal.textPrimary, accent: "#64748b" },
             { label: "Arribados", value: stats.arrived, color: "#64748b", accent: "#64748b" },
             { label: "Hoy", value: stats.today, color: "#f59e0b", accent: "#f59e0b" },
             { label: "Próximos", value: stats.upcoming, color: "#3b82f6", accent: "#3b82f6" },
             { label: "Pasajeros AND", value: stats.totalPax, color: "#21D0B3", accent: "#21D0B3" },
+            { label: "Transfer In", value: transferInTrips.length, color: "#a78bfa", accent: "#a78bfa" },
           ].map(k => (
             <div key={k.label} style={{ background: "#f8fafc", borderRadius: "14px", padding: "12px 14px", border: "1px solid #e2e8f0", borderTop: `2px solid ${k.accent}` }}>
               <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: pal.labelColor }}>{k.label}</p>
@@ -574,6 +628,77 @@ export default function FlightsPage() {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Llegadas Transfer In (aeropuerto → hotel/sede) */}
+      {!loading && (
+        <div style={{ background: "#fff", borderRadius: "18px", border: "1px solid #e2e8f0", overflow: "hidden", boxShadow: pal.shadow }}>
+          <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
+            <div>
+              <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#a78bfa" }}>Llegadas Transfer In</p>
+              <p style={{ fontSize: "12px", color: pal.textMuted, marginTop: "2px" }}>Viajes aeropuerto → hotel/sede creados en Transporte</p>
+            </div>
+            <span style={{ fontSize: "12px", fontWeight: 700, color: "#7c3aed", background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.3)", borderRadius: "99px", padding: "4px 12px" }}>
+              {displayTransferIns.length} viaje{displayTransferIns.length === 1 ? "" : "s"}
+            </span>
+          </div>
+          {displayTransferIns.length === 0 ? (
+            <p style={{ padding: "24px", textAlign: "center", fontSize: "12px", color: pal.labelColor }}>
+              No hay viajes Transfer In para los filtros actuales.
+            </p>
+          ) : (
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+              <thead>
+                <tr style={{ borderBottom: "2px solid #e2e8f0", background: "#fafbfc" }}>
+                  {["Llegada", "Pasajero", "Tipo cliente", "Destino", "Vuelo", "Estado"].map(h => (
+                    <th key={h} style={{ padding: "12px 14px", textAlign: "left", fontSize: "9px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: pal.labelColor }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {displayTransferIns.map(trip => {
+                  const requester = trip.requesterAthleteId ? athleteById[trip.requesterAthleteId] : null;
+                  const del = requester?.delegationId ? delegationById[requester.delegationId] : null;
+                  const flightRaw = trip.flightNumber || (trip.metadata as Record<string, unknown> | null)?.flightNumber;
+                  const flight = typeof flightRaw === "string" && flightRaw ? flightRaw : null;
+                  const st = trip.scheduledAt ? getFlightStatus(trip.scheduledAt) : { label: "Sin fecha", color: "#94a3b8", bg: "#f1f5f9" };
+                  return (
+                    <tr key={trip.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                      <td style={{ padding: "10px 14px" }}>
+                        <div><span style={{ fontWeight: 700, color: pal.textPrimary }}>{fmtTime(trip.scheduledAt)}</span></div>
+                        <div style={{ fontSize: "10px", color: pal.textMuted }}>{fmtDate(trip.scheduledAt)}</div>
+                      </td>
+                      <td style={{ padding: "10px 14px" }}>
+                        <span style={{ fontWeight: 600, color: pal.textPrimary }}>{requester?.fullName || "—"}</span>
+                        {del?.countryCode && (
+                          <span style={{ marginLeft: "6px", fontSize: "9px", fontWeight: 700, padding: "2px 6px", borderRadius: "4px", background: "rgba(99,102,241,0.08)", color: "#6366f1", border: "1px solid rgba(99,102,241,0.15)" }}>{del.countryCode}</span>
+                        )}
+                      </td>
+                      <td style={{ padding: "10px 14px", color: pal.textMuted, fontWeight: 500 }}>{trip.clientType || "—"}</td>
+                      <td style={{ padding: "10px 14px" }}>
+                        <span style={{ fontWeight: 600, color: pal.textPrimary }}>Aeropuerto</span>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2.5" style={{ margin: "0 6px", verticalAlign: "middle" }}><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                        <span style={{ color: pal.textMuted }}>{trip.destination?.split(",")[0] || "—"}</span>
+                      </td>
+                      <td style={{ padding: "10px 14px" }}>
+                        {flight ? (
+                          <span style={{ fontSize: "11px", fontWeight: 700, padding: "3px 8px", borderRadius: "6px", background: "rgba(167,139,250,0.1)", color: "#7c3aed", border: "1px solid rgba(167,139,250,0.3)" }}>✈ {flight}</span>
+                        ) : (
+                          <span style={{ fontSize: "10px", color: "#cbd5e1" }}>—</span>
+                        )}
+                      </td>
+                      <td style={{ padding: "10px 14px" }}>
+                        <span style={{ fontSize: "10px", fontWeight: 700, padding: "3px 10px", borderRadius: "99px", background: st.bg, color: st.color, border: `1px solid ${st.color}30` }}>
+                          {st.label === "Arribado" ? "Llegó" : st.label}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
 
