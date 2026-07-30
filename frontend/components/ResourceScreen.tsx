@@ -1031,10 +1031,17 @@ export default function ResourceScreen({
     if (!selected) return;
     const athlete = (athleteOptions as any[]).find((o) => o.value === selected);
     if (athlete) {
+      // Un VIP viaja solo: no se arrastra su delegación ni sus participantes,
+      // el detalle de participantes queda solo con el VIP.
+      const isVip = String(athlete.userType || "").toUpperCase() === "VIP";
       setForm((prev) => ({
         ...prev,
         ...(athlete.userType ? { clientType: athlete.userType } : {}),
-        ...(athlete.delegationId ? { delegationId: athlete.delegationId } : {}),
+        ...(isVip
+          ? { delegationId: "", athleteIds: [selected] }
+          : athlete.delegationId
+            ? { delegationId: athlete.delegationId }
+            : {}),
       }));
     }
   }, [config.endpoint, form.requesterAthleteId, athleteOptions]);
@@ -1047,6 +1054,7 @@ export default function ResourceScreen({
 
   useEffect(() => {
     if (!isTrips) return;
+    if (String(form.clientType || "").toUpperCase() === "VIP") return;
     const delegationId = form.delegationId as string | undefined;
     if (!delegationId) return;
     const options = (athleteOptions as any[]).filter(
@@ -1059,7 +1067,7 @@ export default function ResourceScreen({
       if (current.length === allIds.length) return prev;
       return { ...prev, athleteIds: allIds };
     });
-  }, [isTrips, form.delegationId, athleteOptions]);
+  }, [isTrips, form.delegationId, form.clientType, athleteOptions]);
 
   useEffect(() => {
     if (needsFlights) {
@@ -1907,6 +1915,7 @@ export default function ResourceScreen({
     if (!isTrips) return;
     if (!editingId) return;
     if (form.delegationId) return;
+    if (String(form.clientType || "").toUpperCase() === "VIP") return;
     const currentAthletes = (form.athleteIds as string[]) || [];
     if (currentAthletes.length === 0) return;
     const first = (athleteOptions as any[]).find(
@@ -1915,7 +1924,7 @@ export default function ResourceScreen({
     if (first?.delegationId) {
       setForm((prev) => ({ ...prev, delegationId: first.delegationId }));
     }
-  }, [isTrips, editingId, form.delegationId, form.athleteIds, athleteOptions]);
+  }, [isTrips, editingId, form.delegationId, form.clientType, form.athleteIds, athleteOptions]);
 
   useEffect(() => {
     if (!externalEditingId || externalEditingId === editingId) return;
@@ -2213,6 +2222,13 @@ export default function ResourceScreen({
     if (source === "hotelBeds") return hotelBedOptions;
     if (field.optionsSource === "athletes") {
       if (config.endpoint === "/trips") {
+        // Cliente VIP: el detalle de participantes solo ofrece VIPs,
+        // nunca la delegación completa.
+        if (field.key === "athleteIds" && String(form.clientType || "").toUpperCase() === "VIP") {
+          return (athleteOptions as any[]).filter(
+            (option) => String(option.userType || "").toUpperCase() === "VIP"
+          );
+        }
         const delegationId = form.delegationId as string | undefined;
         if (delegationId) {
           return (athleteOptions as any[]).filter(
@@ -2565,6 +2581,22 @@ export default function ResourceScreen({
                             return;
                           }
                           setForm({ ...form, tripType: nextValue });
+                          return;
+                        }
+                        if (config.endpoint === "/trips" && field.key === "clientType" && nextValue === "VIP") {
+                          // VIP viaja solo: se limpia la delegación y quedan solo
+                          // participantes VIP en la selección.
+                          const vipIds = new Set(
+                            (athleteOptions as any[])
+                              .filter((o) => String(o.userType || "").toUpperCase() === "VIP")
+                              .map((o) => o.value),
+                          );
+                          setForm({
+                            ...form,
+                            clientType: nextValue,
+                            delegationId: "",
+                            athleteIds: ((form.athleteIds as string[]) || []).filter((id) => vipIds.has(id)),
+                          });
                           return;
                         }
                         if (config.endpoint === "/trips" && field.key === "originVenueId") {

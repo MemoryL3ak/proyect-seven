@@ -1156,7 +1156,7 @@ export const resources: Record<string, ResourceConfig> = {
       { key: "scheduledAt", label: "Fecha programación", type: "datetime" },
       { key: "startedAt", label: "Inicio", type: "datetime", formHidden: true },
       { key: "completedAt", label: "Cierre", type: "datetime", formHidden: true },
-      { key: "delegationId", label: "Delegación", type: "select", optionsSource: "delegations", transient: true },
+      { key: "delegationId", label: "Delegación", type: "select", optionsSource: "delegations", transient: true, hideWhen: { field: "clientType", value: "VIP" } },
       { key: "athleteIds", label: "Participantes", type: "multiselect", optionsSource: "athletes" },
       { key: "tripCost", label: "Costo de viaje", type: "text" }
     ]
