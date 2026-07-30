@@ -6,6 +6,7 @@ import Link from "next/link";
 import { mobileLogin } from "@/lib/api";
 import { getMobileSession, markFromApp, setMobileSession, postToReactNative } from "@/lib/mobile-auth";
 import { claimPortalSession } from "@/lib/portal-session";
+import { clearPersistedTabs } from "@/lib/portal-tab";
 
 const CODE_LENGTH = 6;
 
@@ -61,6 +62,8 @@ export default function MobileLoginPage() {
     setLoading(true);
     try {
       const result = await mobileLogin(code);
+      // Login explícito: el portal debe abrir en su home, no en el último tab.
+      clearPersistedTabs();
 
       if (result.kind === "athlete") {
         const session = {

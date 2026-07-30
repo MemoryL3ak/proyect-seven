@@ -20,7 +20,7 @@ import CredentialQrCard from "@/components/CredentialQrCard";
 import { buildCredentialHtml } from "@/lib/credential-template";
 import { downloadCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
 import { isAvailable as isNativeShell } from "@/lib/native-bridge";
-import { persistTab, restoreOnReload } from "@/lib/portal-tab";
+import { clearPersistedTabs, persistTab, restoreOnReload, startTabHeartbeat } from "@/lib/portal-tab";
 import { claimPortalSession, clearPortalSession } from "@/lib/portal-session";
 import PortalSessionGuard from "@/components/PortalSessionGuard";
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
@@ -431,6 +431,9 @@ export default function VehicleRequestPortalPage() {
   useEffect(() => {
     persistTab("portal_vr_tab", activeTab);
   }, [activeTab]);
+  // Mientras el portal está abierto, marca que sigue vivo: así una recarga
+  // (F5 o botón actualizar de la app) se distingue de un login/apertura fría.
+  useEffect(() => startTabHeartbeat(), []);
   const [moreOpen, setMoreOpen] = useState(false);
   const [assistOpen, setAssistOpen] = useState(false);
   const { vipPrimary, vipOverflow } = useMemo(() => {
@@ -608,6 +611,7 @@ export default function VehicleRequestPortalPage() {
         return;
       }
       setAthlete(match);
+      clearPersistedTabs();
       setActiveTab("solicitud");
       try { sessionStorage.setItem("portal_vr_id", match.id); } catch {}
       // Sesión única: este dispositivo pasa a ser la sesión activa.
@@ -680,6 +684,7 @@ export default function VehicleRequestPortalPage() {
 
   const logout = () => {
     try { sessionStorage.removeItem("portal_vr_id"); } catch {}
+    clearPersistedTabs();
     setActiveTab("solicitud");
     setAthlete(null);
     setTrips([]);

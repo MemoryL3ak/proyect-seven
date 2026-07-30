@@ -19,7 +19,7 @@ import PushTokenSync from "@/components/PushTokenSync";
 import { buildCredentialHtml } from "@/lib/credential-template";
 import { downloadCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
 import { isAvailable as isNativeShell } from "@/lib/native-bridge";
-import { persistTab, restoreOnReload } from "@/lib/portal-tab";
+import { clearPersistedTabs, persistTab, restoreOnReload, startTabHeartbeat } from "@/lib/portal-tab";
 import { claimPortalSession, clearPortalSession } from "@/lib/portal-session";
 import PortalSessionGuard from "@/components/PortalSessionGuard";
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
@@ -300,6 +300,9 @@ export default function UserPortalPage() {
   useEffect(() => {
     persistTab("portal_user_tab", activeTab);
   }, [activeTab]);
+  // Mientras el portal está abierto, marca que sigue vivo: así una recarga
+  // (F5 o botón actualizar de la app) se distingue de un login/apertura fría.
+  useEffect(() => startTabHeartbeat(), []);
   const [moreOpen, setMoreOpen] = useState(false);
   const [assistOpen, setAssistOpen] = useState(false);
   const [actSubTab, setActSubTab] = useState<"curso" | "historial">("curso");
@@ -512,7 +515,12 @@ export default function UserPortalPage() {
       setAthlete(data);
       try { sessionStorage.setItem("portal_user_id", data.id); } catch {}
       // Sesión única: el login manual reclama la sesión para este dispositivo.
-      if (!directId) void claimPortalSession("athlete", data.id);
+      if (!directId) {
+        void claimPortalSession("athlete", data.id);
+        // Login manual: siempre parte en el home (Itinerario).
+        clearPersistedTabs();
+        setActiveTab("itinerario");
+      }
 
       const [flightData, hotelData, vehicleData, tripData, tripsList, eventData, delegationData, assignmentData] = await Promise.all([
         data.arrivalFlightId ? apiFetch<Flight>(`/flights/${data.arrivalFlightId}`) : Promise.resolve(null),
@@ -1118,6 +1126,7 @@ export default function UserPortalPage() {
           onInvalid={() => {
             clearPortalSession("athlete", athlete.id);
             try { sessionStorage.removeItem("portal_user_id"); } catch {}
+            clearPersistedTabs();
             setAthlete(null);
             setAthleteId("");
             setActiveTab("itinerario");
@@ -1248,7 +1257,7 @@ export default function UserPortalPage() {
                 <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
               </svg>
             </button>
-            <button type="button" onClick={() => { try { sessionStorage.removeItem("portal_user_id"); } catch {} setActiveTab("itinerario"); mobileAwareLogout(); }}
+            <button type="button" onClick={() => { try { sessionStorage.removeItem("portal_user_id"); } catch {} clearPersistedTabs(); setActiveTab("itinerario"); mobileAwareLogout(); }}
               style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(255,255,255,0.15)",background:"rgba(255,255,255,0.08)",cursor:"pointer",flexShrink:0 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
@@ -2946,7 +2955,7 @@ export default function UserPortalPage() {
             {/* Device permissions (only visible inside the mobile app) */}
             <DevicePermissionsSection />
             {/* Logout */}
-            <button type="button" onClick={() => { setAthlete(null); setAthleteId(""); try { sessionStorage.removeItem("portal_user_id"); } catch {} setActiveTab("itinerario"); }}
+            <button type="button" onClick={() => { setAthlete(null); setAthleteId(""); try { sessionStorage.removeItem("portal_user_id"); } catch {} clearPersistedTabs(); setActiveTab("itinerario"); }}
               style={{ width:"100%",padding:12,borderRadius:12,border:"1px solid #e2e8f0",background:"#fff",color:"#ef4444",fontSize:13,fontWeight:600,cursor:"pointer" }}>
               Cerrar sesión
             </button>
