@@ -326,6 +326,9 @@ export default function UserPortalPage() {
   const [premView, setPremView] = useState<"list" | "calendar">("calendar");
   // Premiación destacada al llegar desde una notificación (?premiacionId=).
   const [premFocusId, setPremFocusId] = useState<string | null>(null);
+  // Secciones colapsables de la vista lista de premiaciones.
+  const [premPendingOpen, setPremPendingOpen] = useState(true);
+  const [premDoneOpen, setPremDoneOpen] = useState(true);
   const [premCalCursor, setPremCalCursor] = useState(() => new Date());
   const [premCalSelectedKey, setPremCalSelectedKey] = useState<string | null>(null);
   // Coupons tab state
@@ -361,6 +364,9 @@ export default function UserPortalPage() {
     setActiveTab("premiaciones");
     setPremView("list");
     setPremFocusId(premId);
+    // La premiación notificada debe ser visible: abre ambas secciones.
+    setPremPendingOpen(true);
+    setPremDoneOpen(true);
     try {
       const url = new URL(window.location.href);
       url.searchParams.delete("premiacionId");
@@ -2391,15 +2397,20 @@ export default function UserPortalPage() {
                 ) : (
                   <div style={{ display:"flex",flexDirection:"column",gap:14 }}>
                     {pendingDays.length > 0 && (
-                      <div style={{ display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:12,background:"linear-gradient(135deg,#fff4d6 0%,#fffbeb 100%)",border:"1px solid #f2d98a" }}>
-                        <span style={{ width:8,height:8,borderRadius:"50%",background:"#e3a808",boxShadow:"0 0 8px #e3a808" }} />
+                      <button type="button" onClick={() => setPremPendingOpen(v => !v)}
+                        style={{ display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:12,background:"linear-gradient(135deg,#fff4d6 0%,#fffbeb 100%)",border:"1px solid #f2d98a",cursor:"pointer",width:"100%",textAlign:"left" }}>
+                        <span style={{ width:8,height:8,borderRadius:"50%",background:"#e3a808",boxShadow:"0 0 8px #e3a808",flexShrink:0 }} />
                         <p style={{ fontSize:11.5,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:"#7a4a00",margin:0 }}>Por realizar</p>
                         <span style={{ marginLeft:"auto",fontSize:10,fontWeight:800,padding:"2px 9px",borderRadius:99,background:"#fff",color:"#a87800",border:"1px solid #f0deb0" }}>
                           {pendingDays.reduce((s,[,items]) => s + items.length, 0)}
                         </span>
-                      </div>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a87800" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                          style={{ flexShrink:0,transform:premPendingOpen?"rotate(180deg)":"none",transition:"transform .2s" }}>
+                          <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                      </button>
                     )}
-                    {pendingDays.map(([day, items]) => (
+                    {premPendingOpen && pendingDays.map(([day, items]) => (
                       <div key={day} style={{ display:"flex",flexDirection:"column",gap:6 }}>
                         <div style={{ position:"sticky",top:0,zIndex:2,background:"linear-gradient(180deg,#fffbeb 0%,rgba(255,251,235,0.92) 100%)",backdropFilter:"blur(6px)",padding:"6px 10px",borderRadius:10,display:"flex",alignItems:"center",gap:8,border:"1px solid #f2d98a" }}>
                           <div style={{ width:6,height:6,borderRadius:"50%",background:"#d4a017",boxShadow:"0 0 6px #d4a017" }} />
@@ -2410,15 +2421,20 @@ export default function UserPortalPage() {
                       </div>
                     ))}
                     {doneDays.length > 0 && (
-                      <div style={{ display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:12,background:"#f1f5f9",border:"1px solid #e2e8f0",marginTop: pendingDays.length > 0 ? 6 : 0 }}>
-                        <span style={{ width:8,height:8,borderRadius:"50%",background:"#2e7d32" }} />
+                      <button type="button" onClick={() => setPremDoneOpen(v => !v)}
+                        style={{ display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:12,background:"#f1f5f9",border:"1px solid #e2e8f0",marginTop: pendingDays.length > 0 ? 6 : 0,cursor:"pointer",width:"100%",textAlign:"left" }}>
+                        <span style={{ width:8,height:8,borderRadius:"50%",background:"#2e7d32",flexShrink:0 }} />
                         <p style={{ fontSize:11.5,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:"#64748b",margin:0 }}>Realizadas</p>
                         <span style={{ marginLeft:"auto",fontSize:10,fontWeight:800,padding:"2px 9px",borderRadius:99,background:"#fff",color:"#64748b",border:"1px solid #e2e8f0" }}>
                           {doneDays.reduce((s,[,items]) => s + items.length, 0)}
                         </span>
-                      </div>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                          style={{ flexShrink:0,transform:premDoneOpen?"rotate(180deg)":"none",transition:"transform .2s" }}>
+                          <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                      </button>
                     )}
-                    {doneDays.map(([day, items]) => (
+                    {premDoneOpen && doneDays.map(([day, items]) => (
                       <div key={day} style={{ display:"flex",flexDirection:"column",gap:6 }}>
                         <div style={{ position:"sticky",top:0,zIndex:2,background:"linear-gradient(180deg,#f8fafc 0%,rgba(248,250,252,0.92) 100%)",backdropFilter:"blur(6px)",padding:"6px 10px",borderRadius:10,display:"flex",alignItems:"center",gap:8,border:"1px solid #e2e8f0" }}>
                           <div style={{ width:6,height:6,borderRadius:"50%",background:"#94a3b8" }} />
