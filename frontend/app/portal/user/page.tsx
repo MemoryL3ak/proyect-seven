@@ -2038,13 +2038,21 @@ export default function UserPortalPage() {
           const totalReal = premiaciones.filter(p => p.status === "REALIZADA").length;
           const disciplineOpts = Array.from(new Set(premiaciones.map(p => p.discipline).filter(Boolean) as string[])).sort();
           const venueOpts = Array.from(new Set(premiaciones.map(p => p.venueName).filter(Boolean) as string[])).sort();
-          const grouped = new Map<string, Premiacion[]>();
-          visible.forEach(p => {
-            const k = fmtKey(p.scheduledAt);
-            if (!grouped.has(k)) grouped.set(k, []);
-            grouped.get(k)!.push(p);
-          });
-          const days = Array.from(grouped.entries()).sort(([a],[b]) => a.localeCompare(b));
+          // Programadas (por realizar) SIEMPRE primero — la más próxima arriba
+          // y con estilo destacado; realizadas al final, apagadas.
+          const groupByDay = (arr: Premiacion[]) => {
+            const m = new Map<string, Premiacion[]>();
+            arr.forEach(p => {
+              const k = fmtKey(p.scheduledAt);
+              if (!m.has(k)) m.set(k, []);
+              m.get(k)!.push(p);
+            });
+            return m;
+          };
+          const pendingDays = Array.from(groupByDay(visible.filter(p => p.status !== "REALIZADA")).entries())
+            .sort(([a],[b]) => a.localeCompare(b));
+          const doneDays = Array.from(groupByDay(visible.filter(p => p.status === "REALIZADA")).entries())
+            .sort(([a],[b]) => b.localeCompare(a));
           const hasFilters = !!(premStatusFilter || premDisciplineFilter || premVenueFilter || premSearchQuery);
           const clearAll = () => { setPremStatusFilter(""); setPremDisciplineFilter(""); setPremVenueFilter(""); setPremSearchQuery(""); };
 
@@ -2083,9 +2091,10 @@ export default function UserPortalPage() {
             const focused = p.id === premFocusId;
             return (
               <article key={p.id} id={`prem-${p.id}`}
-                style={{ background:isDone ? "linear-gradient(135deg,#f7fcf8 0%,#ffffff 70%)" : "linear-gradient(135deg,#fffbf2 0%,#ffffff 70%)",
-                  borderRadius:14,border:`1px solid ${focused ? "#21D0B3" : isDone?"#cfe9d6":"#f0deb0"}`,borderLeft:`4px solid ${focused ? "#21D0B3" : accent}`,padding:"12px 14px",
-                  boxShadow: focused ? "0 0 0 3px rgba(33,208,179,0.4), 0 8px 24px rgba(33,208,179,0.25)" : undefined,transition:"box-shadow .4s,border-color .4s" }}>
+                style={{ background:isDone ? "#f8fafc" : "linear-gradient(135deg,#fffbeb 0%,#ffffff 70%)",
+                  borderRadius:14,border:`1px solid ${focused ? "#21D0B3" : isDone?"#e2e8f0":"#f2d98a"}`,borderLeft:`4px solid ${focused ? "#21D0B3" : isDone ? "#cbd5e1" : "#e3a808"}`,padding:"12px 14px",
+                  boxShadow: focused ? "0 0 0 3px rgba(33,208,179,0.4), 0 8px 24px rgba(33,208,179,0.25)" : isDone ? undefined : "0 2px 10px rgba(199,140,0,0.14)",
+                  opacity: isDone ? 0.82 : 1,transition:"box-shadow .4s,border-color .4s" }}>
                 <div style={{ display:"flex",alignItems:"flex-start",gap:10 }}>
                   <div style={{ width:38,height:38,borderRadius:11,flexShrink:0,
                     background: isDone ? "linear-gradient(135deg,#e7f5ec 0%,#cfe9d6 100%)" : "linear-gradient(135deg,#fff4d6 0%,rgba(245,200,66,0.5) 100%)",
@@ -2381,12 +2390,40 @@ export default function UserPortalPage() {
                   </div>
                 ) : (
                   <div style={{ display:"flex",flexDirection:"column",gap:14 }}>
-                    {days.map(([day, items]) => (
+                    {pendingDays.length > 0 && (
+                      <div style={{ display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:12,background:"linear-gradient(135deg,#fff4d6 0%,#fffbeb 100%)",border:"1px solid #f2d98a" }}>
+                        <span style={{ width:8,height:8,borderRadius:"50%",background:"#e3a808",boxShadow:"0 0 8px #e3a808" }} />
+                        <p style={{ fontSize:11.5,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:"#7a4a00",margin:0 }}>Por realizar</p>
+                        <span style={{ marginLeft:"auto",fontSize:10,fontWeight:800,padding:"2px 9px",borderRadius:99,background:"#fff",color:"#a87800",border:"1px solid #f0deb0" }}>
+                          {pendingDays.reduce((s,[,items]) => s + items.length, 0)}
+                        </span>
+                      </div>
+                    )}
+                    {pendingDays.map(([day, items]) => (
                       <div key={day} style={{ display:"flex",flexDirection:"column",gap:6 }}>
-                        <div style={{ position:"sticky",top:0,zIndex:2,background:"linear-gradient(180deg,#f8fafc 0%,rgba(248,250,252,0.92) 100%)",backdropFilter:"blur(6px)",padding:"6px 10px",borderRadius:10,display:"flex",alignItems:"center",gap:8,border:"1px solid #e2e8f0" }}>
+                        <div style={{ position:"sticky",top:0,zIndex:2,background:"linear-gradient(180deg,#fffbeb 0%,rgba(255,251,235,0.92) 100%)",backdropFilter:"blur(6px)",padding:"6px 10px",borderRadius:10,display:"flex",alignItems:"center",gap:8,border:"1px solid #f2d98a" }}>
                           <div style={{ width:6,height:6,borderRadius:"50%",background:"#d4a017",boxShadow:"0 0 6px #d4a017" }} />
                           <p style={{ fontSize:11,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",color:"#7a4a00",margin:0 }}>{fmtDateLong(day)}</p>
                           <span style={{ marginLeft:"auto",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:"#fff",color:"#a87800",border:"1px solid #f0deb0" }}>{items.length}</span>
+                        </div>
+                        {items.map(p => renderPremCard(p))}
+                      </div>
+                    ))}
+                    {doneDays.length > 0 && (
+                      <div style={{ display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:12,background:"#f1f5f9",border:"1px solid #e2e8f0",marginTop: pendingDays.length > 0 ? 6 : 0 }}>
+                        <span style={{ width:8,height:8,borderRadius:"50%",background:"#2e7d32" }} />
+                        <p style={{ fontSize:11.5,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:"#64748b",margin:0 }}>Realizadas</p>
+                        <span style={{ marginLeft:"auto",fontSize:10,fontWeight:800,padding:"2px 9px",borderRadius:99,background:"#fff",color:"#64748b",border:"1px solid #e2e8f0" }}>
+                          {doneDays.reduce((s,[,items]) => s + items.length, 0)}
+                        </span>
+                      </div>
+                    )}
+                    {doneDays.map(([day, items]) => (
+                      <div key={day} style={{ display:"flex",flexDirection:"column",gap:6 }}>
+                        <div style={{ position:"sticky",top:0,zIndex:2,background:"linear-gradient(180deg,#f8fafc 0%,rgba(248,250,252,0.92) 100%)",backdropFilter:"blur(6px)",padding:"6px 10px",borderRadius:10,display:"flex",alignItems:"center",gap:8,border:"1px solid #e2e8f0" }}>
+                          <div style={{ width:6,height:6,borderRadius:"50%",background:"#94a3b8" }} />
+                          <p style={{ fontSize:11,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",color:"#64748b",margin:0 }}>{fmtDateLong(day)}</p>
+                          <span style={{ marginLeft:"auto",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:"#fff",color:"#64748b",border:"1px solid #e2e8f0" }}>{items.length}</span>
                         </div>
                         {items.map(p => renderPremCard(p))}
                       </div>
