@@ -435,9 +435,11 @@ export default function NotificationBell({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          width: 42,
-          height: 42,
-          borderRadius: 14,
+          // Mismo tamaño que los demás botones del header del portal
+          // (asistencia / actualizar / salir son de 34×34, radio 10).
+          width: 34,
+          height: 34,
+          borderRadius: 10,
           border: "1px solid rgba(33,208,179,0.4)",
           background: open ? "rgba(33,208,179,0.18)" : "rgba(33,208,179,0.08)",
           cursor: "pointer",
@@ -446,14 +448,14 @@ export default function NotificationBell({
           WebkitTapHighlightColor: "transparent",
         }}
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
           <path d="M13.73 21a2 2 0 0 1-3.46 0" />
         </svg>
         {unreadCount > 0 && (
           <span style={{
             position: "absolute", top: -5, right: -5,
-            minWidth: 18, height: 18, borderRadius: 9,
+            minWidth: 16, height: 16, borderRadius: 8,
             background: "#f43f5e", color: "#fff",
             fontSize: 10, fontWeight: 800,
             display: "flex", alignItems: "center", justifyContent: "center",

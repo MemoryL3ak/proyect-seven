@@ -2444,7 +2444,7 @@ export default function VehicleRequestPortalPage() {
                       </div>
                     </div>
                     {premiaciones.length > 0 && (
-                      <div style={{ position:"relative",display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginTop:12 }}>
+                      <div style={{ position:"relative",display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:8,marginTop:12 }}>
                         {[
                           { label:"Programadas", value:totalProg, color:"#c78c00", bg:"#fff4d6" },
                           { label:"Realizadas",  value:totalReal, color:"#1e5125", bg:"#e7f5ec" },
@@ -2506,69 +2506,10 @@ export default function VehicleRequestPortalPage() {
                           />
                         </div>
 
-                        {/* Filtros como listas desplegables: simples y compactos */}
-                        <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:6 }}>
-                          {(() => {
-                            const selectStyle = (active: boolean) => ({
-                              padding:"8px 10px",borderRadius:10,
-                              border:`1px solid ${active?"#c78c00":"#e2e8f0"}`,
-                              fontSize:12,color:active?"#7a4a00":"#475569",
-                              fontWeight:active?700:400,background:"#fff",width:"100%",
-                            });
-                            return (
-                              <>
-                                {disciplineOptions.length > 0 && (
-                                  <select value={premDisciplineFilter} onChange={(e) => setPremDisciplineFilter(e.target.value)}
-                                    aria-label="Disciplina" style={selectStyle(!!premDisciplineFilter)}>
-                                    <option value="">Disciplina: todas</option>
-                                    {disciplineOptions.map(d => <option key={d} value={d}>{d}</option>)}
-                                  </select>
-                                )}
-                                {venueOptions.length > 0 && (
-                                  <select value={premVenueFilter} onChange={(e) => setPremVenueFilter(e.target.value)}
-                                    aria-label="Sede" style={selectStyle(!!premVenueFilter)}>
-                                    <option value="">Sede: todas</option>
-                                    {venueOptions.map(v => <option key={v} value={v}>{v}</option>)}
-                                  </select>
-                                )}
-                                <select value={premStatusFilter}
-                                  onChange={(e) => setPremStatusFilter(e.target.value as "" | "PROGRAMADA" | "REALIZADA")}
-                                  aria-label="Estado" style={selectStyle(!!premStatusFilter)}>
-                                  <option value="">Estado: todos ({premiaciones.length})</option>
-                                  <option value="PROGRAMADA">Programadas ({totalProg})</option>
-                                  <option value="REALIZADA">Realizadas ({totalReal})</option>
-                                </select>
-                                <select value={premAttendanceFilter}
-                                  onChange={(e) => setPremAttendanceFilter(e.target.value as "" | "CONFIRMED" | "PENDING" | "DECLINED")}
-                                  aria-label="Asistencia" style={selectStyle(!!premAttendanceFilter)}>
-                                  <option value="">Asistencia: todas</option>
-                                  <option value="CONFIRMED">Confirmadas ({countConfirmed})</option>
-                                  <option value="PENDING">Pendientes ({countPending})</option>
-                                  <option value="DECLINED">Declinadas ({premiaciones.filter(p => p.myAssignment?.declined_at).length})</option>
-                                </select>
-                                {roleOptions.length > 1 && (
-                                  <select value={premRoleFilter} onChange={(e) => setPremRoleFilter(e.target.value)}
-                                    aria-label="Rol" style={{ ...selectStyle(!!premRoleFilter), gridColumn:"1 / -1" }}>
-                                    <option value="">Rol: todos</option>
-                                    {roleOptions.map(r => (
-                                      <option key={r} value={r}>{(ROLE_META[r]||ROLE_META.AWARDER).label}</option>
-                                    ))}
-                                  </select>
-                                )}
-                              </>
-                            );
-                          })()}
-                        </div>
-                        {hasFilters && (
-                          <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-                            <button type="button" onClick={clearAll}
-                              style={{ padding:"4px 10px",borderRadius:8,border:"1px solid #fecaca",background:"#fef2f2",color:"#b91c1c",fontSize:11,fontWeight:600,cursor:"pointer" }}>
-                              ✕ Limpiar filtros
-                            </button>
-                            <span style={{ fontSize:11,color:"#64748b",fontWeight:600 }}>
-                              {visible.length} de {premiaciones.length} premiacion{premiaciones.length===1?"":"es"}
-                            </span>
-                          </div>
+                        {premSearch.trim() && (
+                          <span style={{ fontSize:11,color:"#64748b",fontWeight:600 }}>
+                            {visible.length} de {premiaciones.length} premiacion{premiaciones.length===1?"":"es"}
+                          </span>
                         )}
                       </div>
 
