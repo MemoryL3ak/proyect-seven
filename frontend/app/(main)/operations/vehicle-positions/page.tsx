@@ -15,6 +15,7 @@ import type {
 import { geocodeAddress, getDirections, haversineMeters, snapToRoads, type LatLng } from "@/lib/google-maps";
 
 const LiveTrackingMap = dynamic(() => import("@/components/LiveTrackingMap"), { ssr: false });
+const TripRouteMap = dynamic(() => import("@/components/TripRouteMap"), { ssr: false });
 
 type Trip = {
   id: string;
@@ -170,7 +171,6 @@ export default function VehiclePositionsPage() {
   const [detailTrip, setDetailTrip] = useState<Trip | null>(null);
   const [detailPositions, setDetailPositions] = useState<LatLng[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [routeImgFailed, setRouteImgFailed] = useState(false);
   const [routeExpanded, setRouteExpanded] = useState(false);
   const [tableSearch, setTableSearch] = useState("");
   const [tableStatus, setTableStatus] = useState("");
@@ -781,7 +781,6 @@ export default function VehiclePositionsPage() {
   const openTripDetail = async (trip: Trip) => {
     setDetailTrip(trip);
     setDetailPositions([]);
-    setRouteImgFailed(false);
     setDetailLoading(true);
     try {
       const rows = await apiFetch<Array<{ location?: { coordinates?: number[] } | null }>>(
@@ -804,24 +803,6 @@ export default function VehiclePositionsPage() {
     let m = 0;
     for (let i = 1; i < pts.length; i++) m += haversineMeters(pts[i - 1], pts[i]);
     return m / 1000;
-  };
-  // Imagen de la ruta realizada vía Google Static Maps (submuestrea a <=100 puntos).
-  const buildStaticRoute = (pts: LatLng[]): string | null => {
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-    if (!apiKey || pts.length < 2) return null;
-    const step = Math.ceil(pts.length / 100);
-    const sampled = pts.filter((_, i) => i % step === 0);
-    const last = pts[pts.length - 1];
-    if (sampled[sampled.length - 1] !== last) sampled.push(last);
-    const path = sampled.map((p) => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`).join("|");
-    const start = pts[0];
-    return (
-      `https://maps.googleapis.com/maps/api/staticmap?size=640x360&scale=2` +
-      `&path=color:0x21D0B3ff|weight:4|${path}` +
-      `&markers=color:0x21D0B3|label:A|${start.lat},${start.lng}` +
-      `&markers=color:0xef4444|label:B|${last.lat},${last.lng}` +
-      `&key=${apiKey}`
-    );
   };
   // Fallback: mapa embebido de la ruta planificada origen→destino (siempre disponible con la embed key).
   const buildDirectionsEmbed = (origin?: string | null, destination?: string | null): string | null => {
@@ -1267,7 +1248,7 @@ export default function VehiclePositionsPage() {
         const venue = trip.destinationVenueId ? venues[trip.destinationVenueId] : null;
         const event = trip.eventId ? events[trip.eventId] : null;
         const km = detailPositions.length >= 2 ? routeKmFromPts(detailPositions) : null;
-        const routeImg = buildStaticRoute(detailPositions);
+        const hasGps = detailPositions.length >= 2;
         const pax = trip.athleteIds?.length || trip.passengerCount || 0;
         // Pasajero(s): el solicitante del portal (requester) y/o los participantes vinculados.
         const paxNames = Array.from(new Set([
@@ -1315,12 +1296,10 @@ export default function VehiclePositionsPage() {
                 {/* Ruta realizada */}
                 {(() => {
                   const dirEmbed = buildDirectionsEmbed(trip.origin, trip.destination);
-                  const showImg = routeImg && !routeImgFailed;
-                  const isReal = !!showImg;
                   return (
                     <div style={{ borderRadius: "14px", overflow: "hidden", border: "1px solid #e2e8f0", background: "#eef2f7", position: "relative" }}>
-                      {showImg ? (
-                        <img src={routeImg!} alt="Ruta realizada" onError={() => setRouteImgFailed(true)} style={{ width: "100%", display: "block" }} />
+                      {hasGps ? (
+                        <TripRouteMap points={detailPositions} height={460} />
                       ) : dirEmbed ? (
                         <iframe title={`route-${trip.id}`} src={dirEmbed} style={{ width: "100%", height: 460, border: "none", display: "block" }} loading="lazy" />
                       ) : (
@@ -1333,9 +1312,9 @@ export default function VehiclePositionsPage() {
                         </div>
                       )}
                       <span style={{ position: "absolute", top: 8, left: 8, fontSize: "9px", fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "#0a7a6b", background: "rgba(255,255,255,0.92)", border: "1px solid rgba(33,208,179,0.3)", borderRadius: 8, padding: "3px 8px" }}>
-                        {isReal ? "Ruta realizada" : "Ruta estimada"}
+                        {hasGps ? "Ruta realizada" : "Ruta estimada"}
                       </span>
-                      {(showImg || dirEmbed) && (
+                      {(hasGps || dirEmbed) && (
                         <button type="button" onClick={() => setRouteExpanded(true)}
                           style={{ position: "absolute", bottom: 8, right: 8, display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 999, border: "none", background: "rgba(4,26,46,0.85)", color: "#34F3C6", fontSize: 11, fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.25)" }}>
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
@@ -1406,7 +1385,6 @@ export default function VehiclePositionsPage() {
             {/* Ruta a pantalla completa */}
             {routeExpanded && (() => {
               const dirEmbed = buildDirectionsEmbed(trip.origin, trip.destination);
-              const showImg = routeImg && !routeImgFailed;
               return (
                 <div onClick={(e) => e.stopPropagation()}
                   style={{ position: "fixed", inset: 0, zIndex: 80, background: "#0d1a28", display: "flex", flexDirection: "column" }}>
@@ -1420,9 +1398,9 @@ export default function VehiclePositionsPage() {
                       {(trip.origin?.split(",")[0] || "—")} → {(venue?.name || trip.destination?.split(",")[0] || "—")}
                     </p>
                   </div>
-                  {showImg ? (
-                    <div style={{ flex: 1, overflow: "auto", display: "flex", alignItems: "center", justifyContent: "center", background: "#0d1a28" }}>
-                      <img src={routeImg!} alt="Ruta realizada" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+                  {hasGps ? (
+                    <div style={{ flex: 1, minHeight: 0 }}>
+                      <TripRouteMap points={detailPositions} height="100%" />
                     </div>
                   ) : dirEmbed ? (
                     <iframe title={`route-full-${trip.id}`} src={dirEmbed} style={{ flex: 1, width: "100%", border: "none" }} loading="lazy" />

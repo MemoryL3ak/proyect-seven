@@ -143,6 +143,9 @@ export class Trip {
   @Column({ type: 'jsonb', default: () => "'{}'::jsonb" })
   metadata: Record<string, unknown>;
 
+  /** Número de vuelo de salida (Transfer Out), derivado de metadata.flightNumber. */
+  flightNumber?: string | null;
+
   athleteIds?: string[];
 
   athleteNames?: string[];

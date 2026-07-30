@@ -53,6 +53,11 @@ export class CreateTripDto {
   @IsOptional()
   tripType?: string;
 
+  /** Número de vuelo de salida (obligatorio para Transfer Out); se guarda en metadata. */
+  @IsString()
+  @IsOptional()
+  flightNumber?: string;
+
   @IsString()
   @IsOptional()
   clientType?: string;

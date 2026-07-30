@@ -30,6 +30,19 @@ type Athlete = {
 
 type Delegation = { id: string; countryCode?: string | null; name?: string | null };
 type EventItem = { id: string; name?: string | null };
+type Trip = {
+  id: string;
+  eventId?: string | null;
+  tripType?: string | null;
+  clientType?: string | null;
+  requesterAthleteId?: string | null;
+  origin?: string | null;
+  destination?: string | null;
+  status?: string | null;
+  scheduledAt?: string | null;
+  flightNumber?: string | null;
+  metadata?: Record<string, unknown> | null;
+};
 
 const hoyChile = () => {
   const f = new Intl.DateTimeFormat("en-CA", {
@@ -72,6 +85,7 @@ const fechaLarga = (isoDate: string) => {
 
 export default function DepartureMonitoringPage() {
   const [athletes, setAthletes] = useState<Athlete[]>([]);
+  const [transferOutTrips, setTransferOutTrips] = useState<Trip[]>([]);
   const [delegations, setDelegations] = useState<Record<string, Delegation>>({});
   const [eventos, setEventos] = useState<EventItem[]>([]);
   const [eventId, setEventId] = useState("");
@@ -84,12 +98,19 @@ export default function DepartureMonitoringPage() {
   const cargar = async () => {
     setError(null);
     try {
-      const [ath, dels, evs] = await Promise.all([
+      const [ath, dels, evs, trips] = await Promise.all([
         apiFetch<Athlete[]>("/athletes"),
         apiFetch<Delegation[]>("/delegations").catch(() => []),
         apiFetch<EventItem[]>("/events").catch(() => []),
+        apiFetch<Trip[]>("/trips").catch(() => []),
       ]);
       setAthletes(filterValidatedAthletes(Array.isArray(ath) ? ath : []));
+      // Viajes Transfer Out: también son salidas a monitorear.
+      setTransferOutTrips(
+        (Array.isArray(trips) ? trips : []).filter(
+          (t) => String(t.tripType || "").toUpperCase() === "TRANSFER_OUT" && t.status !== "CANCELLED",
+        ),
+      );
       const delMap: Record<string, Delegation> = {};
       (Array.isArray(dels) ? dels : []).forEach((d) => { delMap[d.id] = d; });
       setDelegations(delMap);
@@ -103,19 +124,39 @@ export default function DepartureMonitoringPage() {
 
   useEffect(() => { void cargar(); }, []);
 
-  /* Participantes con salida: trip_type DEPARTURE o con hora de salida cargada. */
-  const salidas = useMemo(
-    () =>
-      athletes.filter((a) => {
-        const meta = (a.metadata || {}) as Record<string, unknown>;
-        return (
-          (a.tripType || "").toUpperCase() === "DEPARTURE" ||
-          Boolean(a.departureTime) ||
-          Boolean(meta.vuelo_salida)
-        );
-      }),
-    [athletes],
-  );
+  /* Participantes con salida: trip_type DEPARTURE o con hora de salida
+     cargada. Además, los VIAJES tipo Transfer Out entran como salidas. */
+  const salidas = useMemo(() => {
+    const deParticipantes = athletes.filter((a) => {
+      const meta = (a.metadata || {}) as Record<string, unknown>;
+      return (
+        (a.tripType || "").toUpperCase() === "DEPARTURE" ||
+        Boolean(a.departureTime) ||
+        Boolean(meta.vuelo_salida)
+      );
+    });
+    const deViajes: Athlete[] = transferOutTrips.map((t) => {
+      const requester = athletes.find((a) => a.id === t.requesterAthleteId);
+      const flight = t.flightNumber || ((t.metadata || {}) as Record<string, unknown>).flightNumber;
+      return {
+        id: `trip-${t.id}`,
+        fullName:
+          requester?.fullName ||
+          [t.origin, t.destination].filter(Boolean).join(" → ") ||
+          "Viaje Transfer Out",
+        eventId: t.eventId ?? null,
+        delegationId: requester?.delegationId ?? null,
+        userType: `Transfer Out${t.clientType ? ` · ${t.clientType}` : ""}`,
+        tripType: "DEPARTURE",
+        flightNumber: typeof flight === "string" && flight ? flight : null,
+        airline: null,
+        departureTime: t.scheduledAt ?? null,
+        departureGate: null,
+        metadata: {},
+      };
+    });
+    return [...deParticipantes, ...deViajes];
+  }, [athletes, transferOutTrips]);
 
   const filtradas = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
@@ -215,7 +256,7 @@ export default function DepartureMonitoringPage() {
     <div className="p-4 md:p-6 space-y-5">
       <PageHeader
         title="Monitoreo de Salidas"
-        description="Participantes con vuelo de salida: fecha, vuelo, aerolínea y puerta de embarque. Sólo se listan participantes validados."
+        description="Participantes con vuelo de salida y viajes Transfer Out: fecha, vuelo, aerolínea y puerta de embarque. Sólo se listan participantes validados."
         icon={<CalendarIcon size={24} />}
         action={
           <button className="btn btn-ghost" onClick={() => { setCargando(true); void cargar(); }}>

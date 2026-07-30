@@ -993,7 +993,8 @@ export const resources: Record<string, ResourceConfig> = {
       "destinationVenueId",
       "destinationHotelId",
       "vehiclePlateDisplay",
-      "vehicleId"
+      "vehicleId",
+      "flightNumber"
     ],
     fields: [
       { key: "eventId", label: "Evento", type: "select", required: true, optionsSource: "events" },
@@ -1003,12 +1004,21 @@ export const resources: Record<string, ResourceConfig> = {
         type: "select",
         options: [
           { label: "Transfer In Out", value: "TRANSFER_IN_OUT" },
+          { label: "Transfer Out (salida)", value: "TRANSFER_OUT" },
           { label: "Disposición 12 horas", value: "DISPOSICION_12H" },
           { label: "Viaje de ida", value: "VIAJE_IDA" },
           { label: "Viaje de regreso", value: "VIAJE_REGRESO" },
           { label: "Viaje de ida y regreso", value: "VIAJE_IDA_REGRESO" },
           { label: "Solicitud portal", value: "PORTAL_REQUEST" },
         ]
+      },
+      {
+        key: "flightNumber",
+        label: "Número de vuelo (salida)",
+        type: "text",
+        required: true,
+        placeholder: "Ej: LA533",
+        showWhen: { field: "tripType", value: "TRANSFER_OUT" },
       },
       { key: "requesterAthleteId", label: "Solicitante", type: "select", optionsSource: "athletes" },
       {

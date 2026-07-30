@@ -2683,18 +2683,36 @@ export default function UserPortalPage() {
                     <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0 }}>Tus lugares de comida</p>
                   </div>
                 </div>
-                {myLocations.map((fl, i) => (
-                  <div key={fl.id} style={{ padding:"12px 16px",borderTop:i>0?"1px solid #f1f5f9":"none",display:"flex",alignItems:"center",gap:12 }}>
-                    <div style={{ width:36,height:36,borderRadius:10,background:"rgba(33,208,179,0.08)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+                {myLocations.map((fl, i) => {
+                  const acc = fl.accommodationId ? allAccommodations.find((a) => a.id === fl.accommodationId) : null;
+                  const mapQuery = [acc?.name || fl.name, acc?.address].filter(Boolean).join(", ");
+                  const isOpen = expandedItemId === `food-${fl.id}`;
+                  return (
+                  <div key={fl.id} style={{ borderTop:i>0?"1px solid #f1f5f9":"none" }}>
+                    <div style={{ padding:"12px 16px",display:"flex",alignItems:"center",gap:12 }}>
+                      <div style={{ width:36,height:36,borderRadius:10,background:"rgba(33,208,179,0.08)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+                      </div>
+                      <div style={{ flex:1,minWidth:0 }}>
+                        <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>{fl.name}</p>
+                        {fl.description && <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0",lineHeight:1.3 }}>{fl.description}</p>}
+                        {acc?.address && <p style={{ fontSize:11,color:"#94a3b8",margin:"2px 0 0",lineHeight:1.3 }}>📍 {acc.address}</p>}
+                      </div>
+                      {fl.capacity && <span style={{ fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:8,background:"#f1f5f9",color:"#475569",flexShrink:0 }}>{fl.capacity} pax</span>}
+                      <button type="button" onClick={() => setExpandedItemId(isOpen ? null : `food-${fl.id}`)}
+                        style={{ display:"inline-flex",alignItems:"center",gap:4,padding:"6px 10px",borderRadius:9,border:`1px solid ${isOpen ? "#21D0B3" : "rgba(33,208,179,0.35)"}`,background:isOpen?"rgba(33,208,179,0.14)":"rgba(33,208,179,0.06)",color:"#0a7a6b",fontSize:11,fontWeight:800,cursor:"pointer",flexShrink:0 }}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        {isOpen ? "Cerrar" : "Mapa"}
+                      </button>
                     </div>
-                    <div style={{ flex:1,minWidth:0 }}>
-                      <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>{fl.name}</p>
-                      {fl.description && <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0",lineHeight:1.3 }}>{fl.description}</p>}
-                    </div>
-                    {fl.capacity && <span style={{ fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:8,background:"#f1f5f9",color:"#475569",flexShrink:0 }}>{fl.capacity} pax</span>}
+                    {isOpen && (
+                      <div style={{ padding:"0 16px 12px" }}>
+                        <VenueMap title={fl.name} query={mapQuery} />
+                      </div>
+                    )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
               )}
               {myLocations.length === 0 && (

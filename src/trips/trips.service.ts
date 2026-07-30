@@ -240,6 +240,13 @@ export class TripsService {
     if (dto.metadata !== undefined) {
       row.metadata = dto.metadata;
     }
+    // Número de vuelo (Transfer Out): vive en la metadata del viaje.
+    if (dto.flightNumber !== undefined) {
+      row.metadata = {
+        ...((row.metadata as Record<string, unknown>) ?? {}),
+        flightNumber: dto.flightNumber?.trim() || null,
+      };
+    }
 
     return row;
   }
@@ -335,6 +342,10 @@ export class TripsService {
       committeeValidatedAt: row.committee_validated_at ? new Date(row.committee_validated_at) : null,
       committeeValidatedBy: row.committee_validated_by,
       metadata: row.metadata ?? {},
+      flightNumber:
+        typeof (row.metadata as Record<string, unknown> | null)?.flightNumber === 'string'
+          ? ((row.metadata as Record<string, unknown>).flightNumber as string)
+          : null,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
     };

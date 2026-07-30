@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { isAvailable as isNativeBridge, send as nativeSend } from "@/lib/native-bridge";
 
 /**
  * Mapa de sede/hotel para los portales.
@@ -21,6 +22,16 @@ export default function VenueMap({ title, query }: { title: string; query: strin
   // Ruta de navegación: en el teléfono abre la app de Google Maps con las
   // indicaciones para llegar desde la ubicación actual.
   const directionsHref = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(query)}&travelmode=driving`;
+
+  // Dentro de la app nativa los enlaces externos deben salir por el puente
+  // url.open (abre la app de Google Maps); si navegan dentro del WebView el
+  // usuario queda atrapado en Google Maps sin botón para volver.
+  const openExternal = (e: React.MouseEvent, url: string) => {
+    if (isNativeBridge()) {
+      e.preventDefault();
+      nativeSend("url.open", { url });
+    }
+  };
 
   return (
     <>
@@ -136,6 +147,7 @@ export default function VenueMap({ title, query }: { title: string; query: strin
               href={directionsHref}
               target="_blank"
               rel="noreferrer"
+              onClick={(e) => openExternal(e, directionsHref)}
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -167,6 +179,7 @@ export default function VenueMap({ title, query }: { title: string; query: strin
                 href={externalHref}
                 target="_blank"
                 rel="noreferrer"
+                onClick={(e) => openExternal(e, externalHref)}
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
@@ -187,6 +200,7 @@ export default function VenueMap({ title, query }: { title: string; query: strin
                 href={directionsHref}
                 target="_blank"
                 rel="noreferrer"
+                onClick={(e) => openExternal(e, directionsHref)}
                 style={{
                   display: "inline-flex",
                   alignItems: "center",

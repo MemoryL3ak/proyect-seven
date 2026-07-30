@@ -1176,6 +1176,11 @@ export default function ResourceScreen({
       const missingRequired = config.fields
         .filter((field) => field.required)
         .filter((field) => {
+          // Un campo condicional oculto (showWhen no satisfecho) no se exige.
+          if (field.showWhen) {
+            const depValue = form[field.showWhen.field] as string | undefined;
+            if ((depValue ?? "") !== field.showWhen.value) return false;
+          }
           const raw = form[field.key];
           return !raw || (Array.isArray(raw) && raw.length === 0);
         })
