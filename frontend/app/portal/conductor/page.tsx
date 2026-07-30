@@ -1945,6 +1945,10 @@ export default function DriverPortalPage() {
                           qrDataUrl,
                           qrContent: qrData,
                           organization: "Seven Arena",
+                          issuedAtLabel: new Date().toLocaleDateString("es-CL"),
+                          providerLabel: prov?.name || undefined,
+                          accessTypes: driverProfile.accessTypes || [],
+                          photoUrl: driverProfile.photoUrl || ((driverProfile.metadata as any)?.photoUrl as string) || null,
                         });
                         setCredentialHtml(html);
                       } catch { driverNotify.push("No se pudo generar la credencial", "❌"); }

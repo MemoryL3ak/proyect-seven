@@ -3588,6 +3588,8 @@ export default function VehicleRequestPortalPage() {
                         qrDataUrl,
                         qrContent: qrData,
                         organization: "Seven Arena",
+                        issuedAtLabel: new Date().toLocaleDateString("es-CL"),
+                        photoUrl,
                       });
                       setCredentialHtml(html);
                     } catch { notify.push("No se pudo generar la credencial", "❌"); }

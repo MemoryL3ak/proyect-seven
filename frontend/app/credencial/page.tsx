@@ -34,6 +34,7 @@ function CredencialDownload() {
         const qrDataUrl = qrContent
           ? await QRCode.toDataURL(qrContent, { width: 200, margin: 1 })
           : undefined;
+        const access = (params.get("a") || "").split(",").map((v) => v.trim()).filter(Boolean);
         const data: CredentialPdfData = {
           eventName: params.get("e") || "Seven Arena",
           fullName,
@@ -41,10 +42,14 @@ function CredencialDownload() {
           code: params.get("c") || undefined,
           countryTag: params.get("t") || undefined,
           organization: params.get("o") || undefined,
+          issuedAtLabel: params.get("d") || undefined,
+          providerLabel: params.get("p") || undefined,
+          photoUrl: params.get("f") || undefined,
+          accessTypes: access.length ? access : undefined,
           qrDataUrl,
         };
         dataRef.current = data;
-        downloadCredentialPdf(data);
+        await downloadCredentialPdf(data);
         setStatus("listo");
       } catch {
         setStatus("error");
@@ -87,7 +92,7 @@ function CredencialDownload() {
             <button
               type="button"
               onClick={() => {
-                if (dataRef.current) downloadCredentialPdf(dataRef.current);
+                if (dataRef.current) void downloadCredentialPdf(dataRef.current);
               }}
               style={{
                 padding: "13px 22px",
