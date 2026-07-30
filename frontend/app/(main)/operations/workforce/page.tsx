@@ -151,26 +151,17 @@ export default function WorkforcePage() {
     });
   }, [persons, personSearch, personTypeFilter, personKitFilter, deliveredPersonIds]);
 
-  // Timeline de entregas de kit agrupado por día (más reciente primero)
-  const deliveryTimeline = useMemo(() => {
-    const byDay = new Map<string, Delivery[]>();
-    deliveries.forEach((d) => {
-      const day = d.deliveredAt ? String(d.deliveredAt).slice(0, 10) : "sin-fecha";
-      if (!byDay.has(day)) byDay.set(day, []);
-      byDay.get(day)!.push(d);
-    });
-    return Array.from(byDay.entries())
-      .sort(([a], [b]) => b.localeCompare(a))
-      .map(([day, items]) => ({
-        day,
-        count: items.length,
-        validated: items.filter((d) => d.validatedAt).length,
-        value: items.reduce((s, d) => s + Number(d.unitCost || 0) * Number(d.quantity || 0), 0),
-        personNames: Array.from(
-          new Set(items.map((d) => personById.get(d.personId)?.fullName).filter(Boolean)),
-        ) as string[],
-      }));
-  }, [deliveries, personById]);
+  // Tablero de entregas de kit por estado (formato "timeline operativa",
+  // igual que el estado general de viajes en tracking).
+  const kitBoard = useMemo(() => {
+    const byRecent = (a: Delivery, b: Delivery) =>
+      String(b.validatedAt || b.deliveredAt || "").localeCompare(String(a.validatedAt || a.deliveredAt || ""));
+    return {
+      sinKit: persons.filter((p) => !deliveredPersonIds.has(p.id)),
+      entregadas: deliveries.filter((d) => !d.validatedAt).sort(byRecent),
+      validadas: deliveries.filter((d) => d.validatedAt).sort(byRecent),
+    };
+  }, [persons, deliveries, deliveredPersonIds]);
 
   const visibleProducts = useMemo(() => {
     const q = productSearch.trim().toLowerCase();
@@ -322,42 +313,94 @@ export default function WorkforcePage() {
               accent="green"
             />
           </section>
-          {/* Timeline de entregas de kit */}
-          {deliveryTimeline.length > 0 && (
-            <section className="surface rounded-2xl p-5">
-              <h2 className="text-sm font-bold mb-4 flex items-center gap-2" style={{ color: "var(--text)" }}>
-                <ClipboardIcon size={16} /> Timeline de entregas de kit
-              </h2>
-              <div style={{ position: "relative", paddingLeft: 22 }}>
-                <div style={{ position: "absolute", left: 7, top: 6, bottom: 6, width: 2, background: "var(--border)", borderRadius: 2 }} />
-                <div className="space-y-4">
-                  {deliveryTimeline.map((t) => (
-                    <div key={t.day} style={{ position: "relative" }}>
-                      <span style={{
-                        position: "absolute", left: -21, top: 3, width: 12, height: 12, borderRadius: "50%",
-                        background: t.validated === t.count ? "#10b981" : "#f59e0b",
-                        border: "2px solid var(--surface)", boxShadow: "0 0 0 2px var(--border)",
-                      }} />
-                      <p className="text-[13px] font-bold capitalize" style={{ color: "var(--text)", margin: 0 }}>
-                        {t.day === "sin-fecha"
-                          ? "Sin fecha registrada"
-                          : new Date(`${t.day}T12:00:00`).toLocaleDateString("es-CL", { weekday: "long", day: "2-digit", month: "long" })}
-                      </p>
-                      <p className="text-xs" style={{ color: "var(--text-muted)", margin: "2px 0 0" }}>
-                        {t.count} entrega{t.count === 1 ? "" : "s"} · {t.validated} validada{t.validated === 1 ? "" : "s"} · {fmt$(t.value)}
-                      </p>
-                      {t.personNames.length > 0 && (
-                        <p className="text-[11px]" style={{ color: "var(--text-faint)", margin: "2px 0 0" }}>
-                          {t.personNames.slice(0, 4).join(", ")}
-                          {t.personNames.length > 4 ? ` y ${t.personNames.length - 4} más` : ""}
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
+          {/* Timeline operativa de entregas de kit (tablero por estado) */}
+          <section style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, padding: 16, boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <div>
+                <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase" as const, color: "#94a3b8" }}>Timeline operativa</p>
+                <h3 style={{ marginTop: "3px", fontWeight: 700, fontSize: "16px", color: "#0f172a" }}>Estado de entregas de kit</h3>
               </div>
-            </section>
-          )}
+              <span style={{ fontSize: "12px", fontWeight: 600, color: "#64748b", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "99px", padding: "4px 12px" }}>
+                {deliveries.length} entregas · {persons.length} personas
+              </span>
+            </div>
+            <div className="grid gap-3 md:grid-cols-3">
+              {([
+                {
+                  key: "sinKit", label: "Sin kit", accent: "#f59e0b", chipBg: "#fef3c7", chipBorder: "#fcd34d",
+                  empty: "Todas las personas tienen kit.",
+                  items: kitBoard.sinKit.map((p) => ({
+                    id: p.id,
+                    title: p.fullName,
+                    line1: [p.personType, p.role].filter(Boolean).join(" · ") || "Sin rol definido",
+                    line2: "Aún sin entregas registradas",
+                  })),
+                },
+                {
+                  key: "entregadas", label: "Entregado · por validar", accent: "#2563eb", chipBg: "#dbeafe", chipBorder: "#93c5fd",
+                  empty: "Sin entregas pendientes de validar.",
+                  items: kitBoard.entregadas.map((d) => ({
+                    id: d.id,
+                    title: personById.get(d.personId)?.fullName || "Persona",
+                    line1: `${productById.get(d.productId)?.name || "Producto"} × ${d.quantity}${d.size ? ` · Talla ${d.size}` : ""}`,
+                    line2: d.deliveredAt
+                      ? `Entregado ${new Date(d.deliveredAt).toLocaleDateString("es-CL", { day: "2-digit", month: "short" })}`
+                      : "Sin fecha registrada",
+                  })),
+                },
+                {
+                  key: "validadas", label: "Validado", accent: "#059669", chipBg: "#e7f5ec", chipBorder: "#86efac",
+                  empty: "Aún sin entregas validadas.",
+                  items: kitBoard.validadas.map((d) => ({
+                    id: d.id,
+                    title: personById.get(d.personId)?.fullName || "Persona",
+                    line1: `${productById.get(d.productId)?.name || "Producto"} × ${d.quantity}${d.size ? ` · Talla ${d.size}` : ""}`,
+                    line2: d.validatedAt
+                      ? `Validado ${new Date(d.validatedAt).toLocaleDateString("es-CL", { day: "2-digit", month: "short" })}${d.validatedBy ? ` · ${d.validatedBy}` : ""}`
+                      : "Validado",
+                  })),
+                },
+              ] as const).map((col) => (
+                <div key={col.key} style={{
+                  background: "#fff", border: "1px solid #e2e8f0", borderTop: `3px solid ${col.accent}`,
+                  borderRadius: "16px", padding: "12px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+                    <span style={{ fontSize: "11px", fontWeight: 700, color: col.accent, textTransform: "uppercase", letterSpacing: "0.1em" }}>
+                      {col.label}
+                    </span>
+                    <span style={{
+                      minWidth: "22px", height: "22px", borderRadius: "99px", display: "inline-flex", alignItems: "center", justifyContent: "center",
+                      fontSize: "11px", fontWeight: 800,
+                      background: col.items.length > 0 ? col.chipBg : "#f1f5f9",
+                      color: col.items.length > 0 ? col.accent : "#64748b",
+                      border: col.items.length > 0 ? `1px solid ${col.chipBorder}` : "1px solid #e2e8f0",
+                    }}>
+                      {col.items.length}
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {col.items.slice(0, 4).map((item) => (
+                      <div key={item.id} style={{
+                        background: "#f8fafc", border: "1px solid #e2e8f0", borderLeft: `3px solid ${col.accent}`,
+                        borderRadius: "10px", padding: "8px 10px",
+                      }}>
+                        <p style={{ fontSize: "12px", fontWeight: 700, color: "#0f172a" }}>{item.title}</p>
+                        <p style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>{item.line1}</p>
+                        <p style={{ fontSize: "11px", color: "#94a3b8" }}>{item.line2}</p>
+                      </div>
+                    ))}
+                    {col.items.length === 0 && (
+                      <p style={{ fontSize: "12px", color: "#94a3b8", textAlign: "center", padding: "12px 0" }}>{col.empty}</p>
+                    )}
+                    {col.items.length > 4 && (
+                      <p style={{ fontSize: "11px", color: col.accent, textAlign: "center", fontWeight: 600 }}>+{col.items.length - 4} más</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
           {dashboard.deliveries.pending > 0 && (
             <section
               className="rounded-2xl p-4 flex items-start gap-3"

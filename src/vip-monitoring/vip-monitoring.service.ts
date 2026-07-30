@@ -78,6 +78,12 @@ export class VipMonitoringService {
         a.id,
         a.full_name,
         a.phone,
+        a.email,
+        a.region,
+        coalesce(nullif(trim(a.country_code), ''), del.country_code) as country_code,
+        del.country_code     as delegation_code,
+        disc.name            as discipline_name,
+        hot.name             as hotel_name,
         a.event_id,
         t.id                 as trip_id,
         t.status             as trip_status,
@@ -126,6 +132,21 @@ export class VipMonitoringService {
       ) t on true
       left join transport.drivers d           on d.id  = t.driver_id
       left join core.provider_participants pp on pp.id = t.driver_id
+      left join core.delegations del          on del.id = a.delegation_id
+      left join core.disciplines disc         on disc.id = a.discipline_id
+      left join lateral (
+        -- Hotel: la asignación explícita manda; si no hay, el hotel del perfil.
+        select acc.name
+        from logistics.accommodations acc
+        where acc.id = coalesce(
+          (select ha.hotel_id
+           from logistics.hotel_assignments ha
+           where ha.participant_id = a.id
+           order by ha.created_at desc
+           limit 1),
+          a.hotel_accommodation_id)
+        limit 1
+      ) hot on true
       left join lateral (
         -- Última posición ligada al viaje o al conductor asignado (últimas
         -- 12 h), aunque el viaje no esté marcado como activo.
@@ -219,6 +240,12 @@ export class VipMonitoringService {
         id: r.id,
         fullName: r.full_name,
         phone: r.phone ?? null,
+        email: r.email ?? null,
+        countryCode: r.country_code ?? null,
+        delegationCode: r.delegation_code ?? null,
+        discipline: r.discipline_name ?? null,
+        hotel: r.hotel_name ?? null,
+        region: r.region ?? null,
         eventId: r.event_id ?? null,
         trip: r.trip_id
           ? {

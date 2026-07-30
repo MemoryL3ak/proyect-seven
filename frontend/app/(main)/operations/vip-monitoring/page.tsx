@@ -18,6 +18,12 @@ type VipRow = {
   id: string;
   fullName: string;
   phone?: string | null;
+  email?: string | null;
+  countryCode?: string | null;
+  delegationCode?: string | null;
+  discipline?: string | null;
+  hotel?: string | null;
+  region?: string | null;
   eventId?: string | null;
   trip: {
     id: string;
@@ -43,6 +49,34 @@ type Snapshot = {
 };
 
 type EventItem = { id: string; name?: string | null };
+
+const countryLabels: Record<string, string> = {
+  ARG: "Argentina",
+  BOL: "Bolivia",
+  BRA: "Brasil",
+  CHL: "Chile",
+  COL: "Colombia",
+  ECU: "Ecuador",
+  PRY: "Paraguay",
+  PER: "Perú",
+  URY: "Uruguay",
+  VEN: "Venezuela",
+  MEX: "México",
+  USA: "Estados Unidos",
+  CAN: "Canadá",
+  ESP: "España",
+  FRA: "Francia",
+  DEU: "Alemania",
+  ITA: "Italia",
+  PRT: "Portugal",
+  GBR: "Reino Unido",
+};
+
+function countryName(code?: string | null) {
+  const c = String(code ?? "").trim().toUpperCase();
+  if (!c) return null;
+  return countryLabels[c] ?? c;
+}
 
 const TRIP_LABEL: Record<string, string> = {
   REQUESTED: "Viaje solicitado",
@@ -104,7 +138,15 @@ export default function VipMonitoringPage() {
     const q = search.trim().toLowerCase();
     return (snapshot?.vips ?? [])
       .filter((v) => (soloEnViaje ? !!v.trip?.active : true))
-      .filter((v) => (q ? `${v.fullName} ${v.phone ?? ""}`.toLowerCase().includes(q) : true));
+      .filter((v) =>
+        q
+          ? `${v.fullName} ${v.phone ?? ""} ${v.email ?? ""} ${countryName(v.countryCode) ?? ""} ${
+              countryName(v.delegationCode) ?? ""
+            } ${v.hotel ?? ""}`
+              .toLowerCase()
+              .includes(q)
+          : true,
+      );
   }, [snapshot, search, soloEnViaje]);
 
   const markers: PresenceMarker[] = useMemo(
@@ -117,7 +159,15 @@ export default function VipMonitoringPage() {
           // viaje activo: el tracking VIP es permanente.
           const fresh = !p.timestamp || Date.now() - new Date(p.timestamp).getTime() < 10 * 60_000;
           const detailRows: { label: string; value: string }[] = [];
+          const pais = countryName(v.countryCode);
+          const delegacion = countryName(v.delegationCode);
+          if (pais) detailRows.push({ label: "País", value: pais });
+          if (delegacion && delegacion !== pais) detailRows.push({ label: "Delegación", value: delegacion });
+          if (v.discipline) detailRows.push({ label: "Disciplina", value: v.discipline });
+          if (v.hotel) detailRows.push({ label: "Hotel", value: v.hotel });
+          if (v.region) detailRows.push({ label: "Región", value: v.region });
           if (v.phone) detailRows.push({ label: "Teléfono", value: v.phone });
+          if (v.email) detailRows.push({ label: "Email", value: v.email });
           detailRows.push({
             label: "Fuente",
             value: p.source === "PASSENGER" ? "GPS del VIP" : "GPS del vehículo",
@@ -278,10 +328,10 @@ export default function VipMonitoringPage() {
           </h2>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm" style={{ minWidth: 760 }}>
+          <table className="w-full text-sm" style={{ minWidth: 980 }}>
             <thead>
               <tr style={{ background: "var(--elevated)" }}>
-                {["VIP", "Estado", "Viaje", "Conductor", "Ubicación", "Última señal"].map((h) => (
+                {["VIP", "País / Delegación", "Hotel", "Estado", "Viaje", "Conductor", "Ubicación", "Última señal"].map((h) => (
                   <th key={h} className="px-3 py-2 text-left text-[10px] font-bold uppercase"
                     style={{ letterSpacing: "0.08em", color: "var(--text-muted)", whiteSpace: "nowrap" }}>
                     {h}
@@ -295,6 +345,19 @@ export default function VipMonitoringPage() {
                   <td className="px-3 py-2.5">
                     <p className="font-bold" style={{ color: "var(--text)" }}>{v.fullName}</p>
                     {v.phone && <p className="text-xs" style={{ color: "var(--text-muted)" }}>{v.phone}</p>}
+                    {v.email && <p className="text-xs" style={{ color: "var(--text-faint)" }}>{v.email}</p>}
+                  </td>
+                  <td className="px-3 py-2.5 whitespace-nowrap">
+                    <p className="text-xs font-semibold" style={{ color: "var(--text)" }}>
+                      {countryName(v.countryCode) || "—"}
+                    </p>
+                    {countryName(v.delegationCode) && countryName(v.delegationCode) !== countryName(v.countryCode) && (
+                      <p className="text-xs" style={{ color: "var(--text-muted)" }}>{countryName(v.delegationCode)}</p>
+                    )}
+                    {v.discipline && <p className="text-xs" style={{ color: "var(--text-faint)" }}>{v.discipline}</p>}
+                  </td>
+                  <td className="px-3 py-2.5" style={{ color: "var(--text-muted)" }}>
+                    <span className="text-xs">{v.hotel || "—"}</span>
                   </td>
                   <td className="px-3 py-2.5 whitespace-nowrap">
                     {v.trip ? (
@@ -342,7 +405,7 @@ export default function VipMonitoringPage() {
               ))}
               {visibles.length === 0 && (
                 <tr style={{ borderTop: "1px solid var(--border)" }}>
-                  <td colSpan={6} className="px-3 py-8 text-center text-sm" style={{ color: "var(--text-muted)" }}>
+                  <td colSpan={8} className="px-3 py-8 text-center text-sm" style={{ color: "var(--text-muted)" }}>
                     No hay usuarios VIP que coincidan con los filtros.
                   </td>
                 </tr>

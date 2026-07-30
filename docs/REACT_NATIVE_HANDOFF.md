@@ -958,3 +958,19 @@ para que nunca vuelva a aparecer la pantalla de error:
 Con el handler nativo instalado, tocar un número de emergencia abre el
 marcador del teléfono directamente; el panel del portal queda solo como
 respaldo visual.
+
+## Otros usos de `url.open` en el web (2026-07-29)
+
+**Guardar credencial en el dispositivo.** Dentro del WebView las descargas
+no funcionan (`doc.save()` de jsPDF intenta navegar a un `blob:` y el shell
+lo bloquea). El botón "Guardar" del visor de credencial ahora envía por el
+puente:
+
+```json
+{ "v": 1, "type": "url.open", "payload": { "url": "https://<host>/credencial?e=…&n=…&q=…" } }
+```
+
+Esa página se abre en el navegador del sistema (Chrome/Safari), regenera el
+PDF de la credencial con los datos del query string y lo descarga de verdad
+en el teléfono. El handler nativo de arriba ya lo cubre (esquema `https:`);
+no se necesita nada adicional.

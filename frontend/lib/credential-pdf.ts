@@ -1,4 +1,5 @@
 import { jsPDF } from "jspdf";
+import { isAvailable as isNativeBridge, send as nativeSend } from "@/lib/native-bridge";
 
 /**
  * Genera y descarga el PDF de la credencial. Reemplaza el flujo de
@@ -12,6 +13,8 @@ export type CredentialPdfData = {
   code?: string;
   countryTag?: string;
   qrDataUrl?: string;
+  /** Contenido plano del QR — permite regenerarlo fuera del portal. */
+  qrContent?: string;
   organization?: string;
 };
 
@@ -113,4 +116,29 @@ export function downloadCredentialPdf(data: CredentialPdfData) {
  */
 export function credentialPdfDataUri(data: CredentialPdfData): string {
   return buildCredentialDoc(data).output("datauristring");
+}
+
+/**
+ * Guarda la credencial en el dispositivo, también dentro de la app nativa.
+ *
+ * En el WebView, doc.save() no descarga nada (el shell bloquea la navegación
+ * a blob:). En su lugar se abre el navegador del sistema (puente `url.open`,
+ * el mismo de los números de emergencia) en /credencial, una página que
+ * regenera el PDF y lo descarga de verdad. En un navegador normal se
+ * descarga directo.
+ */
+export function saveCredentialPdf(data: CredentialPdfData) {
+  if (isNativeBridge()) {
+    const params = new URLSearchParams();
+    params.set("e", data.eventName || "");
+    params.set("n", data.fullName || "");
+    params.set("r", data.roleLabel || "");
+    if (data.code) params.set("c", data.code);
+    if (data.countryTag) params.set("t", data.countryTag);
+    if (data.organization) params.set("o", data.organization);
+    if (data.qrContent) params.set("q", data.qrContent);
+    nativeSend("url.open", { url: `${window.location.origin}/credencial?${params.toString()}` });
+    return;
+  }
+  downloadCredentialPdf(data);
 }

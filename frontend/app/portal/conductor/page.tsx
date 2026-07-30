@@ -17,7 +17,7 @@ import { isAvailable as isNativeAvailable, request as nativeRequest } from "@/li
 import PushTokenSync from "@/components/PushTokenSync";
 import QRCode from "qrcode";
 import { buildCredentialHtml } from "@/lib/credential-template";
-import { downloadCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
+import { downloadCredentialPdf, saveCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
 import { clearPersistedTabs, persistTab, restoreOnReload, startTabHeartbeat } from "@/lib/portal-tab";
 import { claimPortalSession, clearPortalSession } from "@/lib/portal-session";
 import PortalSessionGuard from "@/components/PortalSessionGuard";
@@ -1935,6 +1935,7 @@ export default function DriverPortalPage() {
                           code: driverProfile.credentialCode || driverProfile.id?.slice(-6) || undefined,
                           countryTag: prov?.name || undefined,
                           qrDataUrl,
+                          qrContent: qrData,
                           organization: "Seven Arena",
                         });
                         setCredentialHtml(html);
@@ -2256,7 +2257,7 @@ export default function DriverPortalPage() {
           srcDoc={credentialPdfView}
           title="Credencial completa"
           onClose={() => setCredentialPdfView(null)}
-          onDownload={() => { if (credentialPdf) { try { downloadCredentialPdf(credentialPdf); } catch {} } }}
+          onDownload={() => { if (credentialPdf) { try { saveCredentialPdf(credentialPdf); } catch {} } }}
         />
       )}
 

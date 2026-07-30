@@ -491,54 +491,104 @@ export default function PremiacionesPage() {
           </p>
         </div>
       ) : viewMode === "timeline" ? (
-        /* Timeline cronológico — mismo estilo que la bitácora de viajes */
-        <section className="surface rounded-2xl p-5">
-          <h2 className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: "#0f9d84" }}>
-            Timeline de premiaciones
-          </h2>
-          <div style={{ position: "relative", paddingLeft: 20 }}>
-            <div style={{ position: "absolute", left: 5, top: 4, bottom: 4, width: 2, background: "#e2e8f0", borderRadius: 1 }} />
+        /* Timeline operativa — tablero por columnas, mismo formato que el
+           "Estado general de viajes" del módulo de tracking. */
+        <section style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, padding: 16, boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div>
+              <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase" as const, color: "#94a3b8" }}>Timeline operativa</p>
+              <h3 style={{ marginTop: "3px", fontWeight: 700, fontSize: "16px", color: "#0f172a" }}>Estado general de premiaciones</h3>
+            </div>
+            <span style={{ fontSize: "12px", fontWeight: 600, color: "#64748b", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "99px", padding: "4px 12px" }}>
+              {totalVisible} premiaciones con los filtros actuales
+            </span>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             {(() => {
-              const items = [...[...past].reverse(), ...upcoming];
-              const nextId = upcoming[0]?.id ?? null;
-              return items.map((p, i) => {
-                const isNext = p.id === nextId;
-                const isDone = p.status === "REALIZADA";
-                const color = isDone ? "#059669" : isNext ? "#21D0B3" : "#f59e0b";
-                const awarders = p.awarders || [];
-                const confirmed = awarders.filter((a) => awarderState(a) === "CONFIRMED").length;
-                return (
-                  <div key={p.id} style={{ position: "relative", marginBottom: i < items.length - 1 ? 18 : 0 }}>
-                    <div style={{ position: "absolute", left: -20, top: 2, width: 12, height: 12, borderRadius: "50%", background: "#fff", border: `2px solid ${color}`, zIndex: 1, ...(isNext ? { boxShadow: `0 0 0 3px ${color}33` } : {}) }} />
-                    <p className="text-[13px] font-bold" style={{ color, margin: 0 }}>
-                      {fmtDateTime(p.scheduledAt)}
-                      {isNext && (
-                        <span className="ml-2 text-[9px] font-bold px-1.5 py-0.5 rounded-full align-middle"
-                          style={{ background: "rgba(33,208,179,0.14)", color: "#0f9d84", border: "1px solid rgba(33,208,179,0.45)" }}>
-                          ★ PRÓXIMA
-                        </span>
-                      )}
-                      <span className="ml-2 text-[9px] font-bold px-1.5 py-0.5 rounded-full align-middle"
-                        style={{ background: (STATUS_META[p.status] || STATUS_META.PROGRAMADA).bg, color: (STATUS_META[p.status] || STATUS_META.PROGRAMADA).color }}>
-                        {(STATUS_META[p.status] || STATUS_META.PROGRAMADA).label}
-                      </span>
-                    </p>
-                    <p className="text-sm font-semibold" style={{ color: "#0f172a", margin: "2px 0 0" }}>
-                      {p.title}
-                      {p.discipline && <span className="ml-1.5 text-xs font-semibold" style={{ color: "#14b8a6" }}>· {p.discipline}</span>}
-                    </p>
-                    <p className="text-xs" style={{ color: "#64748b", margin: "2px 0 0" }}>
-                      {[p.venueName, p.locationDetail].filter(Boolean).join(" · ") || "Sin sede definida"}
-                      {awarders.length > 0 && ` · ${confirmed}/${awarders.length} VIP confirmaron`}
-                    </p>
-                    <button type="button" onClick={() => openEdit(p)}
-                      className="text-[11px] font-semibold mt-1"
-                      style={{ color: "#d97706", cursor: "pointer", background: "none", border: "none", padding: 0 }}>
-                      ✎ Editar
-                    </button>
+              const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+              const todayStart = startOfDay(new Date());
+              const tomorrowStart = todayStart + 86400000;
+              const all = [...upcoming, ...past];
+              const when = (p: Premiacion) => new Date(p.scheduledAt).getTime();
+              const columns: { key: string; label: string; accent: string; chipBg: string; chipBorder: string; items: Premiacion[]; empty: string }[] = [
+                {
+                  key: "hoy", label: "Hoy", accent: "#21D0B3", chipBg: "rgba(33,208,179,0.12)", chipBorder: "rgba(33,208,179,0.45)",
+                  items: all.filter((p) => p.status !== "REALIZADA" && when(p) >= todayStart && when(p) < tomorrowStart),
+                  empty: "Sin ceremonias hoy.",
+                },
+                {
+                  key: "proximas", label: "Próximas", accent: "#2563eb", chipBg: "#dbeafe", chipBorder: "#93c5fd",
+                  items: all.filter((p) => p.status !== "REALIZADA" && when(p) >= tomorrowStart),
+                  empty: "Sin ceremonias futuras.",
+                },
+                {
+                  key: "atrasadas", label: "Atrasadas", accent: "#f59e0b", chipBg: "#fef3c7", chipBorder: "#fcd34d",
+                  items: all.filter((p) => p.status !== "REALIZADA" && when(p) < todayStart).sort((a, b) => when(b) - when(a)),
+                  empty: "Nada pendiente de cerrar.",
+                },
+                {
+                  key: "realizadas", label: "Realizadas", accent: "#059669", chipBg: "#e7f5ec", chipBorder: "#86efac",
+                  items: all.filter((p) => p.status === "REALIZADA").sort((a, b) => when(b) - when(a)),
+                  empty: "Aún sin ceremonias realizadas.",
+                },
+              ];
+              const nextId = upcoming.find((p) => p.status !== "REALIZADA")?.id ?? null;
+              return columns.map((col) => (
+                <div key={col.key} style={{
+                  background: "#fff", border: "1px solid #e2e8f0", borderTop: `3px solid ${col.accent}`,
+                  borderRadius: "16px", padding: "12px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+                    <span style={{ fontSize: "11px", fontWeight: 700, color: col.accent, textTransform: "uppercase", letterSpacing: "0.1em" }}>
+                      {col.label}
+                    </span>
+                    <span style={{
+                      minWidth: "22px", height: "22px", borderRadius: "99px", display: "inline-flex", alignItems: "center", justifyContent: "center",
+                      fontSize: "11px", fontWeight: 800,
+                      background: col.items.length > 0 ? col.chipBg : "#f1f5f9",
+                      color: col.items.length > 0 ? col.accent : "#64748b",
+                      border: col.items.length > 0 ? `1px solid ${col.chipBorder}` : "1px solid #e2e8f0",
+                    }}>
+                      {col.items.length}
+                    </span>
                   </div>
-                );
-              });
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {col.items.slice(0, 4).map((p) => {
+                      const awarders = p.awarders || [];
+                      const confirmed = awarders.filter((a) => awarderState(a) === "CONFIRMED").length;
+                      return (
+                        <button key={p.id} type="button" onClick={() => openEdit(p)} style={{
+                          background: "#f8fafc", border: "1px solid #e2e8f0", borderLeft: `3px solid ${col.accent}`,
+                          borderRadius: "10px", padding: "8px 10px", textAlign: "left", cursor: "pointer", width: "100%",
+                        }}>
+                          <p style={{ fontSize: "12px", fontWeight: 700, color: "#0f172a" }}>
+                            {p.title}
+                            {p.id === nextId && (
+                              <span className="ml-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full align-middle"
+                                style={{ background: "rgba(33,208,179,0.14)", color: "#0f9d84", border: "1px solid rgba(33,208,179,0.45)" }}>
+                                ★ PRÓXIMA
+                              </span>
+                            )}
+                          </p>
+                          <p style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>
+                            {fmtDateTime(p.scheduledAt)}{p.discipline ? ` · ${p.discipline}` : ""}
+                          </p>
+                          <p style={{ fontSize: "11px", color: "#94a3b8" }}>
+                            {[p.venueName, p.locationDetail].filter(Boolean).join(" · ") || "Sin sede definida"}
+                            {awarders.length > 0 && ` · ${confirmed}/${awarders.length} VIP`}
+                          </p>
+                        </button>
+                      );
+                    })}
+                    {col.items.length === 0 && (
+                      <p style={{ fontSize: "12px", color: "#94a3b8", textAlign: "center", padding: "12px 0" }}>{col.empty}</p>
+                    )}
+                    {col.items.length > 4 && (
+                      <p style={{ fontSize: "11px", color: col.accent, textAlign: "center", fontWeight: 600 }}>+{col.items.length - 4} más</p>
+                    )}
+                  </div>
+                </div>
+              ));
             })()}
           </div>
         </section>

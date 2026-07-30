@@ -18,7 +18,7 @@ import SofiaWidget from "@/components/SofiaWidget";
 import VenueMap from "@/components/VenueMap";
 import CredentialQrCard from "@/components/CredentialQrCard";
 import { buildCredentialHtml } from "@/lib/credential-template";
-import { downloadCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
+import { downloadCredentialPdf, saveCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
 import { isAvailable as isNativeShell } from "@/lib/native-bridge";
 import { clearPersistedTabs, persistTab, restoreOnReload, startTabHeartbeat } from "@/lib/portal-tab";
 import { claimPortalSession, clearPortalSession } from "@/lib/portal-session";
@@ -3542,6 +3542,7 @@ export default function VehicleRequestPortalPage() {
                         code: athlete.id.slice(-6),
                         countryTag: delegations[athlete.delegationId || ""]?.countryCode || undefined,
                         qrDataUrl,
+                        qrContent: qrData,
                         organization: "Seven Arena",
                       });
                       setCredentialHtml(html);
@@ -3795,7 +3796,7 @@ export default function VehicleRequestPortalPage() {
           srcDoc={credentialPdfView}
           title="Credencial completa"
           onClose={() => setCredentialPdfView(null)}
-          onDownload={() => { if (credentialPdf) { try { downloadCredentialPdf(credentialPdf); } catch {} } }}
+          onDownload={() => { if (credentialPdf) { try { saveCredentialPdf(credentialPdf); } catch {} } }}
         />
       )}
 
