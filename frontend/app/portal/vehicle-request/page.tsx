@@ -10,6 +10,8 @@ import NotificationBell, { useNotifications } from "@/components/NotificationBel
 import TripChat from "@/components/TripChat";
 import AssistanceChat from "@/components/AssistanceChat";
 import DevicePermissionsSection from "@/components/DevicePermissionsSection";
+import DeleteAccountSection from "@/components/DeleteAccountSection";
+import { deletePortalAccount } from "@/lib/account-deletion";
 import CuadernoCargoSection from "@/components/CuadernoCargoSection";
 import EmergencyNumbersSection from "@/components/EmergencyNumbersSection";
 import PushTokenSync from "@/components/PushTokenSync";
@@ -3678,6 +3680,12 @@ export default function VehicleRequestPortalPage() {
                   </svg>
                   Cerrar sesion
                 </button>
+
+                {/* Eliminar cuenta */}
+                <DeleteAccountSection
+                  onDelete={() => deletePortalAccount("athlete", athlete.id)}
+                  onDeleted={logout}
+                />
               </div>
             )}
 

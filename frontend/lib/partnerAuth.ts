@@ -60,6 +60,12 @@ export async function logoutPartner() {
   clearPartner();
 }
 
+/** Baja de cuenta iniciada por el propio partner (requiere sesión activa). */
+export async function deletePartnerAccount(): Promise<void> {
+  await partnerFetch("/coupon-partners/me/delete-account", { method: "POST" });
+  clearPartner();
+}
+
 /** apiFetch variant that adds X-Partner-Token. */
 export async function partnerFetch<T = unknown>(
   path: string,

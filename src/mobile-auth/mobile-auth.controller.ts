@@ -6,6 +6,7 @@ import {
 } from './mobile-auth.service';
 import { MobileLoginDto } from './dto/mobile-login.dto';
 import { MobileRecoverDto } from './dto/mobile-recover.dto';
+import { MobileDeleteAccountDto } from './dto/mobile-delete-account.dto';
 
 @Controller('m/auth')
 export class MobileAuthController {
@@ -41,5 +42,15 @@ export class MobileAuthController {
   @Post('session/release')
   releaseSession(@Body() body: { kind?: string; userId?: string; sessionId?: string }) {
     return this.mobileAuthService.releaseSession(body ?? {});
+  }
+
+  /**
+   * Eliminación de cuenta a pedido del propio usuario (soft delete).
+   * Requiere el código de acceso del portal como confirmación de identidad;
+   * tras la baja, el login por código y las sesiones activas quedan inválidos.
+   */
+  @Post('account/delete')
+  deleteAccount(@Body() dto: MobileDeleteAccountDto) {
+    return this.mobileAuthService.deleteAccount(dto);
   }
 }

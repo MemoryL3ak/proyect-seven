@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Inject,
   Injectable,
+  InternalServerErrorException,
   Logger,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -96,10 +97,13 @@ export class MobileAuthService {
       const { data: row } = await this.supabase
         .schema(target.schema)
         .from(target.table)
-        .select('id, metadata')
+        .select('id, metadata, status')
         .eq('id', userId)
         .maybeSingle();
       if (!row) throw new UnauthorizedException('Usuario no encontrado');
+      if (row.status === 'DELETED') {
+        throw new UnauthorizedException('Cuenta eliminada');
+      }
       const meta = ((row.metadata as Record<string, unknown>) ?? {});
       const existing = typeof meta.portalSessionId === 'string' ? meta.portalSessionId : '';
       const at = meta.portalSessionAt ? new Date(String(meta.portalSessionAt)).getTime() : 0;
@@ -150,9 +154,11 @@ export class MobileAuthService {
       const { data: row } = await this.supabase
         .schema(target.schema)
         .from(target.table)
-        .select('metadata')
+        .select('metadata, status')
         .eq('id', userId)
         .maybeSingle();
+      // Cuenta eliminada: cualquier dispositivo que siga dentro debe salir.
+      if (row?.status === 'DELETED') return { valid: false };
       const meta = (row?.metadata as Record<string, unknown> | null) ?? {};
       const current = meta.portalSessionId;
       // Sin sesión registrada (usuarios antiguos) → válida; distinta → la
@@ -214,6 +220,79 @@ export class MobileAuthService {
     }
   }
 
+  // ── Eliminación de cuenta (iniciada por el propio usuario) ──────────────────
+  // Soft delete: la fila se conserva (historial de viajes, canjes, etc. siguen
+  // consistentes) pero status pasa a DELETED, con lo que el login por código y
+  // el reclamo de sesión la rechazan. El código de acceso (últimos 6 del id)
+  // confirma que quien pide la baja conoce la credencial — el mismo nivel de
+  // autenticación que usa el login de los portales.
+
+  async deleteAccount(input: { kind?: string; userId?: string; code?: string }) {
+    const kind = String(input.kind || '');
+    const userId = String(input.userId || '').trim();
+    const code = String(input.code || '').trim().toLowerCase();
+    if (!userId || !['athlete', 'driver', 'staff'].includes(kind)) {
+      throw new BadRequestException('kind y userId son obligatorios');
+    }
+    if (!code || userId.slice(-6).toLowerCase() !== code) {
+      throw new UnauthorizedException('Código inválido');
+    }
+
+    const target =
+      kind === 'staff'
+        ? { schema: 'core', table: 'provider_participants' }
+        : await this.sessionTable(kind, userId);
+    if (!target) throw new BadRequestException('kind inválido');
+
+    const { data: row, error: readError } = await this.supabase
+      .schema(target.schema)
+      .from(target.table)
+      .select('id, metadata, status')
+      .eq('id', userId)
+      .maybeSingle();
+    if (readError) {
+      throw new InternalServerErrorException('No se pudo eliminar la cuenta');
+    }
+    if (!row) throw new UnauthorizedException('Usuario no encontrado');
+
+    const meta = { ...(((row.metadata as Record<string, unknown>) ?? {})) };
+    delete meta.portalSessionId;
+    delete meta.portalSessionAt;
+    const metadata = {
+      ...meta,
+      deletedAt: new Date().toISOString(),
+      deletedBy: 'self',
+      statusBeforeDeletion: row.status ?? null,
+    };
+
+    const { error: updateError } = await this.supabase
+      .schema(target.schema)
+      .from(target.table)
+      .update({ status: 'DELETED', metadata })
+      .eq('id', userId);
+    if (updateError) {
+      this.logger.error(
+        `No se pudo eliminar la cuenta de ${kind} ${userId}: ${updateError.message}`,
+      );
+      throw new InternalServerErrorException('No se pudo eliminar la cuenta');
+    }
+
+    // Best-effort: sin la cuenta ya no deben llegar push a sus dispositivos.
+    const { error: tokenError } = await this.supabase
+      .schema('core')
+      .from('device_tokens')
+      .delete()
+      .eq('user_id', userId);
+    if (tokenError) {
+      this.logger.warn(
+        `Cuenta ${kind} ${userId} eliminada, pero no se pudieron borrar sus device tokens: ${tokenError.message}`,
+      );
+    }
+
+    this.logger.log(`Cuenta ${kind} ${userId} eliminada a pedido del usuario`);
+    return { ok: true };
+  }
+
   async recover(input: { email: string }): Promise<MobileRecoverResult> {
     const email = String(input.email || '').trim().toLowerCase();
 
@@ -250,6 +329,7 @@ export class MobileAuthService {
       .schema('core')
       .from('athletes')
       .select('id, full_name, email')
+      .neq('status', 'DELETED')
       .ilike('email', email)
       .limit(1)
       .maybeSingle();
@@ -269,6 +349,7 @@ export class MobileAuthService {
       .schema('transport')
       .from('drivers')
       .select('id, full_name, email')
+      .neq('status', 'DELETED')
       .ilike('email', email)
       .limit(1)
       .maybeSingle();
@@ -282,6 +363,7 @@ export class MobileAuthService {
       .schema('core')
       .from('provider_participants')
       .select('id, full_name, email, metadata')
+      .neq('status', 'DELETED')
       .ilike('email', email)
       .limit(1)
       .maybeSingle();
@@ -312,7 +394,8 @@ export class MobileAuthService {
     const { data, error } = await this.supabase
       .schema('core')
       .from('athletes')
-      .select('id, full_name, email');
+      .select('id, full_name, email')
+      .neq('status', 'DELETED');
 
     if (error) {
       this.logger.error('Athlete lookup error', JSON.stringify(error));
@@ -350,7 +433,8 @@ export class MobileAuthService {
     const { data: driverData, error: driverError } = await this.supabase
       .schema('transport')
       .from('drivers')
-      .select('id, full_name, email');
+      .select('id, full_name, email')
+      .neq('status', 'DELETED');
 
     if (driverError) {
       this.logger.error('Driver lookup error', JSON.stringify(driverError));
@@ -384,7 +468,8 @@ export class MobileAuthService {
     const { data: participantData, error: participantError } = await this.supabase
       .schema('core')
       .from('provider_participants')
-      .select('id, full_name, email, metadata');
+      .select('id, full_name, email, metadata')
+      .neq('status', 'DELETED');
 
     if (participantError) {
       this.logger.error(

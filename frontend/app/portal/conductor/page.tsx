@@ -10,6 +10,8 @@ import NotificationBell, { useNotifications } from "@/components/NotificationBel
 import TripChat from "@/components/TripChat";
 import AssistanceChat from "@/components/AssistanceChat";
 import DevicePermissionsSection from "@/components/DevicePermissionsSection";
+import DeleteAccountSection from "@/components/DeleteAccountSection";
+import { deletePortalAccount } from "@/lib/account-deletion";
 import CuadernoCargoSection from "@/components/CuadernoCargoSection";
 import EmergencyNumbersSection from "@/components/EmergencyNumbersSection";
 import CredentialQrCard from "@/components/CredentialQrCard";
@@ -286,7 +288,9 @@ export default function DriverPortalPage() {
           _isParticipant: true,
         }));
 
-      const allDrivers: Driver[] = [...(driversData || []), ...participantDrivers];
+      const allDrivers: Driver[] = [...(driversData || []), ...participantDrivers]
+        // Las cuentas dadas de baja no pueden volver a iniciar sesión.
+        .filter((driver) => (driver.status ?? "").toUpperCase() !== "DELETED");
 
       const normalizedInput = id.trim().toLowerCase();
       const driverMatch = allDrivers.find((driver) => {
@@ -2091,6 +2095,17 @@ export default function DriverPortalPage() {
 
                 {/* Device permissions (only visible inside the mobile app) */}
                 <DevicePermissionsSection />
+
+                {/* Eliminar cuenta */}
+                <DeleteAccountSection
+                  onDelete={() => deletePortalAccount("driver", driverProfile.id)}
+                  onDeleted={async () => {
+                    try { sessionStorage.removeItem("portal_conductor_id"); } catch {}
+                    clearPersistedTabs();
+                    await releasePortalSession("driver", driverProfile.id);
+                    mobileAwareLogout();
+                  }}
+                />
               </div>
             )}
 

@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import {
   Partner,
   clearPartner,
+  deletePartnerAccount,
   getStoredPartner,
   partnerFetch,
 } from "@/lib/partnerAuth";
+import DeleteAccountSection from "@/components/DeleteAccountSection";
 
 const TEAL = "#21D0B3";
 const TEAL_MID = "#34F3C6";
@@ -437,6 +439,12 @@ export default function PartnerScannerPage() {
             onContinue={reset}
           />
         )}
+
+        {/* Eliminar cuenta del comercio */}
+        <DeleteAccountSection
+          onDelete={deletePartnerAccount}
+          onDeleted={logout}
+        />
       </main>
     </div>
   );

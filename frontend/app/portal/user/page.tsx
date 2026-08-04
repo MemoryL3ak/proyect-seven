@@ -13,6 +13,8 @@ import NotificationBell, { useNotifications } from "@/components/NotificationBel
 import TripChat from "@/components/TripChat";
 import AssistanceChat from "@/components/AssistanceChat";
 import DevicePermissionsSection from "@/components/DevicePermissionsSection";
+import DeleteAccountSection from "@/components/DeleteAccountSection";
+import { deletePortalAccount } from "@/lib/account-deletion";
 import CuadernoCargoSection from "@/components/CuadernoCargoSection";
 import EmergencyNumbersSection from "@/components/EmergencyNumbersSection";
 import PushTokenSync from "@/components/PushTokenSync";
@@ -3074,6 +3076,16 @@ export default function UserPortalPage() {
               style={{ width:"100%",padding:12,borderRadius:12,border:"1px solid #e2e8f0",background:"#fff",color:"#ef4444",fontSize:13,fontWeight:600,cursor:"pointer" }}>
               Cerrar sesión
             </button>
+            {/* Eliminar cuenta */}
+            <DeleteAccountSection
+              onDelete={() => deletePortalAccount("athlete", athlete.id)}
+              onDeleted={async () => {
+                try { sessionStorage.removeItem("portal_user_id"); } catch {}
+                clearPersistedTabs();
+                await releasePortalSession("athlete", athlete.id);
+                mobileAwareLogout();
+              }}
+            />
           </div>
         )}
 

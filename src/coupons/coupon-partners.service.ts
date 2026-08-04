@@ -152,6 +152,40 @@ export class CouponPartnersService {
     };
   }
 
+  /**
+   * Baja de cuenta iniciada por el propio partner (soft delete): queda
+   * inactivo (login y verifyToken lo rechazan) y se cierran todas sus
+   * sesiones. La fila se conserva para que los canjes históricos no queden
+   * huérfanos.
+   */
+  async deleteMyAccount(partnerId: string) {
+    const { data: partner, error: readError } = await this.supabase
+      .from('coupon_partners')
+      .select('id, metadata')
+      .eq('id', partnerId)
+      .maybeSingle();
+    this.throwIfError(readError, 'Error eliminando la cuenta');
+    if (!partner) throw new NotFoundException('Partner no encontrado');
+
+    const metadata = {
+      ...(((partner as any).metadata as Row | null) ?? {}),
+      deletedAt: new Date().toISOString(),
+      deletedBy: 'self',
+    };
+    const { error: updateError } = await this.supabase
+      .from('coupon_partners')
+      .update({ active: false, metadata })
+      .eq('id', partnerId);
+    this.throwIfError(updateError, 'Error eliminando la cuenta');
+
+    await this.supabase
+      .from('coupon_partner_sessions')
+      .delete()
+      .eq('partner_id', partnerId);
+
+    return { ok: true };
+  }
+
   async logout(token: string) {
     await this.supabase
       .from('coupon_partner_sessions')

@@ -96,6 +96,13 @@ export class CouponPartnersController {
     return this.coupons.validateClaim(body.token, req.partner.id);
   }
 
+  /** Baja de cuenta iniciada por el propio partner (soft delete + cierre de sesiones). */
+  @Post('me/delete-account')
+  @UseGuards(PartnerAuthGuard)
+  deleteMyAccount(@Req() req: any) {
+    return this.partners.deleteMyAccount(req.partner.id);
+  }
+
   @Post('me/redeem')
   @UseGuards(PartnerAuthGuard)
   redeem(@Body() dto: ConfirmRedeemDto, @Req() req: any) {

@@ -4,6 +4,10 @@ export function isAthletePersonalDataValidated(item: unknown): boolean {
     metadata?: Record<string, unknown> | null;
   };
 
+  // Una cuenta eliminada nunca cuenta como validada, aunque su metadata
+  // conserve personalDataValidated de antes de la baja.
+  if (athlete.status === "DELETED") return false;
+
   return (
     athlete.status === "PERSONAL_DATA_VALIDATED" ||
     athlete.metadata?.personalDataValidated === true

@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import DeleteAccountSection from "@/components/DeleteAccountSection";
+import { deletePortalAccount } from "@/lib/account-deletion";
 
 type ScanLocation = "ESTADIO" | "HOTEL" | "GIMNASIO" | "CASINO";
 
@@ -219,7 +221,8 @@ export default function AccessControlPortalPage() {
       const normalized = codeInput.trim().toLowerCase();
       const match = (participants || []).find((p) => {
         if (!staffProviderIds.has(p.providerId)) return false;
-        if ((p.status ?? "").toUpperCase() === "DISABLED") return false;
+        const status = (p.status ?? "").toUpperCase();
+        if (status === "DISABLED" || status === "DELETED") return false;
         return p.id.slice(-6).toLowerCase() === normalized;
       });
       if (!match) {
@@ -605,6 +608,11 @@ export default function AccessControlPortalPage() {
               >
                 Cerrar sesión
               </button>
+              <DeleteAccountSection
+                compact
+                onDelete={() => deletePortalAccount("staff", staff.id)}
+                onDeleted={logout}
+              />
             </div>
           </div>
         </section>
