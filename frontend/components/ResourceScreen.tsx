@@ -1968,6 +1968,21 @@ export default function ResourceScreen({
     }
   };
 
+  // Cuenta dada de baja desde el portal por el propio usuario (soft delete).
+  const isAccountDeleted = (item: Record<string, any>) =>
+    String(item.status ?? "").toUpperCase() === "DELETED";
+
+  const handleReactivate = async (id: string) => {
+    setError(null);
+    try {
+      await apiFetch(`${config.endpoint}/${id}/reactivate`, { method: "POST" });
+      loadItems();
+      onDataChanged?.();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("Error al reactivar"));
+    }
+  };
+
   const missingAthleteValidationFields = (item: Record<string, any>) => {
     const required = [
       { key: "eventId", label: "Evento" },
@@ -3692,6 +3707,7 @@ export default function ResourceScreen({
                 )}
                 {filtered.map((item) => {
                   const isVal = isAthletePersonalDataValidated(item);
+                  const isDeleted = isAccountDeleted(item);
                   const missing = missingAthleteValidationFields(item);
                   const initials = (item.fullName ?? "?").split(" ").slice(0, 2).map((w: string) => w[0] ?? "").join("").toUpperCase();
                   const delegLabel = delegationOptions.find((o) => o.value === item.delegationId)?.label ?? item.delegationId ?? null;
@@ -3702,9 +3718,9 @@ export default function ResourceScreen({
                   return (
                     <div key={item.id ?? JSON.stringify(item)} style={{
                       borderRadius: "12px",
-                      border: `1px solid ${isVal ? "rgba(16,185,129,0.25)" : "#e2e8f0"}`,
-                      borderLeft: `4px solid ${isVal ? "#10b981" : "#f59e0b"}`,
-                      background: isVal ? "rgba(16,185,129,0.03)" : "#fafafa",
+                      border: `1px solid ${isDeleted ? "rgba(239,68,68,0.3)" : isVal ? "rgba(16,185,129,0.25)" : "#e2e8f0"}`,
+                      borderLeft: `4px solid ${isDeleted ? "#ef4444" : isVal ? "#10b981" : "#f59e0b"}`,
+                      background: isDeleted ? "rgba(239,68,68,0.04)" : isVal ? "rgba(16,185,129,0.03)" : "#fafafa",
                       padding: "12px 14px",
                       display: "flex",
                       alignItems: "flex-start",
@@ -3734,14 +3750,14 @@ export default function ResourceScreen({
                           {/* Status badge */}
                           <span style={{
                             fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", padding: "2px 8px", borderRadius: "20px",
-                            background: isVal ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.12)",
-                            color: isVal ? "#059669" : "#b45309",
-                            border: `1px solid ${isVal ? "rgba(16,185,129,0.3)" : "rgba(245,158,11,0.3)"}`,
+                            background: isDeleted ? "rgba(239,68,68,0.12)" : isVal ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.12)",
+                            color: isDeleted ? "#dc2626" : isVal ? "#059669" : "#b45309",
+                            border: `1px solid ${isDeleted ? "rgba(239,68,68,0.3)" : isVal ? "rgba(16,185,129,0.3)" : "rgba(245,158,11,0.3)"}`,
                           }}>
-                            {isVal ? t("VALIDADO") : t("PENDIENTE")}
+                            {isDeleted ? t("ELIMINADA") : isVal ? t("VALIDADO") : t("PENDIENTE")}
                           </span>
                           {/* Missing fields warning */}
-                          {!isVal && missing.length > 0 && (
+                          {!isVal && !isDeleted && missing.length > 0 && (
                             <span title={missing.map((f) => f.label).join(", ")} style={{
                               fontSize: "10px", fontWeight: 600, padding: "2px 8px", borderRadius: "20px",
                               background: "rgba(239,68,68,0.1)", color: "#dc2626",
@@ -3808,7 +3824,16 @@ export default function ResourceScreen({
                       </div>
                       {/* Actions */}
                       <div style={{ display: "flex", flexDirection: "column", gap: "5px", flexShrink: 0, alignItems: "flex-end" }}>
-                        {!isVal && (
+                        {isDeleted && item.id && (
+                          <button
+                            className="btn btn-primary"
+                            style={{ fontSize: "11px", padding: "5px 12px", borderRadius: "8px" }}
+                            onClick={() => handleReactivate(item.id)}
+                          >
+                            {t("Reactivar")}
+                          </button>
+                        )}
+                        {!isVal && !isDeleted && (
                           <button
                             className="btn btn-primary"
                             style={{ fontSize: "11px", padding: "5px 12px", borderRadius: "8px" }}
@@ -3896,6 +3921,15 @@ export default function ResourceScreen({
                       );
                     })}
                     <td className="flex gap-2">
+                      {item.id && isAccountDeleted(item) && (
+                        <button
+                          className="btn btn-ghost"
+                          style={{ color: "#059669", fontWeight: 700 }}
+                          onClick={() => handleReactivate(item.id)}
+                        >
+                          {t("Reactivar")}
+                        </button>
+                      )}
                       <button
                         className="btn btn-ghost"
                         onClick={() => {

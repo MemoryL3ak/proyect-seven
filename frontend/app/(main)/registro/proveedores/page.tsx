@@ -612,6 +612,16 @@ export default function ProveedoresPage() {
     }
   };
 
+  // Reactiva una cuenta dada de baja desde el portal por el propio usuario.
+  const reactivateParticipant = async (p: Participant) => {
+    try {
+      await apiFetch(`/provider-participants/${p.id}/reactivate`, { method: "POST" });
+      await loadParticipants();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Error al reactivar");
+    }
+  };
+
   const removeParticipant = (p: Participant) => {
     setConfirmDialog({
       message: `¿Eliminar participante "${p.fullName}"? Esta acción no se puede deshacer.`,
@@ -1167,7 +1177,31 @@ export default function ProveedoresPage() {
                       <span className="hidden md:block" style={{ fontSize: "12px", color: "var(--text-faint)" }}>{p.rut}</span>
                     )}
 
+                    {(p.status ?? "").toUpperCase() === "DELETED" && (
+                      <span style={{
+                        fontSize: "10px", fontWeight: 700, letterSpacing: "0.06em", padding: "2px 8px",
+                        borderRadius: "99px", background: "rgba(239,68,68,0.1)",
+                        border: "1px solid rgba(239,68,68,0.3)", color: "#dc2626", flexShrink: 0,
+                      }}>
+                        ELIMINADA
+                      </span>
+                    )}
+
                     <div className="flex items-center gap-1 flex-shrink-0">
+                      {(p.status ?? "").toUpperCase() === "DELETED" && (
+                        <button
+                          onClick={() => void reactivateParticipant(p)}
+                          className="transition-colors p-1.5"
+                          style={{ color: "var(--text-faint)" }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#10b981"; }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-faint)"; }}
+                          title="Reactivar cuenta"
+                        >
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v6h6M20 20v-6h-6M4 10a8 8 0 0114-4M20 14a8 8 0 01-14 4" />
+                          </svg>
+                        </button>
+                      )}
                       <button
                         onClick={() => openEditParticipant(p)}
                         className="transition-colors p-1.5"

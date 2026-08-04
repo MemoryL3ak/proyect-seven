@@ -385,6 +385,33 @@ export class AthletesService {
     }
     return athlete;
   }
+  /**
+   * Reactiva una cuenta dada de baja desde el portal (status DELETED):
+   * restaura el estado previo guardado en metadata.statusBeforeDeletion y
+   * limpia las marcas de la baja.
+   */
+  async reactivate(id: string) {
+    const rows = (await this.dataSource.query(
+      `
+      update core.athletes
+      set status = coalesce(metadata->>'statusBeforeDeletion', 'REGISTERED'),
+          metadata = coalesce(metadata, '{}'::jsonb) - 'deletedAt' - 'deletedBy' - 'statusBeforeDeletion',
+          updated_at = now()
+      where id = $1 and status = 'DELETED'
+      returning *
+    `,
+      [id],
+    )) as AthleteRow[];
+
+    if (!rows[0]) {
+      throw new NotFoundException(
+        `Athlete with id ${id} not found or not deleted`,
+      );
+    }
+
+    return this.toEntity(rows[0]);
+  }
+
     async remove(id: string) {
     const rows = (await this.dataSource.query(
       `

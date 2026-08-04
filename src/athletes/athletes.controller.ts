@@ -50,6 +50,12 @@ export class AthletesController {
     return this.athletesService.uploadPhoto(id, payload.dataUrl);
   }
 
+  /** Reactiva una cuenta dada de baja desde el portal (status DELETED). */
+  @Post(':id/reactivate')
+  reactivate(@Param('id') id: string) {
+    return this.athletesService.reactivate(id);
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.athletesService.remove(id);

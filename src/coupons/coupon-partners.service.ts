@@ -100,6 +100,24 @@ export class CouponPartnersService {
     if (dto.active !== undefined) row.active = dto.active;
     if (dto.pin) row.pin_hash = await bcrypt.hash(dto.pin, 10);
 
+    // Reactivar un partner que se dio de baja a sí mismo limpia las marcas
+    // de la eliminación (deletedAt/deletedBy) para que vuelva a operar normal.
+    if (dto.active === true) {
+      const { data: current } = await this.supabase
+        .from('coupon_partners')
+        .select('metadata')
+        .eq('id', id)
+        .maybeSingle();
+      const metadata = {
+        ...(((current as any)?.metadata as Row | null) ?? {}),
+      };
+      if ('deletedAt' in metadata || 'deletedBy' in metadata) {
+        delete metadata.deletedAt;
+        delete metadata.deletedBy;
+        row.metadata = metadata;
+      }
+    }
+
     const { data, error } = await this.supabase
       .from('coupon_partners')
       .update(row)

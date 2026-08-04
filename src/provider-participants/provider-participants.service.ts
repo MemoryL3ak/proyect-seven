@@ -174,6 +174,57 @@ export class ProviderParticipantsService {
     return this.toEntity(data as ParticipantRow);
   }
 
+  /**
+   * Reactiva una cuenta dada de baja desde el portal (status DELETED):
+   * restaura el estado previo guardado en metadata.statusBeforeDeletion y
+   * limpia las marcas de la baja.
+   */
+  async reactivate(id: string) {
+    const { data: current, error: readError } = await this.supabase
+      .schema('core')
+      .from('provider_participants')
+      .select('id, status, metadata')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (readError) {
+      throw new InternalServerErrorException(
+        readError.message || 'Error fetching participant',
+      );
+    }
+    if (!current) throw new NotFoundException(`Participant ${id} not found`);
+    if (current.status !== 'DELETED') {
+      throw new BadRequestException('La cuenta no está eliminada');
+    }
+
+    const metadata = {
+      ...((current.metadata as Record<string, unknown>) ?? {}),
+    };
+    const previous = metadata.statusBeforeDeletion;
+    const restoredStatus =
+      typeof previous === 'string' && previous ? previous : 'REGISTERED';
+    delete metadata.deletedAt;
+    delete metadata.deletedBy;
+    delete metadata.statusBeforeDeletion;
+
+    const { data, error } = await this.supabase
+      .schema('core')
+      .from('provider_participants')
+      .update({ status: restoredStatus, metadata })
+      .eq('id', id)
+      .select('*')
+      .maybeSingle();
+
+    if (error) {
+      throw new InternalServerErrorException(
+        error.message || 'Error reactivating participant',
+      );
+    }
+    if (!data) throw new NotFoundException(`Participant ${id} not found`);
+
+    return this.toEntity(data as ParticipantRow);
+  }
+
   async remove(id: string) {
     const { data, error } = await this.supabase
       .schema('core')

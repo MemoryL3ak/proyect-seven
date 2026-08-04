@@ -36,6 +36,12 @@ export class ProviderParticipantsController {
     return this.service.update(id, dto);
   }
 
+  /** Reactiva una cuenta dada de baja desde el portal (status DELETED). */
+  @Post(':id/reactivate')
+  reactivate(@Param('id') id: string) {
+    return this.service.reactivate(id);
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.service.remove(id);

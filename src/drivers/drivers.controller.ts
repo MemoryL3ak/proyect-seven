@@ -64,6 +64,12 @@ export class DriversController {
     );
   }
 
+  /** Reactiva una cuenta dada de baja desde el portal (status DELETED). */
+  @Post(':id/reactivate')
+  reactivate(@Param('id') id: string) {
+    return this.driversService.reactivate(id);
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.driversService.remove(id);
