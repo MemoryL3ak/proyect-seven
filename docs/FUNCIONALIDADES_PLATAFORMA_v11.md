@@ -1,0 +1,970 @@
+# Funcionalidades de la Plataforma Seven Arena
+
+Documento descriptivo de las funcionalidades operativas de la plataforma Seven Arena, orientada a la gestión integral de servicios para eventos deportivos de gran escala (Juegos Panamericanos 2026). Cada módulo se describe en términos de su funcionalidad operativa y de los mecanismos de registro y administración asociados.
+
+> **Versión 4.0 (v11) — Agosto 2026.** Esta edición consolida en formato editable los módulos ya descritos en las versiones anteriores (secciones 1 a 29) e incorpora: **cupones y beneficios con portal partner** (30), **personal operativo y voluntarios** (31), **gestión administrativa de acreditaciones** (32), **centro de ayuda** (33), **inicio guiado** (34), **operatividad diaria del transporte** (35) y **registro de acciones del asistente de IA** (36). Además documenta las funcionalidades liberadas entre julio y agosto de 2026: **sesión única por dispositivo** (37), **eliminación y reactivación de cuentas** (38), **Transfer In/Out y monitor de vuelos** (39), **monitoreo VIP** (40), **panel financiero de transporte** (41) y **ficha de salud con credencial PDF** (42).
+
+---
+
+## 1. Gestión de Participantes y Delegaciones
+
+Permite mantener un registro centralizado de todos los participantes del evento (atletas, jefes de delegación, VIPs, prensa, oficiales) organizados por delegación o país, con la información personal, deportiva y logística necesaria para la operación.
+
+### a) Funcionalidad
+
+- Registro individual y masivo de participantes asociados a una delegación, indicando nombre, documento de identidad, nacionalidad, género, fecha de nacimiento, deporte, rol y tipo de cliente (TA, VIP, Prensa, Oficial).
+- Clasificación de participantes mediante atributos operativos: jefe de delegación, requiere acreditación, requiere transporte, requiere hospedaje, requiere alimentación.
+- Asociación de participantes a hospedajes, vuelos de llegada y salida, y vehículos asignados durante la estadía.
+- Visualización consolidada de la delegación con totales por categoría, estado de acreditación y servicios contratados.
+- Edición de los datos del participante en cualquier momento de la operación, manteniendo trazabilidad de los cambios realizados.
+- Exportación del listado de participantes a archivos en formato XLSX para reportería externa.
+
+### b) Módulo de registro
+
+- Formulario de registro individual con validación de campos obligatorios y verificación de duplicados por documento de identidad.
+- Carga masiva de participantes mediante archivo XLSX con plantilla descargable, validación previa de cada fila y reporte de errores antes de la confirmación de la carga.
+- Edición masiva de atributos comunes (delegación, tipo de cliente, requerimientos) sobre selección múltiple.
+- Eliminación lógica de registros con confirmación explícita por parte del usuario administrador.
+
+---
+
+## 2. Gestión de Proveedores y Recursos Operativos
+
+Permite registrar a los proveedores externos contratados para la prestación de servicios (transporte, alimentación, hospedaje, seguridad, etc.) y a los recursos humanos y materiales que cada proveedor pone a disposición del evento.
+
+### a) Funcionalidad
+
+- Registro de proveedores con razón social, RUT, contacto, tipo de servicio prestado y datos bancarios.
+- Asociación de participantes del proveedor (conductores, personal de cocina, personal de seguridad) con identificación del rol específico mediante banderas operativas (ej. esChofer = sí).
+- Registro de vehículos del proveedor de transporte con tipo, patente, capacidad máxima, modelo y año.
+- Carga de fotografías del personal del proveedor para fines de identificación visual y acreditación.
+- Carga y visualización de documentos asociados al personal (licencia de conducir, antecedentes, certificaciones), con almacenamiento seguro y versionado.
+- Edición individual y masiva de la información del proveedor y de sus recursos.
+
+### b) Módulo de registro
+
+- Formulario de alta de proveedor con validación de RUT y verificación de unicidad.
+- Carga individual y masiva de participantes del proveedor mediante archivo XLSX.
+- Carga de fotografía del participante en formato JPG o PNG, con previsualización antes de la confirmación.
+- Carga de documentos en formato PDF o imagen, con metadato del tipo de documento y fecha de vencimiento.
+- Eliminación lógica de proveedores y participantes con confirmación explícita.
+
+---
+
+## 3. Calendario Deportivo y Operacional
+
+Permite construir y consultar el calendario completo del evento, integrando competencias deportivas, traslados, ceremonias, entrenamientos y actividades complementarias, con vista diaria y por disciplina.
+
+### a) Funcionalidad
+
+- Creación de eventos deportivos con fecha, hora, sede, disciplina, fase, género y delegaciones participantes.
+- Visualización del calendario en formato mensual, semanal y diario, con filtros por disciplina, sede y delegación.
+- Vista por día consolidada con todas las actividades programadas (competencias, traslados, ceremonias, entrenamientos).
+- Asociación automática entre eventos deportivos y solicitudes de transporte generadas para los participantes involucrados.
+- Edición de eventos con notificación automática a los actores afectados (delegaciones, conductores, transporte).
+- Exportación del calendario a archivos en formato XLSX y PDF para distribución externa.
+
+### b) Módulo de registro
+
+- Formulario de creación de evento con autocompletado de sedes y disciplinas previamente registradas.
+- Carga masiva de eventos mediante archivo XLSX con validación de fechas, sedes y disciplinas.
+- Edición individual y masiva de eventos sobre selección múltiple desde la vista de listado.
+- Eliminación de eventos con confirmación explícita y notificación a los actores asociados.
+
+---
+
+## 4. Gestión de Transporte
+
+Permite administrar de forma integral la operación de transporte del evento, desde la solicitud del servicio hasta la confirmación de la finalización del viaje, incluyendo la asignación de vehículos, conductores, tarifas y trazabilidad en tiempo real.
+
+### a) Funcionalidad
+
+- Recepción de solicitudes de transporte generadas desde los portales de usuario (VIP, jefe de delegación, atleta) o creación manual desde el módulo de administración.
+- Clasificación de viajes por tipo: solo ida, ida y regreso, viaje desde portal, traslado operativo.
+- Asignación de vehículo y conductor a cada viaje, con filtrado automático del listado de conductores disponibles según la capacidad solicitada y el tipo de vehículo registrado.
+- Cálculo automático de la tarifa del viaje según tipo de vehículo, distancia, tipo de viaje (ida o ida y regreso) y horario.
+- Estados del viaje: solicitado, programado, en curso, recogido, finalizado, cancelado.
+- Cancelación de viajes con registro automático del usuario y la fecha de la cancelación en la bitácora del viaje.
+- Bitácora del viaje (registro histórico) con trazabilidad de todas las acciones ejecutadas: creación, asignación de conductor, cambio de vehículo, inicio de ruta, recogida del pasajero, finalización y observaciones manuales.
+- Visualización de los viajes históricos con filtros por estado, fecha, conductor, delegación y tipo de viaje.
+- Reportería operativa con totales de viajes por conductor, vehículo, delegación y rango de fechas.
+
+### b) Módulo de registro
+
+- Formulario de creación manual de viaje con autocompletado de direcciones mediante integración con servicios de mapas.
+- Edición de viajes en cualquier estado anterior a la finalización, con registro automático de cada cambio en la bitácora.
+- Carga masiva de viajes mediante archivo XLSX con validación de fechas, sedes, conductores y vehículos.
+- Eliminación lógica de viajes con confirmación explícita y registro del usuario que ejecutó la acción.
+
+---
+
+## 5. Portal del Conductor
+
+Aplicación destinada a los conductores asociados a proveedores de transporte, mediante la cual reciben sus viajes asignados, ejecutan las acciones operativas del viaje y reportan su posición en tiempo real al centro de control.
+
+### a) Funcionalidad
+
+- Visualización de la bandeja de viajes asignados al conductor, con diferenciación visual entre viajes vistos y no vistos (similar a una bandeja de correo electrónico).
+- Acciones operativas sobre cada viaje: iniciar ruta, marcar pasajero recogido (con confirmación mediante código de pasajero), marcar viaje finalizado.
+- Envío de la posición geográfica del conductor en tiempo real al centro de control durante la ejecución del viaje.
+- Carga de fotografías del vehículo y del pasajero al momento de la recogida y la finalización del viaje.
+- Carga y visualización de los documentos personales del conductor (licencia, antecedentes) directamente desde el portal.
+- Solicitud automática de permisos de ubicación cuando el conductor ejecuta una acción que los requiere.
+- Mantención de la sesión activa y del envío de posición incluso cuando el dispositivo se encuentra en segundo plano (mediante mecanismos de wake lock y aplicación nativa).
+- Comunicación bidireccional con el centro de control mediante chat embebido en cada viaje.
+
+### b) Módulo de registro
+
+- Acceso al portal mediante credenciales generadas por el administrador, vinculadas al participante del proveedor con bandera esChofer = sí.
+- Persistencia local del estado de los viajes vistos y no vistos mediante almacenamiento del dispositivo.
+- Registro automático de cada acción ejecutada en la bitácora del viaje.
+
+---
+
+## 6. Portal de Solicitud de Vehículo (VIP)
+
+Aplicación destinada a participantes registrados como tipo de cliente VIP, mediante la cual pueden solicitar de forma autónoma los servicios de transporte que requieran durante su estadía.
+
+### a) Funcionalidad
+
+- Generación de solicitudes de transporte indicando origen, destino, fecha, hora, cantidad de pasajeros y tipo de vehículo requerido.
+- Selección del tipo de vehículo entre las opciones disponibles (Sedán, SUV, Van, Minibus, Bus) con visualización de la capacidad máxima asociada.
+- Validación automática de la coherencia entre la cantidad de pasajeros solicitada y la capacidad del vehículo seleccionado.
+- Visualización del listado de solicitudes propias con su estado actual (solicitado, programado, en curso, finalizado, cancelado).
+- Modificación o cancelación de solicitudes propias mientras el viaje no haya iniciado.
+- Recepción de notificaciones sobre el estado del viaje y la asignación del conductor.
+
+### b) Módulo de registro
+
+- Acceso al portal mediante credenciales generadas por el administrador, vinculadas al participante registrado con tipo de cliente VIP.
+- Formulario de solicitud con autocompletado de direcciones mediante integración con servicios de mapas.
+- Confirmación visual del envío de la solicitud y del cambio de estado del viaje.
+
+---
+
+## 7. Portal del Jefe de Delegación
+
+Aplicación destinada a los participantes registrados como tipo de cliente TA con la bandera de jefe de delegación activa, mediante la cual administran las solicitudes y consultas de su delegación durante el evento.
+
+### a) Funcionalidad
+
+- Visualización del calendario de actividades deportivas de su delegación.
+- Generación de solicitudes de transporte para los miembros de la delegación.
+- Consulta de la información de hospedaje, alimentación y sedes asignadas.
+- Visualización de la información de la cuenta y datos de la delegación.
+- Acceso a las secciones de actividades, calendario, sedes, alimentación, transporte, solicitudes y cuenta (siete secciones operativas).
+- Recepción de notificaciones operativas relacionadas con la delegación.
+
+### b) Módulo de registro
+
+- Acceso al portal mediante credenciales generadas por el administrador, vinculadas al participante con tipo de cliente TA y bandera jefe de delegación = sí.
+- Filtrado automático de las secciones visibles del portal según el rol del usuario.
+
+---
+
+## 8. Portal del Atleta
+
+Aplicación destinada a los participantes registrados como tipo de cliente TA sin la bandera de jefe de delegación, mediante la cual consultan la información operativa propia durante el evento.
+
+### a) Funcionalidad
+
+- Consulta del calendario personal de actividades deportivas.
+- Consulta de la información de hospedaje, alimentación y sedes asignadas.
+- Visualización de la información de la cuenta y datos personales.
+- Acceso a las secciones de actividades, calendario, sedes, alimentación y cuenta (cinco secciones operativas).
+- Recepción de notificaciones operativas relacionadas con sus actividades.
+
+### b) Módulo de registro
+
+- Acceso al portal mediante credenciales generadas por el administrador, vinculadas al participante con tipo de cliente TA y bandera jefe de delegación = no.
+- Filtrado automático de las secciones visibles del portal según el rol del usuario.
+
+---
+
+## 9. Tracking GPS y Mapa Operativo
+
+Permite visualizar en tiempo real la ubicación de todos los conductores activos del evento, monitorear los viajes en curso y reaccionar de forma inmediata frente a desviaciones o incidentes.
+
+### a) Funcionalidad
+
+- Mapa central con la posición en tiempo real de todos los conductores activos, actualizada cada pocos segundos.
+- Diferenciación visual de los conductores según estado del viaje (en ruta al origen, en ruta al destino, sin viaje activo).
+- Visualización del recorrido histórico de un viaje específico con la trazabilidad completa de las posiciones reportadas.
+- Filtrado del mapa por proveedor de transporte, conductor, tipo de vehículo y estado del viaje.
+- Alertas automáticas frente a desviaciones de ruta, detenciones prolongadas o pérdida de señal.
+
+### b) Módulo de registro
+
+- Registro automático de cada posición reportada por los portales del conductor en la base de datos histórica.
+- Persistencia del recorrido completo de cada viaje para fines de auditoría y reportería.
+
+---
+
+## 10. Heatmap de Conductores
+
+Permite visualizar la distribución horaria de la carga de trabajo de los conductores durante un día operativo, facilitando la planificación y la detección de desbalances en la asignación de viajes.
+
+### a) Funcionalidad
+
+- Matriz visual de conductores en filas y horas en columnas (de 07:00 a 23:00) con intensidad de color proporcional a la cantidad de viajes asignados en cada franja.
+- Indicadores agregados (KPIs) con el total de viajes del día, conductores activos, vehículos en operación y horas totales conducidas.
+- Ranking de conductores por cantidad de viajes ejecutados.
+- Semáforos de carga (subutilizado, óptimo, sobrecargado) por conductor.
+- Tooltip al pasar sobre cada celda con el detalle de los viajes de esa franja horaria.
+- Selector de fecha para consultar días anteriores y actualización automática cada quince segundos durante el día en curso.
+
+### b) Módulo de registro
+
+- Generación automática del heatmap a partir de la información de viajes registrados en el módulo de transporte.
+
+---
+
+## 11. Gestión de Tarifas
+
+Permite mantener el listado de tarifas vigentes para cada tipo de vehículo y tipo de viaje, asegurando el cálculo correcto del valor del servicio en cada solicitud generada.
+
+### a) Funcionalidad
+
+- Registro de tarifas por tipo de vehículo (Sedán, SUV, Van, Minibus, Bus) y tipo de viaje (ida, ida y regreso).
+- Vigencia de tarifas con fecha de inicio y fecha de término.
+- Aplicación automática de la tarifa correspondiente al momento de generar un viaje.
+- Visualización del histórico de tarifas para fines de auditoría.
+
+### b) Módulo de registro
+
+- Formulario de creación de tarifa con validación de unicidad por combinación de vehículo, tipo de viaje y vigencia.
+- Edición y eliminación de tarifas con confirmación explícita.
+
+---
+
+## 12. Tracking de Vuelos
+
+Permite registrar los vuelos de llegada y salida de los participantes y monitorear su estado en tiempo real mediante integración con servicios externos de información aeronáutica.
+
+### a) Funcionalidad
+
+- Registro del número de vuelo, aerolínea, fecha de llegada o salida, origen y destino para cada participante.
+- Consulta automática del estado del vuelo (programado, en ruta, aterrizado, retrasado, cancelado) mediante integración con la API de AviationStack.
+- Visualización del horario estimado de llegada actualizado en tiempo real.
+- Generación automática de alertas frente a retrasos significativos para coordinar la operación de transporte de recibimiento.
+- Diferenciación entre vuelos pasados, en curso y futuros, priorizando la información del vuelo activo o más próximo.
+
+### b) Módulo de registro
+
+- Formulario de registro de vuelo con validación del número de vuelo y la fecha contra la información retornada por la API externa.
+- Carga masiva de vuelos mediante archivo XLSX con validación previa de los datos.
+
+---
+
+## 13. Sistema de Notificaciones
+
+Permite mantener informados a los usuarios de la plataforma sobre eventos relevantes para su operación mediante notificaciones in-app y correo electrónico.
+
+### a) Funcionalidad
+
+- Notificaciones in-app accesibles mediante la campana del menú principal, con indicador del número de notificaciones no leídas.
+- Diferenciación visual de las notificaciones según el tipo (transporte, calendario, confirmación, mensaje, alerta) mediante íconos representativos.
+- Marcado de notificaciones como leídas individualmente o de forma masiva.
+- Envío opcional de notificaciones por correo electrónico para eventos críticos.
+- Generación automática de notificaciones en respuesta a cambios de estado en los módulos de transporte, calendario y administración de usuarios.
+
+### b) Módulo de registro
+
+- Persistencia de todas las notificaciones generadas en la base de datos, asociadas al usuario destinatario.
+- Registro de la fecha y hora de envío y de la fecha y hora de lectura para cada notificación.
+
+---
+
+## 14. Asistente de Inteligencia Artificial (Sofia)
+
+Permite a los usuarios administradores realizar consultas operativas en lenguaje natural sobre el estado de la plataforma y obtener respuestas inmediatas con información actualizada del sistema.
+
+### a) Funcionalidad
+
+- Interfaz de chat embebida en la plataforma de administración, accesible desde cualquier vista.
+- Procesamiento de consultas en lenguaje natural sobre viajes, conductores, vehículos, participantes, tarifas y eventos del calendario.
+- Acceso del asistente a las funciones internas de la plataforma mediante herramientas integradas, permitiendo respuestas con datos en tiempo real.
+- Historial de conversaciones por usuario para retomar consultas previas.
+- Respuestas con formato enriquecido (listados, tablas, enlaces a las vistas correspondientes de la plataforma).
+
+### b) Módulo de registro
+
+- Persistencia del historial de consultas y respuestas por usuario en la base de datos.
+
+---
+
+## 15. Chat Operativo de Viajes
+
+Permite la comunicación en tiempo real entre el conductor del viaje y el centro de control durante la ejecución del servicio.
+
+### a) Funcionalidad
+
+- Chat embebido en cada viaje, accesible tanto desde el portal del conductor como desde el módulo de administración de transporte.
+- Mensajería en tiempo real con indicadores de mensaje enviado y mensaje leído.
+- Persistencia de la conversación completa asociada al viaje para fines de auditoría.
+- Soporte para envío de mensajes de texto y, opcionalmente, fotografías adjuntas.
+
+### b) Módulo de registro
+
+- Persistencia automática de todos los mensajes en la base de datos, asociados al viaje y al usuario emisor.
+
+---
+
+## 16. Administración de Usuarios y Permisos
+
+Permite gestionar las cuentas de los usuarios de la plataforma de administración y los módulos a los que cada uno tiene acceso, asegurando el principio de mínimo privilegio.
+
+### a) Funcionalidad
+
+- Creación de usuarios administradores con generación automática de contraseña inicial y envío de credenciales.
+- Asignación de módulos visibles y accesibles para cada usuario, con filtrado automático de la navegación según los módulos otorgados.
+- Edición de los datos del usuario y de los módulos asignados en cualquier momento.
+- Cambio de contraseña gestionado por el propio usuario o por el administrador, con confirmación explícita.
+- Eliminación de usuarios con confirmación explícita y registro de la acción.
+
+### b) Módulo de registro
+
+- Formulario de creación de usuario con validación de unicidad del correo electrónico.
+- Persistencia de los módulos asignados en los metadatos del usuario.
+- Registro de la fecha de creación, última modificación y último acceso.
+
+---
+
+## 17. Reportería Operativa
+
+Permite generar reportes consolidados de la operación del evento para análisis, rendición de cuentas y toma de decisiones, con acceso diferenciado según el rol del usuario dentro de la plataforma.
+
+### a) Funcionalidad
+
+- Reportes de transporte: viajes ejecutados por conductor, vehículo, delegación, tipo de viaje y rango de fechas.
+- Reportes de participantes: distribución por delegación, tipo de cliente y servicios contratados.
+- Reportes de calendario: actividades realizadas, asistencia y cumplimiento de horarios.
+- Reportes financieros: facturación por proveedor según tarifas aplicadas y viajes ejecutados.
+- Reportes de incidencias y asistencia: volumen, tiempos de respuesta y resolución, categorización y agente responsable.
+- Exportación de todos los reportes a formato **XLSX** y **PDF** para su posterior análisis o distribución.
+- **Acceso para los miembros del Comité Organizador**: los usuarios del Comité disponen de una vista específica dentro de la plataforma desde la cual pueden consultar y **descargar directamente los reportes** correspondientes a su ámbito de responsabilidad (operación general, transporte, participantes, incidencias, indicadores de cumplimiento), sin requerir solicitudes manuales al equipo operativo.
+- **Filtros personalizables** por fecha, delegación, disciplina, proveedor, tipo de servicio y estado, permitiendo al usuario generar el reporte ajustado a su necesidad puntual.
+- **Indicadores ejecutivos (KPIs)** con los totales y porcentajes clave de la operación presentados de forma visual para la toma de decisiones rápida.
+
+### b) Módulo de registro
+
+- Generación automática de los reportes a partir de la información operativa registrada en cada módulo, sin necesidad de carga adicional.
+- Control de acceso a los reportes según el rol del usuario, asegurando que cada perfil (administrador, operador, Comité Organizador, proveedor) visualice únicamente la información que le corresponde.
+- Registro de trazabilidad de cada descarga realizada (usuario, fecha, tipo de reporte) para fines de auditoría.
+
+---
+
+## 18. Auditoría y Trazabilidad
+
+Permite mantener el registro histórico de todas las acciones relevantes ejecutadas en la plataforma, asegurando la trazabilidad de los cambios y la rendición de cuentas.
+
+### a) Funcionalidad
+
+- Bitácora por viaje con el detalle de todas las acciones ejecutadas (creación, asignación de conductor, cambio de vehículo, inicio de ruta, recogida, finalización, cancelación, observaciones manuales).
+- Registro del usuario, fecha y hora de cada acción ejecutada.
+- Visualización de la bitácora desde el módulo de transporte en formato de línea de tiempo.
+- Persistencia indefinida de la bitácora para fines de auditoría.
+
+### b) Módulo de registro
+
+- Generación automática de las entradas de bitácora en respuesta a cada cambio relevante en los módulos operativos.
+- Posibilidad de añadir entradas manuales desde el módulo de administración por parte del usuario autorizado.
+
+---
+
+## 19. Trazabilidad del Deportista mediante Código QR
+
+Permite realizar el control de ingreso y la trazabilidad de los participantes del evento en cada uno de los puntos operativos (sedes deportivas, hoteles, zonas de alimentación, zonas restringidas) mediante el escaneo del código QR de la credencial digital portada en la aplicación móvil.
+
+### a) Funcionalidad
+
+- Cada participante del evento cuenta con una **credencial digital única** con código QR, accesible desde su aplicación móvil nativa.
+- El personal autorizado en terreno (seguridad, acreditación, control de acceso) escanea el código QR del participante al momento de su ingreso a un punto operativo, mediante un dispositivo habilitado (teléfono, tablet o lector dedicado).
+- Validación en tiempo real del código contra la base de datos central, con respuesta inmediata sobre la autorización del participante para ingresar al punto escaneado (autorizado, no autorizado, credencial vencida, participante no registrado).
+- **Registro de cada escaneo** con fecha, hora, ubicación, punto de control y usuario que ejecutó la acción, generando una trazabilidad completa del recorrido del participante durante el evento.
+- **Alertas automáticas** ante intentos de ingreso no autorizados, credenciales duplicadas o comportamientos anómalos.
+- **Visualización del historial de ingresos** de cada participante desde el módulo de administración, disponible para los equipos de seguridad, operaciones y comité organizador.
+- Integración con los módulos de **acreditación, alimentación y transporte**, asegurando que la trazabilidad alimente las estadísticas operativas del evento.
+
+### b) Módulo de registro
+
+- Persistencia automática en la base de datos de cada escaneo realizado, con todos los atributos de contexto asociados.
+- Generación de reportes consolidados de ingresos por punto de control, por delegación, por rango de fechas y por tipo de participante.
+- Exportación de los reportes de trazabilidad a formato XLSX y PDF para fines de auditoría y rendición de cuentas.
+
+---
+
+## 20. Gestión de Premiaciones
+
+Permite administrar de forma centralizada las ceremonias de premiación asociadas a cada prueba deportiva del evento, definiendo el horario y ubicación de la ceremonia y asignando el equipo de participantes VIP encargado de entregar las medallas o reconocimientos a los deportistas premiados.
+
+### a) Funcionalidad
+
+- **Asignación de fecha, hora y ubicación** de la ceremonia de premiación para cada prueba del calendario deportivo, de forma independiente al horario de la competencia.
+- **Asignación del equipo de premiadores VIP**: desde el módulo de administración se selecciona a uno o más participantes registrados como tipo de cliente VIP para oficiar como entregadores del premio en cada ceremonia.
+- Posibilidad de asignar **roles específicos dentro del equipo de premiación** (ej. entregador de medalla de oro, entregador de medalla de plata, entregador de medalla de bronce, autoridad oficial).
+- **Visualización consolidada** del calendario de premiaciones del evento con filtros por fecha, disciplina, sede y estado.
+- **Notificación automática a los VIP asignados**: los participantes VIP que integren un equipo de premiación reciben en su aplicación móvil la notificación con la información completa de la ceremonia (prueba, disciplina, fecha, hora, sede, ubicación exacta dentro de la sede, rol asignado, instrucciones especiales).
+- **Integración con el portal VIP**: en la vista del participante VIP se habilita una sección dedicada a sus premiaciones asignadas, con el listado de ceremonias futuras, el detalle completo de cada una y recordatorios automáticos antes de cada ceremonia.
+- **Solicitud automática de transporte** para trasladar al equipo VIP desde su hotel hasta la sede de la ceremonia, coordinada con el módulo de transporte.
+- **Confirmación de asistencia** por parte del VIP premiador desde su aplicación móvil, permitiendo al equipo operativo reaccionar ante ausencias o reasignaciones.
+- **Registro histórico de las ceremonias ejecutadas** con los participantes VIP que efectivamente oficiaron el acto.
+
+### b) Módulo de registro
+
+- Formulario de creación de premiación asociado a una prueba del calendario deportivo, con validación de disponibilidad de sede y horario.
+- Carga masiva de premiaciones mediante archivo XLSX con validación de fechas, sedes y pruebas.
+- Edición individual y masiva de premiaciones con notificación automática a los VIP afectados ante cualquier cambio.
+- Eliminación de premiaciones con confirmación explícita y trazabilidad de la acción.
+
+---
+
+## 21. Centro de Asistencia y Gestión de Incidencias
+
+Permite canalizar, atender y resolver las incidencias, consultas y solicitudes de soporte levantadas por los conductores y los participantes del evento desde sus respectivos portales móviles, asegurando un flujo bidireccional de comunicación entre el usuario en terreno y el equipo operativo de la plataforma.
+
+### a) Funcionalidad
+
+- **Apertura de salas de asistencia desde los portales móviles**: tanto el conductor como el participante (VIP, jefe de delegación y atleta) pueden abrir, desde su aplicación nativa, una sala de chat directa con el equipo operativo de Seven Arena para levantar incidencias (consultas, objetos perdidos, problemas operativos, solicitudes de apoyo, alertas de emergencia).
+- **Bandeja centralizada de asistencia en la plataforma web operativa**: todas las salas abiertas por los usuarios aparecen en una bandeja consolidada dentro del módulo de administración, visible para los agentes operativos habilitados.
+- **Asignación de agentes**: cada sala de asistencia puede ser tomada por un agente operativo, quien queda como responsable de la atención y resolución de la incidencia.
+- **Diferenciación visual** de las salas según el origen (conductor o participante), la categoría de la incidencia y el nivel de prioridad asignado.
+- **Chat en tiempo real** bidireccional entre el agente y el usuario, con soporte para envío de mensajes de texto, fotografías y archivos adjuntos como evidencia.
+- **Categorización de incidencias**: las salas pueden clasificarse por tipo (consulta general, objeto perdido, incidencia operativa, crisis o emergencia, soporte al conductor, soporte al participante) para facilitar el análisis posterior y la reportería.
+- **Estados de la incidencia**: abierta, en atención, escalada, resuelta, cerrada; con transiciones registradas y visibles en la ficha de la incidencia.
+- **Escalamiento**: cuando una incidencia supera la capacidad de resolución del agente de primera línea, puede ser escalada a un coordinador o a una ruta de emergencia definida, con notificación automática al responsable correspondiente.
+- **Historial completo de la conversación** persistido en la base de datos para fines de auditoría y análisis posterior.
+- **Reportería de incidencias**: estadísticas de volumen, tiempo promedio de respuesta, tiempo promedio de resolución, incidencias por tipo, por usuario origen y por agente atendiente, exportable a formato XLSX y PDF.
+- **Notificaciones en tiempo real**: los agentes reciben notificaciones dentro de la plataforma web cuando se abre una nueva sala o cuando llega un mensaje en una sala asignada; el usuario en el portal móvil recibe notificaciones push cuando el agente responde.
+
+### b) Módulo de registro
+
+- Persistencia automática en la base de datos de cada sala de asistencia creada, con sus mensajes, archivos adjuntos, categoría, agente asignado y trazabilidad completa de los cambios de estado.
+- Registro del agente que tomó la incidencia, fecha y hora de apertura, fecha y hora de primera respuesta, fecha y hora de resolución.
+- Posibilidad de añadir notas internas por parte del agente, visibles únicamente para el equipo operativo y no para el usuario origen.
+- Cierre formal de la incidencia con registro del resultado (resuelta, derivada, no procedente) y observaciones finales.
+
+---
+
+## 22. Arquitectura Tecnológica (Descripción General)
+
+La plataforma Seven Arena ha sido construida sobre una arquitectura moderna de tres capas (frontend, backend y base de datos), desplegada en infraestructura cloud de alta disponibilidad y diseñada para soportar la operación simultánea de grandes volúmenes de usuarios durante el evento deportivo.
+
+### a) Backend y servicios
+
+- Capa de servicios desarrollada con tecnologías modernas basadas en **Node.js** y **TypeScript**, que aseguran una arquitectura modular, mantenible y escalable.
+- Exposición de los servicios mediante una interfaz estándar de integración, con validación estricta de entrada y autenticación basada en tokens seguros.
+- Transmisión de eventos en tiempo real (ubicaciones GPS, notificaciones, mensajería) para soportar la operación en campo.
+- Integración con servicios externos para funcionalidades complementarias: mapas y geocodificación, seguimiento de vuelos, inteligencia artificial y almacenamiento de archivos.
+- Despliegue en infraestructura cloud con escalamiento automático y monitoreo continuo.
+
+### b) Frontend (Plataforma Web de Administración)
+
+- Plataforma de administración desarrollada con **React** y **TypeScript**, asegurando una experiencia de usuario fluida y alta mantenibilidad del código.
+- Interfaz responsiva con sistema de componentes reutilizables e identidad visual coherente en todos los módulos.
+- Despliegue con entrega de contenido mediante red de distribución global, asegurando baja latencia desde cualquier ubicación.
+
+### c) Base de Datos
+
+- Motor **PostgreSQL** gestionado en infraestructura cloud, con respaldos automáticos diarios y replicación de alta disponibilidad.
+- Modelo de datos relacional normalizado, con estructuras flexibles para metadatos operativos (bitácoras, permisos, configuraciones).
+- Control de acceso a la información según el rol del usuario, asegurando que cada participante y proveedor acceda únicamente a los datos que le corresponden.
+- Optimización de consultas sobre los datos críticos de la operación (viajes, posiciones GPS, participantes, calendario) para asegurar tiempos de respuesta bajos incluso con volúmenes elevados.
+
+### d) Seguridad
+
+- Autenticación centralizada con gestión de sesiones, recuperación de contraseña y soporte para mecanismos de doble factor.
+- Cifrado de las comunicaciones mediante **HTTPS/TLS** en todos los puntos de acceso.
+- Almacenamiento de archivos sensibles (documentos, fotografías) en repositorios privados con políticas de acceso por rol.
+- Registro de auditoría de las acciones relevantes ejecutadas en la plataforma.
+- Aplicación de buenas prácticas de seguridad en el desarrollo, conforme a estándares reconocidos de la industria (OWASP).
+
+### e) Escalabilidad y Disponibilidad
+
+- Infraestructura cloud con escalamiento horizontal automático según la demanda.
+- Caché de alto rendimiento para las consultas más frecuentes.
+- Monitoreo continuo del estado de los servicios con alertas automáticas ante cualquier degradación.
+- Capacidad de soportar grandes volúmenes de usuarios concurrentes durante los picos de operación del evento deportivo.
+
+### f) Inteligencia Artificial integrada
+
+- La plataforma integra un **asistente conversacional basado en modelos avanzados de Inteligencia Artificial** (Sofia IA), que permite a los usuarios administradores consultar información operativa en lenguaje natural.
+- El asistente accede de forma controlada a los datos operativos de la plataforma mediante un conjunto de herramientas internas definidas y seguras, asegurando que las respuestas reflejen siempre el estado actualizado del sistema.
+- Capacidad de ampliar las funcionalidades del asistente mediante la incorporación de nuevas herramientas y flujos conversacionales según las necesidades operativas del evento.
+- Aplicación de buenas prácticas de seguridad y privacidad en el manejo de la información enviada al modelo de lenguaje, cumpliendo con los estándares de protección de datos.
+
+### g) Soporte multilenguaje
+
+- La plataforma ha sido diseñada con **soporte multilenguaje nativo**, permitiendo la presentación de la interfaz y de los contenidos operativos en distintos idiomas según las necesidades de cada usuario.
+- Idiomas soportados inicialmente: **español, inglés y portugués**, con posibilidad de incorporar idiomas adicionales de las delegaciones participantes en el evento deportivo.
+- Selección del idioma por parte de cada usuario desde su perfil, con persistencia de la preferencia entre sesiones.
+- Traducción automática de las notificaciones, mensajes operativos y reportes según el idioma preferido del destinatario.
+- Aplicación del soporte multilenguaje tanto en la plataforma web de administración como en las aplicaciones móviles nativas de los cuatro portales de usuario.
+
+---
+
+## 23. Aplicación Móvil Nativa (Portales de Usuario)
+
+Como complemento a la plataforma web de administración, los cuatro portales de usuario final (Conductor, VIP, Jefe de Delegación y Atleta) serán desarrollados como **aplicaciones móviles nativas** para los sistemas operativos **iOS** y **Android**. Esta migración responde a la necesidad operativa de asegurar la continuidad del tracking GPS en segundo plano, la recepción inmediata de notificaciones push y la entrega de una experiencia de usuario acorde a los estándares de las aplicaciones móviles modernas, condiciones que no es posible garantizar de forma confiable mediante una aplicación web.
+
+### a) Arquitectura general
+
+- Las aplicaciones móviles nativas se integran directamente con la plataforma central Seven Arena, sin reemplazar el sistema de administración web actual utilizado por el equipo operativo.
+- Toda la lógica de negocio permanece centralizada en la plataforma; las aplicaciones móviles actúan como clientes que consumen los servicios existentes, asegurando consistencia de la información en tiempo real.
+
+### b) Stack tecnológico propuesto
+
+- Desarrollo multiplataforma con **React Native**, permitiendo una única base de código para los sistemas operativos **iOS** y **Android** con alto porcentaje de reutilización.
+- **TypeScript** como lenguaje principal, consistente con el resto de la plataforma.
+- Publicación en las tiendas oficiales **App Store** (Apple) y **Google Play** (Google).
+
+### c) Funcionalidades nativas del dispositivo
+
+- **Geolocalización en segundo plano**, manteniendo el envío continuo de la posición del conductor al centro de control incluso con la aplicación minimizada o la pantalla apagada.
+- **Notificaciones push** con apertura directa en la pantalla adecuada al tocar la notificación.
+- **Cámara y galería** del dispositivo para la carga de fotografías de perfil, del vehículo, de documentos y de evidencia de jornada laboral.
+- **Mapas interactivos** con marcadores, rutas y posición en tiempo real.
+- **Biometría opcional** (Face ID / Touch ID) como mejora de seguridad para el inicio de sesión.
+- **Credencial digital con código QR** para la acreditación de ingreso a sedes, hoteles y servicios de alimentación.
+
+### d) Portal Conductor — App Nativa
+
+- **Autenticación por código único**: el conductor ingresa un código de 6 caracteres (los últimos 6 caracteres de su identificador de participante del proveedor), distinto del mecanismo estándar de email y contraseña.
+- Bandeja de viajes asignados filtrable por estado: **Hoy, En curso, Programados e Historial**, con marcado visual de viajes no vistos (estilo bandeja de correo).
+- Flujo operativo completo del viaje: iniciar ruta, validación del pasajero mediante **código de pickup**, marcar pasajero recogido, marcar dejado en destino y completar viaje.
+- **Envío automático de ubicación GPS cada 5 segundos** mientras el viaje se encuentra en estado *En ruta* o *Recogido*, funcionando con la aplicación minimizada o la pantalla apagada.
+- Gestión del perfil del conductor: carga de **foto de perfil, 12 documentos personales y del vehículo** (cédula, licencia de conducir, antecedentes, SOAP, permiso de circulación, padrón, foto del vehículo, contrato entre proveedores, entre otros), y **2 fotos diarias obligatorias** para monitorear la jornada laboral.
+- **Credencial digital con código QR** para la acreditación del conductor.
+- Soporte para **viajes tipo Disposición 12 horas**, con ejecución paralela de viajes tipo Transfer In/Out dentro del periodo de disposición y cálculo diferenciado del costo final según los servicios efectivamente realizados.
+- **Chat en tiempo real** con el pasajero durante los viajes activos y **sala de asistencia al conductor** atendida por un agente operativo con soporte para envío de mensajes, archivos y fotografías como evidencia.
+- **Historial de viajes** con filtros por fecha, tipo y calificación recibida, además de estadísticas personales (total de viajes y calificación promedio).
+- Notificaciones push ante: nueva asignación de viaje, nuevo mensaje del pasajero o modificación/cancelación de viajes programados.
+
+### e) Portal Solicitud de Vehículo (VIP) — App Nativa
+
+- Autenticación mediante **Supabase Auth** con email y contraseña.
+- Pantalla principal orientada al **formulario de solicitud de vehículo**, con selección de tipo (Sedán 4, SUV 6, Van 10/15/19, Minibús 33, Bus 64), validación de capacidad, dirección de origen con **autocompletado Google Places**, sede destino, fecha, hora, observaciones y toggle de *ida y vuelta* con retorno a destino distinto.
+- **Modificación o cancelación** de solicitudes con máximo de anticipación definido por la regla de negocio.
+- **Seguimiento en tiempo real** del viaje activo con mapa, posición del conductor, datos del vehículo asignado (nombre del conductor, foto, patente, modelo) y tiempo estimado de llegada.
+- **Chat en tiempo real** con el conductor durante los viajes activos, con notificaciones push de nuevos mensajes.
+- **Calificación del viaje** al finalizar (1 a 5 estrellas y comentario opcional).
+- Secciones complementarias: **Actividades** (viajes en curso, programados e historial), **Sedes** (directorio con fotos y mapas), **Hoteles** (Villa Panamericana y alojamientos), **Calendario** deportivo (si el VIP tiene evento asociado) y **Cuenta** con credencial digital QR.
+- **Sala de asistencia al participante** para levantar incidencias, consultas u objetos perdidos con un agente de operaciones.
+
+### f) Portal Jefe de Delegación — App Nativa
+
+- Autenticación mediante **Supabase Auth** con email y contraseña.
+- **Siete pestañas operativas**: Itinerario, Actividades, Calendario, Sedes, Alimentación, Delegación y Cuenta.
+- **Itinerario personal** con vista consolidada del día, ordenado cronológicamente, incluyendo viajes, actividades deportivas, comidas y eventos programados.
+- **Gestión de actividades**: creación y seguimiento de viajes para los miembros de la delegación, con mapa en tiempo real, chat con el conductor y bitácora de cambios en el historial.
+- **Calendario deportivo** con vista mensual, detalle diario por disciplina, pruebas, sedes y horarios, con filtros por disciplina o delegación.
+- **Directorio de sedes** con fotografías, direcciones, ubicación en mapa e información de contacto.
+- **Menús de alimentación** por fecha y tipo (desayuno, almuerzo, cena, coffee break), con lugares de servicio, ubicación y capacidad.
+- **Administración de la delegación**: listado completo de miembros, información individual (nombre, disciplina, rol, estado de acreditación) y datos agregados.
+- **Cuenta y credencial digital QR** con foto de perfil y datos personales.
+- **Sala de asistencia** para levantar incidencias con un agente de operaciones.
+- Notificaciones push ante: confirmación de solicitud de viaje, asignación de conductor, estados del viaje, mensajes del conductor, cambios en el calendario y alertas de acreditación.
+
+### g) Portal Atleta — App Nativa
+
+- Autenticación mediante **Supabase Auth** con email y contraseña.
+- **Cinco pestañas operativas**: Actividades, Calendario, Sedes, Alimentación y Cuenta.
+- **Actividades**: consulta de viajes propios como pasajero (cuando el jefe de delegación lo ha vinculado), seguimiento en tiempo real, chat con el conductor y calificación al finalizar.
+- **Calendario deportivo** con vista mensual y énfasis en las actividades donde el atleta participa.
+- **Directorio de sedes** con fotos, direcciones y mapas.
+- **Menús de alimentación** diarios según el tipo de cliente.
+- **Credencial digital con código QR** para acreditación de ingreso a sedes, hoteles y alimentación.
+- **Sala de asistencia al participante** para incidencias y consultas.
+- Notificaciones push ante: viaje asignado donde el atleta es pasajero, estados del viaje, mensajes del conductor, cambios en el calendario y actualizaciones de acreditación.
+
+### h) Autenticación y resolución del portal
+
+- **Portal Conductor**: autenticación mediante un código único de 6 caracteres entregado al conductor al momento de su registro, con persistencia de la sesión para facilitar el acceso en siguientes aperturas.
+- **Portales VIP, Jefe de Delegación y Atleta**: autenticación mediante email y contraseña, reutilizando las credenciales ya asignadas al participante en la plataforma central.
+- **Resolución automática del portal** tras el inicio de sesión, según los atributos del participante:
+  - Participante asociado a proveedor de transporte con **esChofer = sí** → Portal Conductor.
+  - Participante con **tipoCliente = VIP** → Portal Solicitud de Vehículo.
+  - Participante con **tipoCliente = TA** y **jefeDelegación = sí** → Portal Jefe de Delegación.
+  - Participante con **tipoCliente = TA** y **jefeDelegación = no** → Portal Atleta.
+
+### i) Requisitos funcionales comunes
+
+- **Sesión persistente** entre cierres de la aplicación, con cierre manual y opción de biometría (Face ID / Touch ID).
+- **Notificaciones push** con apertura en la pantalla adecuada al tocar la notificación (*deep linking*).
+- **Solicitud amigable de permisos** de ubicación, cámara y notificaciones.
+- **Funcionamiento con red inestable** mediante reintentos automáticos e indicación visual del estado de conexión.
+- **Compresión automática de imágenes** antes de subirlas al servidor.
+- **Interfaz en español**, diseño consistente con la identidad de marca, soporte para modo horizontal y vertical, y accesibilidad básica.
+
+### j) Reglas de negocio aplicables
+
+- Un viaje se crea en estado **Solicitado**, pasa a **Programado** al asignar conductor y vehículo, y avanza secuencialmente a **En ruta**, **Recogido**, **Dejado en hotel** y **Completado**.
+- El usuario puede **modificar o cancelar un viaje únicamente si faltan más de 2 horas** para su hora programada.
+- Cada modificación, cancelación o asignación se registra en la **bitácora del viaje**.
+- Un viaje de **ida y vuelta** genera dos viajes enlazados (padre e hijo).
+- Al asignar conductor, solo se muestran conductores cuyo vehículo tenga **capacidad suficiente** para los pasajeros solicitados.
+- El **chat solo está disponible** durante los estados *En ruta* y *Recogido*.
+- La **calificación del conductor** (1 a 5 estrellas y comentario opcional) se realiza al finalizar el viaje y alimenta el ranking operacional.
+
+### k) Continuidad operativa con la plataforma central
+
+- Las aplicaciones móviles se integran de forma transparente con la plataforma Seven Arena existente, reutilizando el modelo de datos, la lógica de negocio y los mecanismos de seguridad ya operativos.
+- La información registrada desde las aplicaciones móviles (viajes, ubicaciones, mensajes, documentos, incidencias) se refleja de forma inmediata en la plataforma web operativa utilizada por el equipo de administración.
+- La infraestructura cloud actual soporta el tráfico adicional de las aplicaciones móviles sin requerir modificaciones mayores, asegurando la continuidad del servicio durante la operación del evento.
+
+### l) Publicación y gestión de versiones
+
+- Publicación en **App Store** (Apple) y **Google Play** (Google) bajo las cuentas de desarrollador de la organización.
+- Gestión de **versiones y actualizaciones automáticas** mediante los mecanismos nativos de cada tienda.
+- Ambiente de **pruebas internas** (TestFlight para iOS, Internal Testing para Android) previo a la publicación pública de cada versión.
+- **Documentación técnica y funcional completa** del proyecto disponible para el proveedor a cargo del desarrollo (referencia: documento *Seven Arena — Documentación Técnica y Funcional de Portales Móviles*).
+
+---
+
+## 24. Autenticación Móvil por Código (App Nativa)
+
+Permite a los usuarios finales de la aplicación móvil (atletas y conductores) iniciar sesión de forma simple y segura mediante un código personal, sin necesidad de gestionar contraseñas, y recuperar dicho código de manera autónoma cuando no lo recuerden.
+
+### a) Funcionalidad
+
+- **Inicio de sesión por código personal de 6 caracteres**, derivado de forma determinística del identificador único del participante (los últimos 6 caracteres de su ID). El usuario no necesita crear ni memorizar una contraseña.
+- **Resolución automática del perfil** a partir del código ingresado: el sistema identifica si el código corresponde a un **atleta** (dirigiéndolo al portal de usuario) o a un **conductor** (dirigiéndolo al portal del conductor), buscando en los registros de atletas, conductores y participantes de proveedor marcados como conductor.
+- **Detección de colisiones**: si un mismo código coincidiera con más de un participante, el acceso se rechaza para evitar ambigüedad, garantizando que cada sesión quede asociada a una única persona.
+- **Recuperación de código por correo electrónico**: desde la pantalla de inicio de sesión, la opción "Recordarme mi código" permite al usuario ingresar su correo registrado y recibir su código de acceso.
+- **Respuesta neutra por privacidad**: la recuperación siempre responde con un mensaje genérico de confirmación, sin revelar si el correo está o no registrado en el sistema, evitando la enumeración de cuentas.
+- **Persistencia de la sesión** en el dispositivo, de modo que el usuario permanece autenticado entre aperturas sucesivas de la aplicación y es redirigido automáticamente a su portal.
+- **Cierre de sesión consciente del origen**: cuando la sesión proviene de la aplicación móvil, el cierre de sesión devuelve al usuario a la pantalla de inicio de sesión de la app, diferenciándola del cierre de sesión de la plataforma web de administración.
+
+### b) Módulo de registro
+
+- El código de acceso se genera automáticamente a partir del identificador del participante ya registrado en la plataforma central; no requiere carga ni configuración adicional.
+- Cada intento de recuperación queda registrado en la bitácora del servidor para fines de auditoría y detección de uso anómalo.
+- La sesión activa se almacena localmente en el dispositivo, sin exponer credenciales sensibles.
+
+---
+
+## 25. Puente Nativo (Web ⇆ Contenedor Móvil)
+
+La aplicación móvil de Seven Arena se ejecuta como una aplicación web moderna alojada dentro de un **contenedor nativo** (WebView), lo que permite reutilizar íntegramente la lógica y las vistas de los portales web y, al mismo tiempo, acceder a las capacidades nativas del dispositivo. La comunicación entre ambas capas se realiza mediante un **puente de mensajería estructurado**.
+
+### a) Funcionalidad
+
+- **Canal de comunicación bidireccional** entre la aplicación web (portales) y el contenedor nativo, mediante mensajes con un formato de sobre versionado que asegura compatibilidad entre versiones de la app.
+- **Modelo de solicitud/respuesta** con identificador de correlación y tiempo máximo de espera: la capa web puede solicitar información al dispositivo (por ejemplo, la ubicación actual o el estado de permisos) y recibir la respuesta de forma asíncrona y controlada.
+- **Modelo de eventos (suscripción)**: el contenedor nativo puede notificar de forma proactiva a la aplicación web ante cambios relevantes (por ejemplo, activación o desactivación del GPS del sistema, o el toque de una notificación push).
+- **Degradación transparente**: cuando la misma aplicación web se abre en un navegador de escritorio (fuera del contenedor nativo), el puente se detecta como no disponible y las funciones nativas simplemente no se ofrecen, sin generar errores.
+- **Operaciones soportadas** a través del puente: obtención del token de notificaciones push, inicio/detención/consulta del seguimiento GPS, consulta y solicitud de permisos del dispositivo, obtención de la ubicación puntual, apertura de los ajustes del sistema y enrutamiento ante el toque de una notificación.
+
+### b) Módulo de registro
+
+- El contrato de mensajes del puente (tipos, formato y ejemplos) está documentado técnicamente para el proveedor de desarrollo del contenedor nativo.
+- No requiere configuración por parte del usuario final; el puente se inicializa automáticamente al cargar la aplicación dentro del contenedor.
+
+---
+
+## 26. Notificaciones Push Remotas
+
+Permite hacer llegar avisos a los usuarios de la aplicación móvil directamente en su dispositivo, incluso con la aplicación cerrada, para eventos operativos relevantes (asignación de viajes, mensajes, recordatorios, alertas), y ofrece al equipo operativo una herramienta de envío manual.
+
+### a) Funcionalidad
+
+- **Registro del dispositivo**: al iniciar sesión en la aplicación móvil, el dispositivo obtiene un token de notificaciones y lo registra automáticamente en la plataforma, asociado al usuario, la plataforma (iOS/Android), la versión de la app y el nombre del dispositivo.
+- **Entrega de notificaciones push** a todos los dispositivos activos de un usuario mediante el servicio de mensajería de Expo, con sonido y prioridad alta.
+- **Persistencia previa en la bandeja**: cada notificación se guarda primero en la bandeja del usuario (para que aparezca en la campana del portal) y luego se despacha al dispositivo, de modo que el aviso no se pierde aunque la entrega push falle o el usuario no tenga dispositivos registrados.
+- **Enrutamiento al tocar la notificación** (*deep linking*): al pulsar una notificación, la aplicación abre directamente la pantalla correspondiente indicada en el contenido del aviso.
+- **Limpieza automática de tokens caducados**: cuando el servicio de mensajería informa que un token ya no es válido (dispositivo desinstalado o token expirado), el sistema lo elimina automáticamente del registro.
+- **Panel administrativo de envío manual**: el equipo operativo dispone de una vista que lista todos los destinatarios con dispositivos registrados (con su nombre, tipo, plataformas y última actividad) y permite componer y enviar una notificación puntual (título, mensaje y emoji) a un usuario específico, útil para pruebas y comunicaciones dirigidas.
+
+### b) Módulo de registro
+
+- Persistencia de los tokens de dispositivo en la base de datos, con actualización de la última actividad en cada registro y unicidad por token.
+- Persistencia de cada notificación enviada, asociada al usuario destinatario, con su título, cuerpo, emoji, tipo lógico y datos de enrutamiento.
+- Registro de los resultados de entrega y de los errores devueltos por el servicio de mensajería para diagnóstico.
+
+---
+
+## 27. Bandeja de Notificaciones del Usuario (Campana)
+
+Complementa a las notificaciones push con una **bandeja de entrada persistente** dentro de cada portal, accesible mediante el ícono de campana, que conserva el historial de avisos aunque el usuario no haya visto la notificación en el momento en que llegó.
+
+### a) Funcionalidad
+
+- **Listado de notificaciones** del usuario ordenado de la más reciente a la más antigua, con título, cuerpo, emoji representativo y marca de tiempo.
+- **Indicador de no leídas** en la campana, con la cantidad de notificaciones pendientes de lectura.
+- **Marcado como leídas** de forma individual o masiva.
+- **Vaciado de la bandeja** por parte del usuario.
+- **Consistencia con el push**: toda notificación push enviada al usuario queda también disponible en su bandeja, garantizando que ningún aviso se pierda.
+
+### b) Módulo de registro
+
+- Persistencia de todas las notificaciones en la base de datos, asociadas al usuario destinatario, con registro de la fecha de creación y de la fecha de lectura.
+- Consulta filtrada por tipo de usuario e identificador para servir la bandeja de cada persona.
+
+---
+
+## 28. Gestión de Permisos del Dispositivo
+
+Permite al usuario de la aplicación móvil consultar y otorgar de forma clara y guiada los permisos que la aplicación necesita para funcionar (notificaciones, ubicación, cámara y galería), respetando el control del usuario sobre su dispositivo.
+
+### a) Funcionalidad
+
+- **Panel de permisos** dentro de la sección de cuenta del portal, con una fila por cada permiso relevante (notificaciones, ubicación, cámara, galería), su descripción en lenguaje claro y su estado actual (activado, sin activar o bloqueado en ajustes).
+- **Solicitud guiada del permiso**: al presionar "Activar", la aplicación dispara el diálogo nativo del sistema para conceder el permiso correspondiente.
+- **Acceso directo a los ajustes del sistema**: cuando un permiso está bloqueado a nivel de sistema operativo, la aplicación ofrece abrir directamente la pantalla de ajustes del dispositivo para habilitarlo.
+- **Actualización automática del estado**: al regresar a la aplicación después de modificar un permiso en los ajustes, el panel refresca el estado sin necesidad de reiniciar la app.
+- **Avisos contextuales**: en las pantallas que requieren un permiso específico (por ejemplo, la cámara para subir una fotografía), se muestra un aviso puntual invitando a activarlo, con la acción directa correspondiente.
+
+### b) Módulo de registro
+
+- La consulta y solicitud de permisos se resuelven en tiempo real contra el sistema operativo del dispositivo a través del puente nativo; no se persiste información en la plataforma central.
+
+---
+
+## 29. Seguimiento GPS Nativo del Conductor (Segundo Plano)
+
+Amplía el seguimiento GPS de la operación de transporte con las capacidades nativas del dispositivo, permitiendo el envío continuo y confiable de la posición del conductor incluso con la aplicación minimizada o la pantalla apagada, y ofreciendo al conductor visibilidad y control sobre el estado de su transmisión.
+
+### a) Funcionalidad
+
+- **Interruptor de seguimiento** en el portal del conductor: el conductor activa o detiene con un solo toque el envío de su ubicación al centro de control.
+- **Solicitud automática y ordenada de permisos**: al activar, la aplicación solicita el permiso de ubicación (incluyendo el permiso de segundo plano cuando está disponible) y, si el GPS del sistema está apagado, guía al conductor para encenderlo sin salir de la aplicación.
+- **Envío de posición en segundo plano**, manteniendo la transmisión con la app minimizada o la pantalla apagada cuando el permiso de segundo plano ha sido concedido; en caso contrario, opera mientras la app permanece abierta.
+- **Indicador de estado en tiempo real** mediante un distintivo visual: *Transmitiendo* (activo y enviando), *GPS apagado* (armado pero sin señal del sistema) o *Inactivo*.
+- **Diagnóstico de red integrado**: la pantalla muestra la hora del último intento de envío, la hora del último envío exitoso, los errores de red y la cantidad de posiciones en cola pendientes de reenvío.
+- **Resiliencia ante conectividad intermitente**: las posiciones capturadas mientras no hay red se acumulan en el dispositivo y se reenvían automáticamente al restablecerse la conexión.
+- **Reflejo inmediato en el sistema operativo**: si el conductor apaga o enciende el GPS del sistema, el estado del interruptor se actualiza en el momento gracias a los avisos del contenedor nativo.
+
+### b) Módulo de registro
+
+- Cada posición recibida se persiste en el histórico de posiciones de vehículos de la plataforma, alimentando el mapa operativo en tiempo real, el monitoreo de conductores y la trazabilidad del viaje (ver secciones 9 y 10).
+- El diagnóstico de red se calcula y muestra en el dispositivo; el histórico de posiciones queda disponible para auditoría en la plataforma central.
+
+---
+
+## 30. Sistema de Cupones y Beneficios (con Portal Partner)
+
+Permite ofrecer a los participantes un catálogo digital de beneficios en comercios aliados, gestionando el ciclo completo: publicación del cupón, reclamo por el participante, y canje validado por el comercio mediante QR.
+
+### a) Funcionalidad
+
+- Catálogo administrable de cupones con título, categoría, comercio, tipo y valor de descuento, vigencia, imagen, términos y límite por participante.
+- **Audiencia por tipo de cliente**: cada cupón puede dirigirse a tipos de cliente específicos (TA, VIP, staff, etc.); el portal muestra a cada participante solo los cupones de su audiencia.
+- Reclamo desde los portales: genera un **código único** (`CPN-XXXXXX`) y un **QR criptográfico** con vigencia de 48 horas.
+- Estados del claim: `CLAIMED` (reclamado), `REDEEMED` (canjeado), `EXPIRED` (vencido), `REVOKED` (anulado por administración).
+- **Portal Partner** (`/portal/partner`): el comercio inicia sesión con **código + PIN**, escanea el QR del participante (o ingresa el código manual), valida el cupón y confirma el canje, con respuesta visual inmediata.
+- Estadísticas para el comercio: canjes de hoy, total acumulado, beneficios habilitados, pendientes por validar y stock restante.
+- Alcance configurable por partner: lista de cupones que ese comercio puede canjear (o todos).
+- Reportería de reclamos y canjes por cupón, comercio y período.
+
+### b) Módulo de registro
+
+- Administración de cupones y partners desde la plataforma web (Beneficios → Administrar beneficios), incluyendo la creación de partners con PIN de acceso (almacenado cifrado) y su activación/desactivación.
+- Sesiones del partner con token de 12 horas de vigencia, registradas con IP y dispositivo.
+- Persistencia de cada canje con fecha, comercio, operador y cupón, para auditoría y reportes.
+
+---
+
+## 31. Gestión de Personal Operativo y Voluntarios (Workforce)
+
+Permite administrar al personal del evento que no es participante deportivo (voluntarios, supervisores, agentes, personal de servicio) junto con el inventario de productos y materiales que se les entregan.
+
+### a) Funcionalidad
+
+- Registro de personas con categoría, área asignada, contacto y fotografía.
+- Catálogo de productos (uniformes, kits, credenciales, materiales) con stock y **código de barras único** (Code 128) por producto.
+- Registro de entregas y devoluciones por persona, con cantidad, fecha y usuario responsable.
+- Impresión de etiquetas de código de barras individuales o en lote.
+- Reportes de entregas por persona y categoría, productos sin entregar y stock faltante.
+
+### b) Módulo de registro
+
+- Formularios de alta de personas y productos con validación de campos obligatorios.
+- Persistencia de cada movimiento de inventario asociado a la persona y al operador que lo registró.
+
+---
+
+## 32. Gestión Administrativa de Acreditaciones
+
+Permite operar el flujo completo de acreditación de participantes y conductores desde la plataforma web: revisión, aprobación o rechazo, emisión de credencial con QR e impresión.
+
+### a) Funcionalidad
+
+- Cola de revisión con los participantes pendientes, su documentación y fotografía.
+- Aprobación o rechazo con motivo documentado y notificación al operador que registró.
+- Emisión de la credencial con **QR único**, en formato PDF listo para impresión.
+- El listado de conductores para acreditación incluye tanto a los conductores propios como a los **conductores de proveedor**.
+- Reimpresión con invalidación del QR anterior y deshabilitación de credenciales.
+
+### b) Módulo de registro
+
+- Registro de cada cambio de estado de acreditación con usuario, fecha y motivo.
+- Bitácora de escaneos de credenciales en los puntos de control (ver sección 19).
+
+---
+
+## 33. Centro de Ayuda y Documentación
+
+Base de conocimiento integrada con la documentación operativa del evento: glosario, roles, regiones, recintos, hoteles, coordinadores y el Cuaderno de Cargo del evento con soporte trilingüe (ES/EN/PT).
+
+### a) Funcionalidad
+
+- Categorías navegables por pestañas y búsqueda libre en tiempo real.
+- Descarga del Cuaderno de Cargo en PDF.
+- Disponible para todos los roles administrativos sin permisos especiales.
+
+### b) Módulo de registro
+
+- Contenido administrado centralmente; no requiere carga por parte del usuario final.
+
+---
+
+## 34. Inicio Guiado al Usuario Administrador
+
+Recorrido interactivo personalizado por rol que acompaña al nuevo usuario administrador en sus primeros pasos, recomendando módulos y tareas según su perfil y objetivos declarados.
+
+### a) Funcionalidad
+
+- Seis pasos: bienvenida, selección de rol, selección de objetivos, recomendación de tareas con enlaces directos, sugerencias y atajos, y cierre.
+- Persistencia del progreso en el navegador con opción de reiniciar el recorrido.
+
+### b) Módulo de registro
+
+- El estado del recorrido se conserva localmente en el dispositivo del usuario.
+
+---
+
+## 35. Operatividad Diaria del Transporte
+
+Pantalla de gestión diaria del transporte que consolida planificación, asignación y seguimiento de los viajes del día, con asignación automática de conductores y carga masiva por plantilla XLSX.
+
+### a) Funcionalidad
+
+- Indicadores del día: total de viajes, asignados, sin asignar y porcentaje de cobertura, con **despacho por cobertura** y descripciones operativas por franja.
+- Asignación automática de conductores considerando capacidad del vehículo, disponibilidad horaria y carga acumulada del día.
+- Plantilla XLSX descargable, validación previa por fila y creación de viajes en lote; también permite **crear viajes directamente desde la planilla del día**.
+- Edición masiva (asignar conductor o cambiar vehículo en lote).
+- Gestión diferenciada de la **flota VIP/T1**.
+
+### b) Módulo de registro
+
+- Cada asignación (manual o automática) queda registrada en la bitácora del viaje.
+
+---
+
+## 36. Registro de Acciones del Asistente de Inteligencia Artificial
+
+Auditoría completa de cada operación que el asistente SofIA ejecuta sobre la plataforma (crear viajes, programar premiaciones, enviar notificaciones, etc.).
+
+### a) Funcionalidad
+
+- Registro por operación: tipo, parámetros, respuesta, conversación de origen, usuario y fecha/hora.
+- Filtros por tipo, fecha, usuario y resultado (exitosa / con error), con detalle expandible.
+- Indicadores agregados: operaciones por día y tipo, porcentaje de éxito, funciones más utilizadas.
+- Exportación a XLSX.
+
+### b) Módulo de registro
+
+- Persistencia automática de cada acción ejecutada por el asistente, vinculada a la conversación que la originó.
+
+---
+
+## 37. Sesión Única por Dispositivo en los Portales
+
+Garantiza que cada cuenta de usuario final (participante o conductor) tenga **una sola sesión activa a la vez**, protegiendo el uso del código de acceso compartido o filtrado.
+
+### a) Funcionalidad
+
+- Al iniciar sesión, el dispositivo **reclama** la sesión de la cuenta; si otro dispositivo ya tiene una sesión viva, el nuevo login se **rechaza** con un mensaje explicativo (la sesión existente manda: no se expulsa al primero).
+- La sesión activa emite un **latido** periódico; si la app se cierra sin cerrar sesión, la sesión caduca en ~2 minutos y otro dispositivo puede entrar.
+- El **cierre de sesión libera la sesión de inmediato**.
+- Degradación segura: ante errores de red o backend, el mecanismo no bloquea el uso normal del portal.
+
+### b) Módulo de registro
+
+- El identificador de la sesión activa y su último latido se registran junto al usuario; cada reclamo, validación y liberación queda trazado en el servidor.
+
+---
+
+## 38. Eliminación y Reactivación de Cuentas de Usuario Final
+
+Permite a cada usuario de portal eliminar su propia cuenta (requisito de las tiendas de aplicaciones) y al equipo administrativo reactivarla si corresponde, sin pérdida de datos históricos.
+
+### a) Funcionalidad
+
+- Opción **"Eliminar mi cuenta"** con confirmación en los cinco portales activos (usuario, conductor, solicitud de vehículo, control de acceso y partner).
+- La eliminación exige la **confirmación de identidad** con el mismo nivel de autenticación del portal (código de acceso o sesión del partner).
+- Efectos inmediatos: la cuenta pasa a estado **eliminado** (soft delete), se cierra la sesión en todos los dispositivos, el login por código y la recuperación por correo la rechazan, y se eliminan sus tokens de notificaciones push.
+- Los datos históricos (viajes, canjes, acreditación) se conservan para trazabilidad.
+- **Reactivación desde administración**: los listados administrativos muestran la cuenta con distintivo **ELIMINADA** y un botón **Reactivar** que restaura el estado previo a la baja; el usuario vuelve a ingresar con su mismo código.
+
+### b) Módulo de registro
+
+- La baja registra fecha, origen (el propio usuario) y el estado previo de la cuenta, lo que permite una reactivación fiel.
+- Endpoints administrativos de reactivación por tipo de cuenta (participante, conductor, participante de proveedor, partner).
+
+---
+
+## 39. Transfer In / Transfer Out y Monitor de Vuelos
+
+Vincula los viajes de recepción y despedida con los vuelos de los participantes y ofrece un monitor operativo de llegadas y salidas en tiempo real.
+
+### a) Funcionalidad
+
+- Viajes tipo **Transfer In** (recepción) y **Transfer Out** (despedida) asociados al vuelo del participante, con hora estimada actualizada por la integración aeronáutica.
+- **Monitor de Vuelos** con las llegadas y salidas del día y **línea de tiempo clickeable**: pinchar un vuelo abre directamente el editor del viaje asociado.
+- **Mapa interactivo del recorrido** del transfer en el detalle del viaje.
+- Regla de negocio: el cliente **VIP viaja solo** (sus viajes no incluyen delegación ni participantes adicionales).
+
+### b) Módulo de registro
+
+- La asociación vuelo ⇄ viaje queda persistida y visible en la bitácora del viaje.
+
+---
+
+## 40. Monitoreo VIP en Tiempo Real
+
+Seguimiento permanente de la ubicación y agenda de los participantes VIP para los equipos de protocolo y operaciones.
+
+### a) Funcionalidad
+
+- Transmisión **permanente** de la ubicación del VIP mientras la app está abierta (no solo durante viajes).
+- Mapa con la posición actual de cada VIP y **ficha completa** (datos, credencial, vuelos, hotel, viajes, premiaciones).
+- **Timelines tipo tablero** con la agenda del día de cada VIP.
+
+### b) Módulo de registro
+
+- Persistencia del histórico de posiciones del VIP para trazabilidad y auditoría.
+
+---
+
+## 41. Panel Financiero de Transporte
+
+Consolida los indicadores económicos de la operación de transporte para la toma de decisiones y la rendición de cuentas con proveedores.
+
+### a) Funcionalidad
+
+- **Ingreso** por viajes según tarifas, **costo** operativo (incluye kilometraje GPS real) y **margen** resultante.
+- Desglose por día, proveedor, tipo de vehículo y tipo de viaje.
+- Uso de caché para el cálculo de kilometraje GPS, evitando saturar los servicios de posición.
+
+### b) Módulo de registro
+
+- Los indicadores se calculan de la información operativa ya registrada (viajes, tarifas, posiciones); no requiere carga adicional.
+
+---
+
+## 42. Ficha de Salud del Participante y Credencial PDF
+
+Incorpora la información de salud del participante al ciclo operativo y mejora la entrega de la credencial digital.
+
+### a) Funcionalidad
+
+- **Ficha de salud** completada por el propio participante desde su portal, con estado visible (completada / pendiente).
+- Consulta administrativa de las fichas desde el módulo de Salud, con **detalle por participante**.
+- La descarga de la credencial desde los portales genera el **PDF de la credencial completa** (formato oficial con QR, foto y datos del evento).
+- Ruta de **descarga de credencial sin login** para casos operativos excepcionales.
+
+### b) Módulo de registro
+
+- Persistencia de la ficha de salud asociada al participante, con trazabilidad de su completitud.
+- El PDF se genera desde los datos vigentes del participante al momento de la descarga.
