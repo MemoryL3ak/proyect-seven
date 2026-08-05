@@ -67,3 +67,7 @@ certificates
 
 # Standalone mobile app — has its own repo
 seven-arena-app/
+# Documentos con credenciales reales — solo distribución controlada, no versionar
+docs/USUARIOS_ROLES_Y_CODIGOS.md
+docs/USUARIOS_ROLES_Y_CODIGOS.xlsx
+docs/_users_export.json
