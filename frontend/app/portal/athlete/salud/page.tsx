@@ -16,9 +16,16 @@ import { apiFetch } from "@/lib/api";
 
 type YesNo = "" | "SI" | "NO";
 
+// Mantener alineado con el HealthRecord del módulo administrativo de Salud
+// (frontend/app/(main)/operations/health/page.tsx): los campos que el
+// participante no completa acá quedan vacíos en la ficha FUPD del admin.
 type HealthRecord = {
+  sport: string;
   personal: {
     fullName: string;
+    socialName: string;
+    genderIdentity: string;
+    idCardGender: string;
     rut: string;
     birthDate: string;
     height: string;
@@ -30,6 +37,9 @@ type HealthRecord = {
     medications: string;
     psychiatricTreatment: YesNo;
     psychiatricDetail: string;
+    psychiatricDiagnosis: string;
+    psychiatricMedications: YesNo;
+    psychiatricDoseSchedule: string;
     specialDiet: YesNo;
     specialDietDetail: string;
   };
@@ -40,10 +50,22 @@ type HealthRecord = {
     region: string;
     phone: string;
     email: string;
+    indigenous: YesNo;
+    indigenousDetail: string;
+    shirtSize: string;
+  };
+  representation: {
+    dependencyType: string;
+    institutionName: string;
+    enrolledClub: YesNo;
+    clubName: string;
+    promesasChile: YesNo;
   };
   emergency: {
     name: string;
     phone: string;
+    email: string;
+    address: string;
     relation: string;
   };
   participantSignature: string; // base64 dataURL of canvas
@@ -63,8 +85,12 @@ type AthleteItem = {
 
 function emptyRecord(): HealthRecord {
   return {
+    sport: "",
     personal: {
       fullName: "",
+      socialName: "",
+      genderIdentity: "",
+      idCardGender: "",
       rut: "",
       birthDate: "",
       height: "",
@@ -76,11 +102,15 @@ function emptyRecord(): HealthRecord {
       medications: "",
       psychiatricTreatment: "",
       psychiatricDetail: "",
+      psychiatricDiagnosis: "",
+      psychiatricMedications: "",
+      psychiatricDoseSchedule: "",
       specialDiet: "",
       specialDietDetail: "",
     },
-    contact: { address: "", commune: "", city: "", region: "", phone: "", email: "" },
-    emergency: { name: "", phone: "", relation: "" },
+    contact: { address: "", commune: "", city: "", region: "", phone: "", email: "", indigenous: "", indigenousDetail: "", shirtSize: "" },
+    representation: { dependencyType: "", institutionName: "", enrolledClub: "", clubName: "", promesasChile: "" },
+    emergency: { name: "", phone: "", email: "", address: "", relation: "" },
     participantSignature: "",
     signedAt: "",
     medicalDocumentUrl: "",
@@ -100,13 +130,17 @@ function mergeRecord(raw: unknown, fallbackName = ""): HealthRecord {
     ...(r as Partial<HealthRecord>),
     personal: { ...base.personal, ...((r.personal as object) ?? {}) },
     contact: { ...base.contact, ...((r.contact as object) ?? {}) },
+    representation: { ...base.representation, ...((r.representation as object) ?? {}) },
     emergency: { ...base.emergency, ...((r.emergency as object) ?? {}) },
+    sport: (r.sport as string) ?? "",
     participantSignature: (r.participantSignature as string) ?? "",
     signedAt: (r.signedAt as string) ?? "",
     medicalDocumentUrl: (r.medicalDocumentUrl as string) ?? "",
     medicalDocumentUploadedAt: (r.medicalDocumentUploadedAt as string) ?? "",
   };
 }
+
+const SHIRT_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
 
 async function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -576,6 +610,7 @@ function FichaSaludContent() {
   const p = record.personal;
   const c = record.contact;
   const e = record.emergency;
+  const rp = record.representation;
 
   const setP = (patch: Partial<typeof p>) =>
     setRecord((r) => ({ ...r, personal: { ...r.personal, ...patch } }));
@@ -583,6 +618,8 @@ function FichaSaludContent() {
     setRecord((r) => ({ ...r, contact: { ...r.contact, ...patch } }));
   const setE = (patch: Partial<typeof e>) =>
     setRecord((r) => ({ ...r, emergency: { ...r.emergency, ...patch } }));
+  const setRP = (patch: Partial<typeof rp>) =>
+    setRecord((r) => ({ ...r, representation: { ...r.representation, ...patch } }));
 
   // Auto-load if ID comes from URL
   useEffect(() => {
@@ -780,6 +817,22 @@ function FichaSaludContent() {
                   <input className="input" value={p.fullName} onChange={(ev) => setP({ fullName: ev.target.value })} />
                 </label>
                 <label className="space-y-2">
+                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Nombre social <span className="font-normal" style={{ color: "var(--text-faint)" }}>(opcional)</span></span>
+                  <input className="input" value={p.socialName} onChange={(ev) => setP({ socialName: ev.target.value })} />
+                </label>
+                <label className="space-y-2">
+                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Deporte / disciplina</span>
+                  <input className="input" value={record.sport} onChange={(ev) => setRecord((r) => ({ ...r, sport: ev.target.value }))} placeholder="Atletismo, natación..." />
+                </label>
+                <label className="space-y-2">
+                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Género con que te identificas</span>
+                  <input className="input" value={p.genderIdentity} onChange={(ev) => setP({ genderIdentity: ev.target.value })} />
+                </label>
+                <label className="space-y-2">
+                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Género en cédula de identidad</span>
+                  <input className="input" value={p.idCardGender} onChange={(ev) => setP({ idCardGender: ev.target.value })} />
+                </label>
+                <label className="space-y-2">
                   <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>RUT</span>
                   <input className="input" value={p.rut} onChange={(ev) => setP({ rut: ev.target.value })} placeholder="12.345.678-9" />
                 </label>
@@ -824,10 +877,23 @@ function FichaSaludContent() {
 
               <YesNoField label="¿Está en tratamiento psiquiátrico?" value={p.psychiatricTreatment} onChange={(v) => setP({ psychiatricTreatment: v })} />
               {p.psychiatricTreatment === "SI" && (
-                <label className="space-y-2 block">
-                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Detalle del tratamiento</span>
-                  <textarea className="input" rows={2} value={p.psychiatricDetail} onChange={(ev) => setP({ psychiatricDetail: ev.target.value })} />
-                </label>
+                <>
+                  <label className="space-y-2 block">
+                    <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Detalle del tratamiento</span>
+                    <textarea className="input" rows={2} value={p.psychiatricDetail} onChange={(ev) => setP({ psychiatricDetail: ev.target.value })} />
+                  </label>
+                  <label className="space-y-2 block">
+                    <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Diagnóstico</span>
+                    <input className="input" value={p.psychiatricDiagnosis} onChange={(ev) => setP({ psychiatricDiagnosis: ev.target.value })} />
+                  </label>
+                  <YesNoField label="¿Toma medicamentos psiquiátricos?" value={p.psychiatricMedications} onChange={(v) => setP({ psychiatricMedications: v })} />
+                  {p.psychiatricMedications === "SI" && (
+                    <label className="space-y-2 block">
+                      <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Dosis y horarios</span>
+                      <input className="input" value={p.psychiatricDoseSchedule} onChange={(ev) => setP({ psychiatricDoseSchedule: ev.target.value })} placeholder="Ej: 20 mg cada mañana" />
+                    </label>
+                  )}
+                </>
               )}
 
               <YesNoField label="¿Requiere dieta especial?" value={p.specialDiet} onChange={(v) => setP({ specialDiet: v })} />
@@ -886,6 +952,44 @@ function FichaSaludContent() {
                   <input className="input" type="email" value={c.email} onChange={(ev) => setC({ email: ev.target.value })} />
                 </label>
               </div>
+              <YesNoField label="¿Perteneces a un pueblo originario?" value={c.indigenous} onChange={(v) => setC({ indigenous: v })} />
+              {c.indigenous === "SI" && (
+                <label className="space-y-2 block">
+                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>¿Cuál?</span>
+                  <input className="input" value={c.indigenousDetail} onChange={(ev) => setC({ indigenousDetail: ev.target.value })} />
+                </label>
+              )}
+              <label className="space-y-2 block">
+                <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Talla de ropa</span>
+                <select className="input" value={c.shirtSize} onChange={(ev) => setC({ shirtSize: ev.target.value })}>
+                  <option value="">Selecciona tu talla</option>
+                  {SHIRT_SIZES.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </label>
+            </div>
+            <div className="surface rounded-2xl p-6 space-y-4">
+              <div>
+                <h2 className="text-lg font-semibold" style={{ color: "var(--text)" }}>Representación deportiva</h2>
+                <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>Institución o club al que representas.</p>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="space-y-2">
+                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Dependencia</span>
+                  <input className="input" value={rp.dependencyType} onChange={(ev) => setRP({ dependencyType: ev.target.value })} placeholder="Municipal, particular, federado..." />
+                </label>
+                <label className="space-y-2">
+                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Institución / establecimiento</span>
+                  <input className="input" value={rp.institutionName} onChange={(ev) => setRP({ institutionName: ev.target.value })} />
+                </label>
+              </div>
+              <YesNoField label="¿Estás inscrito en un club?" value={rp.enrolledClub} onChange={(v) => setRP({ enrolledClub: v })} />
+              {rp.enrolledClub === "SI" && (
+                <label className="space-y-2 block">
+                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Nombre del club</span>
+                  <input className="input" value={rp.clubName} onChange={(ev) => setRP({ clubName: ev.target.value })} />
+                </label>
+              )}
+              <YesNoField label="¿Perteneces a Promesas Chile?" value={rp.promesasChile} onChange={(v) => setRP({ promesasChile: v })} />
             </div>
             <NavButtons onPrev={prev} onNext={next} />
           </div>
@@ -911,6 +1015,14 @@ function FichaSaludContent() {
                 <label className="space-y-2">
                   <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Relación</span>
                   <input className="input" value={e.relation} onChange={(ev) => setE({ relation: ev.target.value })} placeholder="Madre, padre, pareja..." />
+                </label>
+                <label className="space-y-2">
+                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Correo electrónico</span>
+                  <input className="input" type="email" value={e.email} onChange={(ev) => setE({ email: ev.target.value })} />
+                </label>
+                <label className="space-y-2">
+                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Dirección</span>
+                  <input className="input" value={e.address} onChange={(ev) => setE({ address: ev.target.value })} />
                 </label>
               </div>
             </div>

@@ -24,6 +24,7 @@ import { isAvailable as isNativeShell } from "@/lib/native-bridge";
 import { clearPersistedTabs, persistTab, restoreOnReload, startTabHeartbeat } from "@/lib/portal-tab";
 import { claimPortalSession, clearPortalSession, releasePortalSession, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
 import PortalSessionGuard from "@/components/PortalSessionGuard";
+import SofiaWidget from "@/components/SofiaWidget";
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
 import QrFullscreenOverlay from "@/components/QrFullscreenOverlay";
 import QRCode from "qrcode";
@@ -76,7 +77,7 @@ type HotelAssignment = {
 type HotelRoom = { id: string; roomNumber: string; roomType: string };
 type HotelBed = { id: string; bedType: string };
 type Vehicle = { id: string; plate: string; type: string };
-type Trip = { id: string; driverId: string; vehicleId?: string | null; athleteIds?: string[]; requesterAthleteId?: string | null; clientType?: string | null; origin?: string | null; destination?: string | null; status?: string | null; scheduledAt?: string | null; startedAt?: string | null; completedAt?: string | null; tripType?: string | null; notes?: string | null; driverRating?: number | null; ratingComment?: string | null; ratedAt?: string | null; passengerLat?: number | null; passengerLng?: number | null };
+type Trip = { id: string; driverId: string; vehicleId?: string | null; athleteIds?: string[]; athleteNames?: string[]; requesterAthleteId?: string | null; clientType?: string | null; origin?: string | null; destination?: string | null; status?: string | null; scheduledAt?: string | null; startedAt?: string | null; completedAt?: string | null; tripType?: string | null; discipline?: string | null; notes?: string | null; driverRating?: number | null; ratingComment?: string | null; ratedAt?: string | null; passengerLat?: number | null; passengerLng?: number | null };
 type Driver = { id: string; fullName: string; userId?: string | null };
 type Event = { id: string; name: string };
 type Delegation = { id: string; countryCode: string };
@@ -287,6 +288,7 @@ export default function UserPortalPage() {
   const [disciplineParents, setDisciplineParents] = useState<DisciplineParent[]>([]);
   const [healthRecord, setHealthRecord] = useState<Record<string, any> | null>(null);
   const [delegationMembers, setDelegationMembers] = useState<Athlete[]>([]);
+  const [delegationTrips, setDelegationTrips] = useState<Trip[]>([]);
   const [venues, setVenues] = useState<Venue[]>([]);
   const [allAccommodations, setAllAccommodations] = useState<Accommodation[]>([]);
   const [foodLocations, setFoodLocations] = useState<FoodLocation[]>([]);
@@ -457,12 +459,13 @@ export default function UserPortalPage() {
       { key:"sedes", label:"Sedes", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg> },
       { key:"alimentacion", label:"Alimentación", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg> },
       { key:"delegacion", label:"Delegación", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg> },
-      { key:"cupones", label:"Cupones", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v2a3 3 0 010 6v2a2 2 0 002 2h14a2 2 0 002-2v-2a3 3 0 010-6V7a2 2 0 00-2-2H5a2 2 0 00-2 2z"/><line x1="13" y1="5" x2="13" y2="7"/><line x1="13" y1="11" x2="13" y2="13"/><line x1="13" y1="17" x2="13" y2="19"/></svg> },
+      { key:"cupones", label:"Beneficios", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v2a3 3 0 010 6v2a2 2 0 002 2h14a2 2 0 002-2v-2a3 3 0 010-6V7a2 2 0 00-2-2H5a2 2 0 00-2 2z"/><line x1="13" y1="5" x2="13" y2="7"/><line x1="13" y1="11" x2="13" y2="13"/><line x1="13" y1="17" x2="13" y2="19"/></svg> },
       { key:"cuenta", label:"Cuenta", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
     ];
     if (isTA) return all.filter(t => ["actividades","calendario","sedes","alimentacion","cupones","cuenta"].includes(t.key));
     if (!isChief) return all.filter(t => ["actividades","calendario","premiaciones","sedes","alimentacion","cupones","cuenta"].includes(t.key));
-    return all;
+    // Jefe de delegación: vista completa, sin premiaciones (no oficia como entregador).
+    return all.filter(t => t.key !== "premiaciones");
   }, [isChief, isTA]);
 
   // La barra inferior muestra hasta 4 pestañas fijas + "Más"; el resto se agrupa
@@ -497,6 +500,12 @@ export default function UserPortalPage() {
   useEffect(() => {
     if (athlete && !isChief) setActiveTab("actividades");
   }, [athlete?.id]);
+
+  // El jefe ya no tiene pestaña de premiaciones: si venía persistida de una
+  // sesión anterior, volver al itinerario para no dejar la pantalla vacía.
+  useEffect(() => {
+    if (athlete && isChief && activeTab === "premiaciones") setActiveTab("itinerario");
+  }, [athlete?.id, isChief, activeTab]);
 
   const DAY_NAMES = ["L","M","M","J","V","S","D"];
   function getMonthGrid(cursor: Date) {
@@ -654,6 +663,12 @@ export default function UserPortalPage() {
           const allAthletes = await apiFetch<Athlete[]>("/athletes");
           setDelegationMembers((allAthletes || []).filter(a => a.delegationId === data.delegationId && a.id !== data.id));
         } catch { setDelegationMembers([]); }
+        // Viajes del evento: el tab Actividades del jefe los filtra por los
+        // miembros y disciplinas de su delegación.
+        try {
+          const allTrips = await apiFetch<Trip[]>("/trips");
+          setDelegationTrips(Array.isArray(allTrips) ? allTrips : []);
+        } catch { setDelegationTrips([]); }
       }
 
     } catch (err) {
@@ -1168,6 +1183,8 @@ export default function UserPortalPage() {
           }}
         />
       )}
+      {/* Asistente IA para el jefe de delegación */}
+      {athlete && isChief && <SofiaWidget compact />}
       <style>{`
         @keyframes db-in{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
         @keyframes db-badge{from{opacity:0;transform:scale(0.85)}to{opacity:1;transform:scale(1)}}
@@ -1440,34 +1457,90 @@ export default function UserPortalPage() {
                 })}
               </div>
             </div>
-            {/* Action buttons */}
-            <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
-              {[
-                { field:"airportCheckinAt" as const, label:"Marcar embarque / llegada", done:!!athlete.airportCheckinAt, icon:<IcoPlane /> },
-                { field:"hotelCheckinAt" as const, label:"Marcar check-in hotel", done:!!athlete.hotelCheckinAt, icon:<IcoHotel /> },
-                { field:"hotelCheckoutAt" as const, label:"Marcar check-out hotel", done:!!athlete.hotelCheckoutAt, icon:<IcoCheck /> },
-              ].filter(a => !a.done).map(a => (
-                <button key={a.field} type="button" disabled={markLoading===a.field} onClick={async () => {
-                  setMarkLoading(a.field);
-                  try {
-                    const now = new Date().toISOString();
-                    if (a.field === "hotelCheckinAt" || a.field === "hotelCheckoutAt") {
-                      if (hotelAssignment) {
-                        const key = a.field === "hotelCheckinAt" ? "checkinAt" : "checkoutAt";
-                        await apiFetch(`/hotel-assignments/${hotelAssignment.id}`, { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ [key]: now }) });
-                      }
-                    }
-                    await apiFetch(`/athletes/${athlete.id}`, { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ [a.field]: now }) });
-                    setAthlete({ ...athlete, [a.field]: now });
-                    notify.push("Registro confirmado", "✅");
-                  } catch { notify.push("No se pudo registrar", "❌"); }
-                  setMarkLoading(null);
-                }}
-                  style={{ width:"100%",padding:14,borderRadius:12,border:"none",background:"linear-gradient(135deg,#21D0B3,#17a68e)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,opacity:markLoading===a.field?0.6:1 }}>
-                  {a.icon} {markLoading===a.field ? "Registrando..." : a.label}
-                </button>
-              ))}
-            </div>
+            {/* Los botones de check-in/check-out se retiraron del portal del
+                jefe: esos registros los marca el personal de hotelería y
+                operaciones desde el módulo administrativo. */}
+            {/* Vuelos de la delegación */}
+            {(() => {
+              const everyone = [athlete, ...delegationMembers];
+              const byFlight = new Map<string, { label: string; arrival?: string | null; origin?: string | null; names: string[] }>();
+              const noFlight: string[] = [];
+              everyone.forEach(p => {
+                if (!p.flightNumber) { noFlight.push(p.fullName); return; }
+                const label = `${p.airline ? `${p.airline} · ` : ""}${p.flightNumber}`;
+                const cur = byFlight.get(label) || { label, arrival: null, origin: null, names: [] };
+                if (!cur.arrival && p.arrivalTime) cur.arrival = p.arrivalTime;
+                if (!cur.origin && p.origin) cur.origin = p.origin;
+                cur.names.push(p.fullName);
+                byFlight.set(label, cur);
+              });
+              const flights = Array.from(byFlight.values()).sort((a, b) => new Date(a.arrival || 0).getTime() - new Date(b.arrival || 0).getTime());
+              return (
+                <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+                  <div style={{ padding:"12px 14px",borderBottom:"1px solid #f1f5f9",display:"flex",alignItems:"center",gap:10 }}>
+                    <IcoPlane />
+                    <span style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#21D0B3" }}>Vuelos de la delegación</span>
+                  </div>
+                  <div style={{ padding:"12px 14px",display:"flex",flexDirection:"column",gap:8 }}>
+                    {flights.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>Sin vuelos asignados a la delegación</p>}
+                    {flights.map(f => (
+                      <div key={f.label} style={{ padding:"10px 12px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                        <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0 }}>{f.label}</p>
+                        <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 6px" }}>
+                          {f.arrival ? `Arribo: ${fmt(f.arrival)}` : "Sin horario"}{f.origin ? ` · Origen: ${f.origin}` : ""}
+                        </p>
+                        <div style={{ display:"flex",flexWrap:"wrap",gap:4 }}>
+                          {f.names.map(n => <span key={n} style={{ fontSize:9,fontWeight:600,padding:"1px 6px",borderRadius:4,background:"rgba(33,208,179,0.1)",color:"#0a7a6b" }}>{n}</span>)}
+                        </div>
+                      </div>
+                    ))}
+                    {noFlight.length > 0 && (
+                      <p style={{ fontSize:11,color:"#94a3b8",margin:0 }}>Sin vuelo asignado: {noFlight.join(", ")}</p>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+            {/* Hoteles de la delegación */}
+            {(() => {
+              const everyone = [athlete, ...delegationMembers];
+              const byHotel = new Map<string, { name: string; members: { name: string; room?: string | null }[] }>();
+              const noHotel: string[] = [];
+              everyone.forEach(p => {
+                if (!p.hotelAccommodationId) { noHotel.push(p.fullName); return; }
+                const name = allAccommodations.find(a => a.id === p.hotelAccommodationId)?.name || "Hotel asignado";
+                const cur = byHotel.get(p.hotelAccommodationId) || { name, members: [] };
+                cur.members.push({ name: p.fullName, room: p.roomNumber });
+                byHotel.set(p.hotelAccommodationId, cur);
+              });
+              const hotels = Array.from(byHotel.values()).sort((a, b) => a.name.localeCompare(b.name));
+              return (
+                <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+                  <div style={{ padding:"12px 14px",borderBottom:"1px solid #f1f5f9",display:"flex",alignItems:"center",gap:10 }}>
+                    <IcoHotel />
+                    <span style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#0fa894" }}>Hoteles de la delegación</span>
+                  </div>
+                  <div style={{ padding:"12px 14px",display:"flex",flexDirection:"column",gap:8 }}>
+                    {hotels.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>Sin hoteles asignados a la delegación</p>}
+                    {hotels.map(h => (
+                      <div key={h.name} style={{ padding:"10px 12px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                        <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:"0 0 6px" }}>{h.name} <span style={{ fontSize:11,fontWeight:600,color:"#64748b" }}>· {h.members.length} persona(s)</span></p>
+                        <div style={{ display:"flex",flexWrap:"wrap",gap:4 }}>
+                          {h.members.map(mm => (
+                            <span key={mm.name} style={{ fontSize:9,fontWeight:600,padding:"1px 6px",borderRadius:4,background:"#f0fdf8",color:"#0a7a6b",border:"1px solid rgba(33,208,179,0.2)" }}>
+                              {mm.name}{mm.room ? ` · Hab. ${mm.room}` : ""}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                    {noHotel.length > 0 && (
+                      <p style={{ fontSize:11,color:"#94a3b8",margin:0 }}>Sin hotel asignado: {noHotel.join(", ")}</p>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
 
@@ -1518,6 +1591,66 @@ export default function UserPortalPage() {
                   ))}
                 </div>
               ) : <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:20 }}>Sin viajes completados</p>;
+            })()}
+            {/* Jefe de delegación: viajes de su disciplina / delegación */}
+            {isChief && (() => {
+              const memberIds = new Set([athlete.id, ...delegationMembers.map(m => m.id)]);
+              // Nombres de las disciplinas de la delegación (prueba y deporte
+              // padre) para hacer match con trips.discipline (texto libre).
+              const discNames = new Set<string>();
+              [athlete, ...delegationMembers].forEach(p => {
+                if (!p?.disciplineId) return;
+                const child = calendarEvents.find(c => c.id === p.disciplineId);
+                if (child?.name) discNames.add(child.name.trim().toLowerCase());
+                const parent = disciplineParents.find(pp => pp.id === (child?.parentId || p.disciplineId));
+                if (parent?.name) discNames.add(parent.name.trim().toLowerCase());
+              });
+              const relevant = delegationTrips
+                .filter(tr =>
+                  (tr.requesterAthleteId && memberIds.has(tr.requesterAthleteId)) ||
+                  (tr.athleteIds || []).some(id => memberIds.has(id)) ||
+                  (tr.discipline && discNames.has(tr.discipline.trim().toLowerCase())),
+                )
+                .sort((a, b) => new Date(b.scheduledAt || 0).getTime() - new Date(a.scheduledAt || 0).getTime());
+              const STATUS_CFG: Record<string, { label: string; bg: string; color: string }> = {
+                SCHEDULED: { label:"Programado", bg:"rgba(33,208,179,0.12)", color:"#0f9e87" },
+                EN_ROUTE: { label:"En ruta", bg:"rgba(59,130,246,0.12)", color:"#2563eb" },
+                PICKED_UP: { label:"En curso", bg:"rgba(139,92,246,0.12)", color:"#7c3aed" },
+                COMPLETED: { label:"Completado", bg:"#f1f5f9", color:"#64748b" },
+                DROPPED_OFF: { label:"Completado", bg:"#f1f5f9", color:"#64748b" },
+                CANCELLED: { label:"Cancelado", bg:"rgba(239,68,68,0.1)", color:"#dc2626" },
+                REQUESTED: { label:"Solicitado", bg:"#FEF3C7", color:"#92400E" },
+              };
+              return (
+                <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+                  <div style={{ padding:"12px 14px",borderBottom:"1px solid #f1f5f9" }}>
+                    <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>Viajes de mi delegación</p>
+                    <p style={{ fontSize:11,color:"#94a3b8",margin:"3px 0 0" }}>Traslados de los miembros y disciplinas de tu delegación</p>
+                  </div>
+                  <div style={{ padding:"12px 14px",display:"flex",flexDirection:"column",gap:8 }}>
+                    {relevant.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",margin:0,textAlign:"center",padding:8 }}>Sin viajes registrados para tu delegación</p>}
+                    {relevant.slice(0, 30).map(tr => {
+                      const st = STATUS_CFG[(tr.status || "").toUpperCase()] || { label: tr.status || "—", bg:"#f1f5f9", color:"#64748b" };
+                      const passengers = (tr.athleteNames || []).filter(n => n);
+                      return (
+                        <div key={tr.id} style={{ padding:"10px 12px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                          <div style={{ display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:4 }}>
+                            <span style={{ padding:"2px 8px",borderRadius:20,fontSize:10,fontWeight:700,background:st.bg,color:st.color }}>{st.label}</span>
+                            {tr.discipline && <span style={{ fontSize:9,fontWeight:600,padding:"1px 6px",borderRadius:4,background:"rgba(33,208,179,0.1)",color:"#0a7a6b" }}>{tr.discipline}</span>}
+                          </div>
+                          <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0 }}>{tr.origin || "–"} → {tr.destination || "–"}</p>
+                          {tr.scheduledAt && <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0" }}>{fmt(tr.scheduledAt)}</p>}
+                          {passengers.length > 0 && (
+                            <p style={{ fontSize:10,color:"#94a3b8",margin:"4px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                              {passengers.slice(0, 4).join(", ")}{passengers.length > 4 ? ` +${passengers.length - 4}` : ""}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
             })()}
           </div>
         )}
@@ -1575,11 +1708,27 @@ export default function UserPortalPage() {
             });
           });
 
+          // El jefe de delegación ve solo las disciplinas (deportes padre) en
+          // las que compite su delegación — antes veía el calendario global
+          // del evento completo. Se resuelve el padre de la prueba de cada
+          // miembro (member.disciplineId suele ser la prueba/hija).
+          const chiefDiscIds = (() => {
+            if (!isChief) return null;
+            const ids = new Set<string>();
+            [athlete, ...delegationMembers].forEach(p => {
+              if (!p?.disciplineId) return;
+              const child = calendarEvents.find(c => c.id === p.disciplineId);
+              ids.add(child?.parentId || p.disciplineId);
+            });
+            return ids.size > 0 ? ids : null;
+          })();
+
           // Opciones de disciplina (deportes con actividades) para el filtro
           const discOptions = Array.from(
             new Map(
               items
                 .filter(i => i.discId)
+                .filter(i => !chiefDiscIds || chiefDiscIds.has(i.discId as string))
                 .map(i => {
                   const name = disciplineParents.find(p => p.id===i.discId)?.name
                     || calendarEvents.find(c => c.id===i.discId)?.name
@@ -1591,7 +1740,10 @@ export default function UserPortalPage() {
 
           const typed = items.filter(i =>
             (!calTypeFilter || i.type===calTypeFilter) &&
-            (!calDiscFilter || i.discId===calDiscFilter),
+            (!calDiscFilter || i.discId===calDiscFilter) &&
+            // Jefe: solo actividades de las disciplinas de su delegación (las
+            // sin disciplina —ceremonias generales— se mantienen visibles).
+            (!chiefDiscIds || !i.discId || chiefDiscIds.has(i.discId)),
           );
           const inMonth = typed.filter(i => i.date.getFullYear()===y && i.date.getMonth()===m);
           const daysWithEvents = new Set(inMonth.map(i => i.date.getDate()));
@@ -1970,7 +2122,8 @@ export default function UserPortalPage() {
                   </div>
                 </div>
 
-                {/* Filtros */}
+                {/* Filtros — ocultos para TA: su calendario queda fijo en su disciplina */}
+                {!isTA && (
                 <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",padding:"12px 14px" }}>
                   <p style={{ fontSize:10,fontWeight:800,letterSpacing:"0.14em",textTransform:"uppercase",color:"#94a3b8",margin:"0 0 8px" }}>Filtros</p>
                   <label style={{ fontSize:11,fontWeight:600,color:"#64748b" }}>Tipo de evento</label>
@@ -1990,15 +2143,17 @@ export default function UserPortalPage() {
                       </select>
                     </>
                   )}
-                  {(calTypeFilter || (!isTA && calDiscFilter) || calSelectedDay) && (
-                    <button type="button" onClick={()=>{ setCalTypeFilter(""); if (!isTA) setCalDiscFilter(""); setCalSelectedDay(null); }}
+                  {(calTypeFilter || calDiscFilter || calSelectedDay) && (
+                    <button type="button" onClick={()=>{ setCalTypeFilter(""); setCalDiscFilter(""); setCalSelectedDay(null); }}
                       style={{ marginTop:10,width:"100%",fontSize:11,fontWeight:700,color:"#dc2626",background:"#fef2f2",border:"1px solid #fecaca",borderRadius:8,padding:"6px",cursor:"pointer" }}>
                       ✕ Limpiar filtros
                     </button>
                   )}
                 </div>
+                )}
 
-                {/* Leyenda */}
+                {/* Leyenda — oculta para TA junto con los filtros */}
+                {!isTA && (
                 <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",padding:"12px 14px" }}>
                   <p style={{ fontSize:10,fontWeight:800,letterSpacing:"0.14em",textTransform:"uppercase",color:"#94a3b8",margin:"0 0 8px" }}>Leyenda</p>
                   <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
@@ -2011,6 +2166,7 @@ export default function UserPortalPage() {
                     ))}
                   </div>
                 </div>
+                )}
 
               </div>
             </div>
@@ -2018,7 +2174,7 @@ export default function UserPortalPage() {
         })()}
 
         {/* ─── Premiaciones tab ─── */}
-        {activeTab === "premiaciones" && (() => {
+        {activeTab === "premiaciones" && !isChief && (() => {
           const fmtKey = (iso?: string | null) => iso ? new Date(iso).toISOString().slice(0,10) : "";
           const fmtTime = (iso?: string | null) => iso ? new Date(iso).toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"}) : "";
           const fmtDateLong = (iso?: string | null) => {
@@ -2748,8 +2904,14 @@ export default function UserPortalPage() {
                   const disc = m.disciplineId ? ([...disciplineParents, ...calendarEvents] as any[]).find((d: any) => d.id === m.disciplineId) : null;
                   const discParent = disc?.parentId ? disciplineParents.find(p => p.id === disc.parentId) : null;
                   const discLabel = discParent ? `${discParent.name} — ${disc?.name}` : disc?.name;
+                  const memberHotel = m.hotelAccommodationId ? allAccommodations.find(a => a.id === m.hotelAccommodationId)?.name : null;
+                  const memberFlight = m.flightNumber ? `${m.airline ? `${m.airline} · ` : ""}${m.flightNumber}` : null;
+                  const accreditation = (m.accreditationStatus || "").toUpperCase();
+                  const accLabel = accreditation === "APPROVED" || accreditation === "ISSUED" ? "Acreditado"
+                    : accreditation === "REJECTED" ? "Acreditación rechazada"
+                    : accreditation ? "Acreditación pendiente" : null;
                   return (
-                    <div key={m.id} style={{ background:"#fff",borderRadius:12,border:"1px solid #e2e8f0",padding:"10px 14px",display:"flex",alignItems:"center",gap:10 }}>
+                    <div key={m.id} style={{ background:"#fff",borderRadius:12,border:"1px solid #e2e8f0",padding:"10px 14px",display:"flex",alignItems:"flex-start",gap:10 }}>
                       <div style={{ width:36,height:36,borderRadius:"50%",background:"#f1f5f9",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:"#64748b",flexShrink:0 }}>
                         {(m.fullName || "?").split(" ").slice(0,2).map(w => w[0] || "").join("").toUpperCase()}
                       </div>
@@ -2759,6 +2921,15 @@ export default function UserPortalPage() {
                           {m.userType && <span style={{ fontSize:9,fontWeight:600,padding:"1px 6px",borderRadius:4,background:"#f1f5f9",color:"#64748b" }}>{m.userType}</span>}
                           {discLabel && <span style={{ fontSize:9,fontWeight:600,padding:"1px 6px",borderRadius:4,background:"rgba(33,208,179,0.1)",color:"#0a7a6b" }}>{discLabel}</span>}
                           {m.countryCode && <span style={{ fontSize:9,fontWeight:600,padding:"1px 6px",borderRadius:4,background:"rgba(99,102,241,0.08)",color:"#6366f1" }}>{m.countryCode}</span>}
+                          {accLabel && <span style={{ fontSize:9,fontWeight:600,padding:"1px 6px",borderRadius:4,
+                            background: accLabel === "Acreditado" ? "rgba(16,185,129,0.1)" : accLabel === "Acreditación rechazada" ? "rgba(239,68,68,0.1)" : "#FEF3C7",
+                            color: accLabel === "Acreditado" ? "#059669" : accLabel === "Acreditación rechazada" ? "#dc2626" : "#92400E" }}>{accLabel}</span>}
+                        </div>
+                        <div style={{ display:"flex",flexDirection:"column",gap:2,marginTop:6 }}>
+                          {m.email && <p style={{ fontSize:11,color:"#64748b",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>✉️ {m.email}</p>}
+                          {m.phone && <p style={{ fontSize:11,color:"#64748b",margin:0 }}>📞 {m.phone}</p>}
+                          {memberFlight && <p style={{ fontSize:11,color:"#64748b",margin:0 }}>✈️ {memberFlight}{m.arrivalTime ? ` · ${fmt(m.arrivalTime)}` : ""}</p>}
+                          {memberHotel && <p style={{ fontSize:11,color:"#64748b",margin:0 }}>🏨 {memberHotel}{m.roomNumber ? ` · Hab. ${m.roomNumber}` : ""}</p>}
                         </div>
                       </div>
                     </div>

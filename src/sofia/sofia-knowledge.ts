@@ -140,7 +140,7 @@ Registra cada atención médica: participante atendido, fecha, tipo de atención
 Gestiona el listado de sustancias prohibidas y el seguimiento de atletas sujetos a controles antidopaje. El submódulo Cumplimiento AND permite registrar la entrega de formularios de declaración y el estado de cumplimiento por atleta.
 
 ### Ficha de Salud (Portal Atleta)
-Los atletas pueden completar su ficha de salud desde el portal, incluyendo: datos personales de salud, alergias, enfermedades crónicas, medicamentos, tratamientos psiquiátricos, dietas especiales, contacto de emergencia y firma digital.
+Los atletas completan su ficha de salud desde el portal (Cuenta → Ficha de salud), con los mismos campos de la ficha FUPD del módulo administrativo: identificación (nombre, nombre social, género de identidad y de cédula, RUT, fecha de nacimiento, talla, peso, deporte), condiciones de salud (alergias, enfermedades crónicas, medicamentos, tratamiento psiquiátrico con diagnóstico/medicamentos/dosis, dieta especial), contacto (dirección con autocompletado, comuna, ciudad, región, teléfono, correo, pueblo originario, talla de ropa), representación deportiva (dependencia, institución, club, Promesas Chile), contacto de emergencia (nombre, teléfono, correo, dirección, relación), firma digital y documento médico adjunto. El módulo de Salud del admin muestra cada ficha con su porcentaje de completitud y detalle por participante.
 
 ---
 
@@ -171,16 +171,26 @@ Usa el escáner QR en cada punto de control. Muestra en tiempo real si el acceso
 ---
 
 ## 10. PORTALES DE USUARIO
-La plataforma ofrece portales simplificados para usuarios finales que no necesitan acceso al sistema completo.
+La plataforma ofrece portales simplificados para usuarios finales que no necesitan acceso al sistema completo. Todos usan login por código personal de 6 caracteres (los últimos 6 del ID del registro), con recuperación por correo, y tienen sesión única por dispositivo: una sola sesión activa por cuenta; si la app se cierra sin logout, la sesión caduca sola en ~2 minutos.
 
-### Portal de Usuario / Atleta
-Vista personalizada para atletas y técnicos. Muestra: datos del participante, habitación asignada, credencial QR, viajes programados e información del evento. Accesible desde dispositivos móviles.
+### Portal de Usuario (/portal/user) — atletas TA y jefes de delegación
+Pestañas del atleta TA: Actividades (sus viajes), Calendario (fijo en su disciplina, sin filtros), Sedes, Alimentación (menús del día y lugares de comida con QR), Beneficios (cupones para reclamar con QR) y Cuenta (datos, credencial QR, ficha de salud, permisos del dispositivo, cerrar sesión y eliminar cuenta).
+El JEFE DE DELEGACIÓN ve además: Itinerario (su vuelo y hotel, estado de check-ins, vuelos de toda su delegación agrupados por vuelo y hoteles de la delegación con habitaciones), Delegación (miembros con disciplina, correo, teléfono, vuelo, hotel y estado de acreditación) y en Actividades los viajes de los miembros y disciplinas de su delegación. Su Calendario se filtra automáticamente a las disciplinas en que compite su delegación. No ve la pestaña Premiaciones y cuenta con el asistente SofIA integrado (widget flotante). Los check-in/check-out de hotel los registra el personal de hotelería desde el admin (no hay botones en el portal).
 
-### Portal Conductor
-Vista optimizada para conductores. Muestra los viajes asignados del día con origen, destino, pasajeros y estado. El conductor puede actualizar el estado del viaje (En curso / Completado) y su posición se transmite al mapa de tracking.
+### Solicitud de Vehículo (/portal/vehicle-request) — VIPs
+El login por código en /portal/user redirige aquí automáticamente si el participante es tipo VIP. Permite solicitar vehículo (el VIP viaja solo: sin delegación ni acompañantes), seguir el viaje en mapa, ver premiaciones asignadas y confirmarlas/declinarlas, beneficios, sedes/hoteles/alimentación, credencial y cuenta. Incluye el widget de SofIA.
 
-### Solicitud de Vehículo
-Portal para que los responsables de delegación o coordinadores soliciten traslados. La solicitud queda en estado Pendiente hasta que un operador la aprueba y asigna un conductor.
+### Portal Conductor (/portal/conductor)
+Bandeja de viajes asignados, flujo del viaje (iniciar ruta → validar pasajero con su código → recogido → finalizado), tracking GPS en segundo plano, reportes con fotos de jornada, documentos personales, credencial QR y cuenta (con eliminar cuenta). Sirve tanto a conductores propios como a choferes de proveedor.
+
+### Control de Acceso (/portal/access-control)
+Para staff de proveedores tipo Staff: escáner QR de credenciales con respuesta verde/rojo/amarillo y bitácora de accesos.
+
+### Portal Partner (/portal/partner)
+Para comercios aliados de beneficios: login con código de comercio + PIN, escaneo y canje de cupones, estadísticas de canje.
+
+### Eliminación y reactivación de cuentas
+Todos los portales tienen "Eliminar mi cuenta" (baja permanente con confirmación; soft delete que conserva el historial). Solo un administrador puede reactivar la cuenta desde el admin: los listados muestran badge ELIMINADA y botón Reactivar (participantes en Inscripción Participantes, conductores en Users → Conductores, staff en Registro → Proveedores, partners con Activo: Sí). Al reactivar, el usuario vuelve a entrar con su mismo código.
 
 ---
 

@@ -668,12 +668,17 @@ export class TripsService {
         order: { createdAt: 'DESC' },
       });
 
+      // Adjunta los pasajeros reales (transport.trip_athletes): sin esto el
+      // listado devolvía athleteIds siempre vacío y los portales no podían
+      // saber en qué viajes participa un atleta.
+      const withAthletes = await this.attachAthletes(trips);
+
       // Group child trips under their parents
       const tripMap = new Map<string, any>();
-      const childTrips: Trip[] = [];
+      const childTrips: (Trip & { athleteIds?: string[]; athleteNames?: string[] })[] = [];
 
-      for (const trip of trips) {
-        const extended = { ...trip, athleteIds: [] as string[], athleteNames: [] as string[], childTrips: [] as Trip[] };
+      for (const trip of withAthletes) {
+        const extended = { ...trip, childTrips: [] as Trip[] };
         if (trip.parentTripId) {
           childTrips.push(trip);
         } else {
@@ -684,10 +689,10 @@ export class TripsService {
       for (const child of childTrips) {
         const parent = tripMap.get(child.parentTripId!);
         if (parent) {
-          parent.childTrips.push({ ...child, athleteIds: [], athleteNames: [] });
+          parent.childTrips.push({ ...child });
         } else {
           // Orphan child – show as standalone
-          tripMap.set(child.id, { ...child, athleteIds: [], athleteNames: [], childTrips: [] });
+          tripMap.set(child.id, { ...child, childTrips: [] });
         }
       }
 
