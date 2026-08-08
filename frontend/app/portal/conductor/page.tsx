@@ -1076,9 +1076,11 @@ export default function DriverPortalPage() {
           }}
         />
       )}
+      {/* Restauración de sesión tras recarga: fondo claro (el mismo del portal)
+          con un spinner discreto — nada de pantalla negra de carga. */}
       {!sessionChecked && !driverProfile && (
-        <div style={{ minHeight: "100vh", background: "#020c18", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ width: 36, height: 36, borderRadius: "50%", border: "3px solid rgba(33,208,179,0.25)", borderTopColor: "#21D0B3", animation: "pc-spin 0.8s linear infinite" }} />
+        <div style={{ minHeight: "100vh", background: "#eef1f8", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ width: 28, height: 28, borderRadius: "50%", border: "3px solid rgba(33,208,179,0.2)", borderTopColor: "#21D0B3", animation: "pc-spin 0.8s linear infinite" }} />
           <style>{`@keyframes pc-spin{to{transform:rotate(360deg)}}`}</style>
         </div>
       )}
