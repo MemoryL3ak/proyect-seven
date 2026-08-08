@@ -36,8 +36,8 @@ const TOOL_LABELS: Record<string, string> = {
   release_hotel_assignment: "Liberar hotel",
   create_premiacion: "Crear premiación",
   update_premiacion_status: "Actualizar premiación",
-  create_coupon: "Crear cupón",
-  claim_coupon: "Reclamar cupón",
+  create_coupon: "Crear beneficio",
+  claim_coupon: "Reclamar beneficio",
   send_notification: "Enviar notificación",
   create_workforce_person: "Registrar personal",
   undo_last_action: "Deshacer acción",
@@ -94,7 +94,7 @@ export default function SofiaActionsPage() {
     <div className="min-w-0 space-y-6 overflow-x-hidden">
       <PageHeader
         title="Acciones de SofIA"
-        description="Registro de auditoría de cada operación que el asistente ejecutó en la plataforma: viajes, hoteles, premiaciones, cupones, notificaciones y más."
+        description="Registro de auditoría de cada operación que el asistente ejecutó en la plataforma: viajes, hoteles, premiaciones, beneficios, notificaciones y más."
         icon={<SparkleIcon size={24} />}
         meta={
           <span className="text-xs" style={{ color: "var(--text-muted)" }}>

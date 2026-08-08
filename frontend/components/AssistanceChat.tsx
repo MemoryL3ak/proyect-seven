@@ -41,14 +41,38 @@ type Message = {
   created_at: string;
 };
 
-const CATEGORIES = [
-  { value: "QUERY", label: "Consulta general" },
-  { value: "INCIDENT", label: "Incidencia" },
-  { value: "FLIGHT_CHANGE", label: "Cambio de vuelo" },
-  { value: "LOST_ITEM", label: "Objeto perdido" },
-  { value: "EMERGENCY", label: "Emergencia" },
-  { value: "OTHER", label: "Otro" },
-];
+// Etiquetas de todas las categorías (para mostrar salas ya creadas).
+const CATEGORY_LABELS: Record<string, string> = {
+  QUERY: "Consulta general",
+  INCIDENT: "Incidencia",
+  FLIGHT_CHANGE: "Cambio de vuelo",
+  COORDINATOR_CONTACT: "Contacto con coordinador",
+  LOST_ITEM: "Objeto perdido",
+  EMERGENCY: "Emergencia",
+  OTHER: "Otro",
+};
+
+// Las categorías dependen del origen: el conductor no gestiona cambios de
+// vuelo (eso es del participante); en su lugar puede pedir contacto directo
+// con su coordinador de transporte.
+const categoriesFor = (originType: AssistanceChatProps["originType"]) =>
+  originType === "driver"
+    ? [
+        { value: "QUERY", label: "Consulta general" },
+        { value: "COORDINATOR_CONTACT", label: "Contacto con coordinador" },
+        { value: "INCIDENT", label: "Incidencia" },
+        { value: "LOST_ITEM", label: "Objeto perdido" },
+        { value: "EMERGENCY", label: "Emergencia" },
+        { value: "OTHER", label: "Otro" },
+      ]
+    : [
+        { value: "QUERY", label: "Consulta general" },
+        { value: "INCIDENT", label: "Incidencia" },
+        { value: "FLIGHT_CHANGE", label: "Cambio de vuelo" },
+        { value: "LOST_ITEM", label: "Objeto perdido" },
+        { value: "EMERGENCY", label: "Emergencia" },
+        { value: "OTHER", label: "Otro" },
+      ];
 
 const STATUS_LABEL: Record<string, { label: string; color: string }> = {
   OPEN: { label: "Abierta — sin asignar", color: "#3b82f6" },
@@ -265,7 +289,7 @@ export default function AssistanceChat({
                     <button key={c.id} type="button" onClick={() => openChat(c.id)} style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", marginBottom: "8px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "10px", cursor: "pointer" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
                         <p style={{ fontSize: "13px", fontWeight: 700, color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "220px" }}>
-                          {c.subject || CATEGORIES.find((x) => x.value === c.category)?.label || c.category}
+                          {c.subject || CATEGORY_LABELS[c.category] || c.category}
                         </p>
                         <span style={{ fontSize: "10px", color: "#94a3b8" }}>{timeShort(c.last_message_at)}</span>
                       </div>
@@ -288,7 +312,7 @@ export default function AssistanceChat({
               <div>
                 <label style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#64748b" }}>Categoría</label>
                 <select value={newCategory} onChange={(e) => setNewCategory(e.target.value)} style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "13px", marginTop: "4px" }}>
-                  {CATEGORIES.map((c) => (<option key={c.value} value={c.value}>{c.label}</option>))}
+                  {categoriesFor(originType).map((c) => (<option key={c.value} value={c.value}>{c.label}</option>))}
                 </select>
               </div>
               {newCategory === "FLIGHT_CHANGE" && (

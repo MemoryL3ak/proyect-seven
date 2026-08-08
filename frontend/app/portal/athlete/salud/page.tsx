@@ -595,6 +595,9 @@ function StepBar({ current }: { current: Step }) {
 
 function FichaSaludContent() {
   const searchParams = useSearchParams();
+  // Si el portal ya entrega el id (?id=...), la ficha carga directo: no se
+  // muestra la pantalla de identificación (parecía un "login" extra).
+  const cameWithId = Boolean(searchParams.get("id"));
   const [athleteId, setAthleteId] = useState(searchParams.get("id") ?? "");
   const [athlete, setAthlete] = useState<AthleteItem | null>(null);
   const [record, setRecord] = useState<HealthRecord>(emptyRecord());
@@ -763,7 +766,16 @@ function FichaSaludContent() {
 
       <form onSubmit={handleSubmit}>
         {/* ── STEP 1: Identificación ─────────────────────────────────────── */}
-        {step === "identificacion" && (
+        {/* Con ?id= en la URL (llegada desde el portal) la ficha se carga sola:
+            solo se muestra un estado de carga, nunca el formulario de ID. */}
+        {step === "identificacion" && cameWithId && !error && (
+          <div className="surface rounded-2xl p-6 flex flex-col items-center gap-4 py-12">
+            <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid rgba(33,208,179,0.2)", borderTopColor: "#21D0B3", animation: "fs-spin 0.8s linear infinite" }} />
+            <style>{`@keyframes fs-spin{to{transform:rotate(360deg)}}`}</style>
+            <p className="text-sm" style={{ color: "var(--text-muted)" }}>Cargando tu ficha de salud…</p>
+          </div>
+        )}
+        {step === "identificacion" && (!cameWithId || error) && (
           <div className="surface rounded-2xl p-6 space-y-5">
             <div>
               <h2 className="text-xl font-semibold" style={{ color: "var(--text)" }}>Identifícate</h2>

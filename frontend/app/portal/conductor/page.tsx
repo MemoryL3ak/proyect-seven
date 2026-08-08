@@ -29,6 +29,11 @@ const TripMap = dynamic(() => import("@/components/TripMap"), {
   ssr: false,
   loading: () => <div style={{ height: 240, background: "#dde8e2", borderRadius: "0" }} />,
 });
+const VenueMap = dynamic(() => import("@/components/VenueMap"), { ssr: false });
+
+type VenueSite = { id: string; eventId?: string | null; name?: string | null; address?: string | null; commune?: string | null; region?: string | null; photoUrl?: string | null };
+type AccommodationSite = { id: string; name?: string | null; address?: string | null; city?: string | null; country?: string | null; contactPhone?: string | null; photoUrl?: string | null };
+type FlightItem = { id: string; flightNumber: string; airline: string; arrivalTime: string | null; origin?: string | null; terminal?: string | null };
 
 type Trip = {
   id: string;
@@ -165,10 +170,10 @@ export default function DriverPortalPage() {
   const [requestStatus, setRequestStatus] = useState<string | null>(null);
   // El home del portal es siempre Actividades; sólo un refresh (F5) restaura
   // la sección donde estaba el usuario.
-  const [activeTab, setActiveTab] = useState<"actividades" | "reportes" | "cuenta">(() =>
-    restoreOnReload<"actividades" | "reportes" | "cuenta">(
+  const [activeTab, setActiveTab] = useState<"actividades" | "vuelos" | "sedes" | "reportes" | "cuenta">(() =>
+    restoreOnReload<"actividades" | "vuelos" | "sedes" | "reportes" | "cuenta">(
       "portal_conductor_tab",
-      ["actividades", "reportes", "cuenta"],
+      ["actividades", "vuelos", "sedes", "reportes", "cuenta"],
       "actividades",
     ),
   );
@@ -202,6 +207,10 @@ export default function DriverPortalPage() {
     try { const saved = localStorage.getItem("conductor_seen_trips"); return saved ? new Set(JSON.parse(saved)) : new Set(); } catch { return new Set(); }
   });
   const [driverPosition, setDriverPosition] = useState<{ lat: number; lng: number } | null>(null);
+  const [venues, setVenues] = useState<VenueSite[]>([]);
+  const [accommodations, setAccommodations] = useState<AccommodationSite[]>([]);
+  const [flights, setFlights] = useState<FlightItem[]>([]);
+  const [expandedSiteId, setExpandedSiteId] = useState<string | null>(null);
   const [locationPermission, setLocationPermission] = useState<"granted" | "prompt" | "denied" | null>(null);
   const markTripSeen = (tripId: string) => {
     setSeenTripIds((prev) => {
@@ -247,6 +256,24 @@ export default function DriverPortalPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Deep-link desde notificaciones: ?tripId= abre Actividades y deja limpia
+  // la URL. Antes el parámetro se ignoraba y el conductor aterrizaba en el
+  // portal sin ver el viaje notificado.
+  useEffect(() => {
+    if (!driverProfile) return;
+    const params = new URLSearchParams(window.location.search);
+    const tripId = params.get("tripId");
+    if (!tripId) return;
+    setActiveTab("actividades");
+    setSelectedTripId(tripId);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("tripId");
+      window.history.replaceState(window.history.state, "", url.toString());
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [driverProfile?.id]);
+
   const loadTrips = async (overrideId?: string) => {
     const id = overrideId || driverId;
     if (!id) return;
@@ -273,6 +300,20 @@ export default function DriverPortalPage() {
         apiFetch<ProviderItem[]>("/providers"),
         apiFetch<ProviderParticipant[]>("/provider-participants"),
       ]);
+
+      // Sedes, hoteles y vuelos para las pestañas informativas del conductor
+      // (best-effort: si fallan, las pestañas muestran su estado vacío).
+      Promise.all([
+        apiFetch<VenueSite[]>("/venues").catch(() => []),
+        apiFetch<AccommodationSite[]>("/accommodations").catch(() => []),
+        apiFetch<FlightItem[]>("/flights").catch(() => []),
+      ]).then(([venueData, accomData, flightData]) => {
+        setVenues(venueData || []);
+        setAccommodations(accomData || []);
+        setFlights(
+          (flightData || []).sort((a, b) => new Date(a.arrivalTime || 0).getTime() - new Date(b.arrivalTime || 0).getTime()),
+        );
+      });
 
       // Merge provider participants who are choferes into the drivers list
       const participantDrivers: Driver[] = (participantsData || [])
@@ -2109,12 +2150,120 @@ export default function DriverPortalPage() {
               </div>
             )}
 
+            {/* ─── Vuelos tab (monitor de llegadas para transfers) ─── */}
+            {activeTab === "vuelos" && (() => {
+              const now = new Date();
+              const todayKey = now.toDateString();
+              const withDate = flights.filter(f => f.arrivalTime);
+              const today = withDate.filter(f => new Date(f.arrivalTime!).toDateString() === todayKey);
+              const upcoming = withDate.filter(f => {
+                const d = new Date(f.arrivalTime!);
+                return d.toDateString() !== todayKey && d.getTime() > now.getTime();
+              });
+              const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
+              const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("es-CL", { weekday: "short", day: "2-digit", month: "short" });
+              const FlightCard = ({ f, showDate }: { f: FlightItem; showDate?: boolean }) => (
+                <div style={{ background:"#fff",borderRadius:12,border:"1px solid #e2e8f0",padding:"10px 14px",display:"flex",alignItems:"center",gap:10 }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}>
+                    <path d="M17.8 19.2L16 11l3.5-3.5C21 6 21 4 19 2c-2-2-4-2-5.5-.5L10 5 1.8 6.2l2.4 2.4L9 9l-4.5 4.5L5 15l2-1 1 2-1 2 2 .5 4.5-4.5.8 4.7 2.4 2.5z"/>
+                  </svg>
+                  <div style={{ flex:1,minWidth:0 }}>
+                    <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0 }}>{f.airline ? `${f.airline} · ` : ""}{f.flightNumber}</p>
+                    <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                      {f.origin ? `Desde ${f.origin}` : "Origen no informado"}{f.terminal ? ` · Terminal ${f.terminal}` : ""}
+                    </p>
+                  </div>
+                  {f.arrivalTime && (
+                    <div style={{ textAlign:"right",flexShrink:0 }}>
+                      <p style={{ fontSize:14,fontWeight:800,color:"#0a7a6b",margin:0 }}>{fmtTime(f.arrivalTime)}</p>
+                      {showDate && <p style={{ fontSize:10,color:"#94a3b8",margin:"1px 0 0" }}>{fmtDate(f.arrivalTime)}</p>}
+                    </div>
+                  )}
+                </div>
+              );
+              return (
+                <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
+                  <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>Llegadas de hoy</p>
+                  {today.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:14 }}>Sin vuelos programados para hoy</p>}
+                  {today.map(f => <FlightCard key={f.id} f={f} />)}
+                  <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#0fa894",margin:"10px 0 0" }}>Próximas llegadas</p>
+                  {upcoming.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:14 }}>Sin vuelos próximos registrados</p>}
+                  {upcoming.slice(0, 25).map(f => <FlightCard key={f.id} f={f} showDate />)}
+                </div>
+              );
+            })()}
+
+            {/* ─── Sedes tab ─── */}
+            {activeTab === "sedes" && (
+              <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
+                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>Sedes del evento</p>
+                {venues.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:20 }}>No hay sedes registradas</p>}
+                {venues.map(v => {
+                  const isOpen = expandedSiteId === `venue-${v.id}`;
+                  const addr = [v.address, v.commune, v.region].filter(Boolean).join(", ");
+                  return (
+                    <div key={v.id} style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+                      <button type="button" onClick={() => setExpandedSiteId(isOpen?null:`venue-${v.id}`)}
+                        style={{ width:"100%",display:"flex",alignItems:"center",gap:10,padding:"12px 14px",background:"none",border:"none",cursor:"pointer",textAlign:"left" }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        <div style={{ flex:1,minWidth:0 }}>
+                          <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>{v.name || "–"}</p>
+                          {v.address && <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{v.address}</p>}
+                        </div>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" style={{ transition:"transform .15s",transform:isOpen?"rotate(180deg)":"rotate(0)",flexShrink:0 }}><polyline points="6 9 12 15 18 9"/></svg>
+                      </button>
+                      {isOpen && (
+                        <div style={{ padding:"0 14px 14px",display:"flex",flexDirection:"column",gap:8 }}>
+                          {v.photoUrl && (
+                            <img src={v.photoUrl} alt={v.name || "Sede"} style={{ width:"100%",height:140,objectFit:"cover",borderRadius:10 }} />
+                          )}
+                          {addr && <p style={{ fontSize:12,color:"#334155",margin:0 }}>{addr}</p>}
+                          {addr && <VenueMap title={v.name || "Sede"} query={addr} />}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#0fa894",margin:"8px 0 0" }}>Hoteles</p>
+                {accommodations.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:20 }}>No hay hoteles registrados</p>}
+                {accommodations.map(h => {
+                  const isOpen = expandedSiteId === `hotel-${h.id}`;
+                  const addr = [h.address, h.city, h.country].filter(Boolean).join(", ");
+                  return (
+                    <div key={h.id} style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+                      <button type="button" onClick={() => setExpandedSiteId(isOpen?null:`hotel-${h.id}`)}
+                        style={{ width:"100%",display:"flex",alignItems:"center",gap:10,padding:"12px 14px",background:"none",border:"none",cursor:"pointer",textAlign:"left" }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0fa894" strokeWidth="1.8"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h2M14 7h2M8 11h2M14 11h2M8 15h2M14 15h2"/></svg>
+                        <div style={{ flex:1,minWidth:0 }}>
+                          <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>{h.name || "–"}</p>
+                          {addr && <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{addr}</p>}
+                        </div>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" style={{ transition:"transform .15s",transform:isOpen?"rotate(180deg)":"rotate(0)",flexShrink:0 }}><polyline points="6 9 12 15 18 9"/></svg>
+                      </button>
+                      {isOpen && (
+                        <div style={{ padding:"0 14px 14px",display:"flex",flexDirection:"column",gap:6 }}>
+                          {h.photoUrl && (
+                            <img src={h.photoUrl} alt={h.name || "Hotel"} style={{ width:"100%",height:140,objectFit:"cover",borderRadius:10 }} />
+                          )}
+                          {addr && <p style={{ fontSize:12,color:"#334155",margin:0 }}>{addr}</p>}
+                          {h.contactPhone && <p style={{ fontSize:11,color:"#64748b",margin:0 }}>Teléfono: {h.contactPhone}</p>}
+                          {addr && <VenueMap title={h.name || "Hotel"} query={addr} />}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
           </div>
 
           {/* ─── Bottom Tab Bar ─── */}
           <div className="dc-bottom-tabs">
             {([
               { key: "actividades" as const, label: "Actividades", icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 17H3v-6l2.5-5h11L19 11v6h-2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/><path d="M5 11h14"/></svg> },
+              { key: "vuelos" as const, label: "Vuelos", icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21 4 19 2c-2-2-4-2-5.5-.5L10 5 1.8 6.2l2.4 2.4L9 9l-4.5 4.5L5 15l2-1 1 2-1 2 2 .5 4.5-4.5.8 4.7 2.4 2.5z"/></svg> },
+              { key: "sedes" as const, label: "Sedes", icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg> },
               { key: "reportes" as const, label: "Reportes", icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> },
               { key: "cuenta" as const, label: "Cuenta", icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
             ]).map((tab) => (

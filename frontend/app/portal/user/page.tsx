@@ -389,6 +389,30 @@ export default function UserPortalPage() {
     const clearTimer = window.setTimeout(() => setPremFocusId(null), 8000);
     return () => { window.clearTimeout(scrollTimer); window.clearTimeout(clearTimer); };
   }, [premFocusId, activeTab, premiaciones.length]);
+
+  // Deep-link desde notificaciones de viaje: ?tripId= abre Actividades (y el
+  // detalle si es el viaje propio). Antes el parámetro se ignoraba y el
+  // usuario aterrizaba en el home sin ver nada.
+  const tripDeepLinkId = useRef<string | null>(null);
+  useEffect(() => {
+    if (!athlete) return;
+    const params = new URLSearchParams(window.location.search);
+    const tripId = params.get("tripId");
+    if (!tripId) return;
+    tripDeepLinkId.current = tripId;
+    setActiveTab("actividades");
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("tripId");
+      window.history.replaceState(window.history.state, "", url.toString());
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [athlete?.id]);
+  useEffect(() => {
+    if (!tripDeepLinkId.current || !trip) return;
+    if (trip.id === tripDeepLinkId.current) setShowTripModal(true);
+    tripDeepLinkId.current = null;
+  }, [trip?.id]);
   const notify = useNotifications({ userKind: "athlete", userId: athlete?.id ?? null });
 
   // Al cargar las actividades por primera vez, posiciona el calendario en el mes
@@ -730,7 +754,7 @@ export default function UserPortalPage() {
       setCouponsAvailable(Array.isArray(list) ? list : []);
       setCouponClaims(Array.isArray(claims) ? claims : []);
     } catch (err) {
-      setCouponError(err instanceof Error ? err.message : "No se pudieron cargar los cupones");
+      setCouponError(err instanceof Error ? err.message : "No se pudieron cargar los beneficios");
     }
   };
 
@@ -1011,33 +1035,17 @@ export default function UserPortalPage() {
   /* ══════════════════════════════════════════════════════════
      BOOT LOADER (mobile auto-login in progress)
   ══════════════════════════════════════════════════════════ */
-  if (!athlete && !bootCheckDone) {
+  // Al restaurar sesión (refresh o auto-login móvil) NO se muestra la pantalla
+  // de marca: solo un fondo neutro con un spinner discreto, para que la
+  // recarga se sienta como una actualización y no como un arranque de la app.
+  if ((!athlete && !bootCheckDone) || !sessionChecked) {
     return (
-      <div style={{ minHeight: "100vh", background: "#020c18", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ width: 36, height: 36, borderRadius: "50%", border: "3px solid rgba(33,208,179,0.25)", borderTopColor: "#21D0B3", animation: "pu-spin 0.8s linear infinite" }} />
+      <div style={{ minHeight: "100vh", background: "#eef1f8", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ width: 28, height: 28, borderRadius: "50%", border: "3px solid rgba(33,208,179,0.2)", borderTopColor: "#21D0B3", animation: "pu-spin 0.8s linear infinite" }} />
         <style>{`@keyframes pu-spin{to{transform:rotate(360deg)}}`}</style>
       </div>
     );
   }
-
-  /* ══════════════════════════════════════════════════════════
-     LOGIN SCREEN
-  ══════════════════════════════════════════════════════════ */
-  if (!sessionChecked) return (
-    <div style={{ minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"linear-gradient(135deg,#020c18 0%,#0a1628 50%,#041220 100%)",position:"relative",overflow:"hidden" }}>
-      <div style={{ position:"absolute",top:"-20%",right:"-10%",width:"50vw",height:"50vw",borderRadius:"50%",background:"radial-gradient(circle,rgba(33,208,179,0.08) 0%,transparent 70%)",pointerEvents:"none" }} />
-      <div style={{ position:"absolute",bottom:"-15%",left:"-10%",width:"40vw",height:"40vw",borderRadius:"50%",background:"radial-gradient(circle,rgba(31,205,255,0.06) 0%,transparent 70%)",pointerEvents:"none" }} />
-      <div style={{ position:"relative",zIndex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:20 }}>
-        <img src="/branding/LOGO-SEVEN-1.png" alt="Seven Arena" style={{ height:48,width:"auto",objectFit:"contain",filter:"drop-shadow(0 0 24px rgba(33,208,179,0.4)) drop-shadow(0 4px 12px rgba(0,0,0,0.6))",marginBottom:8 }} />
-        <div style={{ width:44,height:44,position:"relative" }}>
-          <div style={{ position:"absolute",inset:0,border:"3px solid rgba(33,208,179,0.15)",borderRadius:"50%" }} />
-          <div style={{ position:"absolute",inset:0,border:"3px solid transparent",borderTopColor:"#21D0B3",borderRadius:"50%",animation:"sa-spin 0.9s cubic-bezier(0.4,0,0.2,1) infinite" }} />
-        </div>
-        <p style={{ fontSize:13,fontWeight:600,color:"rgba(255,255,255,0.5)",margin:0,letterSpacing:"0.03em" }}>Cargando portal...</p>
-      </div>
-      <style>{`@keyframes sa-spin { to { transform: rotate(360deg); } }`}</style>
-    </div>
-  );
 
   if (!athlete) return (
     <div className="flex flex-col lg:flex-row" style={{ minHeight: "100vh", background: "#020c18", position: "relative", overflow: "hidden" }}>
@@ -1571,10 +1579,22 @@ export default function UserPortalPage() {
                       {trip.status==="EN_ROUTE"?"En ruta":trip.status==="PICKED_UP"?"En curso":"Programado"}
                     </span>}
                   </div>
-                  <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:"0 0 6px" }}>{trip.origin || "–"} → {trip.destination || "–"}</p>
+                  {/* Origen/destino en filas compactas con recorte: las
+                      direcciones largas ya no llenan la tarjeta de texto. */}
+                  <div style={{ display:"flex",flexDirection:"column",gap:3,margin:"0 0 6px" }}>
+                    <div style={{ display:"flex",alignItems:"baseline",gap:6,minWidth:0 }}>
+                      <span style={{ fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:"#94a3b8",flexShrink:0,width:48 }}>ORIGEN</span>
+                      <span style={{ fontSize:13,fontWeight:700,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{trip.origin || "–"}</span>
+                    </div>
+                    <div style={{ display:"flex",alignItems:"baseline",gap:6,minWidth:0 }}>
+                      <span style={{ fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:"#94a3b8",flexShrink:0,width:48 }}>DESTINO</span>
+                      <span style={{ fontSize:13,fontWeight:700,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{trip.destination || "–"}</span>
+                    </div>
+                  </div>
                   {trip.scheduledAt && <p style={{ fontSize:12,color:"#64748b",margin:"0 0 6px" }}>Programado: {fmt(trip.scheduledAt)}</p>}
                   {driver?.fullName && <p style={{ fontSize:12,color:"#334155",margin:0 }}>Conductor: {driver.fullName}</p>}
                   {driverEta && trip.status === "EN_ROUTE" && <p style={{ fontSize:12,fontWeight:700,color:"#0ea5c8",margin:"4px 0 0" }}>~{driverEta.duration} · {driverEta.distance}</p>}
+                  <p style={{ fontSize:10,color:"#94a3b8",margin:"6px 0 0" }}>Toca para ver el detalle completo</p>
                 </div>
               ) : <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:20 }}>Sin viajes activos</p>
             )}
@@ -1584,7 +1604,16 @@ export default function UserPortalPage() {
                 <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
                   {completed.map(t => (
                     <div key={t.id} style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",padding:"12px 14px" }}>
-                      <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:"0 0 4px" }}>{t.origin || "–"} → {t.destination || "–"}</p>
+                      <div style={{ display:"flex",flexDirection:"column",gap:2,margin:"0 0 4px" }}>
+                        <div style={{ display:"flex",alignItems:"baseline",gap:6,minWidth:0 }}>
+                          <span style={{ fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:"#94a3b8",flexShrink:0,width:48 }}>ORIGEN</span>
+                          <span style={{ fontSize:12.5,fontWeight:700,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{t.origin || "–"}</span>
+                        </div>
+                        <div style={{ display:"flex",alignItems:"baseline",gap:6,minWidth:0 }}>
+                          <span style={{ fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:"#94a3b8",flexShrink:0,width:48 }}>DESTINO</span>
+                          <span style={{ fontSize:12.5,fontWeight:700,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{t.destination || "–"}</span>
+                        </div>
+                      </div>
                       <p style={{ fontSize:11,color:"#64748b",margin:"0 0 4px" }}>Completado: {fmt(t.completedAt)}</p>
                       {t.driverRating && <p style={{ fontSize:11,color:"#f59e0b",margin:0 }}>{"⭐".repeat(t.driverRating)} {t.ratingComment && `"${t.ratingComment}"`}</p>}
                     </div>
@@ -2970,7 +2999,7 @@ export default function UserPortalPage() {
                   boxShadow: couponTab === "mine" ? "0 4px 14px rgba(33,208,179,0.32)" : "none",
                   border: "none", cursor: "pointer", letterSpacing: "0.01em",
                 }}>
-                Mis cupones
+                Mis beneficios
                 <span className="text-[10px] rounded-full font-bold px-2 py-0.5"
                   style={{
                     background: couponTab === "mine" ? "rgba(255,255,255,0.25)" : "#f1f5f9",
@@ -2990,7 +3019,7 @@ export default function UserPortalPage() {
             {couponTab === "available" ? (
               visibleCouponsAvailable.length === 0 ? (
                 <div style={{ padding:24, textAlign:"center", background:"#fff", borderRadius:14, border:"1px solid #e2e8f0" }}>
-                  <p style={{ fontSize:14, fontWeight:600, color:"#0f172a", margin:0 }}>No hay cupones disponibles</p>
+                  <p style={{ fontSize:14, fontWeight:600, color:"#0f172a", margin:0 }}>No hay beneficios disponibles</p>
                   <p style={{ fontSize:12, color:"#94a3b8", margin:"6px 0 0" }}>Vuelve a chequear más tarde, vamos a estar agregando beneficios durante el evento.</p>
                 </div>
               ) : (
@@ -3087,7 +3116,7 @@ export default function UserPortalPage() {
                             <>Reclamando…</>
                           ) : (
                             <>
-                              Reclamar cupón
+                              Reclamar beneficio
                               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
                             </>
                           )}
@@ -3099,7 +3128,7 @@ export default function UserPortalPage() {
               )
             ) : couponClaims.length === 0 ? (
               <div style={{ padding:24, textAlign:"center", background:"#fff", borderRadius:14, border:"1px solid #e2e8f0" }}>
-                <p style={{ fontSize:14, fontWeight:600, color:"#0f172a", margin:0 }}>Todavía no reclamaste ningún cupón</p>
+                <p style={{ fontSize:14, fontWeight:600, color:"#0f172a", margin:0 }}>Todavía no reclamaste ningún beneficio</p>
                 <p style={{ fontSize:12, color:"#94a3b8", margin:"6px 0 0" }}>Ve a la pestaña Disponibles y reclama los que quieras.</p>
               </div>
             ) : (
@@ -3122,7 +3151,7 @@ export default function UserPortalPage() {
                                 <span style={{ fontSize:11, color:"#64748b" }}>{coupon.partnerName}</span>
                               )}
                             </div>
-                            <p style={{ fontSize:13.5, fontWeight:700, color:"#0f172a", margin:0, lineHeight:1.25 }}>{coupon?.title || "Cupón"}</p>
+                            <p style={{ fontSize:13.5, fontWeight:700, color:"#0f172a", margin:0, lineHeight:1.25 }}>{coupon?.title || "Beneficio"}</p>
                             <p style={{ fontSize:11, fontFamily:"ui-monospace, SFMono-Regular, monospace", color:"#64748b", margin:"4px 0 0", letterSpacing:"0.04em" }}>
                               {c.uniqueCode}
                             </p>
@@ -3786,7 +3815,7 @@ export default function UserPortalPage() {
               </div>
               <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", padding:"8px 20px 12px", borderBottom:"1px solid #f1f5f9" }}>
                 <div style={{ flex:1, minWidth:0 }}>
-                  <p style={{ fontSize:10, fontWeight:700, letterSpacing:"0.2em", textTransform:"uppercase", color:"#64748b", margin:0 }}>Tu cupón</p>
+                  <p style={{ fontSize:10, fontWeight:700, letterSpacing:"0.2em", textTransform:"uppercase", color:"#64748b", margin:0 }}>Tu beneficio</p>
                   <h2 style={{ fontSize:18, fontWeight:800, color:"#0f172a", margin:"2px 0 0", lineHeight:1.2 }}>{activeClaim.coupon?.title}</h2>
                   {activeClaim.coupon?.partnerName && (
                     <p style={{ fontSize:12, color:"#64748b", margin:"3px 0 0" }}>{activeClaim.coupon.partnerName}</p>
@@ -3799,7 +3828,7 @@ export default function UserPortalPage() {
                 <div style={{ display:"flex", justifyContent:"center" }}>
                   {couponQrDataUrl ? (
                     <div style={{ padding:16, background:"#fff", borderRadius:16, boxShadow:"0 4px 20px rgba(0,0,0,0.08)" }}>
-                      <img src={couponQrDataUrl} alt="QR del cupón" style={{ width:240, height:240 }} />
+                      <img src={couponQrDataUrl} alt="QR del beneficio" style={{ width:240, height:240 }} />
                     </div>
                   ) : (
                     <div style={{ width:264, height:264, background:"#f1f5f9", borderRadius:16, display:"flex", alignItems:"center", justifyContent:"center" }}>

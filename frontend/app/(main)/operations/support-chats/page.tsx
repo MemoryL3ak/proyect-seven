@@ -46,6 +46,7 @@ const CATEGORY_LABEL: Record<string, string> = {
   LOST_ITEM: "Objeto perdido",
   INCIDENT: "Incidencia",
   FLIGHT_CHANGE: "Cambio de vuelo",
+  COORDINATOR_CONTACT: "Contacto con coordinador",
   EMERGENCY: "Emergencia",
   OTHER: "Otro",
 };

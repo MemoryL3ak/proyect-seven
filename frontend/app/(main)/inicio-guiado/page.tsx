@@ -312,7 +312,7 @@ const GOALS: Array<{ key: GoalKey; label: string; emoji: string; tags: RoleKey[]
   { key: "manage_access",        label: "Configurar tipos de acceso",         emoji: "🔐", tags: ["accreditation"] },
   { key: "monitor_incidents",    label: "Resolver incidencias y soporte",     emoji: "🆘", tags: ["operations"] },
   { key: "premiaciones",         label: "Coordinar premiaciones",             emoji: "🏆", tags: ["operations"] },
-  { key: "coupons",              label: "Administrar cupones y partners",     emoji: "🎟️", tags: ["operations", "other"] },
+  { key: "coupons",              label: "Administrar beneficios y partners",     emoji: "🎟️", tags: ["operations", "other"] },
   { key: "workforce",            label: "Gestionar staff y voluntarios",      emoji: "👷", tags: ["operations"] },
   { key: "finance_panel",        label: "Controlar finanzas de transporte",   emoji: "💰", tags: ["admin", "transport"] },
   { key: "vip_monitoring",       label: "Monitorear ubicación de VIP",        emoji: "⭐", tags: ["transport", "operations"] },
@@ -356,7 +356,7 @@ const TASKS: Task[] = [
   // Operaciones
   { key: "t-incidents", title: "Centro de incidencias", description: "Recibe, asigna y resuelve tickets de soporte de los portales.", href: "/operations/support-chats", goal: "monitor_incidents" },
   { key: "t-premiaciones", title: "Gestionar premiaciones", description: "Crea ceremonias, asigna entregadores VIP (con notificación push) y sigue las confirmaciones en tarjetas o timeline.", href: "/deportes/premiaciones", goal: "premiaciones" },
-  { key: "t-coupons", title: "Catálogo de cupones", description: "Define beneficios, partners y revisa los canjes desde el portal del comercio.", href: "/operations/coupons", goal: "coupons" },
+  { key: "t-coupons", title: "Catálogo de beneficios", description: "Define beneficios, partners y revisa los canjes desde el portal del comercio.", href: "/operations/coupons", goal: "coupons" },
   { key: "t-workforce", title: "Gestionar workforce", description: "Personal, catálogo del kit con carga masiva Excel, entregas por fila y timeline de entregas en el dashboard.", href: "/operations/workforce", goal: "workforce" },
   { key: "t-finance", title: "Panel Financiero de Transporte", description: "Ingreso, costo y margen por servicio con filtros por evento, cliente, flota y proveedor. Exporta a CSV o PDF.", href: "/operations/transport-finance", goal: "finance_panel" },
   { key: "t-vip-monitor", title: "Monitoreo de usuarios VIP", description: "Mapa en vivo con la ubicación permanente de cada VIP: GPS del teléfono con respaldo del vehículo asignado.", href: "/operations/vip-monitoring", goal: "vip_monitoring" },

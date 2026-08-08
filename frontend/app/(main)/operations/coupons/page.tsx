@@ -215,7 +215,7 @@ export default function CouponsAdminPage() {
       {/* KPIs */}
       {stats && (
         <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <KpiCard label="Cupones" value={stats.totalCoupons}
+          <KpiCard label="Beneficios" value={stats.totalCoupons}
             detail={`${stats.activeCoupons} activos`}
             icon={<TicketIcon size={18} />} accent="blue" />
           <KpiCard label="Reclamados (vigentes)" value={stats.activeClaims}
@@ -330,7 +330,7 @@ function CatalogTab({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      setMessage(id ? "Cupón actualizado." : "Cupón creado.");
+      setMessage(id ? "Beneficio actualizado." : "Beneficio creado.");
       setModalOpen(false); setForm({});
       await reload();
     } catch (err) {
@@ -339,10 +339,10 @@ function CatalogTab({
   };
 
   const remove = async (id: string) => {
-    if (!confirm("¿Eliminar este cupón? Esta acción no se puede deshacer.")) return;
+    if (!confirm("¿Eliminar este beneficio? Esta acción no se puede deshacer.")) return;
     try {
       await apiFetch(`/coupons/${id}`, { method: "DELETE" });
-      setMessage("Cupón eliminado.");
+      setMessage("Beneficio eliminado.");
       await reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error eliminando");
@@ -354,7 +354,7 @@ function CatalogTab({
       <div className="flex justify-end">
         <button className="btn btn-primary" type="button" onClick={() => openModal()}>
           <PlusIcon size={16} className="inline-block mr-1" />
-          Nuevo cupón
+          Nuevo beneficio
         </button>
       </div>
 
@@ -382,12 +382,12 @@ function CatalogTab({
       {visible.length === 0 ? (
         <EmptyStateBox
           icon={<TicketIcon size={36} />}
-          title="No hay cupones cargados"
-          description="Crea el primer cupón para que aparezca en la app de tus atletas, VIPs y staff."
+          title="No hay beneficios cargados"
+          description="Crea el primer beneficio para que aparezca en la app de tus atletas, VIPs y staff."
           action={
             <button className="btn btn-primary" type="button" onClick={() => openModal()}>
               <PlusIcon size={16} className="inline-block mr-1" />
-              Nuevo cupón
+              Nuevo beneficio
             </button>
           }
         />
@@ -458,7 +458,7 @@ function CatalogTab({
             onClick={(e) => e.stopPropagation()}>
             <div className="p-5 border-b flex items-center justify-between sticky top-0 bg-white rounded-t-2xl">
               <h2 className="text-lg font-semibold">
-                {(form as any).id ? "Editar cupón" : "Nuevo cupón"}
+                {(form as any).id ? "Editar beneficio" : "Nuevo beneficio"}
               </h2>
               <button className="btn btn-ghost text-sm" type="button" onClick={() => setModalOpen(false)}>
                 Cerrar ✕
@@ -583,7 +583,7 @@ function CatalogTab({
                   })}
                 </div>
                 <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>
-                  Si no seleccionas ninguno, el cupón es visible para todos.
+                  Si no seleccionas ninguno, el beneficio es visible para todos.
                 </p>
               </Field>
               <Field label="Términos y condiciones" className="md:col-span-2">
@@ -743,8 +743,8 @@ function PartnersTab({
                   )}
                   <p className="text-[11px] mt-2" style={{ color: "var(--text-muted)" }}>
                     {(p.allowedCouponIds?.length ?? 0) > 0
-                      ? `Canjea ${p.allowedCouponIds!.length} cupones específicos`
-                      : "Puede canjear todos los cupones"}
+                      ? `Canjea ${p.allowedCouponIds!.length} beneficios específicos`
+                      : "Puede canjear todos los beneficios"}
                   </p>
                 </div>
                 <div className="flex flex-col gap-1">
@@ -801,9 +801,9 @@ function PartnersTab({
                 <input type="text" className="input" value={form.contactPhone || ""}
                   onChange={(e) => setField("contactPhone", e.target.value)} />
               </Field>
-              <Field label="Cupones que puede canjear" className="md:col-span-2">
+              <Field label="Beneficios que puede canjear" className="md:col-span-2">
                 <p className="text-[11px] mb-2" style={{ color: "var(--text-muted)" }}>
-                  Si no seleccionás ninguno, puede canjear todos los cupones del sistema.
+                  Si no seleccionás ninguno, puede canjear todos los beneficios del sistema.
                 </p>
                 <div className="flex flex-wrap gap-1 max-h-40 overflow-y-auto p-1 rounded-lg"
                   style={{ backgroundColor: "#fafbfc" }}>
@@ -900,10 +900,10 @@ function ClaimsTab({
         {coupons.length > 0 && (
           <div>
             <p className="text-xs font-medium uppercase tracking-wide mb-2"
-              style={{ color: "var(--text-muted)" }}>Cupón</p>
+              style={{ color: "var(--text-muted)" }}>Beneficio</p>
             <select className="input max-w-md"
               value={couponFilter} onChange={(e) => setCouponFilter(e.target.value)}>
-              <option value="">Todos los cupones</option>
+              <option value="">Todos los beneficios</option>
               {coupons.map((c) => (
                 <option key={c.id} value={c.id}>{c.code} · {c.title}</option>
               ))}
@@ -916,7 +916,7 @@ function ClaimsTab({
         <EmptyStateBox
           icon={<ClipboardIcon size={36} />}
           title="No hay claims"
-          description="Cuando los atletas reclamen cupones desde su portal, aparecerán acá."
+          description="Cuando los atletas reclamen beneficios desde su portal, aparecerán acá."
         />
       ) : (
         <div className="surface rounded-2xl overflow-hidden">
@@ -925,7 +925,7 @@ function ClaimsTab({
               <thead style={{ backgroundColor: "#1f4e8c", color: "#fff" }}>
                 <tr>
                   <th className="p-3 text-left">Código</th>
-                  <th className="p-3 text-left">Cupón</th>
+                  <th className="p-3 text-left">Beneficio</th>
                   <th className="p-3 text-left">Usuario</th>
                   <th className="p-3 text-left">Estado</th>
                   <th className="p-3 text-left">Reclamado</th>

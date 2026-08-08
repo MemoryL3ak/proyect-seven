@@ -88,8 +88,8 @@ const TOOL_PROGRESS_LABELS: Record<string, string> = {
   release_hotel_assignment: "Liberando habitación...",
   create_premiacion: "Creando premiación...",
   update_premiacion_status: "Actualizando premiación...",
-  create_coupon: "Creando cupón...",
-  claim_coupon: "Reclamando cupón...",
+  create_coupon: "Creando beneficio...",
+  claim_coupon: "Reclamando beneficio...",
   send_notification: "Enviando notificación...",
   create_workforce_person: "Registrando personal...",
   create_event: "Creando evento...",
@@ -1037,7 +1037,7 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
     "Pronostica la demanda de viajes de la próxima semana",
     "Abre el mapa en vivo de conductores",
     "Muéstrame las alertas operativas ahora",
-    "Analiza el desempeño de cupones y partners",
+    "Analiza el desempeño de beneficios y partners",
   ];
 
   return (

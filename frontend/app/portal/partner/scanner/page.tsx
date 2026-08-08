@@ -425,7 +425,7 @@ export default function PartnerScannerPage() {
         {mode === "success" && (
           <ResultScreen
             kind="success"
-            title="¡Cupón canjeado!"
+            title="¡Beneficio canjeado!"
             subtitle={preview?.coupon?.title}
             onContinue={reset}
           />
@@ -525,7 +525,7 @@ function IdleScreen({ onScan, onManual }: { onScan: () => void; onManual: () => 
 
         <div>
           <h2 className="text-2xl font-bold tracking-tight" style={{ color: "#0d1e3a" }}>
-            Validar cupón
+            Validar beneficio
           </h2>
           <p className="text-sm mt-2 max-w-xs mx-auto" style={{ color: "#5e6b7a" }}>
             Escanea el QR del atleta con la cámara o ingresa el código manualmente.
@@ -662,7 +662,7 @@ function ManualScreen({
           Ingreso manual
         </p>
         <h2 className="text-xl font-bold mt-0.5" style={{ color: "#0d1e3a" }}>
-          Código del cupón
+          Código del beneficio
         </h2>
         <p className="text-xs mt-1" style={{ color: "#5e6b7a" }}>
           Pedile al atleta que te dicte el código debajo de su QR (formato: CPN-XXXXXX).
@@ -739,10 +739,10 @@ function PreviewScreen({
         <div className="absolute bottom-0 left-0 right-0 h-[1px] shimmer-line opacity-60" />
         <div className="relative z-10">
           <p className="text-[10px] uppercase tracking-widest font-bold text-white opacity-80">
-            ✓ Cupón válido
+            ✓ Beneficio válido
           </p>
           <h2 className="text-xl font-bold text-white leading-tight mt-1">
-            {preview.coupon?.title || "Cupón"}
+            {preview.coupon?.title || "Beneficio"}
           </h2>
           <p className="text-4xl font-extrabold text-white mt-2 anim-scale-pop">
             {discountDisplay(preview.coupon)}
@@ -869,7 +869,7 @@ function ResultScreen({
           background: `linear-gradient(135deg, ${TEAL} 0%, #1eb19a 100%)`,
           boxShadow: `0 6px 18px ${TEAL}50`,
         }}>
-        {isSuccess ? "Validar otro cupón →" : "Reintentar"}
+        {isSuccess ? "Validar otro beneficio →" : "Reintentar"}
       </button>
       </div>
     </div>
@@ -953,7 +953,7 @@ function RecentRedemptionsCard({
               Sin canjes aún
             </p>
             <p className="text-xs mt-1" style={{ color: "#5e6b7a" }}>
-              Cuando valides el primer cupón aparecerá acá.
+              Cuando valides el primer beneficio aparecerá acá.
             </p>
           </div>
         ) : (
@@ -973,7 +973,7 @@ function RecentRedemptionsCard({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-baseline justify-between gap-2">
                     <p className="text-sm font-semibold truncate" style={{ color: "#0d1e3a" }}>
-                      {r.coupon?.title || "Cupón"}
+                      {r.coupon?.title || "Beneficio"}
                     </p>
                     {discountText(r.coupon) && (
                       <span className="text-xs font-bold flex-shrink-0" style={{ color: "#2e7d32" }}>
