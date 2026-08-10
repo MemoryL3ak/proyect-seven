@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import AirlineLogo from "@/components/AirlineLogo";
 import { apiFetch } from "@/lib/api";
 import { filterValidatedAthletes } from "@/lib/athletes";
 
@@ -45,6 +46,8 @@ type TripItem = {
 type TrackResult = {
   flightNumber: string;
   airlineName: string | null;
+  airlineIata?: string | null;
+  provider?: "aerodatabox" | "aviationstack" | null;
   flightStatus: string | null;
   flightDate: string | null;
   requestedDate?: string | null;
@@ -111,6 +114,32 @@ function fmtAirportTime(iso?: string | null) {
   if (!iso) return "—";
   const m = /T(\d{2}):(\d{2})/.exec(iso);
   return m ? `${m[1]}:${m[2]}` : fmtTime(iso);
+}
+
+/** "America/Santiago" → "Santiago" */
+function tzCity(tz?: string | null) {
+  return tz ? tz.split("/").pop()?.replace(/_/g, " ") ?? "" : "";
+}
+
+function fmtLongDate(date?: string | null) {
+  if (!date) return "";
+  const d = new Date(`${date}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return date;
+  return d.toLocaleDateString("es-CL", { weekday: "short", day: "numeric", month: "short" });
+}
+
+/**
+ * Duración del vuelo. Sólo se puede calcular cuando los horarios traen el
+ * offset real de cada aeropuerto (AeroDataBox); con AviationStack el offset es
+ * siempre "+00:00" y la resta daría un valor falso, así que no la mostramos.
+ */
+function flightDuration(r: TrackResult) {
+  if (r.provider !== "aerodatabox" || !r.depScheduled || !r.arrScheduled) return null;
+  const mins = Math.round((new Date(r.arrScheduled).getTime() - new Date(r.depScheduled).getTime()) / 60000);
+  if (!Number.isFinite(mins) || mins <= 0 || mins > 24 * 60) return null;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return h ? `${h}h ${m ? `${m}min` : ""}`.trim() : `${m}min`;
 }
 
 function fmtDate(iso?: string | null) {
@@ -452,51 +481,105 @@ export default function FlightsPage() {
           </button>
         </div>
         {quickError && <p style={{ fontSize: "12px", color: "#ef4444", marginTop: "8px" }}>{quickError}</p>}
-        {quickResult && (
-          <div style={{ marginTop: "12px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "14px", padding: "16px" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                  <span style={{ fontSize: "20px", fontWeight: 900, color: pal.textPrimary }}>{quickResult.flightNumber}</span>
-                  <span style={{ fontSize: "12px", color: pal.textMuted }}>{quickResult.airlineName}</span>
-                  {(() => { const st = statusStyle(quickResult.flightStatus); return (
-                    <span style={{ fontSize: "10px", fontWeight: 700, padding: "3px 8px", borderRadius: "99px", background: st.bg, color: st.color, border: `1px solid ${st.border}`, display: "inline-flex", alignItems: "center", gap: "4px" }}>
+        {quickResult && (() => {
+          const st = statusStyle(quickResult.flightStatus);
+          const depReal = quickResult.depActual || quickResult.depEstimated;
+          const arrReal = quickResult.arrActual || quickResult.arrEstimated;
+          const depChanged = depReal ? fmtAirportTime(depReal) !== fmtAirportTime(quickResult.depScheduled) : false;
+          const arrChanged = arrReal ? fmtAirportTime(arrReal) !== fmtAirportTime(quickResult.arrScheduled) : false;
+          const duration = flightDuration(quickResult);
+          const delay = quickResult.arrDelayMinutes ?? 0;
+
+          const endpoint = (opts: {
+            label: string; iata?: string | null; city?: string | null; airport?: string | null;
+            scheduled?: string | null; real?: string | null; changed: boolean;
+            terminal?: string | null; gate?: string | null; extra?: string | null;
+            align: "left" | "right";
+          }) => (
+            <div style={{ textAlign: opts.align, minWidth: 0 }}>
+              <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: pal.labelColor }}>{opts.label}</p>
+              <p style={{ fontSize: "26px", fontWeight: 900, color: pal.textPrimary, letterSpacing: "0.04em", lineHeight: 1.15 }}>{opts.iata || "—"}</p>
+              <p style={{ fontSize: "12px", color: pal.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{opts.city || opts.airport || ""}</p>
+              <div style={{ marginTop: "6px", display: "flex", alignItems: "baseline", gap: "8px", justifyContent: opts.align === "right" ? "flex-end" : "flex-start", flexWrap: "wrap" }}>
+                <span style={{ fontSize: "19px", fontWeight: 800, color: opts.changed ? pal.labelColor : pal.textPrimary, textDecoration: opts.changed ? "line-through" : "none" }}>
+                  {fmtAirportTime(opts.scheduled)}
+                </span>
+                {opts.changed && <span style={{ fontSize: "19px", fontWeight: 900, color: "#f59e0b" }}>{fmtAirportTime(opts.real)}</span>}
+              </div>
+              <p style={{ fontSize: "11px", color: pal.textMuted, marginTop: "3px" }}>
+                {[opts.terminal ? `Terminal ${opts.terminal}` : null, opts.gate ? `Puerta ${opts.gate}` : null, opts.extra].filter(Boolean).join(" · ") || " "}
+              </p>
+            </div>
+          );
+
+          return (
+            <div style={{ marginTop: "12px", background: "#fff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "16px 18px", boxShadow: pal.shadow }}>
+              {/* Encabezado: logo, vuelo, aerolínea y estado */}
+              <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+                <AirlineLogo iata={quickResult.airlineIata} flightNumber={quickResult.flightNumber} name={quickResult.airlineName} size={38} />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                    <span style={{ fontSize: "19px", fontWeight: 900, color: pal.textPrimary, letterSpacing: "0.02em" }}>{quickResult.flightNumber}</span>
+                    <span style={{ fontSize: "10px", fontWeight: 700, padding: "3px 9px", borderRadius: "99px", background: st.bg, color: st.color, border: `1px solid ${st.border}`, display: "inline-flex", alignItems: "center", gap: "5px" }}>
                       {st.pulse && <span style={{ width: 6, height: 6, borderRadius: "50%", background: st.color, animation: "pulse 1.5s infinite", display: "inline-block" }} />}
                       {st.label}
                     </span>
-                  ); })()}
-                </div>
-                <div style={{ display: "flex", gap: "20px", marginTop: "8px", fontSize: "12px", color: pal.textMuted }}>
-                  <span><b style={{ color: pal.textPrimary }}>{quickResult.depIata || "—"}</b> {quickResult.depCity || quickResult.depAirport || ""}{quickResult.depTerminal ? ` · T${quickResult.depTerminal}` : ""} → <b style={{ color: pal.textPrimary }}>{quickResult.arrIata || "—"}</b> {quickResult.arrCity || quickResult.arrAirport || ""}{quickResult.arrTerminal ? ` · T${quickResult.arrTerminal}` : ""}</span>
-                </div>
-                <div style={{ display: "flex", gap: "16px", marginTop: "6px", fontSize: "12px", flexWrap: "wrap" }}>
-                  {quickResult.depScheduled && (() => {
-                    const real = quickResult.depActual || quickResult.depEstimated;
-                    const changed = real ? fmtAirportTime(real) !== fmtAirportTime(quickResult.depScheduled) : false;
-                    return (
-                      <span style={{ color: pal.textMuted }}>Sale: <b style={{ color: pal.textPrimary, textDecoration: changed ? "line-through" : "none", opacity: changed ? 0.55 : 1 }}>{fmtAirportTime(quickResult.depScheduled)}</b>
-                        {changed && <b style={{ color: "#f59e0b", marginLeft: "6px" }}>{fmtAirportTime(real)}</b>}
+                    {delay > 0 && (
+                      <span style={{ fontSize: "10px", fontWeight: 700, padding: "3px 9px", borderRadius: "99px", background: "rgba(245,158,11,0.12)", color: "#b45309", border: "1px solid rgba(245,158,11,0.3)" }}>
+                        {delay} min de retraso
                       </span>
-                    );
-                  })()}
-                  {quickResult.arrScheduled && (() => {
-                    const real = quickResult.arrActual || quickResult.arrEstimated;
-                    const changed = real ? fmtAirportTime(real) !== fmtAirportTime(quickResult.arrScheduled) : false;
-                    return (
-                      <span style={{ color: pal.textMuted }}>Llega: <b style={{ color: changed ? pal.textPrimary : "#21D0B3", textDecoration: changed ? "line-through" : "none", opacity: changed ? 0.55 : 1 }}>{fmtAirportTime(quickResult.arrScheduled)}</b>
-                        {changed && <b style={{ color: "#f59e0b", marginLeft: "6px" }}>{fmtAirportTime(real)}</b>}
-                      </span>
-                    );
-                  })()}
-                  {quickResult.flightDate && <span style={{ color: pal.textMuted }}>Fecha: {quickResult.flightDate}</span>}
-                  {(quickResult.arrDelayMinutes ?? 0) > 0 && <span style={{ color: "#f59e0b", fontWeight: 700 }}>{quickResult.arrDelayMinutes} min retraso</span>}
+                    )}
+                  </div>
+                  <p style={{ fontSize: "12px", color: pal.textMuted, marginTop: "2px" }}>
+                    {[quickResult.airlineName, fmtLongDate(quickResult.flightDate)].filter(Boolean).join(" · ")}
+                  </p>
                 </div>
-                <p style={{ marginTop: "6px", fontSize: "10px", color: pal.labelColor }}>Horarios en hora local de cada aeropuerto{quickResult.depTimezone ? ` (${quickResult.depTimezone.split("/").pop()?.replace(/_/g, " ")} → ${quickResult.arrTimezone?.split("/").pop()?.replace(/_/g, " ") ?? ""})` : ""}</p>
+                <button onClick={() => { setQuickResult(null); setQuickSearch(""); }}
+                  style={{ marginLeft: "auto", padding: "6px 12px", borderRadius: "8px", border: "1px solid #e2e8f0", background: "#fff", fontSize: "11px", color: pal.textMuted, cursor: "pointer" }}>Cerrar</button>
               </div>
-              <button onClick={() => { setQuickResult(null); setQuickSearch(""); }} style={{ padding: "6px 12px", borderRadius: "8px", border: "1px solid #e2e8f0", background: "#fff", fontSize: "11px", color: pal.textMuted, cursor: "pointer" }}>Cerrar</button>
+
+              {/* Ruta: origen — trayecto — destino */}
+              <div style={{ marginTop: "14px", display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(90px,1.1fr) minmax(0,1fr)", gap: "10px", alignItems: "center" }}>
+                {endpoint({
+                  label: "Salida", iata: quickResult.depIata, city: quickResult.depCity, airport: quickResult.depAirport,
+                  scheduled: quickResult.depScheduled, real: depReal, changed: depChanged,
+                  terminal: quickResult.depTerminal, gate: quickResult.depGate,
+                  extra: quickResult.depCheckInDesk ? `Check-in ${quickResult.depCheckInDesk}` : null,
+                  align: "left",
+                })}
+
+                <div style={{ textAlign: "center", paddingBottom: "18px" }}>
+                  <p style={{ fontSize: "11px", fontWeight: 700, color: pal.textMuted, marginBottom: "3px" }}>{duration ?? " "}</p>
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                    <span style={{ flex: 1, height: "2px", background: "linear-gradient(90deg,#e2e8f0,#a78bfa)", borderRadius: "2px" }} />
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="#7c3aed" style={{ flexShrink: 0 }}>
+                      <path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z"/>
+                    </svg>
+                    <span style={{ flex: 1, height: "2px", background: "linear-gradient(90deg,#a78bfa,#e2e8f0)", borderRadius: "2px" }} />
+                  </div>
+                  {quickResult.aircraftModel && (
+                    <p style={{ fontSize: "10px", color: pal.labelColor, marginTop: "4px" }}>{quickResult.aircraftModel}</p>
+                  )}
+                </div>
+
+                {endpoint({
+                  label: "Llegada", iata: quickResult.arrIata, city: quickResult.arrCity, airport: quickResult.arrAirport,
+                  scheduled: quickResult.arrScheduled, real: arrReal, changed: arrChanged,
+                  terminal: quickResult.arrTerminal, gate: null,
+                  extra: quickResult.arrBaggage ? `Cinta ${quickResult.arrBaggage}` : null,
+                  align: "right",
+                })}
+              </div>
+
+              <p style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px solid #f1f5f9", fontSize: "10px", color: pal.labelColor }}>
+                Horarios en hora local de cada aeropuerto
+                {quickResult.depTimezone ? ` · ${tzCity(quickResult.depTimezone)} → ${tzCity(quickResult.arrTimezone)}` : ""}
+                {quickResult.aircraftReg ? ` · Matrícula ${quickResult.aircraftReg}` : ""}
+                {quickResult.provider ? ` · Fuente: ${quickResult.provider === "aerodatabox" ? "AeroDataBox" : "AviationStack"}` : ""}
+              </p>
             </div>
-          </div>
-        )}
+          );
+        })()}
       </section>
 
       {/* Filters */}
@@ -568,7 +651,12 @@ export default function FlightsPage() {
                     <td style={{ padding: "10px 14px" }}>
                       <span style={{ fontSize: "14px", fontWeight: 800, color: pal.textPrimary, letterSpacing: "0.03em" }}>{flight.flightNumber}</span>
                     </td>
-                    <td style={{ padding: "10px 14px", color: pal.textMuted, fontWeight: 500 }}>{flight.airline}</td>
+                    <td style={{ padding: "10px 14px", color: pal.textMuted, fontWeight: 500 }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                        <AirlineLogo flightNumber={flight.flightNumber} name={flight.airline} size={26} />
+                        {flight.airline}
+                      </span>
+                    </td>
                     <td style={{ padding: "10px 14px" }}>
                       <span style={{ fontWeight: 600, color: pal.textPrimary }}>{flight.origin}</span>
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2.5" style={{ margin: "0 6px", verticalAlign: "middle" }}><path d="M5 12h14M13 6l6 6-6 6"/></svg>
@@ -803,12 +891,15 @@ export default function FlightsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div style={{ background: "#fff", borderRadius: "24px", width: "100%", maxWidth: "560px", borderTop: "3px solid #21D0B3", boxShadow: "0 8px 40px rgba(15,23,42,0.2)", maxHeight: "90vh", display: "flex", flexDirection: "column" }}>
             <div style={{ padding: "24px 24px 16px", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", flexShrink: 0 }}>
-              <div>
-                <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#21D0B3", marginBottom: "4px" }}>Rastreo en vivo</p>
-                <h2 style={{ fontSize: "1.4rem", fontWeight: 900, color: pal.textPrimary }}>
-                  {trackModal.flight.flightNumber}
-                  {trackResult?.airlineName && <span style={{ fontSize: "13px", fontWeight: 500, color: pal.textMuted, marginLeft: "8px" }}>{trackResult.airlineName}</span>}
-                </h2>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
+                <AirlineLogo iata={trackResult?.airlineIata} flightNumber={trackModal.flight.flightNumber} name={trackResult?.airlineName ?? trackModal.flight.airline} size={40} />
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#21D0B3", marginBottom: "4px" }}>Rastreo en vivo</p>
+                  <h2 style={{ fontSize: "1.4rem", fontWeight: 900, color: pal.textPrimary }}>
+                    {trackModal.flight.flightNumber}
+                    {trackResult?.airlineName && <span style={{ fontSize: "13px", fontWeight: 500, color: pal.textMuted, marginLeft: "8px" }}>{trackResult.airlineName}</span>}
+                  </h2>
+                </div>
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center", flexShrink: 0 }}>
                 <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", fontWeight: 600, color: pal.textMuted, cursor: "pointer" }}>
