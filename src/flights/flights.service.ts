@@ -43,30 +43,41 @@ export class FlightsService {
     if (!normalized)
       throw new InternalServerErrorException('Flight number is required');
 
-    const url = new URL('https://api.aviationstack.com/v1/flights');
-    url.searchParams.set('access_key', apiKey);
-    if (/^[A-Z]{2,3}\d+$/.test(normalized)) {
-      url.searchParams.set('flight_iata', normalized);
-    } else {
-      const digits = normalized.replace(/\D/g, '');
-      if (!digits)
-        throw new InternalServerErrorException('Invalid flight number format');
-      url.searchParams.set('flight_number', digits);
-    }
-    if (flightDate) {
-      url.searchParams.set('flight_date', flightDate);
-    }
-
-    const response = await fetch(url.toString());
-    if (!response.ok)
-      throw new InternalServerErrorException(
-        `AviationStack request failed (${response.status})`,
-      );
-
-    const payload = (await response.json()) as {
-      data?: Record<string, unknown>[];
-      error?: { message?: string };
+    const buildUrl = (withDate: boolean) => {
+      const url = new URL('https://api.aviationstack.com/v1/flights');
+      url.searchParams.set('access_key', apiKey);
+      if (/^[A-Z]{2,3}\d+$/.test(normalized)) {
+        url.searchParams.set('flight_iata', normalized);
+      } else {
+        const digits = normalized.replace(/\D/g, '');
+        if (!digits)
+          throw new InternalServerErrorException('Invalid flight number format');
+        url.searchParams.set('flight_number', digits);
+      }
+      if (withDate && flightDate) {
+        url.searchParams.set('flight_date', flightDate);
+      }
+      return url.toString();
     };
+
+    const request = async (withDate: boolean) => {
+      const response = await fetch(buildUrl(withDate));
+      if (!response.ok)
+        throw new InternalServerErrorException(
+          `AviationStack request failed (${response.status})`,
+        );
+      return (await response.json()) as {
+        data?: Record<string, unknown>[];
+        error?: { code?: string; message?: string };
+      };
+    };
+
+    let payload = await request(Boolean(flightDate));
+    // El plan gratuito de AviationStack no permite consultar por fecha:
+    // reintentamos sin flight_date para devolver al menos el vuelo vigente.
+    if (payload.error?.code === 'function_access_restricted' && flightDate) {
+      payload = await request(false);
+    }
     if (payload.error)
       throw new InternalServerErrorException(
         payload.error.message || 'AviationStack error',
@@ -147,6 +158,16 @@ export class FlightsService {
       airlineIata: row.airline?.iata ?? null,
       flightStatus: row.flight_status ?? null,
       flightDate: row.flight_date ?? null,
+      // Fecha pedida por el cliente: si no coincide con flightDate, la API no
+      // tenía datos de ese día (el plan actual sólo entrega el vuelo vigente).
+      requestedDate: flightDate ?? null,
+      // AviationStack entrega los horarios en hora local de cada aeropuerto
+      // (con un offset +00:00 que no corresponde). No convertir a otra zona.
+      timesAreAirportLocal: true,
+      depTimezone: dep.timezone ?? null,
+      arrTimezone: arr.timezone ?? null,
+      depTerminal: dep.terminal ?? null,
+      arrTerminal: arr.terminal ?? null,
       depAirport: dep.airport ?? null,
       depIata: dep.iata ?? null,
       depCity: dep.city ?? null,
