@@ -52,6 +52,9 @@ type TrackResult = {
   arrTimezone?: string | null;
   depTerminal?: string | null;
   arrTerminal?: string | null;
+  depCheckInDesk?: string | null;
+  aircraftModel?: string | null;
+  aircraftReg?: string | null;
   depAirport: string | null;
   depIata: string | null;
   depCity: string | null;
@@ -78,7 +81,10 @@ type TrackResult = {
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; border: string; pulse: boolean }> = {
   scheduled:  { label: "Programado",  color: "#3b82f6", bg: "rgba(59,130,246,0.1)",  border: "rgba(59,130,246,0.3)",  pulse: false },
+  boarding:   { label: "Embarcando",  color: "#8b5cf6", bg: "rgba(139,92,246,0.1)",  border: "rgba(139,92,246,0.3)",  pulse: true  },
   active:     { label: "En vuelo",    color: "#10b981", bg: "rgba(16,185,129,0.1)",  border: "rgba(16,185,129,0.3)",  pulse: true  },
+  approaching:{ label: "Aproximando", color: "#10b981", bg: "rgba(16,185,129,0.1)",  border: "rgba(16,185,129,0.3)",  pulse: true  },
+  delayed:    { label: "Retrasado",   color: "#f59e0b", bg: "rgba(245,158,11,0.1)",  border: "rgba(245,158,11,0.3)",  pulse: false },
   landed:     { label: "Aterrizó",    color: "#21D0B3", bg: "rgba(33,208,179,0.1)",  border: "rgba(33,208,179,0.3)",  pulse: false },
   cancelled:  { label: "Cancelado",   color: "#ef4444", bg: "rgba(239,68,68,0.1)",   border: "rgba(239,68,68,0.3)",   pulse: false },
   diverted:   { label: "Desviado",    color: "#f59e0b", bg: "rgba(245,158,11,0.1)",  border: "rgba(245,158,11,0.3)",  pulse: false },
@@ -834,6 +840,7 @@ export default function FlightsPage() {
                         <span style={{ fontSize: "15px", fontWeight: 800, color: st.color }}>{st.label}</span>
                       </div>
                       {trackResult.flightDate && <span style={{ fontSize: "12px", color: pal.textMuted }}>Fecha: {trackResult.flightDate}</span>}
+                      {trackResult.aircraftModel && <span style={{ fontSize: "12px", color: pal.textMuted }}>{trackResult.aircraftModel}{trackResult.aircraftReg ? ` · ${trackResult.aircraftReg}` : ""}</span>}
                       {hasDelay && (
                         <span style={{ marginLeft: "auto", fontSize: "12px", fontWeight: 700, color: "#f59e0b", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: "99px", padding: "3px 10px" }}>
                           {Math.max(trackResult.depDelayMinutes ?? 0, trackResult.arrDelayMinutes ?? 0)} min retraso
@@ -856,6 +863,7 @@ export default function FlightsPage() {
                           {trackResult.depActual && <p>Real: <span style={{ fontWeight: 700, color: "#21D0B3" }}>{fmtAirportTime(trackResult.depActual)}</span></p>}
                           {trackResult.depTerminal && <p>Terminal: <span style={{ fontWeight: 600, color: pal.textPrimary }}>{trackResult.depTerminal}</span></p>}
                           {trackResult.depGate && <p>Puerta: <span style={{ fontWeight: 600, color: pal.textPrimary }}>{trackResult.depGate}</span></p>}
+                          {trackResult.depCheckInDesk && <p>Check-in: <span style={{ fontWeight: 600, color: pal.textPrimary }}>{trackResult.depCheckInDesk}</span></p>}
                         </div>
                       </div>
                       <div style={{ textAlign: "center" }}>

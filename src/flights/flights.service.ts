@@ -7,6 +7,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Repository } from 'typeorm';
+import { AeroDataBoxProvider } from './aerodatabox.provider';
 import { CreateFlightDto } from './dto/create-flight.dto';
 import { UpdateFlightDto } from './dto/update-flight.dto';
 import { Flight } from './entities/flight.entity';
@@ -29,7 +30,23 @@ export class FlightsService {
     @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
     @InjectRepository(Flight)
     private readonly flightRepository: Repository<Flight>,
+    private readonly aeroDataBox: AeroDataBoxProvider,
   ) {}
+
+  /**
+   * Proveedor de datos de vuelo. Se controla con FLIGHT_DATA_PROVIDER
+   * (aerodatabox | aviationstack); si no está definido usamos AeroDataBox
+   * cuando hay clave configurada, porque entrega horarios con la zona horaria
+   * correcta y permite consultar por fecha.
+   */
+  private useAeroDataBox() {
+    const configured = (process.env.FLIGHT_DATA_PROVIDER || '')
+      .trim()
+      .toLowerCase();
+    if (configured === 'aviationstack') return false;
+    if (configured === 'aerodatabox') return true;
+    return AeroDataBoxProvider.isConfigured();
+  }
 
   private async fetchAviationStack(
     flightNumber: string,
@@ -87,6 +104,8 @@ export class FlightsService {
   }
 
   async lookupAirline(flightNumber: string) {
+    if (this.useAeroDataBox())
+      return this.aeroDataBox.lookupAirline(flightNumber);
     const data = await this.fetchAviationStack(flightNumber);
     const normalized = (flightNumber ?? '').replace(/\s+/g, '').toUpperCase();
     const first = data[0] as any;
@@ -115,7 +134,19 @@ export class FlightsService {
     };
   }
 
+  /** Monitor de llegadas de un aeropuerto. Sólo disponible con AeroDataBox. */
+  async airportArrivals(iata: string, hours?: number) {
+    if (!this.useAeroDataBox())
+      throw new InternalServerErrorException(
+        'El monitor de llegadas por aeropuerto requiere el proveedor AeroDataBox',
+      );
+    const duration = Math.round((hours && hours > 0 ? hours : 12) * 60);
+    return this.aeroDataBox.airportArrivals(iata, -60, duration);
+  }
+
   async trackFlight(flightNumber: string, flightDate?: string) {
+    if (this.useAeroDataBox())
+      return this.aeroDataBox.trackFlight(flightNumber, flightDate);
     const data = await this.fetchAviationStack(flightNumber, flightDate);
     const normalized = (flightNumber ?? '').replace(/\s+/g, '').toUpperCase();
     if (!data.length)
@@ -163,11 +194,15 @@ export class FlightsService {
       requestedDate: flightDate ?? null,
       // AviationStack entrega los horarios en hora local de cada aeropuerto
       // (con un offset +00:00 que no corresponde). No convertir a otra zona.
-      timesAreAirportLocal: true,
+      timesAreAirportLocal: true as const,
+      provider: 'aviationstack' as const,
       depTimezone: dep.timezone ?? null,
       arrTimezone: arr.timezone ?? null,
       depTerminal: dep.terminal ?? null,
       arrTerminal: arr.terminal ?? null,
+      depCheckInDesk: null,
+      aircraftModel: row.aircraft?.iata ?? row.aircraft?.icao ?? null,
+      aircraftReg: row.aircraft?.registration ?? null,
       depAirport: dep.airport ?? null,
       depIata: dep.iata ?? null,
       depCity: dep.city ?? null,

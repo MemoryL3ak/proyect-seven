@@ -31,6 +31,17 @@ export class FlightsController {
     return this.flightsService.lookupAirline(flightNumber);
   }
 
+  @Get('airport-arrivals')
+  airportArrivals(
+    @Query('iata') iata: string,
+    @Query('hours') hours?: string,
+  ) {
+    return this.flightsService.airportArrivals(
+      iata,
+      hours ? Number(hours) : undefined,
+    );
+  }
+
   @Get('track')
   trackFlight(
     @Query('flightNumber') flightNumber: string,
