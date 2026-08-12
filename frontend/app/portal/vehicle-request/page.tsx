@@ -11,6 +11,7 @@ import TripChat from "@/components/TripChat";
 import AssistanceChat from "@/components/AssistanceChat";
 import DevicePermissionsSection from "@/components/DevicePermissionsSection";
 import DeleteAccountSection from "@/components/DeleteAccountSection";
+import PortalSkeleton from "@/components/PortalSkeleton";
 import { deletePortalAccount } from "@/lib/account-deletion";
 import CuadernoCargoSection from "@/components/CuadernoCargoSection";
 import EmergencyNumbersSection from "@/components/EmergencyNumbersSection";
@@ -1621,10 +1622,7 @@ export default function VehicleRequestPortalPage() {
       {/* Restauración de sesión: fondo neutro y spinner discreto, sin la
           pantalla de marca — la recarga debe sentirse como actualización. */}
       {!sessionChecked && !athlete && (
-        <div style={{ minHeight:"100vh",background:"#eef1f8",display:"flex",alignItems:"center",justifyContent:"center" }}>
-          <div style={{ width:28,height:28,borderRadius:"50%",border:"3px solid rgba(33,208,179,0.2)",borderTopColor:"#21D0B3",animation:"sa-spin 0.8s linear infinite" }} />
-          <style>{`@keyframes sa-spin { to { transform: rotate(360deg); } }`}</style>
-        </div>
+        <PortalSkeleton tabs={5} cards={4} />
       )}
       {sessionChecked && !athlete && (
         <div className="flex flex-col lg:flex-row" style={{ minHeight: "100vh", background: "#020c18", position: "relative", overflow: "hidden" }}>
