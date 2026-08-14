@@ -62,9 +62,16 @@ export default function PdfCanvasViewer({ src }: { src: string }) {
         // Build `legacy`: el WebView de la app no siempre soporta la sintaxis
         // del build moderno y el visor fallaba entero.
         const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
-        // El worker se sirve desde /public (lo copia scripts/copy-pdf-worker.mjs
-        // en cada build). Empaquetarlo con webpack rompe el build de Next 14.
-        pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+
+        // El worker va DENTRO del bundle. Importarlo registra
+        // globalThis.pdfjsWorker, y PDF.js lo usa tal cual sin descargar nada:
+        // servirlo como archivo estático fallaba con "'text/html' is not a
+        // valid JavaScript MIME type" porque el hosting devolvía la página en
+        // vez del script.
+        await import("pdfjs-dist/legacy/build/pdf.worker.min.mjs");
+        // Sólo se usa si el WebView sí puede crear un Worker de verdad; si no,
+        // PDF.js cae al handler ya registrado arriba.
+        pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.js";
 
         const doc = (await pdfjs.getDocument({
           url: src,
