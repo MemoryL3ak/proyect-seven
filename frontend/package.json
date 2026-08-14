@@ -3,8 +3,10 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
+    "predev": "node scripts/copy-pdf-worker.mjs",
     "dev": "next dev -p 3001 --hostname 0.0.0.0 --experimental-https",
     "dev:http": "next dev -p 3001 --hostname 0.0.0.0",
+    "prebuild": "node scripts/copy-pdf-worker.mjs",
     "build": "next build",
     "start": "next start -p 3001",
     "lint": "next lint"
@@ -21,6 +23,7 @@
     "leaflet": "^1.9.4",
     "lucide-react": "^1.6.0",
     "next": "^14.2.5",
+    "pdfjs-dist": "^4.10.38",
     "qrcode": "^1.5.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

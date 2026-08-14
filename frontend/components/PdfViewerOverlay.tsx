@@ -1,5 +1,12 @@
 "use client";
 
+import dynamic from "next/dynamic";
+
+// PDF.js pesa: se carga sólo cuando se abre un documento.
+const PdfCanvasViewer = dynamic(() => import("@/components/PdfCanvasViewer"), {
+  ssr: false,
+});
+
 /**
  * Visor de PDF a pantalla completa DENTRO del portal, con botón "← Volver"
  * siempre visible. Se usa en la app nativa: descargar con doc.save() hacía
@@ -108,11 +115,9 @@ export default function PdfViewerOverlay({
           style={{ flex: 1, width: "100%", border: "none", background: "#fff" }}
         />
       ) : (
-        <iframe
-          src={src ?? dataUri}
-          title={title}
-          style={{ flex: 1, width: "100%", border: "none", background: "#334155" }}
-        />
+        // Los PDF se dibujan con PDF.js: en un iframe iOS muestra sólo la
+        // primera página y Android no muestra nada.
+        <PdfCanvasViewer src={(src ?? dataUri) as string} />
       )}
     </div>
   );
