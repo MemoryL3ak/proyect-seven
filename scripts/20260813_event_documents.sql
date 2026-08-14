@@ -30,6 +30,11 @@ create index if not exists idx_event_documents_published on core.event_documents
 -- Bucket de Storage. Es público a propósito: son documentos informativos
 -- pensados para repartirse (informativo del evento, programa, reglamento).
 -- NO subir aquí documentos con datos personales o médicos.
+--
+-- OJO: en los proyectos nuevos de Supabase el SQL Editor no siempre puede
+-- escribir en storage.buckets. Si al subir un documento aparece
+-- "Bucket not found", crea el bucket a mano en Storage > New bucket con el
+-- nombre 'event-documents' y la casilla Public marcada.
 insert into storage.buckets (id, name, public)
 values ('event-documents', 'event-documents', true)
 on conflict (id) do nothing;
