@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { isAvailable as isNativeBridge, send as nativeSend } from "@/lib/native-bridge";
 
 /**
  * Visor de PDF que dibuja el documento completo con PDF.js.
@@ -37,6 +38,7 @@ export default function PdfCanvasViewer({ src }: { src: string }) {
   const [baseWidth, setBaseWidth] = useState(0);
   const [zoom, setZoom] = useState(1);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [errorDetail, setErrorDetail] = useState<string | null>(null);
 
   // Ancho disponible: define la escala con la que se dibuja cada página.
   useEffect(() => {
@@ -57,18 +59,29 @@ export default function PdfCanvasViewer({ src }: { src: string }) {
 
     (async () => {
       try {
-        const pdfjs = await import("pdfjs-dist");
+        // Build `legacy`: el WebView de la app no siempre soporta la sintaxis
+        // del build moderno y el visor fallaba entero.
+        const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
         // El worker se sirve desde /public (lo copia scripts/copy-pdf-worker.mjs
         // en cada build). Empaquetarlo con webpack rompe el build de Next 14.
         pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
-        const doc = (await pdfjs.getDocument({ url: src }).promise) as unknown as PdfDocProxy;
+        const doc = (await pdfjs.getDocument({
+          url: src,
+          // Sin estas dos, en algunos WebView el visor queda en blanco.
+          isEvalSupported: false,
+          useSystemFonts: false,
+        }).promise) as unknown as PdfDocProxy;
         if (cancelled) { void doc.destroy(); return; }
         docRef.current = doc;
         setNumPages(doc.numPages);
         setStatus("ready");
-      } catch {
-        if (!cancelled) setStatus("error");
+      } catch (e) {
+        if (cancelled) return;
+        // El detalle se muestra en pantalla: sin consola en la app móvil, es
+        // la única forma de saber por qué falló.
+        setErrorDetail(e instanceof Error ? `${e.name}: ${e.message}` : String(e));
+        setStatus("error");
       }
     })();
 
@@ -111,6 +124,12 @@ export default function PdfCanvasViewer({ src }: { src: string }) {
       renderedRef.current.delete(pageNumber);
     }
   }, [baseWidth, zoom]);
+
+  /** En el WebView un <a target="_blank"> no hace nada: hay que usar el puente. */
+  const openExternally = useCallback(() => {
+    if (isNativeBridge()) nativeSend("url.open", { url: src });
+    else window.open(src, "_blank", "noopener");
+  }, [src]);
 
   // Al cambiar el zoom hay que redibujar todo.
   useEffect(() => { renderedRef.current = new Set(); }, [zoom, baseWidth]);
@@ -167,14 +186,21 @@ export default function PdfCanvasViewer({ src }: { src: string }) {
             <p style={{ color: "#fca5a5", fontSize: 13, marginBottom: 12 }}>
               No se pudo mostrar el documento aquí.
             </p>
-            <a href={src} target="_blank" rel="noopener noreferrer"
+            <button
+              type="button"
+              onClick={openExternally}
               style={{
-                display: "inline-block", padding: "10px 18px", borderRadius: 10,
+                padding: "10px 18px", borderRadius: 10, cursor: "pointer",
                 background: "rgba(33,208,179,0.15)", border: "1px solid rgba(52,243,198,0.4)",
-                color: "#34F3C6", fontSize: 13, fontWeight: 700, textDecoration: "none",
+                color: "#34F3C6", fontSize: 13, fontWeight: 700,
               }}>
               Abrir en el navegador
-            </a>
+            </button>
+            {errorDetail && (
+              <p style={{ marginTop: 16, color: "#64748b", fontSize: 10.5, wordBreak: "break-word" }}>
+                {errorDetail}
+              </p>
+            )}
           </div>
         )}
 
