@@ -11,6 +11,7 @@ import TripChat from "@/components/TripChat";
 import AssistanceChat from "@/components/AssistanceChat";
 import DevicePermissionsSection from "@/components/DevicePermissionsSection";
 import DeleteAccountSection from "@/components/DeleteAccountSection";
+import EventDocumentsSection from "@/components/EventDocumentsSection";
 import PortalSkeleton from "@/components/PortalSkeleton";
 import { deletePortalAccount } from "@/lib/account-deletion";
 import CuadernoCargoSection from "@/components/CuadernoCargoSection";
@@ -120,7 +121,7 @@ type Accommodation = {
 type EventItem = { id: string; name?: string | null };
 type DelegationItem = { id: string; countryCode?: string | null };
 type AccessRequestResponse = { message?: string };
-type PortalTab = "solicitud" | "actividades" | "premiaciones" | "cupones" | "sedes" | "hoteles" | "alimentacion" | "calendario" | "cuenta";
+type PortalTab = "solicitud" | "actividades" | "premiaciones" | "cupones" | "sedes" | "hoteles" | "alimentacion" | "calendario" | "documentos" | "cuenta";
 
 type FoodLocation = { id: string; accommodationId?: string | null; name: string; description?: string | null; capacity?: number | null; clientTypes?: string[] };
 type FoodMenu = { id: string; date: string; mealType: string; title: string; description?: string | null; dietaryType?: string | null; accommodationId?: string | null; clientTypes?: string[] | null; locationDetail?: string | null };
@@ -428,7 +429,7 @@ export default function VehicleRequestPortalPage() {
   const [activeTab, setActiveTab] = useState<PortalTab>(() =>
     restoreOnReload<PortalTab>(
       "portal_vr_tab",
-      ["solicitud", "actividades", "premiaciones", "cupones", "sedes", "hoteles", "alimentacion", "calendario", "cuenta"],
+      ["solicitud", "actividades", "premiaciones", "cupones", "sedes", "hoteles", "alimentacion", "calendario", "documentos", "cuenta"],
       "solicitud",
     ),
   );
@@ -450,10 +451,11 @@ export default function VehicleRequestPortalPage() {
       { key: "hoteles" as PortalTab, label: "Mi Hotel", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 22V8l9-6 9 6v14"/><path d="M9 22V12h6v10"/></svg> },
       { key: "alimentacion" as PortalTab, label: "Alimentación", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg> },
       { key: "calendario" as PortalTab, label: "Calendario", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> },
+      { key: "documentos" as PortalTab, label: "Documentos", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h8M8 17h5"/></svg> },
       { key: "cuenta" as PortalTab, label: "Cuenta", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
     ];
     const MAX_PRIMARY = 4;
-    const PRIORITY = ["solicitud", "actividades", "calendario", "cuenta", "alimentacion", "sedes", "hoteles", "premiaciones", "cupones"];
+    const PRIORITY = ["solicitud", "actividades", "calendario", "cuenta", "alimentacion", "sedes", "hoteles", "documentos", "premiaciones", "cupones"];
     const ranked = [...all].sort((a, b) => PRIORITY.indexOf(a.key) - PRIORITY.indexOf(b.key));
     const primaryKeys = new Set(ranked.slice(0, MAX_PRIMARY).map((t) => t.key));
     return {
@@ -3509,6 +3511,11 @@ export default function VehicleRequestPortalPage() {
                   </div>
                 )}
               </div>
+            )}
+
+            {/* ═══════════════════ DOCUMENTOS TAB ═══════════════════ */}
+            {activeTab === "documentos" && (
+              <EventDocumentsSection audience="VIP" eventId={athlete.eventId} />
             )}
 
             {/* ═══════════════════ CUENTA TAB ═══════════════════ */}

@@ -8,6 +8,7 @@
  */
 export default function PdfViewerOverlay({
   dataUri,
+  src,
   srcDoc,
   title,
   onClose,
@@ -15,6 +16,8 @@ export default function PdfViewerOverlay({
 }: {
   /** PDF como data URI (no siempre renderiza en WebView Android). */
   dataUri?: string;
+  /** URL del documento, por ejemplo la pública del Storage. */
+  src?: string;
   /** HTML directo — renderiza en cualquier WebView; preferido para la credencial. */
   srcDoc?: string;
   title: string;
@@ -106,7 +109,7 @@ export default function PdfViewerOverlay({
         />
       ) : (
         <iframe
-          src={dataUri}
+          src={src ?? dataUri}
           title={title}
           style={{ flex: 1, width: "100%", border: "none", background: "#334155" }}
         />

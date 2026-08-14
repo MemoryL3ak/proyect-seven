@@ -14,6 +14,7 @@ import TripChat from "@/components/TripChat";
 import AssistanceChat from "@/components/AssistanceChat";
 import DevicePermissionsSection from "@/components/DevicePermissionsSection";
 import DeleteAccountSection from "@/components/DeleteAccountSection";
+import EventDocumentsSection from "@/components/EventDocumentsSection";
 import PortalSkeleton from "@/components/PortalSkeleton";
 import { deletePortalAccount } from "@/lib/account-deletion";
 import CuadernoCargoSection from "@/components/CuadernoCargoSection";
@@ -115,7 +116,7 @@ type Premiacion = {
   notes?: string | null;
   awarders?: PremAwarder[] | null;
 };
-type PortalTab = "itinerario" | "actividades" | "calendario" | "premiaciones" | "sedes" | "alimentacion" | "delegacion" | "cupones" | "cuenta";
+type PortalTab = "itinerario" | "actividades" | "calendario" | "premiaciones" | "sedes" | "alimentacion" | "delegacion" | "cupones" | "documentos" | "cuenta";
 
 type Coupon = {
   id: string;
@@ -299,7 +300,7 @@ export default function UserPortalPage() {
   const [activeTab, setActiveTab] = useState<PortalTab>(() =>
     restoreOnReload<PortalTab>(
       "portal_user_tab",
-      ["itinerario", "actividades", "calendario", "premiaciones", "sedes", "alimentacion", "delegacion", "cupones", "cuenta"],
+      ["itinerario", "actividades", "calendario", "premiaciones", "sedes", "alimentacion", "delegacion", "cupones", "documentos", "cuenta"],
       "itinerario",
     ),
   );
@@ -485,10 +486,11 @@ export default function UserPortalPage() {
       { key:"alimentacion", label:"Alimentación", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg> },
       { key:"delegacion", label:"Delegación", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg> },
       { key:"cupones", label:"Beneficios", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v2a3 3 0 010 6v2a2 2 0 002 2h14a2 2 0 002-2v-2a3 3 0 010-6V7a2 2 0 00-2-2H5a2 2 0 00-2 2z"/><line x1="13" y1="5" x2="13" y2="7"/><line x1="13" y1="11" x2="13" y2="13"/><line x1="13" y1="17" x2="13" y2="19"/></svg> },
+      { key:"documentos", label:"Documentos", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h8M8 17h5"/></svg> },
       { key:"cuenta", label:"Cuenta", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
     ];
-    if (isTA) return all.filter(t => ["actividades","calendario","sedes","alimentacion","cupones","cuenta"].includes(t.key));
-    if (!isChief) return all.filter(t => ["actividades","calendario","premiaciones","sedes","alimentacion","cupones","cuenta"].includes(t.key));
+    if (isTA) return all.filter(t => ["actividades","calendario","sedes","alimentacion","cupones","documentos","cuenta"].includes(t.key));
+    if (!isChief) return all.filter(t => ["actividades","calendario","premiaciones","sedes","alimentacion","cupones","documentos","cuenta"].includes(t.key));
     // Jefe de delegación: vista completa, sin premiaciones (no oficia como entregador).
     return all.filter(t => t.key !== "premiaciones");
   }, [isChief, isTA]);
@@ -497,7 +499,7 @@ export default function UserPortalPage() {
   // en una hoja inferior. Orden de prioridad para elegir cuáles quedan fijas.
   const { primaryTabs, overflowTabs } = useMemo(() => {
     const MAX_PRIMARY = 4;
-    const PRIORITY = ["itinerario", "actividades", "calendario", "delegacion", "alimentacion", "sedes", "cuenta", "premiaciones", "cupones"];
+    const PRIORITY = ["itinerario", "actividades", "calendario", "delegacion", "alimentacion", "sedes", "cuenta", "documentos", "premiaciones", "cupones"];
     if (portalTabs.length <= MAX_PRIMARY + 1) {
       return { primaryTabs: portalTabs, overflowTabs: [] as typeof portalTabs };
     }
@@ -3180,6 +3182,11 @@ export default function UserPortalPage() {
               </div>
             )}
           </div>
+        )}
+
+        {/* ─── Documentos tab ─── */}
+        {activeTab === "documentos" && (
+          <EventDocumentsSection audience="PARTICIPANTE" eventId={athlete.eventId} />
         )}
 
         {/* ─── Cuenta tab ─── */}

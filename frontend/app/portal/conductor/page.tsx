@@ -11,6 +11,7 @@ import TripChat from "@/components/TripChat";
 import AssistanceChat from "@/components/AssistanceChat";
 import DevicePermissionsSection from "@/components/DevicePermissionsSection";
 import DeleteAccountSection from "@/components/DeleteAccountSection";
+import EventDocumentsSection from "@/components/EventDocumentsSection";
 import PortalSkeleton from "@/components/PortalSkeleton";
 import { deletePortalAccount } from "@/lib/account-deletion";
 import CuadernoCargoSection from "@/components/CuadernoCargoSection";
@@ -1880,6 +1881,12 @@ export default function DriverPortalPage() {
             {/* ─── TAB: Cuenta ─── */}
             {activeTab === "cuenta" && (
               <div style={{ display:"flex",flexDirection:"column",gap:12 }}>
+                {/* Documentos informativos del evento */}
+                <EventDocumentsSection
+                  audience="CONDUCTOR"
+                  eventId={(driverProfile as { eventId?: string | null }).eventId ?? null}
+                />
+
                 {/* Profile + Photo */}
                 <div style={{ background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",padding:"16px 14px",display:"flex",alignItems:"center",gap:14 }}>
                   <div style={{ position:"relative",flexShrink:0 }}>

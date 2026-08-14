@@ -8,6 +8,7 @@ import { TripsModule } from './trips/trips.module';
 import { DriversModule } from './drivers/drivers.module';
 import { FlightsModule } from './flights/flights.module';
 import { AccommodationsModule } from './accommodations/accommodations.module';
+import { EventDocumentsModule } from './event-documents/event-documents.module';
 import { EventsModule } from './events/events.module';
 import { DelegationsModule } from './delegations/delegations.module';
 import { VehiclePositionsModule } from './vehicle-positions/vehicle-positions.module';
@@ -72,6 +73,7 @@ import { VipMonitoringModule } from './vip-monitoring/vip-monitoring.module';
     FlightsModule,
     AccommodationsModule,
     EventsModule,
+    EventDocumentsModule,
     DelegationsModule,
     VehiclePositionsModule,
     AthletesModule,

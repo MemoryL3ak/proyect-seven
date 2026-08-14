@@ -62,6 +62,7 @@ const ALL_MODULES: AppModule[] = [
   { id: "sede", label: "Sede", group: "Sede", icon: "📍" },
   { id: "calendario", label: "Calendario Operacional", group: "Calendario", icon: "📆" },
   { id: "acreditaciones", label: "Acreditaciones", group: "Acreditaciones", icon: "🎫" },
+  { id: "documentos", label: "Documentos del Evento", group: "Documentos", icon: "📄" },
   { id: "portales", label: "Portales", group: "Portales", icon: "🌐" },
   { id: "admin.usuarios", label: "Gestión de Usuarios", group: "Administración", icon: "👥" },
 ];
@@ -74,7 +75,7 @@ const ROLE_PERMISSIONS: Record<Role, string[]> = {
   Administrador: ALL_MODULES.map((m) => m.id),
   Supervisor: ALL_MODULES.filter((m) => m.group !== "Administración").map((m) => m.id),
   Coordinador: ALL_MODULES.filter((m) => !["Dashboard", "Administración"].includes(m.group)).map((m) => m.id),
-  Operador: ALL_MODULES.filter((m) => ["Operación", "Transporte", "Hotelería", "Alimentación", "Acreditaciones"].includes(m.group)).map((m) => m.id),
+  Operador: ALL_MODULES.filter((m) => ["Operación", "Transporte", "Hotelería", "Alimentación", "Acreditaciones", "Documentos"].includes(m.group)).map((m) => m.id),
   Visualizador: ALL_MODULES.filter((m) => ["Dashboard", "Registro"].includes(m.group)).map((m) => m.id),
 };
 
