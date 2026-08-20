@@ -3415,7 +3415,7 @@ export default function ResourceScreen({
             const roomKeys = ["roomSingle", "roomDouble", "roomTriple", "roomSuite"];
             return (
               <>
-                {["eventId", "accommodationType", "tower", "name", "address"].map((key) => {
+                {["eventId", "accommodationType", "tower", "name", "address", "photoDataUrl", "checkIn", "checkOut"].map((key) => {
                   const field = byKey.get(key);
                   return field ? renderField(field) : null;
                 })}
