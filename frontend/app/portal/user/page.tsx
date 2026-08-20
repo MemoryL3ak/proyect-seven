@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { apiFetch } from "@/lib/api";
+import { buildDisciplineLabelMap } from "@/lib/discipline-filters";
 import { getMobileSession, mobileAwareLogout } from "@/lib/mobile-auth";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { normalizeClientType } from "@/lib/clientTypes";
@@ -92,7 +93,7 @@ type CalendarEvent = {
   category?: string | null;
   gender?: string | null;
 };
-type DisciplineParent = { id: string; name?: string | null };
+type DisciplineParent = { id: string; name?: string | null; category?: string | null; gender?: string | null };
 type Venue = { id: string; eventId?: string | null; name?: string | null; address?: string | null; region?: string | null; commune?: string | null; photoUrl?: string | null };
 type Accommodation = { id: string; eventId?: string | null; name?: string | null; address?: string | null; city?: string | null; country?: string | null; checkIn?: string | null; checkOut?: string | null; roomType?: string | null; contactPhone?: string | null; photoUrl?: string | null };
 type FoodLocation = { id: string; accommodationId?: string | null; name: string; description?: string | null; capacity?: number | null; clientTypes: string[] };
@@ -288,6 +289,10 @@ export default function UserPortalPage() {
   const [driverEta, setDriverEta] = useState<{ distance: string; duration: string } | null>(null);
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [disciplineParents, setDisciplineParents] = useState<DisciplineParent[]>([]);
+  // Etiquetas desambiguadas por variante ("Atletismo · Femenino"): el mismo
+  // deporte existe una vez por género/categoría y mostrar solo `name`
+  // producía opciones y filas duplicadas en el calendario.
+  const discLabelMap = useMemo(() => buildDisciplineLabelMap(disciplineParents), [disciplineParents]);
   const [healthRecord, setHealthRecord] = useState<Record<string, any> | null>(null);
   const [delegationMembers, setDelegationMembers] = useState<Athlete[]>([]);
   const [delegationTrips, setDelegationTrips] = useState<Trip[]>([]);
@@ -1717,10 +1722,11 @@ export default function UserPortalPage() {
             if (!ev.scheduledAt) return;
             const d = new Date(ev.scheduledAt); if (Number.isNaN(d.getTime())) return;
             const parent = disciplineParents.find(p => p.id===ev.parentId);
+            const parentLabel = ev.parentId ? discLabelMap.get(ev.parentId) : undefined;
             items.push({
               id:`ce-${ev.id}`, type:classifyEvent(ev.name),
-              date:d, title:ev.name || parent?.name || "Actividad",
-              subtitle: parent?.name && ev.name!==parent.name ? parent.name : undefined,
+              date:d, title:ev.name || parentLabel || "Actividad",
+              subtitle: parent?.name && ev.name!==parent.name ? parentLabel : undefined,
               venue: ev.venueName || undefined,
               discId: ev.parentId || null,
             });
@@ -1759,7 +1765,7 @@ export default function UserPortalPage() {
                 .filter(i => i.discId)
                 .filter(i => !chiefDiscIds || chiefDiscIds.has(i.discId as string))
                 .map(i => {
-                  const name = disciplineParents.find(p => p.id===i.discId)?.name
+                  const name = discLabelMap.get(i.discId as string)
                     || calendarEvents.find(c => c.id===i.discId)?.name
                     || i.subtitle || "Disciplina";
                   return [i.discId as string, name] as const;
@@ -1795,7 +1801,7 @@ export default function UserPortalPage() {
           const gRowMap = new Map<string,{ name:string; byDay:Map<number,CalItem[]> }>();
           typed.filter(i => i.date.getFullYear()===y && i.date.getMonth()===m).forEach(i => {
             const pid = i.discId || "—";
-            const pname = disciplineParents.find(p=>p.id===pid)?.name || i.subtitle || i.title || "Actividad";
+            const pname = discLabelMap.get(pid) || i.subtitle || i.title || "Actividad";
             if(!gRowMap.has(pid)) gRowMap.set(pid,{ name:pname, byDay:new Map() });
             const bd = gRowMap.get(pid)!.byDay; const dd=i.date.getDate();
             bd.set(dd,[...(bd.get(dd)??[]),i]);
@@ -3608,7 +3614,7 @@ export default function UserPortalPage() {
           ) : (
             <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
               {calendarEvents.map((ce) => {
-                const parentName = ce.parentId ? (disciplineParents.find((p) => p.id === ce.parentId)?.name || "") : "";
+                const parentName = ce.parentId ? (discLabelMap.get(ce.parentId) || "") : "";
                 const isPast = new Date(ce.scheduledAt!) < new Date();
                 return (
                   <div key={ce.id} style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9",opacity:isPast ? 0.5 : 1 }}>

@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import PlacesAutocompleteInput from "@/components/PlacesAutocompleteInput";
 import { apiFetch } from "@/lib/api";
+import { buildDisciplineLabelMap, categoryLabel, genderLabel, normalizeCategory, normalizeGender } from "@/lib/discipline-filters";
 import { getMobileSession, mobileAwareLogout } from "@/lib/mobile-auth";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { normalizeClientType } from "@/lib/clientTypes";
@@ -218,7 +219,7 @@ type CalendarEvent = {
   category?: string | null;
   gender?: string | null;
 };
-type DisciplineParent = { id: string; name?: string | null };
+type DisciplineParent = { id: string; name?: string | null; category?: string | null; gender?: string | null };
 type PositionItem = {
   id: string;
   vehicleId: string;
@@ -409,7 +410,12 @@ export default function VehicleRequestPortalPage() {
 
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [disciplineParents, setDisciplineParents] = useState<DisciplineParent[]>([]);
+  // Filtros del calendario: disciplina por NOMBRE (agrupa sus variantes) más
+  // género y categoría para refinar — el mismo deporte existe una vez por
+  // variante y filtrar solo por registro mostraba nombres duplicados.
   const [calDisciplineFilter, setCalDisciplineFilter] = useState("");
+  const [calGenderFilter, setCalGenderFilter] = useState("");
+  const [calCategoryFilter, setCalCategoryFilter] = useState("");
 
   const [selectedVehicleType, setSelectedVehicleType] = useState<string>("SEDAN");
   const [originAddress, setOriginAddress] = useState("");
@@ -1277,10 +1283,61 @@ export default function VehicleRequestPortalPage() {
   const calGrid = useMemo(() => getMonthGrid(calYear, calMonth), [calYear, calMonth]);
   const calMonthLabel = calMonthCursor.toLocaleDateString("es-CL", { month: "long", year: "numeric" });
 
-  // Filtro por disciplina (parent) del calendario deportivo
+  // Filtros del calendario deportivo. Género y categoría se toman de la
+  // prueba y, si faltan, del deporte padre.
+  const calParentById = useMemo(
+    () => new Map(disciplineParents.map((p) => [p.id, p])),
+    [disciplineParents],
+  );
+  const calEventMeta = useMemo(
+    () =>
+      calendarEvents.map((ce) => {
+        const parent = ce.parentId ? calParentById.get(ce.parentId) : undefined;
+        return {
+          ce,
+          discName: (parent?.name || "").trim(),
+          gender: normalizeGender(ce.gender || parent?.gender),
+          category: normalizeCategory(ce.category || parent?.category),
+        };
+      }),
+    [calendarEvents, calParentById],
+  );
+  const calDisciplineOptions = useMemo(
+    () =>
+      Array.from(new Set(calEventMeta.map((m) => m.discName).filter(Boolean))).sort((a, b) =>
+        a.localeCompare(b, "es"),
+      ),
+    [calEventMeta],
+  );
+  // Opciones de género/categoría acotadas a la disciplina elegida
+  const calScopedMeta = useMemo(
+    () => (calDisciplineFilter ? calEventMeta.filter((m) => m.discName === calDisciplineFilter) : calEventMeta),
+    [calEventMeta, calDisciplineFilter],
+  );
+  const calGenderOptions = useMemo(
+    () =>
+      Array.from(new Set(calScopedMeta.map((m) => m.gender).filter(Boolean))).sort((a, b) =>
+        genderLabel(a).localeCompare(genderLabel(b), "es"),
+      ),
+    [calScopedMeta],
+  );
+  const calCategoryOptions = useMemo(
+    () =>
+      Array.from(new Set(calScopedMeta.map((m) => m.category).filter(Boolean))).sort((a, b) =>
+        categoryLabel(a).localeCompare(categoryLabel(b), "es"),
+      ),
+    [calScopedMeta],
+  );
   const calFilteredEvents = useMemo(
-    () => (calDisciplineFilter ? calendarEvents.filter((ce) => ce.parentId === calDisciplineFilter) : calendarEvents),
-    [calendarEvents, calDisciplineFilter],
+    () =>
+      calScopedMeta
+        .filter(
+          (m) =>
+            (!calGenderFilter || m.gender === calGenderFilter) &&
+            (!calCategoryFilter || m.category === calCategoryFilter),
+        )
+        .map((m) => m.ce),
+    [calScopedMeta, calGenderFilter, calCategoryFilter],
   );
 
   const calDaysWithEvents = useMemo(() => {
@@ -1304,10 +1361,9 @@ export default function VehicleRequestPortalPage() {
     });
   }, [calFilteredEvents, calYear, calMonth, calSelectedDay]);
 
-  const parentNameMap = useMemo(
-    () => new Map(disciplineParents.map((p) => [p.id, p.name || ""])),
-    [disciplineParents],
-  );
+  // Etiquetas desambiguadas por variante ("Atletismo · Femenino") para las
+  // filas del Gantt y las tarjetas de las vistas Semana/Día
+  const parentNameMap = useMemo(() => buildDisciplineLabelMap(disciplineParents), [disciplineParents]);
 
   // Eventos del día apuntado por calCursor (vista Día)
   const calCursorDayEvents = useMemo(() => {
@@ -3228,21 +3284,40 @@ export default function VehicleRequestPortalPage() {
                   ))}
                 </div>
 
-                {/* Filtro por disciplina */}
-                {disciplineParents.length > 0 && (
-                  <div style={{ display:"flex",gap:6,alignItems:"center" }}>
-                    <select value={calDisciplineFilter} onChange={(e) => setCalDisciplineFilter(e.target.value)}
-                      style={{ flex:1,padding:"9px 12px",borderRadius:10,border:`1px solid ${calDisciplineFilter?"#21D0B3":"#e2e8f0"}`,fontSize:12.5,fontWeight:calDisciplineFilter?700:400,color:calDisciplineFilter?"#0a7a6b":"#475569",background:"#fff" }}>
-                      <option value="">Todas las disciplinas</option>
-                      {[...disciplineParents]
-                        .sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "es"))
-                        .map((p) => <option key={p.id} value={p.id}>{p.name || p.id}</option>)}
-                    </select>
-                    {calDisciplineFilter && (
-                      <button type="button" onClick={() => setCalDisciplineFilter("")}
-                        style={{ padding:"9px 12px",borderRadius:10,border:"1px solid #fecaca",background:"#fef2f2",color:"#b91c1c",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0 }}>
-                        ✕
-                      </button>
+                {/* Filtros: disciplina + género + categoría */}
+                {calDisciplineOptions.length > 0 && (
+                  <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
+                    <div style={{ display:"flex",gap:6,alignItems:"center" }}>
+                      <select value={calDisciplineFilter}
+                        onChange={(e) => { setCalDisciplineFilter(e.target.value); setCalGenderFilter(""); setCalCategoryFilter(""); }}
+                        style={{ flex:1,padding:"9px 12px",borderRadius:10,border:`1px solid ${calDisciplineFilter?"#21D0B3":"#e2e8f0"}`,fontSize:12.5,fontWeight:calDisciplineFilter?700:400,color:calDisciplineFilter?"#0a7a6b":"#475569",background:"#fff" }}>
+                        <option value="">Todas las disciplinas</option>
+                        {calDisciplineOptions.map((n) => <option key={n} value={n}>{n}</option>)}
+                      </select>
+                      {(calDisciplineFilter || calGenderFilter || calCategoryFilter) && (
+                        <button type="button" onClick={() => { setCalDisciplineFilter(""); setCalGenderFilter(""); setCalCategoryFilter(""); }}
+                          style={{ padding:"9px 12px",borderRadius:10,border:"1px solid #fecaca",background:"#fef2f2",color:"#b91c1c",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0 }}>
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                    {(calGenderOptions.length > 1 || calCategoryOptions.length > 1) && (
+                      <div style={{ display:"flex",gap:6 }}>
+                        {calGenderOptions.length > 1 && (
+                          <select value={calGenderFilter} onChange={(e) => setCalGenderFilter(e.target.value)}
+                            style={{ flex:1,minWidth:0,padding:"9px 12px",borderRadius:10,border:`1px solid ${calGenderFilter?"#21D0B3":"#e2e8f0"}`,fontSize:12.5,fontWeight:calGenderFilter?700:400,color:calGenderFilter?"#0a7a6b":"#475569",background:"#fff" }}>
+                            <option value="">Todos los géneros</option>
+                            {calGenderOptions.map((g) => <option key={g} value={g}>{genderLabel(g)}</option>)}
+                          </select>
+                        )}
+                        {calCategoryOptions.length > 1 && (
+                          <select value={calCategoryFilter} onChange={(e) => setCalCategoryFilter(e.target.value)}
+                            style={{ flex:1,minWidth:0,padding:"9px 12px",borderRadius:10,border:`1px solid ${calCategoryFilter?"#21D0B3":"#e2e8f0"}`,fontSize:12.5,fontWeight:calCategoryFilter?700:400,color:calCategoryFilter?"#0a7a6b":"#475569",background:"#fff" }}>
+                            <option value="">Todas las categorías</option>
+                            {calCategoryOptions.map((c) => <option key={c} value={c}>{categoryLabel(c)}</option>)}
+                          </select>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}
