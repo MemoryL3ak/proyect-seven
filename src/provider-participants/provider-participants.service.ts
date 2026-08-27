@@ -200,6 +200,13 @@ export class ProviderParticipantsService {
     const metadata = {
       ...((current.metadata as Record<string, unknown>) ?? {}),
     };
+    // Purga definitiva ya ejecutada (30 días tras la baja): los datos
+    // personales no existen más, así que no hay cuenta que restaurar.
+    if (metadata.purgedAt) {
+      throw new BadRequestException(
+        'Los datos de esta cuenta fueron eliminados definitivamente; ya no es posible reactivarla.',
+      );
+    }
     const previous = metadata.statusBeforeDeletion;
     const restoredStatus =
       typeof previous === 'string' && previous ? previous : 'REGISTERED';

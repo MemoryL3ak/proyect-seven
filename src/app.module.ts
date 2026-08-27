@@ -2,6 +2,8 @@
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
+import { AccountPurgeModule } from './account-purge/account-purge.module';
 import { AuthModule } from './auth/auth.module';
 import { TransportsModule } from './transports/transports.module';
 import { TripsModule } from './trips/trips.module';
@@ -48,6 +50,7 @@ import { VipMonitoringModule } from './vip-monitoring/vip-monitoring.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    ScheduleModule.forRoot(),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -105,6 +108,7 @@ import { VipMonitoringModule } from './vip-monitoring/vip-monitoring.module';
     FleetModule,
     TripRequestsModule,
     VipMonitoringModule,
+    AccountPurgeModule,
   ],
   controllers: [AppController],
   providers: [AppService],

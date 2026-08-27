@@ -391,25 +391,57 @@ export class AthletesService {
    * limpia las marcas de la baja.
    */
   async reactivate(id: string) {
-    const rows = (await this.dataSource.query(
-      `
-      update core.athletes
-      set status = coalesce(metadata->>'statusBeforeDeletion', 'REGISTERED'),
-          metadata = coalesce(metadata, '{}'::jsonb) - 'deletedAt' - 'deletedBy' - 'statusBeforeDeletion',
-          updated_at = now()
-      where id = $1 and status = 'DELETED'
-      returning *
-    `,
-      [id],
-    )) as AthleteRow[];
-
-    if (!rows[0]) {
+    const { data: current, error: readError } = await this.supabase
+      .schema('core')
+      .from('athletes')
+      .select('id, status, metadata')
+      .eq('id', id)
+      .maybeSingle();
+    if (readError) {
+      throw new InternalServerErrorException(
+        readError.message || 'Error fetching athlete',
+      );
+    }
+    if (!current || current.status !== 'DELETED') {
       throw new NotFoundException(
         `Athlete with id ${id} not found or not deleted`,
       );
     }
 
-    return this.toEntity(rows[0]);
+    const metadata = {
+      ...((current.metadata as Record<string, unknown>) ?? {}),
+    };
+    // Purga definitiva ya ejecutada (30 días tras la baja): los datos
+    // personales no existen más, así que no hay cuenta que restaurar.
+    if (metadata.purgedAt) {
+      throw new BadRequestException(
+        'Los datos de esta cuenta fueron eliminados definitivamente; ya no es posible reactivarla.',
+      );
+    }
+    const previous = metadata.statusBeforeDeletion;
+    const restoredStatus =
+      typeof previous === 'string' && previous ? previous : 'REGISTERED';
+    delete metadata.deletedAt;
+    delete metadata.deletedBy;
+    delete metadata.statusBeforeDeletion;
+
+    const { data, error } = await this.supabase
+      .schema('core')
+      .from('athletes')
+      .update({ status: restoredStatus, metadata })
+      .eq('id', id)
+      .select('*')
+      .maybeSingle();
+    if (error) {
+      throw new InternalServerErrorException(
+        error.message || 'Error reactivating athlete',
+      );
+    }
+    if (!data) {
+      throw new NotFoundException(`Athlete with id ${id} not found`);
+    }
+
+    return this.toEntity(data as AthleteRow);
   }
 
     async remove(id: string) {

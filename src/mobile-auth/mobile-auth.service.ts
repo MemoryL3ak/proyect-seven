@@ -289,8 +289,89 @@ export class MobileAuthService {
       );
     }
 
+    // Los datos de ubicación se eliminan de inmediato con la baja (no esperan
+    // el ciclo de purga): es lo que declara la política de privacidad y el
+    // formulario de Data safety de Google Play.
+    await this.purgeLocationData(kind, userId);
+
     this.logger.log(`Cuenta ${kind} ${userId} eliminada a pedido del usuario`);
     return { ok: true };
+  }
+
+  /**
+   * Borra el rastro de ubicación del usuario al eliminar su cuenta.
+   * Best-effort: cualquier fallo se loguea pero no revierte la baja (la
+   * purga programada de cuentas lo reintenta al cierre del período de gracia).
+   */
+  private async purgeLocationData(kind: string, userId: string): Promise<void> {
+    // Conductores (en transport.drivers o provider_participants): su historial
+    // GPS completo. El staff puede tener rol de conductor, así que también.
+    if (kind === 'driver' || kind === 'staff') {
+      const { error } = await this.supabase
+        .schema('telemetry')
+        .from('vehicle_positions')
+        .delete()
+        .eq('driver_id', userId);
+      if (error) {
+        this.logger.warn(
+          `No se pudo borrar el GPS de conductor ${userId}: ${error.message}`,
+        );
+      }
+    }
+
+    if (kind === 'athlete') {
+      // Tracking VIP permanente del portal.
+      const { error: userPosError } = await this.supabase
+        .schema('telemetry')
+        .from('user_positions')
+        .delete()
+        .eq('athlete_id', userId);
+      if (userPosError) {
+        this.logger.warn(
+          `No se pudo borrar el GPS de usuario ${userId}: ${userPosError.message}`,
+        );
+      }
+
+      // Última posición del pasajero guardada en sus viajes
+      // (transport.trips.passenger_lat/lng): también es dato de ubicación.
+      const { error: reqTripsError } = await this.supabase
+        .schema('transport')
+        .from('trips')
+        .update({ passenger_lat: null, passenger_lng: null })
+        .eq('requester_athlete_id', userId);
+      if (reqTripsError) {
+        this.logger.warn(
+          `No se pudo limpiar la posición de pasajero (viajes solicitados) de ${userId}: ${reqTripsError.message}`,
+        );
+      }
+
+      const { data: links, error: linksError } = await this.supabase
+        .schema('transport')
+        .from('trip_athletes')
+        .select('trip_id')
+        .eq('athlete_id', userId);
+      if (linksError) {
+        this.logger.warn(
+          `No se pudieron listar los viajes de ${userId} para limpiar su posición: ${linksError.message}`,
+        );
+        return;
+      }
+      const tripIds = Array.from(
+        new Set((links ?? []).map((l) => l.trip_id as string).filter(Boolean)),
+      );
+      if (tripIds.length > 0) {
+        const { error: memberTripsError } = await this.supabase
+          .schema('transport')
+          .from('trips')
+          .update({ passenger_lat: null, passenger_lng: null })
+          .in('id', tripIds);
+        if (memberTripsError) {
+          this.logger.warn(
+            `No se pudo limpiar la posición de pasajero (viajes como miembro) de ${userId}: ${memberTripsError.message}`,
+          );
+        }
+      }
+    }
   }
 
   async recover(input: { email: string }): Promise<MobileRecoverResult> {
