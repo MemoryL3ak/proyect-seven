@@ -1819,6 +1819,54 @@ export default function TripsPage() {
                   </div>
                 );
               })()}
+              {/* Fotos de jornada del conductor tomadas en este viaje: la de
+                  inicio se pide en el primer viaje del día y la de término en
+                  el último (metadata jornada_<fecha>_<start|end> con tripId). */}
+              {(() => {
+                const driver = logTrip.driverId ? drivers[logTrip.driverId] : null;
+                const meta = (driver?.metadata ?? {}) as Record<string, unknown>;
+                const tripDay = (logTrip.startedAt || logTrip.scheduledAt || "").slice(0, 10);
+                const photos = Object.entries(meta)
+                  .map(([key, value]) => {
+                    const m = key.match(/^jornada_(\d{4}-\d{2}-\d{2})_(start|end)$/);
+                    if (!m || !value || typeof value !== "object") return null;
+                    const v = value as { url?: string; tripId?: string | null; uploadedAt?: string | null };
+                    if (!v.url) return null;
+                    return { date: m[1], kind: m[2] as "start" | "end", url: v.url, tripId: v.tripId ?? null, uploadedAt: v.uploadedAt ?? null };
+                  })
+                  .filter((p): p is NonNullable<typeof p> => p !== null)
+                  // Del viaje exacto que la gatilló; las fotos antiguas sin
+                  // tripId se muestran si son del mismo día del viaje.
+                  .filter((p) => p.tripId === logTrip.id || (!p.tripId && !!tripDay && p.date === tripDay))
+                  .sort((a) => (a.kind === "start" ? -1 : 1));
+                if (photos.length === 0) return null;
+                return (
+                  <div style={{ marginTop: 18, paddingTop: 14, borderTop: "1px solid #f1f5f9" }}>
+                    <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "#21D0B3", margin: "0 0 10px" }}>
+                      Fotos de jornada del conductor
+                    </p>
+                    <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+                      {photos.map((p) => {
+                        const uploaded = p.uploadedAt ? new Date(p.uploadedAt) : null;
+                        const timeStr = uploaded && !isNaN(uploaded.getTime())
+                          ? uploaded.toLocaleString("es-CL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
+                          : p.date;
+                        return (
+                          <a key={`${p.date}-${p.kind}`} href={p.url} target="_blank" rel="noreferrer" title="Abrir foto en tamaño completo"
+                            style={{ textDecoration: "none", width: "150px" }}>
+                            <img src={p.url} alt={p.kind === "start" ? "Foto de inicio de jornada" : "Foto de término de jornada"}
+                              style={{ width: "150px", height: "100px", objectFit: "cover", borderRadius: "10px", border: "1px solid #e2e8f0", display: "block" }} />
+                            <p style={{ fontSize: "11.5px", fontWeight: 700, color: "#0f172a", margin: "6px 0 0" }}>
+                              {p.kind === "start" ? "Inicio de jornada" : "Término de jornada"}
+                            </p>
+                            <p style={{ fontSize: "10.5px", color: "#94a3b8", margin: "1px 0 0" }}>{timeStr}</p>
+                          </a>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
             {/* Footer */}
             <div style={{ padding: "12px 24px", borderTop: "1px solid #f1f5f9", flexShrink: 0, textAlign: "center" }}>

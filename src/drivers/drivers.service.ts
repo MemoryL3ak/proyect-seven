@@ -707,17 +707,67 @@ export class DriversService {
       throw new InternalServerErrorException('Error resolving journey photo URL');
     }
 
-    const driver = await this.findOne(id);
-    const currentMeta = (driver as any).metadata ?? {};
     const metaKey = `jornada_${date}_${kind.toLowerCase()}`;
-    await this.update(id, {
-      metadata: {
-        ...currentMeta,
-        [metaKey]: { url: publicUrl, tripId: tripId ?? null, uploadedAt: new Date().toISOString() },
-      },
-    } as any);
+    const entry = {
+      url: publicUrl,
+      tripId: tripId ?? null,
+      uploadedAt: new Date().toISOString(),
+    };
 
-    return { url: publicUrl, key: metaKey };
+    // El conductor puede vivir en transport.drivers (Flota propia) o en
+    // core.provider_participants (choferes operativos de proveedor): la
+    // referencia de la foto se guarda en la metadata de la fila que exista.
+    const { data: driverRow } = await this.supabase
+      .schema('transport')
+      .from('drivers')
+      .select('id, metadata')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (driverRow) {
+      const metadata = {
+        ...(((driverRow.metadata as Record<string, unknown>) ?? {})),
+        [metaKey]: entry,
+      };
+      const { error: updateError } = await this.supabase
+        .schema('transport')
+        .from('drivers')
+        .update({ metadata })
+        .eq('id', id);
+      if (updateError) {
+        throw new InternalServerErrorException(
+          updateError.message || 'Error saving journey photo reference',
+        );
+      }
+      return { url: publicUrl, key: metaKey };
+    }
+
+    const { data: participantRow } = await this.supabase
+      .schema('core')
+      .from('provider_participants')
+      .select('id, metadata')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (participantRow) {
+      const metadata = {
+        ...(((participantRow.metadata as Record<string, unknown>) ?? {})),
+        [metaKey]: entry,
+      };
+      const { error: updateError } = await this.supabase
+        .schema('core')
+        .from('provider_participants')
+        .update({ metadata })
+        .eq('id', id);
+      if (updateError) {
+        throw new InternalServerErrorException(
+          updateError.message || 'Error saving journey photo reference',
+        );
+      }
+      return { url: publicUrl, key: metaKey };
+    }
+
+    throw new NotFoundException(`Driver with id ${id} not found`);
   }
 
   async requestAccess(email: string) {
