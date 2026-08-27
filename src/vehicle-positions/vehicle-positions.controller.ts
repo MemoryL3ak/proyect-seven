@@ -32,6 +32,11 @@ export class VehiclePositionsController {
     return this.vehiclePositionsService.findByTrip(tripId);
   }
 
+  @Get('by-trip/:tripId/latest')
+  findLatestByTrip(@Param('tripId') tripId: string) {
+    return this.vehiclePositionsService.findLatestByTrip(tripId);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.vehiclePositionsService.findOne(id);

@@ -223,8 +223,11 @@ type DisciplineParent = { id: string; name?: string | null; category?: string | 
 type PositionItem = {
   id: string;
   vehicleId: string;
+  driverId?: string | null;
   timestamp: string;
   location?: { coordinates?: [number, number] } | { lat?: number; lng?: number };
+  lat?: number | null;
+  lng?: number | null;
   speed?: number | null;
   heading?: number | null;
 };
@@ -326,7 +329,11 @@ function getEditDeadline(trip: Trip) {
 }
 
 function extractCoords(position?: PositionItem | null) {
-  if (!position?.location) return null;
+  if (!position) return null;
+  if (typeof position.lat === "number" && typeof position.lng === "number") {
+    return { lat: position.lat, lng: position.lng };
+  }
+  if (!position.location) return null;
   const coordinates = (position.location as { coordinates?: [number, number] }).coordinates;
   const lat = coordinates ? coordinates[1] : (position.location as { lat?: number }).lat;
   const lng = coordinates ? coordinates[0] : (position.location as { lng?: number }).lng;
@@ -961,7 +968,11 @@ export default function VehicleRequestPortalPage() {
 
   useEffect(() => {
     if (!athlete) return;
-    const activeTrips = trips.filter((trip) => trip.status === "EN_ROUTE" && trip.vehicleId);
+    // También por driverId: muchos viajes no tienen vehicle_id asignado y
+    // antes quedaban sin posición en vivo.
+    const activeTrips = trips.filter(
+      (trip) => trip.status === "EN_ROUTE" && (trip.vehicleId || trip.driverId),
+    );
     if (activeTrips.length === 0) {
       setPositionsByVehicle({});
       return;
@@ -972,15 +983,25 @@ export default function VehicleRequestPortalPage() {
       try {
         const positionData = await apiFetch<PositionItem[]>("/vehicle-positions");
         if (cancelled) return;
-        const latestByVehicle: Record<string, PositionItem> = {};
-        (positionData || []).forEach((pos) => {
-          if (!activeTrips.some((trip) => trip.vehicleId === pos.vehicleId)) return;
-          const current = latestByVehicle[pos.vehicleId];
+        const latestByKey: Record<string, PositionItem> = {};
+        const keep = (key: string | null | undefined, pos: PositionItem) => {
+          if (!key) return;
+          const current = latestByKey[key];
           if (!current || new Date(pos.timestamp).getTime() > new Date(current.timestamp).getTime()) {
-            latestByVehicle[pos.vehicleId] = pos;
+            latestByKey[key] = pos;
           }
+        };
+        (positionData || []).forEach((pos) => {
+          const relevant = activeTrips.some(
+            (trip) =>
+              (trip.vehicleId && trip.vehicleId === pos.vehicleId) ||
+              (trip.driverId && trip.driverId === pos.driverId),
+          );
+          if (!relevant) return;
+          keep(pos.vehicleId, pos);
+          keep(pos.driverId ? `driver:${pos.driverId}` : null, pos);
         });
-        setPositionsByVehicle(latestByVehicle);
+        setPositionsByVehicle(latestByKey);
       } catch {
         // non-blocking
       }
@@ -1397,7 +1418,9 @@ export default function VehicleRequestPortalPage() {
     const isActive = trip.status === "EN_ROUTE" || trip.status === "PICKED_UP";
     const isCompleted = trip.status === "COMPLETED" || trip.status === "DROPPED_OFF";
     const canRate = isCompleted && !trip.driverRating && trip.driverId;
-    const livePosition = trip.vehicleId ? positionsByVehicle[trip.vehicleId] : null;
+    const livePosition =
+      (trip.vehicleId ? positionsByVehicle[trip.vehicleId] : null) ??
+      (trip.driverId ? positionsByVehicle[`driver:${trip.driverId}`] : null);
     const coords = extractCoords(livePosition);
 
     return (
@@ -1927,7 +1950,9 @@ export default function VehicleRequestPortalPage() {
               const veh = t.vehicleId ? vehicles[t.vehicleId] : null;
               const st = statusMeta[t.status || "REQUESTED"] || statusMeta.REQUESTED;
               const vname = venues.find((v) => v.id === t.destinationVenueId)?.name || t.destination || "Destino pendiente";
-              const pos = t.vehicleId ? positionsByVehicle[t.vehicleId] : null;
+              const pos =
+                (t.vehicleId ? positionsByVehicle[t.vehicleId] : null) ??
+                (t.driverId ? positionsByVehicle[`driver:${t.driverId}`] : null);
               const coords = extractCoords(pos);
               const isActive = t.status === "EN_ROUTE" || t.status === "PICKED_UP";
               const liveLabel = t.status === "PICKED_UP" ? "Viaje en curso" : t.status === "EN_ROUTE" ? "Tu conductor está en camino" : st.label;

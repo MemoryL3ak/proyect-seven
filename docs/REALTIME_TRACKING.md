@@ -148,7 +148,9 @@ Para el modelo futuro de producción se puede restringir a participantes del via
 Al abrir la pantalla del mapa, el cliente móvil debe:
 
 1. Cargar **la última posición conocida** del conductor mediante el endpoint REST existente:
-   - `GET /vehicle-positions/by-driver/:driverId` → retorna la última posición del conductor.
+   - `GET /vehicle-positions/by-trip/:tripId/latest` → última posición del viaje activo (preferido: no depende de `vehicle_id` ni de resolver el conductor).
+   - `GET /vehicle-positions/by-driver/:driverId` → última posición del conductor.
+   Ambos devuelven `lat`/`lng` numéricos al tope del objeto y `location` como GeoJSON.
 2. Pintar el pin inicial con ese dato.
 3. Suscribirse al canal Realtime para las siguientes posiciones.
 

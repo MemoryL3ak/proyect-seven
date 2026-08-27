@@ -10,6 +10,7 @@ import VenueMap from "@/components/VenueMap";
 import CredentialQrCard from "@/components/CredentialQrCard";
 import { useI18n } from "@/lib/i18n";
 import TripMap from "@/components/TripMap";
+import { getSupabase } from "@/lib/supabase";
 import NotificationBell, { useNotifications } from "@/components/NotificationBell";
 import TripChat from "@/components/TripChat";
 import AssistanceChat from "@/components/AssistanceChat";
@@ -552,6 +553,11 @@ export default function UserPortalPage() {
   }
   const prevTripStatus = useRef<string | null>(null);
   const arrivedNotified = useRef<string | null>(null); // tracks which segment was already notified
+  // Último cálculo de ETA (throttle de DistanceMatrix) y último fix recibido
+  // por Realtime (para saltar el fetch REST de posición cuando el WebSocket
+  // está entregando).
+  const lastEtaCalcRef = useRef<{ at: number; pos: { lat: number; lng: number }; segment: string } | null>(null);
+  const lastRealtimeFixRef = useRef(0);
   const [bootCheckDone, setBootCheckDone] = useState(false);
 
   const loadAthlete = async (directId?: string) => {
@@ -857,6 +863,16 @@ export default function UserPortalPage() {
     notify.push(info.message, info.emoji);
   };
 
+  const fixMetersBetween = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
+    const R = 6371000;
+    const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+    const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+    const s =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(s));
+  };
+
   const calculateEta = (
     driverLatLng: { lat: number; lng: number },
     tripStatus: string | null | undefined,
@@ -872,6 +888,21 @@ export default function UserPortalPage() {
     if (!target) return;
 
     const segmentKey = `${tripStatus}`;
+
+    // Throttle: con Realtime llegan fixes cada ~5 s y DistanceMatrix se cobra
+    // por consulta — recalcular solo si cambió el tramo, pasaron 20 s o el
+    // conductor se movió más de 150 m.
+    const last = lastEtaCalcRef.current;
+    if (
+      last &&
+      last.segment === segmentKey &&
+      Date.now() - last.at < 20000 &&
+      fixMetersBetween(last.pos, driverLatLng) < 150
+    ) {
+      return;
+    }
+    lastEtaCalcRef.current = { at: Date.now(), pos: driverLatLng, segment: segmentKey };
+
     const service = new google.maps.DistanceMatrixService();
     service.getDistanceMatrix(
       { origins: [driverLatLng], destinations: [target], travelMode: "DRIVING" },
@@ -893,6 +924,45 @@ export default function UserPortalPage() {
         }
       }
     );
+  };
+
+  // Acepta las tres formas en que llega una posición: lat/lng al tope (REST
+  // nuevo y payload Realtime), GeoJSON Point en location, o lat/lng anidados.
+  const parseFixLatLng = (pos: any): { lat: number; lng: number } | null => {
+    if (!pos) return null;
+    if (typeof pos.lat === "number" && typeof pos.lng === "number") {
+      return { lat: pos.lat, lng: pos.lng };
+    }
+    const loc = pos.location as any;
+    if (
+      Array.isArray(loc?.coordinates) &&
+      loc.coordinates.length >= 2 &&
+      typeof loc.coordinates[0] === "number" &&
+      typeof loc.coordinates[1] === "number"
+    ) {
+      return { lat: loc.coordinates[1], lng: loc.coordinates[0] };
+    }
+    if (typeof loc?.lat === "number" && typeof loc?.lng === "number") {
+      return { lat: loc.lat, lng: loc.lng };
+    }
+    if (typeof loc?.latitude === "number" && typeof loc?.longitude === "number") {
+      return { lat: loc.latitude, lng: loc.longitude };
+    }
+    return null;
+  };
+
+  const handleDriverFix = (
+    latLng: { lat: number; lng: number },
+    tripStatus: string | null | undefined,
+    tripOrigin: string | null | undefined,
+    tripDestination: string | null | undefined,
+  ) => {
+    setDriverPos(latLng);
+    if (tripStatus === "EN_ROUTE" || tripStatus === "PICKED_UP") {
+      calculateEta(latLng, tripStatus, tripOrigin, tripDestination);
+    } else {
+      setDriverEta(null);
+    }
   };
 
   // Mobile-app auto-login: skip code gate when a mobile session is present.
@@ -947,35 +1017,37 @@ export default function UserPortalPage() {
           }
         }
 
-        const vehicleId = updated.vehicleId ?? trip.vehicleId;
-        if (vehicleId) {
-          const pos = await apiFetch<any>(`/vehicle-positions/by-vehicle/${vehicleId}`).catch(() => null);
-          if (pos?.location) {
-            const loc = pos.location as any;
-            // GeoJSON Point: { coordinates: [lng, lat] }
-            // or flat object: { lat, lng } or { latitude, longitude }
-            let latLng: { lat: number; lng: number } | null = null;
-            if (Array.isArray(loc?.coordinates) && loc.coordinates.length >= 2) {
-              latLng = { lat: loc.coordinates[1] as number, lng: loc.coordinates[0] as number };
-            } else if (typeof loc?.lat === "number" && typeof loc?.lng === "number") {
-              latLng = { lat: loc.lat, lng: loc.lng };
-            } else if (typeof loc?.latitude === "number" && typeof loc?.longitude === "number") {
-              latLng = { lat: loc.latitude, lng: loc.longitude };
-            }
-            if (latLng) {
-              setDriverPos(latLng);
-              if (updated.status === "EN_ROUTE" || updated.status === "PICKED_UP") {
-                calculateEta(
-                  latLng,
-                  updated.status,
-                  updated.origin ?? trip.origin,
-                  updated.destination ?? trip.destination,
-                );
-              } else {
-                setDriverEta(null);
+        if (["EN_ROUTE", "PICKED_UP"].includes(updated.status ?? "")) {
+          // Respaldo REST: solo si Realtime no entregó un fix hace poco.
+          if (Date.now() - lastRealtimeFixRef.current > 12000) {
+            // El fix se etiqueta con el viaje activo al ingresar, así que la
+            // clave más confiable es el viaje; driver y vehículo son respaldo
+            // (muchos viajes no tienen vehicle_id).
+            let pos = await apiFetch<any>(`/vehicle-positions/by-trip/${trip.id}/latest`).catch(() => null);
+            if (!parseFixLatLng(pos)) {
+              const driverId = updated.driverId ?? trip.driverId;
+              if (driverId) {
+                pos = await apiFetch<any>(`/vehicle-positions/by-driver/${driverId}`).catch(() => null);
               }
             }
+            if (!parseFixLatLng(pos)) {
+              const vehicleId = updated.vehicleId ?? trip.vehicleId;
+              if (vehicleId) {
+                pos = await apiFetch<any>(`/vehicle-positions/by-vehicle/${vehicleId}`).catch(() => null);
+              }
+            }
+            const latLng = parseFixLatLng(pos);
+            if (latLng) {
+              handleDriverFix(
+                latLng,
+                updated.status,
+                updated.origin ?? trip.origin,
+                updated.destination ?? trip.destination,
+              );
+            }
           }
+        } else {
+          setDriverEta(null);
         }
       } catch {
         // non-blocking
@@ -987,6 +1059,48 @@ export default function UserPortalPage() {
     return () => clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trip?.id, trip?.status]);
+
+  /* ─── Supabase Realtime: posición del conductor en vivo ───
+     Cada INSERT en telemetry.vehicle_positions del conductor del viaje llega
+     por WebSocket (50–200 ms) y mueve el auto en el mapa al instante. El
+     polling de arriba queda como respaldo si el canal no conecta. */
+  useEffect(() => {
+    if (!trip?.id || !trip.driverId) return;
+    if (!["EN_ROUTE", "PICKED_UP"].includes(trip.status ?? "")) return;
+
+    let channel: any = null;
+    let supabase: any = null;
+    try {
+      supabase = getSupabase();
+      channel = supabase
+        .channel(`trip-tracking-${trip.id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "telemetry",
+            table: "vehicle_positions",
+            filter: `driver_id=eq.${trip.driverId}`,
+          },
+          (payload: any) => {
+            const latLng = parseFixLatLng(payload?.new);
+            if (!latLng) return;
+            lastRealtimeFixRef.current = Date.now();
+            handleDriverFix(latLng, trip.status, trip.origin, trip.destination);
+          },
+        )
+        .subscribe();
+    } catch {
+      // Sin credenciales de Supabase en el build: seguimos solo con polling.
+    }
+
+    return () => {
+      if (channel && supabase) {
+        try { supabase.removeChannel(channel); } catch {}
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trip?.id, trip?.status, trip?.driverId]);
 
   /* ─── user geolocation + send to backend (Safari-friendly) ─── */
   useEffect(() => {
@@ -1388,6 +1502,11 @@ export default function UserPortalPage() {
                 <p style={{ fontSize:14.5,fontWeight:800,color:"#fff",margin:"1px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
                   {trip.status==="EN_ROUTE" ? "Tu conductor está en camino" : "Viaje en curso"}
                 </p>
+                {driverEta && (
+                  <p style={{ fontSize:12,fontWeight:700,color:"#34F3C6",margin:"3px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                    {trip.status==="EN_ROUTE" ? "Llega en" : "Llegas en"} ~{driverEta.duration} · {driverEta.distance}
+                  </p>
+                )}
                 {driver && (
                   <p style={{ fontSize:11.5,color:"rgba(255,255,255,0.7)",margin:"3px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
                     🧑 {driver.fullName || "Conductor"}
@@ -3703,7 +3822,7 @@ export default function UserPortalPage() {
               </div>
               {/* Map */}
               <div style={{ margin:"0 0 20px" }}>
-                <TripMap origin={trip.origin} destination={trip.destination} driverPosition={driverPos} userPosition={userPos} height={260} />
+                <TripMap origin={trip.origin} destination={trip.destination} driverPosition={driverPos} userPosition={userPos} phase={trip.status} height={260} />
               </div>
               {/* Details */}
               <div style={{ padding:"0 24px",display:"flex",flexDirection:"column",gap:"12px" }}>

@@ -10,7 +10,19 @@ interface TripMapProps {
   destination?: string | null;
   driverPosition?: LatLng | null;
   userPosition?: LatLng | null;
+  /** Estado del viaje: con "EN_ROUTE" se dibuja la ruta conductor → recogida. */
+  phase?: string | null;
   height?: number;
+}
+
+function metersBetween(a: LatLng, b: LatLng): number {
+  const R = 6371000;
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+  const sa =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(sa));
 }
 
 const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
@@ -73,6 +85,7 @@ function MapCanvas({
   destination,
   driverPosition,
   userPosition,
+  phase,
   height,
   gestureHandling = "cooperative",
 }: TripMapProps & { gestureHandling?: string }) {
@@ -81,6 +94,8 @@ function MapCanvas({
   const driverMarkerRef = useRef<any>(null);
   const userMarkerRef = useRef<any>(null);
   const directionsRendererRef = useRef<any>(null);
+  const pickupRouteRendererRef = useRef<any>(null);
+  const lastPickupRouteRef = useRef<{ at: number; pos: LatLng | null }>({ at: 0, pos: null });
   const initKey = useRef("");
   const driverPositionRef = useRef<LatLng | null>(driverPosition ?? null);
 
@@ -209,6 +224,56 @@ function MapCanvas({
     }
   }, [driverPosition]);
 
+  // Ruta en vivo conductor → punto de recogida mientras va a buscar al
+  // pasajero. Se recalcula con moderación (30 s o >120 m de movimiento) para
+  // no quemar cuota de Directions con cada fix GPS.
+  useEffect(() => {
+    const google = (window as any).google;
+    if (!mapRef.current || !google?.maps?.DirectionsService) return;
+
+    if (phase !== "EN_ROUTE" || !driverPosition || !origin) {
+      if (pickupRouteRendererRef.current) {
+        pickupRouteRendererRef.current.setMap(null);
+        pickupRouteRendererRef.current = null;
+      }
+      lastPickupRouteRef.current = { at: 0, pos: null };
+      return;
+    }
+
+    const last = lastPickupRouteRef.current;
+    if (
+      last.at &&
+      last.pos &&
+      Date.now() - last.at < 30000 &&
+      metersBetween(last.pos, driverPosition) < 120
+    ) {
+      return;
+    }
+    lastPickupRouteRef.current = { at: Date.now(), pos: driverPosition };
+
+    const firstRoute = !pickupRouteRendererRef.current;
+    const service = new google.maps.DirectionsService();
+    service.route(
+      { origin: driverPosition, destination: origin, travelMode: google.maps.TravelMode.DRIVING },
+      (result: any, status: string) => {
+        if (status !== "OK" || !mapRef.current) return;
+        if (!pickupRouteRendererRef.current) {
+          pickupRouteRendererRef.current = new google.maps.DirectionsRenderer({
+            suppressMarkers: true,
+            preserveViewport: true,
+            polylineOptions: { strokeColor: "#2563eb", strokeWeight: 5, strokeOpacity: 0.85 },
+          });
+          pickupRouteRendererRef.current.setMap(mapRef.current);
+        }
+        pickupRouteRendererRef.current.setDirections(result);
+        // Primer trazado: encuadrar conductor + punto de recogida.
+        if (firstRoute && result.routes?.[0]?.bounds) {
+          mapRef.current.fitBounds(result.routes[0].bounds, 48);
+        }
+      },
+    );
+  }, [driverPosition, phase, origin]);
+
   useEffect(() => {
     if (!mapRef.current || !userPosition) return;
     const google = (window as any).google;
@@ -236,6 +301,10 @@ function MapCanvas({
       if (directionsRendererRef.current) {
         directionsRendererRef.current.setMap(null);
         directionsRendererRef.current = null;
+      }
+      if (pickupRouteRendererRef.current) {
+        pickupRouteRendererRef.current.setMap(null);
+        pickupRouteRendererRef.current = null;
       }
       if (driverMarkerRef.current) {
         driverMarkerRef.current.setMap(null);
