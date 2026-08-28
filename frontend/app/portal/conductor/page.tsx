@@ -479,10 +479,23 @@ export default function DriverPortalPage() {
     return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Santiago", year: "numeric", month: "2-digit", day: "2-digit" }).format(d) === journeyToday();
   };
   const journeyFlagKey = (kind: "START" | "END") => `journey_photo_${driverProfile?.id || "anon"}_${journeyToday()}_${kind}`;
+  // Marcador en tres capas para no volver a pedir la foto: memoria de la
+  // sesión (por si localStorage no está disponible), localStorage (persiste
+  // entre pestañas) y la metadata del conductor en el servidor (persiste
+  // entre dispositivos y reinstalaciones — el WebView de la app puede llegar
+  // con el almacenamiento local vacío).
+  const journeyMarksRef = useRef<Set<string>>(new Set());
+  const hasServerJourneyPhoto = (kind: "START" | "END") => {
+    const meta = (driverProfile?.metadata ?? {}) as Record<string, unknown>;
+    return Boolean(meta[`jornada_${journeyToday()}_${kind.toLowerCase()}`]);
+  };
   const hasJourneyMark = (kind: "START" | "END") => {
+    if (journeyMarksRef.current.has(journeyFlagKey(kind))) return true;
+    if (hasServerJourneyPhoto(kind)) return true;
     try { return Boolean(window.localStorage.getItem(journeyFlagKey(kind))); } catch { return false; }
   };
   const setJourneyMark = (kind: "START" | "END", value: string) => {
+    journeyMarksRef.current.add(journeyFlagKey(kind));
     try { window.localStorage.setItem(journeyFlagKey(kind), value); } catch { /* privado */ }
   };
 
@@ -495,6 +508,41 @@ export default function DriverPortalPage() {
         !["COMPLETED", "DROPPED_OFF", "CANCELLED"].includes(t.status || ""),
     );
 
+  /* ── Navegación (Waze / Google Maps): popup al iniciar cada tramo. ──
+     En ruta a recoger el objetivo es el punto de recogida (coordenadas del
+     pasajero si existen — clave en solicitudes VIP sin dirección de destino
+     escrita —, si no el texto de origen); con el pasajero a bordo, el destino. */
+  const [navPrompt, setNavPrompt] = useState<{ trip: Trip; phase: "pickup" | "dropoff" } | null>(null);
+
+  const navTarget = (trip: Trip, phase: "pickup" | "dropoff"): { waze: string; gmaps: string; label: string } | null => {
+    if (phase === "pickup") {
+      if (typeof trip.passengerLat === "number" && typeof trip.passengerLng === "number") {
+        const ll = `${trip.passengerLat},${trip.passengerLng}`;
+        return {
+          waze: `https://waze.com/ul?ll=${ll}&navigate=yes`,
+          gmaps: `https://www.google.com/maps/dir/?api=1&destination=${ll}`,
+          label: trip.origin || "Punto de recogida (posición del pasajero)",
+        };
+      }
+      if (trip.origin) {
+        return {
+          waze: `https://waze.com/ul?q=${encodeURIComponent(trip.origin)}&navigate=yes`,
+          gmaps: `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(trip.origin)}`,
+          label: trip.origin,
+        };
+      }
+      return null;
+    }
+    if (trip.destination) {
+      return {
+        waze: `https://waze.com/ul?q=${encodeURIComponent(trip.destination)}&navigate=yes`,
+        gmaps: `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(trip.destination)}`,
+        label: trip.destination,
+      };
+    }
+    return null;
+  };
+
   const uploadJourneyPhoto = async (file: File) => {
     if (!journeyPhoto || !driverProfile?.id) return;
     setJourneyUploading(true);
@@ -505,12 +553,26 @@ export default function DriverPortalPage() {
         reader.onerror = () => reject(new Error("read"));
         reader.readAsDataURL(file);
       });
-      await apiFetch(`/drivers/${driverProfile.id}/journey-photo`, {
+      const saved = await apiFetch<{ url?: string; key?: string }>(`/drivers/${driverProfile.id}/journey-photo`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ kind: journeyPhoto.kind, date: journeyToday(), dataUrl, tripId: journeyPhoto.tripId }),
       });
       setJourneyMark(journeyPhoto.kind, "uploaded");
+      // Reflejar la foto en el perfil local: el chequeo server-side del
+      // marcador la ve sin necesidad de refetchear al conductor.
+      const metaKey = `jornada_${journeyToday()}_${journeyPhoto.kind.toLowerCase()}`;
+      setDriverProfile((prev) =>
+        prev
+          ? {
+              ...prev,
+              metadata: {
+                ...((prev.metadata as Record<string, unknown>) || {}),
+                [metaKey]: { url: saved?.url ?? null, tripId: journeyPhoto.tripId, uploadedAt: new Date().toISOString() },
+              },
+            }
+          : prev,
+      );
       driverNotify.push(
         journeyPhoto.kind === "START" ? "Foto de inicio de jornada registrada" : "Foto de término de jornada registrada",
         "📷",
@@ -570,6 +632,12 @@ export default function DriverPortalPage() {
       if (status === "EN_ROUTE" || status === "PICKED_UP") {
         setTrackingTripId(updated.id);
         setSelectedTripId(updated.id);
+        // Ofrecer navegación apenas parte el tramo (también en viajes VIP,
+        // que suelen no traer destino escrito pero sí posición del pasajero).
+        if (!isDisposicion(updated)) {
+          const phase = status === "EN_ROUTE" ? ("pickup" as const) : ("dropoff" as const);
+          if (navTarget(updated, phase)) setNavPrompt({ trip: updated, phase });
+        }
       }
       if (status === "DROPPED_OFF" || status === "COMPLETED") {
         setTrackingTripId((current) => (current === updated.id ? null : current));
@@ -1592,11 +1660,15 @@ export default function DriverPortalPage() {
                                 <TripMap origin={trip.origin} destination={trip.destination} driverPosition={driverPosition} userPosition={trip.passengerLat && trip.passengerLng ? { lat: trip.passengerLat, lng: trip.passengerLng } : null} height={180} />
                               </div>
 
-                              {/* Navigate with Waze / Google Maps */}
-                              {trip.destination && (
+                              {/* Navigate with Waze / Google Maps — en ruta a
+                                  recoger navega a la recogida; después, al destino */}
+                              {(() => {
+                                const target = navTarget(trip, trip.status === "EN_ROUTE" ? "pickup" : "dropoff");
+                                if (!target) return null;
+                                return (
                                 <div style={{ display:"flex",gap:6,marginBottom:10 }}>
                                   <a
-                                    href={`https://waze.com/ul?q=${encodeURIComponent(trip.destination)}&navigate=yes`}
+                                    href={target.waze}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     style={{ flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"10px 0",borderRadius:10,border:"1px solid #e2e8f0",background:"#fff",textDecoration:"none",fontSize:12,fontWeight:700,color:"#33ccff" }}
@@ -1605,7 +1677,7 @@ export default function DriverPortalPage() {
                                     Waze
                                   </a>
                                   <a
-                                    href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(trip.destination)}`}
+                                    href={target.gmaps}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     style={{ flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"10px 0",borderRadius:10,border:"1px solid #e2e8f0",background:"#fff",textDecoration:"none",fontSize:12,fontWeight:700,color:"#4285F4" }}
@@ -1614,7 +1686,8 @@ export default function DriverPortalPage() {
                                     Google Maps
                                   </a>
                                 </div>
-                              )}
+                                );
+                              })()}
 
                               {/* Route detail */}
                               <div style={{ display:"flex",gap:10,marginBottom:10,alignItems:"stretch" }}>
@@ -2373,6 +2446,54 @@ export default function DriverPortalPage() {
           </div>
         </div>
       )}
+
+      {/* ── Popup de navegación al iniciar un tramo (Waze / Google Maps) ── */}
+      {navPrompt && (() => {
+        const target = navTarget(navPrompt.trip, navPrompt.phase);
+        if (!target) return null;
+        return (
+          <div style={{ position:"fixed",inset:0,zIndex:130,background:"rgba(6,15,30,0.6)",backdropFilter:"blur(3px)",display:"flex",alignItems:"center",justifyContent:"center",padding:16 }}
+            onClick={() => setNavPrompt(null)}>
+            <div onClick={(e) => e.stopPropagation()}
+              style={{ background:"#fff",borderRadius:20,padding:"24px 20px",maxWidth:360,width:"100%",textAlign:"center",boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}>
+              <div style={{ fontSize:40,marginBottom:8 }}>🧭</div>
+              <h3 style={{ fontSize:17,fontWeight:800,color:"#0f172a",margin:0 }}>
+                {navPrompt.phase === "pickup" ? "Navegar al punto de recogida" : "Navegar al destino"}
+              </h3>
+              <p style={{ fontSize:13,color:"#64748b",margin:"8px 0 16px",lineHeight:1.5,overflow:"hidden",textOverflow:"ellipsis" }}>
+                {target.label}
+              </p>
+              <a
+                href={target.waze}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setNavPrompt(null)}
+                style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",padding:14,borderRadius:14,border:"none",background:"linear-gradient(135deg,#33ccff,#0f9ed8)",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",textDecoration:"none",boxSizing:"border-box" }}
+              >
+                <img src="https://www.waze.com/favicon.ico" alt="" width="20" height="20" style={{ borderRadius:4 }} />
+                Abrir en Waze
+              </a>
+              <a
+                href={target.gmaps}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setNavPrompt(null)}
+                style={{ marginTop:8,display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",padding:13,borderRadius:14,border:"1px solid #e2e8f0",background:"#fff",color:"#4285F4",fontSize:13,fontWeight:700,cursor:"pointer",textDecoration:"none",boxSizing:"border-box" }}
+              >
+                <img src="https://maps.google.com/favicon.ico" alt="" width="18" height="18" style={{ borderRadius:4 }} />
+                Abrir en Google Maps
+              </a>
+              <button
+                type="button"
+                onClick={() => setNavPrompt(null)}
+                style={{ marginTop:10,width:"100%",padding:12,borderRadius:12,border:"none",background:"transparent",color:"#64748b",fontSize:13,fontWeight:600,cursor:"pointer" }}
+              >
+                Ahora no
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── Trip Chat (active trips only) ── */}
       {driverProfile && trackingTripId && (
