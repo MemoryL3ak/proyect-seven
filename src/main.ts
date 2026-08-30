@@ -55,7 +55,15 @@ async function bootstrap() {
       return callback(new Error('Not allowed by CORS'));
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      // Credenciales de sesión de portal (SA-BACKEND-02): identifican al
+      // atleta/conductor sin cuenta Supabase ante los endpoints protegidos.
+      'x-portal-kind',
+      'x-portal-user',
+      'x-portal-session',
+    ],
     exposedHeaders: ['Authorization', 'x-refresh-token'],
     credentials: true,
   });

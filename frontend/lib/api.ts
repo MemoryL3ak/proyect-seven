@@ -59,6 +59,57 @@ export function getStoredUser(): StoredAuthUser | null {
 }
 
 const USER_KEY = "seven.user";
+
+/* ── Identidad de portal (SA-BACKEND-02) ──
+   Los usuarios de portal (atleta/conductor) no tienen JWT: su credencial es
+   la sesión única (portalSessionId). Este puntero guarda la identidad activa
+   para adjuntarla como headers x-portal-* en cada request. Lo mantienen
+   claimPortalSession/ensurePortalSession y lo limpia el logout. */
+const PORTAL_KEY = "seven.portal";
+
+export type PortalIdentity = {
+  kind: "athlete" | "driver";
+  userId: string;
+  sessionId: string;
+};
+
+export function getPortalIdentity(): PortalIdentity | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(PORTAL_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<PortalIdentity>;
+    if (
+      (parsed.kind === "athlete" || parsed.kind === "driver") &&
+      typeof parsed.userId === "string" &&
+      typeof parsed.sessionId === "string"
+    ) {
+      return parsed as PortalIdentity;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export function setPortalIdentity(identity: PortalIdentity) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(PORTAL_KEY, JSON.stringify(identity));
+  } catch {}
+}
+
+export function clearPortalIdentity(userId?: string) {
+  if (typeof window === "undefined") return;
+  try {
+    if (userId) {
+      const current = getPortalIdentity();
+      if (current && current.userId !== userId) return;
+    }
+    window.localStorage.removeItem(PORTAL_KEY);
+  } catch {}
+}
+
 const API_BASE = (process.env.NEXT_PUBLIC_API_BASE || "").trim();
 let preferredBase: string | null = null;
 
@@ -156,6 +207,12 @@ function withAuthHeaders(headers?: HeadersInit) {
   const nextHeaders = new Headers(headers || {});
   if (tokens?.accessToken) {
     nextHeaders.set("Authorization", `Bearer ${tokens.accessToken}`);
+  }
+  const portal = getPortalIdentity();
+  if (portal) {
+    nextHeaders.set("x-portal-kind", portal.kind);
+    nextHeaders.set("x-portal-user", portal.userId);
+    nextHeaders.set("x-portal-session", portal.sessionId);
   }
   return nextHeaders;
 }

@@ -6,8 +6,31 @@ import {
   Logger,
   UnauthorizedException,
 } from '@nestjs/common';
-import { randomUUID } from 'crypto';
+import { ConfigService } from '@nestjs/config';
+import { createHmac, randomUUID } from 'crypto';
 import { SupabaseClient } from '@supabase/supabase-js';
+
+// JWT HS256 mínimo (sin dependencias): suficiente para firmar tokens que
+// Supabase Realtime valida contra el JWT secret del proyecto.
+function base64url(input: string | Buffer): string {
+  return Buffer.from(input)
+    .toString('base64')
+    .replace(/=+$/, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
+}
+
+function signHs256Jwt(payload: Record<string, unknown>, secret: string): string {
+  const header = base64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+  const body = base64url(JSON.stringify(payload));
+  const signature = createHmac('sha256', secret)
+    .update(`${header}.${body}`)
+    .digest('base64')
+    .replace(/=+$/, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
+  return `${header}.${body}.${signature}`;
+}
 
 export type MobileLoginResult =
   | {
@@ -39,7 +62,87 @@ export class MobileAuthService {
   constructor(
     private readonly logger: Logger = new Logger(MobileAuthService.name),
     @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
+    private readonly config: ConfigService,
   ) {}
+
+  /**
+   * Validación ESTRICTA de la sesión de portal — para autorizar acceso a
+   * recursos (SA-BACKEND-02), no para mantener sesiones vivas. A diferencia
+   * de validateSession(), un dato incompleto o no coincidente es rechazo.
+   */
+  async validateSessionStrict(
+    kind: string,
+    userId: string,
+    sessionId: string,
+  ): Promise<boolean> {
+    if (!userId || !sessionId || !['athlete', 'driver'].includes(kind)) {
+      return false;
+    }
+    const target = await this.sessionTable(kind, userId);
+    if (!target) return false;
+    try {
+      const { data: row } = await this.supabase
+        .schema(target.schema)
+        .from(target.table)
+        .select('metadata, status')
+        .eq('id', userId)
+        .maybeSingle();
+      if (!row || row.status === 'DELETED') return false;
+      const meta = (row.metadata as Record<string, unknown> | null) ?? {};
+      return (
+        typeof meta.portalSessionId === 'string' &&
+        meta.portalSessionId.length > 0 &&
+        meta.portalSessionId === sessionId
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Token efímero para Supabase Realtime: los usuarios de portal no tienen
+   * cuenta Supabase, así que el backend firma un JWT (HS256, secret del
+   * proyecto) con rol `authenticated` y el claim `portal`, que las políticas
+   * RLS usan para acotar la lectura a los viajes en que participa.
+   */
+  async mintRealtimeToken(input: {
+    kind?: string;
+    userId?: string;
+    sessionId?: string;
+  }): Promise<{ token: string; expiresIn: number }> {
+    const kind = String(input.kind || '');
+    const userId = String(input.userId || '').trim();
+    const sessionId = String(input.sessionId || '').trim();
+
+    const valid = await this.validateSessionStrict(kind, userId, sessionId);
+    if (!valid) {
+      throw new UnauthorizedException('Sesión de portal inválida');
+    }
+
+    const secret = this.config.get<string>('SUPABASE_JWT_SECRET');
+    if (!secret) {
+      // Sin el secret el portal sigue funcionando por polling REST; sólo se
+      // pierde el push de Realtime.
+      throw new InternalServerErrorException(
+        'SUPABASE_JWT_SECRET no configurada',
+      );
+    }
+
+    const expiresIn = 3600;
+    const now = Math.floor(Date.now() / 1000);
+    const token = signHs256Jwt(
+      {
+        aud: 'authenticated',
+        role: 'authenticated',
+        sub: userId,
+        portal: kind,
+        iat: now,
+        exp: now + expiresIn,
+      },
+      secret,
+    );
+    return { token, expiresIn };
+  }
 
   async login(input: { code: string }): Promise<MobileLoginResult> {
     const code = String(input.code || '').trim().toLowerCase();

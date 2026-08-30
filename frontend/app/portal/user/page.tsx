@@ -10,7 +10,7 @@ import VenueMap from "@/components/VenueMap";
 import CredentialQrCard from "@/components/CredentialQrCard";
 import { useI18n } from "@/lib/i18n";
 import TripMap from "@/components/TripMap";
-import { getSupabase } from "@/lib/supabase";
+import { ensurePortalRealtimeAuth, getSupabase } from "@/lib/supabase";
 import NotificationBell, { useNotifications } from "@/components/NotificationBell";
 import TripChat from "@/components/TripChat";
 import AssistanceChat from "@/components/AssistanceChat";
@@ -1070,8 +1070,18 @@ export default function UserPortalPage() {
 
     let channel: any = null;
     let supabase: any = null;
-    try {
-      supabase = getSupabase();
+    let cancelled = false;
+    (async () => {
+      try {
+        supabase = getSupabase();
+      } catch {
+        // Sin credenciales de Supabase en el build: seguimos solo con polling.
+        return;
+      }
+      // RLS por participación (SA-BACKEND-02): sin este token el canal no
+      // entrega filas y el portal queda en el polling REST autenticado.
+      await ensurePortalRealtimeAuth();
+      if (cancelled) return;
       channel = supabase
         .channel(`trip-tracking-${trip.id}`)
         .on(
@@ -1090,11 +1100,16 @@ export default function UserPortalPage() {
           },
         )
         .subscribe();
-    } catch {
-      // Sin credenciales de Supabase en el build: seguimos solo con polling.
-    }
+    })();
+
+    // El JWT de portal dura 1 h: refrescarlo mantiene viva la suscripción.
+    const tokenTimer = window.setInterval(() => {
+      void ensurePortalRealtimeAuth();
+    }, 40 * 60 * 1000);
 
     return () => {
+      cancelled = true;
+      window.clearInterval(tokenTimer);
       if (channel && supabase) {
         try { supabase.removeChannel(channel); } catch {}
       }

@@ -23,7 +23,7 @@ import QRCode from "qrcode";
 import { buildCredentialHtml } from "@/lib/credential-template";
 import { downloadCredentialPdf, saveCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
 import { clearPersistedTabs, persistTab, restoreOnReload, startTabHeartbeat } from "@/lib/portal-tab";
-import { claimPortalSession, clearPortalSession, releasePortalSession, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
+import { claimPortalSession, clearPortalSession, getStoredPortalSessionId, releasePortalSession, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
 import PortalSessionGuard from "@/components/PortalSessionGuard";
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
 
@@ -763,7 +763,22 @@ export default function DriverPortalPage() {
     const driverId = driverProfile?.id;
     if (!driverId || trackingArmedRef.current) return;
     trackingArmedRef.current = true;
-    nativeRequest("tracking.start", { driverId }, { timeoutMs: 30_000 }).catch(() => {
+    // SA-BACKEND-02: la sesión de portal viaja al shell para que el tracker
+    // la adjunte a sus POST /vehicle-positions como headers
+    // x-portal-kind / x-portal-user / x-portal-session. Los shells antiguos
+    // ignoran el campo (la API acepta POST sin credenciales mientras
+    // VEHICLE_POSITIONS_INGEST_AUTH siga en modo log).
+    const sessionId = getStoredPortalSessionId("driver", driverId);
+    nativeRequest(
+      "tracking.start",
+      {
+        driverId,
+        ...(sessionId
+          ? { session: { kind: "driver", userId: driverId, sessionId } }
+          : {}),
+      },
+      { timeoutMs: 30_000 },
+    ).catch(() => {
       // Let a later render retry (e.g. after the driver grants permission).
       trackingArmedRef.current = false;
     });

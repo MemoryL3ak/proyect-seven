@@ -412,7 +412,8 @@ export default function VehicleRequestPortalPage() {
   const [drivers, setDrivers] = useState<Record<string, Driver>>({});
   const [vehicles, setVehicles] = useState<Record<string, Vehicle>>({});
   const [accommodations, setAccommodations] = useState<Accommodation[]>([]);
-  const [positionsByVehicle, setPositionsByVehicle] = useState<Record<string, PositionItem>>({});
+  // Última posición del conductor por viaje activo (clave: trip.id).
+  const [positionsByTrip, setPositionsByTrip] = useState<Record<string, PositionItem>>({});
   const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
 
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
@@ -968,40 +969,34 @@ export default function VehicleRequestPortalPage() {
 
   useEffect(() => {
     if (!athlete) return;
-    // También por driverId: muchos viajes no tienen vehicle_id asignado y
-    // antes quedaban sin posición en vivo.
-    const activeTrips = trips.filter(
-      (trip) => trip.status === "EN_ROUTE" && (trip.vehicleId || trip.driverId),
-    );
+    // Por viaje activo (by-trip/latest): el listado global /vehicle-positions
+    // quedó restringido al panel de administración (SA-BACKEND-02), y la
+    // autorización por participación aplica justamente por viaje.
+    const activeTrips = trips.filter((trip) => trip.status === "EN_ROUTE");
     if (activeTrips.length === 0) {
-      setPositionsByVehicle({});
+      setPositionsByTrip({});
       return;
     }
 
     let cancelled = false;
     const loadPositions = async () => {
       try {
-        const positionData = await apiFetch<PositionItem[]>("/vehicle-positions");
+        const entries = await Promise.all(
+          activeTrips.map(async (trip) => {
+            const pos = await apiFetch<PositionItem | null>(
+              `/vehicle-positions/by-trip/${trip.id}/latest`,
+            ).catch(() => null);
+            return [trip.id, pos] as const;
+          }),
+        );
         if (cancelled) return;
-        const latestByKey: Record<string, PositionItem> = {};
-        const keep = (key: string | null | undefined, pos: PositionItem) => {
-          if (!key) return;
-          const current = latestByKey[key];
-          if (!current || new Date(pos.timestamp).getTime() > new Date(current.timestamp).getTime()) {
-            latestByKey[key] = pos;
+        const latestByTrip: Record<string, PositionItem> = {};
+        for (const [tripId, pos] of entries) {
+          if (pos && (typeof pos.lat === "number" || pos.location)) {
+            latestByTrip[tripId] = pos;
           }
-        };
-        (positionData || []).forEach((pos) => {
-          const relevant = activeTrips.some(
-            (trip) =>
-              (trip.vehicleId && trip.vehicleId === pos.vehicleId) ||
-              (trip.driverId && trip.driverId === pos.driverId),
-          );
-          if (!relevant) return;
-          keep(pos.vehicleId, pos);
-          keep(pos.driverId ? `driver:${pos.driverId}` : null, pos);
-        });
-        setPositionsByVehicle(latestByKey);
+        }
+        setPositionsByTrip(latestByTrip);
       } catch {
         // non-blocking
       }
@@ -1418,9 +1413,7 @@ export default function VehicleRequestPortalPage() {
     const isActive = trip.status === "EN_ROUTE" || trip.status === "PICKED_UP";
     const isCompleted = trip.status === "COMPLETED" || trip.status === "DROPPED_OFF";
     const canRate = isCompleted && !trip.driverRating && trip.driverId;
-    const livePosition =
-      (trip.vehicleId ? positionsByVehicle[trip.vehicleId] : null) ??
-      (trip.driverId ? positionsByVehicle[`driver:${trip.driverId}`] : null);
+    const livePosition = positionsByTrip[trip.id] ?? null;
     const coords = extractCoords(livePosition);
 
     return (
@@ -1950,9 +1943,7 @@ export default function VehicleRequestPortalPage() {
               const veh = t.vehicleId ? vehicles[t.vehicleId] : null;
               const st = statusMeta[t.status || "REQUESTED"] || statusMeta.REQUESTED;
               const vname = venues.find((v) => v.id === t.destinationVenueId)?.name || t.destination || "Destino pendiente";
-              const pos =
-                (t.vehicleId ? positionsByVehicle[t.vehicleId] : null) ??
-                (t.driverId ? positionsByVehicle[`driver:${t.driverId}`] : null);
+              const pos = positionsByTrip[t.id] ?? null;
               const coords = extractCoords(pos);
               const isActive = t.status === "EN_ROUTE" || t.status === "PICKED_UP";
               const liveLabel = t.status === "PICKED_UP" ? "Viaje en curso" : t.status === "EN_ROUTE" ? "Tu conductor está en camino" : st.label;

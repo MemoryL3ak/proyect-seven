@@ -1,44 +1,84 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { CreateVehiclePositionDto } from './dto/create-vehicle-position.dto';
 import { UpdateVehiclePositionDto } from './dto/update-vehicle-position.dto';
 import { VehiclePositionsService } from './vehicle-positions.service';
+import { VehiclePositionsAccessService } from './vehicle-positions.access.service';
+import type { VpRequest } from './vehicle-positions.access.service';
+import { VehiclePositionsGuard } from './vehicle-positions.guard';
 
+/**
+ * SA-BACKEND-02: todo el módulo exige autenticación (guard) y cada endpoint
+ * acota la autorización a la participación del solicitante en el viaje.
+ */
+@UseGuards(VehiclePositionsGuard)
 @Controller('vehicle-positions')
 export class VehiclePositionsController {
-  constructor(private readonly vehiclePositionsService: VehiclePositionsService) {}
+  constructor(
+    private readonly vehiclePositionsService: VehiclePositionsService,
+    private readonly access: VehiclePositionsAccessService,
+  ) {}
 
   @Post()
-  create(@Body() createVehiclePositionDto: CreateVehiclePositionDto) {
+  async create(
+    @Body() createVehiclePositionDto: CreateVehiclePositionDto,
+    @Req() req: VpRequest,
+  ) {
+    await this.access.assertCanIngest(req.vpCaller, createVehiclePositionDto);
     return this.vehiclePositionsService.create(createVehiclePositionDto);
   }
 
   @Get()
-  findAll() {
+  findAll(@Req() req: VpRequest) {
+    this.access.requireStaff(req.vpCaller);
     return this.vehiclePositionsService.findAll();
   }
 
   @Get('by-vehicle/:vehicleId')
-  findLatestByVehicle(@Param('vehicleId') vehicleId: string) {
+  async findLatestByVehicle(
+    @Param('vehicleId') vehicleId: string,
+    @Req() req: VpRequest,
+  ) {
+    await this.access.assertCanReadVehicle(req.vpCaller, vehicleId);
     return this.vehiclePositionsService.findLatestByVehicle(vehicleId);
   }
 
   @Get('by-driver/:driverId')
-  findLatestByDriver(@Param('driverId') driverId: string) {
+  async findLatestByDriver(
+    @Param('driverId') driverId: string,
+    @Req() req: VpRequest,
+  ) {
+    await this.access.assertCanReadDriver(req.vpCaller, driverId);
     return this.vehiclePositionsService.findLatestByDriver(driverId);
   }
 
   @Get('by-trip/:tripId')
-  findByTrip(@Param('tripId') tripId: string) {
+  async findByTrip(@Param('tripId') tripId: string, @Req() req: VpRequest) {
+    await this.access.assertCanReadTrip(req.vpCaller, tripId);
     return this.vehiclePositionsService.findByTrip(tripId);
   }
 
   @Get('by-trip/:tripId/latest')
-  findLatestByTrip(@Param('tripId') tripId: string) {
+  async findLatestByTrip(
+    @Param('tripId') tripId: string,
+    @Req() req: VpRequest,
+  ) {
+    await this.access.assertCanReadTrip(req.vpCaller, tripId);
     return this.vehiclePositionsService.findLatestByTrip(tripId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id') id: string, @Req() req: VpRequest) {
+    this.access.requireStaff(req.vpCaller);
     return this.vehiclePositionsService.findOne(id);
   }
 
@@ -46,12 +86,15 @@ export class VehiclePositionsController {
   update(
     @Param('id') id: string,
     @Body() updateVehiclePositionDto: UpdateVehiclePositionDto,
+    @Req() req: VpRequest,
   ) {
+    this.access.requireStaff(req.vpCaller);
     return this.vehiclePositionsService.update(id, updateVehiclePositionDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  remove(@Param('id') id: string, @Req() req: VpRequest) {
+    this.access.requireStaff(req.vpCaller);
     return this.vehiclePositionsService.remove(id);
   }
 }

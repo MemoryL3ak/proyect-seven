@@ -79,7 +79,20 @@ Content-Type: application/json
 }
 ```
 
-**No se requiere modificación al backend** — este endpoint ya está en producción.
+**Autenticación (SA-BACKEND-02)**: el POST debe incluir la sesión de portal
+del conductor como headers — los mismos que entrega el login del portal y que
+el WebView pasa al shell en `tracking.start` (`payload.session`):
+
+```
+x-portal-kind: driver
+x-portal-user: <driverId>
+x-portal-session: <portalSessionId>
+```
+
+Transición: mientras el backend tenga `VEHICLE_POSITIONS_INGEST_AUTH=log`
+(valor por defecto), los POST sin estos headers se aceptan y se registran en
+el log. Cuando la app con headers esté desplegada, el env pasa a `enforce` y
+los POST sin credenciales reciben 401/403.
 
 ---
 
@@ -98,7 +111,19 @@ const supabase = createClient(
 )
 ```
 
-La autenticación se hereda de la sesión de Supabase Auth del usuario (email + password). No hay configuración adicional.
+Los usuarios de portal (atleta/conductor) **no tienen cuenta Supabase**: antes
+de suscribirse, el cliente pide un token efímero al backend y lo aplica al
+canal:
+
+```typescript
+const { token } = await api.post('/m/auth/realtime-token', {
+  kind, userId, sessionId, // la sesión de portal activa
+})
+supabase.realtime.setAuth(token)
+```
+
+El token dura 1 hora (renovar en suscripciones largas). El panel de
+administración sigue usando su sesión de Supabase Auth directamente.
 
 ### 4.2 Suscripción por conductor
 
@@ -137,9 +162,17 @@ Si se conoce el `driverId` o el `vehicleId` del viaje activo, es preferible filt
 
 ## 5. Seguridad (Row Level Security)
 
-La tabla tiene RLS habilitado. La política actual permite **lectura a cualquier usuario autenticado** (`authenticated` role de Supabase Auth). Es suficiente para la operación inicial.
+La tabla tiene RLS habilitado con **lectura por participación**
+(`scripts/20260829_vehicle_positions_rls_participation.sql`):
 
-Para el modelo futuro de producción se puede restringir a participantes del viaje (cada usuario solo ve las posiciones de los viajes en los que participa como conductor, pasajero o administrador). La restricción se aplica únicamente a nivel de política SQL, sin cambios en el cliente.
+- Personal del panel (sesión Supabase real): ve toda la flota.
+- Conductor de portal: solo sus propias posiciones.
+- Pasajero de portal: solo las posiciones del conductor con el que tiene un
+  viaje activo (`EN_ROUTE` / `PICKED_UP`).
+
+Los endpoints REST (`GET /vehicle-positions*`) aplican la misma regla en la
+API: exigen la sesión del panel (Bearer) o la sesión de portal (headers
+`x-portal-*`); sin credenciales responden 401.
 
 ---
 

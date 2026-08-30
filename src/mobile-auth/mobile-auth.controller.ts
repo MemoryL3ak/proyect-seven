@@ -45,6 +45,16 @@ export class MobileAuthController {
   }
 
   /**
+   * Token efímero para Supabase Realtime (SA-BACKEND-02): requiere la sesión
+   * de portal activa y devuelve un JWT con el claim `portal` que las
+   * políticas RLS usan para acotar la lectura por participación en el viaje.
+   */
+  @Post('realtime-token')
+  realtimeToken(@Body() body: { kind?: string; userId?: string; sessionId?: string }) {
+    return this.mobileAuthService.mintRealtimeToken(body ?? {});
+  }
+
+  /**
    * Eliminación de cuenta a pedido del propio usuario (soft delete).
    * Requiere el código de acceso del portal como confirmación de identidad;
    * tras la baja, el login por código y las sesiones activas quedan inválidos.

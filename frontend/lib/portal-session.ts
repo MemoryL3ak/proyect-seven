@@ -1,4 +1,4 @@
-import { apiFetch } from "@/lib/api";
+import { apiFetch, clearPortalIdentity, setPortalIdentity } from "@/lib/api";
 
 /**
  * Sesión única por usuario: sólo un dispositivo puede tener la sesión activa,
@@ -49,6 +49,8 @@ export async function claimPortalSession(
     }
     if (res?.sessionId) {
       try { localStorage.setItem(storageKey(kind, userId), res.sessionId); } catch {}
+      // Identidad activa para los headers x-portal-* de apiFetch.
+      setPortalIdentity({ kind, userId, sessionId: res.sessionId });
     }
     return { ok: true, activeElsewhere: false };
   } catch {
@@ -75,7 +77,13 @@ export async function ensurePortalSession(kind: PortalSessionKind, userId: strin
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ kind, userId, sessionId: stored }),
     });
-    return res?.valid !== false;
+    if (res?.valid !== false) {
+      // Refresca el puntero de identidad (cubre el auto-login de la app,
+      // que trae la sesión reclamada desde /m/login).
+      setPortalIdentity({ kind, userId, sessionId: stored });
+      return true;
+    }
+    return false;
   } catch {
     return true;
   }
@@ -94,6 +102,7 @@ export async function releasePortalSession(kind: PortalSessionKind, userId: stri
   let stored: string | null = null;
   try { stored = localStorage.getItem(storageKey(kind, userId)); } catch {}
   try { localStorage.removeItem(storageKey(kind, userId)); } catch {}
+  clearPortalIdentity(userId);
   if (!stored) return;
   try {
     await Promise.race([
@@ -113,4 +122,9 @@ export async function releasePortalSession(kind: PortalSessionKind, userId: stri
 /** Variante fire-and-forget para flujos que NO navegan después. */
 export function clearPortalSession(kind: PortalSessionKind, userId: string): void {
   void releasePortalSession(kind, userId);
+}
+
+/** SessionId local de la sesión de portal, si este dispositivo la tiene. */
+export function getStoredPortalSessionId(kind: PortalSessionKind, userId: string): string | null {
+  try { return localStorage.getItem(storageKey(kind, userId)); } catch { return null; }
 }
