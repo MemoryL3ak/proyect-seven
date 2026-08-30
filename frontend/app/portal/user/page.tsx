@@ -4051,6 +4051,9 @@ export default function UserPortalPage() {
             senderType="PASSENGER"
             senderName={athlete.fullName}
             tripStatus={trip.status}
+            reporterOriginType="athlete"
+            reporterOriginId={athlete.id}
+            eventId={athlete.eventId || null}
             onNewMessage={(name, content) => notify.push(`${name}: ${content.slice(0, 80)}`, "💬")}
           />
         )}

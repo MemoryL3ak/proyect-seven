@@ -2502,6 +2502,8 @@ export default function DriverPortalPage() {
           senderType="DRIVER"
           senderName={driverProfile.fullName || "Conductor"}
           tripStatus={trips.find((t) => t.id === trackingTripId)?.status}
+          reporterOriginType="driver"
+          reporterOriginId={driverProfile.id}
           onNewMessage={(name, content) => driverNotify.push(`${name}: ${content.slice(0, 80)}`, "💬")}
         />
       )}

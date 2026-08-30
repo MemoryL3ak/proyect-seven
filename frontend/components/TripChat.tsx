@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { apiFetch } from "@/lib/api";
+import { REPORT_CATEGORY, REPORT_REASONS, reportReasonLabel } from "@/lib/chat-report";
 
 type ChatMessage = {
   id: string;
@@ -12,6 +13,15 @@ type ChatMessage = {
   createdAt: string;
 };
 
+/** El bloqueo se guarda por viaje en el dispositivo. El registro duradero es el
+ *  caso de soporte que se abre al bloquear, no esta clave. */
+const blockStorageKey = (tripId: string) => `seven.blocked.trip.${tripId}`;
+
+type ReportTarget =
+  | { kind: "message"; msg: ChatMessage }
+  | { kind: "conversation" }
+  | null;
+
 type Props = {
   tripId: string;
   senderType: "DRIVER" | "PASSENGER";
@@ -19,9 +29,14 @@ type Props = {
   tripStatus?: string | null;
   pollInterval?: number;
   onNewMessage?: (senderName: string, content: string) => void;
+  /** Identidad de quien usa el chat. Necesaria para abrir el caso de soporte
+   *  cuando denuncia o bloquea. */
+  reporterOriginType: "athlete" | "driver" | "provider_participant";
+  reporterOriginId: string;
+  eventId?: string | null;
 };
 
-export default function TripChat({ tripId, senderType, senderName, tripStatus, pollInterval = 1500, onNewMessage }: Props) {
+export default function TripChat({ tripId, senderType, senderName, tripStatus, pollInterval = 1500, onNewMessage, reporterOriginType, reporterOriginId, eventId }: Props) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -33,6 +48,17 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
   openRef.current = open;
   const onNewMessageRef = useRef(onNewMessage);
   onNewMessageRef.current = onNewMessage;
+
+  // ── Denuncia y bloqueo (política de contenido generado por usuarios) ──
+  const [blocked, setBlocked] = useState(false);
+  const blockedRef = useRef(blocked);
+  blockedRef.current = blocked;
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [reportTarget, setReportTarget] = useState<ReportTarget>(null);
+  const [reportReason, setReportReason] = useState<string>(REPORT_REASONS[0].value);
+  const [reportDetail, setReportDetail] = useState("");
+  const [reportSending, setReportSending] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const isFinished = tripStatus === "COMPLETED" || tripStatus === "DROPPED_OFF";
 
@@ -53,6 +79,22 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [open]);
+
+  // Restaurar el bloqueo guardado en este dispositivo
+  useEffect(() => {
+    try {
+      setBlocked(window.localStorage.getItem(blockStorageKey(tripId)) === "1");
+    } catch {
+      setBlocked(false); // almacenamiento no disponible: el chat queda visible
+    }
+  }, [tripId]);
+
+  // El aviso es informativo; se retira solo para no tapar la conversación
+  useEffect(() => {
+    if (!notice) return;
+    const t = setTimeout(() => setNotice(null), 5000);
+    return () => clearTimeout(t);
+  }, [notice]);
 
   // Polling — stop when trip finished
   useEffect(() => {
@@ -75,7 +117,8 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
             if (fresh.length === 0) return prev;
             // Replace local messages with server versions
             const mergedPrev = prev.filter((m) => !(m.id.startsWith("local-") && fresh.some((f) => f.content === m.content && f.senderType === m.senderType)));
-            if (!isFirst) {
+            // Bloqueado: no se acumulan no leídos ni se emiten notificaciones
+            if (!isFirst && !blockedRef.current) {
               otherMsgs = fresh.filter((m) => m.senderType !== senderType && !localContents.has(m.content));
               if (!openRef.current && otherMsgs.length > 0) setUnread((u) => u + otherMsgs.length);
             }
@@ -98,7 +141,7 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
 
   const send = useCallback(async () => {
     const text = input.replace(/\n/g, " ").trim();
-    if (!text || sending || isFinished) return;
+    if (!text || sending || isFinished || blocked) return;
     setInput("");
     setSending(true);
     try {
@@ -117,16 +160,104 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
     }
     setSending(false);
     inputRef.current?.focus();
-  }, [input, sending, tripId, senderType, senderName, isFinished]);
+  }, [input, sending, tripId, senderType, senderName, isFinished, blocked]);
 
   const formatTime = (iso: string) => new Date(iso).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
   const isMine = (msg: ChatMessage) => msg.senderType === senderType;
   const otherLabel = senderType === "PASSENGER" ? "Conductor" : "Pasajero";
+  const otherRole = senderType === "PASSENGER" ? "DRIVER" : "PASSENGER";
+
+  /** Abre un caso en el módulo de soporte que ya existe. No hace falta un
+   *  endpoint nuevo: `category`, `priority` y `metadata` son libres en el DTO. */
+  const openSupportCase = useCallback(
+    async (payload: { subject: string; initialMessage: string; metadata: Record<string, unknown> }) => {
+      await apiFetch(`/support-chats`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          eventId: eventId || undefined,
+          originType: reporterOriginType,
+          originId: reporterOriginId,
+          originName: senderName,
+          category: REPORT_CATEGORY,
+          priority: "HIGH",
+          subject: payload.subject,
+          initialMessage: payload.initialMessage,
+          metadata: payload.metadata,
+        }),
+      });
+    },
+    [eventId, reporterOriginType, reporterOriginId, senderName],
+  );
+
+  const submitReport = useCallback(async () => {
+    if (!reportTarget || reportSending) return;
+    setReportSending(true);
+    const reasonLabel = reportReasonLabel(reportReason);
+    const reported = reportTarget.kind === "message" ? reportTarget.msg : null;
+    try {
+      await openSupportCase({
+        subject: "Denuncia de contenido en chat de viaje",
+        initialMessage: [
+          `Motivo: ${reasonLabel}`,
+          reported
+            ? `Mensaje denunciado de ${reported.senderName}: "${reported.content}"`
+            : "Denuncia de la conversación completa.",
+          reportDetail.trim() ? `Detalle: ${reportDetail.trim()}` : null,
+        ]
+          .filter(Boolean)
+          .join("\n"),
+        metadata: {
+          source: "trip_chat",
+          tripId,
+          reason: reportReason,
+          reportedMessageId: reported?.id ?? null,
+          reportedContent: reported?.content ?? null,
+          reportedSenderType: reported?.senderType ?? otherRole,
+          reportedSenderName: reported?.senderName ?? null,
+        },
+      });
+      setNotice("Recibimos tu denuncia. Operaciones la revisará.");
+    } catch {
+      setNotice("No pudimos enviar la denuncia. Vuelve a intentarlo.");
+    }
+    setReportSending(false);
+    setReportTarget(null);
+    setReportDetail("");
+    setReportReason(REPORT_REASONS[0].value);
+  }, [reportTarget, reportSending, reportReason, reportDetail, tripId, otherRole, openSupportCase]);
+
+  /** El bloqueo corta el canal directo pero no el traslado: avisa a operaciones
+   *  para que tome la coordinación y nadie quede incomunicado. */
+  const toggleBlock = useCallback(async () => {
+    const next = !blocked;
+    setBlocked(next);
+    setMenuOpen(false);
+    try {
+      if (next) window.localStorage.setItem(blockStorageKey(tripId), "1");
+      else window.localStorage.removeItem(blockStorageKey(tripId));
+    } catch { /* almacenamiento no disponible: el bloqueo dura la sesión */ }
+    if (!next) {
+      setNotice(null);
+      return;
+    }
+    try {
+      await openSupportCase({
+        subject: "Usuario bloqueado en chat de viaje",
+        initialMessage: `${senderName} bloqueó a su ${otherLabel.toLowerCase()} en el chat del viaje. La coordinación debe seguir por operaciones.`,
+        metadata: { source: "trip_chat_block", tripId, blockedRole: otherRole },
+      });
+    } catch { /* el bloqueo local ya está aplicado */ }
+    setNotice("Bloqueaste este chat. Operaciones fue notificada.");
+  }, [blocked, tripId, senderName, otherLabel, otherRole, openSupportCase]);
+
+  // Bloqueado: solo se ven los mensajes propios
+  const visibleMessages = blocked ? messages.filter(isMine) : messages;
 
   // Group consecutive messages from same sender
-  const grouped = messages.map((msg, i) => {
-    const prev = i > 0 ? messages[i - 1] : null;
-    const next = i < messages.length - 1 ? messages[i + 1] : null;
+  const grouped = visibleMessages.map((msg, i) => {
+    const prev = i > 0 ? visibleMessages[i - 1] : null;
+    const next = i < visibleMessages.length - 1 ? visibleMessages[i + 1] : null;
     const isFirstInGroup = !prev || prev.senderType !== msg.senderType;
     const isLastInGroup = !next || next.senderType !== msg.senderType;
     return { msg, isFirstInGroup, isLastInGroup };
@@ -174,6 +305,33 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
                 </p>
               </div>
             </div>
+            <div style={{ position: "relative", flexShrink: 0 }}>
+              <button
+                type="button"
+                onClick={() => setMenuOpen((v) => !v)}
+                className="tripchat-close-btn"
+                aria-label="Opciones de seguridad del chat"
+                aria-expanded={menuOpen}
+                title="Opciones de seguridad"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <circle cx="12" cy="5" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="12" cy="19" r="1.8" />
+                </svg>
+              </button>
+              {menuOpen && (
+                <>
+                  <div className="tripchat-menu-scrim" onClick={() => setMenuOpen(false)} />
+                  <div className="tripchat-menu" role="menu">
+                    <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); setReportTarget({ kind: "conversation" }); }}>
+                      Denunciar conversación
+                    </button>
+                    <button type="button" role="menuitem" className="tripchat-menu-danger" onClick={toggleBlock}>
+                      {blocked ? `Desbloquear al ${otherLabel.toLowerCase()}` : `Bloquear al ${otherLabel.toLowerCase()}`}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
             <button type="button" onClick={() => setOpen(false)} className="tripchat-close-btn">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <polyline points="6 9 12 15 18 9" />
@@ -183,7 +341,7 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
 
           {/* Messages */}
           <div className="tripchat-messages">
-            {messages.length === 0 && (
+            {visibleMessages.length === 0 && !blocked && (
               <div className="tripchat-empty">
                 <div className="tripchat-empty-icon">
                   <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -227,13 +385,43 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
                     </span>
                   )}
                 </div>
+                {!isMine(msg) && (
+                  <button
+                    type="button"
+                    className="tripchat-report-btn"
+                    title="Denunciar este mensaje"
+                    aria-label={`Denunciar el mensaje de ${msg.senderName}`}
+                    onClick={() => setReportTarget({ kind: "message", msg })}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                      <line x1="4" y1="22" x2="4" y2="15" />
+                    </svg>
+                  </button>
+                )}
               </div>
             ))}
             <div ref={messagesEndRef} />
           </div>
 
+          {notice && (
+            <div className="tripchat-notice" role="status">{notice}</div>
+          )}
+
           {/* Input */}
-          {isFinished ? (
+          {blocked ? (
+            <div className="tripchat-blocked-bar">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b45309" strokeWidth="2" strokeLinecap="round">
+                <circle cx="12" cy="12" r="9" /><line x1="5.6" y1="5.6" x2="18.4" y2="18.4" />
+              </svg>
+              <span style={{ flex: 1 }}>
+                Bloqueaste al {otherLabel.toLowerCase()}. La coordinación del viaje sigue por operaciones.
+              </span>
+              <button type="button" className="tripchat-unblock-btn" onClick={toggleBlock}>
+                Desbloquear
+              </button>
+            </div>
+          ) : isFinished ? (
             <div className="tripchat-finished-bar">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
               Viaje finalizado — chat cerrado
@@ -266,6 +454,52 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
               </button>
             </div>
           )}
+        </div>
+      )}
+
+      {/* ─── Hoja de denuncia ─── */}
+      {reportTarget && (
+        <div className="tripchat-report-scrim" onClick={() => !reportSending && setReportTarget(null)}>
+          <div className="tripchat-report-card" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Denunciar contenido">
+            <p className="tripchat-report-title">Denunciar contenido</p>
+            <p className="tripchat-report-sub">
+              {reportTarget.kind === "message"
+                ? `Mensaje de ${reportTarget.msg.senderName}: “${reportTarget.msg.content.slice(0, 120)}”`
+                : "Se denunciará la conversación completa de este viaje."}
+            </p>
+
+            <label className="tripchat-report-label" htmlFor="tripchat-report-reason">Motivo</label>
+            <select
+              id="tripchat-report-reason"
+              className="tripchat-report-select"
+              value={reportReason}
+              onChange={(e) => setReportReason(e.target.value)}
+            >
+              {REPORT_REASONS.map((r) => (
+                <option key={r.value} value={r.value}>{r.label}</option>
+              ))}
+            </select>
+
+            <label className="tripchat-report-label" htmlFor="tripchat-report-detail">Detalle (opcional)</label>
+            <textarea
+              id="tripchat-report-detail"
+              className="tripchat-report-textarea"
+              value={reportDetail}
+              onChange={(e) => setReportDetail(e.target.value)}
+              maxLength={500}
+              rows={3}
+              placeholder="Cuéntanos qué ocurrió"
+            />
+
+            <div className="tripchat-report-actions">
+              <button type="button" className="tripchat-report-cancel" disabled={reportSending} onClick={() => setReportTarget(null)}>
+                Cancelar
+              </button>
+              <button type="button" className="tripchat-report-submit" disabled={reportSending} onClick={submitReport}>
+                {reportSending ? "Enviando…" : "Enviar denuncia"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -469,6 +703,145 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
             animation: tripChatFadeIn .25s cubic-bezier(0.16,1,0.3,1) both;
           }
           .tripchat-input-bar { padding-bottom: 12px; }
+        }
+
+        /* ── Denuncia y bloqueo ── */
+
+        .tripchat-menu-scrim {
+          position: fixed; inset: 0;
+          z-index: 205;
+        }
+        .tripchat-menu {
+          position: absolute; top: calc(100% + 6px); right: 0;
+          z-index: 206;
+          min-width: 210px;
+          background: #fff;
+          border: 1px solid #e2e8f0;
+          border-radius: 12px;
+          box-shadow: 0 12px 32px rgba(15,23,42,0.18);
+          overflow: hidden;
+          display: flex; flex-direction: column;
+        }
+        .tripchat-menu button {
+          appearance: none; border: none; background: none;
+          text-align: left;
+          padding: 11px 14px;
+          font-size: 13px; font-weight: 600;
+          color: #1e293b;
+          cursor: pointer;
+        }
+        .tripchat-menu button:hover { background: #f4f7fc; }
+        .tripchat-menu-danger { color: #dc2626 !important; border-top: 1px solid #f1f5f9; }
+
+        .tripchat-report-btn {
+          appearance: none;
+          background: none; border: none;
+          padding: 4px;
+          margin-bottom: 14px;
+          color: #cbd5e1;
+          cursor: pointer;
+          flex-shrink: 0;
+          border-radius: 6px;
+          transition: color .15s, background .15s;
+          -webkit-tap-highlight-color: transparent;
+        }
+        .tripchat-report-btn:hover { color: #ef4444; background: rgba(239,68,68,0.08); }
+
+        .tripchat-notice {
+          padding: 9px 14px;
+          background: #ecfdf5;
+          border-top: 1px solid #d1fae5;
+          color: #047857;
+          font-size: 11.5px; font-weight: 600;
+          text-align: center;
+          flex-shrink: 0;
+        }
+
+        .tripchat-blocked-bar {
+          padding: 11px 14px calc(11px + env(safe-area-inset-bottom, 0px));
+          border-top: 1px solid #fde68a;
+          background: #fffbeb;
+          display: flex; align-items: center; gap: 8px;
+          color: #92400e; font-size: 11.5px; font-weight: 600;
+          line-height: 1.4;
+          flex-shrink: 0;
+        }
+        .tripchat-unblock-btn {
+          appearance: none;
+          border: 1px solid #fcd34d;
+          background: #fff;
+          color: #b45309;
+          border-radius: 9px;
+          padding: 6px 10px;
+          font-size: 11.5px; font-weight: 700;
+          cursor: pointer;
+          flex-shrink: 0;
+        }
+        .tripchat-unblock-btn:hover { background: #fffbeb; }
+
+        .tripchat-report-scrim {
+          position: fixed; inset: 0;
+          z-index: 250;
+          background: rgba(2,12,24,0.6);
+          backdrop-filter: blur(4px);
+          display: flex; align-items: center; justify-content: center;
+          padding: 16px;
+          animation: tripChatFadeIn .2s ease-out both;
+        }
+        .tripchat-report-card {
+          width: 100%; max-width: 380px;
+          background: #fff;
+          border-radius: 18px;
+          padding: 18px;
+          box-shadow: 0 24px 60px rgba(15,23,42,0.3);
+        }
+        .tripchat-report-title {
+          margin: 0 0 4px; font-size: 15px; font-weight: 800; color: #0f172a;
+        }
+        .tripchat-report-sub {
+          margin: 0 0 14px; font-size: 12px; color: #64748b; line-height: 1.5;
+          overflow-wrap: break-word;
+        }
+        .tripchat-report-label {
+          display: block;
+          font-size: 11px; font-weight: 700; color: #475569;
+          margin: 0 0 5px; letter-spacing: .02em;
+        }
+        .tripchat-report-select, .tripchat-report-textarea {
+          width: 100%;
+          padding: 10px 12px;
+          border-radius: 12px;
+          border: 1px solid #e2e8f0;
+          background: #f8fafc;
+          color: #0f172a; font-size: 13px;
+          outline: none; font-family: inherit;
+          margin-bottom: 12px;
+        }
+        .tripchat-report-textarea { resize: vertical; }
+        .tripchat-report-select:focus, .tripchat-report-textarea:focus {
+          border-color: #21D0B3; box-shadow: 0 0 0 3px rgba(33,208,179,0.12);
+        }
+        .tripchat-report-actions {
+          display: flex; gap: 8px; justify-content: flex-end;
+        }
+        .tripchat-report-cancel, .tripchat-report-submit {
+          appearance: none;
+          border-radius: 12px;
+          padding: 10px 16px;
+          font-size: 13px; font-weight: 700;
+          cursor: pointer;
+        }
+        .tripchat-report-cancel {
+          border: 1px solid #e2e8f0; background: #fff; color: #475569;
+        }
+        .tripchat-report-submit {
+          border: none;
+          background: linear-gradient(135deg, #f43f5e, #e11d48);
+          color: #fff;
+          box-shadow: 0 2px 8px rgba(244,63,94,0.3);
+        }
+        .tripchat-report-cancel:disabled, .tripchat-report-submit:disabled {
+          opacity: .6; cursor: not-allowed;
         }
 
         @keyframes tripChatSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }

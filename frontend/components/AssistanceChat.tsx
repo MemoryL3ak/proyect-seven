@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { REPORT_CATEGORY, REPORT_REASONS, reportReasonLabel } from "@/lib/chat-report";
 
 type AssistanceChatProps = {
   originType: "driver" | "athlete" | "provider_participant";
@@ -49,6 +50,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   COORDINATOR_CONTACT: "Contacto con coordinador",
   LOST_ITEM: "Objeto perdido",
   EMERGENCY: "Emergencia",
+  ABUSE: "Denuncia",
   OTHER: "Otro",
 };
 
@@ -101,6 +103,12 @@ export default function AssistanceChat({
   };
   const [chats, setChats] = useState<Chat[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
+  // ── Denuncia de contenido (política de contenido generado por usuarios) ──
+  const [reportMsg, setReportMsg] = useState<Message | null>(null);
+  const [reportReason, setReportReason] = useState<string>(REPORT_REASONS[0].value);
+  const [reportDetail, setReportDetail] = useState("");
+  const [reportSending, setReportSending] = useState(false);
+  const [reportNotice, setReportNotice] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
@@ -204,6 +212,49 @@ export default function AssistanceChat({
       setDraft("");
       await loadMessages(activeChatId);
     } finally { setSending(false); }
+  };
+
+  /** La denuncia abre un caso aparte, con prioridad alta, para que no quede
+   *  sepultada dentro de la conversación que se está denunciando. */
+  const submitReport = async () => {
+    if (!reportMsg || reportSending) return;
+    setReportSending(true);
+    try {
+      await apiFetch(`/support-chats`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          eventId: eventId || undefined,
+          originType,
+          originId,
+          originName,
+          category: REPORT_CATEGORY,
+          priority: "HIGH",
+          subject: "Denuncia de contenido en chat de asistencia",
+          initialMessage: [
+            `Motivo: ${reportReasonLabel(reportReason)}`,
+            `Mensaje denunciado de ${reportMsg.sender_name || "Agente"}: "${reportMsg.content || ""}"`,
+            reportDetail.trim() ? `Detalle: ${reportDetail.trim()}` : null,
+          ].filter(Boolean).join("\n"),
+          metadata: {
+            source: "assistance_chat",
+            reportedChatId: reportMsg.chat_id,
+            reportedMessageId: reportMsg.id,
+            reportedContent: reportMsg.content ?? null,
+            reportedSenderName: reportMsg.sender_name ?? null,
+            reason: reportReason,
+          },
+        }),
+      });
+      setReportNotice("Recibimos tu denuncia. Operaciones la revisará.");
+      await loadChats();
+    } catch {
+      setReportNotice("No pudimos enviar la denuncia. Vuelve a intentarlo.");
+    }
+    setReportSending(false);
+    setReportMsg(null);
+    setReportDetail("");
+    setReportReason(REPORT_REASONS[0].value);
   };
 
   const active = chats.find((c) => c.id === activeChatId) || null;
@@ -376,11 +427,30 @@ export default function AssistanceChat({
                           {m.sender_name || (mine ? "Tú" : "Agente")} · {timeShort(m.created_at)}
                         </p>
                       </div>
+                      {!mine && (
+                        <button
+                          type="button"
+                          onClick={() => setReportMsg(m)}
+                          title="Denunciar este mensaje"
+                          aria-label={`Denunciar el mensaje de ${m.sender_name || "Agente"}`}
+                          style={{ alignSelf: "flex-end", background: "none", border: "none", padding: "4px", marginLeft: "2px", color: "#cbd5e1", cursor: "pointer", lineHeight: 0 }}
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                            <line x1="4" y1="22" x2="4" y2="15" />
+                          </svg>
+                        </button>
+                      )}
                     </div>
                   );
                 })}
                 <div ref={bottomRef} />
               </div>
+              {reportNotice && (
+                <div role="status" style={{ padding: "9px 14px", background: "#ecfdf5", borderTop: "1px solid #d1fae5", color: "#047857", fontSize: "11.5px", fontWeight: 600, textAlign: "center" }}>
+                  {reportNotice}
+                </div>
+              )}
               <div style={{ padding: "10px 14px", borderTop: "1px solid #e2e8f0", background: "#ffffff", display: "flex", gap: "6px" }}>
                 <textarea
                   value={draft}
@@ -396,6 +466,59 @@ export default function AssistanceChat({
               </div>
             </>
           )}
+        </div>
+      )}
+
+      {/* ─── Hoja de denuncia ─── */}
+      {reportMsg && (
+        <div
+          onClick={() => !reportSending && setReportMsg(null)}
+          style={{ position: "fixed", inset: 0, zIndex: 250, background: "rgba(2,12,24,0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Denunciar contenido"
+            style={{ width: "100%", maxWidth: "380px", background: "#fff", borderRadius: "18px", padding: "18px", boxShadow: "0 24px 60px rgba(15,23,42,0.3)" }}
+          >
+            <p style={{ margin: "0 0 4px", fontSize: "15px", fontWeight: 800, color: "#0f172a" }}>Denunciar contenido</p>
+            <p style={{ margin: "0 0 14px", fontSize: "12px", color: "#64748b", lineHeight: 1.5, overflowWrap: "break-word" }}>
+              Mensaje de {reportMsg.sender_name || "Agente"}: “{(reportMsg.content || "").slice(0, 120)}”
+            </p>
+
+            <label htmlFor="assist-report-reason" style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#475569", margin: "0 0 5px" }}>Motivo</label>
+            <select
+              id="assist-report-reason"
+              value={reportReason}
+              onChange={(e) => setReportReason(e.target.value)}
+              style={{ width: "100%", padding: "10px 12px", borderRadius: "12px", border: "1px solid #e2e8f0", background: "#f8fafc", color: "#0f172a", fontSize: "13px", marginBottom: "12px", fontFamily: "inherit" }}
+            >
+              {REPORT_REASONS.map((r) => (<option key={r.value} value={r.value}>{r.label}</option>))}
+            </select>
+
+            <label htmlFor="assist-report-detail" style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#475569", margin: "0 0 5px" }}>Detalle (opcional)</label>
+            <textarea
+              id="assist-report-detail"
+              value={reportDetail}
+              onChange={(e) => setReportDetail(e.target.value)}
+              maxLength={500}
+              rows={3}
+              placeholder="Cuéntanos qué ocurrió"
+              style={{ width: "100%", padding: "10px 12px", borderRadius: "12px", border: "1px solid #e2e8f0", background: "#f8fafc", color: "#0f172a", fontSize: "13px", marginBottom: "12px", resize: "vertical", fontFamily: "inherit" }}
+            />
+
+            <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+              <button type="button" disabled={reportSending} onClick={() => setReportMsg(null)}
+                style={{ borderRadius: "12px", padding: "10px 16px", fontSize: "13px", fontWeight: 700, border: "1px solid #e2e8f0", background: "#fff", color: "#475569", cursor: reportSending ? "not-allowed" : "pointer", opacity: reportSending ? 0.6 : 1 }}>
+                Cancelar
+              </button>
+              <button type="button" disabled={reportSending} onClick={submitReport}
+                style={{ borderRadius: "12px", padding: "10px 16px", fontSize: "13px", fontWeight: 700, border: "none", background: "linear-gradient(135deg, #f43f5e, #e11d48)", color: "#fff", cursor: reportSending ? "not-allowed" : "pointer", opacity: reportSending ? 0.6 : 1 }}>
+                {reportSending ? "Enviando…" : "Enviar denuncia"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </>
