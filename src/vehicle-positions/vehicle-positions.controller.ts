@@ -1,3 +1,4 @@
+import { Public } from '../auth/public.decorator';
 import {
   Body,
   Controller,
@@ -28,6 +29,8 @@ export class VehiclePositionsController {
     private readonly access: VehiclePositionsAccessService,
   ) {}
 
+  /** Ingesta GPS del shell nativo: excluida del guard global mientras dure el modo transicional (VehiclePositionsGuard decide). */
+  @Public()
   @Post()
   async create(
     @Body() createVehiclePositionDto: CreateVehiclePositionDto,

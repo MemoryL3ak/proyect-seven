@@ -1,4 +1,4 @@
-import { apiFetch, clearPortalIdentity, setPortalIdentity } from "@/lib/api";
+import { apiFetch, clearPortalIdentity, getPortalIdentity, setPortalIdentity } from "@/lib/api";
 
 /**
  * Sesión única por usuario: sólo un dispositivo puede tener la sesión activa,
@@ -13,7 +13,7 @@ import { apiFetch, clearPortalIdentity, setPortalIdentity } from "@/lib/api";
  * - El logout libera la sesión de inmediato (release).
  * - Ante errores de red o backend sin la función, se degrada sin bloquear.
  */
-export type PortalSessionKind = "athlete" | "driver";
+export type PortalSessionKind = "athlete" | "driver" | "staff";
 
 export const SESSION_ACTIVE_ELSEWHERE_MSG =
   "No se pudo iniciar sesión: esta cuenta ya tiene una sesión activa en otro dispositivo. " +
@@ -127,4 +127,39 @@ export function clearPortalSession(kind: PortalSessionKind, userId: string): voi
 /** SessionId local de la sesión de portal, si este dispositivo la tiene. */
 export function getStoredPortalSessionId(kind: PortalSessionKind, userId: string): string | null {
   try { return localStorage.getItem(storageKey(kind, userId)); } catch { return null; }
+}
+
+/**
+ * Login de portal server-side (SA-BACKEND-03): el backend resuelve el código
+ * de acceso y devuelve la identidad. Reemplaza el patrón anterior de
+ * descargar el listado completo de usuarios para matchear el código en el
+ * cliente — que exponía todos los datos personales sin autenticación.
+ */
+export type PortalLoginResult =
+  | { kind: "athlete"; athleteId: string; profile: { id: string; fullName: string; email: string | null } }
+  | { kind: "driver"; driverId: string; profile: { id: string; fullName: string; email: string | null } }
+  | {
+      kind: "staff";
+      staffId: string;
+      profile: { id: string; fullName: string; email: string | null; providerId: string; providerName: string };
+    };
+
+export async function portalLogin(code: string): Promise<PortalLoginResult> {
+  return apiFetch<PortalLoginResult>("/m/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code: code.trim() }),
+  });
+}
+
+/**
+ * Garantiza que este dispositivo tenga identidad de portal antes de pedir
+ * datos protegidos (auto-login por id: deep links, sesión de la app). Si ya
+ * hay identidad para ese usuario no hace nada.
+ */
+export async function ensurePortalIdentity(kind: PortalSessionKind, userId: string): Promise<boolean> {
+  const current = getPortalIdentity();
+  if (current && current.userId === userId) return true;
+  const claim = await claimPortalSession(kind, userId);
+  return !claim.activeElsewhere;
 }

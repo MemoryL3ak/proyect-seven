@@ -1,3 +1,4 @@
+import { Public } from '../auth/public.decorator';
 import {
   Body,
   Controller,
@@ -57,6 +58,8 @@ export class CouponPartnersController {
 
   // ── Auth del partner ───────────────────────────────────────────────────────
 
+  /** Login del socio (código + PIN) — público. */
+  @Public()
   @Post('auth/login')
   login(@Body() dto: PartnerLoginDto, @Req() req: any) {
     return this.partners.login(dto, {
@@ -65,6 +68,7 @@ export class CouponPartnersController {
     });
   }
 
+  @Public()
   @Post('auth/logout')
   logout(@Headers('x-partner-token') token: string) {
     return this.partners.logout(token);
@@ -73,24 +77,28 @@ export class CouponPartnersController {
   // ── Endpoints protegidos del partner ───────────────────────────────────────
 
   @Get('me/profile')
+  @Public() // autenticado por PartnerAuthGuard (token de socio)
   @UseGuards(PartnerAuthGuard)
   profile(@Req() req: any) {
     return req.partner;
   }
 
   @Get('me/stats')
+  @Public() // autenticado por PartnerAuthGuard (token de socio)
   @UseGuards(PartnerAuthGuard)
   myStats(@Req() req: any) {
     return this.partners.myStats(req.partner.id);
   }
 
   @Get('me/redemptions')
+  @Public() // autenticado por PartnerAuthGuard (token de socio)
   @UseGuards(PartnerAuthGuard)
   myRedemptions(@Req() req: any) {
     return this.partners.myRedemptions(req.partner.id, 20);
   }
 
   @Post('me/validate')
+  @Public() // autenticado por PartnerAuthGuard (token de socio)
   @UseGuards(PartnerAuthGuard)
   validate(@Body() body: { token: string }, @Req() req: any) {
     return this.coupons.validateClaim(body.token, req.partner.id);
@@ -98,12 +106,14 @@ export class CouponPartnersController {
 
   /** Baja de cuenta iniciada por el propio partner (soft delete + cierre de sesiones). */
   @Post('me/delete-account')
+  @Public() // autenticado por PartnerAuthGuard (token de socio)
   @UseGuards(PartnerAuthGuard)
   deleteMyAccount(@Req() req: any) {
     return this.partners.deleteMyAccount(req.partner.id);
   }
 
   @Post('me/redeem')
+  @Public() // autenticado por PartnerAuthGuard (token de socio)
   @UseGuards(PartnerAuthGuard)
   redeem(@Body() dto: ConfirmRedeemDto, @Req() req: any) {
     return this.coupons.redeemByToken(

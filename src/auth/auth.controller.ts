@@ -1,8 +1,12 @@
+import { Public } from './public.decorator';
+import { StaffOnly } from './staff-only.decorator';
 import type { Response } from 'express';
 import { Controller, Post, Get, Patch, Delete, Body, Param, Res, Put } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ChangeTemporaryPasswordDto, CreateUserDto, LoginUserDto } from './dto/users.dto';
 
+/** Gestión de usuarios del panel: solo staff. Login y cambio de clave temporal son públicos. */
+@StaffOnly()
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -42,6 +46,7 @@ export class AuthController {
     return this.authService.enableUser(id);
   }
 
+  @Public()
   @Post('login')
   async login(
     @Body() dto: LoginUserDto,
@@ -60,6 +65,7 @@ export class AuthController {
     };
   }
 
+  @Public()
   @Post('change-temporary-password')
   async changeTemporaryPassword(@Body() dto: ChangeTemporaryPasswordDto) {
     return this.authService.changeTemporaryPassword(dto);

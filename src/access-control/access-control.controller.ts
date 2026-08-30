@@ -1,3 +1,4 @@
+import { Public } from '../auth/public.decorator';
 import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { AccessControlService } from './access-control.service';
 import { ScanDto } from './dto/scan.dto';
@@ -11,6 +12,8 @@ export class AccessControlController {
     return this.service.scan(dto);
   }
 
+  /** Recuperación del código de acceso por correo — público. */
+  @Public()
   @Post('request-access')
   requestAccess(@Body() payload: { email: string }) {
     return this.service.requestAccess(payload.email);

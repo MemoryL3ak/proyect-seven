@@ -1,4 +1,7 @@
-﻿import { Body, Controller, Delete, Get, Param, Patch, Post, Req } from '@nestjs/common';
+import { isSelfCaller, isStaffCaller } from '../auth/api-auth.guard';
+import type { ApiRequest } from '../auth/api-auth.guard';
+import { Public } from '../auth/public.decorator';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Req } from '@nestjs/common';
 import { AthletesService } from './athletes.service';
 import { CreateAthleteDto } from './dto/create-athlete.dto';
 import { RequestAthleteAccessDto } from './dto/request-athlete-access.dto';
@@ -14,19 +17,32 @@ export class AthletesController {
     return this.athletesService.create(createAthleteDto);
   }
 
+  /** Recuperación del código de acceso por correo — público. */
+  @Public()
   @Post('request-access')
   requestAccess(@Body() requestAthleteAccessDto: RequestAthleteAccessDto) {
     return this.athletesService.requestAccess(requestAthleteAccessDto.email);
   }
 
+  /**
+   * SA-BACKEND-03 · 5.3.2: credentialCode (código de la credencial de
+   * acreditación) nunca forma parte de un listado. En el detalle sólo lo ve
+   * el personal del panel o el propio titular (su credencial digital).
+   */
   @Get()
-  findAll() {
-    return this.athletesService.findAll();
+  async findAll() {
+    const athletes = await this.athletesService.findAll();
+    return athletes.map(({ credentialCode: _omit, ...rest }) => rest);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.athletesService.findOne(id);
+  async findOne(@Param('id') id: string, @Req() req: ApiRequest) {
+    const athlete = await this.athletesService.findOne(id);
+    if (isStaffCaller(req.apiCaller) || isSelfCaller(req.apiCaller, id)) {
+      return athlete;
+    }
+    const { credentialCode: _omit, ...rest } = athlete;
+    return rest;
   }
 
   @Patch(':id')

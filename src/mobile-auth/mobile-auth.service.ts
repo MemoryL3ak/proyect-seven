@@ -50,6 +50,19 @@ export type MobileLoginResult =
         fullName: string;
         email: string | null;
       };
+    }
+  | {
+      // Staff de proveedor (control de acceso en sedes): provider_participants
+      // de un proveedor de tipo "staff" que no son conductores.
+      kind: 'staff';
+      staffId: string;
+      profile: {
+        id: string;
+        fullName: string;
+        email: string | null;
+        providerId: string;
+        providerName: string;
+      };
     };
 
 export type MobileRecoverResult = {
@@ -75,7 +88,7 @@ export class MobileAuthService {
     userId: string,
     sessionId: string,
   ): Promise<boolean> {
-    if (!userId || !sessionId || !['athlete', 'driver'].includes(kind)) {
+    if (!userId || !sessionId || !['athlete', 'driver', 'staff'].includes(kind)) {
       return false;
     }
     const target = await this.sessionTable(kind, userId);
@@ -157,7 +170,74 @@ export class MobileAuthService {
     const driverResult = await this.tryDriverByCode(code);
     if (driverResult) return driverResult;
 
+    const staffResult = await this.tryStaffByCode(code);
+    if (staffResult) return staffResult;
+
     throw new UnauthorizedException('Código inválido');
+  }
+
+  /**
+   * Staff de proveedor para el portal de control de acceso: participante de
+   * un proveedor de tipo "staff", no conductor, no dado de baja. Antes el
+   * portal descargaba proveedores y participantes completos para matchear el
+   * código en el cliente (SA-BACKEND-03); ahora el match es server-side.
+   */
+  private async tryStaffByCode(
+    code: string,
+  ): Promise<Extract<MobileLoginResult, { kind: 'staff' }> | null> {
+    const { data: providers, error: providersError } = await this.supabase
+      .schema('core')
+      .from('providers')
+      .select('id, name, type');
+    if (providersError) {
+      this.logger.error('Provider lookup error', JSON.stringify(providersError));
+      return null;
+    }
+    const staffProviders = new Map<string, string>();
+    (providers ?? []).forEach((p) => {
+      if (String(p.type ?? '').toLowerCase() === 'staff') {
+        staffProviders.set(p.id, p.name ?? '');
+      }
+    });
+    if (staffProviders.size === 0) return null;
+
+    const { data: participants, error } = await this.supabase
+      .schema('core')
+      .from('provider_participants')
+      .select('id, full_name, email, provider_id, status, metadata')
+      .neq('status', 'DELETED');
+    if (error) {
+      this.logger.error('Staff lookup error', JSON.stringify(error));
+      return null;
+    }
+
+    const matches = (participants ?? []).filter((row) => {
+      if (String(row.id).slice(-6).toLowerCase() !== code) return false;
+      if (!staffProviders.has(row.provider_id)) return false;
+      if (String(row.status ?? '').toUpperCase() === 'DISABLED') return false;
+      const meta = (row.metadata ?? {}) as Record<string, unknown>;
+      return !(meta.isDriver === true || meta.isDriver === 'true');
+    });
+    if (matches.length === 0) return null;
+    if (matches.length > 1) {
+      this.logger.warn(
+        `Code collision in staff participants for ${code} (${matches.length} matches)`,
+      );
+      return null;
+    }
+
+    const match = matches[0];
+    return {
+      kind: 'staff',
+      staffId: match.id,
+      profile: {
+        id: match.id,
+        fullName: match.full_name,
+        email: match.email ?? null,
+        providerId: match.provider_id,
+        providerName: staffProviders.get(match.provider_id) ?? '',
+      },
+    };
   }
 
   // ── Sesión única por usuario ────────────────────────────────────────────────
@@ -183,6 +263,8 @@ export class MobileAuthService {
       if (data) return { schema: 'transport', table: 'drivers' };
       return { schema: 'core', table: 'provider_participants' };
     }
+    // Staff de proveedor (portal de control de acceso).
+    if (kind === 'staff') return { schema: 'core', table: 'provider_participants' };
     return null;
   }
 
@@ -190,7 +272,7 @@ export class MobileAuthService {
     const kind = String(input.kind || '');
     const userId = String(input.userId || '');
     const currentSessionId = String(input.currentSessionId || '');
-    if (!userId || !['athlete', 'driver'].includes(kind)) {
+    if (!userId || !['athlete', 'driver', 'staff'].includes(kind)) {
       throw new BadRequestException('kind y userId son obligatorios');
     }
     const target = await this.sessionTable(kind, userId);
@@ -248,7 +330,7 @@ export class MobileAuthService {
     const kind = String(input.kind || '');
     const userId = String(input.userId || '');
     const sessionId = String(input.sessionId || '');
-    if (!userId || !sessionId || !['athlete', 'driver'].includes(kind)) {
+    if (!userId || !sessionId || !['athlete', 'driver', 'staff'].includes(kind)) {
       return { valid: true }; // datos incompletos: no forzar logout
     }
     const target = await this.sessionTable(kind, userId);
@@ -291,7 +373,7 @@ export class MobileAuthService {
     const kind = String(input.kind || '');
     const userId = String(input.userId || '');
     const sessionId = String(input.sessionId || '');
-    if (!userId || !sessionId || !['athlete', 'driver'].includes(kind)) {
+    if (!userId || !sessionId || !['athlete', 'driver', 'staff'].includes(kind)) {
       return { ok: true };
     }
     const target = await this.sessionTable(kind, userId);

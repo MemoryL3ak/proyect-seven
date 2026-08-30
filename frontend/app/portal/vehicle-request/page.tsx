@@ -26,7 +26,7 @@ import { buildCredentialHtml } from "@/lib/credential-template";
 import { downloadCredentialPdf, saveCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
 import { isAvailable as isNativeShell } from "@/lib/native-bridge";
 import { clearPersistedTabs, persistTab, restoreOnReload, startTabHeartbeat } from "@/lib/portal-tab";
-import { claimPortalSession, clearPortalSession, releasePortalSession, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
+import { claimPortalSession, clearPortalSession, ensurePortalIdentity, portalLogin, releasePortalSession, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
 import PortalSessionGuard from "@/components/PortalSessionGuard";
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
 import QrFullscreenOverlay from "@/components/QrFullscreenOverlay";
@@ -629,20 +629,32 @@ export default function VehicleRequestPortalPage() {
     setError(null);
     setMessage(null);
     try {
-      const athleteList = await apiFetch<Athlete[]>("/athletes");
-      const validatedAthletes = filterValidatedAthletes(athleteList || []);
-      const normalizedLower = normalized.toLowerCase();
-      const match = validatedAthletes.find((item) => item.id?.slice(-6).toLowerCase() === normalizedLower);
-      if (!match) {
+      // Login server-side (SA-BACKEND-03): el backend resuelve el código; ya
+      // no se descarga el listado de participantes para matchear.
+      let login: Awaited<ReturnType<typeof portalLogin>>;
+      try {
+        login = await portalLogin(normalized);
+      } catch {
+        setError("No encontramos un usuario con ese codigo.");
+        setAthlete(null);
+        return;
+      }
+      if (login.kind !== "athlete") {
         setError("No encontramos un usuario con ese codigo.");
         setAthlete(null);
         return;
       }
       // Sesión única: la sesión existente manda — si otro dispositivo tiene
       // la sesión viva, este login se rechaza con un mensaje.
-      const claim = await claimPortalSession("athlete", match.id);
+      const claim = await claimPortalSession("athlete", login.athleteId);
       if (claim.activeElsewhere) {
         setError(SESSION_ACTIVE_ELSEWHERE_MSG);
+        setAthlete(null);
+        return;
+      }
+      const match = await apiFetch<Athlete>(`/athletes/${login.athleteId}`);
+      if (!match?.id || filterValidatedAthletes([match]).length === 0) {
+        setError("No encontramos un usuario con ese codigo.");
         setAthlete(null);
         return;
       }
@@ -679,6 +691,8 @@ export default function VehicleRequestPortalPage() {
     (async () => {
       setLoading(true);
       try {
+        // Identidad de portal antes de pedir datos protegidos (SA-BACKEND-03).
+        await ensurePortalIdentity("athlete", athleteId);
         const data = await apiFetch<Athlete>(`/athletes/${athleteId}`);
         if (data?.id) {
           setAthlete(data);

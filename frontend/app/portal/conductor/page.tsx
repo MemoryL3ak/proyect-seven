@@ -23,7 +23,7 @@ import QRCode from "qrcode";
 import { buildCredentialHtml } from "@/lib/credential-template";
 import { downloadCredentialPdf, saveCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
 import { clearPersistedTabs, persistTab, restoreOnReload, startTabHeartbeat } from "@/lib/portal-tab";
-import { claimPortalSession, clearPortalSession, getStoredPortalSessionId, releasePortalSession, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
+import { claimPortalSession, clearPortalSession, ensurePortalIdentity, getStoredPortalSessionId, portalLogin, releasePortalSession, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
 import PortalSessionGuard from "@/components/PortalSessionGuard";
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
 
@@ -283,6 +283,42 @@ export default function DriverPortalPage() {
     setError(null);
     setIdError(null);
     try {
+      // SA-BACKEND-03: la identidad se resuelve server-side ANTES de pedir
+      // datos protegidos (ya no se descargan los listados para matchear el
+      // código en el cliente). El id restaurado de sessionStorage es el código
+      // visible de 6 caracteres, así que también pasa por el login.
+      let resolvedId = id;
+      const needsLogin = !overrideId || overrideId.length <= 8;
+      if (needsLogin) {
+        let login: Awaited<ReturnType<typeof portalLogin>>;
+        try {
+          login = await portalLogin(id);
+        } catch {
+          setDriverProfile(null);
+          setIdError(t("El ID ingresado no corresponde a un conductor registrado."));
+          setTrips([]);
+          return;
+        }
+        if (login.kind !== "driver") {
+          setDriverProfile(null);
+          setIdError(t("El ID ingresado no corresponde a un conductor registrado."));
+          setTrips([]);
+          return;
+        }
+        resolvedId = login.driverId;
+        // Sesión única: la sesión existente manda — si otro dispositivo tiene
+        // la sesión viva, este login se rechaza con un mensaje.
+        const claim = await claimPortalSession("driver", resolvedId);
+        if (claim.activeElsewhere) {
+          setDriverProfile(null);
+          setIdError(SESSION_ACTIVE_ELSEWHERE_MSG);
+          setTrips([]);
+          return;
+        }
+      } else {
+        await ensurePortalIdentity("driver", overrideId);
+      }
+
       const [
         tripsData,
         driversData,
@@ -335,7 +371,7 @@ export default function DriverPortalPage() {
         // Las cuentas dadas de baja no pueden volver a iniciar sesión.
         .filter((driver) => (driver.status ?? "").toUpperCase() !== "DELETED");
 
-      const normalizedInput = id.trim().toLowerCase();
+      const normalizedInput = resolvedId.trim().toLowerCase();
       const driverMatch = allDrivers.find((driver) => {
         const driverIdLower = (driver.id ?? "").toLowerCase();
         const userIdLower = (driver.userId ?? "").toLowerCase();
@@ -351,17 +387,6 @@ export default function DriverPortalPage() {
         setIdError(t("El ID ingresado no corresponde a un conductor registrado."));
         setTrips([]);
         return;
-      }
-      // Sesión única: la sesión existente manda — si otro dispositivo tiene
-      // la sesión viva, este login se rechaza con un mensaje.
-      if (!overrideId) {
-        const claim = await claimPortalSession("driver", driverMatch.id);
-        if (claim.activeElsewhere) {
-          setDriverProfile(null);
-          setIdError(SESSION_ACTIVE_ELSEWHERE_MSG);
-          setTrips([]);
-          return;
-        }
       }
       setDriverProfile(driverMatch);
       try {

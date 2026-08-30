@@ -1,3 +1,4 @@
+import { StaffOnly } from '../auth/staff-only.decorator';
 import { Body, Controller, Get, Post } from '@nestjs/common';
 import {
   RegisterTokenDto,
@@ -19,6 +20,7 @@ export class PushNotificationsController {
     return this.service.unregister(dto.expoToken);
   }
 
+  @StaffOnly()
   @Get('recipients')
   recipients() {
     return this.service.listRecipients();
@@ -28,6 +30,7 @@ export class PushNotificationsController {
    * Endpoint de prueba para QA y panel admin: permite disparar un push a un
    * user específico sin esperar a un evento de dominio.
    */
+  @StaffOnly()
   @Post('test')
   async test(
     @Body()

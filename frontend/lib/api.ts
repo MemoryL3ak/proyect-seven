@@ -68,7 +68,7 @@ const USER_KEY = "seven.user";
 const PORTAL_KEY = "seven.portal";
 
 export type PortalIdentity = {
-  kind: "athlete" | "driver";
+  kind: "athlete" | "driver" | "staff";
   userId: string;
   sessionId: string;
 };
@@ -80,7 +80,7 @@ export function getPortalIdentity(): PortalIdentity | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<PortalIdentity>;
     if (
-      (parsed.kind === "athlete" || parsed.kind === "driver") &&
+      (parsed.kind === "athlete" || parsed.kind === "driver" || parsed.kind === "staff") &&
       typeof parsed.userId === "string" &&
       typeof parsed.sessionId === "string"
     ) {

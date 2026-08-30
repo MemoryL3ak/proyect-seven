@@ -1,6 +1,8 @@
+import { StaffOnly } from '../auth/staff-only.decorator';
 import { Controller, Post } from '@nestjs/common';
 import { AccountPurgeService } from './account-purge.service';
 
+@StaffOnly()
 @Controller('account-purge')
 export class AccountPurgeController {
   constructor(private readonly accountPurgeService: AccountPurgeService) {}

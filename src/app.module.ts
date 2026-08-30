@@ -1,8 +1,12 @@
-﻿import { Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
+import { SupabaseProvider } from '@/supabase/provider';
+import { ApiAuthGuard } from './auth/api-auth.guard';
+import { SensitiveFieldsInterceptor } from './auth/sensitive-fields.interceptor';
 import { AccountPurgeModule } from './account-purge/account-purge.module';
 import { AuthModule } from './auth/auth.module';
 import { TransportsModule } from './transports/transports.module';
@@ -111,6 +115,15 @@ import { VipMonitoringModule } from './vip-monitoring/vip-monitoring.module';
     AccountPurgeModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    SupabaseProvider,
+    // SA-BACKEND-03 · 5.3.1: control de acceso a nivel de aplicación. Todo
+    // endpoint exige autenticación salvo los marcados con @Public(); los
+    // servicios futuros quedan protegidos por omisión.
+    { provide: APP_GUARD, useClass: ApiAuthGuard },
+    // 5.3.2: ninguna credencial de sesión sale en las respuestas.
+    { provide: APP_INTERCEPTOR, useClass: SensitiveFieldsInterceptor },
+  ],
 })
 export class AppModule {}

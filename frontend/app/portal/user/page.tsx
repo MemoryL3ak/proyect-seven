@@ -26,7 +26,7 @@ import { buildCredentialHtml } from "@/lib/credential-template";
 import { downloadCredentialPdf, saveCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
 import { isAvailable as isNativeShell } from "@/lib/native-bridge";
 import { clearPersistedTabs, persistTab, restoreOnReload, startTabHeartbeat } from "@/lib/portal-tab";
-import { claimPortalSession, clearPortalSession, releasePortalSession, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
+import { claimPortalSession, clearPortalSession, ensurePortalIdentity, portalLogin, releasePortalSession, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
 import PortalSessionGuard from "@/components/PortalSessionGuard";
 import SofiaWidget from "@/components/SofiaWidget";
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
@@ -567,16 +567,33 @@ export default function UserPortalPage() {
     try {
       let data: Athlete;
       if (directId) {
+        // Auto-login por id (app / deep link): garantizar la identidad de
+        // portal antes de pedir datos protegidos.
+        await ensurePortalIdentity("athlete", directId);
         data = await apiFetch<Athlete>(`/athletes/${directId}`);
         if (!data?.id) { setError("Sesión expirada."); return; }
       } else {
         const normalizedInput = athleteId.trim().toLowerCase();
         if (normalizedInput.length < 6) { setError(t("El código ingresado no es válido.")); return; }
-        const list = await apiFetch<Athlete[]>(`/athletes`);
-        const validatedAthletes = filterValidatedAthletes(list || []);
-        const match = validatedAthletes.find((a) => a.id?.slice(-6).toLowerCase() === normalizedInput);
-        if (!match) { setError(t("El código ingresado no corresponde a un usuario registrado.")); return; }
-        data = await apiFetch<Athlete>(`/athletes/${match.id}`);
+        // Login server-side (SA-BACKEND-03): el backend resuelve el código.
+        // Ya no se descarga el listado de participantes para matchear.
+        let login: Awaited<ReturnType<typeof portalLogin>>;
+        try {
+          login = await portalLogin(normalizedInput);
+        } catch {
+          setError(t("El código ingresado no corresponde a un usuario registrado."));
+          return;
+        }
+        if (login.kind !== "athlete") { setError(t("El código ingresado no corresponde a un usuario registrado.")); return; }
+        // Sesión única: la sesión existente manda — si otro dispositivo tiene
+        // la sesión viva, este login se rechaza con un mensaje.
+        const claim = await claimPortalSession("athlete", login.athleteId);
+        if (claim.activeElsewhere) { setError(SESSION_ACTIVE_ELSEWHERE_MSG); return; }
+        data = await apiFetch<Athlete>(`/athletes/${login.athleteId}`);
+        if (!data?.id || filterValidatedAthletes([data]).length === 0) {
+          setError(t("El código ingresado no corresponde a un usuario registrado."));
+          return;
+        }
       }
 
       if (data.userType === "VIP") {
@@ -586,15 +603,6 @@ export default function UserPortalPage() {
         return;
       }
 
-      // Sesión única: la sesión existente manda — si otro dispositivo tiene
-      // la sesión viva, este login se rechaza con un mensaje.
-      if (!directId) {
-        const claim = await claimPortalSession("athlete", data.id);
-        if (claim.activeElsewhere) {
-          setError(SESSION_ACTIVE_ELSEWHERE_MSG);
-          return;
-        }
-      }
       setAthlete(data);
       try { sessionStorage.setItem("portal_user_id", data.id); } catch {}
       if (!directId) {

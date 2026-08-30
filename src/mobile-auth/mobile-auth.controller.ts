@@ -1,3 +1,4 @@
+import { Public } from '../auth/public.decorator';
 import { Body, Controller, Post } from '@nestjs/common';
 import {
   MobileAuthService,
@@ -8,6 +9,8 @@ import { MobileLoginDto } from './dto/mobile-login.dto';
 import { MobileRecoverDto } from './dto/mobile-recover.dto';
 import { MobileDeleteAccountDto } from './dto/mobile-delete-account.dto';
 
+/** Público por naturaleza: es el login del portal. Cada endpoint valida su propia credencial (código de acceso o sessionId). */
+@Public()
 @Controller('m/auth')
 export class MobileAuthController {
   constructor(private readonly mobileAuthService: MobileAuthService) {}

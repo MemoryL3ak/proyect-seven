@@ -1,8 +1,10 @@
+import { StaffOnly } from '../auth/staff-only.decorator';
 import { Body, Controller, Get, Logger, Post, Query, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import { AskSofiaDto } from './dto/ask-sofia.dto';
 import { SofiaService } from './sofia.service';
 
+@StaffOnly()
 @Controller('sofia')
 export class SofiaController {
   private readonly logger = new Logger(SofiaController.name);

@@ -1,4 +1,7 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { isSelfCaller, isStaffCaller } from '../auth/api-auth.guard';
+import type { ApiRequest } from '../auth/api-auth.guard';
+import { Public } from '../auth/public.decorator';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Req } from '@nestjs/common';
 import { CreateDriverDto } from './dto/create-driver.dto';
 import { RequestDriverAccessDto } from './dto/request-driver-access.dto';
 import { UpdateDriverDto } from './dto/update-driver.dto';
@@ -14,19 +17,28 @@ export class DriversController {
     return this.driversService.create(createDriverDto);
   }
 
+  /** Recuperación del código de acceso por correo — público. */
+  @Public()
   @Post('request-access')
   requestAccess(@Body() payload: RequestDriverAccessDto) {
     return this.driversService.requestAccess(payload.email);
   }
 
+  /** SA-BACKEND-03 · 5.3.2: credentialCode fuera de los listados; en el detalle sólo staff o el propio conductor. */
   @Get()
-  findAll() {
-    return this.driversService.findAll();
+  async findAll() {
+    const drivers = await this.driversService.findAll();
+    return drivers.map(({ credentialCode: _omit, ...rest }) => rest);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.driversService.findOne(id);
+  async findOne(@Param('id') id: string, @Req() req: ApiRequest) {
+    const driver = await this.driversService.findOne(id);
+    if (isStaffCaller(req.apiCaller) || isSelfCaller(req.apiCaller, id)) {
+      return driver;
+    }
+    const { credentialCode: _omit, ...rest } = driver;
+    return rest;
   }
 
   @Patch(':id')

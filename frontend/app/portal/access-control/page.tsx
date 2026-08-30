@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { claimPortalSession, ensurePortalIdentity, portalLogin, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
 import DeleteAccountSection from "@/components/DeleteAccountSection";
 import { deletePortalAccount } from "@/lib/account-deletion";
 
@@ -180,7 +181,12 @@ export default function AccessControlPortalPage() {
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem(STORAGE_KEY);
-      if (raw) setStaff(JSON.parse(raw));
+      if (raw) {
+        const profile = JSON.parse(raw) as StaffProfile;
+        setStaff(profile);
+        // Recuperar la identidad de portal (headers x-portal-*) para el scan.
+        if (profile?.id) void ensurePortalIdentity("staff", profile.id);
+      }
     } catch {}
   }, []);
 
@@ -209,34 +215,34 @@ export default function AccessControlPortalPage() {
     setAuthError(null);
     setAuthLoading(true);
     try {
-      const [providers, participants] = await Promise.all([
-        apiFetch<Provider[]>("/providers"),
-        apiFetch<ProviderParticipant[]>("/provider-participants"),
-      ]);
-      const staffProviderIds = new Set(
-        (providers || [])
-          .filter((p) => String(p.type ?? "").toLowerCase() === "staff")
-          .map((p) => p.id),
-      );
+      // Login server-side (SA-BACKEND-03): el backend valida que el código
+      // pertenezca a un participante de un proveedor tipo Staff. Ya no se
+      // descargan proveedores y participantes para matchear en el cliente.
       const normalized = codeInput.trim().toLowerCase();
-      const match = (participants || []).find((p) => {
-        if (!staffProviderIds.has(p.providerId)) return false;
-        const status = (p.status ?? "").toUpperCase();
-        if (status === "DISABLED" || status === "DELETED") return false;
-        return p.id.slice(-6).toLowerCase() === normalized;
-      });
-      if (!match) {
-        setAuthError(
-          "Código no válido o no corresponde a un participante registrado como proveedor tipo Staff.",
-        );
+      const invalidMsg =
+        "Código no válido o no corresponde a un participante registrado como proveedor tipo Staff.";
+      let login: Awaited<ReturnType<typeof portalLogin>>;
+      try {
+        login = await portalLogin(normalized);
+      } catch {
+        setAuthError(invalidMsg);
         return;
       }
-      const providerName = (providers || []).find((p) => p.id === match.providerId)?.name || "";
+      if (login.kind !== "staff") {
+        setAuthError(invalidMsg);
+        return;
+      }
+      // Sesión única de portal: habilita los headers x-portal-* del scanner.
+      const claim = await claimPortalSession("staff", login.staffId);
+      if (claim.activeElsewhere) {
+        setAuthError(SESSION_ACTIVE_ELSEWHERE_MSG);
+        return;
+      }
       const profile: StaffProfile = {
-        id: match.id,
-        fullName: match.fullName,
-        providerId: match.providerId,
-        providerName,
+        id: login.staffId,
+        fullName: login.profile.fullName,
+        providerId: login.profile.providerId,
+        providerName: login.profile.providerName,
       };
       setStaff(profile);
       try {
