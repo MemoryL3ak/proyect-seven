@@ -3930,6 +3930,9 @@ export default function VehicleRequestPortalPage() {
           senderType="PASSENGER"
           senderName={athlete.fullName || "Pasajero"}
           tripStatus={activeChatTrip.status}
+          reporterOriginType="athlete"
+          reporterOriginId={athlete.id}
+          eventId={athlete.eventId || null}
           onNewMessage={(name, content) => notify.push(`${name}: ${content.slice(0, 80)}`, "💬")}
         />
       )}

@@ -48,6 +48,7 @@ const CATEGORY_LABEL: Record<string, string> = {
   FLIGHT_CHANGE: "Cambio de vuelo",
   COORDINATOR_CONTACT: "Contacto con coordinador",
   EMERGENCY: "Emergencia",
+  ABUSE: "Denuncia de contenido",
   OTHER: "Otro",
 };
 
