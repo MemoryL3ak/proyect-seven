@@ -70,6 +70,9 @@ type HealthRecord = {
   };
   participantSignature: string; // base64 dataURL of canvas
   signedAt: string;
+  /** Ruta en el bucket privado; el documento se abre vía URL firmada. */
+  medicalDocumentPath: string;
+  /** Legado: URL pública antigua (bucket ahora privado, ya no es operativa). */
   medicalDocumentUrl: string;
   medicalDocumentUploadedAt: string;
 };
@@ -113,6 +116,7 @@ function emptyRecord(): HealthRecord {
     emergency: { name: "", phone: "", email: "", address: "", relation: "" },
     participantSignature: "",
     signedAt: "",
+    medicalDocumentPath: "",
     medicalDocumentUrl: "",
     medicalDocumentUploadedAt: "",
   };
@@ -135,6 +139,7 @@ function mergeRecord(raw: unknown, fallbackName = ""): HealthRecord {
     sport: (r.sport as string) ?? "",
     participantSignature: (r.participantSignature as string) ?? "",
     signedAt: (r.signedAt as string) ?? "",
+    medicalDocumentPath: (r.medicalDocumentPath as string) ?? "",
     medicalDocumentUrl: (r.medicalDocumentUrl as string) ?? "",
     medicalDocumentUploadedAt: (r.medicalDocumentUploadedAt as string) ?? "",
   };
@@ -656,6 +661,27 @@ function FichaSaludContent() {
     else setDocPreview(null);
   };
 
+  // El bucket de documentos médicos es privado: se pide una URL firmada de
+  // vigencia limitada al backend (requiere la sesión de portal del titular).
+  const [docUrlLoading, setDocUrlLoading] = useState(false);
+  const openCurrentDocument = async () => {
+    if (!athlete || docUrlLoading) return;
+    setDocUrlLoading(true);
+    setError(null);
+    try {
+      const res = await apiFetch<{ url?: string }>(`/athletes/${athlete.id}/health-document-url`);
+      if (res?.url) {
+        window.open(res.url, "_blank", "noopener");
+      } else {
+        setError("No se pudo obtener el documento.");
+      }
+    } catch {
+      setError("No se pudo abrir el documento. Ingresa desde tu portal para verlo.");
+    } finally {
+      setDocUrlLoading(false);
+    }
+  };
+
   const handleSubmit = async (ev: FormEvent) => {
     ev.preventDefault();
     if (!athlete) return;
@@ -1069,16 +1095,21 @@ function FichaSaludContent() {
               </div>
 
               {/* Existing document */}
-              {record.medicalDocumentUrl && !docPreview && (
+              {(record.medicalDocumentPath || record.medicalDocumentUrl) && !docPreview && (
                 <div className="flex items-center gap-3 rounded-xl bg-emerald-50 px-4 py-3">
                   <svg className="h-5 w-5 shrink-0 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-emerald-800">Documento ya subido</p>
-                    <a href={record.medicalDocumentUrl} target="_blank" rel="noreferrer" className="text-xs text-emerald-700 underline truncate block">
-                      Ver documento actual
-                    </a>
+                    <button
+                      type="button"
+                      onClick={() => void openCurrentDocument()}
+                      disabled={docUrlLoading}
+                      className="text-xs text-emerald-700 underline truncate block bg-transparent border-0 p-0 cursor-pointer text-left"
+                    >
+                      {docUrlLoading ? "Abriendo…" : "Ver documento actual"}
+                    </button>
                   </div>
                 </div>
               )}

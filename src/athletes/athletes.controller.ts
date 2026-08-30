@@ -1,4 +1,4 @@
-﻿import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+﻿import { Body, Controller, Delete, Get, Param, Patch, Post, Req } from '@nestjs/common';
 import { AthletesService } from './athletes.service';
 import { CreateAthleteDto } from './dto/create-athlete.dto';
 import { RequestAthleteAccessDto } from './dto/request-athlete-access.dto';
@@ -40,6 +40,18 @@ export class AthletesController {
     @Body() payload: UploadHealthDocumentDto,
   ) {
     return this.athletesService.uploadHealthDocument(id, payload.dataUrl);
+  }
+
+  /**
+   * URL firmada de vigencia limitada para el documento médico (SA-BACKEND-01
+   * Req 1): sólo el titular con sesión de portal o el personal del panel.
+   */
+  @Get(':id/health-document-url')
+  getHealthDocumentUrl(
+    @Param('id') id: string,
+    @Req() req: { headers: Record<string, string | string[] | undefined> },
+  ) {
+    return this.athletesService.getHealthDocumentUrl(id, req.headers);
   }
 
   @Post(':id/photo')

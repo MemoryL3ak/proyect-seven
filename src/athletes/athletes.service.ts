@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Inject,
   Injectable,
   InternalServerErrorException,
@@ -11,9 +12,12 @@ import * as https from 'https';
 import { accessCodeEmailHtml } from '../shared/email-templates';
 import { ConfigService } from '@nestjs/config';
 import { DataSource, Repository } from 'typeorm';
+import { MobileAuthService } from '../mobile-auth/mobile-auth.service';
 import { CreateAthleteDto } from './dto/create-athlete.dto';
 import { UpdateAthleteDto } from './dto/update-athlete.dto';
 import { Athlete } from './entities/athlete.entity';
+
+export type RequestHeaders = Record<string, string | string[] | undefined>;
 
 type AthleteRow = {
   id: string;
@@ -89,6 +93,7 @@ export class AthletesService {
     @InjectRepository(Athlete)
     private readonly athleteRepository: Repository<Athlete>,
     private readonly dataSource: DataSource,
+    private readonly mobileAuth: MobileAuthService,
   ) {}
 
   private getAdminClient() {
@@ -566,13 +571,9 @@ export class AthletesService {
       throw new InternalServerErrorException(error.message || 'Error uploading health document');
     }
 
-    const { data } = admin.storage.from('athlete-health-docs').getPublicUrl(path);
-    const publicUrl = data?.publicUrl ?? null;
-    if (!publicUrl) {
-      throw new InternalServerErrorException('Error resolving health document URL');
-    }
-
-    // Store the URL in athlete metadata
+    // SA-BACKEND-01 · Req 1: el bucket es privado. Se persiste la RUTA del
+    // archivo, no una URL pública — el documento se sirve con URLs firmadas
+    // de vigencia limitada vía GET /athletes/:id/health-document-url.
     const athlete = await this.findOne(id);
     const existingMetadata = (athlete.metadata as Record<string, unknown>) ?? {};
     const existingHealthRecord = (existingMetadata.healthRecord as Record<string, unknown>) ?? {};
@@ -580,12 +581,110 @@ export class AthletesService {
       ...existingMetadata,
       healthRecord: {
         ...existingHealthRecord,
-        medicalDocumentUrl: publicUrl,
+        medicalDocumentPath: path,
+        medicalDocumentUrl: null,
         medicalDocumentUploadedAt: new Date().toISOString(),
       },
     };
 
     return this.update(id, { metadata: updatedMetadata });
+  }
+
+  /**
+   * URL firmada de vigencia limitada para el documento médico (bucket
+   * privado). Sólo el propio atleta (sesión de portal) o el personal del
+   * panel pueden solicitarla.
+   */
+  async getHealthDocumentUrl(id: string, headers: RequestHeaders) {
+    await this.assertHealthDocumentAccess(headers, id);
+
+    const athlete = await this.findOne(id);
+    const meta = (athlete.metadata as Record<string, unknown>) ?? {};
+    const healthRecord = (meta.healthRecord as Record<string, unknown>) ?? {};
+
+    let path =
+      typeof healthRecord.medicalDocumentPath === 'string' &&
+      healthRecord.medicalDocumentPath
+        ? healthRecord.medicalDocumentPath
+        : null;
+    // Registros antiguos: guardaban la URL pública — se recupera la ruta.
+    if (!path && typeof healthRecord.medicalDocumentUrl === 'string') {
+      const marker = '/object/public/athlete-health-docs/';
+      const index = healthRecord.medicalDocumentUrl.indexOf(marker);
+      if (index >= 0) {
+        path = decodeURIComponent(
+          healthRecord.medicalDocumentUrl.slice(index + marker.length),
+        );
+      }
+    }
+    if (!path) {
+      throw new NotFoundException('El participante no tiene documento médico');
+    }
+
+    const admin = this.getAdminClient();
+    if (!admin) {
+      throw new InternalServerErrorException(
+        'SUPABASE_SERVICE_ROLE_KEY is required to sign health document URLs',
+      );
+    }
+    const { data, error } = await admin.storage
+      .from('athlete-health-docs')
+      .createSignedUrl(path, 600);
+    if (error || !data?.signedUrl) {
+      throw new InternalServerErrorException(
+        error?.message || 'No se pudo generar la URL del documento',
+      );
+    }
+    return { url: data.signedUrl, expiresIn: 600 };
+  }
+
+  /**
+   * Staff del panel (sesión Supabase que no sea una cuenta de conductor) o el
+   * propio atleta con su sesión de portal activa. Cualquier otro caso: 403.
+   */
+  private async assertHealthDocumentAccess(
+    headers: RequestHeaders,
+    athleteId: string,
+  ): Promise<void> {
+    const headerValue = (name: string): string => {
+      const raw = headers[name];
+      return String(Array.isArray(raw) ? raw[0] : (raw ?? '')).trim();
+    };
+
+    const authHeader = headerValue('authorization');
+    if (authHeader.toLowerCase().startsWith('bearer ')) {
+      const token = authHeader.slice(7).trim();
+      if (token) {
+        try {
+          const { data, error } = await this.supabase.auth.getUser(token);
+          if (!error && data?.user) {
+            // Las cuentas Supabase vinculadas a conductores no son staff.
+            const rows = (await this.dataSource.query(
+              `select 1 from transport.drivers where user_id = $1 limit 1`,
+              [data.user.id],
+            )) as unknown[];
+            if (rows.length === 0) return;
+          }
+        } catch {
+          // token ilegible: se sigue con la vía de portal
+        }
+      }
+    }
+
+    const kind = headerValue('x-portal-kind');
+    const userId = headerValue('x-portal-user');
+    const sessionId = headerValue('x-portal-session');
+    if (
+      kind === 'athlete' &&
+      userId === athleteId &&
+      (await this.mobileAuth.validateSessionStrict(kind, userId, sessionId))
+    ) {
+      return;
+    }
+
+    throw new ForbiddenException(
+      'El documento médico sólo es visible para su titular o el personal autorizado',
+    );
   }
 
   async uploadPhoto(id: string, dataUrl: string) {
