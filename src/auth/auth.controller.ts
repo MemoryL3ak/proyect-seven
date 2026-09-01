@@ -1,7 +1,7 @@
 import { Public } from './public.decorator';
 import { StaffOnly } from './staff-only.decorator';
 import type { Response } from 'express';
-import { Controller, Post, Get, Patch, Delete, Body, Param, Res, Put } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Delete, Body, Param, Res, Put, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ChangeTemporaryPasswordDto, CreateUserDto, LoginUserDto } from './dto/users.dto';
 
@@ -63,6 +63,27 @@ export class AuthController {
       user,
       requiresPasswordChange,
     };
+  }
+
+  /**
+   * Renueva la sesión del panel cuando el access token expira (~1 h).
+   * @Public: la credencial es el propio refresh token, validado por Supabase.
+   * Devuelve los tokens nuevos en los mismos headers que el login.
+   */
+  @Public()
+  @Post('refresh')
+  async refresh(
+    @Body() body: { refreshToken?: string },
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const refreshToken = String(body?.refreshToken || '').trim();
+    if (!refreshToken) {
+      throw new UnauthorizedException('refreshToken requerido');
+    }
+    const { user, session } = await this.authService.refreshSession(refreshToken);
+    res.setHeader('Authorization', `Bearer ${session.access_token}`);
+    res.setHeader('x-refresh-token', session.refresh_token);
+    return { user };
   }
 
   @Public()

@@ -217,12 +217,60 @@ function withAuthHeaders(headers?: HeadersInit) {
   return nextHeaders;
 }
 
+/**
+ * Renovación de sesión del panel: cuando el access token expira (~1 h),
+ * canjea el refresh token por uno nuevo y el request original se reintenta.
+ * Single-flight: si varios requests reciben 401 a la vez, un solo refresh.
+ */
+let refreshInFlight: Promise<boolean> | null = null;
+
+async function tryRefreshSession(): Promise<boolean> {
+  const tokens = getTokens();
+  if (!tokens?.refreshToken) return false;
+  if (!refreshInFlight) {
+    refreshInFlight = (async () => {
+      try {
+        const { response } = await fetchWithBaseFallback("/auth/refresh", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          cache: "no-store",
+          body: JSON.stringify({ refreshToken: tokens.refreshToken }),
+        });
+        if (!response.ok) return false;
+        const accessToken = response.headers.get("Authorization")?.replace("Bearer ", "");
+        const refreshToken = response.headers.get("x-refresh-token") || undefined;
+        if (!accessToken) return false;
+        setTokens({ accessToken, refreshToken: refreshToken || tokens.refreshToken });
+        return true;
+      } catch {
+        return false;
+      } finally {
+        // Liberar después de resolver, para que un fallo permita reintentar más tarde.
+        setTimeout(() => { refreshInFlight = null; }, 0);
+      }
+    })();
+  }
+  return refreshInFlight;
+}
+
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const { response, base } = await fetchWithBaseFallback(path, {
+  let { response, base } = await fetchWithBaseFallback(path, {
       ...options,
       headers: withAuthHeaders(options.headers),
       cache: "no-store"
     });
+
+  // Sesión del panel expirada: refrescar una vez y reintentar el request.
+  if (response.status === 401 && getTokens()?.accessToken) {
+    const refreshed = await tryRefreshSession();
+    if (refreshed) {
+      ({ response, base } = await fetchWithBaseFallback(path, {
+        ...options,
+        headers: withAuthHeaders(options.headers),
+        cache: "no-store"
+      }));
+    }
+  }
 
   if (!response.ok) {
     const contentType = response.headers.get("content-type") || "";
@@ -265,7 +313,20 @@ export async function login(email: string, password: string) {
       throw new Error(`Endpoint de login no encontrado en API (${base}/auth/login)`);
     }
     const text = await response.text();
-    throw new Error(text || `No se pudo iniciar sesión (${base}/auth/login)`);
+    // Traducir la respuesta del backend a un mensaje legible (nunca JSON crudo).
+    let message = "";
+    try {
+      const json = JSON.parse(text);
+      const raw = Array.isArray(json?.message) ? json.message.join(", ") : String(json?.message ?? "");
+      if (/invalid (login credentials|email or password)/i.test(raw)) {
+        message = "Correo o contraseña incorrectos.";
+      } else if (/rate limit|too many/i.test(raw)) {
+        message = "Demasiados intentos. Espera un momento y vuelve a intentarlo.";
+      } else {
+        message = raw;
+      }
+    } catch { /* respuesta no JSON: usar genérico */ }
+    throw new Error(message || "No se pudo iniciar sesión. Inténtalo de nuevo.");
   }
 
   const accessToken = response.headers.get("Authorization")?.replace("Bearer ", "");
