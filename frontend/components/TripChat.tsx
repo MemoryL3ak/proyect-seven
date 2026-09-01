@@ -13,8 +13,10 @@ type ChatMessage = {
   createdAt: string;
 };
 
-/** El bloqueo se guarda por viaje en el dispositivo. El registro duradero es el
- *  caso de soporte que se abre al bloquear, no esta clave. */
+/** El bloqueo vive en la base de datos (core.chat_blocks, endpoints
+ *  /chat-blocks/:tripId) asociado a usuario y viaje: acompaña al usuario en
+ *  cualquier dispositivo. localStorage queda solo como caché local y como
+ *  origen de la migración de los bloqueos guardados antes de este cambio. */
 const blockStorageKey = (tripId: string) => `seven.blocked.trip.${tripId}`;
 
 type ReportTarget =
@@ -80,13 +82,31 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
     }
   }, [open]);
 
-  // Restaurar el bloqueo guardado en este dispositivo
+  // Restaurar el bloqueo desde el servicio (con la caché local como arranque
+  // rápido y respaldo sin red). Si había un bloqueo guardado solo en este
+  // dispositivo (versión anterior), se migra al servicio.
   useEffect(() => {
+    let localBlocked = false;
     try {
-      setBlocked(window.localStorage.getItem(blockStorageKey(tripId)) === "1");
-    } catch {
-      setBlocked(false); // almacenamiento no disponible: el chat queda visible
-    }
+      localBlocked = window.localStorage.getItem(blockStorageKey(tripId)) === "1";
+    } catch { /* almacenamiento no disponible */ }
+    setBlocked(localBlocked);
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await apiFetch<{ blocked: boolean }>(`/chat-blocks/${tripId}`);
+        if (cancelled) return;
+        if (res.blocked) {
+          setBlocked(true);
+          try { window.localStorage.setItem(blockStorageKey(tripId), "1"); } catch {}
+        } else if (localBlocked) {
+          // Migración: bloqueo previo solo local → persistirlo en el servicio.
+          await apiFetch(`/chat-blocks/${tripId}`, { method: "POST" });
+        }
+      } catch { /* sin red o backend antiguo: rige la caché local */ }
+    })();
+    return () => { cancelled = true; };
   }, [tripId]);
 
   // El aviso es informativo; se retira solo para no tapar la conversación
@@ -236,7 +256,10 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
     try {
       if (next) window.localStorage.setItem(blockStorageKey(tripId), "1");
       else window.localStorage.removeItem(blockStorageKey(tripId));
-    } catch { /* almacenamiento no disponible: el bloqueo dura la sesión */ }
+    } catch { /* almacenamiento no disponible: rige el registro del servicio */ }
+    try {
+      await apiFetch(`/chat-blocks/${tripId}`, { method: next ? "POST" : "DELETE" });
+    } catch { /* sin red: la caché local mantiene el estado y se migra al reabrir */ }
     if (!next) {
       setNotice(null);
       return;

@@ -7,7 +7,9 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { SupabaseProvider } from '@/supabase/provider';
 import { ApiAuthGuard } from './auth/api-auth.guard';
 import { SensitiveFieldsInterceptor } from './auth/sensitive-fields.interceptor';
+import { SignedStorageUrlInterceptor } from './storage/signed-storage-url.interceptor';
 import { AccountPurgeModule } from './account-purge/account-purge.module';
+import { ChatBlocksModule } from './chat-blocks/chat-blocks.module';
 import { AuthModule } from './auth/auth.module';
 import { TransportsModule } from './transports/transports.module';
 import { TripsModule } from './trips/trips.module';
@@ -113,6 +115,7 @@ import { VipMonitoringModule } from './vip-monitoring/vip-monitoring.module';
     TripRequestsModule,
     VipMonitoringModule,
     AccountPurgeModule,
+    ChatBlocksModule,
   ],
   controllers: [AppController],
   providers: [
@@ -124,6 +127,9 @@ import { VipMonitoringModule } from './vip-monitoring/vip-monitoring.module';
     { provide: APP_GUARD, useClass: ApiAuthGuard },
     // 5.3.2: ninguna credencial de sesión sale en las respuestas.
     { provide: APP_INTERCEPTOR, useClass: SensitiveFieldsInterceptor },
+    // SA-BACKEND-04 · 1: los buckets con datos personales son privados; toda
+    // URL de esos buckets sale firmada y con vigencia limitada.
+    { provide: APP_INTERCEPTOR, useClass: SignedStorageUrlInterceptor },
   ],
 })
 export class AppModule {}
