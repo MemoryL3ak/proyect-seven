@@ -24,6 +24,8 @@ import { buildCredentialHtml } from "@/lib/credential-template";
 import { downloadCredentialPdf, saveCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
 import { clearPersistedTabs, persistTab, restoreOnReload, startTabHeartbeat } from "@/lib/portal-tab";
 import { claimPortalSession, clearPortalSession, ensurePortalIdentity, getStoredPortalSessionId, portalLogin, releasePortalSession, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
+import { dlog } from "@/lib/native-debug";
+import NativeDebugOverlay from "@/components/NativeDebugOverlay";
 import PortalSessionGuard from "@/components/PortalSessionGuard";
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
 
@@ -243,12 +245,14 @@ export default function DriverPortalPage() {
       return;
     }
     const session = getMobileSession();
+    dlog(`restore: mobileSession=${session ? `${session.kind}·…${String((session as { driverId?: string }).driverId ?? "").slice(-6)}` : "no"}`);
     if (session?.kind === "driver" && session.driverId) {
       loadTrips(session.driverId).finally(() => setSessionChecked(true));
       return;
     }
     try {
       const saved = sessionStorage.getItem("portal_conductor_id");
+      dlog(`restore: sessionStorage=${saved ?? "no"}`);
       if (saved) {
         loadTrips(saved).finally(() => setSessionChecked(true));
       } else {
@@ -289,6 +293,7 @@ export default function DriverPortalPage() {
       // visible de 6 caracteres, así que también pasa por el login.
       let resolvedId = id;
       const needsLogin = !overrideId || overrideId.length <= 8;
+      dlog(`loadTrips(…${String(id).slice(-6)}) needsLogin=${needsLogin}`);
       if (needsLogin) {
         let login: Awaited<ReturnType<typeof portalLogin>>;
         try {
@@ -318,6 +323,7 @@ export default function DriverPortalPage() {
       } else {
         await ensurePortalIdentity("driver", overrideId);
       }
+      dlog("identidad ok → fetch x8…");
 
       const [
         tripsData,
@@ -382,6 +388,7 @@ export default function DriverPortalPage() {
           normalizedInput === userIdLower.slice(-6)
         );
       });
+      dlog(`fetch ok → match=${driverMatch ? `…${driverMatch.id.slice(-6)}` : "NO"}`);
       if (!driverMatch) {
         setDriverProfile(null);
         setIdError(t("El ID ingresado no corresponde a un conductor registrado."));
@@ -456,9 +463,11 @@ export default function DriverPortalPage() {
         }, {})
       );
     } catch (err) {
+      dlog(`loadTrips ERR: ${err instanceof Error ? err.message.slice(0, 90) : String(err).slice(0, 90)}`);
       setError(err instanceof Error ? err.message : t("No se pudo cargar"));
     } finally {
       setLoading(false);
+      dlog("loadTrips fin");
     }
   };
 
@@ -797,11 +806,15 @@ export default function DriverPortalPage() {
     // bloquearse, restaurar:
     //   const sessionId = getStoredPortalSessionId("driver", driverId);
     //   payload: { driverId, ...(sessionId ? { session: { kind: "driver", userId: driverId, sessionId } } : {}) }
+    dlog("→ shell tracking.start");
     nativeRequest(
       "tracking.start",
       { driverId },
       { timeoutMs: 30_000 },
-    ).catch(() => {
+    ).then(() => {
+      dlog("shell tracking OK");
+    }).catch((err) => {
+      dlog(`shell tracking FAIL: ${err instanceof Error ? err.message.slice(0, 60) : err}`);
       // Let a later render retry (e.g. after the driver grants permission).
       trackingArmedRef.current = false;
     });
@@ -912,6 +925,7 @@ export default function DriverPortalPage() {
     const opts: PositionOptions = { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 };
 
     // Try getCurrentPosition first (triggers Safari permission dialog)
+    dlog("geo: getCurrentPosition + watch");
     navigator.geolocation.getCurrentPosition(onPos, () => {}, opts);
 
     watchId = navigator.geolocation.watchPosition(onPos, () => {}, opts);
@@ -1168,12 +1182,14 @@ export default function DriverPortalPage() {
 
   return (
     <>
+      <NativeDebugOverlay />
       <PushTokenSync userKind="driver" userId={driverProfile?.id || null} />
       {driverProfile && (
         <PortalSessionGuard
           kind="driver"
           userId={driverProfile.id}
           onInvalid={() => {
+            dlog("⚠ sesión invalidada (otro claim) → logout");
             clearPortalSession("driver", driverProfile.id);
             try { sessionStorage.removeItem("portal_conductor_id"); } catch {}
             clearPersistedTabs();
