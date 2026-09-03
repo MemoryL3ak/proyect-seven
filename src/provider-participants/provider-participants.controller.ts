@@ -8,6 +8,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { StaffOnly } from '../auth/staff-only.decorator';
 import { CreateProviderParticipantDto } from './dto/create-provider-participant.dto';
 import { UpdateProviderParticipantDto } from './dto/update-provider-participant.dto';
 import { ProviderParticipantsService } from './provider-participants.service';
@@ -34,6 +35,13 @@ export class ProviderParticipantsController {
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateProviderParticipantDto) {
     return this.service.update(id, dto);
+  }
+
+  /** Reenvía el correo de bienvenida con el código de acceso (acción del panel). */
+  @StaffOnly()
+  @Post(':id/send-welcome-email')
+  sendWelcomeEmail(@Param('id') id: string) {
+    return this.service.sendWelcome(id);
   }
 
   /** Reactiva una cuenta dada de baja desde el portal (status DELETED). */

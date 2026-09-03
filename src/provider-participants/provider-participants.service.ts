@@ -3,8 +3,11 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { welcomeEmailHtml } from '../shared/email-templates';
+import { sendResendEmail } from '../shared/resend';
 import { InjectRepository } from '@nestjs/typeorm';
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
 import { ConfigService } from '@nestjs/config';
@@ -40,6 +43,8 @@ type ParticipantRow = {
 
 @Injectable()
 export class ProviderParticipantsService {
+  private readonly logger = new Logger(ProviderParticipantsService.name);
+
   constructor(
     @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
     private readonly configService: ConfigService,
@@ -122,7 +127,79 @@ export class ProviderParticipantsService {
       );
     }
 
-    return this.toEntity(data as ParticipantRow);
+    const participant = this.toEntity(data as ParticipantRow);
+    // Correo de bienvenida con el código de acceso (habilitación de cuenta).
+    // Nunca bloquea ni revierte la creación: si el envío falla, queda el flujo
+    // de "Recordarme mi código" del portal.
+    void this.sendWelcomeEmail(data as ParticipantRow).catch((err) => {
+      this.logger.warn(
+        `No se pudo enviar el correo de bienvenida a ${(data as ParticipantRow).email ?? 'sin correo'}: ${err instanceof Error ? err.message : err}`,
+      );
+    });
+    return participant;
+  }
+
+  /** Envío manual desde el panel del mismo correo de bienvenida. */
+  async sendWelcome(id: string) {
+    const { data, error } = await this.supabase
+      .schema('core')
+      .from('provider_participants')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    if (error) throw new InternalServerErrorException(error.message);
+    if (!data) throw new NotFoundException('Participante no encontrado');
+    const row = data as ParticipantRow;
+    const email = String(row.email ?? '').trim();
+    if (!email) {
+      throw new BadRequestException(
+        'El participante no tiene correo registrado; agrégalo y vuelve a intentar',
+      );
+    }
+    try {
+      await this.sendWelcomeEmail(row);
+    } catch (err) {
+      throw new InternalServerErrorException(
+        err instanceof Error ? err.message : 'No se pudo enviar el correo',
+      );
+    }
+    return { message: `Correo de acceso enviado a ${email}` };
+  }
+
+  /**
+   * Al registrar un participante de proveedor con correo, se le envía su
+   * código de acceso indicando el portal que le corresponde: Control de
+   * Acceso si el proveedor es de tipo Staff; Portal Conductor en el resto
+   * (choferes operativos de transporte).
+   */
+  private async sendWelcomeEmail(row: ParticipantRow) {
+    const email = String(row.email ?? '').trim().toLowerCase();
+    if (!email) return;
+
+    let portalLabel = 'Portal Conductor';
+    let portalPath = '/portal/conductor';
+    const { data: provider } = await this.supabase
+      .schema('core')
+      .from('providers')
+      .select('type')
+      .eq('id', row.provider_id)
+      .maybeSingle();
+    if (String(provider?.type ?? '').toLowerCase() === 'staff') {
+      portalLabel = 'Portal Control de Acceso';
+      portalPath = '/portal/access-control';
+    }
+
+    const base = (process.env.FRONTEND_BASE_URL || 'https://seven.management').replace(/\/+$/, '');
+    const portalUrl = `${base}${portalPath}`;
+    const fullName = row.full_name ?? 'Participante';
+    const accessCode = String(row.id).slice(-6);
+
+    await sendResendEmail({
+      to: email,
+      subject: 'Tu cuenta está habilitada — Seven Arena',
+      text: `Hola ${fullName},\n\nTe dieron acceso a la plataforma Seven Arena.\nTu código de acceso para el ${portalLabel} es:\n${accessCode}\n\nIngresa en: ${portalUrl}\n\nGuárdalo en un lugar seguro.\n`,
+      html: welcomeEmailHtml(fullName, accessCode, portalLabel, portalUrl),
+    });
   }
 
   async findAll(providerId?: string) {

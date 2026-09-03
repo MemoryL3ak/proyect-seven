@@ -259,6 +259,29 @@ export default function ProveedoresPage() {
   const [participantDocFiles, setParticipantDocFiles] = useState<Record<string, File | null>>({});
   const [savingParticipant, setSavingParticipant] = useState(false);
   const [participantError, setParticipantError] = useState<string | null>(null);
+  // Envío manual del correo de bienvenida con el código de acceso
+  const [sendingMailId, setSendingMailId] = useState<string | null>(null);
+  const [mailToast, setMailToast] = useState<{ ok: boolean; msg: string } | null>(null);
+  useEffect(() => {
+    if (!mailToast) return;
+    const t = setTimeout(() => setMailToast(null), 4500);
+    return () => clearTimeout(t);
+  }, [mailToast]);
+  const sendAccessEmail = async (p: Participant) => {
+    if (sendingMailId) return;
+    setSendingMailId(p.id);
+    try {
+      const res = await apiFetch<{ message: string }>(
+        `/provider-participants/${p.id}/send-welcome-email`,
+        { method: "POST" },
+      );
+      setMailToast({ ok: true, msg: res.message || `Correo enviado a ${p.email}` });
+    } catch (e) {
+      setMailToast({ ok: false, msg: e instanceof Error ? e.message : "No se pudo enviar el correo" });
+    } finally {
+      setSendingMailId(null);
+    }
+  };
   const [lookingUpPlate, setLookingUpPlate] = useState(false);
   const [plateError, setPlateError] = useState<string | null>(null);
 
@@ -1203,6 +1226,19 @@ export default function ProveedoresPage() {
                         </button>
                       )}
                       <button
+                        onClick={() => void sendAccessEmail(p)}
+                        disabled={!p.email || sendingMailId === p.id}
+                        className="transition-colors p-1.5"
+                        style={{ color: "var(--text-faint)", opacity: !p.email || sendingMailId === p.id ? 0.4 : 1, cursor: !p.email ? "not-allowed" : "pointer" }}
+                        onMouseEnter={e => { if (p.email) (e.currentTarget as HTMLElement).style.color = "#21D0B3"; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-faint)"; }}
+                        title={p.email ? "Enviar código de acceso por correo" : "Sin correo registrado"}
+                      >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                      </button>
+                      <button
                         onClick={() => openEditParticipant(p)}
                         className="transition-colors p-1.5"
                         style={{ color: "var(--text-faint)" }}
@@ -1236,6 +1272,18 @@ export default function ProveedoresPage() {
       )}
 
       {/* ── MODAL: PROVEEDOR ─────────────────────────────────────────────── */}
+      {mailToast && (
+        <div style={{
+          position: "fixed", bottom: "24px", right: "24px", zIndex: 60,
+          background: mailToast.ok ? "#ecfdf5" : "#fef2f2",
+          border: `1px solid ${mailToast.ok ? "#a7f3d0" : "#fecaca"}`,
+          color: mailToast.ok ? "#047857" : "#b91c1c",
+          borderRadius: "12px", padding: "12px 18px", fontSize: "13px", fontWeight: 600,
+          boxShadow: "0 8px 24px rgba(15,23,42,0.15)", maxWidth: "360px",
+        }}>
+          {mailToast.ok ? "✓ " : "✕ "}{mailToast.msg}
+        </div>
+      )}
       {providerModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div

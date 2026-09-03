@@ -387,6 +387,9 @@ export default function TripsPage() {
   };
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
   const [logTrip, setLogTrip] = useState<Trip | null>(null);
+  // Popup de solo lectura al pinchar una tarjeta del timeline operativo
+  // (la edición queda como acción explícita dentro del popup).
+  const [infoTrip, setInfoTrip] = useState<Trip | null>(null);
   const [pendingAction, setPendingAction] = useState<{ trip: Trip; kind: "cancel" | "delete" } | null>(null);
   const [actionBusy, setActionBusy] = useState(false);
   const knownRequestedIdsRef = useRef<Set<string>>(new Set());
@@ -1273,16 +1276,7 @@ export default function TripsPage() {
                     <button
                       key={trip.id}
                       type="button"
-                      onClick={() => {
-                        setShowAdminEditor(true);
-                        setActiveTab("editor");
-                        setSelectedTripId(trip.id);
-                        // El editor se monta tras el re-render; el formulario con el
-                        // viaje cargado queda al inicio de la sección, no al final.
-                        setTimeout(() => {
-                          document.getElementById("trip-editor-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                        }, 120);
-                      }}
+                      onClick={() => setInfoTrip(trip)}
                       style={{
                         background: "#f8fafc",
                         border: `1px solid ${pal.cardBorder}`,
@@ -1761,6 +1755,80 @@ export default function TripsPage() {
         </section>
       )}
       {/* ── Modal Bitácora ── */}
+      {infoTrip && (() => {
+        const isc = STATUS_COLORS[infoTrip.status ?? ""] ?? STATUS_COLORS.SCHEDULED;
+        const itone = statusTone(infoTrip.status);
+        const ivenue = infoTrip.destinationVenueId ? venues[infoTrip.destinationVenueId] : null;
+        const fields: { label: string; value: string }[] = [
+          { label: "Programación", value: formatDateTime(infoTrip.scheduledAt) },
+          ...(infoTrip.startedAt ? [{ label: "Inicio real", value: formatDateTime(infoTrip.startedAt) }] : []),
+          ...(infoTrip.completedAt ? [{ label: "Término", value: formatDateTime(infoTrip.completedAt) }] : []),
+          { label: "Origen", value: safeText(infoTrip.origin, "Origen pendiente") },
+          { label: "Destino", value: ivenue ? buildVenueAddress(ivenue) : safeText(infoTrip.destination, "Destino pendiente") },
+          { label: "Conductor", value: infoTrip.driverId ? (drivers[infoTrip.driverId]?.fullName || "Asignado") : "Por asignar" },
+          { label: "Vehículo", value: infoTrip.vehicleId || infoTrip.vehiclePlate ? resolveVehicle(infoTrip) : "Por asignar" },
+          ...(infoTrip.passengerCount ? [{ label: "Pasajeros", value: String(infoTrip.passengerCount) }] : []),
+          ...(infoTrip.clientType ? [{ label: "Tipo de cliente", value: infoTrip.clientType }] : []),
+          ...(infoTrip.athleteNames?.length ? [{ label: "Participantes", value: infoTrip.athleteNames.join(", ") }] : []),
+        ];
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setInfoTrip(null)}>
+            <div onClick={(e) => e.stopPropagation()} style={{ background: "#fff", borderRadius: "20px", width: "100%", maxWidth: "520px", maxHeight: "85vh", display: "flex", flexDirection: "column", boxShadow: "0 8px 40px rgba(15,23,42,0.2)" }}>
+              {/* Header */}
+              <div style={{ padding: "20px 24px 14px", borderBottom: "1px solid #f1f5f9", flexShrink: 0, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
+                <div>
+                  <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "#21D0B3", margin: "0 0 4px" }}>Detalle del viaje</p>
+                  <p style={{ fontSize: "15px", fontWeight: 700, color: "#0f172a", margin: 0 }}>{resolveRequester(infoTrip)}</p>
+                </div>
+                <span style={{ flexShrink: 0, fontSize: "11px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: isc.accent, background: isc.chipBg, border: `1px solid ${isc.chipBorder}`, borderRadius: "99px", padding: "5px 12px" }}>
+                  {t(itone.label)}
+                </span>
+              </div>
+              {/* Datos */}
+              <div style={{ padding: "16px 24px", overflowY: "auto" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                  {fields.map((f) => (
+                    <div key={f.label} style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "9px 12px", gridColumn: f.label === "Destino" || f.label === "Origen" || f.label === "Participantes" ? "1 / -1" : undefined }}>
+                      <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#94a3b8", margin: "0 0 3px" }}>{f.label}</p>
+                      <p style={{ fontSize: "13px", fontWeight: 600, color: "#0f172a", margin: 0 }}>{f.value}</p>
+                    </div>
+                  ))}
+                </div>
+                {infoTrip.notes && (
+                  <p style={{ marginTop: "12px", fontSize: "12.5px", color: "#78350f", background: "#fffbeb", border: "1px solid #fde68a", borderLeft: "4px solid #f59e0b", borderRadius: 10, padding: "8px 12px", fontWeight: 600 }}>
+                    <span style={{ fontWeight: 800, color: "#b45309" }}>⚠ Observación:</span>{" "}
+                    {safeText(infoTrip.notes.replace(/^\[Portal\]\s*/, ""))}
+                  </p>
+                )}
+              </div>
+              {/* Acciones */}
+              <div style={{ padding: "14px 24px 18px", borderTop: "1px solid #f1f5f9", flexShrink: 0, display: "flex", gap: "8px", justifyContent: "flex-end", flexWrap: "wrap" }}>
+                <button type="button" onClick={() => setInfoTrip(null)}
+                  style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "99px", padding: "8px 16px", fontSize: "13px", fontWeight: 600, color: "#64748b", cursor: "pointer" }}>
+                  Cerrar
+                </button>
+                <button type="button" onClick={() => { setLogTrip(infoTrip); setInfoTrip(null); }}
+                  style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "99px", padding: "8px 16px", fontSize: "13px", fontWeight: 600, color: "#475569", cursor: "pointer" }}>
+                  Ver bitácora
+                </button>
+                <button type="button" onClick={() => {
+                    const target = infoTrip;
+                    setInfoTrip(null);
+                    setShowAdminEditor(true);
+                    setActiveTab("editor");
+                    setSelectedTripId(target.id);
+                    setTimeout(() => {
+                      document.getElementById("trip-editor-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }, 120);
+                  }}
+                  style={{ background: "linear-gradient(135deg, #21D0B3, #14b8a6)", border: "none", borderRadius: "99px", padding: "8px 18px", fontSize: "13px", fontWeight: 700, color: "#fff", cursor: "pointer", boxShadow: "0 2px 8px rgba(20,184,166,0.35)" }}>
+                  Editar viaje
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
       {logTrip && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setLogTrip(null)}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: "#fff", borderRadius: "20px", width: "100%", maxWidth: "480px", maxHeight: "80vh", display: "flex", flexDirection: "column", boxShadow: "0 8px 40px rgba(15,23,42,0.2)" }}>
