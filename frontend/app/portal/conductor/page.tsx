@@ -153,7 +153,7 @@ type ProviderParticipant = {
 
 const statusLabel: Record<string, string> = {
   SCHEDULED: "Programado",
-  EN_ROUTE: "En ruta a recoger",
+  EN_ROUTE: "En ruta al punto de recogida",
   PICKED_UP: "En curso",
   DROPPED_OFF: "Dejado en hotel",
   COMPLETED: "Viaje completado"
@@ -799,6 +799,14 @@ export default function DriverPortalPage() {
   const isDisposicion = (trip: Trip) => trip.tripType === "DISPOSICION_12H";
 
   const confirmPickup = (trip: Trip) => {
+    // Cliente TA en viajes de ida / regreso / ida y regreso: la recogida se
+    // confirma sin pedir el código de verificación del pasajero.
+    const esTa = (trip.clientType || "").toUpperCase() === "TA";
+    const viajeSinCodigo = ["VIAJE_IDA", "VIAJE_REGRESO", "VIAJE_IDA_REGRESO"].includes(trip.tripType || "");
+    if (esTa && viajeSinCodigo) {
+      void updateTrip(trip.id, "PICKED_UP");
+      return;
+    }
     setPickupTrip(trip);
     setPickupCode("");
     setPickupError(null);
@@ -1505,7 +1513,7 @@ export default function DriverPortalPage() {
                     <span style={{ display:"flex",alignItems:"center",gap:8 }}>
                       <span style={{ fontSize:10,fontWeight:800,letterSpacing:"0.18em",textTransform:"uppercase",color:"#34F3C6" }}>● En viaje</span>
                       <span style={{ fontSize:9.5,fontWeight:700,padding:"2px 8px",borderRadius:"99px",background:"rgba(52,243,198,0.15)",border:"1px solid rgba(52,243,198,0.3)",color:"#a8f5e0" }}>
-                        {enCurso ? "En curso" : "En ruta a recoger"}
+                        {enCurso ? "En curso" : "En ruta al punto de recogida"}
                       </span>
                     </span>
                     <span style={{ display:"block",fontSize:14,fontWeight:700,color:"#fff",margin:"4px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
@@ -1898,7 +1906,7 @@ export default function DriverPortalPage() {
                               ) : (
                                 <button type="button" onClick={() => updateTrip(trip.id, "EN_ROUTE")} disabled={loading}
                                   style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:"linear-gradient(135deg,#34F3C6,#21D0B3)",color:"#0d1b3e",fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(33,208,179,0.3)",opacity:loading?0.7:1 }}>
-                                  {t("Iniciar — En ruta a recoger")}
+                                  {t("Iniciar — En ruta al punto de recogida")}
                                 </button>
                               )
                             ) : status === "EN_ROUTE" ? (

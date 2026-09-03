@@ -240,7 +240,7 @@ const translations: Record<Locale, Record<string, string>> = {
     "Camas": "Beds",
     "Foto conductor": "Driver photo",
     "Encargado de delegación": "Delegation lead",
-    "En ruta a recoger": "En route to pickup",
+    "En ruta al punto de recogida": "En route to pickup point",
     "Todos": "All",
     "Filtrar por destino": "Filter by destination",
     // ── Form sections (ResourceScreen) ────────────────────────────────────
@@ -1037,7 +1037,7 @@ const translations: Record<Locale, Record<string, string>> = {
     "Dirección": "Endereço",
     "Camas": "Camas",
     "Foto conductor": "Foto do motorista",
-    "En ruta a recoger": "A caminho da coleta",
+    "En ruta al punto de recogida": "A caminho do ponto de coleta",
     "Todos": "Todos",
     "Filtrar por destino": "Filtrar por destino",
     // ── Form sections (ResourceScreen) ────────────────────────────────────

@@ -64,7 +64,7 @@ const STATUS_COLORS: Record<string, { accent: string; chipBg: string; chipBorder
 };
 
 const STATUS_LABEL: Record<string, string> = {
-  EN_ROUTE: "En ruta a recoger", PICKED_UP: "En curso", SCHEDULED: "Programado",
+  EN_ROUTE: "En ruta al punto de recogida", PICKED_UP: "En curso", SCHEDULED: "Programado",
   COMPLETED: "Completado", DROPPED_OFF: "Dejado en hotel",
 };
 
@@ -90,7 +90,7 @@ type StoredPosition = {
 };
 
 const statusLabel: Record<string, string> = {
-  EN_ROUTE: "En ruta a recoger",
+  EN_ROUTE: "En ruta al punto de recogida",
   SCHEDULED: "Programado",
   PICKED_UP: "Recogido",
   DROPPED_OFF: "Dejado en hotel",
