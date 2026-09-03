@@ -787,8 +787,20 @@ export class TripsService {
       row.status = inferredStatus;
     }
 
-    // Re-calculate cost when driver or vehicle type changes
-    if (updateTripDto.driverId !== undefined || updateTripDto.requestedVehicleType !== undefined || updateTripDto.tripType !== undefined) {
+    // Re-calculate cost when driver, vehicle type or service type actually
+    // changes. Comparar contra el viaje actual: el formulario del panel envía
+    // siempre estos campos, y recalcular en cada edición pisaba un costo
+    // modificado a mano (igual que respetar un tripCost editado explícito).
+    const driverChanged =
+      updateTripDto.driverId !== undefined && updateTripDto.driverId !== currentTrip.driverId;
+    const fleetChanged =
+      updateTripDto.requestedVehicleType !== undefined &&
+      updateTripDto.requestedVehicleType !== currentTrip.requestedVehicleType;
+    const serviceChanged =
+      updateTripDto.tripType !== undefined && updateTripDto.tripType !== currentTrip.tripType;
+    const costEdited =
+      updateTripDto.tripCost !== undefined && updateTripDto.tripCost !== currentTrip.tripCost;
+    if (!costEdited && (driverChanged || fleetChanged || serviceChanged)) {
       const driverId = updateTripDto.driverId ?? currentTrip.driverId;
       const fleetType = updateTripDto.requestedVehicleType ?? currentTrip.requestedVehicleType;
       const tripType = updateTripDto.tripType ?? currentTrip.tripType;

@@ -93,6 +93,11 @@ type AthleteItem = {
   delegationId?: string | null;
   email?: string | null;
   isDelegationLead?: boolean | null;
+  arrivalFlightId?: string | null;
+  flightNumber?: string | null;
+  airline?: string | null;
+  origin?: string | null;
+  arrivalTime?: string | null;
 };
 
 type ProviderItem = {
@@ -164,6 +169,7 @@ export default function DriverPortalPage() {
   const [vehicles, setVehicles] = useState<Record<string, VehicleItem>>({});
   const [delegations, setDelegations] = useState<Record<string, DelegationItem>>({});
   const [athletes, setAthletes] = useState<Record<string, AthleteItem>>({});
+  const [allAthletes, setAllAthletes] = useState<Record<string, AthleteItem>>({});
   const [providers, setProviders] = useState<Record<string, ProviderItem>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -451,6 +457,15 @@ export default function DriverPortalPage() {
 
       setAthletes(
         (filterValidatedAthletes(athletesData || [])).reduce<Record<string, AthleteItem>>((acc, athlete) => {
+          acc[athlete.id] = athlete;
+          return acc;
+        }, {})
+      );
+
+      // Todos los pasajeros (validados o no): la pestaña Vuelos necesita el
+      // vuelo de cualquier pasajero asignado a un viaje del conductor.
+      setAllAthletes(
+        (athletesData || []).reduce<Record<string, AthleteItem>>((acc, athlete) => {
           acc[athlete.id] = athlete;
           return acc;
         }, {})
@@ -2286,11 +2301,52 @@ export default function DriverPortalPage() {
               </div>
             )}
 
-            {/* ─── Vuelos tab (monitor de llegadas para transfers) ─── */}
+            {/* ─── Vuelos tab: vuelos de los pasajeros de los viajes asignados ─── */}
             {activeTab === "vuelos" && (() => {
               const now = new Date();
               const todayKey = now.toDateString();
-              const withDate = flights.filter(f => f.arrivalTime);
+              // El vuelo puede venir del maestro (arrivalFlightId) o estar
+              // registrado solo en la ficha del pasajero (flightNumber suelto).
+              const flightById = new Map(flights.map(f => [f.id, f]));
+              type PassengerFlight = FlightItem & { passengers: string[] };
+              const byKey = new Map<string, PassengerFlight>();
+              trips
+                .filter(t => t.status !== "CANCELLED" && t.status !== "COMPLETED")
+                .forEach(trip => {
+                  const passengerIds = new Set<string>([
+                    ...(trip.athleteIds || []),
+                    ...(trip.requesterAthleteId ? [trip.requesterAthleteId] : []),
+                  ]);
+                  passengerIds.forEach(aid => {
+                    const a = allAthletes[aid];
+                    if (!a) return;
+                    const master = a.arrivalFlightId ? flightById.get(a.arrivalFlightId) : undefined;
+                    const flightNumber = master?.flightNumber || a.flightNumber;
+                    if (!flightNumber) return;
+                    const arrivalTime = master?.arrivalTime || (a.arrivalTime ? String(a.arrivalTime) : null);
+                    const key = `${flightNumber}|${arrivalTime || ""}`;
+                    const name = (a.fullName || "").trim();
+                    const existing = byKey.get(key);
+                    if (existing) {
+                      if (name && !existing.passengers.includes(name)) existing.passengers.push(name);
+                      return;
+                    }
+                    byKey.set(key, {
+                      id: key,
+                      flightNumber,
+                      airline: master?.airline || a.airline || "",
+                      origin: master?.origin || a.origin || null,
+                      terminal: master?.terminal || null,
+                      arrivalTime,
+                      passengers: name ? [name] : [],
+                    });
+                  });
+                });
+              const passengerFlights = Array.from(byKey.values()).sort(
+                (a, b) => new Date(a.arrivalTime || 0).getTime() - new Date(b.arrivalTime || 0).getTime(),
+              );
+              const withDate = passengerFlights.filter(f => f.arrivalTime);
+              const noSchedule = passengerFlights.filter(f => !f.arrivalTime);
               const today = withDate.filter(f => new Date(f.arrivalTime!).toDateString() === todayKey);
               const upcoming = withDate.filter(f => {
                 const d = new Date(f.arrivalTime!);
@@ -2298,7 +2354,7 @@ export default function DriverPortalPage() {
               });
               const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
               const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("es-CL", { weekday: "short", day: "2-digit", month: "short" });
-              const FlightCard = ({ f, showDate }: { f: FlightItem; showDate?: boolean }) => (
+              const FlightCard = ({ f, showDate }: { f: PassengerFlight; showDate?: boolean }) => (
                 <div style={{ background:"#fff",borderRadius:12,border:"1px solid #e2e8f0",padding:"10px 14px",display:"flex",alignItems:"center",gap:10 }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}>
                     <path d="M17.8 19.2L16 11l3.5-3.5C21 6 21 4 19 2c-2-2-4-2-5.5-.5L10 5 1.8 6.2l2.4 2.4L9 9l-4.5 4.5L5 15l2-1 1 2-1 2 2 .5 4.5-4.5.8 4.7 2.4 2.5z"/>
@@ -2308,6 +2364,11 @@ export default function DriverPortalPage() {
                     <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
                       {f.origin ? `Desde ${f.origin}` : "Origen no informado"}{f.terminal ? ` · Terminal ${f.terminal}` : ""}
                     </p>
+                    {f.passengers.length > 0 && (
+                      <p style={{ fontSize:11,fontWeight:600,color:"#0a7a6b",margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                        {f.passengers.join(", ")}
+                      </p>
+                    )}
                   </div>
                   {f.arrivalTime && (
                     <div style={{ textAlign:"right",flexShrink:0 }}>
@@ -2320,11 +2381,17 @@ export default function DriverPortalPage() {
               return (
                 <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
                   <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>Llegadas de hoy</p>
-                  {today.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:14 }}>Sin vuelos programados para hoy</p>}
+                  {today.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:14 }}>Sin vuelos de tus pasajeros para hoy</p>}
                   {today.map(f => <FlightCard key={f.id} f={f} />)}
                   <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#0fa894",margin:"10px 0 0" }}>Próximas llegadas</p>
-                  {upcoming.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:14 }}>Sin vuelos próximos registrados</p>}
+                  {upcoming.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:14 }}>Sin vuelos próximos de tus pasajeros</p>}
                   {upcoming.slice(0, 25).map(f => <FlightCard key={f.id} f={f} showDate />)}
+                  {noSchedule.length > 0 && (
+                    <>
+                      <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#94a3b8",margin:"10px 0 0" }}>Sin horario informado</p>
+                      {noSchedule.slice(0, 10).map(f => <FlightCard key={f.id} f={f} />)}
+                    </>
+                  )}
                 </div>
               );
             })()}

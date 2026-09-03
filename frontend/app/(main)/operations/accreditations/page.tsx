@@ -602,14 +602,14 @@ export default function AccreditationsPage() {
             <div className="flex flex-wrap items-start justify-between gap-3" style={{ marginBottom: "18px" }}>
               <div>
                 <div className="flex items-center gap-2" style={{ marginBottom: "5px" }}>
-                  <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: pal.labelColor }}>AND / Acreditacion</span>
+                  <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: pal.labelColor }}>AND / Acreditación</span>
                   <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", borderRadius: "99px", padding: "2px 10px" }}>
                     <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#10b981", display: "inline-block", animation: "pulse 2s ease-in-out infinite" }} />
                     <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: "#10b981" }}>EN VIVO</span>
                   </span>
                 </div>
-                <h2 style={{ fontSize: "20px", fontWeight: 800, color: pal.titleColor, margin: 0 }}>Cumplimiento de acreditacion sobre registro AND</h2>
-                <p style={{ fontSize: "12px", color: pal.subtitleColor, marginTop: "3px" }}>Compara participantes registrados en AND vs participantes acreditados por disciplina.</p>
+                <h2 style={{ fontSize: "22px", fontWeight: 800, color: pal.titleColor, margin: 0, letterSpacing: "-0.01em" }}>Cumplimiento de acreditación</h2>
+                <p style={{ fontSize: "13px", color: pal.subtitleColor, marginTop: "4px" }}>Participantes registrados en AND vs. acreditados, por disciplina.</p>
               </div>
               <button type="button" onClick={loadData} disabled={loading} style={{ flexShrink: 0, border: "1px solid #e2e8f0", borderRadius: "12px", padding: "8px 16px", fontSize: "13px", fontWeight: 600, color: "#475569", background: "#ffffff", cursor: loading ? "default" : "pointer", opacity: loading ? 0.6 : 1 }}>
                 {loading ? "Actualizando..." : "↻ Refrescar KPI"}
@@ -627,7 +627,7 @@ export default function AccreditationsPage() {
                   </select>
                 </div>
                 <div>
-                  <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: pal.labelColor, marginBottom: "8px" }}>Delegacion AND</p>
+                  <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: pal.labelColor, marginBottom: "8px" }}>Delegación AND</p>
                   <select className="input rounded-xl" style={sel} value={andKpiDelegationId} onChange={(e) => setAndKpiDelegationId(e.target.value)}>
                     <option value="">Todas las delegaciones</option>
                     {eventDelegations.map((item) => <option key={item.id} value={item.id}>{item.countryCode || item.id}</option>)}
@@ -645,7 +645,7 @@ export default function AccreditationsPage() {
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
               {[
                 { label: "Registrado AND",  value: String(andKpiTotals.registered), color: pal.accent,  sub: "Base declarada por AND",            extra: null },
-                { label: "Acreditado",       value: String(andKpiTotals.accredited), color: "#10b981",  sub: "Casos aprobados en acreditacion",    extra: null },
+                { label: "Acreditado",       value: String(andKpiTotals.accredited), color: "#10b981",  sub: "Casos aprobados en acreditación",    extra: null },
                 { label: "Cumplimiento",     value: `${andKpiTotals.pct}%`,          color: pctColor,    sub: "sobre AND",                          extra: "bar" },
                 { label: "Brecha neta",      value: String(andKpiTotals.variance),   color: varColor,    sub: "Diferencia contra registro AND",      extra: null },
               ].map((card) => (
@@ -745,7 +745,7 @@ export default function AccreditationsPage() {
 
         {/* Form */}
         <form onSubmit={createAccreditation} style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderTop: `3px solid ${pal.accent}`, borderRadius: "20px", padding: "20px", boxShadow: pal.cardShadow }} className="xl:order-1">
-          <h3 style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#94a3b8", marginBottom: "14px" }}>Nueva acreditacion</h3>
+          <h3 style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#94a3b8", marginBottom: "14px" }}>Nueva acreditación</h3>
           <div className="space-y-3">
             <select className="input rounded-xl" value={newSubjectType} onChange={(e) => {
               const type = e.target.value as "PARTICIPANT" | "DRIVER";

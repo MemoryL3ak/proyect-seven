@@ -127,6 +127,11 @@ function parseValue(field: FieldDef, value: string | string[]) {
   if (field.key === "createBeds") {
     return normalizedText === "true";
   }
+  if (field.key === "isRoundTrip") {
+    // El backend hace `if (dto.isRoundTrip)` — el string "false" es truthy
+    // y creaba un viaje de regreso duplicado al elegir "Solo ida".
+    return normalizedText === "true";
+  }
   if (field.key === "tripCost") {
     const digits = normalizedText.replace(/[^\d]/g, "");
     return digits ? Number(digits) : undefined;
@@ -1514,6 +1519,18 @@ export default function ResourceScreen({
       }
 
       let finalPayload = { ...payload };
+      if (config.endpoint === "/trips") {
+        // El reduce de arriba omite los campos vacíos, por lo que vaciar un
+        // campo (quitar conductor, sede/hotel, observación o participantes)
+        // nunca se guardaba. Se envían explícitos (null/[] = borrar).
+        finalPayload.destinationVenueId = (form.destinationVenueId as string) || null;
+        finalPayload.destinationHotelId = (form.destinationHotelId as string) || null;
+        finalPayload.driverId = (form.driverId as string) || null;
+        finalPayload.vehicleId = (form.vehicleId as string) || null;
+        finalPayload.vehiclePlate = (form.vehiclePlate as string) || null;
+        finalPayload.notes = (form.notes as string) || null;
+        finalPayload.athleteIds = Array.isArray(form.athleteIds) ? form.athleteIds : [];
+      }
       if (config.endpoint === "/events") {
         const previousConfig = readEventAndConfig((payload as any).config).raw;
 
@@ -2447,7 +2464,8 @@ export default function ResourceScreen({
               if (
                 config.endpoint === "/trips" &&
                 field.key === "athleteIds" &&
-                !form.delegationId
+                !form.delegationId &&
+                String(form.clientType || "").toUpperCase() !== "VIP"
               ) {
                 return (
                   <div key={field.key} className="flex flex-col gap-2 text-sm">
@@ -2630,12 +2648,22 @@ export default function ResourceScreen({
                           setForm({ ...form, originHotelId: nextValue, origin: addr });
                           return;
                         }
+                        if (config.endpoint === "/trips" && field.key === "destinationTypeFilter") {
+                          // Cambiar el tipo descarta la sede/hotel anterior: si no,
+                          // el viaje queda apuntando a ambos y "gana" el dato viejo.
+                          setForm({ ...form, destinationTypeFilter: nextValue, destinationVenueId: "", destinationHotelId: "" });
+                          return;
+                        }
+                        if (config.endpoint === "/trips" && field.key === "originTypeFilter") {
+                          setForm({ ...form, originTypeFilter: nextValue, originVenueId: "", originHotelId: "" });
+                          return;
+                        }
                         if (config.endpoint === "/trips" && field.key === "destinationVenueId") {
                           const venue = venuesRaw.find((v) => v.id === nextValue);
                           const addr = venue
                             ? [venue.address, venue.commune, venue.region, "Chile"].filter(Boolean).join(", ") || venue.name || ""
                             : "";
-                          setForm({ ...form, destinationVenueId: nextValue, destination: addr });
+                          setForm({ ...form, destinationVenueId: nextValue, destinationHotelId: "", destination: addr });
                           return;
                         }
                         if (config.endpoint === "/trips" && field.key === "destinationHotelId") {
@@ -2643,7 +2671,7 @@ export default function ResourceScreen({
                           const addr = hotel
                             ? [hotel.address, hotel.commune, hotel.region, "Chile"].filter(Boolean).join(", ") || hotel.name || ""
                             : "";
-                          setForm({ ...form, destinationHotelId: nextValue, destination: addr });
+                          setForm({ ...form, destinationHotelId: nextValue, destinationVenueId: "", destination: addr });
                           return;
                         }
                         if (config.endpoint === "/drivers" && field.key === "vehicleType") {
