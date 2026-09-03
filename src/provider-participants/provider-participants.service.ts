@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { welcomeEmailHtml } from '../shared/email-templates';
 import { sendResendEmail } from '../shared/resend';
+import { normalizeStorageUrlsDeep } from '../shared/storage-url';
 import { InjectRepository } from '@nestjs/typeorm';
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
 import { ConfigService } from '@nestjs/config';
@@ -82,7 +83,11 @@ export class ProviderParticipantsService {
     if (dto.arrivalTime !== undefined) row.arrival_time = dto.arrivalTime ?? null;
     if (dto.departureTime !== undefined) row.departure_time = dto.departureTime ?? null;
     if (dto.observations !== undefined) row.observations = dto.observations ?? null;
-    if (dto.metadata !== undefined) row.metadata = dto.metadata ?? {};
+    if (dto.metadata !== undefined) {
+      // Nunca persistir URLs firmadas (token caduco): guardar la URL pública
+      // canónica; el interceptor firma al leer.
+      row.metadata = normalizeStorageUrlsDeep(dto.metadata ?? {});
+    }
     return row;
   }
 

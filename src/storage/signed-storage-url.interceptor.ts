@@ -34,6 +34,10 @@ const PRIVATE_BUCKETS = new Set([
 ]);
 
 const PUBLIC_MARKER = '/storage/v1/object/public/';
+// URLs ya firmadas que quedaron persistidas en la base (el token caduca): hay
+// que reconocerlas para volver a firmarlas frescas al leer, si no la imagen
+// deja de cargar cuando expira el token.
+const SIGN_MARKER = '/storage/v1/object/sign/';
 const SIGN_TTL_SECONDS = 3600; // vigencia de la URL firmada
 const CACHE_REUSE_MS = 30 * 60 * 1000; // reutilizar firmas hasta 30 min
 const MAX_DEPTH = 12;
@@ -41,9 +45,14 @@ const MAX_DEPTH = 12;
 type ParsedRef = { bucket: string; path: string };
 
 function parsePrivateRef(value: string): ParsedRef | null {
-  const idx = value.indexOf(PUBLIC_MARKER);
-  if (idx < 0) return null;
-  const rest = value.slice(idx + PUBLIC_MARKER.length).split('?')[0];
+  const marker = value.includes(PUBLIC_MARKER)
+    ? PUBLIC_MARKER
+    : value.includes(SIGN_MARKER)
+      ? SIGN_MARKER
+      : null;
+  if (!marker) return null;
+  const idx = value.indexOf(marker);
+  const rest = value.slice(idx + marker.length).split('?')[0];
   const slash = rest.indexOf('/');
   if (slash <= 0) return null;
   const bucket = rest.slice(0, slash);
