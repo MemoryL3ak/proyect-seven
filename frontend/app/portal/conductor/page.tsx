@@ -787,6 +787,12 @@ export default function DriverPortalPage() {
     if (!isNativeAvailable()) return;
     const driverId = driverProfile?.id;
     if (!driverId || trackingArmedRef.current) return;
+    // Conductores de proveedor: el shell arma su rastreo recién cuando hay un
+    // viaje en curso. Dispararlo al entrar congela el WebView para estas
+    // cuentas (shell actual); los conductores de flota propia conservan el
+    // comportamiento de siempre (rastreo desde el login) y el rastreo de los
+    // viajes queda cubierto igual para todos.
+    if (driverProfile?._isParticipant && !trackingTripId) return;
     trackingArmedRef.current = true;
     // SA-BACKEND-02: la sesión de portal viaja al shell para que el tracker
     // la adjunte a sus POST /vehicle-positions como headers
@@ -807,7 +813,9 @@ export default function DriverPortalPage() {
       // Let a later render retry (e.g. after the driver grants permission).
       trackingArmedRef.current = false;
     });
-  }, [driverProfile?.id]);
+    // trackingTripId en las deps: para el conductor de proveedor, el arme se
+    // re-evalúa cuando inicia un viaje.
+  }, [driverProfile?.id, trackingTripId]);
 
   // Wake Lock: keep screen awake while tracking (prevents browser suspension)
   useEffect(() => {
