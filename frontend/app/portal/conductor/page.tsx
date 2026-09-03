@@ -37,6 +37,40 @@ type VenueSite = { id: string; eventId?: string | null; name?: string | null; ad
 type AccommodationSite = { id: string; name?: string | null; address?: string | null; city?: string | null; country?: string | null; contactPhone?: string | null; photoUrl?: string | null };
 type FlightItem = { id: string; flightNumber: string; airline: string; arrivalTime: string | null; origin?: string | null; terminal?: string | null };
 
+type FlightTrack = {
+  flightNumber: string;
+  airlineName: string | null;
+  flightStatus: string | null;
+  flightDate: string | null;
+  depAirport: string | null; depIata: string | null; depCity: string | null;
+  depScheduled: string | null; depEstimated?: string | null; depActual: string | null;
+  depGate: string | null; depTerminal?: string | null; depDelayMinutes: number | null;
+  arrAirport: string | null; arrIata: string | null; arrCity: string | null;
+  arrScheduled: string | null; arrEstimated: string | null; arrActual: string | null;
+  arrBaggage: string | null; arrTerminal?: string | null; arrDelayMinutes: number | null;
+};
+
+const FLIGHT_STATUS_ES: Record<string, { label: string; color: string }> = {
+  scheduled:   { label: "Programado",  color: "#3b82f6" },
+  boarding:    { label: "Embarcando",  color: "#8b5cf6" },
+  active:      { label: "En vuelo",    color: "#10b981" },
+  approaching: { label: "Aproximando", color: "#10b981" },
+  delayed:     { label: "Retrasado",   color: "#f59e0b" },
+  landed:      { label: "Aterrizó",    color: "#21D0B3" },
+  cancelled:   { label: "Cancelado",   color: "#ef4444" },
+  diverted:    { label: "Desviado",    color: "#f59e0b" },
+  incident:    { label: "Incidente",   color: "#f97316" },
+};
+
+// AviationStack entrega la hora local de cada aeropuerto con offset "+00:00"
+// falso; se lee la hora literal del string para no desplazarla a la zona del
+// navegador (mismo criterio que el panel de Vuelos).
+const fmtVueloHora = (iso?: string | null) => {
+  if (!iso) return "—";
+  const m = /T(\d{2}):(\d{2})/.exec(iso);
+  return m ? `${m[1]}:${m[2]}` : iso;
+};
+
 type Trip = {
   id: string;
   driverId: string;
@@ -219,6 +253,28 @@ export default function DriverPortalPage() {
   const [venues, setVenues] = useState<VenueSite[]>([]);
   const [accommodations, setAccommodations] = useState<AccommodationSite[]>([]);
   const [flights, setFlights] = useState<FlightItem[]>([]);
+  // Rastreo de un vuelo (pestaña Vuelos): estado del popup con la info en vivo.
+  const [trackTarget, setTrackTarget] = useState<{ flightNumber: string; airline?: string | null } | null>(null);
+  const [trackInfo, setTrackInfo] = useState<FlightTrack | null>(null);
+  const [trackLoading, setTrackLoading] = useState(false);
+  const [trackError, setTrackError] = useState<string | null>(null);
+
+  const rastrearVuelo = async (flightNumber: string, airline: string | null | undefined, arrivalTime: string | null | undefined) => {
+    setTrackTarget({ flightNumber, airline });
+    setTrackInfo(null);
+    setTrackError(null);
+    setTrackLoading(true);
+    try {
+      const flightDate = arrivalTime ? new Date(arrivalTime).toISOString().slice(0, 10) : "";
+      const dateParam = flightDate ? `&flightDate=${flightDate}` : "";
+      const result = await apiFetch<FlightTrack>(`/flights/track?flightNumber=${encodeURIComponent(flightNumber)}${dateParam}`);
+      setTrackInfo(result);
+    } catch (err) {
+      setTrackError(err instanceof Error ? err.message : "No se pudo rastrear el vuelo.");
+    } finally {
+      setTrackLoading(false);
+    }
+  };
   const [expandedSiteId, setExpandedSiteId] = useState<string | null>(null);
   const [locationPermission, setLocationPermission] = useState<"granted" | "prompt" | "denied" | null>(null);
   const markTripSeen = (tripId: string) => {
@@ -2384,6 +2440,13 @@ export default function DriverPortalPage() {
                       {showDate && <p style={{ fontSize:10,color:"#94a3b8",margin:"1px 0 0" }}>{fmtDate(f.arrivalTime)}</p>}
                     </div>
                   )}
+                  <button
+                    type="button"
+                    onClick={() => rastrearVuelo(f.flightNumber, f.airline, f.arrivalTime)}
+                    style={{ flexShrink:0,padding:"7px 12px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#21D0B3,#14AE98)",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer" }}
+                  >
+                    Rastrear
+                  </button>
                 </div>
               );
               return (
@@ -2541,6 +2604,73 @@ export default function DriverPortalPage() {
           </div>
         </div>
       )}
+
+      {/* ── Rastreo de vuelo (pestaña Vuelos) ── */}
+      {trackTarget && (() => {
+        const st = trackInfo?.flightStatus
+          ? (FLIGHT_STATUS_ES[trackInfo.flightStatus.toLowerCase()] ?? { label: trackInfo.flightStatus, color: "#94a3b8" })
+          : null;
+        const Row = ({ label, value }: { label: string; value?: string | null }) => (
+          <div style={{ display:"flex",justifyContent:"space-between",gap:10,padding:"5px 0",borderBottom:"1px solid #f1f5f9" }}>
+            <span style={{ fontSize:12,color:"#64748b" }}>{label}</span>
+            <span style={{ fontSize:12,fontWeight:700,color:"#0f172a",textAlign:"right" }}>{value || "—"}</span>
+          </div>
+        );
+        return (
+          <div style={{ position:"fixed",inset:0,zIndex:150,background:"rgba(6,15,30,0.6)",backdropFilter:"blur(3px)",display:"flex",alignItems:"center",justifyContent:"center",padding:16 }}>
+            <div style={{ background:"#fff",borderRadius:20,padding:"20px 18px",maxWidth:380,width:"100%",maxHeight:"85vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}>
+              <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,marginBottom:4 }}>
+                <h3 style={{ fontSize:17,fontWeight:800,color:"#0f172a",margin:0 }}>
+                  {(trackInfo?.airlineName || trackTarget.airline) ? `${trackInfo?.airlineName || trackTarget.airline} · ` : ""}{trackTarget.flightNumber}
+                </h3>
+                {st && (
+                  <span style={{ flexShrink:0,fontSize:11,fontWeight:700,color:st.color,background:`${st.color}1a`,border:`1px solid ${st.color}55`,borderRadius:99,padding:"3px 10px" }}>{st.label}</span>
+                )}
+              </div>
+              {trackLoading && <p style={{ fontSize:13,color:"#64748b",textAlign:"center",padding:"24px 0" }}>Consultando información del vuelo…</p>}
+              {trackError && <p style={{ fontSize:13,color:"#b91c1c",textAlign:"center",padding:"18px 0" }}>{trackError}</p>}
+              {trackInfo && !trackLoading && (
+                <>
+                  <p style={{ fontSize:12,color:"#64748b",margin:"0 0 12px" }}>
+                    {(trackInfo.depCity || trackInfo.depIata || "Origen")} → {(trackInfo.arrCity || trackInfo.arrIata || "Destino")}
+                    {trackInfo.flightDate ? ` · ${trackInfo.flightDate}` : ""}
+                  </p>
+                  <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#21D0B3",margin:"0 0 4px" }}>Salida{trackInfo.depIata ? ` · ${trackInfo.depIata}` : ""}</p>
+                  <Row label="Aeropuerto" value={trackInfo.depAirport} />
+                  <Row label="Programada" value={fmtVueloHora(trackInfo.depScheduled)} />
+                  {trackInfo.depActual
+                    ? <Row label="Despegó" value={fmtVueloHora(trackInfo.depActual)} />
+                    : trackInfo.depEstimated ? <Row label="Estimada" value={fmtVueloHora(trackInfo.depEstimated)} /> : null}
+                  {(trackInfo.depTerminal || trackInfo.depGate) && (
+                    <Row label="Terminal / Puerta" value={[trackInfo.depTerminal, trackInfo.depGate].filter(Boolean).join(" / ")} />
+                  )}
+                  <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#0fa894",margin:"12px 0 4px" }}>Llegada{trackInfo.arrIata ? ` · ${trackInfo.arrIata}` : ""}</p>
+                  <Row label="Aeropuerto" value={trackInfo.arrAirport} />
+                  <Row label="Programada" value={fmtVueloHora(trackInfo.arrScheduled)} />
+                  {trackInfo.arrActual
+                    ? <Row label="Aterrizó" value={fmtVueloHora(trackInfo.arrActual)} />
+                    : trackInfo.arrEstimated ? <Row label="Estimada" value={fmtVueloHora(trackInfo.arrEstimated)} /> : null}
+                  {(trackInfo.arrTerminal || trackInfo.arrBaggage) && (
+                    <Row label="Terminal / Cinta" value={[trackInfo.arrTerminal, trackInfo.arrBaggage].filter(Boolean).join(" / ")} />
+                  )}
+                  {typeof trackInfo.arrDelayMinutes === "number" && trackInfo.arrDelayMinutes > 0 && (
+                    <p style={{ fontSize:12,fontWeight:700,color:"#b45309",margin:"10px 0 0",textAlign:"center" }}>
+                      Retraso de llegada: {trackInfo.arrDelayMinutes} min
+                    </p>
+                  )}
+                </>
+              )}
+              <button
+                type="button"
+                onClick={() => { setTrackTarget(null); setTrackInfo(null); setTrackError(null); }}
+                style={{ width:"100%",marginTop:14,padding:12,borderRadius:12,border:"1px solid #e2e8f0",background:"#f8fafc",color:"#475569",fontSize:13,fontWeight:700,cursor:"pointer" }}
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── Foto de jornada (primer / último viaje del día) ── */}
       {journeyPhoto && (
