@@ -2352,6 +2352,14 @@ export default function DriverPortalPage() {
                 const d = new Date(f.arrivalTime!);
                 return d.toDateString() !== todayKey && d.getTime() > now.getTime();
               });
+              // Viaje asignado con vuelo ya aterrizado (fecha pasada): igual se
+              // muestra — antes quedaba invisible y parecia que no cargo.
+              const past = withDate
+                .filter(f => {
+                  const d = new Date(f.arrivalTime!);
+                  return d.toDateString() !== todayKey && d.getTime() <= now.getTime();
+                })
+                .reverse();
               const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
               const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("es-CL", { weekday: "short", day: "2-digit", month: "short" });
               const FlightCard = ({ f, showDate }: { f: PassengerFlight; showDate?: boolean }) => (
@@ -2386,6 +2394,12 @@ export default function DriverPortalPage() {
                   <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#0fa894",margin:"10px 0 0" }}>Próximas llegadas</p>
                   {upcoming.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:14 }}>Sin vuelos próximos de tus pasajeros</p>}
                   {upcoming.slice(0, 25).map(f => <FlightCard key={f.id} f={f} showDate />)}
+                  {past.length > 0 && (
+                    <>
+                      <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#94a3b8",margin:"10px 0 0" }}>Llegadas anteriores</p>
+                      {past.slice(0, 10).map(f => <FlightCard key={f.id} f={f} showDate />)}
+                    </>
+                  )}
                   {noSchedule.length > 0 && (
                     <>
                       <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#94a3b8",margin:"10px 0 0" }}>Sin horario informado</p>
