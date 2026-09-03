@@ -240,15 +240,11 @@ export class MobileAuthService {
     };
   }
 
-  // ── Sesión única por usuario ────────────────────────────────────────────────
-  // Sólo puede haber UN dispositivo con sesión activa por usuario, y LA SESIÓN
-  // EXISTENTE MANDA: un segundo dispositivo no expulsa a la primera, sino que
-  // su login se rechaza con ACTIVE_ELSEWHERE. La sesión activa refresca su
-  // "latido" (portalSessionAt) en cada validación; si deja de latir por más de
-  // SESSION_STALE_MS (app cerrada sin logout), otro dispositivo puede reclamar.
-  // El logout libera la sesión de inmediato.
-
-  private static readonly SESSION_STALE_MS = 2 * 60 * 1000;
+  // ── Sesión por usuario (un dispositivo activo, sin bloqueo) ─────────────────
+  // Hay UN sessionId activo por usuario. EL ÚLTIMO LOGIN MANDA: un nuevo
+  // dispositivo desplaza al anterior (su sessionId deja de coincidir y su
+  // próxima validación lo desloguea), sin rechazar el login. El logout libera
+  // la sesión de inmediato.
 
   private async sessionTable(kind: string, userId: string): Promise<{ schema: string; table: string } | null> {
     if (kind === 'athlete') return { schema: 'core', table: 'athletes' };
@@ -291,16 +287,10 @@ export class MobileAuthService {
       }
       const meta = ((row.metadata as Record<string, unknown>) ?? {});
       const existing = typeof meta.portalSessionId === 'string' ? meta.portalSessionId : '';
-      const at = meta.portalSessionAt ? new Date(String(meta.portalSessionAt)).getTime() : 0;
-      const alive =
-        Number.isFinite(at) && at > 0 && Date.now() - at < MobileAuthService.SESSION_STALE_MS;
 
-      // La sesión existente manda: si otro dispositivo tiene una sesión viva,
-      // este login se rechaza (no se expulsa al primero).
-      if (existing && alive && existing !== currentSessionId) {
-        return { claimed: false, reason: 'ACTIVE_ELSEWHERE', sessionId: null };
-      }
-
+      // Un dispositivo activo a la vez, SIN bloqueo: el login nuevo desplaza a
+      // la sesión anterior (el dispositivo viejo se invalida en su próxima
+      // validación) en vez de rechazarse. No se devuelve ACTIVE_ELSEWHERE.
       // Mismo dispositivo (re-login) conserva su sessionId; si no, uno nuevo.
       const sessionId = existing && existing === currentSessionId ? existing : randomUUID();
       const metadata = {
