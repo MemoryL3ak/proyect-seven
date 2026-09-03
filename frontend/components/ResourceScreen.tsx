@@ -1800,19 +1800,6 @@ export default function ResourceScreen({
       setForm(next);
       return;
     }
-    if (config.endpoint === "/trips") {
-      if (item.delegationId) {
-        next.delegationId = item.delegationId;
-      }
-      if (Array.isArray(item.athleteIds)) {
-        next.athleteIds = item.athleteIds;
-      }
-      if (item.destinationHotelId) {
-        next.destinationTypeFilter = "HOTEL";
-      } else if (item.destinationVenueId) {
-        next.destinationTypeFilter = "SEDE";
-      }
-    }
     if (config.endpoint === "/athletes" && item.countryCode === "CHL") {
       if (item.passportNumber) {
         next.rut = String(item.passportNumber);
@@ -1895,6 +1882,22 @@ export default function ResourceScreen({
       }
       next[field.key] = String(value);
     });
+    // OJO: debe ir DESPUÉS del forEach de arriba — ese loop resetea a "" los
+    // campos transitorios (destinationTypeFilter, delegationId) y pisaba estos
+    // valores, por lo que "Tipo de destino" siempre se abría vacío.
+    if (config.endpoint === "/trips") {
+      if (item.delegationId) {
+        next.delegationId = item.delegationId;
+      }
+      if (Array.isArray(item.athleteIds)) {
+        next.athleteIds = item.athleteIds;
+      }
+      if (item.destinationHotelId) {
+        next.destinationTypeFilter = "HOTEL";
+      } else if (item.destinationVenueId) {
+        next.destinationTypeFilter = "SEDE";
+      }
+    }
     if (config.endpoint === "/events") {
       const parsedConfig = readEventAndConfig(item.config);
       setEventCapacityTotals(parsedConfig.totals);
