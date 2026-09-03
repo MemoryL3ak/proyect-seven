@@ -25,7 +25,6 @@ import { downloadCredentialPdf, saveCredentialPdf, type CredentialPdfData } from
 import { clearPersistedTabs, persistTab, restoreOnReload, startTabHeartbeat } from "@/lib/portal-tab";
 import { claimPortalSession, clearPortalSession, ensurePortalIdentity, getStoredPortalSessionId, portalLogin, releasePortalSession, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
 import { dlog } from "@/lib/native-debug";
-import NativeDebugOverlay from "@/components/NativeDebugOverlay";
 import PortalSessionGuard from "@/components/PortalSessionGuard";
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
 
@@ -1186,7 +1185,6 @@ export default function DriverPortalPage() {
 
   return (
     <>
-      <NativeDebugOverlay />
       <PushTokenSync userKind="driver" userId={driverProfile?.id || null} />
       {driverProfile && (
         <PortalSessionGuard
