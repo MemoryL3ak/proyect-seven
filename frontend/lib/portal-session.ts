@@ -159,7 +159,21 @@ export async function portalLogin(code: string): Promise<PortalLoginResult> {
  */
 export async function ensurePortalIdentity(kind: PortalSessionKind, userId: string): Promise<boolean> {
   const current = getPortalIdentity();
-  if (current && current.userId === userId) return true;
+  if (current && current.userId === userId) {
+    // "El último login manda": otra apertura pudo desplazar esta sesión y la
+    // credencial local estaría muerta (todo daría 401 "Autenticación
+    // requerida"). Validar antes de confiar; si murió, reclamar una fresca.
+    try {
+      const res = await apiFetch<{ valid: boolean }>("/m/auth/session/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind, userId, sessionId: current.sessionId }),
+      });
+      if (res?.valid !== false) return true;
+    } catch {
+      return true; // sin red / backend antiguo: seguir con lo local
+    }
+  }
   const claim = await claimPortalSession(kind, userId);
   return !claim.activeElsewhere;
 }

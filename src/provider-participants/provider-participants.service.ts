@@ -315,6 +315,9 @@ export class ProviderParticipantsService {
   }
 
   async remove(id: string) {
+    // Las acreditaciones de un chofer de proveedor no tienen FK que las
+    // limpie en cascada: se eliminan aquí para no dejar huérfanas.
+    await this.supabase.schema('core').from('accreditations').delete().eq('driver_id', id);
     const { data, error } = await this.supabase
       .schema('core')
       .from('provider_participants')

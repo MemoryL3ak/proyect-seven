@@ -553,6 +553,9 @@ export class DriversService {
   }
 
   async remove(id: string) {
+    // Sin FK en core.accreditations.driver_id (migración 20260903): las
+    // acreditaciones del conductor se limpian aquí para no dejar huérfanas.
+    await this.supabase.schema('core').from('accreditations').delete().eq('driver_id', id);
     const { data, error } = await this.supabase
       .schema('transport')
       .from('drivers')

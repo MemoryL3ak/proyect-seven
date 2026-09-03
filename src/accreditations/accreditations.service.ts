@@ -75,7 +75,7 @@ export class AccreditationsService {
     return fallback;
   }
 
-  private validateSubjectReferences(
+  private async validateSubjectReferences(
     subjectType: 'PARTICIPANT' | 'DRIVER',
     athleteId?: string | null,
     driverId?: string | null,
@@ -93,6 +93,32 @@ export class AccreditationsService {
       throw new BadRequestException(
         'For DRIVER, driverId is required and athleteId must be empty',
       );
+    }
+
+    // Un conductor puede vivir en transport.drivers (flota propia) o en
+    // core.provider_participants (choferes de proveedor). La tabla ya no
+    // tiene FK sobre driver_id (migración 20260903), así que la existencia
+    // se valida aquí.
+    if (subjectType === 'DRIVER' && driverId) {
+      const { data: fleetDriver } = await this.supabase
+        .schema('transport')
+        .from('drivers')
+        .select('id')
+        .eq('id', driverId)
+        .maybeSingle();
+      if (!fleetDriver) {
+        const { data: participant } = await this.supabase
+          .schema('core')
+          .from('provider_participants')
+          .select('id')
+          .eq('id', driverId)
+          .maybeSingle();
+        if (!participant) {
+          throw new BadRequestException(
+            'El conductor indicado no existe (ni en flota propia ni como participante de proveedor)',
+          );
+        }
+      }
     }
   }
 
@@ -272,7 +298,7 @@ export class AccreditationsService {
   }
 
   async create(dto: CreateAccreditationDto) {
-    this.validateSubjectReferences(dto.subjectType, dto.athleteId, dto.driverId);
+    await this.validateSubjectReferences(dto.subjectType, dto.athleteId, dto.driverId);
 
     let payload = this.toRow(dto);
     let { data, error } = await this.supabase
@@ -369,7 +395,7 @@ export class AccreditationsService {
     const mergedDriverId =
       dto.driverId !== undefined ? dto.driverId : current.driverId;
 
-    this.validateSubjectReferences(
+    await this.validateSubjectReferences(
       mergedSubjectType,
       mergedAthleteId,
       mergedDriverId,

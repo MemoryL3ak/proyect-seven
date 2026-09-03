@@ -14,7 +14,6 @@ import DeleteAccountSection from "@/components/DeleteAccountSection";
 import EventDocumentsSection from "@/components/EventDocumentsSection";
 import PortalSkeleton from "@/components/PortalSkeleton";
 import { deletePortalAccount } from "@/lib/account-deletion";
-import CuadernoCargoSection from "@/components/CuadernoCargoSection";
 import EmergencyNumbersSection from "@/components/EmergencyNumbersSection";
 import CredentialQrCard from "@/components/CredentialQrCard";
 import { isAvailable as isNativeAvailable, request as nativeRequest } from "@/lib/native-bridge";
@@ -107,6 +106,7 @@ type ProviderParticipant = {
   fullName?: string | null;
   rut?: string | null;
   email?: string | null;
+  phone?: string | null;
   status?: string | null;
   providerId?: string | null;
   metadata?: Record<string, unknown> | null;
@@ -366,6 +366,7 @@ export default function DriverPortalPage() {
           fullName: p.fullName,
           rut: p.rut,
           email: p.email,
+          phone: p.phone,
           status: p.status,
           providerId: p.providerId,
           metadata: p.metadata,
@@ -2069,6 +2070,8 @@ export default function DriverPortalPage() {
                   <div style={{ flex:1,minWidth:0 }}>
                     <h2 style={{ fontSize:16,fontWeight:800,color:"#0f172a",margin:"0 0 2px" }}>{driverProfile.fullName || "Conductor"}</h2>
                     {driverProfile.rut && <p style={{ fontSize:12,color:"#64748b",margin:0 }}>RUT: {driverProfile.rut}</p>}
+                    {driverProfile.phone && <p style={{ fontSize:12,color:"#64748b",margin:"2px 0 0" }}>Teléfono: +{String(driverProfile.phone).replace(/^\+/, "")}</p>}
+                    {driverProfile.email && <p style={{ fontSize:12,color:"#64748b",margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{driverProfile.email}</p>}
                     <div style={{ display:"flex",alignItems:"center",gap:6,marginTop:4 }}>
                       <span style={{ width:7,height:7,borderRadius:"50%",background: driverProfile.status === "ACTIVE" ? "#21D0B3" : "#f59e0b" }} />
                       <span style={{ fontSize:11,color:"#64748b",fontWeight:600 }}>{driverProfile.status === "ACTIVE" ? "Activo" : driverProfile.status || "—"}</span>
@@ -2266,9 +2269,6 @@ export default function DriverPortalPage() {
 
                 {/* Números de emergencia */}
                 <EmergencyNumbersSection />
-
-                {/* Cuaderno de cargo */}
-                <CuadernoCargoSection />
 
                 {/* Device permissions (only visible inside the mobile app) */}
                 <DevicePermissionsSection />
