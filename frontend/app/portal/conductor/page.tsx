@@ -788,20 +788,18 @@ export default function DriverPortalPage() {
     const driverId = driverProfile?.id;
     if (!driverId || trackingArmedRef.current) return;
     trackingArmedRef.current = true;
-    // SA-BACKEND-02: la sesión de portal viaja al shell para que el tracker
-    // la adjunte a sus POST /vehicle-positions como headers
-    // x-portal-kind / x-portal-user / x-portal-session. Los shells antiguos
-    // ignoran el campo (la API acepta POST sin credenciales mientras
-    // VEHICLE_POSITIONS_INGEST_AUTH siga en modo log).
-    const sessionId = getStoredPortalSessionId("driver", driverId);
+    // ⚠ TRANSITORIO: el campo `session` de SA-BACKEND-02 (la sesión de portal
+    // para que el shell adjunte headers a sus POST /vehicle-positions) está
+    // RETIRADO del payload — el shell instalado congela el WebView al
+    // recibirlo, dejando el portal conductor inutilizable dentro de la app.
+    // Hoy el campo no cumple función operativa (la ingesta sigue en modo log,
+    // que acepta POST sin credenciales). Cuando el shell maneje el campo sin
+    // bloquearse, restaurar:
+    //   const sessionId = getStoredPortalSessionId("driver", driverId);
+    //   payload: { driverId, ...(sessionId ? { session: { kind: "driver", userId: driverId, sessionId } } : {}) }
     nativeRequest(
       "tracking.start",
-      {
-        driverId,
-        ...(sessionId
-          ? { session: { kind: "driver", userId: driverId, sessionId } }
-          : {}),
-      },
+      { driverId },
       { timeoutMs: 30_000 },
     ).catch(() => {
       // Let a later render retry (e.g. after the driver grants permission).
