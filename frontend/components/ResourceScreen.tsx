@@ -1032,6 +1032,9 @@ export default function ResourceScreen({
 
   useEffect(() => {
     if (config.endpoint !== "/trips") return;
+    // Autollenado solo al CREAR: al editar, este efecto pisaba el tipo de
+    // cliente y los participantes guardados con los derivados del solicitante.
+    if (editingId) return;
     const selected = form.requesterAthleteId as string | undefined;
     if (!selected) return;
     const athlete = (athleteOptions as any[]).find((o) => o.value === selected);
@@ -1049,7 +1052,7 @@ export default function ResourceScreen({
             : {}),
       }));
     }
-  }, [config.endpoint, form.requesterAthleteId, athleteOptions]);
+  }, [config.endpoint, editingId, form.requesterAthleteId, athleteOptions]);
 
   useEffect(() => {
     if (needsAthletes) {
@@ -1069,7 +1072,9 @@ export default function ResourceScreen({
     if (allIds.length === 0) return;
     setForm((prev) => {
       const current = (prev.athleteIds as string[]) || [];
-      if (current.length === allIds.length) return prev;
+      // Preseleccionar todos SOLO si no hay selección: antes forzaba la
+      // delegación completa y era imposible quitar participantes al editar.
+      if (current.length > 0) return prev;
       return { ...prev, athleteIds: allIds };
     });
   }, [isTrips, form.delegationId, form.clientType, athleteOptions]);
@@ -2647,6 +2652,12 @@ export default function ResourceScreen({
                             ? [hotel.address, hotel.commune, hotel.region, "Chile"].filter(Boolean).join(", ") || hotel.name || ""
                             : "";
                           setForm({ ...form, originHotelId: nextValue, origin: addr });
+                          return;
+                        }
+                        if (config.endpoint === "/trips" && field.key === "delegationId") {
+                          // Cambiar la delegación vacía la selección para que
+                          // el efecto de preselección cargue la nueva completa.
+                          setForm({ ...form, delegationId: nextValue, athleteIds: [] });
                           return;
                         }
                         if (config.endpoint === "/trips" && field.key === "destinationTypeFilter") {
