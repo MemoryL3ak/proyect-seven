@@ -153,7 +153,7 @@ type ProviderParticipant = {
 
 const statusLabel: Record<string, string> = {
   SCHEDULED: "Programado",
-  EN_ROUTE: "En ruta al punto de recogida",
+  EN_ROUTE: "En ruta al punto de encuentro",
   PICKED_UP: "En curso",
   DROPPED_OFF: "Dejado en hotel",
   COMPLETED: "Viaje completado"
@@ -1513,7 +1513,7 @@ export default function DriverPortalPage() {
                     <span style={{ display:"flex",alignItems:"center",gap:8 }}>
                       <span style={{ fontSize:10,fontWeight:800,letterSpacing:"0.18em",textTransform:"uppercase",color:"#34F3C6" }}>● En viaje</span>
                       <span style={{ fontSize:9.5,fontWeight:700,padding:"2px 8px",borderRadius:"99px",background:"rgba(52,243,198,0.15)",border:"1px solid rgba(52,243,198,0.3)",color:"#a8f5e0" }}>
-                        {enCurso ? "En curso" : "En ruta al punto de recogida"}
+                        {enCurso ? "En curso" : "En ruta al punto de encuentro"}
                       </span>
                     </span>
                     <span style={{ display:"block",fontSize:14,fontWeight:700,color:"#fff",margin:"4px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
@@ -1906,7 +1906,7 @@ export default function DriverPortalPage() {
                               ) : (
                                 <button type="button" onClick={() => updateTrip(trip.id, "EN_ROUTE")} disabled={loading}
                                   style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:"linear-gradient(135deg,#34F3C6,#21D0B3)",color:"#0d1b3e",fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(33,208,179,0.3)",opacity:loading?0.7:1 }}>
-                                  {t("Iniciar — En ruta al punto de recogida")}
+                                  {t("Iniciar — En ruta al punto de encuentro")}
                                 </button>
                               )
                             ) : status === "EN_ROUTE" ? (
@@ -2742,7 +2742,7 @@ export default function DriverPortalPage() {
               style={{ background:"#fff",borderRadius:20,padding:"24px 20px",maxWidth:360,width:"100%",textAlign:"center",boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}>
               <div style={{ fontSize:40,marginBottom:8 }}>🧭</div>
               <h3 style={{ fontSize:17,fontWeight:800,color:"#0f172a",margin:0 }}>
-                {navPrompt.phase === "pickup" ? "Navegar al punto de recogida" : "Navegar al destino"}
+                {navPrompt.phase === "pickup" ? "Navegar al punto de encuentro" : "Navegar al destino"}
               </h3>
               <p style={{ fontSize:13,color:"#64748b",margin:"8px 0 16px",lineHeight:1.5,overflow:"hidden",textOverflow:"ellipsis" }}>
                 {target.label}

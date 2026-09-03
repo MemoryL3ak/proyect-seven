@@ -254,7 +254,7 @@ const statusMeta: Record<string, { label: string; tone: string; panel: string }>
     panel: "",
   },
   EN_ROUTE: {
-    label: "En ruta al punto de recogida",
+    label: "En ruta al punto de encuentro",
     tone: "border-indigo-400 bg-indigo-50 text-indigo-700",
     panel: "",
   },

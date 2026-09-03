@@ -176,7 +176,7 @@ const STATUS_TONES: Record<string, StatusTone> = {
   REQUESTED: { label: "Solicitado", chip: "", panel: "" },
   SCHEDULED: { label: "Programado", chip: "", panel: "" },
   ASSIGNED: { label: "Asignado", chip: "", panel: "" },
-  EN_ROUTE: { label: "En ruta al punto de recogida", chip: "", panel: "" },
+  EN_ROUTE: { label: "En ruta al punto de encuentro", chip: "", panel: "" },
   PICKED_UP: { label: "En curso", chip: "", panel: "" },
   DROPPED_OFF: { label: "Dejado en hotel", chip: "", panel: "" },
   COMPLETED: { label: "Completado", chip: "", panel: "" },
