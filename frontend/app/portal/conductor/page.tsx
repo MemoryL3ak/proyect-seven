@@ -806,18 +806,19 @@ export default function DriverPortalPage() {
     // bloquearse, restaurar:
     //   const sessionId = getStoredPortalSessionId("driver", driverId);
     //   payload: { driverId, ...(sessionId ? { session: { kind: "driver", userId: driverId, sessionId } } : {}) }
-    dlog("→ shell tracking.start");
-    nativeRequest(
-      "tracking.start",
-      { driverId },
-      { timeoutMs: 30_000 },
-    ).then(() => {
-      dlog("shell tracking OK");
-    }).catch((err) => {
-      dlog(`shell tracking FAIL: ${err instanceof Error ? err.message.slice(0, 60) : err}`);
-      // Let a later render retry (e.g. after the driver grants permission).
-      trackingArmedRef.current = false;
-    });
+    // ⚠ DESACTIVADO TRANSITORIAMENTE: el shell instalado (build 1.0.1) se
+    // cuelga al procesar tracking.start — nunca responde (evidencia medida:
+    // `bridge.request("tracking.start") timed out after 30000ms`) y al
+    // colgarse BLOQUEA los toques de toda la pantalla (portal conductor
+    // inutilizable dentro de la app). Hoy ese rastreo del shell no opera de
+    // todos modos (el handler muere); el rastreo de los viajes activos queda
+    // cubierto por la vía web (watchPosition) también dentro de la app.
+    // Restaurar cuando el shell responda al request sin bloquear el WebView:
+    //   dlog("→ shell tracking.start");
+    //   nativeRequest("tracking.start", { driverId }, { timeoutMs: 30_000 })
+    //     .then(() => dlog("shell tracking OK"))
+    //     .catch(() => { trackingArmedRef.current = false; });
+    dlog("shell tracking omitido (shell colgado; GPS web activo)");
   }, [driverProfile?.id]);
 
   // Wake Lock: keep screen awake while tracking (prevents browser suspension)
@@ -857,7 +858,10 @@ export default function DriverPortalPage() {
   // pure-web drivers, keeping their active trip covered.
   useEffect(() => {
     if (!trackingTripId) return;
-    if (isNativeAvailable()) return;
+    // ⚠ TRANSITORIO: mientras el shell tenga colgado su tracker (ver
+    // tracking.start arriba), la vía web de GPS corre TAMBIÉN dentro de la
+    // app — así los viajes activos siguen rastreados. Al restaurar el shell,
+    // reponer el salto: if (isNativeAvailable()) return;
     const trip = getTripById(trackingTripId);
     if (!trip) return;
 
