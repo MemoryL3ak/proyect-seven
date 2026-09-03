@@ -1946,12 +1946,10 @@ export default function ResourceScreen({
   useEffect(() => {
     if (!externalEditingId || externalEditingId === editingId) return;
 
-    const localItem = items.find((item) => item.id === externalEditingId);
-    if (localItem) {
-      handleEdit(localItem);
-      return;
-    }
-
+    // Siempre pedir el registro fresco a la API. Usar la copia local (items)
+    // re-llenaba el formulario con datos previos al guardado — parecía que el
+    // cambio no se tomó y, al guardar de nuevo, se re-escribían los datos
+    // viejos en la base.
     let cancelled = false;
     apiFetch<Record<string, any>>(`${config.endpoint}/${externalEditingId}`)
       .then((item) => {
@@ -1966,7 +1964,7 @@ export default function ResourceScreen({
     return () => {
       cancelled = true;
     };
-  }, [config.endpoint, editingId, externalEditingId, items, t]);
+  }, [config.endpoint, editingId, externalEditingId, t]);
 
   const handleDelete = async (id: string) => {
     setError(null);
