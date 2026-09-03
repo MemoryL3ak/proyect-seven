@@ -254,14 +254,13 @@ export default function DriverPortalPage() {
   const [accommodations, setAccommodations] = useState<AccommodationSite[]>([]);
   const [flights, setFlights] = useState<FlightItem[]>([]);
   // Rastreo de un vuelo (pestaña Vuelos): estado del popup con la info en vivo.
-  const [trackTarget, setTrackTarget] = useState<{ flightNumber: string; airline?: string | null } | null>(null);
+  const [trackTarget, setTrackTarget] = useState<{ flightNumber: string; airline?: string | null; arrivalTime?: string | null } | null>(null);
   const [trackInfo, setTrackInfo] = useState<FlightTrack | null>(null);
   const [trackLoading, setTrackLoading] = useState(false);
   const [trackError, setTrackError] = useState<string | null>(null);
 
   const rastrearVuelo = async (flightNumber: string, airline: string | null | undefined, arrivalTime: string | null | undefined) => {
-    setTrackTarget({ flightNumber, airline });
-    setTrackInfo(null);
+    setTrackTarget({ flightNumber, airline, arrivalTime });
     setTrackError(null);
     setTrackLoading(true);
     try {
@@ -2660,13 +2659,23 @@ export default function DriverPortalPage() {
                   )}
                 </>
               )}
-              <button
-                type="button"
-                onClick={() => { setTrackTarget(null); setTrackInfo(null); setTrackError(null); }}
-                style={{ width:"100%",marginTop:14,padding:12,borderRadius:12,border:"1px solid #e2e8f0",background:"#f8fafc",color:"#475569",fontSize:13,fontWeight:700,cursor:"pointer" }}
-              >
-                Cerrar
-              </button>
+              <div style={{ display:"flex",gap:10,marginTop:14 }}>
+                <button
+                  type="button"
+                  disabled={trackLoading}
+                  onClick={() => rastrearVuelo(trackTarget.flightNumber, trackTarget.airline, trackTarget.arrivalTime ?? null)}
+                  style={{ flex:1,padding:12,borderRadius:12,border:"none",background: trackLoading ? "#cbd5e1" : "linear-gradient(135deg,#21D0B3,#14AE98)",color:"#fff",fontSize:13,fontWeight:700,cursor: trackLoading ? "wait" : "pointer" }}
+                >
+                  {trackLoading ? "Actualizando…" : "↻ Actualizar"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setTrackTarget(null); setTrackInfo(null); setTrackError(null); }}
+                  style={{ flex:1,padding:12,borderRadius:12,border:"1px solid #e2e8f0",background:"#f8fafc",color:"#475569",fontSize:13,fontWeight:700,cursor:"pointer" }}
+                >
+                  Cerrar
+                </button>
+              </div>
             </div>
           </div>
         );
