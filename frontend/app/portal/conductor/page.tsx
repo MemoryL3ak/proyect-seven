@@ -151,6 +151,28 @@ type ProviderParticipant = {
   metadata?: Record<string, unknown> | null;
 };
 
+// La acreditación de un chofer de proveedor vive espejada en su metadata
+// (accreditationStatus, credentialCode, accessTypes — ver AccreditationsService.
+// syncSubjectSnapshot): se eleva a campos planos para que la credencial del
+// portal la muestre igual que la de un conductor de flota propia.
+const participantToDriver = (p: ProviderParticipant): Driver => {
+  const meta = (p.metadata ?? {}) as Record<string, unknown>;
+  return {
+    id: p.id,
+    fullName: p.fullName,
+    rut: p.rut,
+    email: p.email,
+    phone: p.phone,
+    status: p.status,
+    providerId: p.providerId,
+    accreditationStatus: typeof meta.accreditationStatus === "string" ? meta.accreditationStatus : null,
+    credentialCode: typeof meta.credentialCode === "string" ? meta.credentialCode : null,
+    accessTypes: Array.isArray(meta.accessTypes) ? (meta.accessTypes as string[]) : [],
+    metadata: p.metadata,
+    _isParticipant: true,
+  };
+};
+
 const statusLabel: Record<string, string> = {
   SCHEDULED: "Programado",
   EN_ROUTE: "En ruta al punto de encuentro",
@@ -340,6 +362,22 @@ export default function DriverPortalPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [driverProfile?.id]);
 
+  // Al abrir "Cuenta" se refresca el perfil desde el backend: si operaciones
+  // modificó los accesos o reemitió la credencial mientras la sesión estaba
+  // abierta, la credencial se muestra al día sin volver a iniciar sesión.
+  useEffect(() => {
+    if (activeTab !== "cuenta" || !driverProfile?.id) return;
+    (async () => {
+      try {
+        const fresh = driverProfile._isParticipant
+          ? participantToDriver(await apiFetch<ProviderParticipant>(`/provider-participants/${driverProfile.id}`))
+          : await apiFetch<Driver>(`/drivers/${driverProfile.id}`);
+        setDriverProfile((prev) => (prev && prev.id === fresh.id ? { ...prev, ...fresh } : prev));
+      } catch { /* se conserva el perfil ya cargado */ }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, driverProfile?.id]);
+
   const loadTrips = async (overrideId?: string) => {
     const id = overrideId || driverId;
     if (!id) return;
@@ -422,17 +460,7 @@ export default function DriverPortalPage() {
       // Merge provider participants who are choferes into the drivers list
       const participantDrivers: Driver[] = (participantsData || [])
         .filter((p) => p.metadata?.isDriver === true || p.metadata?.isDriver === "true")
-        .map((p) => ({
-          id: p.id,
-          fullName: p.fullName,
-          rut: p.rut,
-          email: p.email,
-          phone: p.phone,
-          status: p.status,
-          providerId: p.providerId,
-          metadata: p.metadata,
-          _isParticipant: true,
-        }));
+        .map(participantToDriver);
 
       const allDrivers: Driver[] = [...(driversData || []), ...participantDrivers]
         // Las cuentas dadas de baja no pueden volver a iniciar sesión.
@@ -2130,10 +2158,9 @@ export default function DriverPortalPage() {
                               body: JSON.stringify({ dataUrl }),
                             });
                           }
-                          const endpoint = driverProfile._isParticipant
-                            ? `/provider-participants/${driverProfile.id}`
-                            : `/drivers/${driverProfile.id}`;
-                          const updated = await apiFetch<Driver>(endpoint);
+                          const updated = driverProfile._isParticipant
+                            ? participantToDriver(await apiFetch<ProviderParticipant>(`/provider-participants/${driverProfile.id}`))
+                            : await apiFetch<Driver>(`/drivers/${driverProfile.id}`);
                           setDriverProfile(updated);
                           driverNotify.push("Foto actualizada", "📷");
                         } catch { driverNotify.push("No se pudo subir la foto", "❌"); }

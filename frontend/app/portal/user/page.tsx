@@ -3375,6 +3375,15 @@ export default function UserPortalPage() {
                   const evName = event?.name || "Seven Arena";
                   const qrData = `Participante: ${athlete.fullName}\nID: ${athlete.id.slice(-6)}\nDelegación: ${delegation?.countryCode || "—"}`;
                   const qrDataUrl = await QRCode.toDataURL(qrData, { width:200, margin:1 });
+                  // Los accesos (y el código/estado vigentes) viven en la
+                  // acreditación, no en el atleta: se consultan al abrir la
+                  // credencial para reflejar cambios hechos por operaciones.
+                  type AccSummary = { eventId?: string | null; status?: string | null; credentialCode?: string | null; accessTypes?: string[] | null };
+                  let acc: AccSummary | null = null;
+                  try {
+                    const accs = await apiFetch<AccSummary[]>(`/accreditations?athleteId=${athlete.id}&subjectType=PARTICIPANT`);
+                    acc = (accs || []).find((a) => !athlete.eventId || a.eventId === athlete.eventId) ?? (accs || [])[0] ?? null;
+                  } catch { /* sin acreditación consultable: credencial sin accesos */ }
                   const meta = (athlete.metadata || {}) as Record<string, unknown>;
                   const photoKeys = ["photoUrl","photo_url","avatar","avatarUrl","imageUrl","image_url"];
                   let photoUrl: string | null = null;
@@ -3382,16 +3391,18 @@ export default function UserPortalPage() {
                     const v = meta[k];
                     if (typeof v === "string" && v.trim()) { photoUrl = v.trim(); break; }
                   }
+                  const accessTypes = Array.isArray(acc?.accessTypes) ? acc.accessTypes : [];
                   const html = buildCredentialHtml({
                     eventName: evName,
                     fullName: athlete.fullName,
                     roleLabel: athlete.isDelegationLead ? "JEFE DELEGACIÓN" : "PARTICIPANTE",
-                    credentialCode: athlete.credentialCode || athlete.id.slice(-6).toUpperCase(),
-                    statusLabel: athlete.accreditationStatus || "PENDING",
+                    credentialCode: acc?.credentialCode || athlete.credentialCode || athlete.id.slice(-6).toUpperCase(),
+                    statusLabel: acc?.status || athlete.accreditationStatus || "PENDING",
                     issuedAtLabel: new Date().toLocaleDateString("es-CL"),
                     issuerLabel: "Seven Arena",
                     subjectId: athlete.id,
                     countryTag: athlete.countryCode || delegation?.countryCode || "",
+                    accessTypes,
                     photoUrl,
                     qrDataUrl,
                   });
@@ -3399,12 +3410,13 @@ export default function UserPortalPage() {
                     eventName: evName,
                     fullName: athlete.fullName,
                     roleLabel: athlete.isDelegationLead ? "JEFE DELEGACIÓN" : "PARTICIPANTE",
-                    code: athlete.credentialCode || athlete.id.slice(-6),
+                    code: acc?.credentialCode || athlete.credentialCode || athlete.id.slice(-6),
                     countryTag: athlete.countryCode || delegation?.countryCode || undefined,
                     qrDataUrl,
                     qrContent: qrData,
                     organization: "Seven Arena",
                     issuedAtLabel: new Date().toLocaleDateString("es-CL"),
+                    accessTypes,
                     photoUrl,
                   });
                   setCredentialHtml(html);
