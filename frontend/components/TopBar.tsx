@@ -158,7 +158,9 @@ export default function TopBar({ onMenuOpen }: { onMenuOpen?: () => void }) {
           border: "1px solid #e2e8f0",
           borderRadius: "12px",
           padding: "6px 10px",
-          minWidth: "188px",
+          // Sin ancho mínimo fijo: en móvil (app staff) 188px + el botón de
+          // salir desbordaban el header; el nombre ya trunca con ellipsis.
+          maxWidth: "188px",
         }}>
           <div aria-hidden style={{
             width: "30px",

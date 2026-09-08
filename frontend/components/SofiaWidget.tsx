@@ -820,7 +820,19 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
   const justDraggedRef = useRef(false);
   const fabRef = useRef<HTMLDivElement | null>(null);
 
-  const FAB_SIZE = compact ? 56 : 96;
+  // En pantallas chicas (app staff / móvil) el FAB completo de 96px tapaba
+  // demasiado contenido: se usa la versión compacta aunque no sea portal.
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const update = () => setIsSmallScreen(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
+  const smallFab = compact || isSmallScreen;
+  const FAB_SIZE = smallFab ? 56 : 96;
 
   const clampFab = (x: number, y: number) => ({
     x: Math.min(Math.max(8, x), window.innerWidth - FAB_SIZE - 8),
@@ -1180,7 +1192,7 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
-          ) : compact ? (
+          ) : smallFab ? (
             <div style={{ color: "#fff" }}>
               <SofiaBotIcon size={30} eyeColor="#21D0B3" />
             </div>
@@ -1216,7 +1228,9 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
             // Si el usuario movió el FAB, el panel se abre junto a él.
             ...(fabPos
               ? (() => {
-                  const panelWidth = compact ? Math.min(320, window.innerWidth - 24) : 400;
+                  // El panel nunca puede ser más ancho que la pantalla (en la
+                  // app staff los 400px fijos desbordaban el viewport).
+                  const panelWidth = Math.min(compact ? 320 : 400, window.innerWidth - 24);
                   const left = Math.min(
                     Math.max(12, fabPos.x + FAB_SIZE / 2 - panelWidth / 2),
                     window.innerWidth - panelWidth - 12,
@@ -1232,7 +1246,7 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
                 })()
               : compact
               ? { bottom: 152, right: 12, width: "min(320px, calc(100vw - 24px))" }
-              : { bottom: 92, right: 24, width: 400 }),
+              : { bottom: 92, right: isSmallScreen ? 12 : 24, width: "min(400px, calc(100vw - 24px))" }),
           }}
         >
           {/* Header */}
@@ -1330,8 +1344,8 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
           {/* Messages */}
           <div
             style={{
-              minHeight: compact ? "min(240px, 32vh)" : "min(460px, 58vh)",
-              maxHeight: compact ? "42vh" : "72vh",
+              minHeight: compact ? "min(240px, 32vh)" : isSmallScreen ? "min(280px, 40vh)" : "min(460px, 58vh)",
+              maxHeight: compact ? "42vh" : isSmallScreen ? "55vh" : "72vh",
               overflowY: "auto",
               padding: "16px 18px",
               display: "flex",

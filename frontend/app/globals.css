@@ -1240,6 +1240,13 @@ label > *:first-child {
     padding: 0 !important;
     gap: 0 !important;
   }
+  /* Densidad de tablas en pantallas chicas (app staff / móvil): celdas más
+     compactas para que quepan más columnas antes de scrollear. */
+  .table th,
+  .table td {
+    padding: 7px 9px;
+    font-size: 12px;
+  }
 }
 @media (min-width: 768px) {
   .topbar-hamburger {

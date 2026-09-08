@@ -78,13 +78,13 @@ function ProgressBar({ pct, color, height = 6 }: { pct: number; color: string; h
 
 export default function Page() {
   const { t } = useI18n();
-  const [loading, setLoading] = useState(true);
-  const [eventsCount, setEventsCount] = useState(0);
-  const [athletesCount, setAthletesCount] = useState(0);
-  const [trips, setTrips] = useState<Trip[]>([]);
-  const [accommodationsCount, setAccommodationsCount] = useState(0);
-  const [hotelRooms, setHotelRooms] = useState<HotelRoom[]>([]);
-  const [hotelAssignments, setHotelAssignments] = useState<HotelAssignment[]>([]);
+  // null = ese indicador aún no llega (se muestra "—" solo en su tarjeta).
+  const [eventsCount, setEventsCount] = useState<number | null>(null);
+  const [athletesCount, setAthletesCount] = useState<number | null>(null);
+  const [trips, setTrips] = useState<Trip[] | null>(null);
+  const [accommodationsCount, setAccommodationsCount] = useState<number | null>(null);
+  const [hotelRooms, setHotelRooms] = useState<HotelRoom[] | null>(null);
+  const [hotelAssignments, setHotelAssignments] = useState<HotelAssignment[] | null>(null);
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [capacityByDiscipline, setCapacityByDiscipline] = useState<Map<string, number>>(new Map());
   const [athletesByDiscipline, setAthletesByDiscipline] = useState<Map<string, number>>(new Map());
@@ -92,60 +92,64 @@ export default function Page() {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      setLoading(true);
-      try {
-        const [events, athletes, tripsList, accommodations, rooms, assignments, disciplinesList] = await Promise.all([
-          apiFetch<EventData[]>("/events"),
-          apiFetch<AthleteItem[]>("/athletes"),
-          apiFetch("/trips"),
-          apiFetch("/accommodations"),
-          apiFetch("/hotel-rooms").catch(() => []),
-          apiFetch("/hotel-assignments").catch(() => []),
-          apiFetch<Discipline[]>("/disciplines").catch(() => []),
-        ]);
-        if (cancelled) return;
-        apiFetch<{ totales?: { kmRecorridos?: number } }>("/trips/finance/summary")
-          .then((r) => { if (!cancelled) setKmRecorridos(r?.totales?.kmRecorridos ?? null); })
-          .catch(() => { if (!cancelled) setKmRecorridos(null); });
-        setEventsCount(Array.isArray(events) ? events.length : 0);
-        const validAthletes = Array.isArray(athletes) ? filterValidatedAthletes(athletes) : [];
-        setAthletesCount(validAthletes.length);
-        setTrips(Array.isArray(tripsList) ? tripsList : []);
-        setAccommodationsCount(Array.isArray(accommodations) ? accommodations.length : 0);
-        setHotelRooms(Array.isArray(rooms) ? rooms : []);
-        setHotelAssignments(Array.isArray(assignments) ? assignments : []);
-        setDisciplines(Array.isArray(disciplinesList) ? disciplinesList : []);
+    // Cada indicador se pinta apenas responde su endpoint. Antes un único
+    // Promise.all dejaba TODO el dashboard en "—" hasta que terminara la
+    // llamada más lenta — notorio en la app móvil. Un fetch fallido deja su
+    // métrica en el valor de respaldo en vez de colgar la tarjeta.
+    const load = <T,>(promise: Promise<T>, apply: (value: T) => void, fallback: T) => {
+      promise.then(
+        (value) => { if (!cancelled) apply(value); },
+        () => { if (!cancelled) apply(fallback); },
+      );
+    };
 
-        // Capacity by discipline (sum expectedCount across events/delegations)
-        const capMap = new Map<string, number>();
-        (Array.isArray(events) ? events : []).forEach((ev) => {
-          (ev.expectedCapacities || []).forEach((cap) => {
-            capMap.set(cap.disciplineId, (capMap.get(cap.disciplineId) || 0) + cap.expectedCount);
-          });
+    load(apiFetch<EventData[]>("/events"), (events) => {
+      const list = Array.isArray(events) ? events : [];
+      setEventsCount(list.length);
+      // Capacity by discipline (sum expectedCount across events/delegations)
+      const capMap = new Map<string, number>();
+      list.forEach((ev) => {
+        (ev.expectedCapacities || []).forEach((cap) => {
+          capMap.set(cap.disciplineId, (capMap.get(cap.disciplineId) || 0) + cap.expectedCount);
         });
-        setCapacityByDiscipline(capMap);
+      });
+      setCapacityByDiscipline(capMap);
+    }, []);
 
-        // Validated athletes by discipline
-        const athMap = new Map<string, number>();
-        validAthletes.forEach((a: AthleteItem) => {
-          if (a.disciplineId) {
-            athMap.set(a.disciplineId, (athMap.get(a.disciplineId) || 0) + 1);
-          }
-        });
-        setAthletesByDiscipline(athMap);
-      } catch {
-        // silently ignore — data stays at defaults
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
+    load(apiFetch<AthleteItem[]>("/athletes"), (athletes) => {
+      const validAthletes = Array.isArray(athletes) ? filterValidatedAthletes(athletes) : [];
+      setAthletesCount(validAthletes.length);
+      // Validated athletes by discipline
+      const athMap = new Map<string, number>();
+      validAthletes.forEach((a: AthleteItem) => {
+        if (a.disciplineId) {
+          athMap.set(a.disciplineId, (athMap.get(a.disciplineId) || 0) + 1);
+        }
+      });
+      setAthletesByDiscipline(athMap);
+    }, []);
+
+    load(apiFetch<Trip[]>("/trips"), (list) => setTrips(Array.isArray(list) ? list : []), []);
+    load(apiFetch<unknown[]>("/accommodations"), (list) => setAccommodationsCount(Array.isArray(list) ? list.length : 0), []);
+    load(apiFetch<HotelRoom[]>("/hotel-rooms"), (list) => setHotelRooms(Array.isArray(list) ? list : []), []);
+    load(apiFetch<HotelAssignment[]>("/hotel-assignments"), (list) => setHotelAssignments(Array.isArray(list) ? list : []), []);
+    load(apiFetch<Discipline[]>("/disciplines"), (list) => setDisciplines(Array.isArray(list) ? list : []), []);
+    load(
+      apiFetch<{ totales?: { kmRecorridos?: number } }>("/trips/finance/summary"),
+      (r) => setKmRecorridos(r?.totales?.kmRecorridos ?? null),
+      { totales: {} },
+    );
+
     return () => { cancelled = true; };
   }, []);
 
+  // Gates de carga por sección (cada una espera solo lo suyo).
+  const disciplinesReady = eventsCount !== null && athletesCount !== null;
+  const hotelLoading = hotelRooms === null || hotelAssignments === null;
+
   const tripStats = useMemo(() => {
     const s = { scheduled: 0, active: 0, completed: 0 };
-    trips.forEach((trip) => {
+    (trips ?? []).forEach((trip) => {
       const st = norm(trip.status);
       if (STATUS.completed.has(st)) s.completed++;
       else if (STATUS.active.has(st)) s.active++;
@@ -155,17 +159,19 @@ export default function Page() {
   }, [trips]);
 
   const bedStats = useMemo(() => {
-    const occupied = hotelAssignments.filter(
+    const rooms = hotelRooms ?? [];
+    const occupied = (hotelAssignments ?? []).filter(
       (a) => a.roomId && !["CHECKOUT", "CHECKED_OUT", "FINISHED", "CANCELLED"].includes(norm(a.status)),
     ).length;
-    return { available: Math.max(0, hotelRooms.length - occupied), occupied, total: hotelRooms.length };
+    return { available: Math.max(0, rooms.length - occupied), occupied, total: rooms.length };
   }, [hotelAssignments, hotelRooms]);
 
   const roomStats = useMemo(() => {
-    const available = hotelRooms.filter(
+    const rooms = hotelRooms ?? [];
+    const available = rooms.filter(
       (r) => ["AVAILABLE", "DISPONIBLE", ""].includes(norm(r.status)) || !r.status
     ).length;
-    return { available, total: hotelRooms.length };
+    return { available, total: rooms.length };
   }, [hotelRooms]);
 
   const occupancyPct = bedStats.total > 0 ? Math.round((bedStats.occupied / bedStats.total) * 100) : 0;
@@ -176,11 +182,11 @@ export default function Page() {
         title: "KPIs generales",
         headers: ["Indicador", "Valor"],
         rows: [
-          ["Participantes registrados", athletesCount],
-          ["Eventos", eventsCount],
-          ["Hoteles", accommodationsCount],
-          ["Viajes totales", trips.length],
-          ["Asignaciones hoteleras", hotelAssignments.length],
+          ["Participantes registrados", athletesCount ?? 0],
+          ["Eventos", eventsCount ?? 0],
+          ["Hoteles", accommodationsCount ?? 0],
+          ["Viajes totales", trips?.length ?? 0],
+          ["Asignaciones hoteleras", hotelAssignments?.length ?? 0],
           ["Ocupación hotelera", `${occupancyPct}%`],
         ] as (string | number)[][],
       },
@@ -191,7 +197,7 @@ export default function Page() {
           ["Programados", tripStats.scheduled],
           ["En curso", tripStats.active],
           ["Completados", tripStats.completed],
-          ["Total", trips.length],
+          ["Total", trips?.length ?? 0],
           ["Km recorridos", kmRecorridos === null ? "—" : `${Math.round(kmRecorridos)} km`],
         ] as (string | number)[][],
       },
@@ -284,14 +290,15 @@ export default function Page() {
     ),
   };
 
+  // value null = todavía cargando ese indicador (la tarjeta muestra "—").
   const kpis = [
-    { label: "Participantes",   value: fmt(athletesCount),          color: TEAL,       iconKey: "participantes", link: "/registro/participantes" },
-    { label: "Eventos",         value: fmt(eventsCount),            color: BLUE,       iconKey: "eventos",       link: "/deportes" },
-    { label: "Hoteles",         value: fmt(accommodationsCount),    color: CHARCOAL,   iconKey: "hoteles",       link: "/masters/accommodations" },
-    { label: "Viajes totales",  value: fmt(trips.length),           color: TEAL,       iconKey: "viajes",        link: "/operations/trips" },
-    { label: "Km recorridos",   value: kmRecorridos === null ? "—" : `${fmt(Math.round(kmRecorridos))} km`, color: BLUE, iconKey: "viajes", link: "/operations/transport-finance" },
-    { label: "Asignaciones",    value: fmt(hotelAssignments.length),color: BLUE,       iconKey: "asignaciones",  link: "/operations/hotel-assignments" },
-    { label: "Ocupación",       value: `${occupancyPct}%`,          color: TEAL_LIGHT, iconKey: "ocupacion",     link: "/operations/hotel-tracking" },
+    { label: "Participantes",   value: athletesCount === null ? null : fmt(athletesCount),             color: TEAL,       iconKey: "participantes", link: "/registro/participantes" },
+    { label: "Eventos",         value: eventsCount === null ? null : fmt(eventsCount),                 color: BLUE,       iconKey: "eventos",       link: "/deportes" },
+    { label: "Hoteles",         value: accommodationsCount === null ? null : fmt(accommodationsCount), color: CHARCOAL,   iconKey: "hoteles",       link: "/masters/accommodations" },
+    { label: "Viajes totales",  value: trips === null ? null : fmt(trips.length),                      color: TEAL,       iconKey: "viajes",        link: "/operations/trips" },
+    { label: "Km recorridos",   value: kmRecorridos === null ? null : `${fmt(Math.round(kmRecorridos))} km`, color: BLUE, iconKey: "viajes", link: "/operations/transport-finance" },
+    { label: "Asignaciones",    value: hotelAssignments === null ? null : fmt(hotelAssignments.length), color: BLUE,      iconKey: "asignaciones",  link: "/operations/hotel-assignments" },
+    { label: "Ocupación",       value: hotelLoading ? null : `${occupancyPct}%`,                       color: TEAL_LIGHT, iconKey: "ocupacion",     link: "/operations/hotel-tracking" },
   ];
 
   return (
@@ -339,8 +346,8 @@ export default function Page() {
                 <span style={{ color: kpi.color }}>{kpiIcons[kpi.iconKey]}</span>
                 <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: kpi.color, display: "inline-block" }} />
               </div>
-              <p style={{ fontSize: "1.65rem", fontWeight: 800, color: kpi.color, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
-                {loading ? "—" : kpi.value}
+              <p style={{ fontSize: "1.65rem", fontWeight: 800, color: kpi.color, lineHeight: 1, fontVariantNumeric: "tabular-nums", opacity: kpi.value === null ? 0.45 : 1, transition: "opacity 200ms ease" }}>
+                {kpi.value ?? "—"}
               </p>
               <p style={{ fontSize: "11px", color: "#64748b", marginTop: "5px", fontWeight: 500 }}>{kpi.label}</p>
             </div>
@@ -362,7 +369,7 @@ export default function Page() {
           </div>
           <div className="flex items-center justify-center gap-6">
             {tripDonutSegments.length > 0 ? (
-              <DonutChart segments={tripDonutSegments} size={140} thickness={20} label={fmt(trips.length)} sublabel="total" />
+              <DonutChart segments={tripDonutSegments} size={140} thickness={20} label={fmt(trips?.length ?? 0)} sublabel="total" />
             ) : (
               <p style={{ color: "#94a3b8", fontSize: "13px" }}>Sin datos</p>
             )}
@@ -428,7 +435,7 @@ export default function Page() {
       </div>
 
       {/* ── Discipline capacity vs registered */}
-      {!loading && (
+      {disciplinesReady && (
         <Card accentColor={CHARCOAL}>
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -539,7 +546,7 @@ export default function Page() {
             <div key={i} style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "14px" }}>
               <p style={{ fontSize: "10px", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.12em" }}>{item.label}</p>
               <p style={{ fontSize: "1.5rem", fontWeight: 700, color: item.color, marginTop: "4px", fontVariantNumeric: "tabular-nums" }}>
-                {loading ? "—" : item.value}
+                {hotelLoading ? "—" : item.value}
               </p>
             </div>
           ))}

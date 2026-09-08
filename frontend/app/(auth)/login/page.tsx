@@ -138,7 +138,9 @@ export default function LoginPage() {
                 border: "1px solid rgba(255,255,255,0.12)",
                 background: "rgba(255,255,255,0.08)",
                 color: "#f1f5f9",
-                fontSize: "14px",
+                // 16px mínimo: bajo eso, iOS hace auto-zoom al enfocar el input
+                // dentro del WebView y la vista queda ampliada tras el login.
+                fontSize: "16px",
                 outline: "none",
                 fontWeight: 500,
                 transition: "border-color 150ms",
@@ -175,7 +177,7 @@ export default function LoginPage() {
                 border: "1px solid rgba(255,255,255,0.12)",
                 background: "rgba(255,255,255,0.08)",
                 color: "#f1f5f9",
-                fontSize: "14px",
+                fontSize: "16px",
                 outline: "none",
                 fontWeight: 500,
                 transition: "border-color 150ms",
@@ -231,7 +233,7 @@ export default function LoginPage() {
               style={{
                 width: "100%", padding: "12px 14px", borderRadius: "10px",
                 border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.08)",
-                color: "#f1f5f9", fontSize: "14px", outline: "none", fontWeight: 500,
+                color: "#f1f5f9", fontSize: "16px", outline: "none", fontWeight: 500,
               }}
             />
             <input
@@ -242,7 +244,7 @@ export default function LoginPage() {
               style={{
                 width: "100%", padding: "12px 14px", borderRadius: "10px",
                 border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.08)",
-                color: "#f1f5f9", fontSize: "14px", outline: "none", fontWeight: 500,
+                color: "#f1f5f9", fontSize: "16px", outline: "none", fontWeight: 500,
               }}
             />
             <button
