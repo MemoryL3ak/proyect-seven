@@ -651,6 +651,10 @@ export default function UsuariosPage() {
               overflow: "hidden",
               background: "#ffffff",
             }}>
+              {/* En móvil la tabla-grid de 6 columnas scrollea horizontal en
+                  vez de recortarse bajo el overflow hidden del card. */}
+              <div style={{ overflowX: "auto" }}>
+              <div style={{ minWidth: "760px" }}>
               {/* Table header */}
               <div style={{
                 display: "grid",
@@ -858,6 +862,8 @@ export default function UsuariosPage() {
                   );
                 })
               )}
+              </div>
+              </div>
             </div>
           </>
         )}

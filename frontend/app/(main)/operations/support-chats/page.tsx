@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch, getStoredUser } from "@/lib/api";
+import { useIsMobile } from "@/lib/useIsMobile";
 
 type Chat = {
   id: string;
@@ -78,6 +79,9 @@ const timeShort = (iso: string) => {
 };
 
 export default function SupportChatsPage() {
+  // Móvil: bandeja y chat no caben lado a lado (la columna fija de 380px ya
+  // superaba el viewport) — se muestra una vista a la vez, con botón volver.
+  const isMobile = useIsMobile();
   const [chats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<string>("");
@@ -189,9 +193,9 @@ export default function SupportChatsPage() {
         </div>
       </section>
 
-      <div style={{ display: "grid", gridTemplateColumns: "380px 1fr", gap: "16px", height: "72vh" }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "380px 1fr", gap: "16px", height: "72vh" }}>
         {/* Inbox */}
-        <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+        <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", overflow: "hidden", display: isMobile && selectedId ? "none" : "flex", flexDirection: "column" }}>
           <div style={{ padding: "10px 12px", borderBottom: "1px solid #e2e8f0", background: "#f8fafc" }}>
             <p style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.15em", color: "#64748b" }}>Bandeja — {chats.length}</p>
           </div>
@@ -241,7 +245,7 @@ export default function SupportChatsPage() {
         </section>
 
         {/* Chat view */}
-        <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+        <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", overflow: "hidden", display: isMobile && !selectedId ? "none" : "flex", flexDirection: "column" }}>
           {!selected ? (
             <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", fontSize: "13px" }}>
               Selecciona una incidencia para atenderla.
@@ -250,12 +254,24 @@ export default function SupportChatsPage() {
             <>
               {/* Chat header */}
               <div style={{ padding: "14px 18px", borderBottom: "1px solid #e2e8f0", background: "#f8fafc", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+                  {isMobile && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedId(null)}
+                      aria-label="Volver a la bandeja"
+                      style={{ flexShrink: 0, width: "32px", height: "32px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "#ffffff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#475569" }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+                    </button>
+                  )}
                 <div>
                   <p style={{ fontSize: "14px", fontWeight: 700, color: "#0f172a" }}>{selected.origin_name}</p>
                   <p style={{ fontSize: "11px", color: "#64748b" }}>
                     {ORIGIN_LABEL[selected.origin_type] || selected.origin_type} · {CATEGORY_LABEL[selected.category] || selected.category} · Prioridad {selected.priority}
                     {selected.agent_name ? ` · Asignado: ${selected.agent_name}` : ""}
                   </p>
+                </div>
                 </div>
                 <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
                   {!selected.agent_id && (

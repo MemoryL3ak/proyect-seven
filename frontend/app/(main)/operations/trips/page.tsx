@@ -1561,6 +1561,10 @@ export default function TripsPage() {
                 </div>
               ) : (
                 <div style={{ borderRadius: "16px", border: `1px solid ${pal.cardBorder}`, overflow: "hidden", boxShadow: pal.shadow }}>
+                  {/* Filas de 6 columnas: scroll horizontal en pantallas
+                      chicas en vez de aplastarse bajo el overflow hidden. */}
+                  <div style={{ overflowX: "auto" }}>
+                  <div style={{ minWidth: "720px" }}>
                   {completedTrips.map((trip, i) => {
                     const sc = STATUS_COLORS[trip.status ?? "COMPLETED"] ?? STATUS_COLORS.COMPLETED;
                     const venue = trip.destinationVenueId ? venues[trip.destinationVenueId] : null;
@@ -1588,6 +1592,8 @@ export default function TripsPage() {
                       </div>
                     );
                   })}
+                  </div>
+                  </div>
                 </div>
               )}
             </section>

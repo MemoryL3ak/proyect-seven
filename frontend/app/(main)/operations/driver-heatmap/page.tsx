@@ -431,8 +431,8 @@ export default function DriverHeatmapPage() {
         </div>
       </div>
 
-      {/* ── Rankings ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+      {/* ── Rankings ── apilados en móvil, lado a lado desde lg ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
         {/* Left: Ranking table */}
         <div style={{ background: pal.cardBg, borderRadius: "20px", border: `1px solid ${pal.cardBorder}`, boxShadow: pal.shadow, overflow: "hidden" }}>

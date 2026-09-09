@@ -450,7 +450,7 @@ export default function FlightsPage() {
         </div>
 
         {/* KPI row */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: "12px", marginTop: "20px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "12px", marginTop: "20px" }}>
           {[
             { label: "Total vuelos", value: stats.total, color: pal.textPrimary, accent: "#64748b" },
             { label: "Arribados", value: stats.arrived, color: "#64748b", accent: "#64748b" },
@@ -625,7 +625,10 @@ export default function FlightsPage() {
         </div>
       ) : (
         <div style={{ background: "#fff", borderRadius: "18px", border: "1px solid #e2e8f0", overflow: "hidden", boxShadow: pal.shadow }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+          {/* overflow hidden del card recortaba columnas en móvil: la tabla
+              scrollea horizontal dentro de su propio contenedor. */}
+          <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", minWidth: "820px", borderCollapse: "collapse", fontSize: "13px" }}>
             <thead>
               <tr style={{ borderBottom: "2px solid #e2e8f0", background: "#fafbfc" }}>
                 {["", "Vuelo", "Aerolínea", "Ruta", "Llegada", "Estado", "Delegaciones", "Pax", "Acciones"].map(h => (
@@ -755,6 +758,7 @@ export default function FlightsPage() {
               })}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 
@@ -775,7 +779,8 @@ export default function FlightsPage() {
               No hay viajes Transfer In para los filtros actuales.
             </p>
           ) : (
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+            <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", minWidth: "680px", borderCollapse: "collapse", fontSize: "13px" }}>
               <thead>
                 <tr style={{ borderBottom: "2px solid #e2e8f0", background: "#fafbfc" }}>
                   {["Llegada", "Pasajero", "Tipo cliente", "Destino", "Vuelo", "Estado"].map(h => (
@@ -825,6 +830,7 @@ export default function FlightsPage() {
                 })}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       )}

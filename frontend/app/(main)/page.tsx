@@ -462,7 +462,7 @@ export default function Page() {
             const fillPct = totalCupos > 0 ? Math.round((totalRegistered / totalCupos) * 100) : 0;
             const semColor = fillPct >= 85 ? "#22c55e" : fillPct >= 60 ? "#f59e0b" : "#ef4444";
             return (
-              <div className="grid grid-cols-3 gap-4 mb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                 <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: "12px 14px" }}>
                   <p style={{ fontSize: "10px", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 600 }}>Total cupos</p>
                   <p style={{ fontSize: "1.3rem", fontWeight: 800, color: CHARCOAL, marginTop: 4, fontVariantNumeric: "tabular-nums" }}>{fmt(totalCupos)}</p>

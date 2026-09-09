@@ -852,11 +852,12 @@ export default function ManualPage() {
           zIndex: 50,
           background: "#fff",
           borderBottom: "1px solid #e2e8f0",
-          padding: "12px 32px",
+          padding: "12px 16px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          gap: 16,
+          flexWrap: "wrap",
+          gap: 10,
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>

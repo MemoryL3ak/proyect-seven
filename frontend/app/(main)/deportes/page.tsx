@@ -1375,6 +1375,9 @@ export default function DeportesPage() {
             {/* ── VISTA MES (celdas grandes con mini-cards color-coded) */}
             {calView === "month" && (
               <section className="relative accent-strip-top animate-fade-up" style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 20, overflow: "hidden", boxShadow: pal.cardShadow }}>
+                {/* En móvil el mes scrollea horizontal en vez de aplastar los 7 días. */}
+                <div style={{ overflowX: "auto" }}>
+                <div style={{ minWidth: "640px" }}>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", paddingTop: 4 }}>
                   {WEEK.map(d => (
                     <div key={d} style={{ textAlign: "center", padding: "10px 0", fontSize: 11, fontWeight: 800, color: "#475569", letterSpacing: "0.1em", textTransform: "uppercase" }}>{d}</div>
@@ -1447,13 +1450,17 @@ export default function DeportesPage() {
                     );
                   })}
                 </div>
+                </div>
+                </div>
               </section>
             )}
 
             {/* ── VISTA SEMANA */}
             {calView === "week" && (
               <section className="relative accent-strip-top animate-fade-up" style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 20, overflow: "hidden", boxShadow: pal.cardShadow }}>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", paddingTop: 4 }}>
+                {/* En móvil la semana scrollea horizontal en vez de aplastar los 7 días. */}
+                <div style={{ overflowX: "auto" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", minWidth: "640px", paddingTop: 4 }}>
                   {week.map(day => {
                     const dk = day.toISOString().slice(0, 10);
                     const isToday = dk === todayKey;
@@ -1503,6 +1510,7 @@ export default function DeportesPage() {
                       </div>
                     );
                   })}
+                </div>
                 </div>
               </section>
             )}

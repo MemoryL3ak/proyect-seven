@@ -269,7 +269,7 @@ export default function DepartureMonitoringPage() {
         </div>
 
         {/* KPI row */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "12px", marginTop: "20px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "12px", marginTop: "20px" }}>
           {[
             { label: "Total salidas", value: kpis.total, color: "#0f172a", accent: "#64748b" },
             { label: "Salen hoy", value: kpis.salidasHoy, color: "#f59e0b", accent: "#f59e0b" },

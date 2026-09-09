@@ -250,7 +250,7 @@ export default function CommercialDashboardPage() {
             <p style={{ fontSize: 11, color: TEAL, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", margin: 0 }}>Viajes licitados vs consumidos</p>
             <span style={{ width: 12, height: 12, borderRadius: "50%", background: tripSem.color, boxShadow: `0 0 8px ${tripSem.glow}` }} />
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {[
               { label: "Licitados", value: tripCounts.bid > 0 ? tripCounts.bid.toLocaleString("es-CL") : "—", color: "#0f172a", bg: "#f8fafc" },
               { label: "Completados", value: tripCounts.completed.toLocaleString("es-CL"), color: tripSem.color, bg: tripSem.bg },

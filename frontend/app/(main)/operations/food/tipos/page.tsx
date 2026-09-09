@@ -100,7 +100,7 @@ export default function TiposAlimentacionPage() {
         ].map((kpi) => (
           <div key={kpi.label} style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
             <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", color: "#94a3b8" }}>{kpi.label}</p>
-            <p style={{ fontSize: "3rem", fontWeight: 800, color: "#0f172a", marginTop: "12px", lineHeight: 1 }}>{kpi.value}</p>
+            <p style={{ fontSize: "clamp(1.8rem, 8vw, 3rem)", fontWeight: 800, color: "#0f172a", marginTop: "12px", lineHeight: 1 }}>{kpi.value}</p>
             {kpi.sub && <p style={{ fontSize: "11px", color: "#94a3b8", marginTop: "4px" }}>{kpi.sub}</p>}
           </div>
         ))}

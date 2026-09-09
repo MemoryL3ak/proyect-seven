@@ -634,7 +634,7 @@ export default function TransportFinancePage() {
           </section>
 
           {/* ══ Ejecución presupuestaria + composición ══ */}
-          <section className="grid gap-4" style={{ gridTemplateColumns: "minmax(0,1.35fr) minmax(0,1fr)" }}>
+          <section className="grid gap-4 grid-cols-1 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
             <EjecucionPresupuestaria p={p} viajesActivos={t.viajesActivos} />
             <ComposicionIngreso t={t} />
           </section>

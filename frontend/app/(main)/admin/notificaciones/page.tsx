@@ -98,7 +98,7 @@ export default function AdminNotificacionesPage() {
   };
 
   return (
-    <div style={{ padding: "24px 28px", maxWidth: 1100, margin: "0 auto" }}>
+    <div className="p-4 md:px-7 md:py-6" style={{ maxWidth: 1100, margin: "0 auto" }}>
       <div style={{ marginBottom: 18 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, color: "#0f172a", margin: 0 }}>
           Notificaciones push
@@ -109,7 +109,9 @@ export default function AdminNotificacionesPage() {
         </p>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(320px, 1fr) 1.4fr", gap: 18, alignItems: "stretch" }}>
+      {/* En móvil las dos columnas se apilan: el minmax(320px,…) inline
+          empujaba el compositor del push fuera de la pantalla. */}
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(320px,1fr)_1.4fr] gap-4 items-stretch">
         {/* ────── Recipients column ────── */}
         <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, display: "flex", flexDirection: "column", overflow: "hidden" }}>
           <div style={{ padding: "12px 14px", borderBottom: "1px solid #f1f5f9" }}>

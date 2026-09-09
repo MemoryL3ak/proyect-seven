@@ -17,6 +17,7 @@ import {
 } from "recharts";
 import { apiFetch, getTokens } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
+import { useIsMobile } from "@/lib/useIsMobile";
 import { downloadCSV, downloadChartPng, slugify } from "@/lib/export";
 
 /* ── Sparkle icon ── */
@@ -822,14 +823,7 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
 
   // En pantallas chicas (app staff / móvil) el FAB completo de 96px tapaba
   // demasiado contenido: se usa la versión compacta aunque no sea portal.
-  const [isSmallScreen, setIsSmallScreen] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 767px)");
-    const update = () => setIsSmallScreen(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, []);
+  const isSmallScreen = useIsMobile();
 
   const smallFab = compact || isSmallScreen;
   const FAB_SIZE = smallFab ? 56 : 96;

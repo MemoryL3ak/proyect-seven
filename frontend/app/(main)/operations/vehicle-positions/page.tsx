@@ -6,6 +6,7 @@ import { apiFetch } from "@/lib/api";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { getSupabase } from "@/lib/supabase";
 import { useI18n } from "@/lib/i18n";
+import { useIsMobile } from "@/lib/useIsMobile";
 import type {
   DestinationPin,
   RoutePath,
@@ -136,6 +137,7 @@ const formatTripType = (value?: string | null) => {
 
 export default function VehiclePositionsPage() {
   const { t } = useI18n();
+  const isMobile = useIsMobile();
   const [trips, setTrips] = useState<Trip[]>([]);
   const [events, setEvents] = useState<Record<string, EventItem>>({});
   const [drivers, setDrivers] = useState<Record<string, DriverItem>>({});
@@ -996,7 +998,10 @@ export default function VehiclePositionsPage() {
             </div>
           )}
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "16px", alignItems: "start" }} className="xl:grid-cols-[1fr_340px] md:!grid-cols-1">
+          {/* Mapa + lista: apilados en pantallas chicas, lado a lado desde lg.
+              El grid vive solo en clases — el gridTemplateColumns inline le
+              ganaba a las clases responsive y aplastaba el mapa en móvil. */}
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-4 items-start">
 
             {/* Map — always rendered, even when no drivers are connected. */}
             <div style={{
@@ -1037,14 +1042,14 @@ export default function VehiclePositionsPage() {
                 destinations={liveDestinations}
                 routes={liveRoutes}
                 trails={liveTrails}
-                height={760}
+                height={isMobile ? 420 : 760}
                 isDark={false}
                 selectedTripId={selectedTripId}
               />
             </div>
 
             {/* Sidebar — one card per tracked driver (online + offline). */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxHeight: "780px", overflowY: "auto", paddingRight: "2px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", ...(isMobile ? {} : { maxHeight: "780px", overflowY: "auto" as const }), paddingRight: "2px" }}>
               {trackedDrivers.length === 0 && (
                 <div style={{
                   borderRadius: "14px", border: "1px dashed #cbd5e1", background: "#ffffff",

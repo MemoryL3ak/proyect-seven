@@ -436,8 +436,8 @@ export default function SalonesPage() {
         </div>
       )}
 
-      {/* ── Body: sidebar + calendar ─────────────────────────────────────────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "260px 1fr", gap: "16px", alignItems: "start" }}>
+      {/* ── Body: sidebar + calendar ── apilados en móvil, lado a lado en lg ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-4 items-start">
 
         {/* ── Salones sidebar ─────────────────────────────────────────────────── */}
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -539,6 +539,7 @@ export default function SalonesPage() {
                 <div style={{
                   background: pal.calHeader, borderBottom: `1px solid ${pal.headerBorder}`,
                   padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between",
+                  flexWrap: "wrap", gap: "10px",
                 }}>
                   <div>
                     <p style={{ fontSize: "11px", fontWeight: 700, color: pal.accent, letterSpacing: "0.15em", textTransform: "uppercase" }}>
@@ -568,6 +569,10 @@ export default function SalonesPage() {
                   </div>
                 </div>
 
+                {/* Semana con ancho mínimo: en pantallas chicas scrollea
+                    horizontal en vez de aplastar los 7 días. */}
+                <div style={{ overflowX: "auto" }}>
+                <div style={{ minWidth: "640px" }}>
                 {/* Day column headers */}
                 <div style={{ display: "grid", gridTemplateColumns: "52px repeat(7, 1fr)", borderBottom: `1px solid ${pal.headerBorder}` }}>
                   <div style={{ background: pal.calHeader }} />
@@ -708,6 +713,8 @@ export default function SalonesPage() {
                       );
                     })}
                   </div>
+                </div>
+                </div>
                 </div>
               </div>
 
