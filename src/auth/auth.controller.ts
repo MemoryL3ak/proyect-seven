@@ -1,9 +1,10 @@
 import { Public } from './public.decorator';
 import { StaffOnly } from './staff-only.decorator';
 import type { Response } from 'express';
-import { Controller, Post, Get, Patch, Delete, Body, Param, Res, Put, UnauthorizedException } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Delete, Body, Param, Req, Res, Put, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { ChangeTemporaryPasswordDto, CreateUserDto, LoginUserDto } from './dto/users.dto';
+import type { ApiRequest } from './api-auth.guard';
+import { ChangeOwnPasswordDto, ChangeTemporaryPasswordDto, CreateUserDto, LoginUserDto } from './dto/users.dto';
 
 /** Gestión de usuarios del panel: solo staff. Login y cambio de clave temporal son públicos. */
 @StaffOnly()
@@ -44,6 +45,26 @@ export class AuthController {
   @Patch('users/:id/enable')
   async enableUser(@Param('id') id: string) {
     return this.authService.enableUser(id);
+  }
+
+  /** Autoeliminación desde "Mi Cuenta" (bloqueada para Administrador). */
+  @Delete('me')
+  async deleteOwnAccount(@Req() req: ApiRequest) {
+    const caller = req.apiCaller;
+    if (caller?.type !== 'staff') {
+      throw new UnauthorizedException('Sesión del panel requerida');
+    }
+    return this.authService.deleteOwnAccount(caller.userId);
+  }
+
+  /** Cambio de contraseña de la propia cuenta desde "Mi Cuenta". */
+  @Patch('me/password')
+  async changeOwnPassword(@Req() req: ApiRequest, @Body() dto: ChangeOwnPasswordDto) {
+    const caller = req.apiCaller;
+    if (caller?.type !== 'staff') {
+      throw new UnauthorizedException('Sesión del panel requerida');
+    }
+    return this.authService.changeOwnPassword(caller.userId, dto.currentPassword, dto.newPassword);
   }
 
   @Public()

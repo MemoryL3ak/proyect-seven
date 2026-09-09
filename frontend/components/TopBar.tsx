@@ -57,6 +57,7 @@ export default function TopBar({ onMenuOpen }: { onMenuOpen?: () => void }) {
     workforce: "Staff & Voluntarios",
     "sofia-actions": "Acciones de SofIA",
     "inicio-guiado": "Inicio guiado",
+    cuenta: "Mi Cuenta",
     "vehicle-positions": "Tracking de viajes",
     accreditations: "Acreditaciones",
     "hotel-tracking": "Tracking hotelería",

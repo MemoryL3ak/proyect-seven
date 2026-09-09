@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   Inject,
   Injectable,
   UnauthorizedException,
@@ -29,6 +30,7 @@ export class AuthService {
     username,
     password,
     role,
+    modules,
     isTemporaryPassword,
   }: CreateUserDto): Promise<{ user: User }> {
     const resolvedEmail = email
@@ -47,6 +49,9 @@ export class AuthService {
       user_metadata: {
         name,
         role,
+        // Sin esto, el usuario nuevo quedaba sin módulos en metadata y el
+        // menú lateral le mostraba TODO el panel (sin módulos = acceso total).
+        ...(Array.isArray(modules) && modules.length > 0 ? { modules } : {}),
         ...(username ? { username } : {}),
         forcePasswordChange: forceChange,
         force_password_change: forceChange,
@@ -138,6 +143,70 @@ export class AuthService {
       throw new BadRequestException(error.message);
     }
     return { message: 'User enabled successfully' };
+  }
+
+  /**
+   * Autoeliminación desde "Mi Cuenta". Las cuentas Administrador no pueden
+   * autoeliminarse (regla aplicada aquí, no solo ocultando el botón).
+   */
+  async deleteOwnAccount(userId: string): Promise<{ message: string }> {
+    const { data, error } = await this.supabase.auth.admin.getUserById(userId);
+    if (error || !data.user) {
+      throw new BadRequestException(error?.message || 'Usuario no encontrado');
+    }
+    const role = String(
+      (data.user.user_metadata as Record<string, unknown> | undefined)?.role ?? '',
+    ).toLowerCase();
+    if (role === 'administrador') {
+      throw new ForbiddenException(
+        'Las cuentas de administrador no pueden autoeliminarse. Pide a otro administrador que la elimine desde Gestión de Usuarios.',
+      );
+    }
+    const { error: deleteError } = await this.supabase.auth.admin.deleteUser(userId);
+    if (deleteError) {
+      this.logger.error('deleteOwnAccount error', JSON.stringify(deleteError));
+      throw new BadRequestException(deleteError.message);
+    }
+    this.logger.log(`Self-deleted panel account ${userId} (role: ${role || 'sin rol'})`);
+    return { message: 'Cuenta eliminada' };
+  }
+
+  /**
+   * Cambio de contraseña desde "Mi Cuenta": verifica la clave actual con un
+   * login real (mismo patrón que changeTemporaryPassword) y fija la nueva
+   * sin marcar forcePasswordChange.
+   */
+  async changeOwnPassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<{ message: string }> {
+    const { data, error } = await this.supabase.auth.admin.getUserById(userId);
+    if (error || !data.user?.email) {
+      throw new BadRequestException(error?.message || 'Usuario no encontrado');
+    }
+
+    const { error: signInError } = await this.supabase.auth.signInWithPassword({
+      email: data.user.email,
+      password: currentPassword,
+    });
+    if (signInError) {
+      throw new UnauthorizedException('La contraseña actual no es correcta');
+    }
+
+    const currentMetadata = (data.user.user_metadata || {}) as Record<string, unknown>;
+    const { error: updateError } = await this.supabase.auth.admin.updateUserById(userId, {
+      password: newPassword,
+      user_metadata: {
+        ...currentMetadata,
+        forcePasswordChange: false,
+        force_password_change: false,
+      },
+    });
+    if (updateError) {
+      throw new BadRequestException(updateError.message || 'Error actualizando la contraseña');
+    }
+    return { message: 'Contraseña actualizada' };
   }
 
   async login({

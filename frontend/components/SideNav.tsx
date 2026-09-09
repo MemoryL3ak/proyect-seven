@@ -139,6 +139,7 @@ const navSections: NavSection[] = [
       { href: "/operations/sofia-actions", label: "Acciones de SofIA", icon: "admin" }
     ]
   },
+  { title: "Mi Cuenta", icon: "athlete", href: "/cuenta" },
   { title: "Inicio guiado", icon: "stack", href: "/inicio-guiado" },
   { title: "Ayuda", icon: "help", href: "/ayuda" }
 ];
@@ -255,8 +256,10 @@ const HREF_TO_MODULE: Record<string, string> = {
   "/deportes/premiaciones": "deportes",
   "/sede": "sede",
   "/sports-calendar": "calendario",
-  "/operations/workforce": "operacion.viajes",
-  "/operations/coupons": "operacion.viajes",
+  // Con módulo propio: antes colgaban de "operacion.viajes" y cualquier
+  // usuario con Viajes veía Staff & Voluntarios y Beneficios sin quererlo.
+  "/operations/workforce": "workforce",
+  "/operations/coupons": "beneficios",
   "/accreditations": "acreditaciones",
   "/portal/user": "portales",
   "/portal/conductor": "portales",
@@ -266,6 +269,7 @@ const HREF_TO_MODULE: Record<string, string> = {
   "/admin/usuarios": "admin.usuarios",
   "/admin/notificaciones": "admin.notificaciones",
   "/operations/sofia-actions": "_always",
+  "/cuenta": "_always",
   "/inicio-guiado": "_always",
   "/ayuda": "_always",
 };
