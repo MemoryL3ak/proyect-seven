@@ -4,6 +4,7 @@ import { ChangeEvent, FormEvent, useCallback, useEffect, useState } from "react"
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
 import StyledSelect from "@/components/StyledSelect";
 import { apiFetch } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 import {
   AUDIENCE_LABELS,
   CATEGORY_LABELS,
@@ -57,6 +58,7 @@ const pal = {
 };
 
 export default function EventDocumentsPage() {
+  const { t } = useI18n();
   const [docs, setDocs] = useState<EventDocument[]>([]);
   const [events, setEvents] = useState<EventItem[]>([]);
   const [form, setForm] = useState<DocForm>(emptyForm);
@@ -80,11 +82,11 @@ export default function EventDocumentsPage() {
       setEvents(eventsData ?? []);
       setError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error al cargar los documentos");
+      setError(e instanceof Error ? e.message : t("Error al cargar los documentos"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -120,9 +122,9 @@ export default function EventDocumentsPage() {
 
   const submit = async (ev: FormEvent) => {
     ev.preventDefault();
-    if (!form.title.trim()) { setError("El título es obligatorio."); return; }
-    if (!editingId && !file) { setError("Adjunta el archivo del documento."); return; }
-    if (!form.audiences.length) { setError("Selecciona al menos un portal donde publicarlo."); return; }
+    if (!form.title.trim()) { setError(t("El título es obligatorio.")); return; }
+    if (!editingId && !file) { setError(t("Adjunta el archivo del documento.")); return; }
+    if (!form.audiences.length) { setError(t("Selecciona al menos un portal donde publicarlo.")); return; }
 
     setSaving(true);
     setError(null);
@@ -148,19 +150,19 @@ export default function EventDocumentsPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
-        setMessage("Documento actualizado.");
+        setMessage(t("Documento actualizado."));
       } else {
         await apiFetch("/event-documents", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
-        setMessage("Documento publicado.");
+        setMessage(t("Documento publicado."));
       }
       resetForm();
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error al guardar el documento");
+      setError(e instanceof Error ? e.message : t("Error al guardar el documento"));
     } finally {
       setSaving(false);
     }
@@ -170,10 +172,10 @@ export default function EventDocumentsPage() {
     try {
       await apiFetch(`/event-documents/${doc.id}`, { method: "DELETE" });
       setDeleteConfirm(null);
-      setMessage("Documento eliminado.");
+      setMessage(t("Documento eliminado."));
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error al eliminar");
+      setError(e instanceof Error ? e.message : t("Error al eliminar"));
     }
   };
 
@@ -186,7 +188,7 @@ export default function EventDocumentsPage() {
       });
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error al cambiar la visibilidad");
+      setError(e instanceof Error ? e.message : t("Error al cambiar la visibilidad"));
     }
   };
 
@@ -202,31 +204,31 @@ export default function EventDocumentsPage() {
     <div className="space-y-4">
       <section style={{ background: pal.cardBg, border: `1px solid ${pal.cardBorder}`, borderRadius: 18, padding: "18px 20px", boxShadow: pal.shadow }}>
         <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#a78bfa", marginBottom: 4 }}>
-          Documentos del evento
+          {t("Documentos del evento")}
         </p>
         <h1 style={{ fontSize: 20, fontWeight: 800, color: pal.textPrimary }}>
-          {editingId ? "Editar documento" : "Publicar un documento"}
+          {editingId ? t("Editar documento") : t("Publicar un documento")}
         </h1>
         <p style={{ fontSize: 12.5, color: pal.textMuted, marginTop: 4 }}>
-          Los documentos publicados aparecen en los portales de los usuarios que elijas, con visor y descarga.
+          {t("Los documentos publicados aparecen en los portales de los usuarios que elijas, con visor y descarga.")}
         </p>
 
         <form onSubmit={submit} className="mt-4 space-y-3">
           <div className="grid gap-3 md:grid-cols-2">
             <div>
-              <label style={{ fontSize: 11, fontWeight: 700, color: pal.labelColor, letterSpacing: "0.1em", textTransform: "uppercase" }}>Título</label>
+              <label style={{ fontSize: 11, fontWeight: 700, color: pal.labelColor, letterSpacing: "0.1em", textTransform: "uppercase" }}>{t("Título")}</label>
               <input className="input mt-1 w-full" style={{ borderRadius: 10 }} value={form.title}
                 onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                placeholder="Ej: Informativo de Evento" />
+                placeholder={t("Ej: Informativo de Evento")} />
             </div>
             <div>
-              <label style={{ fontSize: 11, fontWeight: 700, color: pal.labelColor, letterSpacing: "0.1em", textTransform: "uppercase" }}>Evento</label>
+              <label style={{ fontSize: 11, fontWeight: 700, color: pal.labelColor, letterSpacing: "0.1em", textTransform: "uppercase" }}>{t("Evento")}</label>
               <StyledSelect
                 wrapperClassName="mt-1"
                 value={form.eventId}
                 onChange={e => setForm(f => ({ ...f, eventId: e.target.value }))}
               >
-                <option value="">Todos los eventos</option>
+                <option value="">{t("Todos los eventos")}</option>
                 {events.map(ev => (
                   <option key={ev.id} value={ev.id}>{ev.name || ev.id}</option>
                 ))}
@@ -235,33 +237,33 @@ export default function EventDocumentsPage() {
           </div>
 
           <div>
-            <label style={{ fontSize: 11, fontWeight: 700, color: pal.labelColor, letterSpacing: "0.1em", textTransform: "uppercase" }}>Descripción</label>
+            <label style={{ fontSize: 11, fontWeight: 700, color: pal.labelColor, letterSpacing: "0.1em", textTransform: "uppercase" }}>{t("Descripción")}</label>
             <input className="input mt-1 w-full" style={{ borderRadius: 10 }} value={form.description}
               onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-              placeholder="Breve texto que verá el usuario debajo del título" />
+              placeholder={t("Breve texto que verá el usuario debajo del título")} />
           </div>
 
           <div className="grid gap-3 md:grid-cols-3">
             <div>
-              <label style={{ fontSize: 11, fontWeight: 700, color: pal.labelColor, letterSpacing: "0.1em", textTransform: "uppercase" }}>Categoría</label>
+              <label style={{ fontSize: 11, fontWeight: 700, color: pal.labelColor, letterSpacing: "0.1em", textTransform: "uppercase" }}>{t("Categoría")}</label>
               <StyledSelect
                 wrapperClassName="mt-1"
                 value={form.category}
                 onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
               >
                 {DOCUMENT_CATEGORIES.map(c => (
-                  <option key={c} value={c}>{CATEGORY_LABELS[c]}</option>
+                  <option key={c} value={c}>{t(CATEGORY_LABELS[c])}</option>
                 ))}
               </StyledSelect>
             </div>
             <div>
-              <label style={{ fontSize: 11, fontWeight: 700, color: pal.labelColor, letterSpacing: "0.1em", textTransform: "uppercase" }}>Orden</label>
+              <label style={{ fontSize: 11, fontWeight: 700, color: pal.labelColor, letterSpacing: "0.1em", textTransform: "uppercase" }}>{t("Orden")}</label>
               <input type="number" className="input mt-1 w-full" style={{ borderRadius: 10 }} value={form.sortOrder}
                 onChange={e => setForm(f => ({ ...f, sortOrder: e.target.value }))} />
             </div>
             <div>
               <label style={{ fontSize: 11, fontWeight: 700, color: pal.labelColor, letterSpacing: "0.1em", textTransform: "uppercase" }}>
-                Archivo {editingId && <span style={{ textTransform: "none", letterSpacing: 0, fontWeight: 500 }}>(opcional al editar)</span>}
+                {t("Archivo")} {editingId && <span style={{ textTransform: "none", letterSpacing: 0, fontWeight: 500 }}>{t("(opcional al editar)")}</span>}
               </label>
               <input type="file" accept="application/pdf,.pdf,image/*" onChange={onFileChange}
                 className="mt-1 w-full" style={{ fontSize: 12, color: pal.textMuted }} />
@@ -269,7 +271,7 @@ export default function EventDocumentsPage() {
           </div>
 
           <div>
-            <label style={{ fontSize: 11, fontWeight: 700, color: pal.labelColor, letterSpacing: "0.1em", textTransform: "uppercase" }}>Publicar en</label>
+            <label style={{ fontSize: 11, fontWeight: 700, color: pal.labelColor, letterSpacing: "0.1em", textTransform: "uppercase" }}>{t("Publicar en")}</label>
             <div className="mt-2 flex flex-wrap gap-2">
               {ALL_AUDIENCES.map(a => {
                 const active = form.audiences.includes(a);
@@ -281,14 +283,14 @@ export default function EventDocumentsPage() {
                       background: active ? "rgba(167,139,250,0.14)" : "#fff",
                       color: active ? "#7c3aed" : pal.textMuted,
                     }}>
-                    {AUDIENCE_LABELS[a]}
+                    {t(AUDIENCE_LABELS[a])}
                   </button>
                 );
               })}
               <label style={{ display: "inline-flex", alignItems: "center", gap: 6, marginLeft: 8, fontSize: 12, color: pal.textMuted, cursor: "pointer" }}>
                 <input type="checkbox" checked={form.published}
                   onChange={e => setForm(f => ({ ...f, published: e.target.checked }))} />
-                Visible para los usuarios
+                {t("Visible para los usuarios")}
               </label>
             </div>
           </div>
@@ -303,12 +305,12 @@ export default function EventDocumentsPage() {
                 background: "linear-gradient(135deg,#a78bfa,#7c3aed)", color: "#fff",
                 fontSize: 13, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1,
               }}>
-              {saving ? "Guardando..." : editingId ? "Guardar cambios" : "Publicar documento"}
+              {saving ? t("Guardando...") : editingId ? t("Guardar cambios") : t("Publicar documento")}
             </button>
             {editingId && (
               <button type="button" onClick={resetForm}
                 style={{ padding: "10px 18px", borderRadius: 12, border: `1px solid ${pal.cardBorder}`, background: "#fff", fontSize: 13, color: pal.textMuted, cursor: "pointer" }}>
-                Cancelar
+                {t("Cancelar")}
               </button>
             )}
           </div>
@@ -318,14 +320,14 @@ export default function EventDocumentsPage() {
       <section style={{ background: pal.cardBg, border: `1px solid ${pal.cardBorder}`, borderRadius: 18, overflow: "hidden", boxShadow: pal.shadow }}>
         <div style={{ padding: "14px 20px", borderBottom: `1px solid ${pal.cardBorder}` }}>
           <p style={{ fontSize: 13, fontWeight: 800, color: pal.textPrimary }}>
-            Documentos publicados <span style={{ color: pal.labelColor, fontWeight: 600 }}>({docs.length})</span>
+            {t("Documentos publicados")} <span style={{ color: pal.labelColor, fontWeight: 600 }}>({docs.length})</span>
           </p>
         </div>
 
-        {loading && <p style={{ padding: 20, fontSize: 13, color: pal.textMuted }}>Cargando...</p>}
+        {loading && <p style={{ padding: 20, fontSize: 13, color: pal.textMuted }}>{t("Cargando...")}</p>}
         {!loading && docs.length === 0 && (
           <p style={{ padding: 20, fontSize: 13, color: pal.textMuted }}>
-            Todavía no hay documentos. Sube el primero con el formulario de arriba.
+            {t("Todavía no hay documentos. Sube el primero con el formulario de arriba.")}
           </p>
         )}
 
@@ -335,7 +337,7 @@ export default function EventDocumentsPage() {
               <thead>
                 <tr style={{ borderBottom: `2px solid ${pal.cardBorder}`, background: "#fafbfc" }}>
                   {["Documento", "Evento", "Portales", "Estado", "Acciones"].map(h => (
-                    <th key={h} style={{ padding: "12px 14px", textAlign: "left", fontSize: 9, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: pal.labelColor }}>{h}</th>
+                    <th key={h} style={{ padding: "12px 14px", textAlign: "left", fontSize: 9, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: pal.labelColor }}>{t(h)}</th>
                   ))}
                 </tr>
               </thead>
@@ -344,13 +346,13 @@ export default function EventDocumentsPage() {
                   const size = formatFileSize(doc.sizeBytes);
                   const eventName = doc.eventId
                     ? events.find(e => e.id === doc.eventId)?.name || "—"
-                    : "Todos";
+                    : t("Todos");
                   return (
                     <tr key={doc.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
                       <td style={{ padding: "10px 14px" }}>
                         <p style={{ fontWeight: 700, color: pal.textPrimary }}>{doc.title}</p>
                         <p style={{ fontSize: 11, color: pal.textMuted }}>
-                          {[CATEGORY_LABELS[doc.category] ?? doc.category, size, doc.fileName].filter(Boolean).join(" · ")}
+                          {[t(CATEGORY_LABELS[doc.category] ?? doc.category), size, doc.fileName].filter(Boolean).join(" · ")}
                         </p>
                       </td>
                       <td style={{ padding: "10px 14px", color: pal.textMuted }}>{eventName}</td>
@@ -358,7 +360,7 @@ export default function EventDocumentsPage() {
                         <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
                           {doc.audiences?.map(a => (
                             <span key={a} style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 99, background: "rgba(167,139,250,0.14)", color: "#7c3aed" }}>
-                              {AUDIENCE_LABELS[a] ?? a}
+                              {t(AUDIENCE_LABELS[a] ?? a)}
                             </span>
                           ))}
                         </div>
@@ -371,7 +373,7 @@ export default function EventDocumentsPage() {
                             background: doc.published ? "rgba(16,185,129,0.1)" : "#f1f5f9",
                             color: doc.published ? "#059669" : pal.textMuted,
                           }}>
-                          {doc.published ? "Visible" : "Oculto"}
+                          {doc.published ? t("Visible") : t("Oculto")}
                         </button>
                       </td>
                       <td style={{ padding: "10px 14px" }}>
@@ -379,16 +381,16 @@ export default function EventDocumentsPage() {
                           {isPdf(doc) && (
                             <button onClick={() => setViewing(doc)}
                               style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: "linear-gradient(135deg,#21D0B3,#14AE98)", color: "#fff", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
-                              Ver
+                              {t("Ver")}
                             </button>
                           )}
                           <button onClick={() => startEdit(doc)}
                             style={{ padding: "5px 12px", borderRadius: 8, border: `1px solid ${pal.cardBorder}`, background: "#fff", fontSize: 11, color: "#475569", cursor: "pointer" }}>
-                            Editar
+                            {t("Editar")}
                           </button>
                           <button onClick={() => setDeleteConfirm(doc)}
                             style={{ padding: "5px 12px", borderRadius: 8, border: "1px solid rgba(239,68,68,0.3)", background: "#fff", fontSize: 11, color: "#ef4444", cursor: "pointer" }}>
-                            Eliminar
+                            {t("Eliminar")}
                           </button>
                         </div>
                       </td>
@@ -412,18 +414,18 @@ export default function EventDocumentsPage() {
       {deleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div style={{ background: "#fff", borderRadius: 20, padding: 24, maxWidth: 400, width: "100%" }}>
-            <h2 style={{ fontSize: 16, fontWeight: 800, color: pal.textPrimary }}>Eliminar documento</h2>
+            <h2 style={{ fontSize: 16, fontWeight: 800, color: pal.textPrimary }}>{t("Eliminar documento")}</h2>
             <p style={{ fontSize: 13, color: pal.textMuted, marginTop: 8 }}>
-              ¿Seguro que quieres eliminar <b>{deleteConfirm.title}</b>? Dejará de verse en los portales.
+              {t("¿Seguro que quieres eliminar")} <b>{deleteConfirm.title}</b>? {t("Dejará de verse en los portales.")}
             </p>
             <div className="mt-5 flex justify-end gap-2">
               <button onClick={() => setDeleteConfirm(null)}
                 style={{ padding: "8px 16px", borderRadius: 10, border: `1px solid ${pal.cardBorder}`, background: "#fff", fontSize: 13, color: pal.textMuted, cursor: "pointer" }}>
-                Cancelar
+                {t("Cancelar")}
               </button>
               <button onClick={() => remove(deleteConfirm)}
                 style={{ padding: "8px 16px", borderRadius: 10, border: "none", background: "#ef4444", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                Eliminar
+                {t("Eliminar")}
               </button>
             </div>
           </div>

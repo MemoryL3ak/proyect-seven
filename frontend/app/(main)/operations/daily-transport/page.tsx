@@ -8,6 +8,7 @@ import FileDropZone from "@/components/ui/FileDropZone";
 import EmptyStateBox from "@/components/ui/EmptyState";
 import KpiCard from "@/components/ui/KpiCard";
 import { clientTypeLabel } from "@/lib/clientTypes";
+import { useI18n } from "@/lib/i18n";
 import {
   TruckIcon,
   UploadIcon,
@@ -305,6 +306,7 @@ function isoToDisplay(iso: string): string {
 }
 
 export default function DailyTransportPage() {
+  const { t } = useI18n();
   const [tab, setTab] = useState<"import" | "assign" | "view">("import");
   const [events, setEvents] = useState<Event[]>([]);
   const [eventId, setEventId] = useState("");
@@ -400,9 +402,9 @@ export default function DailyTransportPage() {
           .map((r) => toScheduleRow(r))
           .filter((r) => r.date || r.clientType || r.discipline);
         setRows(cleaned);
-        if (cleaned.length === 0) setError("No se detectaron filas válidas en el archivo");
+        if (cleaned.length === 0) setError(t("No se detectaron filas válidas en el archivo"));
       } catch (err) {
-        setError(err instanceof Error ? err.message : "No se pudo leer el archivo");
+        setError(err instanceof Error ? err.message : t("No se pudo leer el archivo"));
       }
     };
     reader.readAsBinaryString(file);
@@ -462,7 +464,7 @@ export default function DailyTransportPage() {
       if (result.createdCount === 0) {
         setError(
           `No se creó ningún viaje (${result.skippedCount} fila(s) saltadas). ` +
-            "Revisa el motivo fila por fila en la tabla de abajo — típicamente falta la fecha, la hora, o hay un problema de esquema en la base.",
+            t("Revisa el motivo fila por fila en la tabla de abajo — típicamente falta la fecha, la hora, o hay un problema de esquema en la base."),
         );
       } else {
         setMessage(
@@ -483,7 +485,7 @@ export default function DailyTransportPage() {
         setLastImportedDate(firstDate);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error en importación");
+      setError(err instanceof Error ? err.message : t("Error en importación"));
     } finally {
       setImporting(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -528,7 +530,7 @@ export default function DailyTransportPage() {
         );
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error en auto-asignación");
+      setError(err instanceof Error ? err.message : t("Error en auto-asignación"));
     } finally {
       setAssigning(false);
     }
@@ -546,7 +548,7 @@ export default function DailyTransportPage() {
       });
       setViewTrips(filtered);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error cargando viajes");
+      setError(err instanceof Error ? err.message : t("Error cargando viajes"));
     } finally {
       setViewLoading(false);
     }
@@ -587,13 +589,13 @@ export default function DailyTransportPage() {
   return (
     <div className="min-w-0 space-y-6 overflow-x-hidden">
       <PageHeader
-        title="Operatividad diaria — Transporte"
-        description="Importa horarios desde planilla, auto-asigna conductores respetando restricciones, y revisa el día operativo completo."
+        title={t("Operatividad diaria — Transporte")}
+        description={t("Importa horarios desde planilla, auto-asigna conductores respetando restricciones, y revisa el día operativo completo.")}
         icon={<TruckIcon size={24} />}
         meta={
           <div className="flex items-center gap-2">
             <label className="text-xs font-medium uppercase tracking-wide"
-              style={{ color: "var(--text-muted)" }}>Evento:</label>
+              style={{ color: "var(--text-muted)" }}>{t("Evento:")}</label>
             <select className="input" style={{ minWidth: "240px" }}
               value={eventId} onChange={(e) => setEventId(e.target.value)}>
               {events.map((e) => <option key={e.id} value={e.id}>{e.name || e.id}</option>)}
@@ -606,9 +608,9 @@ export default function DailyTransportPage() {
       <section className="surface rounded-2xl p-2">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
           {[
-            { key: "import" as const, n: 1, title: "Importar planilla", desc: "Carga el programa operativo del día", icon: <UploadIcon size={15} />, badge: rows.length > 0 ? `${rows.length} filas` : importResult ? `${importResult.createdCount} creados` : null },
-            { key: "assign" as const, n: 2, title: "Asignar conductores", desc: "Motor de asignación con reglas operativas", icon: <SettingsIcon size={15} />, badge: assignResult ? `${assignResult.assignedCount} asignados` : null },
-            { key: "view" as const, n: 3, title: "Vista del día", desc: "Control y cobertura del día operativo", icon: <CalendarIcon size={15} />, badge: viewTrips.length > 0 ? `${viewTrips.length} servicios` : null },
+            { key: "import" as const, n: 1, title: t("Importar planilla"), desc: t("Carga el programa operativo del día"), icon: <UploadIcon size={15} />, badge: rows.length > 0 ? `${rows.length} ${t("filas")}` : importResult ? `${importResult.createdCount} ${t("creados")}` : null },
+            { key: "assign" as const, n: 2, title: t("Asignar conductores"), desc: t("Motor de asignación con reglas operativas"), icon: <SettingsIcon size={15} />, badge: assignResult ? `${assignResult.assignedCount} ${t("asignados")}` : null },
+            { key: "view" as const, n: 3, title: t("Vista del día"), desc: t("Control y cobertura del día operativo"), icon: <CalendarIcon size={15} />, badge: viewTrips.length > 0 ? `${viewTrips.length} ${t("servicios")}` : null },
           ].map((s) => {
             const active = tab === s.key;
             return (
@@ -631,7 +633,7 @@ export default function DailyTransportPage() {
                 </span>
                 <span style={{ minWidth: 0, flex: 1 }}>
                   <span style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 10, fontWeight: 800, color: active ? "rgba(255,255,255,0.7)" : "#94a3b8", letterSpacing: "0.1em" }}>PASO {s.n}</span>
+                    <span style={{ fontSize: 10, fontWeight: 800, color: active ? "rgba(255,255,255,0.7)" : "#94a3b8", letterSpacing: "0.1em" }}>{t("PASO")} {s.n}</span>
                     {s.badge && (
                       <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 7px", borderRadius: 99, background: active ? "rgba(255,255,255,0.25)" : "rgba(33,208,179,0.12)", color: active ? "#fff" : "#1eb19a", whiteSpace: "nowrap" }}>
                         {s.badge}
@@ -662,26 +664,24 @@ export default function DailyTransportPage() {
         <section className="surface rounded-2xl p-5 space-y-4">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div className="min-w-0">
-              <p className="section-label mb-1">Cargar planilla operativa</p>
+              <p className="section-label mb-1">{t("Cargar planilla operativa")}</p>
               <p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)", maxWidth: "65ch" }}>
-                Acepta el formato de la planilla de operación con columnas: Fecha, Acrónimo cliente,
-                Disciplina, Presentación, Lugar Origen, Hora Llegada Recinto, Recinto, Acrónimo Flota,
-                PAX, Sillas de rueda, etc. Las fechas sin año se asumirán del evento seleccionado
-                (<strong>{defaultYear}</strong>).
+                {t("Acepta el formato de la planilla de operación con columnas: Fecha, Acrónimo cliente, Disciplina, Presentación, Lugar Origen, Hora Llegada Recinto, Recinto, Acrónimo Flota, PAX, Sillas de rueda, etc. Las fechas sin año se asumirán del evento seleccionado")}
+                {" "}(<strong>{defaultYear}</strong>).
               </p>
             </div>
             <button
               type="button"
               onClick={downloadTemplate}
               className="btn btn-ghost"
-              title="Descarga un archivo Excel con todas las columnas esperadas y filas de ejemplo"
+              title={t("Descarga un archivo Excel con todas las columnas esperadas y filas de ejemplo")}
             >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="inline-block mr-1.5 -mt-0.5">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                 <polyline points="7 10 12 15 17 10" />
                 <line x1="12" y1="15" x2="12" y2="3" />
               </svg>
-              Descargar plantilla
+              {t("Descargar plantilla")}
             </button>
           </div>
 
@@ -689,7 +689,7 @@ export default function DailyTransportPage() {
             accept=".csv,.xls,.xlsx"
             onFile={handleFile}
             selectedFileName={fileName}
-            selectedDetail={rows.length > 0 ? `${rows.length} fila(s) detectadas` : undefined}
+            selectedDetail={rows.length > 0 ? `${rows.length} ${t("fila(s) detectadas")}` : undefined}
           />
 
           {rows.length > 0 && (
@@ -697,9 +697,9 @@ export default function DailyTransportPage() {
               {[
                 { icon: "📋", label: `${rows.length} servicio${rows.length === 1 ? "" : "s"}` },
                 { icon: "📅", label: `${importStats.dates} fecha${importStats.dates === 1 ? "" : "s"} operativa${importStats.dates === 1 ? "" : "s"}` },
-                { icon: "👥", label: `${importStats.pax} pasajeros` },
-                ...(importStats.wheelchairs > 0 ? [{ icon: "♿", label: `${importStats.wheelchairs} silla(s) de rueda` }] : []),
-                ...(importStats.roundTrips > 0 ? [{ icon: "⇄", label: `${importStats.roundTrips} con tramo de regreso` }] : []),
+                { icon: "👥", label: `${importStats.pax} ${t("pasajeros")}` },
+                ...(importStats.wheelchairs > 0 ? [{ icon: "♿", label: `${importStats.wheelchairs} ${t("silla(s) de rueda")}` }] : []),
+                ...(importStats.roundTrips > 0 ? [{ icon: "⇄", label: `${importStats.roundTrips} ${t("con tramo de regreso")}` }] : []),
                 ...(importStats.clients.length > 0 ? [{ icon: "🎫", label: importStats.clients.join(" · ") }] : []),
               ].map((c) => (
                 <span key={c.label} className="inline-flex items-center gap-1.5 text-xs font-semibold rounded-full px-3 py-1.5"
@@ -714,8 +714,8 @@ export default function DailyTransportPage() {
             style={{ background: "var(--elevated)", border: "1px solid var(--border)" }}>
             <p className="text-xs" style={{ color: "var(--text-muted)" }}>
               {rows.length > 0
-                ? "Se crearán los servicios (y sus tramos de regreso) en las fechas indicadas. Podrás asignar conductores en el paso 2."
-                : "Selecciona o arrastra la planilla operativa para previsualizarla antes de importar."}
+                ? t("Se crearán los servicios (y sus tramos de regreso) en las fechas indicadas. Podrás asignar conductores en el paso 2.")
+                : t("Selecciona o arrastra la planilla operativa para previsualizarla antes de importar.")}
             </p>
             <button
               type="button"
@@ -730,10 +730,10 @@ export default function DailyTransportPage() {
               }}
             >
               {importing
-                ? "Importando…"
+                ? t("Importando…")
                 : rows.length > 0
-                  ? `Importar ${rows.length} servicio${rows.length === 1 ? "" : "s"}`
-                  : "Selecciona un archivo primero"}
+                  ? `${t("Importar")} ${rows.length} servicio${rows.length === 1 ? "" : "s"}`
+                  : t("Selecciona un archivo primero")}
             </button>
           </div>
           {rows.length > 0 && (
@@ -742,16 +742,16 @@ export default function DailyTransportPage() {
                 <thead style={{ background: "var(--elevated)", color: "var(--text-muted)" }}>
                   <tr>
                     <th className="p-2 text-left font-semibold uppercase tracking-wide">#</th>
-                    <th className="p-2 text-left font-semibold uppercase tracking-wide">Fecha</th>
-                    <th className="p-2 text-left font-semibold uppercase tracking-wide">Pres.</th>
-                    <th className="p-2 text-left font-semibold uppercase tracking-wide">Cliente</th>
-                    <th className="p-2 text-left font-semibold uppercase tracking-wide">Disciplina</th>
-                    <th className="p-2 text-left font-semibold uppercase tracking-wide">Origen</th>
-                    <th className="p-2 text-left font-semibold uppercase tracking-wide">Destino</th>
-                    <th className="p-2 text-left font-semibold uppercase tracking-wide">Flota</th>
-                    <th className="p-2 text-left font-semibold uppercase tracking-wide">PAX</th>
-                    <th className="p-2 text-left font-semibold uppercase tracking-wide">SR</th>
-                    <th className="p-2 text-left font-semibold uppercase tracking-wide">Vuelta</th>
+                    <th className="p-2 text-left font-semibold uppercase tracking-wide">{t("Fecha")}</th>
+                    <th className="p-2 text-left font-semibold uppercase tracking-wide">{t("Pres.")}</th>
+                    <th className="p-2 text-left font-semibold uppercase tracking-wide">{t("Cliente")}</th>
+                    <th className="p-2 text-left font-semibold uppercase tracking-wide">{t("Disciplina")}</th>
+                    <th className="p-2 text-left font-semibold uppercase tracking-wide">{t("Origen")}</th>
+                    <th className="p-2 text-left font-semibold uppercase tracking-wide">{t("Destino")}</th>
+                    <th className="p-2 text-left font-semibold uppercase tracking-wide">{t("Flota")}</th>
+                    <th className="p-2 text-left font-semibold uppercase tracking-wide">{t("PAX")}</th>
+                    <th className="p-2 text-left font-semibold uppercase tracking-wide">{t("SR")}</th>
+                    <th className="p-2 text-left font-semibold uppercase tracking-wide">{t("Vuelta")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -774,7 +774,7 @@ export default function DailyTransportPage() {
               </table>
               {rows.length > 50 && (
                 <p className="p-2 text-xs" style={{ color: "var(--text-muted)" }}>
-                  Mostrando 50 de {rows.length}. Todas se importarán al confirmar.
+                  {t("Mostrando 50 de")} {rows.length}. {t("Todas se importarán al confirmar.")}
                 </p>
               )}
             </div>
@@ -782,9 +782,9 @@ export default function DailyTransportPage() {
           {importResult && (
             <div className="space-y-3 rounded-xl p-4" style={{ background: "var(--elevated)", border: "1px solid var(--border)" }}>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="badge badge-success">{importResult.createdCount} viajes creados</span>
+                <span className="badge badge-success">{importResult.createdCount} {t("viajes creados")}</span>
                 {importResult.skippedCount > 0 && (
-                  <span className="badge badge-danger">{importResult.skippedCount} saltados</span>
+                  <span className="badge badge-danger">{importResult.skippedCount} {t("saltados")}</span>
                 )}
               </div>
               {(importResult.warnings ?? []).length > 0 && (
@@ -797,12 +797,12 @@ export default function DailyTransportPage() {
               {importResult.created.length > 0 && (
                 <details>
                   <summary className="text-xs cursor-pointer font-semibold" style={{ color: "var(--text-muted)" }}>
-                    Ver los {importResult.created.length} viajes creados
+                    {t("Ver los")} {importResult.created.length} {t("viajes creados")}
                   </summary>
                   <div className="rounded-lg max-h-48 overflow-auto mt-2" style={{ border: "1px solid var(--border)" }}>
                     <table className="w-full text-xs">
                       <thead style={{ background: "var(--surface)", color: "var(--text-muted)" }}>
-                        <tr><th className="p-2 text-left font-semibold uppercase tracking-wide">Fila</th><th className="p-2 text-left font-semibold uppercase tracking-wide">Viaje</th></tr>
+                        <tr><th className="p-2 text-left font-semibold uppercase tracking-wide">{t("Fila")}</th><th className="p-2 text-left font-semibold uppercase tracking-wide">{t("Viaje")}</th></tr>
                       </thead>
                       <tbody>
                         {importResult.created.map((c, i) => (
@@ -818,14 +818,14 @@ export default function DailyTransportPage() {
               )}
               {importResult.createdCount > 0 && lastImportedDate && (
                 <div className="flex flex-wrap items-center gap-2 text-sm" style={{ color: "var(--text-muted)" }}>
-                  <span>Los viajes quedaron para el <strong>{isoToDisplay(lastImportedDate)}</strong>.</span>
+                  <span>{t("Los viajes quedaron para el")} <strong>{isoToDisplay(lastImportedDate)}</strong>.</span>
                   <button
                     type="button"
                     className="btn btn-primary"
                     onClick={() => setTab("view")}
                   >
                     <CalendarIcon size={14} className="inline-block mr-1.5 -mt-0.5" />
-                    Ver los viajes del {isoToDisplay(lastImportedDate)}
+                    {t("Ver los viajes del")} {isoToDisplay(lastImportedDate)}
                   </button>
                 </div>
               )}
@@ -833,7 +833,7 @@ export default function DailyTransportPage() {
                 <div className="rounded-lg max-h-48 overflow-auto" style={{ border: "1px solid var(--border)" }}>
                   <table className="w-full text-xs">
                     <thead style={{ background: "var(--surface)", color: "var(--text-muted)" }}>
-                      <tr><th className="p-2 text-left font-semibold uppercase tracking-wide">Fila</th><th className="p-2 text-left font-semibold uppercase tracking-wide">Motivo</th></tr>
+                      <tr><th className="p-2 text-left font-semibold uppercase tracking-wide">{t("Fila")}</th><th className="p-2 text-left font-semibold uppercase tracking-wide">{t("Motivo")}</th></tr>
                     </thead>
                     <tbody>
                       {importResult.skipped.map((s, i) => (
@@ -854,84 +854,83 @@ export default function DailyTransportPage() {
             {/* ── Parámetros del motor ── */}
             <div className="surface rounded-2xl p-5 space-y-5">
               <div>
-                <p className="section-label mb-1">Parámetros de asignación</p>
+                <p className="section-label mb-1">{t("Parámetros de asignación")}</p>
                 <p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)", maxWidth: "62ch" }}>
-                  El motor evalúa cada servicio sin conductor del día y busca el mejor candidato entre la
-                  Flota propia y los conductores de proveedores, respetando las reglas activas.
+                  {t("El motor evalúa cada servicio sin conductor del día y busca el mejor candidato entre la Flota propia y los conductores de proveedores, respetando las reglas activas.")}
                 </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <label className="text-sm">
-                  <span className="block text-xs mb-1 font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Fecha operativa</span>
+                  <span className="block text-xs mb-1 font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>{t("Fecha operativa")}</span>
                   <input type="date" className="input"
                     value={viewDate} onChange={(e) => setViewDate(e.target.value)} />
                   <span className="block text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>
-                    Se asignan los servicios sin conductor de este día.
+                    {t("Se asignan los servicios sin conductor de este día.")}
                   </span>
                 </label>
                 <label className="text-sm">
-                  <span className="block text-xs mb-1 font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Tipo de cliente</span>
+                  <span className="block text-xs mb-1 font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>{t("Tipo de cliente")}</span>
                   <select className="input"
                     value={assignClientType} onChange={(e) => setAssignClientType(e.target.value)}>
-                    <option value="">Todos</option>
-                    {CLIENT_TYPES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+                    <option value="">{t("Todos")}</option>
+                    {CLIENT_TYPES.map((c) => <option key={c.value} value={c.value}>{t(c.label)}</option>)}
                   </select>
                 </label>
                 <label className="text-sm">
-                  <span className="block text-xs mb-1 font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Flota</span>
+                  <span className="block text-xs mb-1 font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>{t("Flota")}</span>
                   <select className="input"
                     value={assignFleet} onChange={(e) => setAssignFleet(e.target.value)}>
-                    <option value="">Todas</option>
-                    {FLEET_TYPES.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
+                    <option value="">{t("Todas")}</option>
+                    {FLEET_TYPES.map((f) => <option key={f.value} value={f.value}>{t(f.label)}</option>)}
                   </select>
                 </label>
               </div>
 
               <div>
-                <p className="section-label mb-2">Reglas operativas</p>
+                <p className="section-label mb-2">{t("Reglas operativas")}</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   <ToggleRow checked={enforceClientTypeMatch} onChange={setEnforceClientTypeMatch}
-                    label="Tipo de cliente habilitado"
-                    hint="El conductor debe estar autorizado para el tipo de cliente del servicio" />
+                    label={t("Tipo de cliente habilitado")}
+                    hint={t("El conductor debe estar autorizado para el tipo de cliente del servicio")} />
                   <ToggleRow checked={enforceFleetTypeMatch} onChange={setEnforceFleetTypeMatch}
-                    label="Flota requerida (M1 / M4 / M5)"
-                    hint="El vehículo debe ser compatible con la flota indicada en la planilla" />
+                    label={t("Flota requerida (M1 / M4 / M5)")}
+                    hint={t("El vehículo debe ser compatible con la flota indicada en la planilla")} />
                   <ToggleRow checked={respectVehicleCapacity} onChange={setRespectVehicleCapacity}
-                    label="Capacidad del vehículo"
-                    hint="Los pasajeros del servicio no pueden exceder la capacidad declarada" />
+                    label={t("Capacidad del vehículo")}
+                    hint={t("Los pasajeros del servicio no pueden exceder la capacidad declarada")} />
                   <ToggleRow checked={respectWheelchair} onChange={setRespectWheelchair}
-                    label="Accesibilidad"
-                    hint="Servicios con silla de ruedas solo en vehículo adaptado (M5)" />
+                    label={t("Accesibilidad")}
+                    hint={t("Servicios con silla de ruedas solo en vehículo adaptado (M5)")} />
                   <ToggleRow checked={prioritizeRoundTrips} onChange={setPrioritizeRoundTrips}
-                    label="Continuidad ida y regreso"
-                    hint="El mismo conductor cubre ambos tramos del servicio" />
+                    label={t("Continuidad ida y regreso")}
+                    hint={t("El mismo conductor cubre ambos tramos del servicio")} />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <label className="text-sm">
                   <span className="block text-xs mb-1 font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
-                    Buffer entre servicios: <strong style={{ color: "#0f766e" }}>{bufferMinutes} min</strong>
+                    {t("Buffer entre servicios:")} <strong style={{ color: "#0f766e" }}>{bufferMinutes} min</strong>
                   </span>
                   <input type="range" min={0} max={240} step={15} className="block w-full mt-1"
                     value={bufferMinutes} onChange={(e) => setBufferMinutes(Number(e.target.value))} />
                   <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                    Recomendado: 90 min según política operativa.
+                    {t("Recomendado: 90 min según política operativa.")}
                   </span>
                 </label>
                 <label className="text-sm">
-                  <span className="block text-xs mb-1 font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Máx. servicios por conductor</span>
-                  <input type="number" min={1} placeholder="Sin tope" className="input"
+                  <span className="block text-xs mb-1 font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>{t("Máx. servicios por conductor")}</span>
+                  <input type="number" min={1} placeholder={t("Sin tope")} className="input"
                     value={maxTripsPerDriver} onChange={(e) => setMaxTripsPerDriver(e.target.value)} />
                 </label>
                 <label className="text-sm">
-                  <span className="block text-xs mb-1 font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Estrategia</span>
+                  <span className="block text-xs mb-1 font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>{t("Estrategia")}</span>
                   <select className="input"
                     value={strategy} onChange={(e) => setStrategy(e.target.value as any)}>
-                    <option value="least_loaded">Menor carga (balanceado)</option>
-                    <option value="first_available">Primer disponible</option>
-                    <option value="longest_idle">Más tiempo libre</option>
+                    <option value="least_loaded">{t("Menor carga (balanceado)")}</option>
+                    <option value="first_available">{t("Primer disponible")}</option>
+                    <option value="longest_idle">{t("Más tiempo libre")}</option>
                   </select>
                 </label>
               </div>
@@ -942,19 +941,19 @@ export default function DailyTransportPage() {
               style={{ background: "linear-gradient(160deg, #0f172a 0%, #1f4e8c 130%)", boxShadow: "0 8px 24px rgba(15,23,42,0.25)" }}>
               <div>
                 <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.2em", textTransform: "uppercase", color: "#21D0B3" }}>
-                  Motor de asignación
+                  {t("Motor de asignación")}
                 </p>
-                <h3 style={{ marginTop: 4, fontSize: 16, fontWeight: 800, color: "#fff" }}>Resumen de ejecución</h3>
+                <h3 style={{ marginTop: 4, fontSize: 16, fontWeight: 800, color: "#fff" }}>{t("Resumen de ejecución")}</h3>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {[
-                  ["Fecha operativa", isoToDisplay(viewDate)],
-                  ["Tipo de cliente", assignClientType ? (CLIENT_TYPES.find((c) => c.value === assignClientType)?.label ?? assignClientType) : "Todos"],
-                  ["Flota", assignFleet ? (FLEET_TYPES.find((f) => f.value === assignFleet)?.label ?? assignFleet) : "Todas"],
-                  ["Reglas activas", `${[enforceClientTypeMatch, enforceFleetTypeMatch, respectVehicleCapacity, respectWheelchair, prioritizeRoundTrips].filter(Boolean).length} de 5`],
-                  ["Buffer entre servicios", `${bufferMinutes} min`],
-                  ["Tope por conductor", maxTripsPerDriver ? `${maxTripsPerDriver} servicios` : "Sin tope"],
-                  ["Estrategia", strategy === "least_loaded" ? "Menor carga" : strategy === "first_available" ? "Primer disponible" : "Más tiempo libre"],
+                  [t("Fecha operativa"), isoToDisplay(viewDate)],
+                  [t("Tipo de cliente"), assignClientType ? t(CLIENT_TYPES.find((c) => c.value === assignClientType)?.label ?? assignClientType) : t("Todos")],
+                  [t("Flota"), assignFleet ? t(FLEET_TYPES.find((f) => f.value === assignFleet)?.label ?? assignFleet) : t("Todas")],
+                  [t("Reglas activas"), `${[enforceClientTypeMatch, enforceFleetTypeMatch, respectVehicleCapacity, respectWheelchair, prioritizeRoundTrips].filter(Boolean).length} ${t("de 5")}`],
+                  [t("Buffer entre servicios"), `${bufferMinutes} min`],
+                  [t("Tope por conductor"), maxTripsPerDriver ? `${maxTripsPerDriver} ${t("servicios")}` : t("Sin tope")],
+                  [t("Estrategia"), strategy === "least_loaded" ? t("Menor carga") : strategy === "first_available" ? t("Primer disponible") : t("Más tiempo libre")],
                 ].map(([k, v]) => (
                   <div key={k} style={{ display: "flex", justifyContent: "space-between", gap: 12, borderBottom: "1px solid rgba(255,255,255,0.08)", paddingBottom: 7 }}>
                     <span style={{ fontSize: 11, color: "rgba(255,255,255,0.55)" }}>{k}</span>
@@ -969,7 +968,7 @@ export default function DailyTransportPage() {
                     background: "rgba(255,255,255,0.08)", color: "#fff", border: "1px solid rgba(255,255,255,0.22)",
                     cursor: assigning ? "default" : "pointer", opacity: assigning ? 0.6 : 1,
                   }}>
-                  Simular sin aplicar (dry-run)
+                  {t("Simular sin aplicar (dry-run)")}
                 </button>
                 <button type="button" disabled={assigning} onClick={() => runAssign(false)}
                   style={{
@@ -978,10 +977,10 @@ export default function DailyTransportPage() {
                     boxShadow: "0 4px 14px rgba(33,208,179,0.4)",
                     cursor: assigning ? "default" : "pointer", opacity: assigning ? 0.7 : 1,
                   }}>
-                  {assigning ? "Asignando…" : "Aplicar asignación"}
+                  {assigning ? t("Asignando…") : t("Aplicar asignación")}
                 </button>
                 <p style={{ fontSize: 10.5, color: "rgba(255,255,255,0.5)", textAlign: "center", margin: 0 }}>
-                  La simulación muestra el plan completo sin escribir cambios.
+                  {t("La simulación muestra el plan completo sin escribir cambios.")}
                 </p>
               </div>
             </div>
@@ -991,9 +990,9 @@ export default function DailyTransportPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
               <div className="rounded-2xl p-4" style={{ background: "var(--success-dim)", border: "1px solid var(--success-border)" }}>
                 <p className="font-bold text-sm mb-2 flex items-center gap-2" style={{ color: "var(--success)" }}>
-                  <CheckIcon size={15} /> Asignados
+                  <CheckIcon size={15} /> {t("Asignados")}
                   <span className="text-[11px] font-extrabold rounded-full px-2 py-0.5" style={{ background: "rgba(46,125,50,0.15)" }}>{assignResult.assignedCount}</span>
-                  {assignResult.dryRun && <span className="text-[10px] font-bold uppercase tracking-wide rounded px-1.5 py-0.5" style={{ background: "#fff", color: "var(--text-muted)" }}>simulación</span>}
+                  {assignResult.dryRun && <span className="text-[10px] font-bold uppercase tracking-wide rounded px-1.5 py-0.5" style={{ background: "#fff", color: "var(--text-muted)" }}>{t("simulación")}</span>}
                 </p>
                 <div className="max-h-64 overflow-auto text-xs">
                   {assignResult.assigned.map((a) => (
@@ -1005,7 +1004,7 @@ export default function DailyTransportPage() {
               </div>
               <div className="rounded-2xl p-4" style={{ background: "var(--danger-dim)", border: "1px solid var(--danger-border)" }}>
                 <p className="font-bold text-sm mb-2 flex items-center gap-2" style={{ color: "var(--danger)" }}>
-                  <AlertIcon size={15} /> Sin asignar
+                  <AlertIcon size={15} /> {t("Sin asignar")}
                   <span className="text-[11px] font-extrabold rounded-full px-2 py-0.5" style={{ background: "rgba(179,35,27,0.12)" }}>{assignResult.unassignedCount}</span>
                 </p>
                 <div className="max-h-64 overflow-auto text-xs">
@@ -1027,32 +1026,32 @@ export default function DailyTransportPage() {
           {viewTrips.length > 0 && (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               <KpiCard
-                label="Viajes del día"
+                label={t("Viajes del día")}
                 value={viewKpis.total}
                 accent="blue"
                 icon={<TruckIcon size={18} />}
                 detail={isoToDisplay(viewDate)}
               />
               <KpiCard
-                label="Con conductor"
+                label={t("Con conductor")}
                 value={viewKpis.assigned}
                 accent="green"
                 icon={<CheckIcon size={18} />}
-                detail={`${viewKpis.total ? Math.round((viewKpis.assigned / viewKpis.total) * 100) : 0}% de cobertura`}
+                detail={`${viewKpis.total ? Math.round((viewKpis.assigned / viewKpis.total) * 100) : 0}% ${t("de cobertura")}`}
               />
               <KpiCard
-                label="Sin asignar"
+                label={t("Sin asignar")}
                 value={viewKpis.unassigned}
                 accent="red"
                 icon={<AlertIcon size={18} />}
-                detail={viewKpis.unassigned > 0 ? "Requieren conductor" : "Cobertura completa"}
+                detail={viewKpis.unassigned > 0 ? t("Requieren conductor") : t("Cobertura completa")}
               />
               <KpiCard
-                label="Pasajeros"
+                label={t("Pasajeros")}
                 value={viewKpis.pax}
                 accent="purple"
                 icon={<UsersIcon size={18} />}
-                detail="Capacidad total del día"
+                detail={t("Capacidad total del día")}
               />
             </div>
           )}
@@ -1062,26 +1061,26 @@ export default function DailyTransportPage() {
             <div className="flex flex-wrap gap-3 items-end">
               <label className="text-sm">
                 <span className="block text-xs mb-1 uppercase tracking-wide font-medium"
-                  style={{ color: "var(--text-muted)" }}>Fecha</span>
+                  style={{ color: "var(--text-muted)" }}>{t("Fecha")}</span>
                 <input type="date" className="input"
                   value={viewDate} onChange={(e) => setViewDate(e.target.value)} />
               </label>
               <button className="btn btn-ghost" type="button" onClick={loadView}>
                 <RefreshIcon size={14} className="inline-block mr-1" />
-                Refrescar
+                {t("Refrescar")}
               </button>
             </div>
             <span className="badge badge-slate">
               {viewLoading
-                ? "Cargando…"
-                : `${viewTrips.length} servicio${viewTrips.length === 1 ? "" : "s"} en la fecha`}
+                ? t("Cargando…")
+                : `${viewTrips.length} servicio${viewTrips.length === 1 ? "" : "s"} ${t("en la fecha")}`}
             </span>
           </div>
 
           {viewTrips.length > 0 && (
             <div className="flex items-center gap-3">
               <span className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--text-muted)", whiteSpace: "nowrap" }}>
-                Cobertura de conductores
+                {t("Cobertura de conductores")}
               </span>
               <div style={{ flex: 1, height: 8, borderRadius: 99, background: "var(--elevated)", border: "1px solid var(--border)", overflow: "hidden" }}>
                 <div style={{
@@ -1102,12 +1101,12 @@ export default function DailyTransportPage() {
           {!viewLoading && viewTrips.length === 0 ? (
             <EmptyStateBox
               icon={<CalendarIcon size={36} />}
-              title="No hay viajes para esta fecha"
-              description="Cambia de fecha o importa una planilla en la pestaña anterior para ver los viajes operativos del día."
+              title={t("No hay viajes para esta fecha")}
+              description={t("Cambia de fecha o importa una planilla en la pestaña anterior para ver los viajes operativos del día.")}
               action={
                 <button className="btn btn-primary" type="button" onClick={() => setTab("import")}>
                   <UploadIcon size={14} className="inline-block mr-1" />
-                  Importar planilla
+                  {t("Importar planilla")}
                 </button>
               }
             />
@@ -1116,37 +1115,37 @@ export default function DailyTransportPage() {
               <table className="w-full text-xs">
                 <thead style={{ background: "var(--elevated)", color: "var(--text-muted)" }}>
                   <tr>
-                    <th className="p-3 text-left font-semibold uppercase tracking-wide text-[11px]">Hora</th>
-                    <th className="p-3 text-left font-semibold uppercase tracking-wide text-[11px]">Cliente</th>
-                    <th className="p-3 text-left font-semibold uppercase tracking-wide text-[11px]">Flota</th>
-                    <th className="p-3 text-left font-semibold uppercase tracking-wide text-[11px]">Origen → Destino</th>
-                    <th className="p-3 text-left font-semibold uppercase tracking-wide text-[11px]">PAX</th>
-                    <th className="p-3 text-left font-semibold uppercase tracking-wide text-[11px]">SR</th>
-                    <th className="p-3 text-left font-semibold uppercase tracking-wide text-[11px]">Tipo</th>
-                    <th className="p-3 text-left font-semibold uppercase tracking-wide text-[11px]">Conductor</th>
-                    <th className="p-3 text-left font-semibold uppercase tracking-wide text-[11px]">Estado</th>
+                    <th className="p-3 text-left font-semibold uppercase tracking-wide text-[11px]">{t("Hora")}</th>
+                    <th className="p-3 text-left font-semibold uppercase tracking-wide text-[11px]">{t("Cliente")}</th>
+                    <th className="p-3 text-left font-semibold uppercase tracking-wide text-[11px]">{t("Flota")}</th>
+                    <th className="p-3 text-left font-semibold uppercase tracking-wide text-[11px]">{t("Origen → Destino")}</th>
+                    <th className="p-3 text-left font-semibold uppercase tracking-wide text-[11px]">{t("PAX")}</th>
+                    <th className="p-3 text-left font-semibold uppercase tracking-wide text-[11px]">{t("SR")}</th>
+                    <th className="p-3 text-left font-semibold uppercase tracking-wide text-[11px]">{t("Tipo")}</th>
+                    <th className="p-3 text-left font-semibold uppercase tracking-wide text-[11px]">{t("Conductor")}</th>
+                    <th className="p-3 text-left font-semibold uppercase tracking-wide text-[11px]">{t("Estado")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {viewTrips
                     .sort((a, b) => String(a.scheduledAt || a.scheduled_at || "").localeCompare(String(b.scheduledAt || b.scheduled_at || "")))
-                    .map((t, idx) => {
-                      const driverId = t.driverId || t.driver_id;
-                      const time = String(t.scheduledAt || t.scheduled_at || "").slice(11, 16);
+                    .map((trip, idx) => {
+                      const driverId = trip.driverId || trip.driver_id;
+                      const time = String(trip.scheduledAt || trip.scheduled_at || "").slice(11, 16);
                       return (
-                        <tr key={t.id}
+                        <tr key={trip.id}
                           style={{ borderTop: "1px solid var(--border-muted)", background: idx % 2 === 0 ? "var(--surface)" : "var(--elevated)" }}>
                           <td className="p-3 font-mono font-semibold">{time}</td>
-                          <td className="p-3 font-medium">{clientTypeLabel(t.clientType || t.client_type)}</td>
+                          <td className="p-3 font-medium">{t(clientTypeLabel(trip.clientType || trip.client_type))}</td>
                           <td className="p-3">
-                            {(t.fleetAcronym || t.fleet_acronym)
-                              ? <span className="badge badge-slate">{t.fleetAcronym || t.fleet_acronym}</span>
+                            {(trip.fleetAcronym || trip.fleet_acronym)
+                              ? <span className="badge badge-slate">{trip.fleetAcronym || trip.fleet_acronym}</span>
                               : <span style={{ color: "var(--text-faint)" }}>—</span>}
                           </td>
-                          <td className="p-3">{t.origin} → {t.destination}</td>
-                          <td className="p-3">{t.passengerCount ?? t.passenger_count ?? "-"}</td>
-                          <td className="p-3">{t.wheelchairCount ?? t.wheelchair_count ?? "-"}</td>
-                          <td className="p-3">{legTypeLabel(t.legType || t.leg_type)}</td>
+                          <td className="p-3">{trip.origin} → {trip.destination}</td>
+                          <td className="p-3">{trip.passengerCount ?? trip.passenger_count ?? "-"}</td>
+                          <td className="p-3">{trip.wheelchairCount ?? trip.wheelchair_count ?? "-"}</td>
+                          <td className="p-3">{t(legTypeLabel(trip.legType || trip.leg_type))}</td>
                           <td className="p-3">
                             {driverId ? (
                               <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
@@ -1163,11 +1162,11 @@ export default function DailyTransportPage() {
                                 <span className="font-medium">{driverNameById.get(driverId) || driverId.slice(0, 8)}</span>
                               </span>
                             ) : (
-                              <span className="badge badge-amber">Por asignar</span>
+                              <span className="badge badge-amber">{t("Por asignar")}</span>
                             )}
                           </td>
                           <td className="p-3">
-                            {(() => { const b = statusBadge(t.status); return <span className={`badge ${b.cls}`}>{b.label}</span>; })()}
+                            {(() => { const b = statusBadge(trip.status); return <span className={`badge ${b.cls}`}>{t(b.label)}</span>; })()}
                           </td>
                         </tr>
                       );

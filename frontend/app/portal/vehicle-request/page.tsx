@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import PlacesAutocompleteInput from "@/components/PlacesAutocompleteInput";
 import { apiFetch } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 import { buildDisciplineLabelMap, categoryLabel, genderLabel, normalizeCategory, normalizeGender } from "@/lib/discipline-filters";
 import { getMobileSession, mobileAwareLogout } from "@/lib/mobile-auth";
 import { filterValidatedAthletes } from "@/lib/athletes";
@@ -390,6 +391,7 @@ function getMonthGrid(year: number, month: number) {
 }
 
 export default function VehicleRequestPortalPage() {
+  const { t } = useI18n();
   const autoLoginRef = useRef(false);
   const deepLinkHandled = useRef(false);
   const [userCode, setUserCode] = useState("");
@@ -622,7 +624,7 @@ export default function VehicleRequestPortalPage() {
   const login = async () => {
     const normalized = userCode.trim();
     if (normalized.length < 6) {
-      setError("Ingresa un codigo de usuario valido.");
+      setError(t("Ingresa un codigo de usuario valido."));
       return;
     }
     setLoading(true);
@@ -635,12 +637,12 @@ export default function VehicleRequestPortalPage() {
       try {
         login = await portalLogin(normalized);
       } catch {
-        setError("No encontramos un usuario con ese codigo.");
+        setError(t("No encontramos un usuario con ese codigo."));
         setAthlete(null);
         return;
       }
       if (login.kind !== "athlete") {
-        setError("No encontramos un usuario con ese codigo.");
+        setError(t("No encontramos un usuario con ese codigo."));
         setAthlete(null);
         return;
       }
@@ -654,7 +656,7 @@ export default function VehicleRequestPortalPage() {
       }
       const match = await apiFetch<Athlete>(`/athletes/${login.athleteId}`);
       if (!match?.id || filterValidatedAthletes([match]).length === 0) {
-        setError("No encontramos un usuario con ese codigo.");
+        setError(t("No encontramos un usuario con ese codigo."));
         setAthlete(null);
         return;
       }
@@ -664,7 +666,7 @@ export default function VehicleRequestPortalPage() {
       try { sessionStorage.setItem("portal_vr_id", match.id); } catch {}
       await loadPortal(match);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo iniciar el portal.");
+      setError(err instanceof Error ? err.message : t("No se pudo iniciar el portal."));
     } finally {
       setLoading(false);
     }
@@ -722,9 +724,9 @@ export default function VehicleRequestPortalPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: requestEmail.trim() }),
       });
-      setAccessRequestStatus(response?.message || "Codigo enviado al correo.");
+      setAccessRequestStatus(response?.message || t("Codigo enviado al correo."));
     } catch (err) {
-      setAccessRequestError(err instanceof Error ? err.message : "No se pudo solicitar el codigo.");
+      setAccessRequestError(err instanceof Error ? err.message : t("No se pudo solicitar el codigo."));
     } finally {
       setRequestAccessLoading(false);
     }
@@ -775,7 +777,7 @@ export default function VehicleRequestPortalPage() {
   const cancelTrip = async (trip: Trip) => {
     if (!athlete) return;
     if (!canEditTrip(trip)) {
-      setError("La solicitud ya no puede cancelarse porque esta dentro de las 2 horas previas al viaje.");
+      setError(t("La solicitud ya no puede cancelarse porque esta dentro de las 2 horas previas al viaje."));
       return;
     }
     setLoading(true);
@@ -795,10 +797,10 @@ export default function VehicleRequestPortalPage() {
       if (editingTripId === trip.id) {
         resetRequestForm();
       }
-      setMessage("Solicitud cancelada correctamente.");
+      setMessage(t("Solicitud cancelada correctamente."));
       await loadPortal(athlete);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo cancelar la solicitud.");
+      setError(err instanceof Error ? err.message : t("No se pudo cancelar la solicitud."));
     } finally {
       setLoading(false);
     }
@@ -835,24 +837,24 @@ export default function VehicleRequestPortalPage() {
     event.preventDefault();
     if (!athlete) return;
     if (destinationType === "SEDE" && !selectedVenueId) {
-      setError("Selecciona la sede destino.");
+      setError(t("Selecciona la sede destino."));
       return;
     }
     if (destinationType === "HOTEL" && !selectedHotelId) {
-      setError("Selecciona el hotel destino.");
+      setError(t("Selecciona el hotel destino."));
       return;
     }
     if (!originAddress.trim()) {
-      setError("Ingresa la direccion de origen.");
+      setError(t("Ingresa la direccion de origen."));
       return;
     }
     if (!requestedTime) {
-      setError("Indica la hora del servicio.");
+      setError(t("Indica la hora del servicio."));
       return;
     }
     const normalizedPassengerCount = Number(passengerCount);
     if (!Number.isFinite(normalizedPassengerCount) || normalizedPassengerCount < 1) {
-      setError("Indica una cantidad de personas valida.");
+      setError(t("Indica una cantidad de personas valida."));
       return;
     }
     const vehicleSpec = VEHICLE_TYPES.find((v) => v.value === selectedVehicleType);
@@ -861,7 +863,7 @@ export default function VehicleRequestPortalPage() {
       return;
     }
     if (isRoundTrip && !returnTime) {
-      setError("Indica la fecha y hora del viaje de regreso.");
+      setError(t("Indica la fecha y hora del viaje de regreso."));
       return;
     }
     setSubmitting(true);
@@ -916,14 +918,14 @@ export default function VehicleRequestPortalPage() {
       });
       setMessage(
         editingTripId
-          ? "Solicitud actualizada correctamente."
+          ? t("Solicitud actualizada correctamente.")
           : "SOLICITUD_ENVIADA",
       );
       resetRequestForm();
       await loadPortal(athlete);
       setActiveTab("solicitud");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo guardar la solicitud.");
+      setError(err instanceof Error ? err.message : t("No se pudo guardar la solicitud."));
     } finally {
       setSubmitting(false);
     }
@@ -958,12 +960,12 @@ export default function VehicleRequestPortalPage() {
         }),
       });
       setTrips((prev) => prev.map((t) => t.id === tripId ? { ...t, driverRating: ratingStars } : t));
-      notify.push("Gracias por tu evaluacion!", "⭐");
+      notify.push(t("Gracias por tu evaluacion!"), "⭐");
       setRatingTripId(null);
       setRatingStars(0);
       setRatingComment("");
     } catch {
-      notify.push("No se pudo enviar la evaluacion", "❌");
+      notify.push(t("No se pudo enviar la evaluacion"), "❌");
     } finally {
       setRatingLoading(false);
     }
@@ -1053,7 +1055,7 @@ export default function VehicleRequestPortalPage() {
       const data = await apiFetch<PremiacionVIP[]>(`/premiaciones/by-athlete/${athlete!.id}`);
       setPremiaciones(data || []);
     } catch (e) {
-      alert(e instanceof Error ? e.message : "No se pudo actualizar");
+      alert(e instanceof Error ? e.message : t("No se pudo actualizar"));
     }
   };
 
@@ -1068,7 +1070,7 @@ export default function VehicleRequestPortalPage() {
       setCouponsAvailable(Array.isArray(list) ? list : []);
       setCouponClaims(Array.isArray(claims) ? claims : []);
     } catch (err) {
-      setCouponError(err instanceof Error ? err.message : "No se pudieron cargar los beneficios");
+      setCouponError(err instanceof Error ? err.message : t("No se pudieron cargar los beneficios"));
     }
   };
   useEffect(() => {
@@ -1104,7 +1106,7 @@ export default function VehicleRequestPortalPage() {
       setActiveClaim({ ...result, coupon });
       await loadCoupons(athlete.id, athlete.userType || "VIP");
     } catch (err) {
-      setCouponError(err instanceof Error ? err.message : "Error reclamando");
+      setCouponError(err instanceof Error ? err.message : t("Error reclamando"));
     } finally {
       setCouponClaiming(null);
     }
@@ -1158,24 +1160,24 @@ export default function VehicleRequestPortalPage() {
           );
 
         // Detect status changes and notify
-        myTrips.forEach((t) => {
-          const prev = prevStatuses.current[t.id];
-          if (prev && t.status && prev !== t.status) {
+        myTrips.forEach((tp) => {
+          const prev = prevStatuses.current[tp.id];
+          if (prev && tp.status && prev !== tp.status) {
             const msgs: Record<string, { message: string; emoji: string }> = {
-              SCHEDULED: { message: "Tu traslado fue programado", emoji: "cal" },
-              EN_ROUTE: { message: "El conductor esta en camino", emoji: "car" },
-              PICKED_UP: { message: "Estas en ruta a tu destino", emoji: "ok" },
-              COMPLETED: { message: "Viaje completado", emoji: "done" },
+              SCHEDULED: { message: t("Tu traslado fue programado"), emoji: "cal" },
+              EN_ROUTE: { message: t("El conductor esta en camino"), emoji: "car" },
+              PICKED_UP: { message: t("Estas en ruta a tu destino"), emoji: "ok" },
+              COMPLETED: { message: t("Viaje completado"), emoji: "done" },
             };
-            const info = msgs[t.status];
+            const info = msgs[tp.status];
             if (info) notify.push(info.message, info.emoji);
             // Auto-open rating when trip completes
-            if ((t.status === "COMPLETED" || t.status === "DROPPED_OFF") && !t.driverRating && t.driverId) {
-              setRatingTripId(t.id);
-              setExpandedTripId(t.id);
+            if ((tp.status === "COMPLETED" || tp.status === "DROPPED_OFF") && !tp.driverRating && tp.driverId) {
+              setRatingTripId(tp.id);
+              setExpandedTripId(tp.id);
             }
           }
-          if (t.id && t.status) prevStatuses.current[t.id] = t.status;
+          if (tp.id && tp.status) prevStatuses.current[tp.id] = tp.status;
         });
 
         setTrips(myTrips);
@@ -1452,11 +1454,11 @@ export default function VehicleRequestPortalPage() {
           }} />
           <div style={{ flex:1,minWidth:0 }}>
             <p style={{ fontSize:13.5,fontWeight:700,color:"#0f172a",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
-              {venue?.name || trip.destination || "Destino pendiente"}
+              {venue?.name || trip.destination || t("Destino pendiente")}
             </p>
             <p style={{ fontSize:11,color:"#94a3b8",margin:"2px 0 0" }}>
-              {formatDateTime(trip.scheduledAt || trip.requestedAt)} · {status.label}
-              {trip.isRoundTrip && <span style={{ marginLeft:6,padding:"1px 6px",borderRadius:6,background:"#f0fdfa",border:"1px solid #99f6e4",fontSize:10,fontWeight:600,color:"#0a7a6b" }}>Ida y vuelta</span>}
+              {formatDateTime(trip.scheduledAt || trip.requestedAt)} · {t(status.label)}
+              {trip.isRoundTrip && <span style={{ marginLeft:6,padding:"1px 6px",borderRadius:6,background:"#f0fdfa",border:"1px solid #99f6e4",fontSize:10,fontWeight:600,color:"#0a7a6b" }}>{t("Ida y vuelta")}</span>}
             </p>
           </div>
           {driver && (
@@ -1474,7 +1476,7 @@ export default function VehicleRequestPortalPage() {
           <div style={{ padding:"0 14px 10px",display:"flex",alignItems:"center",gap:8 }}>
             <span style={{ width:6,height:6,borderRadius:"50%",background:"#7c3aed",animation:"vrPulse 1.5s ease-in-out infinite" }} />
             <span style={{ fontSize:12,fontWeight:600,color:"#7c3aed" }}>
-              {trip.status === "PICKED_UP" ? "Viaje en curso" : trip.status === "EN_ROUTE" ? "Conductor en camino" : ""}
+              {trip.status === "PICKED_UP" ? t("Viaje en curso") : trip.status === "EN_ROUTE" ? t("Conductor en camino") : ""}
             </span>
           </div>
         )}
@@ -1487,7 +1489,7 @@ export default function VehicleRequestPortalPage() {
               border:"1px solid rgba(33,208,179,0.3)",background:"rgba(33,208,179,0.06)",
               color:"#0a7a6b",fontSize:12,fontWeight:600,cursor:"pointer",
             }}>
-              Evaluar conductor
+              {t("Evaluar conductor")}
             </button>
           </div>
         )}
@@ -1495,7 +1497,7 @@ export default function VehicleRequestPortalPage() {
         {/* Inline rating */}
         {isCompleted && !trip.driverRating && ratingTripId === trip.id && (
           <div style={{ padding:"0 14px 14px",display:"flex",flexDirection:"column",alignItems:"center",gap:10 }}>
-            <p style={{ fontSize:13,fontWeight:600,color:"#0f172a",margin:0 }}>Como fue tu viaje?</p>
+            <p style={{ fontSize:13,fontWeight:600,color:"#0f172a",margin:0 }}>{t("Como fue tu viaje?")}</p>
             <div style={{ display:"flex",gap:4 }}>
               {[1,2,3,4,5].map((star) => (
                 <button key={star} type="button" onClick={() => setRatingStars(star)} style={{ background:"none",border:"none",cursor:"pointer",padding:2 }}>
@@ -1508,18 +1510,18 @@ export default function VehicleRequestPortalPage() {
             <textarea
               value={ratingComment}
               onChange={(e) => setRatingComment(e.target.value)}
-              placeholder="Comentario opcional..."
+              placeholder={t("Comentario opcional...")}
               rows={2}
               style={{ width:"100%",padding:10,borderRadius:10,border:"1px solid #e2e8f0",fontSize:13,resize:"none",outline:"none",boxSizing:"border-box",fontFamily:"inherit" }}
             />
             <div style={{ display:"flex",gap:8,width:"100%" }}>
               <button type="button" onClick={() => submitRating(trip.id)} disabled={ratingStars === 0 || ratingLoading}
                 style={{ flex:1,padding:10,borderRadius:10,border:"none",background:ratingStars > 0 ? "linear-gradient(135deg,#34F3C6,#21D0B3)" : "#e2e8f0",color:ratingStars > 0 ? "#0d1b3e" : "#94a3b8",fontSize:13,fontWeight:700,cursor:ratingStars > 0 ? "pointer" : "not-allowed" }}>
-                {ratingLoading ? "..." : "Enviar"}
+                {ratingLoading ? "..." : t("Enviar")}
               </button>
               <button type="button" onClick={() => { setRatingTripId(null); setRatingStars(0); setRatingComment(""); }}
                 style={{ padding:"10px 14px",borderRadius:10,border:"1px solid #e2e8f0",background:"#f8fafc",color:"#64748b",fontSize:13,fontWeight:600,cursor:"pointer" }}>
-                Omitir
+                {t("Omitir")}
               </button>
             </div>
           </div>
@@ -1533,7 +1535,7 @@ export default function VehicleRequestPortalPage() {
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
               </svg>
             ))}
-            <span style={{ fontSize:11,color:"#94a3b8",marginLeft:4 }}>Evaluado</span>
+            <span style={{ fontSize:11,color:"#94a3b8",marginLeft:4 }}>{t("Evaluado")}</span>
           </div>
         )}
 
@@ -1542,48 +1544,48 @@ export default function VehicleRequestPortalPage() {
           <div style={{ padding:"0 14px 14px",display:"flex",flexDirection:"column",gap:8 }}>
             <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:6 }}>
               <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Origen</p>
-                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0",lineHeight:1.3 }}>{trip.origin || "Pendiente"}</p>
+                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Origen")}</p>
+                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0",lineHeight:1.3 }}>{trip.origin || t("Pendiente")}</p>
               </div>
               <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Destino</p>
-                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0",lineHeight:1.3 }}>{trip.destination || venue?.name || "Pendiente"}</p>
+                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Destino")}</p>
+                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0",lineHeight:1.3 }}>{trip.destination || venue?.name || t("Pendiente")}</p>
               </div>
               <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Conductor</p>
-                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{driver?.fullName || "Pendiente"}</p>
+                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Conductor")}</p>
+                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{driver?.fullName || t("Pendiente")}</p>
                 {driver?.phone && <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0" }}>{driver.phone}</p>}
               </div>
               <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Vehiculo</p>
-                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{vehicle?.plate || "Pendiente"}</p>
+                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Vehiculo")}</p>
+                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{vehicle?.plate || t("Pendiente")}</p>
                 {vehicle && <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0" }}>{[vehicle.type, vehicle.brand, vehicle.model].filter(Boolean).join(" · ")}</p>}
               </div>
               <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Personas</p>
+                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Personas")}</p>
                 <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{trip.passengerCount || "-"}</p>
               </div>
               <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Tipo</p>
-                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{vehicleTypeLabel(trip.requestedVehicleType)}</p>
+                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Tipo")}</p>
+                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{t(vehicleTypeLabel(trip.requestedVehicleType))}</p>
               </div>
               {trip.requestedAt && (
                 <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                  <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Solicitado</p>
+                  <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Solicitado")}</p>
                   <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{formatDateTime(trip.requestedAt)}</p>
                 </div>
               )}
             </div>
             {trip.notes && (
               <div style={{ padding:"10px 12px",borderRadius:10,background:"#fffbeb",border:"1px solid #fde68a",borderLeft:"4px solid #f59e0b" }}>
-                <p style={{ fontSize:10,fontWeight:800,color:"#b45309",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>⚠ Observación</p>
+                <p style={{ fontSize:10,fontWeight:800,color:"#b45309",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>⚠ {t("Observación")}</p>
                 <p style={{ fontSize:13,fontWeight:600,color:"#78350f",margin:"3px 0 0",lineHeight:1.4 }}>{trip.notes.replace(/^\[Portal\]\s*/, "")}</p>
               </div>
             )}
 
             {trip.isRoundTrip && trip.childTrips && trip.childTrips.length > 0 && (
               <div style={{ padding:"10px 12px",borderRadius:12,background:"#f0fdfa",border:"1px solid #99f6e4" }}>
-                <p style={{ fontSize:10,fontWeight:700,color:"#0a7a6b",margin:"0 0 6px",textTransform:"uppercase",letterSpacing:"0.1em" }}>Viaje de regreso</p>
+                <p style={{ fontSize:10,fontWeight:700,color:"#0a7a6b",margin:"0 0 6px",textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Viaje de regreso")}</p>
                 {trip.childTrips.map((child) => {
                   const returnVenue = child.destinationVenueId ? venues.find((v) => v.id === child.destinationVenueId) : null;
                   const returnDriver = child.driverId ? drivers[child.driverId] : null;
@@ -1593,26 +1595,26 @@ export default function VehicleRequestPortalPage() {
                     <div key={child.id} style={{ display:"flex",flexDirection:"column",gap:6 }}>
                       <div style={{ display:"flex",alignItems:"center",gap:6,marginBottom:2 }}>
                         <span style={{ display:"inline-block",width:8,height:8,borderRadius:4,background:childStatus.color }} />
-                        <span style={{ fontSize:11,fontWeight:700,color:childStatus.color }}>{childStatus.label}</span>
+                        <span style={{ fontSize:11,fontWeight:700,color:childStatus.color }}>{t(childStatus.label)}</span>
                       </div>
                       <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:6 }}>
                         <div style={{ padding:"6px 8px",borderRadius:8,background:"#fff",border:"1px solid #e2e8f0" }}>
-                          <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Fecha regreso</p>
+                          <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Fecha regreso")}</p>
                           <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{formatDateTime(child.scheduledAt)}</p>
                         </div>
                         <div style={{ padding:"6px 8px",borderRadius:8,background:"#fff",border:"1px solid #e2e8f0" }}>
-                          <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Destino</p>
+                          <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Destino")}</p>
                           <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0",lineHeight:1.3 }}>
-                            {returnVenue?.name || child.destination || child.origin || "Pendiente"}
+                            {returnVenue?.name || child.destination || child.origin || t("Pendiente")}
                           </p>
                         </div>
                         <div style={{ padding:"6px 8px",borderRadius:8,background:"#fff",border:"1px solid #e2e8f0" }}>
-                          <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Conductor</p>
-                          <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{returnDriver?.fullName || "Pendiente"}</p>
+                          <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Conductor")}</p>
+                          <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{returnDriver?.fullName || t("Pendiente")}</p>
                         </div>
                         <div style={{ padding:"6px 8px",borderRadius:8,background:"#fff",border:"1px solid #e2e8f0" }}>
-                          <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Origen</p>
-                          <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0",lineHeight:1.3 }}>{child.origin || "Pendiente"}</p>
+                          <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Origen")}</p>
+                          <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0",lineHeight:1.3 }}>{child.origin || t("Pendiente")}</p>
                         </div>
                       </div>
                     </div>
@@ -1633,7 +1635,7 @@ export default function VehicleRequestPortalPage() {
                 />
                 <div style={{ padding:"8px 10px",background:"rgba(33,208,179,0.06)",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
                   <span style={{ fontSize:12,fontWeight:700,color:"#0a7a6b" }}>
-                    {trip.status === "PICKED_UP" ? "Viaje en curso" : trip.status === "EN_ROUTE" ? "Conductor en camino" : "Ruta programada"}
+                    {trip.status === "PICKED_UP" ? t("Viaje en curso") : trip.status === "EN_ROUTE" ? t("Conductor en camino") : t("Ruta programada")}
                   </span>
                   {coords && (
                     <a
@@ -1642,7 +1644,7 @@ export default function VehicleRequestPortalPage() {
                       rel="noreferrer"
                       style={{ fontSize:11,color:"#21D0B3",fontWeight:600 }}
                     >
-                      Abrir en Maps
+                      {t("Abrir en Maps")}
                     </a>
                   )}
                 </div>
@@ -1654,13 +1656,13 @@ export default function VehicleRequestPortalPage() {
               <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:6 }}>
                 {trip.startedAt && (
                   <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                    <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Inicio</p>
+                    <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Inicio")}</p>
                     <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{formatDateTime(trip.startedAt)}</p>
                   </div>
                 )}
                 {trip.completedAt && (
                   <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                    <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Fin</p>
+                    <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Fin")}</p>
                     <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{formatDateTime(trip.completedAt)}</p>
                   </div>
                 )}
@@ -1675,7 +1677,7 @@ export default function VehicleRequestPortalPage() {
                     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                   </svg>
                 ))}
-                <span style={{ fontSize:11,color:"#94a3b8",marginLeft:4 }}>Tu evaluacion</span>
+                <span style={{ fontSize:11,color:"#94a3b8",marginLeft:4 }}>{t("Tu evaluacion")}</span>
               </div>
             )}
 
@@ -1684,11 +1686,11 @@ export default function VehicleRequestPortalPage() {
               <div style={{ display:"flex",gap:8,marginTop:4 }}>
                 <button type="button" onClick={() => startEditingTrip(trip)}
                   style={{ flex:1,padding:"8px 12px",borderRadius:10,border:"1px solid #e2e8f0",background:"#f8fafc",color:"#334155",fontSize:12,fontWeight:600,cursor:"pointer" }}>
-                  Modificar
+                  {t("Modificar")}
                 </button>
                 <button type="button" onClick={() => cancelTrip(trip)}
                   style={{ padding:"8px 12px",borderRadius:10,border:"1px solid #fecaca",background:"#fef2f2",color:"#dc2626",fontSize:12,fontWeight:600,cursor:"pointer" }}>
-                  Cancelar
+                  {t("Cancelar")}
                 </button>
               </div>
             )}
@@ -1738,16 +1740,16 @@ export default function VehicleRequestPortalPage() {
             <div style={{ position: "relative", zIndex: 1, flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: "16px", padding: "24px 0" }}>
               <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", width: "fit-content" }}>
                 <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#21D0B3", boxShadow: "0 0 8px #21D0B3" }} />
-                <span style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#21D0B3" }}>Portal de Movilidad</span>
+                <span style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#21D0B3" }}>{t("Portal de Movilidad")}</span>
               </div>
               <h1 style={{ fontSize: "clamp(28px,4vw,44px)", fontWeight: 700, lineHeight: 1.1, color: "#ffffff", margin: 0 }}>
-                Solicita tu<br />
+                {t("Solicita tu")}<br />
                 <span style={{ background: "linear-gradient(90deg,#21D0B3,#34F3C6,#21D0B3)", backgroundSize: "200% auto", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", animation: "pvr-shimmer 4s linear infinite" }}>
-                  vehiculo
+                  {t("vehiculo")}
                 </span>
               </h1>
               <p className="hidden sm:block" style={{ fontSize: "15px", lineHeight: 1.6, color: "rgba(255,255,255,0.55)", maxWidth: "340px", margin: 0 }}>
-                Registra, modifica y haz seguimiento en tiempo real de tus solicitudes de transporte hacia las sedes del evento.
+                {t("Registra, modifica y haz seguimiento en tiempo real de tus solicitudes de transporte hacia las sedes del evento.")}
               </p>
               <div className="hidden lg:flex flex-col" style={{ gap: "10px", marginTop: "8px" }}>
                 {([
@@ -1757,13 +1759,13 @@ export default function VehicleRequestPortalPage() {
                 ] as [React.ReactNode, string][]).map(([icon, label]) => (
                   <div key={label} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                     <span style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>{icon}</span>
-                    <span style={{ fontSize: "13px", color: "rgba(255,255,255,0.6)", fontWeight: 500 }}>{label}</span>
+                    <span style={{ fontSize: "13px", color: "rgba(255,255,255,0.6)", fontWeight: 500 }}>{t(label)}</span>
                   </div>
                 ))}
               </div>
             </div>
             <div className="hidden lg:block" style={{ position: "relative", zIndex: 1 }}>
-              <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.25)", letterSpacing: "0.08em" }}>Seven Arena - Portal seguro</p>
+              <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.25)", letterSpacing: "0.08em" }}>{t("Seven Arena - Portal seguro")}</p>
             </div>
           </div>
 
@@ -1771,9 +1773,9 @@ export default function VehicleRequestPortalPage() {
           <div className="pvr-form flex flex-1 flex-col justify-center px-5 py-8 sm:px-6 sm:py-12 lg:px-14" style={{ background: "linear-gradient(160deg,#030f1e 0%,#041a2e 50%,#020c18 100%)" }}>
             <div style={{ maxWidth: 480, width: "100%", margin: "0 auto" }}>
               <div style={{ marginBottom: "32px" }}>
-                <p style={{ fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", color: "#21D0B3", marginBottom: "8px" }}>Acceso</p>
-                <h2 style={{ fontSize: "26px", fontWeight: 700, color: "#ffffff", margin: "0 0 6px" }}>Ingresa con tu codigo</h2>
-                <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.45)", margin: 0 }}>Usa el codigo corto del portal de usuario para acceder a tu panel de movilidad.</p>
+                <p style={{ fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", color: "#21D0B3", marginBottom: "8px" }}>{t("Acceso")}</p>
+                <h2 style={{ fontSize: "26px", fontWeight: 700, color: "#ffffff", margin: "0 0 6px" }}>{t("Ingresa con tu codigo")}</h2>
+                <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.45)", margin: 0 }}>{t("Usa el codigo corto del portal de usuario para acceder a tu panel de movilidad.")}</p>
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "14px", marginBottom: "28px" }}>
@@ -1781,7 +1783,7 @@ export default function VehicleRequestPortalPage() {
                   className="input h-12 text-base"
                   value={userCode}
                   onChange={(e) => setUserCode(e.target.value)}
-                  placeholder="Codigo de usuario"
+                  placeholder={t("Codigo de usuario")}
                   onKeyDown={(e) => e.key === "Enter" && login()}
                   inputMode="text"
                   autoCapitalize="none"
@@ -1796,16 +1798,16 @@ export default function VehicleRequestPortalPage() {
                   disabled={loading}
                   style={{ height: "48px", borderRadius: "12px", fontWeight: 700, fontSize: "15px", cursor: loading ? "not-allowed" : "pointer", background: "linear-gradient(135deg,#34F3C6 0%,#21D0B3 50%,#15B09A 100%)", color: "#0d1b3e", border: "none", opacity: loading ? 0.7 : 1, boxShadow: "0 4px 20px rgba(33,208,179,0.35)" }}
                 >
-                  {loading ? "Ingresando..." : "Abrir portal"}
+                  {loading ? t("Ingresando...") : t("Abrir portal")}
                 </button>
                 {error && <p style={{ fontSize: "13px", color: "#f87171", margin: 0 }}>{error}</p>}
               </div>
 
               <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "28px" }}>
-                <p style={{ fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", color: "#21D0B3", marginBottom: "8px" }}>Recuperacion de acceso</p>
-                <h3 style={{ fontSize: "18px", fontWeight: 600, color: "#ffffff", margin: "0 0 6px" }}>Solicita tu codigo</h3>
+                <p style={{ fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", color: "#21D0B3", marginBottom: "8px" }}>{t("Recuperacion de acceso")}</p>
+                <h3 style={{ fontSize: "18px", fontWeight: 600, color: "#ffffff", margin: "0 0 6px" }}>{t("Solicita tu codigo")}</h3>
                 <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.4)", margin: "0 0 16px" }}>
-                  Si no tienes tu codigo, ingresalo con tu correo registrado y te lo enviamos.
+                  {t("Si no tienes tu codigo, ingresalo con tu correo registrado y te lo enviamos.")}
                 </p>
                 <div style={{ display: "flex", gap: "10px", flexDirection: "column" }}>
                   <input
@@ -1822,7 +1824,7 @@ export default function VehicleRequestPortalPage() {
                     disabled={requestAccessLoading}
                     style={{ width: "100%", height: "44px", padding: "0 20px", borderRadius: "10px", fontWeight: 500, fontSize: "13px", cursor: requestAccessLoading ? "not-allowed" : "pointer", background: "rgba(33,208,179,0.1)", color: "#21D0B3", border: "1px solid rgba(33,208,179,0.3)", opacity: requestAccessLoading ? 0.7 : 1 }}
                   >
-                    {requestAccessLoading ? "Enviando..." : "Solicitar codigo"}
+                    {requestAccessLoading ? t("Enviando...") : t("Solicitar codigo")}
                   </button>
                 </div>
                 {accessRequestStatus && <p style={{ fontSize: "13px", color: "#34d399", marginTop: "10px" }}>{accessRequestStatus}</p>}
@@ -1831,8 +1833,8 @@ export default function VehicleRequestPortalPage() {
                 <div style={{ marginTop: "24px", display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "10px" }}>
                   {[["Paso 1", "Solicita tu codigo"], ["Paso 2", "Ingresa al portal"], ["Paso 3", "Sigue el viaje"]].map(([step, label]) => (
                     <div key={step} style={{ borderRadius: "12px", padding: "12px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(33,208,179,0.12)" }}>
-                      <div style={{ fontSize: "10px", letterSpacing: "0.18em", textTransform: "uppercase", color: "rgba(33,208,179,0.7)", marginBottom: "6px" }}>{step}</div>
-                      <p style={{ fontSize: "12px", fontWeight: 500, color: "rgba(255,255,255,0.7)", margin: 0 }}>{label}</p>
+                      <div style={{ fontSize: "10px", letterSpacing: "0.18em", textTransform: "uppercase", color: "rgba(33,208,179,0.7)", marginBottom: "6px" }}>{t(step)}</div>
+                      <p style={{ fontSize: "12px", fontWeight: 500, color: "rgba(255,255,255,0.7)", margin: 0 }}>{t(label)}</p>
                     </div>
                   ))}
                 </div>
@@ -1871,13 +1873,13 @@ export default function VehicleRequestPortalPage() {
                   onMarkAllRead={notify.markAllRead}
                   onClear={notify.clear}
                 />
-                <button type="button" onClick={() => setAssistOpen((p) => !p)} title="Asistencia"
+                <button type="button" onClick={() => setAssistOpen((p) => !p)} title={t("Asistencia")}
                   style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:`1px solid ${assistOpen ? "rgba(52,243,198,0.7)" : "rgba(33,208,179,0.4)"}`,background: assistOpen ? "linear-gradient(135deg,rgba(52,243,198,0.28),rgba(33,208,179,0.18))" : "rgba(33,208,179,0.12)",cursor:"pointer",flexShrink:0,transition:"all .15s" }}>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
                   </svg>
                 </button>
-                <button type="button" onClick={() => window.location.reload()} disabled={loading} title="Actualizar"
+                <button type="button" onClick={() => window.location.reload()} disabled={loading} title={t("Actualizar")}
                   style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",cursor:"pointer",flexShrink:0,opacity:loading?0.5:1 }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
@@ -1907,8 +1909,8 @@ export default function VehicleRequestPortalPage() {
                   const drv = trip.driverId ? drivers[trip.driverId] : null;
                   const veh = trip.vehicleId ? vehicles[trip.vehicleId] : null;
                   const enRoute = trip.status === "EN_ROUTE";
-                  const headline = enRoute ? "Tu conductor está en camino" : "Viaje en curso";
-                  const dest = venues.find((v) => v.id === trip.destinationVenueId)?.name || trip.destination || "tu destino";
+                  const headline = enRoute ? t("Tu conductor está en camino") : t("Viaje en curso");
+                  const dest = venues.find((v) => v.id === trip.destinationVenueId)?.name || trip.destination || t("tu destino");
                   return (
                     <div key={trip.id}
                       style={{ position:"relative",overflow:"hidden",borderRadius:16,padding:"14px 16px",
@@ -1922,24 +1924,24 @@ export default function VehicleRequestPortalPage() {
                         </span>
                         <div style={{ flex:1,minWidth:0 }}>
                           <p style={{ fontSize:9.5,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#34F3C6",margin:0 }}>
-                            {enRoute ? "En ruta a recogerte" : `Rumbo a ${dest}`}
+                            {enRoute ? t("En ruta a recogerte") : `${t("Rumbo a")} ${dest}`}
                           </p>
                           <p style={{ fontSize:14.5,fontWeight:800,color:"#fff",margin:"1px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{headline}</p>
                           {drv && (
                             <p style={{ fontSize:11.5,color:"rgba(255,255,255,0.7)",margin:"3px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
-                              🧑 {drv.fullName || "Conductor"}{veh ? ` · ${[veh.plate, veh.brand, veh.model].filter(Boolean).join(" ")}` : ""}
+                              🧑 {drv.fullName || t("Conductor")}{veh ? ` · ${[veh.plate, veh.brand, veh.model].filter(Boolean).join(" ")}` : ""}
                             </p>
                           )}
                         </div>
                         <div style={{ display:"flex",flexDirection:"column",gap:6,flexShrink:0 }}>
                           <button type="button" onClick={() => setTripModal(trip)}
                             style={{ padding:"8px 14px",borderRadius:10,border:"none",cursor:"pointer",fontSize:12,fontWeight:700,background:"linear-gradient(135deg,#34F3C6,#21D0B3)",color:"#062240",whiteSpace:"nowrap" }}>
-                            Ver viaje
+                            {t("Ver viaje")}
                           </button>
                           {drv?.phone && (
                             <a href={`tel:${drv.phone}`}
                               style={{ padding:"6px 14px",borderRadius:10,border:"1px solid rgba(52,243,198,0.4)",cursor:"pointer",fontSize:11.5,fontWeight:700,background:"rgba(33,208,179,0.12)",color:"#34F3C6",textAlign:"center",textDecoration:"none" }}>
-                              Llamar
+                              {t("Llamar")}
                             </a>
                           )}
                         </div>
@@ -1952,15 +1954,15 @@ export default function VehicleRequestPortalPage() {
 
             {/* ═══ Popup detalle de viaje ═══ */}
             {tripModal && (() => {
-              const t = tripModal;
-              const drv = t.driverId ? drivers[t.driverId] : null;
-              const veh = t.vehicleId ? vehicles[t.vehicleId] : null;
-              const st = statusMeta[t.status || "REQUESTED"] || statusMeta.REQUESTED;
-              const vname = venues.find((v) => v.id === t.destinationVenueId)?.name || t.destination || "Destino pendiente";
-              const pos = positionsByTrip[t.id] ?? null;
+              const tm = tripModal;
+              const drv = tm.driverId ? drivers[tm.driverId] : null;
+              const veh = tm.vehicleId ? vehicles[tm.vehicleId] : null;
+              const st = statusMeta[tm.status || "REQUESTED"] || statusMeta.REQUESTED;
+              const vname = venues.find((v) => v.id === tm.destinationVenueId)?.name || tm.destination || t("Destino pendiente");
+              const pos = positionsByTrip[tm.id] ?? null;
               const coords = extractCoords(pos);
-              const isActive = t.status === "EN_ROUTE" || t.status === "PICKED_UP";
-              const liveLabel = t.status === "PICKED_UP" ? "Viaje en curso" : t.status === "EN_ROUTE" ? "Tu conductor está en camino" : st.label;
+              const isActive = tm.status === "EN_ROUTE" || tm.status === "PICKED_UP";
+              const liveLabel = tm.status === "PICKED_UP" ? t("Viaje en curso") : tm.status === "EN_ROUTE" ? t("Tu conductor está en camino") : t(st.label);
               const Field = ({ label, value, sub }: { label: string; value: string; sub?: string | null }) => (
                 <div style={{ padding:"9px 11px",borderRadius:12,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
                   <p style={{ fontSize:9.5,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{label}</p>
@@ -1978,14 +1980,14 @@ export default function VehicleRequestPortalPage() {
                       <div style={{ position:"absolute",bottom:0,left:0,right:0,height:2,background:"linear-gradient(90deg,transparent,#21D0B3 40%,#34F3C6 50%,#21D0B3 60%,transparent)" }} />
                       <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:10 }}>
                         <div style={{ minWidth:0 }}>
-                          <p style={{ fontSize:9.5,fontWeight:700,letterSpacing:"0.16em",textTransform:"uppercase",color:"#34F3C6",margin:0 }}>Detalle del viaje</p>
+                          <p style={{ fontSize:9.5,fontWeight:700,letterSpacing:"0.16em",textTransform:"uppercase",color:"#34F3C6",margin:0 }}>{t("Detalle del viaje")}</p>
                           <p style={{ fontSize:17,fontWeight:800,color:"#fff",margin:"3px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{vname}</p>
                           <span style={{ display:"inline-flex",alignItems:"center",gap:6,marginTop:8,fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:99,background:"rgba(52,243,198,0.14)",color:"#34F3C6",border:"1px solid rgba(52,243,198,0.3)" }}>
                             {isActive && <span style={{ width:7,height:7,borderRadius:"50%",background:"#34F3C6",boxShadow:"0 0 8px #34F3C6",animation:"vrPulse 1.4s ease-in-out infinite" }} />}
                             {liveLabel}
                           </span>
                         </div>
-                        <button type="button" onClick={() => setTripModal(null)} aria-label="Cerrar"
+                        <button type="button" onClick={() => setTripModal(null)} aria-label={t("Cerrar")}
                           style={{ flexShrink:0,width:30,height:30,borderRadius:9,border:"1px solid rgba(255,255,255,0.2)",background:"rgba(255,255,255,0.1)",color:"#fff",cursor:"pointer",fontSize:16,lineHeight:1 }}>×</button>
                       </div>
                     </div>
@@ -2000,26 +2002,26 @@ export default function VehicleRequestPortalPage() {
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="#ef4444" stroke="#ef4444"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5" fill="#fff"/></svg>
                           </div>
                           <div style={{ flex:1,minWidth:0,display:"flex",flexDirection:"column",gap:14 }}>
-                            <div><p style={{ fontSize:9.5,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Origen</p><p style={{ fontSize:13,fontWeight:600,color:"#0f172a",margin:"2px 0 0",lineHeight:1.3 }}>{t.origin || "Pendiente"}</p></div>
-                            <div><p style={{ fontSize:9.5,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Destino</p><p style={{ fontSize:13,fontWeight:600,color:"#0f172a",margin:"2px 0 0",lineHeight:1.3 }}>{t.destination || vname}</p></div>
+                            <div><p style={{ fontSize:9.5,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Origen")}</p><p style={{ fontSize:13,fontWeight:600,color:"#0f172a",margin:"2px 0 0",lineHeight:1.3 }}>{tm.origin || t("Pendiente")}</p></div>
+                            <div><p style={{ fontSize:9.5,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Destino")}</p><p style={{ fontSize:13,fontWeight:600,color:"#0f172a",margin:"2px 0 0",lineHeight:1.3 }}>{tm.destination || vname}</p></div>
                           </div>
                         </div>
                       </div>
 
                       {/* Mapa en vivo */}
-                      {(isActive || t.status === "SCHEDULED") && (
+                      {(isActive || tm.status === "SCHEDULED") && (
                         <div style={{ borderRadius:14,overflow:"hidden",border:"1px solid rgba(33,208,179,0.25)" }}>
                           <TripMap
-                            origin={t.origin}
-                            destination={t.destination || vname}
+                            origin={tm.origin}
+                            destination={tm.destination || vname}
                             driverPosition={coords ? { lat: coords.lat, lng: coords.lng } : null}
-                            userPosition={userPos || (t.passengerLat && t.passengerLng ? { lat: t.passengerLat, lng: t.passengerLng } : null)}
+                            userPosition={userPos || (tm.passengerLat && tm.passengerLng ? { lat: tm.passengerLat, lng: tm.passengerLng } : null)}
                             height={190}
                           />
                           {coords && (
-                            <a href={buildDirectionsLink(coords.lat, coords.lng, t.origin)} target="_blank" rel="noreferrer"
+                            <a href={buildDirectionsLink(coords.lat, coords.lng, tm.origin)} target="_blank" rel="noreferrer"
                               style={{ display:"block",padding:"9px 12px",background:"rgba(33,208,179,0.08)",fontSize:12,fontWeight:700,color:"#0a7a6b",textAlign:"center",textDecoration:"none" }}>
-                              📍 Seguir en Google Maps
+                              📍 {t("Seguir en Google Maps")}
                             </a>
                           )}
                         </div>
@@ -2027,27 +2029,27 @@ export default function VehicleRequestPortalPage() {
 
                       {/* Datos */}
                       <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:8 }}>
-                        <Field label="Conductor" value={drv?.fullName || "Por asignar"} sub={drv?.phone || null} />
-                        <Field label="Vehículo" value={veh?.plate || "Por asignar"} sub={veh ? [veh.brand, veh.model].filter(Boolean).join(" ") || veh.type : null} />
-                        <Field label="Fecha y hora" value={formatDateTime(t.scheduledAt || t.requestedAt)} />
-                        <Field label="Tipo de vehículo" value={vehicleTypeLabel(t.requestedVehicleType)} />
-                        <Field label="Personas" value={String(t.passengerCount || "-")} />
-                        <Field label="Estado" value={st.label} />
+                        <Field label={t("Conductor")} value={drv?.fullName || t("Por asignar")} sub={drv?.phone || null} />
+                        <Field label={t("Vehículo")} value={veh?.plate || t("Por asignar")} sub={veh ? [veh.brand, veh.model].filter(Boolean).join(" ") || veh.type : null} />
+                        <Field label={t("Fecha y hora")} value={formatDateTime(tm.scheduledAt || tm.requestedAt)} />
+                        <Field label={t("Tipo de vehículo")} value={t(vehicleTypeLabel(tm.requestedVehicleType))} />
+                        <Field label={t("Personas")} value={String(tm.passengerCount || "-")} />
+                        <Field label={t("Estado")} value={t(st.label)} />
                       </div>
 
-                      {t.notes && (
+                      {tm.notes && (
                         <div style={{ padding:"9px 11px",borderRadius:12,background:"#fffbeb",border:"1px solid #fde68a" }}>
-                          <p style={{ fontSize:9.5,fontWeight:700,color:"#b45309",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Notas</p>
-                          <p style={{ fontSize:12.5,color:"#92400e",margin:"3px 0 0",lineHeight:1.4 }}>{t.notes.replace(/^\[Portal\]\s*/, "")}</p>
+                          <p style={{ fontSize:9.5,fontWeight:700,color:"#b45309",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Notas")}</p>
+                          <p style={{ fontSize:12.5,color:"#92400e",margin:"3px 0 0",lineHeight:1.4 }}>{tm.notes.replace(/^\[Portal\]\s*/, "")}</p>
                         </div>
                       )}
 
                       {/* Tiempos */}
-                      {(t.requestedAt || t.startedAt || t.completedAt) && (
+                      {(tm.requestedAt || tm.startedAt || tm.completedAt) && (
                         <div style={{ display:"flex",flexDirection:"column",gap:4,padding:"10px 12px",borderRadius:12,background:"#f8fafc",border:"1px solid #eef1f6" }}>
-                          {t.requestedAt && <div style={{ display:"flex",justifyContent:"space-between" }}><span style={{ fontSize:11,color:"#64748b" }}>Solicitado</span><span style={{ fontSize:11.5,fontWeight:600,color:"#0f172a" }}>{formatDateTime(t.requestedAt)}</span></div>}
-                          {t.startedAt && <div style={{ display:"flex",justifyContent:"space-between" }}><span style={{ fontSize:11,color:"#64748b" }}>Inicio</span><span style={{ fontSize:11.5,fontWeight:600,color:"#0f172a" }}>{formatDateTime(t.startedAt)}</span></div>}
-                          {t.completedAt && <div style={{ display:"flex",justifyContent:"space-between" }}><span style={{ fontSize:11,color:"#64748b" }}>Fin</span><span style={{ fontSize:11.5,fontWeight:600,color:"#0f172a" }}>{formatDateTime(t.completedAt)}</span></div>}
+                          {tm.requestedAt && <div style={{ display:"flex",justifyContent:"space-between" }}><span style={{ fontSize:11,color:"#64748b" }}>{t("Solicitado")}</span><span style={{ fontSize:11.5,fontWeight:600,color:"#0f172a" }}>{formatDateTime(tm.requestedAt)}</span></div>}
+                          {tm.startedAt && <div style={{ display:"flex",justifyContent:"space-between" }}><span style={{ fontSize:11,color:"#64748b" }}>{t("Inicio")}</span><span style={{ fontSize:11.5,fontWeight:600,color:"#0f172a" }}>{formatDateTime(tm.startedAt)}</span></div>}
+                          {tm.completedAt && <div style={{ display:"flex",justifyContent:"space-between" }}><span style={{ fontSize:11,color:"#64748b" }}>{t("Fin")}</span><span style={{ fontSize:11.5,fontWeight:600,color:"#0f172a" }}>{formatDateTime(tm.completedAt)}</span></div>}
                         </div>
                       )}
 
@@ -2056,12 +2058,12 @@ export default function VehicleRequestPortalPage() {
                         {drv?.phone && (
                           <a href={`tel:${drv.phone}`}
                             style={{ flex:1,padding:"12px",borderRadius:12,textAlign:"center",textDecoration:"none",fontSize:13,fontWeight:700,background:"linear-gradient(135deg,#34F3C6,#21D0B3)",color:"#062240" }}>
-                            📞 Llamar conductor
+                            📞 {t("Llamar conductor")}
                           </a>
                         )}
                         <button type="button" onClick={() => { setTripModal(null); setActiveTab("actividades"); setActividadesSubTab("en_curso"); }}
                           style={{ flex:1,padding:"12px",borderRadius:12,border:"1px solid #e2e8f0",background:"#fff",color:"#334155",fontSize:13,fontWeight:700,cursor:"pointer" }}>
-                          Ver en Actividades
+                          {t("Ver en Actividades")}
                         </button>
                       </div>
                     </div>
@@ -2077,16 +2079,16 @@ export default function VehicleRequestPortalPage() {
                   <div style={{ width:"56px",height:"56px",borderRadius:"50%",background:"rgba(33,208,179,0.12)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 18px" }}>
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
                   </div>
-                  <h3 style={{ fontSize:"18px",fontWeight:800,color:"#0f172a",margin:"0 0 8px" }}>Solicitud enviada</h3>
+                  <h3 style={{ fontSize:"18px",fontWeight:800,color:"#0f172a",margin:"0 0 8px" }}>{t("Solicitud enviada")}</h3>
                   <p style={{ fontSize:"13px",color:"#64748b",lineHeight:1.5,margin:"0 0 24px" }}>
-                    Transporte la revisará y asignará un conductor.<br/>
-                    Podrás ver el estado en la pestaña <strong style={{ color:"#0f172a" }}>Actividades</strong>.
+                    {t("Transporte la revisará y asignará un conductor.")}<br/>
+                    {t("Podrás ver el estado en la pestaña")} <strong style={{ color:"#0f172a" }}>{t("Actividades")}</strong>.
                   </p>
                   <button
                     onClick={() => setMessage(null)}
                     style={{ width:"100%",padding:"12px",borderRadius:"14px",border:"none",background:"linear-gradient(135deg,#21D0B3,#14AE98)",color:"#fff",fontSize:"14px",fontWeight:700,cursor:"pointer",boxShadow:"0 2px 12px rgba(33,208,179,0.35)" }}
                   >
-                    Entendido
+                    {t("Entendido")}
                   </button>
                 </div>
               </div>
@@ -2098,11 +2100,11 @@ export default function VehicleRequestPortalPage() {
               <section>
                 <div style={{ borderRadius:16,border:"1px solid #e2e8f0",background:"#fff",padding:"16px 14px",boxShadow:"0 1px 4px rgba(15,23,42,0.04)" }}>
                   <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:"0 0 12px" }}>
-                    {editingTripId ? "Modificar solicitud" : "Solicitar vehiculo"}
+                    {editingTripId ? t("Modificar solicitud") : t("Solicitar vehiculo")}
                   </p>
                   {editingTrip ? (
                     <div style={{ padding:"8px 10px",borderRadius:10,background:"#fffbeb",border:"1px solid #fde68a",color:"#92400e",fontSize:12,marginBottom:12 }}>
-                      Editable hasta <strong>{formatDateTime(getEditDeadline(editingTrip)?.toISOString() || null)}</strong>
+                      {t("Editable hasta")} <strong>{formatDateTime(getEditDeadline(editingTrip)?.toISOString() || null)}</strong>
                     </div>
                   ) : null}
 
@@ -2117,16 +2119,16 @@ export default function VehicleRequestPortalPage() {
                     style={{ display:"flex",flexDirection:"column",gap:10 }}>
                     <div style={{ display:"grid",gridTemplateColumns:"1fr 90px",gap:8 }}>
                       <div>
-                        <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>Tipo de vehiculo</label>
+                        <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>{t("Tipo de vehiculo")}</label>
                         <select className="input" value={selectedVehicleType} onChange={(e) => setSelectedVehicleType(e.target.value)}
                           style={{ width:"100%",height:40,fontSize:13,borderRadius:10 }}>
                           {VEHICLE_TYPES.map((item) => (
-                            <option key={item.value} value={item.value}>{item.label}</option>
+                            <option key={item.value} value={item.value}>{t(item.label)}</option>
                           ))}
                         </select>
                       </div>
                       <div>
-                        <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>Personas</label>
+                        <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>{t("Personas")}</label>
                         <input className="input" type="number" min={1} max={VEHICLE_TYPES.find((v) => v.value === selectedVehicleType)?.maxPax ?? 64} step={1} value={passengerCount}
                           onChange={(e) => setPassengerCount(e.target.value)}
                           style={{ width:"100%",height:40,fontSize:13,borderRadius:10,textAlign:"center", borderColor: Number(passengerCount) > (VEHICLE_TYPES.find((v) => v.value === selectedVehicleType)?.maxPax ?? 64) ? "#ef4444" : undefined }} />
@@ -2145,18 +2147,18 @@ export default function VehicleRequestPortalPage() {
                     })()}
 
                     <div>
-                      <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>Origen</label>
+                      <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>{t("Origen")}</label>
                       <PlacesAutocompleteInput
                         className="input"
                         value={originAddress}
                         onChange={setOriginAddress}
-                        placeholder="Direccion de recogida"
+                        placeholder={t("Direccion de recogida")}
                         style={{ height:40,fontSize:13,borderRadius:10 }}
                       />
                     </div>
 
                     <div>
-                      <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>Tipo de destino</label>
+                      <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>{t("Tipo de destino")}</label>
                       <div style={{ display:"flex",gap:6,marginBottom:8 }}>
                         {([["SEDE","Sede"],["HOTEL","Hotel"]] as const).map(([v,label]) => (
                           <button key={v} type="button" onClick={() => setDestinationType(v)}
@@ -2164,14 +2166,14 @@ export default function VehicleRequestPortalPage() {
                               border: destinationType === v ? "1.5px solid #21D0B3" : "1px solid #e2e8f0",
                               background: destinationType === v ? "rgba(33,208,179,0.1)" : "#fff",
                               color: destinationType === v ? "#0e9384" : "#64748b" }}>
-                            {label}
+                            {t(label)}
                           </button>
                         ))}
                       </div>
                       {destinationType === "SEDE" ? (
                         <select className="input" value={selectedVenueId} onChange={(e) => setSelectedVenueId(e.target.value)}
                           style={{ width:"100%",height:40,fontSize:13,borderRadius:10 }}>
-                          <option value="">Selecciona una sede</option>
+                          <option value="">{t("Selecciona una sede")}</option>
                           {venues.map((venue) => (
                             <option key={venue.id} value={venue.id}>
                               {venue.name}{venue.address ? ` — ${venue.address}` : ""}
@@ -2181,7 +2183,7 @@ export default function VehicleRequestPortalPage() {
                       ) : (
                         <select className="input" value={selectedHotelId} onChange={(e) => setSelectedHotelId(e.target.value)}
                           style={{ width:"100%",height:40,fontSize:13,borderRadius:10 }}>
-                          <option value="">Selecciona un hotel</option>
+                          <option value="">{t("Selecciona un hotel")}</option>
                           {accommodations.map((acc) => (
                             <option key={acc.id} value={acc.id}>
                               {acc.name}{acc.address ? ` — ${acc.address}` : ""}
@@ -2190,21 +2192,21 @@ export default function VehicleRequestPortalPage() {
                         </select>
                       )}
                       {destinationType === "HOTEL" && accommodations.length === 0 && (
-                        <p style={{ fontSize:11,color:"#94a3b8",margin:"4px 0 0" }}>No hay hoteles registrados.</p>
+                        <p style={{ fontSize:11,color:"#94a3b8",margin:"4px 0 0" }}>{t("No hay hoteles registrados.")}</p>
                       )}
                     </div>
 
                     <div>
-                      <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>Fecha y hora</label>
+                      <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>{t("Fecha y hora")}</label>
                       <input className="input" type="datetime-local" value={requestedTime}
                         onChange={(e) => setRequestedTime(e.target.value)}
                         style={{ width:"100%",height:40,fontSize:13,borderRadius:10,boxSizing:"border-box",WebkitAppearance:"none",appearance:"none" }} />
                     </div>
 
                     <div>
-                      <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>Notas (opcional)</label>
+                      <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>{t("Notas (opcional)")}</label>
                       <textarea className="input" value={notes} onChange={(e) => setNotes(e.target.value)}
-                        placeholder="Equipamiento, prioridad, indicaciones..."
+                        placeholder={t("Equipamiento, prioridad, indicaciones...")}
                         rows={2}
                         style={{ width:"100%",fontSize:13,borderRadius:10,resize:"none",padding:"8px 10px",boxSizing:"border-box",fontFamily:"inherit" }} />
                     </div>
@@ -2223,23 +2225,23 @@ export default function VehicleRequestPortalPage() {
                           boxShadow:"0 1px 3px rgba(0,0,0,0.2)",transition:"left 0.2s",
                         }} />
                       </button>
-                      <span style={{ fontSize:13,fontWeight:600,color:"#0f172a" }}>Ida y vuelta</span>
+                      <span style={{ fontSize:13,fontWeight:600,color:"#0f172a" }}>{t("Ida y vuelta")}</span>
                     </div>
 
                     {isRoundTrip && (
                       <div style={{ display:"flex",flexDirection:"column",gap:10,padding:"10px 12px",borderRadius:12,background:"#f0fdfa",border:"1px solid #99f6e4" }}>
-                        <p style={{ fontSize:12,fontWeight:700,color:"#0a7a6b",margin:0 }}>Datos del regreso</p>
+                        <p style={{ fontSize:12,fontWeight:700,color:"#0a7a6b",margin:0 }}>{t("Datos del regreso")}</p>
                         <div>
-                          <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>Fecha y hora de regreso</label>
+                          <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>{t("Fecha y hora de regreso")}</label>
                           <input className="input" type="datetime-local" value={returnTime}
                             onChange={(e) => setReturnTime(e.target.value)}
                             style={{ width:"100%",height:40,fontSize:13,borderRadius:10,boxSizing:"border-box",WebkitAppearance:"none",appearance:"none" }} />
                         </div>
                         <div>
-                          <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>Destino de regreso (opcional)</label>
+                          <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>{t("Destino de regreso (opcional)")}</label>
                           <select className="input" value={returnVenueId} onChange={(e) => setReturnVenueId(e.target.value)}
                             style={{ width:"100%",height:40,fontSize:13,borderRadius:10 }}>
-                            <option value="">Volver a dirección de recogida</option>
+                            <option value="">{t("Volver a dirección de recogida")}</option>
                             {venues.map((venue) => (
                               <option key={venue.id} value={venue.id}>
                                 {venue.name}{venue.address ? ` — ${venue.address}` : ""}
@@ -2247,7 +2249,7 @@ export default function VehicleRequestPortalPage() {
                             ))}
                           </select>
                           <p style={{ fontSize:10.5,color:"#64748b",margin:"4px 0 0" }}>
-                            Si no seleccionas una sede, el regreso será a tu dirección de recogida.
+                            {t("Si no seleccionas una sede, el regreso será a tu dirección de recogida.")}
                           </p>
                         </div>
                       </div>
@@ -2261,13 +2263,13 @@ export default function VehicleRequestPortalPage() {
                         boxShadow: submitting ? "none" : "0 2px 10px rgba(33,208,179,0.3)",
                       }}>
                       {submitting
-                        ? (editingTripId ? "Guardando..." : "Enviando...")
-                        : (editingTripId ? "Guardar cambios" : "Enviar solicitud")}
+                        ? (editingTripId ? t("Guardando...") : t("Enviando..."))
+                        : (editingTripId ? t("Guardar cambios") : t("Enviar solicitud"))}
                     </button>
                     {editingTripId && (
                       <button type="button" onClick={resetRequestForm}
                         style={{ width:"100%",height:38,borderRadius:10,border:"1px solid #e2e8f0",background:"#f8fafc",color:"#64748b",fontSize:13,fontWeight:600,cursor:"pointer" }}>
-                        Cancelar
+                        {t("Cancelar")}
                       </button>
                     )}
                   </form>
@@ -2279,7 +2281,7 @@ export default function VehicleRequestPortalPage() {
             {/* ═══════════════════ ACTIVIDADES TAB ═══════════════════ */}
             {activeTab === "actividades" && (
               <section style={{ display:"flex",flexDirection:"column",gap:"12px" }}>
-                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>Mis viajes</p>
+                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>{t("Mis viajes")}</p>
 
                 {/* Sub-tabs */}
                 <div style={{ display:"flex",gap:0,background:"#fff",borderRadius:12,border:"1px solid #e2e8f0",overflow:"hidden" }}>
@@ -2299,7 +2301,7 @@ export default function VehicleRequestPortalPage() {
                         borderBottom: actividadesSubTab === st.key ? "2px solid #21D0B3" : "2px solid transparent",
                       }}
                     >
-                      {st.label} {st.count > 0 && <span style={{ fontSize:10,fontWeight:700,background:actividadesSubTab === st.key ? "#21D0B3" : "#e2e8f0",color:actividadesSubTab === st.key ? "#fff" : "#64748b",borderRadius:10,padding:"1px 6px",marginLeft:3 }}>{st.count}</span>}
+                      {t(st.label)} {st.count > 0 && <span style={{ fontSize:10,fontWeight:700,background:actividadesSubTab === st.key ? "#21D0B3" : "#e2e8f0",color:actividadesSubTab === st.key ? "#fff" : "#64748b",borderRadius:10,padding:"1px 6px",marginLeft:3 }}>{st.count}</span>}
                     </button>
                   ))}
                 </div>
@@ -2309,8 +2311,8 @@ export default function VehicleRequestPortalPage() {
                   <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
                     {enCursoTrips.length === 0 ? (
                       <div style={{ textAlign:"center",padding:"28px 16px",borderRadius:16,border:"1px dashed rgba(33,208,179,0.3)",background:"#fafcfb" }}>
-                        <p style={{ fontSize:15,fontWeight:700,color:"#0f172a",margin:"0 0 4px" }}>{loading ? "Cargando viajes…" : "Sin viajes en curso"}</p>
-                        <p style={{ fontSize:12.5,color:"#64748b",margin:0 }}>{loading ? "Un momento, estamos actualizando tu información." : "Los viajes activos apareceran aqui."}</p>
+                        <p style={{ fontSize:15,fontWeight:700,color:"#0f172a",margin:"0 0 4px" }}>{loading ? t("Cargando viajes…") : t("Sin viajes en curso")}</p>
+                        <p style={{ fontSize:12.5,color:"#64748b",margin:0 }}>{loading ? t("Un momento, estamos actualizando tu información.") : t("Los viajes activos apareceran aqui.")}</p>
                       </div>
                     ) : enCursoTrips.map(renderTripCard)}
                   </div>
@@ -2321,8 +2323,8 @@ export default function VehicleRequestPortalPage() {
                   <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
                     {historialTrips.length === 0 ? (
                       <div style={{ textAlign:"center",padding:"28px 16px",borderRadius:16,border:"1px dashed rgba(33,208,179,0.3)",background:"#fafcfb" }}>
-                        <p style={{ fontSize:15,fontWeight:700,color:"#0f172a",margin:"0 0 4px" }}>{loading ? "Cargando historial…" : "Sin viajes completados"}</p>
-                        <p style={{ fontSize:12.5,color:"#64748b",margin:0 }}>{loading ? "Un momento, estamos actualizando tu información." : "Tu historial aparecera aqui."}</p>
+                        <p style={{ fontSize:15,fontWeight:700,color:"#0f172a",margin:"0 0 4px" }}>{loading ? t("Cargando historial…") : t("Sin viajes completados")}</p>
+                        <p style={{ fontSize:12.5,color:"#64748b",margin:0 }}>{loading ? t("Un momento, estamos actualizando tu información.") : t("Tu historial aparecera aqui.")}</p>
                       </div>
                     ) : historialTrips.map(renderTripCard)}
                   </div>
@@ -2333,8 +2335,8 @@ export default function VehicleRequestPortalPage() {
                   <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
                     {pendientesTrips.length === 0 ? (
                       <div style={{ textAlign:"center",padding:"28px 16px",borderRadius:16,border:"1px dashed rgba(33,208,179,0.3)",background:"#fafcfb" }}>
-                        <p style={{ fontSize:15,fontWeight:700,color:"#0f172a",margin:"0 0 4px" }}>{loading ? "Cargando solicitudes…" : "Sin solicitudes pendientes"}</p>
-                        <p style={{ fontSize:12.5,color:"#64748b",margin:0 }}>{loading ? "Un momento, estamos actualizando tu información." : "Tus solicitudes pendientes apareceran aqui."}</p>
+                        <p style={{ fontSize:15,fontWeight:700,color:"#0f172a",margin:"0 0 4px" }}>{loading ? t("Cargando solicitudes…") : t("Sin solicitudes pendientes")}</p>
+                        <p style={{ fontSize:12.5,color:"#64748b",margin:0 }}>{loading ? t("Un momento, estamos actualizando tu información.") : t("Tus solicitudes pendientes apareceran aqui.")}</p>
                       </div>
                     ) : pendientesTrips.map(renderTripCard)}
                   </div>
@@ -2464,7 +2466,7 @@ export default function VehicleRequestPortalPage() {
                       <div style={{ flex:1,minWidth:0 }}>
                         <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8 }}>
                           <p style={{ fontSize:14.5,fontWeight:800,color:"#0f172a",margin:0,lineHeight:1.3 }}>{p.title}</p>
-                          <span style={{ flexShrink:0,display:"inline-flex",alignItems:"center",gap:4,fontSize:10,padding:"3px 9px",borderRadius:99,background:r.bg,color:r.color,fontWeight:800,letterSpacing:"0.02em",border:`1px solid ${r.ring}40` }}>{r.label}</span>
+                          <span style={{ flexShrink:0,display:"inline-flex",alignItems:"center",gap:4,fontSize:10,padding:"3px 9px",borderRadius:99,background:r.bg,color:r.color,fontWeight:800,letterSpacing:"0.02em",border:`1px solid ${r.ring}40` }}>{t(r.label)}</span>
                         </div>
                         {p.discipline && <p style={{ fontSize:11.5,color:"#0ea5c8",margin:"2px 0 0",fontWeight:600 }}>{p.discipline}</p>}
                         <div style={{ display:"flex",flexWrap:"wrap",gap:"4px 12px",marginTop:6 }}>
@@ -2481,7 +2483,7 @@ export default function VehicleRequestPortalPage() {
                           <span style={{ display:"inline-flex",alignItems:"center",gap:4,fontSize:10,fontWeight:800,padding:"2px 8px",borderRadius:99,letterSpacing:"0.06em",textTransform:"uppercase",
                             background:isDone?"#e7f5ec":"#fff4d6",color:isDone?"#1e5125":"#7a4a00",border:`1px solid ${isDone?"#2e7d3233":"#c78c0033"}` }}>
                             <span style={{ width:5,height:5,borderRadius:"50%",background:isDone?"#2e7d32":"#c78c00",animation:isDone?"none":"pulse 1.8s infinite" }} />
-                            {isDone?"Realizada":"Programada"}
+                            {isDone?t("Realizada"):t("Programada")}
                           </span>
                         </div>
                         {p.notes && <p style={{ margin:"8px 0 0",fontSize:11.5,color:"#64748b",fontStyle:"italic",lineHeight:1.45,padding:"6px 10px",background:"#f8fafc",borderRadius:8,borderLeft:"2px solid #cbd5e1" }}>{p.notes}</p>}
@@ -2493,25 +2495,25 @@ export default function VehicleRequestPortalPage() {
                         {attendance === "CONFIRMED" ? (
                           <div style={{ display:"inline-flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:99,background:"linear-gradient(135deg,#dcfce7 0%,#bbf7d0 100%)",color:"#166534",fontSize:11.5,fontWeight:800,border:"1px solid #86efac" }}>
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                            Asistencia confirmada
+                            {t("Asistencia confirmada")}
                           </div>
                         ) : attendance === "DECLINED" ? (
                           <div style={{ display:"inline-flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:99,background:"#fee2e2",color:"#991b1b",fontSize:11.5,fontWeight:800,border:"1px solid #fca5a5" }}>
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                            Declinaste
+                            {t("Declinaste")}
                           </div>
                         ) : (
                           <div style={{ display:"flex",alignItems:"center",gap:8,flexWrap:"wrap" }}>
-                            <span style={{ fontSize:10,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:"#a87800" }}>Confirma tu asistencia</span>
+                            <span style={{ fontSize:10,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:"#a87800" }}>{t("Confirma tu asistencia")}</span>
                             <div style={{ display:"flex",gap:6,marginLeft:"auto" }}>
                               <button type="button" onClick={() => confirmAwarder(p.id, a.id, "CONFIRM")}
                                 style={{ padding:"7px 14px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#10b981 0%,#059669 100%)",color:"#fff",fontSize:11.5,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 8px rgba(16,185,129,0.3)",display:"inline-flex",alignItems:"center",gap:5 }}>
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                Confirmar
+                                {t("Confirmar")}
                               </button>
                               <button type="button" onClick={() => confirmAwarder(p.id, a.id, "DECLINE")}
                                 style={{ padding:"7px 14px",borderRadius:10,border:"1px solid #fca5a5",background:"#fff",color:"#b91c1c",fontSize:11.5,fontWeight:700,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:5 }}>
-                                Declinar
+                                {t("Declinar")}
                               </button>
                             </div>
                           </div>
@@ -2532,7 +2534,7 @@ export default function VehicleRequestPortalPage() {
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg>
                       </div>
                       <div style={{ flex:1,minWidth:0 }}>
-                        <p style={{ fontSize:10,fontWeight:800,letterSpacing:"0.2em",textTransform:"uppercase",color:"#a87800",margin:0 }}>Tus premiaciones</p>
+                        <p style={{ fontSize:10,fontWeight:800,letterSpacing:"0.2em",textTransform:"uppercase",color:"#a87800",margin:0 }}>{t("Tus premiaciones")}</p>
                         <p style={{ fontSize:14,color:"#7a4a00",margin:"2px 0 0",fontWeight:700 }}>{premiaciones.length} asignacion{premiaciones.length===1?"":"es"}</p>
                       </div>
                     </div>
@@ -2546,7 +2548,7 @@ export default function VehicleRequestPortalPage() {
                         ].map(s => (
                           <div key={s.label} style={{ background:s.bg,borderRadius:10,padding:"8px 6px",textAlign:"center",border:`1px solid ${s.color}22` }}>
                             <p style={{ fontSize:18,fontWeight:900,color:s.color,margin:0,lineHeight:1 }}>{s.value}</p>
-                            <p style={{ fontSize:9,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",color:s.color,margin:"3px 0 0",opacity:0.85 }}>{s.label}</p>
+                            <p style={{ fontSize:9,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",color:s.color,margin:"3px 0 0",opacity:0.85 }}>{t(s.label)}</p>
                           </div>
                         ))}
                       </div>
@@ -2556,8 +2558,8 @@ export default function VehicleRequestPortalPage() {
                   {premiaciones.length === 0 ? (
                     <div style={{ textAlign:"center",padding:"36px 20px",borderRadius:16,border:"1px dashed #f0deb0",background:"linear-gradient(135deg,#fffbf2 0%,#ffffff 100%)" }}>
                       <p style={{ fontSize:36,margin:"0 0 8px" }}>🏆</p>
-                      <p style={{ fontSize:14,fontWeight:800,color:"#7a4a00",margin:"0 0 4px" }}>{loading ? "Cargando premiaciones…" : "Sin premiaciones asignadas"}</p>
-                      <p style={{ fontSize:12,color:"#a87800",margin:0 }}>{loading ? "Un momento, estamos actualizando tu información." : "Cuando te designemos como premiador de una ceremonia aparecerá aquí."}</p>
+                      <p style={{ fontSize:14,fontWeight:800,color:"#7a4a00",margin:"0 0 4px" }}>{loading ? t("Cargando premiaciones…") : t("Sin premiaciones asignadas")}</p>
+                      <p style={{ fontSize:12,color:"#a87800",margin:0 }}>{loading ? t("Un momento, estamos actualizando tu información.") : t("Cuando te designemos como premiador de una ceremonia aparecerá aquí.")}</p>
                     </div>
                   ) : (
                     <>
@@ -2579,7 +2581,7 @@ export default function VehicleRequestPortalPage() {
                                   display:"inline-flex",alignItems:"center",justifyContent:"center",gap:6,
                                   transition:"all .15s" }}>
                                 {opt.icon}
-                                {opt.label}
+                                {t(opt.label)}
                               </button>
                             );
                           })}
@@ -2594,7 +2596,7 @@ export default function VehicleRequestPortalPage() {
                             type="search"
                             value={premSearch}
                             onChange={(e) => setPremSearch(e.target.value)}
-                            placeholder="Buscar por ceremonia, disciplina, sede…"
+                            placeholder={t("Buscar por ceremonia, disciplina, sede…")}
                             style={{ width:"100%",padding:"8px 10px 8px 32px",borderRadius:10,border:"1px solid #e2e8f0",fontSize:12.5,boxSizing:"border-box" }}
                           />
                         </div>
@@ -2662,14 +2664,14 @@ export default function VehicleRequestPortalPage() {
                             </div>
                             <div style={{ display:"flex",alignItems:"center",gap:14,marginTop:10,paddingTop:10,borderTop:"1px dashed #f0deb0",justifyContent:"center" }}>
                               <span style={{ display:"inline-flex",alignItems:"center",gap:5,fontSize:10,color:"#7a4a00",fontWeight:600 }}>
-                                <span style={{ width:6,height:6,borderRadius:"50%",background:"#c78c00" }} />Pendiente
+                                <span style={{ width:6,height:6,borderRadius:"50%",background:"#c78c00" }} />{t("Pendiente")}
                               </span>
                               <span style={{ display:"inline-flex",alignItems:"center",gap:5,fontSize:10,color:"#166534",fontWeight:600 }}>
-                                <span style={{ width:6,height:6,borderRadius:"50%",background:"#10b981" }} />Confirmada
+                                <span style={{ width:6,height:6,borderRadius:"50%",background:"#10b981" }} />{t("Confirmada")}
                               </span>
                               {todayNum && (
                                 <span style={{ display:"inline-flex",alignItems:"center",gap:5,fontSize:10,color:"#7a4a00",fontWeight:600 }}>
-                                  <span style={{ width:8,height:8,borderRadius:4,border:"1.5px solid #d4a017",background:"#fff" }} />Hoy
+                                  <span style={{ width:8,height:8,borderRadius:4,border:"1.5px solid #d4a017",background:"#fff" }} />{t("Hoy")}
                                 </span>
                               )}
                             </div>
@@ -2686,12 +2688,12 @@ export default function VehicleRequestPortalPage() {
                               </div>
                             ) : (
                               <div style={{ background:"#fff",borderRadius:14,border:"1px dashed #e2e8f0",padding:"20px",textAlign:"center" }}>
-                                <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>Sin premiaciones este día</p>
+                                <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>{t("Sin premiaciones este día")}</p>
                               </div>
                             )
                           ) : (
                             <div style={{ background:"#fff",borderRadius:14,border:"1px dashed #e2e8f0",padding:"20px",textAlign:"center" }}>
-                              <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>Selecciona un día para ver tus premiaciones</p>
+                              <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>{t("Selecciona un día para ver tus premiaciones")}</p>
                             </div>
                           )}
                         </div>
@@ -2702,7 +2704,7 @@ export default function VehicleRequestPortalPage() {
                         visible.length === 0 ? (
                           <div style={{ background:"#fff",borderRadius:14,border:"1px dashed #e2e8f0",padding:"28px 20px",textAlign:"center" }}>
                             <p style={{ fontSize:32,margin:"0 0 8px" }}>🔍</p>
-                            <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>No hay premiaciones con esos filtros</p>
+                            <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>{t("No hay premiaciones con esos filtros")}</p>
                           </div>
                         ) : (
                           <div style={{ display:"flex",flexDirection:"column",gap:14 }}>
@@ -2710,7 +2712,7 @@ export default function VehicleRequestPortalPage() {
                               <button type="button" onClick={() => setPremPendingOpen(v => !v)}
                                 style={{ display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:12,background:"linear-gradient(135deg,#fff4d6 0%,#fffbeb 100%)",border:"1px solid #f2d98a",cursor:"pointer",width:"100%",textAlign:"left" }}>
                                 <span style={{ width:8,height:8,borderRadius:"50%",background:"#e3a808",boxShadow:"0 0 8px #e3a808",animation:"pulse 1.8s infinite",flexShrink:0 }} />
-                                <p style={{ fontSize:11.5,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:"#7a4a00",margin:0 }}>Por realizar</p>
+                                <p style={{ fontSize:11.5,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:"#7a4a00",margin:0 }}>{t("Por realizar")}</p>
                                 <span style={{ marginLeft:"auto",fontSize:10,fontWeight:800,padding:"2px 9px",borderRadius:99,background:"#fff",color:"#a87800",border:"1px solid #f0deb0" }}>
                                   {pendingDays.reduce((s,[,items]) => s + items.length, 0)}
                                 </span>
@@ -2734,7 +2736,7 @@ export default function VehicleRequestPortalPage() {
                               <button type="button" onClick={() => setPremDoneOpen(v => !v)}
                                 style={{ display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:12,background:"#f1f5f9",border:"1px solid #e2e8f0",marginTop: pendingDays.length > 0 ? 6 : 0,cursor:"pointer",width:"100%",textAlign:"left" }}>
                                 <span style={{ width:8,height:8,borderRadius:"50%",background:"#2e7d32",flexShrink:0 }} />
-                                <p style={{ fontSize:11.5,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:"#64748b",margin:0 }}>Realizadas</p>
+                                <p style={{ fontSize:11.5,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:"#64748b",margin:0 }}>{t("Realizadas")}</p>
                                 <span style={{ marginLeft:"auto",fontSize:10,fontWeight:800,padding:"2px 9px",borderRadius:99,background:"#fff",color:"#64748b",border:"1px solid #e2e8f0" }}>
                                   {doneDays.reduce((s,[,items]) => s + items.length, 0)}
                                 </span>
@@ -2774,7 +2776,7 @@ export default function VehicleRequestPortalPage() {
                       color:couponTab==="available"?"#fff":"#64748b",
                       boxShadow:couponTab==="available"?"0 4px 14px rgba(33,208,179,0.32)":"none",
                       display:"inline-flex",alignItems:"center",justifyContent:"center",gap:8 }}>
-                    Disponibles
+                    {t("Disponibles")}
                     <span style={{ fontSize:10,padding:"2px 8px",borderRadius:99,fontWeight:800,
                       background:couponTab==="available"?"rgba(255,255,255,0.25)":"#f1f5f9",
                       color:couponTab==="available"?"#fff":"#64748b" }}>
@@ -2787,7 +2789,7 @@ export default function VehicleRequestPortalPage() {
                       color:couponTab==="mine"?"#fff":"#64748b",
                       boxShadow:couponTab==="mine"?"0 4px 14px rgba(33,208,179,0.32)":"none",
                       display:"inline-flex",alignItems:"center",justifyContent:"center",gap:8 }}>
-                    Mis beneficios
+                    {t("Mis beneficios")}
                     <span style={{ fontSize:10,padding:"2px 8px",borderRadius:99,fontWeight:800,
                       background:couponTab==="mine"?"rgba(255,255,255,0.25)":"#f1f5f9",
                       color:couponTab==="mine"?"#fff":"#64748b" }}>
@@ -2806,8 +2808,8 @@ export default function VehicleRequestPortalPage() {
                   visibleCouponsAvailable.length === 0 ? (
                     <div style={{ padding:24,textAlign:"center",background:"#fff",borderRadius:14,border:"1px solid #e2e8f0" }}>
                       <p style={{ fontSize:32,margin:"0 0 8px" }}>🎟️</p>
-                      <p style={{ fontSize:14,fontWeight:600,color:"#0f172a",margin:0 }}>No hay beneficios disponibles</p>
-                      <p style={{ fontSize:12,color:"#94a3b8",margin:"6px 0 0" }}>Vuelve a chequear más tarde, vamos a estar agregando beneficios.</p>
+                      <p style={{ fontSize:14,fontWeight:600,color:"#0f172a",margin:0 }}>{t("No hay beneficios disponibles")}</p>
+                      <p style={{ fontSize:12,color:"#94a3b8",margin:"6px 0 0" }}>{t("Vuelve a chequear más tarde, vamos a estar agregando beneficios.")}</p>
                     </div>
                   ) : (
                     <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:12 }}>
@@ -2828,10 +2830,10 @@ export default function VehicleRequestPortalPage() {
                               <div style={{ position:"absolute",inset:0,pointerEvents:"none",background:"linear-gradient(to top, rgba(15,23,42,0.65) 0%, rgba(15,23,42,0.2) 35%, transparent 60%)" }} />
                               <span style={{ position:"absolute",top:10,left:10,display:"inline-flex",alignItems:"center",gap:5,background:"rgba(255,255,255,0.92)",color:cat.color,padding:"3px 9px",borderRadius:99,fontSize:10,fontWeight:800,textTransform:"uppercase",letterSpacing:"0.05em",boxShadow:"0 2px 6px rgba(0,0,0,0.12)" }}>
                                 <span style={{ width:5,height:5,borderRadius:"50%",background:cat.color }} />
-                                {cat.label}
+                                {t(cat.label)}
                               </span>
                               <div style={{ position:"absolute",top:10,right:10,background:`linear-gradient(135deg, ${cat.color} 0%, ${cat.color}d0 100%)`,color:"#fff",padding:"6px 12px",borderRadius:14,fontSize:15,fontWeight:800,boxShadow:`0 6px 18px ${cat.color}66` }}>
-                                {couponDiscountDisplay(c)}
+                                {t(couponDiscountDisplay(c))}
                               </div>
                               {c.partnerName && (
                                 <div style={{ position:"absolute",bottom:10,left:10,right:10,display:"flex",alignItems:"center",gap:8 }}>
@@ -2861,7 +2863,7 @@ export default function VehicleRequestPortalPage() {
                                 {c.validUntil && (
                                   <span style={{ display:"inline-flex",alignItems:"center",gap:4,fontSize:10.5,color:"#64748b",fontWeight:500 }}>
                                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                                    Hasta {fmtCouponDate(c.validUntil)}
+                                    {t("Hasta")} {fmtCouponDate(c.validUntil)}
                                   </span>
                                 )}
                                 {c.partnerAddress && (
@@ -2880,13 +2882,13 @@ export default function VehicleRequestPortalPage() {
                               {exhausted ? (
                                 <>
                                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                                  Ya lo reclamaste
+                                  {t("Ya lo reclamaste")}
                                 </>
                               ) : couponClaiming === c.id ? (
-                                <>Reclamando…</>
+                                <>{t("Reclamando…")}</>
                               ) : (
                                 <>
-                                  Reclamar beneficio
+                                  {t("Reclamar beneficio")}
                                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
                                 </>
                               )}
@@ -2899,8 +2901,8 @@ export default function VehicleRequestPortalPage() {
                 ) : couponClaims.length === 0 ? (
                   <div style={{ padding:24,textAlign:"center",background:"#fff",borderRadius:14,border:"1px solid #e2e8f0" }}>
                     <p style={{ fontSize:32,margin:"0 0 8px" }}>🎟️</p>
-                    <p style={{ fontSize:14,fontWeight:600,color:"#0f172a",margin:0 }}>Todavía no reclamaste ningún beneficio</p>
-                    <p style={{ fontSize:12,color:"#94a3b8",margin:"6px 0 0" }}>Ve a la pestaña Disponibles y reclama los que quieras.</p>
+                    <p style={{ fontSize:14,fontWeight:600,color:"#0f172a",margin:0 }}>{t("Todavía no reclamaste ningún beneficio")}</p>
+                    <p style={{ fontSize:12,color:"#94a3b8",margin:"6px 0 0" }}>{t("Ve a la pestaña Disponibles y reclama los que quieras.")}</p>
                   </div>
                 ) : (
                   <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
@@ -2916,35 +2918,35 @@ export default function VehicleRequestPortalPage() {
                               <div style={{ flex:1,minWidth:0 }}>
                                 <div style={{ display:"flex",alignItems:"center",gap:6,marginBottom:4 }}>
                                   <span style={{ fontSize:10,padding:"2px 8px",borderRadius:99,fontWeight:700,background:statusMeta.bg,color:statusMeta.color }}>
-                                    {statusMeta.label}
+                                    {t(statusMeta.label)}
                                   </span>
                                   {coupon?.partnerName && (
                                     <span style={{ fontSize:11,color:"#64748b" }}>{coupon.partnerName}</span>
                                   )}
                                 </div>
-                                <p style={{ fontSize:13.5,fontWeight:700,color:"#0f172a",margin:0,lineHeight:1.25 }}>{coupon?.title || "Beneficio"}</p>
+                                <p style={{ fontSize:13.5,fontWeight:700,color:"#0f172a",margin:0,lineHeight:1.25 }}>{coupon?.title || t("Beneficio")}</p>
                                 <p style={{ fontSize:11,fontFamily:"ui-monospace, SFMono-Regular, monospace",color:"#64748b",margin:"4px 0 0",letterSpacing:"0.04em" }}>
                                   {c.uniqueCode}
                                 </p>
                               </div>
                               <div style={{ textAlign:"right",flexShrink:0 }}>
                                 <p style={{ fontSize:18,fontWeight:800,color:cat.color,margin:0 }}>
-                                  {coupon ? couponDiscountDisplay(coupon) : "—"}
+                                  {coupon ? t(couponDiscountDisplay(coupon)) : "—"}
                                 </p>
                                 {c.status === "CLAIMED" && (
                                   <p style={{ fontSize:10.5,fontWeight:600,color:"#c78c00",margin:"2px 0 0" }}>
-                                    Expira en {couponTimeLeft(c.expiresAt)}
+                                    {t("Expira en")} {couponTimeLeft(c.expiresAt)}
                                   </p>
                                 )}
                                 {c.status === "REDEEMED" && c.redeemedAt && (
                                   <p style={{ fontSize:10.5,color:"#64748b",margin:"2px 0 0" }}>
-                                    Canjeado {fmtCouponDate(c.redeemedAt)}
+                                    {t("Canjeado")} {fmtCouponDate(c.redeemedAt)}
                                   </p>
                                 )}
                               </div>
                             </div>
                             {c.status === "CLAIMED" && (
-                              <p style={{ fontSize:11,fontWeight:600,color:"#1f4e8c",margin:"8px 0 0" }}>Toca para mostrar el QR</p>
+                              <p style={{ fontSize:11,fontWeight:600,color:"#1f4e8c",margin:"8px 0 0" }}>{t("Toca para mostrar el QR")}</p>
                             )}
                           </button>
                         </article>
@@ -2958,7 +2960,7 @@ export default function VehicleRequestPortalPage() {
             {/* ═══════════════════ SEDES TAB ═══════════════════ */}
             {activeTab === "sedes" && (
               <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
-                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>Sedes del evento</p>
+                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>{t("Sedes del evento")}</p>
                 {venues.map(v => {
                   const isOpen = expandedItemId === `venue-${v.id}`;
                   return (
@@ -2982,11 +2984,11 @@ export default function VehicleRequestPortalPage() {
                       {isOpen && (
                         <div style={{ padding:"0 14px 14px",display:"flex",flexDirection:"column",gap:8 }}>
                           {v.photoUrl && (
-                            <img src={v.photoUrl} alt={v.name || "Sede"} style={{ width:"100%",height:140,objectFit:"cover",borderRadius:10 }} />
+                            <img src={v.photoUrl} alt={v.name || t("Sede")} style={{ width:"100%",height:140,objectFit:"cover",borderRadius:10 }} />
                           )}
                           {v.address && (
                             <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                              <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Direccion</p>
+                              <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Direccion")}</p>
                               <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0",lineHeight:1.3 }}>{v.address}</p>
                             </div>
                           )}
@@ -2994,13 +2996,13 @@ export default function VehicleRequestPortalPage() {
                             <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:6 }}>
                               {v.commune && (
                                 <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                                  <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Comuna</p>
+                                  <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Comuna")}</p>
                                   <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{v.commune}</p>
                                 </div>
                               )}
                               {v.region && (
                                 <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                                  <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Region</p>
+                                  <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Region")}</p>
                                   <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{v.region}</p>
                                 </div>
                               )}
@@ -3012,14 +3014,14 @@ export default function VehicleRequestPortalPage() {
                     </div>
                   );
                 })}
-                {venues.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:20 }}>No hay sedes registradas</p>}
+                {venues.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:20 }}>{t("No hay sedes registradas")}</p>}
               </div>
             )}
 
             {/* ═══════════════════ HOTELES TAB ═══════════════════ */}
             {activeTab === "hoteles" && (
               <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
-                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>Mi Hotel</p>
+                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>{t("Mi Hotel")}</p>
                 {accommodations.map(acc => {
                   const isOpen = expandedItemId === `acc-${acc.id}`;
                   return (
@@ -3033,7 +3035,7 @@ export default function VehicleRequestPortalPage() {
                           <path d="M3 22V8l9-6 9 6v14"/><path d="M9 22V12h6v10"/>
                         </svg>
                         <div style={{ flex:1,minWidth:0 }}>
-                          <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>{acc.name || "Hotel"}</p>
+                          <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>{acc.name || t("Hotel")}</p>
                           {acc.city && <p style={{ fontSize:12,color:"#64748b",margin:"2px 0 0" }}>{[acc.city, acc.country].filter(Boolean).join(", ")}</p>}
                         </div>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0,transition:"transform .2s",transform:isOpen?"rotate(180deg)":"rotate(0)" }}>
@@ -3043,25 +3045,25 @@ export default function VehicleRequestPortalPage() {
                       {isOpen && (
                         <div style={{ padding:"0 14px 14px",display:"flex",flexDirection:"column",gap:8 }}>
                           {acc.photoUrl && (
-                            <img src={acc.photoUrl} alt={acc.name || "Hotel"}
+                            <img src={acc.photoUrl} alt={acc.name || t("Hotel")}
                               style={{ width:"100%",height:150,objectFit:"cover",borderRadius:10,border:"1px solid #e2e8f0" }} />
                           )}
                           {acc.address && (
                             <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                              <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Direccion</p>
+                              <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Direccion")}</p>
                               <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0",lineHeight:1.3 }}>{acc.address}</p>
                             </div>
                           )}
                           <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:6 }}>
                             {acc.city && (
                               <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Ciudad</p>
+                                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Ciudad")}</p>
                                 <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{acc.city}</p>
                               </div>
                             )}
                             {acc.country && (
                               <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Pais</p>
+                                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Pais")}</p>
                                 <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{acc.country}</p>
                               </div>
                             )}
@@ -3079,13 +3081,13 @@ export default function VehicleRequestPortalPage() {
                             )}
                             {acc.roomType && (
                               <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Habitacion</p>
+                                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Habitacion")}</p>
                                 <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{acc.roomType}</p>
                               </div>
                             )}
                             {acc.contactPhone && (
                               <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Telefono</p>
+                                <p style={{ fontSize:10,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Telefono")}</p>
                                 <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"3px 0 0" }}>{acc.contactPhone}</p>
                               </div>
                             )}
@@ -3096,7 +3098,7 @@ export default function VehicleRequestPortalPage() {
                     </div>
                   );
                 })}
-                {accommodations.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:20 }}>No hay alojamientos registrados</p>}
+                {accommodations.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:20 }}>{t("No hay alojamientos registrados")}</p>}
               </div>
             )}
 
@@ -3106,20 +3108,20 @@ export default function VehicleRequestPortalPage() {
                 {/* Credencial QR para validar en el comedor */}
                 {mealQrDataUrl && (
                   <div style={{ background:"linear-gradient(135deg,#041a2e,#062240)",borderRadius:16,padding:"16px",display:"flex",alignItems:"center",gap:14 }}>
-                    <button type="button" onClick={() => setMealQrZoom(true)} title="Ver QR más grande"
+                    <button type="button" onClick={() => setMealQrZoom(true)} title={t("Ver QR más grande")}
                       style={{ background:"#fff",borderRadius:12,padding:6,flexShrink:0,border:"none",cursor:"pointer" }}>
-                      <img src={mealQrDataUrl} alt="QR credencial" style={{ width:96,height:96,display:"block" }} />
+                      <img src={mealQrDataUrl} alt={t("QR credencial")} style={{ width:96,height:96,display:"block" }} />
                     </button>
                     <div style={{ minWidth:0 }}>
-                      <p style={{ fontSize:10,fontWeight:800,letterSpacing:"0.18em",textTransform:"uppercase",color:"#34F3C6",margin:0 }}>Tu credencial</p>
+                      <p style={{ fontSize:10,fontWeight:800,letterSpacing:"0.18em",textTransform:"uppercase",color:"#34F3C6",margin:0 }}>{t("Tu credencial")}</p>
                       <p style={{ fontSize:14,fontWeight:700,color:"#fff",margin:"4px 0 0",lineHeight:1.3 }}>
-                        Muestra este QR al ingresar al lugar de comida
+                        {t("Muestra este QR al ingresar al lugar de comida")}
                       </p>
                       <p style={{ fontSize:11.5,color:"rgba(255,255,255,0.65)",margin:"4px 0 0" }}>
-                        Código: <span style={{ fontFamily:"monospace",fontWeight:700,color:"#34F3C6",letterSpacing:"0.15em" }}>{athlete.id.slice(-6).toUpperCase()}</span>
+                        {t("Código:")} <span style={{ fontFamily:"monospace",fontWeight:700,color:"#34F3C6",letterSpacing:"0.15em" }}>{athlete.id.slice(-6).toUpperCase()}</span>
                       </p>
                       <p style={{ fontSize:10.5,color:"rgba(255,255,255,0.45)",margin:"4px 0 0" }}>
-                        Toca el QR para verlo más grande
+                        {t("Toca el QR para verlo más grande")}
                       </p>
                     </div>
                   </div>
@@ -3128,8 +3130,8 @@ export default function VehicleRequestPortalPage() {
                   <QrFullscreenOverlay
                     qrDataUrl={mealQrDataUrl}
                     code={athlete.id.slice(-6)}
-                    title="Credencial de alimentación"
-                    subtitle="Muestra este QR al ingresar al lugar de comida."
+                    title={t("Credencial de alimentación")}
+                    subtitle={t("Muestra este QR al ingresar al lugar de comida.")}
                     onClose={() => setMealQrZoom(false)}
                   />
                 )}
@@ -3157,7 +3159,7 @@ export default function VehicleRequestPortalPage() {
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
                           </div>
                           <div>
-                            <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>Menú de hoy</p>
+                            <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>{t("Menú de hoy")}</p>
                             <p style={{ fontSize:11,color:"#64748b",margin:0,textTransform:"capitalize" }}>{new Date().toLocaleDateString("es-CL",{weekday:"long",day:"numeric",month:"long"})}</p>
                           </div>
                         </div>
@@ -3169,7 +3171,7 @@ export default function VehicleRequestPortalPage() {
                             <div style={{ width:40,height:40,borderRadius:10,background:m.bg,border:`1px solid ${m.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0 }}>{m.icon}</div>
                             <div style={{ flex:1,minWidth:0 }}>
                               <div style={{ display:"flex",alignItems:"center",gap:6,flexWrap:"wrap" }}>
-                                <span style={{ fontSize:10,fontWeight:800,padding:"2px 8px",borderRadius:6,textTransform:"uppercase",letterSpacing:"0.05em",background:m.bg,color:m.color }}>{m.label}</span>
+                                <span style={{ fontSize:10,fontWeight:800,padding:"2px 8px",borderRadius:6,textTransform:"uppercase",letterSpacing:"0.05em",background:m.bg,color:m.color }}>{t(m.label)}</span>
                                 {fm.dietaryType && fm.dietaryType !== "ESTANDAR" && (
                                   <span style={{ fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:6,background:"#f0fdf4",color:"#166534",border:"1px solid #bbf7d0" }}>{fm.dietaryType}</span>
                                 )}
@@ -3182,7 +3184,7 @@ export default function VehicleRequestPortalPage() {
                         );
                       }) : (
                         <div style={{ padding:20,textAlign:"center" }}>
-                          <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>No hay menú programado para hoy</p>
+                          <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>{t("No hay menú programado para hoy")}</p>
                         </div>
                       )}
                     </div>
@@ -3212,7 +3214,7 @@ export default function VehicleRequestPortalPage() {
                       <div style={{ padding:"12px 16px",background:"#f8fafc",borderBottom:"1px solid #e2e8f0",display:"flex",alignItems:"center",gap:8 }}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                         <div>
-                          <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0 }}>Menú de mañana</p>
+                          <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0 }}>{t("Menú de mañana")}</p>
                           <p style={{ fontSize:11,color:"#94a3b8",margin:0,textTransform:"capitalize" }}>{tomorrow.toLocaleDateString("es-CL",{weekday:"long",day:"numeric",month:"long"})}</p>
                         </div>
                       </div>
@@ -3222,7 +3224,7 @@ export default function VehicleRequestPortalPage() {
                           <div key={fm.id} style={{ padding:"12px 16px",borderTop:i>0?"1px solid #f1f5f9":"none",display:"flex",gap:12,alignItems:"flex-start" }}>
                             <div style={{ width:36,height:36,borderRadius:8,background:m.bg,border:`1px solid ${m.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0 }}>{m.icon}</div>
                             <div style={{ flex:1,minWidth:0 }}>
-                              <span style={{ fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:6,textTransform:"uppercase",letterSpacing:"0.05em",background:m.bg,color:m.color }}>{m.label}</span>
+                              <span style={{ fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:6,textTransform:"uppercase",letterSpacing:"0.05em",background:m.bg,color:m.color }}>{t(m.label)}</span>
                               <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:"4px 0 0" }}>{fm.title}</p>
                               {fm.description && <p style={{ fontSize:12,color:"#64748b",margin:"2px 0 0",lineHeight:1.4 }}>{fm.description}</p>}
                               {fm.locationDetail && <p style={{ fontSize:11,color:"#94a3b8",margin:"2px 0 0" }}>📍 {fm.locationDetail}</p>}
@@ -3231,7 +3233,7 @@ export default function VehicleRequestPortalPage() {
                         );
                       }) : (
                         <div style={{ padding:16,textAlign:"center" }}>
-                          <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>Menú pendiente de programar</p>
+                          <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>{t("Menú pendiente de programar")}</p>
                         </div>
                       )}
                     </div>
@@ -3250,7 +3252,7 @@ export default function VehicleRequestPortalPage() {
                     <div style={{ padding:"14px 16px",background:"linear-gradient(135deg,rgba(33,208,179,0.06),rgba(31,205,255,0.04))",borderBottom:"1px solid #e2e8f0" }}>
                       <div style={{ display:"flex",alignItems:"center",gap:8 }}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                        <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0 }}>Tus lugares de comida</p>
+                        <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0 }}>{t("Tus lugares de comida")}</p>
                       </div>
                     </div>
                     {myLocations.map((fl, i) => {
@@ -3272,7 +3274,7 @@ export default function VehicleRequestPortalPage() {
                           <button type="button" onClick={() => setFoodMapId(isOpen ? null : fl.id)}
                             style={{ display:"inline-flex",alignItems:"center",gap:4,padding:"6px 10px",borderRadius:9,border:`1px solid ${isOpen ? "#21D0B3" : "rgba(33,208,179,0.35)"}`,background:isOpen?"rgba(33,208,179,0.14)":"rgba(33,208,179,0.06)",color:"#0a7a6b",fontSize:11,fontWeight:800,cursor:"pointer",flexShrink:0 }}>
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                            {isOpen ? "Cerrar" : "Mapa"}
+                            {isOpen ? t("Cerrar") : t("Mapa")}
                           </button>
                         </div>
                         {isOpen && (
@@ -3288,7 +3290,7 @@ export default function VehicleRequestPortalPage() {
                   <div style={{ background:"#fff",borderRadius:16,border:"1px dashed #e2e8f0",padding:24,textAlign:"center" }}>
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round" style={{ margin:"0 auto 8px" }}><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
                     <p style={{ fontSize:13,fontWeight:600,color:"#94a3b8",margin:0 }}>
-                      {loading ? "Cargando lugares de comida…" : "No hay lugares de comida asignados a tu perfil"}
+                      {loading ? t("Cargando lugares de comida…") : t("No hay lugares de comida asignados a tu perfil")}
                     </p>
                   </div>
                   );
@@ -3299,7 +3301,7 @@ export default function VehicleRequestPortalPage() {
             {/* ═══════════════════ CALENDARIO TAB ═══════════════════ */}
             {activeTab === "calendario" && (
               <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
-                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>Calendario deportivo</p>
+                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>{t("Calendario deportivo")}</p>
 
                 {/* Selector de vista */}
                 <div style={{ display:"flex",gap:4,background:"#e2e8f0",borderRadius:12,padding:4 }}>
@@ -3309,7 +3311,7 @@ export default function VehicleRequestPortalPage() {
                         background: calView === v ? "#fff" : "transparent",
                         color: calView === v ? "#0f172a" : "#94a3b8",
                         boxShadow: calView === v ? "0 1px 3px rgba(15,23,42,0.08)" : "none" }}>
-                      {label}
+                      {t(label)}
                     </button>
                   ))}
                 </div>
@@ -3321,7 +3323,7 @@ export default function VehicleRequestPortalPage() {
                       <select value={calDisciplineFilter}
                         onChange={(e) => { setCalDisciplineFilter(e.target.value); setCalGenderFilter(""); setCalCategoryFilter(""); }}
                         style={{ flex:1,padding:"9px 12px",borderRadius:10,border:`1px solid ${calDisciplineFilter?"#21D0B3":"#e2e8f0"}`,fontSize:12.5,fontWeight:calDisciplineFilter?700:400,color:calDisciplineFilter?"#0a7a6b":"#475569",background:"#fff" }}>
-                        <option value="">Todas las disciplinas</option>
+                        <option value="">{t("Todas las disciplinas")}</option>
                         {calDisciplineOptions.map((n) => <option key={n} value={n}>{n}</option>)}
                       </select>
                       {(calDisciplineFilter || calGenderFilter || calCategoryFilter) && (
@@ -3336,14 +3338,14 @@ export default function VehicleRequestPortalPage() {
                         {calGenderOptions.length > 1 && (
                           <select value={calGenderFilter} onChange={(e) => setCalGenderFilter(e.target.value)}
                             style={{ flex:1,minWidth:0,padding:"9px 12px",borderRadius:10,border:`1px solid ${calGenderFilter?"#21D0B3":"#e2e8f0"}`,fontSize:12.5,fontWeight:calGenderFilter?700:400,color:calGenderFilter?"#0a7a6b":"#475569",background:"#fff" }}>
-                            <option value="">Todos los géneros</option>
+                            <option value="">{t("Todos los géneros")}</option>
                             {calGenderOptions.map((g) => <option key={g} value={g}>{genderLabel(g)}</option>)}
                           </select>
                         )}
                         {calCategoryOptions.length > 1 && (
                           <select value={calCategoryFilter} onChange={(e) => setCalCategoryFilter(e.target.value)}
                             style={{ flex:1,minWidth:0,padding:"9px 12px",borderRadius:10,border:`1px solid ${calCategoryFilter?"#21D0B3":"#e2e8f0"}`,fontSize:12.5,fontWeight:calCategoryFilter?700:400,color:calCategoryFilter?"#0a7a6b":"#475569",background:"#fff" }}>
-                            <option value="">Todas las categorías</option>
+                            <option value="">{t("Todas las categorías")}</option>
                             {calCategoryOptions.map((c) => <option key={c} value={c}>{categoryLabel(c)}</option>)}
                           </select>
                         )}
@@ -3373,7 +3375,7 @@ export default function VehicleRequestPortalPage() {
                     </button>
                     <span style={{ fontSize:13.5,fontWeight:700,color:"#0f172a",textTransform:"capitalize",textAlign:"center" }}>
                       {calView === "week"
-                        ? `Sem. ${calWeekDays[0].day.toLocaleDateString("es-CL",{ day:"2-digit",month:"short" })} – ${calWeekDays[6].day.toLocaleDateString("es-CL",{ day:"2-digit",month:"short" })}`
+                        ? `${t("Sem.")} ${calWeekDays[0].day.toLocaleDateString("es-CL",{ day:"2-digit",month:"short" })} – ${calWeekDays[6].day.toLocaleDateString("es-CL",{ day:"2-digit",month:"short" })}`
                         : calCursor.toLocaleDateString("es-CL",{ weekday:"long",day:"2-digit",month:"long" })}
                     </span>
                     <button type="button" onClick={() => setCalCursor((d) => { const x = new Date(d); x.setDate(x.getDate() + (calView === "week" ? 7 : 1)); return x; })}
@@ -3406,7 +3408,7 @@ export default function VehicleRequestPortalPage() {
                     return (
                       <div style={{ padding:"32px 16px",textAlign:"center",background:"#fff",borderRadius:12,border:"1px dashed #e2e8f0" }}>
                         <p style={{ fontSize:28,margin:0 }}>📅</p>
-                        <p style={{ fontSize:13,fontWeight:600,color:"#475569",margin:"6px 0 0" }}>Sin actividades en {calMonthLabel}</p>
+                        <p style={{ fontSize:13,fontWeight:600,color:"#475569",margin:"6px 0 0" }}>{t("Sin actividades en")} {calMonthLabel}</p>
                       </div>
                     );
                   }
@@ -3416,7 +3418,7 @@ export default function VehicleRequestPortalPage() {
                       <div style={{ display:"flex",flexWrap:"wrap",gap:10 }}>
                         {(["CLASIFICATORIA","FINAL","TRAINING","CEREMONY","PRUEBA"] as GCat[]).map((c) => (
                           <span key={c} style={{ display:"inline-flex",alignItems:"center",gap:5,fontSize:10.5,color:"#64748b" }}>
-                            <span style={{ width:9,height:9,borderRadius:"50%",background:GCAT[c].dot }} />{GCAT[c].label}
+                            <span style={{ width:9,height:9,borderRadius:"50%",background:GCAT[c].dot }} />{t(GCAT[c].label)}
                           </span>
                         ))}
                       </div>
@@ -3534,7 +3536,7 @@ export default function VehicleRequestPortalPage() {
                   <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
                     {calCursorDayEvents.length === 0 ? (
                       <div style={{ padding:"28px 16px",textAlign:"center",background:"#fff",borderRadius:12,border:"1px dashed #e2e8f0" }}>
-                        <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>Sin actividades este día</p>
+                        <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>{t("Sin actividades este día")}</p>
                       </div>
                     ) : (
                       calCursorDayEvents.map((ce) => {
@@ -3546,7 +3548,7 @@ export default function VehicleRequestPortalPage() {
                               <span style={{ fontSize:13,fontWeight:800,color:"#0f172a" }}>
                                 {new Date(ce.scheduledAt!).toLocaleTimeString("es-CL",{ hour:"2-digit",minute:"2-digit" })}
                               </span>
-                              <span style={{ fontSize:9,fontWeight:700,color:meta.text,background:meta.bar,borderRadius:6,padding:"1px 6px",marginTop:3 }}>{meta.label}</span>
+                              <span style={{ fontSize:9,fontWeight:700,color:meta.text,background:meta.bar,borderRadius:6,padding:"1px 6px",marginTop:3 }}>{t(meta.label)}</span>
                             </div>
                             <div style={{ flex:1,minWidth:0 }}>
                               <p style={{ fontSize:13,fontWeight:600,color:"#0f172a",margin:0 }}>{ce.name}</p>
@@ -3574,7 +3576,7 @@ export default function VehicleRequestPortalPage() {
                         <span style={{ fontSize:16,fontWeight:800,color:"#0f172a",textTransform:"capitalize" }}>{ganttDetail.title}</span>
                         <button type="button" onClick={() => setGanttDetail(null)}
                           style={{ background:"#f1f5f9",border:"none",borderRadius:10,padding:"8px 14px",cursor:"pointer",color:"#475569",fontSize:12.5,fontWeight:700 }}>
-                          ✕ Cerrar
+                          ✕ {t("Cerrar")}
                         </button>
                       </div>
                       <p style={{ fontSize:12,color:"#64748b",margin:"0 0 12px" }}>
@@ -3605,7 +3607,7 @@ export default function VehicleRequestPortalPage() {
                                   </p>
                                 )}
                                 <span style={{ display:"inline-block",marginTop:6,fontSize:10,fontWeight:800,padding:"3px 10px",borderRadius:99,background:meta.bar,color:meta.text,border:`1px solid ${meta.border}`,textTransform:"uppercase",letterSpacing:"0.06em" }}>
-                                  {meta.label}
+                                  {t(meta.label)}
                                 </span>
                               </div>
                             </div>
@@ -3659,7 +3661,7 @@ export default function VehicleRequestPortalPage() {
                       ["ID", athlete.id?.slice(-6) || "-"],
                     ] as [string, string][]).map(([label, value]) => (
                       <div key={label} style={{ display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 10px",borderRadius:8,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                        <span style={{ fontSize:11,fontWeight:600,color:"#94a3b8",textTransform:"uppercase",letterSpacing:"0.08em" }}>{label}</span>
+                        <span style={{ fontSize:11,fontWeight:600,color:"#94a3b8",textTransform:"uppercase",letterSpacing:"0.08em" }}>{t(label)}</span>
                         <span style={{ fontSize:12.5,fontWeight:600,color:"#0f172a" }}>{value}</span>
                       </div>
                     ))}
@@ -3674,7 +3676,7 @@ export default function VehicleRequestPortalPage() {
                       { label:"Cerradas", value:requestStats.completed, color:"#10b981" },
                     ] as const).map(s => (
                       <div key={s.label} style={{ textAlign:"center",padding:"8px 4px",borderRadius:"10px",background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                        <div style={{ fontSize:"8px",fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"#94a3b8" }}>{s.label}</div>
+                        <div style={{ fontSize:"8px",fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"#94a3b8" }}>{t(s.label)}</div>
                         <div style={{ fontSize:"20px",fontWeight:700,color:s.color,marginTop:"2px" }}>{s.value}</div>
                       </div>
                     ))}
@@ -3727,7 +3729,7 @@ export default function VehicleRequestPortalPage() {
                         photoUrl,
                       });
                       setCredentialHtml(html);
-                    } catch { notify.push("No se pudo generar la credencial", "❌"); }
+                    } catch { notify.push(t("No se pudo generar la credencial"), "❌"); }
                   }}
                 />
 
@@ -3737,10 +3739,10 @@ export default function VehicleRequestPortalPage() {
                   <span style={{ display:"flex",alignItems:"center",gap:10 }}>
                     <span aria-hidden style={{ fontSize:18 }}>🏅</span>
                     <span>
-                      <span style={{ display:"block",fontSize:13.5,fontWeight:700,color:"#7a4a00" }}>Premiaciones</span>
+                      <span style={{ display:"block",fontSize:13.5,fontWeight:700,color:"#7a4a00" }}>{t("Premiaciones")}</span>
                       <span style={{ display:"block",fontSize:11.5,color:"#a16207" }}>
                         {premiaciones.length === 0
-                          ? "Sin premiaciones asignadas"
+                          ? t("Sin premiaciones asignadas")
                           : `${premiaciones.length} asignada${premiaciones.length === 1 ? "" : "s"}${(() => {
                               const pendientes = premiaciones.filter(p => p.myAssignment && !p.myAssignment.confirmed_at && !p.myAssignment.declined_at).length;
                               return pendientes > 0 ? ` · ${pendientes} por confirmar` : "";
@@ -3757,14 +3759,14 @@ export default function VehicleRequestPortalPage() {
                   <span style={{ display:"flex",alignItems:"center",gap:10 }}>
                     <span aria-hidden style={{ fontSize:18 }}>🩺</span>
                     <span>
-                      <span style={{ display:"block",fontSize:13.5,fontWeight:700,color:"#1e40af" }}>Ficha de salud</span>
-                      <span style={{ display:"block",fontSize:11.5,color:"#3b82f6" }}>Datos médicos y contacto de emergencia</span>
+                      <span style={{ display:"block",fontSize:13.5,fontWeight:700,color:"#1e40af" }}>{t("Ficha de salud")}</span>
+                      <span style={{ display:"block",fontSize:11.5,color:"#3b82f6" }}>{t("Datos médicos y contacto de emergencia")}</span>
                     </span>
                   </span>
                   <span style={{ fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:999,
                     background: (athlete.metadata as Record<string, unknown> | undefined)?.healthRecord ? "#dcfce7" : "#fef9c3",
                     color: (athlete.metadata as Record<string, unknown> | undefined)?.healthRecord ? "#15803d" : "#a16207" }}>
-                    {(athlete.metadata as Record<string, unknown> | undefined)?.healthRecord ? "Completada" : "Pendiente"}
+                    {(athlete.metadata as Record<string, unknown> | undefined)?.healthRecord ? t("Completada") : t("Pendiente")}
                   </span>
                 </a>
 
@@ -3783,7 +3785,7 @@ export default function VehicleRequestPortalPage() {
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
                   </svg>
-                  Cerrar sesion
+                  {t("Cerrar sesion")}
                 </button>
 
                 {/* Eliminar cuenta */}
@@ -3802,7 +3804,7 @@ export default function VehicleRequestPortalPage() {
             {vipPrimary.map(tab => (
               <button key={tab.key} onClick={() => setActiveTab(tab.key)} style={{ flex:1,padding:"6px 0 4px",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:1 }}>
                 {tab.icon(activeTab===tab.key ? "#21D0B3" : "#94a3b8")}
-                <span style={{ fontSize:9,fontWeight:activeTab===tab.key?700:500,color:activeTab===tab.key?"#21D0B3":"#94a3b8" }}>{tab.label}</span>
+                <span style={{ fontSize:9,fontWeight:activeTab===tab.key?700:500,color:activeTab===tab.key?"#21D0B3":"#94a3b8" }}>{t(tab.label)}</span>
               </button>
             ))}
             {vipOverflow.length > 0 && (() => {
@@ -3814,7 +3816,7 @@ export default function VehicleRequestPortalPage() {
                   {activeOverflow ? activeOverflow.icon(col) : (
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={col} strokeWidth="1.8" strokeLinecap="round"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
                   )}
-                  <span style={{ fontSize:9,fontWeight: on ? 700 : 500,color: col }}>{activeOverflow ? activeOverflow.label : "Más"}</span>
+                  <span style={{ fontSize:9,fontWeight: on ? 700 : 500,color: col }}>{activeOverflow ? t(activeOverflow.label) : t("Más")}</span>
                 </button>
               );
             })()}
@@ -3827,7 +3829,7 @@ export default function VehicleRequestPortalPage() {
               <div onClick={(e) => e.stopPropagation()}
                 style={{ width:"100%",background:"#fff",borderRadius:"22px 22px 0 0",padding:"10px 16px calc(20px + env(safe-area-inset-bottom,0px))",boxShadow:"0 -10px 40px rgba(0,0,0,0.25)",animation:"vr-sheet .25s cubic-bezier(0.16,1,0.3,1) both" }}>
                 <div style={{ width:40,height:4,borderRadius:99,background:"#e2e8f0",margin:"0 auto 12px" }} />
-                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:"#94a3b8",margin:"0 0 12px" }}>Más secciones</p>
+                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:"#94a3b8",margin:"0 0 12px" }}>{t("Más secciones")}</p>
                 <div style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10 }}>
                   {vipOverflow.map(tab => {
                     const on = activeTab === tab.key;
@@ -3839,7 +3841,7 @@ export default function VehicleRequestPortalPage() {
                         <span style={{ width:44,height:44,borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",
                           background: on ? "linear-gradient(135deg,#34F3C6,#21D0B3)" : "#fff",
                           border:`1px solid ${on ? "transparent" : "#e2e8f0"}` }}>{tab.icon(on ? "#fff" : "#64748b")}</span>
-                        <span style={{ fontSize:12,fontWeight: on ? 700 : 600,color: on ? "#0a7a6b" : "#334155" }}>{tab.label}</span>
+                        <span style={{ fontSize:12,fontWeight: on ? 700 : 600,color: on ? "#0a7a6b" : "#334155" }}>{t(tab.label)}</span>
                       </button>
                     );
                   })}
@@ -3871,7 +3873,7 @@ export default function VehicleRequestPortalPage() {
               onInvalid={() => {
                 clearPortalSession("athlete", athlete.id);
                 logout();
-                setError("Tu sesión expiró y esta cuenta inició sesión en otro dispositivo.");
+                setError(t("Tu sesión expiró y esta cuenta inició sesión en otro dispositivo."));
               }}
             />
           )}
@@ -3893,8 +3895,8 @@ export default function VehicleRequestPortalPage() {
               onClick={(e) => e.stopPropagation()}
               style={{ background:"#fff",borderRadius:20,padding:"28px 24px",maxWidth:340,width:"100%",textAlign:"center",boxShadow:"0 20px 60px rgba(0,0,0,0.2)" }}
             >
-              <p style={{ fontSize:16,fontWeight:700,color:"#0f172a",margin:"0 0 4px" }}>Como fue tu viaje?</p>
-              {rDriver?.fullName && <p style={{ fontSize:13,color:"#64748b",margin:"0 0 16px" }}>Conductor: {rDriver.fullName}</p>}
+              <p style={{ fontSize:16,fontWeight:700,color:"#0f172a",margin:"0 0 4px" }}>{t("Como fue tu viaje?")}</p>
+              {rDriver?.fullName && <p style={{ fontSize:13,color:"#64748b",margin:"0 0 16px" }}>{t("Conductor:")} {rDriver.fullName}</p>}
 
               <div style={{ display:"flex",justifyContent:"center",gap:6,marginBottom:16 }}>
                 {[1,2,3,4,5].map((star) => (
@@ -3910,18 +3912,18 @@ export default function VehicleRequestPortalPage() {
               <textarea
                 value={ratingComment}
                 onChange={(e) => setRatingComment(e.target.value)}
-                placeholder="Comentario opcional..."
+                placeholder={t("Comentario opcional...")}
                 rows={2}
                 style={{ width:"100%",padding:10,borderRadius:12,border:"1px solid #e2e8f0",fontSize:13,resize:"none",outline:"none",boxSizing:"border-box",fontFamily:"inherit",marginBottom:14 }}
               />
 
               <button type="button" onClick={() => submitRating(rTrip.id)} disabled={ratingStars === 0 || ratingLoading}
                 style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:ratingStars > 0 ? "linear-gradient(135deg,#34F3C6,#21D0B3)" : "#e2e8f0",color:ratingStars > 0 ? "#0d1b3e" : "#94a3b8",fontSize:15,fontWeight:700,cursor:ratingStars > 0 ? "pointer" : "not-allowed",opacity:ratingLoading ? 0.7 : 1 }}>
-                {ratingLoading ? "Enviando..." : "Enviar evaluacion"}
+                {ratingLoading ? t("Enviando...") : t("Enviar evaluacion")}
               </button>
               <button type="button" onClick={dismissRating}
                 style={{ marginTop:8,background:"none",border:"none",color:"#94a3b8",fontSize:13,cursor:"pointer",padding:8 }}>
-                Omitir
+                {t("Omitir")}
               </button>
             </div>
           </div>
@@ -3950,8 +3952,8 @@ export default function VehicleRequestPortalPage() {
             style={{ background:"#fff",borderRadius:20,width:"100%",maxWidth:480,maxHeight:"95vh",display:"flex",flexDirection:"column",overflow:"hidden",boxShadow:"0 24px 80px rgba(0,0,0,0.5)" }}>
             <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",borderBottom:"1px solid #e2e8f0",background:"linear-gradient(135deg,#041a2e,#062240)",color:"#fff" }}>
               <div>
-                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>Credencial digital</p>
-                <p style={{ fontSize:14,fontWeight:700,margin:"2px 0 0" }}>{athlete?.fullName || "Participante"}</p>
+                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>{t("Credencial digital")}</p>
+                <p style={{ fontSize:14,fontWeight:700,margin:"2px 0 0" }}>{athlete?.fullName || t("Participante")}</p>
               </div>
               <div style={{ display:"flex",gap:8 }}>
                 <button type="button" onClick={() => {
@@ -3962,19 +3964,19 @@ export default function VehicleRequestPortalPage() {
                     // navegaba el WebView y era muy difícil volver.
                     if (isNativeShell() && credentialHtml) setCredentialPdfView(credentialHtml);
                     else downloadCredentialPdf(credentialPdf);
-                  } catch { notify.push("No se pudo generar el PDF", "❌"); }
+                  } catch { notify.push(t("No se pudo generar el PDF"), "❌"); }
                 }}
-                  title="Descargar PDF"
+                  title={t("Descargar PDF")}
                   style={{ width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",color:"#21D0B3",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 </button>
                 <button type="button" onClick={() => setCredentialHtml(null)}
                   style={{ height:34,padding:"0 12px",borderRadius:10,border:"1px solid rgba(255,255,255,0.25)",background:"rgba(255,255,255,0.08)",color:"#fff",cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6,fontSize:12.5,fontWeight:700,lineHeight:1 }}>
-                  <span aria-hidden style={{ fontSize:15 }}>✕</span> Volver
+                  <span aria-hidden style={{ fontSize:15 }}>✕</span> {t("Volver")}
                 </button>
               </div>
             </div>
-            <iframe srcDoc={credentialHtml} title="Credencial"
+            <iframe srcDoc={credentialHtml} title={t("Credencial")}
               style={{ flex:1,width:"100%",minHeight:"60vh",border:"none",background:"#fff" }} />
           </div>
         </div>
@@ -3984,7 +3986,7 @@ export default function VehicleRequestPortalPage() {
       {credentialPdfView && (
         <PdfViewerOverlay
           srcDoc={credentialPdfView}
-          title="Credencial completa"
+          title={t("Credencial completa")}
           onClose={() => setCredentialPdfView(null)}
           onDownload={() => { if (credentialPdf) { try { saveCredentialPdf(credentialPdf); } catch {} } }}
         />
@@ -4001,7 +4003,7 @@ export default function VehicleRequestPortalPage() {
             </div>
             <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between",padding:"8px 20px 12px",borderBottom:"1px solid #f1f5f9" }}>
               <div style={{ flex:1,minWidth:0 }}>
-                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:"#64748b",margin:0 }}>Tu beneficio</p>
+                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:"#64748b",margin:0 }}>{t("Tu beneficio")}</p>
                 <h2 style={{ fontSize:18,fontWeight:800,color:"#0f172a",margin:"2px 0 0",lineHeight:1.2 }}>{activeClaim.coupon?.title}</h2>
                 {activeClaim.coupon?.partnerName && (
                   <p style={{ fontSize:12,color:"#64748b",margin:"3px 0 0" }}>{activeClaim.coupon.partnerName}</p>
@@ -4014,37 +4016,37 @@ export default function VehicleRequestPortalPage() {
               <div style={{ display:"flex",justifyContent:"center" }}>
                 {couponQrDataUrl ? (
                   <div style={{ padding:16,background:"#fff",borderRadius:16,boxShadow:"0 4px 20px rgba(0,0,0,0.08)" }}>
-                    <img src={couponQrDataUrl} alt="QR del beneficio" style={{ width:240,height:240 }} />
+                    <img src={couponQrDataUrl} alt={t("QR del beneficio")} style={{ width:240,height:240 }} />
                   </div>
                 ) : (
                   <div style={{ width:264,height:264,background:"#f1f5f9",borderRadius:16,display:"flex",alignItems:"center",justifyContent:"center" }}>
-                    <span style={{ fontSize:13,color:"#94a3b8" }}>Generando QR…</span>
+                    <span style={{ fontSize:13,color:"#94a3b8" }}>{t("Generando QR…")}</span>
                   </div>
                 )}
               </div>
               <div style={{ textAlign:"center" }}>
-                <p style={{ fontSize:11,textTransform:"uppercase",letterSpacing:"0.1em",color:"#64748b",margin:"0 0 4px" }}>Código de respaldo</p>
+                <p style={{ fontSize:11,textTransform:"uppercase",letterSpacing:"0.1em",color:"#64748b",margin:"0 0 4px" }}>{t("Código de respaldo")}</p>
                 <p style={{ fontSize:22,fontFamily:"ui-monospace, SFMono-Regular, monospace",fontWeight:800,letterSpacing:"0.1em",color:"#1f4e8c",margin:0 }}>{activeClaim.uniqueCode}</p>
-                <p style={{ fontSize:11,color:"#94a3b8",margin:"4px 0 0" }}>Si el QR no escanea, dictá este código al comercio.</p>
+                <p style={{ fontSize:11,color:"#94a3b8",margin:"4px 0 0" }}>{t("Si el QR no escanea, dictá este código al comercio.")}</p>
               </div>
               <div style={{ padding:12,borderRadius:12,background:"linear-gradient(135deg,#fff8e1 0%,#fff4d6 100%)" }}>
-                <p style={{ fontSize:12,fontWeight:700,color:"#c78c00",margin:"0 0 4px" }}>Cómo canjearlo</p>
+                <p style={{ fontSize:12,fontWeight:700,color:"#c78c00",margin:"0 0 4px" }}>{t("Cómo canjearlo")}</p>
                 <ol style={{ fontSize:12,color:"#7a5800",margin:0,paddingLeft:18,lineHeight:1.5 }}>
-                  <li>Ve al local del comercio.</li>
-                  <li>Muestra esta pantalla con el QR.</li>
-                  <li>El comercio lo escaneará y aplicará el descuento.</li>
+                  <li>{t("Ve al local del comercio.")}</li>
+                  <li>{t("Muestra esta pantalla con el QR.")}</li>
+                  <li>{t("El comercio lo escaneará y aplicará el descuento.")}</li>
                 </ol>
               </div>
               <div style={{ fontSize:12,color:"#64748b",display:"flex",flexDirection:"column",gap:3 }}>
-                <p style={{ margin:0 }}>📅 Reclamado el {fmtCouponFull(activeClaim.claimedAt)}</p>
-                <p style={{ margin:0 }}>⏱️ Expira el {fmtCouponFull(activeClaim.expiresAt)} <strong>({couponTimeLeft(activeClaim.expiresAt)} restantes)</strong></p>
+                <p style={{ margin:0 }}>📅 {t("Reclamado el")} {fmtCouponFull(activeClaim.claimedAt)}</p>
+                <p style={{ margin:0 }}>⏱️ {t("Expira el")} {fmtCouponFull(activeClaim.expiresAt)} <strong>({couponTimeLeft(activeClaim.expiresAt)} {t("restantes")})</strong></p>
                 {activeClaim.coupon?.partnerAddress && (
                   <p style={{ margin:0 }}>📍 {activeClaim.coupon.partnerAddress}</p>
                 )}
               </div>
               {activeClaim.coupon?.termsAndConditions && (
                 <details style={{ fontSize:12 }}>
-                  <summary style={{ cursor:"pointer",fontWeight:600,color:"#64748b" }}>Términos y condiciones</summary>
+                  <summary style={{ cursor:"pointer",fontWeight:600,color:"#64748b" }}>{t("Términos y condiciones")}</summary>
                   <p style={{ marginTop:6,lineHeight:1.5,color:"#64748b" }}>{activeClaim.coupon.termsAndConditions}</p>
                 </details>
               )}

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 
 type FoodLocation = {
   id: string;
@@ -70,6 +71,7 @@ const labelStyle: React.CSSProperties = {
 };
 
 export default function FoodLocationsPage() {
+  const { t } = useI18n();
   const [locations, setLocations] = useState<FoodLocation[]>([]);
   const [accommodations, setAccommodations] = useState<Record<string, Accommodation>>({});
   const [loading, setLoading] = useState(false);
@@ -149,7 +151,7 @@ export default function FoodLocationsPage() {
 
   const handleSave = async () => {
     if (!form.name.trim()) {
-      setError("El nombre del lugar es obligatorio.");
+      setError(t("El nombre del lugar es obligatorio."));
       return;
     }
     setSaving(true);
@@ -170,14 +172,14 @@ export default function FoodLocationsPage() {
       setShowForm(false);
       await loadData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al guardar");
+      setError(err instanceof Error ? err.message : t("Error al guardar"));
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("¿Eliminar este lugar de comida?")) return;
+    if (!confirm(t("¿Eliminar este lugar de comida?"))) return;
     try {
       await apiFetch(`/food-locations/${id}`, { method: "DELETE" });
       await loadData();
@@ -193,17 +195,17 @@ export default function FoodLocationsPage() {
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
           <div>
             <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.25)", borderRadius: "99px", padding: "3px 10px", fontSize: "11px", fontWeight: 700, color: "#21D0B3", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-              Alimentación
+              {t("Alimentación")}
             </span>
-            <h1 style={{ marginTop: "8px", fontSize: "22px", fontWeight: 800, color: "#0f172a" }}>Lugares de Comida</h1>
-            <p style={{ marginTop: "4px", fontSize: "13px", color: "#94a3b8" }}>Recintos de alimentación y tipos de cliente asignados.</p>
+            <h1 style={{ marginTop: "8px", fontSize: "22px", fontWeight: 800, color: "#0f172a" }}>{t("Lugares de Comida")}</h1>
+            <p style={{ marginTop: "4px", fontSize: "13px", color: "#94a3b8" }}>{t("Recintos de alimentación y tipos de cliente asignados.")}</p>
           </div>
           <button
             type="button"
             onClick={openCreate}
             style={{ background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: "#ffffff", border: "none", borderRadius: "10px", padding: "9px 18px", fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 8px rgba(33,208,179,0.3)", whiteSpace: "nowrap" }}
           >
-            + Nuevo lugar
+            + {t("Nuevo lugar")}
           </button>
         </div>
 
@@ -224,7 +226,7 @@ export default function FoodLocationsPage() {
               transition: "all 120ms",
             }}
           >
-            Todos ({locations.length})
+            {t("Todos")} ({locations.length})
           </button>
           {CLIENT_TYPES.map((ct) => {
             const count = countByType[ct.value] || 0;
@@ -247,7 +249,7 @@ export default function FoodLocationsPage() {
                   opacity: count === 0 ? 0.4 : 1,
                 }}
               >
-                {ct.label} {count > 0 && <span style={{ opacity: 0.7 }}>({count})</span>}
+                {t(ct.label)} {count > 0 && <span style={{ opacity: 0.7 }}>({count})</span>}
               </button>
             );
           })}
@@ -257,13 +259,13 @@ export default function FoodLocationsPage() {
       {/* Location cards */}
       {loading ? (
         <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "64px 24px", textAlign: "center", color: "#94a3b8", fontSize: "13px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
-          Cargando…
+          {t("Cargando…")}
         </div>
       ) : filtered.length === 0 ? (
         <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "64px 24px", textAlign: "center", color: "#94a3b8", fontSize: "13px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
           {selectedClientType
-            ? `No hay lugares asignados a ${CLIENT_MAP[selectedClientType]?.label ?? selectedClientType}.`
-            : "No hay lugares de comida registrados."}
+            ? `${t("No hay lugares asignados a")} ${t(CLIENT_MAP[selectedClientType]?.label ?? selectedClientType)}.`
+            : t("No hay lugares de comida registrados.")}
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -294,7 +296,7 @@ export default function FoodLocationsPage() {
                         padding: "3px 10px",
                       }}
                     >
-                      Aforo {loc.capacity}
+                      {t("Aforo")} {loc.capacity}
                     </span>
                   )}
                 </div>
@@ -306,7 +308,7 @@ export default function FoodLocationsPage() {
                 {/* Client type chips */}
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "auto" }}>
                   {loc.clientTypes.length === 0 ? (
-                    <span style={{ fontSize: "12px", color: "#94a3b8" }}>Sin tipos asignados</span>
+                    <span style={{ fontSize: "12px", color: "#94a3b8" }}>{t("Sin tipos asignados")}</span>
                   ) : (
                     loc.clientTypes.map((ct) => {
                       const meta = CLIENT_MAP[ct];
@@ -328,7 +330,7 @@ export default function FoodLocationsPage() {
                             color: meta.color,
                           }}
                         >
-                          {meta.label}
+                          {t(meta.label)}
                         </span>
                       );
                     })
@@ -341,14 +343,14 @@ export default function FoodLocationsPage() {
                     onClick={() => openEdit(loc)}
                     style={{ flex: 1, fontSize: "12px", padding: "7px 10px", borderRadius: "8px", border: "1px solid #e2e8f0", background: "#ffffff", color: "#0f172a", fontWeight: 600, cursor: "pointer" }}
                   >
-                    Editar
+                    {t("Editar")}
                   </button>
                   <button
                     type="button"
                     onClick={() => handleDelete(loc.id)}
                     style={{ fontSize: "12px", padding: "7px 10px", borderRadius: "8px", border: "1px solid rgba(239,68,68,0.2)", background: "rgba(239,68,68,0.05)", color: "#ef4444", fontWeight: 600, cursor: "pointer" }}
                   >
-                    Eliminar
+                    {t("Eliminar")}
                   </button>
                 </div>
               </article>
@@ -372,7 +374,7 @@ export default function FoodLocationsPage() {
             style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "24px", width: "100%", maxWidth: "520px", maxHeight: "90vh", overflowY: "auto", display: "flex", flexDirection: "column", gap: "16px", boxShadow: "0 8px 32px rgba(15,23,42,0.15)" }}
           >
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <h2 style={{ fontWeight: 700, fontSize: "17px", color: "#0f172a" }}>{editingId ? "Editar lugar" : "Nuevo lugar de comida"}</h2>
+              <h2 style={{ fontWeight: 700, fontSize: "17px", color: "#0f172a" }}>{editingId ? t("Editar lugar") : t("Nuevo lugar de comida")}</h2>
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
@@ -384,24 +386,24 @@ export default function FoodLocationsPage() {
 
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               <div>
-                <label style={labelStyle}>Nombre *</label>
+                <label style={labelStyle}>{t("Nombre")} *</label>
                 <input
                   type="text"
                   style={fieldStyle}
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  placeholder="Ej: Comedor principal Villa Deportiva"
+                  placeholder={t("Ej: Comedor principal Villa Deportiva")}
                 />
               </div>
 
               <div>
-                <label style={labelStyle}>Hotel / Villa</label>
+                <label style={labelStyle}>{t("Hotel / Villa")}</label>
                 <select
                   style={fieldStyle}
                   value={form.accommodationId}
                   onChange={(e) => setForm((f) => ({ ...f, accommodationId: e.target.value }))}
                 >
-                  <option value="">Sin asignar</option>
+                  <option value="">{t("Sin asignar")}</option>
                   {Object.values(accommodations).map((acc) => (
                     <option key={acc.id} value={acc.id}>{acc.name || acc.id}</option>
                   ))}
@@ -410,30 +412,30 @@ export default function FoodLocationsPage() {
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 <div>
-                  <label style={labelStyle}>Descripción</label>
+                  <label style={labelStyle}>{t("Descripción")}</label>
                   <input
                     type="text"
                     style={fieldStyle}
                     value={form.description}
                     onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                    placeholder="Descripción opcional"
+                    placeholder={t("Descripción opcional")}
                   />
                 </div>
                 <div>
-                  <label style={labelStyle}>Aforo</label>
+                  <label style={labelStyle}>{t("Aforo")}</label>
                   <input
                     type="number"
                     min={1}
                     style={fieldStyle}
                     value={form.capacity}
                     onChange={(e) => setForm((f) => ({ ...f, capacity: e.target.value }))}
-                    placeholder="Ej: 200"
+                    placeholder={t("Ej: 200")}
                   />
                 </div>
               </div>
 
               <div>
-                <label style={labelStyle}>Tipos de cliente asignados</label>
+                <label style={labelStyle}>{t("Tipos de cliente asignados")}</label>
                 <div style={{ marginTop: "8px", display: "flex", flexWrap: "wrap", gap: "8px" }}>
                   {CLIENT_TYPES.map((ct) => {
                     const active = form.clientTypes.includes(ct.value);
@@ -454,13 +456,13 @@ export default function FoodLocationsPage() {
                           transition: "all 120ms",
                         }}
                       >
-                        {ct.label}
+                        {t(ct.label)}
                       </button>
                     );
                   })}
                 </div>
                 {form.clientTypes.length === 0 && (
-                  <p style={{ marginTop: "8px", fontSize: "12px", color: "#94a3b8" }}>Ningún tipo seleccionado — selecciona al menos uno.</p>
+                  <p style={{ marginTop: "8px", fontSize: "12px", color: "#94a3b8" }}>{t("Ningún tipo seleccionado — selecciona al menos uno.")}</p>
                 )}
               </div>
             </div>
@@ -473,7 +475,7 @@ export default function FoodLocationsPage() {
                 onClick={() => setShowForm(false)}
                 style={{ flex: 1, padding: "9px 16px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "#ffffff", color: "#64748b", fontWeight: 600, fontSize: "14px", cursor: "pointer" }}
               >
-                Cancelar
+                {t("Cancelar")}
               </button>
               <button
                 type="button"
@@ -481,7 +483,7 @@ export default function FoodLocationsPage() {
                 disabled={saving}
                 style={{ flex: 1, padding: "9px 16px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: "#ffffff", fontWeight: 700, fontSize: "14px", cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1, boxShadow: "0 2px 8px rgba(33,208,179,0.3)" }}
               >
-                {saving ? "Guardando…" : editingId ? "Guardar cambios" : "Crear lugar"}
+                {saving ? t("Guardando…") : editingId ? t("Guardar cambios") : t("Crear lugar")}
               </button>
             </div>
           </div>

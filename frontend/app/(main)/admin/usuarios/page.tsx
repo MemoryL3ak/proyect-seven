@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import { apiFetch } from "@/lib/api";
 import { ALL_MODULES, MODULE_GROUPS, type AppModule } from "@/lib/modules";
 import StyledSelect from "@/components/StyledSelect";
+import { useI18n } from "@/lib/i18n";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type SupabaseUser = {
@@ -249,6 +250,8 @@ function emptyForm() {
 
 // ── Component ──────────────────────────────────────────────────────────────
 export default function UsuariosPage() {
+  const { t } = useI18n();
+
   const pal = {
     accent: "#21D0B3",
     kpiGlow: "rgba(33,208,179,0.25)",
@@ -429,7 +432,7 @@ export default function UsuariosPage() {
       }
       setShowModal(false);
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : "Error al guardar el usuario");
+      setSaveError(err instanceof Error ? err.message : t("Error al guardar el usuario"));
     } finally {
       setSaving(false);
     }
@@ -448,7 +451,7 @@ export default function UsuariosPage() {
       setUsers((us) => us.map((u) => u.id === confirmDelete.id ? { ...u, status: isDisabling ? "inactive" : "active" } : u));
       setConfirmDelete(null);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Error al actualizar el usuario");
+      alert(err instanceof Error ? err.message : t("Error al actualizar el usuario"));
     } finally {
       setDeleting(false);
     }
@@ -486,12 +489,12 @@ export default function UsuariosPage() {
           <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#94a3b8" }}>Seven Arena</span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.25)", borderRadius: "99px", padding: "2px 10px" }}>
             <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#21D0B3", display: "inline-block", animation: "pulse 2s ease-in-out infinite" }} />
-            <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: "#21D0B3" }}>ADMINISTRACIÓN</span>
+            <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: "#21D0B3" }}>{t("ADMINISTRACIÓN")}</span>
           </span>
         </div>
 
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "16px", marginBottom: "24px" }}>
-          <h1 style={{ fontSize: "24px", fontWeight: 800, color: "#0f172a", margin: 0 }}>Gestión de Usuarios</h1>
+          <h1 style={{ fontSize: "24px", fontWeight: 800, color: "#0f172a", margin: 0 }}>{t("Gestión de Usuarios")}</h1>
           <button
             onClick={openCreate}
             style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 20px", background: "#21D0B3", color: "#ffffff", border: "none", borderRadius: "12px", fontSize: "14px", fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 14px rgba(33,208,179,0.3)", transition: "all 150ms ease", whiteSpace: "nowrap" }}
@@ -501,7 +504,7 @@ export default function UsuariosPage() {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
-            Nuevo Usuario
+            {t("Nuevo Usuario")}
           </button>
         </div>
 
@@ -520,13 +523,13 @@ export default function UsuariosPage() {
               onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; }}
             >
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
-                <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: k.color, margin: 0 }}>{k.label}</p>
+                <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: k.color, margin: 0 }}>{t(k.label)}</p>
                 <k.Icon color={k.color} size={18} />
               </div>
               <p style={{ fontSize: "2rem", fontWeight: 800, lineHeight: 1, color: k.color, margin: "0 0 8px" }}>{k.value}</p>
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                 <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: k.color, flexShrink: 0 }} />
-                <p style={{ fontSize: "11px", color: "#64748b", margin: 0 }}>{k.sub}</p>
+                <p style={{ fontSize: "11px", color: "#64748b", margin: 0 }}>{t(k.sub)}</p>
               </div>
             </div>
           ))}
@@ -554,8 +557,8 @@ export default function UsuariosPage() {
             >
               <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
                 {tab === "usuarios"
-                  ? <><UsersIcon color={activeTab === tab ? pal.accent : "#64748b"} size={14} /> Usuarios</>
-                  : <><KeyIcon color={activeTab === tab ? pal.accent : "#64748b"} size={14} /> Roles y Permisos</>
+                  ? <><UsersIcon color={activeTab === tab ? pal.accent : "#64748b"} size={14} /> {t("Usuarios")}</>
+                  : <><KeyIcon color={activeTab === tab ? pal.accent : "#64748b"} size={14} /> {t("Roles y Permisos")}</>
                 }
               </span>
             </button>
@@ -576,7 +579,7 @@ export default function UsuariosPage() {
                 </span>
                 <input
                   type="text"
-                  placeholder="Buscar usuarios..."
+                  placeholder={t("Buscar usuarios...")}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   style={{ background: "#f8fafc", color: "#0f172a", border: "1px solid #e2e8f0", padding: "10px 14px 10px 38px", borderRadius: "10px", fontSize: "13.5px", outline: "none", width: "100%" }}
@@ -589,8 +592,8 @@ export default function UsuariosPage() {
                 onChange={(e) => setFilterRole(e.target.value as Role | "")}
                 wrapperStyle={{ minWidth: "160px", flex: "none" }}
               >
-                <option value="">Todos los roles</option>
-                {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+                <option value="">{t("Todos los roles")}</option>
+                {ROLES.map((r) => <option key={r} value={r}>{t(r)}</option>)}
               </StyledSelect>
 
               {/* Status filter */}
@@ -599,14 +602,14 @@ export default function UsuariosPage() {
                 onChange={(e) => setFilterStatus(e.target.value as UserStatus | "")}
                 wrapperStyle={{ minWidth: "150px", flex: "none" }}
               >
-                <option value="">Todos los estados</option>
-                <option value="active">Activos</option>
-                <option value="inactive">Inactivos</option>
-                <option value="pending">Pendientes</option>
+                <option value="">{t("Todos los estados")}</option>
+                <option value="active">{t("Activos")}</option>
+                <option value="inactive">{t("Inactivos")}</option>
+                <option value="pending">{t("Pendientes")}</option>
               </StyledSelect>
 
               <span style={{ fontSize: "13px", color: "#64748b", whiteSpace: "nowrap" }}>
-                {filtered.length} usuario{filtered.length !== 1 ? "s" : ""}
+                {filtered.length} {filtered.length !== 1 ? t("usuarios") : t("usuario")}
               </span>
             </div>
 
@@ -631,17 +634,17 @@ export default function UsuariosPage() {
                 borderBottom: `1px solid ${pal.tableBorder}`,
               }}>
                 {["Usuario", "Email", "Rol", "Módulos", "Estado", ""].map((h) => (
-                  <span key={h} style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#94a3b8" }}>{h}</span>
+                  <span key={h} style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#94a3b8" }}>{h ? t(h) : ""}</span>
                 ))}
               </div>
 
               {loadingUsers ? (
                 <div style={{ padding: "48px", textAlign: "center", color: "#64748b", fontSize: "14px" }}>
-                  Cargando usuarios...
+                  {t("Cargando usuarios...")}
                 </div>
               ) : filtered.length === 0 ? (
                 <div style={{ padding: "48px", textAlign: "center", color: "#64748b", fontSize: "14px" }}>
-                  No hay usuarios que coincidan con los filtros
+                  {t("No hay usuarios que coincidan con los filtros")}
                 </div>
               ) : (
                 filtered.map((user) => {
@@ -677,7 +680,7 @@ export default function UsuariosPage() {
                         </div>
                         <div>
                           <p style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a", margin: 0 }}>{user.fullName}</p>
-                          {user.lastLogin && <p style={{ fontSize: "11.5px", color: "#94a3b8", margin: "1px 0 0" }}>Último: {user.lastLogin}</p>}
+                          {user.lastLogin && <p style={{ fontSize: "11.5px", color: "#94a3b8", margin: "1px 0 0" }}>{t("Último:")} {user.lastLogin}</p>}
                         </div>
                       </div>
 
@@ -685,7 +688,7 @@ export default function UsuariosPage() {
                       <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
                         {isUsernameUser(user.email) ? (
                           <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "13px", color: "#64748b" }}>
-                            <span style={{ fontSize: "10px", fontWeight: 700, padding: "1px 6px", borderRadius: "99px", background: "rgba(99,102,241,0.12)", color: "#818cf8", border: "1px solid rgba(99,102,241,0.25)" }}>USUARIO</span>
+                            <span style={{ fontSize: "10px", fontWeight: 700, padding: "1px 6px", borderRadius: "99px", background: "rgba(99,102,241,0.12)", color: "#818cf8", border: "1px solid rgba(99,102,241,0.25)" }}>{t("USUARIO")}</span>
                             {extractUsername(user.email)}
                           </span>
                         ) : (
@@ -696,7 +699,7 @@ export default function UsuariosPage() {
                             fontSize: "10px", fontWeight: 700, padding: "1px 7px", borderRadius: "99px", width: "fit-content",
                             background: "rgba(245,158,11,0.12)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.3)",
                           }}>
-                            ⚠ Email no confirmado
+                            {t("⚠ Email no confirmado")}
                           </span>
                         )}
                       </div>
@@ -711,7 +714,7 @@ export default function UsuariosPage() {
                         fontSize: "12px", fontWeight: 600, color: rc.color,
                         width: "fit-content",
                       }}>
-                        {user.role}
+                        {t(user.role)}
                       </span>
 
                       {/* Modules */}
@@ -735,7 +738,7 @@ export default function UsuariosPage() {
                           boxShadow: user.status === "active" ? `0 0 6px ${si.color}` : "none",
                           flexShrink: 0,
                         }} />
-                        <span style={{ fontSize: "12.5px", color: "#64748b", fontWeight: 500 }}>{si.label}</span>
+                        <span style={{ fontSize: "12.5px", color: "#64748b", fontWeight: 500 }}>{t(si.label)}</span>
                       </div>
 
                       {/* Actions */}
@@ -747,7 +750,7 @@ export default function UsuariosPage() {
                                 await apiFetch(`/auth/users/${user.id}/confirm-email`, { method: "PATCH" });
                                 setUsers((us) => us.map((u) => u.id === user.id ? { ...u, emailConfirmed: true } : u));
                               } catch (err) {
-                                alert(err instanceof Error ? err.message : "Error confirmando email");
+                                alert(err instanceof Error ? err.message : t("Error confirmando email"));
                               }
                             }}
                             style={{
@@ -756,9 +759,9 @@ export default function UsuariosPage() {
                               cursor: "pointer", color: "#f59e0b", fontSize: "11px", fontWeight: 700,
                               transition: "all 150ms", whiteSpace: "nowrap",
                             }}
-                            title="Confirmar email para permitir acceso"
+                            title={t("Confirmar email para permitir acceso")}
                           >
-                            Confirmar email
+                            {t("Confirmar email")}
                           </button>
                         )}
                         <button
@@ -769,7 +772,7 @@ export default function UsuariosPage() {
                             cursor: "pointer", color: "#64748b",
                             transition: "all 150ms",
                           }}
-                          title="Editar"
+                          title={t("Editar")}
                           onMouseEnter={(e) => { e.currentTarget.style.color = pal.accent; e.currentTarget.style.borderColor = pal.accent; }}
                           onMouseLeave={(e) => { e.currentTarget.style.color = "#64748b"; e.currentTarget.style.borderColor = "#e2e8f0"; }}
                         >
@@ -787,7 +790,7 @@ export default function UsuariosPage() {
                             color: user.status === "active" ? "#64748b" : "#22c55e",
                             transition: "all 150ms",
                           }}
-                          title={user.status === "active" ? "Deshabilitar acceso" : "Habilitar acceso"}
+                          title={user.status === "active" ? t("Deshabilitar acceso") : t("Habilitar acceso")}
                           onMouseEnter={(e) => {
                             e.currentTarget.style.color = user.status === "active" ? "#ef4444" : "#22c55e";
                             e.currentTarget.style.borderColor = user.status === "active" ? "#ef4444" : "#22c55e";
@@ -815,7 +818,7 @@ export default function UsuariosPage() {
                             borderRadius: "8px", padding: "6px",
                             cursor: "pointer", color: "#94a3b8", transition: "all 150ms",
                           }}
-                          title="Eliminar usuario"
+                          title={t("Eliminar usuario")}
                           onMouseEnter={(e) => { e.currentTarget.style.color = "#ef4444"; e.currentTarget.style.borderColor = "#ef4444"; }}
                           onMouseLeave={(e) => { e.currentTarget.style.color = "#94a3b8"; e.currentTarget.style.borderColor = "#e2e8f0"; }}
                         >
@@ -861,15 +864,15 @@ export default function UsuariosPage() {
                         background: rc.bg, border: `1px solid ${rc.border}`,
                         borderRadius: "100px",
                         fontSize: "13px", fontWeight: 700, color: rc.color,
-                      }}>{role}</span>
+                      }}>{t(role)}</span>
                       <span style={{
                         fontSize: "12px", color: "#94a3b8", fontWeight: 500,
                       }}>
-                        {roleUsers.length} usuario{roleUsers.length !== 1 ? "s" : ""}
+                        {roleUsers.length} {roleUsers.length !== 1 ? t("usuarios") : t("usuario")}
                       </span>
                     </div>
                     <p style={{ fontSize: "12px", color: "#64748b", margin: 0 }}>
-                      {perms.length} de {ALL_MODULES.length} módulos habilitados
+                      {perms.length} {t("de")} {ALL_MODULES.length} {t("módulos habilitados")}
                     </p>
                   </div>
 
@@ -885,7 +888,7 @@ export default function UsuariosPage() {
                             fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em",
                             textTransform: "uppercase", color: "#94a3b8",
                             margin: "0 0 6px",
-                          }}>{group}</p>
+                          }}>{t(group)}</p>
                           <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
                             {enabledInGroup.map((m) => (
                               <span key={m.id} style={{
@@ -896,7 +899,7 @@ export default function UsuariosPage() {
                                 borderRadius: "100px",
                                 fontSize: "11px", color: "#64748b", fontWeight: 500,
                               }}>
-                                <ModuleIcon module={m} color={rc.color} size={10} /> {m.label}
+                                <ModuleIcon module={m} color={rc.color} size={10} /> {t(m.label)}
                               </span>
                             ))}
                           </div>
@@ -925,7 +928,7 @@ export default function UsuariosPage() {
                           ))}
                         </div>
                         {roleUsers.length > 4 && (
-                          <span style={{ fontSize: "11px", color: "#94a3b8" }}>+{roleUsers.length - 4} más</span>
+                          <span style={{ fontSize: "11px", color: "#94a3b8" }}>+{roleUsers.length - 4} {t("más")}</span>
                         )}
                       </div>
                     </div>
@@ -969,10 +972,10 @@ export default function UsuariosPage() {
             }}>
               <div>
                 <h2 style={{ fontSize: "18px", fontWeight: 800, color: pal.mText, margin: "0 0 3px" }}>
-                  {editingUser ? "Editar Usuario" : "Nuevo Usuario"}
+                  {editingUser ? t("Editar Usuario") : t("Nuevo Usuario")}
                 </h2>
                 <p style={{ fontSize: "13px", color: pal.mTextMuted, margin: 0 }}>
-                  {editingUser ? "Modifica los datos y permisos del usuario" : "Crea una cuenta y asigna accesos al sistema"}
+                  {editingUser ? t("Modifica los datos y permisos del usuario") : t("Crea una cuenta y asigna accesos al sistema")}
                 </p>
               </div>
               <button
@@ -993,7 +996,7 @@ export default function UsuariosPage() {
               {/* Basic info */}
               <div>
                 <h3 style={{ fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: pal.mTextFaint, margin: "0 0 14px" }}>
-                  Información personal
+                  {t("Información personal")}
                 </h3>
                 {/* Login type toggle */}
                 {!editingUser && (
@@ -1016,7 +1019,7 @@ export default function UsuariosPage() {
                           color: form.loginType === type ? pal.accent : pal.mTextMuted,
                         }}
                       >
-                        {type === "email" ? "📧 Con Email" : "👤 Con Usuario"}
+                        {type === "email" ? t("📧 Con Email") : t("👤 Con Usuario")}
                       </button>
                     ))}
                   </div>
@@ -1024,13 +1027,13 @@ export default function UsuariosPage() {
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                   <div>
                     <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: pal.mTextMuted, marginBottom: "6px" }}>
-                      Nombre completo *
+                      {t("Nombre completo *")}
                     </label>
                     <input
                       type="text"
                       value={form.fullName}
                       onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))}
-                      placeholder="Nombre Apellido"
+                      placeholder={t("Nombre Apellido")}
                       style={{ ...selM, padding: "10px 14px", borderRadius: "10px", fontSize: "14px", outline: "none", width: "100%" }}
                     />
                   </div>
@@ -1038,26 +1041,26 @@ export default function UsuariosPage() {
                     {form.loginType === "username" ? (
                       <>
                         <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: pal.mTextMuted, marginBottom: "6px" }}>
-                          Nombre de usuario *
+                          {t("Nombre de usuario *")}
                         </label>
                         <input
                           type="text"
                           value={form.username}
                           onChange={(e) => setForm((f) => ({ ...f, username: e.target.value.toLowerCase().replace(/\s/g, "") }))}
-                          placeholder="nombre.usuario"
+                          placeholder={t("nombre.usuario")}
                           style={{ ...selM, padding: "10px 14px", borderRadius: "10px", fontSize: "14px", outline: "none", width: "100%", fontFamily: "monospace" }}
                         />
                       </>
                     ) : (
                       <>
                         <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: pal.mTextMuted, marginBottom: "6px" }}>
-                          Email *
+                          {t("Email *")}
                         </label>
                         <input
                           type="email"
                           value={form.email}
                           onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                          placeholder="email@ejemplo.com"
+                          placeholder={t("email@ejemplo.com")}
                           style={{ ...selM, padding: "10px 14px", borderRadius: "10px", fontSize: "14px", outline: "none", width: "100%" }}
                         />
                       </>
@@ -1069,27 +1072,27 @@ export default function UsuariosPage() {
               {/* Role + Status */}
               <div>
                 <h3 style={{ fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: pal.mTextFaint, margin: "0 0 14px" }}>
-                  Rol y estado
+                  {t("Rol y estado")}
                 </h3>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                   <div>
-                    <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: pal.mTextMuted, marginBottom: "6px" }}>Rol</label>
+                    <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: pal.mTextMuted, marginBottom: "6px" }}>{t("Rol")}</label>
                     <StyledSelect
                       value={form.role}
                       onChange={(e) => handleRoleChange(e.target.value as Role)}
                     >
-                      {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+                      {ROLES.map((r) => <option key={r} value={r}>{t(r)}</option>)}
                     </StyledSelect>
                   </div>
                   <div>
-                    <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: pal.mTextMuted, marginBottom: "6px" }}>Estado</label>
+                    <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: pal.mTextMuted, marginBottom: "6px" }}>{t("Estado")}</label>
                     <StyledSelect
                       value={form.status}
                       onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as UserStatus }))}
                     >
-                      <option value="active">Activo</option>
-                      <option value="inactive">Inactivo</option>
-                      <option value="pending">Pendiente</option>
+                      <option value="active">{t("Activo")}</option>
+                      <option value="inactive">{t("Inactivo")}</option>
+                      <option value="pending">{t("Pendiente")}</option>
                     </StyledSelect>
                   </div>
                 </div>
@@ -1099,12 +1102,12 @@ export default function UsuariosPage() {
               <div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "0 0 14px" }}>
                     <h3 style={{ fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: pal.mTextFaint, margin: 0 }}>
-                      {editingUser ? "Restablecer contraseña" : form.loginType === "username" ? "Contraseña asignada" : "Contraseña temporal"}
+                      {editingUser ? t("Restablecer contraseña") : form.loginType === "username" ? t("Contraseña asignada") : t("Contraseña temporal")}
                     </h3>
                     {editingUser && form.loginType !== "username" && (
                       <button type="button" onClick={() => setForm((f) => ({ ...f, passwordEditable: !f.passwordEditable, tempPassword: f.passwordEditable ? "" : generateTempPassword() }))}
                         style={{ fontSize: "11px", fontWeight: 600, padding: "4px 12px", borderRadius: "8px", border: "none", cursor: "pointer", background: form.passwordEditable ? "rgba(239,68,68,0.1)" : "rgba(33,208,179,0.1)", color: form.passwordEditable ? "#ef4444" : "#21D0B3" }}>
-                        {form.passwordEditable ? "Cancelar cambio" : "Cambiar contraseña"}
+                        {form.passwordEditable ? t("Cancelar cambio") : t("Cambiar contraseña")}
                       </button>
                     )}
                   </div>
@@ -1114,7 +1117,7 @@ export default function UsuariosPage() {
                       value={form.tempPassword}
                       onChange={form.loginType === "username" || form.passwordEditable ? (e) => setForm((f) => ({ ...f, tempPassword: e.target.value })) : undefined}
                       readOnly={form.loginType !== "username" && !form.passwordEditable}
-                      placeholder={form.loginType === "username" ? "Escribe la contraseña" : editingUser && !form.passwordEditable ? "••••••••" : undefined}
+                      placeholder={form.loginType === "username" ? t("Escribe la contraseña") : editingUser && !form.passwordEditable ? "••••••••" : undefined}
                       style={{
                         ...selM,
                         padding: "11px 80px 11px 14px",
@@ -1139,7 +1142,7 @@ export default function UsuariosPage() {
                       <button
                         type="button"
                         onClick={copyTempPassword}
-                        title="Copiar"
+                        title={t("Copiar")}
                         style={{ background: "none", border: "none", cursor: "pointer", color: copiedPwd ? "#22c55e" : pal.mTextMuted, padding: "2px", transition: "color 150ms" }}
                       >
                         {copiedPwd ? (
@@ -1151,7 +1154,7 @@ export default function UsuariosPage() {
                       <button
                         type="button"
                         onClick={() => setForm((f) => ({ ...f, tempPassword: generateTempPassword() }))}
-                        title="Regenerar"
+                        title={t("Regenerar")}
                         style={{ background: "none", border: "none", cursor: "pointer", color: pal.mTextMuted, padding: "2px", transition: "color 150ms" }}
                         onMouseEnter={(e) => e.currentTarget.style.color = pal.mText}
                         onMouseLeave={(e) => e.currentTarget.style.color = pal.mTextMuted}
@@ -1164,8 +1167,8 @@ export default function UsuariosPage() {
                   </div>
                   <p style={{ fontSize: "11.5px", color: pal.mTextFaint, margin: "6px 0 0" }}>
                     {editingUser
-                      ? "Genera una nueva contraseña y compártela con el usuario."
-                      : "Esta contraseña temporal debe ser cambiada en el primer inicio de sesión."}
+                      ? t("Genera una nueva contraseña y compártela con el usuario.")
+                      : t("Esta contraseña temporal debe ser cambiada en el primer inicio de sesión.")}
                   </p>
               </div>
 
@@ -1173,13 +1176,13 @@ export default function UsuariosPage() {
               <div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
                   <h3 style={{ fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: pal.mTextFaint, margin: 0 }}>
-                    Módulos asignados
+                    {t("Módulos asignados")}
                   </h3>
                   <span style={{
                     fontSize: "12px", fontWeight: 600,
                     color: pal.accent,
                   }}>
-                    {form.modules.length} / {ALL_MODULES.length} seleccionados
+                    {form.modules.length} / {ALL_MODULES.length} {t("seleccionados")}
                   </span>
                 </div>
 
@@ -1222,7 +1225,7 @@ export default function UsuariosPage() {
                               {allSelected && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
                               {someSelected && !allSelected && <div style={{ width: 8, height: 2, background: pal.accent, borderRadius: "1px" }} />}
                             </div>
-                            <span style={{ fontSize: "13.5px", fontWeight: 600, color: pal.mText }}>{group}</span>
+                            <span style={{ fontSize: "13.5px", fontWeight: 600, color: pal.mText }}>{t(group)}</span>
                             <span style={{
                               fontSize: "11px",
                               padding: "2px 7px",
@@ -1273,7 +1276,7 @@ export default function UsuariosPage() {
                                   </div>
                                   <ModuleIcon module={m} color={checked ? pal.accent : "#94a3b8"} size={13} />
                                   <span style={{ fontSize: "13px", color: checked ? pal.mText : pal.mTextMuted, fontWeight: checked ? 500 : 400, transition: "color 150ms" }}>
-                                    {m.label}
+                                    {t(m.label)}
                                   </span>
                                 </div>
                               );
@@ -1317,7 +1320,7 @@ export default function UsuariosPage() {
                 onMouseEnter={(e) => e.currentTarget.style.color = pal.mText}
                 onMouseLeave={(e) => e.currentTarget.style.color = pal.mTextMuted}
               >
-                Cancelar
+                {t("Cancelar")}
               </button>
               <button
                 onClick={handleSave}
@@ -1339,7 +1342,7 @@ export default function UsuariosPage() {
                     <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
                   </svg>
                 )}
-                {saving ? "Creando..." : (editingUser ? "Guardar cambios" : "Crear usuario")}
+                {saving ? t("Creando...") : (editingUser ? t("Guardar cambios") : t("Crear usuario"))}
               </button>
             </div>
           </div>
@@ -1390,12 +1393,12 @@ export default function UsuariosPage() {
                   )}
                 </div>
                 <p style={{ fontSize: "17px", fontWeight: 700, color: pal.mText, margin: "0 0 8px" }}>
-                  {isDisabling ? "Deshabilitar acceso" : "Habilitar acceso"}
+                  {isDisabling ? t("Deshabilitar acceso") : t("Habilitar acceso")}
                 </p>
                 <p style={{ fontSize: "13px", color: pal.mTextMuted, margin: 0, lineHeight: 1.6 }}>
                   {isDisabling
-                    ? <>¿Deshabilitar el acceso de <span style={{ color: pal.mText, fontWeight: 600 }}>{confirmDelete.fullName}</span>?<br />No podrá iniciar sesión hasta que se reactive su cuenta.</>
-                    : <>¿Habilitar nuevamente el acceso de <span style={{ color: pal.mText, fontWeight: 600 }}>{confirmDelete.fullName}</span>?<br />Podrá volver a iniciar sesión en la plataforma.</>
+                    ? <>{t("¿Deshabilitar el acceso de")} <span style={{ color: pal.mText, fontWeight: 600 }}>{confirmDelete.fullName}</span>?<br />{t("No podrá iniciar sesión hasta que se reactive su cuenta.")}</>
+                    : <>{t("¿Habilitar nuevamente el acceso de")} <span style={{ color: pal.mText, fontWeight: 600 }}>{confirmDelete.fullName}</span>?<br />{t("Podrá volver a iniciar sesión en la plataforma.")}</>
                   }
                 </p>
               </div>
@@ -1435,7 +1438,7 @@ export default function UsuariosPage() {
                     color: pal.mTextMuted, cursor: "pointer",
                   }}
                 >
-                  Cancelar
+                  {t("Cancelar")}
                 </button>
                 <button
                   onClick={confirmAndToggleStatus}
@@ -1456,8 +1459,8 @@ export default function UsuariosPage() {
                     </svg>
                   )}
                   {deleting
-                    ? (isDisabling ? "Deshabilitando..." : "Habilitando...")
-                    : (isDisabling ? "Sí, deshabilitar" : "Sí, habilitar")
+                    ? (isDisabling ? t("Deshabilitando...") : t("Habilitando..."))
+                    : (isDisabling ? t("Sí, deshabilitar") : t("Sí, habilitar"))
                   }
                 </button>
               </div>
@@ -1475,17 +1478,17 @@ export default function UsuariosPage() {
                 <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
               </svg>
             </div>
-            <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#0f172a", margin: "0 0 8px" }}>Eliminar usuario</h3>
+            <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#0f172a", margin: "0 0 8px" }}>{t("Eliminar usuario")}</h3>
             <p style={{ fontSize: "13px", color: "#64748b", lineHeight: 1.5, margin: "0 0 6px" }}>
-              ¿Estás seguro de eliminar a <strong style={{ color: "#0f172a" }}>{deleteConfirm.fullName}</strong>?
+              {t("¿Estás seguro de eliminar a")} <strong style={{ color: "#0f172a" }}>{deleteConfirm.fullName}</strong>?
             </p>
             <p style={{ fontSize: "12px", color: "#ef4444", margin: "0 0 20px" }}>
-              Esta acción es irreversible. El usuario será eliminado de Supabase Auth.
+              {t("Esta acción es irreversible. El usuario será eliminado de Supabase Auth.")}
             </p>
             <div style={{ display: "flex", gap: "10px" }}>
               <button onClick={() => setDeleteConfirm(null)}
                 style={{ flex: 1, padding: "11px", borderRadius: "12px", border: "1px solid #e2e8f0", background: "#f8fafc", color: "#475569", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
-                Cancelar
+                {t("Cancelar")}
               </button>
               <button onClick={async () => {
                 try {
@@ -1493,11 +1496,11 @@ export default function UsuariosPage() {
                   setUsers((us) => us.filter((u) => u.id !== deleteConfirm.id));
                   setDeleteConfirm(null);
                 } catch (e) {
-                  alert(e instanceof Error ? e.message : "Error eliminando usuario");
+                  alert(e instanceof Error ? e.message : t("Error eliminando usuario"));
                 }
               }}
                 style={{ flex: 1, padding: "11px", borderRadius: "12px", border: "none", background: "linear-gradient(135deg,#ef4444,#dc2626)", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 10px rgba(239,68,68,0.3)" }}>
-                Sí, eliminar
+                {t("Sí, eliminar")}
               </button>
             </div>
           </div>

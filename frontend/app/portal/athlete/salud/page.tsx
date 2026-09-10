@@ -11,6 +11,7 @@ import {
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { apiFetch } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -176,6 +177,7 @@ const MESES_ES = [
 ];
 
 function SpanishDateField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const { t } = useI18n();
   const parts = (value || "").split("-").map(Number);
   const [year, setYear] = useState(parts[0] || 0);
   const [month, setMonth] = useState(parts[1] || 0);
@@ -202,16 +204,16 @@ function SpanishDateField({ value, onChange }: { value: string; onChange: (v: st
 
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr 1fr", gap: 8 }}>
-      <select className="input" value={day || ""} onChange={(ev) => setDay(Number(ev.target.value))} aria-label="Día">
-        <option value="">Día</option>
+      <select className="input" value={day || ""} onChange={(ev) => setDay(Number(ev.target.value))} aria-label={t("Día")}>
+        <option value="">{t("Día")}</option>
         {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => <option key={d} value={d}>{d}</option>)}
       </select>
-      <select className="input" value={month || ""} onChange={(ev) => setMonth(Number(ev.target.value))} aria-label="Mes">
-        <option value="">Mes</option>
-        {MESES_ES.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
+      <select className="input" value={month || ""} onChange={(ev) => setMonth(Number(ev.target.value))} aria-label={t("Mes")}>
+        <option value="">{t("Mes")}</option>
+        {MESES_ES.map((m, i) => <option key={m} value={i + 1}>{t(m)}</option>)}
       </select>
-      <select className="input" value={year || ""} onChange={(ev) => setYear(Number(ev.target.value))} aria-label="Año">
-        <option value="">Año</option>
+      <select className="input" value={year || ""} onChange={(ev) => setYear(Number(ev.target.value))} aria-label={t("Año")}>
+        <option value="">{t("Año")}</option>
         {years.map((y) => <option key={y} value={y}>{y}</option>)}
       </select>
     </div>
@@ -254,6 +256,7 @@ function splitPhone(value: string): { country: string; local: string } {
 }
 
 function PhoneField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const { t } = useI18n();
   const initial = splitPhone(value);
   const [country, setCountry] = useState(initial.country);
   const [local, setLocal] = useState(initial.local);
@@ -283,7 +286,7 @@ function PhoneField({ value, onChange }: { value: string; onChange: (v: string) 
         style={{ maxWidth: 130, flexShrink: 0 }}
         value={country}
         onChange={(ev) => { setCountry(ev.target.value); emit(ev.target.value, local); }}
-        aria-label="País"
+        aria-label={t("País")}
       >
         {PHONE_COUNTRIES.map((c) => (
           <option key={c.code} value={c.code}>{c.flag} {c.dial}</option>
@@ -339,6 +342,7 @@ function AddressAutocompleteField({
   onChange: (v: string) => void;
   onResolved: (parts: { address: string; commune: string; city: string; region: string }) => void;
 }) {
+  const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
   const onResolvedRef = useRef(onResolved);
   onResolvedRef.current = onResolved;
@@ -392,7 +396,7 @@ function AddressAutocompleteField({
       className="input"
       value={value}
       onChange={(ev) => onChange(ev.target.value)}
-      placeholder="Escribe tu dirección y elige una sugerencia…"
+      placeholder={t("Escribe tu dirección y elige una sugerencia…")}
       autoComplete="off"
     />
   );
@@ -407,6 +411,7 @@ function SignatureCanvas({
   onSign: (dataUrl: string) => void;
   existingSignature: string;
 }) {
+  const { t } = useI18n();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
   const [hasDrawn, setHasDrawn] = useState(false);
@@ -505,14 +510,14 @@ function SignatureCanvas({
       </div>
       <div className="flex items-center justify-between">
         <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-          {hasDrawn ? "Firma registrada" : "Dibuja tu firma con el dedo o el mouse"}
+          {hasDrawn ? t("Firma registrada") : t("Dibuja tu firma con el dedo o el mouse")}
         </p>
         <button
           type="button"
           onClick={clear}
           className="text-xs font-medium text-rose-600 hover:text-rose-700"
         >
-          Limpiar firma
+          {t("Limpiar firma")}
         </button>
       </div>
     </div>
@@ -530,9 +535,10 @@ function YesNoField({
   value: YesNo;
   onChange: (v: YesNo) => void;
 }) {
+  const { t } = useI18n();
   return (
     <div className="space-y-2">
-      <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{label}</span>
+      <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t(label)}</span>
       <div className="flex gap-3">
         {(["SI", "NO"] as YesNo[]).map((opt) => (
           <button
@@ -548,7 +554,7 @@ function YesNoField({
                 : { borderColor: "var(--border-strong)", background: "var(--surface)", color: "var(--text-muted)" }
             }
           >
-            {opt === "SI" ? "Sí" : "No"}
+            {opt === "SI" ? t("Sí") : t("No")}
           </button>
         ))}
       </div>
@@ -559,6 +565,7 @@ function YesNoField({
 // ─── Step indicator ───────────────────────────────────────────────────────────
 
 function StepBar({ current }: { current: Step }) {
+  const { t } = useI18n();
   const idx = STEPS.indexOf(current);
   return (
     <div className="flex items-center gap-0">
@@ -581,7 +588,7 @@ function StepBar({ current }: { current: Step }) {
               className="text-[10px] font-medium"
               style={{ color: i === idx ? "var(--text)" : "var(--text-faint)" }}
             >
-              {STEP_LABELS[step]}
+              {t(STEP_LABELS[step])}
             </span>
           </div>
           {i < STEPS.length - 1 && (
@@ -599,6 +606,7 @@ function StepBar({ current }: { current: Step }) {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 function FichaSaludContent() {
+  const { t } = useI18n();
   const searchParams = useSearchParams();
   // Si el portal ya entrega el id (?id=...), la ficha carga directo: no se
   // muestra la pantalla de identificación (parecía un "login" extra).
@@ -648,7 +656,7 @@ function FichaSaludContent() {
       setRecord(mergeRecord(existing, data.fullName ?? ""));
       setStep("salud");
     } catch {
-      setError("No se encontró el participante. Verifica tu ID.");
+      setError(t("No se encontró el participante. Verifica tu ID."));
     } finally {
       setLoading(false);
     }
@@ -673,10 +681,10 @@ function FichaSaludContent() {
       if (res?.url) {
         window.open(res.url, "_blank", "noopener");
       } else {
-        setError("No se pudo obtener el documento.");
+        setError(t("No se pudo obtener el documento."));
       }
     } catch {
-      setError("No se pudo abrir el documento. Ingresa desde tu portal para verlo.");
+      setError(t("No se pudo abrir el documento. Ingresa desde tu portal para verlo."));
     } finally {
       setDocUrlLoading(false);
     }
@@ -686,7 +694,7 @@ function FichaSaludContent() {
     ev.preventDefault();
     if (!athlete) return;
     if (!record.participantSignature) {
-      setError("Debes dibujar tu firma antes de enviar.");
+      setError(t("Debes dibujar tu firma antes de enviar."));
       return;
     }
 
@@ -721,7 +729,7 @@ function FichaSaludContent() {
 
       setSuccess(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo guardar la ficha.");
+      setError(err instanceof Error ? err.message : t("No se pudo guardar la ficha."));
     } finally {
       setSaving(false);
     }
@@ -750,14 +758,14 @@ function FichaSaludContent() {
           </svg>
         </div>
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: "var(--text)" }}>Ficha enviada</h1>
+          <h1 className="text-2xl font-bold" style={{ color: "var(--text)" }}>{t("Ficha enviada")}</h1>
           <p className="mt-2" style={{ color: "var(--text-muted)" }}>
-            Tu ficha de salud fue guardada correctamente.
-            {docFile && " El documento médico fue subido con éxito."}
+            {t("Tu ficha de salud fue guardada correctamente.")}
+            {docFile && ` ${t("El documento médico fue subido con éxito.")}`}
           </p>
         </div>
         <button className="btn btn-primary" onClick={() => { setSuccess(false); setStep("salud"); }}>
-          Volver a la ficha
+          {t("Volver a la ficha")}
         </button>
       </div>
     );
@@ -771,15 +779,15 @@ function FichaSaludContent() {
       <button type="button" onClick={() => window.history.back()}
         style={{ display:"inline-flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",padding:0,color:"#21D0B3",fontSize:13,fontWeight:600 }}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
-        Volver al portal
+        {t("Volver al portal")}
       </button>
 
       {/* Header */}
       <div className="space-y-1">
         <p className="text-xs font-medium uppercase tracking-[0.3em]" style={{ color: "var(--text-faint)" }}>Seven Arena</p>
-        <h1 className="text-3xl font-bold" style={{ color: "var(--text)" }}>Ficha de salud</h1>
+        <h1 className="text-3xl font-bold" style={{ color: "var(--text)" }}>{t("Ficha de salud")}</h1>
         <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-          Completa tu información de salud, firma y adjunta el documento médico de respaldo.
+          {t("Completa tu información de salud, firma y adjunta el documento médico de respaldo.")}
         </p>
       </div>
 
@@ -798,19 +806,19 @@ function FichaSaludContent() {
           <div className="surface rounded-2xl p-6 flex flex-col items-center gap-4 py-12">
             <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid rgba(33,208,179,0.2)", borderTopColor: "#21D0B3", animation: "fs-spin 0.8s linear infinite" }} />
             <style>{`@keyframes fs-spin{to{transform:rotate(360deg)}}`}</style>
-            <p className="text-sm" style={{ color: "var(--text-muted)" }}>Cargando tu ficha de salud…</p>
+            <p className="text-sm" style={{ color: "var(--text-muted)" }}>{t("Cargando tu ficha de salud…")}</p>
           </div>
         )}
         {step === "identificacion" && (!cameWithId || error) && (
           <div className="surface rounded-2xl p-6 space-y-5">
             <div>
-              <h2 className="text-xl font-semibold" style={{ color: "var(--text)" }}>Identifícate</h2>
+              <h2 className="text-xl font-semibold" style={{ color: "var(--text)" }}>{t("Identifícate")}</h2>
               <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-                Ingresa el ID de participante que te entregó la organización.
+                {t("Ingresa el ID de participante que te entregó la organización.")}
               </p>
             </div>
             <label className="space-y-2 block">
-              <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>ID de participante</span>
+              <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("ID de participante")}</span>
               <input
                 className="input"
                 value={athleteId}
@@ -825,7 +833,7 @@ function FichaSaludContent() {
               onClick={() => loadAthlete()}
               disabled={loading || !athleteId.trim()}
             >
-              {loading ? "Buscando..." : "Continuar"}
+              {loading ? t("Buscando...") : t("Continuar")}
             </button>
           </div>
         )}
@@ -844,91 +852,91 @@ function FichaSaludContent() {
                   </svg>
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold" style={{ color: "var(--text)" }}>Datos personales de salud</h2>
+                  <h2 className="text-lg font-semibold" style={{ color: "var(--text)" }}>{t("Datos personales de salud")}</h2>
                   <p className="text-xs" style={{ color: "var(--text-muted)" }}>{athlete.fullName}</p>
                 </div>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="space-y-2 sm:col-span-2">
-                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Nombre completo</span>
+                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("Nombre completo")}</span>
                   <input className="input" value={p.fullName} onChange={(ev) => setP({ fullName: ev.target.value })} />
                 </label>
                 <label className="space-y-2">
-                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Nombre social <span className="font-normal" style={{ color: "var(--text-faint)" }}>(opcional)</span></span>
+                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("Nombre social")} <span className="font-normal" style={{ color: "var(--text-faint)" }}>{t("(opcional)")}</span></span>
                   <input className="input" value={p.socialName} onChange={(ev) => setP({ socialName: ev.target.value })} />
                 </label>
                 <label className="space-y-2">
-                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Deporte / disciplina</span>
-                  <input className="input" value={record.sport} onChange={(ev) => setRecord((r) => ({ ...r, sport: ev.target.value }))} placeholder="Atletismo, natación..." />
+                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("Deporte / disciplina")}</span>
+                  <input className="input" value={record.sport} onChange={(ev) => setRecord((r) => ({ ...r, sport: ev.target.value }))} placeholder={t("Atletismo, natación...")} />
                 </label>
                 <label className="space-y-2">
-                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Género con que te identificas</span>
+                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("Género con que te identificas")}</span>
                   <input className="input" value={p.genderIdentity} onChange={(ev) => setP({ genderIdentity: ev.target.value })} />
                 </label>
                 <label className="space-y-2">
-                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Género en cédula de identidad</span>
+                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("Género en cédula de identidad")}</span>
                   <input className="input" value={p.idCardGender} onChange={(ev) => setP({ idCardGender: ev.target.value })} />
                 </label>
                 <label className="space-y-2">
-                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>RUT</span>
+                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("RUT")}</span>
                   <input className="input" value={p.rut} onChange={(ev) => setP({ rut: ev.target.value })} placeholder="12.345.678-9" />
                 </label>
                 <label className="space-y-2">
-                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Fecha de nacimiento</span>
+                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("Fecha de nacimiento")}</span>
                   <SpanishDateField value={p.birthDate} onChange={(v) => setP({ birthDate: v })} />
                 </label>
                 <label className="space-y-2">
-                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Talla (cm)</span>
+                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("Talla (cm)")}</span>
                   <input className="input" type="number" value={p.height} onChange={(ev) => setP({ height: ev.target.value })} placeholder="170" />
                 </label>
                 <label className="space-y-2">
-                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Peso (kg)</span>
+                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("Peso (kg)")}</span>
                   <input className="input" type="number" value={p.weight} onChange={(ev) => setP({ weight: ev.target.value })} placeholder="65" />
                 </label>
               </div>
             </div>
 
             <div className="surface rounded-2xl p-6 space-y-5">
-              <h3 className="font-medium" style={{ color: "var(--text)" }}>Condiciones de salud</h3>
+              <h3 className="font-medium" style={{ color: "var(--text)" }}>{t("Condiciones de salud")}</h3>
 
               <YesNoField label="¿Tiene alergias?" value={p.allergic} onChange={(v) => setP({ allergic: v })} />
               {p.allergic === "SI" && (
                 <label className="space-y-2 block">
-                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>¿A qué es alérgico/a?</span>
-                  <input className="input" value={p.allergicTo} onChange={(ev) => setP({ allergicTo: ev.target.value })} placeholder="Penicilina, nueces, mariscos..." />
+                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("¿A qué es alérgico/a?")}</span>
+                  <input className="input" value={p.allergicTo} onChange={(ev) => setP({ allergicTo: ev.target.value })} placeholder={t("Penicilina, nueces, mariscos...")} />
                 </label>
               )}
 
               <YesNoField label="¿Tiene enfermedades crónicas?" value={p.chronicDiseases} onChange={(v) => setP({ chronicDiseases: v })} />
               {p.chronicDiseases === "SI" && (
                 <label className="space-y-2 block">
-                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Detalle enfermedades crónicas</span>
+                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("Detalle enfermedades crónicas")}</span>
                   <textarea className="input" rows={2} value={p.chronicDetail} onChange={(ev) => setP({ chronicDetail: ev.target.value })} />
                 </label>
               )}
 
               <label className="space-y-2 block">
-                <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Medicamentos actuales <span className="font-normal" style={{ color: "var(--text-faint)" }}>(si aplica)</span></span>
-                <textarea className="input" rows={2} value={p.medications} onChange={(ev) => setP({ medications: ev.target.value })} placeholder="Nombre, dosis y frecuencia..." />
+                <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("Medicamentos actuales")} <span className="font-normal" style={{ color: "var(--text-faint)" }}>{t("(si aplica)")}</span></span>
+                <textarea className="input" rows={2} value={p.medications} onChange={(ev) => setP({ medications: ev.target.value })} placeholder={t("Nombre, dosis y frecuencia...")} />
               </label>
 
               <YesNoField label="¿Está en tratamiento psiquiátrico?" value={p.psychiatricTreatment} onChange={(v) => setP({ psychiatricTreatment: v })} />
               {p.psychiatricTreatment === "SI" && (
                 <>
                   <label className="space-y-2 block">
-                    <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Detalle del tratamiento</span>
+                    <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("Detalle del tratamiento")}</span>
                     <textarea className="input" rows={2} value={p.psychiatricDetail} onChange={(ev) => setP({ psychiatricDetail: ev.target.value })} />
                   </label>
                   <label className="space-y-2 block">
-                    <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Diagnóstico</span>
+                    <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("Diagnóstico")}</span>
                     <input className="input" value={p.psychiatricDiagnosis} onChange={(ev) => setP({ psychiatricDiagnosis: ev.target.value })} />
                   </label>
                   <YesNoField label="¿Toma medicamentos psiquiátricos?" value={p.psychiatricMedications} onChange={(v) => setP({ psychiatricMedications: v })} />
                   {p.psychiatricMedications === "SI" && (
                     <label className="space-y-2 block">
-                      <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Dosis y horarios</span>
-                      <input className="input" value={p.psychiatricDoseSchedule} onChange={(ev) => setP({ psychiatricDoseSchedule: ev.target.value })} placeholder="Ej: 20 mg cada mañana" />
+                      <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("Dosis y horarios")}</span>
+                      <input className="input" value={p.psychiatricDoseSchedule} onChange={(ev) => setP({ psychiatricDoseSchedule: ev.target.value })} placeholder={t("Ej: 20 mg cada mañana")} />
                     </label>
                   )}
                 </>
@@ -937,8 +945,8 @@ function FichaSaludContent() {
               <YesNoField label="¿Requiere dieta especial?" value={p.specialDiet} onChange={(v) => setP({ specialDiet: v })} />
               {p.specialDiet === "SI" && (
                 <label className="space-y-2 block">
-                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Tipo de dieta</span>
-                  <input className="input" value={p.specialDietDetail} onChange={(ev) => setP({ specialDietDetail: ev.target.value })} placeholder="Vegetariana, celíaca, sin lactosa..." />
+                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("Tipo de dieta")}</span>
+                  <input className="input" value={p.specialDietDetail} onChange={(ev) => setP({ specialDietDetail: ev.target.value })} placeholder={t("Vegetariana, celíaca, sin lactosa...")} />
                 </label>
               )}
             </div>
@@ -951,9 +959,9 @@ function FichaSaludContent() {
         {step === "contacto" && athlete && (
           <div className="space-y-4">
             <div className="surface rounded-2xl p-6 space-y-4">
-              <h2 className="text-lg font-semibold" style={{ color: "var(--text)" }}>Información de contacto</h2>
+              <h2 className="text-lg font-semibold" style={{ color: "var(--text)" }}>{t("Información de contacto")}</h2>
               <label className="space-y-2 block">
-                <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Dirección</span>
+                <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("Dirección")}</span>
                 <AddressAutocompleteField
                   value={c.address}
                   onChange={(v) => setC({ address: v })}
@@ -965,65 +973,65 @@ function FichaSaludContent() {
                   })}
                 />
                 <span className="text-xs" style={{ color: "var(--text-faint)" }}>
-                  Al elegir una sugerencia se completan comuna, ciudad y región.
+                  {t("Al elegir una sugerencia se completan comuna, ciudad y región.")}
                 </span>
               </label>
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="space-y-2">
-                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Comuna</span>
+                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("Comuna")}</span>
                   <input className="input" value={c.commune} onChange={(ev) => setC({ commune: ev.target.value })} />
                 </label>
                 <label className="space-y-2">
-                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Ciudad</span>
+                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("Ciudad")}</span>
                   <input className="input" value={c.city} onChange={(ev) => setC({ city: ev.target.value })} />
                 </label>
                 <label className="space-y-2">
-                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Región</span>
+                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("Región")}</span>
                   <input className="input" value={c.region} onChange={(ev) => setC({ region: ev.target.value })} />
                 </label>
                 <label className="space-y-2">
-                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Teléfono</span>
+                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("Teléfono")}</span>
                   <PhoneField value={c.phone} onChange={(v) => setC({ phone: v })} />
                 </label>
                 <label className="space-y-2 sm:col-span-2">
-                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Correo electrónico</span>
+                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("Correo electrónico")}</span>
                   <input className="input" type="email" value={c.email} onChange={(ev) => setC({ email: ev.target.value })} />
                 </label>
               </div>
               <YesNoField label="¿Perteneces a un pueblo originario?" value={c.indigenous} onChange={(v) => setC({ indigenous: v })} />
               {c.indigenous === "SI" && (
                 <label className="space-y-2 block">
-                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>¿Cuál?</span>
+                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("¿Cuál?")}</span>
                   <input className="input" value={c.indigenousDetail} onChange={(ev) => setC({ indigenousDetail: ev.target.value })} />
                 </label>
               )}
               <label className="space-y-2 block">
-                <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Talla de ropa</span>
+                <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("Talla de ropa")}</span>
                 <select className="input" value={c.shirtSize} onChange={(ev) => setC({ shirtSize: ev.target.value })}>
-                  <option value="">Selecciona tu talla</option>
+                  <option value="">{t("Selecciona tu talla")}</option>
                   {SHIRT_SIZES.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
               </label>
             </div>
             <div className="surface rounded-2xl p-6 space-y-4">
               <div>
-                <h2 className="text-lg font-semibold" style={{ color: "var(--text)" }}>Representación deportiva</h2>
-                <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>Institución o club al que representas.</p>
+                <h2 className="text-lg font-semibold" style={{ color: "var(--text)" }}>{t("Representación deportiva")}</h2>
+                <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>{t("Institución o club al que representas.")}</p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="space-y-2">
-                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Dependencia</span>
-                  <input className="input" value={rp.dependencyType} onChange={(ev) => setRP({ dependencyType: ev.target.value })} placeholder="Municipal, particular, federado..." />
+                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("Dependencia")}</span>
+                  <input className="input" value={rp.dependencyType} onChange={(ev) => setRP({ dependencyType: ev.target.value })} placeholder={t("Municipal, particular, federado...")} />
                 </label>
                 <label className="space-y-2">
-                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Institución / establecimiento</span>
+                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("Institución / establecimiento")}</span>
                   <input className="input" value={rp.institutionName} onChange={(ev) => setRP({ institutionName: ev.target.value })} />
                 </label>
               </div>
               <YesNoField label="¿Estás inscrito en un club?" value={rp.enrolledClub} onChange={(v) => setRP({ enrolledClub: v })} />
               {rp.enrolledClub === "SI" && (
                 <label className="space-y-2 block">
-                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Nombre del club</span>
+                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("Nombre del club")}</span>
                   <input className="input" value={rp.clubName} onChange={(ev) => setRP({ clubName: ev.target.value })} />
                 </label>
               )}
@@ -1038,28 +1046,28 @@ function FichaSaludContent() {
           <div className="space-y-4">
             <div className="surface rounded-2xl p-6 space-y-4">
               <div>
-                <h2 className="text-lg font-semibold" style={{ color: "var(--text)" }}>Contacto de emergencia</h2>
-                <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>Persona a quien llamar en caso de emergencia.</p>
+                <h2 className="text-lg font-semibold" style={{ color: "var(--text)" }}>{t("Contacto de emergencia")}</h2>
+                <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>{t("Persona a quien llamar en caso de emergencia.")}</p>
               </div>
               <label className="space-y-2 block">
-                <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Nombre completo</span>
+                <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("Nombre completo")}</span>
                 <input className="input" value={e.name} onChange={(ev) => setE({ name: ev.target.value })} />
               </label>
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="space-y-2">
-                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Teléfono</span>
+                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("Teléfono")}</span>
                   <PhoneField value={e.phone} onChange={(v) => setE({ phone: v })} />
                 </label>
                 <label className="space-y-2">
-                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Relación</span>
-                  <input className="input" value={e.relation} onChange={(ev) => setE({ relation: ev.target.value })} placeholder="Madre, padre, pareja..." />
+                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("Relación")}</span>
+                  <input className="input" value={e.relation} onChange={(ev) => setE({ relation: ev.target.value })} placeholder={t("Madre, padre, pareja...")} />
                 </label>
                 <label className="space-y-2">
-                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Correo electrónico</span>
+                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("Correo electrónico")}</span>
                   <input className="input" type="email" value={e.email} onChange={(ev) => setE({ email: ev.target.value })} />
                 </label>
                 <label className="space-y-2">
-                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Dirección</span>
+                  <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("Dirección")}</span>
                   <input className="input" value={e.address} onChange={(ev) => setE({ address: ev.target.value })} />
                 </label>
               </div>
@@ -1074,9 +1082,9 @@ function FichaSaludContent() {
             {/* Signature */}
             <div className="surface rounded-2xl p-6 space-y-4">
               <div>
-                <h2 className="text-lg font-semibold" style={{ color: "var(--text)" }}>Firma del participante</h2>
+                <h2 className="text-lg font-semibold" style={{ color: "var(--text)" }}>{t("Firma del participante")}</h2>
                 <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
-                  Dibuja tu firma en el recuadro de abajo. Certifica que la información entregada es verdadera.
+                  {t("Dibuja tu firma en el recuadro de abajo. Certifica que la información entregada es verdadera.")}
                 </p>
               </div>
               <SignatureCanvas
@@ -1088,9 +1096,9 @@ function FichaSaludContent() {
             {/* Medical document */}
             <div className="surface rounded-2xl p-6 space-y-4">
               <div>
-                <h2 className="text-lg font-semibold" style={{ color: "var(--text)" }}>Documento médico de respaldo</h2>
+                <h2 className="text-lg font-semibold" style={{ color: "var(--text)" }}>{t("Documento médico de respaldo")}</h2>
                 <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
-                  Sube una foto o PDF de tu certificado médico, examen de apto físico u otro documento que avale tu condición de salud.
+                  {t("Sube una foto o PDF de tu certificado médico, examen de apto físico u otro documento que avale tu condición de salud.")}
                 </p>
               </div>
 
@@ -1101,14 +1109,14 @@ function FichaSaludContent() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-emerald-800">Documento ya subido</p>
+                    <p className="text-sm font-medium text-emerald-800">{t("Documento ya subido")}</p>
                     <button
                       type="button"
                       onClick={() => void openCurrentDocument()}
                       disabled={docUrlLoading}
                       className="text-xs text-emerald-700 underline truncate block bg-transparent border-0 p-0 cursor-pointer text-left"
                     >
-                      {docUrlLoading ? "Abriendo…" : "Ver documento actual"}
+                      {docUrlLoading ? t("Abriendo…") : t("Ver documento actual")}
                     </button>
                   </div>
                 </div>
@@ -1118,7 +1126,7 @@ function FichaSaludContent() {
               {docPreview && docFile?.type.startsWith("image/") && (
                 <div className="overflow-hidden rounded-2xl" style={{ border: "1px solid var(--border)" }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={docPreview} alt="Documento" className="max-h-56 w-full object-contain" style={{ background: "var(--elevated)" }} />
+                  <img src={docPreview} alt={t("Documento")} className="max-h-56 w-full object-contain" style={{ background: "var(--elevated)" }} />
                 </div>
               )}
               {docPreview && docFile?.type === "application/pdf" && (
@@ -1143,9 +1151,9 @@ function FichaSaludContent() {
                 </svg>
                 <div>
                   <p className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>
-                    {docFile ? "Cambiar documento" : "Subir documento médico"}
+                    {docFile ? t("Cambiar documento") : t("Subir documento médico")}
                   </p>
-                  <p className="mt-1 text-xs" style={{ color: "var(--text-faint)" }}>JPG, PNG, PDF · Máx. 4 MB</p>
+                  <p className="mt-1 text-xs" style={{ color: "var(--text-faint)" }}>{t("JPG, PNG, PDF · Máx. 4 MB")}</p>
                 </div>
               </div>
               <input
@@ -1165,19 +1173,19 @@ function FichaSaludContent() {
 
             <div className="flex gap-3">
               <button type="button" className="btn btn-ghost flex-1" onClick={prev}>
-                Atrás
+                {t("Atrás")}
               </button>
               <button
                 type="submit"
                 className="btn btn-primary flex-1"
                 disabled={saving || !record.participantSignature}
               >
-                {saving ? "Enviando..." : "Enviar ficha"}
+                {saving ? t("Enviando...") : t("Enviar ficha")}
               </button>
             </div>
 
             {!record.participantSignature && (
-              <p className="text-center text-xs" style={{ color: "var(--text-faint)" }}>Debes dibujar tu firma para poder enviar.</p>
+              <p className="text-center text-xs" style={{ color: "var(--text-faint)" }}>{t("Debes dibujar tu firma para poder enviar.")}</p>
             )}
           </div>
         )}
@@ -1195,15 +1203,16 @@ function NavButtons({
   onNext: () => void;
   hidePrev?: boolean;
 }) {
+  const { t } = useI18n();
   return (
     <div className="flex gap-3">
       {!hidePrev && (
         <button type="button" className="btn btn-ghost flex-1" onClick={onPrev}>
-          Atrás
+          {t("Atrás")}
         </button>
       )}
       <button type="button" className="btn btn-primary flex-1" onClick={onNext}>
-        Continuar
+        {t("Continuar")}
       </button>
     </div>
   );

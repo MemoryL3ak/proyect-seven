@@ -5,6 +5,7 @@ import { apiFetch } from "@/lib/api";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import EmptyState from "@/components/ui/EmptyState";
 import { CalendarIcon, AlertIcon, SearchIcon, RefreshIcon } from "@/components/ui/Icons";
+import { useI18n } from "@/lib/i18n";
 
 /* ────────────────────────────────────────────────────────────
    Monitoreo de Salidas de Participantes
@@ -82,6 +83,7 @@ const fechaLarga = (isoDate: string) => {
 };
 
 export default function DepartureMonitoringPage() {
+  const { t } = useI18n();
   const [athletes, setAthletes] = useState<Athlete[]>([]);
   const [transferOutTrips, setTransferOutTrips] = useState<Trip[]>([]);
   const [delegations, setDelegations] = useState<Record<string, Delegation>>({});
@@ -114,7 +116,7 @@ export default function DepartureMonitoringPage() {
       setDelegations(delMap);
       setEventos(Array.isArray(evs) ? evs : []);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "No se pudo cargar la información de salidas.");
+      setError(e instanceof Error ? e.message : t("No se pudo cargar la información de salidas."));
     } finally {
       setCargando(false);
     }
@@ -242,9 +244,9 @@ export default function DepartureMonitoringPage() {
         <EmptyState
           variant="warning"
           icon={<AlertIcon />}
-          title="No se pudo cargar el monitoreo de salidas"
+          title={t("No se pudo cargar el monitoreo de salidas")}
           description={error}
-          action={<button className="btn btn-primary" onClick={() => { setCargando(true); void cargar(); }}>Reintentar</button>}
+          action={<button className="btn btn-primary" onClick={() => { setCargando(true); void cargar(); }}>{t("Reintentar")}</button>}
         />
       </div>
     );
@@ -258,13 +260,13 @@ export default function DepartureMonitoringPage() {
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.4-.1.9.3 1.1l5.4 3.1-3 3-1.7-.5c-.3-.1-.7 0-.9.2l-.3.3c-.2.3-.1.7.1.9l2.8 2.1 2.1 2.8c.2.3.6.4.9.1l.3-.3c.2-.2.3-.6.2-.9l-.5-1.7 3-3 3.1 5.4c.2.4.7.5 1.1.3l.5-.3c.4-.2.6-.6.5-1.1z"/></svg>
-              <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#21D0B3" }}>Operaciones aéreas</p>
+              <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#21D0B3" }}>{t("Operaciones aéreas")}</p>
             </div>
-            <h1 style={{ fontSize: "1.75rem", fontWeight: 800, color: "#0f172a", lineHeight: 1.1 }}>Monitoreo de Salidas</h1>
-            <p style={{ fontSize: "13px", color: "#64748b", marginTop: "4px" }}>Participantes con vuelo de salida y viajes Transfer Out · Sólo participantes validados</p>
+            <h1 style={{ fontSize: "1.75rem", fontWeight: 800, color: "#0f172a", lineHeight: 1.1 }}>{t("Monitoreo de Salidas")}</h1>
+            <p style={{ fontSize: "13px", color: "#64748b", marginTop: "4px" }}>{t("Participantes con vuelo de salida y viajes Transfer Out · Sólo participantes validados")}</p>
           </div>
           <button className="btn btn-ghost" onClick={() => { setCargando(true); void cargar(); }}>
-            <RefreshIcon /> Actualizar
+            <RefreshIcon /> {t("Actualizar")}
           </button>
         </div>
 
@@ -278,7 +280,7 @@ export default function DepartureMonitoringPage() {
             { label: "Sin vuelo", value: kpis.sinVuelo, color: kpis.sinVuelo > 0 ? "#ef4444" : "#0f172a", accent: "#ef4444" },
           ].map(k => (
             <div key={k.label} style={{ background: "#f8fafc", borderRadius: "14px", padding: "12px 14px", border: "1px solid #e2e8f0", borderTop: `2px solid ${k.accent}` }}>
-              <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#94a3b8" }}>{k.label}</p>
+              <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#94a3b8" }}>{t(k.label)}</p>
               <p style={{ fontSize: "22px", fontWeight: 800, color: k.color, marginTop: "2px" }}>{k.value}</p>
             </div>
           ))}
@@ -289,29 +291,29 @@ export default function DepartureMonitoringPage() {
       <section className="surface rounded-2xl p-5">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
           <label className="text-sm block">
-            <span className="block mb-1">Evento</span>
+            <span className="block mb-1">{t("Evento")}</span>
             <select className="input" value={eventId} onChange={(e) => setEventId(e.target.value)}>
-              <option value="">Todos los eventos</option>
+              <option value="">{t("Todos los eventos")}</option>
               {eventos.map((ev) => (
-                <option key={ev.id} value={ev.id}>{ev.name || "Evento sin nombre"}</option>
+                <option key={ev.id} value={ev.id}>{ev.name || t("Evento sin nombre")}</option>
               ))}
             </select>
           </label>
           <label className="text-sm block">
-            <span className="block mb-1">Fecha de salida</span>
+            <span className="block mb-1">{t("Fecha de salida")}</span>
             <input type="date" className="input" value={fecha} onChange={(e) => setFecha(e.target.value)} />
           </label>
           <label className="text-sm block">
-            <span className="block mb-1">Delegación</span>
+            <span className="block mb-1">{t("Delegación")}</span>
             <select className="input" value={delegacionId} onChange={(e) => setDelegacionId(e.target.value)}>
-              <option value="">Todas las delegaciones</option>
+              <option value="">{t("Todas las delegaciones")}</option>
               {delegacionesOrdenadas.map((d) => (
                 <option key={d.id} value={d.id}>{d.countryCode || d.name || d.id}</option>
               ))}
             </select>
           </label>
           <label className="text-sm block">
-            <span className="block mb-1">Buscar</span>
+            <span className="block mb-1">{t("Buscar")}</span>
             <div style={{ position: "relative" }}>
               <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-faint)" }}>
                 <SearchIcon size={14} />
@@ -320,7 +322,7 @@ export default function DepartureMonitoringPage() {
                 type="text"
                 className="input"
                 style={{ paddingLeft: 32 }}
-                placeholder="Nombre, vuelo, aerolínea…"
+                placeholder={t("Nombre, vuelo, aerolínea…")}
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
               />
@@ -333,8 +335,8 @@ export default function DepartureMonitoringPage() {
       {filtradas.length === 0 ? (
         <EmptyState
           icon={<CalendarIcon />}
-          title="Sin salidas para los filtros seleccionados"
-          description="Ajusta la fecha, la delegación o la búsqueda para ver participantes con vuelo de salida."
+          title={t("Sin salidas para los filtros seleccionados")}
+          description={t("Ajusta la fecha, la delegación o la búsqueda para ver participantes con vuelo de salida.")}
         />
       ) : (
         porDia.map(([dia, grupo]) => (
@@ -347,11 +349,11 @@ export default function DepartureMonitoringPage() {
               }}
             >
               <h2 className="text-sm font-bold capitalize" style={{ color: dia === hoy ? "#b45309" : "var(--text)" }}>
-                {dia === "sin-fecha" ? "Sin fecha de salida" : fechaLarga(dia)}
-                {dia === hoy && " · HOY"}
+                {dia === "sin-fecha" ? t("Sin fecha de salida") : fechaLarga(dia)}
+                {dia === hoy && ` · ${t("HOY")}`}
               </h2>
               <span className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
-                {grupo.length} participante{grupo.length === 1 ? "" : "s"}
+                {grupo.length} {grupo.length === 1 ? t("participante") : t("participantes")}
               </span>
             </div>
             <div className="overflow-x-auto">
@@ -364,7 +366,7 @@ export default function DepartureMonitoringPage() {
                         className="px-3 py-2 text-left text-[10px] font-bold uppercase"
                         style={{ letterSpacing: "0.08em", color: "var(--text-muted)", whiteSpace: "nowrap" }}
                       >
-                        {h}
+                        {t(h)}
                       </th>
                     ))}
                   </tr>
@@ -396,7 +398,7 @@ export default function DepartureMonitoringPage() {
                               className="text-[11px] font-semibold px-2 py-0.5 rounded"
                               style={{ background: "#fef2f2", color: "#b91c1c", border: "1px solid #fecaca" }}
                             >
-                              Sin vuelo
+                              {t("Sin vuelo")}
                             </span>
                           )}
                         </td>

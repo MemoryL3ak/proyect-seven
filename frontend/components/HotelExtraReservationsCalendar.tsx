@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 
 type Reservation = {
   id: string;
@@ -83,6 +84,7 @@ export default function HotelExtraReservationsCalendar({
   refreshKey: number;
   onDataChanged: () => void;
 }) {
+  const { t } = useI18n();
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
@@ -204,7 +206,7 @@ export default function HotelExtraReservationsCalendar({
 
   const handleSave = async () => {
     if (!form.extraId || !form.participantId) {
-      setError("Extra y participante son obligatorios.");
+      setError(t("Extra y participante son obligatorios."));
       return;
     }
     setSaving(true);
@@ -228,14 +230,14 @@ export default function HotelExtraReservationsCalendar({
       setEditingId(null);
       onDataChanged();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al guardar");
+      setError(err instanceof Error ? err.message : t("Error al guardar"));
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("¿Eliminar esta reserva?")) return;
+    if (!confirm(t("¿Eliminar esta reserva?"))) return;
     try {
       await apiFetch(`/hotel-extra-reservations/${id}`, { method: "DELETE" });
       onDataChanged();
@@ -261,7 +263,7 @@ export default function HotelExtraReservationsCalendar({
               ‹
             </button>
             <h2 className="text-lg font-bold" style={{ minWidth: "160px", textAlign: "center" }}>
-              {MONTHS[month]} {year}
+              {t(MONTHS[month])} {year}
             </h2>
             <button
               type="button"
@@ -277,7 +279,7 @@ export default function HotelExtraReservationsCalendar({
             className="btn btn-primary"
             onClick={() => openCreate(selectedDay || undefined)}
           >
-            + Nueva reserva
+            + {t("Nueva reserva")}
           </button>
         </div>
 
@@ -285,14 +287,14 @@ export default function HotelExtraReservationsCalendar({
         <div className="grid grid-cols-7 mb-2">
           {DAYS_SHORT.map((d) => (
             <div key={d} className="text-center" style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", opacity: 0.5, paddingBottom: "8px" }}>
-              {d}
+              {t(d)}
             </div>
           ))}
         </div>
 
         {/* Calendar grid */}
         {loading ? (
-          <div className="py-16 text-center opacity-50">Cargando…</div>
+          <div className="py-16 text-center opacity-50">{t("Cargando…")}</div>
         ) : (
           <div className="grid grid-cols-7 gap-1">
             {calendarDays.map((day, i) => {
@@ -381,7 +383,7 @@ export default function HotelExtraReservationsCalendar({
             return (
               <span key={key} className="flex items-center gap-1.5" style={{ fontSize: "11px", opacity: 0.75 }}>
                 <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: sc.text, display: "inline-block" }} />
-                {label}
+                {t(label)}
               </span>
             );
           })}
@@ -393,7 +395,7 @@ export default function HotelExtraReservationsCalendar({
         <div className="surface rounded-2xl p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-bold text-base">
-              Reservas del {parseDateLocal(selectedDay).toLocaleDateString("es-CL", { day: "numeric", month: "long", year: "numeric" })}
+              {t("Reservas del")} {parseDateLocal(selectedDay).toLocaleDateString("es-CL", { day: "numeric", month: "long", year: "numeric" })}
             </h3>
             <button
               type="button"
@@ -401,11 +403,11 @@ export default function HotelExtraReservationsCalendar({
               style={{ fontSize: "13px", padding: "6px 14px" }}
               onClick={() => openCreate(selectedDay)}
             >
-              + Nueva
+              + {t("Nueva")}
             </button>
           </div>
           {selectedDayReservations.length === 0 ? (
-            <p className="text-sm opacity-50 py-4 text-center">Sin reservas para este día.</p>
+            <p className="text-sm opacity-50 py-4 text-center">{t("Sin reservas para este día.")}</p>
           ) : (
             <div className="space-y-2">
               {selectedDayReservations.map((res) => {
@@ -429,7 +431,7 @@ export default function HotelExtraReservationsCalendar({
                         <p className="text-xs opacity-70 mt-0.5">{athleteName}</p>
                         <div className="flex flex-wrap gap-2 mt-2">
                           <span style={{ fontSize: "11px", fontWeight: 700, color: sc.text }}>
-                            {STATUS_LABELS[res.status] ?? res.status}
+                            {t(STATUS_LABELS[res.status] ?? res.status)}
                           </span>
                           <span style={{ fontSize: "11px", opacity: 0.6 }}>
                             ×{res.quantity}
@@ -453,7 +455,7 @@ export default function HotelExtraReservationsCalendar({
                           style={{ fontSize: "12px", padding: "4px 10px" }}
                           onClick={() => openEdit(res)}
                         >
-                          Editar
+                          {t("Editar")}
                         </button>
                         <button
                           type="button"
@@ -461,7 +463,7 @@ export default function HotelExtraReservationsCalendar({
                           style={{ fontSize: "12px", padding: "4px 10px", color: "#ef4444" }}
                           onClick={() => handleDelete(res.id)}
                         >
-                          Eliminar
+                          {t("Eliminar")}
                         </button>
                       </div>
                     </div>
@@ -480,7 +482,7 @@ export default function HotelExtraReservationsCalendar({
         return (
           <div className="surface rounded-2xl p-4">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-bold text-base opacity-70">Sin rango de fechas ({noDates.length})</h3>
+              <h3 className="font-bold text-base opacity-70">{t("Sin rango de fechas")} ({noDates.length})</h3>
             </div>
             <div className="space-y-2">
               {noDates.map((res) => {
@@ -504,7 +506,7 @@ export default function HotelExtraReservationsCalendar({
                         <p className="text-xs opacity-70 mt-0.5">{athleteName}</p>
                         <div className="flex flex-wrap gap-2 mt-1">
                           <span style={{ fontSize: "11px", fontWeight: 700, color: sc.text }}>
-                            {STATUS_LABELS[res.status] ?? res.status}
+                            {t(STATUS_LABELS[res.status] ?? res.status)}
                           </span>
                           <span style={{ fontSize: "11px", opacity: 0.6 }}>×{res.quantity}</span>
                         </div>
@@ -516,7 +518,7 @@ export default function HotelExtraReservationsCalendar({
                           style={{ fontSize: "12px", padding: "4px 10px" }}
                           onClick={() => openEdit(res)}
                         >
-                          Editar
+                          {t("Editar")}
                         </button>
                         <button
                           type="button"
@@ -524,7 +526,7 @@ export default function HotelExtraReservationsCalendar({
                           style={{ fontSize: "12px", padding: "4px 10px", color: "#ef4444" }}
                           onClick={() => handleDelete(res.id)}
                         >
-                          Eliminar
+                          {t("Eliminar")}
                         </button>
                       </div>
                     </div>
@@ -552,15 +554,15 @@ export default function HotelExtraReservationsCalendar({
             style={{ maxHeight: "90vh", overflowY: "auto" }}
           >
             <div className="flex items-center justify-between">
-              <h2 className="font-bold text-lg">{editingId ? "Editar reserva" : "Nueva reserva"}</h2>
+              <h2 className="font-bold text-lg">{editingId ? t("Editar reserva") : t("Nueva reserva")}</h2>
               <button type="button" className="btn btn-ghost" style={{ padding: "4px 10px" }} onClick={() => setShowForm(false)}>✕</button>
             </div>
 
             <div className="space-y-3">
               <div>
-                <label className="label-sm">Extra *</label>
+                <label className="label-sm">{t("Extra *")}</label>
                 <select className="input w-full" value={form.extraId} onChange={(e) => setForm((f) => ({ ...f, extraId: e.target.value }))}>
-                  <option value="">Seleccionar extra…</option>
+                  <option value="">{t("Seleccionar extra…")}</option>
                   {Object.values(extras).map((ex) => (
                     <option key={ex.id} value={ex.id}>{ex.name || ex.id}</option>
                   ))}
@@ -568,9 +570,9 @@ export default function HotelExtraReservationsCalendar({
               </div>
 
               <div>
-                <label className="label-sm">Participante *</label>
+                <label className="label-sm">{t("Participante *")}</label>
                 <select className="input w-full" value={form.participantId} onChange={(e) => setForm((f) => ({ ...f, participantId: e.target.value }))}>
-                  <option value="">Seleccionar participante…</option>
+                  <option value="">{t("Seleccionar participante…")}</option>
                   {Object.values(athletes).map((a) => (
                     <option key={a.id} value={a.id}>{a.fullName || a.id}</option>
                   ))}
@@ -579,7 +581,7 @@ export default function HotelExtraReservationsCalendar({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="label-sm">Desde</label>
+                  <label className="label-sm">{t("Desde")}</label>
                   <input
                     type="date"
                     className="input w-full"
@@ -588,7 +590,7 @@ export default function HotelExtraReservationsCalendar({
                   />
                 </div>
                 <div>
-                  <label className="label-sm">Hasta</label>
+                  <label className="label-sm">{t("Hasta")}</label>
                   <input
                     type="date"
                     className="input w-full"
@@ -600,7 +602,7 @@ export default function HotelExtraReservationsCalendar({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="label-sm">Cantidad</label>
+                  <label className="label-sm">{t("Cantidad")}</label>
                   <input
                     type="number"
                     min={1}
@@ -610,24 +612,24 @@ export default function HotelExtraReservationsCalendar({
                   />
                 </div>
                 <div>
-                  <label className="label-sm">Estado</label>
+                  <label className="label-sm">{t("Estado")}</label>
                   <select className="input w-full" value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}>
-                    <option value="PENDING">Pendiente</option>
-                    <option value="APPROVED">Aprobado</option>
-                    <option value="REJECTED">Rechazado</option>
-                    <option value="DELIVERED">Entregado</option>
+                    <option value="PENDING">{t("Pendiente")}</option>
+                    <option value="APPROVED">{t("Aprobado")}</option>
+                    <option value="REJECTED">{t("Rechazado")}</option>
+                    <option value="DELIVERED">{t("Entregado")}</option>
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="label-sm">Notas</label>
+                <label className="label-sm">{t("Notas")}</label>
                 <input
                   type="text"
                   className="input w-full"
                   value={form.notes}
                   onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-                  placeholder="Observaciones opcionales"
+                  placeholder={t("Observaciones opcionales")}
                 />
               </div>
             </div>
@@ -636,10 +638,10 @@ export default function HotelExtraReservationsCalendar({
 
             <div className="flex gap-3 pt-2">
               <button type="button" className="btn btn-ghost flex-1" onClick={() => setShowForm(false)}>
-                Cancelar
+                {t("Cancelar")}
               </button>
               <button type="button" className="btn btn-primary flex-1" onClick={handleSave} disabled={saving}>
-                {saving ? "Guardando…" : editingId ? "Guardar cambios" : "Crear reserva"}
+                {saving ? t("Guardando…") : editingId ? t("Guardar cambios") : t("Crear reserva")}
               </button>
             </div>
           </div>

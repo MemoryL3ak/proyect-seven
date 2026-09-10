@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { filterValidatedAthletes } from "@/lib/athletes";
+import { useI18n } from "@/lib/i18n";
 
 type HotelKeyStatus = "AVAILABLE" | "ASSIGNED" | "LOST" | "MAINTENANCE" | string;
 
@@ -93,6 +94,7 @@ const KPI_ICONS = [
 ];
 
 export default function HotelKeysPage() {
+  const { t } = useI18n();
   const [keys, setKeys] = useState<HotelKey[]>([]);
   const [movements, setMovements] = useState<HotelKeyMovement[]>([]);
   const [events, setEvents] = useState<EventItem[]>([]);
@@ -140,7 +142,7 @@ export default function HotelKeysPage() {
       }
       setLastUpdated(new Date());
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo cargar gestión de llaves");
+      setError(err instanceof Error ? err.message : t("No se pudo cargar gestión de llaves"));
     } finally {
       setLoading(false);
     }
@@ -225,7 +227,7 @@ export default function HotelKeysPage() {
         body: JSON.stringify({ hotelId: keyForm.hotelId, roomId: keyForm.roomId, bedId: keyForm.bedId || null, keyNumber: keyForm.keyNumber, copyNumber: Number(keyForm.copyNumber || "1"), label: keyForm.label || null, notes: keyForm.notes || null }),
       });
       setKeyForm(emptyKeyForm()); await loadData();
-    } catch (err) { setError(err instanceof Error ? err.message : "No se pudo crear la llave"); }
+    } catch (err) { setError(err instanceof Error ? err.message : t("No se pudo crear la llave")); }
   };
 
   const submitIssue = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -236,7 +238,7 @@ export default function HotelKeysPage() {
         body: JSON.stringify({ holderName: issueForm.holderName, holderType: issueForm.holderType || null, holderParticipantId: issueForm.holderParticipantId || null, actorName: issueForm.actorName || null, notes: issueForm.notes || null }),
       });
       setIssueForm(emptyIssueForm()); setIssueKeyId(null); await loadData(); setSelectedKeyId(issueKeyId);
-    } catch (err) { setError(err instanceof Error ? err.message : "No se pudo entregar la llave"); }
+    } catch (err) { setError(err instanceof Error ? err.message : t("No se pudo entregar la llave")); }
   };
 
   const submitReturn = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -247,7 +249,7 @@ export default function HotelKeysPage() {
         body: JSON.stringify({ actorName: returnForm.actorName || null, notes: returnForm.notes || null }),
       });
       setReturnForm(emptyReturnForm()); setReturnKeyId(null); await loadData(); setSelectedKeyId(returnKeyId);
-    } catch (err) { setError(err instanceof Error ? err.message : "No se pudo registrar la devolución"); }
+    } catch (err) { setError(err instanceof Error ? err.message : t("No se pudo registrar la devolución")); }
   };
 
   const changeStatus = async (keyId: string, status: HotelKeyStatus) => {
@@ -258,7 +260,7 @@ export default function HotelKeysPage() {
         body: JSON.stringify({ status, actorName: "Operaciones Hotelería" }),
       });
       await loadData(); setSelectedKeyId(keyId);
-    } catch (err) { setError(err instanceof Error ? err.message : "No se pudo actualizar estado"); }
+    } catch (err) { setError(err instanceof Error ? err.message : t("No se pudo actualizar estado")); }
   };
 
   const [deleteKeyConfirm, setDeleteKeyConfirm] = useState<string | null>(null);
@@ -270,18 +272,18 @@ export default function HotelKeysPage() {
       if (selectedKeyId === keyId) setSelectedKeyId(null);
       await loadData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo eliminar la llave");
+      setError(err instanceof Error ? err.message : t("No se pudo eliminar la llave"));
     }
   };
 
   const assignedPct = stats.total > 0 ? Math.round((stats.assigned / stats.total) * 100) : 0;
 
   const kpiCards = [
-    { label: "Total llaves",  value: stats.total,       color: "#64748b", i: 0, sub: "En inventario" },
-    { label: "Disponibles",   value: stats.available,   color: "#10b981", i: 1, sub: "Listas para entrega" },
-    { label: "Entregadas",    value: stats.assigned,    color: "#3b82f6", i: 2, sub: `${assignedPct}% del total` },
-    { label: "Mantenimiento", value: stats.maintenance, color: "#f59e0b", i: 3, sub: "Fuera de servicio" },
-    { label: "Perdidas",      value: stats.lost,        color: "#ef4444", i: 4, sub: stats.lost > 0 ? "¡Requiere atención!" : "Sin incidencias" },
+    { label: t("Total llaves"),  value: stats.total,       color: "#64748b", i: 0, sub: t("En inventario") },
+    { label: t("Disponibles"),   value: stats.available,   color: "#10b981", i: 1, sub: t("Listas para entrega") },
+    { label: t("Entregadas"),    value: stats.assigned,    color: "#3b82f6", i: 2, sub: `${assignedPct}${t("% del total")}` },
+    { label: t("Mantenimiento"), value: stats.maintenance, color: "#f59e0b", i: 3, sub: t("Fuera de servicio") },
+    { label: t("Perdidas"),      value: stats.lost,        color: "#ef4444", i: 4, sub: stats.lost > 0 ? t("¡Requiere atención!") : t("Sin incidencias") },
   ];
 
   return (
@@ -291,42 +293,42 @@ export default function HotelKeysPage() {
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: "16px" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
-              <p style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "#94a3b8" }}>Operaciones</p>
+              <p style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "#94a3b8" }}>{t("Operaciones")}</p>
               <span style={{ display: "flex", alignItems: "center", gap: "5px", background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.25)", borderRadius: "99px", padding: "2px 8px" }}>
                 <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#10b981", display: "inline-block" }} />
-                <span style={{ fontSize: "10px", fontWeight: 700, color: "#10b981", letterSpacing: "0.08em" }}>EN VIVO</span>
+                <span style={{ fontSize: "10px", fontWeight: 700, color: "#10b981", letterSpacing: "0.08em" }}>{t("EN VIVO")}</span>
               </span>
             </div>
-            <h1 style={{ fontSize: "22px", fontWeight: 800, color: "#0f172a", lineHeight: 1.2, marginBottom: "4px" }}>Gestión de llaves</h1>
+            <h1 style={{ fontSize: "22px", fontWeight: 800, color: "#0f172a", lineHeight: 1.2, marginBottom: "4px" }}>{t("Gestión de llaves")}</h1>
             <p style={{ fontSize: "13px", color: "#64748b" }}>
-              {lastUpdated ? `Actualizado ${lastUpdated.toLocaleTimeString("es-CL")}` : "Control operativo en tiempo real"}
+              {lastUpdated ? `${t("Actualizado")} ${lastUpdated.toLocaleTimeString("es-CL")}` : t("Control operativo en tiempo real")}
             </p>
           </div>
 
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px" }}>
             <select style={selectStyle} value={selectedEventId} onChange={(e) => { setSelectedEventId(e.target.value); setSelectedHotelId(""); }}>
-              <option value="">Todos los eventos</option>
+              <option value="">{t("Todos los eventos")}</option>
               {events.map((item) => <option key={item.id} value={item.id}>{item.name || item.id}</option>)}
             </select>
             <select style={selectStyle} value={selectedHotelId} onChange={(e) => setSelectedHotelId(e.target.value)}>
-              <option value="">Todos los hoteles</option>
+              <option value="">{t("Todos los hoteles")}</option>
               {filteredHotels.map((hotel) => <option key={hotel.id} value={hotel.id}>{hotel.name || hotel.id}</option>)}
             </select>
             <select style={selectStyle} value={selectedStatus} onChange={(e) => setSelectedStatus(e.target.value)}>
-              <option value="">Todos los estados</option>
-              <option value="AVAILABLE">Disponible</option>
-              <option value="ASSIGNED">Entregada</option>
-              <option value="MAINTENANCE">Mantenimiento</option>
-              <option value="LOST">Perdida</option>
+              <option value="">{t("Todos los estados")}</option>
+              <option value="AVAILABLE">{t("Disponible")}</option>
+              <option value="ASSIGNED">{t("Entregada")}</option>
+              <option value="MAINTENANCE">{t("Mantenimiento")}</option>
+              <option value="LOST">{t("Perdida")}</option>
             </select>
-            <input style={inputStyle} placeholder="Buscar llave, habitación, hotel…" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <input style={inputStyle} placeholder={t("Buscar llave, habitación, hotel…")} value={search} onChange={(e) => setSearch(e.target.value)} />
             <button onClick={loadData} disabled={loading} style={{
               background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "9px 16px",
               color: loading ? "#94a3b8" : "#475569", fontSize: "13px", fontWeight: 600,
               cursor: loading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: "6px",
             }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-              {loading ? "Actualizando..." : "Refrescar"}
+              {loading ? t("Actualizando...") : t("Refrescar")}
             </button>
           </div>
         </div>
@@ -366,14 +368,14 @@ export default function HotelKeysPage() {
         {/* Inventory list */}
         <article style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "24px", padding: "22px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
           <div style={{ marginBottom: "16px" }}>
-            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#94a3b8" }}>Control de inventario</p>
-            <h3 style={{ marginTop: "3px", fontWeight: 700, fontSize: "16px", color: "#0f172a" }}>Inventario de llaves</h3>
-            <p style={{ marginTop: "3px", fontSize: "13px", color: "#64748b" }}>Selecciona una llave para ver su bitácora y operar entrega/devolución.</p>
+            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#94a3b8" }}>{t("Control de inventario")}</p>
+            <h3 style={{ marginTop: "3px", fontWeight: 700, fontSize: "16px", color: "#0f172a" }}>{t("Inventario de llaves")}</h3>
+            <p style={{ marginTop: "3px", fontSize: "13px", color: "#64748b" }}>{t("Selecciona una llave para ver su bitácora y operar entrega/devolución.")}</p>
           </div>
           <div className="space-y-3">
             {enrichedKeys.length === 0 ? (
               <div style={{ borderRadius: "16px", border: "1px dashed #e2e8f0", background: "#f8fafc", padding: "48px 24px", textAlign: "center", color: "#94a3b8", fontSize: "14px" }}>
-                Sin llaves registradas para este filtro.
+                {t("Sin llaves registradas para este filtro.")}
               </div>
             ) : (
               enrichedKeys.map((key) => {
@@ -391,38 +393,38 @@ export default function HotelKeysPage() {
                       <div style={{ minWidth: 0 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "8px" }}>
                           <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", background: ss.chipBg, border: `1px solid ${ss.chipBorder}`, borderRadius: "99px", padding: "3px 10px", fontSize: "11px", fontWeight: 700, color: ss.accent }}>
-                            {ss.label}
+                            {t(ss.label)}
                           </span>
                           <button type="button" onClick={() => setSelectedKeyId(key.id)}
                             style={{ fontSize: "12px", fontWeight: 600, color: "#21D0B3", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-                            Ver bitácora →
+                            {t("Ver bitácora →")}
                           </button>
                         </div>
                         <h4 style={{ fontWeight: 800, fontSize: "18px", color: "#0f172a", marginBottom: "4px", display: "flex", alignItems: "center", gap: "6px" }}>
                           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="7" cy="17" r="3"/><path d="M10.83 14.17l6.44-6.43"/><path d="M14 8l2-2 4 4-2 2"/></svg>
-                          {key.keyNumber} · Copia {key.copyNumber || 1}
+                          {key.keyNumber} · {t("Copia")} {key.copyNumber || 1}
                         </h4>
                         <p style={{ fontSize: "13px", color: "#64748b" }}>
-                          {key.hotelName} · Hab. {key.roomNumber} · Cama {key.bedLabel}
+                          {key.hotelName} · {t("Hab.")} {key.roomNumber} · {t("Cama")} {key.bedLabel}
                         </p>
                         <p style={{ marginTop: "4px", fontSize: "13px", color: "#64748b" }}>
-                          Responsable: <span style={{ fontWeight: 700, color: "#0f172a" }}>{key.holderText}</span>
+                          {t("Responsable:")} <span style={{ fontWeight: 700, color: "#0f172a" }}>{t(key.holderText)}</span>
                         </p>
                         <p style={{ marginTop: "3px", fontSize: "11px", color: "#94a3b8" }}>
-                          Entrega: {formatDateTime(key.issuedAt)} · Dev.: {formatDateTime(key.returnedAt)}
+                          {t("Entrega:")} {formatDateTime(key.issuedAt)} · {t("Dev.:")} {formatDateTime(key.returnedAt)}
                         </p>
                       </div>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", alignItems: "flex-start" }}>
                         {key.status !== "ASSIGNED" && (
                           <button type="button" onClick={() => { setIssueKeyId(key.id); setIssueForm((p) => ({ ...p, holderName: key.holderName || "", holderType: key.holderType || "" })); setReturnKeyId(null); setSelectedKeyId(key.id); }}
                             style={{ background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.25)", borderRadius: "99px", padding: "6px 14px", fontSize: "12px", fontWeight: 700, color: "#3b82f6", cursor: "pointer" }}>
-                            Entregar
+                            {t("Entregar")}
                           </button>
                         )}
                         {key.status === "ASSIGNED" && (
                           <button type="button" onClick={() => { setReturnKeyId(key.id); setIssueKeyId(null); setSelectedKeyId(key.id); }}
                             style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.25)", borderRadius: "99px", padding: "6px 14px", fontSize: "12px", fontWeight: 700, color: "#10b981", cursor: "pointer" }}>
-                            Registrar devolución
+                            {t("Registrar devolución")}
                           </button>
                         )}
                         <button type="button" onClick={() => changeStatus(key.id, "MAINTENANCE")}
@@ -441,7 +443,7 @@ export default function HotelKeysPage() {
                         )}
                         <button type="button" onClick={() => setDeleteKeyConfirm(key.id)}
                           style={{ background: "rgba(239,68,68,0.04)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: "99px", padding: "6px 10px", fontSize: "12px", fontWeight: 600, color: "#f43f5e", cursor: "pointer", display: "flex", alignItems: "center" }}
-                          title="Eliminar llave">
+                          title={t("Eliminar llave")}>
                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                         </button>
                       </div>
@@ -458,20 +460,20 @@ export default function HotelKeysPage() {
 
           {/* Alta de llave */}
           <article style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderTop: "3px solid #21D0B3", borderRadius: "24px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
-            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#94a3b8", marginBottom: "4px" }}>Registrar</p>
-            <h3 style={{ fontWeight: 700, fontSize: "16px", color: "#0f172a", marginBottom: "14px" }}>Alta de llave</h3>
+            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#94a3b8", marginBottom: "4px" }}>{t("Registrar")}</p>
+            <h3 style={{ fontWeight: 700, fontSize: "16px", color: "#0f172a", marginBottom: "14px" }}>{t("Alta de llave")}</h3>
             <form style={{ display: "flex", flexDirection: "column", gap: "10px" }} onSubmit={submitCreate}>
               <select style={selectStyle} value={keyForm.hotelId} onChange={(e) => setKeyForm((p) => ({ ...p, hotelId: e.target.value, roomId: "", bedId: "" }))} required>
-                <option value="">Selecciona hotel</option>
+                <option value="">{t("Selecciona hotel")}</option>
                 {filteredHotels.map((h) => <option key={h.id} value={h.id}>{h.name || h.id}</option>)}
               </select>
               <select style={selectStyle} value={keyForm.roomId} onChange={(e) => setKeyForm((p) => ({ ...p, roomId: e.target.value }))} required>
-                <option value="">Selecciona habitación</option>
-                {filteredRooms.map((r) => <option key={r.id} value={r.id}>Habitación {r.roomNumber || r.id}</option>)}
+                <option value="">{t("Selecciona habitación")}</option>
+                {filteredRooms.map((r) => <option key={r.id} value={r.id}>{t("Habitación")} {r.roomNumber || r.id}</option>)}
               </select>
-              <input style={inputStyle} placeholder="Número de llave" value={keyForm.keyNumber} onChange={(e) => setKeyForm((p) => ({ ...p, keyNumber: e.target.value }))} required />
+              <input style={inputStyle} placeholder={t("Número de llave")} value={keyForm.keyNumber} onChange={(e) => setKeyForm((p) => ({ ...p, keyNumber: e.target.value }))} required />
               <button type="submit" style={{ padding: "10px", borderRadius: "10px", background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: "#ffffff", fontWeight: 700, fontSize: "13px", border: "none", cursor: "pointer", boxShadow: "0 2px 10px rgba(33,208,179,0.35)" }}>
-                Registrar llave
+                {t("Registrar llave")}
               </button>
             </form>
           </article>
@@ -479,26 +481,26 @@ export default function HotelKeysPage() {
           {/* Entrega */}
           {issueKeyId && (
             <article style={{ background: "#ffffff", border: "1px solid rgba(59,130,246,0.3)", borderTop: "3px solid #3b82f6", borderRadius: "24px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
-              <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#3b82f6", marginBottom: "4px" }}>Operación</p>
+              <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#3b82f6", marginBottom: "4px" }}>{t("Operación")}</p>
               <h3 style={{ fontWeight: 700, fontSize: "16px", color: "#0f172a", marginBottom: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="7" cy="17" r="3"/><path d="M10.83 14.17l6.44-6.43"/><path d="M14 8l2-2 4 4-2 2"/></svg>
-                Entrega de llave
+                {t("Entrega de llave")}
               </h3>
               <form style={{ display: "flex", flexDirection: "column", gap: "10px" }} onSubmit={submitIssue}>
                 <select style={selectStyle} value={issueForm.holderParticipantId}
                   onChange={(e) => { const a = athleteById[e.target.value]; setIssueForm((p) => ({ ...p, holderParticipantId: e.target.value, holderName: a?.fullName || p.holderName })); }} required>
-                  <option value="">Seleccionar participante</option>
+                  <option value="">{t("Seleccionar participante")}</option>
                   {athletes.map((a) => <option key={a.id} value={a.id}>{a.fullName || a.id}</option>)}
                 </select>
-                <input style={inputStyle} placeholder="Operador que entrega" value={issueForm.actorName} onChange={(e) => setIssueForm((p) => ({ ...p, actorName: e.target.value }))} required />
-                <textarea style={textareaStyle} placeholder="Observaciones (opcional)" value={issueForm.notes} onChange={(e) => setIssueForm((p) => ({ ...p, notes: e.target.value }))} />
+                <input style={inputStyle} placeholder={t("Operador que entrega")} value={issueForm.actorName} onChange={(e) => setIssueForm((p) => ({ ...p, actorName: e.target.value }))} required />
+                <textarea style={textareaStyle} placeholder={t("Observaciones (opcional)")} value={issueForm.notes} onChange={(e) => setIssueForm((p) => ({ ...p, notes: e.target.value }))} />
                 <div style={{ display: "flex", gap: "8px" }}>
                   <button type="submit" style={{ flex: 1, padding: "10px", borderRadius: "10px", background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: "#ffffff", fontWeight: 700, fontSize: "13px", border: "none", cursor: "pointer" }}>
-                    Confirmar entrega
+                    {t("Confirmar entrega")}
                   </button>
                   <button type="button" onClick={() => { setIssueKeyId(null); setIssueForm(emptyIssueForm()); }}
                     style={{ padding: "10px 16px", borderRadius: "10px", background: "#ffffff", border: "1px solid #e2e8f0", color: "#475569", fontWeight: 600, fontSize: "13px", cursor: "pointer" }}>
-                    Cancelar
+                    {t("Cancelar")}
                   </button>
                 </div>
               </form>
@@ -508,21 +510,21 @@ export default function HotelKeysPage() {
           {/* Devolución */}
           {returnKeyId && (
             <article style={{ background: "#ffffff", border: "1px solid rgba(16,185,129,0.3)", borderTop: "3px solid #10b981", borderRadius: "24px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
-              <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#10b981", marginBottom: "4px" }}>Operación</p>
+              <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#10b981", marginBottom: "4px" }}>{t("Operación")}</p>
               <h3 style={{ fontWeight: 700, fontSize: "16px", color: "#0f172a", marginBottom: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
-                Devolución de llave
+                {t("Devolución de llave")}
               </h3>
               <form style={{ display: "flex", flexDirection: "column", gap: "10px" }} onSubmit={submitReturn}>
-                <input style={inputStyle} placeholder="Operador que recibe" value={returnForm.actorName} onChange={(e) => setReturnForm((p) => ({ ...p, actorName: e.target.value }))} />
-                <textarea style={textareaStyle} placeholder="Observaciones de devolución" value={returnForm.notes} onChange={(e) => setReturnForm((p) => ({ ...p, notes: e.target.value }))} />
+                <input style={inputStyle} placeholder={t("Operador que recibe")} value={returnForm.actorName} onChange={(e) => setReturnForm((p) => ({ ...p, actorName: e.target.value }))} />
+                <textarea style={textareaStyle} placeholder={t("Observaciones de devolución")} value={returnForm.notes} onChange={(e) => setReturnForm((p) => ({ ...p, notes: e.target.value }))} />
                 <div style={{ display: "flex", gap: "8px" }}>
                   <button type="submit" style={{ flex: 1, padding: "10px", borderRadius: "10px", background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: "#ffffff", fontWeight: 700, fontSize: "13px", border: "none", cursor: "pointer" }}>
-                    Confirmar devolución
+                    {t("Confirmar devolución")}
                   </button>
                   <button type="button" onClick={() => { setReturnKeyId(null); setReturnForm(emptyReturnForm()); }}
                     style={{ padding: "10px 16px", borderRadius: "10px", background: "#ffffff", border: "1px solid #e2e8f0", color: "#475569", fontWeight: 600, fontSize: "13px", cursor: "pointer" }}>
-                    Cancelar
+                    {t("Cancelar")}
                   </button>
                 </div>
               </form>
@@ -531,20 +533,20 @@ export default function HotelKeysPage() {
 
           {/* Bitácora */}
           <article style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "24px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
-            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#94a3b8", marginBottom: "4px" }}>Historial</p>
-            <h3 style={{ fontWeight: 700, fontSize: "16px", color: "#0f172a", marginBottom: "12px" }}>Bitácora de movimientos</h3>
+            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#94a3b8", marginBottom: "4px" }}>{t("Historial")}</p>
+            <h3 style={{ fontWeight: 700, fontSize: "16px", color: "#0f172a", marginBottom: "12px" }}>{t("Bitácora de movimientos")}</h3>
             {!selectedKey ? (
-              <p style={{ fontSize: "13px", color: "#94a3b8" }}>Selecciona una llave para ver su historial.</p>
+              <p style={{ fontSize: "13px", color: "#94a3b8" }}>{t("Selecciona una llave para ver su historial.")}</p>
             ) : (
               <>
                 <p style={{ fontSize: "13px", color: "#64748b", marginBottom: "12px" }}>
-                  Llave <span style={{ fontWeight: 700, color: "#0f172a" }}>{selectedKey.keyNumber}</span> · Hab. <span style={{ fontWeight: 700, color: "#0f172a" }}>{selectedKey.roomNumber}</span>
+                  {t("Llave")} <span style={{ fontWeight: 700, color: "#0f172a" }}>{selectedKey.keyNumber}</span> · {t("Hab.")} <span style={{ fontWeight: 700, color: "#0f172a" }}>{selectedKey.roomNumber}</span>
                 </p>
                 <div style={{ maxHeight: "360px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "8px" }}>
                   {loadingMovements ? (
-                    <p style={{ fontSize: "13px", color: "#94a3b8" }}>Cargando movimientos...</p>
+                    <p style={{ fontSize: "13px", color: "#94a3b8" }}>{t("Cargando movimientos...")}</p>
                   ) : selectedMovements.length === 0 ? (
-                    <p style={{ fontSize: "13px", color: "#94a3b8" }}>Sin movimientos registrados.</p>
+                    <p style={{ fontSize: "13px", color: "#94a3b8" }}>{t("Sin movimientos registrados.")}</p>
                   ) : (
                     selectedMovements.map((mv) => {
                       const action = mv.action || "";
@@ -556,7 +558,7 @@ export default function HotelKeysPage() {
                             <span style={{ fontSize: "11px", color: "#94a3b8" }}>{formatDateTime(mv.happenedAt || mv.createdAt)}</span>
                           </div>
                           <p style={{ marginTop: "4px", fontSize: "13px", fontWeight: 600, color: "#0f172a" }}>
-                            {mv.holderName || mv.actorName || "Sin responsable informado"}
+                            {mv.holderName || mv.actorName || t("Sin responsable informado")}
                           </p>
                           {mv.notes && <p style={{ marginTop: "3px", fontSize: "11px", color: "#64748b" }}>{mv.notes}</p>}
                         </div>
@@ -579,18 +581,18 @@ export default function HotelKeysPage() {
               <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "rgba(239,68,68,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
               </div>
-              <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#0f172a", margin: "0 0 6px" }}>Eliminar llave</h3>
+              <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#0f172a", margin: "0 0 6px" }}>{t("Eliminar llave")}</h3>
               <p style={{ fontSize: "13px", color: "#64748b", margin: "0 0 20px" }}>
-                ¿Estás seguro de eliminar la llave <b style={{ color: "#0f172a" }}>{keyToDelete?.keyNumber || ""}</b>{keyToDelete?.hotelName ? ` del hotel ${keyToDelete.hotelName}` : ""}? Esta acción no se puede deshacer.
+                {t("¿Estás seguro de eliminar la llave")} <b style={{ color: "#0f172a" }}>{keyToDelete?.keyNumber || ""}</b>{keyToDelete?.hotelName ? ` ${t("del hotel")} ${keyToDelete.hotelName}` : ""}? {t("Esta acción no se puede deshacer.")}
               </p>
               <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
                 <button onClick={() => setDeleteKeyConfirm(null)}
                   style={{ padding: "10px 24px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
-                  Cancelar
+                  {t("Cancelar")}
                 </button>
                 <button onClick={() => removeKey(deleteKeyConfirm)}
                   style={{ padding: "10px 24px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #ef4444, #dc2626)", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 10px rgba(239,68,68,0.3)" }}>
-                  Sí, eliminar
+                  {t("Sí, eliminar")}
                 </button>
               </div>
             </div>

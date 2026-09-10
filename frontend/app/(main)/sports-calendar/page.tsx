@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import StyledSelect from "@/components/StyledSelect";
 import PageHeader from "@/components/ui/PageHeader";
@@ -324,6 +325,7 @@ function fromLocalDateTimeInput(value: string) {
 }
 
 export default function SportsCalendarPage() {
+  const { t } = useI18n();
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [entries, setEntries] = useState<SportsEvent[]>([]);
   const [eventOptions, setEventOptions] = useState<EventOption[]>([]);
@@ -433,7 +435,7 @@ export default function SportsCalendarPage() {
           : source,
       );
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "No se pudo cargar calendario.");
+      setMessage(err instanceof Error ? err.message : t("No se pudo cargar calendario."));
     } finally {
       setLoading(false);
     }
@@ -828,7 +830,7 @@ export default function SportsCalendarPage() {
             }),
           },
         );
-        setMessage(editingEntryId ? "Actividad actualizada." : "Actividad creada en calendario.");
+        setMessage(editingEntryId ? t("Actividad actualizada.") : t("Actividad creada en calendario."));
       }
       setEditingEntryId(null);
       setNewEntry((prev) => ({
@@ -847,8 +849,8 @@ export default function SportsCalendarPage() {
         err instanceof Error
           ? err.message
           : editingEntryId
-            ? "No se pudo actualizar la actividad."
-            : "No se pudo crear la actividad.",
+            ? t("No se pudo actualizar la actividad.")
+            : t("No se pudo crear la actividad."),
       );
     } finally {
       setSaving(false);
@@ -897,7 +899,7 @@ export default function SportsCalendarPage() {
         (row) => row.sport && row.league && row.startAtUtc,
       );
       if (parsed.length === 0) {
-        setMessage("CSV sin filas validas.");
+        setMessage(t("CSV sin filas validas."));
         return;
       }
 
@@ -915,7 +917,7 @@ export default function SportsCalendarPage() {
         setMessage(`Carga masiva completada: ${result.inserted} actividades.`);
         await loadEntries();
       } catch (err) {
-        setMessage(err instanceof Error ? err.message : "No se pudo importar CSV.");
+        setMessage(err instanceof Error ? err.message : t("No se pudo importar CSV."));
       } finally {
         setSaving(false);
       }
@@ -944,10 +946,10 @@ export default function SportsCalendarPage() {
       if (editingEntryId === id) {
         cancelEdit();
       }
-      setMessage("Actividad eliminada.");
+      setMessage(t("Actividad eliminada."));
       await loadEntries();
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "No se pudo eliminar la actividad.");
+      setMessage(err instanceof Error ? err.message : t("No se pudo eliminar la actividad."));
     } finally {
       setSaving(false);
     }
@@ -964,18 +966,18 @@ export default function SportsCalendarPage() {
   return (
     <div className="space-y-5 min-w-0 overflow-x-hidden">
       <PageHeader
-        title="Calendario Operacional"
-        description="Programación de llegadas, entrenamientos, pruebas y retiros. Filtra por tipo, sede, delegación o disciplina."
+        title={t("Calendario Operacional")}
+        description={t("Programación de llegadas, entrenamientos, pruebas y retiros. Filtra por tipo, sede, delegación o disciplina.")}
         icon={<CalendarIcon size={26} />}
         iconBg="linear-gradient(135deg, #1FCDFF 0%, #1f4e8c 100%)"
         accentStrip="teal"
         action={
           <div className="flex gap-2">
             <button className="btn btn-ghost text-xs" type="button" onClick={downloadTemplate}>
-              Template CSV
+              {t("Template CSV")}
             </button>
             <button className="btn btn-primary text-xs" type="button" onClick={() => fileRef.current?.click()} disabled={saving}>
-              {saving ? "Importando…" : "Cargar CSV"}
+              {saving ? t("Importando…") : t("Cargar CSV")}
             </button>
             <input ref={fileRef} className="hidden" type="file" accept=".csv,text/csv" onChange={uploadCsv} />
           </div>
@@ -984,18 +986,18 @@ export default function SportsCalendarPage() {
 
       {/* KPIs de operación */}
       <section className="grid grid-cols-2 md:grid-cols-4 gap-3 stagger">
-        <KpiCard label="Actividades hoy" value={calendarKpis.today}
-          detail={calendarKpis.today > 0 ? "en ejecución hoy" : "sin operación hoy"}
+        <KpiCard label={t("Actividades hoy")} value={calendarKpis.today}
+          detail={calendarKpis.today > 0 ? t("en ejecución hoy") : t("sin operación hoy")}
           icon={<CalendarIcon size={18} />} accent="blue" />
-        <KpiCard label="Próximas 24h" value={calendarKpis.upcomingSoon}
-          detail={calendarKpis.upcomingSoon > 0 ? "requieren coordinación" : "sin actividad próxima"}
+        <KpiCard label={t("Próximas 24h")} value={calendarKpis.upcomingSoon}
+          detail={calendarKpis.upcomingSoon > 0 ? t("requieren coordinación") : t("sin actividad próxima")}
           icon={<AlertIcon size={18} />}
           accent={calendarKpis.upcomingSoon > 0 ? "red" : "neutral"} />
-        <KpiCard label="Llegadas y retiros" value={calendarKpis.transfers}
-          detail="movimientos con traslado"
+        <KpiCard label={t("Llegadas y retiros")} value={calendarKpis.transfers}
+          detail={t("movimientos con traslado")}
           icon={<TruckIcon size={18} />} accent="amber" />
-        <KpiCard label="Sedes en uso" value={calendarKpis.venuesInUse}
-          detail="recintos con actividad programada"
+        <KpiCard label={t("Sedes en uso")} value={calendarKpis.venuesInUse}
+          detail={t("recintos con actividad programada")}
           icon={<CheckIcon size={18} />} accent="green" />
       </section>
 
@@ -1015,7 +1017,7 @@ export default function SportsCalendarPage() {
                     color: active ? "#fff" : "#475569",
                     boxShadow: active ? "0 2px 6px rgba(33,208,179,0.35)" : "none",
                   }}>
-                  {v === "month" ? "Mes" : v === "week" ? "Semana" : v === "day" ? "Día" : "Línea de tiempo"}
+                  {v === "month" ? t("Mes") : v === "week" ? t("Semana") : v === "day" ? t("Día") : t("Línea de tiempo")}
                 </button>
               );
             })}
@@ -1028,7 +1030,7 @@ export default function SportsCalendarPage() {
             <input
               className="input"
               style={{ paddingLeft: 36 }}
-              placeholder="Buscar disciplina, sede, delegación, competidor…"
+              placeholder={t("Buscar disciplina, sede, delegación, competidor…")}
               value={quickSearch}
               onChange={(e) => setQuickSearch(e.target.value)}
             />
@@ -1047,7 +1049,7 @@ export default function SportsCalendarPage() {
               }}
               className="btn btn-ghost text-xs"
               style={{ color: "#b91c1c", borderColor: "#fecaca", background: "#fef2f2" }}>
-              ✕ Limpiar
+              ✕ {t("Limpiar")}
             </button>
           )}
         </div>
@@ -1069,7 +1071,7 @@ export default function SportsCalendarPage() {
                   border: `1.5px solid ${active ? chip.color : "transparent"}`,
                   boxShadow: active ? `0 3px 10px ${chip.color}55` : "none",
                 }}>
-                {chip.label}
+                {t(chip.label)}
                 <span style={{
                   fontSize: 10,
                   padding: "1px 7px",
@@ -1089,31 +1091,31 @@ export default function SportsCalendarPage() {
         <details className="text-xs">
           <summary className="cursor-pointer font-semibold inline-flex items-center gap-1.5"
             style={{ color: "var(--brand)" }}>
-            <FilterIcon size={12} /> Filtros avanzados
+            <FilterIcon size={12} /> {t("Filtros avanzados")}
           </summary>
           <div className="grid gap-2 mt-3 lg:grid-cols-6">
             <StyledSelect wrapperClassName="lg:col-span-2" value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)}>
-              <option value="">Todos los eventos principales</option>
+              <option value="">{t("Todos los eventos principales")}</option>
               {eventOptions.map((item) => (
                 <option key={item.id} value={item.id}>{item.name}</option>
               ))}
             </StyledSelect>
             <StyledSelect wrapperClassName="lg:col-span-1" value={selectedDelegationId} onChange={(e) => setSelectedDelegationId(e.target.value)}>
-              <option value="">Todas las delegaciones</option>
+              <option value="">{t("Todas las delegaciones")}</option>
               {filteredDelegationOptions.map((item) => (
                 <option key={item.id} value={item.id}>{item.countryCode || item.id}</option>
               ))}
             </StyledSelect>
             <StyledSelect wrapperClassName="lg:col-span-1" value={sportFilter} onChange={(e) => setSportFilter(e.target.value)}>
-              <option value="">Todas las disciplinas</option>
+              <option value="">{t("Todas las disciplinas")}</option>
               {disciplineFilterOptions.map((name) => (
                 <option key={name} value={name}>{name}</option>
               ))}
             </StyledSelect>
-            <input className="input lg:col-span-1" placeholder="Fase / categoría" value={phaseFilter} onChange={(e) => setPhaseFilter(e.target.value)} />
+            <input className="input lg:col-span-1" placeholder={t("Fase / categoría")} value={phaseFilter} onChange={(e) => setPhaseFilter(e.target.value)} />
             <StyledSelect wrapperClassName="lg:col-span-1" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
               {STATUSES.map((status) => (
-                <option key={status} value={status}>{status === "ALL" ? "Estados: todos" : status}</option>
+                <option key={status} value={status}>{status === "ALL" ? t("Estados: todos") : status}</option>
               ))}
             </StyledSelect>
           </div>
@@ -1123,12 +1125,12 @@ export default function SportsCalendarPage() {
       <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
           <div>
-            <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#94a3b8" }}>Agenda AND por delegacion</span>
-            <h2 style={{ marginTop: "4px", fontSize: "18px", fontWeight: 800, color: "#0f172a" }}>Fechas por disciplina y delegacion</h2>
-            <p style={{ marginTop: "4px", fontSize: "13px", color: "#64748b" }}>Llegada y retiro se obtienen desde AND. Entrenamientos y pruebas se completan en este calendario.</p>
+            <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#94a3b8" }}>{t("Agenda AND por delegacion")}</span>
+            <h2 style={{ marginTop: "4px", fontSize: "18px", fontWeight: 800, color: "#0f172a" }}>{t("Fechas por disciplina y delegacion")}</h2>
+            <p style={{ marginTop: "4px", fontSize: "13px", color: "#64748b" }}>{t("Llegada y retiro se obtienen desde AND. Entrenamientos y pruebas se completan en este calendario.")}</p>
           </div>
           <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.2)", borderRadius: "10px", padding: "6px 12px", fontSize: "12px", fontWeight: 600, color: "#21D0B3" }}>
-            {selectedDelegationId ? "Vista filtrada por delegacion" : "Vista consolidada (todas las delegaciones)"}
+            {selectedDelegationId ? t("Vista filtrada por delegacion") : t("Vista consolidada (todas las delegaciones)")}
           </div>
         </div>
 
@@ -1137,7 +1139,7 @@ export default function SportsCalendarPage() {
             <thead>
               <tr style={{ background: "#f8fafc" }}>
                 {["Delegacion", "Personas", "Disciplinas", "Fecha de llegada (AND)", "Fechas de entrenamiento", "Fechas de pruebas", "Fecha de retiro (AND)"].map((h) => (
-                  <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#94a3b8", borderBottom: "1px solid #e2e8f0", whiteSpace: "nowrap" }}>{h}</th>
+                  <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#94a3b8", borderBottom: "1px solid #e2e8f0", whiteSpace: "nowrap" }}>{t(h)}</th>
                 ))}
               </tr>
             </thead>
@@ -1156,7 +1158,7 @@ export default function SportsCalendarPage() {
                         ))}
                       </div>
                     ) : (
-                      <span style={{ fontSize: "12px", color: "#94a3b8" }}>Sin detalle</span>
+                      <span style={{ fontSize: "12px", color: "#94a3b8" }}>{t("Sin detalle")}</span>
                     )}
                   </td>
                   <td style={{ padding: "10px 14px", color: "#475569", fontSize: "12px" }}>{formatDateTime(row.arrivalAt)}</td>
@@ -1170,7 +1172,7 @@ export default function SportsCalendarPage() {
                         ))}
                       </div>
                     ) : (
-                      <span style={{ fontSize: "12px", color: "#94a3b8" }}>Sin programar</span>
+                      <span style={{ fontSize: "12px", color: "#94a3b8" }}>{t("Sin programar")}</span>
                     )}
                   </td>
                   <td style={{ padding: "10px 14px" }}>
@@ -1183,7 +1185,7 @@ export default function SportsCalendarPage() {
                         ))}
                       </div>
                     ) : (
-                      <span style={{ fontSize: "12px", color: "#94a3b8" }}>Sin programar</span>
+                      <span style={{ fontSize: "12px", color: "#94a3b8" }}>{t("Sin programar")}</span>
                     )}
                   </td>
                   <td style={{ padding: "10px 14px", color: "#475569", fontSize: "12px" }}>{formatDateTime(row.departureAt)}</td>
@@ -1192,7 +1194,7 @@ export default function SportsCalendarPage() {
             </tbody>
           </table>
           {andDelegationScheduleRows.length === 0 ? (
-            <p style={{ marginTop: "12px", fontSize: "13px", color: "#94a3b8" }}>No hay datos para construir la agenda por delegacion con los filtros actuales.</p>
+            <p style={{ marginTop: "12px", fontSize: "13px", color: "#94a3b8" }}>{t("No hay datos para construir la agenda por delegacion con los filtros actuales.")}</p>
           ) : null}
         </div>
       </section>
@@ -1206,14 +1208,14 @@ export default function SportsCalendarPage() {
                   if (view === "month" || view === "timeline") setMonthCursor((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
                   else if (view === "week") setSelectedDay((prev) => { const d = new Date(prev); d.setDate(d.getDate() - 7); return d; });
                   else setSelectedDay((prev) => { const d = new Date(prev); d.setDate(d.getDate() - 1); return d; });
-                }}>← {view === "month" || view === "timeline" ? "Mes anterior" : view === "week" ? "Semana anterior" : "Día anterior"}</button>
-              <button className="btn btn-ghost" type="button" onClick={() => { const now = new Date(); setMonthCursor(startOfMonth(now)); setSelectedDay(now); }}>Hoy</button>
+                }}>← {view === "month" || view === "timeline" ? t("Mes anterior") : view === "week" ? t("Semana anterior") : t("Día anterior")}</button>
+              <button className="btn btn-ghost" type="button" onClick={() => { const now = new Date(); setMonthCursor(startOfMonth(now)); setSelectedDay(now); }}>{t("Hoy")}</button>
               <button className="btn btn-ghost" type="button"
                 onClick={() => {
                   if (view === "month" || view === "timeline") setMonthCursor((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
                   else if (view === "week") setSelectedDay((prev) => { const d = new Date(prev); d.setDate(d.getDate() + 7); return d; });
                   else setSelectedDay((prev) => { const d = new Date(prev); d.setDate(d.getDate() + 1); return d; });
-                }}>{view === "month" || view === "timeline" ? "Mes siguiente" : view === "week" ? "Semana siguiente" : "Día siguiente"} →</button>
+                }}>{view === "month" || view === "timeline" ? t("Mes siguiente") : view === "week" ? t("Semana siguiente") : t("Día siguiente")} →</button>
             </div>
             <h2 style={{ fontSize: "18px", fontWeight: 800, color: "#0f172a", textTransform: "capitalize" }}>
               {view === "month" || view === "timeline"
@@ -1247,7 +1249,7 @@ export default function SportsCalendarPage() {
                       boxShadow: "0 1px 4px rgba(15,23,42,0.06)",
                     }}>
                     <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: isToday ? "#21D0B3" : "#94a3b8" }}>
-                      {WEEK_LABELS[(day.getDay() + 6) % 7]}
+                      {t(WEEK_LABELS[(day.getDay() + 6) % 7])}
                     </p>
                     <div className="flex items-center justify-between">
                       <p style={{ fontSize: 22, fontWeight: 800, color: isToday ? "#21D0B3" : "#0f172a", lineHeight: 1 }}>
@@ -1278,7 +1280,7 @@ export default function SportsCalendarPage() {
                         );
                       })}
                       {dayEntries.length > 5 && (
-                        <p className="text-[10px] font-semibold" style={{ color: "#94a3b8" }}>+{dayEntries.length - 5} más</p>
+                        <p className="text-[10px] font-semibold" style={{ color: "#94a3b8" }}>+{dayEntries.length - 5} {t("más")}</p>
                       )}
                     </div>
                   </button>
@@ -1294,10 +1296,10 @@ export default function SportsCalendarPage() {
                   style={{ background: "linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)", border: "1px dashed #e2e8f0" }}>
                   <CalendarIcon size={36} color="#cbd5e1" />
                   <p className="text-sm font-semibold mt-3" style={{ color: "#475569" }}>
-                    Sin actividades para este día
+                    {t("Sin actividades para este día")}
                   </p>
                   <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-                    Programá una desde el panel lateral.
+                    {t("Programá una desde el panel lateral.")}
                   </p>
                 </div>
               ) : selectedDayEntries.map((entry) => {
@@ -1315,11 +1317,11 @@ export default function SportsCalendarPage() {
                           <span className="truncate">{titleFromEvent(entry)}</span>
                         </p>
                         <p className="text-[11px]" style={{ opacity: 0.8 }}>
-                          {scheduleTypeLabel(tipo)}{entry.venue && ` · 📍 ${venueLabelById(venueOptions, entry.venue)}`}
+                          {t(scheduleTypeLabel(tipo))}{entry.venue && ` · 📍 ${venueLabelById(venueOptions, entry.venue)}`}
                         </p>
                       </div>
                       <span className="text-[10px] px-2 py-0.5 rounded-full font-bold" style={{ background: "rgba(255,255,255,0.55)", color: theme.fg, whiteSpace: "nowrap" }}>
-                        {scheduleTypeLabel(tipo)}
+                        {t(scheduleTypeLabel(tipo))}
                       </span>
                     </div>
                   </div>
@@ -1331,7 +1333,7 @@ export default function SportsCalendarPage() {
           {view === "month" && (<>
           <div className="grid grid-cols-7 gap-2 text-center text-xs uppercase tracking-[0.14em]"
             style={{ color: "#94a3b8" }}>
-            {WEEK_LABELS.map((label) => <div key={label}>{label}</div>)}
+            {WEEK_LABELS.map((label) => <div key={label}>{t(label)}</div>)}
           </div>
 
           <div className="mt-2 grid grid-cols-7 gap-2">
@@ -1420,7 +1422,7 @@ export default function SportsCalendarPage() {
                       );
                     })}
                     {dayEntries.length > 3 ? (
-                      <p className="text-[10px] font-semibold" style={{ color: "#94a3b8", textAlign: "center" }}>+{dayEntries.length - 3} más</p>
+                      <p className="text-[10px] font-semibold" style={{ color: "#94a3b8", textAlign: "center" }}>+{dayEntries.length - 3} {t("más")}</p>
                     ) : null}
                   </div>
                 </button>
@@ -1493,7 +1495,7 @@ export default function SportsCalendarPage() {
                       count += list.length;
                       list.forEach((e) => { if (e.league?.trim()) leagues.add(e.league.trim()); });
                     }
-                    const label = leagues.size === 1 ? Array.from(leagues)[0] : TL_CAT_META[cat].label;
+                    const label = leagues.size === 1 ? Array.from(leagues)[0] : t(TL_CAT_META[cat].label);
                     rawBars.push({ cat, start: idxs[i], span: idxs[j] - idxs[i] + 1, label, count });
                     i = j + 1;
                   }
@@ -1523,7 +1525,7 @@ export default function SportsCalendarPage() {
                   {(["CLASIFICATORIA", "FINAL", "TRAINING", "CEREMONY", "OTHER"] as TLCat[]).map((cat) => (
                     <span key={cat} className="inline-flex items-center gap-1.5" style={{ fontSize: 11, fontWeight: 700, color: "#475569" }}>
                       <span style={{ width: 10, height: 10, borderRadius: "50%", background: TL_CAT_META[cat].dot, display: "inline-block" }} />
-                      {TL_CAT_META[cat].label}
+                      {t(TL_CAT_META[cat].label)}
                     </span>
                   ))}
                 </div>
@@ -1531,14 +1533,14 @@ export default function SportsCalendarPage() {
                 {rows.length === 0 ? (
                   <div className="p-12 text-center rounded-2xl" style={{ background: "linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)", border: "1px dashed #e2e8f0" }}>
                     <CalendarIcon size={36} color="#cbd5e1" />
-                    <p className="text-sm font-semibold mt-3" style={{ color: "#475569" }}>Sin actividades para mostrar</p>
-                    <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Ajusta los filtros o carga actividades en el calendario.</p>
+                    <p className="text-sm font-semibold mt-3" style={{ color: "#475569" }}>{t("Sin actividades para mostrar")}</p>
+                    <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{t("Ajusta los filtros o carga actividades en el calendario.")}</p>
                   </div>
                 ) : (
                   <div style={{ display: "flex", border: "1px solid #e2e8f0", borderRadius: 14, overflow: "hidden", background: "#fff" }}>
                     <div style={{ flex: "0 0 190px", borderRight: "1px solid #e2e8f0", background: "#fff" }}>
                       <div style={{ height: HEADER_H, display: "flex", alignItems: "center", padding: "0 14px", fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "#94a3b8", borderBottom: "1px solid #e2e8f0", background: "#f8fafc" }}>
-                        Disciplina
+                        {t("Disciplina")}
                       </div>
                       {rows.map((r, i) => (
                         <div key={r.sport} style={{ height: rowHeight(r.lanes), display: "flex", alignItems: "center", padding: "0 14px", borderBottom: i < rows.length - 1 ? "1px solid #f1f5f9" : "none", background: i % 2 === 0 ? "#fff" : "#fafbfc" }}>
@@ -1556,7 +1558,7 @@ export default function SportsCalendarPage() {
                             const isWeekend = d.getDay() === 0 || d.getDay() === 6;
                             return (
                               <div key={k} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", borderLeft: i === 0 ? "none" : "1px solid #eef2f7", background: isToday ? "rgba(33,208,179,0.12)" : isWeekend ? "#f1f5f9" : "transparent" }}>
-                                <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: isToday ? "#0e9384" : "#94a3b8" }}>{WEEK_LABELS[(d.getDay() + 6) % 7]}</span>
+                                <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: isToday ? "#0e9384" : "#94a3b8" }}>{t(WEEK_LABELS[(d.getDay() + 6) % 7])}</span>
                                 <span style={{ fontSize: 13, fontWeight: 800, color: isToday ? "#0e9384" : "#0f172a" }}>{d.getDate()}</span>
                               </div>
                             );
@@ -1586,9 +1588,9 @@ export default function SportsCalendarPage() {
 
         {view !== "timeline" && (<div className="space-y-4">
           <form onSubmit={createEntry} style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "16px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
-            <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#21D0B3" }}>Programar actividad</span>
+            <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#21D0B3" }}>{t("Programar actividad")}</span>
             <h3 style={{ marginTop: "2px", fontSize: "16px", fontWeight: 800, color: "#0f172a" }}>
-              {entryFormTitle(getMetaString(newEntry.metadata, "scheduleType"), Boolean(editingEntryId))}
+              {t(entryFormTitle(getMetaString(newEntry.metadata, "scheduleType"), Boolean(editingEntryId)))}
             </h3>
             <p style={{ marginTop: "2px", fontSize: "12px", color: "#64748b" }}>{dayLabel(selectedDay)}</p>
             <div className="mt-3 grid gap-2">
@@ -1610,13 +1612,13 @@ export default function SportsCalendarPage() {
                   })
                 }
               >
-                <option value="">Tipo de fecha</option>
+                <option value="">{t("Tipo de fecha")}</option>
                 {MANUAL_SCHEDULE_TYPE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
+                  <option key={option.value} value={option.value}>{t(option.label)}</option>
                 ))}
               </StyledSelect>
               <p style={{ fontSize: "11px", color: "#94a3b8" }}>
-                Llegada y retiro se calculan automaticamente desde AND (no se cargan manualmente aqui).
+                {t("Llegada y retiro se calculan automaticamente desde AND (no se cargan manualmente aqui).")}
               </p>
               <div className="grid grid-cols-2 gap-2">
                 <StyledSelect
@@ -1632,9 +1634,9 @@ export default function SportsCalendarPage() {
                     })
                   }
                 >
-                  <option value="">Categoria de disciplina</option>
+                  <option value="">{t("Categoria de disciplina")}</option>
                   {DISCIPLINE_CATEGORY_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
+                    <option key={option.value} value={option.value}>{t(option.label)}</option>
                   ))}
                 </StyledSelect>
                 <StyledSelect
@@ -1650,9 +1652,9 @@ export default function SportsCalendarPage() {
                     })
                   }
                 >
-                  <option value="">Genero de disciplina</option>
+                  <option value="">{t("Genero de disciplina")}</option>
                   {DISCIPLINE_GENDER_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
+                    <option key={option.value} value={option.value}>{t(option.label)}</option>
                   ))}
                 </StyledSelect>
               </div>
@@ -1673,7 +1675,7 @@ export default function SportsCalendarPage() {
                   });
                 }}
               >
-                <option value="">Disciplina vinculada (opcional)</option>
+                <option value="">{t("Disciplina vinculada (opcional)")}</option>
                 {filteredDisciplineOptions.map((item) => (
                   <option key={item.id} value={item.id}>{item.name || item.id}</option>
                 ))}
@@ -1687,7 +1689,7 @@ export default function SportsCalendarPage() {
                   })
                 }
               >
-                <option value="">Todas / sin delegacion</option>
+                <option value="">{t("Todas / sin delegacion")}</option>
                 {filteredDelegationOptions.map((item) => (
                   <option key={item.id} value={item.id}>{item.countryCode || item.id}</option>
                 ))}
@@ -1696,7 +1698,7 @@ export default function SportsCalendarPage() {
                 <>
                   <input
                     className="input"
-                    placeholder="Descripcion del entrenamiento"
+                    placeholder={t("Descripcion del entrenamiento")}
                     value={String(newEntry.metadata?.title ?? "")}
                     onChange={(e) =>
                       setNewEntry({ ...newEntry, metadata: { ...newEntry.metadata, title: e.target.value } })
@@ -1704,7 +1706,7 @@ export default function SportsCalendarPage() {
                   />
                   <input
                     className="input"
-                    placeholder="Bloque / sesion"
+                    placeholder={t("Bloque / sesion")}
                     value={newEntry.league}
                     onChange={(e) => setNewEntry({ ...newEntry, league: e.target.value })}
                     required
@@ -1715,7 +1717,7 @@ export default function SportsCalendarPage() {
                 <>
                   <input
                     className="input"
-                    placeholder="Descripcion de la prueba"
+                    placeholder={t("Descripcion de la prueba")}
                     value={String(newEntry.metadata?.title ?? "")}
                     onChange={(e) =>
                       setNewEntry({ ...newEntry, metadata: { ...newEntry.metadata, title: e.target.value } })
@@ -1723,7 +1725,7 @@ export default function SportsCalendarPage() {
                   />
                   <input
                     className="input"
-                    placeholder="Fase / categoria"
+                    placeholder={t("Fase / categoria")}
                     value={newEntry.league}
                     onChange={(e) => setNewEntry({ ...newEntry, league: e.target.value })}
                     required
@@ -1736,20 +1738,20 @@ export default function SportsCalendarPage() {
                   style={{ width: 38, height: 20, borderRadius: 10, border: "none", cursor: "pointer", position: "relative", background: (newEntry.metadata as any)?.useDateRange ? "#21D0B3" : "#cbd5e1", transition: "background 0.2s" }}>
                   <span style={{ position: "absolute", top: 2, left: (newEntry.metadata as any)?.useDateRange ? 20 : 2, width: 16, height: 16, borderRadius: 8, background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.2)", transition: "left 0.2s" }} />
                 </button>
-                <span style={{ fontSize: 12, fontWeight: 600, color: "#0f172a" }}>Rango de fechas (crear para varios días)</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: "#0f172a" }}>{t("Rango de fechas (crear para varios días)")}</span>
               </div>
               {(newEntry.metadata as any)?.useDateRange ? (
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <label style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", display: "block", marginBottom: 2 }}>Fecha inicio</label>
+                    <label style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", display: "block", marginBottom: 2 }}>{t("Fecha inicio")}</label>
                     <input className="input" type="date" value={(newEntry.metadata as any)?.rangeStart || ""} onChange={(e) => setNewEntry({ ...newEntry, metadata: { ...newEntry.metadata, rangeStart: e.target.value } })} required />
                   </div>
                   <div>
-                    <label style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", display: "block", marginBottom: 2 }}>Fecha fin</label>
+                    <label style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", display: "block", marginBottom: 2 }}>{t("Fecha fin")}</label>
                     <input className="input" type="date" value={(newEntry.metadata as any)?.rangeEnd || ""} onChange={(e) => setNewEntry({ ...newEntry, metadata: { ...newEntry.metadata, rangeEnd: e.target.value } })} required />
                   </div>
                   <div>
-                    <label style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", display: "block", marginBottom: 2 }}>Hora (todos los días)</label>
+                    <label style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", display: "block", marginBottom: 2 }}>{t("Hora (todos los días)")}</label>
                     <input className="input" type="time" value={(newEntry.metadata as any)?.rangeTime || ""} onChange={(e) => setNewEntry({ ...newEntry, metadata: { ...newEntry.metadata, rangeTime: e.target.value } })} required />
                   </div>
                 </div>
@@ -1768,18 +1770,18 @@ export default function SportsCalendarPage() {
                 />
               )}
               <select className="input" value={newEntry.venue ?? ""} onChange={(e) => setNewEntry({ ...newEntry, venue: e.target.value })}>
-                <option value="">Selecciona una sede</option>
+                <option value="">{t("Selecciona una sede")}</option>
                 {filteredVenueOptions.map((v) => (
                   <option key={v.id} value={v.id}>{v.name}{v.address ? ` — ${v.address}` : ""}</option>
                 ))}
               </select>
               <div className="flex gap-2">
                 <button className="btn btn-primary flex-1" type="submit" disabled={saving || !selectedEventId || !selectedManualScheduleType || !getMetaString(newEntry.metadata, "disciplineId")}>
-                  {selectedEventId ? (saving ? "Guardando..." : editingEntryId ? "Guardar cambios" : "Crear actividad") : "Selecciona evento principal"}
+                  {selectedEventId ? (saving ? t("Guardando...") : editingEntryId ? t("Guardar cambios") : t("Crear actividad")) : t("Selecciona evento principal")}
                 </button>
                 {editingEntryId ? (
                   <button className="btn btn-ghost" type="button" onClick={cancelEdit}>
-                    Cancelar
+                    {t("Cancelar")}
                   </button>
                 ) : null}
               </div>
@@ -1789,18 +1791,18 @@ export default function SportsCalendarPage() {
           <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "16px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
               <div>
-                <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#94a3b8" }}>Actividades del dia</span>
+                <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#94a3b8" }}>{t("Actividades del dia")}</span>
                 <p style={{ marginTop: "2px", fontSize: "13px", fontWeight: 700, color: "#0f172a" }}>{dayLabel(selectedDay)}</p>
               </div>
               <Link
                 href={`/sports-calendar/day/${selectedDayKey}?eventId=${encodeURIComponent(selectedEventId || "")}&delegationId=${encodeURIComponent(selectedDelegationId || "")}`}
                 className="btn btn-primary"
               >
-                Ver detalle del dia
+                {t("Ver detalle del dia")}
               </Link>
             </div>
-            {loading ? <p style={{ marginTop: "8px", fontSize: "13px", color: "#94a3b8" }}>Cargando...</p> : null}
-            {!loading && selectedDayEntries.length === 0 ? <p style={{ marginTop: "8px", fontSize: "13px", color: "#94a3b8" }}>Sin actividades en esta fecha.</p> : null}
+            {loading ? <p style={{ marginTop: "8px", fontSize: "13px", color: "#94a3b8" }}>{t("Cargando...")}</p> : null}
+            {!loading && selectedDayEntries.length === 0 ? <p style={{ marginTop: "8px", fontSize: "13px", color: "#94a3b8" }}>{t("Sin actividades en esta fecha.")}</p> : null}
             <div className="mt-2 space-y-2">
               {selectedDayEntries.map((entry) => (
                 <div key={entry.id} style={{ borderRadius: "10px", border: "1px solid #e2e8f0", borderLeft: "3px solid #21D0B3", background: "#f8fafc", padding: "10px 12px" }}>
@@ -1808,7 +1810,7 @@ export default function SportsCalendarPage() {
                   <p style={{ fontSize: "13px", fontWeight: 700, color: "#0f172a", marginTop: "2px" }}>{titleFromEvent(entry)}</p>
                   <div className="mt-1 flex flex-wrap gap-1.5">
                     <span className={`inline-flex rounded-full px-2 py-1 text-[10px] font-semibold ${scheduleTypeBadgeClass(getMetaString(entry.metadata, "scheduleType"))}`}>
-                      {scheduleTypeLabel(getMetaString(entry.metadata, "scheduleType"))}
+                      {t(scheduleTypeLabel(getMetaString(entry.metadata, "scheduleType")))}
                     </span>
                     {getMetaString(entry.metadata, "delegationId") ? (
                       <span style={{ display: "inline-flex", borderRadius: "99px", background: "rgba(99,102,241,0.1)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: "#6366f1" }}>
@@ -1817,19 +1819,19 @@ export default function SportsCalendarPage() {
                     ) : null}
                     {entry.source === "and-derived" && getMetaString(entry.metadata, "peopleCount") ? (
                       <span style={{ display: "inline-flex", borderRadius: "99px", background: "rgba(33,208,179,0.08)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: "#21D0B3" }}>
-                        {getMetaString(entry.metadata, "peopleCount")} personas
+                        {getMetaString(entry.metadata, "peopleCount")} {t("personas")}
                       </span>
                     ) : null}
                     {entry.source === "and-derived" && getMetaString(entry.metadata, "disciplineCount") ? (
                       <span style={{ display: "inline-flex", borderRadius: "99px", background: "rgba(139,92,246,0.1)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: "#7c3aed" }}>
-                        {getMetaString(entry.metadata, "disciplineCount")} disciplinas
+                        {getMetaString(entry.metadata, "disciplineCount")} {t("disciplinas")}
                       </span>
                     ) : null}
                   </div>
-                  <p style={{ fontSize: "11px", color: "#64748b", marginTop: "4px" }}>{venueLabelById(venueOptions, entry.venue) || "Sede por confirmar"} · {entry.status ?? "SCHEDULED"}</p>
+                  <p style={{ fontSize: "11px", color: "#64748b", marginTop: "4px" }}>{venueLabelById(venueOptions, entry.venue) || t("Sede por confirmar")} · {entry.status ?? "SCHEDULED"}</p>
                   {entry.source === "and-derived" && getMetaStringArray(entry.metadata, "disciplineNames").length ? (
                     <div style={{ marginTop: "8px" }}>
-                      <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#94a3b8" }}>Detalle</p>
+                      <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#94a3b8" }}>{t("Detalle")}</p>
                       <div className="mt-1 flex flex-wrap gap-1">
                         {getMetaStringArray(entry.metadata, "disciplineNames").map((discipline) => (
                           <span key={discipline} style={{ display: "inline-flex", borderRadius: "99px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.2)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: "#21D0B3" }}>
@@ -1841,11 +1843,11 @@ export default function SportsCalendarPage() {
                   ) : null}
                   <div style={{ marginTop: "8px" }}>
                     {entry.source === "and-derived" ? (
-                      <p style={{ fontSize: "11px", fontWeight: 600, color: "#21D0B3" }}>Hito AND (solo lectura)</p>
+                      <p style={{ fontSize: "11px", fontWeight: 600, color: "#21D0B3" }}>{t("Hito AND (solo lectura)")}</p>
                     ) : (
                       <div className="flex gap-2">
-                        <button className="btn btn-ghost" type="button" onClick={() => onEditEntry(entry)}>Editar</button>
-                        <button className="btn btn-ghost" type="button" onClick={() => setPendingDeleteEntryId(entry.id)}>Eliminar</button>
+                        <button className="btn btn-ghost" type="button" onClick={() => onEditEntry(entry)}>{t("Editar")}</button>
+                        <button className="btn btn-ghost" type="button" onClick={() => setPendingDeleteEntryId(entry.id)}>{t("Eliminar")}</button>
                       </div>
                     )}
                   </div>
@@ -1879,16 +1881,16 @@ export default function SportsCalendarPage() {
               <div className="ambient-orb" style={{ width: 160, height: 160, top: -60, right: -40, background: "radial-gradient(circle, rgba(255,255,255,0.35) 0%, transparent 65%)" }} />
               <div className="relative flex items-start justify-between gap-3">
                 <div style={{ minWidth: 0 }}>
-                  <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.22em", textTransform: "uppercase", color: "rgba(255,255,255,0.85)" }}>Agenda del día</p>
+                  <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.22em", textTransform: "uppercase", color: "rgba(255,255,255,0.85)" }}>{t("Agenda del día")}</p>
                   <h3 style={{ marginTop: 2, fontSize: 18, fontWeight: 800, color: "#fff", textTransform: "capitalize", lineHeight: 1.2 }}>{dayLabel(selectedDay)}</h3>
                   <p style={{ marginTop: 4, fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.9)" }}>
-                    {selectedDayEntries.length} {selectedDayEntries.length === 1 ? "actividad" : "actividades"}
+                    {selectedDayEntries.length} {selectedDayEntries.length === 1 ? t("actividad") : t("actividades")}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setDayModalOpen(false)}
-                  aria-label="Cerrar"
+                  aria-label={t("Cerrar")}
                   style={{ flexShrink: 0, width: 32, height: 32, borderRadius: 10, border: "none", cursor: "pointer", background: "rgba(255,255,255,0.2)", color: "#fff", fontSize: 18, fontWeight: 700, lineHeight: 1 }}
                 >
                   ✕
@@ -1902,7 +1904,7 @@ export default function SportsCalendarPage() {
                     if (count === 0) return null;
                     return (
                       <span key={chip.value} style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "rgba(255,255,255,0.92)", borderRadius: 99, padding: "2px 9px", fontSize: 11, fontWeight: 800, color: chip.color }}>
-                        {chip.label} <span style={{ background: chip.bg, borderRadius: 99, padding: "0 6px" }}>{count}</span>
+                        {t(chip.label)} <span style={{ background: chip.bg, borderRadius: 99, padding: "0 6px" }}>{count}</span>
                       </span>
                     );
                   })}
@@ -1915,8 +1917,8 @@ export default function SportsCalendarPage() {
               {selectedDayEntries.length === 0 ? (
                 <div style={{ padding: "32px 16px", textAlign: "center" }}>
                   <p style={{ fontSize: 40, marginBottom: 6 }}>📅</p>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: "#475569" }}>Sin actividades para este día</p>
-                  <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>Programá una desde el panel lateral.</p>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: "#475569" }}>{t("Sin actividades para este día")}</p>
+                  <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>{t("Programá una desde el panel lateral.")}</p>
                 </div>
               ) : selectedDayEntries.map((entry) => {
                 const tipo = getMetaString(entry.metadata, "scheduleType");
@@ -1936,7 +1938,7 @@ export default function SportsCalendarPage() {
                         </p>
                       </div>
                       <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 800, padding: "3px 9px", borderRadius: 99, background: "rgba(255,255,255,0.6)", color: theme.fg, whiteSpace: "nowrap" }}>
-                        {scheduleTypeLabel(tipo)}
+                        {t(scheduleTypeLabel(tipo))}
                       </span>
                     </div>
                     <div className="mt-2 flex flex-wrap items-center gap-1.5">
@@ -1947,21 +1949,21 @@ export default function SportsCalendarPage() {
                       ) : null}
                       {entry.source === "and-derived" && getMetaString(entry.metadata, "peopleCount") ? (
                         <span style={{ background: "rgba(255,255,255,0.55)", borderRadius: 99, padding: "2px 8px", fontSize: 10, fontWeight: 700 }}>
-                          {getMetaString(entry.metadata, "peopleCount")} personas
+                          {getMetaString(entry.metadata, "peopleCount")} {t("personas")}
                         </span>
                       ) : null}
                     </div>
                     <div className="mt-2">
                       {entry.source === "and-derived" ? (
-                        <p style={{ fontSize: 11, fontWeight: 700, opacity: 0.75 }}>Hito AND (solo lectura)</p>
+                        <p style={{ fontSize: 11, fontWeight: 700, opacity: 0.75 }}>{t("Hito AND (solo lectura)")}</p>
                       ) : (
                         <div className="flex gap-2">
                           <button type="button" className="btn btn-ghost"
                             style={{ background: "rgba(255,255,255,0.7)" }}
-                            onClick={() => { onEditEntry(entry); setDayModalOpen(false); }}>Editar</button>
+                            onClick={() => { onEditEntry(entry); setDayModalOpen(false); }}>{t("Editar")}</button>
                           <button type="button" className="btn btn-ghost"
                             style={{ background: "rgba(255,255,255,0.7)" }}
-                            onClick={() => setPendingDeleteEntryId(entry.id)}>Eliminar</button>
+                            onClick={() => setPendingDeleteEntryId(entry.id)}>{t("Eliminar")}</button>
                         </div>
                       )}
                     </div>
@@ -1972,12 +1974,12 @@ export default function SportsCalendarPage() {
 
             {/* Footer */}
             <div style={{ padding: "12px 16px", borderTop: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", gap: 10, background: "#f8fafc" }}>
-              <button type="button" className="btn btn-ghost" onClick={() => setDayModalOpen(false)}>Cerrar</button>
+              <button type="button" className="btn btn-ghost" onClick={() => setDayModalOpen(false)}>{t("Cerrar")}</button>
               <Link
                 href={`/sports-calendar/day/${selectedDayKey}?eventId=${encodeURIComponent(selectedEventId || "")}&delegationId=${encodeURIComponent(selectedDelegationId || "")}`}
                 className="btn btn-primary"
               >
-                Ver detalle del día →
+                {t("Ver detalle del día")} →
               </Link>
             </div>
           </div>
@@ -1987,9 +1989,9 @@ export default function SportsCalendarPage() {
       {pendingDeleteEntryId ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="surface w-full max-w-md rounded-2xl p-5 shadow-2xl">
-            <h4 className="text-base font-semibold text-white">Eliminar actividad</h4>
+            <h4 className="text-base font-semibold text-white">{t("Eliminar actividad")}</h4>
             <p className="mt-2 text-sm text-white/65">
-              Esta accion eliminara la actividad del calendario. ¿Deseas continuar?
+              {t("Esta accion eliminara la actividad del calendario. ¿Deseas continuar?")}
             </p>
             <div className="mt-5 flex justify-end gap-2">
               <button
@@ -1998,7 +2000,7 @@ export default function SportsCalendarPage() {
                 onClick={() => setPendingDeleteEntryId(null)}
                 disabled={saving}
               >
-                Cancelar
+                {t("Cancelar")}
               </button>
               <button
                 className="btn btn-primary"
@@ -2010,7 +2012,7 @@ export default function SportsCalendarPage() {
                 }}
                 disabled={saving}
               >
-                Eliminar
+                {t("Eliminar")}
               </button>
             </div>
           </div>

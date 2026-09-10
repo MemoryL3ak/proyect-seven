@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useI18n } from "@/lib/i18n";
 
 /* ─────────────────────────────────────────────────────────────
    Estilos custom (keyframes, glass, glow, gradients)
@@ -408,6 +409,7 @@ const RESOURCES = [
    Sub-componentes
    ───────────────────────────────────────────────────────────── */
 function StepIndicator({ current, total, onJump }: { current: number; total: number; onJump?: (i: number) => void }) {
+  const { t } = useI18n();
   return (
     <div className="flex items-center gap-1.5 flex-wrap">
       {Array.from({ length: total }, (_, i) => {
@@ -420,7 +422,7 @@ function StepIndicator({ current, total, onJump }: { current: number; total: num
             type="button"
             disabled={!reachable}
             onClick={() => reachable && onJump?.(i)}
-            title={`Paso ${i + 1}`}
+            title={`${t("Paso")} ${i + 1}`}
             className={`rounded-full transition-all ${active ? "ob-pulse-ring" : ""}`}
             style={{
               width: active ? 32 : done ? 10 : 8,
@@ -490,6 +492,7 @@ function RoleCard({
   selected: boolean;
   onClick: () => void;
 }) {
+  const { t } = useI18n();
   const gradient = `linear-gradient(135deg, ${role.color}, ${role.color}aa, ${role.color})`;
   return (
     <button
@@ -551,7 +554,7 @@ function RoleCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <p className="text-[15px] font-bold leading-tight" style={{ color: "#0f172a" }}>
-              {role.label}
+              {t(role.label)}
             </p>
             {selected && (
               <span
@@ -570,7 +573,7 @@ function RoleCard({
             )}
           </div>
           <p className="text-[12px] mt-1 leading-relaxed" style={{ color: "var(--text-muted)" }}>
-            {role.desc}
+            {t(role.desc)}
           </p>
           {selected && (
             <div className="mt-2 flex flex-wrap gap-1">
@@ -580,13 +583,13 @@ function RoleCard({
                 return (
                   <span key={g} className="inline-flex items-center gap-1 text-[10px] font-bold rounded-full px-2 py-0.5"
                     style={{ background: `${role.color}18`, color: role.color, border: `1px solid ${role.color}30` }}>
-                    <span>{goal.emoji}</span>{goal.label}
+                    <span>{goal.emoji}</span>{t(goal.label)}
                   </span>
                 );
               })}
               {role.suggested.length > 3 && (
                 <span className="text-[10px] font-semibold" style={{ color: role.color }}>
-                  +{role.suggested.length - 3} más
+                  +{role.suggested.length - 3} {t("más")}
                 </span>
               )}
             </div>
@@ -657,6 +660,7 @@ function TaskRow({
   done: boolean;
   onToggle: () => void;
 }) {
+  const { t } = useI18n();
   return (
     <div
       className="rounded-xl p-4 transition-all"
@@ -699,10 +703,10 @@ function TaskRow({
               textDecoration: done ? "line-through" : "none",
             }}
           >
-            {task.title}
+            {t(task.title)}
           </p>
           <p className="text-[12px] mt-1 leading-relaxed" style={{ color: "var(--text-muted)" }}>
-            {task.description}
+            {t(task.description)}
           </p>
         </div>
         <Link
@@ -716,7 +720,7 @@ function TaskRow({
             textDecoration: "none",
           }}
         >
-          {done ? "Ir igual" : "Ir ahora"}
+          {done ? t("Ir igual") : t("Ir ahora")}
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
           </svg>
@@ -731,6 +735,7 @@ function TaskRow({
    ───────────────────────────────────────────────────────────── */
 export default function OnboardingPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const [state, setState] = useState<WizardState>(EMPTY);
   const [hydrated, setHydrated] = useState(false);
 
@@ -805,7 +810,7 @@ export default function OnboardingPage() {
   if (!hydrated) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <p className="text-sm" style={{ color: "var(--text-muted)" }}>Cargando…</p>
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>{t("Cargando…")}</p>
       </div>
     );
   }
@@ -867,7 +872,7 @@ export default function OnboardingPage() {
               style={{ background: "rgba(33,208,179,0.12)", border: "1px solid rgba(33,208,179,0.28)", borderRadius: 99, padding: "4px 12px" }}>
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#21D0B3", boxShadow: "0 0 10px #21D0B3", animation: "pulse 2s infinite" }} />
               <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#21D0B3" }}>
-                Inicio guiado
+                {t("Inicio guiado")}
               </span>
               {estMinutes > 0 && (
                 <span className="inline-flex items-center gap-1"
@@ -881,20 +886,20 @@ export default function OnboardingPage() {
             </div>
             <h1 className="mt-3 text-3xl md:text-4xl font-extrabold tracking-tight" style={{ color: "#f1f5f9", letterSpacing: "-0.02em" }}>
               {state.step === 0
-                ? <>Bienvenido a <span className="ob-shimmer-text">Seven Arena</span></>
-                : state.step === 1 ? "Contanos qué hacés"
-                : state.step === 2 ? "Tus objetivos iniciales"
-                : state.step === 3 ? "Tu plan de arranque"
-                : state.step === 4 ? "Tips y recursos"
-                : <span className="ob-shimmer-text">¡Todo listo!</span>}
+                ? <>{t("Bienvenido a")} <span className="ob-shimmer-text">Seven Arena</span></>
+                : state.step === 1 ? t("Contanos qué hacés")
+                : state.step === 2 ? t("Tus objetivos iniciales")
+                : state.step === 3 ? t("Tu plan de arranque")
+                : state.step === 4 ? t("Tips y recursos")
+                : <span className="ob-shimmer-text">{t("¡Todo listo!")}</span>}
             </h1>
             <p className="mt-1.5 text-sm md:text-base max-w-xl" style={{ color: "rgba(241,245,249,0.65)" }}>
-              {state.step === 0 && "Te llevamos en menos de 3 minutos por los módulos que necesitas. Personalizado, sin manuales."}
-              {state.step === 1 && "Vamos a recomendarte tareas y atajos según tu rol — puedes cambiarlo después en cualquier momento."}
-              {state.step === 2 && "Elige lo que quieres resolver primero. Las tareas se ajustan a tu selección."}
-              {state.step === 3 && `Estos son tus próximos pasos. Marca cada uno cuando lo termines — guardamos tu progreso.`}
-              {state.step === 4 && "Trucos para que aproveches al máximo la plataforma."}
-              {state.step === 5 && "Tienes todo lo que necesitas. Vuelve acá cuando quieras revisar tu progreso."}
+              {state.step === 0 && t("Te llevamos en menos de 3 minutos por los módulos que necesitas. Personalizado, sin manuales.")}
+              {state.step === 1 && t("Vamos a recomendarte tareas y atajos según tu rol — puedes cambiarlo después en cualquier momento.")}
+              {state.step === 2 && t("Elige lo que quieres resolver primero. Las tareas se ajustan a tu selección.")}
+              {state.step === 3 && t("Estos son tus próximos pasos. Marca cada uno cuando lo termines — guardamos tu progreso.")}
+              {state.step === 4 && t("Trucos para que aproveches al máximo la plataforma.")}
+              {state.step === 5 && t("Tienes todo lo que necesitas. Vuelve acá cuando quieras revisar tu progreso.")}
             </p>
           </div>
 
@@ -905,7 +910,7 @@ export default function OnboardingPage() {
               onJump={(i) => setState((s) => ({ ...s, step: i }))}
             />
             <p className="text-[11px] mt-2 font-semibold" style={{ color: "rgba(241,245,249,0.5)", letterSpacing: "0.04em" }}>
-              Paso {state.step + 1} de {TOTAL_STEPS + 1}
+              {t("Paso")} {state.step + 1} {t("de")} {TOTAL_STEPS + 1}
             </p>
           </div>
         </div>
@@ -930,8 +935,8 @@ export default function OnboardingPage() {
                     background: `radial-gradient(circle, ${b.accent}30 0%, transparent 65%)`, pointerEvents: "none",
                   }} />
                   <span className="text-3xl relative">{b.icon}</span>
-                  <p className="text-sm font-bold mt-2 relative" style={{ color: "#0f172a" }}>{b.title}</p>
-                  <p className="text-xs mt-1 relative" style={{ color: "var(--text-muted)" }}>{b.text}</p>
+                  <p className="text-sm font-bold mt-2 relative" style={{ color: "#0f172a" }}>{t(b.title)}</p>
+                  <p className="text-xs mt-1 relative" style={{ color: "var(--text-muted)" }}>{t(b.text)}</p>
                 </div>
               ))}
             </div>
@@ -942,11 +947,11 @@ export default function OnboardingPage() {
                 border: "1px solid rgba(33,208,179,0.25)",
               }}>
               <label className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#1eb19a" }}>
-                ¿Cómo te llamamos?
+                {t("¿Cómo te llamamos?")}
               </label>
               <input
                 type="text"
-                placeholder="Tu nombre (opcional)"
+                placeholder={t("Tu nombre (opcional)")}
                 value={state.name}
                 onChange={(e) => setState((s) => ({ ...s, name: e.target.value }))}
                 style={{
@@ -960,11 +965,11 @@ export default function OnboardingPage() {
             <div className="flex justify-end gap-2">
               <button type="button" onClick={() => router.push("/dashboard/operacional")}
                 className="btn btn-ghost">
-                Saltar el tour
+                {t("Saltar el tour")}
               </button>
               <button type="button" onClick={next}
                 className="btn btn-primary text-base px-6 py-3 inline-flex items-center gap-2">
-                Empezar
+                {t("Empezar")}
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
                 </svg>
@@ -977,8 +982,8 @@ export default function OnboardingPage() {
         {state.step === 1 && (
           <div className="space-y-5">
             <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-              {state.name ? `Hola ${state.name}, ` : ""}
-              ¿Cuál es tu rol principal en el evento?
+              {state.name ? `${t("Hola")} ${state.name}, ` : ""}
+              {t("¿Cuál es tu rol principal en el evento?")}
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 ob-stagger">
               {ROLES.map((r) => (
@@ -986,10 +991,10 @@ export default function OnboardingPage() {
               ))}
             </div>
             <div className="flex justify-between gap-2 pt-2">
-              <button type="button" onClick={prev} className="btn btn-ghost">← Atrás</button>
+              <button type="button" onClick={prev} className="btn btn-ghost">{t("← Atrás")}</button>
               <button type="button" onClick={next} disabled={!state.role}
                 className="btn btn-primary inline-flex items-center gap-2">
-                Continuar
+                {t("Continuar")}
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
                 </svg>
@@ -1009,25 +1014,25 @@ export default function OnboardingPage() {
                 </div>
                 <div>
                   <p className="text-[11px] font-bold uppercase tracking-[0.14em]" style={{ color: role.color }}>
-                    Tu rol
+                    {t("Tu rol")}
                   </p>
-                  <p className="text-sm font-bold" style={{ color: "#0f172a" }}>{role.label}</p>
+                  <p className="text-sm font-bold" style={{ color: "#0f172a" }}>{t(role.label)}</p>
                 </div>
                 <button type="button" onClick={prev}
                   className="text-xs underline ml-auto"
                   style={{ color: "var(--text-muted)" }}>
-                  Cambiar
+                  {t("Cambiar")}
                 </button>
               </div>
             )}
 
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.14em] mb-2" style={{ color: "#1eb19a" }}>
-                Sugeridos para tu rol
+                {t("Sugeridos para tu rol")}
               </p>
               <div className="flex flex-wrap gap-2">
                 {GOALS.filter((g) => role && g.tags.includes(role.key)).map((g) => (
-                  <GoalChip key={g.key} label={g.label} emoji={g.emoji}
+                  <GoalChip key={g.key} label={t(g.label)} emoji={g.emoji}
                     selected={state.goals.includes(g.key)}
                     onClick={() => toggleGoal(g.key)} />
                 ))}
@@ -1036,11 +1041,11 @@ export default function OnboardingPage() {
 
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.14em] mb-2" style={{ color: "var(--text-muted)" }}>
-                Otros que podrías necesitar
+                {t("Otros que podrías necesitar")}
               </p>
               <div className="flex flex-wrap gap-2">
                 {GOALS.filter((g) => !role || !g.tags.includes(role.key)).map((g) => (
-                  <GoalChip key={g.key} label={g.label} emoji={g.emoji}
+                  <GoalChip key={g.key} label={t(g.label)} emoji={g.emoji}
                     selected={state.goals.includes(g.key)}
                     onClick={() => toggleGoal(g.key)} />
                 ))}
@@ -1048,14 +1053,14 @@ export default function OnboardingPage() {
             </div>
 
             <div className="flex justify-between gap-2 pt-2">
-              <button type="button" onClick={prev} className="btn btn-ghost">← Atrás</button>
+              <button type="button" onClick={prev} className="btn btn-ghost">{t("← Atrás")}</button>
               <div className="inline-flex items-center gap-3">
                 <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-                  {state.goals.length} {state.goals.length === 1 ? "seleccionado" : "seleccionados"}
+                  {state.goals.length} {state.goals.length === 1 ? t("seleccionado") : t("seleccionados")}
                 </span>
                 <button type="button" onClick={next} disabled={state.goals.length === 0}
                   className="btn btn-primary inline-flex items-center gap-2">
-                  Ver mi plan
+                  {t("Ver mi plan")}
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
                   </svg>
@@ -1076,7 +1081,7 @@ export default function OnboardingPage() {
               }}>
               <div className="flex items-center justify-between mb-2">
                 <p className="text-sm font-bold" style={{ color: "#0f172a" }}>
-                  Tu progreso
+                  {t("Tu progreso")}
                 </p>
                 <span className="text-[13px] font-bold tabular-nums"
                   style={{ color: "#1eb19a" }}>
@@ -1108,18 +1113,18 @@ export default function OnboardingPage() {
               ))}
               {relevantTasks.length === 0 && (
                 <p className="text-sm text-center py-6" style={{ color: "var(--text-muted)" }}>
-                  No seleccionaste objetivos. <button type="button" onClick={prev}
+                  {t("No seleccionaste objetivos.")} <button type="button" onClick={prev}
                     className="underline font-semibold" style={{ color: "#1eb19a" }}>
-                    Volver atrás
-                  </button> para elegir.
+                    {t("Volver atrás")}
+                  </button> {t("para elegir.")}
                 </p>
               )}
             </div>
 
             <div className="flex justify-between gap-2 pt-2">
-              <button type="button" onClick={prev} className="btn btn-ghost">← Atrás</button>
+              <button type="button" onClick={prev} className="btn btn-ghost">{t("← Atrás")}</button>
               <button type="button" onClick={next} className="btn btn-primary inline-flex items-center gap-2">
-                Ver tips
+                {t("Ver tips")}
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
                 </svg>
@@ -1133,7 +1138,7 @@ export default function OnboardingPage() {
           <div className="space-y-6">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.14em] mb-3" style={{ color: "#1eb19a" }}>
-                Tips para tu rol
+                {t("Tips para tu rol")}
               </p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 ob-stagger">
                 {(TIPS_BY_ROLE[state.role || "other"] || []).map((tip, i) => (
@@ -1144,7 +1149,7 @@ export default function OnboardingPage() {
                     }}>
                     <span className="text-2xl">{tip.icon}</span>
                     <p className="text-[12.5px] mt-2 leading-relaxed" style={{ color: "#334155" }}>
-                      {tip.text}
+                      {t(tip.text)}
                     </p>
                   </div>
                 ))}
@@ -1153,7 +1158,7 @@ export default function OnboardingPage() {
 
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.14em] mb-3" style={{ color: "#d4a017" }}>
-                Recursos a mano
+                {t("Recursos a mano")}
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 ob-stagger">
                 {RESOURCES.map((r) => {
@@ -1177,8 +1182,8 @@ export default function OnboardingPage() {
                     >
                       <span className="text-2xl flex-shrink-0">{r.icon}</span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold" style={{ color: "#0f172a" }}>{r.title}</p>
-                        <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{r.desc}</p>
+                        <p className="text-sm font-bold" style={{ color: "#0f172a" }}>{t(r.title)}</p>
+                        <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{t(r.desc)}</p>
                       </div>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 4 }}>
                         <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
@@ -1195,9 +1200,9 @@ export default function OnboardingPage() {
             </div>
 
             <div className="flex justify-between gap-2 pt-2">
-              <button type="button" onClick={prev} className="btn btn-ghost">← Atrás</button>
+              <button type="button" onClick={prev} className="btn btn-ghost">{t("← Atrás")}</button>
               <button type="button" onClick={next} className="btn btn-primary inline-flex items-center gap-2">
-                Finalizar
+                {t("Finalizar")}
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
@@ -1222,35 +1227,35 @@ export default function OnboardingPage() {
 
             <div>
               <h2 className="text-2xl font-extrabold tracking-tight" style={{ color: "#0f172a" }}>
-                {state.name ? `¡Listo, ${state.name}!` : "¡Estás listo!"}
+                {state.name ? `${t("¡Listo,")} ${state.name}!` : t("¡Estás listo!")}
               </h2>
               <p className="mt-2 text-sm max-w-md mx-auto" style={{ color: "var(--text-muted)" }}>
-                Configuraste tu rol como <strong style={{ color: role?.color }}>{role?.label}</strong>{" "}
-                con {state.goals.length} objetivo{state.goals.length === 1 ? "" : "s"}.
-                Completaste {progressTasks} de {relevantTasks.length} tareas iniciales.
+                {t("Configuraste tu rol como")} <strong style={{ color: role?.color }}>{role && t(role.label)}</strong>{" "}
+                {t("con")} {state.goals.length} {state.goals.length === 1 ? t("objetivo") : t("objetivos")}.{" "}
+                {t("Completaste")} {progressTasks} {t("de")} {relevantTasks.length} {t("tareas iniciales.")}
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 max-w-2xl mx-auto">
               <Link href="/dashboard/operacional" className="btn btn-primary py-3"
                 style={{ textDecoration: "none" }}>
-                Ir al dashboard
+                {t("Ir al dashboard")}
               </Link>
               <Link href="/ayuda" className="btn btn-ghost py-3"
                 style={{ textDecoration: "none" }}>
-                Centro de Ayuda
+                {t("Centro de Ayuda")}
               </Link>
               <button type="button" onClick={reset} className="btn btn-ghost py-3">
-                Reiniciar guía
+                {t("Reiniciar guía")}
               </button>
             </div>
 
             {progressTasks < relevantTasks.length && (
               <p className="text-xs italic" style={{ color: "var(--text-muted)" }}>
-                Quedaron {relevantTasks.length - progressTasks} tareas pendientes —
+                {t("Quedaron")} {relevantTasks.length - progressTasks} {t("tareas pendientes —")}
                 <button type="button" onClick={() => setState((s) => ({ ...s, step: 3 }))}
                   className="ml-1 underline font-semibold" style={{ color: "#1eb19a" }}>
-                  retomalas cuando quieras
+                  {t("retomalas cuando quieras")}
                 </button>
               </p>
             )}

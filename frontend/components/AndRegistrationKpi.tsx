@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 import { filterValidatedAthletes } from "@/lib/athletes";
 
 type EventItem = {
@@ -146,6 +147,7 @@ export default function AndRegistrationKpi({
   subtitle = "Compara el objetivo definido en Eventos con los participantes registrados en Arrival & Departure por disciplina.",
   eyebrow = "AND KPI",
 }: KpiProps) {
+  const { t } = useI18n();
   const [events, setEvents] = useState<EventItem[]>([]);
   const [disciplines, setDisciplines] = useState<DisciplineItem[]>([]);
   const [delegations, setDelegations] = useState<DelegationItem[]>([]);
@@ -174,7 +176,7 @@ export default function AndRegistrationKpi({
       setAthletes(filterValidatedAthletes(Array.isArray(athleteData) ? athleteData : []));
       if (!selectedEventId && safeEvents.length) setSelectedEventId(safeEvents[0].id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo cargar KPI AND.");
+      setError(err instanceof Error ? err.message : t("No se pudo cargar KPI AND."));
     } finally {
       setLoading(false);
     }
@@ -240,7 +242,7 @@ export default function AndRegistrationKpi({
     const delegationNameByCode = new Map(
       filteredDelegations.map((item) => [
         normalizeDelegationKey(item.countryCode || item.id),
-        item.countryCode || item.id || "Sin delegación",
+        item.countryCode || item.id || t("Sin delegación"),
       ]),
     );
     const selectedDelegationCode = selectedDelegationId
@@ -258,7 +260,7 @@ export default function AndRegistrationKpi({
       actualByDisciplineDelegation.set(compositeKey, (actualByDisciplineDelegation.get(compositeKey) ?? 0) + 1);
       actualByDiscipline.set(disciplineKey, (actualByDiscipline.get(disciplineKey) ?? 0) + 1);
       if (!delegationNameByCode.has(delegationCode)) {
-        delegationNameByCode.set(delegationCode, delegationCode || "Sin delegación");
+        delegationNameByCode.set(delegationCode, delegationCode || t("Sin delegación"));
       }
     });
 
@@ -272,10 +274,10 @@ export default function AndRegistrationKpi({
     return Array.from(allIds)
       .flatMap((disciplineId) => {
         const disciplineName =
-          disciplineId === "SIN_DISCIPLINA" ? "Sin disciplina" : disciplineMap.get(disciplineId) || disciplineId;
+          disciplineId === "SIN_DISCIPLINA" ? t("Sin disciplina") : disciplineMap.get(disciplineId) || disciplineId;
         const disciplineData = disciplineDataById.get(disciplineId);
-        const disciplineType = typeLabel(disciplineData?.category);
-        const disciplineGender = genderLabel(disciplineData?.gender);
+        const disciplineType = t(typeLabel(disciplineData?.category));
+        const disciplineGender = t(genderLabel(disciplineData?.gender));
         const delegationRow = expectedByDisciplineDelegation[disciplineId] ?? {};
         const expectedDelegationCodes = Object.keys(delegationRow).map((key) =>
           normalizeDelegationKey(delegationCodeById.get(key) || key),
@@ -304,7 +306,7 @@ export default function AndRegistrationKpi({
           const statusTone = (pct ?? 0) > 100 ? "over" : (pct ?? 0) >= 100 ? "good" : "warn";
           return {
             delegationKey: delegationCode,
-            delegationName: delegationNameByCode.get(delegationCode) || delegationCode || "Sin delegación",
+            delegationName: delegationNameByCode.get(delegationCode) || delegationCode || t("Sin delegación"),
             disciplineId,
             disciplineName,
             disciplineType,
@@ -345,7 +347,7 @@ export default function AndRegistrationKpi({
           return [
             {
               delegationKey: "TODAS",
-              delegationName: "Todas",
+              delegationName: t("Todas"),
               disciplineId,
               disciplineName,
               disciplineType,
@@ -367,7 +369,7 @@ export default function AndRegistrationKpi({
         if (byDelegation !== 0) return byDelegation;
         return a.disciplineName.localeCompare(b.disciplineName);
       });
-  }, [selectedEvent, athletes, selectedDelegationId, selectedDelegationCountryCode, disciplineMap, disciplines, filteredDelegations]);
+  }, [selectedEvent, athletes, selectedDelegationId, selectedDelegationCountryCode, disciplineMap, disciplines, filteredDelegations, t]);
 
   const disciplineOptions = useMemo(
     () =>
@@ -427,30 +429,30 @@ export default function AndRegistrationKpi({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#21D0B3", marginBottom: "4px" }}>{eyebrow}</p>
-          <h2 className="mt-1 text-2xl font-semibold" style={{ color: "var(--text)" }}>{title}</h2>
-          <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>{subtitle}</p>
+          <h2 className="mt-1 text-2xl font-semibold" style={{ color: "var(--text)" }}>{t(title)}</h2>
+          <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>{t(subtitle)}</p>
         </div>
         <button className="btn btn-ghost" type="button" onClick={load} disabled={loading}>
-          {loading ? "Actualizando..." : "Refrescar KPI"}
+          {loading ? t("Actualizando...") : t("Refrescar KPI")}
         </button>
       </div>
 
       {/* ── Filters */}
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
         <select className="input" value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)}>
-          <option value="">Selecciona evento</option>
+          <option value="">{t("Selecciona evento")}</option>
           {events.map((event) => (
             <option key={event.id} value={event.id}>{event.name || event.id}</option>
           ))}
         </select>
         <select className="input" value={selectedDelegationId} onChange={(e) => setSelectedDelegationId(e.target.value)}>
-          <option value="">Todas las delegaciones</option>
+          <option value="">{t("Todas las delegaciones")}</option>
           {filteredDelegations.map((delegation) => (
             <option key={delegation.id} value={delegation.id}>{delegation.countryCode || delegation.id}</option>
           ))}
         </select>
         <select className="input" value={selectedDisciplineId} onChange={(e) => setSelectedDisciplineId(e.target.value)}>
-          <option value="">Todas las disciplinas</option>
+          <option value="">{t("Todas las disciplinas")}</option>
           {disciplineOptions.map((discipline) => (
             <option key={discipline.id} value={discipline.id}>{discipline.name}</option>
           ))}
@@ -468,9 +470,9 @@ export default function AndRegistrationKpi({
             <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: complianceColor, display: "inline-block" }} />
           </div>
           <p style={{ fontSize: "2rem", fontWeight: 800, color: complianceColor, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
-            {totals.pct === null ? "N/D" : formatPercent(totals.pct)}
+            {totals.pct === null ? t("N/D") : formatPercent(totals.pct)}
           </p>
-          <p style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "6px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.14em" }}>Cumplimiento total</p>
+          <p style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "6px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.14em" }}>{t("Cumplimiento total")}</p>
           <div style={{ marginTop: "10px", height: "4px", borderRadius: "99px", background: "#f1f5f9" }}>
             <div style={{ height: "4px", borderRadius: "99px", width: `${Math.min(totals.pct ?? 0, 100)}%`, background: complianceColor, transition: "width 0.5s ease" }} />
           </div>
@@ -491,9 +493,9 @@ export default function AndRegistrationKpi({
           <p style={{ fontSize: "2rem", fontWeight: 800, color: varianceColor, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
             {totals.variance === null ? "-" : totals.variance > 0 ? `+${totals.variance}` : totals.variance}
           </p>
-          <p style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "6px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.14em" }}>Brecha neta</p>
+          <p style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "6px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.14em" }}>{t("Brecha neta")}</p>
           <p style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "4px" }}>
-            {selectedDelegationId && !totals.hasComparableExpected ? "Sin meta configurada" : `${totals.registered} reg. / ${totals.expected} esp.`}
+            {selectedDelegationId && !totals.hasComparableExpected ? t("Sin meta configurada") : `${totals.registered} reg. / ${totals.expected} esp.`}
           </p>
         </div>
 
@@ -512,9 +514,9 @@ export default function AndRegistrationKpi({
               <p style={{ fontSize: "2rem", fontWeight: 800, color: defColor, lineHeight: 1 }}>
                 {deficitStats.uniqueDeficitDisciplines}
               </p>
-              <p style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "6px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.14em" }}>Disciplinas en déficit</p>
+              <p style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "6px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.14em" }}>{t("Disciplinas en déficit")}</p>
               <p style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "4px" }}>
-                {deficitStats.onTrack} en objetivo · {deficitStats.deficit} rezagadas
+                {deficitStats.onTrack} {t("en objetivo")} · {deficitStats.deficit} {t("rezagadas")}
               </p>
             </div>
           );
@@ -532,9 +534,9 @@ export default function AndRegistrationKpi({
           <p style={{ fontSize: "2rem", fontWeight: 800, color: "#1FCDFF", lineHeight: 1 }}>
             {filteredDelegations.length}
           </p>
-          <p style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "6px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.14em" }}>Delegaciones</p>
+          <p style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "6px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.14em" }}>{t("Delegaciones")}</p>
           <p style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "4px" }}>
-            {totals.registered} participantes AND
+            {totals.registered} {t("participantes AND")}
           </p>
         </div>
       </div>
@@ -543,10 +545,10 @@ export default function AndRegistrationKpi({
 
       <div className="mt-4 flex items-center justify-between gap-3">
         <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-          Mostrando {Math.min(filteredRows.length, maxRows)} de {filteredRows.length} filas
+          {t("Mostrando")} {Math.min(filteredRows.length, maxRows)} {t("de")} {filteredRows.length} {t("filas")}
         </p>
         <div className="flex items-center gap-2">
-          <span className="text-xs" style={{ color: "var(--text-muted)" }}>Límite</span>
+          <span className="text-xs" style={{ color: "var(--text-muted)" }}>{t("Límite")}</span>
           <select
             className="input h-9 min-w-[120px]"
             value={maxRows}
@@ -566,7 +568,7 @@ export default function AndRegistrationKpi({
             <tr>
               {["Delegación","Disciplina","Tipo","Género","Esperado","Registrado","Brecha","Cumplimiento"].map((col) => (
                 <th key={col} className="sticky top-0 z-10" style={{ background: "linear-gradient(to bottom, #eaf4fb, #e8f0f8)", color: "#1FCDFF", fontSize: "10px", letterSpacing: "0.16em", textTransform: "uppercase", borderBottom: "2px solid rgba(31,205,255,0.25)", fontWeight: 700 }}>
-                  {col}
+                  {t(col)}
                 </th>
               ))}
             </tr>
@@ -595,7 +597,7 @@ export default function AndRegistrationKpi({
                       />
                     </div>
                     <span className="min-w-[52px] text-right text-xs font-semibold" style={{ color: "var(--text)" }}>
-                      {row.pct === null ? "N/D" : formatPercent(row.pct)}
+                      {row.pct === null ? t("N/D") : formatPercent(row.pct)}
                     </span>
                   </div>
                 </td>
@@ -607,7 +609,7 @@ export default function AndRegistrationKpi({
 
       {!loading && filteredRows.length === 0 ? (
         <p className="mt-3 text-sm" style={{ color: "var(--text-muted)" }}>
-          Define primero la planificacion AND en Eventos (capacidad por disciplina y por delegacion) para ver este KPI.
+          {t("Define primero la planificacion AND en Eventos (capacidad por disciplina y por delegacion) para ver este KPI.")}
         </p>
       ) : null}
     </section>

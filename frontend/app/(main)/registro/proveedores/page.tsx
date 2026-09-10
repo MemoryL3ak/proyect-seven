@@ -5,6 +5,7 @@ import { apiFetch } from "@/lib/api";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import CountrySelect from "@/components/CountrySelect";
 import { CLIENT_TYPE_OPTIONS } from "@/lib/clientTypes";
+import { useI18n } from "@/lib/i18n";
 
 // ── Type/subtype catalogue ──────────────────────────────────────────────────
 type TypeEntry = { label: string; subtypes: string[]; color: string; bg: string };
@@ -155,6 +156,7 @@ function DocRow({
   onFile: (key: string, file: File | null) => void;
   disabled?: boolean;
 }) {
+  const { t } = useI18n();
   const ref = useRef<HTMLInputElement>(null);
   const hasUploaded = typeof url === "string" && url.length > 0;
   const hasNew = file !== null;
@@ -164,12 +166,12 @@ function DocRow({
       <span style={{ flex: 1, fontSize: "12px", color: "var(--text)", fontWeight: 500 }}>{label}</span>
       <span style={{ fontSize: "11px", maxWidth: "120px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
         color: hasNew ? "#21D0B3" : hasUploaded ? "#10b981" : "var(--text-faint)" }}>
-        {hasNew ? file.name : hasUploaded ? "✓ Cargado" : "—"}
+        {hasNew ? file.name : hasUploaded ? "✓ " + t("Cargado") : "—"}
       </span>
       {hasUploaded && url && (
         <a href={url} target="_blank" rel="noreferrer"
           style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, borderRadius: 6, border: "1px solid var(--border)", background: "var(--elevated)", cursor: "pointer", flexShrink: 0 }}
-          title="Ver documento">
+          title={t("Ver documento")}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
         </a>
       )}
@@ -189,7 +191,7 @@ function DocRow({
           background: "var(--elevated)", color: "var(--text-muted)", cursor: disabled ? "not-allowed" : "pointer",
           whiteSpace: "nowrap", flexShrink: 0 }}
       >
-        {hasUploaded || hasNew ? "Cambiar" : "Cargar"}
+        {hasUploaded || hasNew ? t("Cambiar") : t("Cargar")}
       </button>
       {hasNew && (
         <button type="button" disabled={disabled} onClick={() => onFile(docKey, null)}
@@ -234,6 +236,7 @@ const EMPTY_PARTICIPANT_FORM = {
 
 // ── Main page ────────────────────────────────────────────────────────────────
 export default function ProveedoresPage() {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<"proveedores" | "participantes">("proveedores");
   const [providerFilter, setProviderFilter] = useState<string>(""); // provider id filter for participantes tab
 
@@ -275,9 +278,9 @@ export default function ProveedoresPage() {
         `/provider-participants/${p.id}/send-welcome-email`,
         { method: "POST" },
       );
-      setMailToast({ ok: true, msg: res.message || `Correo enviado a ${p.email}` });
+      setMailToast({ ok: true, msg: res.message || `${t("Correo enviado a")} ${p.email}` });
     } catch (e) {
-      setMailToast({ ok: false, msg: e instanceof Error ? e.message : "No se pudo enviar el correo" });
+      setMailToast({ ok: false, msg: e instanceof Error ? e.message : t("No se pudo enviar el correo") });
     } finally {
       setSendingMailId(null);
     }
@@ -301,7 +304,7 @@ export default function ProveedoresPage() {
         vehicleAno: data.year ? String(data.year) : f.vehicleAno,
       }));
     } catch {
-      setPlateError("No se encontró información para esta patente");
+      setPlateError(t("No se encontró información para esta patente"));
     } finally {
       setLookingUpPlate(false);
     }
@@ -397,7 +400,7 @@ export default function ProveedoresPage() {
   };
 
   const saveProvider = async () => {
-    if (!providerForm.name.trim()) { setProviderError("El nombre es requerido."); return; }
+    if (!providerForm.name.trim()) { setProviderError(t("El nombre es requerido.")); return; }
     setSavingProvider(true);
     setProviderError(null);
     try {
@@ -465,7 +468,7 @@ export default function ProveedoresPage() {
       setProviderModal(null);
       await loadProviders();
     } catch (e) {
-      setProviderError(e instanceof Error ? e.message : "Error al guardar");
+      setProviderError(e instanceof Error ? e.message : t("Error al guardar"));
     } finally {
       setSavingProvider(false);
     }
@@ -473,14 +476,14 @@ export default function ProveedoresPage() {
 
   const removeProvider = (p: Provider) => {
     setConfirmDialog({
-      message: `¿Eliminar proveedor "${p.name}"? Esta acción no se puede deshacer.`,
+      message: `${t("¿Eliminar proveedor")} "${p.name}"? ${t("Esta acción no se puede deshacer.")}`,
       onConfirm: async () => {
         setConfirmDialog(null);
         try {
           await apiFetch(`/providers/${p.id}`, { method: "DELETE" });
           await loadProviders();
         } catch (e) {
-          alert(e instanceof Error ? e.message : "Error al eliminar");
+          alert(e instanceof Error ? e.message : t("Error al eliminar"));
         }
       },
     });
@@ -553,8 +556,8 @@ export default function ProveedoresPage() {
   };
 
   const saveParticipant = async () => {
-    if (!participantForm.fullName.trim()) { setParticipantError("El nombre completo es requerido."); return; }
-    if (!participantForm.providerId) { setParticipantError("Debe seleccionar un proveedor."); return; }
+    if (!participantForm.fullName.trim()) { setParticipantError(t("El nombre completo es requerido.")); return; }
+    if (!participantForm.providerId) { setParticipantError(t("Debe seleccionar un proveedor.")); return; }
     setSavingParticipant(true);
     setParticipantError(null);
     try {
@@ -629,7 +632,7 @@ export default function ProveedoresPage() {
       setParticipantModal(null);
       await loadParticipants();
     } catch (e) {
-      setParticipantError(e instanceof Error ? e.message : "Error al guardar");
+      setParticipantError(e instanceof Error ? e.message : t("Error al guardar"));
     } finally {
       setSavingParticipant(false);
     }
@@ -641,20 +644,20 @@ export default function ProveedoresPage() {
       await apiFetch(`/provider-participants/${p.id}/reactivate`, { method: "POST" });
       await loadParticipants();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Error al reactivar");
+      alert(e instanceof Error ? e.message : t("Error al reactivar"));
     }
   };
 
   const removeParticipant = (p: Participant) => {
     setConfirmDialog({
-      message: `¿Eliminar participante "${p.fullName}"? Esta acción no se puede deshacer.`,
+      message: `${t("¿Eliminar participante")} "${p.fullName}"? ${t("Esta acción no se puede deshacer.")}`,
       onConfirm: async () => {
         setConfirmDialog(null);
         try {
           await apiFetch(`/provider-participants/${p.id}`, { method: "DELETE" });
           await loadParticipants();
         } catch (e) {
-          alert(e instanceof Error ? e.message : "Error al eliminar");
+          alert(e instanceof Error ? e.message : t("Error al eliminar"));
         }
       },
     });
@@ -670,10 +673,10 @@ export default function ProveedoresPage() {
     <div className="space-y-6">
       <ConfirmDialog
         open={!!confirmDialog}
-        title="Confirmar eliminación"
+        title={t("Confirmar eliminación")}
         message={confirmDialog?.message ?? ""}
-        confirmLabel="Eliminar"
-        cancelLabel="Cancelar"
+        confirmLabel={t("Eliminar")}
+        cancelLabel={t("Cancelar")}
         danger
         onConfirm={() => confirmDialog?.onConfirm()}
         onCancel={() => setConfirmDialog(null)}
@@ -685,17 +688,17 @@ export default function ProveedoresPage() {
         style={{ borderTop: "2px solid #21D0B3", boxShadow: "0 1px 6px rgba(15,23,42,0.06)" }}
       >
         <div>
-          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#21D0B3", marginBottom: "4px" }}>Registro</p>
-          <h1 style={{ fontSize: "1.75rem", fontWeight: 700, color: "var(--text)", lineHeight: 1.1 }}>Proveedores</h1>
+          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#21D0B3", marginBottom: "4px" }}>{t("Registro")}</p>
+          <h1 style={{ fontSize: "1.75rem", fontWeight: 700, color: "var(--text)", lineHeight: 1.1 }}>{t("Proveedores")}</h1>
           <p style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "4px" }}>
-            Gestión de proveedores y sus participantes
+            {t("Gestión de proveedores y sus participantes")}
           </p>
         </div>
         <button
           className="btn btn-primary"
           onClick={activeTab === "proveedores" ? openAddProvider : openAddParticipant}
         >
-          {activeTab === "proveedores" ? "+ Nuevo proveedor" : "+ Nuevo participante"}
+          {activeTab === "proveedores" ? t("+ Nuevo proveedor") : t("+ Nuevo participante")}
         </button>
       </section>
 
@@ -720,7 +723,7 @@ export default function ProveedoresPage() {
               transition: "color 0.15s",
             }}
           >
-            {tab === "proveedores" ? "Proveedores" : "Participantes"}
+            {tab === "proveedores" ? t("Proveedores") : t("Participantes")}
           </button>
         ))}
       </div>
@@ -739,7 +742,7 @@ export default function ProveedoresPage() {
                 </div>
                 <div>
                   <p style={{ fontSize: "22px", fontWeight: 700, color: "var(--text)", lineHeight: 1 }}>{providers.length}</p>
-                  <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "2px" }}>Proveedores</p>
+                  <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "2px" }}>{t("Proveedores")}</p>
                 </div>
               </div>
               {Object.entries(
@@ -763,8 +766,8 @@ export default function ProveedoresPage() {
                         <span style={{ fontSize: "14px", fontWeight: 800, color: entry?.color ?? "#21D0B3" }}>{count}</span>
                       </div>
                       <div>
-                        <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--text)", lineHeight: 1.2 }}>{entry?.label ?? type}</p>
-                        <p style={{ fontSize: "10px", color: "var(--text-faint)", marginTop: "1px" }}>proveedor{count !== 1 ? "es" : ""}</p>
+                        <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--text)", lineHeight: 1.2 }}>{t(entry?.label ?? type)}</p>
+                        <p style={{ fontSize: "10px", color: "var(--text-faint)", marginTop: "1px" }}>{count !== 1 ? t("proveedores") : t("proveedor")}</p>
                       </div>
                     </div>
                   );
@@ -781,25 +784,25 @@ export default function ProveedoresPage() {
               <input
                 className="input"
                 style={{ paddingLeft: "32px" }}
-                placeholder="Buscar por nombre, email o RUT…"
+                placeholder={t("Buscar por nombre, email o RUT…")}
                 value={providerSearch}
                 onChange={e => setProviderSearch(e.target.value)}
               />
             </div>
             <select className="input w-52" value={filterType} onChange={e => setFilterType(e.target.value)}>
-              <option value="">— Todos los tipos —</option>
+              <option value="">{t("— Todos los tipos —")}</option>
               {Object.entries(PROVIDER_TYPES).map(([key, { label }]) => (
-                <option key={key} value={key}>{label}</option>
+                <option key={key} value={key}>{t(label)}</option>
               ))}
             </select>
             <span style={{ fontSize: "12px", color: "var(--text-faint)", whiteSpace: "nowrap" }}>
-              {filteredProviders.length} de {providers.length}
+              {filteredProviders.length} {t("de")} {providers.length}
             </span>
           </section>
 
           {loadingProviders ? (
             <div className="flex items-center justify-center h-40 text-sm" style={{ color: "var(--text-faint)" }}>
-              Cargando proveedores…
+              {t("Cargando proveedores…")}
             </div>
           ) : filteredProviders.length === 0 ? (
             <div className="surface rounded-2xl p-10 text-center" style={{ color: "var(--text-faint)" }}>
@@ -807,10 +810,10 @@ export default function ProveedoresPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
               <p style={{ fontSize: "14px", fontWeight: 600 }}>
-                {providers.length === 0 ? "No hay proveedores registrados" : "Sin resultados"}
+                {providers.length === 0 ? t("No hay proveedores registrados") : t("Sin resultados")}
               </p>
               <p style={{ fontSize: "12px", marginTop: "4px" }}>
-                {providers.length === 0 ? "Agrega un proveedor para comenzar." : "Ajusta los filtros de búsqueda."}
+                {providers.length === 0 ? t("Agrega un proveedor para comenzar.") : t("Ajusta los filtros de búsqueda.")}
               </p>
             </div>
           ) : (
@@ -818,7 +821,7 @@ export default function ProveedoresPage() {
               {groupKeys.map(key => {
                 const items = groupedProviders[key];
                 const typeEntry = PROVIDER_TYPES[key];
-                const typeLabel = key === "__none__" ? "Sin tipo asignado" : (typeEntry?.label ?? key);
+                const typeLabel = key === "__none__" ? t("Sin tipo asignado") : t(typeEntry?.label ?? key);
                 const typeColor = key === "__none__" ? "#94a3b8" : (typeEntry?.color ?? "#21D0B3");
                 const typeBg = key === "__none__" ? "rgba(148,163,184,0.08)" : (typeEntry?.bg ?? "rgba(33,208,179,0.08)");
 
@@ -864,7 +867,7 @@ export default function ProveedoresPage() {
                                   style={{ fontSize: "14px", fontWeight: 700, color: "var(--text)", background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left", display: "block", width: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
                                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = typeColor; }}
                                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--text)"; }}
-                                  title={`Ver participantes de ${p.name}`}
+                                  title={`${t("Ver participantes de")} ${p.name}`}
                                 >
                                   {p.name}
                                 </button>
@@ -906,7 +909,7 @@ export default function ProveedoresPage() {
                                   style={{ padding: "5px", borderRadius: "7px", background: "none", border: "none", cursor: "pointer", color: "var(--text-faint)", transition: "all 0.15s" }}
                                   onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = "rgba(31,205,255,0.1)"; el.style.color = "#1FCDFF"; }}
                                   onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = "none"; el.style.color = "var(--text-faint)"; }}
-                                  title="Editar"
+                                  title={t("Editar")}
                                 >
                                   <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -917,7 +920,7 @@ export default function ProveedoresPage() {
                                   style={{ padding: "5px", borderRadius: "7px", background: "none", border: "none", cursor: "pointer", color: "var(--text-faint)", transition: "all 0.15s" }}
                                   onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = "rgba(244,63,94,0.1)"; el.style.color = "#f43f5e"; }}
                                   onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = "none"; el.style.color = "var(--text-faint)"; }}
-                                  title="Eliminar"
+                                  title={t("Eliminar")}
                                 >
                                   <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -937,7 +940,7 @@ export default function ProveedoresPage() {
                                 <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke={typeColor} strokeWidth={2}>
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                                 </svg>
-                                <span style={{ fontSize: "11px", fontWeight: 600, color: typeColor }}>Participantes</span>
+                                <span style={{ fontSize: "11px", fontWeight: 600, color: typeColor }}>{t("Participantes")}</span>
                               </button>
                               {!p.parentProviderId && (
                                 <button
@@ -945,10 +948,10 @@ export default function ProveedoresPage() {
                                   style={{ padding: "8px 14px", background: typeBg, border: "none", borderLeft: `1px solid ${typeColor}20`, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", transition: "background 0.15s" }}
                                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = `${typeColor}18`; }}
                                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = typeBg; }}
-                                  title="Crear subproveedor"
+                                  title={t("Crear subproveedor")}
                                 >
                                   <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke={typeColor} strokeWidth={2}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                                  <span style={{ fontSize: "10px", fontWeight: 600, color: typeColor }}>Sub</span>
+                                  <span style={{ fontSize: "10px", fontWeight: 600, color: typeColor }}>{t("Sub")}</span>
                                 </button>
                               )}
                             </div>
@@ -959,15 +962,15 @@ export default function ProveedoresPage() {
                               if (subs.length === 0) return null;
                               return (
                                 <div style={{ padding: "8px 16px 12px", borderTop: `1px solid ${typeColor}15`, background: `${typeColor}05` }}>
-                                  <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: typeColor, margin: "0 0 6px" }}>Subproveedores ({subs.length})</p>
+                                  <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: typeColor, margin: "0 0 6px" }}>{t("Subproveedores")} ({subs.length})</p>
                                   {subs.map(sub => (
                                     <div key={sub.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 8px", borderRadius: 6, background: "#fff", border: "1px solid #f1f5f9", marginBottom: 3 }}>
                                       <span style={{ fontSize: 12, fontWeight: 600, color: "#0f172a" }}>{sub.name}</span>
                                       <div style={{ display: "flex", gap: 4 }}>
-                                        <button onClick={() => openEditProvider(sub)} style={{ padding: 3, borderRadius: 4, border: "none", background: "none", cursor: "pointer", color: "#94a3b8" }} title="Editar">
+                                        <button onClick={() => openEditProvider(sub)} style={{ padding: 3, borderRadius: 4, border: "none", background: "none", cursor: "pointer", color: "#94a3b8" }} title={t("Editar")}>
                                           <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                         </button>
-                                        <button onClick={() => removeProvider(sub)} style={{ padding: 3, borderRadius: 4, border: "none", background: "none", cursor: "pointer", color: "#94a3b8" }} title="Eliminar">
+                                        <button onClick={() => removeProvider(sub)} style={{ padding: 3, borderRadius: 4, border: "none", background: "none", cursor: "pointer", color: "#94a3b8" }} title={t("Eliminar")}>
                                           <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                         </button>
                                       </div>
@@ -995,7 +998,7 @@ export default function ProveedoresPage() {
           <section className="surface rounded-2xl p-4 flex flex-wrap gap-3 items-center" style={{ boxShadow: "0 1px 4px rgba(15,23,42,0.05)" }}>
             <input
               className="input flex-1 min-w-[180px]"
-              placeholder="Buscar por nombre, RUT o email…"
+              placeholder={t("Buscar por nombre, RUT o email…")}
               value={participantSearch}
               onChange={e => setParticipantSearch(e.target.value)}
             />
@@ -1004,7 +1007,7 @@ export default function ProveedoresPage() {
               value={providerFilter}
               onChange={e => setProviderFilter(e.target.value)}
             >
-              <option value="">— Todos los proveedores —</option>
+              <option value="">{t("— Todos los proveedores —")}</option>
               {providers.map(p => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
@@ -1020,7 +1023,7 @@ export default function ProveedoresPage() {
               </button>
             )}
             <span style={{ fontSize: "12px", color: "var(--text-faint)" }}>
-              {filteredParticipants.length} resultado{filteredParticipants.length !== 1 ? "s" : ""}
+              {filteredParticipants.length} {filteredParticipants.length !== 1 ? t("resultados") : t("resultado")}
             </span>
           </section>
 
@@ -1029,10 +1032,10 @@ export default function ProveedoresPage() {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
               <div>
                 <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#a78bfa", marginBottom: "4px" }}>
-                  Carga masiva de fotos
+                  {t("Carga masiva de fotos")}
                 </p>
                 <p style={{ fontSize: "12px", color: "#64748b", margin: 0 }}>
-                  El nombre del archivo debe coincidir con el nombre completo del participante.
+                  {t("El nombre del archivo debe coincidir con el nombre completo del participante.")}
                 </p>
               </div>
               <label style={{
@@ -1041,7 +1044,7 @@ export default function ProveedoresPage() {
                 cursor: "pointer", boxShadow: "0 2px 10px rgba(167,139,250,0.35)",
               }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                Seleccionar fotos
+                {t("Seleccionar fotos")}
                 <input type="file" accept="image/*" multiple style={{ display: "none" }} onChange={async (e) => {
                   const files = Array.from(e.target.files || []);
                   if (files.length === 0) return;
@@ -1095,29 +1098,29 @@ export default function ProveedoresPage() {
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                   )}
                 </div>
-                <h3 style={{ fontSize: "16px", fontWeight: 700, margin: "0 0 6px" }}>{bulkPhotoResult.matched > 0 ? "Carga completada" : "Sin coincidencias"}</h3>
+                <h3 style={{ fontSize: "16px", fontWeight: 700, margin: "0 0 6px" }}>{bulkPhotoResult.matched > 0 ? t("Carga completada") : t("Sin coincidencias")}</h3>
                 <div style={{ display: "flex", justifyContent: "center", gap: "16px", margin: "12px 0 16px" }}>
                   <div style={{ padding: "8px 16px", borderRadius: "10px", background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)" }}>
                     <p style={{ fontSize: "20px", fontWeight: 800, color: "#10b981", margin: 0 }}>{bulkPhotoResult.matched}</p>
-                    <p style={{ fontSize: "10px", fontWeight: 600, color: "#065f46", margin: 0 }}>Exitosas</p>
+                    <p style={{ fontSize: "10px", fontWeight: 600, color: "#065f46", margin: 0 }}>{t("Exitosas")}</p>
                   </div>
                   <div style={{ padding: "8px 16px", borderRadius: "10px", background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)" }}>
                     <p style={{ fontSize: "20px", fontWeight: 800, color: "#ef4444", margin: 0 }}>{bulkPhotoResult.notFound}</p>
-                    <p style={{ fontSize: "10px", fontWeight: 600, color: "#991b1b", margin: 0 }}>Sin match</p>
+                    <p style={{ fontSize: "10px", fontWeight: 600, color: "#991b1b", margin: 0 }}>{t("Sin match")}</p>
                   </div>
                 </div>
                 {bulkPhotoResult.names.length > 0 && (
                   <div style={{ textAlign: "left", background: "#f8fafc", borderRadius: "10px", padding: "10px 14px", marginBottom: "16px", maxHeight: "120px", overflowY: "auto" }}>
-                    <p style={{ fontSize: "10px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 6px" }}>Archivos sin coincidencia</p>
+                    <p style={{ fontSize: "10px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 6px" }}>{t("Archivos sin coincidencia")}</p>
                     {bulkPhotoResult.names.slice(0, 10).map(name => (
                       <p key={name} style={{ fontSize: "12px", color: "#64748b", margin: "2px 0" }}>{name}</p>
                     ))}
-                    {bulkPhotoResult.names.length > 10 && <p style={{ fontSize: "11px", color: "#94a3b8", margin: "4px 0 0" }}>+{bulkPhotoResult.names.length - 10} más...</p>}
+                    {bulkPhotoResult.names.length > 10 && <p style={{ fontSize: "11px", color: "#94a3b8", margin: "4px 0 0" }}>+{bulkPhotoResult.names.length - 10} {t("más...")}</p>}
                   </div>
                 )}
                 <button onClick={() => setBulkPhotoResult(null)}
                   style={{ padding: "10px 32px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 10px rgba(33,208,179,0.3)" }}>
-                  Entendido
+                  {t("Entendido")}
                 </button>
               </div>
             </div>
@@ -1125,13 +1128,13 @@ export default function ProveedoresPage() {
 
           {loadingParticipants ? (
             <div className="flex items-center justify-center h-40 text-sm" style={{ color: "var(--text-faint)" }}>
-              Cargando participantes…
+              {t("Cargando participantes…")}
             </div>
           ) : filteredParticipants.length === 0 ? (
             <div className="surface rounded-2xl p-8 text-center text-sm" style={{ color: "var(--text-faint)" }}>
               {participants.length === 0
-                ? "No hay participantes registrados para este proveedor."
-                : "Sin resultados para el filtro actual."}
+                ? t("No hay participantes registrados para este proveedor.")
+                : t("Sin resultados para el filtro actual.")}
             </div>
           ) : (
             <div className="surface rounded-2xl overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(15,23,42,0.05)" }}>
@@ -1179,7 +1182,7 @@ export default function ProveedoresPage() {
                         color: p.tripType === "ARRIVAL" ? "#1FCDFF" : p.tripType === "DEPARTURE" ? "#a855f7" : "#21D0B3",
                         flexShrink: 0,
                       }}>
-                        {TRIP_TYPE_LABELS[p.tripType] ?? p.tripType}
+                        {t(TRIP_TYPE_LABELS[p.tripType] ?? p.tripType)}
                       </span>
                     )}
 
@@ -1192,7 +1195,7 @@ export default function ProveedoresPage() {
                         color: docCount === ALL_TRANSPORT_DOCS.length ? "#10b981" : "#21D0B3",
                         flexShrink: 0,
                       }}>
-                        {docCount}/{ALL_TRANSPORT_DOCS.length} docs
+                        {docCount}/{ALL_TRANSPORT_DOCS.length} {t("docs")}
                       </span>
                     )}
 
@@ -1206,7 +1209,7 @@ export default function ProveedoresPage() {
                         borderRadius: "99px", background: "rgba(239,68,68,0.1)",
                         border: "1px solid rgba(239,68,68,0.3)", color: "#dc2626", flexShrink: 0,
                       }}>
-                        ELIMINADA
+                        {t("ELIMINADA")}
                       </span>
                     )}
 
@@ -1218,7 +1221,7 @@ export default function ProveedoresPage() {
                           style={{ color: "var(--text-faint)" }}
                           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#10b981"; }}
                           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-faint)"; }}
-                          title="Reactivar cuenta"
+                          title={t("Reactivar cuenta")}
                         >
                           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v6h6M20 20v-6h-6M4 10a8 8 0 0114-4M20 14a8 8 0 01-14 4" />
@@ -1232,7 +1235,7 @@ export default function ProveedoresPage() {
                         style={{ color: "var(--text-faint)", opacity: !p.email || sendingMailId === p.id ? 0.4 : 1, cursor: !p.email ? "not-allowed" : "pointer" }}
                         onMouseEnter={e => { if (p.email) (e.currentTarget as HTMLElement).style.color = "#21D0B3"; }}
                         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-faint)"; }}
-                        title={p.email ? "Enviar código de acceso por correo" : "Sin correo registrado"}
+                        title={p.email ? t("Enviar código de acceso por correo") : t("Sin correo registrado")}
                       >
                         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -1244,7 +1247,7 @@ export default function ProveedoresPage() {
                         style={{ color: "var(--text-faint)" }}
                         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#1FCDFF"; }}
                         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-faint)"; }}
-                        title="Editar"
+                        title={t("Editar")}
                       >
                         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -1256,7 +1259,7 @@ export default function ProveedoresPage() {
                         style={{ color: "var(--text-faint)" }}
                         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#f43f5e"; }}
                         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-faint)"; }}
-                        title="Eliminar"
+                        title={t("Eliminar")}
                       >
                         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -1297,10 +1300,10 @@ export default function ProveedoresPage() {
           >
             <div className="px-6 pt-6 pb-4 flex-shrink-0">
               <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#21D0B3", marginBottom: "4px" }}>
-                {providerModal.editing ? "Editar" : "Nuevo"}
+                {providerModal.editing ? t("Editar") : t("Nuevo")}
               </p>
               <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "var(--text)" }}>
-                {providerModal.editing ? "Editar proveedor" : providerModal.parentId ? `Nuevo subproveedor de ${providers.find(pr => pr.id === providerModal.parentId)?.name || ""}` : "Nuevo proveedor"}
+                {providerModal.editing ? t("Editar proveedor") : providerModal.parentId ? `${t("Nuevo subproveedor de")} ${providers.find(pr => pr.id === providerModal.parentId)?.name || ""}` : t("Nuevo proveedor")}
               </h2>
             </div>
 
@@ -1314,7 +1317,7 @@ export default function ProveedoresPage() {
                   return (
                     <div style={{ width: "56px", height: "56px", borderRadius: "14px", border: "2px dashed #e2e8f0", background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
                       {logoUrl ? (
-                        <img src={logoUrl} alt="Logo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        <img src={logoUrl} alt={t("Logo")} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                       ) : (
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
                       )}
@@ -1323,7 +1326,7 @@ export default function ProveedoresPage() {
                 })()}
                 <div style={{ flex: 1 }}>
                   <DocRow
-                    label="Logo del proveedor"
+                    label={t("Logo del proveedor")}
                     docKey="logo"
                     file={providerDocFiles.logo ?? null}
                     url={typeof providerModal?.editing?.metadata?.logo === "string" ? (providerModal.editing.metadata.logo as string) : undefined}
@@ -1334,68 +1337,68 @@ export default function ProveedoresPage() {
               </div>
 
               <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                Nombre *
-                <input className="input" value={providerForm.name} onChange={e => setProviderForm(f => ({ ...f, name: e.target.value }))} placeholder="Nombre del proveedor" autoFocus />
+                {t("Nombre *")}
+                <input className="input" value={providerForm.name} onChange={e => setProviderForm(f => ({ ...f, name: e.target.value }))} placeholder={t("Nombre del proveedor")} autoFocus />
               </label>
 
               <div className="grid grid-cols-2 gap-3">
                 <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                  Tipo
+                  {t("Tipo")}
                   <select className="input" value={providerForm.type} onChange={e => setProviderForm(f => ({ ...f, type: e.target.value, subtype: "" }))}>
-                    <option value="">— Sin tipo —</option>
+                    <option value="">{t("— Sin tipo —")}</option>
                     {Object.entries(PROVIDER_TYPES).map(([key, { label }]) => (
-                      <option key={key} value={key}>{label}</option>
+                      <option key={key} value={key}>{t(label)}</option>
                     ))}
                   </select>
                 </label>
                 <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                  Sub-tipo
+                  {t("Sub-tipo")}
                   <select className="input" value={providerForm.subtype} onChange={e => setProviderForm(f => ({ ...f, subtype: e.target.value }))} disabled={availableSubtypes.length === 0}>
                     <option value="">—</option>
-                    {availableSubtypes.map(s => <option key={s} value={s}>{s}</option>)}
+                    {availableSubtypes.map(s => <option key={s} value={s}>{t(s)}</option>)}
                   </select>
                 </label>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                  Email
+                  {t("Email")}
                   <input className="input" type="email" value={providerForm.email} onChange={e => setProviderForm(f => ({ ...f, email: e.target.value }))} placeholder="contacto@proveedor.com" />
                 </label>
                 <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                  RUT
+                  {t("RUT")}
                   <input className="input" value={providerForm.rut} onChange={e => setProviderForm(f => ({ ...f, rut: e.target.value }))} placeholder="12.345.678-9" />
                 </label>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                  Teléfono
+                  {t("Teléfono")}
                   <input className="input" value={providerForm.phone} onChange={e => setProviderForm(f => ({ ...f, phone: e.target.value }))} placeholder="+56 9 1234 5678" />
                 </label>
                 <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                  Nombre de contacto
-                  <input className="input" value={providerForm.contactName} onChange={e => setProviderForm(f => ({ ...f, contactName: e.target.value }))} placeholder="Nombre del contacto" />
+                  {t("Nombre de contacto")}
+                  <input className="input" value={providerForm.contactName} onChange={e => setProviderForm(f => ({ ...f, contactName: e.target.value }))} placeholder={t("Nombre del contacto")} />
                 </label>
               </div>
 
               <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                Dirección
-                <input className="input" value={providerForm.address} onChange={e => setProviderForm(f => ({ ...f, address: e.target.value }))} placeholder="Dirección del proveedor" />
+                {t("Dirección")}
+                <input className="input" value={providerForm.address} onChange={e => setProviderForm(f => ({ ...f, address: e.target.value }))} placeholder={t("Dirección del proveedor")} />
               </label>
 
               <div className="grid grid-cols-2 gap-3">
                 <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                  Ciudad
+                  {t("Ciudad")}
                   <input className="input" value={providerForm.city} onChange={e => setProviderForm(f => ({ ...f, city: e.target.value }))} placeholder="Santiago" />
                 </label>
                 <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                  Tipo de factura
+                  {t("Tipo de factura")}
                   <select className="input" value={providerForm.invoiceType} onChange={e => setProviderForm(f => ({ ...f, invoiceType: e.target.value }))}>
-                    <option value="">— Seleccionar —</option>
-                    <option value="AFECTO">Afecto</option>
-                    <option value="EXENTO">Exento</option>
-                    <option value="MIXTO">Mixto</option>
+                    <option value="">{t("— Seleccionar —")}</option>
+                    <option value="AFECTO">{t("Afecto")}</option>
+                    <option value="EXENTO">{t("Exento")}</option>
+                    <option value="MIXTO">{t("Mixto")}</option>
                   </select>
                 </label>
               </div>
@@ -1404,12 +1407,12 @@ export default function ProveedoresPage() {
               {(providerForm.type === "TRANSPORTE" || providerForm.type === "HOTELERIA" || providerForm.type === "ALIMENTACION") && (
                 <div className={providerForm.type === "TRANSPORTE" ? "grid grid-cols-2 gap-3" : ""}>
                   <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                    Monto licitado
+                    {t("Monto licitado")}
                     <input className="input" type="text" inputMode="numeric" value={providerForm.bidAmount ? `$${Number(providerForm.bidAmount).toLocaleString("es-CL")}` : ""} onChange={e => { const raw = e.target.value.replace(/[^0-9]/g, ""); setProviderForm(f => ({ ...f, bidAmount: raw })); }} placeholder="$0" />
                   </label>
                   {providerForm.type === "TRANSPORTE" && (
                     <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                      Total viajes licitados
+                      {t("Total viajes licitados")}
                       <input className="input" type="text" inputMode="numeric" value={providerForm.bidTripCount || ""} onChange={e => { const raw = e.target.value.replace(/[^0-9]/g, ""); setProviderForm(f => ({ ...f, bidTripCount: raw })); }} placeholder="0" />
                     </label>
                   )}
@@ -1420,7 +1423,7 @@ export default function ProveedoresPage() {
               {isTransporteProvider && (
                 <div style={{ borderRadius: 14, border: "1px solid var(--border)", overflow: "hidden" }}>
                   <div style={{ padding: "10px 14px", background: "rgba(33,208,179,0.06)", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <p style={{ fontSize: 12, fontWeight: 700, color: "#0f172a", margin: 0 }}>Tabla de tarifas</p>
+                    <p style={{ fontSize: 12, fontWeight: 700, color: "#0f172a", margin: 0 }}>{t("Tabla de tarifas")}</p>
                     <button type="button" onClick={() => {
                       // Generate all combinations if empty
                       if (providerRates.length === 0) {
@@ -1440,7 +1443,7 @@ export default function ProveedoresPage() {
                         setProviderRates(generated);
                       }
                     }} style={{ fontSize: 11, fontWeight: 600, color: "#21D0B3", background: "none", border: "1px solid rgba(33,208,179,0.3)", borderRadius: 8, padding: "4px 10px", cursor: "pointer" }}>
-                      {providerRates.length === 0 ? "Generar tabla" : "Regenerar"}
+                      {providerRates.length === 0 ? t("Generar tabla") : t("Regenerar")}
                     </button>
                   </div>
 
@@ -1449,11 +1452,11 @@ export default function ProveedoresPage() {
                       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                         <thead>
                           <tr style={{ background: "#f8fafc", position: "sticky", top: 0, zIndex: 1 }}>
-                            <th style={{ padding: "8px 10px", textAlign: "left", fontWeight: 700, color: "#64748b", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", borderBottom: "1px solid var(--border)" }}>Flota</th>
-                            <th style={{ padding: "8px 6px", textAlign: "center", fontWeight: 700, color: "#64748b", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", borderBottom: "1px solid var(--border)" }}>Pax</th>
-                            <th style={{ padding: "8px 10px", textAlign: "left", fontWeight: 700, color: "#64748b", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", borderBottom: "1px solid var(--border)" }}>Tipo servicio</th>
-                            <th style={{ padding: "8px 6px", textAlign: "right", fontWeight: 700, color: "#64748b", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", borderBottom: "1px solid var(--border)" }}>Valor cliente</th>
-                            <th style={{ padding: "8px 6px", textAlign: "right", fontWeight: 700, color: "#64748b", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", borderBottom: "1px solid var(--border)" }}>Valor proveedor</th>
+                            <th style={{ padding: "8px 10px", textAlign: "left", fontWeight: 700, color: "#64748b", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", borderBottom: "1px solid var(--border)" }}>{t("Flota")}</th>
+                            <th style={{ padding: "8px 6px", textAlign: "center", fontWeight: 700, color: "#64748b", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", borderBottom: "1px solid var(--border)" }}>{t("Pax")}</th>
+                            <th style={{ padding: "8px 10px", textAlign: "left", fontWeight: 700, color: "#64748b", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", borderBottom: "1px solid var(--border)" }}>{t("Tipo servicio")}</th>
+                            <th style={{ padding: "8px 6px", textAlign: "right", fontWeight: 700, color: "#64748b", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", borderBottom: "1px solid var(--border)" }}>{t("Valor cliente")}</th>
+                            <th style={{ padding: "8px 6px", textAlign: "right", fontWeight: 700, color: "#64748b", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", borderBottom: "1px solid var(--border)" }}>{t("Valor proveedor")}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1464,12 +1467,12 @@ export default function ProveedoresPage() {
                             return (
                               <tr key={`${rate.fleetType}-${rate.tripType}`} style={{ borderBottom: "1px solid #f1f5f9", background: isFirstOfFleet ? "#fafbfc" : "#fff" }}>
                                 <td style={{ padding: "6px 10px", fontWeight: isFirstOfFleet ? 700 : 400, color: "#0f172a" }}>
-                                  {isFirstOfFleet ? (fleet?.label || rate.fleetType) : ""}
+                                  {isFirstOfFleet ? t(fleet?.label || rate.fleetType) : ""}
                                 </td>
                                 <td style={{ padding: "6px", textAlign: "center", color: "#64748b" }}>
                                   {isFirstOfFleet ? (fleet?.passengers || "-") : ""}
                                 </td>
-                                <td style={{ padding: "6px 10px", color: "#334155" }}>{service?.label || rate.tripType}</td>
+                                <td style={{ padding: "6px 10px", color: "#334155" }}>{t(service?.label || rate.tripType)}</td>
                                 <td style={{ padding: "4px 6px", textAlign: "right" }}>
                                   <input type="text" inputMode="numeric" value={Number(rate.clientPrice) ? `$${Number(rate.clientPrice).toLocaleString("es-CL")}` : ""} onChange={(e) => {
                                     const raw = e.target.value.replace(/[^0-9]/g, "");
@@ -1500,9 +1503,9 @@ export default function ProveedoresPage() {
             </div>
 
             <div className="px-6 py-4 flex justify-end gap-3 flex-shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
-              <button className="btn btn-ghost" onClick={() => setProviderModal(null)} disabled={savingProvider}>Cancelar</button>
+              <button className="btn btn-ghost" onClick={() => setProviderModal(null)} disabled={savingProvider}>{t("Cancelar")}</button>
               <button className="btn btn-primary" onClick={saveProvider} disabled={savingProvider}>
-                {savingProvider ? "Guardando…" : "Guardar"}
+                {savingProvider ? t("Guardando…") : t("Guardar")}
               </button>
             </div>
           </div>
@@ -1523,25 +1526,25 @@ export default function ProveedoresPage() {
           >
             <div className="px-6 pt-6 pb-4 flex-shrink-0">
               <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#21D0B3", marginBottom: "4px" }}>
-                {participantModal.editing ? "Editar" : "Nuevo"}
+                {participantModal.editing ? t("Editar") : t("Nuevo")}
               </p>
               <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "var(--text)" }}>
-                {participantModal.editing ? "Editar participante" : "Nuevo participante"}
+                {participantModal.editing ? t("Editar participante") : t("Nuevo participante")}
               </h2>
             </div>
 
             <div className="overflow-y-auto px-6 pb-2 flex-1 space-y-4">
               {/* Proveedor */}
               <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                Proveedor *
+                {t("Proveedor *")}
                 <select
                   className="input"
                   value={participantForm.providerId}
                   onChange={e => setParticipantForm(f => ({ ...f, providerId: e.target.value }))}
                 >
-                  <option value="">— Seleccionar proveedor —</option>
+                  <option value="">{t("— Seleccionar proveedor —")}</option>
                   {providers.map(p => (
-                    <option key={p.id} value={p.id}>{p.name}{p.type ? ` (${PROVIDER_TYPES[p.type]?.label ?? p.type})` : ""}</option>
+                    <option key={p.id} value={p.id}>{p.name}{p.type ? ` (${t(PROVIDER_TYPES[p.type]?.label ?? p.type)})` : ""}</option>
                   ))}
                 </select>
               </label>
@@ -1562,7 +1565,7 @@ export default function ProveedoresPage() {
                     cursor: "pointer", boxShadow: "0 2px 8px rgba(33,208,179,0.3)",
                   }}>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                    {participantForm.photoDataUrl ? "Cambiar foto" : "Subir foto"}
+                    {participantForm.photoDataUrl ? t("Cambiar foto") : t("Subir foto")}
                     <input type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
@@ -1589,7 +1592,7 @@ export default function ProveedoresPage() {
                   {participantForm.photoDataUrl && (
                     <button type="button" onClick={() => setParticipantForm(f => ({ ...f, photoDataUrl: "" }))}
                       style={{ marginLeft: "8px", fontSize: "11px", color: "#ef4444", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>
-                      Quitar
+                      {t("Quitar")}
                     </button>
                   )}
                 </div>
@@ -1597,15 +1600,15 @@ export default function ProveedoresPage() {
 
               {/* Datos personales */}
               <div style={{ borderTop: "1px solid var(--border)", paddingTop: "12px" }}>
-                <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: "12px" }}>Datos personales</p>
+                <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: "12px" }}>{t("Datos personales")}</p>
                 <div className="space-y-3">
                   <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                    Nombre completo *
-                    <input className="input" value={participantForm.fullName} onChange={e => setParticipantForm(f => ({ ...f, fullName: e.target.value }))} placeholder="Nombre y apellido" autoFocus />
+                    {t("Nombre completo *")}
+                    <input className="input" value={participantForm.fullName} onChange={e => setParticipantForm(f => ({ ...f, fullName: e.target.value }))} placeholder={t("Nombre y apellido")} autoFocus />
                   </label>
 
                   <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                    País
+                    {t("País")}
                     <CountrySelect
                       value={participantForm.countryCode}
                       onChange={val => setParticipantForm(f => ({ ...f, countryCode: val, rut: val !== "CHL" ? "" : f.rut, passportNumber: val === "CHL" ? "" : f.passportNumber }))}
@@ -1616,43 +1619,43 @@ export default function ProveedoresPage() {
                   <div className="grid grid-cols-2 gap-3">
                     {participantForm.countryCode === "CHL" ? (
                       <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                        RUT
+                        {t("RUT")}
                         <input className="input" value={participantForm.rut} onChange={e => setParticipantForm(f => ({ ...f, rut: e.target.value }))} placeholder="12.345.678-9" autoFocus />
                       </label>
                     ) : (
                       <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                        Pasaporte
+                        {t("Pasaporte")}
                         <input className="input" value={participantForm.passportNumber} onChange={e => setParticipantForm(f => ({ ...f, passportNumber: e.target.value }))} placeholder="A12345678" />
                       </label>
                     )}
                     <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                      Fecha de nacimiento
+                      {t("Fecha de nacimiento")}
                       <input className="input" type="date" value={participantForm.dateOfBirth} onChange={e => setParticipantForm(f => ({ ...f, dateOfBirth: e.target.value }))} />
                     </label>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                      Email
+                      {t("Email")}
                       <input className="input" type="email" value={participantForm.email} onChange={e => setParticipantForm(f => ({ ...f, email: e.target.value }))} placeholder="nombre@email.com" />
                     </label>
                     <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                      Teléfono
+                      {t("Teléfono")}
                       <input className="input" value={participantForm.phone} onChange={e => setParticipantForm(f => ({ ...f, phone: e.target.value }))} placeholder="+56 9 1234 5678" />
                     </label>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                      Rol / Tipo
-                      <input className="input" value={participantForm.userType} onChange={e => setParticipantForm(f => ({ ...f, userType: e.target.value }))} placeholder="Conductor, Coordinador…" />
+                      {t("Rol / Tipo")}
+                      <input className="input" value={participantForm.userType} onChange={e => setParticipantForm(f => ({ ...f, userType: e.target.value }))} placeholder={t("Conductor, Coordinador…")} />
                     </label>
                     <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                      Requiere visa
+                      {t("Requiere visa")}
                       <select className="input" value={participantForm.visaRequired} onChange={e => setParticipantForm(f => ({ ...f, visaRequired: e.target.value }))}>
-                        <option value="">— Sin especificar —</option>
-                        <option value="true">Sí</option>
-                        <option value="false">No</option>
+                        <option value="">{t("— Sin especificar —")}</option>
+                        <option value="true">{t("Sí")}</option>
+                        <option value="false">{t("No")}</option>
                       </select>
                     </label>
                   </div>
@@ -1661,8 +1664,8 @@ export default function ProveedoresPage() {
 
               {/* Observaciones */}
               <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                Observaciones
-                <textarea className="input" rows={2} value={participantForm.observations} onChange={e => setParticipantForm(f => ({ ...f, observations: e.target.value }))} placeholder="Notas adicionales…" style={{ resize: "vertical" }} />
+                {t("Observaciones")}
+                <textarea className="input" rows={2} value={participantForm.observations} onChange={e => setParticipantForm(f => ({ ...f, observations: e.target.value }))} placeholder={t("Notas adicionales…")} style={{ resize: "vertical" }} />
               </label>
 
               {/* Chofer flag + vehículo + docs (solo TRANSPORTE) */}
@@ -1685,7 +1688,7 @@ export default function ProveedoresPage() {
                         <circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>
                       </svg>
                       <span style={{ fontSize: "13px", fontWeight: 600, color: participantForm.isDriver ? "#21D0B3" : "var(--text-muted)" }}>
-                        Es conductor
+                        {t("Es conductor")}
                       </span>
                     </div>
                     {/* Toggle pill */}
@@ -1708,10 +1711,10 @@ export default function ProveedoresPage() {
                     {/* Tipos de cliente que puede transportar */}
                     <div style={{ marginTop: "16px" }}>
                       <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: "4px" }}>
-                        Tipos de cliente que puede transportar
+                        {t("Tipos de cliente que puede transportar")}
                       </p>
                       <p style={{ fontSize: "11px", color: "var(--text-muted)", marginBottom: "10px" }}>
-                        La auto-asignación solo le entregará servicios de estos tipos. Por defecto: TA (Deportista).
+                        {t("La auto-asignación solo le entregará servicios de estos tipos. Por defecto: TA (Deportista).")}
                       </p>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
                         {CLIENT_TYPE_OPTIONS.map(o => {
@@ -1734,14 +1737,14 @@ export default function ProveedoresPage() {
                                 border: `1px solid ${sel ? "#21D0B3" : "var(--border)"}`,
                               }}
                             >
-                              {sel ? "✓ " : ""}{o.label}
+                              {sel ? "✓ " : ""}{t(o.label)}
                             </button>
                           );
                         })}
                       </div>
                       {participantForm.allowedClientTypes.length === 0 && (
                         <p style={{ fontSize: "11px", color: "#f59e0b", marginTop: "8px" }}>
-                          ⚠ Sin tipos seleccionados se guardará con TA (Deportista) por defecto.
+                          ⚠ {t("Sin tipos seleccionados se guardará con TA (Deportista) por defecto.")}
                         </p>
                       )}
                     </div>
@@ -1749,21 +1752,21 @@ export default function ProveedoresPage() {
                     {/* Vehículo */}
                     <div style={{ marginTop: "16px" }}>
                       <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: "10px" }}>
-                        Detalle del vehículo
+                        {t("Detalle del vehículo")}
                       </p>
                       <div className="space-y-3">
                         {/* Patente con lookup */}
                         <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
                           <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                            Patente
+                            {t("Patente")}
                             {lookingUpPlate && (
-                              <span style={{ fontSize: "10px", color: "#21D0B3", fontWeight: 500, letterSpacing: "0.05em" }}>Buscando…</span>
+                              <span style={{ fontSize: "10px", color: "#21D0B3", fontWeight: 500, letterSpacing: "0.05em" }}>{t("Buscando…")}</span>
                             )}
                             {!lookingUpPlate && plateError && (
                               <span style={{ fontSize: "10px", color: "#f87171", fontWeight: 500 }}>{plateError}</span>
                             )}
                             {!lookingUpPlate && !plateError && participantForm.vehicleMarca && (
-                              <span style={{ fontSize: "10px", color: "#21D0B3", fontWeight: 500 }}>✓ Datos encontrados</span>
+                              <span style={{ fontSize: "10px", color: "#21D0B3", fontWeight: 500 }}>✓ {t("Datos encontrados")}</span>
                             )}
                           </span>
                           <input
@@ -1776,30 +1779,30 @@ export default function ProveedoresPage() {
                         </label>
                         <div className="grid grid-cols-2 gap-3">
                           <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                            Marca
+                            {t("Marca")}
                             <input className="input" value={participantForm.vehicleMarca} onChange={e => setParticipantForm(f => ({ ...f, vehicleMarca: e.target.value }))} placeholder="Toyota" />
                           </label>
                           <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                            Modelo
+                            {t("Modelo")}
                             <input className="input" value={participantForm.vehicleModelo} onChange={e => setParticipantForm(f => ({ ...f, vehicleModelo: e.target.value }))} placeholder="Corolla" />
                           </label>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                           <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                            Año
+                            {t("Año")}
                             <input className="input" value={participantForm.vehicleAno} onChange={e => setParticipantForm(f => ({ ...f, vehicleAno: e.target.value }))} placeholder="2022" maxLength={4} />
                           </label>
                           <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                            Tipo
+                            {t("Tipo")}
                             <select className="input" value={participantForm.vehicleTipo} onChange={e => setParticipantForm(f => ({ ...f, vehicleTipo: e.target.value }))}>
-                              <option value="">— Tipo —</option>
-                              <option value="SEDAN">Sedán</option>
-                              <option value="SUV">SUV</option>
-                              <option value="VAN_10">Van 10</option>
-                              <option value="VAN_15">Van 15-17</option>
-                              <option value="VAN_19">Van 19</option>
-                              <option value="MINIBUS">Minibus</option>
-                              <option value="BUS">Bus</option>
+                              <option value="">{t("— Tipo —")}</option>
+                              <option value="SEDAN">{t("Sedán")}</option>
+                              <option value="SUV">{t("SUV")}</option>
+                              <option value="VAN_10">{t("Van 10")}</option>
+                              <option value="VAN_15">{t("Van 15-17")}</option>
+                              <option value="VAN_19">{t("Van 19")}</option>
+                              <option value="MINIBUS">{t("Minibus")}</option>
+                              <option value="BUS">{t("Bus")}</option>
                             </select>
                           </label>
                         </div>
@@ -1809,19 +1812,19 @@ export default function ProveedoresPage() {
                     {/* Documentación */}
                     <div style={{ marginTop: "20px" }}>
                       <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#21D0B3", marginBottom: "2px" }}>
-                        Documentación requerida
+                        {t("Documentación requerida")}
                       </p>
                       <p style={{ fontSize: "12px", color: "var(--text-muted)", marginBottom: "12px" }}>
-                        Documentos del participante y del vehículo. Formatos: imagen o PDF.
+                        {t("Documentos del participante y del vehículo. Formatos: imagen o PDF.")}
                       </p>
 
                       <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: "4px" }}>
-                        Documentos personales
+                        {t("Documentos personales")}
                       </p>
                       {TRANSPORT_DOCS_PERSON.map(doc => (
                         <DocRow
                           key={doc.key}
-                          label={doc.label}
+                          label={t(doc.label)}
                           docKey={doc.key}
                           file={participantDocFiles[doc.key] ?? null}
                           url={typeof participantModal?.editing?.metadata?.[doc.key] === "string" ? (participantModal.editing.metadata![doc.key] as string) : undefined}
@@ -1831,12 +1834,12 @@ export default function ProveedoresPage() {
                       ))}
 
                       <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--text-muted)", marginTop: "16px", marginBottom: "4px" }}>
-                        Documentos del vehículo
+                        {t("Documentos del vehículo")}
                       </p>
                       {TRANSPORT_DOCS_VEHICLE.map(doc => (
                         <DocRow
                           key={doc.key}
-                          label={doc.label}
+                          label={t(doc.label)}
                           docKey={doc.key}
                           file={participantDocFiles[doc.key] ?? null}
                           url={typeof participantModal?.editing?.metadata?.[doc.key] === "string" ? (participantModal.editing.metadata![doc.key] as string) : undefined}
@@ -1854,9 +1857,9 @@ export default function ProveedoresPage() {
             </div>
 
             <div className="px-6 py-4 flex justify-end gap-3 flex-shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
-              <button className="btn btn-ghost" onClick={() => setParticipantModal(null)} disabled={savingParticipant}>Cancelar</button>
+              <button className="btn btn-ghost" onClick={() => setParticipantModal(null)} disabled={savingParticipant}>{t("Cancelar")}</button>
               <button className="btn btn-primary" onClick={saveParticipant} disabled={savingParticipant}>
-                {savingParticipant ? "Guardando…" : "Guardar"}
+                {savingParticipant ? t("Guardando…") : t("Guardar")}
               </button>
             </div>
           </div>

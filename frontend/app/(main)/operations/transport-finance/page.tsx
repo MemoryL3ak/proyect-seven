@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 import KpiCard from "@/components/ui/KpiCard";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
@@ -196,6 +197,7 @@ const restarDias = (iso: string, dias: number) => {
 type Preset = "todo" | "hoy" | "7d" | "30d" | "custom";
 
 export default function TransportFinancePage() {
+  const { t } = useI18n();
   const [resumen, setResumen] = useState<Resumen | null>(null);
   const [detalle, setDetalle] = useState<Detalle[]>([]);
   const [eventos, setEventos] = useState<EventItem[]>([]);
@@ -233,7 +235,7 @@ export default function TransportFinancePage() {
       setResumen(r);
       setDetalle(Array.isArray(d) ? d : []);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "No se pudo cargar la información financiera.");
+      setError(e instanceof Error ? e.message : t("No se pudo cargar la información financiera."));
     } finally {
       setCargando(false);
     }
@@ -405,11 +407,11 @@ export default function TransportFinancePage() {
         <EmptyState
           variant="warning"
           icon={<AlertIcon />}
-          title="No se pudo cargar el panel financiero"
+          title={t("No se pudo cargar el panel financiero")}
           description={error}
           action={
             <button className="btn btn-primary" onClick={() => { setCargando(true); void cargar(); }}>
-              Reintentar
+              {t("Reintentar")}
             </button>
           }
         />
@@ -419,33 +421,33 @@ export default function TransportFinancePage() {
 
   if (!resumen) return null;
 
-  const t = resumen.totales;
+  const tot = resumen.totales;
   const p = resumen.presupuesto;
   const q = resumen.calidadDatos;
-  const sinDatos = t.viajes === 0;
+  const sinDatos = tot.viajes === 0;
 
   return (
     <div className="p-4 md:p-6 space-y-5">
       {/* ══ Encabezado ══ */}
       <PageHeader
-        title="Panel Financiero de Transporte"
-        description="Ingreso facturable, costo de proveedores y margen por servicio. Cada tramo (ida y regreso) se valoriza como un servicio independiente."
+        title={t("Panel Financiero de Transporte")}
+        description={t("Ingreso facturable, costo de proveedores y margen por servicio. Cada tramo (ida y regreso) se valoriza como un servicio independiente.")}
         icon={<DollarIcon size={24} />}
         meta={
           <span className="text-[11px]" style={{ color: "var(--text-faint)" }}>
-            Actualizado {new Date(resumen.generadoEn).toLocaleString("es-CL", { timeZone: "America/Santiago" })}
+            {t("Actualizado")} {new Date(resumen.generadoEn).toLocaleString("es-CL", { timeZone: "America/Santiago" })}
           </span>
         }
         action={
           <div className="flex gap-2">
             <button className="btn btn-ghost" onClick={() => { setCargando(true); void cargar(); }}>
-              <RefreshIcon /> Actualizar
+              <RefreshIcon /> {t("Actualizar")}
             </button>
             <button className="btn btn-gold" onClick={exportarCsv} disabled={detalle.length === 0}>
-              <ClipboardIcon /> Exportar CSV
+              <ClipboardIcon /> {t("Exportar CSV")}
             </button>
             <button className="btn btn-primary" onClick={exportarPdf} disabled={!resumen || sinDatos}>
-              <ClipboardIcon /> Exportar PDF
+              <ClipboardIcon /> {t("Exportar PDF")}
             </button>
           </div>
         }
@@ -455,78 +457,78 @@ export default function TransportFinancePage() {
       <section className="surface rounded-2xl p-5 space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
           <label className="text-sm block">
-            <span className="block mb-1">Evento</span>
+            <span className="block mb-1">{t("Evento")}</span>
             <select
               className="input"
               value={eventId}
               onChange={(e) => setEventId(e.target.value)}
               style={{ borderColor: eventId ? "var(--brand)" : undefined, fontWeight: eventId ? 600 : 400 }}
             >
-              <option value="">Todos los eventos</option>
+              <option value="">{t("Todos los eventos")}</option>
               {eventos.map((ev) => (
-                <option key={ev.id} value={ev.id}>{ev.name || "Evento sin nombre"}</option>
+                <option key={ev.id} value={ev.id}>{ev.name || t("Evento sin nombre")}</option>
               ))}
             </select>
           </label>
 
           <label className="text-sm block">
-            <span className="block mb-1">Tipo cliente</span>
+            <span className="block mb-1">{t("Tipo cliente")}</span>
             <select
               className="input"
               value={tipoCliente}
               onChange={(e) => setTipoCliente(e.target.value)}
               style={{ borderColor: tipoCliente ? "var(--brand)" : undefined, fontWeight: tipoCliente ? 600 : 400 }}
             >
-              <option value="">Todos los tipos</option>
+              <option value="">{t("Todos los tipos")}</option>
               {CLIENT_TYPE_OPTIONS.map((c) => (
-                <option key={c.value} value={c.value}>{c.label}</option>
+                <option key={c.value} value={c.value}>{t(c.label)}</option>
               ))}
             </select>
           </label>
 
           <label className="text-sm block">
-            <span className="block mb-1">Flota</span>
+            <span className="block mb-1">{t("Flota")}</span>
             <select
               className="input"
               value={flota}
               onChange={(e) => setFlota(e.target.value)}
               style={{ borderColor: flota ? "var(--brand)" : undefined, fontWeight: flota ? 600 : 400 }}
             >
-              <option value="">Todas las flotas</option>
+              <option value="">{t("Todas las flotas")}</option>
               {Object.entries(FLOTA_LABEL)
                 .filter(([clave]) => clave !== "SIN CLASIFICAR")
                 .map(([clave, etiqueta]) => (
-                  <option key={clave} value={clave}>{etiqueta}</option>
+                  <option key={clave} value={clave}>{t(etiqueta)}</option>
                 ))}
             </select>
           </label>
 
           <label className="text-sm block">
-            <span className="block mb-1">Tipo de servicio</span>
+            <span className="block mb-1">{t("Tipo de servicio")}</span>
             <select
               className="input"
               value={servicio}
               onChange={(e) => setServicio(e.target.value)}
               style={{ borderColor: servicio ? "var(--brand)" : undefined, fontWeight: servicio ? 600 : 400 }}
             >
-              <option value="">Todos los servicios</option>
+              <option value="">{t("Todos los servicios")}</option>
               {Object.entries(SERVICIO_LABEL).map(([clave, etiqueta]) => (
-                <option key={clave} value={clave}>{etiqueta}</option>
+                <option key={clave} value={clave}>{t(etiqueta)}</option>
               ))}
             </select>
           </label>
 
           <label className="text-sm block">
-            <span className="block mb-1">Proveedor</span>
+            <span className="block mb-1">{t("Proveedor")}</span>
             <select
               className="input"
               value={proveedorId}
               onChange={(e) => setProveedorId(e.target.value)}
               style={{ borderColor: proveedorId ? "var(--brand)" : undefined, fontWeight: proveedorId ? 600 : 400 }}
             >
-              <option value="">Todos los proveedores</option>
+              <option value="">{t("Todos los proveedores")}</option>
               {proveedores.map((pr) => (
-                <option key={pr.id} value={pr.id}>{pr.name || "Proveedor sin nombre"}</option>
+                <option key={pr.id} value={pr.id}>{pr.name || t("Proveedor sin nombre")}</option>
               ))}
             </select>
           </label>
@@ -549,7 +551,7 @@ export default function TransportFinancePage() {
                     color: preset === valor ? "#ffffff" : "var(--text-muted)",
                   }}
                 >
-                  {etiqueta}
+                  {t(etiqueta)}
                 </button>
               ),
             )}
@@ -558,18 +560,18 @@ export default function TransportFinancePage() {
           <input
             type="date" className="input" style={{ maxWidth: 150 }} value={desde}
             onChange={(e) => { setDesde(e.target.value); setPreset("custom"); }}
-            aria-label="Desde"
+            aria-label={t("Desde")}
           />
           <span style={{ color: "var(--text-faint)" }}>→</span>
           <input
             type="date" className="input" style={{ maxWidth: 150 }} value={hasta}
             onChange={(e) => { setHasta(e.target.value); setPreset("custom"); }}
-            aria-label="Hasta"
+            aria-label={t("Hasta")}
           />
 
           {hayFiltros && (
             <button className="btn btn-ghost" onClick={limpiarFiltros}>
-              Limpiar filtros
+              {t("Limpiar filtros")}
             </button>
           )}
         </div>
@@ -578,9 +580,9 @@ export default function TransportFinancePage() {
       {sinDatos ? (
         <EmptyState
           icon={<DollarIcon />}
-          title="Sin servicios en el período seleccionado"
-          description="Ajusta el rango de fechas o el evento para ver la información financiera."
-          action={<button className="btn btn-ghost" onClick={() => aplicarPreset("todo")}>Ver todo el período</button>}
+          title={t("Sin servicios en el período seleccionado")}
+          description={t("Ajusta el rango de fechas o el evento para ver la información financiera.")}
+          action={<button className="btn btn-ghost" onClick={() => aplicarPreset("todo")}>{t("Ver todo el período")}</button>}
         />
       ) : (
         <>
@@ -590,44 +592,44 @@ export default function TransportFinancePage() {
             style={{ gridTemplateColumns: "repeat(auto-fit,minmax(210px,1fr))" }}
           >
             <KpiCard
-              label="Ingreso facturable"
-              value={clpCorto(t.ingresoTotal)}
-              detail={`${t.viajesActivos} servicios activos · ${clp(t.ingresoTotal)}`}
+              label={t("Ingreso facturable")}
+              value={clpCorto(tot.ingresoTotal)}
+              detail={`${tot.viajesActivos} servicios activos · ${clp(tot.ingresoTotal)}`}
               accent="green"
               icon={<DollarIcon />}
             />
             <KpiCard
-              label="Costo proveedores"
-              value={clpCorto(t.costoTotal)}
-              detail={`${pct(t.ingresoTotal > 0 ? (t.costoTotal / t.ingresoTotal) * 100 : 0)} del ingreso`}
+              label={t("Costo proveedores")}
+              value={clpCorto(tot.costoTotal)}
+              detail={`${pct(tot.ingresoTotal > 0 ? (tot.costoTotal / tot.ingresoTotal) * 100 : 0)} del ingreso`}
               accent="red"
               icon={<TruckIcon />}
             />
             <KpiCard
-              label="Margen bruto"
-              value={clpCorto(t.margenTotal)}
-              detail={`Margen de ${pct(t.margenPct)} sobre el ingreso`}
+              label={t("Margen bruto")}
+              value={clpCorto(tot.margenTotal)}
+              detail={`Margen de ${pct(tot.margenPct)} sobre el ingreso`}
               accent="blue"
               icon={<DollarIcon />}
             />
             <KpiCard
-              label="Ticket promedio"
-              value={clpCorto(t.ticketPromedio)}
-              detail={`${t.pasajeros} pasajeros · ${clpCorto(t.costoPorPasajero)} de costo por pasajero`}
+              label={t("Ticket promedio")}
+              value={clpCorto(tot.ticketPromedio)}
+              detail={`${tot.pasajeros} pasajeros · ${clpCorto(tot.costoPorPasajero)} de costo por pasajero`}
               accent="purple"
               icon={<UsersIcon />}
             />
             <KpiCard
-              label="Servicios entregados"
-              value={String(t.viajesPrestados)}
-              detail={`${clpCorto(t.ingresoPrestado)} devengado · ${t.viajesCancelados} cancelados`}
+              label={t("Servicios entregados")}
+              value={String(tot.viajesPrestados)}
+              detail={`${clpCorto(tot.ingresoPrestado)} devengado · ${tot.viajesCancelados} cancelados`}
               accent="amber"
               icon={<ClipboardIcon />}
             />
             <KpiCard
-              label="Km recorridos"
-              value={km(t.kmRecorridos)}
-              detail={`${km(t.kmPrestados)} en servicios entregados`}
+              label={t("Km recorridos")}
+              value={km(tot.kmRecorridos)}
+              detail={`${km(tot.kmPrestados)} en servicios entregados`}
               accent="neutral"
               icon={<TruckIcon />}
             />
@@ -635,16 +637,16 @@ export default function TransportFinancePage() {
 
           {/* ══ Ejecución presupuestaria + composición ══ */}
           <section className="grid gap-4 grid-cols-1 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
-            <EjecucionPresupuestaria p={p} viajesActivos={t.viajesActivos} />
-            <ComposicionIngreso t={t} />
+            <EjecucionPresupuestaria p={p} viajesActivos={tot.viajesActivos} />
+            <ComposicionIngreso t={tot} />
           </section>
 
           {/* ══ Pestañas ══ */}
           <div className="flex gap-1 p-1 rounded-xl w-fit" style={{ background: "var(--elevated)" }}>
             {([
-              ["resumen", "Resumen por dimensión"],
-              ["detalle", `Detalle de servicios (${detalle.length})`],
-              ["calidad", `Calidad de datos${q.sinValorizar + q.porReferencia > 0 ? ` (${q.sinValorizar + q.porReferencia})` : ""}`],
+              ["resumen", t("Resumen por dimensión")],
+              ["detalle", `${t("Detalle de servicios")} (${detalle.length})`],
+              ["calidad", `${t("Calidad de datos")}${q.sinValorizar + q.porReferencia > 0 ? ` (${q.sinValorizar + q.porReferencia})` : ""}`],
             ] as [typeof vista, string][]).map(([valor, etiqueta]) => (
               <button
                 key={valor}
@@ -670,22 +672,22 @@ export default function TransportFinancePage() {
 
               <section className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))" }}>
                 <DesgloseBarras
-                  titulo="Por tipo de flota"
-                  subtitulo="Dónde se concentra el gasto de la operación"
+                  titulo={t("Por tipo de flota")}
+                  subtitulo={t("Dónde se concentra el gasto de la operación")}
                   filas={resumen.porFlota}
-                  etiqueta={(k) => FLOTA_LABEL[k] ?? k}
+                  etiqueta={(k) => t(FLOTA_LABEL[k] ?? k)}
                 />
                 <DesgloseBarras
-                  titulo="Por tipo de servicio"
-                  subtitulo="Ida, regreso, transfer y disposición"
+                  titulo={t("Por tipo de servicio")}
+                  subtitulo={t("Ida, regreso, transfer y disposición")}
                   filas={resumen.porServicio}
-                  etiqueta={(k) => SERVICIO_LABEL[k] ?? k}
+                  etiqueta={(k) => t(SERVICIO_LABEL[k] ?? k)}
                 />
                 <DesgloseBarras
-                  titulo="Por tipo de cliente"
-                  subtitulo="Consumo por segmento atendido"
+                  titulo={t("Por tipo de cliente")}
+                  subtitulo={t("Consumo por segmento atendido")}
                   filas={resumen.porTipoCliente}
-                  etiqueta={(k) => (k === "SIN TIPO" ? "Sin tipo" : clientTypeLabel(k) || k)}
+                  etiqueta={(k) => (k === "SIN TIPO" ? t("Sin tipo") : t(clientTypeLabel(k) || k))}
                 />
               </section>
 
@@ -697,7 +699,7 @@ export default function TransportFinancePage() {
             <TablaDetalle filas={ordenado} orden={orden} onOrdenar={ordenarPor} />
           )}
 
-          {vista === "calidad" && <CalidadDatos q={q} filas={resumen.viajesSinTarifa} total={t.viajes} />}
+          {vista === "calidad" && <CalidadDatos q={q} filas={resumen.viajesSinTarifa} total={tot.viajes} />}
         </>
       )}
     </div>
@@ -712,6 +714,7 @@ function EjecucionPresupuestaria({
   p: Resumen["presupuesto"];
   viajesActivos: number;
 }) {
+  const { t } = useI18n();
   const pctMonto = Math.min(100, p.pctConsumido);
   const pctViajes = Math.min(100, p.pctViajes);
 
@@ -720,10 +723,10 @@ function EjecucionPresupuestaria({
       <div className="flex items-start justify-between gap-3 mb-4">
         <div>
           <p className="text-[10px] font-bold uppercase" style={{ letterSpacing: "0.14em", color: "var(--text-muted)" }}>
-            Ejecución del contrato
+            {t("Ejecución del contrato")}
           </p>
           <h2 className="text-lg font-bold mt-0.5" style={{ color: "var(--text)" }}>
-            Presupuesto adjudicado
+            {t("Presupuesto adjudicado")}
           </h2>
         </div>
         <span
@@ -736,26 +739,25 @@ function EjecucionPresupuestaria({
 
       {p.adjudicado === 0 ? (
         <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-          Ningún proveedor tiene monto adjudicado cargado. Regístralo en Registro → Proveedores
-          para habilitar el seguimiento presupuestario.
+          {t("Ningún proveedor tiene monto adjudicado cargado. Regístralo en Registro → Proveedores para habilitar el seguimiento presupuestario.")}
         </p>
       ) : (
         <>
           <div className="grid grid-cols-3 gap-3 mb-4">
-            <Cifra etiqueta="Adjudicado" valor={clpCorto(p.adjudicado)} detalle={clp(p.adjudicado)} />
-            <Cifra etiqueta="Consumido" valor={clpCorto(p.consumido)} detalle={pct(p.pctConsumido, 2)} color="#0f766e" />
+            <Cifra etiqueta={t("Adjudicado")} valor={clpCorto(p.adjudicado)} detalle={clp(p.adjudicado)} />
+            <Cifra etiqueta={t("Consumido")} valor={clpCorto(p.consumido)} detalle={pct(p.pctConsumido, 2)} color="#0f766e" />
             <Cifra
-              etiqueta="Disponible"
+              etiqueta={t("Disponible")}
               valor={clpCorto(p.disponible)}
-              detalle={p.disponible < 0 ? "Sobre ejecutado" : "Saldo del contrato"}
+              detalle={p.disponible < 0 ? t("Sobre ejecutado") : t("Saldo del contrato")}
               color={p.disponible < 0 ? "#b91c1c" : undefined}
             />
           </div>
 
-          <Barra titulo="Monto ejecutado" porcentaje={pctMonto} detalle={`${clpCorto(p.consumido)} de ${clpCorto(p.adjudicado)}`} />
+          <Barra titulo={t("Monto ejecutado")} porcentaje={pctMonto} detalle={`${clpCorto(p.consumido)} de ${clpCorto(p.adjudicado)}`} />
           <div className="mt-3">
             <Barra
-              titulo="Servicios realizados"
+              titulo={t("Servicios realizados")}
               porcentaje={pctViajes}
               detalle={`${viajesActivos} de ${p.viajesLicitados || "—"} licitados`}
               tono="#1d4ed8"
@@ -810,21 +812,22 @@ function Barra({
 }
 
 /* ════════ Composición del ingreso ════════ */
-function ComposicionIngreso({ t }: { t: Resumen["totales"] }) {
-  const base = t.ingresoPrestado + t.ingresoComprometido;
+function ComposicionIngreso({ t: tot }: { t: Resumen["totales"] }) {
+  const { t } = useI18n();
+  const base = tot.ingresoPrestado + tot.ingresoComprometido;
   const filas = [
-    { etiqueta: "Devengado (servicio entregado)", valor: t.ingresoPrestado, color: "#16a34a" },
-    { etiqueta: "Comprometido (programado)", valor: t.ingresoComprometido, color: "#d97706" },
-    { etiqueta: "Anulado (cancelados)", valor: t.ingresoAnulado, color: "#94a3b8" },
+    { etiqueta: "Devengado (servicio entregado)", valor: tot.ingresoPrestado, color: "#16a34a" },
+    { etiqueta: "Comprometido (programado)", valor: tot.ingresoComprometido, color: "#d97706" },
+    { etiqueta: "Anulado (cancelados)", valor: tot.ingresoAnulado, color: "#94a3b8" },
   ];
 
   return (
     <div className="surface p-5 rounded-2xl">
       <p className="text-[10px] font-bold uppercase" style={{ letterSpacing: "0.14em", color: "var(--text-muted)" }}>
-        Composición
+        {t("Composición")}
       </p>
       <h2 className="text-lg font-bold mt-0.5 mb-4" style={{ color: "var(--text)" }}>
-        Estado del ingreso
+        {t("Estado del ingreso")}
       </h2>
 
       <div className="space-y-3">
@@ -833,7 +836,7 @@ function ComposicionIngreso({ t }: { t: Resumen["totales"] }) {
           return (
             <div key={f.etiqueta}>
               <div className="flex justify-between items-baseline mb-1">
-                <span className="text-xs" style={{ color: "var(--text-muted)" }}>{f.etiqueta}</span>
+                <span className="text-xs" style={{ color: "var(--text-muted)" }}>{t(f.etiqueta)}</span>
                 <span className="text-sm font-bold" style={{ color: f.color }}>{clpCorto(f.valor)}</span>
               </div>
               <div className="h-1.5 rounded-full" style={{ background: "var(--elevated)" }}>
@@ -847,14 +850,14 @@ function ComposicionIngreso({ t }: { t: Resumen["totales"] }) {
       <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--border)" }}>
         <div className="flex justify-between items-center">
           <span className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
-            Margen sobre lo entregado
+            {t("Margen sobre lo entregado")}
           </span>
           <span className="text-lg font-bold" style={{ color: "#0f766e" }}>
-            {clpCorto(t.margenPrestado)}
+            {clpCorto(tot.margenPrestado)}
           </span>
         </div>
         <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>
-          {clpCorto(t.ingresoPrestado)} facturado − {clpCorto(t.costoPrestado)} de costo
+          {clpCorto(tot.ingresoPrestado)} {t("facturado")} − {clpCorto(tot.costoPrestado)} {t("de costo")}
         </p>
       </div>
     </div>
@@ -863,6 +866,7 @@ function ComposicionIngreso({ t }: { t: Resumen["totales"] }) {
 
 /* ════════ Serie diaria (SVG propio, sin dependencias) ════════ */
 function SerieDiaria({ serie }: { serie: Resumen["serieDiaria"] }) {
+  const { t } = useI18n();
   if (serie.length === 0) return null;
   const max = Math.max(...serie.map((d) => d.ingreso), 1);
   const totalIngreso = serie.reduce((s, d) => s + d.ingreso, 0);
@@ -873,17 +877,17 @@ function SerieDiaria({ serie }: { serie: Resumen["serieDiaria"] }) {
       <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
         <div>
           <p className="text-[10px] font-bold uppercase" style={{ letterSpacing: "0.14em", color: "var(--text-muted)" }}>
-            Evolución
+            {t("Evolución")}
           </p>
           <h2 className="text-lg font-bold mt-0.5" style={{ color: "var(--text)" }}>
-            Ingreso y costo por día
+            {t("Ingreso y costo por día")}
           </h2>
         </div>
         <div className="flex items-center gap-4">
-          <Leyenda color="#21D0B3" texto="Ingreso" />
-          <Leyenda color="#f43f5e" texto="Costo" />
+          <Leyenda color="#21D0B3" texto={t("Ingreso")} />
+          <Leyenda color="#f43f5e" texto={t("Costo")} />
           <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-            Promedio diario {clpCorto(promedio)}
+            {t("Promedio diario")} {clpCorto(promedio)}
           </span>
         </div>
       </div>
@@ -899,14 +903,14 @@ function SerieDiaria({ serie }: { serie: Resumen["serieDiaria"] }) {
                 <span className="text-[10px] font-bold" style={{ color: "#0f766e" }}>{clpCorto(d.ingreso)}</span>
                 <div className="flex items-end gap-0.5" style={{ height: 152 }}>
                   <div
-                    title={`Ingreso ${clp(d.ingreso)}`}
+                    title={`${t("Ingreso")} ${clp(d.ingreso)}`}
                     style={{
                       width: 14, height: hIngreso, borderRadius: "3px 3px 0 0",
                       background: "linear-gradient(180deg, #34F3C6, #21D0B3)",
                     }}
                   />
                   <div
-                    title={`Costo ${clp(d.costo)}`}
+                    title={`${t("Costo")} ${clp(d.costo)}`}
                     style={{
                       width: 14, height: hCosto, borderRadius: "3px 3px 0 0",
                       background: "linear-gradient(180deg, #fda4af, #f43f5e)",
@@ -916,7 +920,7 @@ function SerieDiaria({ serie }: { serie: Resumen["serieDiaria"] }) {
                 <span className="text-[10px] font-semibold" style={{ color: "var(--text-muted)" }}>
                   {dia}/{mes}
                 </span>
-                <span className="text-[9px]" style={{ color: "var(--text-faint)" }}>{d.viajes} serv.</span>
+                <span className="text-[9px]" style={{ color: "var(--text-faint)" }}>{d.viajes} {t("serv.")}</span>
               </div>
             );
           })}
@@ -937,28 +941,29 @@ function Leyenda({ color, texto }: { color: string; texto: string }) {
 
 /* ════════ Tabla de proveedores ════════ */
 function TablaProveedores({ filas }: { filas: Resumen["porProveedor"] }) {
+  const { t } = useI18n();
   if (filas.length === 0) return null;
   return (
     <div className="surface rounded-2xl overflow-hidden">
       <div className="p-5 pb-3">
         <p className="text-[10px] font-bold uppercase" style={{ letterSpacing: "0.14em", color: "var(--text-muted)" }}>
-          Proveedores
+          {t("Proveedores")}
         </p>
         <h2 className="text-lg font-bold mt-0.5" style={{ color: "var(--text)" }}>
-          Ingreso, costo y margen por proveedor
+          {t("Ingreso, costo y margen por proveedor")}
         </h2>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm" style={{ minWidth: 760 }}>
           <thead>
             <tr style={{ background: "var(--elevated)" }}>
-              <Th>Proveedor</Th>
-              <Th alinear="right">Servicios</Th>
-              <Th alinear="right">Ingreso</Th>
-              <Th alinear="right">Costo</Th>
-              <Th alinear="right">Margen</Th>
-              <Th>Margen %</Th>
-              <Th>Ejecución del contrato</Th>
+              <Th>{t("Proveedor")}</Th>
+              <Th alinear="right">{t("Servicios")}</Th>
+              <Th alinear="right">{t("Ingreso")}</Th>
+              <Th alinear="right">{t("Costo")}</Th>
+              <Th alinear="right">{t("Margen")}</Th>
+              <Th>{t("Margen %")}</Th>
+              <Th>{t("Ejecución del contrato")}</Th>
             </tr>
           </thead>
           <tbody>
@@ -976,7 +981,7 @@ function TablaProveedores({ filas }: { filas: Resumen["porProveedor"] }) {
                 </td>
                 <td className="px-4 py-3" style={{ minWidth: 170 }}>
                   {f.pctConsumido == null ? (
-                    <span className="text-xs" style={{ color: "var(--text-faint)" }}>Sin monto adjudicado</span>
+                    <span className="text-xs" style={{ color: "var(--text-faint)" }}>{t("Sin monto adjudicado")}</span>
                   ) : (
                     <>
                       <div className="h-1.5 rounded-full mb-1" style={{ background: "var(--elevated)" }}>
@@ -1037,6 +1042,7 @@ function DesgloseBarras({
   filas: Grupo[];
   etiqueta: (k: string) => string;
 }) {
+  const { t } = useI18n();
   if (filas.length === 0) return null;
   const max = Math.max(...filas.map((f) => f.ingreso), 1);
 
@@ -1062,11 +1068,11 @@ function DesgloseBarras({
               {/* Costo y margen dentro de la misma barra: se lee la estructura del ingreso */}
               <div
                 style={{ width: `${(f.costo / max) * 100}%`, background: "#fda4af" }}
-                title={`Costo ${clp(f.costo)}`}
+                title={`${t("Costo")} ${clp(f.costo)}`}
               />
               <div
                 style={{ width: `${(Math.max(f.margen, 0) / max) * 100}%`, background: "#21D0B3" }}
-                title={`Margen ${clp(f.margen)}`}
+                title={`${t("Margen")} ${clp(f.margen)}`}
               />
             </div>
             <div className="flex justify-between mt-1">
@@ -1074,7 +1080,7 @@ function DesgloseBarras({
                 {f.viajes} serv. · ticket {clpCorto(f.ticketPromedio)}
               </span>
               <span className="text-[10px] font-semibold" style={{ color: f.margenPct >= 15 ? "#0f766e" : "#a16207" }}>
-                margen {pct(f.margenPct)}
+                {t("margen")} {pct(f.margenPct)}
               </span>
             </div>
           </div>
@@ -1086,6 +1092,7 @@ function DesgloseBarras({
 
 /* ════════ Top conductores ════════ */
 function TopConductores({ filas }: { filas: Resumen["topConductores"] }) {
+  const { t } = useI18n();
   if (filas.length === 0) return null;
   const iniciales = (n: string) =>
     n.split(" ").filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join("");
@@ -1094,22 +1101,22 @@ function TopConductores({ filas }: { filas: Resumen["topConductores"] }) {
     <div className="surface rounded-2xl overflow-hidden">
       <div className="p-5 pb-3">
         <p className="text-[10px] font-bold uppercase" style={{ letterSpacing: "0.14em", color: "var(--text-muted)" }}>
-          Conductores
+          {t("Conductores")}
         </p>
         <h2 className="text-lg font-bold mt-0.5" style={{ color: "var(--text)" }}>
-          Mayor facturación del período
+          {t("Mayor facturación del período")}
         </h2>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm" style={{ minWidth: 640 }}>
           <thead>
             <tr style={{ background: "var(--elevated)" }}>
-              <Th>Conductor</Th>
-              <Th>Proveedor</Th>
-              <Th alinear="right">Servicios</Th>
-              <Th alinear="right">Ingreso</Th>
-              <Th alinear="right">Ticket promedio</Th>
-              <Th alinear="right">Margen</Th>
+              <Th>{t("Conductor")}</Th>
+              <Th>{t("Proveedor")}</Th>
+              <Th alinear="right">{t("Servicios")}</Th>
+              <Th alinear="right">{t("Ingreso")}</Th>
+              <Th alinear="right">{t("Ticket promedio")}</Th>
+              <Th alinear="right">{t("Margen")}</Th>
             </tr>
           </thead>
           <tbody>
@@ -1148,8 +1155,9 @@ function TablaDetalle({
   orden: { campo: keyof Detalle; asc: boolean };
   onOrdenar: (c: keyof Detalle) => void;
 }) {
+  const { t } = useI18n();
   if (filas.length === 0) {
-    return <EmptyState icon={<ClipboardIcon />} title="Sin servicios para mostrar" description="Ajusta los filtros del período." />;
+    return <EmptyState icon={<ClipboardIcon />} title={t("Sin servicios para mostrar")} description={t("Ajusta los filtros del período.")} />;
   }
 
   const cabeceras: { campo: keyof Detalle; texto: string; alinear?: "right" }[] = [
@@ -1185,9 +1193,9 @@ function TablaDetalle({
                     textAlign: c.alinear ?? "left",
                     whiteSpace: "nowrap",
                   }}
-                  title="Ordenar por esta columna"
+                  title={t("Ordenar por esta columna")}
                 >
-                  {c.texto}
+                  {t(c.texto)}
                   {orden.campo === c.campo && <span> {orden.asc ? "▲" : "▼"}</span>}
                 </th>
               ))}
@@ -1205,17 +1213,17 @@ function TablaDetalle({
                   <td className="px-3 py-2.5 whitespace-nowrap" style={{ color: "var(--text-muted)" }}>{f.fecha ?? "—"}</td>
                   <td className="px-3 py-2.5 whitespace-nowrap">
                     <span className="text-[11px] font-semibold" style={{ color: cancelado ? "#b91c1c" : "var(--text)" }}>
-                      {STATUS_LABEL[f.status] ?? f.status}
+                      {t(STATUS_LABEL[f.status] ?? f.status)}
                     </span>
                   </td>
                   <td className="px-3 py-2.5 whitespace-nowrap" style={{ color: "var(--text-muted)" }}>
-                    {f.clientType === "—" ? "—" : clientTypeLabel(f.clientType) || f.clientType}
+                    {f.clientType === "—" ? "—" : t(clientTypeLabel(f.clientType) || f.clientType)}
                   </td>
                   <td className="px-3 py-2.5 whitespace-nowrap" style={{ color: "var(--text-muted)" }}>
-                    {SERVICIO_LABEL[f.servicio] ?? f.servicio}
+                    {t(SERVICIO_LABEL[f.servicio] ?? f.servicio)}
                   </td>
                   <td className="px-3 py-2.5 whitespace-nowrap" style={{ color: "var(--text-muted)" }}>
-                    {FLOTA_LABEL[f.flota] ?? f.flota}
+                    {t(FLOTA_LABEL[f.flota] ?? f.flota)}
                   </td>
                   <td className="px-3 py-2.5 whitespace-nowrap" style={{ color: "var(--text)" }}>{f.conductor}</td>
                   <td className="px-3 py-2.5 whitespace-nowrap" style={{ color: "var(--text-muted)" }}>{f.proveedor}</td>
@@ -1241,7 +1249,7 @@ function TablaDetalle({
                         className="text-[10px] font-semibold px-2 py-0.5 rounded"
                         style={{ color: meta.tone, background: meta.bg, border: `1px solid ${meta.border}` }}
                       >
-                        {meta.label}
+                        {t(meta.label)}
                       </span>
                     )}
                   </td>
@@ -1252,7 +1260,7 @@ function TablaDetalle({
         </table>
       </div>
       <p className="px-4 py-3 text-[11px]" style={{ color: "var(--text-muted)", borderTop: "1px solid var(--border)" }}>
-        {filas.length} servicios · Los cancelados se muestran atenuados y no suman al ingreso.
+        {filas.length} {t("servicios · Los cancelados se muestran atenuados y no suman al ingreso.")}
       </p>
     </div>
   );
@@ -1266,27 +1274,28 @@ function CalidadDatos({
   filas: Resumen["viajesSinTarifa"];
   total: number;
 }) {
+  const { t } = useI18n();
   return (
     <div className="space-y-4">
       <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))" }}>
         <KpiCard
-          label="Cobertura de valorización"
+          label={t("Cobertura de valorización")}
           value={pct(q.cobertura, 0)}
           detail={`${total - q.sinValorizar} de ${total} servicios con valor asignado`}
           accent={q.cobertura >= 95 ? "green" : "amber"}
           icon={<CheckOrAlert ok={q.cobertura >= 95} />}
         />
         <KpiCard
-          label="Con tarifa de referencia"
+          label={t("Con tarifa de referencia")}
           value={String(q.porReferencia)}
-          detail="Se valorizaron con el promedio del catálogo por no encontrar tarifa del proveedor"
+          detail={t("Se valorizaron con el promedio del catálogo por no encontrar tarifa del proveedor")}
           accent="amber"
           icon={<AlertIcon />}
         />
         <KpiCard
-          label="Sin valorizar"
+          label={t("Sin valorizar")}
           value={String(q.sinValorizar)}
-          detail="No fue posible asignarles ningún valor"
+          detail={t("No fue posible asignarles ningún valor")}
           accent={q.sinValorizar > 0 ? "red" : "green"}
           icon={<AlertIcon />}
         />
@@ -1295,32 +1304,30 @@ function CalidadDatos({
       {filas.length === 0 ? (
         <EmptyState
           variant="success"
-          title="Todos los servicios están valorizados con tarifa propia"
-          description="No hay servicios que dependan de tarifas de referencia ni sin valor asignado."
+          title={t("Todos los servicios están valorizados con tarifa propia")}
+          description={t("No hay servicios que dependan de tarifas de referencia ni sin valor asignado.")}
         />
       ) : (
         <div className="surface rounded-2xl overflow-hidden">
           <div className="p-5 pb-3">
             <h2 className="text-lg font-bold" style={{ color: "var(--text)" }}>
-              Servicios que requieren revisión
+              {t("Servicios que requieren revisión")}
             </h2>
             <p className="text-[13px] mt-1" style={{ color: "var(--text-muted)" }}>
-              Estos servicios no calzaron con una tarifa del proveedor. Revisa que el conductor tenga
-              proveedor asignado y que exista la tarifa para esa combinación de flota y tipo de servicio
-              en Registro → Proveedores.
+              {t("Estos servicios no calzaron con una tarifa del proveedor. Revisa que el conductor tenga proveedor asignado y que exista la tarifa para esa combinación de flota y tipo de servicio en Registro → Proveedores.")}
             </p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm" style={{ minWidth: 780 }}>
               <thead>
                 <tr style={{ background: "var(--elevated)" }}>
-                  <Th>Fecha</Th>
-                  <Th>Cliente</Th>
-                  <Th>Vehículo solicitado</Th>
-                  <Th>Flota interpretada</Th>
-                  <Th>Servicio</Th>
-                  <Th>Ruta</Th>
-                  <Th>Situación</Th>
+                  <Th>{t("Fecha")}</Th>
+                  <Th>{t("Cliente")}</Th>
+                  <Th>{t("Vehículo solicitado")}</Th>
+                  <Th>{t("Flota interpretada")}</Th>
+                  <Th>{t("Servicio")}</Th>
+                  <Th>{t("Ruta")}</Th>
+                  <Th>{t("Situación")}</Th>
                 </tr>
               </thead>
               <tbody>
@@ -1330,16 +1337,16 @@ function CalidadDatos({
                     <tr key={f.id} style={{ borderTop: "1px solid var(--border)" }}>
                       <td className="px-4 py-2.5 whitespace-nowrap" style={{ color: "var(--text-muted)" }}>{f.fecha ?? "—"}</td>
                       <td className="px-4 py-2.5" style={{ color: "var(--text-muted)" }}>
-                        {f.clientType === "—" ? "—" : clientTypeLabel(f.clientType) || f.clientType}
+                        {f.clientType === "—" ? "—" : t(clientTypeLabel(f.clientType) || f.clientType)}
                       </td>
                       <td className="px-4 py-2.5 font-semibold" style={{ color: "var(--text)" }}>{f.vehiculo}</td>
                       <td className="px-4 py-2.5" style={{ color: "var(--text-muted)" }}>
                         {f.flotaNormalizada
-                          ? FLOTA_LABEL[f.flotaNormalizada] ?? f.flotaNormalizada
-                          : <span style={{ color: "#b91c1c" }}>No reconocida</span>}
+                          ? t(FLOTA_LABEL[f.flotaNormalizada] ?? f.flotaNormalizada)
+                          : <span style={{ color: "#b91c1c" }}>{t("No reconocida")}</span>}
                       </td>
                       <td className="px-4 py-2.5" style={{ color: "var(--text-muted)" }}>
-                        {SERVICIO_LABEL[f.servicio] ?? f.servicio}
+                        {t(SERVICIO_LABEL[f.servicio] ?? f.servicio)}
                       </td>
                       <td className="px-4 py-2.5 text-[12px]" style={{ color: "var(--text-muted)", maxWidth: 260 }}>
                         {f.ruta}
@@ -1350,7 +1357,7 @@ function CalidadDatos({
                             className="text-[10px] font-semibold px-2 py-0.5 rounded"
                             style={{ color: meta.tone, background: meta.bg, border: `1px solid ${meta.border}` }}
                           >
-                            {meta.label}
+                            {t(meta.label)}
                           </span>
                         )}
                       </td>

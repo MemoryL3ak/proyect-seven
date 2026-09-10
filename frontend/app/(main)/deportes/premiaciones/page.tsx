@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiCard from "@/components/ui/KpiCard";
 import StyledSelect from "@/components/StyledSelect";
@@ -90,6 +91,7 @@ const EMPTY_FORM = {
 };
 
 export default function PremiacionesPage() {
+  const { t } = useI18n();
   const [premiaciones, setPremiaciones] = useState<Premiacion[]>([]);
   const [athletes, setAthletes] = useState<Athlete[]>([]);
   const [events, setEvents] = useState<EventItem[]>([]);
@@ -126,7 +128,7 @@ export default function PremiacionesPage() {
       setEvents(Array.isArray(ev) ? ev : []);
       setVenues(Array.isArray(ven) ? ven : []);
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "No se pudieron cargar las premiaciones.");
+      setMessage(err instanceof Error ? err.message : t("No se pudieron cargar las premiaciones."));
     } finally {
       setLoading(false);
     }
@@ -226,8 +228,8 @@ export default function PremiacionesPage() {
   };
 
   const saveForm = async () => {
-    if (!form.title.trim()) { setMessage("El título es obligatorio."); return; }
-    if (!form.scheduledAt) { setMessage("La fecha y hora son obligatorias."); return; }
+    if (!form.title.trim()) { setMessage(t("El título es obligatorio.")); return; }
+    if (!form.scheduledAt) { setMessage(t("La fecha y hora son obligatorias.")); return; }
     setSavingForm(true);
     setMessage(null);
     try {
@@ -260,7 +262,7 @@ export default function PremiacionesPage() {
       setFormOpen(false);
       await load();
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "No se pudo guardar la premiación.");
+      setMessage(err instanceof Error ? err.message : t("No se pudo guardar la premiación."));
     } finally {
       setSavingForm(false);
     }
@@ -268,7 +270,7 @@ export default function PremiacionesPage() {
 
   const deletePremiacion = async () => {
     if (!formEditingId) return;
-    if (!window.confirm("¿Eliminar esta premiación? Esta acción no se puede deshacer.")) return;
+    if (!window.confirm(t("¿Eliminar esta premiación? Esta acción no se puede deshacer."))) return;
     setDeleting(true);
     setMessage(null);
     try {
@@ -276,7 +278,7 @@ export default function PremiacionesPage() {
       setFormOpen(false);
       await load();
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "No se pudo eliminar la premiación.");
+      setMessage(err instanceof Error ? err.message : t("No se pudo eliminar la premiación."));
     } finally {
       setDeleting(false);
     }
@@ -294,7 +296,7 @@ export default function PremiacionesPage() {
       });
       setPremiaciones((prev) => prev.map((x) => (x.id === p.id ? { ...x, status: next } : x)));
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "No se pudo actualizar el estado.");
+      setMessage(err instanceof Error ? err.message : t("No se pudo actualizar el estado."));
     } finally {
       setSavingId(null);
     }
@@ -317,7 +319,7 @@ export default function PremiacionesPage() {
             {isNext && (
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full inline-block mb-1"
                 style={{ background: "rgba(33,208,179,0.14)", color: "#0f9d84", border: "1px solid rgba(33,208,179,0.45)", letterSpacing: "0.08em" }}>
-                ★ PRÓXIMA CEREMONIA
+                ★ {t("PRÓXIMA CEREMONIA")}
               </span>
             )}
             <p className="font-bold text-[15px] leading-tight" style={{ color: "#0f172a" }}>{p.title}</p>
@@ -327,11 +329,11 @@ export default function PremiacionesPage() {
           </div>
           <select value={p.status} disabled={savingId === p.id}
             onChange={(e) => changeStatus(p, e.target.value)}
-            title="Cambiar estado"
+            title={t("Cambiar estado")}
             className="text-[10px] font-bold px-2 py-1 rounded-full"
             style={{ background: st.bg, color: st.color, border: `1px solid ${st.color}55`, cursor: "pointer", whiteSpace: "nowrap", appearance: "auto" }}>
-            <option value="PROGRAMADA">Programada</option>
-            <option value="REALIZADA">Realizada</option>
+            <option value="PROGRAMADA">{t("Programada")}</option>
+            <option value="REALIZADA">{t("Realizada")}</option>
           </select>
         </div>
 
@@ -342,7 +344,7 @@ export default function PremiacionesPage() {
             {rel && (
               <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded"
                 style={{ background: rel === "Hoy" ? "#fef3c7" : "#eef1f6", color: rel === "Hoy" ? "#b45309" : "#64748b" }}>
-                {rel}
+                {t(rel)}
               </span>
             )}
           </p>
@@ -356,15 +358,15 @@ export default function PremiacionesPage() {
         <div className="rounded-xl p-3" style={{ background: "#f8fafc", border: "1px solid #eef1f6" }}>
           <div className="flex items-center justify-between mb-2">
             <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>
-              Entregadores (VIP)
+              {t("Entregadores (VIP)")}
             </span>
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
               style={{ background: confirmed === awarders.length && awarders.length > 0 ? "#e7f5ec" : "#eef1f6", color: confirmed === awarders.length && awarders.length > 0 ? "#059669" : "#64748b" }}>
-              {confirmed}/{awarders.length} confirmaron
+              {confirmed}/{awarders.length} {t("confirmaron")}
             </span>
           </div>
           {awarders.length === 0 ? (
-            <p className="text-[11px]" style={{ color: "#94a3b8" }}>Sin entregadores asignados.</p>
+            <p className="text-[11px]" style={{ color: "#94a3b8" }}>{t("Sin entregadores asignados.")}</p>
           ) : (
             <div className="flex flex-col gap-1.5">
               {awarders.map((a, i) => {
@@ -378,7 +380,7 @@ export default function PremiacionesPage() {
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1 flex-shrink-0"
                       style={{ background: meta.bg, color: meta.color }}
                       title={state === "CONFIRMED" && a.confirmedAt ? fmtDateTime(a.confirmedAt) : undefined}>
-                      <span>{meta.icon}</span>{meta.label}
+                      <span>{meta.icon}</span>{t(meta.label)}
                     </span>
                   </div>
                 );
@@ -391,11 +393,11 @@ export default function PremiacionesPage() {
           <button type="button" onClick={() => openEdit(p)}
             className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
             style={{ background: "#fff7ed", color: "#d97706", border: "1px solid #fed7aa", cursor: "pointer" }}>
-            ✎ Editar premiación
+            ✎ {t("Editar premiación")}
           </button>
           {p.disciplineId && (
             <Link href="/deportes" className="text-xs font-semibold" style={{ color: "#14b8a6" }}>
-              Ver prueba →
+              {t("Ver prueba")} →
             </Link>
           )}
         </div>
@@ -408,27 +410,27 @@ export default function PremiacionesPage() {
   return (
     <div className="space-y-5 min-w-0 overflow-x-hidden">
       <PageHeader
-        title="Premiaciones"
-        description="Ceremonias de premiación por prueba, con sus entregadores VIP y el estado de confirmación de asistencia."
+        title={t("Premiaciones")}
+        description={t("Ceremonias de premiación por prueba, con sus entregadores VIP y el estado de confirmación de asistencia.")}
         icon={<TrophyIcon size={26} />}
         iconBg="linear-gradient(135deg, #fbbf24 0%, #d97706 100%)"
         accentStrip="gold"
         action={
           <button type="button" onClick={openCreate} className="btn btn-primary text-xs">
-            + Nueva premiación
+            + {t("Nueva premiación")}
           </button>
         }
       />
 
       {/* KPIs */}
       <section className="grid grid-cols-2 md:grid-cols-4 gap-3 stagger">
-        <KpiCard label="Ceremonias" value={kpis.total} icon={<TrophyIcon size={18} />} accent="amber" />
-        <KpiCard label="Programadas" value={kpis.programadas} icon={<CalendarIcon size={18} />} accent="blue" />
-        <KpiCard label="Realizadas" value={kpis.realizadas} icon={<CheckIcon size={18} />} accent="green" />
+        <KpiCard label={t("Ceremonias")} value={kpis.total} icon={<TrophyIcon size={18} />} accent="amber" />
+        <KpiCard label={t("Programadas")} value={kpis.programadas} icon={<CalendarIcon size={18} />} accent="blue" />
+        <KpiCard label={t("Realizadas")} value={kpis.realizadas} icon={<CheckIcon size={18} />} accent="green" />
         <KpiCard
-          label="VIP por confirmar"
+          label={t("VIP por confirmar")}
           value={kpis.pendientes}
-          detail={kpis.pendientes > 0 ? "entregadores pendientes" : "todos respondieron"}
+          detail={kpis.pendientes > 0 ? t("entregadores pendientes") : t("todos respondieron")}
           icon={<AlertIcon size={18} />}
           accent={kpis.pendientes > 0 ? "red" : "neutral"}
         />
@@ -441,25 +443,25 @@ export default function PremiacionesPage() {
             <SearchIcon size={15} />
           </span>
           <input className="input" style={{ paddingLeft: 36 }}
-            placeholder="Buscar por prueba, disciplina o sede…"
+            placeholder={t("Buscar por prueba, disciplina o sede…")}
             value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         {events.length > 0 && (
           <StyledSelect wrapperStyle={{ maxWidth: 220 }} value={eventFilter} onChange={(e) => setEventFilter(e.target.value)}>
-            <option value="">Todos los eventos</option>
+            <option value="">{t("Todos los eventos")}</option>
             {events.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
           </StyledSelect>
         )}
         {disciplineOptions.length > 0 && (
           <StyledSelect wrapperStyle={{ maxWidth: 200 }} value={disciplineFilter} onChange={(e) => setDisciplineFilter(e.target.value)}>
-            <option value="">Todas las disciplinas</option>
+            <option value="">{t("Todas las disciplinas")}</option>
             {disciplineOptions.map((d) => <option key={d} value={d}>{d}</option>)}
           </StyledSelect>
         )}
         <StyledSelect wrapperStyle={{ maxWidth: 170 }} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-          <option value="">Todos los estados</option>
-          <option value="PROGRAMADA">Programadas</option>
-          <option value="REALIZADA">Realizadas</option>
+          <option value="">{t("Todos los estados")}</option>
+          <option value="PROGRAMADA">{t("Programadas")}</option>
+          <option value="REALIZADA">{t("Realizadas")}</option>
         </StyledSelect>
         {/* Toggle de vista */}
         <div className="flex rounded-lg overflow-hidden" style={{ border: "1px solid #e2e8f0" }}>
@@ -471,7 +473,7 @@ export default function PremiacionesPage() {
                 color: viewMode === v ? "#34F3C6" : "#64748b",
                 border: "none", cursor: "pointer",
               }}>
-              {label}
+              {t(label)}
             </button>
           ))}
         </div>
@@ -481,13 +483,13 @@ export default function PremiacionesPage() {
 
       {/* Lista */}
       {loading ? (
-        <p className="text-sm" style={{ color: "#94a3b8" }}>Cargando premiaciones…</p>
+        <p className="text-sm" style={{ color: "#94a3b8" }}>{t("Cargando premiaciones…")}</p>
       ) : totalVisible === 0 ? (
         <div className="p-12 text-center rounded-2xl" style={{ background: "linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)", border: "1px dashed #e2e8f0" }}>
           <TrophyIcon size={36} color="#cbd5e1" />
-          <p className="text-sm font-semibold mt-3" style={{ color: "#475569" }}>No hay premiaciones para mostrar</p>
+          <p className="text-sm font-semibold mt-3" style={{ color: "#475569" }}>{t("No hay premiaciones para mostrar")}</p>
           <p className="text-xs mt-1" style={{ color: "#94a3b8" }}>
-            Crea la primera con el botón <button type="button" onClick={openCreate} style={{ color: "#14b8a6", fontWeight: 600, cursor: "pointer" }}>+ Nueva premiación</button>.
+            {t("Crea la primera con el botón")} <button type="button" onClick={openCreate} style={{ color: "#14b8a6", fontWeight: 600, cursor: "pointer" }}>+ {t("Nueva premiación")}</button>.
           </p>
         </div>
       ) : viewMode === "timeline" ? (
@@ -496,11 +498,11 @@ export default function PremiacionesPage() {
         <section style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, padding: 16, boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div>
-              <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase" as const, color: "#94a3b8" }}>Timeline operativa</p>
-              <h3 style={{ marginTop: "3px", fontWeight: 700, fontSize: "16px", color: "#0f172a" }}>Estado general de premiaciones</h3>
+              <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase" as const, color: "#94a3b8" }}>{t("Timeline operativa")}</p>
+              <h3 style={{ marginTop: "3px", fontWeight: 700, fontSize: "16px", color: "#0f172a" }}>{t("Estado general de premiaciones")}</h3>
             </div>
             <span style={{ fontSize: "12px", fontWeight: 600, color: "#64748b", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "99px", padding: "4px 12px" }}>
-              {totalVisible} premiaciones con los filtros actuales
+              {totalVisible} {t("premiaciones con los filtros actuales")}
             </span>
           </div>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -540,7 +542,7 @@ export default function PremiacionesPage() {
                 }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
                     <span style={{ fontSize: "11px", fontWeight: 700, color: col.accent, textTransform: "uppercase", letterSpacing: "0.1em" }}>
-                      {col.label}
+                      {t(col.label)}
                     </span>
                     <span style={{
                       minWidth: "22px", height: "22px", borderRadius: "99px", display: "inline-flex", alignItems: "center", justifyContent: "center",
@@ -566,7 +568,7 @@ export default function PremiacionesPage() {
                             {p.id === nextId && (
                               <span className="ml-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full align-middle"
                                 style={{ background: "rgba(33,208,179,0.14)", color: "#0f9d84", border: "1px solid rgba(33,208,179,0.45)" }}>
-                                ★ PRÓXIMA
+                                ★ {t("PRÓXIMA")}
                               </span>
                             )}
                           </p>
@@ -574,17 +576,17 @@ export default function PremiacionesPage() {
                             {fmtDateTime(p.scheduledAt)}{p.discipline ? ` · ${p.discipline}` : ""}
                           </p>
                           <p style={{ fontSize: "11px", color: "#94a3b8" }}>
-                            {[p.venueName, p.locationDetail].filter(Boolean).join(" · ") || "Sin sede definida"}
+                            {[p.venueName, p.locationDetail].filter(Boolean).join(" · ") || t("Sin sede definida")}
                             {awarders.length > 0 && ` · ${confirmed}/${awarders.length} VIP`}
                           </p>
                         </button>
                       );
                     })}
                     {col.items.length === 0 && (
-                      <p style={{ fontSize: "12px", color: "#94a3b8", textAlign: "center", padding: "12px 0" }}>{col.empty}</p>
+                      <p style={{ fontSize: "12px", color: "#94a3b8", textAlign: "center", padding: "12px 0" }}>{t(col.empty)}</p>
                     )}
                     {col.items.length > 4 && (
-                      <p style={{ fontSize: "11px", color: col.accent, textAlign: "center", fontWeight: 600 }}>+{col.items.length - 4} más</p>
+                      <p style={{ fontSize: "11px", color: col.accent, textAlign: "center", fontWeight: 600 }}>+{col.items.length - 4} {t("más")}</p>
                     )}
                   </div>
                 </div>
@@ -597,7 +599,7 @@ export default function PremiacionesPage() {
           {upcoming.length > 0 && (
             <section className="space-y-3">
               <h2 className="text-xs font-bold uppercase tracking-widest flex items-center gap-2" style={{ color: "#0f9d84" }}>
-                Próximas ceremonias
+                {t("Próximas ceremonias")}
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(33,208,179,0.12)", color: "#0f9d84" }}>{upcoming.length}</span>
               </h2>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
@@ -608,7 +610,7 @@ export default function PremiacionesPage() {
           {past.length > 0 && (
             <section className="space-y-3">
               <h2 className="text-xs font-bold uppercase tracking-widest flex items-center gap-2" style={{ color: "#94a3b8" }}>
-                Realizadas y pasadas
+                {t("Realizadas y pasadas")}
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "#eef1f6", color: "#64748b" }}>{past.length}</span>
               </h2>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
@@ -627,31 +629,31 @@ export default function PremiacionesPage() {
             onClick={(e) => e.stopPropagation()}>
             <div>
               <h3 className="text-lg font-bold" style={{ color: "#0f172a" }}>
-                {formEditingId ? "Editar premiación" : "Nueva premiación"}
+                {formEditingId ? t("Editar premiación") : t("Nueva premiación")}
               </h3>
               <p className="text-xs" style={{ color: "#94a3b8" }}>
-                {formEditingId ? "Modifica los datos de la ceremonia." : "Programa una ceremonia de premiación."}
+                {formEditingId ? t("Modifica los datos de la ceremonia.") : t("Programa una ceremonia de premiación.")}
               </p>
             </div>
 
             <div className="space-y-3">
               <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>Título *</label>
-                <input className="input" placeholder="Ej: Final 100m planos varones"
+                <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>{t("Título")} *</label>
+                <input className="input" placeholder={t("Ej: Final 100m planos varones")}
                   value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>Disciplina</label>
-                  <input className="input" placeholder="Ej: Atletismo" list="premiacion-disciplinas"
+                  <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>{t("Disciplina")}</label>
+                  <input className="input" placeholder={t("Ej: Atletismo")} list="premiacion-disciplinas"
                     value={form.discipline} onChange={(e) => setForm((f) => ({ ...f, discipline: e.target.value }))} />
                   <datalist id="premiacion-disciplinas">
                     {disciplineOptions.map((d) => <option key={d} value={d} />)}
                   </datalist>
                 </div>
                 <div>
-                  <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>Fecha y hora *</label>
+                  <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>{t("Fecha y hora")} *</label>
                   <input className="input" type="datetime-local"
                     value={form.scheduledAt} onChange={(e) => setForm((f) => ({ ...f, scheduledAt: e.target.value }))} />
                 </div>
@@ -660,17 +662,17 @@ export default function PremiacionesPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {events.length > 0 && (
                   <div>
-                    <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>Evento</label>
+                    <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>{t("Evento")}</label>
                     <StyledSelect value={form.eventId} onChange={(e) => setForm((f) => ({ ...f, eventId: e.target.value }))}>
-                      <option value="">Sin evento</option>
+                      <option value="">{t("Sin evento")}</option>
                       {events.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
                     </StyledSelect>
                   </div>
                 )}
                 <div>
-                  <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>Sede</label>
+                  <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>{t("Sede")}</label>
                   <StyledSelect value={form.venueId} onChange={(e) => setForm((f) => ({ ...f, venueId: e.target.value }))}>
-                    <option value="">Sin sede</option>
+                    <option value="">{t("Sin sede")}</option>
                     {venues.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
                   </StyledSelect>
                 </div>
@@ -678,37 +680,37 @@ export default function PremiacionesPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>Detalle de ubicación</label>
-                  <input className="input" placeholder="Ej: Podio central, pista 1"
+                  <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>{t("Detalle de ubicación")}</label>
+                  <input className="input" placeholder={t("Ej: Podio central, pista 1")}
                     value={form.locationDetail} onChange={(e) => setForm((f) => ({ ...f, locationDetail: e.target.value }))} />
                 </div>
                 <div>
-                  <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>Estado</label>
+                  <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>{t("Estado")}</label>
                   <StyledSelect value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}>
-                    <option value="PROGRAMADA">Programada</option>
-                    <option value="REALIZADA">Realizada</option>
+                    <option value="PROGRAMADA">{t("Programada")}</option>
+                    <option value="REALIZADA">{t("Realizada")}</option>
                   </StyledSelect>
                 </div>
               </div>
 
               <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>Notas</label>
-                <textarea className="input" rows={2} placeholder="Notas internas de la ceremonia…"
+                <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>{t("Notas")}</label>
+                <textarea className="input" rows={2} placeholder={t("Notas internas de la ceremonia…")}
                   value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
               </div>
 
               {/* Entregadores */}
               <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>Entregadores VIP</label>
+                <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>{t("Entregadores VIP")}</label>
                 <StyledSelect value={addAthleteId} onChange={(e) => addAwarder(e.target.value)}>
-                  <option value="">Agregar un VIP…</option>
+                  <option value="">{t("Agregar un VIP…")}</option>
                   {awarderCandidates
                     .filter((a) => !formAwarders.some((e) => e.athleteId === a.id))
                     .map((a) => <option key={a.id} value={a.id}>{a.fullName || a.id.slice(0, 8)}</option>)}
                 </StyledSelect>
                 <div className="rounded-xl p-3 space-y-1.5 mt-2" style={{ background: "#f8fafc", border: "1px solid #eef1f6", maxHeight: 200, overflowY: "auto" }}>
                   {formAwarders.length === 0 ? (
-                    <p className="text-[12px]" style={{ color: "#94a3b8" }}>Sin entregadores asignados.</p>
+                    <p className="text-[12px]" style={{ color: "#94a3b8" }}>{t("Sin entregadores asignados.")}</p>
                   ) : formAwarders.map((a) => {
                     const state = awarderState(a);
                     const meta = AWARDER_META[state];
@@ -721,11 +723,11 @@ export default function PremiacionesPage() {
                           {a.id && (
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1"
                               style={{ background: meta.bg, color: meta.color }}>
-                              <span>{meta.icon}</span>{meta.label}
+                              <span>{meta.icon}</span>{t(meta.label)}
                             </span>
                           )}
                           <button type="button" onClick={() => removeAwarder(a.athleteId)}
-                            className="text-[11px] font-bold" style={{ color: "#dc2626", cursor: "pointer" }} title="Quitar">
+                            className="text-[11px] font-bold" style={{ color: "#dc2626", cursor: "pointer" }} title={t("Quitar")}>
                             ✕
                           </button>
                         </div>
@@ -734,7 +736,7 @@ export default function PremiacionesPage() {
                   })}
                 </div>
                 <p className="text-[11px] mt-1" style={{ color: "#94a3b8" }}>
-                  Los entregadores nuevos reciben una notificación y empiezan como pendientes; las confirmaciones existentes se conservan.
+                  {t("Los entregadores nuevos reciben una notificación y empiezan como pendientes; las confirmaciones existentes se conservan.")}
                 </p>
               </div>
             </div>
@@ -746,13 +748,13 @@ export default function PremiacionesPage() {
                 <button type="button" onClick={deletePremiacion} disabled={savingForm || deleting}
                   className="text-xs font-semibold px-3 py-1.5 rounded-lg"
                   style={{ background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", cursor: "pointer" }}>
-                  {deleting ? "Eliminando…" : "Eliminar"}
+                  {deleting ? t("Eliminando…") : t("Eliminar")}
                 </button>
               ) : <span />}
               <div className="flex gap-2">
-                <button type="button" className="btn btn-ghost text-sm" onClick={() => setFormOpen(false)} disabled={savingForm || deleting}>Cancelar</button>
+                <button type="button" className="btn btn-ghost text-sm" onClick={() => setFormOpen(false)} disabled={savingForm || deleting}>{t("Cancelar")}</button>
                 <button type="button" className="btn btn-primary text-sm" onClick={saveForm} disabled={savingForm || deleting}>
-                  {savingForm ? "Guardando…" : formEditingId ? "Guardar cambios" : "Crear premiación"}
+                  {savingForm ? t("Guardando…") : formEditingId ? t("Guardar cambios") : t("Crear premiación")}
                 </button>
               </div>
             </div>

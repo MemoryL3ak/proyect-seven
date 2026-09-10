@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import JsBarcode from "jsbarcode";
 import * as XLSX from "xlsx";
 import { apiFetch } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiCard from "@/components/ui/KpiCard";
 import Tabs from "@/components/ui/Tabs";
@@ -94,6 +95,7 @@ const fmtDate = (iso?: string | null) =>
   iso ? new Date(iso).toLocaleDateString("es-CL", { day: "2-digit", month: "short", year: "numeric" }) : "-";
 
 export default function WorkforcePage() {
+  const { t } = useI18n();
   const [tab, setTab] = useState<"dashboard" | "persons" | "products" | "deliveries">("dashboard");
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -185,7 +187,7 @@ export default function WorkforcePage() {
       setDeliveries(Array.isArray(d) ? d : []);
       setDashboard(dash || null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error cargando datos");
+      setError(err instanceof Error ? err.message : t("Error cargando datos"));
     }
   };
 
@@ -213,24 +215,24 @@ export default function WorkforcePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      setMessage(id ? "Actualizado correctamente." : "Creado correctamente.");
+      setMessage(id ? t("Actualizado correctamente.") : t("Creado correctamente."));
       setModal(null);
       await loadAll();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error guardando");
+      setError(err instanceof Error ? err.message : t("Error guardando"));
     } finally {
       setSaving(false);
     }
   };
 
   const deleteEntity = async (type: "person" | "product" | "delivery", id: string) => {
-    if (!confirm("¿Eliminar este registro?")) return;
+    if (!confirm(t("¿Eliminar este registro?"))) return;
     try {
       await apiFetch(`/workforce/${type}s/${id}`, { method: "DELETE" });
-      setMessage("Eliminado correctamente.");
+      setMessage(t("Eliminado correctamente."));
       await loadAll();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error eliminando");
+      setError(err instanceof Error ? err.message : t("Error eliminando"));
     }
   };
 
@@ -241,10 +243,10 @@ export default function WorkforcePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ validatedBy: "Admin" }),
       });
-      setMessage("Entrega validada.");
+      setMessage(t("Entrega validada."));
       await loadAll();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error validando");
+      setError(err instanceof Error ? err.message : t("Error validando"));
     }
   };
 
@@ -253,8 +255,8 @@ export default function WorkforcePage() {
   return (
     <div className="min-w-0 space-y-6 overflow-x-hidden">
       <PageHeader
-        title="Workforce — Staff & Voluntarios"
-        description="Gestión del personal contratado, voluntariado, catálogo de productos del kit y entregas operativas."
+        title={t("Workforce — Staff & Voluntarios")}
+        description={t("Gestión del personal contratado, voluntariado, catálogo de productos del kit y entregas operativas.")}
         icon={<UsersIcon size={24} />}
       />
 
@@ -262,10 +264,10 @@ export default function WorkforcePage() {
         value={tab}
         onChange={(k) => setTab(k as any)}
         tabs={[
-          { key: "dashboard", label: "Dashboard", badge: dashboard?.deliveries.pending || undefined },
-          { key: "persons", label: "Personas", badge: persons.length || undefined },
-          { key: "products", label: "Productos", badge: products.length || undefined },
-          { key: "deliveries", label: "Entregas", badge: deliveries.length || undefined },
+          { key: "dashboard", label: t("Dashboard"), badge: dashboard?.deliveries.pending || undefined },
+          { key: "persons", label: t("Personas"), badge: persons.length || undefined },
+          { key: "products", label: t("Productos"), badge: products.length || undefined },
+          { key: "deliveries", label: t("Entregas"), badge: deliveries.length || undefined },
         ]}
       />
 
@@ -285,30 +287,30 @@ export default function WorkforcePage() {
         <>
           <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <KpiCard
-              label="Total personas"
+              label={t("Total personas")}
               value={dashboard.persons.total}
-              detail={`${dashboard.persons.staff} staff · ${dashboard.persons.volunteers} voluntarios`}
+              detail={`${dashboard.persons.staff} ${t("staff")} · ${dashboard.persons.volunteers} ${t("voluntarios")}`}
               icon={<UsersIcon size={18} />}
               accent="blue"
             />
             <KpiCard
-              label="Productos catálogo"
+              label={t("Productos catálogo")}
               value={dashboard.products.total}
-              detail={`${fmt$(dashboard.products.totalInventoryValue)} en inventario`}
+              detail={`${fmt$(dashboard.products.totalInventoryValue)} ${t("en inventario")}`}
               icon={<PackageIcon size={18} />}
               accent="purple"
             />
             <KpiCard
-              label="Entregas"
+              label={t("Entregas")}
               value={dashboard.deliveries.total}
-              detail={`${dashboard.deliveries.validated} validadas · ${dashboard.deliveries.pending} pendientes`}
+              detail={`${dashboard.deliveries.validated} ${t("validadas")} · ${dashboard.deliveries.pending} ${t("pendientes")}`}
               icon={<ClipboardIcon size={18} />}
               accent="amber"
             />
             <KpiCard
-              label="Costo total"
+              label={t("Costo total")}
               value={fmt$(dashboard.costs.total)}
-              detail={`${fmt$(dashboard.costs.labor)} mano obra + ${fmt$(dashboard.costs.materials)} materiales`}
+              detail={`${fmt$(dashboard.costs.labor)} ${t("mano obra")} + ${fmt$(dashboard.costs.materials)} ${t("materiales")}`}
               icon={<DollarIcon size={18} />}
               accent="green"
             />
@@ -317,47 +319,47 @@ export default function WorkforcePage() {
           <section style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, padding: 16, boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <div>
-                <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase" as const, color: "#94a3b8" }}>Timeline operativa</p>
-                <h3 style={{ marginTop: "3px", fontWeight: 700, fontSize: "16px", color: "#0f172a" }}>Estado de entregas de kit</h3>
+                <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase" as const, color: "#94a3b8" }}>{t("Timeline operativa")}</p>
+                <h3 style={{ marginTop: "3px", fontWeight: 700, fontSize: "16px", color: "#0f172a" }}>{t("Estado de entregas de kit")}</h3>
               </div>
               <span style={{ fontSize: "12px", fontWeight: 600, color: "#64748b", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "99px", padding: "4px 12px" }}>
-                {deliveries.length} entregas · {persons.length} personas
+                {deliveries.length} {t("entregas")} · {persons.length} {t("personas")}
               </span>
             </div>
             <div className="grid gap-3 md:grid-cols-3">
               {([
                 {
-                  key: "sinKit", label: "Sin kit", accent: "#f59e0b", chipBg: "#fef3c7", chipBorder: "#fcd34d",
-                  empty: "Todas las personas tienen kit.",
+                  key: "sinKit", label: t("Sin kit"), accent: "#f59e0b", chipBg: "#fef3c7", chipBorder: "#fcd34d",
+                  empty: t("Todas las personas tienen kit."),
                   items: kitBoard.sinKit.map((p) => ({
                     id: p.id,
                     title: p.fullName,
-                    line1: [p.personType, p.role].filter(Boolean).join(" · ") || "Sin rol definido",
-                    line2: "Aún sin entregas registradas",
+                    line1: [p.personType, p.role].filter(Boolean).join(" · ") || t("Sin rol definido"),
+                    line2: t("Aún sin entregas registradas"),
                   })),
                 },
                 {
-                  key: "entregadas", label: "Entregado · por validar", accent: "#2563eb", chipBg: "#dbeafe", chipBorder: "#93c5fd",
-                  empty: "Sin entregas pendientes de validar.",
+                  key: "entregadas", label: t("Entregado · por validar"), accent: "#2563eb", chipBg: "#dbeafe", chipBorder: "#93c5fd",
+                  empty: t("Sin entregas pendientes de validar."),
                   items: kitBoard.entregadas.map((d) => ({
                     id: d.id,
-                    title: personById.get(d.personId)?.fullName || "Persona",
-                    line1: `${productById.get(d.productId)?.name || "Producto"} × ${d.quantity}${d.size ? ` · Talla ${d.size}` : ""}`,
+                    title: personById.get(d.personId)?.fullName || t("Persona"),
+                    line1: `${productById.get(d.productId)?.name || t("Producto")} × ${d.quantity}${d.size ? ` · ${t("Talla")} ${d.size}` : ""}`,
                     line2: d.deliveredAt
-                      ? `Entregado ${new Date(d.deliveredAt).toLocaleDateString("es-CL", { day: "2-digit", month: "short" })}`
-                      : "Sin fecha registrada",
+                      ? `${t("Entregado")} ${new Date(d.deliveredAt).toLocaleDateString("es-CL", { day: "2-digit", month: "short" })}`
+                      : t("Sin fecha registrada"),
                   })),
                 },
                 {
-                  key: "validadas", label: "Validado", accent: "#059669", chipBg: "#e7f5ec", chipBorder: "#86efac",
-                  empty: "Aún sin entregas validadas.",
+                  key: "validadas", label: t("Validado"), accent: "#059669", chipBg: "#e7f5ec", chipBorder: "#86efac",
+                  empty: t("Aún sin entregas validadas."),
                   items: kitBoard.validadas.map((d) => ({
                     id: d.id,
-                    title: personById.get(d.personId)?.fullName || "Persona",
-                    line1: `${productById.get(d.productId)?.name || "Producto"} × ${d.quantity}${d.size ? ` · Talla ${d.size}` : ""}`,
+                    title: personById.get(d.personId)?.fullName || t("Persona"),
+                    line1: `${productById.get(d.productId)?.name || t("Producto")} × ${d.quantity}${d.size ? ` · ${t("Talla")} ${d.size}` : ""}`,
                     line2: d.validatedAt
-                      ? `Validado ${new Date(d.validatedAt).toLocaleDateString("es-CL", { day: "2-digit", month: "short" })}${d.validatedBy ? ` · ${d.validatedBy}` : ""}`
-                      : "Validado",
+                      ? `${t("Validado")} ${new Date(d.validatedAt).toLocaleDateString("es-CL", { day: "2-digit", month: "short" })}${d.validatedBy ? ` · ${d.validatedBy}` : ""}`
+                      : t("Validado"),
                   })),
                 },
               ] as const).map((col) => (
@@ -394,7 +396,7 @@ export default function WorkforcePage() {
                       <p style={{ fontSize: "12px", color: "#94a3b8", textAlign: "center", padding: "12px 0" }}>{col.empty}</p>
                     )}
                     {col.items.length > 4 && (
-                      <p style={{ fontSize: "11px", color: col.accent, textAlign: "center", fontWeight: 600 }}>+{col.items.length - 4} más</p>
+                      <p style={{ fontSize: "11px", color: col.accent, textAlign: "center", fontWeight: 600 }}>+{col.items.length - 4} {t("más")}</p>
                     )}
                   </div>
                 </div>
@@ -417,10 +419,10 @@ export default function WorkforcePage() {
               </div>
               <div>
                 <p className="text-sm font-semibold" style={{ color: "#7a4a00" }}>
-                  {dashboard.deliveries.pending} entrega(s) pendientes de validación
+                  {dashboard.deliveries.pending} {t("entrega(s) pendientes de validación")}
                 </p>
                 <p className="text-xs mt-0.5" style={{ color: "#7a4a00" }}>
-                  Ve a la pestaña <strong>Entregas</strong> para revisarlas.
+                  {t("Ve a la pestaña")} <strong>{t("Entregas")}</strong> {t("para revisarlas.")}
                 </p>
               </div>
             </section>
@@ -435,51 +437,51 @@ export default function WorkforcePage() {
           <SectionHeader
             accentColor="#5e3aab"
             icon={<UsersIcon size={20} />}
-            label="Personas registradas"
+            label={t("Personas registradas")}
             sub={persons.length > 0
-              ? `${persons.length} ${persons.length === 1 ? "persona" : "personas"} · ${persons.filter(p => p.personType === "STAFF").length} staff · ${persons.filter(p => p.personType === "VOLUNTEER").length} voluntarios`
-              : "Carga la primera persona del equipo"}
+              ? `${persons.length} ${persons.length === 1 ? t("persona") : t("personas")} · ${persons.filter(p => p.personType === "STAFF").length} ${t("staff")} · ${persons.filter(p => p.personType === "VOLUNTEER").length} ${t("voluntarios")}`
+              : t("Carga la primera persona del equipo")}
             action={
               <button className="btn btn-primary" type="button" onClick={() => setModal({ type: "person", data: {} })}>
                 <PlusIcon size={15} className="inline-block mr-1.5 -mt-0.5" />
-                Nueva persona
+                {t("Nueva persona")}
               </button>
             }
           />
           <WorkforceBulkImport kind="persons" onDone={loadAll} />
           {/* Filtros de personas */}
           <div className="flex flex-wrap items-center gap-2">
-            <input className="input flex-1 min-w-[200px]" placeholder="Buscar por nombre, RUT, rol o email…"
+            <input className="input flex-1 min-w-[200px]" placeholder={t("Buscar por nombre, RUT, rol o email…")}
               value={personSearch} onChange={(e) => setPersonSearch(e.target.value)} />
             <select className="input" style={{ maxWidth: 160, borderColor: personTypeFilter ? "var(--brand)" : undefined }}
               value={personTypeFilter} onChange={(e) => setPersonTypeFilter(e.target.value)}>
-              <option value="">Tipo: todos</option>
-              <option value="STAFF">Staff</option>
-              <option value="VOLUNTEER">Voluntarios</option>
+              <option value="">{t("Tipo: todos")}</option>
+              <option value="STAFF">{t("Staff")}</option>
+              <option value="VOLUNTEER">{t("Voluntarios")}</option>
             </select>
             <select className="input" style={{ maxWidth: 170, borderColor: personKitFilter ? "var(--brand)" : undefined }}
               value={personKitFilter} onChange={(e) => setPersonKitFilter(e.target.value)}>
-              <option value="">Kit: todos</option>
-              <option value="CON">Con kit entregado</option>
-              <option value="SIN">Sin kit</option>
+              <option value="">{t("Kit: todos")}</option>
+              <option value="CON">{t("Con kit entregado")}</option>
+              <option value="SIN">{t("Sin kit")}</option>
             </select>
             {(personSearch || personTypeFilter || personKitFilter) && (
               <span className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
-                {visiblePersons.length} de {persons.length}
+                {visiblePersons.length} {t("de")} {persons.length}
               </span>
             )}
           </div>
           {persons.length === 0 ? (
             <EmptyStateBox
               icon={<UsersIcon size={36} />}
-              title="Sin personas registradas"
-              description="Comenzá agregando staff o voluntarios al evento. Cada persona puede recibir productos del kit y registrar entregas validadas."
+              title={t("Sin personas registradas")}
+              description={t("Comenzá agregando staff o voluntarios al evento. Cada persona puede recibir productos del kit y registrar entregas validadas.")}
               variant="purple"
               action={
                 <button className="btn btn-primary" type="button"
                   onClick={() => setModal({ type: "person", data: {} })}>
                   <PlusIcon size={15} className="inline-block mr-1.5 -mt-0.5" />
-                  Nueva persona
+                  {t("Nueva persona")}
                 </button>
               }
             />
@@ -488,15 +490,15 @@ export default function WorkforcePage() {
               <table className="table w-full text-xs">
                 <thead>
                   <tr>
-                    <th className="text-left">Nombre</th>
-                    <th className="text-left">RUT</th>
-                    <th className="text-left">Tipo</th>
-                    <th className="text-left">Rol</th>
-                    <th className="text-left">Contacto</th>
-                    <th className="text-right">$/día</th>
-                    <th className="text-right">Días</th>
-                    <th className="text-right">Total</th>
-                    <th className="text-center">Acciones</th>
+                    <th className="text-left">{t("Nombre")}</th>
+                    <th className="text-left">{t("RUT")}</th>
+                    <th className="text-left">{t("Tipo")}</th>
+                    <th className="text-left">{t("Rol")}</th>
+                    <th className="text-left">{t("Contacto")}</th>
+                    <th className="text-right">{t("$/día")}</th>
+                    <th className="text-right">{t("Días")}</th>
+                    <th className="text-right">{t("Total")}</th>
+                    <th className="text-center">{t("Acciones")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -516,13 +518,13 @@ export default function WorkforcePage() {
                                 {hasKit && (
                                   <span className="ml-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full align-middle"
                                     style={{ background: "#e7f5ec", color: "#1e5125", border: "1px solid #a7f3d0", whiteSpace: "nowrap" }}>
-                                    ✓ KIT
+                                    {t("✓ KIT")}
                                   </span>
                                 )}
                               </p>
                               {p.gender && (
                                 <p className="text-[10.5px] mt-0.5" style={{ color: "var(--text-muted)" }}>
-                                  {p.gender === "MALE" ? "Masculino" : p.gender === "FEMALE" ? "Femenino" : p.gender}
+                                  {p.gender === "MALE" ? t("Masculino") : p.gender === "FEMALE" ? t("Femenino") : p.gender}
                                 </p>
                               )}
                             </div>
@@ -553,7 +555,7 @@ export default function WorkforcePage() {
                             <span className="font-semibold tabular-nums" style={{ color: isVolunteer ? "#94a3b8" : "#0f172a" }}>
                               {fmt$(p.dailyRate)}
                             </span>
-                            {!isVolunteer && <span className="text-[9.5px] uppercase tracking-wider" style={{ color: "#94a3b8" }}>diario</span>}
+                            {!isVolunteer && <span className="text-[9.5px] uppercase tracking-wider" style={{ color: "#94a3b8" }}>{t("diario")}</span>}
                           </div>
                         </td>
                         <td className="p-3 text-right">
@@ -567,13 +569,13 @@ export default function WorkforcePage() {
                         </td>
                         <td className="p-3">
                           <div className="inline-flex items-center justify-center gap-1.5">
-                            <IconActionButton variant="validate" title={hasKit ? "Registrar otra entrega" : "Entregar kit"}
+                            <IconActionButton variant="validate" title={hasKit ? t("Registrar otra entrega") : t("Entregar kit")}
                               onClick={() => setModal({ type: "delivery", data: { personId: p.id, quantity: 1 } })}>
-                              Kit
+                              {t("Kit")}
                             </IconActionButton>
-                            <IconActionButton variant="edit" title="Editar persona"
+                            <IconActionButton variant="edit" title={t("Editar persona")}
                               onClick={() => setModal({ type: "person", data: p })} />
-                            <IconActionButton variant="delete" title="Eliminar persona"
+                            <IconActionButton variant="delete" title={t("Eliminar persona")}
                               onClick={() => deleteEntity("person", p.id)} />
                           </div>
                         </td>
@@ -584,7 +586,7 @@ export default function WorkforcePage() {
                 <tfoot>
                   <tr style={{ borderTop: "2px solid var(--border)", background: "var(--elevated)" }}>
                     <td colSpan={7} className="p-3 text-right text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
-                      Total nómina mano de obra
+                      {t("Total nómina mano de obra")}
                     </td>
                     <td className="p-3 text-right">
                       <span className="font-bold tabular-nums text-sm" style={{ color: "#5e3aab" }}>
@@ -607,10 +609,10 @@ export default function WorkforcePage() {
           <SectionHeader
             accentColor="#c78c00"
             icon={<PackageIcon size={20} />}
-            label="Catálogo de productos"
+            label={t("Catálogo de productos")}
             sub={products.length > 0
-              ? `${products.length} ${products.length === 1 ? "producto" : "productos"} · stock total ${products.reduce((s, p) => s + (p.stockQuantity || 0), 0)} unidades · ${products.filter(p => !!p.barcode).length} con código`
-              : "Define qué se entrega en el kit"}
+              ? `${products.length} ${products.length === 1 ? t("producto") : t("productos")} · ${t("stock total")} ${products.reduce((s, p) => s + (p.stockQuantity || 0), 0)} ${t("unidades")} · ${products.filter(p => !!p.barcode).length} ${t("con código")}`
+              : t("Define qué se entrega en el kit")}
             action={
               <div className="inline-flex items-center gap-2 flex-wrap">
                 {products.some((p) => !!p.barcode) && (
@@ -623,19 +625,19 @@ export default function WorkforcePage() {
                         category: PRODUCT_CATEGORIES.find((c) => c.value === p.category)?.label || p.category,
                       }))
                     )}
-                    title="Imprime una hoja con los códigos de barra de todos los productos"
+                    title={t("Imprime una hoja con los códigos de barra de todos los productos")}
                   >
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="inline-block mr-1.5 -mt-0.5">
                       <polyline points="6 9 6 2 18 2 18 9" />
                       <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
                       <rect x="6" y="14" width="12" height="8" />
                     </svg>
-                    Imprimir códigos
+                    {t("Imprimir códigos")}
                   </button>
                 )}
                 <button className="btn btn-primary" type="button" onClick={() => setModal({ type: "product", data: {} })}>
                   <PlusIcon size={15} className="inline-block mr-1.5 -mt-0.5" />
-                  Nuevo producto
+                  {t("Nuevo producto")}
                 </button>
               </div>
             }
@@ -643,30 +645,30 @@ export default function WorkforcePage() {
           <WorkforceBulkImport kind="products" onDone={loadAll} />
           {/* Filtros de productos */}
           <div className="flex flex-wrap items-center gap-2">
-            <input className="input flex-1 min-w-[200px]" placeholder="Buscar por producto, descripción o código…"
+            <input className="input flex-1 min-w-[200px]" placeholder={t("Buscar por producto, descripción o código…")}
               value={productSearch} onChange={(e) => setProductSearch(e.target.value)} />
             <select className="input" style={{ maxWidth: 180, borderColor: productCategoryFilter ? "var(--brand)" : undefined }}
               value={productCategoryFilter} onChange={(e) => setProductCategoryFilter(e.target.value)}>
-              <option value="">Categoría: todas</option>
-              {PRODUCT_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+              <option value="">{t("Categoría: todas")}</option>
+              {PRODUCT_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{t(c.label)}</option>)}
             </select>
             {(productSearch || productCategoryFilter) && (
               <span className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
-                {visibleProducts.length} de {products.length}
+                {visibleProducts.length} {t("de")} {products.length}
               </span>
             )}
           </div>
           {products.length === 0 ? (
             <EmptyStateBox
               icon={<PackageIcon size={36} />}
-              title="Sin productos en el catálogo"
-              description="Carga los productos del kit que se entregan al staff (polera, polerón, pantalón, etc.). Cada uno con su costo, tallas y código de barras."
+              title={t("Sin productos en el catálogo")}
+              description={t("Carga los productos del kit que se entregan al staff (polera, polerón, pantalón, etc.). Cada uno con su costo, tallas y código de barras.")}
               variant="warning"
               action={
                 <button className="btn btn-primary" type="button"
                   onClick={() => setModal({ type: "product", data: {} })}>
                   <PlusIcon size={15} className="inline-block mr-1.5 -mt-0.5" />
-                  Nuevo producto
+                  {t("Nuevo producto")}
                 </button>
               }
             />
@@ -675,14 +677,14 @@ export default function WorkforcePage() {
               <table className="table w-full text-xs">
                 <thead>
                   <tr>
-                    <th className="text-left">Producto</th>
-                    <th className="text-left">Categoría</th>
-                    <th className="text-left">Código barras</th>
-                    <th className="text-left">Tallas</th>
-                    <th className="text-right">Stock</th>
-                    <th className="text-right">Costo unit.</th>
-                    <th className="text-right">Valor inventario</th>
-                    <th className="text-center">Acciones</th>
+                    <th className="text-left">{t("Producto")}</th>
+                    <th className="text-left">{t("Categoría")}</th>
+                    <th className="text-left">{t("Código barras")}</th>
+                    <th className="text-left">{t("Tallas")}</th>
+                    <th className="text-right">{t("Stock")}</th>
+                    <th className="text-right">{t("Costo unit.")}</th>
+                    <th className="text-right">{t("Valor inventario")}</th>
+                    <th className="text-center">{t("Acciones")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -744,7 +746,7 @@ export default function WorkforcePage() {
                             </div>
                           ) : (
                             <span className="inline-flex items-center text-[10px] px-2 py-0.5 rounded-full"
-                              style={{ background: "#f1f5f9", color: "#94a3b8" }}>Talla única</span>
+                              style={{ background: "#f1f5f9", color: "#94a3b8" }}>{t("Talla única")}</span>
                           )}
                         </td>
                         <td className="p-3 text-right">
@@ -762,7 +764,7 @@ export default function WorkforcePage() {
                         <td className="p-3 text-right">
                           <div className="inline-flex flex-col items-end">
                             <span className="font-semibold tabular-nums" style={{ color: "#334155" }}>{fmt$(p.unitCost)}</span>
-                            <span className="text-[9.5px] uppercase tracking-wider" style={{ color: "#94a3b8" }}>por unidad</span>
+                            <span className="text-[9.5px] uppercase tracking-wider" style={{ color: "#94a3b8" }}>{t("por unidad")}</span>
                           </div>
                         </td>
                         <td className="p-3 text-right">
@@ -772,16 +774,16 @@ export default function WorkforcePage() {
                           <div className="inline-flex items-center justify-center gap-1.5">
                             <IconActionButton
                               variant="print"
-                              title={p.barcode ? "Imprimir código de barras" : "Este producto no tiene código de barras asignado"}
+                              title={p.barcode ? t("Imprimir código de barras") : t("Este producto no tiene código de barras asignado")}
                               disabled={!p.barcode}
                               onClick={() => p.barcode && printBarcodeLabels([{
                                 name: p.name, barcode: p.barcode,
                                 category: PRODUCT_CATEGORIES.find((c) => c.value === p.category)?.label || p.category,
                               }])}
                             />
-                            <IconActionButton variant="edit" title="Editar producto"
+                            <IconActionButton variant="edit" title={t("Editar producto")}
                               onClick={() => setModal({ type: "product", data: p })} />
-                            <IconActionButton variant="delete" title="Eliminar producto"
+                            <IconActionButton variant="delete" title={t("Eliminar producto")}
                               onClick={() => deleteEntity("product", p.id)} />
                           </div>
                         </td>
@@ -792,7 +794,7 @@ export default function WorkforcePage() {
                 <tfoot>
                   <tr style={{ borderTop: "2px solid var(--border)", background: "var(--elevated)" }}>
                     <td colSpan={6} className="p-3 text-right text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
-                      Valor total de inventario
+                      {t("Valor total de inventario")}
                     </td>
                     <td className="p-3 text-right">
                       <span className="font-bold tabular-nums text-sm" style={{ color: "#c78c00" }}>
@@ -815,29 +817,29 @@ export default function WorkforcePage() {
           <SectionHeader
             accentColor="#1eb19a"
             icon={<ClipboardIcon size={20} />}
-            label="Registro de entregas"
+            label={t("Registro de entregas")}
             sub={deliveries.length > 0
-              ? `${deliveries.length} entregas · ${deliveries.filter((d) => d.validatedAt).length} validadas · ${deliveries.filter((d) => !d.validatedAt).length} pendientes`
-              : "Registra cuando una persona recibe productos del kit"}
+              ? `${deliveries.length} ${t("entregas")} · ${deliveries.filter((d) => d.validatedAt).length} ${t("validadas")} · ${deliveries.filter((d) => !d.validatedAt).length} ${t("pendientes")}`
+              : t("Registra cuando una persona recibe productos del kit")}
             action={
               <button className="btn btn-primary" type="button"
                 onClick={() => setModal({ type: "delivery", data: { quantity: 1 } })}>
                 <PlusIcon size={15} className="inline-block mr-1.5 -mt-0.5" />
-                Nueva entrega
+                {t("Nueva entrega")}
               </button>
             }
           />
           {deliveries.length === 0 ? (
             <EmptyStateBox
               icon={<ClipboardIcon size={36} />}
-              title="Sin entregas registradas"
-              description="Las entregas se registran cuando una persona recibe un producto del kit. Cada entrega luego se valida por un supervisor."
+              title={t("Sin entregas registradas")}
+              description={t("Las entregas se registran cuando una persona recibe un producto del kit. Cada entrega luego se valida por un supervisor.")}
               variant="default"
               action={
                 <button className="btn btn-primary" type="button"
                   onClick={() => setModal({ type: "delivery", data: { quantity: 1 } })}>
                   <PlusIcon size={15} className="inline-block mr-1.5 -mt-0.5" />
-                  Nueva entrega
+                  {t("Nueva entrega")}
                 </button>
               }
             />
@@ -846,14 +848,14 @@ export default function WorkforcePage() {
               <table className="table w-full text-xs">
                 <thead>
                   <tr>
-                    <th className="text-left">Fecha</th>
-                    <th className="text-left">Persona</th>
-                    <th className="text-left">Producto</th>
-                    <th className="text-left">Talla</th>
-                    <th className="text-right">Cant.</th>
-                    <th className="text-right">Costo</th>
-                    <th className="text-left">Estado</th>
-                    <th className="text-center">Acciones</th>
+                    <th className="text-left">{t("Fecha")}</th>
+                    <th className="text-left">{t("Persona")}</th>
+                    <th className="text-left">{t("Producto")}</th>
+                    <th className="text-left">{t("Talla")}</th>
+                    <th className="text-right">{t("Cant.")}</th>
+                    <th className="text-right">{t("Costo")}</th>
+                    <th className="text-left">{t("Estado")}</th>
+                    <th className="text-center">{t("Acciones")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -868,7 +870,7 @@ export default function WorkforcePage() {
                           <div className="inline-flex flex-col">
                             <span className="font-semibold" style={{ color: "#0f172a" }}>{fmtDate(d.deliveredAt)}</span>
                             {d.deliveredBy && (
-                              <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>por {d.deliveredBy}</span>
+                              <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>{t("por")} {d.deliveredBy}</span>
                             )}
                           </div>
                         </td>
@@ -878,7 +880,7 @@ export default function WorkforcePage() {
                               <PersonAvatar name={per.fullName} type={per.personType} />
                               <div className="min-w-0">
                                 <p className="font-semibold leading-tight" style={{ color: "#0f172a" }}>{per.fullName}</p>
-                                <p className="text-[10.5px] mt-0.5" style={{ color: "var(--text-muted)" }}>{per.role || (per.personType === "STAFF" ? "Staff" : "Voluntario")}</p>
+                                <p className="text-[10.5px] mt-0.5" style={{ color: "var(--text-muted)" }}>{per.role || (per.personType === "STAFF" ? t("Staff") : t("Voluntario"))}</p>
                               </div>
                             </div>
                           ) : (
@@ -923,12 +925,12 @@ export default function WorkforcePage() {
                         <td className="p-3">
                           <div className="inline-flex items-center justify-center gap-1.5">
                             {pending && (
-                              <IconActionButton variant="validate" title="Validar entrega"
+                              <IconActionButton variant="validate" title={t("Validar entrega")}
                                 onClick={() => validateDelivery(d.id)}>
-                                Validar
+                                {t("Validar")}
                               </IconActionButton>
                             )}
-                            <IconActionButton variant="delete" title="Eliminar entrega"
+                            <IconActionButton variant="delete" title={t("Eliminar entrega")}
                               onClick={() => deleteEntity("delivery", d.id)} />
                           </div>
                         </td>
@@ -939,7 +941,7 @@ export default function WorkforcePage() {
                 <tfoot>
                   <tr style={{ borderTop: "2px solid var(--border)", background: "var(--elevated)" }}>
                     <td colSpan={5} className="p-3 text-right text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
-                      Total entregado
+                      {t("Total entregado")}
                     </td>
                     <td className="p-3 text-right">
                       <span className="font-bold tabular-nums text-sm" style={{ color: "#1eb19a" }}>
@@ -963,10 +965,10 @@ export default function WorkforcePage() {
             onClick={(e) => e.stopPropagation()}>
             <div className="p-5 border-b flex items-center justify-between sticky top-0 bg-white rounded-t-2xl">
               <h2 className="text-lg font-semibold">
-                {(modal.data as any)?.id ? "Editar" : "Nuevo"}{" "}
-                {modal.type === "person" ? "persona" : modal.type === "product" ? "producto" : "entrega"}
+                {(modal.data as any)?.id ? t("Editar") : t("Nuevo")}{" "}
+                {modal.type === "person" ? t("persona") : modal.type === "product" ? t("producto") : t("entrega")}
               </h2>
-              <button className="btn btn-ghost text-sm" type="button" onClick={() => setModal(null)}>Cerrar ✕</button>
+              <button className="btn btn-ghost text-sm" type="button" onClick={() => setModal(null)}>{t("Cerrar ✕")}</button>
             </div>
 
             <div className="p-5">
@@ -987,10 +989,10 @@ export default function WorkforcePage() {
 
             <div className="p-5 border-t flex justify-end gap-2 sticky bottom-0 bg-white rounded-b-2xl">
               <button className="btn btn-ghost" type="button" onClick={() => setModal(null)} disabled={saving}>
-                Cancelar
+                {t("Cancelar")}
               </button>
               <button className="btn btn-primary" type="button" onClick={saveEntity} disabled={saving}>
-                {saving ? "Guardando…" : "Guardar"}
+                {saving ? t("Guardando…") : t("Guardar")}
               </button>
             </div>
           </div>
@@ -1115,6 +1117,7 @@ function ContactCell({ email, phone }: { email?: string | null; phone?: string |
 }
 
 function CategoryChip({ value }: { value: string | null | undefined }) {
+  const { t } = useI18n();
   const meta: Record<string, { label: string; bg: string; color: string; icon: React.ReactNode }> = {
     CLOTHING:    { label: "Vestimenta",  bg: "#eef4fb", color: "#1f4e8c", icon: (
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z" /></svg>
@@ -1141,12 +1144,13 @@ function CategoryChip({ value }: { value: string | null | undefined }) {
     <span className="inline-flex items-center gap-1.5 text-[10px] px-2.5 py-1 rounded-full font-semibold"
       style={{ backgroundColor: m.bg, color: m.color, border: `1px solid ${m.color}33` }}>
       {m.icon}
-      {m.label}
+      {t(m.label)}
     </span>
   );
 }
 
 function PersonTypeBadge({ type }: { type: string }) {
+  const { t } = useI18n();
   const isStaff = type === "STAFF";
   const color = isStaff ? "#1f4e8c" : "#5e3aab";
   const bg    = isStaff ? "#eef4fb" : "#f4f0fb";
@@ -1156,12 +1160,13 @@ function PersonTypeBadge({ type }: { type: string }) {
       style={{ backgroundColor: bg, color, border: `1px solid ${color}33` }}
     >
       <span style={{ width: 5, height: 5, borderRadius: "50%", background: color, boxShadow: `0 0 0 2px ${color}22` }} />
-      {isStaff ? "Staff" : "Voluntario"}
+      {isStaff ? t("Staff") : t("Voluntario")}
     </span>
   );
 }
 
 function ValidationPill({ at }: { at: string | null | undefined }) {
+  const { t } = useI18n();
   if (at) {
     return (
       <span
@@ -1169,7 +1174,7 @@ function ValidationPill({ at }: { at: string | null | undefined }) {
         style={{ backgroundColor: "#e7f5ec", color: "#1e5125", border: "1px solid #2e7d3233" }}
       >
         <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#2e7d32" }} />
-        Validada · {new Date(at).toLocaleDateString("es-CL", { day: "2-digit", month: "short" })}
+        {t("Validada")} · {new Date(at).toLocaleDateString("es-CL", { day: "2-digit", month: "short" })}
       </span>
     );
   }
@@ -1179,7 +1184,7 @@ function ValidationPill({ at }: { at: string | null | undefined }) {
       style={{ backgroundColor: "#fff4d6", color: "#7a4a00", border: "1px solid #c78c0033" }}
     >
       <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#c78c00", animation: "pulse 1.8s infinite" }} />
-      Pendiente
+      {t("Pendiente")}
     </span>
   );
 }
@@ -1386,55 +1391,56 @@ function escapeHtml(s: string): string {
 // ── Componentes auxiliares ────────────────────────────────────────────────────
 
 function PersonForm({ data, onChange }: { data: Partial<Person>; onChange: (d: Partial<Person>) => void }) {
+  const { t } = useI18n();
   const set = (k: keyof Person, v: any) => onChange({ ...data, [k]: v });
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-      <Field label="Nombre completo *" className="md:col-span-2">
+      <Field label={t("Nombre completo *")} className="md:col-span-2">
         <input type="text" className="input" value={data.fullName || ""}
           onChange={(e) => set("fullName", e.target.value)} />
       </Field>
-      <Field label="RUT">
+      <Field label={t("RUT")}>
         <input type="text" className="input" value={data.rut || ""}
           onChange={(e) => set("rut", e.target.value)} />
       </Field>
-      <Field label="Tipo">
+      <Field label={t("Tipo")}>
         <select className="input" value={data.personType || "STAFF"}
           onChange={(e) => set("personType", e.target.value)}>
-          {PERSON_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+          {PERSON_TYPES.map((opt) => <option key={opt.value} value={opt.value}>{t(opt.label)}</option>)}
         </select>
       </Field>
-      <Field label="Email">
+      <Field label={t("Email")}>
         <input type="email" className="input" value={data.email || ""}
           onChange={(e) => set("email", e.target.value)} />
       </Field>
-      <Field label="Teléfono">
+      <Field label={t("Teléfono")}>
         <input type="tel" className="input" value={data.phone || ""}
           onChange={(e) => set("phone", e.target.value)} />
       </Field>
-      <Field label="Género">
+      <Field label={t("Género")}>
         <select className="input" value={data.gender || ""}
           onChange={(e) => set("gender", e.target.value)}>
-          <option value="">— Seleccionar —</option>
-          {GENDER_OPTIONS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
+          <option value="">{t("— Seleccionar —")}</option>
+          {GENDER_OPTIONS.map((g) => <option key={g.value} value={g.value}>{t(g.label)}</option>)}
         </select>
       </Field>
-      <Field label="Rol / Cargo">
-        <input type="text" className="input" placeholder="Ej: Coordinador logístico"
+      <Field label={t("Rol / Cargo")}>
+        <input type="text" className="input" placeholder={t("Ej: Coordinador logístico")}
           value={data.role || ""} onChange={(e) => set("role", e.target.value)} />
       </Field>
-      <Field label="Dirección" className="md:col-span-2">
+      <Field label={t("Dirección")} className="md:col-span-2">
         <input type="text" className="input" value={data.address || ""}
           onChange={(e) => set("address", e.target.value)} />
       </Field>
-      <Field label="$/día">
+      <Field label={t("$/día")}>
         <input type="number" min={0} className="input" value={data.dailyRate ?? ""}
           onChange={(e) => set("dailyRate", Number(e.target.value) || 0)} />
       </Field>
-      <Field label="Cantidad de días">
+      <Field label={t("Cantidad de días")}>
         <input type="number" min={0} className="input" value={data.daysCount ?? ""}
           onChange={(e) => set("daysCount", Number(e.target.value) || 0)} />
       </Field>
-      <Field label="Notas" className="md:col-span-2">
+      <Field label={t("Notas")} className="md:col-span-2">
         <textarea rows={2} className="input" value={data.notes || ""}
           onChange={(e) => set("notes", e.target.value)} />
       </Field>
@@ -1443,6 +1449,7 @@ function PersonForm({ data, onChange }: { data: Partial<Person>; onChange: (d: P
 }
 
 function ProductForm({ data, onChange }: { data: Partial<Product>; onChange: (d: Partial<Product>) => void }) {
+  const { t } = useI18n();
   const set = (k: keyof Product, v: any) => onChange({ ...data, [k]: v });
   const [sizeInput, setSizeInput] = useState("");
   const sizes = data.availableSizes || [];
@@ -1453,18 +1460,18 @@ function ProductForm({ data, onChange }: { data: Partial<Product>; onChange: (d:
   };
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-      <Field label="Nombre *" className="md:col-span-2">
-        <input type="text" className="input" placeholder="Ej: Polera oficial"
+      <Field label={t("Nombre *")} className="md:col-span-2">
+        <input type="text" className="input" placeholder={t("Ej: Polera oficial")}
           value={data.name || ""} onChange={(e) => set("name", e.target.value)} />
       </Field>
-      <Field label="Categoría">
+      <Field label={t("Categoría")}>
         <select className="input" value={data.category || ""}
           onChange={(e) => set("category", e.target.value)}>
-          <option value="">— Seleccionar —</option>
-          {PRODUCT_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+          <option value="">{t("— Seleccionar —")}</option>
+          {PRODUCT_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{t(c.label)}</option>)}
         </select>
       </Field>
-      <Field label="Código de barras (auto-generado)">
+      <Field label={t("Código de barras (auto-generado)")}>
         <div className="input flex items-center gap-2 font-mono"
           style={{
             background: "#f8fafc",
@@ -1488,30 +1495,30 @@ function ProductForm({ data, onChange }: { data: Partial<Product>; onChange: (d:
             </span>
           )}
           <span className="tracking-wider">
-            {data.barcode || "Se genera al guardar"}
+            {data.barcode || t("Se genera al guardar")}
           </span>
         </div>
         <p className="text-[10px] mt-1" style={{ color: "var(--text-muted)" }}>
-          EAN-13 escaneable. No es editable.
+          {t("EAN-13 escaneable. No es editable.")}
         </p>
       </Field>
-      <Field label="Costo unitario ($)">
+      <Field label={t("Costo unitario ($)")}>
         <input type="number" min={0} className="input" value={data.unitCost ?? ""}
           onChange={(e) => set("unitCost", Number(e.target.value) || 0)} />
       </Field>
-      <Field label="Stock disponible">
+      <Field label={t("Stock disponible")}>
         <input type="number" min={0} className="input" value={data.stockQuantity ?? ""}
           onChange={(e) => set("stockQuantity", Number(e.target.value) || 0)} />
       </Field>
-      <Field label="¿Maneja tallas?" className="md:col-span-2">
+      <Field label={t("¿Maneja tallas?")} className="md:col-span-2">
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={!!data.hasSizes}
             onChange={(e) => set("hasSizes", e.target.checked)} />
-          Sí, este producto tiene variantes de talla
+          {t("Sí, este producto tiene variantes de talla")}
         </label>
       </Field>
       {data.hasSizes && (
-        <Field label="Tallas disponibles" className="md:col-span-2">
+        <Field label={t("Tallas disponibles")} className="md:col-span-2">
           <div className="flex gap-2 flex-wrap items-center mb-2">
             {sizes.map((s, i) => (
               <span key={i} className="text-xs px-2 py-1 rounded-full font-medium"
@@ -1525,14 +1532,14 @@ function ProductForm({ data, onChange }: { data: Partial<Product>; onChange: (d:
             ))}
           </div>
           <div className="flex gap-2">
-            <input type="text" className="input flex-1" placeholder="Ej: S, M, L, 38, 42…"
+            <input type="text" className="input flex-1" placeholder={t("Ej: S, M, L, 38, 42…")}
               value={sizeInput} onChange={(e) => setSizeInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addSize(); } }} />
-            <button type="button" className="btn btn-ghost" onClick={addSize}>+ Agregar</button>
+            <button type="button" className="btn btn-ghost" onClick={addSize}>{t("+ Agregar")}</button>
           </div>
         </Field>
       )}
-      <Field label="Descripción" className="md:col-span-2">
+      <Field label={t("Descripción")} className="md:col-span-2">
         <textarea rows={2} className="input" value={data.description || ""}
           onChange={(e) => set("description", e.target.value)} />
       </Field>
@@ -1546,53 +1553,54 @@ function DeliveryForm({
   data: Partial<Delivery>; persons: Person[]; products: Product[];
   onChange: (d: Partial<Delivery>) => void;
 }) {
+  const { t } = useI18n();
   const set = (k: keyof Delivery, v: any) => onChange({ ...data, [k]: v });
   const selectedProduct = products.find((p) => p.id === data.productId);
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-      <Field label="Persona *">
+      <Field label={t("Persona *")}>
         <select className="input" value={data.personId || ""}
           onChange={(e) => set("personId", e.target.value)}>
-          <option value="">— Seleccionar persona —</option>
+          <option value="">{t("— Seleccionar persona —")}</option>
           {persons.map((p) => (
             <option key={p.id} value={p.id}>
-              {p.fullName} ({p.personType === "STAFF" ? "Staff" : "Voluntario"})
+              {p.fullName} ({p.personType === "STAFF" ? t("Staff") : t("Voluntario")})
             </option>
           ))}
         </select>
       </Field>
-      <Field label="Producto *">
+      <Field label={t("Producto *")}>
         <select className="input" value={data.productId || ""}
           onChange={(e) => set("productId", e.target.value)}>
-          <option value="">— Seleccionar producto —</option>
+          <option value="">{t("— Seleccionar producto —")}</option>
           {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
       </Field>
-      <Field label="Cantidad">
+      <Field label={t("Cantidad")}>
         <input type="number" min={1} className="input" value={data.quantity ?? 1}
           onChange={(e) => set("quantity", Number(e.target.value) || 1)} />
       </Field>
       {selectedProduct?.hasSizes && (
-        <Field label="Talla">
+        <Field label={t("Talla")}>
           <select className="input" value={data.size || ""}
             onChange={(e) => set("size", e.target.value)}>
-            <option value="">— Seleccionar talla —</option>
+            <option value="">{t("— Seleccionar talla —")}</option>
             {(selectedProduct.availableSizes || []).map((s) => (
               <option key={s} value={s}>{s}</option>
             ))}
           </select>
         </Field>
       )}
-      <Field label="Fecha de entrega">
+      <Field label={t("Fecha de entrega")}>
         <input type="datetime-local" className="input"
           value={data.deliveredAt ? new Date(data.deliveredAt).toISOString().slice(0, 16) : ""}
           onChange={(e) => set("deliveredAt", e.target.value ? new Date(e.target.value).toISOString() : null)} />
       </Field>
-      <Field label="Entregado por">
-        <input type="text" className="input" placeholder="Nombre del operador"
+      <Field label={t("Entregado por")}>
+        <input type="text" className="input" placeholder={t("Nombre del operador")}
           value={data.deliveredBy || ""} onChange={(e) => set("deliveredBy", e.target.value)} />
       </Field>
-      <Field label="Notas" className="md:col-span-2">
+      <Field label={t("Notas")} className="md:col-span-2">
         <textarea rows={2} className="input" value={data.notes || ""}
           onChange={(e) => set("notes", e.target.value)} />
       </Field>
@@ -1629,6 +1637,7 @@ function importNumber(v: unknown): number | undefined {
 }
 
 function WorkforceBulkImport({ kind, onDone }: { kind: "persons" | "products"; onDone: () => Promise<void> | void }) {
+  const { t } = useI18n();
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [rowErrors, setRowErrors] = useState<string[]>([]);
@@ -1658,7 +1667,7 @@ function WorkforceBulkImport({ kind, onDone }: { kind: "persons" | "products"; o
         return out;
       }).filter((r) => Object.values(r).some((v) => v !== ""));
       if (rows.length === 0) {
-        setResult("El archivo no tiene filas con datos.");
+        setResult(t("El archivo no tiene filas con datos."));
         return;
       }
 
@@ -1687,8 +1696,8 @@ function WorkforceBulkImport({ kind, onDone }: { kind: "persons" | "products"; o
           "/workforce/persons/bulk",
           { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ persons }) },
         );
-        setResult(`Personas: ${res.created} creadas · ${res.updated} actualizadas · ${res.errors.length} con error.`);
-        setRowErrors(res.errors.map((e) => `Fila ${e.row}: ${e.message}`));
+        setResult(`${t("Personas")}: ${res.created} ${t("creadas")} · ${res.updated} ${t("actualizadas")} · ${res.errors.length} ${t("con error.")}`);
+        setRowErrors(res.errors.map((e) => `${t("Fila")} ${e.row}: ${e.message}`));
       } else {
         const products = rows.map((r) => {
           const cat = r.category.toUpperCase();
@@ -1711,12 +1720,12 @@ function WorkforceBulkImport({ kind, onDone }: { kind: "persons" | "products"; o
           "/workforce/products/bulk",
           { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ products }) },
         );
-        setResult(`Productos: ${res.created} creados · ${res.updated} actualizados · ${res.errors.length} con error.`);
-        setRowErrors(res.errors.map((e) => `Fila ${e.row}: ${e.message}`));
+        setResult(`${t("Productos")}: ${res.created} ${t("creados")} · ${res.updated} ${t("actualizados")} · ${res.errors.length} ${t("con error.")}`);
+        setRowErrors(res.errors.map((e) => `${t("Fila")} ${e.row}: ${e.message}`));
       }
       await onDone();
     } catch (err) {
-      setResult(err instanceof Error ? err.message : "No se pudo procesar el archivo.");
+      setResult(err instanceof Error ? err.message : t("No se pudo procesar el archivo."));
     } finally {
       setBusy(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -1727,10 +1736,10 @@ function WorkforceBulkImport({ kind, onDone }: { kind: "persons" | "products"; o
     <div className="rounded-xl p-3 flex flex-wrap items-center gap-2"
       style={{ border: "1px dashed var(--border)", background: "var(--elevated)" }}>
       <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "#21D0B3" }}>
-        Carga masiva
+        {t("Carga masiva")}
       </span>
       <button type="button" className="btn btn-ghost text-xs" onClick={downloadTemplate}>
-        Descargar plantilla
+        {t("Descargar plantilla")}
       </button>
       <input
         ref={fileRef}
@@ -1741,13 +1750,13 @@ function WorkforceBulkImport({ kind, onDone }: { kind: "persons" | "products"; o
         onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleFile(f); }}
       />
       <label htmlFor={`wf-bulk-${kind}`} className="btn btn-primary text-xs" style={{ cursor: busy ? "wait" : "pointer" }}>
-        {busy ? "Procesando…" : "Subir archivo"}
+        {busy ? t("Procesando…") : t("Subir archivo")}
       </label>
       {result && <span className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>{result}</span>}
       {rowErrors.length > 0 && (
         <ul className="w-full text-[11px] space-y-0.5 mt-1" style={{ color: "#b3231b" }}>
           {rowErrors.slice(0, 8).map((e, i) => <li key={i}>{e}</li>)}
-          {rowErrors.length > 8 && <li>… y {rowErrors.length - 8} errores más.</li>}
+          {rowErrors.length > 8 && <li>… {t("y")} {rowErrors.length - 8} {t("errores más.")}</li>}
         </ul>
       )}
     </div>

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { apiFetch } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 import { getSupabase } from "@/lib/supabase";
 import { downloadCSV } from "@/lib/export";
 import PageHeader from "@/components/ui/PageHeader";
@@ -149,6 +150,7 @@ function clientTypeChip(type: string) {
 }
 
 export default function DriverMonitoringPage() {
+  const { t } = useI18n();
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -187,11 +189,11 @@ export default function DriverMonitoringPage() {
       setSnapshot(data);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo cargar el monitoreo.");
+      setError(err instanceof Error ? err.message : t("No se pudo cargar el monitoreo."));
     } finally {
       setLoading(false);
     }
-  }, [selectedDate]);
+  }, [selectedDate, t]);
 
   useEffect(() => {
     setLoading(true);
@@ -314,6 +316,7 @@ export default function DriverMonitoringPage() {
       // snapshot's DB-join coordinates so a driver still appears on load.
       visibleDrivers
         .map((d) => {
+          const rawTripLabel = tripLabel(d.activeTripStatus, d.activeTrips);
           const live = livePositions[d.driverId];
           let lat: number | null = null;
           let lng: number | null = null;
@@ -344,7 +347,7 @@ export default function DriverMonitoringPage() {
             name: d.fullName,
             online: reporting,
             onTrip,
-            tripLabel: tripLabel(d.activeTripStatus, d.activeTrips),
+            tripLabel: rawTripLabel ? t(rawTripLabel) : rawTripLabel,
             lastSeen: ago(d.secondsSinceSeen),
             gpsTime:
               gpsTimestamp != null
@@ -361,7 +364,7 @@ export default function DriverMonitoringPage() {
           } as PresenceMarker;
         })
         .filter((m): m is PresenceMarker => m !== null),
-    [visibleDrivers, livePositions, nowTick],
+    [visibleDrivers, livePositions, nowTick, t],
   );
 
   const onTripCount = useMemo(
@@ -403,8 +406,8 @@ export default function DriverMonitoringPage() {
   return (
     <div className="min-w-0 space-y-6 overflow-x-hidden">
       <PageHeader
-        title="Monitoreo de Conductores"
-        description="Seguimiento en vivo de los conductores que tienen la aplicación abierta, hayan iniciado un viaje o no. Detecta presencia, sesiones y actividad de la app."
+        title={t("Monitoreo de Conductores")}
+        description={t("Seguimiento en vivo de los conductores que tienen la aplicación abierta, hayan iniciado un viaje o no. Detecta presencia, sesiones y actividad de la app.")}
         icon={<TruckIcon size={24} />}
         meta={
           isToday ? (
@@ -422,7 +425,7 @@ export default function DriverMonitoringPage() {
                   animation: "pulse 1.8s infinite",
                 }}
               />
-              En vivo · se actualiza cada 8 s
+              {t("En vivo · se actualiza cada 8 s")}
             </span>
           ) : (
             <span
@@ -437,7 +440,7 @@ export default function DriverMonitoringPage() {
                   background: "#d4a017",
                 }}
               />
-              Histórico · snapshot del {new Date(selectedDate + "T12:00:00").toLocaleDateString("es-CL", {
+              {t("Histórico · snapshot del")} {new Date(selectedDate + "T12:00:00").toLocaleDateString("es-CL", {
                 day: "2-digit", month: "short", year: "numeric",
               })}
             </span>
@@ -451,37 +454,37 @@ export default function DriverMonitoringPage() {
             className="btn btn-ghost"
           >
             <UploadIcon size={15} className="inline-block mr-1.5 -mt-0.5" />
-            Exportar CSV
+            {t("Exportar CSV")}
           </button>
         }
       />
 
       <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KpiCard
-          label="Conectados ahora"
+          label={t("Conectados ahora")}
           value={stats.onlineNow}
-          detail={`${onTripCount} en viaje · ${freeCount} libres · ${markers.length} con GPS`}
+          detail={`${onTripCount} ${t("en viaje")} · ${freeCount} ${t("libres")} · ${markers.length} ${t("con GPS")}`}
           icon={<UsersIcon size={18} />}
           accent={stats.onlineNow > 0 ? "green" : "neutral"}
         />
         <KpiCard
-          label="Conductores totales"
+          label={t("Conductores totales")}
           value={stats.totalDrivers}
-          detail={`registrados · ${visibleDrivers.length} visibles con los filtros`}
+          detail={`${t("registrados")} · ${visibleDrivers.length} ${t("visibles con los filtros")}`}
           icon={<TruckIcon size={18} />}
           accent="blue"
         />
         <KpiCard
-          label="Activos hoy"
+          label={t("Activos hoy")}
           value={stats.driversToday}
-          detail={`abrieron la app hoy (${stats.totalDrivers > 0 ? Math.round((stats.driversToday / stats.totalDrivers) * 100) : 0}% del total)`}
+          detail={`${t("abrieron la app hoy")} (${stats.totalDrivers > 0 ? Math.round((stats.driversToday / stats.totalDrivers) * 100) : 0}% ${t("del total")})`}
           icon={<CheckIcon size={18} />}
           accent="purple"
         />
         <KpiCard
-          label="Sesiones hoy"
+          label={t("Sesiones hoy")}
           value={stats.sessionsToday}
-          detail={`aperturas de la app · ${stats.driversToday > 0 ? (stats.sessionsToday / stats.driversToday).toFixed(1) : "0"} por conductor`}
+          detail={`${t("aperturas de la app")} · ${stats.driversToday > 0 ? (stats.sessionsToday / stats.driversToday).toFixed(1) : "0"} ${t("por conductor")}`}
           icon={<RefreshIcon size={18} />}
           accent="amber"
         />
@@ -531,15 +534,15 @@ export default function DriverMonitoringPage() {
         >
           <div className="flex items-center justify-between p-4" style={{ borderBottom: "1px solid #f1f5f9" }}>
             <h2 className="text-sm font-semibold uppercase tracking-wider" style={{ color: "#475569" }}>
-              Mapa de conductores
+              {t("Mapa de conductores")}
             </h2>
             <span className="text-xs" style={{ color: "#94a3b8" }}>
-              {markers.length} con señal GPS
+              {markers.length} {t("con señal GPS")}
               {onTripCount > 0 && (
                 <>
                   {" · "}
                   <span style={{ color: "#059669", fontWeight: 700 }}>
-                    {onTripCount} en viaje
+                    {onTripCount} {t("en viaje")}
                   </span>
                 </>
               )}
@@ -551,9 +554,9 @@ export default function DriverMonitoringPage() {
               style={{ height: 280, background: "#f1f5f9" }}
             >
               <p className="text-sm" style={{ color: "#94a3b8" }}>
-                Ningún conductor tiene una posición GPS registrada todavía.
+                {t("Ningún conductor tiene una posición GPS registrada todavía.")}
                 <br />
-                El mapa se poblará cuando la app de un conductor reporte su ubicación.
+                {t("El mapa se poblará cuando la app de un conductor reporte su ubicación.")}
               </p>
             </div>
           ) : (
@@ -566,13 +569,13 @@ export default function DriverMonitoringPage() {
 
       {loading && !snapshot ? (
         <section className="surface rounded-2xl p-8">
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>Cargando monitoreo…</p>
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>{t("Cargando monitoreo…")}</p>
         </section>
       ) : drivers.length === 0 ? (
         <EmptyStateBox
           icon={<TruckIcon size={36} />}
-          title="No hay conductores registrados"
-          description="Cuando un conductor abra el Portal Conductor, su sesión aparecerá acá en tiempo real, haya iniciado un viaje o no."
+          title={t("No hay conductores registrados")}
+          description={t("Cuando un conductor abra el Portal Conductor, su sesión aparecerá acá en tiempo real, haya iniciado un viaje o no.")}
         />
       ) : visibleDrivers.length === 0 ? (
         <section
@@ -584,10 +587,10 @@ export default function DriverMonitoringPage() {
         >
           <p style={{ fontSize: 32, margin: "0 0 8px" }}>🔍</p>
           <p style={{ fontSize: 14, fontWeight: 600, color: "#475569", margin: 0 }}>
-            No hay conductores que coincidan con los filtros
+            {t("No hay conductores que coincidan con los filtros")}
           </p>
           <p style={{ fontSize: 12, color: "#94a3b8", margin: "6px 0 0" }}>
-            Prueba quitar algún filtro o cambiar los criterios de búsqueda.
+            {t("Prueba quitar algún filtro o cambiar los criterios de búsqueda.")}
           </p>
         </section>
       ) : (
@@ -608,10 +611,10 @@ export default function DriverMonitoringPage() {
               className="text-sm font-semibold uppercase tracking-wider"
               style={{ color: "#475569" }}
             >
-              Detalle de conductores
+              {t("Detalle de conductores")}
             </h2>
             <span style={{ fontSize: 11.5, color: "#94a3b8", fontWeight: 500 }}>
-              {visibleDrivers.length} {visibleDrivers.length === 1 ? "conductor" : "conductores"}
+              {visibleDrivers.length} {visibleDrivers.length === 1 ? t("conductor") : t("conductores")}
             </span>
           </div>
 
@@ -647,7 +650,7 @@ export default function DriverMonitoringPage() {
                         whiteSpace: "nowrap",
                       }}
                     >
-                      {h}
+                      {t(h)}
                     </th>
                   ))}
                 </tr>
@@ -737,7 +740,7 @@ export default function DriverMonitoringPage() {
                               animation: d.online ? "pulse 1.8s infinite" : "none",
                             }}
                           />
-                          {d.online ? "Conectado" : "Desconectado"}
+                          {d.online ? t("Conectado") : t("Desconectado")}
                         </span>
                       </td>
 
@@ -759,7 +762,7 @@ export default function DriverMonitoringPage() {
                             }}
                           >
                             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 17H3v-6l2.5-5h11L19 11v6h-2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg>
-                            {tripText ?? `${d.activeTrips} ${d.activeTrips === 1 ? "viaje" : "viajes"}`}
+                            {tripText ? t(tripText) : `${d.activeTrips} ${d.activeTrips === 1 ? t("viaje") : t("viajes")}`}
                           </span>
                         ) : (
                           <span
@@ -776,7 +779,7 @@ export default function DriverMonitoringPage() {
                               border: "1px solid #67e8f9",
                             }}
                           >
-                            Disponible
+                            {t("Disponible")}
                           </span>
                         )}
                       </td>
@@ -830,7 +833,7 @@ export default function DriverMonitoringPage() {
                                     textTransform: "uppercase",
                                   }}
                                 >
-                                  {meta.label}
+                                  {t(meta.label)}
                                 </span>
                               );
                             })}
@@ -896,11 +899,11 @@ export default function DriverMonitoringPage() {
                               })}
                             </span>
                             <span style={{ fontSize: 10, color: "#94a3b8" }}>
-                              {d.heartbeats ?? 0} latidos
+                              {d.heartbeats ?? 0} {t("latidos")}
                             </span>
                           </div>
                         ) : (
-                          <span style={{ color: "#94a3b8", fontStyle: "italic" }}>Nunca usó la app</span>
+                          <span style={{ color: "#94a3b8", fontStyle: "italic" }}>{t("Nunca usó la app")}</span>
                         )}
                       </td>
 
@@ -929,7 +932,7 @@ export default function DriverMonitoringPage() {
                               boxShadow: gpsActive ? "0 0 6px #10b981" : "none",
                             }}
                           />
-                          {gpsActive ? "Reportando" : "Sin señal"}
+                          {gpsActive ? t("Reportando") : t("Sin señal")}
                         </span>
                       </td>
                     </tr>
@@ -972,13 +975,14 @@ type FiltersBarProps = {
 };
 
 function FiltersBar(p: FiltersBarProps) {
+  const { t } = useI18n();
   return (
     <section className="surface rounded-2xl p-5 space-y-3">
       {/* Una sola grilla responsiva — todos los filtros se ven al mismo tiempo */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
         {/* Fecha */}
         <label className="text-sm block">
-          <span className="block mb-1">Fecha</span>
+          <span className="block mb-1">{t("Fecha")}</span>
           <input
             type="date"
             className="input"
@@ -995,11 +999,11 @@ function FiltersBar(p: FiltersBarProps) {
 
         {/* Buscar */}
         <label className="text-sm block md:col-span-2">
-          <span className="block mb-1">Buscar</span>
+          <span className="block mb-1">{t("Buscar")}</span>
           <input
             type="text"
             className="input"
-            placeholder="Nombre del conductor o plataforma…"
+            placeholder={t("Nombre del conductor o plataforma…")}
             value={p.searchQuery}
             onChange={(e) => p.setSearchQuery(e.target.value)}
           />
@@ -1007,7 +1011,7 @@ function FiltersBar(p: FiltersBarProps) {
 
         {/* Tipo cliente */}
         <label className="text-sm block">
-          <span className="block mb-1">Tipo cliente</span>
+          <span className="block mb-1">{t("Tipo cliente")}</span>
           <select
             className="input"
             value={p.clientTypeFilter}
@@ -1021,12 +1025,12 @@ function FiltersBar(p: FiltersBarProps) {
           >
             <option value="">
               {p.clientTypeOptions.length === 0
-                ? "Sin tipos disponibles"
-                : "Todos los tipos"}
+                ? t("Sin tipos disponibles")
+                : t("Todos los tipos")}
             </option>
             {p.clientTypeOptions.map((c) => (
               <option key={c} value={c}>
-                {CLIENT_TYPE_META[c.toUpperCase()]?.label ?? c}
+                {t(CLIENT_TYPE_META[c.toUpperCase()]?.label ?? c)}
               </option>
             ))}
           </select>
@@ -1035,7 +1039,7 @@ function FiltersBar(p: FiltersBarProps) {
         {/* Disciplina */}
         <label className="text-sm block">
           <span className="block mb-1">
-            Disciplina
+            {t("Disciplina")}
             {p.disciplineOptions.length > 0 && (
               <span
                 className="ml-1.5 inline-block"
@@ -1067,8 +1071,8 @@ function FiltersBar(p: FiltersBarProps) {
           >
             <option value="">
               {p.disciplineOptions.length === 0
-                ? `Sin disciplinas ${p.isToday ? "hoy" : "este día"}`
-                : "Todas las disciplinas"}
+                ? `${t("Sin disciplinas")} ${p.isToday ? t("hoy") : t("este día")}`
+                : t("Todas las disciplinas")}
             </option>
             {p.disciplineOptions.map((dx) => (
               <option key={dx} value={dx}>
@@ -1101,7 +1105,7 @@ function FiltersBar(p: FiltersBarProps) {
                 boxShadow: active ? "0 1px 4px rgba(33,208,179,0.3)" : "none",
               }}
             >
-              {opt.label}
+              {t(opt.label)}
               <span
                 style={{
                   fontSize: 10,
@@ -1127,7 +1131,7 @@ function FiltersBar(p: FiltersBarProps) {
               className="text-xs"
               style={{ color: "var(--text-muted)" }}
             >
-              <strong style={{ color: "#0f172a" }}>{p.visibleCount}</strong> de {p.totalCount}
+              <strong style={{ color: "#0f172a" }}>{p.visibleCount}</strong> {t("de")} {p.totalCount}
             </span>
             <button
               type="button"
@@ -1135,7 +1139,7 @@ function FiltersBar(p: FiltersBarProps) {
               className="btn btn-ghost text-xs"
               style={{ padding: "5px 10px" }}
             >
-              Limpiar
+              {t("Limpiar")}
             </button>
           </>
         ) : (
@@ -1145,9 +1149,9 @@ function FiltersBar(p: FiltersBarProps) {
               onClick={() => p.setSelectedDate(p.today)}
               className="btn btn-ghost text-xs"
               style={{ padding: "5px 10px" }}
-              title="Volver a hoy"
+              title={t("Volver a hoy")}
             >
-              ← Volver a hoy
+              ← {t("Volver a hoy")}
             </button>
           )
         )}

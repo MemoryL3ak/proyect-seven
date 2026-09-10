@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 
 type EventItem = {
   id: string;
@@ -55,6 +56,7 @@ function sumRow(values?: NumericStringMap) {
 }
 
 export default function EventAndCapacityPlanner() {
+  const { t } = useI18n();
   const [events, setEvents] = useState<EventItem[]>([]);
   const [disciplines, setDisciplines] = useState<DisciplineItem[]>([]);
   const [delegations, setDelegations] = useState<DelegationItem[]>([]);
@@ -82,7 +84,7 @@ export default function EventAndCapacityPlanner() {
       setDelegations(Array.isArray(delegationData) ? delegationData : []);
       if (!selectedEventId && safeEvents.length) setSelectedEventId(safeEvents[0].id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo cargar planificacion AND del evento.");
+      setError(err instanceof Error ? err.message : t("No se pudo cargar planificacion AND del evento."));
     } finally {
       setLoading(false);
     }
@@ -207,10 +209,10 @@ export default function EventAndCapacityPlanner() {
         }),
       });
 
-      setMessage("Planificacion AND guardada: capacidad por disciplina y por delegacion.");
+      setMessage(t("Planificacion AND guardada: capacidad por disciplina y por delegacion."));
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo guardar la planificacion AND.");
+      setError(err instanceof Error ? err.message : t("No se pudo guardar la planificacion AND."));
     } finally {
       setSaving(false);
     }
@@ -220,14 +222,14 @@ export default function EventAndCapacityPlanner() {
     <section className="surface rounded-3xl border border-white/10 p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-[0.24em] text-white/50">Planificacion AND</p>
-          <h2 className="mt-1 text-2xl font-semibold text-white">Capacidad esperada por disciplina y delegacion</h2>
+          <p className="text-xs uppercase tracking-[0.24em] text-white/50">{t("Planificacion AND")}</p>
+          <h2 className="mt-1 text-2xl font-semibold text-white">{t("Capacidad esperada por disciplina y delegacion")}</h2>
           <p className="mt-1 text-sm text-white/50">
-            Define el objetivo de llegada/registro para cada disciplina y distribuyelo por delegacion del evento.
+            {t("Define el objetivo de llegada/registro para cada disciplina y distribuyelo por delegacion del evento.")}
           </p>
         </div>
         <button className="btn btn-primary" type="button" onClick={save} disabled={!selectedEvent || saving || loading}>
-          {saving ? "Guardando..." : "Guardar planificacion AND"}
+          {saving ? t("Guardando...") : t("Guardar planificacion AND")}
         </button>
       </div>
 
@@ -241,35 +243,35 @@ export default function EventAndCapacityPlanner() {
             setError(null);
           }}
         >
-          <option value="">Selecciona un evento</option>
+          <option value="">{t("Selecciona un evento")}</option>
           {events.map((event) => (
             <option key={event.id} value={event.id}>{event.name || event.id}</option>
           ))}
         </select>
         <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-          <div className="text-xs text-white/50">Total esperado</div>
+          <div className="text-xs text-white/50">{t("Total esperado")}</div>
           <div className="text-lg font-semibold text-white">{totalExpected}</div>
         </div>
         <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-          <div className="text-xs text-white/50">Asignado a delegaciones</div>
+          <div className="text-xs text-white/50">{t("Asignado a delegaciones")}</div>
           <div className="text-lg font-semibold text-white">{totalAllocated}</div>
         </div>
       </div>
 
       <div className="mt-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm">
-        <span className="text-white/50">Balance global:</span>{" "}
+        <span className="text-white/50">{t("Balance global:")}</span>{" "}
         <span className={totalBalance === 0 ? "font-semibold text-emerald-400" : totalBalance > 0 ? "font-semibold text-amber-400" : "font-semibold text-rose-400"}>
-          {totalBalance > 0 ? `Faltan ${totalBalance} por asignar` : totalBalance < 0 ? `Exceso de ${Math.abs(totalBalance)} asignados` : "Cuadre perfecto"}
+          {totalBalance > 0 ? `Faltan ${totalBalance} por asignar` : totalBalance < 0 ? `Exceso de ${Math.abs(totalBalance)} asignados` : t("Cuadre perfecto")}
         </span>
       </div>
 
-      {loading ? <p className="mt-3 text-sm text-white/50">Cargando planificacion...</p> : null}
+      {loading ? <p className="mt-3 text-sm text-white/50">{t("Cargando planificacion...")}</p> : null}
       {error ? <p className="mt-3 text-sm text-rose-400">{error}</p> : null}
       {message ? <p className="mt-3 text-sm text-emerald-400">{message}</p> : null}
 
       {!loading && selectedEvent && eventDisciplines.length === 0 ? (
         <p className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-400">
-          Este evento no tiene disciplinas asociadas. Primero agrega disciplinas en el formulario de Eventos y luego configura la planificacion AND.
+          {t("Este evento no tiene disciplinas asociadas. Primero agrega disciplinas en el formulario de Eventos y luego configura la planificacion AND.")}
         </p>
       ) : null}
 
@@ -277,8 +279,8 @@ export default function EventAndCapacityPlanner() {
         <div className="mt-4 grid gap-4 xl:grid-cols-[1.15fr_1.85fr]">
           <div className="rounded-2xl border border-white/10 bg-white/4 p-4">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-white/50">Objetivo por disciplina</h3>
-              <span className="text-xs text-white/50">{plannerRows.length} disciplinas</span>
+              <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-white/50">{t("Objetivo por disciplina")}</h3>
+              <span className="text-xs text-white/50">{plannerRows.length} {t("disciplinas")}</span>
             </div>
             <div className="space-y-2">
               {plannerRows.map((row) => (
@@ -297,7 +299,7 @@ export default function EventAndCapacityPlanner() {
                     <div>
                       <p className="font-medium text-white">{row.name}</p>
                       <p className="mt-1 text-xs text-white/50">
-                        Asignado {row.allocated} / Objetivo {row.total}
+                        {t("Asignado")} {row.allocated} / {t("Objetivo")} {row.total}
                       </p>
                     </div>
                     <input
@@ -318,7 +320,7 @@ export default function EventAndCapacityPlanner() {
                     />
                   </div>
                   <p className={`mt-2 text-xs ${row.balance === 0 ? "text-emerald-400" : row.balance > 0 ? "text-amber-400" : "text-rose-400"}`}>
-                    {row.balance === 0 ? "Distribucion completa" : row.balance > 0 ? `Faltan ${row.balance} por distribuir` : `Exceso de ${Math.abs(row.balance)}`}
+                    {row.balance === 0 ? t("Distribucion completa") : row.balance > 0 ? `Faltan ${row.balance} por distribuir` : `Exceso de ${Math.abs(row.balance)}`}
                   </p>
                 </button>
               ))}
@@ -329,23 +331,23 @@ export default function EventAndCapacityPlanner() {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h3 className="text-base font-semibold text-white">
-                  {selectedDiscipline ? `Distribucion por delegacion: ${selectedDiscipline.name}` : "Distribucion por delegacion"}
+                  {selectedDiscipline ? `${t("Distribucion por delegacion")}: ${selectedDiscipline.name}` : t("Distribucion por delegacion")}
                 </h3>
                 <p className="mt-1 text-sm text-white/50">
-                  Define cuanto deberia registrar cada delegacion para la disciplina seleccionada.
+                  {t("Define cuanto deberia registrar cada delegacion para la disciplina seleccionada.")}
                 </p>
               </div>
               <div className="grid grid-cols-3 gap-2 text-xs">
                 <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                  <div className="text-white/50">Objetivo</div>
+                  <div className="text-white/50">{t("Objetivo")}</div>
                   <div className="font-semibold text-white">{selectedDisciplineSummary.total}</div>
                 </div>
                 <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                  <div className="text-white/50">Asignado</div>
+                  <div className="text-white/50">{t("Asignado")}</div>
                   <div className="font-semibold text-white">{selectedDisciplineSummary.allocated}</div>
                 </div>
                 <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                  <div className="text-white/50">Balance</div>
+                  <div className="text-white/50">{t("Balance")}</div>
                   <div className={`font-semibold ${selectedDisciplineSummary.balance === 0 ? "text-emerald-400" : selectedDisciplineSummary.balance > 0 ? "text-amber-400" : "text-rose-400"}`}>
                     {selectedDisciplineSummary.balance}
                   </div>
@@ -354,16 +356,16 @@ export default function EventAndCapacityPlanner() {
             </div>
 
             {!selectedDiscipline ? (
-              <p className="mt-4 text-sm text-white/50">Selecciona una disciplina para asignar cupos por delegacion.</p>
+              <p className="mt-4 text-sm text-white/50">{t("Selecciona una disciplina para asignar cupos por delegacion.")}</p>
             ) : eventDelegations.length === 0 ? (
-              <p className="mt-4 text-sm text-white/50">No hay delegaciones creadas para este evento.</p>
+              <p className="mt-4 text-sm text-white/50">{t("No hay delegaciones creadas para este evento.")}</p>
             ) : (
               <div className="mt-4 overflow-x-auto">
                 <table className="table">
                   <thead>
                     <tr>
-                      <th>Delegacion</th>
-                      <th>Cupo esperado</th>
+                      <th>{t("Delegacion")}</th>
+                      <th>{t("Cupo esperado")}</th>
                     </tr>
                   </thead>
                   <tbody>

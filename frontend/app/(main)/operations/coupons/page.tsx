@@ -17,6 +17,7 @@ import {
   SettingsIcon,
 } from "@/components/ui/Icons";
 import { CLIENT_TYPE_OPTIONS, clientTypeLabel, normalizeClientType } from "@/lib/clientTypes";
+import { useI18n } from "@/lib/i18n";
 
 type Coupon = {
   id: string;
@@ -172,6 +173,7 @@ function discountDisplay(c: Coupon) {
 }
 
 export default function CouponsAdminPage() {
+  const { t } = useI18n();
   const [tab, setTab] = useState<"catalog" | "partners" | "claims">("catalog");
 
   const [coupons, setCoupons] = useState<Coupon[]>([]);
@@ -195,7 +197,7 @@ export default function CouponsAdminPage() {
       setClaims(Array.isArray(cl) ? cl : []);
       setStats(st || null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error cargando datos");
+      setError(err instanceof Error ? err.message : t("Error cargando datos"));
     }
   };
 
@@ -206,8 +208,8 @@ export default function CouponsAdminPage() {
   return (
     <div className="min-w-0 space-y-6 overflow-x-hidden">
       <PageHeader
-        title="Beneficios"
-        description="Sistema de beneficios con QR para atletas, VIPs y staff. El atleta los reclama desde su portal y los presenta en el comercio."
+        title={t("Beneficios")}
+        description={t("Sistema de beneficios con QR para atletas, VIPs y staff. El atleta los reclama desde su portal y los presenta en el comercio.")}
         icon={<TicketIcon size={24} />}
         iconBg="linear-gradient(135deg, #d4a017 0%, #e3a808 100%)"
       />
@@ -215,15 +217,15 @@ export default function CouponsAdminPage() {
       {/* KPIs */}
       {stats && (
         <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <KpiCard label="Beneficios" value={stats.totalCoupons}
-            detail={`${stats.activeCoupons} activos`}
+          <KpiCard label={t("Beneficios")} value={stats.totalCoupons}
+            detail={`${stats.activeCoupons} ${t("activos")}`}
             icon={<TicketIcon size={18} />} accent="blue" />
-          <KpiCard label="Reclamados (vigentes)" value={stats.activeClaims}
+          <KpiCard label={t("Reclamados (vigentes)")} value={stats.activeClaims}
             icon={<ClipboardIcon size={18} />} accent="amber" />
-          <KpiCard label="Canjeados" value={stats.totalRedemptions}
+          <KpiCard label={t("Canjeados")} value={stats.totalRedemptions}
             icon={<CheckIcon size={18} />} accent="green" />
-          <KpiCard label="Partners habilitados" value={partners.filter(p => p.active).length}
-            detail={`${partners.length} totales`}
+          <KpiCard label={t("Partners habilitados")} value={partners.filter(p => p.active).length}
+            detail={`${partners.length} ${t("totales")}`}
             icon={<UsersIcon size={18} />} accent="purple" />
         </section>
       )}
@@ -232,9 +234,9 @@ export default function CouponsAdminPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Tabs
           tabs={[
-            { key: "catalog", label: "Catálogo", icon: <TicketIcon size={16} />, badge: coupons.length },
-            { key: "partners", label: "Partners", icon: <UsersIcon size={16} />, badge: partners.length },
-            { key: "claims", label: "Claims", icon: <ClipboardIcon size={16} />, badge: claims.filter(c => c.status === "CLAIMED").length },
+            { key: "catalog", label: t("Catálogo"), icon: <TicketIcon size={16} />, badge: coupons.length },
+            { key: "partners", label: t("Partners"), icon: <UsersIcon size={16} />, badge: partners.length },
+            { key: "claims", label: t("Claims"), icon: <ClipboardIcon size={16} />, badge: claims.filter(c => c.status === "CLAIMED").length },
           ]}
           value={tab}
           onChange={setTab}
@@ -280,6 +282,7 @@ function CatalogTab({
   setError: (s: string | null) => void;
   setMessage: (s: string | null) => void;
 }) {
+  const { t } = useI18n();
   const [categoryFilter, setCategoryFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
@@ -317,7 +320,7 @@ function CatalogTab({
 
   const save = async () => {
     if (!form.code || !form.title) {
-      setError("Código y título son obligatorios");
+      setError(t("Código y título son obligatorios"));
       return;
     }
     setSaving(true); setError(null);
@@ -330,22 +333,22 @@ function CatalogTab({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      setMessage(id ? "Beneficio actualizado." : "Beneficio creado.");
+      setMessage(id ? t("Beneficio actualizado.") : t("Beneficio creado."));
       setModalOpen(false); setForm({});
       await reload();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error guardando");
+      setError(err instanceof Error ? err.message : t("Error guardando"));
     } finally { setSaving(false); }
   };
 
   const remove = async (id: string) => {
-    if (!confirm("¿Eliminar este beneficio? Esta acción no se puede deshacer.")) return;
+    if (!confirm(t("¿Eliminar este beneficio? Esta acción no se puede deshacer."))) return;
     try {
       await apiFetch(`/coupons/${id}`, { method: "DELETE" });
-      setMessage("Beneficio eliminado.");
+      setMessage(t("Beneficio eliminado."));
       await reload();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error eliminando");
+      setError(err instanceof Error ? err.message : t("Error eliminando"));
     }
   };
 
@@ -354,40 +357,40 @@ function CatalogTab({
       <div className="flex justify-end">
         <button className="btn btn-primary" type="button" onClick={() => openModal()}>
           <PlusIcon size={16} className="inline-block mr-1" />
-          Nuevo beneficio
+          {t("Nuevo beneficio")}
         </button>
       </div>
 
       <section className="surface rounded-2xl p-4 space-y-3">
         <div>
           <p className="text-xs font-medium uppercase tracking-wide mb-2"
-            style={{ color: "var(--text-muted)" }}>Categoría</p>
+            style={{ color: "var(--text-muted)" }}>{t("Categoría")}</p>
           <FilterChips value={categoryFilter} onChange={setCategoryFilter}
-            options={CATEGORIES.map(c => ({ value: c.value, label: c.label }))}
-            allLabel="Todas" />
+            options={CATEGORIES.map(c => ({ value: c.value, label: t(c.label) }))}
+            allLabel={t("Todas")} />
         </div>
         <div>
           <p className="text-xs font-medium uppercase tracking-wide mb-2"
-            style={{ color: "var(--text-muted)" }}>Estado</p>
+            style={{ color: "var(--text-muted)" }}>{t("Estado")}</p>
           <FilterChips value={statusFilter} onChange={setStatusFilter}
             options={[
-              { value: "ACTIVE", label: "Activos" },
-              { value: "INACTIVE", label: "Inactivos" },
-              { value: "EXPIRED", label: "Expirados" },
+              { value: "ACTIVE", label: t("Activos") },
+              { value: "INACTIVE", label: t("Inactivos") },
+              { value: "EXPIRED", label: t("Expirados") },
             ]}
-            allLabel="Todos" />
+            allLabel={t("Todos")} />
         </div>
       </section>
 
       {visible.length === 0 ? (
         <EmptyStateBox
           icon={<TicketIcon size={36} />}
-          title="No hay beneficios cargados"
-          description="Crea el primer beneficio para que aparezca en la app de tus atletas, VIPs y staff."
+          title={t("No hay beneficios cargados")}
+          description={t("Crea el primer beneficio para que aparezca en la app de tus atletas, VIPs y staff.")}
           action={
             <button className="btn btn-primary" type="button" onClick={() => openModal()}>
               <PlusIcon size={16} className="inline-block mr-1" />
-              Nuevo beneficio
+              {t("Nuevo beneficio")}
             </button>
           }
         />
@@ -405,7 +408,7 @@ function CatalogTab({
                   <div className="flex items-start justify-between gap-2">
                     <span className="text-[10px] px-2 py-0.5 rounded-full font-medium"
                       style={{ backgroundColor: cat.bg, color: cat.color }}>
-                      {cat.label}
+                      {t(cat.label)}
                     </span>
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded font-medium"
                       style={{ backgroundColor: "#eef1f6", color: "#1f4e8c" }}>
@@ -426,22 +429,22 @@ function CatalogTab({
                   )}
                   {(c.validUntil || c.maxRedemptions) && (
                     <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-                      {c.validUntil && <>Hasta {fmtDate(c.validUntil)}</>}
-                      {c.maxRedemptions && <> · Máx. {c.maxRedemptions} canjes</>}
+                      {c.validUntil && <>{t("Hasta")} {fmtDate(c.validUntil)}</>}
+                      {c.maxRedemptions && <> · {t("Máx.")} {c.maxRedemptions} {t("canjes")}</>}
                     </p>
                   )}
                   {expired && (
                     <p className="text-[11px] font-medium" style={{ color: "#b3231b" }}>
-                      ⚠ Expirado
+                      ⚠ {t("Expirado")}
                     </p>
                   )}
                 </div>
                 <div className="border-t px-4 py-2 flex gap-1 justify-end"
                   style={{ backgroundColor: "#fafbfc" }}>
                   <button className="btn btn-ghost text-xs py-1 px-2" type="button"
-                    onClick={() => openModal(c)}>Editar</button>
+                    onClick={() => openModal(c)}>{t("Editar")}</button>
                   <button className="btn btn-ghost text-xs py-1 px-2" type="button"
-                    onClick={() => remove(c.id)}>Eliminar</button>
+                    onClick={() => remove(c.id)}>{t("Eliminar")}</button>
                 </div>
               </article>
             );
@@ -458,58 +461,58 @@ function CatalogTab({
             onClick={(e) => e.stopPropagation()}>
             <div className="p-5 border-b flex items-center justify-between sticky top-0 bg-white rounded-t-2xl">
               <h2 className="text-lg font-semibold">
-                {(form as any).id ? "Editar beneficio" : "Nuevo beneficio"}
+                {(form as any).id ? t("Editar beneficio") : t("Nuevo beneficio")}
               </h2>
               <button className="btn btn-ghost text-sm" type="button" onClick={() => setModalOpen(false)}>
-                Cerrar ✕
+                {t("Cerrar")} ✕
               </button>
             </div>
             <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Field label="Código *">
+              <Field label={t("Código *")}>
                 <input type="text" className="input font-mono uppercase"
                   placeholder="MCDO20" value={form.code || ""}
                   onChange={(e) => setField("code", e.target.value.toUpperCase())} />
               </Field>
-              <Field label="Categoría *">
+              <Field label={t("Categoría *")}>
                 <select className="input" value={form.category || "COMIDA"}
                   onChange={(e) => setField("category", e.target.value as any)}>
-                  {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                  {CATEGORIES.map(c => <option key={c.value} value={c.value}>{t(c.label)}</option>)}
                 </select>
               </Field>
-              <Field label="Título *" className="md:col-span-2">
+              <Field label={t("Título *")} className="md:col-span-2">
                 <input type="text" className="input" placeholder="20% OFF en McDonald's"
                   value={form.title || ""} onChange={(e) => setField("title", e.target.value)} />
               </Field>
-              <Field label="Descripción" className="md:col-span-2">
+              <Field label={t("Descripción")} className="md:col-span-2">
                 <textarea rows={2} className="input" value={form.description || ""}
                   onChange={(e) => setField("description", e.target.value)} />
               </Field>
-              <Field label="Tipo de descuento">
+              <Field label={t("Tipo de descuento")}>
                 <select className="input" value={form.discountType || "PERCENTAGE"}
                   onChange={(e) => setField("discountType", e.target.value as any)}>
-                  {DISCOUNT_TYPES.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+                  {DISCOUNT_TYPES.map(d => <option key={d.value} value={d.value}>{t(d.label)}</option>)}
                 </select>
               </Field>
-              <Field label={form.discountType === "AMOUNT" ? "Monto ($)" : "Valor"}>
+              <Field label={form.discountType === "AMOUNT" ? t("Monto ($)") : t("Valor")}>
                 <input type="number" min={0} className="input" value={form.discountValue ?? ""}
                   onChange={(e) => setField("discountValue", Number(e.target.value) || 0)} />
               </Field>
-              <Field label="Comercio / Partner">
+              <Field label={t("Comercio / Partner")}>
                 <input type="text" className="input" placeholder="McDonald's"
                   value={form.partnerName || ""} onChange={(e) => setField("partnerName", e.target.value)} />
               </Field>
-              <Field label="Dirección del local">
+              <Field label={t("Dirección del local")}>
                 <input type="text" className="input" value={form.partnerAddress || ""}
                   onChange={(e) => setField("partnerAddress", e.target.value)} />
               </Field>
-              <Field label="Imagen referencial" className="md:col-span-2">
+              <Field label={t("Imagen referencial")} className="md:col-span-2">
                 <div className="flex items-start gap-3">
                   <div style={{ width: 104, height: 78, borderRadius: 10, overflow: "hidden", background: "#f1f5f9", border: "1px solid #e2e8f0", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
                     {form.imageUrl ? (
-                      <img src={form.imageUrl} alt="Vista previa"
+                      <img src={form.imageUrl} alt={t("Vista previa")}
                         style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     ) : (
-                      <span style={{ fontSize: 10, color: "#94a3b8" }}>Sin imagen</span>
+                      <span style={{ fontSize: 10, color: "#94a3b8" }}>{t("Sin imagen")}</span>
                     )}
                   </div>
                   <div className="flex-1 space-y-2 min-w-0">
@@ -521,51 +524,51 @@ function CatalogTab({
                         try {
                           setField("imageUrl", await compressImageToDataUrl(file) as any);
                         } catch {
-                          setError("No se pudo procesar la imagen.");
+                          setError(t("No se pudo procesar la imagen."));
                         } finally {
                           setImgLoading(false);
                           e.target.value = "";
                         }
                       }} />
                     <input type="text" className="input"
-                      placeholder="…o pega una URL de imagen"
+                      placeholder={t("…o pega una URL de imagen")}
                       value={form.imageUrl && !form.imageUrl.startsWith("data:") ? form.imageUrl : ""}
                       onChange={(e) => setField("imageUrl", (e.target.value || null) as any)} />
                     <div className="flex items-center gap-2">
                       {imgLoading && (
-                        <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>Procesando imagen…</span>
+                        <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>{t("Procesando imagen…")}</span>
                       )}
                       {form.imageUrl && !imgLoading && (
                         <button type="button" className="btn btn-ghost text-xs py-1 px-2"
-                          onClick={() => setField("imageUrl", null as any)}>Quitar imagen</button>
+                          onClick={() => setField("imageUrl", null as any)}>{t("Quitar imagen")}</button>
                       )}
                     </div>
                   </div>
                 </div>
               </Field>
-              <Field label="Válido desde">
+              <Field label={t("Válido desde")}>
                 <input type="datetime-local" className="input"
                   value={fmtDateTimeLocal(form.validFrom)}
                   onChange={(e) => setField("validFrom",
                     e.target.value ? new Date(e.target.value).toISOString() : null as any)} />
               </Field>
-              <Field label="Válido hasta">
+              <Field label={t("Válido hasta")}>
                 <input type="datetime-local" className="input"
                   value={fmtDateTimeLocal(form.validUntil)}
                   onChange={(e) => setField("validUntil",
                     e.target.value ? new Date(e.target.value).toISOString() : null as any)} />
               </Field>
-              <Field label="Máx. canjes (total)">
-                <input type="number" min={1} className="input" placeholder="Sin límite"
+              <Field label={t("Máx. canjes (total)")}>
+                <input type="number" min={1} className="input" placeholder={t("Sin límite")}
                   value={form.maxRedemptions ?? ""}
                   onChange={(e) => setField("maxRedemptions",
                     e.target.value ? Number(e.target.value) : null as any)} />
               </Field>
-              <Field label="Máx. canjes por usuario">
+              <Field label={t("Máx. canjes por usuario")}>
                 <input type="number" min={1} className="input" value={form.perUserLimit ?? 1}
                   onChange={(e) => setField("perUserLimit", Number(e.target.value) || 1)} />
               </Field>
-              <Field label="Audiencia" className="md:col-span-2">
+              <Field label={t("Audiencia")} className="md:col-span-2">
                 <div className="flex flex-wrap gap-2">
                   {AUDIENCE_OPTIONS.map((a) => {
                     const sel = (form.audience || []).includes(a.value);
@@ -577,35 +580,35 @@ function CatalogTab({
                           color: sel ? "#fff" : "#1f4e8c",
                         }}
                         onClick={() => toggleAudience(a.value)}>
-                        {sel ? "✓ " : ""}{a.label}
+                        {sel ? "✓ " : ""}{t(a.label)}
                       </button>
                     );
                   })}
                 </div>
                 <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>
-                  Si no seleccionas ninguno, el beneficio es visible para todos.
+                  {t("Si no seleccionas ninguno, el beneficio es visible para todos.")}
                 </p>
               </Field>
-              <Field label="Términos y condiciones" className="md:col-span-2">
+              <Field label={t("Términos y condiciones")} className="md:col-span-2">
                 <textarea rows={3} className="input"
-                  placeholder="Letra chica, no acumulable, etc."
+                  placeholder={t("Letra chica, no acumulable, etc.")}
                   value={form.termsAndConditions || ""}
                   onChange={(e) => setField("termsAndConditions", e.target.value)} />
               </Field>
-              <Field label="Estado">
+              <Field label={t("Estado")}>
                 <select className="input" value={form.status || "ACTIVE"}
                   onChange={(e) => setField("status", e.target.value)}>
-                  <option value="ACTIVE">Activo</option>
-                  <option value="INACTIVE">Inactivo</option>
-                  <option value="EXPIRED">Expirado</option>
+                  <option value="ACTIVE">{t("Activo")}</option>
+                  <option value="INACTIVE">{t("Inactivo")}</option>
+                  <option value="EXPIRED">{t("Expirado")}</option>
                 </select>
               </Field>
             </div>
             <div className="p-5 border-t flex justify-end gap-2 sticky bottom-0 bg-white rounded-b-2xl">
               <button className="btn btn-ghost" type="button" onClick={() => setModalOpen(false)}
-                disabled={saving}>Cancelar</button>
+                disabled={saving}>{t("Cancelar")}</button>
               <button className="btn btn-primary" type="button" onClick={save} disabled={saving}>
-                {saving ? "Guardando…" : "Guardar"}
+                {saving ? t("Guardando…") : t("Guardar")}
               </button>
             </div>
           </div>
@@ -626,6 +629,7 @@ function PartnersTab({
   setError: (s: string | null) => void;
   setMessage: (s: string | null) => void;
 }) {
+  const { t } = useI18n();
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState<Partial<Partner> & { pin?: string }>({});
   const [saving, setSaving] = useState(false);
@@ -646,12 +650,12 @@ function PartnersTab({
 
   const save = async () => {
     if (!form.code || !form.name) {
-      setError("Código y nombre son obligatorios");
+      setError(t("Código y nombre son obligatorios"));
       return;
     }
     const id = (form as any).id;
     if (!id && (!form.pin || form.pin.length < 4)) {
-      setError("PIN inicial debe tener al menos 4 caracteres");
+      setError(t("PIN inicial debe tener al menos 4 caracteres"));
       return;
     }
     setSaving(true); setError(null);
@@ -664,22 +668,22 @@ function PartnersTab({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      setMessage(id ? "Partner actualizado." : "Partner creado.");
+      setMessage(id ? t("Partner actualizado.") : t("Partner creado."));
       setModalOpen(false); setForm({});
       await reload();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error guardando partner");
+      setError(err instanceof Error ? err.message : t("Error guardando partner"));
     } finally { setSaving(false); }
   };
 
   const remove = async (id: string) => {
-    if (!confirm("¿Eliminar este partner? Pierde acceso al sistema.")) return;
+    if (!confirm(t("¿Eliminar este partner? Pierde acceso al sistema."))) return;
     try {
       await apiFetch(`/coupon-partners/${id}`, { method: "DELETE" });
-      setMessage("Partner eliminado.");
+      setMessage(t("Partner eliminado."));
       await reload();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error eliminando");
+      setError(err instanceof Error ? err.message : t("Error eliminando"));
     }
   };
 
@@ -687,26 +691,26 @@ function PartnersTab({
     <>
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-          Comercios con acceso al scanner. Cada partner usa su <strong>código + PIN</strong> para entrar en
+          {t("Comercios con acceso al scanner. Cada partner usa su")} <strong>{t("código + PIN")}</strong> {t("para entrar en")}
           <a href="/portal/partner" className="ml-1 underline" style={{ color: "#1f4e8c" }}>
             /portal/partner
           </a>.
         </p>
         <button className="btn btn-primary" type="button" onClick={() => openModal()}>
           <PlusIcon size={16} className="inline-block mr-1" />
-          Nuevo partner
+          {t("Nuevo partner")}
         </button>
       </div>
 
       {partners.length === 0 ? (
         <EmptyStateBox
           icon={<UsersIcon size={36} />}
-          title="No hay partners cargados"
-          description="Crea el primer comercio para habilitarle el acceso al scanner de QR."
+          title={t("No hay partners cargados")}
+          description={t("Crea el primer comercio para habilitarle el acceso al scanner de QR.")}
           action={
             <button className="btn btn-primary" type="button" onClick={() => openModal()}>
               <PlusIcon size={16} className="inline-block mr-1" />
-              Nuevo partner
+              {t("Nuevo partner")}
             </button>
           }
         />
@@ -727,7 +731,7 @@ function PartnersTab({
                         backgroundColor: p.active ? "#e7f5ec" : "#eef1f6",
                         color: p.active ? "#2e7d32" : "#5e6b7a",
                       }}>
-                      {p.active ? "Activo" : "Inactivo"}
+                      {p.active ? t("Activo") : t("Inactivo")}
                     </span>
                   </div>
                   <h3 className="font-semibold mt-1">{p.name}</h3>
@@ -743,15 +747,15 @@ function PartnersTab({
                   )}
                   <p className="text-[11px] mt-2" style={{ color: "var(--text-muted)" }}>
                     {(p.allowedCouponIds?.length ?? 0) > 0
-                      ? `Canjea ${p.allowedCouponIds!.length} beneficios específicos`
-                      : "Puede canjear todos los beneficios"}
+                      ? `${t("Canjea")} ${p.allowedCouponIds!.length} ${t("beneficios específicos")}`
+                      : t("Puede canjear todos los beneficios")}
                   </p>
                 </div>
                 <div className="flex flex-col gap-1">
                   <button className="btn btn-ghost text-xs py-1 px-2" type="button"
-                    onClick={() => openModal(p)}>Editar</button>
+                    onClick={() => openModal(p)}>{t("Editar")}</button>
                   <button className="btn btn-ghost text-xs py-1 px-2" type="button"
-                    onClick={() => remove(p.id)}>Eliminar</button>
+                    onClick={() => remove(p.id)}>{t("Eliminar")}</button>
                 </div>
               </div>
             </article>
@@ -768,42 +772,42 @@ function PartnersTab({
             onClick={(e) => e.stopPropagation()}>
             <div className="p-5 border-b flex items-center justify-between sticky top-0 bg-white rounded-t-2xl">
               <h2 className="text-lg font-semibold">
-                {(form as any).id ? "Editar partner" : "Nuevo partner"}
+                {(form as any).id ? t("Editar partner") : t("Nuevo partner")}
               </h2>
               <button className="btn btn-ghost text-sm" type="button"
-                onClick={() => setModalOpen(false)}>Cerrar ✕</button>
+                onClick={() => setModalOpen(false)}>{t("Cerrar")} ✕</button>
             </div>
             <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Field label="Código del local *">
+              <Field label={t("Código del local *")}>
                 <input type="text" className="input font-mono uppercase"
                   placeholder="MCDO-001" value={form.code || ""}
                   onChange={(e) => setField("code", e.target.value.toUpperCase())} />
               </Field>
-              <Field label={(form as any).id ? "PIN (dejar vacío para no cambiar)" : "PIN inicial *"}>
+              <Field label={(form as any).id ? t("PIN (dejar vacío para no cambiar)") : t("PIN inicial *")}>
                 <input type="text" className="input font-mono text-center tracking-widest"
                   placeholder="••••" value={form.pin || ""}
                   onChange={(e) => setField("pin", e.target.value)}
                   maxLength={12} />
               </Field>
-              <Field label="Nombre del comercio *" className="md:col-span-2">
+              <Field label={t("Nombre del comercio *")} className="md:col-span-2">
                 <input type="text" className="input" placeholder="McDonald's Las Condes"
                   value={form.name || ""} onChange={(e) => setField("name", e.target.value)} />
               </Field>
-              <Field label="Dirección" className="md:col-span-2">
+              <Field label={t("Dirección")} className="md:col-span-2">
                 <input type="text" className="input" value={form.address || ""}
                   onChange={(e) => setField("address", e.target.value)} />
               </Field>
-              <Field label="Contacto">
+              <Field label={t("Contacto")}>
                 <input type="text" className="input" value={form.contactName || ""}
                   onChange={(e) => setField("contactName", e.target.value)} />
               </Field>
-              <Field label="Teléfono">
+              <Field label={t("Teléfono")}>
                 <input type="text" className="input" value={form.contactPhone || ""}
                   onChange={(e) => setField("contactPhone", e.target.value)} />
               </Field>
-              <Field label="Beneficios que puede canjear" className="md:col-span-2">
+              <Field label={t("Beneficios que puede canjear")} className="md:col-span-2">
                 <p className="text-[11px] mb-2" style={{ color: "var(--text-muted)" }}>
-                  Si no seleccionás ninguno, puede canjear todos los beneficios del sistema.
+                  {t("Si no seleccionás ninguno, puede canjear todos los beneficios del sistema.")}
                 </p>
                 <div className="flex flex-wrap gap-1 max-h-40 overflow-y-auto p-1 rounded-lg"
                   style={{ backgroundColor: "#fafbfc" }}>
@@ -824,20 +828,20 @@ function PartnersTab({
                   })}
                 </div>
               </Field>
-              <Field label="Activo">
+              <Field label={t("Activo")}>
                 <select className="input"
                   value={form.active ? "true" : "false"}
                   onChange={(e) => setField("active", e.target.value === "true")}>
-                  <option value="true">Sí</option>
-                  <option value="false">No</option>
+                  <option value="true">{t("Sí")}</option>
+                  <option value="false">{t("No")}</option>
                 </select>
               </Field>
             </div>
             <div className="p-5 border-t flex justify-end gap-2 sticky bottom-0 bg-white rounded-b-2xl">
               <button className="btn btn-ghost" type="button" onClick={() => setModalOpen(false)}
-                disabled={saving}>Cancelar</button>
+                disabled={saving}>{t("Cancelar")}</button>
               <button className="btn btn-primary" type="button" onClick={save} disabled={saving}>
-                {saving ? "Guardando…" : "Guardar"}
+                {saving ? t("Guardando…") : t("Guardar")}
               </button>
             </div>
           </div>
@@ -858,6 +862,7 @@ function ClaimsTab({
   setError: (s: string | null) => void;
   setMessage: (s: string | null) => void;
 }) {
+  const { t } = useI18n();
   const [statusFilter, setStatusFilter] = useState("");
   const [couponFilter, setCouponFilter] = useState("");
 
@@ -872,13 +877,13 @@ function ClaimsTab({
   };
 
   const revoke = async (claimId: string) => {
-    if (!confirm("¿Anular este claim? El atleta no podrá canjearlo y vuelve a contar el límite.")) return;
+    if (!confirm(t("¿Anular este claim? El atleta no podrá canjearlo y vuelve a contar el límite."))) return;
     try {
       await apiFetch(`/coupons/claims/${claimId}/revoke`, { method: "POST" });
-      setMessage("Claim anulado.");
+      setMessage(t("Claim anulado."));
       await reload();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error anulando claim");
+      setError(err instanceof Error ? err.message : t("Error anulando claim"));
     }
   };
 
@@ -887,23 +892,23 @@ function ClaimsTab({
       <section className="surface rounded-2xl p-4 space-y-3">
         <div>
           <p className="text-xs font-medium uppercase tracking-wide mb-2"
-            style={{ color: "var(--text-muted)" }}>Estado</p>
+            style={{ color: "var(--text-muted)" }}>{t("Estado")}</p>
           <FilterChips value={statusFilter} onChange={setStatusFilter}
             options={[
-              { value: "CLAIMED", label: "Activos", count: claims.filter(c => c.status === "CLAIMED").length },
-              { value: "REDEEMED", label: "Canjeados", count: claims.filter(c => c.status === "REDEEMED").length },
-              { value: "EXPIRED", label: "Expirados", count: claims.filter(c => c.status === "EXPIRED").length },
-              { value: "REVOKED", label: "Anulados", count: claims.filter(c => c.status === "REVOKED").length },
+              { value: "CLAIMED", label: t("Activos"), count: claims.filter(c => c.status === "CLAIMED").length },
+              { value: "REDEEMED", label: t("Canjeados"), count: claims.filter(c => c.status === "REDEEMED").length },
+              { value: "EXPIRED", label: t("Expirados"), count: claims.filter(c => c.status === "EXPIRED").length },
+              { value: "REVOKED", label: t("Anulados"), count: claims.filter(c => c.status === "REVOKED").length },
             ]}
-            allLabel="Todos" />
+            allLabel={t("Todos")} />
         </div>
         {coupons.length > 0 && (
           <div>
             <p className="text-xs font-medium uppercase tracking-wide mb-2"
-              style={{ color: "var(--text-muted)" }}>Beneficio</p>
+              style={{ color: "var(--text-muted)" }}>{t("Beneficio")}</p>
             <select className="input max-w-md"
               value={couponFilter} onChange={(e) => setCouponFilter(e.target.value)}>
-              <option value="">Todos los beneficios</option>
+              <option value="">{t("Todos los beneficios")}</option>
               {coupons.map((c) => (
                 <option key={c.id} value={c.id}>{c.code} · {c.title}</option>
               ))}
@@ -915,8 +920,8 @@ function ClaimsTab({
       {visible.length === 0 ? (
         <EmptyStateBox
           icon={<ClipboardIcon size={36} />}
-          title="No hay claims"
-          description="Cuando los atletas reclamen beneficios desde su portal, aparecerán acá."
+          title={t("No hay claims")}
+          description={t("Cuando los atletas reclamen beneficios desde su portal, aparecerán acá.")}
         />
       ) : (
         <div className="surface rounded-2xl overflow-hidden">
@@ -924,12 +929,12 @@ function ClaimsTab({
             <table className="w-full text-xs">
               <thead style={{ backgroundColor: "#1f4e8c", color: "#fff" }}>
                 <tr>
-                  <th className="p-3 text-left">Código</th>
-                  <th className="p-3 text-left">Beneficio</th>
-                  <th className="p-3 text-left">Usuario</th>
-                  <th className="p-3 text-left">Estado</th>
-                  <th className="p-3 text-left">Reclamado</th>
-                  <th className="p-3 text-left">Canjeado</th>
+                  <th className="p-3 text-left">{t("Código")}</th>
+                  <th className="p-3 text-left">{t("Beneficio")}</th>
+                  <th className="p-3 text-left">{t("Usuario")}</th>
+                  <th className="p-3 text-left">{t("Estado")}</th>
+                  <th className="p-3 text-left">{t("Reclamado")}</th>
+                  <th className="p-3 text-left">{t("Canjeado")}</th>
                   <th className="p-3"></th>
                 </tr>
               </thead>
@@ -951,7 +956,7 @@ function ClaimsTab({
                       <td className="p-3">
                         <span className="text-[10px] px-2 py-0.5 rounded-full font-medium"
                           style={{ backgroundColor: meta.bg, color: meta.color }}>
-                          {meta.label}
+                          {t(meta.label)}
                         </span>
                       </td>
                       <td className="p-3">{fmtFull(c.claimedAt)}</td>
@@ -968,7 +973,7 @@ function ClaimsTab({
                           <button type="button" className="text-[11px] underline"
                             style={{ color: "#b3231b" }}
                             onClick={() => revoke(c.id)}>
-                            Anular
+                            {t("Anular")}
                           </button>
                         )}
                       </td>
