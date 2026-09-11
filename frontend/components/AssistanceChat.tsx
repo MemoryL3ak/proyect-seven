@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { REPORT_CATEGORY, REPORT_REASONS, reportReasonLabel } from "@/lib/chat-report";
+import { BRAND } from "@/lib/design";
 
 type AssistanceChatProps = {
   originType: "driver" | "athlete" | "provider_participant";
@@ -274,7 +275,7 @@ export default function AssistanceChat({
           padding: open ? 0 : "14px 20px",
           height: "48px",
           borderRadius: open ? "50%" : "24px",
-          background: "linear-gradient(135deg, #21D0B3 0%, #14b8a6 100%)",
+          background: `linear-gradient(135deg, ${BRAND.teal} 0%, #14b8a6 100%)`,
           color: "#fff", border: "none", cursor: "pointer",
           display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
           fontSize: "13px", fontWeight: 700,
@@ -307,7 +308,7 @@ export default function AssistanceChat({
           }}
         >
           {/* Header */}
-          <div style={{ padding: "14px 18px", borderBottom: "1px solid #e2e8f0", background: "linear-gradient(135deg, #21D0B3 0%, #14b8a6 100%)", color: "#fff" }}>
+          <div style={{ padding: "14px 18px", borderBottom: "1px solid #e2e8f0", background: `linear-gradient(135deg, ${BRAND.teal} 0%, #14b8a6 100%)`, color: "#fff" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
                 <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", opacity: 0.9 }}>{t("Asistencia")}</p>
@@ -353,7 +354,7 @@ export default function AssistanceChat({
                 })}
               </div>
               <div style={{ padding: "10px 14px", borderTop: "1px solid #e2e8f0" }}>
-                <button type="button" onClick={() => setView("new")} style={{ width: "100%", padding: "12px", borderRadius: "10px", background: "#21D0B3", color: "#fff", border: "none", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
+                <button type="button" onClick={() => setView("new")} style={{ width: "100%", padding: "12px", borderRadius: "10px", background: BRAND.teal, color: "#fff", border: "none", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
                   + {t("Abrir nueva incidencia")}
                 </button>
               </div>
@@ -392,7 +393,7 @@ export default function AssistanceChat({
                 <label style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#64748b" }}>{t("Describe la situación")}</label>
                 <textarea value={newMessage} onChange={(e) => setNewMessage(e.target.value)} rows={4} style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "13px", marginTop: "4px", resize: "none", flex: 1 }} />
               </div>
-              <button type="button" onClick={createChat} disabled={creating || !newMessage.trim()} style={{ padding: "12px", borderRadius: "10px", background: creating ? "#cbd5e1" : "#21D0B3", color: "#fff", border: "none", fontSize: "13px", fontWeight: 700, cursor: creating ? "not-allowed" : "pointer" }}>
+              <button type="button" onClick={createChat} disabled={creating || !newMessage.trim()} style={{ padding: "12px", borderRadius: "10px", background: creating ? "#cbd5e1" : BRAND.teal, color: "#fff", border: "none", fontSize: "13px", fontWeight: 700, cursor: creating ? "not-allowed" : "pointer" }}>
                 {creating ? t("Abriendo...") : t("Abrir incidencia")}
               </button>
             </div>
@@ -417,7 +418,7 @@ export default function AssistanceChat({
                     <div key={m.id} style={{ display: "flex", justifyContent: mine ? "flex-end" : "flex-start", marginBottom: "8px" }}>
                       <div style={{
                         maxWidth: "76%",
-                        background: mine ? "#21D0B3" : "#ffffff",
+                        background: mine ? BRAND.teal : "#ffffff",
                         color: mine ? "#ffffff" : "#0f172a",
                         border: mine ? "none" : "1px solid #e2e8f0",
                         padding: "8px 12px",
@@ -462,7 +463,7 @@ export default function AssistanceChat({
                   placeholder={t("Escribe un mensaje...")}
                   style={{ flex: 1, padding: "8px 10px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "13px", resize: "none", outline: "none" }}
                 />
-                <button type="button" onClick={sendMessage} disabled={sending || !draft.trim()} style={{ padding: "8px 14px", borderRadius: "8px", background: sending ? "#cbd5e1" : "#21D0B3", color: "#fff", border: "none", fontSize: "12px", fontWeight: 700, cursor: sending ? "not-allowed" : "pointer" }}>
+                <button type="button" onClick={sendMessage} disabled={sending || !draft.trim()} style={{ padding: "8px 14px", borderRadius: "8px", background: sending ? "#cbd5e1" : BRAND.teal, color: "#fff", border: "none", fontSize: "12px", fontWeight: 700, cursor: sending ? "not-allowed" : "pointer" }}>
                   {t("Enviar")}
                 </button>
               </div>

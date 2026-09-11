@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { BRAND } from "@/lib/design";
 
 type Props = {
   open: boolean;
@@ -78,7 +79,7 @@ export default function ConfirmDialog({
           position: "absolute", top: 0, left: 0, right: 0, height: "3px",
           background: danger
             ? "linear-gradient(90deg,#ef4444,#f87171,#ef4444)"
-            : "linear-gradient(90deg,#21D0B3,#34F3C6,#21D0B3)",
+            : `linear-gradient(90deg,${BRAND.teal},${BRAND.tealLight},${BRAND.teal})`,
         }} />
 
         {/* Icon */}
@@ -93,7 +94,7 @@ export default function ConfirmDialog({
               <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
             </svg>
           ) : (
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
             </svg>
           )}
@@ -134,7 +135,7 @@ export default function ConfirmDialog({
               padding: "10px 22px", borderRadius: "12px", border: "none",
               background: danger
                 ? "linear-gradient(135deg,#ef4444,#dc2626)"
-                : "linear-gradient(135deg,#21D0B3,#17a68e)",
+                : `linear-gradient(135deg,${BRAND.teal},#17a68e)`,
               color: "#fff", fontSize: "14px", fontWeight: 700,
               cursor: "pointer",
               boxShadow: danger

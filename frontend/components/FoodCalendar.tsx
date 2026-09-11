@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { apiFetch } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { CLIENT_TYPE_OPTIONS } from "@/lib/clientTypes";
+import { BRAND } from "@/lib/design";
 
 type MealType = "DESAYUNO" | "ALMUERZO" | "CENA";
 
@@ -154,9 +155,9 @@ function MenuFormFields({
                 })}
                 style={{
                   padding: "4px 10px", borderRadius: "99px", fontSize: "11px", fontWeight: 700, cursor: "pointer",
-                  border: `1px solid ${active ? "#21D0B3" : "#e2e8f0"}`,
+                  border: `1px solid ${active ? BRAND.teal : "#e2e8f0"}`,
                   background: active ? "rgba(33,208,179,0.12)" : "#fff",
-                  color: active ? "#0a7a6b" : "#64748b",
+                  color: active ? BRAND.tealInk : "#64748b",
                 }}>
                 {ct.label}
               </button>
@@ -168,7 +169,7 @@ function MenuFormFields({
         </p>
       </div>
       <div style={{ display: "flex", gap: "8px", paddingTop: "4px" }}>
-        <button type="button" style={{ flex: 1, padding: "8px", borderRadius: "8px", fontSize: "13px", fontWeight: 600, background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: "#fff", border: "none", cursor: !form.title.trim() || saving ? "not-allowed" : "pointer", opacity: !form.title.trim() || saving ? 0.6 : 1 }} disabled={!form.title.trim() || saving} onClick={onSave}>
+        <button type="button" style={{ flex: 1, padding: "8px", borderRadius: "8px", fontSize: "13px", fontWeight: 600, background: `linear-gradient(135deg, ${BRAND.teal}, #14AE98)`, color: "#fff", border: "none", cursor: !form.title.trim() || saving ? "not-allowed" : "pointer", opacity: !form.title.trim() || saving ? 0.6 : 1 }} disabled={!form.title.trim() || saving} onClick={onSave}>
           {saving ? t("Guardando…") : editingId ? t("Guardar cambios") : t("Agregar plato")}
         </button>
         <button type="button" style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "13px", fontWeight: 600, background: "transparent", border: "1px solid #e2e8f0", color: "#64748b", cursor: "pointer" }} onClick={onCancel}>{t("Cancelar")}</button>
@@ -304,8 +305,8 @@ export default function FoodCalendar({ mealType }: { mealType: MealType }) {
       <div style={{ borderRadius: "20px", background: "#ffffff", border: "1px solid #e2e8f0", padding: "24px 28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
           <div>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.25)", borderRadius: "99px", padding: "3px 12px", fontSize: "10px", fontWeight: 700, letterSpacing: "0.25em", textTransform: "uppercase", color: "#21D0B3" }}>
-              <span style={{ color: "#21D0B3", display: "flex" }}>{meta.icon}</span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.25)", borderRadius: "99px", padding: "3px 12px", fontSize: "10px", fontWeight: 700, letterSpacing: "0.25em", textTransform: "uppercase", color: BRAND.teal }}>
+              <span style={{ color: BRAND.teal, display: "flex" }}>{meta.icon}</span>
               {t(meta.label)} de hoy
             </span>
             <p style={{ marginTop: "8px", fontSize: "14px", fontWeight: 600, color: "#64748b", textTransform: "capitalize" }}>{formatTodayLong(dateLocale)}</p>
@@ -316,11 +317,11 @@ export default function FoodCalendar({ mealType }: { mealType: MealType }) {
           <div style={{ marginTop: "20px", display: "flex", flexWrap: "wrap", gap: "16px" }}>
             {todayMenus.map((m) => (
               <div key={m.id} style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
-                <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#21D0B3", marginTop: "10px", flexShrink: 0 }} />
+                <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: BRAND.teal, marginTop: "10px", flexShrink: 0 }} />
                 <div>
                   <p style={{ fontSize: "22px", fontWeight: 800, color: "#0f172a", lineHeight: 1.2 }}>{m.title}</p>
                   {m.dietaryType && (
-                    <span style={{ display: "inline-block", fontSize: "10px", fontWeight: 700, background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.25)", padding: "2px 10px", borderRadius: "99px", marginTop: "4px", color: "#21D0B3" }}>
+                    <span style={{ display: "inline-block", fontSize: "10px", fontWeight: 700, background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.25)", padding: "2px 10px", borderRadius: "99px", marginTop: "4px", color: BRAND.teal }}>
                       {dietaryLabel(m.dietaryType, t)}
                     </span>
                   )}
@@ -387,7 +388,7 @@ export default function FoodCalendar({ mealType }: { mealType: MealType }) {
                     style={{
                       minHeight: "88px", padding: "6px", textAlign: "left", display: "flex", flexDirection: "column", gap: "4px", width: "100%", cursor: "pointer",
                       background: isSelected ? "rgba(33,208,179,0.06)" : "transparent",
-                      outline: isSelected ? "2px solid #21D0B3" : "none",
+                      outline: isSelected ? `2px solid ${BRAND.teal}` : "none",
                       outlineOffset: "-2px",
                       border: "none",
                       borderRight: "1px solid #f1f5f9",
@@ -400,14 +401,14 @@ export default function FoodCalendar({ mealType }: { mealType: MealType }) {
                     <span style={{
                       fontSize: "12px", fontWeight: 700, alignSelf: "flex-end", borderRadius: "50%",
                       width: "24px", height: "24px", display: "flex", alignItems: "center", justifyContent: "center",
-                      background: isToday ? "#21D0B3" : "transparent",
-                      color: isToday ? "#ffffff" : isSelected ? "#21D0B3" : "#64748b",
+                      background: isToday ? BRAND.teal : "transparent",
+                      color: isToday ? "#ffffff" : isSelected ? BRAND.teal : "#64748b",
                     }}>
                       {day}
                     </span>
                     <div style={{ display: "flex", flexDirection: "column", gap: "2px", width: "100%", minWidth: 0 }}>
                       {dayMenus.map((m) => (
-                        <span key={m.id} style={{ fontSize: "9px", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", padding: "1px 4px", borderRadius: "4px", border: "1px solid rgba(33,208,179,0.25)", background: "rgba(33,208,179,0.08)", fontWeight: 600, color: "#21D0B3" }}>
+                        <span key={m.id} style={{ fontSize: "9px", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", padding: "1px 4px", borderRadius: "4px", border: "1px solid rgba(33,208,179,0.25)", background: "rgba(33,208,179,0.08)", fontWeight: 600, color: BRAND.teal }}>
                           {m.title}{m.dietaryType ? ` · ${dietaryLabel(m.dietaryType, t)}` : ""}
                         </span>
                       ))}
@@ -432,11 +433,11 @@ export default function FoodCalendar({ mealType }: { mealType: MealType }) {
             <>
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "8px" }}>
                 <div>
-                  <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", color: "#21D0B3" }}>{t(meta.label)}</p>
+                  <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", color: BRAND.teal }}>{t(meta.label)}</p>
                   <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#0f172a", textTransform: "capitalize", marginTop: "2px" }}>{formatFullDate(selectedDay, dateLocale)}</h3>
                 </div>
                 {!panelAdding && (
-                  <button type="button" style={{ padding: "5px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: 600, background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: "#fff", border: "none", cursor: "pointer", flexShrink: 0 }} onClick={() => { setEditingId(null); setPanelForm(EMPTY); setPanelAdding(true); }}>
+                  <button type="button" style={{ padding: "5px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: 600, background: `linear-gradient(135deg, ${BRAND.teal}, #14AE98)`, color: "#fff", border: "none", cursor: "pointer", flexShrink: 0 }} onClick={() => { setEditingId(null); setPanelForm(EMPTY); setPanelAdding(true); }}>
                     {t("+ Agregar")}
                   </button>
                 )}
@@ -454,7 +455,7 @@ export default function FoodCalendar({ mealType }: { mealType: MealType }) {
                         <div style={{ minWidth: 0 }}>
                           <p style={{ fontSize: "13px", fontWeight: 600, color: "#0f172a" }}>{m.title}</p>
                           {m.dietaryType && (
-                            <span style={{ display: "inline-block", fontSize: "10px", fontWeight: 600, padding: "1px 8px", borderRadius: "99px", border: "1px solid rgba(33,208,179,0.25)", background: "rgba(33,208,179,0.08)", color: "#21D0B3", marginTop: "4px" }}>
+                            <span style={{ display: "inline-block", fontSize: "10px", fontWeight: 600, padding: "1px 8px", borderRadius: "99px", border: "1px solid rgba(33,208,179,0.25)", background: "rgba(33,208,179,0.08)", color: BRAND.teal, marginTop: "4px" }}>
                               {dietaryLabel(m.dietaryType, t)}
                             </span>
                           )}

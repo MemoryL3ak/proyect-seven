@@ -33,6 +33,7 @@ import PdfViewerOverlay from "@/components/PdfViewerOverlay";
 import QrFullscreenOverlay from "@/components/QrFullscreenOverlay";
 import QRCode from "qrcode";
 import dynamic from "next/dynamic";
+import { BRAND } from "@/lib/design";
 
 const TripMap = dynamic(() => import("@/components/TripMap"), {
   ssr: false,
@@ -519,7 +520,7 @@ export default function VehicleRequestPortalPage() {
   useEffect(() => {
     if (!athlete) { setMealQrDataUrl(""); return; }
     const qrData = `Participante: ${athlete.fullName}\nID: ${athlete.id.slice(-6)}\nDelegación: ${delegations[athlete.delegationId || ""]?.countryCode || "—"}`;
-    QRCode.toDataURL(qrData, { width: 220, margin: 1, color: { dark: "#062240", light: "#ffffff" } })
+    QRCode.toDataURL(qrData, { width: 220, margin: 1, color: { dark: BRAND.navyLight, light: "#ffffff" } })
       .then(setMealQrDataUrl)
       .catch(() => setMealQrDataUrl(""));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1449,7 +1450,7 @@ export default function VehicleRequestPortalPage() {
         >
           <span style={{
             width:10,height:10,borderRadius:"50%",flexShrink:0,
-            background: isActive ? "#7c3aed" : isCompleted ? "#21D0B3" : trip.status === "SCHEDULED" ? "#0ea5e9" : "#f59e0b",
+            background: isActive ? "#7c3aed" : isCompleted ? BRAND.teal : trip.status === "SCHEDULED" ? "#0ea5e9" : "#f59e0b",
             boxShadow: isActive ? "0 0 8px rgba(124,58,237,0.4)" : "none",
           }} />
           <div style={{ flex:1,minWidth:0 }}>
@@ -1458,7 +1459,7 @@ export default function VehicleRequestPortalPage() {
             </p>
             <p style={{ fontSize:11,color:"#94a3b8",margin:"2px 0 0" }}>
               {formatDateTime(trip.scheduledAt || trip.requestedAt)} · {t(status.label)}
-              {trip.isRoundTrip && <span style={{ marginLeft:6,padding:"1px 6px",borderRadius:6,background:"#f0fdfa",border:"1px solid #99f6e4",fontSize:10,fontWeight:600,color:"#0a7a6b" }}>{t("Ida y vuelta")}</span>}
+              {trip.isRoundTrip && <span style={{ marginLeft:6,padding:"1px 6px",borderRadius:6,background:"#f0fdfa",border:"1px solid #99f6e4",fontSize:10,fontWeight:600,color:BRAND.tealInk }}>{t("Ida y vuelta")}</span>}
             </p>
           </div>
           {driver && (
@@ -1487,7 +1488,7 @@ export default function VehicleRequestPortalPage() {
             <button type="button" onClick={() => setRatingTripId(trip.id)} style={{
               display:"flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:10,
               border:"1px solid rgba(33,208,179,0.3)",background:"rgba(33,208,179,0.06)",
-              color:"#0a7a6b",fontSize:12,fontWeight:600,cursor:"pointer",
+              color:BRAND.tealInk,fontSize:12,fontWeight:600,cursor:"pointer",
             }}>
               {t("Evaluar conductor")}
             </button>
@@ -1516,7 +1517,7 @@ export default function VehicleRequestPortalPage() {
             />
             <div style={{ display:"flex",gap:8,width:"100%" }}>
               <button type="button" onClick={() => submitRating(trip.id)} disabled={ratingStars === 0 || ratingLoading}
-                style={{ flex:1,padding:10,borderRadius:10,border:"none",background:ratingStars > 0 ? "linear-gradient(135deg,#34F3C6,#21D0B3)" : "#e2e8f0",color:ratingStars > 0 ? "#0d1b3e" : "#94a3b8",fontSize:13,fontWeight:700,cursor:ratingStars > 0 ? "pointer" : "not-allowed" }}>
+                style={{ flex:1,padding:10,borderRadius:10,border:"none",background:ratingStars > 0 ? `linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})` : "#e2e8f0",color:ratingStars > 0 ? "#0d1b3e" : "#94a3b8",fontSize:13,fontWeight:700,cursor:ratingStars > 0 ? "pointer" : "not-allowed" }}>
                 {ratingLoading ? "..." : t("Enviar")}
               </button>
               <button type="button" onClick={() => { setRatingTripId(null); setRatingStars(0); setRatingComment(""); }}
@@ -1585,7 +1586,7 @@ export default function VehicleRequestPortalPage() {
 
             {trip.isRoundTrip && trip.childTrips && trip.childTrips.length > 0 && (
               <div style={{ padding:"10px 12px",borderRadius:12,background:"#f0fdfa",border:"1px solid #99f6e4" }}>
-                <p style={{ fontSize:10,fontWeight:700,color:"#0a7a6b",margin:"0 0 6px",textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Viaje de regreso")}</p>
+                <p style={{ fontSize:10,fontWeight:700,color:BRAND.tealInk,margin:"0 0 6px",textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Viaje de regreso")}</p>
                 {trip.childTrips.map((child) => {
                   const returnVenue = child.destinationVenueId ? venues.find((v) => v.id === child.destinationVenueId) : null;
                   const returnDriver = child.driverId ? drivers[child.driverId] : null;
@@ -1634,7 +1635,7 @@ export default function VehicleRequestPortalPage() {
                   height={200}
                 />
                 <div style={{ padding:"8px 10px",background:"rgba(33,208,179,0.06)",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
-                  <span style={{ fontSize:12,fontWeight:700,color:"#0a7a6b" }}>
+                  <span style={{ fontSize:12,fontWeight:700,color:BRAND.tealInk }}>
                     {trip.status === "PICKED_UP" ? t("Viaje en curso") : trip.status === "EN_ROUTE" ? t("Conductor en camino") : t("Ruta programada")}
                   </span>
                   {coords && (
@@ -1642,7 +1643,7 @@ export default function VehicleRequestPortalPage() {
                       href={buildDirectionsLink(coords.lat, coords.lng, trip.origin)}
                       target="_blank"
                       rel="noreferrer"
-                      style={{ fontSize:11,color:"#21D0B3",fontWeight:600 }}
+                      style={{ fontSize:11,color:BRAND.teal,fontWeight:600 }}
                     >
                       {t("Abrir en Maps")}
                     </a>
@@ -1727,7 +1728,7 @@ export default function VehicleRequestPortalPage() {
 
           {/* Left branding panel */}
           <div className="flex flex-col justify-between p-8 lg:p-14 lg:w-[46%] lg:flex-shrink-0"
-            style={{ background: "linear-gradient(160deg,#020c18 0%,#041a2e 40%,#062240 70%,#030f1e 100%)", position: "relative", overflow: "hidden", minHeight: "180px" }}>
+            style={{ background: `linear-gradient(160deg,#020c18 0%,${BRAND.navy} 40%,${BRAND.navyLight} 70%,#030f1e 100%)`, position: "relative", overflow: "hidden", minHeight: "180px" }}>
             <div style={{ position: "absolute", inset: 0, pointerEvents: "none", backgroundImage: `linear-gradient(rgba(33,208,179,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(33,208,179,0.03) 1px,transparent 1px)`, backgroundSize: "60px 60px" }} />
             <div style={{ position: "absolute", top: "-60px", left: "-60px", width: "400px", height: "400px", borderRadius: "50%", background: "radial-gradient(ellipse,rgba(6,34,64,0.6) 0%,transparent 70%)", animation: "pvr-f1 12s ease-in-out infinite", pointerEvents: "none" }} />
             <div style={{ position: "absolute", bottom: "60px", right: "-40px", width: "320px", height: "320px", borderRadius: "50%", background: "radial-gradient(ellipse,rgba(33,208,179,0.1) 0%,transparent 70%)", animation: "pvr-f2 16s ease-in-out infinite", pointerEvents: "none" }} />
@@ -1739,12 +1740,12 @@ export default function VehicleRequestPortalPage() {
             </div>
             <div style={{ position: "relative", zIndex: 1, flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: "16px", padding: "24px 0" }}>
               <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", width: "fit-content" }}>
-                <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#21D0B3", boxShadow: "0 0 8px #21D0B3" }} />
-                <span style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#21D0B3" }}>{t("Portal de Movilidad")}</span>
+                <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: BRAND.teal, boxShadow: `0 0 8px ${BRAND.teal}` }} />
+                <span style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: BRAND.teal }}>{t("Portal de Movilidad")}</span>
               </div>
               <h1 style={{ fontSize: "clamp(28px,4vw,44px)", fontWeight: 700, lineHeight: 1.1, color: "#ffffff", margin: 0 }}>
                 {t("Solicita tu")}<br />
-                <span style={{ background: "linear-gradient(90deg,#21D0B3,#34F3C6,#21D0B3)", backgroundSize: "200% auto", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", animation: "pvr-shimmer 4s linear infinite" }}>
+                <span style={{ background: `linear-gradient(90deg,${BRAND.teal},${BRAND.tealLight},${BRAND.teal})`, backgroundSize: "200% auto", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", animation: "pvr-shimmer 4s linear infinite" }}>
                   {t("vehiculo")}
                 </span>
               </h1>
@@ -1770,10 +1771,10 @@ export default function VehicleRequestPortalPage() {
           </div>
 
           {/* Right login panel */}
-          <div className="pvr-form flex flex-1 flex-col justify-center px-5 py-8 sm:px-6 sm:py-12 lg:px-14" style={{ background: "linear-gradient(160deg,#030f1e 0%,#041a2e 50%,#020c18 100%)" }}>
+          <div className="pvr-form flex flex-1 flex-col justify-center px-5 py-8 sm:px-6 sm:py-12 lg:px-14" style={{ background: `linear-gradient(160deg,#030f1e 0%,${BRAND.navy} 50%,#020c18 100%)` }}>
             <div style={{ maxWidth: 480, width: "100%", margin: "0 auto" }}>
               <div style={{ marginBottom: "32px" }}>
-                <p style={{ fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", color: "#21D0B3", marginBottom: "8px" }}>{t("Acceso")}</p>
+                <p style={{ fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", color: BRAND.teal, marginBottom: "8px" }}>{t("Acceso")}</p>
                 <h2 style={{ fontSize: "26px", fontWeight: 700, color: "#ffffff", margin: "0 0 6px" }}>{t("Ingresa con tu codigo")}</h2>
                 <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.45)", margin: 0 }}>{t("Usa el codigo corto del portal de usuario para acceder a tu panel de movilidad.")}</p>
               </div>
@@ -1796,7 +1797,7 @@ export default function VehicleRequestPortalPage() {
                   type="button"
                   onClick={login}
                   disabled={loading}
-                  style={{ height: "48px", borderRadius: "12px", fontWeight: 700, fontSize: "15px", cursor: loading ? "not-allowed" : "pointer", background: "linear-gradient(135deg,#34F3C6 0%,#21D0B3 50%,#15B09A 100%)", color: "#0d1b3e", border: "none", opacity: loading ? 0.7 : 1, boxShadow: "0 4px 20px rgba(33,208,179,0.35)" }}
+                  style={{ height: "48px", borderRadius: "12px", fontWeight: 700, fontSize: "15px", cursor: loading ? "not-allowed" : "pointer", background: `linear-gradient(135deg,${BRAND.tealLight} 0%,${BRAND.teal} 50%,#15B09A 100%)`, color: "#0d1b3e", border: "none", opacity: loading ? 0.7 : 1, boxShadow: "0 4px 20px rgba(33,208,179,0.35)" }}
                 >
                   {loading ? t("Ingresando...") : t("Abrir portal")}
                 </button>
@@ -1804,7 +1805,7 @@ export default function VehicleRequestPortalPage() {
               </div>
 
               <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "28px" }}>
-                <p style={{ fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", color: "#21D0B3", marginBottom: "8px" }}>{t("Recuperacion de acceso")}</p>
+                <p style={{ fontSize: "11px", letterSpacing: "0.2em", textTransform: "uppercase", color: BRAND.teal, marginBottom: "8px" }}>{t("Recuperacion de acceso")}</p>
                 <h3 style={{ fontSize: "18px", fontWeight: 600, color: "#ffffff", margin: "0 0 6px" }}>{t("Solicita tu codigo")}</h3>
                 <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.4)", margin: "0 0 16px" }}>
                   {t("Si no tienes tu codigo, ingresalo con tu correo registrado y te lo enviamos.")}
@@ -1822,7 +1823,7 @@ export default function VehicleRequestPortalPage() {
                     type="button"
                     onClick={requestAccess}
                     disabled={requestAccessLoading}
-                    style={{ width: "100%", height: "44px", padding: "0 20px", borderRadius: "10px", fontWeight: 500, fontSize: "13px", cursor: requestAccessLoading ? "not-allowed" : "pointer", background: "rgba(33,208,179,0.1)", color: "#21D0B3", border: "1px solid rgba(33,208,179,0.3)", opacity: requestAccessLoading ? 0.7 : 1 }}
+                    style={{ width: "100%", height: "44px", padding: "0 20px", borderRadius: "10px", fontWeight: 500, fontSize: "13px", cursor: requestAccessLoading ? "not-allowed" : "pointer", background: "rgba(33,208,179,0.1)", color: BRAND.teal, border: "1px solid rgba(33,208,179,0.3)", opacity: requestAccessLoading ? 0.7 : 1 }}
                   >
                     {requestAccessLoading ? t("Enviando...") : t("Solicitar codigo")}
                   </button>
@@ -1858,9 +1859,9 @@ export default function VehicleRequestPortalPage() {
           <div style={{ position:"fixed",top:"-100px",right:"-100px",width:"400px",height:"400px",borderRadius:"50%",background:"radial-gradient(ellipse,rgba(33,208,179,0.06) 0%,transparent 65%)",pointerEvents:"none",zIndex:0 }} />
 
           {/* Banner */}
-          <div style={{ position:"relative",background:"linear-gradient(135deg,#041a2e 0%,#062240 45%,#0a3356 80%,#041a2e 100%)",overflow:"hidden",zIndex:1 }}>
+          <div style={{ position:"relative",background:`linear-gradient(135deg,${BRAND.navy} 0%,${BRAND.navyLight} 45%,#0a3356 80%,${BRAND.navy} 100%)`,overflow:"hidden",zIndex:1 }}>
             <div style={{ position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(33,208,179,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(33,208,179,0.04) 1px,transparent 1px)",backgroundSize:"48px 48px",pointerEvents:"none" }} />
-            <div style={{ position:"absolute",bottom:"-1px",left:0,right:0,height:"2px",background:"linear-gradient(90deg,transparent,#21D0B3 30%,#34F3C6 50%,#21D0B3 70%,transparent)",pointerEvents:"none",animation:"vr-glow 3s ease-in-out infinite" }} />
+            <div style={{ position:"absolute",bottom:"-1px",left:0,right:0,height:"2px",background:`linear-gradient(90deg,transparent,${BRAND.teal} 30%,${BRAND.tealLight} 50%,${BRAND.teal} 70%,transparent)`,pointerEvents:"none",animation:"vr-glow 3s ease-in-out infinite" }} />
             <div style={{ padding:"10px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",maxWidth:"960px",margin:"0 auto",position:"relative",zIndex:1 }}>
               <div style={{ display:"flex",alignItems:"center",gap:10 }}>
                 <img src="/branding/LOGO-SEVEN-1.png" alt="Seven Arena" style={{ height:"34px",width:"auto",objectFit:"contain",filter:"drop-shadow(0 0 18px rgba(33,208,179,0.5)) drop-shadow(0 2px 8px rgba(0,0,0,0.8))" }} />
@@ -1875,13 +1876,13 @@ export default function VehicleRequestPortalPage() {
                 />
                 <button type="button" onClick={() => setAssistOpen((p) => !p)} title={t("Asistencia")}
                   style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:`1px solid ${assistOpen ? "rgba(52,243,198,0.7)" : "rgba(33,208,179,0.4)"}`,background: assistOpen ? "linear-gradient(135deg,rgba(52,243,198,0.28),rgba(33,208,179,0.18))" : "rgba(33,208,179,0.12)",cursor:"pointer",flexShrink:0,transition:"all .15s" }}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
                   </svg>
                 </button>
                 <button type="button" onClick={() => window.location.reload()} disabled={loading} title={t("Actualizar")}
                   style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",cursor:"pointer",flexShrink:0,opacity:loading?0.5:1 }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
                   </svg>
                 </button>
@@ -1914,16 +1915,16 @@ export default function VehicleRequestPortalPage() {
                   return (
                     <div key={trip.id}
                       style={{ position:"relative",overflow:"hidden",borderRadius:16,padding:"14px 16px",
-                        background:"linear-gradient(135deg,#062240 0%,#0a3356 55%,#062240 100%)",
+                        background:`linear-gradient(135deg,${BRAND.navyLight} 0%,#0a3356 55%,${BRAND.navyLight} 100%)`,
                         border:"1px solid rgba(33,208,179,0.35)",boxShadow:"0 6px 24px rgba(6,34,64,0.35)" }}>
-                      <div style={{ position:"absolute",bottom:0,left:0,right:0,height:2,background:"linear-gradient(90deg,transparent,#21D0B3 40%,#34F3C6 50%,#21D0B3 60%,transparent)",animation:"vr-glow 3s ease-in-out infinite" }} />
+                      <div style={{ position:"absolute",bottom:0,left:0,right:0,height:2,background:`linear-gradient(90deg,transparent,${BRAND.teal} 40%,${BRAND.tealLight} 50%,${BRAND.teal} 60%,transparent)`,animation:"vr-glow 3s ease-in-out infinite" }} />
                       <div style={{ display:"flex",alignItems:"center",gap:12 }}>
                         <span style={{ position:"relative",flexShrink:0,width:40,height:40,borderRadius:12,background:"rgba(33,208,179,0.15)",display:"flex",alignItems:"center",justifyContent:"center" }}>
-                          <span style={{ position:"absolute",top:6,right:6,width:8,height:8,borderRadius:"50%",background:"#34F3C6",boxShadow:"0 0 8px #34F3C6",animation:"vrPulse 1.4s ease-in-out infinite" }} />
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34F3C6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                          <span style={{ position:"absolute",top:6,right:6,width:8,height:8,borderRadius:"50%",background:BRAND.tealLight,boxShadow:`0 0 8px ${BRAND.tealLight}`,animation:"vrPulse 1.4s ease-in-out infinite" }} />
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={BRAND.tealLight} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
                         </span>
                         <div style={{ flex:1,minWidth:0 }}>
-                          <p style={{ fontSize:9.5,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#34F3C6",margin:0 }}>
+                          <p style={{ fontSize:9.5,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.tealLight,margin:0 }}>
                             {enRoute ? t("En ruta a recogerte") : `${t("Rumbo a")} ${dest}`}
                           </p>
                           <p style={{ fontSize:14.5,fontWeight:800,color:"#fff",margin:"1px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{headline}</p>
@@ -1935,12 +1936,12 @@ export default function VehicleRequestPortalPage() {
                         </div>
                         <div style={{ display:"flex",flexDirection:"column",gap:6,flexShrink:0 }}>
                           <button type="button" onClick={() => setTripModal(trip)}
-                            style={{ padding:"8px 14px",borderRadius:10,border:"none",cursor:"pointer",fontSize:12,fontWeight:700,background:"linear-gradient(135deg,#34F3C6,#21D0B3)",color:"#062240",whiteSpace:"nowrap" }}>
+                            style={{ padding:"8px 14px",borderRadius:10,border:"none",cursor:"pointer",fontSize:12,fontWeight:700,background:`linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})`,color:BRAND.navyLight,whiteSpace:"nowrap" }}>
                             {t("Ver viaje")}
                           </button>
                           {drv?.phone && (
                             <a href={`tel:${drv.phone}`}
-                              style={{ padding:"6px 14px",borderRadius:10,border:"1px solid rgba(52,243,198,0.4)",cursor:"pointer",fontSize:11.5,fontWeight:700,background:"rgba(33,208,179,0.12)",color:"#34F3C6",textAlign:"center",textDecoration:"none" }}>
+                              style={{ padding:"6px 14px",borderRadius:10,border:"1px solid rgba(52,243,198,0.4)",cursor:"pointer",fontSize:11.5,fontWeight:700,background:"rgba(33,208,179,0.12)",color:BRAND.tealLight,textAlign:"center",textDecoration:"none" }}>
                               {t("Llamar")}
                             </a>
                           )}
@@ -1976,14 +1977,14 @@ export default function VehicleRequestPortalPage() {
                   <div onClick={(e) => e.stopPropagation()}
                     style={{ background:"#fff",borderTopLeftRadius:22,borderTopRightRadius:22,width:"100%",maxWidth:520,maxHeight:"92vh",overflowY:"auto",boxShadow:"0 -12px 48px rgba(6,15,30,0.4)" }}>
                     {/* Header */}
-                    <div style={{ position:"sticky",top:0,zIndex:2,padding:"16px 18px 14px",background:"linear-gradient(135deg,#041a2e 0%,#0a3356 60%,#062240 100%)",overflow:"hidden" }}>
-                      <div style={{ position:"absolute",bottom:0,left:0,right:0,height:2,background:"linear-gradient(90deg,transparent,#21D0B3 40%,#34F3C6 50%,#21D0B3 60%,transparent)" }} />
+                    <div style={{ position:"sticky",top:0,zIndex:2,padding:"16px 18px 14px",background:`linear-gradient(135deg,${BRAND.navy} 0%,#0a3356 60%,${BRAND.navyLight} 100%)`,overflow:"hidden" }}>
+                      <div style={{ position:"absolute",bottom:0,left:0,right:0,height:2,background:`linear-gradient(90deg,transparent,${BRAND.teal} 40%,${BRAND.tealLight} 50%,${BRAND.teal} 60%,transparent)` }} />
                       <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:10 }}>
                         <div style={{ minWidth:0 }}>
-                          <p style={{ fontSize:9.5,fontWeight:700,letterSpacing:"0.16em",textTransform:"uppercase",color:"#34F3C6",margin:0 }}>{t("Detalle del viaje")}</p>
+                          <p style={{ fontSize:9.5,fontWeight:700,letterSpacing:"0.16em",textTransform:"uppercase",color:BRAND.tealLight,margin:0 }}>{t("Detalle del viaje")}</p>
                           <p style={{ fontSize:17,fontWeight:800,color:"#fff",margin:"3px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{vname}</p>
-                          <span style={{ display:"inline-flex",alignItems:"center",gap:6,marginTop:8,fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:99,background:"rgba(52,243,198,0.14)",color:"#34F3C6",border:"1px solid rgba(52,243,198,0.3)" }}>
-                            {isActive && <span style={{ width:7,height:7,borderRadius:"50%",background:"#34F3C6",boxShadow:"0 0 8px #34F3C6",animation:"vrPulse 1.4s ease-in-out infinite" }} />}
+                          <span style={{ display:"inline-flex",alignItems:"center",gap:6,marginTop:8,fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:99,background:"rgba(52,243,198,0.14)",color:BRAND.tealLight,border:"1px solid rgba(52,243,198,0.3)" }}>
+                            {isActive && <span style={{ width:7,height:7,borderRadius:"50%",background:BRAND.tealLight,boxShadow:`0 0 8px ${BRAND.tealLight}`,animation:"vrPulse 1.4s ease-in-out infinite" }} />}
                             {liveLabel}
                           </span>
                         </div>
@@ -1997,7 +1998,7 @@ export default function VehicleRequestPortalPage() {
                       <div style={{ display:"flex",flexDirection:"column",gap:0,padding:"12px 14px",borderRadius:14,background:"#f8fafc",border:"1px solid #eef1f6" }}>
                         <div style={{ display:"flex",alignItems:"flex-start",gap:10 }}>
                           <div style={{ display:"flex",flexDirection:"column",alignItems:"center",paddingTop:3 }}>
-                            <span style={{ width:9,height:9,borderRadius:"50%",background:"#21D0B3" }} />
+                            <span style={{ width:9,height:9,borderRadius:"50%",background:BRAND.teal }} />
                             <span style={{ width:2,height:26,background:"#cbd5e1",margin:"2px 0" }} />
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="#ef4444" stroke="#ef4444"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5" fill="#fff"/></svg>
                           </div>
@@ -2020,7 +2021,7 @@ export default function VehicleRequestPortalPage() {
                           />
                           {coords && (
                             <a href={buildDirectionsLink(coords.lat, coords.lng, tm.origin)} target="_blank" rel="noreferrer"
-                              style={{ display:"block",padding:"9px 12px",background:"rgba(33,208,179,0.08)",fontSize:12,fontWeight:700,color:"#0a7a6b",textAlign:"center",textDecoration:"none" }}>
+                              style={{ display:"block",padding:"9px 12px",background:"rgba(33,208,179,0.08)",fontSize:12,fontWeight:700,color:BRAND.tealInk,textAlign:"center",textDecoration:"none" }}>
                               📍 {t("Seguir en Google Maps")}
                             </a>
                           )}
@@ -2057,7 +2058,7 @@ export default function VehicleRequestPortalPage() {
                       <div style={{ display:"flex",gap:8,marginTop:2 }}>
                         {drv?.phone && (
                           <a href={`tel:${drv.phone}`}
-                            style={{ flex:1,padding:"12px",borderRadius:12,textAlign:"center",textDecoration:"none",fontSize:13,fontWeight:700,background:"linear-gradient(135deg,#34F3C6,#21D0B3)",color:"#062240" }}>
+                            style={{ flex:1,padding:"12px",borderRadius:12,textAlign:"center",textDecoration:"none",fontSize:13,fontWeight:700,background:`linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})`,color:BRAND.navyLight }}>
                             📞 {t("Llamar conductor")}
                           </a>
                         )}
@@ -2077,7 +2078,7 @@ export default function VehicleRequestPortalPage() {
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
                 <div style={{ background:"#fff",borderRadius:"24px",width:"100%",maxWidth:"380px",padding:"32px 28px",boxShadow:"0 8px 40px rgba(15,23,42,0.2)",textAlign:"center" }}>
                   <div style={{ width:"56px",height:"56px",borderRadius:"50%",background:"rgba(33,208,179,0.12)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 18px" }}>
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
                   </div>
                   <h3 style={{ fontSize:"18px",fontWeight:800,color:"#0f172a",margin:"0 0 8px" }}>{t("Solicitud enviada")}</h3>
                   <p style={{ fontSize:"13px",color:"#64748b",lineHeight:1.5,margin:"0 0 24px" }}>
@@ -2086,7 +2087,7 @@ export default function VehicleRequestPortalPage() {
                   </p>
                   <button
                     onClick={() => setMessage(null)}
-                    style={{ width:"100%",padding:"12px",borderRadius:"14px",border:"none",background:"linear-gradient(135deg,#21D0B3,#14AE98)",color:"#fff",fontSize:"14px",fontWeight:700,cursor:"pointer",boxShadow:"0 2px 12px rgba(33,208,179,0.35)" }}
+                    style={{ width:"100%",padding:"12px",borderRadius:"14px",border:"none",background:`linear-gradient(135deg,${BRAND.teal},#14AE98)`,color:"#fff",fontSize:"14px",fontWeight:700,cursor:"pointer",boxShadow:"0 2px 12px rgba(33,208,179,0.35)" }}
                   >
                     {t("Entendido")}
                   </button>
@@ -2163,7 +2164,7 @@ export default function VehicleRequestPortalPage() {
                         {([["SEDE","Sede"],["HOTEL","Hotel"]] as const).map(([v,label]) => (
                           <button key={v} type="button" onClick={() => setDestinationType(v)}
                             style={{ flex:1,height:36,borderRadius:10,cursor:"pointer",fontSize:12.5,fontWeight:700,
-                              border: destinationType === v ? "1.5px solid #21D0B3" : "1px solid #e2e8f0",
+                              border: destinationType === v ? `1.5px solid ${BRAND.teal}` : "1px solid #e2e8f0",
                               background: destinationType === v ? "rgba(33,208,179,0.1)" : "#fff",
                               color: destinationType === v ? "#0e9384" : "#64748b" }}>
                             {t(label)}
@@ -2216,7 +2217,7 @@ export default function VehicleRequestPortalPage() {
                       <button type="button" onClick={() => setIsRoundTrip(!isRoundTrip)}
                         style={{
                           width:44,height:24,borderRadius:12,border:"none",cursor:"pointer",position:"relative",
-                          background: isRoundTrip ? "#21D0B3" : "#cbd5e1",
+                          background: isRoundTrip ? BRAND.teal : "#cbd5e1",
                           transition:"background 0.2s",
                         }}>
                         <span style={{
@@ -2230,7 +2231,7 @@ export default function VehicleRequestPortalPage() {
 
                     {isRoundTrip && (
                       <div style={{ display:"flex",flexDirection:"column",gap:10,padding:"10px 12px",borderRadius:12,background:"#f0fdfa",border:"1px solid #99f6e4" }}>
-                        <p style={{ fontSize:12,fontWeight:700,color:"#0a7a6b",margin:0 }}>{t("Datos del regreso")}</p>
+                        <p style={{ fontSize:12,fontWeight:700,color:BRAND.tealInk,margin:0 }}>{t("Datos del regreso")}</p>
                         <div>
                           <label style={{ fontSize:11,fontWeight:600,color:"#64748b",marginBottom:3,display:"block" }}>{t("Fecha y hora de regreso")}</label>
                           <input className="input" type="datetime-local" value={returnTime}
@@ -2248,7 +2249,7 @@ export default function VehicleRequestPortalPage() {
                               </option>
                             ))}
                           </select>
-                          <p style={{ fontSize:10.5,color:"#64748b",margin:"4px 0 0" }}>
+                          <p style={{ fontSize:11,color:"#64748b",margin:"4px 0 0" }}>
                             {t("Si no seleccionas una sede, el regreso será a tu dirección de recogida.")}
                           </p>
                         </div>
@@ -2258,7 +2259,7 @@ export default function VehicleRequestPortalPage() {
                     <button type="submit" disabled={submitting}
                       style={{
                         width:"100%",height:42,borderRadius:12,border:"none",fontSize:14,fontWeight:700,cursor:"pointer",
-                        background: submitting ? "#e2e8f0" : "linear-gradient(135deg,#21D0B3,#14AE98)",
+                        background: submitting ? "#e2e8f0" : `linear-gradient(135deg,${BRAND.teal},#14AE98)`,
                         color: submitting ? "#94a3b8" : "#fff",
                         boxShadow: submitting ? "none" : "0 2px 10px rgba(33,208,179,0.3)",
                       }}>
@@ -2281,7 +2282,7 @@ export default function VehicleRequestPortalPage() {
             {/* ═══════════════════ ACTIVIDADES TAB ═══════════════════ */}
             {activeTab === "actividades" && (
               <section style={{ display:"flex",flexDirection:"column",gap:"12px" }}>
-                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>{t("Mis viajes")}</p>
+                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.teal,margin:0 }}>{t("Mis viajes")}</p>
 
                 {/* Sub-tabs */}
                 <div style={{ display:"flex",gap:0,background:"#fff",borderRadius:12,border:"1px solid #e2e8f0",overflow:"hidden" }}>
@@ -2297,11 +2298,11 @@ export default function VehicleRequestPortalPage() {
                       style={{
                         flex:1,padding:"10px 4px",border:"none",cursor:"pointer",fontSize:12,fontWeight:actividadesSubTab === st.key ? 700 : 500,
                         background: actividadesSubTab === st.key ? "rgba(33,208,179,0.1)" : "transparent",
-                        color: actividadesSubTab === st.key ? "#0a7a6b" : "#64748b",
-                        borderBottom: actividadesSubTab === st.key ? "2px solid #21D0B3" : "2px solid transparent",
+                        color: actividadesSubTab === st.key ? BRAND.tealInk : "#64748b",
+                        borderBottom: actividadesSubTab === st.key ? `2px solid ${BRAND.teal}` : "2px solid transparent",
                       }}
                     >
-                      {t(st.label)} {st.count > 0 && <span style={{ fontSize:10,fontWeight:700,background:actividadesSubTab === st.key ? "#21D0B3" : "#e2e8f0",color:actividadesSubTab === st.key ? "#fff" : "#64748b",borderRadius:10,padding:"1px 6px",marginLeft:3 }}>{st.count}</span>}
+                      {t(st.label)} {st.count > 0 && <span style={{ fontSize:10,fontWeight:700,background:actividadesSubTab === st.key ? BRAND.teal : "#e2e8f0",color:actividadesSubTab === st.key ? "#fff" : "#64748b",borderRadius:10,padding:"1px 6px",marginLeft:3 }}>{st.count}</span>}
                     </button>
                   ))}
                 </div>
@@ -2451,8 +2452,8 @@ export default function VehicleRequestPortalPage() {
                   <article key={p.id} id={`prem-${p.id}`}
                     style={{ position:"relative",
                       background: isDone ? "#f8fafc" : "linear-gradient(135deg,#fffbeb 0%,#ffffff 70%)",
-                      border:`1px solid ${focused ? "#21D0B3" : isDone ? "#e2e8f0" : "#f2d98a"}`,
-                      borderLeft:`4px solid ${focused ? "#21D0B3" : isDone ? "#cbd5e1" : "#e3a808"}`,
+                      border:`1px solid ${focused ? BRAND.teal : isDone ? "#e2e8f0" : "#f2d98a"}`,
+                      borderLeft:`4px solid ${focused ? BRAND.teal : isDone ? "#cbd5e1" : "#e3a808"}`,
                       borderRadius:16,padding:"14px 16px",
                       boxShadow: focused ? "0 0 0 3px rgba(33,208,179,0.4), 0 8px 24px rgba(33,208,179,0.25)" : isDone ? "none" : "0 2px 10px rgba(199,140,0,0.14)",
                       opacity: isDone ? 0.82 : 1,
@@ -2663,14 +2664,14 @@ export default function VehicleRequestPortalPage() {
                               })}
                             </div>
                             <div style={{ display:"flex",alignItems:"center",gap:14,marginTop:10,paddingTop:10,borderTop:"1px dashed #f0deb0",justifyContent:"center" }}>
-                              <span style={{ display:"inline-flex",alignItems:"center",gap:5,fontSize:10,color:"#7a4a00",fontWeight:600 }}>
+                              <span style={{ display:"inline-flex",alignItems:"center",gap:5,fontSize:11,color:"#7a4a00",fontWeight:600 }}>
                                 <span style={{ width:6,height:6,borderRadius:"50%",background:"#c78c00" }} />{t("Pendiente")}
                               </span>
-                              <span style={{ display:"inline-flex",alignItems:"center",gap:5,fontSize:10,color:"#166534",fontWeight:600 }}>
+                              <span style={{ display:"inline-flex",alignItems:"center",gap:5,fontSize:11,color:"#166534",fontWeight:600 }}>
                                 <span style={{ width:6,height:6,borderRadius:"50%",background:"#10b981" }} />{t("Confirmada")}
                               </span>
                               {todayNum && (
-                                <span style={{ display:"inline-flex",alignItems:"center",gap:5,fontSize:10,color:"#7a4a00",fontWeight:600 }}>
+                                <span style={{ display:"inline-flex",alignItems:"center",gap:5,fontSize:11,color:"#7a4a00",fontWeight:600 }}>
                                   <span style={{ width:8,height:8,borderRadius:4,border:"1.5px solid #d4a017",background:"#fff" }} />{t("Hoy")}
                                 </span>
                               )}
@@ -2772,7 +2773,7 @@ export default function VehicleRequestPortalPage() {
                 <div style={{ background:"#fff",border:"1px solid #e2e8f0",borderRadius:14,padding:4,display:"flex",gap:4,boxShadow:"0 1px 4px rgba(15,23,42,0.05)" }}>
                   <button type="button" onClick={() => setCouponTab("available")}
                     style={{ flex:1,padding:"10px 12px",borderRadius:10,border:"none",cursor:"pointer",fontSize:13,fontWeight:800,letterSpacing:"0.01em",
-                      background:couponTab==="available"?"linear-gradient(135deg,#21D0B3 0%,#15B09A 100%)":"transparent",
+                      background:couponTab==="available"?`linear-gradient(135deg,${BRAND.teal} 0%,#15B09A 100%)`:"transparent",
                       color:couponTab==="available"?"#fff":"#64748b",
                       boxShadow:couponTab==="available"?"0 4px 14px rgba(33,208,179,0.32)":"none",
                       display:"inline-flex",alignItems:"center",justifyContent:"center",gap:8 }}>
@@ -2785,7 +2786,7 @@ export default function VehicleRequestPortalPage() {
                   </button>
                   <button type="button" onClick={() => setCouponTab("mine")}
                     style={{ flex:1,padding:"10px 12px",borderRadius:10,border:"none",cursor:"pointer",fontSize:13,fontWeight:800,
-                      background:couponTab==="mine"?"linear-gradient(135deg,#21D0B3 0%,#15B09A 100%)":"transparent",
+                      background:couponTab==="mine"?`linear-gradient(135deg,${BRAND.teal} 0%,#15B09A 100%)`:"transparent",
                       color:couponTab==="mine"?"#fff":"#64748b",
                       boxShadow:couponTab==="mine"?"0 4px 14px rgba(33,208,179,0.32)":"none",
                       display:"inline-flex",alignItems:"center",justifyContent:"center",gap:8 }}>
@@ -2861,13 +2862,13 @@ export default function VehicleRequestPortalPage() {
                               )}
                               <div style={{ display:"flex",flexWrap:"wrap",gap:8,marginTop:8 }}>
                                 {c.validUntil && (
-                                  <span style={{ display:"inline-flex",alignItems:"center",gap:4,fontSize:10.5,color:"#64748b",fontWeight:500 }}>
+                                  <span style={{ display:"inline-flex",alignItems:"center",gap:4,fontSize:11,color:"#64748b",fontWeight:500 }}>
                                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                                     {t("Hasta")} {fmtCouponDate(c.validUntil)}
                                   </span>
                                 )}
                                 {c.partnerAddress && (
-                                  <span style={{ display:"inline-flex",alignItems:"center",gap:4,fontSize:10.5,color:"#64748b",fontWeight:500,maxWidth:170,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                                  <span style={{ display:"inline-flex",alignItems:"center",gap:4,fontSize:11,color:"#64748b",fontWeight:500,maxWidth:170,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
                                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
                                     {c.partnerAddress}
                                   </span>
@@ -2934,12 +2935,12 @@ export default function VehicleRequestPortalPage() {
                                   {coupon ? t(couponDiscountDisplay(coupon)) : "—"}
                                 </p>
                                 {c.status === "CLAIMED" && (
-                                  <p style={{ fontSize:10.5,fontWeight:600,color:"#c78c00",margin:"2px 0 0" }}>
+                                  <p style={{ fontSize:11,fontWeight:600,color:"#c78c00",margin:"2px 0 0" }}>
                                     {t("Expira en")} {couponTimeLeft(c.expiresAt)}
                                   </p>
                                 )}
                                 {c.status === "REDEEMED" && c.redeemedAt && (
-                                  <p style={{ fontSize:10.5,color:"#64748b",margin:"2px 0 0" }}>
+                                  <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0" }}>
                                     {t("Canjeado")} {fmtCouponDate(c.redeemedAt)}
                                   </p>
                                 )}
@@ -2960,7 +2961,7 @@ export default function VehicleRequestPortalPage() {
             {/* ═══════════════════ SEDES TAB ═══════════════════ */}
             {activeTab === "sedes" && (
               <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
-                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>{t("Sedes del evento")}</p>
+                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.teal,margin:0 }}>{t("Sedes del evento")}</p>
                 {venues.map(v => {
                   const isOpen = expandedItemId === `venue-${v.id}`;
                   return (
@@ -2970,7 +2971,7 @@ export default function VehicleRequestPortalPage() {
                         onClick={() => setExpandedItemId(isOpen ? null : `venue-${v.id}`)}
                         style={{ width:"100%",display:"flex",alignItems:"center",gap:10,padding:"12px 14px",background:"none",border:"none",cursor:"pointer",textAlign:"left" }}
                       >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}>
                           <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
                         </svg>
                         <div style={{ flex:1,minWidth:0 }}>
@@ -3021,7 +3022,7 @@ export default function VehicleRequestPortalPage() {
             {/* ═══════════════════ HOTELES TAB ═══════════════════ */}
             {activeTab === "hoteles" && (
               <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
-                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>{t("Mi Hotel")}</p>
+                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.teal,margin:0 }}>{t("Mi Hotel")}</p>
                 {accommodations.map(acc => {
                   const isOpen = expandedItemId === `acc-${acc.id}`;
                   return (
@@ -3031,7 +3032,7 @@ export default function VehicleRequestPortalPage() {
                         onClick={() => setExpandedItemId(isOpen ? null : `acc-${acc.id}`)}
                         style={{ width:"100%",display:"flex",alignItems:"center",gap:10,padding:"12px 14px",background:"none",border:"none",cursor:"pointer",textAlign:"left" }}
                       >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}>
                           <path d="M3 22V8l9-6 9 6v14"/><path d="M9 22V12h6v10"/>
                         </svg>
                         <div style={{ flex:1,minWidth:0 }}>
@@ -3107,20 +3108,20 @@ export default function VehicleRequestPortalPage() {
               <div style={{ display:"flex",flexDirection:"column",gap:14 }}>
                 {/* Credencial QR para validar en el comedor */}
                 {mealQrDataUrl && (
-                  <div style={{ background:"linear-gradient(135deg,#041a2e,#062240)",borderRadius:16,padding:"16px",display:"flex",alignItems:"center",gap:14 }}>
+                  <div style={{ background:`linear-gradient(135deg,${BRAND.navy},${BRAND.navyLight})`,borderRadius:16,padding:"16px",display:"flex",alignItems:"center",gap:14 }}>
                     <button type="button" onClick={() => setMealQrZoom(true)} title={t("Ver QR más grande")}
                       style={{ background:"#fff",borderRadius:12,padding:6,flexShrink:0,border:"none",cursor:"pointer" }}>
                       <img src={mealQrDataUrl} alt={t("QR credencial")} style={{ width:96,height:96,display:"block" }} />
                     </button>
                     <div style={{ minWidth:0 }}>
-                      <p style={{ fontSize:10,fontWeight:800,letterSpacing:"0.18em",textTransform:"uppercase",color:"#34F3C6",margin:0 }}>{t("Tu credencial")}</p>
+                      <p style={{ fontSize:10,fontWeight:800,letterSpacing:"0.18em",textTransform:"uppercase",color:BRAND.tealLight,margin:0 }}>{t("Tu credencial")}</p>
                       <p style={{ fontSize:14,fontWeight:700,color:"#fff",margin:"4px 0 0",lineHeight:1.3 }}>
                         {t("Muestra este QR al ingresar al lugar de comida")}
                       </p>
                       <p style={{ fontSize:11.5,color:"rgba(255,255,255,0.65)",margin:"4px 0 0" }}>
-                        {t("Código:")} <span style={{ fontFamily:"monospace",fontWeight:700,color:"#34F3C6",letterSpacing:"0.15em" }}>{athlete.id.slice(-6).toUpperCase()}</span>
+                        {t("Código:")} <span style={{ fontFamily:"monospace",fontWeight:700,color:BRAND.tealLight,letterSpacing:"0.15em" }}>{athlete.id.slice(-6).toUpperCase()}</span>
                       </p>
-                      <p style={{ fontSize:10.5,color:"rgba(255,255,255,0.45)",margin:"4px 0 0" }}>
+                      <p style={{ fontSize:11,color:"rgba(255,255,255,0.45)",margin:"4px 0 0" }}>
                         {t("Toca el QR para verlo más grande")}
                       </p>
                     </div>
@@ -3156,7 +3157,7 @@ export default function VehicleRequestPortalPage() {
                       <div style={{ padding:"14px 16px",background:"linear-gradient(135deg,rgba(33,208,179,0.08),rgba(33,208,179,0.02))",borderBottom:"1px solid #e2e8f0",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
                         <div style={{ display:"flex",alignItems:"center",gap:8 }}>
                           <div style={{ width:32,height:32,borderRadius:10,background:"rgba(33,208,179,0.12)",display:"flex",alignItems:"center",justifyContent:"center" }}>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2" strokeLinecap="round"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
                           </div>
                           <div>
                             <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>{t("Menú de hoy")}</p>
@@ -3173,7 +3174,7 @@ export default function VehicleRequestPortalPage() {
                               <div style={{ display:"flex",alignItems:"center",gap:6,flexWrap:"wrap" }}>
                                 <span style={{ fontSize:10,fontWeight:800,padding:"2px 8px",borderRadius:6,textTransform:"uppercase",letterSpacing:"0.05em",background:m.bg,color:m.color }}>{t(m.label)}</span>
                                 {fm.dietaryType && fm.dietaryType !== "ESTANDAR" && (
-                                  <span style={{ fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:6,background:"#f0fdf4",color:"#166534",border:"1px solid #bbf7d0" }}>{fm.dietaryType}</span>
+                                  <span style={{ fontSize:10,fontWeight:700,padding:"2px 7px",borderRadius:6,background:"#f0fdf4",color:"#166534",border:"1px solid #bbf7d0" }}>{fm.dietaryType}</span>
                                 )}
                               </div>
                               <p style={{ fontSize:15,fontWeight:700,color:"#0f172a",margin:"5px 0 0" }}>{fm.title}</p>
@@ -3224,7 +3225,7 @@ export default function VehicleRequestPortalPage() {
                           <div key={fm.id} style={{ padding:"12px 16px",borderTop:i>0?"1px solid #f1f5f9":"none",display:"flex",gap:12,alignItems:"flex-start" }}>
                             <div style={{ width:36,height:36,borderRadius:8,background:m.bg,border:`1px solid ${m.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0 }}>{m.icon}</div>
                             <div style={{ flex:1,minWidth:0 }}>
-                              <span style={{ fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:6,textTransform:"uppercase",letterSpacing:"0.05em",background:m.bg,color:m.color }}>{t(m.label)}</span>
+                              <span style={{ fontSize:10,fontWeight:800,padding:"2px 7px",borderRadius:6,textTransform:"uppercase",letterSpacing:"0.05em",background:m.bg,color:m.color }}>{t(m.label)}</span>
                               <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:"4px 0 0" }}>{fm.title}</p>
                               {fm.description && <p style={{ fontSize:12,color:"#64748b",margin:"2px 0 0",lineHeight:1.4 }}>{fm.description}</p>}
                               {fm.locationDetail && <p style={{ fontSize:11,color:"#94a3b8",margin:"2px 0 0" }}>📍 {fm.locationDetail}</p>}
@@ -3251,7 +3252,7 @@ export default function VehicleRequestPortalPage() {
                   <div style={{ background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)" }}>
                     <div style={{ padding:"14px 16px",background:"linear-gradient(135deg,rgba(33,208,179,0.06),rgba(31,205,255,0.04))",borderBottom:"1px solid #e2e8f0" }}>
                       <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                         <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0 }}>{t("Tus lugares de comida")}</p>
                       </div>
                     </div>
@@ -3263,7 +3264,7 @@ export default function VehicleRequestPortalPage() {
                       <div key={fl.id} style={{ borderTop:i>0?"1px solid #f1f5f9":"none" }}>
                         <div style={{ padding:"12px 16px",display:"flex",alignItems:"center",gap:12 }}>
                           <div style={{ width:36,height:36,borderRadius:10,background:"rgba(33,208,179,0.08)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2" strokeLinecap="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
                           </div>
                           <div style={{ flex:1,minWidth:0 }}>
                             <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>{fl.name}</p>
@@ -3272,7 +3273,7 @@ export default function VehicleRequestPortalPage() {
                           </div>
                           {fl.capacity && <span style={{ fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:8,background:"#f1f5f9",color:"#475569",flexShrink:0 }}>{fl.capacity} pax</span>}
                           <button type="button" onClick={() => setFoodMapId(isOpen ? null : fl.id)}
-                            style={{ display:"inline-flex",alignItems:"center",gap:4,padding:"6px 10px",borderRadius:9,border:`1px solid ${isOpen ? "#21D0B3" : "rgba(33,208,179,0.35)"}`,background:isOpen?"rgba(33,208,179,0.14)":"rgba(33,208,179,0.06)",color:"#0a7a6b",fontSize:11,fontWeight:800,cursor:"pointer",flexShrink:0 }}>
+                            style={{ display:"inline-flex",alignItems:"center",gap:4,padding:"6px 10px",borderRadius:9,border:`1px solid ${isOpen ? BRAND.teal : "rgba(33,208,179,0.35)"}`,background:isOpen?"rgba(33,208,179,0.14)":"rgba(33,208,179,0.06)",color:BRAND.tealInk,fontSize:11,fontWeight:800,cursor:"pointer",flexShrink:0 }}>
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                             {isOpen ? t("Cerrar") : t("Mapa")}
                           </button>
@@ -3301,7 +3302,7 @@ export default function VehicleRequestPortalPage() {
             {/* ═══════════════════ CALENDARIO TAB ═══════════════════ */}
             {activeTab === "calendario" && (
               <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
-                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>{t("Calendario deportivo")}</p>
+                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.teal,margin:0 }}>{t("Calendario deportivo")}</p>
 
                 {/* Selector de vista */}
                 <div style={{ display:"flex",gap:4,background:"#e2e8f0",borderRadius:12,padding:4 }}>
@@ -3322,7 +3323,7 @@ export default function VehicleRequestPortalPage() {
                     <div style={{ display:"flex",gap:6,alignItems:"center" }}>
                       <select value={calDisciplineFilter}
                         onChange={(e) => { setCalDisciplineFilter(e.target.value); setCalGenderFilter(""); setCalCategoryFilter(""); }}
-                        style={{ flex:1,padding:"9px 12px",borderRadius:10,border:`1px solid ${calDisciplineFilter?"#21D0B3":"#e2e8f0"}`,fontSize:12.5,fontWeight:calDisciplineFilter?700:400,color:calDisciplineFilter?"#0a7a6b":"#475569",background:"#fff" }}>
+                        style={{ flex:1,padding:"9px 12px",borderRadius:10,border:`1px solid ${calDisciplineFilter?BRAND.teal:"#e2e8f0"}`,fontSize:12.5,fontWeight:calDisciplineFilter?700:400,color:calDisciplineFilter?BRAND.tealInk:"#475569",background:"#fff" }}>
                         <option value="">{t("Todas las disciplinas")}</option>
                         {calDisciplineOptions.map((n) => <option key={n} value={n}>{n}</option>)}
                       </select>
@@ -3337,14 +3338,14 @@ export default function VehicleRequestPortalPage() {
                       <div style={{ display:"flex",gap:6 }}>
                         {calGenderOptions.length > 1 && (
                           <select value={calGenderFilter} onChange={(e) => setCalGenderFilter(e.target.value)}
-                            style={{ flex:1,minWidth:0,padding:"9px 12px",borderRadius:10,border:`1px solid ${calGenderFilter?"#21D0B3":"#e2e8f0"}`,fontSize:12.5,fontWeight:calGenderFilter?700:400,color:calGenderFilter?"#0a7a6b":"#475569",background:"#fff" }}>
+                            style={{ flex:1,minWidth:0,padding:"9px 12px",borderRadius:10,border:`1px solid ${calGenderFilter?BRAND.teal:"#e2e8f0"}`,fontSize:12.5,fontWeight:calGenderFilter?700:400,color:calGenderFilter?BRAND.tealInk:"#475569",background:"#fff" }}>
                             <option value="">{t("Todos los géneros")}</option>
                             {calGenderOptions.map((g) => <option key={g} value={g}>{genderLabel(g)}</option>)}
                           </select>
                         )}
                         {calCategoryOptions.length > 1 && (
                           <select value={calCategoryFilter} onChange={(e) => setCalCategoryFilter(e.target.value)}
-                            style={{ flex:1,minWidth:0,padding:"9px 12px",borderRadius:10,border:`1px solid ${calCategoryFilter?"#21D0B3":"#e2e8f0"}`,fontSize:12.5,fontWeight:calCategoryFilter?700:400,color:calCategoryFilter?"#0a7a6b":"#475569",background:"#fff" }}>
+                            style={{ flex:1,minWidth:0,padding:"9px 12px",borderRadius:10,border:`1px solid ${calCategoryFilter?BRAND.teal:"#e2e8f0"}`,fontSize:12.5,fontWeight:calCategoryFilter?700:400,color:calCategoryFilter?BRAND.tealInk:"#475569",background:"#fff" }}>
                             <option value="">{t("Todas las categorías")}</option>
                             {calCategoryOptions.map((c) => <option key={c} value={c}>{categoryLabel(c)}</option>)}
                           </select>
@@ -3417,7 +3418,7 @@ export default function VehicleRequestPortalPage() {
                       {/* Leyenda */}
                       <div style={{ display:"flex",flexWrap:"wrap",gap:10 }}>
                         {(["CLASIFICATORIA","FINAL","TRAINING","CEREMONY","PRUEBA"] as GCat[]).map((c) => (
-                          <span key={c} style={{ display:"inline-flex",alignItems:"center",gap:5,fontSize:10.5,color:"#64748b" }}>
+                          <span key={c} style={{ display:"inline-flex",alignItems:"center",gap:5,fontSize:11,color:"#64748b" }}>
                             <span style={{ width:9,height:9,borderRadius:"50%",background:GCAT[c].dot }} />{t(GCAT[c].label)}
                           </span>
                         ))}
@@ -3495,7 +3496,7 @@ export default function VehicleRequestPortalPage() {
                     {calWeekDays.map(({ day, events }) => {
                       const isToday = calKeyOf(day) === calKeyOf(new Date());
                       return (
-                        <div key={calKeyOf(day)} style={{ background:"#fff",borderRadius:12,border:`1px solid ${isToday ? "#21D0B3" : "#e2e8f0"}`,padding:"10px 12px" }}>
+                        <div key={calKeyOf(day)} style={{ background:"#fff",borderRadius:12,border:`1px solid ${isToday ? BRAND.teal : "#e2e8f0"}`,padding:"10px 12px" }}>
                           <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom: events.length ? 6 : 0 }}>
                             <span style={{ fontSize:12.5,fontWeight:700,color: isToday ? "#0e9384" : "#0f172a",textTransform:"capitalize" }}>
                               {day.toLocaleDateString("es-CL",{ weekday:"long",day:"2-digit",month:"short" })}
@@ -3548,7 +3549,7 @@ export default function VehicleRequestPortalPage() {
                               <span style={{ fontSize:13,fontWeight:800,color:"#0f172a" }}>
                                 {new Date(ce.scheduledAt!).toLocaleTimeString("es-CL",{ hour:"2-digit",minute:"2-digit" })}
                               </span>
-                              <span style={{ fontSize:9,fontWeight:700,color:meta.text,background:meta.bar,borderRadius:6,padding:"1px 6px",marginTop:3 }}>{t(meta.label)}</span>
+                              <span style={{ fontSize:10,fontWeight:700,color:meta.text,background:meta.bar,borderRadius:6,padding:"1px 6px",marginTop:3 }}>{t(meta.label)}</span>
                             </div>
                             <div style={{ flex:1,minWidth:0 }}>
                               <p style={{ fontSize:13,fontWeight:600,color:"#0f172a",margin:0 }}>{ce.name}</p>
@@ -3593,7 +3594,7 @@ export default function VehicleRequestPortalPage() {
                                   {d ? d.toLocaleTimeString("es-CL",{ hour:"2-digit",minute:"2-digit" }) : "—"}
                                 </p>
                                 {d && (
-                                  <p style={{ fontSize:10,color:"#94a3b8",margin:"2px 0 0",textTransform:"capitalize" }}>
+                                  <p style={{ fontSize:11,color:"#94a3b8",margin:"2px 0 0",textTransform:"capitalize" }}>
                                     {d.toLocaleDateString("es-CL",{ weekday:"short" })}
                                   </p>
                                 )}
@@ -3629,19 +3630,19 @@ export default function VehicleRequestPortalPage() {
             {activeTab === "cuenta" && (
               <div style={{ display:"flex",flexDirection:"column",gap:12 }}>
                 {/* Profile card */}
-                <div className="vr-card" style={{ display:"flex",flexDirection:"column",gap:"10px",borderLeft:"4px solid #21D0B3" }}>
+                <div className="vr-card" style={{ display:"flex",flexDirection:"column",gap:"10px",borderLeft:`4px solid ${BRAND.teal}` }}>
                   <div style={{ display:"flex",alignItems:"center",gap:"10px" }}>
                     {(athlete.metadata?.photoUrl as string)?.startsWith("http") ? (
-                      <img src={athlete.metadata!.photoUrl as string} alt={athlete.fullName || ""} style={{ width:48,height:48,borderRadius:"50%",objectFit:"cover",flexShrink:0,boxShadow:"0 3px 12px rgba(33,208,179,0.3)",border:"2px solid #21D0B3" }} />
+                      <img src={athlete.metadata!.photoUrl as string} alt={athlete.fullName || ""} style={{ width:48,height:48,borderRadius:"50%",objectFit:"cover",flexShrink:0,boxShadow:"0 3px 12px rgba(33,208,179,0.3)",border:`2px solid ${BRAND.teal}` }} />
                     ) : (
-                      <div style={{ width:48,height:48,borderRadius:"50%",background:"linear-gradient(135deg,#21D0B3,#062240)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"16px",fontWeight:900,color:"#fff",boxShadow:"0 3px 12px rgba(33,208,179,0.3)",flexShrink:0 }}>
+                      <div style={{ width:48,height:48,borderRadius:"50%",background:`linear-gradient(135deg,${BRAND.teal},${BRAND.navyLight})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"16px",fontWeight:900,color:"#fff",boxShadow:"0 3px 12px rgba(33,208,179,0.3)",flexShrink:0 }}>
                         {(athlete.fullName || "?").split(" ").slice(0,2).map(w=>w[0]||"").join("").toUpperCase()}
                       </div>
                     )}
                     <div style={{ minWidth:0,flex:1 }}>
                       <h2 style={{ fontSize:"17px",fontWeight:800,color:"#0f172a",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{athlete.fullName || athlete.id}</h2>
                       <div style={{ display:"flex",flexWrap:"wrap",gap:"4px",marginTop:4 }}>
-                        <span style={{ fontSize:"10px",fontWeight:600,padding:"2px 8px",borderRadius:"10px",background:"linear-gradient(135deg,rgba(33,208,179,0.12),rgba(33,208,179,0.06))",color:"#0a7a6b",border:"1px solid rgba(33,208,179,0.3)" }}>
+                        <span style={{ fontSize:"10px",fontWeight:600,padding:"2px 8px",borderRadius:"10px",background:"linear-gradient(135deg,rgba(33,208,179,0.12),rgba(33,208,179,0.06))",color:BRAND.tealInk,border:"1px solid rgba(33,208,179,0.3)" }}>
                           {events[athlete.eventId || ""]?.name || "-"}
                         </span>
                         <span style={{ fontSize:"10px",fontWeight:600,padding:"2px 8px",borderRadius:"10px",background:"#f1f5f9",color:"#334155",border:"1px solid #dde3ed" }}>
@@ -3671,7 +3672,7 @@ export default function VehicleRequestPortalPage() {
                   <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"6px",marginTop:4 }}>
                     {([
                       { label:"Solicit.", value:requestStats.requested, color:"#0f172a" },
-                      { label:"Program.", value:requestStats.scheduled, color:"#21D0B3" },
+                      { label:"Program.", value:requestStats.scheduled, color:BRAND.teal },
                       { label:"Activas", value:requestStats.active, color:"#f59e0b" },
                       { label:"Cerradas", value:requestStats.completed, color:"#10b981" },
                     ] as const).map(s => (
@@ -3803,14 +3804,14 @@ export default function VehicleRequestPortalPage() {
           <div style={{ position:"fixed",bottom:0,left:0,right:0,display:"flex",background:"#fff",borderTop:"1px solid #e2e8f0",zIndex:100,paddingTop:6,paddingBottom:6,boxShadow:"0 -2px 12px rgba(0,0,0,0.06)" }}>
             {vipPrimary.map(tab => (
               <button key={tab.key} onClick={() => setActiveTab(tab.key)} style={{ flex:1,padding:"6px 0 4px",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:1 }}>
-                {tab.icon(activeTab===tab.key ? "#21D0B3" : "#94a3b8")}
-                <span style={{ fontSize:9,fontWeight:activeTab===tab.key?700:500,color:activeTab===tab.key?"#21D0B3":"#94a3b8" }}>{t(tab.label)}</span>
+                {tab.icon(activeTab===tab.key ? BRAND.teal : "#94a3b8")}
+                <span style={{ fontSize:9,fontWeight:activeTab===tab.key?700:500,color:activeTab===tab.key?BRAND.teal:"#94a3b8" }}>{t(tab.label)}</span>
               </button>
             ))}
             {vipOverflow.length > 0 && (() => {
               const activeOverflow = vipOverflow.find(tp => tp.key === activeTab);
               const on = !!activeOverflow || moreOpen;
-              const col = on ? "#21D0B3" : "#94a3b8";
+              const col = on ? BRAND.teal : "#94a3b8";
               return (
                 <button type="button" onClick={() => setMoreOpen(true)} style={{ flex:1,padding:"6px 0 4px",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:1 }}>
                   {activeOverflow ? activeOverflow.icon(col) : (
@@ -3839,9 +3840,9 @@ export default function VehicleRequestPortalPage() {
                           background: on ? "rgba(33,208,179,0.1)" : "#f8fafc",
                           border:`1px solid ${on ? "rgba(33,208,179,0.4)" : "#eef2f7"}` }}>
                         <span style={{ width:44,height:44,borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",
-                          background: on ? "linear-gradient(135deg,#34F3C6,#21D0B3)" : "#fff",
+                          background: on ? `linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})` : "#fff",
                           border:`1px solid ${on ? "transparent" : "#e2e8f0"}` }}>{tab.icon(on ? "#fff" : "#64748b")}</span>
-                        <span style={{ fontSize:12,fontWeight: on ? 700 : 600,color: on ? "#0a7a6b" : "#334155" }}>{t(tab.label)}</span>
+                        <span style={{ fontSize:12,fontWeight: on ? 700 : 600,color: on ? BRAND.tealInk : "#334155" }}>{t(tab.label)}</span>
                       </button>
                     );
                   })}
@@ -3918,7 +3919,7 @@ export default function VehicleRequestPortalPage() {
               />
 
               <button type="button" onClick={() => submitRating(rTrip.id)} disabled={ratingStars === 0 || ratingLoading}
-                style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:ratingStars > 0 ? "linear-gradient(135deg,#34F3C6,#21D0B3)" : "#e2e8f0",color:ratingStars > 0 ? "#0d1b3e" : "#94a3b8",fontSize:15,fontWeight:700,cursor:ratingStars > 0 ? "pointer" : "not-allowed",opacity:ratingLoading ? 0.7 : 1 }}>
+                style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:ratingStars > 0 ? `linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})` : "#e2e8f0",color:ratingStars > 0 ? "#0d1b3e" : "#94a3b8",fontSize:15,fontWeight:700,cursor:ratingStars > 0 ? "pointer" : "not-allowed",opacity:ratingLoading ? 0.7 : 1 }}>
                 {ratingLoading ? t("Enviando...") : t("Enviar evaluacion")}
               </button>
               <button type="button" onClick={dismissRating}
@@ -3950,9 +3951,9 @@ export default function VehicleRequestPortalPage() {
           style={{ position:"fixed",inset:0,zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:16,background:"rgba(2,12,24,0.78)",backdropFilter:"blur(6px)" }}>
           <div onClick={(e) => e.stopPropagation()}
             style={{ background:"#fff",borderRadius:20,width:"100%",maxWidth:480,maxHeight:"95vh",display:"flex",flexDirection:"column",overflow:"hidden",boxShadow:"0 24px 80px rgba(0,0,0,0.5)" }}>
-            <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",borderBottom:"1px solid #e2e8f0",background:"linear-gradient(135deg,#041a2e,#062240)",color:"#fff" }}>
+            <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",borderBottom:"1px solid #e2e8f0",background:`linear-gradient(135deg,${BRAND.navy},${BRAND.navyLight})`,color:"#fff" }}>
               <div>
-                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>{t("Credencial digital")}</p>
+                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:BRAND.teal,margin:0 }}>{t("Credencial digital")}</p>
                 <p style={{ fontSize:14,fontWeight:700,margin:"2px 0 0" }}>{athlete?.fullName || t("Participante")}</p>
               </div>
               <div style={{ display:"flex",gap:8 }}>
@@ -3967,7 +3968,7 @@ export default function VehicleRequestPortalPage() {
                   } catch { notify.push(t("No se pudo generar el PDF"), "❌"); }
                 }}
                   title={t("Descargar PDF")}
-                  style={{ width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",color:"#21D0B3",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
+                  style={{ width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",color:BRAND.teal,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 </button>
                 <button type="button" onClick={() => setCredentialHtml(null)}

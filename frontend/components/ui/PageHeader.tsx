@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
+import { BRAND } from "@/lib/design";
 
 type PageHeaderProps = {
   title: string;
@@ -18,7 +19,7 @@ export default function PageHeader({
   title,
   description,
   icon,
-  iconBg = "linear-gradient(135deg, #21D0B3 0%, #1eb19a 100%)",
+  iconBg = `linear-gradient(135deg, ${BRAND.teal} 0%, #1eb19a 100%)`,
   iconColor = "#fff",
   action,
   meta,

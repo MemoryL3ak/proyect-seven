@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { BRAND } from "@/lib/design";
 
 type LatLng = { lat: number; lng: number };
 
@@ -40,14 +41,14 @@ function createUserIconUrl() {
 function createCarIconUrl() {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 56 56">
     <defs><filter id="s" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/></filter></defs>
-    <circle cx="28" cy="28" r="26" fill="#062240" stroke="#21D0B3" stroke-width="3" filter="url(#s)"/>
+    <circle cx="28" cy="28" r="26" fill="${BRAND.navyLight}" stroke="${BRAND.teal}" stroke-width="3" filter="url(#s)"/>
     <g transform="translate(14,16)">
-      <rect x="2" y="8" width="24" height="11" rx="3" fill="#21D0B3"/>
-      <path d="M5 8 L8 2 L20 2 L23 8" fill="#34F3C6" stroke="#062240" stroke-width="0.5"/>
-      <rect x="9" y="3" width="2" height="5" rx="0.5" fill="#062240" opacity="0.3"/>
-      <rect x="17" y="3" width="2" height="5" rx="0.5" fill="#062240" opacity="0.3"/>
-      <circle cx="7" cy="19" r="2.5" fill="#062240" stroke="#fff" stroke-width="1.5"/>
-      <circle cx="21" cy="19" r="2.5" fill="#062240" stroke="#fff" stroke-width="1.5"/>
+      <rect x="2" y="8" width="24" height="11" rx="3" fill="${BRAND.teal}"/>
+      <path d="M5 8 L8 2 L20 2 L23 8" fill="${BRAND.tealLight}" stroke="${BRAND.navyLight}" stroke-width="0.5"/>
+      <rect x="9" y="3" width="2" height="5" rx="0.5" fill="${BRAND.navyLight}" opacity="0.3"/>
+      <rect x="17" y="3" width="2" height="5" rx="0.5" fill="${BRAND.navyLight}" opacity="0.3"/>
+      <circle cx="7" cy="19" r="2.5" fill="${BRAND.navyLight}" stroke="#fff" stroke-width="1.5"/>
+      <circle cx="21" cy="19" r="2.5" fill="${BRAND.navyLight}" stroke="#fff" stroke-width="1.5"/>
       <rect x="0" y="11" width="4" height="2" rx="1" fill="#FFD700"/>
       <rect x="24" y="11" width="4" height="2" rx="1" fill="#FF4444"/>
     </g>
@@ -146,7 +147,7 @@ function MapCanvas({
         const directionsService = new google.maps.DirectionsService();
         const renderer = new google.maps.DirectionsRenderer({
           suppressMarkers: false,
-          polylineOptions: { strokeColor: "#21D0B3", strokeWeight: 4 },
+          polylineOptions: { strokeColor: BRAND.teal, strokeWeight: 4 },
         });
         renderer.setMap(map);
         directionsRendererRef.current = renderer;
@@ -387,14 +388,14 @@ export default function TripMap(props: TripMapProps) {
           <div style={{
             padding: "10px 14px",
             paddingTop: "calc(10px + env(safe-area-inset-top, 0px))",
-            background: "linear-gradient(135deg, #30455B, #243550)",
+            background: `linear-gradient(135deg, ${BRAND.charcoal}, #243550)`,
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
             flexShrink: 0,
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                 <circle cx="12" cy="10" r="3" />
               </svg>
@@ -442,7 +443,7 @@ export default function TripMap(props: TripMapProps) {
             flexShrink: 0,
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#21D0B3", border: "2px solid #062240" }} />
+              <span style={{ width: 10, height: 10, borderRadius: "50%", background: BRAND.teal, border: `2px solid ${BRAND.navyLight}` }} />
               <span style={{ fontSize: 11, color: "#94a3b8" }}>Conductor</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>

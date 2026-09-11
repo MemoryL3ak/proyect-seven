@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
+import { BRAND } from "@/lib/design";
 
 type EmptyStateProps = {
   icon?: ReactNode;
@@ -15,9 +16,9 @@ const VARIANT_STYLES: Record<
   { coreBg: string; haloColor: string; particleColor: string; ringColor: string; shadow: string }
 > = {
   default: {
-    coreBg: "linear-gradient(135deg, #21D0B3 0%, #1eb19a 50%, #15B09A 100%)",
+    coreBg: `linear-gradient(135deg, ${BRAND.teal} 0%, #1eb19a 50%, #15B09A 100%)`,
     haloColor: "rgba(33,208,179,0.25)",
-    particleColor: "linear-gradient(135deg, #34F3C6, #21D0B3)",
+    particleColor: `linear-gradient(135deg, ${BRAND.tealLight}, ${BRAND.teal})`,
     ringColor: "rgba(33,208,179,0.3)",
     shadow: "0 20px 60px rgba(33,208,179,0.45)",
   },

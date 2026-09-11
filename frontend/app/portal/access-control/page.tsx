@@ -6,6 +6,7 @@ import { useI18n } from "@/lib/i18n";
 import { claimPortalSession, ensurePortalIdentity, portalLogin, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
 import DeleteAccountSection from "@/components/DeleteAccountSection";
 import { deletePortalAccount } from "@/lib/account-deletion";
+import { BRAND } from "@/lib/design";
 
 type ScanLocation = "ESTADIO" | "HOTEL" | "GIMNASIO" | "CASINO";
 
@@ -407,7 +408,7 @@ export default function AccessControlPortalPage() {
 
         {/* Left branding panel */}
         <div className="flex flex-col justify-between p-8 lg:p-14 lg:w-[46%] lg:flex-shrink-0"
-          style={{ background: "linear-gradient(160deg,#020c18 0%,#041a2e 40%,#062240 70%,#030f1e 100%)", position: "relative", overflow: "hidden", minHeight: "180px" }}>
+          style={{ background: `linear-gradient(160deg,#020c18 0%,${BRAND.navy} 40%,${BRAND.navyLight} 70%,#030f1e 100%)`, position: "relative", overflow: "hidden", minHeight: "180px" }}>
           <div style={{ position: "absolute", inset: 0, pointerEvents: "none", backgroundImage: `linear-gradient(rgba(33,208,179,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(33,208,179,0.03) 1px,transparent 1px)`, backgroundSize: "60px 60px" }} />
           <div style={{ position: "absolute", top: "-60px", left: "-60px", width: "400px", height: "400px", borderRadius: "50%", background: "radial-gradient(ellipse,rgba(6,34,64,0.6) 0%,transparent 70%)", animation: "pc-f1 12s ease-in-out infinite", pointerEvents: "none" }} />
           <div style={{ position: "absolute", bottom: "60px", right: "-40px", width: "320px", height: "320px", borderRadius: "50%", background: "radial-gradient(ellipse,rgba(33,208,179,0.1) 0%,transparent 70%)", animation: "pc-f2 16s ease-in-out infinite", pointerEvents: "none" }} />
@@ -419,12 +420,12 @@ export default function AccessControlPortalPage() {
           </div>
           <div style={{ position: "relative", zIndex: 1, flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: "16px", padding: "24px 0" }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", width: "fit-content" }}>
-              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#21D0B3", boxShadow: "0 0 10px #21D0B3", display: "inline-block", animation: "pc-pulse 2s ease-in-out infinite" }} />
-              <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#21D0B3" }}>{t("Portal de Control de Acceso")}</span>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: BRAND.teal, boxShadow: `0 0 10px ${BRAND.teal}`, display: "inline-block", animation: "pc-pulse 2s ease-in-out infinite" }} />
+              <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: BRAND.teal }}>{t("Portal de Control de Acceso")}</span>
             </div>
             <h1 style={{ fontSize: "clamp(28px,3vw,44px)", fontWeight: 800, lineHeight: 1.1, color: "#f8fafc", letterSpacing: "-0.02em", margin: 0 }}>
               {t("Valida")}<br />
-              <span style={{ background: "linear-gradient(90deg,#21D0B3 0%,#34F3C6 40%,#21D0B3 80%)", backgroundSize: "200% auto", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", animation: "pc-shimmer 4s linear infinite" }}>{t("credenciales QR")}</span>
+              <span style={{ background: `linear-gradient(90deg,${BRAND.teal} 0%,${BRAND.tealLight} 40%,${BRAND.teal} 80%)`, backgroundSize: "200% auto", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", animation: "pc-shimmer 4s linear infinite" }}>{t("credenciales QR")}</span>
             </h1>
             <p className="hidden sm:block" style={{ fontSize: "14px", color: "rgba(255,255,255,0.45)", maxWidth: "340px", lineHeight: 1.7, margin: 0 }}>
               {t("Escanea los códigos de los participantes en cada punto de control y registra el acceso en tiempo real.")}
@@ -445,7 +446,7 @@ export default function AccessControlPortalPage() {
           <div className="hidden lg:flex" style={{ position: "relative", zIndex: 1, borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: "20px" }}>
             {[["Acceso seguro", "SSL / HTTPS"], ["Registro en vivo", "Tiempo real"], ["Multi-evento", "Global"]].map(([title, sub], i, arr) => (
               <div key={title} style={{ flex: 1, paddingRight: i < arr.length - 1 ? "20px" : "0", borderRight: i < arr.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none", paddingLeft: i > 0 ? "20px" : "0" }}>
-                <p style={{ fontSize: "14px", fontWeight: 800, color: "#21D0B3", margin: 0, lineHeight: 1 }}>{t(title)}</p>
+                <p style={{ fontSize: "14px", fontWeight: 800, color: BRAND.teal, margin: 0, lineHeight: 1 }}>{t(title)}</p>
                 <p style={{ fontSize: "10px", color: "rgba(255,255,255,0.32)", margin: "3px 0 0", letterSpacing: "0.05em", textTransform: "uppercase" }}>{t(sub)}</p>
               </div>
             ))}
@@ -454,7 +455,7 @@ export default function AccessControlPortalPage() {
 
         {/* Right form panel */}
         <div className="flex-1 flex items-center justify-center p-5 sm:p-8 lg:p-16"
-          style={{ background: "linear-gradient(160deg,#030f1e 0%,#041a2e 50%,#020c18 100%)", position: "relative", overflow: "hidden" }}>
+          style={{ background: `linear-gradient(160deg,#030f1e 0%,${BRAND.navy} 50%,#020c18 100%)`, position: "relative", overflow: "hidden" }}>
           <div style={{ position: "absolute", top: "30%", left: "50%", transform: "translate(-50%,-50%)", width: "500px", height: "500px", borderRadius: "50%", background: "radial-gradient(ellipse,rgba(6,34,64,0.4) 0%,transparent 70%)", pointerEvents: "none" }} />
           <div style={{ position: "absolute", bottom: "-50px", right: "-50px", width: "280px", height: "280px", borderRadius: "50%", background: "radial-gradient(ellipse,rgba(33,208,179,0.08) 0%,transparent 70%)", pointerEvents: "none" }} />
           <div className="pc-form relative z-10 w-full" style={{ maxWidth: "420px" }}>
@@ -478,7 +479,7 @@ export default function AccessControlPortalPage() {
                 type="button"
                 onClick={attemptAuth}
                 disabled={authLoading || !codeInput.trim()}
-                style={{ width: "100%", padding: "17px", borderRadius: "14px", border: "none", background: "linear-gradient(135deg,#34F3C6 0%,#21D0B3 50%,#15B09A 100%)", color: "#0d1b3e", fontSize: "16px", fontWeight: 700, cursor: authLoading ? "not-allowed" : "pointer", opacity: authLoading ? 0.7 : 1, letterSpacing: "0.03em", boxShadow: "0 4px 20px rgba(33,208,179,0.35)" }}
+                style={{ width: "100%", padding: "17px", borderRadius: "14px", border: "none", background: `linear-gradient(135deg,${BRAND.tealLight} 0%,${BRAND.teal} 50%,#15B09A 100%)`, color: "#0d1b3e", fontSize: "16px", fontWeight: 700, cursor: authLoading ? "not-allowed" : "pointer", opacity: authLoading ? 0.7 : 1, letterSpacing: "0.03em", boxShadow: "0 4px 20px rgba(33,208,179,0.35)" }}
               >
                 {authLoading ? t("Validando...") : t("Ingresar al scanner")}
               </button>
@@ -557,8 +558,8 @@ export default function AccessControlPortalPage() {
         }}>
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "20px" }}>
             <div>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.25)", borderRadius: "99px", padding: "3px 12px", fontSize: "10px", fontWeight: 700, letterSpacing: "0.25em", textTransform: "uppercase", color: "#21D0B3" }}>
-                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#21D0B3", display: "inline-block" }} />
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.25)", borderRadius: "99px", padding: "3px 12px", fontSize: "10px", fontWeight: 700, letterSpacing: "0.25em", textTransform: "uppercase", color: BRAND.teal }}>
+                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: BRAND.teal, display: "inline-block" }} />
                 {t("Control de acceso")}
               </span>
               <h1 style={{ marginTop: "10px", fontSize: "clamp(1.4rem, 2.5vw, 2rem)", fontWeight: 800, lineHeight: 1.1, color: "#0f172a" }}>
@@ -644,7 +645,7 @@ export default function AccessControlPortalPage() {
                   disabled={!scannerReady || scanning}
                   onClick={() => void startScanner()}
                   style={{
-                    background: scanning ? loc.bg : `linear-gradient(135deg, #21D0B3, #14AE98)`,
+                    background: scanning ? loc.bg : `linear-gradient(135deg, ${BRAND.teal}, #14AE98)`,
                     border: scanning ? `1px solid ${loc.border}` : "none",
                     borderRadius: "10px", padding: "8px 18px",
                     fontSize: "13px", fontWeight: 700,
@@ -739,8 +740,8 @@ export default function AccessControlPortalPage() {
             {/* Success flash */}
             {flashOk && (
               <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
-                <div style={{ background: "rgba(33,208,179,0.12)", border: "2px solid #21D0B3", borderRadius: "50%", width: "160px", height: "160px", display: "flex", alignItems: "center", justifyContent: "center", animation: "successFlash 1.8s ease forwards", boxShadow: "0 0 60px rgba(33,208,179,0.4)" }}>
-                  <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <div style={{ background: "rgba(33,208,179,0.12)", border: `2px solid ${BRAND.teal}`, borderRadius: "50%", width: "160px", height: "160px", display: "flex", alignItems: "center", justifyContent: "center", animation: "successFlash 1.8s ease forwards", boxShadow: "0 0 60px rgba(33,208,179,0.4)" }}>
+                  <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M20 6L9 17l-5-5" />
                   </svg>
                 </div>
@@ -813,7 +814,7 @@ export default function AccessControlPortalPage() {
                           flexShrink: 0,
                         }}>
                           {currentScan.authorized ? (
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                               <path d="M20 6L9 17l-5-5" />
                             </svg>
                           ) : (
@@ -876,7 +877,7 @@ export default function AccessControlPortalPage() {
                   <p style={{ marginTop: "3px", fontSize: "16px", fontWeight: 700, color: "#0f172a" }}>{t("Últimas validaciones")}</p>
                 </div>
                 {history.length > 0 && (
-                  <span style={{ background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.25)", borderRadius: "99px", padding: "3px 10px", fontSize: "12px", fontWeight: 700, color: "#21D0B3" }}>
+                  <span style={{ background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.25)", borderRadius: "99px", padding: "3px 10px", fontSize: "12px", fontWeight: 700, color: BRAND.teal }}>
                     {history.length}
                   </span>
                 )}
@@ -905,7 +906,7 @@ export default function AccessControlPortalPage() {
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <p style={{ fontWeight: 700, fontSize: "13px", color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.fullName}</p>
                           <p style={{ marginTop: "2px", fontSize: "11px", color: "#64748b" }}>{item.delegation} · {item.discipline}</p>
-                          <p style={{ marginTop: "1px", fontSize: "10px", color: "#94a3b8", fontVariantNumeric: "tabular-nums" }}>{item.scannedAt}</p>
+                          <p style={{ marginTop: "1px", fontSize: "11px", color: "#94a3b8", fontVariantNumeric: "tabular-nums" }}>{item.scannedAt}</p>
                         </div>
                         <span style={{
                           background: okBg,

@@ -7,6 +7,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { loadGoogleMaps, type LatLng } from "@/lib/google-maps";
+import { BRAND } from "@/lib/design";
 
 type Props = {
   points: LatLng[];
@@ -53,7 +54,7 @@ export default function TripRouteMap({ points, height = 460 }: Props) {
 
       const line = new google.maps.Polyline({
         path: points,
-        strokeColor: "#21D0B3",
+        strokeColor: BRAND.teal,
         strokeOpacity: 0.95,
         strokeWeight: 5,
         map,
@@ -74,7 +75,7 @@ export default function TripRouteMap({ points, height = 460 }: Props) {
         });
       overlaysRef.current = [
         line,
-        marker(points[0], "A", "#21D0B3"),
+        marker(points[0], "A", BRAND.teal),
         marker(points[points.length - 1], "B", "#ef4444"),
       ];
 

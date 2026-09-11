@@ -1,5 +1,7 @@
 "use client";
 
+import { BRAND } from "@/lib/design";
+
 type Option = {
   value: string;
   label: string;
@@ -32,7 +34,7 @@ export default function FilterChips({
             className="text-xs font-medium px-3 py-1.5 rounded-full transition-all"
             style={{
               background: active
-                ? "linear-gradient(135deg, #21D0B3 0%, #1eb19a 100%)"
+                ? `linear-gradient(135deg, ${BRAND.teal} 0%, #1eb19a 100%)`
                 : "#eef1f6",
               color: active ? "#fff" : "#475569",
               boxShadow: active ? "0 1px 4px rgba(33, 208, 179, 0.30)" : "none",

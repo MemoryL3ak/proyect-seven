@@ -32,6 +32,7 @@ import SofiaWidget from "@/components/SofiaWidget";
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
 import QrFullscreenOverlay from "@/components/QrFullscreenOverlay";
 import QRCode from "qrcode";
+import { BRAND, tripStatusMeta } from "@/lib/design";
 
 type Athlete = {
   id: string;
@@ -297,6 +298,10 @@ export default function UserPortalPage() {
   const [healthRecord, setHealthRecord] = useState<Record<string, any> | null>(null);
   const [delegationMembers, setDelegationMembers] = useState<Athlete[]>([]);
   const [delegationTrips, setDelegationTrips] = useState<Trip[]>([]);
+  // Tarjeta de viaje expandida en Actividades; los conductores se cargan una
+  // sola vez al expandir la primera (el listado general no los trae).
+  const [expandedDelTrip, setExpandedDelTrip] = useState<string | null>(null);
+  const [portalDrivers, setPortalDrivers] = useState<Driver[] | null>(null);
   const [venues, setVenues] = useState<Venue[]>([]);
   const [allAccommodations, setAllAccommodations] = useState<Accommodation[]>([]);
   const [foodLocations, setFoodLocations] = useState<FoodLocation[]>([]);
@@ -360,7 +365,7 @@ export default function UserPortalPage() {
   useEffect(() => {
     if (!athlete) { setMealQrDataUrl(""); return; }
     const qrData = `Participante: ${athlete.fullName}\nID: ${athlete.id.slice(-6)}\nDelegación: ${delegation?.countryCode || "—"}`;
-    QRCode.toDataURL(qrData, { width: 220, margin: 1, color: { dark: "#062240", light: "#ffffff" } })
+    QRCode.toDataURL(qrData, { width: 220, margin: 1, color: { dark: BRAND.navyLight, light: "#ffffff" } })
       .then(setMealQrDataUrl)
       .catch(() => setMealQrDataUrl(""));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1207,7 +1212,7 @@ export default function UserPortalPage() {
 
       {/* Left branding */}
       <div className="flex flex-col justify-between p-8 lg:p-14 lg:w-[46%] lg:flex-shrink-0"
-        style={{ background: "linear-gradient(160deg,#020c18 0%,#041a2e 40%,#062240 70%,#030f1e 100%)", position: "relative", overflow: "hidden", minHeight: "180px" }}>
+        style={{ background: `linear-gradient(160deg,#020c18 0%,${BRAND.navy} 40%,${BRAND.navyLight} 70%,#030f1e 100%)`, position: "relative", overflow: "hidden", minHeight: "180px" }}>
         <div style={{ position:"absolute",inset:0,pointerEvents:"none",backgroundImage:`linear-gradient(rgba(33,208,179,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(33,208,179,0.03) 1px,transparent 1px)`,backgroundSize:"60px 60px" }} />
         <div style={{ position:"absolute",top:"-60px",left:"-60px",width:"400px",height:"400px",borderRadius:"50%",background:"radial-gradient(ellipse,rgba(6,34,64,0.6) 0%,transparent 70%)",animation:"pu-f1 12s ease-in-out infinite",pointerEvents:"none" }} />
         <div style={{ position:"absolute",bottom:"60px",right:"-40px",width:"320px",height:"320px",borderRadius:"50%",background:"radial-gradient(ellipse,rgba(33,208,179,0.1) 0%,transparent 70%)",animation:"pu-f2 16s ease-in-out infinite",pointerEvents:"none" }} />
@@ -1219,12 +1224,12 @@ export default function UserPortalPage() {
         </div>
         <div style={{ position:"relative",zIndex:1,flex:1,display:"flex",flexDirection:"column",justifyContent:"center",gap:"16px",padding:"24px 0" }}>
           <div style={{ display:"inline-flex",alignItems:"center",gap:"8px",width:"fit-content" }}>
-            <span style={{ width:7,height:7,borderRadius:"50%",background:"#21D0B3",boxShadow:"0 0 10px #21D0B3",display:"inline-block",animation:"pu-pulse 2s ease-in-out infinite" }} />
-            <span style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:"#21D0B3" }}>Portal de Participantes</span>
+            <span style={{ width:7,height:7,borderRadius:"50%",background:BRAND.teal,boxShadow:`0 0 10px ${BRAND.teal}`,display:"inline-block",animation:"pu-pulse 2s ease-in-out infinite" }} />
+            <span style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:BRAND.teal }}>Portal de Participantes</span>
           </div>
           <h1 style={{ fontSize:"clamp(28px,3vw,44px)",fontWeight:800,lineHeight:1.1,color:"#f8fafc",letterSpacing:"-0.02em",margin:0 }}>
             Tu itinerario<br />
-            <span style={{ background:"linear-gradient(90deg,#21D0B3 0%,#34F3C6 40%,#21D0B3 80%)",backgroundSize:"200% auto",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",animation:"pu-shimmer 4s linear infinite" }}>en tiempo real</span>
+            <span style={{ background:`linear-gradient(90deg,${BRAND.teal} 0%,${BRAND.tealLight} 40%,${BRAND.teal} 80%)`,backgroundSize:"200% auto",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",animation:"pu-shimmer 4s linear infinite" }}>en tiempo real</span>
           </h1>
           <p className="hidden sm:block" style={{ fontSize:"14px",color:"rgba(255,255,255,0.45)",maxWidth:"340px",lineHeight:1.7,margin:0 }}>
             Accede a tu vuelo, hotel y transporte asignado. Confirma cada etapa de tu llegada al evento.
@@ -1245,7 +1250,7 @@ export default function UserPortalPage() {
         <div className="hidden lg:flex" style={{ position:"relative",zIndex:1,borderTop:"1px solid rgba(255,255,255,0.07)",paddingTop:"20px" }}>
           {[["Acceso seguro","SSL / HTTPS"],["Datos live","Tiempo real"],["Multi-evento","Global"]].map(([title,sub],i,arr) => (
             <div key={title} style={{ flex:1,paddingRight:i<arr.length-1?"20px":"0",borderRight:i<arr.length-1?"1px solid rgba(255,255,255,0.06)":"none",paddingLeft:i>0?"20px":"0" }}>
-              <p style={{ fontSize:"14px",fontWeight:800,color:"#21D0B3",margin:0,lineHeight:1 }}>{title}</p>
+              <p style={{ fontSize:"14px",fontWeight:800,color:BRAND.teal,margin:0,lineHeight:1 }}>{title}</p>
               <p style={{ fontSize:"10px",color:"rgba(255,255,255,0.32)",margin:"3px 0 0",letterSpacing:"0.05em",textTransform:"uppercase" }}>{sub}</p>
             </div>
           ))}
@@ -1254,7 +1259,7 @@ export default function UserPortalPage() {
 
       {/* Right form */}
       <div className="flex-1 flex items-center justify-center p-5 sm:p-8 lg:p-16"
-        style={{ background:"linear-gradient(160deg,#030f1e 0%,#041a2e 50%,#020c18 100%)",position:"relative",overflow:"hidden" }}>
+        style={{ background:`linear-gradient(160deg,#030f1e 0%,${BRAND.navy} 50%,#020c18 100%)`,position:"relative",overflow:"hidden" }}>
         <div style={{ position:"absolute",top:"30%",left:"50%",transform:"translate(-50%,-50%)",width:"500px",height:"500px",borderRadius:"50%",background:"radial-gradient(ellipse,rgba(6,34,64,0.4) 0%,transparent 70%)",pointerEvents:"none" }} />
         <div style={{ position:"absolute",bottom:"-50px",right:"-50px",width:"280px",height:"280px",borderRadius:"50%",background:"radial-gradient(ellipse,rgba(33,208,179,0.08) 0%,transparent 70%)",pointerEvents:"none" }} />
         <div className="pu-form relative z-10 w-full" style={{ maxWidth:"420px" }}>
@@ -1271,7 +1276,7 @@ export default function UserPortalPage() {
                 style={{ width:"100%",padding:"16px",borderRadius:"14px",border:"1px solid rgba(33,208,179,0.2)",background:"rgba(255,255,255,0.05)",color:"rgba(255,255,255,0.9)",fontSize:"15px",outline:"none",fontWeight:500,boxSizing:"border-box",transition:"border-color .2s,box-shadow .2s" }} />
             </div>
             <button type="button" onClick={() => loadAthlete()} disabled={loading}
-              style={{ width:"100%",padding:"17px",borderRadius:"14px",border:"none",background:"linear-gradient(135deg,#34F3C6 0%,#21D0B3 50%,#15B09A 100%)",color:"#0d1b3e",fontSize:"16px",fontWeight:700,cursor:loading?"not-allowed":"pointer",opacity:loading?0.7:1,letterSpacing:"0.03em",boxShadow:"0 4px 20px rgba(33,208,179,0.35)",transition:"opacity .2s,transform .1s" }}>
+              style={{ width:"100%",padding:"17px",borderRadius:"14px",border:"none",background:`linear-gradient(135deg,${BRAND.tealLight} 0%,${BRAND.teal} 50%,#15B09A 100%)`,color:"#0d1b3e",fontSize:"16px",fontWeight:700,cursor:loading?"not-allowed":"pointer",opacity:loading?0.7:1,letterSpacing:"0.03em",boxShadow:"0 4px 20px rgba(33,208,179,0.35)",transition:"opacity .2s,transform .1s" }}>
               {loading ? t("Cargando...") : t("Ver mi información")}
             </button>
             {error && <p style={{ color:"#fca5a5",fontSize:"13px",textAlign:"center",margin:0 }}>{error}</p>}
@@ -1389,7 +1394,7 @@ export default function UserPortalPage() {
         .db-content{max-width:920px;margin:0 auto;padding:24px 16px 72px;position:relative;z-index:1;}
         .db-profile-card{background:#fff;border-radius:24px;border:1px solid rgba(226,232,240,0.8);padding:24px 28px;margin-bottom:20px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;animation:db-in .4s cubic-bezier(0.16,1,0.3,1) both;box-shadow:0 4px 24px rgba(0,0,0,0.06);position:relative;overflow:hidden;}
         .db-profile-body{display:flex;align-items:center;gap:20px;min-width:0;}
-        .db-avatar{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#21D0B3 0%,#062240 100%);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#fff;box-shadow:0 6px 24px rgba(33,208,179,0.4);letter-spacing:-0.02em;flex-shrink:0;}
+        .db-avatar{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,${BRAND.teal} 0%,${BRAND.navyLight} 100%);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#fff;box-shadow:0 6px 24px rgba(33,208,179,0.4);letter-spacing:-0.02em;flex-shrink:0;}
         .db-profile-name{font-size:clamp(18px,2.5vw,26px);font-weight:800;color:#0f172a;margin:0 0 10px;letter-spacing:-0.02em;line-height:1.15;word-break:break-word;}
         .db-cards-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:20px;}
         .db-actions-card{background:#fff;border-radius:24px;border:1px solid rgba(226,232,240,0.8);padding:24px 28px;margin-bottom:16px;box-shadow:0 4px 20px rgba(0,0,0,0.05);animation:db-in .5s cubic-bezier(0.16,1,0.3,1) both;animation-delay:.32s;position:relative;overflow:hidden;}
@@ -1430,11 +1435,11 @@ export default function UserPortalPage() {
       <div style={{ position:"fixed",bottom:"-80px",left:"-80px",width:"380px",height:"380px",borderRadius:"50%",background:"radial-gradient(ellipse,rgba(31,205,255,0.06) 0%,transparent 65%)",pointerEvents:"none",zIndex:0 }} />
 
       {/* ── Top banner ── */}
-      <div style={{ position:"relative",background:"linear-gradient(135deg,#041a2e 0%,#062240 45%,#0a3356 80%,#041a2e 100%)",overflow:"hidden",zIndex:1 }}>
+      <div style={{ position:"relative",background:`linear-gradient(135deg,${BRAND.navy} 0%,${BRAND.navyLight} 45%,#0a3356 80%,${BRAND.navy} 100%)`,overflow:"hidden",zIndex:1 }}>
         {/* Banner grid lines */}
         <div style={{ position:"absolute",inset:0,backgroundImage:`linear-gradient(rgba(33,208,179,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(33,208,179,0.04) 1px,transparent 1px)`,backgroundSize:"48px 48px",pointerEvents:"none" }} />
         {/* Banner glow accent */}
-        <div className="db-banner-glow" style={{ position:"absolute",bottom:"-1px",left:"0",right:"0",height:"2px",background:"linear-gradient(90deg,transparent,#21D0B3 30%,#34F3C6 50%,#21D0B3 70%,transparent)",pointerEvents:"none" }} />
+        <div className="db-banner-glow" style={{ position:"absolute",bottom:"-1px",left:"0",right:"0",height:"2px",background:`linear-gradient(90deg,transparent,${BRAND.teal} 30%,${BRAND.tealLight} 50%,${BRAND.teal} 70%,transparent)`,pointerEvents:"none" }} />
         <div className="db-banner-inner">
           <img src="/branding/LOGO-SEVEN-1.png" alt="Seven Arena" className="db-banner-logo" />
           <div style={{ display:"flex",alignItems:"center",gap:8 }}>
@@ -1447,14 +1452,14 @@ export default function UserPortalPage() {
             {!isTA && (
               <button type="button" onClick={() => setAssistOpen((p) => !p)} title="Asistencia"
                 style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:`1px solid ${assistOpen ? "rgba(52,243,198,0.7)" : "rgba(33,208,179,0.4)"}`,background: assistOpen ? "linear-gradient(135deg,rgba(52,243,198,0.28),rgba(33,208,179,0.18))" : "rgba(33,208,179,0.12)",cursor:"pointer",flexShrink:0,transition:"all .15s" }}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
                 </svg>
               </button>
             )}
             <button type="button" onClick={() => window.location.reload()} disabled={loading} title="Actualizar"
               style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",cursor:"pointer",flexShrink:0,opacity:loading?0.5:1 }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
               </svg>
             </button>
@@ -1473,7 +1478,7 @@ export default function UserPortalPage() {
         {/* ── Profile card (compact) ── */}
         <div className="db-profile-card" style={{ marginBottom:10 }}>
           {/* Left accent bar */}
-          <div style={{ position:"absolute",left:0,top:0,bottom:0,width:"4px",background:"linear-gradient(180deg,#21D0B3,#1FCDFF,#21D0B3)" }} />
+          <div style={{ position:"absolute",left:0,top:0,bottom:0,width:"4px",background:`linear-gradient(180deg,${BRAND.teal},${BRAND.blue},${BRAND.teal})` }} />
           {/* Subtle corner glow */}
           <div style={{ position:"absolute",top:0,right:0,width:"200px",height:"200px",borderRadius:"50%",background:"radial-gradient(ellipse,rgba(33,208,179,0.05) 0%,transparent 65%)",transform:"translate(60px,-60px)",pointerEvents:"none" }} />
           <div className="db-profile-body">
@@ -1483,14 +1488,14 @@ export default function UserPortalPage() {
               ) : (
                 <div className="db-avatar">{initials}</div>
               )}
-              <div style={{ position:"absolute",bottom:2,right:2,width:12,height:12,borderRadius:"50%",background:"#21D0B3",border:"2px solid #fff",boxShadow:"0 0 8px rgba(33,208,179,0.8)" }} />
+              <div style={{ position:"absolute",bottom:2,right:2,width:12,height:12,borderRadius:"50%",background:BRAND.teal,border:"2px solid #fff",boxShadow:"0 0 8px rgba(33,208,179,0.8)" }} />
             </div>
             <div style={{ minWidth:0 }}>
-              <p style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:"#21D0B3",margin:"0 0 5px" }}>Perfil</p>
+              <p style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:BRAND.teal,margin:"0 0 5px" }}>Perfil</p>
               <h1 className="db-profile-name">{athlete.fullName}</h1>
               <div style={{ display:"flex",flexWrap:"wrap",gap:"6px" }}>
                 {event?.name && (
-                  <span style={{ fontSize:"11px",fontWeight:700,padding:"4px 12px",borderRadius:"20px",background:"linear-gradient(135deg,rgba(33,208,179,0.12),rgba(33,208,179,0.06))",color:"#0a7a6b",border:"1px solid rgba(33,208,179,0.3)",animation:"db-badge .4s cubic-bezier(0.16,1,0.3,1) both",animationDelay:".2s",letterSpacing:"0.01em" }}>
+                  <span style={{ fontSize:"11px",fontWeight:700,padding:"4px 12px",borderRadius:"20px",background:"linear-gradient(135deg,rgba(33,208,179,0.12),rgba(33,208,179,0.06))",color:BRAND.tealInk,border:"1px solid rgba(33,208,179,0.3)",animation:"db-badge .4s cubic-bezier(0.16,1,0.3,1) both",animationDelay:".2s",letterSpacing:"0.01em" }}>
                     {event.name}
                   </span>
                 )}
@@ -1510,23 +1515,23 @@ export default function UserPortalPage() {
         {/* ═══ Banner de viaje en curso ═══ */}
         {trip && ["EN_ROUTE","PICKED_UP"].includes(trip.status ?? "") && (
           <div style={{ position:"relative",overflow:"hidden",borderRadius:16,padding:"14px 16px",
-            background:"linear-gradient(135deg,#062240 0%,#0a3356 55%,#062240 100%)",
+            background:`linear-gradient(135deg,${BRAND.navyLight} 0%,#0a3356 55%,${BRAND.navyLight} 100%)`,
             border:"1px solid rgba(33,208,179,0.35)",boxShadow:"0 6px 24px rgba(6,34,64,0.35)" }}>
-            <div style={{ position:"absolute",bottom:0,left:0,right:0,height:2,background:"linear-gradient(90deg,transparent,#21D0B3 40%,#34F3C6 50%,#21D0B3 60%,transparent)" }} />
+            <div style={{ position:"absolute",bottom:0,left:0,right:0,height:2,background:`linear-gradient(90deg,transparent,${BRAND.teal} 40%,${BRAND.tealLight} 50%,${BRAND.teal} 60%,transparent)` }} />
             <div style={{ display:"flex",alignItems:"center",gap:12 }}>
               <span style={{ position:"relative",flexShrink:0,width:40,height:40,borderRadius:12,background:"rgba(33,208,179,0.15)",display:"flex",alignItems:"center",justifyContent:"center" }}>
-                <span style={{ position:"absolute",top:6,right:6,width:8,height:8,borderRadius:"50%",background:"#34F3C6",boxShadow:"0 0 8px #34F3C6" }} />
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34F3C6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                <span style={{ position:"absolute",top:6,right:6,width:8,height:8,borderRadius:"50%",background:BRAND.tealLight,boxShadow:`0 0 8px ${BRAND.tealLight}` }} />
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={BRAND.tealLight} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
               </span>
               <div style={{ flex:1,minWidth:0 }}>
-                <p style={{ fontSize:9.5,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#34F3C6",margin:0 }}>
+                <p style={{ fontSize:9.5,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.tealLight,margin:0 }}>
                   {trip.status==="EN_ROUTE" ? "En ruta a recogerte" : `Rumbo a ${trip.destination || "tu destino"}`}
                 </p>
                 <p style={{ fontSize:14.5,fontWeight:800,color:"#fff",margin:"1px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
                   {trip.status==="EN_ROUTE" ? "Tu conductor está en camino" : "Viaje en curso"}
                 </p>
                 {driverEta && (
-                  <p style={{ fontSize:12,fontWeight:700,color:"#34F3C6",margin:"3px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                  <p style={{ fontSize:12,fontWeight:700,color:BRAND.tealLight,margin:"3px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
                     {trip.status==="EN_ROUTE" ? "Llega en" : "Llegas en"} ~{driverEta.duration} · {driverEta.distance}
                   </p>
                 )}
@@ -1537,7 +1542,7 @@ export default function UserPortalPage() {
                 )}
               </div>
               <button type="button" onClick={() => setShowTripModal(true)}
-                style={{ flexShrink:0,padding:"9px 16px",borderRadius:10,border:"none",cursor:"pointer",fontSize:12,fontWeight:700,background:"linear-gradient(135deg,#34F3C6,#21D0B3)",color:"#062240",whiteSpace:"nowrap" }}>
+                style={{ flexShrink:0,padding:"9px 16px",borderRadius:10,border:"none",cursor:"pointer",fontSize:12,fontWeight:700,background:`linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})`,color:BRAND.navyLight,whiteSpace:"nowrap" }}>
                 Ver viaje
               </button>
             </div>
@@ -1551,7 +1556,7 @@ export default function UserPortalPage() {
             <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
               <div style={{ padding:"12px 14px",borderBottom:"1px solid #f1f5f9",display:"flex",alignItems:"center",gap:10 }}>
                 <IcoPlane />
-                <span style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#21D0B3" }}>Vuelo</span>
+                <span style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.teal }}>Vuelo</span>
               </div>
               <div style={{ padding:"12px 14px" }}>
                 {flightLabel ? (
@@ -1567,21 +1572,21 @@ export default function UserPortalPage() {
             <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
               <div style={{ padding:"12px 14px",borderBottom:"1px solid #f1f5f9",display:"flex",alignItems:"center",gap:10 }}>
                 <IcoHotel />
-                <span style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#0fa894" }}>Hotel</span>
+                <span style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.tealDark }}>Hotel</span>
               </div>
               <div style={{ padding:"12px 14px" }}>
                 {hotel?.name ? (
                   <>
                     <p style={{ fontSize:15,fontWeight:700,color:"#0f172a",margin:"0 0 6px" }}>{hotel.name}</p>
                     <div style={{ display:"flex",flexWrap:"wrap",gap:4 }}>
-                      {hotelRoom_ && <span style={{ fontSize:10,padding:"3px 8px",borderRadius:6,background:"#f0fdf8",color:"#0a7a6b",border:"1px solid rgba(33,208,179,0.2)",fontWeight:600 }}>Hab. {hotelRoom_}</span>}
+                      {hotelRoom_ && <span style={{ fontSize:10,padding:"3px 8px",borderRadius:6,background:"#f0fdf8",color:BRAND.tealInk,border:"1px solid rgba(33,208,179,0.2)",fontWeight:600 }}>Hab. {hotelRoom_}</span>}
                       {hotelBed_ && <span style={{ fontSize:10,padding:"3px 8px",borderRadius:6,background:"#f1f5f9",color:"#475569",border:"1px solid #e2e8f0" }}>Cama {hotelBed_}</span>}
                     </div>
                     {/* Info de check-in / check-out */}
                     <div style={{ marginTop:10,display:"flex",flexDirection:"column",gap:4,borderTop:"1px solid #f1f5f9",paddingTop:8 }}>
                       <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between" }}>
                         <span style={{ fontSize:11,color:"#64748b" }}>Check-in</span>
-                        <span style={{ fontSize:11.5,fontWeight:700,color: hotelAssignment?.checkinAt ? "#0a7a6b" : "#94a3b8" }}>{hotelAssignment?.checkinAt ? fmt(hotelAssignment.checkinAt) : "Pendiente"}</span>
+                        <span style={{ fontSize:11.5,fontWeight:700,color: hotelAssignment?.checkinAt ? BRAND.tealInk : "#94a3b8" }}>{hotelAssignment?.checkinAt ? fmt(hotelAssignment.checkinAt) : "Pendiente"}</span>
                       </div>
                       <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between" }}>
                         <span style={{ fontSize:11,color:"#64748b" }}>Check-out</span>
@@ -1603,10 +1608,10 @@ export default function UserPortalPage() {
                   return (
                     <div key={label} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 10px",borderRadius:10,background:done?"rgba(33,208,179,0.04)":"#f8fafc",border:`1px solid ${done?"rgba(33,208,179,0.2)":"#f1f5f9"}` }}>
                       <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-                        <div style={{ width:8,height:8,borderRadius:"50%",background:done?"#21D0B3":"#cbd5e1" }} />
+                        <div style={{ width:8,height:8,borderRadius:"50%",background:done?BRAND.teal:"#cbd5e1" }} />
                         <span style={{ fontSize:12,color:done?"#0f172a":"#94a3b8",fontWeight:done?600:400 }}>{label}</span>
                       </div>
-                      {done ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg> : <span style={{ fontSize:9,color:"#cbd5e1" }}>Pendiente</span>}
+                      {done ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg> : <span style={{ fontSize:9,color:"#cbd5e1" }}>Pendiente</span>}
                     </div>
                   );
                 })}
@@ -1634,7 +1639,7 @@ export default function UserPortalPage() {
                 <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
                   <div style={{ padding:"12px 14px",borderBottom:"1px solid #f1f5f9",display:"flex",alignItems:"center",gap:10 }}>
                     <IcoPlane />
-                    <span style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#21D0B3" }}>Vuelos de la delegación</span>
+                    <span style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.teal }}>Vuelos de la delegación</span>
                   </div>
                   <div style={{ padding:"12px 14px",display:"flex",flexDirection:"column",gap:8 }}>
                     {flights.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>Sin vuelos asignados a la delegación</p>}
@@ -1645,7 +1650,7 @@ export default function UserPortalPage() {
                           {f.arrival ? `Arribo: ${fmt(f.arrival)}` : "Sin horario"}{f.origin ? ` · Origen: ${f.origin}` : ""}
                         </p>
                         <div style={{ display:"flex",flexWrap:"wrap",gap:4 }}>
-                          {f.names.map(n => <span key={n} style={{ fontSize:9,fontWeight:600,padding:"1px 6px",borderRadius:4,background:"rgba(33,208,179,0.1)",color:"#0a7a6b" }}>{n}</span>)}
+                          {f.names.map(n => <span key={n} style={{ fontSize:10,fontWeight:600,padding:"1px 6px",borderRadius:4,background:"rgba(33,208,179,0.1)",color:BRAND.tealInk }}>{n}</span>)}
                         </div>
                       </div>
                     ))}
@@ -1673,7 +1678,7 @@ export default function UserPortalPage() {
                 <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
                   <div style={{ padding:"12px 14px",borderBottom:"1px solid #f1f5f9",display:"flex",alignItems:"center",gap:10 }}>
                     <IcoHotel />
-                    <span style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#0fa894" }}>Hoteles de la delegación</span>
+                    <span style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.tealDark }}>Hoteles de la delegación</span>
                   </div>
                   <div style={{ padding:"12px 14px",display:"flex",flexDirection:"column",gap:8 }}>
                     {hotels.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>Sin hoteles asignados a la delegación</p>}
@@ -1682,7 +1687,7 @@ export default function UserPortalPage() {
                         <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:"0 0 6px" }}>{h.name} <span style={{ fontSize:11,fontWeight:600,color:"#64748b" }}>· {h.members.length} persona(s)</span></p>
                         <div style={{ display:"flex",flexWrap:"wrap",gap:4 }}>
                           {h.members.map(mm => (
-                            <span key={mm.name} style={{ fontSize:9,fontWeight:600,padding:"1px 6px",borderRadius:4,background:"#f0fdf8",color:"#0a7a6b",border:"1px solid rgba(33,208,179,0.2)" }}>
+                            <span key={mm.name} style={{ fontSize:10,fontWeight:600,padding:"1px 6px",borderRadius:4,background:"#f0fdf8",color:BRAND.tealInk,border:"1px solid rgba(33,208,179,0.2)" }}>
                               {mm.name}{mm.room ? ` · Hab. ${mm.room}` : ""}
                             </span>
                           ))}
@@ -1708,8 +1713,8 @@ export default function UserPortalPage() {
                 {(["curso","historial"] as const).map(sub => (
                   <button key={sub} type="button" onClick={() => setActSubTab(sub)}
                     style={{ flex:1,padding:"8px 0",borderRadius:10,border:"none",fontSize:12,fontWeight:700,cursor:"pointer",
-                      background:actSubTab===sub?"linear-gradient(135deg,#041a2e,#062240)":"#fff",
-                      color:actSubTab===sub?"#21D0B3":"#64748b",
+                      background:actSubTab===sub?`linear-gradient(135deg,${BRAND.navy},${BRAND.navyLight})`:"#fff",
+                      color:actSubTab===sub?BRAND.teal:"#64748b",
                       boxShadow:actSubTab===sub?"0 2px 8px rgba(33,208,179,0.2)":"0 1px 4px rgba(0,0,0,0.04)" }}>
                     {sub === "curso" ? "En curso" : "Historial"}
                   </button>
@@ -1721,9 +1726,9 @@ export default function UserPortalPage() {
                 <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",padding:"14px",cursor:"pointer" }} onClick={() => setShowTripModal(true)}>
                   <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:10 }}>
                     {trip.status && <span style={{ padding:"3px 10px",borderRadius:20,fontSize:11,fontWeight:700,
-                      background:trip.status==="EN_ROUTE"?"rgba(59,130,246,0.12)":trip.status==="PICKED_UP"?"rgba(139,92,246,0.12)":"rgba(33,208,179,0.12)",
-                      color:trip.status==="EN_ROUTE"?"#2563eb":trip.status==="PICKED_UP"?"#7c3aed":"#0f9e87" }}>
-                      {trip.status==="EN_ROUTE"?"En ruta":trip.status==="PICKED_UP"?"En curso":"Programado"}
+                      background:tripStatusMeta(trip.status).bg,
+                      color:tripStatusMeta(trip.status).color }}>
+                      {tripStatusMeta(trip.status).label}
                     </span>}
                   </div>
                   {/* Origen/destino en filas compactas con recorte: las
@@ -1741,7 +1746,7 @@ export default function UserPortalPage() {
                   {trip.scheduledAt && <p style={{ fontSize:12,color:"#64748b",margin:"0 0 6px" }}>Programado: {fmt(trip.scheduledAt)}</p>}
                   {driver?.fullName && <p style={{ fontSize:12,color:"#334155",margin:0 }}>Conductor: {driver.fullName}</p>}
                   {driverEta && trip.status === "EN_ROUTE" && <p style={{ fontSize:12,fontWeight:700,color:"#0ea5c8",margin:"4px 0 0" }}>~{driverEta.duration} · {driverEta.distance}</p>}
-                  <p style={{ fontSize:10,color:"#94a3b8",margin:"6px 0 0" }}>Toca para ver el detalle completo</p>
+                  <p style={{ fontSize:11,color:"#94a3b8",margin:"6px 0 0" }}>Toca para ver el detalle completo</p>
                 </div>
               ) : <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:20 }}>Sin viajes activos</p>
             )}
@@ -1788,38 +1793,119 @@ export default function UserPortalPage() {
                   (tr.discipline && discNames.has(tr.discipline.trim().toLowerCase())),
                 )
                 .sort((a, b) => new Date(b.scheduledAt || 0).getTime() - new Date(a.scheduledAt || 0).getTime());
-              const STATUS_CFG: Record<string, { label: string; bg: string; color: string }> = {
-                SCHEDULED: { label:"Programado", bg:"rgba(33,208,179,0.12)", color:"#0f9e87" },
-                EN_ROUTE: { label:"En ruta", bg:"rgba(59,130,246,0.12)", color:"#2563eb" },
-                PICKED_UP: { label:"En curso", bg:"rgba(139,92,246,0.12)", color:"#7c3aed" },
-                COMPLETED: { label:"Completado", bg:"#f1f5f9", color:"#64748b" },
-                DROPPED_OFF: { label:"Completado", bg:"#f1f5f9", color:"#64748b" },
-                CANCELLED: { label:"Cancelado", bg:"rgba(239,68,68,0.1)", color:"#dc2626" },
-                REQUESTED: { label:"Solicitado", bg:"#FEF3C7", color:"#92400E" },
-              };
               return (
                 <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
                   <div style={{ padding:"12px 14px",borderBottom:"1px solid #f1f5f9" }}>
-                    <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>Viajes de mi delegación</p>
+                    <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.teal,margin:0 }}>Viajes de mi delegación</p>
                     <p style={{ fontSize:11,color:"#94a3b8",margin:"3px 0 0" }}>Traslados de los miembros y disciplinas de tu delegación</p>
                   </div>
                   <div style={{ padding:"12px 14px",display:"flex",flexDirection:"column",gap:8 }}>
                     {relevant.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",margin:0,textAlign:"center",padding:8 }}>Sin viajes registrados para tu delegación</p>}
                     {relevant.slice(0, 30).map(tr => {
-                      const st = STATUS_CFG[(tr.status || "").toUpperCase()] || { label: tr.status || "—", bg:"#f1f5f9", color:"#64748b" };
+                      const st = tripStatusMeta(tr.status);
                       const passengers = (tr.athleteNames || []).filter(n => n);
+                      const open = expandedDelTrip === tr.id;
+                      const tripDriver = open && tr.driverId
+                        ? (portalDrivers || []).find(d => d.id === tr.driverId || d.userId === tr.driverId) ?? null
+                        : null;
+                      const toggle = () => {
+                        setExpandedDelTrip(prev => prev === tr.id ? null : tr.id);
+                        if (portalDrivers === null) {
+                          apiFetch<Driver[]>("/drivers")
+                            .then(d => setPortalDrivers(Array.isArray(d) ? d : []))
+                            .catch(() => setPortalDrivers([]));
+                        }
+                      };
                       return (
-                        <div key={tr.id} style={{ padding:"10px 12px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                        <div key={tr.id} onClick={toggle}
+                          style={{ padding:"10px 12px",borderRadius:10,background:open?"#fff":"#f8fafc",cursor:"pointer",
+                            border:`1px solid ${open?"rgba(33,208,179,0.35)":"#f1f5f9"}`,
+                            boxShadow:open?"0 2px 10px rgba(33,208,179,0.12)":"none",transition:"all 150ms ease" }}>
                           <div style={{ display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:4 }}>
-                            <span style={{ padding:"2px 8px",borderRadius:20,fontSize:10,fontWeight:700,background:st.bg,color:st.color }}>{st.label}</span>
-                            {tr.discipline && <span style={{ fontSize:9,fontWeight:600,padding:"1px 6px",borderRadius:4,background:"rgba(33,208,179,0.1)",color:"#0a7a6b" }}>{tr.discipline}</span>}
+                            <span style={{ padding:"2px 8px",borderRadius:20,fontSize:10,fontWeight:700,background:st.bg,color:st.color }}>{t(st.label)}</span>
+                            {tr.discipline && <span style={{ fontSize:10,fontWeight:600,padding:"1px 6px",borderRadius:4,background:"rgba(33,208,179,0.1)",color:BRAND.tealInk }}>{tr.discipline}</span>}
+                            <span style={{ marginLeft:"auto",display:"flex",alignItems:"center",color:"#94a3b8",transform:open?"rotate(180deg)":"none",transition:"transform 150ms ease" }}>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                            </span>
                           </div>
-                          <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0 }}>{tr.origin || "–"} → {tr.destination || "–"}</p>
+                          <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0,...(open?{}:{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}) }}>{tr.origin || "–"} → {tr.destination || "–"}</p>
                           {tr.scheduledAt && <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0" }}>{fmt(tr.scheduledAt)}</p>}
-                          {passengers.length > 0 && (
-                            <p style={{ fontSize:10,color:"#94a3b8",margin:"4px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                          {!open && passengers.length > 0 && (
+                            <p style={{ fontSize:11,color:"#94a3b8",margin:"4px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
                               {passengers.slice(0, 4).join(", ")}{passengers.length > 4 ? ` +${passengers.length - 4}` : ""}
                             </p>
+                          )}
+                          {open && (
+                            <div style={{ marginTop:8,paddingTop:8,borderTop:"1px dashed #e2e8f0",display:"flex",flexDirection:"column",gap:6 }}>
+                              {/* Recorrido completo sin recorte */}
+                              <div style={{ display:"flex",flexDirection:"column",gap:3 }}>
+                                <div style={{ display:"flex",alignItems:"baseline",gap:6 }}>
+                                  <span style={{ fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:"#94a3b8",flexShrink:0,width:52 }}>{t("ORIGEN")}</span>
+                                  <span style={{ fontSize:12,fontWeight:600,color:"#0f172a" }}>{tr.origin || "–"}</span>
+                                </div>
+                                <div style={{ display:"flex",alignItems:"baseline",gap:6 }}>
+                                  <span style={{ fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:"#94a3b8",flexShrink:0,width:52 }}>{t("DESTINO")}</span>
+                                  <span style={{ fontSize:12,fontWeight:600,color:"#0f172a" }}>{tr.destination || "–"}</span>
+                                </div>
+                              </div>
+                              {/* Línea de tiempo del viaje */}
+                              {(tr.scheduledAt || tr.startedAt || tr.completedAt) && (
+                                <div style={{ display:"flex",flexDirection:"column",gap:2 }}>
+                                  {tr.scheduledAt && (
+                                    <div style={{ display:"flex",justifyContent:"space-between" }}>
+                                      <span style={{ fontSize:11,color:"#64748b" }}>{t("Programado")}</span>
+                                      <span style={{ fontSize:11,fontWeight:600,color:"#334155" }}>{fmt(tr.scheduledAt)}</span>
+                                    </div>
+                                  )}
+                                  {tr.startedAt && (
+                                    <div style={{ display:"flex",justifyContent:"space-between" }}>
+                                      <span style={{ fontSize:11,color:"#64748b" }}>{t("Iniciado")}</span>
+                                      <span style={{ fontSize:11,fontWeight:600,color:"#334155" }}>{fmt(tr.startedAt)}</span>
+                                    </div>
+                                  )}
+                                  {tr.completedAt && (
+                                    <div style={{ display:"flex",justifyContent:"space-between" }}>
+                                      <span style={{ fontSize:11,color:"#64748b" }}>{t("Completado")}</span>
+                                      <span style={{ fontSize:11,fontWeight:600,color:BRAND.tealInk }}>{fmt(tr.completedAt)}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                              {/* Conductor (se resuelve al expandir) */}
+                              {tr.driverId && (
+                                <div style={{ display:"flex",justifyContent:"space-between" }}>
+                                  <span style={{ fontSize:11,color:"#64748b" }}>{t("Conductor")}</span>
+                                  <span style={{ fontSize:11,fontWeight:600,color:"#334155" }}>
+                                    {portalDrivers === null ? "…" : tripDriver?.fullName || t("Sin información")}
+                                  </span>
+                                </div>
+                              )}
+                              {tr.tripType && (
+                                <div style={{ display:"flex",justifyContent:"space-between" }}>
+                                  <span style={{ fontSize:11,color:"#64748b" }}>{t("Tipo de viaje")}</span>
+                                  <span style={{ fontSize:11,fontWeight:600,color:"#334155" }}>{tr.tripType}</span>
+                                </div>
+                              )}
+                              {/* Todos los pasajeros */}
+                              {passengers.length > 0 && (
+                                <div>
+                                  <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:"#94a3b8",margin:"0 0 4px" }}>
+                                    {t("Pasajeros")} · {passengers.length}
+                                  </p>
+                                  <div style={{ display:"flex",flexWrap:"wrap",gap:4 }}>
+                                    {passengers.map(n => (
+                                      <span key={n} style={{ fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:5,background:"rgba(33,208,179,0.08)",color:BRAND.tealInk,border:"1px solid rgba(33,208,179,0.18)" }}>{n}</span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              {tr.notes && (
+                                <p style={{ fontSize:11,color:"#64748b",margin:0,fontStyle:"italic" }}>{tr.notes}</p>
+                              )}
+                              {tr.driverRating ? (
+                                <p style={{ fontSize:11,color:"#f59e0b",margin:0 }}>{"⭐".repeat(tr.driverRating)}{tr.ratingComment ? ` "${tr.ratingComment}"` : ""}</p>
+                              ) : null}
+                            </div>
                           )}
                         </div>
                       );
@@ -1998,7 +2084,7 @@ export default function UserPortalPage() {
                     {([["gantt","Gantt"],["semana","Semana"],["dia","Día"],["agenda","Agenda"],["mes","Mes"]] as const).map(([v,label]) => (
                       <button key={v} type="button" onClick={() => setCalView(v)}
                         style={{ fontSize:12,fontWeight:700,padding:"5px 12px",borderRadius:8,border:"none",cursor:"pointer",
-                          background: calView===v ? "#21D0B3" : "transparent", color: calView===v ? "#fff" : "#475569" }}>
+                          background: calView===v ? BRAND.teal : "transparent", color: calView===v ? "#fff" : "#475569" }}>
                         {label}
                       </button>
                     ))}
@@ -2018,7 +2104,7 @@ export default function UserPortalPage() {
                           <button key={i} type="button" disabled={!day}
                             onClick={() => { if(!day) return; setCalSelectedDay(isSel?null:day); setCalCursor(new Date(y,m,day)); }}
                             style={{ minHeight:64,padding:"4px",borderRadius:10,
-                              border: isSel?"2px solid #21D0B3":isTodayCell?"1px solid #21D0B3":"1px solid #eef2f7",
+                              border: isSel?`2px solid ${BRAND.teal}`:isTodayCell?`1px solid ${BRAND.teal}`:"1px solid #eef2f7",
                               cursor:day?"pointer":"default",
                               background:isSel?"#f0fdfa":day?"#fff":"transparent",display:"flex",flexDirection:"column",alignItems:"flex-start",gap:3 }}>
                             <span style={{ fontSize:12,fontWeight:(isSel||isTodayCell)?800:600,color:day?(isTodayCell?"#0e9384":"#0f172a"):"transparent" }}>{day||""}</span>
@@ -2046,7 +2132,7 @@ export default function UserPortalPage() {
                                 <div key={it.id} style={{ display:"flex",alignItems:"center",gap:8,background:"#f8fafc",border:"1px solid #eef2f7",borderLeft:`3px solid ${cfg.color}`,borderRadius:9,padding:"7px 10px" }}>
                                   <span style={{ fontSize:11,fontWeight:800,color:"#0f172a",flexShrink:0,fontVariantNumeric:"tabular-nums" }}>{it.date.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})}</span>
                                   <span style={{ flex:1,minWidth:0,fontSize:11.5,fontWeight:600,color:"#334155",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{it.title}{it.venue?` · 📍 ${it.venue}`:""}</span>
-                                  <span style={{ flexShrink:0,fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:99,background:cfg.soft,color:cfg.color }}>{cfg.label}</span>
+                                  <span style={{ flexShrink:0,fontSize:10,fontWeight:800,padding:"2px 7px",borderRadius:99,background:cfg.soft,color:cfg.color }}>{cfg.label}</span>
                                 </div>
                               ); })}
                             </div>
@@ -2124,7 +2210,7 @@ export default function UserPortalPage() {
                           return (
                             <div key={i} style={{ height:44,display:"flex",alignItems:"center",gap:6,padding:"0 10px",borderBottom: i<gRows.length-1?"1px solid #f1f5f9":"none" }}>
                               <span style={{ flex:1,minWidth:0,fontSize:11.5,fontWeight:700,color:"#334155",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{r.name}</span>
-                              <span style={{ flexShrink:0,fontSize:9,fontWeight:800,color:"#64748b",background:"#f1f5f9",borderRadius:99,padding:"2px 6px" }}>{total}</span>
+                              <span style={{ flexShrink:0,fontSize:10,fontWeight:800,color:"#64748b",background:"#f1f5f9",borderRadius:99,padding:"2px 6px" }}>{total}</span>
                             </div>
                           );
                         })}
@@ -2150,7 +2236,7 @@ export default function UserPortalPage() {
                                 {gDays.map(d=>{ const isToday=keyOf(d)===keyOf(now); const wknd=d.getDay()===0||d.getDay()===6; return (
                                   <div key={d.getDate()} style={{ display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:1,
                                     background:isToday?"rgba(33,208,179,0.14)":wknd?"#f1f5f9":"transparent",
-                                    borderBottom:isToday?"2px solid #21D0B3":"none" }}>
+                                    borderBottom:isToday?`2px solid ${BRAND.teal}`:"none" }}>
                                     <span style={{ fontSize:8,fontWeight:700,color:isToday?"#0e9384":"#94a3b8" }}>{["DO","LU","MA","MI","JU","VI","SA"][d.getDay()]}</span>
                                     <span style={{ fontSize:12,fontWeight:800,color:isToday?"#0e9384":"#334155" }}>{d.getDate()}</span>
                                   </div>
@@ -2199,7 +2285,7 @@ export default function UserPortalPage() {
                           <span style={{
                             flexShrink:0,width:38,height:38,borderRadius:10,display:"inline-flex",flexDirection:"column",
                             alignItems:"center",justifyContent:"center",lineHeight:1.1,
-                            background:isToday?"#21D0B3":"#f8fafc",border:isToday?"none":"1px solid #eef2f7",
+                            background:isToday?BRAND.teal:"#f8fafc",border:isToday?"none":"1px solid #eef2f7",
                           }}>
                             <span style={{ fontSize:8,fontWeight:800,letterSpacing:"0.08em",color:isToday?"rgba(255,255,255,0.85)":"#94a3b8" }}>{fmtDow(day)}</span>
                             <span style={{ fontSize:15,fontWeight:800,color:isToday?"#fff":"#0f172a" }}>{day.getDate()}</span>
@@ -2218,7 +2304,7 @@ export default function UserPortalPage() {
                               <div key={it.id} style={{ display:"flex",alignItems:"center",gap:8,background:"#f8fafc",border:"1px solid #eef2f7",borderLeft:`3px solid ${cfg.color}`,borderRadius:9,padding:"7px 10px" }}>
                                 <span style={{ fontSize:11,fontWeight:800,color:"#0f172a",flexShrink:0,fontVariantNumeric:"tabular-nums" }}>{it.date.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})}</span>
                                 <span style={{ flex:1,minWidth:0,fontSize:11.5,fontWeight:600,color:"#334155",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{it.title}{it.subtitle?` · ${it.subtitle}`:""}</span>
-                                <span style={{ flexShrink:0,fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:99,background:cfg.soft,color:cfg.color }}>{cfg.label}</span>
+                                <span style={{ flexShrink:0,fontSize:10,fontWeight:800,padding:"2px 7px",borderRadius:99,background:cfg.soft,color:cfg.color }}>{cfg.label}</span>
                               </div>
                             ); })}
                           </div>
@@ -2286,7 +2372,7 @@ export default function UserPortalPage() {
                         <button key={i} type="button" disabled={!day}
                           onClick={() => { if(!day) return; setCalSelectedDay(isSel?null:day); setCalCursor(new Date(y,m,day)); }}
                           style={{ padding:"5px 0",borderRadius:8,border:"none",cursor:day?"pointer":"default",fontSize:12,fontWeight:isSel?800:500,
-                            background:isSel?"#21D0B3":day?"#fff":"transparent",color:isSel?"#fff":day?"#0f172a":"transparent",position:"relative" }}>
+                            background:isSel?BRAND.teal:day?"#fff":"transparent",color:isSel?"#fff":day?"#0f172a":"transparent",position:"relative" }}>
                           {day || ""}
                           {day && daysWithEvents.has(day) && !isSel && (
                             <div style={{ position:"absolute",bottom:1,left:"50%",transform:"translateX(-50%)",display:"flex",gap:1 }}>
@@ -2433,7 +2519,7 @@ export default function UserPortalPage() {
             return (
               <article key={p.id} id={`prem-${p.id}`}
                 style={{ background:isDone ? "#f8fafc" : "linear-gradient(135deg,#fffbeb 0%,#ffffff 70%)",
-                  borderRadius:14,border:`1px solid ${focused ? "#21D0B3" : isDone?"#e2e8f0":"#f2d98a"}`,borderLeft:`4px solid ${focused ? "#21D0B3" : isDone ? "#cbd5e1" : "#e3a808"}`,padding:"12px 14px",
+                  borderRadius:14,border:`1px solid ${focused ? BRAND.teal : isDone?"#e2e8f0":"#f2d98a"}`,borderLeft:`4px solid ${focused ? BRAND.teal : isDone ? "#cbd5e1" : "#e3a808"}`,padding:"12px 14px",
                   boxShadow: focused ? "0 0 0 3px rgba(33,208,179,0.4), 0 8px 24px rgba(33,208,179,0.25)" : isDone ? undefined : "0 2px 10px rgba(199,140,0,0.14)",
                   opacity: isDone ? 0.82 : 1,transition:"box-shadow .4s,border-color .4s" }}>
                 <div style={{ display:"flex",alignItems:"flex-start",gap:10 }}>
@@ -2467,7 +2553,7 @@ export default function UserPortalPage() {
                     </div>
                     {p.notes && <p style={{ fontSize:11,color:"#64748b",margin:"6px 0 0",fontStyle:"italic",lineHeight:1.4 }}>{p.notes}</p>}
                   </div>
-                  <span style={{ flexShrink:0,display:"inline-flex",alignItems:"center",gap:5,fontSize:9,padding:"3px 9px",borderRadius:20,fontWeight:800,letterSpacing:"0.06em",textTransform:"uppercase",
+                  <span style={{ flexShrink:0,display:"inline-flex",alignItems:"center",gap:5,fontSize:10,padding:"3px 9px",borderRadius:20,fontWeight:800,letterSpacing:"0.06em",textTransform:"uppercase",
                     background:isDone?"#e7f5ec":"#fff4d6",
                     color:isDone?"#1e5125":"#7a4a00",
                     border:`1px solid ${isDone?"#2e7d3233":"#c78c0033"}` }}>
@@ -2524,7 +2610,7 @@ export default function UserPortalPage() {
                       <span style={{ fontSize:10,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:"#a87800" }}>Confirma tu asistencia</span>
                       <div style={{ display:"flex",gap:8,marginTop:6 }}>
                         <button type="button" onClick={()=>confirmAwarder(p.id, mine.id!, "CONFIRM")}
-                          style={{ flex:1,padding:"9px",borderRadius:10,border:"none",cursor:"pointer",fontSize:13,fontWeight:700,color:"#fff",background:"linear-gradient(135deg,#21D0B3,#15B09A)" }}>Confirmar</button>
+                          style={{ flex:1,padding:"9px",borderRadius:10,border:"none",cursor:"pointer",fontSize:13,fontWeight:700,color:"#fff",background:`linear-gradient(135deg,${BRAND.teal},#15B09A)` }}>Confirmar</button>
                         <button type="button" onClick={()=>confirmAwarder(p.id, mine.id!, "DECLINE")}
                           style={{ flex:1,padding:"9px",borderRadius:10,border:"1px solid #fecaca",cursor:"pointer",fontSize:13,fontWeight:700,color:"#dc2626",background:"#fef2f2" }}>No puedo</button>
                       </div>
@@ -2590,12 +2676,12 @@ export default function UserPortalPage() {
                     const isProg = opt.v === "PROGRAMADA";
                     return (
                       <button key={opt.v||"all"} type="button" onClick={() => setPremStatusFilter(opt.v)}
-                        style={{ padding:"6px 11px",borderRadius:20,border:active ? `1px solid ${isDone?"#2e7d32":isProg?"#c78c00":"#21D0B3"}` : "1px solid #e2e8f0",
+                        style={{ padding:"6px 11px",borderRadius:20,border:active ? `1px solid ${isDone?"#2e7d32":isProg?"#c78c00":BRAND.teal}` : "1px solid #e2e8f0",
                           background:active ? (isDone?"#e7f5ec":isProg?"#fff4d6":"rgba(33,208,179,0.12)") : "#fff",
-                          color:active ? (isDone?"#1e5125":isProg?"#7a4a00":"#0a7a6b") : "#475569",
+                          color:active ? (isDone?"#1e5125":isProg?"#7a4a00":BRAND.tealInk) : "#475569",
                           fontSize:11,fontWeight:700,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6,letterSpacing:"0.02em" }}>
                         {opt.label}
-                        <span style={{ fontSize:9,padding:"1px 6px",borderRadius:10,background:active?"rgba(255,255,255,0.6)":"#f1f5f9",color:active ? (isDone?"#1e5125":isProg?"#7a4a00":"#0a7a6b") : "#64748b" }}>{opt.count}</span>
+                        <span style={{ fontSize:10,padding:"1px 6px",borderRadius:10,background:active?"rgba(255,255,255,0.6)":"#f1f5f9",color:active ? (isDone?"#1e5125":isProg?"#7a4a00":BRAND.tealInk) : "#64748b" }}>{opt.count}</span>
                       </button>
                     );
                   })}
@@ -2682,14 +2768,14 @@ export default function UserPortalPage() {
                     </div>
                     {/* Legend */}
                     <div style={{ display:"flex",alignItems:"center",gap:14,marginTop:10,paddingTop:10,borderTop:"1px dashed #f0deb0",justifyContent:"center" }}>
-                      <span style={{ display:"inline-flex",alignItems:"center",gap:5,fontSize:10,color:"#7a4a00",fontWeight:600 }}>
+                      <span style={{ display:"inline-flex",alignItems:"center",gap:5,fontSize:11,color:"#7a4a00",fontWeight:600 }}>
                         <span style={{ width:6,height:6,borderRadius:"50%",background:"#c78c00" }} />Programada
                       </span>
-                      <span style={{ display:"inline-flex",alignItems:"center",gap:5,fontSize:10,color:"#1e5125",fontWeight:600 }}>
+                      <span style={{ display:"inline-flex",alignItems:"center",gap:5,fontSize:11,color:"#1e5125",fontWeight:600 }}>
                         <span style={{ width:6,height:6,borderRadius:"50%",background:"#2e7d32" }} />Realizada
                       </span>
                       {todayNum && (
-                        <span style={{ display:"inline-flex",alignItems:"center",gap:5,fontSize:10,color:"#7a4a00",fontWeight:600 }}>
+                        <span style={{ display:"inline-flex",alignItems:"center",gap:5,fontSize:11,color:"#7a4a00",fontWeight:600 }}>
                           <span style={{ width:8,height:8,borderRadius:4,border:"1.5px solid #d4a017",background:"#fff" }} />Hoy
                         </span>
                       )}
@@ -2790,7 +2876,7 @@ export default function UserPortalPage() {
         {activeTab === "sedes" && (
           <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
             {/* Sedes */}
-            <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>Sedes del evento</p>
+            <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.teal,margin:0 }}>Sedes del evento</p>
             {venues.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:20 }}>No hay sedes registradas</p>}
             {venues.map(v => {
               const isOpen = expandedItemId === `venue-${v.id}`;
@@ -2799,7 +2885,7 @@ export default function UserPortalPage() {
                 <div key={v.id} style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
                   <button type="button" onClick={() => setExpandedItemId(isOpen?null:`venue-${v.id}`)}
                     style={{ width:"100%",display:"flex",alignItems:"center",gap:10,padding:"12px 14px",background:"none",border:"none",cursor:"pointer",textAlign:"left" }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
                     <div style={{ flex:1,minWidth:0 }}>
                       <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>{v.name || "–"}</p>
                       {v.address && <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{v.address}</p>}
@@ -2819,7 +2905,7 @@ export default function UserPortalPage() {
               );
             })}
             {/* Hoteles */}
-            <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#0fa894",margin:"8px 0 0" }}>Hoteles</p>
+            <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.tealDark,margin:"8px 0 0" }}>Hoteles</p>
             {allAccommodations.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:20 }}>No hay hoteles registrados</p>}
             {allAccommodations.map(h => {
               const isOpen = expandedItemId === `hotel-${h.id}`;
@@ -2860,18 +2946,18 @@ export default function UserPortalPage() {
 
             {/* Credencial QR para validar en el comedor */}
             {mealQrDataUrl && (
-              <div style={{ background:"linear-gradient(135deg,#041a2e,#062240)",borderRadius:16,padding:"16px",display:"flex",alignItems:"center",gap:14 }}>
+              <div style={{ background:`linear-gradient(135deg,${BRAND.navy},${BRAND.navyLight})`,borderRadius:16,padding:"16px",display:"flex",alignItems:"center",gap:14 }}>
                 <button type="button" onClick={() => setMealQrZoom(true)} title="Ver QR más grande"
                   style={{ background:"#fff",borderRadius:12,padding:6,flexShrink:0,border:"none",cursor:"pointer" }}>
                   <img src={mealQrDataUrl} alt="QR credencial" style={{ width:96,height:96,display:"block" }} />
                 </button>
                 <div style={{ minWidth:0 }}>
-                  <p style={{ fontSize:10,fontWeight:800,letterSpacing:"0.18em",textTransform:"uppercase",color:"#34F3C6",margin:0 }}>Tu credencial</p>
+                  <p style={{ fontSize:10,fontWeight:800,letterSpacing:"0.18em",textTransform:"uppercase",color:BRAND.tealLight,margin:0 }}>Tu credencial</p>
                   <p style={{ fontSize:14,fontWeight:700,color:"#fff",margin:"4px 0 0",lineHeight:1.3 }}>
                     Muestra este QR al ingresar al lugar de comida
                   </p>
                   <p style={{ fontSize:11.5,color:"rgba(255,255,255,0.65)",margin:"4px 0 0" }}>
-                    Código: <span style={{ fontFamily:"monospace",fontWeight:700,color:"#34F3C6",letterSpacing:"0.15em" }}>{(athlete.credentialCode || athlete.id.slice(-6)).toUpperCase()}</span>
+                    Código: <span style={{ fontFamily:"monospace",fontWeight:700,color:BRAND.tealLight,letterSpacing:"0.15em" }}>{(athlete.credentialCode || athlete.id.slice(-6)).toUpperCase()}</span>
                   </p>
                   <p style={{ fontSize:10.5,color:"rgba(255,255,255,0.45)",margin:"4px 0 0" }}>
                     Toca el QR para verlo más grande
@@ -2910,7 +2996,7 @@ export default function UserPortalPage() {
                   <div style={{ padding:"14px 16px",background:"linear-gradient(135deg,rgba(33,208,179,0.08),rgba(33,208,179,0.02))",borderBottom:"1px solid #e2e8f0",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
                     <div style={{ display:"flex",alignItems:"center",gap:8 }}>
                       <div style={{ width:32,height:32,borderRadius:10,background:"rgba(33,208,179,0.12)",display:"flex",alignItems:"center",justifyContent:"center" }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2" strokeLinecap="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
                       </div>
                       <div>
                         <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>Menú de hoy</p>
@@ -2929,7 +3015,7 @@ export default function UserPortalPage() {
                           <div style={{ display:"flex",alignItems:"center",gap:6,flexWrap:"wrap" }}>
                             <span style={{ fontSize:10,fontWeight:800,padding:"2px 8px",borderRadius:6,textTransform:"uppercase",letterSpacing:"0.05em",background:m.bg,color:m.color }}>{m.label}</span>
                             {fm.dietaryType && fm.dietaryType !== "ESTANDAR" && (
-                              <span style={{ fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:6,background:"#f0fdf4",color:"#166534",border:"1px solid #bbf7d0" }}>{fm.dietaryType}</span>
+                              <span style={{ fontSize:10,fontWeight:700,padding:"2px 7px",borderRadius:6,background:"#f0fdf4",color:"#166534",border:"1px solid #bbf7d0" }}>{fm.dietaryType}</span>
                             )}
                           </div>
                           <p style={{ fontSize:15,fontWeight:700,color:"#0f172a",margin:"5px 0 0" }}>{fm.title}</p>
@@ -2982,7 +3068,7 @@ export default function UserPortalPage() {
                           {m.icon}
                         </div>
                         <div style={{ flex:1,minWidth:0 }}>
-                          <span style={{ fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:6,textTransform:"uppercase",letterSpacing:"0.05em",background:m.bg,color:m.color }}>{m.label}</span>
+                          <span style={{ fontSize:10,fontWeight:800,padding:"2px 7px",borderRadius:6,textTransform:"uppercase",letterSpacing:"0.05em",background:m.bg,color:m.color }}>{m.label}</span>
                           <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:"4px 0 0" }}>{fm.title}</p>
                           {fm.description && <p style={{ fontSize:12,color:"#64748b",margin:"2px 0 0",lineHeight:1.4 }}>{fm.description}</p>}
                           {fm.locationDetail && <p style={{ fontSize:11,color:"#94a3b8",margin:"2px 0 0" }}>📍 {fm.locationDetail}</p>}
@@ -3014,7 +3100,7 @@ export default function UserPortalPage() {
               <div style={{ background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)" }}>
                 <div style={{ padding:"14px 16px",background:"linear-gradient(135deg,rgba(33,208,179,0.06),rgba(31,205,255,0.04))",borderBottom:"1px solid #e2e8f0" }}>
                   <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                     <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0 }}>Tus lugares de comida</p>
                   </div>
                 </div>
@@ -3026,7 +3112,7 @@ export default function UserPortalPage() {
                   <div key={fl.id} style={{ borderTop:i>0?"1px solid #f1f5f9":"none" }}>
                     <div style={{ padding:"12px 16px",display:"flex",alignItems:"center",gap:12 }}>
                       <div style={{ width:36,height:36,borderRadius:10,background:"rgba(33,208,179,0.08)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2" strokeLinecap="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
                       </div>
                       <div style={{ flex:1,minWidth:0 }}>
                         <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>{fl.name}</p>
@@ -3035,7 +3121,7 @@ export default function UserPortalPage() {
                       </div>
                       {fl.capacity && <span style={{ fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:8,background:"#f1f5f9",color:"#475569",flexShrink:0 }}>{fl.capacity} pax</span>}
                       <button type="button" onClick={() => setExpandedItemId(isOpen ? null : `food-${fl.id}`)}
-                        style={{ display:"inline-flex",alignItems:"center",gap:4,padding:"6px 10px",borderRadius:9,border:`1px solid ${isOpen ? "#21D0B3" : "rgba(33,208,179,0.35)"}`,background:isOpen?"rgba(33,208,179,0.14)":"rgba(33,208,179,0.06)",color:"#0a7a6b",fontSize:11,fontWeight:800,cursor:"pointer",flexShrink:0 }}>
+                        style={{ display:"inline-flex",alignItems:"center",gap:4,padding:"6px 10px",borderRadius:9,border:`1px solid ${isOpen ? BRAND.teal : "rgba(33,208,179,0.35)"}`,background:isOpen?"rgba(33,208,179,0.14)":"rgba(33,208,179,0.06)",color:BRAND.tealInk,fontSize:11,fontWeight:800,cursor:"pointer",flexShrink:0 }}>
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                         {isOpen ? "Cerrar" : "Mapa"}
                       </button>
@@ -3095,10 +3181,10 @@ export default function UserPortalPage() {
                       <div style={{ flex:1,minWidth:0 }}>
                         <p style={{ fontSize:13,fontWeight:600,color:"#0f172a",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{m.fullName}</p>
                         <div style={{ display:"flex",gap:4,flexWrap:"wrap",marginTop:3 }}>
-                          {m.userType && <span style={{ fontSize:9,fontWeight:600,padding:"1px 6px",borderRadius:4,background:"#f1f5f9",color:"#64748b" }}>{m.userType}</span>}
-                          {discLabel && <span style={{ fontSize:9,fontWeight:600,padding:"1px 6px",borderRadius:4,background:"rgba(33,208,179,0.1)",color:"#0a7a6b" }}>{discLabel}</span>}
-                          {m.countryCode && <span style={{ fontSize:9,fontWeight:600,padding:"1px 6px",borderRadius:4,background:"rgba(99,102,241,0.08)",color:"#6366f1" }}>{m.countryCode}</span>}
-                          {accLabel && <span style={{ fontSize:9,fontWeight:600,padding:"1px 6px",borderRadius:4,
+                          {m.userType && <span style={{ fontSize:10,fontWeight:600,padding:"1px 6px",borderRadius:4,background:"#f1f5f9",color:"#64748b" }}>{m.userType}</span>}
+                          {discLabel && <span style={{ fontSize:10,fontWeight:600,padding:"1px 6px",borderRadius:4,background:"rgba(33,208,179,0.1)",color:BRAND.tealInk }}>{discLabel}</span>}
+                          {m.countryCode && <span style={{ fontSize:10,fontWeight:600,padding:"1px 6px",borderRadius:4,background:"rgba(99,102,241,0.08)",color:"#6366f1" }}>{m.countryCode}</span>}
+                          {accLabel && <span style={{ fontSize:10,fontWeight:600,padding:"1px 6px",borderRadius:4,
                             background: accLabel === "Acreditado" ? "rgba(16,185,129,0.1)" : accLabel === "Acreditación rechazada" ? "rgba(239,68,68,0.1)" : "#FEF3C7",
                             color: accLabel === "Acreditado" ? "#059669" : accLabel === "Acreditación rechazada" ? "#dc2626" : "#92400E" }}>{accLabel}</span>}
                         </div>
@@ -3125,7 +3211,7 @@ export default function UserPortalPage() {
               <button type="button" onClick={() => setCouponTab("available")}
                 className="flex-1 py-2.5 px-3 rounded-xl text-sm font-bold transition-all inline-flex items-center justify-center gap-2"
                 style={{
-                  background: couponTab === "available" ? "linear-gradient(135deg,#21D0B3 0%,#15B09A 100%)" : "transparent",
+                  background: couponTab === "available" ? `linear-gradient(135deg,${BRAND.teal} 0%,#15B09A 100%)` : "transparent",
                   color: couponTab === "available" ? "#fff" : "#64748b",
                   boxShadow: couponTab === "available" ? "0 4px 14px rgba(33,208,179,0.32)" : "none",
                   border: "none", cursor: "pointer", letterSpacing: "0.01em",
@@ -3142,7 +3228,7 @@ export default function UserPortalPage() {
               <button type="button" onClick={() => setCouponTab("mine")}
                 className="flex-1 py-2.5 px-3 rounded-xl text-sm font-bold transition-all inline-flex items-center justify-center gap-2"
                 style={{
-                  background: couponTab === "mine" ? "linear-gradient(135deg,#21D0B3 0%,#15B09A 100%)" : "transparent",
+                  background: couponTab === "mine" ? `linear-gradient(135deg,${BRAND.teal} 0%,#15B09A 100%)` : "transparent",
                   color: couponTab === "mine" ? "#fff" : "#64748b",
                   boxShadow: couponTab === "mine" ? "0 4px 14px rgba(33,208,179,0.32)" : "none",
                   border: "none", cursor: "pointer", letterSpacing: "0.01em",
@@ -3343,15 +3429,15 @@ export default function UserPortalPage() {
             {/* Info rows */}
             <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
               {([
-                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>, label:"Nombre", value:athlete.fullName },
-                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>, label:"Correo", value:athlete.email || "—" },
-                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.12.67.29 1.33.49 1.97"/></svg>, label:"Teléfono", value:athlete.phone || "—" },
-                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>, label:"Evento", value:event?.name || "—" },
-                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>, label:"Delegación", value:delegation ? (countryLabels[delegation.countryCode]||delegation.countryCode) : "—" },
-                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>, label:"Tipo", value:athlete.userType || "—" },
-                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>, label:"Disciplina", value: (() => { if (!athlete.disciplineId) return "—"; const disc = ([...disciplineParents, ...calendarEvents] as any[]).find((d: any) => d.id === athlete.disciplineId); if (!disc) return "—"; const parent = disc.parentId ? disciplineParents.find(p => p.id === disc.parentId) : null; return parent ? `${parent.name} — ${disc.name}` : (disc.name || "—"); })() },
-                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={athlete.isDelegationLead ? "#f59e0b" : "#21D0B3"} strokeWidth="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>, label:"Rol", value:athlete.isDelegationLead ? "Jefe de Delegación" : "Participante" },
-                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>, label:"ID", value:athlete.id.slice(-6).toUpperCase() },
+                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>, label:"Nombre", value:athlete.fullName },
+                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>, label:"Correo", value:athlete.email || "—" },
+                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.12.67.29 1.33.49 1.97"/></svg>, label:"Teléfono", value:athlete.phone || "—" },
+                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>, label:"Evento", value:event?.name || "—" },
+                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>, label:"Delegación", value:delegation ? (countryLabels[delegation.countryCode]||delegation.countryCode) : "—" },
+                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>, label:"Tipo", value:athlete.userType || "—" },
+                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>, label:"Disciplina", value: (() => { if (!athlete.disciplineId) return "—"; const disc = ([...disciplineParents, ...calendarEvents] as any[]).find((d: any) => d.id === athlete.disciplineId); if (!disc) return "—"; const parent = disc.parentId ? disciplineParents.find(p => p.id === disc.parentId) : null; return parent ? `${parent.name} — ${disc.name}` : (disc.name || "—"); })() },
+                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={athlete.isDelegationLead ? "#f59e0b" : BRAND.teal} strokeWidth="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>, label:"Rol", value:athlete.isDelegationLead ? "Jefe de Delegación" : "Participante" },
+                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>, label:"ID", value:athlete.id.slice(-6).toUpperCase() },
               ]).map((r,i) => (
                 <div key={r.label} style={{ display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderTop:i>0?"1px solid #f1f5f9":"none" }}>
                   <span style={{ flexShrink:0 }}>{r.icon}</span>
@@ -3426,9 +3512,9 @@ export default function UserPortalPage() {
             {/* Health form link */}
             <a href={`/portal/athlete/salud?id=${athlete.id}`}
               style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:8,padding:14,borderRadius:12,background:"#fff",border:"1px solid #e2e8f0",color:"#0f172a",fontSize:13,fontWeight:700,textDecoration:"none" }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
               Ficha de salud
-              {healthRecord ? <span style={{ fontSize:10,padding:"2px 8px",borderRadius:6,background:"rgba(33,208,179,0.1)",color:"#0a7a6b" }}>Completada</span> : <span style={{ fontSize:10,padding:"2px 8px",borderRadius:6,background:"#FEF3C7",color:"#92400E" }}>Pendiente</span>}
+              {healthRecord ? <span style={{ fontSize:10,padding:"2px 8px",borderRadius:6,background:"rgba(33,208,179,0.1)",color:BRAND.tealInk }}>Completada</span> : <span style={{ fontSize:10,padding:"2px 8px",borderRadius:6,background:"#FEF3C7",color:"#92400E" }}>Pendiente</span>}
             </a>
             {/* Números de emergencia */}
             <EmergencyNumbersSection />
@@ -3461,7 +3547,7 @@ export default function UserPortalPage() {
           {primaryTabs.map(tab => (
             <button key={tab.key} type="button" onClick={() => setActiveTab(tab.key)}
               style={{ flex:1,padding:"4px 0 2px",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,
-                color:activeTab===tab.key?"#21D0B3":"#94a3b8" }}>
+                color:activeTab===tab.key?BRAND.teal:"#94a3b8" }}>
               <span style={{ display:"flex" }}>{tab.icon}</span>
               <span style={{ fontSize:9.5,fontWeight:activeTab===tab.key?700:500,letterSpacing:"-0.005em" }}>{tab.label}</span>
             </button>
@@ -3472,7 +3558,7 @@ export default function UserPortalPage() {
             return (
               <button type="button" onClick={() => setMoreOpen(true)}
                 style={{ flex:1,padding:"4px 0 2px",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,
-                  color: on ? "#21D0B3" : "#94a3b8" }}>
+                  color: on ? BRAND.teal : "#94a3b8" }}>
                 <span style={{ display:"flex" }}>
                   {activeOverflow ? activeOverflow.icon : (
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
@@ -3501,10 +3587,10 @@ export default function UserPortalPage() {
                         background: on ? "rgba(33,208,179,0.1)" : "#f8fafc",
                         border:`1px solid ${on ? "rgba(33,208,179,0.4)" : "#eef2f7"}` }}>
                       <span style={{ width:44,height:44,borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",
-                        background: on ? "linear-gradient(135deg,#34F3C6,#21D0B3)" : "#fff",
+                        background: on ? `linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})` : "#fff",
                         color: on ? "#fff" : "#64748b",
                         border:`1px solid ${on ? "transparent" : "#e2e8f0"}` }}>{tab.icon}</span>
-                      <span style={{ fontSize:12,fontWeight: on ? 700 : 600,color: on ? "#0a7a6b" : "#334155" }}>{tab.label}</span>
+                      <span style={{ fontSize:12,fontWeight: on ? 700 : 600,color: on ? BRAND.tealInk : "#334155" }}>{tab.label}</span>
                     </button>
                   );
                 })}
@@ -3522,20 +3608,20 @@ export default function UserPortalPage() {
           <div className="db-card">
             <div style={{ position:"absolute",top:0,right:0,width:"120px",height:"120px",borderRadius:"50%",background:"radial-gradient(ellipse,rgba(33,208,179,0.09) 0%,transparent 70%)",transform:"translate(30px,-30px)",pointerEvents:"none" }} />
             <div className="db-card-header" style={{ display:"flex",alignItems:"center",gap:"12px",marginBottom:"18px" }}>
-              <div className="db-card-icon" style={{ width:"40px",height:"40px",borderRadius:"12px",background:"linear-gradient(135deg,rgba(33,208,179,0.18),rgba(33,208,179,0.06))",border:"1px solid rgba(33,208,179,0.25)",display:"flex",alignItems:"center",justifyContent:"center",color:"#21D0B3",flexShrink:0,boxShadow:"0 2px 8px rgba(33,208,179,0.15)" }}>
+              <div className="db-card-icon" style={{ width:"40px",height:"40px",borderRadius:"12px",background:"linear-gradient(135deg,rgba(33,208,179,0.18),rgba(33,208,179,0.06))",border:"1px solid rgba(33,208,179,0.25)",display:"flex",alignItems:"center",justifyContent:"center",color:BRAND.teal,flexShrink:0,boxShadow:"0 2px 8px rgba(33,208,179,0.15)" }}>
                 <IcoPlane />
               </div>
-              <span style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:"#21D0B3" }}>{t("Vuelo")}</span>
+              <span style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:BRAND.teal }}>{t("Vuelo")}</span>
             </div>
             {flightLabel ? (
               <>
                 <p className="db-card-title" style={{ fontSize:"17px",fontWeight:800,color:"#0f172a",margin:"0 0 8px",letterSpacing:"-0.01em" }}>{flightLabel}</p>
                 {(athlete.arrivalTime || flight?.arrivalTime) && (
                   <p className="db-card-subtitle" style={{ fontSize:"12px",color:"#64748b",margin:"0 0 4px",display:"flex",alignItems:"center",gap:"5px" }}>
-                    <span style={{ color:"#21D0B3",fontWeight:600 }}>Arribo</span> · {fmt(athlete.arrivalTime || flight?.arrivalTime)}
+                    <span style={{ color:BRAND.teal,fontWeight:600 }}>Arribo</span> · {fmt(athlete.arrivalTime || flight?.arrivalTime)}
                   </p>
                 )}
-                {athlete.origin && <p className="db-card-subtitle" style={{ fontSize:"12px",color:"#64748b",margin:0 }}><span style={{ color:"#21D0B3",fontWeight:600 }}>Origen</span> · {athlete.origin}</p>}
+                {athlete.origin && <p className="db-card-subtitle" style={{ fontSize:"12px",color:"#64748b",margin:0 }}><span style={{ color:BRAND.teal,fontWeight:600 }}>Origen</span> · {athlete.origin}</p>}
               </>
             ) : (
               <p style={{ fontSize:"13px",color:"#94a3b8",margin:0,fontStyle:"italic" }}>Sin vuelo asignado</p>
@@ -3546,16 +3632,16 @@ export default function UserPortalPage() {
           <div className="db-card">
             <div style={{ position:"absolute",top:0,right:0,width:"120px",height:"120px",borderRadius:"50%",background:"radial-gradient(ellipse,rgba(52,243,198,0.08) 0%,transparent 70%)",transform:"translate(30px,-30px)",pointerEvents:"none" }} />
             <div className="db-card-header" style={{ display:"flex",alignItems:"center",gap:"12px",marginBottom:"18px" }}>
-              <div className="db-card-icon" style={{ width:"40px",height:"40px",borderRadius:"12px",background:"linear-gradient(135deg,rgba(52,243,198,0.18),rgba(52,243,198,0.06))",border:"1px solid rgba(52,243,198,0.25)",display:"flex",alignItems:"center",justifyContent:"center",color:"#0fa894",flexShrink:0,boxShadow:"0 2px 8px rgba(52,243,198,0.15)" }}>
+              <div className="db-card-icon" style={{ width:"40px",height:"40px",borderRadius:"12px",background:"linear-gradient(135deg,rgba(52,243,198,0.18),rgba(52,243,198,0.06))",border:"1px solid rgba(52,243,198,0.25)",display:"flex",alignItems:"center",justifyContent:"center",color:BRAND.tealDark,flexShrink:0,boxShadow:"0 2px 8px rgba(52,243,198,0.15)" }}>
                 <IcoHotel />
               </div>
-              <span style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:"#0fa894" }}>{t("Hotel")}</span>
+              <span style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:BRAND.tealDark }}>{t("Hotel")}</span>
             </div>
             {hotel?.name ? (
               <>
                 <p className="db-card-title" style={{ fontSize:"17px",fontWeight:800,color:"#0f172a",margin:"0 0 8px",letterSpacing:"-0.01em" }}>{hotel.name}</p>
                 <div style={{ display:"flex",flexWrap:"wrap",gap:"4px" }}>
-                  {hotelRoom_ && <span style={{ fontSize:"10px",padding:"3px 8px",borderRadius:"6px",background:"#f0fdf8",color:"#0a7a6b",border:"1px solid rgba(33,208,179,0.2)",fontWeight:600 }}>Hab. {hotelRoom_}</span>}
+                  {hotelRoom_ && <span style={{ fontSize:"10px",padding:"3px 8px",borderRadius:"6px",background:"#f0fdf8",color:BRAND.tealInk,border:"1px solid rgba(33,208,179,0.2)",fontWeight:600 }}>Hab. {hotelRoom_}</span>}
                   {hotelBed_ && <span style={{ fontSize:"10px",padding:"3px 8px",borderRadius:"6px",background:"#f1f5f9",color:"#475569",border:"1px solid #e2e8f0",fontWeight:500 }}>Cama {hotelBed_}</span>}
                   {luggage_ && <span style={{ display:"inline-flex",alignItems:"center",gap:"3px",fontSize:"10px",padding:"3px 8px",borderRadius:"6px",background:"#f1f5f9",color:"#475569",border:"1px solid #e2e8f0",fontWeight:500 }}><IcoBag />{luggage_}</span>}
                 </div>
@@ -3648,7 +3734,7 @@ export default function UserPortalPage() {
                 </div>
                 <span style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:"#475569" }}>{t("Check-ins")}</span>
               </div>
-              <span style={{ fontSize:"12px",fontWeight:700,color:checkinsDone===checkins.length?"#21D0B3":"#94a3b8" }}>{checkinsDone}/{checkins.length}</span>
+              <span style={{ fontSize:"12px",fontWeight:700,color:checkinsDone===checkins.length?BRAND.teal:"#94a3b8" }}>{checkinsDone}/{checkins.length}</span>
             </div>
             <div style={{ display:"flex",flexDirection:"column",gap:"8px" }}>
               {checkins.map(({ label, ts }) => {
@@ -3656,11 +3742,11 @@ export default function UserPortalPage() {
                 return (
                   <div key={label} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",gap:"8px",padding:"8px 10px",borderRadius:"10px",background:done?"linear-gradient(135deg,rgba(33,208,179,0.06),rgba(33,208,179,0.02))":"#f8fafc",border:`1px solid ${done?"rgba(33,208,179,0.2)":"#f1f5f9"}`,transition:"all .3s" }}>
                     <div style={{ display:"flex",alignItems:"center",gap:"8px" }}>
-                      <div style={{ width:8,height:8,borderRadius:"50%",flexShrink:0,background:done?"#21D0B3":"#cbd5e1",boxShadow:done?"0 0 6px rgba(33,208,179,0.7)":"none",transition:"all .3s" }} />
+                      <div style={{ width:8,height:8,borderRadius:"50%",flexShrink:0,background:done?BRAND.teal:"#cbd5e1",boxShadow:done?"0 0 6px rgba(33,208,179,0.7)":"none",transition:"all .3s" }} />
                       <span style={{ fontSize:"12px",color:done?"#0f172a":"#94a3b8",fontWeight:done?600:400 }}>{label}</span>
                     </div>
                     {done
-                      ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                      ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                       : <span style={{ fontSize:"9px",color:"#cbd5e1",fontWeight:500 }}>Pendiente</span>
                     }
                   </div>
@@ -3683,7 +3769,7 @@ export default function UserPortalPage() {
                 doneLabel: t("Embarque confirmado"),
                 icon: <IcoPlane />,
                 done: !!athlete.airportCheckinAt,
-                gradient: "linear-gradient(135deg,#21D0B3 0%,#17a68e 100%)",
+                gradient: `linear-gradient(135deg,${BRAND.teal} 0%,#17a68e 100%)`,
                 glow: "0 6px 24px rgba(33,208,179,0.4)",
                 doneGlow: "0 4px 16px rgba(33,208,179,0.2)",
               },
@@ -3693,7 +3779,7 @@ export default function UserPortalPage() {
                 doneLabel: t("Check-in confirmado"),
                 icon: <IcoHotel />,
                 done: !!athlete.hotelCheckinAt,
-                gradient: "linear-gradient(135deg,#34F3C6 0%,#21D0B3 100%)",
+                gradient: `linear-gradient(135deg,${BRAND.tealLight} 0%,${BRAND.teal} 100%)`,
                 glow: "0 6px 24px rgba(52,243,198,0.4)",
                 doneGlow: "0 4px 16px rgba(52,243,198,0.2)",
               },
@@ -3726,7 +3812,7 @@ export default function UserPortalPage() {
                     background: done
                       ? "linear-gradient(135deg,rgba(33,208,179,0.08),rgba(33,208,179,0.03))"
                       : gradient ?? "#f8fafc",
-                    color: done ? "#0a7a6b" : gradient ? "#062B22" : "#475569",
+                    color: done ? BRAND.tealInk : gradient ? "#062B22" : "#475569",
                     opacity: busy ? 0.7 : 1,
                     boxShadow: done ? doneGlow ?? "none" : glow ?? "0 2px 8px rgba(0,0,0,0.06)",
                     display:"flex",
@@ -3756,12 +3842,12 @@ export default function UserPortalPage() {
         <div className="db-card" style={{ marginBottom:16 }}>
           <div style={{ position:"absolute",top:0,right:0,width:"120px",height:"120px",borderRadius:"50%",background:"radial-gradient(ellipse,rgba(33,208,179,0.09) 0%,transparent 70%)",transform:"translate(30px,-30px)",pointerEvents:"none" }} />
           <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:14 }}>
-            <div style={{ width:40,height:40,borderRadius:12,background:"linear-gradient(135deg,rgba(33,208,179,0.18),rgba(33,208,179,0.06))",border:"1px solid rgba(33,208,179,0.25)",display:"flex",alignItems:"center",justifyContent:"center",color:"#21D0B3",flexShrink:0 }}>
+            <div style={{ width:40,height:40,borderRadius:12,background:"linear-gradient(135deg,rgba(33,208,179,0.18),rgba(33,208,179,0.06))",border:"1px solid rgba(33,208,179,0.25)",display:"flex",alignItems:"center",justifyContent:"center",color:BRAND.teal,flexShrink:0 }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
               </svg>
             </div>
-            <span style={{ fontSize:10,fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:"#21D0B3" }}>Calendario deportivo</span>
+            <span style={{ fontSize:10,fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:BRAND.teal }}>Calendario deportivo</span>
           </div>
           {calendarEvents.length === 0 ? (
             <p style={{ fontSize:12.5,color:"#94a3b8",margin:0,textAlign:"center",padding:"8px 0" }}>Sin actividades programadas</p>
@@ -3772,7 +3858,7 @@ export default function UserPortalPage() {
                 const isPast = new Date(ce.scheduledAt!) < new Date();
                 return (
                   <div key={ce.id} style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9",opacity:isPast ? 0.5 : 1 }}>
-                    <span style={{ width:8,height:8,borderRadius:"50%",background:isPast ? "#94a3b8" : "#21D0B3",flexShrink:0 }} />
+                    <span style={{ width:8,height:8,borderRadius:"50%",background:isPast ? "#94a3b8" : BRAND.teal,flexShrink:0 }} />
                     <div style={{ flex:1,minWidth:0 }}>
                       <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
                         {ce.name}{parentName ? ` · ${parentName}` : ""}
@@ -3793,12 +3879,12 @@ export default function UserPortalPage() {
         <div className="db-card" style={{ marginBottom:16 }}>
           <div style={{ position:"absolute",top:0,right:0,width:"120px",height:"120px",borderRadius:"50%",background:"radial-gradient(ellipse,rgba(33,208,179,0.09) 0%,transparent 70%)",transform:"translate(30px,-30px)",pointerEvents:"none" }} />
           <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:14 }}>
-            <div style={{ width:40,height:40,borderRadius:12,background:"linear-gradient(135deg,rgba(33,208,179,0.18),rgba(33,208,179,0.06))",border:"1px solid rgba(33,208,179,0.25)",display:"flex",alignItems:"center",justifyContent:"center",color:"#21D0B3",flexShrink:0 }}>
+            <div style={{ width:40,height:40,borderRadius:12,background:"linear-gradient(135deg,rgba(33,208,179,0.18),rgba(33,208,179,0.06))",border:"1px solid rgba(33,208,179,0.25)",display:"flex",alignItems:"center",justifyContent:"center",color:BRAND.teal,flexShrink:0 }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
               </svg>
             </div>
-            <span style={{ fontSize:10,fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:"#21D0B3" }}>Ficha de Salud</span>
+            <span style={{ fontSize:10,fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:BRAND.teal }}>Ficha de Salud</span>
           </div>
           {healthRecord?.participantSignature ? (
             <div>
@@ -3807,7 +3893,7 @@ export default function UserPortalPage() {
                 <p style={{ fontSize:13,color:"#0f172a",margin:0,fontWeight:600 }}>Ficha completada y firmada</p>
               </div>
               <a href={`/portal/athlete/salud?id=${athlete.id}`}
-                style={{ display:"inline-flex",alignItems:"center",gap:6,fontSize:12,fontWeight:600,color:"#21D0B3",textDecoration:"none" }}>
+                style={{ display:"inline-flex",alignItems:"center",gap:6,fontSize:12,fontWeight:600,color:BRAND.teal,textDecoration:"none" }}>
                 Ver o editar ficha →
               </a>
             </div>
@@ -3817,7 +3903,7 @@ export default function UserPortalPage() {
                 Completa tu ficha de salud con datos médicos, alergias, contacto de emergencia y firma digital.
               </p>
               <a href={`/portal/athlete/salud?id=${athlete.id}`}
-                style={{ display:"block",width:"100%",padding:12,borderRadius:12,border:"none",background:"linear-gradient(135deg,#21D0B3,#14AE98)",color:"#fff",fontSize:13,fontWeight:700,textAlign:"center",textDecoration:"none",boxShadow:"0 2px 10px rgba(33,208,179,0.3)",boxSizing:"border-box" }}>
+                style={{ display:"block",width:"100%",padding:12,borderRadius:12,border:"none",background:`linear-gradient(135deg,${BRAND.teal},#14AE98)`,color:"#fff",fontSize:13,fontWeight:700,textAlign:"center",textDecoration:"none",boxShadow:"0 2px 10px rgba(33,208,179,0.3)",boxSizing:"border-box" }}>
                 Completar ficha de salud
               </a>
             </>
@@ -3958,7 +4044,7 @@ export default function UserPortalPage() {
               />
               {/* Submit */}
               <button type="button" onClick={submitRating} disabled={ratingStars === 0 || ratingLoading}
-                style={{ width:"100%",padding:16,borderRadius:14,border:"none",background: ratingStars > 0 ? "linear-gradient(135deg,#34F3C6,#21D0B3)" : "#e2e8f0",color: ratingStars > 0 ? "#0d1b3e" : "#94a3b8",fontSize:16,fontWeight:700,cursor: ratingStars > 0 ? "pointer" : "not-allowed",opacity: ratingLoading ? 0.7 : 1 }}>
+                style={{ width:"100%",padding:16,borderRadius:14,border:"none",background: ratingStars > 0 ? `linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})` : "#e2e8f0",color: ratingStars > 0 ? "#0d1b3e" : "#94a3b8",fontSize:16,fontWeight:700,cursor: ratingStars > 0 ? "pointer" : "not-allowed",opacity: ratingLoading ? 0.7 : 1 }}>
                 {ratingLoading ? "Enviando..." : "Enviar evaluación"}
               </button>
               <button type="button" onClick={() => { setShowRating(false); setRatingStars(0); setRatingComment(""); }}
@@ -4038,9 +4124,9 @@ export default function UserPortalPage() {
             style={{ position:"fixed",inset:0,zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:16,background:"rgba(2,12,24,0.78)",backdropFilter:"blur(6px)" }}>
             <div onClick={(e) => e.stopPropagation()}
               style={{ background:"#fff",borderRadius:20,width:"100%",maxWidth:480,maxHeight:"95vh",display:"flex",flexDirection:"column",overflow:"hidden",boxShadow:"0 24px 80px rgba(0,0,0,0.5)" }}>
-              <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",borderBottom:"1px solid #e2e8f0",background:"linear-gradient(135deg,#041a2e,#062240)",color:"#fff" }}>
+              <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",borderBottom:"1px solid #e2e8f0",background:`linear-gradient(135deg,${BRAND.navy},${BRAND.navyLight})`,color:"#fff" }}>
                 <div>
-                  <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>Credencial digital</p>
+                  <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:BRAND.teal,margin:0 }}>Credencial digital</p>
                   <p style={{ fontSize:14,fontWeight:700,margin:"2px 0 0" }}>{athlete?.fullName || "Participante"}</p>
                 </div>
                 <div style={{ display:"flex",gap:8 }}>
@@ -4054,7 +4140,7 @@ export default function UserPortalPage() {
                     } catch { notify.push("No se pudo generar el PDF", "❌"); }
                   }}
                     title="Descargar PDF"
-                    style={{ width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",color:"#21D0B3",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
+                    style={{ width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",color:BRAND.teal,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                   </button>
                   <button type="button" onClick={() => setCredentialHtml(null)}

@@ -9,6 +9,7 @@ import EmptyStateBox from "@/components/ui/EmptyState";
 import KpiCard from "@/components/ui/KpiCard";
 import { clientTypeLabel } from "@/lib/clientTypes";
 import { useI18n } from "@/lib/i18n";
+import { BRAND, TRIP_STATUS_META } from "@/lib/design";
 import {
   TruckIcon,
   UploadIcon,
@@ -20,17 +21,18 @@ import {
   UsersIcon,
 } from "@/components/ui/Icons";
 
-// Etiqueta + color de badge por estado de viaje, consistente con el resto del
-// admin (mismos estados que la pantalla Operaciones / Viajes).
+// Estado de viaje → clase de badge del tema. Los labels salen del catálogo
+// canónico (TRIP_STATUS_META en lib/design); las clases `.badge-*` son la
+// paleta propia de este módulo. ASSIGNED es un estado extra local.
 const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
-  REQUESTED: { label: "Solicitado", cls: "badge-amber" },
-  SCHEDULED: { label: "Programado", cls: "badge-blue" },
+  REQUESTED: { label: TRIP_STATUS_META.REQUESTED.label, cls: "badge-amber" },
+  SCHEDULED: { label: TRIP_STATUS_META.SCHEDULED.label, cls: "badge-blue" },
   ASSIGNED: { label: "Asignado", cls: "badge-gold" },
-  EN_ROUTE: { label: "En ruta", cls: "badge-emerald" },
-  PICKED_UP: { label: "En curso", cls: "badge-emerald" },
-  DROPPED_OFF: { label: "Dejado", cls: "badge-slate" },
-  COMPLETED: { label: "Completado", cls: "badge-slate" },
-  CANCELLED: { label: "Cancelado", cls: "badge-rose" },
+  EN_ROUTE: { label: TRIP_STATUS_META.EN_ROUTE.label, cls: "badge-emerald" },
+  PICKED_UP: { label: TRIP_STATUS_META.PICKED_UP.label, cls: "badge-emerald" },
+  DROPPED_OFF: { label: TRIP_STATUS_META.DROPPED_OFF.label, cls: "badge-slate" },
+  COMPLETED: { label: TRIP_STATUS_META.COMPLETED.label, cls: "badge-slate" },
+  CANCELLED: { label: TRIP_STATUS_META.CANCELLED.label, cls: "badge-rose" },
 };
 const statusBadge = (status?: string | null) =>
   STATUS_BADGE[String(status || "").toUpperCase()] ?? {
@@ -618,7 +620,7 @@ export default function DailyTransportPage() {
                 style={{
                   display: "flex", alignItems: "center", gap: 12, textAlign: "left",
                   padding: "12px 16px", borderRadius: 14, cursor: "pointer",
-                  background: active ? "linear-gradient(135deg, #21D0B3 0%, #1eb19a 100%)" : "transparent",
+                  background: active ? `linear-gradient(135deg, ${BRAND.teal} 0%, #1eb19a 100%)` : "transparent",
                   border: active ? "1px solid transparent" : "1px dashed var(--border)",
                   boxShadow: active ? "0 4px 14px rgba(33,208,179,0.35)" : "none",
                   transition: "all 150ms",
@@ -723,7 +725,7 @@ export default function DailyTransportPage() {
               onClick={runImport}
               style={{
                 padding: "10px 24px", borderRadius: 12, fontSize: 13.5, fontWeight: 800, border: "none",
-                background: rows.length && !importing ? "linear-gradient(135deg, #21D0B3, #1eb19a)" : "var(--border)",
+                background: rows.length && !importing ? `linear-gradient(135deg, ${BRAND.teal}, #1eb19a)` : "var(--border)",
                 color: rows.length && !importing ? "#fff" : "var(--text-muted)",
                 boxShadow: rows.length && !importing ? "0 4px 14px rgba(33,208,179,0.4)" : "none",
                 cursor: rows.length && !importing ? "pointer" : "not-allowed",
@@ -940,7 +942,7 @@ export default function DailyTransportPage() {
             <div className="rounded-2xl p-5 space-y-4"
               style={{ background: "linear-gradient(160deg, #0f172a 0%, #1f4e8c 130%)", boxShadow: "0 8px 24px rgba(15,23,42,0.25)" }}>
               <div>
-                <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.2em", textTransform: "uppercase", color: "#21D0B3" }}>
+                <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.2em", textTransform: "uppercase", color: BRAND.teal }}>
                   {t("Motor de asignación")}
                 </p>
                 <h3 style={{ marginTop: 4, fontSize: 16, fontWeight: 800, color: "#fff" }}>{t("Resumen de ejecución")}</h3>
@@ -973,7 +975,7 @@ export default function DailyTransportPage() {
                 <button type="button" disabled={assigning} onClick={() => runAssign(false)}
                   style={{
                     width: "100%", padding: "12px 16px", borderRadius: 12, fontSize: 13.5, fontWeight: 800,
-                    background: "linear-gradient(135deg, #21D0B3, #1eb19a)", color: "#fff", border: "none",
+                    background: `linear-gradient(135deg, ${BRAND.teal}, #1eb19a)`, color: "#fff", border: "none",
                     boxShadow: "0 4px 14px rgba(33,208,179,0.4)",
                     cursor: assigning ? "default" : "pointer", opacity: assigning ? 0.7 : 1,
                   }}>
@@ -1087,7 +1089,7 @@ export default function DailyTransportPage() {
                   width: `${viewKpis.total ? Math.round((viewKpis.assigned / viewKpis.total) * 100) : 0}%`,
                   height: "100%", borderRadius: 99,
                   background: viewKpis.assigned === viewKpis.total
-                    ? "linear-gradient(90deg, #21D0B3, #1eb19a)"
+                    ? `linear-gradient(90deg, ${BRAND.teal}, #1eb19a)`
                     : "linear-gradient(90deg, #f59e0b, #d97706)",
                   transition: "width 300ms ease",
                 }} />
@@ -1151,7 +1153,7 @@ export default function DailyTransportPage() {
                               <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
                                 <span style={{
                                   width: 24, height: 24, borderRadius: "50%", flexShrink: 0,
-                                  background: "linear-gradient(135deg, #21D0B3, #1eb19a)", color: "#fff",
+                                  background: `linear-gradient(135deg, ${BRAND.teal}, #1eb19a)`, color: "#fff",
                                   fontSize: 9, fontWeight: 800, display: "inline-flex",
                                   alignItems: "center", justifyContent: "center", letterSpacing: "0.03em",
                                 }}>
@@ -1211,7 +1213,7 @@ function ToggleRow({ checked, onChange, label, hint }: {
       </span>
       <span aria-hidden style={{
         width: 36, height: 20, borderRadius: 99, position: "relative", flexShrink: 0,
-        background: checked ? "#21D0B3" : "#cbd5e1", transition: "background 150ms",
+        background: checked ? BRAND.teal : "#cbd5e1", transition: "background 150ms",
       }}>
         <span style={{
           position: "absolute", top: 3, left: checked ? 19 : 3,

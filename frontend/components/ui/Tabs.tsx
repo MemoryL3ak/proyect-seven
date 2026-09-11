@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
+import { BRAND } from "@/lib/design";
 
 type Tab<T extends string> = {
   key: T;
@@ -37,7 +38,7 @@ export default function Tabs<T extends string>({
             className="relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all"
             style={{
               background: active
-                ? "linear-gradient(135deg, #21D0B3 0%, #1eb19a 100%)"
+                ? `linear-gradient(135deg, ${BRAND.teal} 0%, #1eb19a 100%)`
                 : "transparent",
               color: active ? "#fff" : "var(--text-muted)",
               boxShadow: active ? "0 2px 8px rgba(33, 208, 179, 0.30)" : "none",

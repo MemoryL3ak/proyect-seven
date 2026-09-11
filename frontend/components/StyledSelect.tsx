@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { BRAND } from "@/lib/design";
 
 type Option = { value: string; label: string; disabled?: boolean };
 
@@ -81,7 +82,7 @@ export default function StyledSelect({
   };
 
   const active = open || focused;
-  const borderColor = active ? "#21D0B3" : "#e2e8f0";
+  const borderColor = active ? BRAND.teal : "#e2e8f0";
   const shadow = open ? "0 0 0 3px rgba(33,208,179,0.12)" : "none";
 
   return (
@@ -126,7 +127,7 @@ export default function StyledSelect({
         </span>
         <svg
           width="14" height="14" viewBox="0 0 24 24" fill="none"
-          stroke={active ? "#21D0B3" : "#94a3b8"}
+          stroke={active ? BRAND.teal : "#94a3b8"}
           strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
           style={{ flexShrink: 0, marginLeft: "8px", transition: "stroke 150ms ease, transform 150ms ease", transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
         >
@@ -146,7 +147,7 @@ export default function StyledSelect({
             right: 0,
             zIndex: 200,
             background: "#ffffff",
-            border: "1px solid #21D0B3",
+            border: `1px solid ${BRAND.teal}`,
             borderTop: "none",
             borderRadius: "0 0 10px 10px",
             boxShadow: "0 8px 24px rgba(15,23,42,0.12)",
@@ -166,7 +167,7 @@ export default function StyledSelect({
                   padding: "7px 12px",
                   fontSize: "13px",
                   cursor: opt.disabled ? "default" : "pointer",
-                  color: isSelected ? "#21D0B3" : opt.disabled ? "#cbd5e1" : "#0f172a",
+                  color: isSelected ? BRAND.teal : opt.disabled ? "#cbd5e1" : "#0f172a",
                   fontWeight: isSelected ? 700 : 400,
                   background: isSelected ? "rgba(33,208,179,0.06)" : "transparent",
                   borderBottom: i < options.length - 1 ? "1px solid #f1f5f9" : "none",
@@ -180,7 +181,7 @@ export default function StyledSelect({
               >
                 {opt.label}
                 {isSelected && (
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
                 )}

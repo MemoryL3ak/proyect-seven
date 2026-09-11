@@ -6,6 +6,7 @@ import PageHeader from "@/components/ui/PageHeader";
 import { TicketIcon, SearchIcon, RefreshIcon, CheckIcon, AlertIcon } from "@/components/ui/Icons";
 import { normalizeClientType, clientTypeLabel } from "@/lib/clientTypes";
 import { useI18n } from "@/lib/i18n";
+import { BRAND, TRIP_STATUS_META } from "@/lib/design";
 
 /**
  * Solicitudes de viaje generadas desde la app (portal del pasajero).
@@ -39,14 +40,22 @@ type VehicleItem = { id: string; plate?: string | null };
 /** Tipos de viaje originados en la app del pasajero. */
 const PORTAL_TRIP_TYPES = new Set(["PORTAL_REQUEST", "VIAJE_IDA", "VIAJE_IDA_REGRESO"]);
 
+// Colores de estado desde el catálogo canónico (TRIP_STATUS_META en
+// lib/design). Labels y bordes son extensión local de esta pantalla:
+// aquí se habla de "solicitudes" (femenino) y los chips llevan borde,
+// cosas que el catálogo canónico no define.
+const statusMetaLocal = (status: string, label: string, border: string) => {
+  const m = TRIP_STATUS_META[status];
+  return { label, color: m.color, bg: m.bg, border };
+};
 const STATUS_META: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  REQUESTED:   { label: "Pendiente",   color: "#b45309", bg: "#fef3c7", border: "#fcd34d" },
-  SCHEDULED:   { label: "Agendada",    color: "#7c3aed", bg: "#ede9fe", border: "#c4b5fd" },
-  EN_ROUTE:    { label: "En ruta",     color: "#4338ca", bg: "#e0e7ff", border: "#a5b4fc" },
-  PICKED_UP:   { label: "En curso",    color: "#6d28d9", bg: "#f3e8ff", border: "#d8b4fe" },
-  DROPPED_OFF: { label: "En destino",  color: "#0e7490", bg: "#cffafe", border: "#67e8f9" },
-  COMPLETED:   { label: "Completada",  color: "#15803d", bg: "#dcfce7", border: "#86efac" },
-  CANCELLED:   { label: "Cancelada",   color: "#dc2626", bg: "#fee2e2", border: "#fca5a5" },
+  REQUESTED:   statusMetaLocal("REQUESTED",   "Pendiente",  "#fcd34d"),
+  SCHEDULED:   statusMetaLocal("SCHEDULED",   "Agendada",   "rgba(33,208,179,0.35)"),
+  EN_ROUTE:    statusMetaLocal("EN_ROUTE",    "En ruta",    "rgba(59,130,246,0.35)"),
+  PICKED_UP:   statusMetaLocal("PICKED_UP",   "En curso",   "rgba(139,92,246,0.35)"),
+  DROPPED_OFF: statusMetaLocal("DROPPED_OFF", "En destino", "#cbd5e1"),
+  COMPLETED:   statusMetaLocal("COMPLETED",   "Completada", "#cbd5e1"),
+  CANCELLED:   statusMetaLocal("CANCELLED",   "Cancelada",  "rgba(239,68,68,0.35)"),
 };
 
 const CLIENT_META: Record<string, { color: string; bg: string; border: string }> = {
@@ -275,13 +284,13 @@ export default function TripRequestsPage() {
         title={t("Solicitudes de Viaje")}
         description={t("Solicitudes T1 y VIP generadas desde la app. Al asignar un conductor aquí, se notifica al conductor y el pasajero ve el estado en su app.")}
         icon={<TicketIcon size={26} />}
-        iconBg="linear-gradient(135deg, #21D0B3 0%, #1f4e8c 100%)"
+        iconBg={`linear-gradient(135deg, ${BRAND.teal} 0%, #1f4e8c 100%)`}
         accentStrip="teal"
         meta={
           <span className="inline-flex items-center gap-2 text-xs font-semibold rounded-full px-3 py-1"
             style={{ background: "#e7f5ec", color: "#1eb19a" }}>
             <span style={{
-              width: 7, height: 7, borderRadius: "50%", background: "#21D0B3",
+              width: 7, height: 7, borderRadius: "50%", background: BRAND.teal,
               boxShadow: "0 0 0 3px rgba(33,208,179,0.25)", animation: "pulse 1.8s infinite",
             }} />
             {t("En vivo · se actualiza cada 10 s")}

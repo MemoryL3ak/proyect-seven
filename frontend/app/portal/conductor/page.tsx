@@ -26,6 +26,7 @@ import { claimPortalSession, clearPortalSession, ensurePortalIdentity, getStored
 import { dlog } from "@/lib/native-debug";
 import PortalSessionGuard from "@/components/PortalSessionGuard";
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
+import { BRAND } from "@/lib/design";
 
 const TripMap = dynamic(() => import("@/components/TripMap"), {
   ssr: false,
@@ -56,7 +57,7 @@ const FLIGHT_STATUS_ES: Record<string, { label: string; color: string }> = {
   active:      { label: "En vuelo",    color: "#10b981" },
   approaching: { label: "Aproximando", color: "#10b981" },
   delayed:     { label: "Retrasado",   color: "#f59e0b" },
-  landed:      { label: "Aterrizó",    color: "#21D0B3" },
+  landed:      { label: "Aterrizó",    color: BRAND.teal },
   cancelled:   { label: "Cancelado",   color: "#ef4444" },
   diverted:    { label: "Desviado",    color: "#f59e0b" },
   incident:    { label: "Incidente",   color: "#f97316" },
@@ -1327,7 +1328,7 @@ export default function DriverPortalPage() {
 
           {/* Left branding panel */}
           <div className="flex flex-col justify-between p-8 lg:p-14 lg:w-[46%] lg:flex-shrink-0"
-            style={{ background: "linear-gradient(160deg,#020c18 0%,#041a2e 40%,#062240 70%,#030f1e 100%)", position: "relative", overflow: "hidden", minHeight: "180px" }}>
+            style={{ background: `linear-gradient(160deg,#020c18 0%,${BRAND.navy} 40%,${BRAND.navyLight} 70%,#030f1e 100%)`, position: "relative", overflow: "hidden", minHeight: "180px" }}>
             <div style={{ position: "absolute", inset: 0, pointerEvents: "none", backgroundImage: `linear-gradient(rgba(33,208,179,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(33,208,179,0.03) 1px,transparent 1px)`, backgroundSize: "60px 60px" }} />
             <div style={{ position: "absolute", top: "-60px", left: "-60px", width: "400px", height: "400px", borderRadius: "50%", background: "radial-gradient(ellipse,rgba(6,34,64,0.6) 0%,transparent 70%)", animation: "pc-f1 12s ease-in-out infinite", pointerEvents: "none" }} />
             <div style={{ position: "absolute", bottom: "60px", right: "-40px", width: "320px", height: "320px", borderRadius: "50%", background: "radial-gradient(ellipse,rgba(33,208,179,0.1) 0%,transparent 70%)", animation: "pc-f2 16s ease-in-out infinite", pointerEvents: "none" }} />
@@ -1339,12 +1340,12 @@ export default function DriverPortalPage() {
             </div>
             <div style={{ position: "relative", zIndex: 1, flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: "16px", padding: "24px 0" }}>
               <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", width: "fit-content" }}>
-                <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#21D0B3", boxShadow: "0 0 10px #21D0B3", display: "inline-block", animation: "pc-pulse 2s ease-in-out infinite" }} />
-                <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#21D0B3" }}>Portal de Conductores</span>
+                <span style={{ width: 7, height: 7, borderRadius: "50%", background: BRAND.teal, boxShadow: `0 0 10px ${BRAND.teal}`, display: "inline-block", animation: "pc-pulse 2s ease-in-out infinite" }} />
+                <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: BRAND.teal }}>Portal de Conductores</span>
               </div>
               <h1 style={{ fontSize: "clamp(28px,3vw,44px)", fontWeight: 800, lineHeight: 1.1, color: "#f8fafc", letterSpacing: "-0.02em", margin: 0 }}>
                 Gestiona<br />
-                <span style={{ background: "linear-gradient(90deg,#21D0B3 0%,#34F3C6 40%,#21D0B3 80%)", backgroundSize: "200% auto", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", animation: "pc-shimmer 4s linear infinite" }}>tus viajes</span>
+                <span style={{ background: `linear-gradient(90deg,${BRAND.teal} 0%,${BRAND.tealLight} 40%,${BRAND.teal} 80%)`, backgroundSize: "200% auto", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", animation: "pc-shimmer 4s linear infinite" }}>tus viajes</span>
               </h1>
               <p className="hidden sm:block" style={{ fontSize: "14px", color: "rgba(255,255,255,0.45)", maxWidth: "340px", lineHeight: 1.7, margin: 0 }}>
                 Revisa los traslados asignados, reporta el estado de cada etapa y confirma la recogida de pasajeros.
@@ -1365,7 +1366,7 @@ export default function DriverPortalPage() {
             <div className="hidden lg:flex" style={{ position: "relative", zIndex: 1, borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: "20px" }}>
               {[["Acceso seguro", "SSL / HTTPS"], ["GPS tracking", "Tiempo real"], ["Multi-evento", "Global"]].map(([title, sub], i, arr) => (
                 <div key={title} style={{ flex: 1, paddingRight: i < arr.length - 1 ? "20px" : "0", borderRight: i < arr.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none", paddingLeft: i > 0 ? "20px" : "0" }}>
-                  <p style={{ fontSize: "14px", fontWeight: 800, color: "#21D0B3", margin: 0, lineHeight: 1 }}>{title}</p>
+                  <p style={{ fontSize: "14px", fontWeight: 800, color: BRAND.teal, margin: 0, lineHeight: 1 }}>{title}</p>
                   <p style={{ fontSize: "10px", color: "rgba(255,255,255,0.32)", margin: "3px 0 0", letterSpacing: "0.05em", textTransform: "uppercase" }}>{sub}</p>
                 </div>
               ))}
@@ -1374,7 +1375,7 @@ export default function DriverPortalPage() {
 
           {/* Right form panel */}
           <div className="flex-1 flex items-center justify-center p-5 sm:p-8 lg:p-16"
-            style={{ background: "linear-gradient(160deg,#030f1e 0%,#041a2e 50%,#020c18 100%)", position: "relative", overflow: "hidden" }}>
+            style={{ background: `linear-gradient(160deg,#030f1e 0%,${BRAND.navy} 50%,#020c18 100%)`, position: "relative", overflow: "hidden" }}>
             <div style={{ position: "absolute", top: "30%", left: "50%", transform: "translate(-50%,-50%)", width: "500px", height: "500px", borderRadius: "50%", background: "radial-gradient(ellipse,rgba(6,34,64,0.4) 0%,transparent 70%)", pointerEvents: "none" }} />
             <div style={{ position: "absolute", bottom: "-50px", right: "-50px", width: "280px", height: "280px", borderRadius: "50%", background: "radial-gradient(ellipse,rgba(33,208,179,0.08) 0%,transparent 70%)", pointerEvents: "none" }} />
             <div className="pc-form relative z-10 w-full" style={{ maxWidth: "420px" }}>
@@ -1394,7 +1395,7 @@ export default function DriverPortalPage() {
                   />
                 </div>
                 <button type="button" onClick={() => loadTrips()} disabled={loading}
-                  style={{ width: "100%", padding: "17px", borderRadius: "14px", border: "none", background: "linear-gradient(135deg,#34F3C6 0%,#21D0B3 50%,#15B09A 100%)", color: "#0d1b3e", fontSize: "16px", fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1, letterSpacing: "0.03em", boxShadow: "0 4px 20px rgba(33,208,179,0.35)" }}>
+                  style={{ width: "100%", padding: "17px", borderRadius: "14px", border: "none", background: `linear-gradient(135deg,${BRAND.tealLight} 0%,${BRAND.teal} 50%,#15B09A 100%)`, color: "#0d1b3e", fontSize: "16px", fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1, letterSpacing: "0.03em", boxShadow: "0 4px 20px rgba(33,208,179,0.35)" }}>
                   {loading ? t("Cargando...") : t("Ver mis viajes")}
                 </button>
                 {idError && <p style={{ color: "#fca5a5", fontSize: "13px", textAlign: "center" }}>{idError}</p>}
@@ -1445,7 +1446,7 @@ export default function DriverPortalPage() {
             .dc-tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 4px;background:none;border:none;cursor:pointer;font-size:10px;font-weight:600;transition:color .15s;-webkit-tap-highlight-color:transparent;}
             .dc-profile-card{background:#fff;border-radius:24px;border:1px solid rgba(226,232,240,0.8);padding:24px 28px;margin-bottom:20px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;animation:dc-in .4s cubic-bezier(0.16,1,0.3,1) both;box-shadow:0 4px 24px rgba(0,0,0,0.06);position:relative;overflow:hidden;}
             .dc-profile-body{display:flex;align-items:center;gap:20px;min-width:0;}
-            .dc-avatar{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#21D0B3 0%,#062240 100%);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#fff;box-shadow:0 6px 24px rgba(33,208,179,0.4);letter-spacing:-0.02em;flex-shrink:0;}
+            .dc-avatar{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,${BRAND.teal} 0%,${BRAND.navyLight} 100%);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#fff;box-shadow:0 6px 24px rgba(33,208,179,0.4);letter-spacing:-0.02em;flex-shrink:0;}
             .dc-profile-name{font-size:clamp(18px,2.5vw,26px);font-weight:800;color:#0f172a;margin:0 0 10px;letter-spacing:-0.02em;line-height:1.15;word-break:break-word;}
             .dc-cards-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-bottom:20px;}
             .dc-info-strip{display:none;flex-wrap:wrap;gap:6px;margin-bottom:12px;padding:12px 14px;background:#fff;border-radius:16px;border:1px solid rgba(226,232,240,0.8);box-shadow:0 2px 12px rgba(0,0,0,0.04);align-items:center;}
@@ -1453,7 +1454,7 @@ export default function DriverPortalPage() {
             .dc-trips-section{background:#fff;border-radius:24px;border:1px solid rgba(226,232,240,0.8);padding:24px 28px;box-shadow:0 4px 20px rgba(0,0,0,0.05);animation:dc-in .5s cubic-bezier(0.16,1,0.3,1) both;animation-delay:.28s;position:relative;overflow:hidden;}
             .dc-action-ghost{padding:8px 16px;border-radius:10px;border:1px solid #e2e8f0;background:#f8fafc;color:#475569;font-size:12px;font-weight:600;cursor:pointer;transition:all .18s;}
             .dc-action-ghost:hover{background:#f1f5f9;border-color:#cbd5e1;}
-            .dc-action-primary{padding:8px 16px;border-radius:10px;border:none;background:linear-gradient(135deg,#34F3C6,#21D0B3);color:#0d1b3e;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(33,208,179,0.3);transition:all .18s;}
+            .dc-action-primary{padding:8px 16px;border-radius:10px;border:none;background:linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal});color:#0d1b3e;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(33,208,179,0.3);transition:all .18s;}
             .dc-action-primary:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(33,208,179,0.4);}
             @media(max-width:640px){
               .dc-banner-inner{padding:8px 12px;}.dc-banner-logo{height:32px!important;}
@@ -1482,9 +1483,9 @@ export default function DriverPortalPage() {
           <div style={{ position:"fixed",bottom:"-80px",left:"-80px",width:"380px",height:"380px",borderRadius:"50%",background:"radial-gradient(ellipse,rgba(31,205,255,0.06) 0%,transparent 65%)",pointerEvents:"none",zIndex:0 }} />
 
           {/* Top banner */}
-          <div style={{ position:"relative",background:"linear-gradient(135deg,#041a2e 0%,#062240 45%,#0a3356 80%,#041a2e 100%)",overflow:"hidden",zIndex:1 }}>
+          <div style={{ position:"relative",background:`linear-gradient(135deg,${BRAND.navy} 0%,${BRAND.navyLight} 45%,#0a3356 80%,${BRAND.navy} 100%)`,overflow:"hidden",zIndex:1 }}>
             <div style={{ position:"absolute",inset:0,backgroundImage:`linear-gradient(rgba(33,208,179,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(33,208,179,0.04) 1px,transparent 1px)`,backgroundSize:"48px 48px",pointerEvents:"none" }} />
-            <div className="dc-banner-glow" style={{ position:"absolute",bottom:"-1px",left:"0",right:"0",height:"2px",background:"linear-gradient(90deg,transparent,#21D0B3 30%,#34F3C6 50%,#21D0B3 70%,transparent)",pointerEvents:"none" }} />
+            <div className="dc-banner-glow" style={{ position:"absolute",bottom:"-1px",left:"0",right:"0",height:"2px",background:`linear-gradient(90deg,transparent,${BRAND.teal} 30%,${BRAND.tealLight} 50%,${BRAND.teal} 70%,transparent)`,pointerEvents:"none" }} />
             <div className="dc-banner-inner">
               <img src="/branding/LOGO-SEVEN-1.png" alt="Seven Arena" className="dc-banner-logo" />
               <div style={{ display:"flex",alignItems:"center",gap:8 }}>
@@ -1496,13 +1497,13 @@ export default function DriverPortalPage() {
                 />
                 <button type="button" onClick={() => setAssistOpen((p) => !p)} title="Asistencia"
                   style={{ position:"relative",display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:`1px solid ${assistOpen ? "rgba(52,243,198,0.7)" : "rgba(33,208,179,0.4)"}`,background: assistOpen ? "linear-gradient(135deg,rgba(52,243,198,0.28),rgba(33,208,179,0.18))" : "rgba(33,208,179,0.12)",cursor:"pointer",flexShrink:0,transition:"all .15s" }}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
                   </svg>
                 </button>
                 <button type="button" onClick={() => window.location.reload()} disabled={loading} title="Actualizar"
                   style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",cursor:"pointer",flexShrink:0,opacity:loading?0.5:1 }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
                   </svg>
                 </button>
@@ -1529,18 +1530,18 @@ export default function DriverPortalPage() {
               return (
                 <button type="button" onClick={() => { setSelectedTripId(enViaje.id); markTripSeen(enViaje.id); }}
                   style={{ width:"100%",textAlign:"left",display:"flex",alignItems:"center",gap:12,padding:"14px 16px",marginBottom:16,borderRadius:18,border:"1px solid rgba(52,243,198,0.35)",cursor:"pointer",
-                    background:"linear-gradient(135deg,#062240 0%,#0a3356 55%,#062240 100%)",boxShadow:"0 8px 28px rgba(6,34,64,0.35)",position:"relative",overflow:"hidden" }}>
+                    background:`linear-gradient(135deg,${BRAND.navyLight} 0%,#0a3356 55%,${BRAND.navyLight} 100%)`,boxShadow:"0 8px 28px rgba(6,34,64,0.35)",position:"relative",overflow:"hidden" }}>
                   <span style={{ position:"absolute",inset:0,backgroundImage:"linear-gradient(90deg,transparent,rgba(52,243,198,0.10),transparent)",backgroundSize:"200% 100%",animation:"pc-shimmer 2.4s linear infinite",pointerEvents:"none" }} />
                   <span style={{ position:"relative",flexShrink:0,width:44,height:44,borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(52,243,198,0.15)",border:"1px solid rgba(52,243,198,0.4)" }}>
-                    <span style={{ position:"absolute",width:10,height:10,borderRadius:"50%",background:"#34F3C6",boxShadow:"0 0 0 rgba(52,243,198,0.6)",animation:"dc-ping 1.6s ease-out infinite",top:8,right:8 }} />
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#34F3C6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <span style={{ position:"absolute",width:10,height:10,borderRadius:"50%",background:BRAND.tealLight,boxShadow:"0 0 0 rgba(52,243,198,0.6)",animation:"dc-ping 1.6s ease-out infinite",top:8,right:8 }} />
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={BRAND.tealLight} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M5 17h-2v-6l2-5h9l4 5h3a1 1 0 0 1 1 1v5h-2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/>
                     </svg>
                   </span>
                   <span style={{ position:"relative",flex:1,minWidth:0 }}>
                     <span style={{ display:"flex",alignItems:"center",gap:8 }}>
-                      <span style={{ fontSize:10,fontWeight:800,letterSpacing:"0.18em",textTransform:"uppercase",color:"#34F3C6" }}>● En viaje</span>
-                      <span style={{ fontSize:9.5,fontWeight:700,padding:"2px 8px",borderRadius:"99px",background:"rgba(52,243,198,0.15)",border:"1px solid rgba(52,243,198,0.3)",color:"#a8f5e0" }}>
+                      <span style={{ fontSize:10,fontWeight:800,letterSpacing:"0.18em",textTransform:"uppercase",color:BRAND.tealLight }}>● En viaje</span>
+                      <span style={{ fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:"99px",background:"rgba(52,243,198,0.15)",border:"1px solid rgba(52,243,198,0.3)",color:"#a8f5e0" }}>
                         {enCurso ? "En curso" : "En ruta al punto de encuentro"}
                       </span>
                     </span>
@@ -1557,7 +1558,7 @@ export default function DriverPortalPage() {
 
             {/* Profile card */}
             <div className="dc-profile-card">
-              <div style={{ position:"absolute",left:0,top:0,bottom:0,width:"4px",background:"linear-gradient(180deg,#21D0B3,#1FCDFF,#21D0B3)" }} />
+              <div style={{ position:"absolute",left:0,top:0,bottom:0,width:"4px",background:`linear-gradient(180deg,${BRAND.teal},${BRAND.blue},${BRAND.teal})` }} />
               <div style={{ position:"absolute",top:0,right:0,width:"200px",height:"200px",borderRadius:"50%",background:"radial-gradient(ellipse,rgba(33,208,179,0.05) 0%,transparent 65%)",transform:"translate(60px,-60px)",pointerEvents:"none" }} />
               <div className="dc-profile-body">
                 <div style={{ position:"relative",flexShrink:0 }}>
@@ -1568,10 +1569,10 @@ export default function DriverPortalPage() {
                       {(driverProfile.fullName || "C").split(" ").slice(0,2).map((w: string) => w[0] ?? "").join("").toUpperCase() || "C"}
                     </div>
                   )}
-                  <div style={{ position:"absolute",bottom:2,right:2,width:12,height:12,borderRadius:"50%",background:"#21D0B3",border:"2px solid #fff",boxShadow:"0 0 8px rgba(33,208,179,0.8)" }} />
+                  <div style={{ position:"absolute",bottom:2,right:2,width:12,height:12,borderRadius:"50%",background:BRAND.teal,border:"2px solid #fff",boxShadow:"0 0 8px rgba(33,208,179,0.8)" }} />
                 </div>
                 <div style={{ minWidth:0 }}>
-                  <p className="dc-profile-label" style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:"#21D0B3",margin:"0 0 5px" }}>{t("Perfil")}</p>
+                  <p className="dc-profile-label" style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:BRAND.teal,margin:"0 0 5px" }}>{t("Perfil")}</p>
                   <h1 className="dc-profile-name">{driverProfile.fullName || t("Conductor")}</h1>
                   <div className="dc-profile-badges" style={{ display:"flex",flexWrap:"wrap",gap:"6px" }}>
                     {driverProfile.rut && (
@@ -1582,7 +1583,7 @@ export default function DriverPortalPage() {
                     {(() => {
                       const prov = driverProfile.providerId ? providers[driverProfile.providerId] : null;
                       return prov ? (
-                        <span style={{ fontSize:"11px",fontWeight:700,padding:"4px 12px",borderRadius:"20px",background:"linear-gradient(135deg,rgba(33,208,179,0.12),rgba(33,208,179,0.06))",color:"#0a7a6b",border:"1px solid rgba(33,208,179,0.3)" }}>
+                        <span style={{ fontSize:"11px",fontWeight:700,padding:"4px 12px",borderRadius:"20px",background:"linear-gradient(135deg,rgba(33,208,179,0.12),rgba(33,208,179,0.06))",color:BRAND.tealInk,border:"1px solid rgba(33,208,179,0.3)" }}>
                           {prov.name}
                         </span>
                       ) : null;
@@ -1598,10 +1599,10 @@ export default function DriverPortalPage() {
               <div className="dc-card">
                 <div style={{ position:"absolute",top:0,right:0,width:"110px",height:"110px",borderRadius:"50%",background:"radial-gradient(ellipse,rgba(33,208,179,0.09) 0%,transparent 70%)",transform:"translate(28px,-28px)",pointerEvents:"none" }} />
                 <div style={{ display:"flex",alignItems:"center",gap:"12px",marginBottom:"16px" }}>
-                  <div style={{ width:"40px",height:"40px",borderRadius:"12px",background:"linear-gradient(135deg,rgba(33,208,179,0.18),rgba(33,208,179,0.06))",border:"1px solid rgba(33,208,179,0.25)",display:"flex",alignItems:"center",justifyContent:"center",color:"#21D0B3",flexShrink:0 }}>
+                  <div style={{ width:"40px",height:"40px",borderRadius:"12px",background:"linear-gradient(135deg,rgba(33,208,179,0.18),rgba(33,208,179,0.06))",border:"1px solid rgba(33,208,179,0.25)",display:"flex",alignItems:"center",justifyContent:"center",color:BRAND.teal,flexShrink:0 }}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
                   </div>
-                  <span style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:"#21D0B3" }}>{t("Correo")}</span>
+                  <span style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:BRAND.teal }}>{t("Correo")}</span>
                 </div>
                 <p style={{ fontSize:"15px",fontWeight:700,color:"#0f172a",margin:0,wordBreak:"break-all" }}>{driverProfile.email || "-"}</p>
               </div>
@@ -1610,10 +1611,10 @@ export default function DriverPortalPage() {
               <div className="dc-card">
                 <div style={{ position:"absolute",top:0,right:0,width:"110px",height:"110px",borderRadius:"50%",background:"radial-gradient(ellipse,rgba(52,243,198,0.08) 0%,transparent 70%)",transform:"translate(28px,-28px)",pointerEvents:"none" }} />
                 <div style={{ display:"flex",alignItems:"center",gap:"12px",marginBottom:"16px" }}>
-                  <div style={{ width:"40px",height:"40px",borderRadius:"12px",background:"linear-gradient(135deg,rgba(52,243,198,0.18),rgba(52,243,198,0.06))",border:"1px solid rgba(52,243,198,0.25)",display:"flex",alignItems:"center",justifyContent:"center",color:"#0fa894",flexShrink:0 }}>
+                  <div style={{ width:"40px",height:"40px",borderRadius:"12px",background:"linear-gradient(135deg,rgba(52,243,198,0.18),rgba(52,243,198,0.06))",border:"1px solid rgba(52,243,198,0.25)",display:"flex",alignItems:"center",justifyContent:"center",color:BRAND.tealDark,flexShrink:0 }}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 17H3v-6l2.5-5h11L19 11v6h-2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/><path d="M5 11h14"/></svg>
                   </div>
-                  <span style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:"#0fa894" }}>{t("Vehículo")}</span>
+                  <span style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:BRAND.tealDark }}>{t("Vehículo")}</span>
                 </div>
                 {(() => {
                   const veh = driverProfile.vehicleId ? vehicles[driverProfile.vehicleId] : null;
@@ -1631,7 +1632,7 @@ export default function DriverPortalPage() {
                     <>
                       <p style={{ fontSize:"15px",fontWeight:700,color:"#0f172a",margin:"0 0 8px" }}>{plate?.toUpperCase() || "-"}</p>
                       <div style={{ display:"flex",flexWrap:"wrap",gap:"6px" }}>
-                        {type && <span style={{ fontSize:"11px",padding:"3px 9px",borderRadius:"8px",background:"#f0fdf8",color:"#0a7a6b",border:"1px solid rgba(33,208,179,0.2)",fontWeight:600 }}>{type.toUpperCase()}</span>}
+                        {type && <span style={{ fontSize:"11px",padding:"3px 9px",borderRadius:"8px",background:"#f0fdf8",color:BRAND.tealInk,border:"1px solid rgba(33,208,179,0.2)",fontWeight:600 }}>{type.toUpperCase()}</span>}
                         {brand && <span style={{ fontSize:"11px",padding:"3px 9px",borderRadius:"8px",background:"#f1f5f9",color:"#475569",border:"1px solid #e2e8f0",fontWeight:500 }}>{brand.toUpperCase()}</span>}
                         {model && <span style={{ fontSize:"11px",padding:"3px 9px",borderRadius:"8px",background:"#f1f5f9",color:"#475569",border:"1px solid #e2e8f0",fontWeight:500 }}>{model.toUpperCase()}</span>}
                       </div>
@@ -1673,11 +1674,11 @@ export default function DriverPortalPage() {
                   <>
                     {plate && (
                       <span className="dc-info-chip">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><path d="M5 17H3v-6l2.5-5h11L19 11v6h-2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><path d="M5 17H3v-6l2.5-5h11L19 11v6h-2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg>
                         {plate.toUpperCase()}
                       </span>
                     )}
-                    {prov && <span className="dc-info-chip" style={{ color:"#0a7a6b",borderColor:"rgba(33,208,179,0.3)",background:"rgba(33,208,179,0.06)" }}>{prov.name}</span>}
+                    {prov && <span className="dc-info-chip" style={{ color:BRAND.tealInk,borderColor:"rgba(33,208,179,0.3)",background:"rgba(33,208,179,0.06)" }}>{prov.name}</span>}
                     {driverProfile.rut && <span className="dc-info-chip">RUT: {driverProfile.rut}</span>}
                   </>
                 );
@@ -1695,8 +1696,8 @@ export default function DriverPortalPage() {
                     </h2>
                     {trackingTripId && (
                       <div style={{ display:"inline-flex",alignItems:"center",gap:5,padding:"3px 10px",borderRadius:"20px",background:"rgba(33,208,179,0.1)",border:"1px solid rgba(33,208,179,0.3)" }}>
-                        <div style={{ width:6,height:6,borderRadius:"50%",background:"#21D0B3",animation:"dc-glow 1.5s ease-in-out infinite" }} />
-                        <span style={{ fontSize:"10px",fontWeight:700,color:"#21D0B3" }}>GPS</span>
+                        <div style={{ width:6,height:6,borderRadius:"50%",background:BRAND.teal,animation:"dc-glow 1.5s ease-in-out infinite" }} />
+                        <span style={{ fontSize:"10px",fontWeight:700,color:BRAND.teal }}>GPS</span>
                       </div>
                     )}
                   </div>
@@ -1736,10 +1737,10 @@ export default function DriverPortalPage() {
                     <span style={{
                       fontSize:10,fontWeight:700,padding:"1px 6px",borderRadius:6,
                       background: statusFilter === key ? "rgba(33,208,179,0.15)" : "transparent",
-                      color: statusFilter === key ? "#0a7a6b" : "#b0b8c4",
+                      color: statusFilter === key ? BRAND.tealInk : "#b0b8c4",
                     }}>{count}</span>
                     {unread > 0 && (
-                      <span style={{ fontSize:9,fontWeight:800,padding:"2px 6px",borderRadius:"99px",background:"#ef4444",color:"#fff",minWidth:16,textAlign:"center" }}>{unread}</span>
+                      <span style={{ fontSize:10,fontWeight:800,padding:"2px 6px",borderRadius:"99px",background:"#ef4444",color:"#fff",minWidth:16,textAlign:"center" }}>{unread}</span>
                     )}
                   </button>
                 ))}
@@ -1776,7 +1777,7 @@ export default function DriverPortalPage() {
                           <div style={{ position:"relative",flexShrink:0 }}>
                             <span style={{
                               width:10,height:10,borderRadius:"50%",display:"block",
-                              background: isActive ? "#7c3aed" : isCompleted ? "#21D0B3" : isNew ? "#3b82f6" : "#0ea5e9",
+                              background: isActive ? "#7c3aed" : isCompleted ? BRAND.teal : isNew ? "#3b82f6" : "#0ea5e9",
                               boxShadow: isActive ? "0 0 8px rgba(124,58,237,0.4)" : isNew ? "0 0 8px rgba(59,130,246,0.4)" : "none",
                             }} />
                             {isNew && <span style={{ position:"absolute",top:"-6px",right:"-8px",width:6,height:6,borderRadius:"50%",background:"#ef4444",border:"1px solid #fff" }} />}
@@ -1790,10 +1791,10 @@ export default function DriverPortalPage() {
                                   : `${trip.origin?.split(",")[0] || "—"} → ${trip.destination?.split(",")[0] || "—"}`}
                               </p>
                               {isNew && (
-                                <span style={{ fontSize:9,fontWeight:800,padding:"2px 6px",borderRadius:"99px",background:"#3b82f6",color:"#fff",flexShrink:0,letterSpacing:"0.05em" }}>NUEVO</span>
+                                <span style={{ fontSize:10,fontWeight:800,padding:"2px 6px",borderRadius:"99px",background:"#3b82f6",color:"#fff",flexShrink:0,letterSpacing:"0.05em" }}>NUEVO</span>
                               )}
                             </div>
-                            <p style={{ fontSize:10.5,color: isNew ? "#3b82f6" : "#94a3b8",margin:"2px 0 0",fontWeight: isNew ? 600 : 400 }}>
+                            <p style={{ fontSize:11,color: isNew ? "#3b82f6" : "#94a3b8",margin:"2px 0 0",fontWeight: isNew ? 600 : 400 }}>
                               {trip.scheduledAt ? formatDate(trip.scheduledAt) : "—"} · {statusLabel[status] || status}
                               {passengerCount > 0 ? ` · ${passengerCount} pax` : ""}
                             </p>
@@ -1855,17 +1856,17 @@ export default function DriverPortalPage() {
                               {/* Route detail */}
                               <div style={{ display:"flex",gap:10,marginBottom:10,alignItems:"stretch" }}>
                                 <div style={{ display:"flex",flexDirection:"column",alignItems:"center",paddingTop:2 }}>
-                                  <span style={{ width:8,height:8,borderRadius:"50%",background:"#21D0B3",flexShrink:0 }} />
-                                  <div style={{ width:2,flex:1,background:"linear-gradient(180deg,#21D0B3,#ef4444)",margin:"3px 0",opacity:0.3,borderRadius:1 }} />
+                                  <span style={{ width:8,height:8,borderRadius:"50%",background:BRAND.teal,flexShrink:0 }} />
+                                  <div style={{ width:2,flex:1,background:`linear-gradient(180deg,${BRAND.teal},#ef4444)`,margin:"3px 0",opacity:0.3,borderRadius:1 }} />
                                   <span style={{ width:8,height:8,borderRadius:"50%",background:"#ef4444",flexShrink:0 }} />
                                 </div>
                                 <div style={{ flex:1,display:"flex",flexDirection:"column",justifyContent:"space-between",gap:4 }}>
                                   <div>
-                                    <p style={{ fontSize:10,color:"#94a3b8",margin:0 }}>{t("Recogida")}</p>
+                                    <p style={{ fontSize:11,color:"#94a3b8",margin:0 }}>{t("Recogida")}</p>
                                     <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:"1px 0 0" }}>{trip.origin || "—"}</p>
                                   </div>
                                   <div>
-                                    <p style={{ fontSize:10,color:"#94a3b8",margin:0 }}>{t("Destino")}</p>
+                                    <p style={{ fontSize:11,color:"#94a3b8",margin:0 }}>{t("Destino")}</p>
                                     <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:"1px 0 0" }}>{trip.destination || "—"}</p>
                                   </div>
                                 </div>
@@ -1881,7 +1882,7 @@ export default function DriverPortalPage() {
                                 </span>
                               )}
                               {trip.tripCost != null && (
-                                <span style={{ fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:6,background:"#f0fdfb",border:"1px solid rgba(33,208,179,0.2)",color:"#0a7a6b" }}>
+                                <span style={{ fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:6,background:"#f0fdfb",border:"1px solid rgba(33,208,179,0.2)",color:BRAND.tealInk }}>
                                   {formatCurrencyCLP(trip.tripCost)}
                                 </span>
                               )}
@@ -1903,8 +1904,8 @@ export default function DriverPortalPage() {
                             {/* Action button */}
                             {isCompleted ? (
                               <div style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:10,borderRadius:12,background:"rgba(33,208,179,0.06)",border:"1px solid rgba(33,208,179,0.15)" }}>
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                                <span style={{ fontSize:12,fontWeight:700,color:"#21D0B3" }}>{t("Completado")}</span>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                <span style={{ fontSize:12,fontWeight:700,color:BRAND.teal }}>{t("Completado")}</span>
                                 {trip.driverRating && <span style={{ fontSize:12 }}>{"⭐".repeat(trip.driverRating)}</span>}
                               </div>
                             ) : isDisposicion(trip) ? (
@@ -1922,7 +1923,7 @@ export default function DriverPortalPage() {
                                 )
                               ) : status === "EN_ROUTE" || status === "PICKED_UP" ? (
                                 <button type="button" onClick={() => updateTrip(trip.id, "COMPLETED")} disabled={loading}
-                                  style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:"linear-gradient(135deg,#34F3C6,#21D0B3)",color:"#0d1b3e",fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(33,208,179,0.3)",opacity:loading?0.7:1 }}>
+                                  style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:`linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})`,color:"#0d1b3e",fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(33,208,179,0.3)",opacity:loading?0.7:1 }}>
                                   {t("Finalizar servicio")}
                                 </button>
                               ) : null
@@ -1933,14 +1934,14 @@ export default function DriverPortalPage() {
                                 </div>
                               ) : (
                                 <button type="button" onClick={() => updateTrip(trip.id, "EN_ROUTE")} disabled={loading}
-                                  style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:"linear-gradient(135deg,#34F3C6,#21D0B3)",color:"#0d1b3e",fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(33,208,179,0.3)",opacity:loading?0.7:1 }}>
+                                  style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:`linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})`,color:"#0d1b3e",fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(33,208,179,0.3)",opacity:loading?0.7:1 }}>
                                   {t("Iniciar — En ruta al punto de encuentro")}
                                 </button>
                               )
                             ) : status === "EN_ROUTE" ? (
                               <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
                                 <button type="button" onClick={() => confirmPickup(trip)} disabled={loading}
-                                  style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:"linear-gradient(135deg,#34F3C6,#21D0B3)",color:"#0d1b3e",fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(33,208,179,0.3)",opacity:loading?0.7:1 }}>
+                                  style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:`linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})`,color:"#0d1b3e",fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(33,208,179,0.3)",opacity:loading?0.7:1 }}>
                                   {isPortalRequest(trip) ? t("Pasajero recogido — En curso") : t("Pasajero recogido")}
                                 </button>
                                 <button type="button" onClick={() => updateTrip(trip.id, "SCHEDULED")} disabled={loading}
@@ -1952,12 +1953,12 @@ export default function DriverPortalPage() {
                               <button type="button"
                                 onClick={() => isPortalRequest(trip) ? updateTrip(trip.id, "COMPLETED") : updateTrip(trip.id, "DROPPED_OFF")}
                                 disabled={loading}
-                                style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:"linear-gradient(135deg,#34F3C6,#21D0B3)",color:"#0d1b3e",fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(33,208,179,0.3)",opacity:loading?0.7:1 }}>
+                                style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:`linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})`,color:"#0d1b3e",fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(33,208,179,0.3)",opacity:loading?0.7:1 }}>
                                 {isPortalRequest(trip) ? t("Finalizar viaje") : t("Llegamos al destino")}
                               </button>
                             ) : status === "DROPPED_OFF" ? (
                               <button type="button" onClick={() => updateTrip(trip.id, "COMPLETED")} disabled={loading}
-                                style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:"linear-gradient(135deg,#34F3C6,#21D0B3)",color:"#0d1b3e",fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(33,208,179,0.3)",opacity:loading?0.7:1 }}>
+                                style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:`linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})`,color:"#0d1b3e",fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(33,208,179,0.3)",opacity:loading?0.7:1 }}>
                                 {t("Confirmar viaje completado")}
                               </button>
                             ) : null}
@@ -2016,7 +2017,7 @@ export default function DriverPortalPage() {
                     </div>
                     <div style={{ padding:"12px 8px",borderRadius:12,background:"#fff",border:"1px solid #e2e8f0",textAlign:"center" }}>
                       <p style={{ fontSize:9,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Total</p>
-                      <p style={{ fontSize:22,fontWeight:800,color:"#21D0B3",margin:"4px 0 0" }}>${totalCost.toLocaleString("es-CL")}</p>
+                      <p style={{ fontSize:22,fontWeight:800,color:BRAND.teal,margin:"4px 0 0" }}>${totalCost.toLocaleString("es-CL")}</p>
                     </div>
                     <div style={{ padding:"12px 8px",borderRadius:12,background:"#fff",border:"1px solid #e2e8f0",textAlign:"center" }}>
                       <p style={{ fontSize:9,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Rating</p>
@@ -2027,12 +2028,12 @@ export default function DriverPortalPage() {
                   {/* Filter toggle button */}
                   <button type="button" onClick={() => setShowReportFilters(!showReportFilters)}
                     style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"8px",borderRadius:10,
-                      background: hasActiveFilters ? "#21D0B3" : "#fff", border:"1px solid #e2e8f0",cursor:"pointer",width:"100%" }}>
+                      background: hasActiveFilters ? BRAND.teal : "#fff", border:"1px solid #e2e8f0",cursor:"pointer",width:"100%" }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={hasActiveFilters ? "#fff" : "#64748b"} strokeWidth="2" strokeLinecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
                     <span style={{ fontSize:12,fontWeight:600,color: hasActiveFilters ? "#fff" : "#64748b" }}>
                       {showReportFilters ? "Ocultar filtros" : "Filtrar"}
                     </span>
-                    {hasActiveFilters && <span style={{ background:"#fff",color:"#21D0B3",borderRadius:10,padding:"0 6px",fontSize:10,fontWeight:800 }}>{completed.length}/{allCompleted.length}</span>}
+                    {hasActiveFilters && <span style={{ background:"#fff",color:BRAND.teal,borderRadius:10,padding:"0 6px",fontSize:10,fontWeight:800 }}>{completed.length}/{allCompleted.length}</span>}
                   </button>
 
                   {/* Collapsible filters */}
@@ -2070,7 +2071,7 @@ export default function DriverPortalPage() {
                   {/* Trip list */}
                   <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
                     <div style={{ padding:"12px 14px 8px" }}>
-                      <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>Historial</p>
+                      <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:BRAND.teal,margin:0 }}>Historial</p>
                     </div>
                     {completed.length === 0 ? (
                       <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:"20px 14px" }}>Sin viajes completados</p>
@@ -2083,23 +2084,23 @@ export default function DriverPortalPage() {
                               style={{ width:"100%",display:"flex",alignItems:"center",gap:8,padding:"11px 14px",background:"none",border:"none",borderTop:"1px solid #f1f5f9",cursor:"pointer",textAlign:"left",transition:"background .15s" }}
                               onMouseEnter={(e)=>{(e.currentTarget as HTMLElement).style.background="#f8fafc";}}
                               onMouseLeave={(e)=>{(e.currentTarget as HTMLElement).style.background="transparent";}}>
-                              <span style={{ width:8,height:8,borderRadius:"50%",background:"#21D0B3",flexShrink:0 }} />
+                              <span style={{ width:8,height:8,borderRadius:"50%",background:BRAND.teal,flexShrink:0 }} />
                               <div style={{ flex:1,minWidth:0 }}>
                                 <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
                                   {(trip.origin?.split(",")[0] || "—")} → {(trip.destination?.split(",")[0] || "—")}
                                 </p>
-                                <p style={{ fontSize:10,color:"#94a3b8",margin:"1px 0 0" }}>
+                                <p style={{ fontSize:11,color:"#94a3b8",margin:"1px 0 0" }}>
                                   {completedDate ? new Date(completedDate).toLocaleDateString("es-CL",{ day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit" }) : "—"}
                                 </p>
                               </div>
                               {trip.driverRating && (
                                 <div style={{ display:"flex",alignItems:"center",gap:2,flexShrink:0 }}>
                                   <svg width="11" height="11" viewBox="0 0 24 24" fill="#FBBF24" stroke="#F59E0B" strokeWidth="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                                  <span style={{ fontSize:10,fontWeight:700,color:"#f59e0b" }}>{trip.driverRating}</span>
+                                  <span style={{ fontSize:11,fontWeight:700,color:"#f59e0b" }}>{trip.driverRating}</span>
                                 </div>
                               )}
                               {trip.tripCost != null && (
-                                <span style={{ fontSize:10.5,fontWeight:700,color:"#0a7a6b",flexShrink:0 }}>{formatCurrencyCLP(trip.tripCost)}</span>
+                                <span style={{ fontSize:11,fontWeight:700,color:BRAND.tealInk,flexShrink:0 }}>{formatCurrencyCLP(trip.tripCost)}</span>
                               )}
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="2" strokeLinecap="round" style={{ flexShrink:0 }}>
                                 <polyline points="9 18 15 12 9 6" />
@@ -2127,9 +2128,9 @@ export default function DriverPortalPage() {
                 <div style={{ background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",padding:"16px 14px",display:"flex",alignItems:"center",gap:14 }}>
                   <div style={{ position:"relative",flexShrink:0 }}>
                     {(driverProfile.photoUrl || (driverProfile.metadata as any)?.photoUrl) ? (
-                      <img src={driverProfile.photoUrl || (driverProfile.metadata as any)?.photoUrl} alt="" style={{ width:64,height:64,borderRadius:"50%",objectFit:"cover",border:"3px solid #21D0B3" }} />
+                      <img src={driverProfile.photoUrl || (driverProfile.metadata as any)?.photoUrl} alt="" style={{ width:64,height:64,borderRadius:"50%",objectFit:"cover",border:`3px solid ${BRAND.teal}` }} />
                     ) : (
-                      <div style={{ width:64,height:64,borderRadius:"50%",background:"linear-gradient(135deg,#21D0B3,#062240)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:900,color:"#fff",border:"3px solid #21D0B3" }}>
+                      <div style={{ width:64,height:64,borderRadius:"50%",background:`linear-gradient(135deg,${BRAND.teal},${BRAND.navyLight})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:900,color:"#fff",border:`3px solid ${BRAND.teal}` }}>
                         {(driverProfile.fullName || "C").split(" ").slice(0,2).map((w: string) => w[0] ?? "").join("").toUpperCase()}
                       </div>
                     )}
@@ -2168,7 +2169,7 @@ export default function DriverPortalPage() {
                       };
                       input.click();
                     }} disabled={uploadingPhoto}
-                      style={{ position:"absolute",bottom:-2,right:-2,width:24,height:24,borderRadius:"50%",background:"#21D0B3",border:"2px solid #fff",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}>
+                      style={{ position:"absolute",bottom:-2,right:-2,width:24,height:24,borderRadius:"50%",background:BRAND.teal,border:"2px solid #fff",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}>
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
                     </button>
                   </div>
@@ -2178,7 +2179,7 @@ export default function DriverPortalPage() {
                     {driverProfile.phone && <p style={{ fontSize:12,color:"#64748b",margin:"2px 0 0" }}>Teléfono: +{String(driverProfile.phone).replace(/^\+/, "")}</p>}
                     {driverProfile.email && <p style={{ fontSize:12,color:"#64748b",margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{driverProfile.email}</p>}
                     <div style={{ display:"flex",alignItems:"center",gap:6,marginTop:4 }}>
-                      <span style={{ width:7,height:7,borderRadius:"50%",background: driverProfile.status === "ACTIVE" ? "#21D0B3" : "#f59e0b" }} />
+                      <span style={{ width:7,height:7,borderRadius:"50%",background: driverProfile.status === "ACTIVE" ? BRAND.teal : "#f59e0b" }} />
                       <span style={{ fontSize:11,color:"#64748b",fontWeight:600 }}>{driverProfile.status === "ACTIVE" ? "Activo" : driverProfile.status || "—"}</span>
                     </div>
                   </div>
@@ -2187,10 +2188,10 @@ export default function DriverPortalPage() {
                 {/* Credencial digital - generate from template */}
                 <div style={{ background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",padding:"14px",overflow:"hidden" }}>
                   <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12 }}>
-                    <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>Credencial</p>
+                    <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:BRAND.teal,margin:0 }}>Credencial</p>
                     <span style={{ fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:6,
                       background: driverProfile.accreditationStatus === "APPROVED" ? "rgba(33,208,179,0.1)" : "rgba(245,158,11,0.1)",
-                      color: driverProfile.accreditationStatus === "APPROVED" ? "#0a7a6b" : "#92400e",
+                      color: driverProfile.accreditationStatus === "APPROVED" ? BRAND.tealInk : "#92400e",
                       border: `1px solid ${driverProfile.accreditationStatus === "APPROVED" ? "rgba(33,208,179,0.3)" : "rgba(245,158,11,0.3)"}`,
                     }}>
                       {driverProfile.accreditationStatus === "APPROVED" ? "Aprobada" : driverProfile.accreditationStatus === "CREDENTIAL_ISSUED" ? "Emitida" : driverProfile.accreditationStatus || "Pendiente"}
@@ -2253,10 +2254,10 @@ export default function DriverPortalPage() {
                   const vehInfo = [veh?.type || meta.vehicleTipo, veh?.brand || meta.vehicleMarca, veh?.model || meta.vehicleModelo].filter(Boolean).join(" · ");
                   const prov = driverProfile.providerId ? providers[driverProfile.providerId] : null;
                   const rows: { icon: React.ReactNode; label: string; value: string; sub?: string }[] = [
-                    { icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>, label: "Correo", value: driverProfile.email || "—" },
-                    { icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>, label: "Teléfono", value: driverProfile.phone || "—" },
-                    { icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><path d="M5 17H3v-6l2.5-5h11L19 11v6h-2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg>, label: "Vehículo", value: plate?.toUpperCase() || "Sin asignar", sub: vehInfo || undefined },
-                    { icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>, label: "Proveedor", value: prov?.name || "Sin asignar", sub: prov?.rut ? `RUT: ${prov.rut}` : undefined },
+                    { icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>, label: "Correo", value: driverProfile.email || "—" },
+                    { icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>, label: "Teléfono", value: driverProfile.phone || "—" },
+                    { icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><path d="M5 17H3v-6l2.5-5h11L19 11v6h-2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg>, label: "Vehículo", value: plate?.toUpperCase() || "Sin asignar", sub: vehInfo || undefined },
+                    { icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>, label: "Proveedor", value: prov?.name || "Sin asignar", sub: prov?.rut ? `RUT: ${prov.rut}` : undefined },
                   ];
                   return (
                     <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
@@ -2278,7 +2279,7 @@ export default function DriverPortalPage() {
 
                 {/* Documents section */}
                 <div style={{ background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",padding:"14px",overflow:"hidden" }}>
-                  <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:"#21D0B3",margin:"0 0 4px" }}>Documentos</p>
+                  <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:BRAND.teal,margin:"0 0 4px" }}>Documentos</p>
                   <p style={{ fontSize:11,color:"#94a3b8",margin:"0 0 10px" }}>Sube tus documentos desde el celular o galería</p>
                   <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
                     {([
@@ -2299,7 +2300,7 @@ export default function DriverPortalPage() {
                       return (
                         <div key={doc.key} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9",gap:8 }}>
                           <div style={{ display:"flex",alignItems:"center",gap:8,flex:1,minWidth:0 }}>
-                            <span style={{ width:7,height:7,borderRadius:"50%",background:uploaded ? "#21D0B3" : "#e2e8f0",flexShrink:0 }} />
+                            <span style={{ width:7,height:7,borderRadius:"50%",background:uploaded ? BRAND.teal : "#e2e8f0",flexShrink:0 }} />
                             <span style={{ fontSize:12,fontWeight:500,color:uploaded ? "#0f172a" : "#94a3b8",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{doc.label}</span>
                           </div>
                           <div style={{ display:"flex",gap:4,flexShrink:0 }}>
@@ -2344,7 +2345,7 @@ export default function DriverPortalPage() {
                                 height:28,borderRadius:7,border:"none",cursor: isUploading ? "not-allowed" : "pointer",
                                 fontSize:10,fontWeight:600,flexShrink:0,gap:4,
                                 padding: uploaded ? "0 8px" : "0 10px",
-                                background: uploaded ? "#f1f5f9" : "linear-gradient(135deg,#21D0B3,#14AE98)",
+                                background: uploaded ? "#f1f5f9" : `linear-gradient(135deg,${BRAND.teal},#14AE98)`,
                                 color: uploaded ? "#64748b" : "#fff",
                                 opacity: isUploading ? 0.5 : 1,
                               }}>
@@ -2454,7 +2455,7 @@ export default function DriverPortalPage() {
               const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("es-CL", { weekday: "short", day: "2-digit", month: "short" });
               const FlightCard = ({ f, showDate }: { f: PassengerFlight; showDate?: boolean }) => (
                 <div style={{ background:"#fff",borderRadius:12,border:"1px solid #e2e8f0",padding:"10px 14px",display:"flex",alignItems:"center",gap:10 }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}>
                     <path d="M17.8 19.2L16 11l3.5-3.5C21 6 21 4 19 2c-2-2-4-2-5.5-.5L10 5 1.8 6.2l2.4 2.4L9 9l-4.5 4.5L5 15l2-1 1 2-1 2 2 .5 4.5-4.5.8 4.7 2.4 2.5z"/>
                   </svg>
                   <div style={{ flex:1,minWidth:0 }}>
@@ -2463,21 +2464,21 @@ export default function DriverPortalPage() {
                       {f.origin ? `Desde ${f.origin}` : "Origen no informado"}{f.terminal ? ` · Terminal ${f.terminal}` : ""}
                     </p>
                     {f.passengers.length > 0 && (
-                      <p style={{ fontSize:11,fontWeight:600,color:"#0a7a6b",margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                      <p style={{ fontSize:11,fontWeight:600,color:BRAND.tealInk,margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
                         {f.passengers.join(", ")}
                       </p>
                     )}
                   </div>
                   {f.arrivalTime && (
                     <div style={{ textAlign:"right",flexShrink:0 }}>
-                      <p style={{ fontSize:14,fontWeight:800,color:"#0a7a6b",margin:0 }}>{fmtTime(f.arrivalTime)}</p>
-                      {showDate && <p style={{ fontSize:10,color:"#94a3b8",margin:"1px 0 0" }}>{fmtDate(f.arrivalTime)}</p>}
+                      <p style={{ fontSize:14,fontWeight:800,color:BRAND.tealInk,margin:0 }}>{fmtTime(f.arrivalTime)}</p>
+                      {showDate && <p style={{ fontSize:11,color:"#94a3b8",margin:"1px 0 0" }}>{fmtDate(f.arrivalTime)}</p>}
                     </div>
                   )}
                   <button
                     type="button"
                     onClick={() => rastrearVuelo(f.flightNumber, f.airline, f.arrivalTime)}
-                    style={{ flexShrink:0,padding:"7px 12px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#21D0B3,#14AE98)",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer" }}
+                    style={{ flexShrink:0,padding:"7px 12px",borderRadius:10,border:"none",background:`linear-gradient(135deg,${BRAND.teal},#14AE98)`,color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer" }}
                   >
                     Rastrear
                   </button>
@@ -2485,10 +2486,10 @@ export default function DriverPortalPage() {
               );
               return (
                 <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
-                  <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>Llegadas de hoy</p>
+                  <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.teal,margin:0 }}>Llegadas de hoy</p>
                   {today.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:14 }}>Sin vuelos de tus pasajeros para hoy</p>}
                   {today.map(f => <FlightCard key={f.id} f={f} />)}
-                  <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#0fa894",margin:"10px 0 0" }}>Próximas llegadas</p>
+                  <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.tealDark,margin:"10px 0 0" }}>Próximas llegadas</p>
                   {upcoming.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:14 }}>Sin vuelos próximos de tus pasajeros</p>}
                   {upcoming.slice(0, 25).map(f => <FlightCard key={f.id} f={f} showDate />)}
                   {past.length > 0 && (
@@ -2510,7 +2511,7 @@ export default function DriverPortalPage() {
             {/* ─── Sedes tab ─── */}
             {activeTab === "sedes" && (
               <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
-                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>Sedes del evento</p>
+                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.teal,margin:0 }}>Sedes del evento</p>
                 {venues.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:20 }}>No hay sedes registradas</p>}
                 {venues.map(v => {
                   const isOpen = expandedSiteId === `venue-${v.id}`;
@@ -2519,7 +2520,7 @@ export default function DriverPortalPage() {
                     <div key={v.id} style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
                       <button type="button" onClick={() => setExpandedSiteId(isOpen?null:`venue-${v.id}`)}
                         style={{ width:"100%",display:"flex",alignItems:"center",gap:10,padding:"12px 14px",background:"none",border:"none",cursor:"pointer",textAlign:"left" }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
                         <div style={{ flex:1,minWidth:0 }}>
                           <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>{v.name || "–"}</p>
                           {v.address && <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{v.address}</p>}
@@ -2538,7 +2539,7 @@ export default function DriverPortalPage() {
                     </div>
                   );
                 })}
-                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#0fa894",margin:"8px 0 0" }}>Hoteles</p>
+                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.tealDark,margin:"8px 0 0" }}>Hoteles</p>
                 {accommodations.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:20 }}>No hay hoteles registrados</p>}
                 {accommodations.map(h => {
                   const isOpen = expandedSiteId === `hotel-${h.id}`;
@@ -2547,7 +2548,7 @@ export default function DriverPortalPage() {
                     <div key={h.id} style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
                       <button type="button" onClick={() => setExpandedSiteId(isOpen?null:`hotel-${h.id}`)}
                         style={{ width:"100%",display:"flex",alignItems:"center",gap:10,padding:"12px 14px",background:"none",border:"none",cursor:"pointer",textAlign:"left" }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0fa894" strokeWidth="1.8"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h2M14 7h2M8 11h2M14 11h2M8 15h2M14 15h2"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND.tealDark} strokeWidth="1.8"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h2M14 7h2M8 11h2M14 11h2M8 15h2M14 15h2"/></svg>
                         <div style={{ flex:1,minWidth:0 }}>
                           <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>{h.name || "–"}</p>
                           {addr && <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{addr}</p>}
@@ -2582,7 +2583,7 @@ export default function DriverPortalPage() {
               { key: "cuenta" as const, label: "Cuenta", icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
             ]).map((tab) => (
               <button key={tab.key} type="button" className="dc-tab-btn" onClick={() => setActiveTab(tab.key)}
-                style={{ color: activeTab === tab.key ? "#21D0B3" : "#94a3b8" }}>
+                style={{ color: activeTab === tab.key ? BRAND.teal : "#94a3b8" }}>
                 {tab.icon}
                 <span>{tab.label}</span>
               </button>
@@ -2669,7 +2670,7 @@ export default function DriverPortalPage() {
                     {(trackInfo.depCity || trackInfo.depIata || "Origen")} → {(trackInfo.arrCity || trackInfo.arrIata || "Destino")}
                     {trackInfo.flightDate ? ` · ${trackInfo.flightDate}` : ""}
                   </p>
-                  <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#21D0B3",margin:"0 0 4px" }}>Salida{trackInfo.depIata ? ` · ${trackInfo.depIata}` : ""}</p>
+                  <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.teal,margin:"0 0 4px" }}>Salida{trackInfo.depIata ? ` · ${trackInfo.depIata}` : ""}</p>
                   <Row label="Aeropuerto" value={trackInfo.depAirport} />
                   <Row label="Programada" value={fmtVueloHora(trackInfo.depScheduled)} />
                   {trackInfo.depActual
@@ -2678,7 +2679,7 @@ export default function DriverPortalPage() {
                   {(trackInfo.depTerminal || trackInfo.depGate) && (
                     <Row label="Terminal / Puerta" value={[trackInfo.depTerminal, trackInfo.depGate].filter(Boolean).join(" / ")} />
                   )}
-                  <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#0fa894",margin:"12px 0 4px" }}>Llegada{trackInfo.arrIata ? ` · ${trackInfo.arrIata}` : ""}</p>
+                  <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.tealDark,margin:"12px 0 4px" }}>Llegada{trackInfo.arrIata ? ` · ${trackInfo.arrIata}` : ""}</p>
                   <Row label="Aeropuerto" value={trackInfo.arrAirport} />
                   <Row label="Programada" value={fmtVueloHora(trackInfo.arrScheduled)} />
                   {trackInfo.arrActual
@@ -2699,7 +2700,7 @@ export default function DriverPortalPage() {
                   type="button"
                   disabled={trackLoading}
                   onClick={() => rastrearVuelo(trackTarget.flightNumber, trackTarget.airline, trackTarget.arrivalTime ?? null)}
-                  style={{ flex:1,padding:12,borderRadius:12,border:"none",background: trackLoading ? "#cbd5e1" : "linear-gradient(135deg,#21D0B3,#14AE98)",color:"#fff",fontSize:13,fontWeight:700,cursor: trackLoading ? "wait" : "pointer" }}
+                  style={{ flex:1,padding:12,borderRadius:12,border:"none",background: trackLoading ? "#cbd5e1" : `linear-gradient(135deg,${BRAND.teal},#14AE98)`,color:"#fff",fontSize:13,fontWeight:700,cursor: trackLoading ? "wait" : "pointer" }}
                 >
                   {trackLoading ? "Actualizando…" : "↻ Actualizar"}
                 </button>
@@ -2730,7 +2731,7 @@ export default function DriverPortalPage() {
                 : "Terminaste tu último viaje del día: sube una foto del vehículo para cerrar la jornada."}
             </p>
             <label
-              style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",padding:14,borderRadius:14,border:"none",background: journeyUploading ? "#cbd5e1" : "linear-gradient(135deg,#34F3C6,#21D0B3)",color:"#0d1b3e",fontSize:14,fontWeight:800,cursor: journeyUploading ? "wait" : "pointer",boxSizing:"border-box" }}
+              style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",padding:14,borderRadius:14,border:"none",background: journeyUploading ? "#cbd5e1" : `linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})`,color:"#0d1b3e",fontSize:14,fontWeight:800,cursor: journeyUploading ? "wait" : "pointer",boxSizing:"border-box" }}
             >
               <input
                 type="file"
@@ -2837,9 +2838,9 @@ export default function DriverPortalPage() {
           style={{ position:"fixed",inset:0,zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:16,background:"rgba(2,12,24,0.78)",backdropFilter:"blur(6px)" }}>
           <div onClick={(e) => e.stopPropagation()}
             style={{ background:"#fff",borderRadius:20,width:"100%",maxWidth:480,maxHeight:"95vh",display:"flex",flexDirection:"column",overflow:"hidden",boxShadow:"0 24px 80px rgba(0,0,0,0.5)" }}>
-            <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",borderBottom:"1px solid #e2e8f0",background:"linear-gradient(135deg,#041a2e,#062240)",color:"#fff" }}>
+            <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",borderBottom:"1px solid #e2e8f0",background:`linear-gradient(135deg,${BRAND.navy},${BRAND.navyLight})`,color:"#fff" }}>
               <div>
-                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:"#21D0B3",margin:0 }}>Credencial digital</p>
+                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:BRAND.teal,margin:0 }}>Credencial digital</p>
                 <p style={{ fontSize:14,fontWeight:700,margin:"2px 0 0" }}>{driverProfile?.fullName || "Conductor"}</p>
               </div>
               <div style={{ display:"flex",gap:8 }}>
@@ -2853,7 +2854,7 @@ export default function DriverPortalPage() {
                   } catch { driverNotify.push("No se pudo generar el PDF", "❌"); }
                 }}
                   title="Descargar PDF"
-                  style={{ width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",color:"#21D0B3",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
+                  style={{ width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",color:BRAND.teal,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 </button>
                 <button type="button" onClick={() => setCredentialHtml(null)}
@@ -2897,9 +2898,9 @@ export default function DriverPortalPage() {
             <div onClick={(e) => e.stopPropagation()}
               style={{ background:"#fff",borderRadius:"24px 24px 0 0",width:"100%",maxWidth:520,maxHeight:"92vh",display:"flex",flexDirection:"column",overflow:"hidden",boxShadow:"0 -8px 60px rgba(0,0,0,0.5)",animation:"dc-in .3s cubic-bezier(0.16,1,0.3,1) both" }}>
               {/* Header */}
-              <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:10,padding:"16px 18px 12px",borderBottom:"1px solid #f1f5f9",background:"linear-gradient(135deg,#041a2e,#062240)",color:"#fff",flexShrink:0 }}>
+              <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:10,padding:"16px 18px 12px",borderBottom:"1px solid #f1f5f9",background:`linear-gradient(135deg,${BRAND.navy},${BRAND.navyLight})`,color:"#fff",flexShrink:0 }}>
                 <div style={{ minWidth:0 }}>
-                  <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:"#34F3C6",margin:0 }}>Viaje realizado</p>
+                  <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:BRAND.tealLight,margin:0 }}>Viaje realizado</p>
                   <p style={{ fontSize:15,fontWeight:800,margin:"3px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
                     {(trip.origin?.split(",")[0] || "—")} → {(trip.destination?.split(",")[0] || "—")}
                   </p>
@@ -2916,18 +2917,18 @@ export default function DriverPortalPage() {
                 {/* Mapa de la ruta */}
                 <div style={{ borderRadius:14,overflow:"hidden",border:"1px solid #e2e8f0",position:"relative" }}>
                   <TripMap origin={trip.origin} destination={trip.destination} height={200} />
-                  <span style={{ position:"absolute",top:8,left:8,zIndex:5,fontSize:9,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:"#0a7a6b",background:"rgba(255,255,255,0.9)",border:"1px solid rgba(33,208,179,0.3)",borderRadius:8,padding:"3px 8px" }}>Ruta del viaje</span>
+                  <span style={{ position:"absolute",top:8,left:8,zIndex:5,fontSize:10,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:BRAND.tealInk,background:"rgba(255,255,255,0.9)",border:"1px solid rgba(33,208,179,0.3)",borderRadius:8,padding:"3px 8px" }}>Ruta del viaje</span>
                 </div>
 
                 {/* Stats principales */}
                 <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8 }}>
                   {stat("Distancia", km != null ? `${km.toFixed(1)} km` : (historyRouteLoading ? "…" : "—"), "#0f172a")}
-                  {stat("Valor", trip.tripCost != null ? formatCurrencyCLP(trip.tripCost) : "—", "#0a7a6b")}
+                  {stat("Valor", trip.tripCost != null ? formatCurrencyCLP(trip.tripCost) : "—", BRAND.tealInk)}
                   {stat("Duración", formatDuration(trip.startedAt, trip.completedAt), "#0f172a")}
                   {stat("Pasajeros", pax ? String(pax) : "—", "#0f172a")}
                 </div>
                 {km == null && !historyRouteLoading && (
-                  <p style={{ fontSize:10.5,color:"#94a3b8",margin:"-4px 0 0",textAlign:"center" }}>
+                  <p style={{ fontSize:11,color:"#94a3b8",margin:"-4px 0 0",textAlign:"center" }}>
                     Sin registro GPS para calcular la distancia de este viaje.
                   </p>
                 )}
@@ -2935,8 +2936,8 @@ export default function DriverPortalPage() {
                 {/* Origen / Destino */}
                 <div style={{ display:"flex",gap:10,alignItems:"stretch",padding:"12px 14px",borderRadius:14,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
                   <div style={{ display:"flex",flexDirection:"column",alignItems:"center",paddingTop:3 }}>
-                    <span style={{ width:9,height:9,borderRadius:"50%",background:"#21D0B3",flexShrink:0 }} />
-                    <div style={{ width:2,flex:1,background:"linear-gradient(180deg,#21D0B3,#ef4444)",margin:"3px 0",opacity:0.35,borderRadius:1,minHeight:18 }} />
+                    <span style={{ width:9,height:9,borderRadius:"50%",background:BRAND.teal,flexShrink:0 }} />
+                    <div style={{ width:2,flex:1,background:`linear-gradient(180deg,${BRAND.teal},#ef4444)`,margin:"3px 0",opacity:0.35,borderRadius:1,minHeight:18 }} />
                     <span style={{ width:9,height:9,borderRadius:"50%",background:"#ef4444",flexShrink:0 }} />
                   </div>
                   <div style={{ flex:1,minWidth:0,display:"flex",flexDirection:"column",justifyContent:"space-between",gap:8 }}>
@@ -3019,7 +3020,7 @@ export default function DriverPortalPage() {
                 Cerrar
               </button>
               <button type="button" onClick={() => { setShowLocationBlockedModal(false); window.location.reload(); }}
-                style={{ flex:1,padding:"12px",borderRadius:"14px",border:"none",background:"linear-gradient(135deg,#21D0B3,#14AE98)",color:"#fff",fontSize:"13px",fontWeight:700,cursor:"pointer",boxShadow:"0 2px 10px rgba(33,208,179,0.3)" }}>
+                style={{ flex:1,padding:"12px",borderRadius:"14px",border:"none",background:`linear-gradient(135deg,${BRAND.teal},#14AE98)`,color:"#fff",fontSize:"13px",fontWeight:700,cursor:"pointer",boxShadow:"0 2px 10px rgba(33,208,179,0.3)" }}>
                 Recargar página
               </button>
             </div>

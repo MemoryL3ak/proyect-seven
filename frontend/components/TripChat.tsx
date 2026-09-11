@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { apiFetch } from "@/lib/api";
 import { REPORT_CATEGORY, REPORT_REASONS, reportReasonLabel } from "@/lib/chat-report";
+import { BRAND } from "@/lib/design";
 
 type ChatMessage = {
   id: string;
@@ -315,8 +316,8 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
             <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1 }}>
               <div className="tripchat-avatar">
                 {senderType === "PASSENGER"
-                  ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-                  : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                  : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 }
               </div>
               <div>
@@ -387,8 +388,8 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
                 {!isMine(msg) && isFirstInGroup && (
                   <div className="tripchat-msg-avatar">
                     {senderType === "PASSENGER"
-                      ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2.5"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-                      : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                      ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2.5"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                      : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                     }
                   </div>
                 )}
@@ -465,7 +466,7 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
                 disabled={sending || !input.trim()}
                 className="tripchat-send-btn"
                 style={{
-                  background: sending || !input.trim() ? "#e2e8f0" : "linear-gradient(135deg, #21D0B3, #14AE98)",
+                  background: sending || !input.trim() ? "#e2e8f0" : `linear-gradient(135deg, ${BRAND.teal}, #14AE98)`,
                   cursor: sending || !input.trim() ? "not-allowed" : "pointer",
                   boxShadow: sending || !input.trim() ? "none" : "0 2px 8px rgba(33,208,179,0.3)",
                 }}
@@ -533,7 +534,7 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
           right: 16px;
           width: 52px; height: 52px;
           border-radius: 16px;
-          background: linear-gradient(135deg, #21D0B3, #14AE98);
+          background: linear-gradient(135deg, ${BRAND.teal}, #14AE98);
           border: none;
           color: #fff;
           display: flex; align-items: center; justify-content: center;
@@ -633,7 +634,7 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
 
         .tripchat-sender-name {
           display: block; /* en línea compartía renglón con el bubble y lo empujaba a una 2ª línea */
-          font-size: 10px; font-weight: 700; color: #21D0B3;
+          font-size: 10px; font-weight: 700; color: ${BRAND.teal};
           margin: 0 0 2px 2px;
           letter-spacing: 0.02em;
         }
@@ -642,7 +643,7 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
           display: inline-block;
           padding: 10px 14px;
           border-radius: 18px 18px 6px 18px;
-          background: linear-gradient(135deg, #21D0B3, #14AE98);
+          background: linear-gradient(135deg, ${BRAND.teal}, #14AE98);
           color: #fff;
           font-size: 14px; line-height: 1.45;
           overflow-wrap: break-word;
@@ -701,7 +702,7 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
           transition: border-color .15s, box-shadow .15s;
         }
         .tripchat-input:focus {
-          border-color: #21D0B3;
+          border-color: ${BRAND.teal};
           box-shadow: 0 0 0 3px rgba(33,208,179,0.12);
         }
         .tripchat-send-btn {
@@ -842,7 +843,7 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
         }
         .tripchat-report-textarea { resize: vertical; }
         .tripchat-report-select:focus, .tripchat-report-textarea:focus {
-          border-color: #21D0B3; box-shadow: 0 0 0 3px rgba(33,208,179,0.12);
+          border-color: ${BRAND.teal}; box-shadow: 0 0 0 3px rgba(33,208,179,0.12);
         }
         .tripchat-report-actions {
           display: flex; gap: 8px; justify-content: flex-end;

@@ -6,6 +6,7 @@ import { apiFetch } from "@/lib/api";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { getSupabase } from "@/lib/supabase";
 import { useI18n } from "@/lib/i18n";
+import { BRAND, TRIP_STATUS_META } from "@/lib/design";
 import { useIsMobile } from "@/lib/useIsMobile";
 import type {
   DestinationPin,
@@ -55,18 +56,33 @@ type DelegationItem = { id: string; countryCode?: string | null };
 
 type VenueItem = { id: string; name?: string | null; address?: string | null; commune?: string | null };
 
+// Acentos de estado derivados del catálogo canónico (TRIP_STATUS_META en
+// lib/design): accent = color y chipBg = bg. `chipBorder` es una extensión
+// local de esta pantalla (el catálogo canónico no define borde).
+const statusColors = (status: string, chipBorder: string) => {
+  const m = TRIP_STATUS_META[status];
+  return { accent: m.color, chipBg: m.bg, chipBorder };
+};
 const STATUS_COLORS: Record<string, { accent: string; chipBg: string; chipBorder: string }> = {
-  EN_ROUTE:   { accent: "#10b981", chipBg: "rgba(16,185,129,0.14)",  chipBorder: "rgba(16,185,129,0.3)"  },
-  PICKED_UP:  { accent: "#22d3ee", chipBg: "rgba(34,211,238,0.14)",  chipBorder: "rgba(34,211,238,0.3)"  },
-  SCHEDULED:  { accent: "#3b82f6", chipBg: "rgba(59,130,246,0.12)",  chipBorder: "rgba(59,130,246,0.3)"  },
-  COMPLETED:  { accent: "#64748b", chipBg: "rgba(100,116,139,0.1)",  chipBorder: "rgba(100,116,139,0.25)" },
-  DROPPED_OFF:{ accent: "#14b8a6", chipBg: "rgba(20,184,166,0.12)",  chipBorder: "rgba(20,184,166,0.3)"  },
-  CANCELLED:  { accent: "#ef4444", chipBg: "rgba(239,68,68,0.1)",    chipBorder: "rgba(239,68,68,0.28)"  },
+  REQUESTED:   statusColors("REQUESTED",   "rgba(146,64,14,0.3)"),
+  SCHEDULED:   statusColors("SCHEDULED",   "rgba(33,208,179,0.3)"),
+  EN_ROUTE:    statusColors("EN_ROUTE",    "rgba(59,130,246,0.3)"),
+  PICKED_UP:   statusColors("PICKED_UP",   "rgba(139,92,246,0.3)"),
+  DROPPED_OFF: statusColors("DROPPED_OFF", "rgba(100,116,139,0.25)"),
+  COMPLETED:   statusColors("COMPLETED",   "rgba(100,116,139,0.25)"),
+  CANCELLED:   statusColors("CANCELLED",   "rgba(239,68,68,0.28)"),
 };
 
+// Labels de estado: base canónica (lib/design) + fraseo operativo propio del
+// tracking (EN_ROUTE y DROPPED_OFF conservan las frases de esta pantalla).
 const STATUS_LABEL: Record<string, string> = {
-  EN_ROUTE: "En ruta al punto de encuentro", PICKED_UP: "En curso", SCHEDULED: "Programado",
-  COMPLETED: "Completado", DROPPED_OFF: "Dejado en hotel",
+  REQUESTED: TRIP_STATUS_META.REQUESTED.label,
+  SCHEDULED: TRIP_STATUS_META.SCHEDULED.label,
+  EN_ROUTE: "En ruta al punto de encuentro",
+  PICKED_UP: TRIP_STATUS_META.PICKED_UP.label,
+  DROPPED_OFF: "Dejado en hotel",
+  COMPLETED: TRIP_STATUS_META.COMPLETED.label,
+  CANCELLED: TRIP_STATUS_META.CANCELLED.label,
 };
 
 type PositionItem = {
@@ -88,15 +104,6 @@ type StoredPosition = {
   timestamp: string;
   // Server clock — drives the green/red online state.
   receivedAt: string;
-};
-
-const statusLabel: Record<string, string> = {
-  EN_ROUTE: "En ruta al punto de encuentro",
-  SCHEDULED: "Programado",
-  PICKED_UP: "Recogido",
-  DROPPED_OFF: "Dejado en hotel",
-  COMPLETED: "Completado",
-  CANCELLED: "Cancelado",
 };
 
 const countryLabels: Record<string, string> = {
@@ -828,12 +835,12 @@ export default function VehiclePositionsPage() {
     panelBorder: "1px solid #e2e8f0",
     panelShadow: "0 1px 4px rgba(15,23,42,0.06)",
     orb1: "rgba(33,208,179,0.07)", orb2: "rgba(31,205,255,0.05)",
-    accent: "#21D0B3",
+    accent: BRAND.teal,
     titleColor: "#0f172a",
     subtitleColor: "#64748b",
     chipBg: "#f8fafc", chipBorder: "#e2e8f0", chipLabel: "#64748b",
     btnBg: "#ffffff", btnBorder: "#e2e8f0", btnColor: "#475569",
-    kpi: ["#21D0B3", "#10b981", "#f59e0b", "#3b82f6", "#8b5cf6"],
+    kpi: [BRAND.teal, "#10b981", "#f59e0b", "#3b82f6", "#8b5cf6"],
   };
 
   return (
@@ -942,7 +949,7 @@ export default function VehiclePositionsPage() {
                 style={{
                   display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px",
                   borderRadius: "12px", padding: "10px 16px", cursor: "pointer",
-                  background: selected ? "#21D0B3" : "transparent",
+                  background: selected ? BRAND.teal : "transparent",
                   border: "none", transition: "all 150ms",
                 }}
               >
@@ -1115,7 +1122,7 @@ export default function VehiclePositionsPage() {
                     {trip && (
                       <>
                         <div style={{ fontSize: "11px", color: "#64748b", lineHeight: 1.5, display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2.2" strokeLinecap="round"><path d="M12 22s6-6 6-11a6 6 0 0 0-12 0c0 5 6 11 6 11z"/><circle cx="12" cy="11" r="2"/></svg>
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2.2" strokeLinecap="round"><path d="M12 22s6-6 6-11a6 6 0 0 0-12 0c0 5 6 11 6 11z"/><circle cx="12" cy="11" r="2"/></svg>
                           <span>{trip.origin || "Origen"}</span>
                           <span style={{ color: "#cbd5e1" }}>→</span>
                           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h2M14 7h2M8 11h2M14 11h2"/></svg>
@@ -1173,7 +1180,7 @@ export default function VehiclePositionsPage() {
             </div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {[{ key: "", label: "Todos", accent: "#14b8a6", count: trips.length }].concat(
-                Object.keys(statusCounts).map((s) => ({ key: s, label: statusLabel[s] || s, accent: (STATUS_COLORS[s] ?? STATUS_COLORS.SCHEDULED).accent, count: statusCounts[s] }))
+                Object.keys(statusCounts).map((s) => ({ key: s, label: STATUS_LABEL[s] || s, accent: (STATUS_COLORS[s] ?? STATUS_COLORS.SCHEDULED).accent, count: statusCounts[s] }))
               ).map((chip) => {
                 const active = tableStatus === chip.key;
                 return (
@@ -1223,7 +1230,7 @@ export default function VehiclePositionsPage() {
                           {originShort} <span style={{ color: "#94a3b8", fontWeight: 400 }}>→</span> {destShort}
                         </span>
                         <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 99, background: sc.chipBg, border: `1px solid ${sc.chipBorder}`, color: sc.accent }}>
-                          {statusLabel[trip.status || "SCHEDULED"] || trip.status}
+                          {STATUS_LABEL[trip.status || "SCHEDULED"] || trip.status}
                         </span>
                       </div>
                       <p style={{ fontSize: 12, color: "#64748b", margin: "4px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{meta}</p>
@@ -1284,12 +1291,12 @@ export default function VehiclePositionsPage() {
               {/* Header */}
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", padding: "18px 22px 14px", background: "linear-gradient(135deg,#041a2e,#062240)", color: "#fff", flexShrink: 0 }}>
                 <div style={{ minWidth: 0 }}>
-                  <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", color: "#34F3C6", margin: 0 }}>Detalle del viaje</p>
+                  <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", color: BRAND.tealLight, margin: 0 }}>Detalle del viaje</p>
                   <h3 style={{ fontSize: "17px", fontWeight: 800, margin: "4px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {(trip.origin?.split(",")[0] || "—")} → {(venue?.name || trip.destination?.split(",")[0] || "—")}
                   </h3>
                   <span style={{ display: "inline-block", marginTop: "6px", fontSize: "10px", fontWeight: 700, padding: "3px 10px", borderRadius: "99px", background: sc.chipBg, border: `1px solid ${sc.chipBorder}`, color: sc.accent }}>
-                    {statusLabel[trip.status || "SCHEDULED"] || trip.status}
+                    {STATUS_LABEL[trip.status || "SCHEDULED"] || trip.status}
                   </span>
                 </div>
                 <button type="button" onClick={close}
@@ -1310,7 +1317,7 @@ export default function VehiclePositionsPage() {
                       ) : (
                         <div style={{ height: 180, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 8, color: "#94a3b8", fontSize: "13px", textAlign: "center", padding: "0 20px" }}>
                           {detailLoading ? (
-                            <><div style={{ width: 26, height: 26, borderRadius: "50%", border: "3px solid rgba(33,208,179,0.25)", borderTopColor: "#21D0B3", animation: "vp-spin 0.8s linear infinite" }} /><span>Cargando recorrido…</span></>
+                            <><div style={{ width: 26, height: 26, borderRadius: "50%", border: "3px solid rgba(33,208,179,0.25)", borderTopColor: BRAND.teal, animation: "vp-spin 0.8s linear infinite" }} /><span>Cargando recorrido…</span></>
                           ) : (
                             <><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.8" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span>Sin recorrido GPS registrado para este viaje.</span></>
                           )}
@@ -1321,7 +1328,7 @@ export default function VehiclePositionsPage() {
                       </span>
                       {(hasGps || dirEmbed) && (
                         <button type="button" onClick={() => setRouteExpanded(true)}
-                          style={{ position: "absolute", bottom: 8, right: 8, display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 999, border: "none", background: "rgba(4,26,46,0.85)", color: "#34F3C6", fontSize: 11, fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.25)" }}>
+                          style={{ position: "absolute", bottom: 8, right: 8, display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 999, border: "none", background: "rgba(4,26,46,0.85)", color: BRAND.tealLight, fontSize: 11, fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.25)" }}>
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
                           Ver más grande
                         </button>
@@ -1380,7 +1387,7 @@ export default function VehiclePositionsPage() {
                   </a>
                 )}
                 <button type="button" onClick={close}
-                  style={{ padding: "9px 20px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg,#21D0B3,#14AE98)", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
+                  style={{ padding: "9px 20px", borderRadius: "10px", border: "none", background: `linear-gradient(135deg,${BRAND.teal},#14AE98)`, color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
                   Cerrar
                 </button>
               </div>
@@ -1395,7 +1402,7 @@ export default function VehiclePositionsPage() {
                   style={{ position: "fixed", inset: 0, zIndex: 80, background: "#0d1a28", display: "flex", flexDirection: "column" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: "linear-gradient(135deg,#041a2e,#062240)", flexShrink: 0 }}>
                     <button type="button" onClick={() => setRouteExpanded(false)}
-                      style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 16px", borderRadius: 10, border: "1px solid rgba(52,243,198,0.4)", background: "rgba(33,208,179,0.15)", color: "#34F3C6", fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
+                      style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 16px", borderRadius: 10, border: "1px solid rgba(52,243,198,0.4)", background: "rgba(33,208,179,0.15)", color: BRAND.tealLight, fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>
                       Volver
                     </button>
@@ -1426,7 +1433,7 @@ export default function VehiclePositionsPage() {
           <div style={{ background: "#ffffff", width: "100%", maxWidth: "900px", borderRadius: "20px", padding: "20px", boxShadow: "0 24px 64px rgba(15,23,42,0.22)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
               <div>
-                <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", color: "#21D0B3" }}>{t("Tracking de viajes")}</p>
+                <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", color: BRAND.teal }}>{t("Tracking de viajes")}</p>
                 <h3 style={{ fontSize: "18px", fontWeight: 700, color: "#0f172a" }}>{mapPreview.title}</h3>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -1441,7 +1448,7 @@ export default function VehiclePositionsPage() {
                 <button
                   type="button"
                   onClick={() => setMapPreview(null)}
-                  style={{ padding: "8px 16px", borderRadius: "10px", border: "none", background: "#21D0B3", color: "#ffffff", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}
+                  style={{ padding: "8px 16px", borderRadius: "10px", border: "none", background: BRAND.teal, color: "#ffffff", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}
                 >
                   {t("Cerrar")}
                 </button>

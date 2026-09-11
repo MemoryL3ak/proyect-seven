@@ -9,6 +9,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import { DollarIcon, TruckIcon, UsersIcon, AlertIcon, RefreshIcon, ClipboardIcon } from "@/components/ui/Icons";
 import { CLIENT_TYPE_OPTIONS, clientTypeLabel } from "@/lib/clientTypes";
 import { downloadPDF } from "@/lib/reports";
+import { BRAND, TRIP_STATUS_META } from "@/lib/design";
 
 /* ────────────────────────────────────────────────────────────
    Panel Financiero de Transporte
@@ -166,14 +167,16 @@ const ORIGEN_VALOR_META: Record<string, { label: string; tone: string; bg: strin
   SIN_VALORIZAR: { label: "Sin valorizar", tone: "#b91c1c", bg: "#fef2f2", border: "#fecaca" },
 };
 
+// Labels de estado: base canónica (TRIP_STATUS_META en lib/design) + fraseo
+// financiero propio de este panel para PICKED_UP y DROPPED_OFF.
 const STATUS_LABEL: Record<string, string> = {
-  REQUESTED: "Solicitado",
-  SCHEDULED: "Programado",
-  EN_ROUTE: "En ruta",
+  REQUESTED: TRIP_STATUS_META.REQUESTED.label,
+  SCHEDULED: TRIP_STATUS_META.SCHEDULED.label,
+  EN_ROUTE: TRIP_STATUS_META.EN_ROUTE.label,
   PICKED_UP: "Pasajero a bordo",
   DROPPED_OFF: "Servicio entregado",
-  COMPLETED: "Completado",
-  CANCELLED: "Cancelado",
+  COMPLETED: TRIP_STATUS_META.COMPLETED.label,
+  CANCELLED: TRIP_STATUS_META.CANCELLED.label,
 };
 
 /** Rango de fechas local (America/Santiago), evitando el corrimiento de UTC. */
@@ -547,7 +550,7 @@ export default function TransportFinancePage() {
                   aria-pressed={preset === valor}
                   className="px-3 py-1.5 rounded-md text-xs font-semibold transition-colors"
                   style={{
-                    background: preset === valor ? "linear-gradient(135deg, #21D0B3, #1eb19a)" : "transparent",
+                    background: preset === valor ? `linear-gradient(135deg, ${BRAND.teal}, #1eb19a)` : "transparent",
                     color: preset === valor ? "#ffffff" : "var(--text-muted)",
                   }}
                 >
@@ -784,7 +787,7 @@ function Cifra({
 }
 
 function Barra({
-  titulo, porcentaje, detalle, tono = "#21D0B3",
+  titulo, porcentaje, detalle, tono = BRAND.teal,
 }: { titulo: string; porcentaje: number; detalle: string; tono?: string }) {
   return (
     <div>
@@ -884,7 +887,7 @@ function SerieDiaria({ serie }: { serie: Resumen["serieDiaria"] }) {
           </h2>
         </div>
         <div className="flex items-center gap-4">
-          <Leyenda color="#21D0B3" texto={t("Ingreso")} />
+          <Leyenda color={BRAND.teal} texto={t("Ingreso")} />
           <Leyenda color="#f43f5e" texto={t("Costo")} />
           <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
             {t("Promedio diario")} {clpCorto(promedio)}
@@ -906,7 +909,7 @@ function SerieDiaria({ serie }: { serie: Resumen["serieDiaria"] }) {
                     title={`${t("Ingreso")} ${clp(d.ingreso)}`}
                     style={{
                       width: 14, height: hIngreso, borderRadius: "3px 3px 0 0",
-                      background: "linear-gradient(180deg, #34F3C6, #21D0B3)",
+                      background: `linear-gradient(180deg, ${BRAND.tealLight}, ${BRAND.teal})`,
                     }}
                   />
                   <div
@@ -989,7 +992,7 @@ function TablaProveedores({ filas }: { filas: Resumen["porProveedor"] }) {
                           className="h-full rounded-full"
                           style={{
                             width: `${Math.min(100, f.pctConsumido)}%`,
-                            background: f.pctConsumido > 90 ? "#dc2626" : "#21D0B3",
+                            background: f.pctConsumido > 90 ? "#dc2626" : BRAND.teal,
                           }}
                         />
                       </div>
@@ -1071,7 +1074,7 @@ function DesgloseBarras({
                 title={`${t("Costo")} ${clp(f.costo)}`}
               />
               <div
-                style={{ width: `${(Math.max(f.margen, 0) / max) * 100}%`, background: "#21D0B3" }}
+                style={{ width: `${(Math.max(f.margen, 0) / max) * 100}%`, background: BRAND.teal }}
                 title={`${t("Margen")} ${clp(f.margen)}`}
               />
             </div>
@@ -1126,7 +1129,7 @@ function TopConductores({ filas }: { filas: Resumen["topConductores"] }) {
                   <div className="flex items-center gap-2.5">
                     <span
                       className="flex items-center justify-center rounded-full text-[10px] font-bold text-white flex-shrink-0"
-                      style={{ width: 30, height: 30, background: "linear-gradient(135deg, #21D0B3, #1eb19a)" }}
+                      style={{ width: 30, height: 30, background: `linear-gradient(135deg, ${BRAND.teal}, #1eb19a)` }}
                     >
                       {iniciales(f.nombre)}
                     </span>

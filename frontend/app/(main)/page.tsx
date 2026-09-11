@@ -8,24 +8,28 @@ import { useI18n } from "@/lib/i18n";
 import DonutChart from "@/components/charts/DonutChart";
 import BarChart from "@/components/charts/BarChart";
 import { downloadExcel, downloadPDF } from "@/lib/reports";
+import { BRAND } from "@/lib/design";
+import DetailRow from "@/components/ui/DetailRow";
 
-// ── Brand palette — Seven Arena ────────────────────────────────
-const TEAL       = "#21D0B3";
-const TEAL_LIGHT = "#34F3C6";
-const BLUE       = "#1FCDFF";
-const CHARCOAL   = "#30455B";
+// ── Brand palette — Seven Arena (tokens compartidos) ───────────
+const TEAL       = BRAND.teal;
+const TEAL_LIGHT = BRAND.tealLight;
+const BLUE       = BRAND.blue;
+const CHARCOAL   = BRAND.charcoal;
 
 type Trip = { id: string; status?: string | null };
 type HotelAssignment = { id: string; roomId?: string | null; status?: string | null };
 type HotelRoom = { id: string; status?: string | null };
 type Discipline = { id: string; name?: string | null; parentId?: string | null; category?: string | null; gender?: string | null };
-type EventData = { id: string; expectedCapacities?: Array<{ disciplineId: string; delegationCode: string; expectedCount: number }> };
+type EventData = { id: string; name?: string | null; expectedCapacities?: Array<{ disciplineId: string; delegationCode: string; expectedCount: number }> };
 type AthleteItem = { id: string; disciplineId?: string | null; status?: string | null };
+type AccommodationItem = { id: string; name?: string | null; city?: string | null };
 
 const STATUS = {
   scheduled: new Set(["SCHEDULED", "PROGRAMADO", "PROGRAMADA", "PROGRAMMED"]),
   active: new Set(["EN_ROUTE", "EN_RUTA", "PICKED_UP", "RECOGIDO", "DROPPED_OFF"]),
   completed: new Set(["COMPLETED", "FINALIZADO", "COMPLETADO"]),
+  cancelled: new Set(["CANCELLED", "CANCELADO", "CANCELADA"]),
 };
 
 const norm = (v?: string | null) => (v ? v.trim().toUpperCase() : "");
@@ -80,9 +84,13 @@ export default function Page() {
   const { t } = useI18n();
   // null = ese indicador aún no llega (se muestra "—" solo en su tarjeta).
   const [eventsCount, setEventsCount] = useState<number | null>(null);
+  const [eventsList, setEventsList] = useState<EventData[]>([]);
   const [athletesCount, setAthletesCount] = useState<number | null>(null);
   const [trips, setTrips] = useState<Trip[] | null>(null);
   const [accommodationsCount, setAccommodationsCount] = useState<number | null>(null);
+  const [accommodationsList, setAccommodationsList] = useState<AccommodationItem[]>([]);
+  // KPI expandida: muestra su panel de detalle bajo la fila de indicadores.
+  const [expandedKpi, setExpandedKpi] = useState<string | null>(null);
   const [hotelRooms, setHotelRooms] = useState<HotelRoom[] | null>(null);
   const [hotelAssignments, setHotelAssignments] = useState<HotelAssignment[] | null>(null);
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
@@ -106,6 +114,7 @@ export default function Page() {
     load(apiFetch<EventData[]>("/events"), (events) => {
       const list = Array.isArray(events) ? events : [];
       setEventsCount(list.length);
+      setEventsList(list);
       // Capacity by discipline (sum expectedCount across events/delegations)
       const capMap = new Map<string, number>();
       list.forEach((ev) => {
@@ -130,7 +139,11 @@ export default function Page() {
     }, []);
 
     load(apiFetch<Trip[]>("/trips"), (list) => setTrips(Array.isArray(list) ? list : []), []);
-    load(apiFetch<unknown[]>("/accommodations"), (list) => setAccommodationsCount(Array.isArray(list) ? list.length : 0), []);
+    load(apiFetch<AccommodationItem[]>("/accommodations"), (list) => {
+      const arr = Array.isArray(list) ? list : [];
+      setAccommodationsCount(arr.length);
+      setAccommodationsList(arr);
+    }, []);
     load(apiFetch<HotelRoom[]>("/hotel-rooms"), (list) => setHotelRooms(Array.isArray(list) ? list : []), []);
     load(apiFetch<HotelAssignment[]>("/hotel-assignments"), (list) => setHotelAssignments(Array.isArray(list) ? list : []), []);
     load(apiFetch<Discipline[]>("/disciplines"), (list) => setDisciplines(Array.isArray(list) ? list : []), []);
@@ -148,12 +161,14 @@ export default function Page() {
   const hotelLoading = hotelRooms === null || hotelAssignments === null;
 
   const tripStats = useMemo(() => {
-    const s = { scheduled: 0, active: 0, completed: 0 };
+    const s = { scheduled: 0, active: 0, completed: 0, cancelled: 0, other: 0 };
     (trips ?? []).forEach((trip) => {
       const st = norm(trip.status);
       if (STATUS.completed.has(st)) s.completed++;
       else if (STATUS.active.has(st)) s.active++;
       else if (STATUS.scheduled.has(st)) s.scheduled++;
+      else if (STATUS.cancelled.has(st)) s.cancelled++;
+      else s.other++;
     });
     return s;
   }, [trips]);
@@ -292,14 +307,153 @@ export default function Page() {
 
   // value null = todavía cargando ese indicador (la tarjeta muestra "—").
   const kpis = [
-    { label: "Participantes",   value: athletesCount === null ? null : fmt(athletesCount),             color: TEAL,       iconKey: "participantes", link: "/registro/participantes" },
-    { label: "Eventos",         value: eventsCount === null ? null : fmt(eventsCount),                 color: BLUE,       iconKey: "eventos",       link: "/deportes" },
-    { label: "Hoteles",         value: accommodationsCount === null ? null : fmt(accommodationsCount), color: CHARCOAL,   iconKey: "hoteles",       link: "/masters/accommodations" },
-    { label: "Viajes totales",  value: trips === null ? null : fmt(trips.length),                      color: TEAL,       iconKey: "viajes",        link: "/operations/trips" },
-    { label: "Km recorridos",   value: kmRecorridos === null ? null : `${fmt(Math.round(kmRecorridos))} km`, color: BLUE, iconKey: "viajes", link: "/operations/transport-finance" },
-    { label: "Asignaciones",    value: hotelAssignments === null ? null : fmt(hotelAssignments.length), color: BLUE,      iconKey: "asignaciones",  link: "/operations/hotel-assignments" },
-    { label: "Ocupación",       value: hotelLoading ? null : `${occupancyPct}%`,                       color: TEAL_LIGHT, iconKey: "ocupacion",     link: "/operations/hotel-tracking" },
+    { id: "participantes", label: "Participantes",   value: athletesCount === null ? null : fmt(athletesCount),             color: TEAL,       iconKey: "participantes", link: "/registro/participantes" },
+    { id: "eventos",       label: "Eventos",         value: eventsCount === null ? null : fmt(eventsCount),                 color: BLUE,       iconKey: "eventos",       link: "/deportes" },
+    { id: "hoteles",       label: "Hoteles",         value: accommodationsCount === null ? null : fmt(accommodationsCount), color: CHARCOAL,   iconKey: "hoteles",       link: "/masters/accommodations" },
+    { id: "viajes",        label: "Viajes totales",  value: trips === null ? null : fmt(trips.length),                      color: TEAL,       iconKey: "viajes",        link: "/operations/trips" },
+    { id: "km",            label: "Km recorridos",   value: kmRecorridos === null ? null : `${fmt(Math.round(kmRecorridos))} km`, color: BLUE, iconKey: "viajes", link: "/operations/transport-finance" },
+    { id: "asignaciones",  label: "Asignaciones",    value: hotelAssignments === null ? null : fmt(hotelAssignments.length), color: BLUE,      iconKey: "asignaciones",  link: "/operations/hotel-assignments" },
+    { id: "ocupacion",     label: "Ocupación",       value: hotelLoading ? null : `${occupancyPct}%`,                       color: TEAL_LIGHT, iconKey: "ocupacion",     link: "/operations/hotel-tracking" },
   ];
+  const expanded = kpis.find(k => k.id === expandedKpi) ?? null;
+
+  // ── Detalle expandido por KPI (usa DetailRow del kit ui) ──────
+  const renderKpiDetail = (id: string) => {
+    switch (id) {
+      case "participantes": {
+        const rows = Array.from(athletesByDiscipline.entries())
+          .map(([discId, count]) => {
+            const disc = disciplines.find(d => d.id === discId);
+            const parent = disc?.parentId ? disciplines.find(d => d.id === disc.parentId) : null;
+            const name = parent ? `${parent.name} — ${disc?.name}` : disc?.name || t("Sin disciplina");
+            const cupos = capacityByDiscipline.get(discId) || 0;
+            return { name, count, cupos };
+          })
+          .sort((a, b) => b.count - a.count);
+        const shown = rows.slice(0, 8);
+        const rest = rows.slice(8).reduce((s, r) => s + r.count, 0);
+        return (
+          <div>
+            <p style={{ fontSize: 12, color: "#94a3b8", margin: "0 0 8px" }}>{t("Participantes validados por disciplina")}</p>
+            {shown.length === 0 && <p style={{ fontSize: 13, color: "#94a3b8" }}>{t("Sin participantes registrados")}</p>}
+            {shown.map(r => (
+              <div key={r.name} style={{ padding: "7px 0", borderBottom: "1px solid #f1f5f9" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                  <span style={{ fontSize: 12.5, color: "#334155", fontWeight: 600 }}>{r.name}</span>
+                  <span style={{ fontSize: 12.5, fontWeight: 700, color: "#0f172a", fontVariantNumeric: "tabular-nums" }}>
+                    {fmt(r.count)}{r.cupos > 0 ? ` / ${fmt(r.cupos)}` : ""}
+                  </span>
+                </div>
+                {r.cupos > 0 && <ProgressBar pct={Math.round((r.count / r.cupos) * 100)} color={TEAL} height={5} />}
+              </div>
+            ))}
+            {rest > 0 && <DetailRow label={t("Otras disciplinas")} value={fmt(rest)} />}
+            <DetailRow label={t("Total validados")} value={fmt(athletesCount ?? 0)} color={TEAL} bold />
+          </div>
+        );
+      }
+      case "eventos": {
+        return (
+          <div>
+            {eventsList.length === 0 && <p style={{ fontSize: 13, color: "#94a3b8" }}>{t("Sin eventos creados")}</p>}
+            {eventsList.map(ev => {
+              const cupos = (ev.expectedCapacities || []).reduce((s, c) => s + (c.expectedCount || 0), 0);
+              return <DetailRow key={ev.id} label={ev.name || ev.id}
+                value={cupos > 0 ? `${fmt(cupos)} ${t("cupos")}` : t("Sin cupos definidos")} />;
+            })}
+          </div>
+        );
+      }
+      case "hoteles": {
+        return (
+          <div>
+            {accommodationsList.length === 0 && <p style={{ fontSize: 13, color: "#94a3b8" }}>{t("Sin hoteles registrados")}</p>}
+            {accommodationsList.slice(0, 10).map(h => (
+              <DetailRow key={h.id} label={h.name || h.id} value={h.city || "—"} />
+            ))}
+            {accommodationsList.length > 10 && (
+              <DetailRow label={t("Otros hoteles")} value={fmt(accommodationsList.length - 10)} />
+            )}
+            <DetailRow label={t("Total habitaciones")} value={fmt(roomStats.total)} bold />
+            <DetailRow label={t("Habitaciones disponibles")} value={fmt(roomStats.available)} color={TEAL} bold />
+          </div>
+        );
+      }
+      case "viajes": {
+        const total = trips?.length ?? 0;
+        const seg = [
+          { label: "Programados", value: tripStats.scheduled, color: BLUE },
+          { label: "En curso", value: tripStats.active, color: TEAL_LIGHT },
+          { label: "Completados", value: tripStats.completed, color: TEAL },
+          { label: "Cancelados", value: tripStats.cancelled, color: "#f87171" },
+          { label: "Otros estados", value: tripStats.other, color: "#94a3b8" },
+        ].filter(s => s.value > 0);
+        return (
+          <div>
+            {seg.map(s => (
+              <div key={s.label} style={{ padding: "7px 0", borderBottom: "1px solid #f1f5f9" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                  <span style={{ fontSize: 12.5, color: "#334155", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: s.color, display: "inline-block" }} />
+                    {t(s.label)}
+                  </span>
+                  <span style={{ fontSize: 12.5, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
+                    {fmt(s.value)} <span style={{ color: "#94a3b8", fontWeight: 500 }}>({total > 0 ? Math.round((s.value / total) * 100) : 0}%)</span>
+                  </span>
+                </div>
+                <ProgressBar pct={total > 0 ? Math.round((s.value / total) * 100) : 0} color={s.color} height={5} />
+              </div>
+            ))}
+            <DetailRow label={t("Total de viajes")} value={fmt(total)} color={TEAL} bold />
+          </div>
+        );
+      }
+      case "km": {
+        const km = kmRecorridos ?? 0;
+        const completados = tripStats.completed;
+        return (
+          <div>
+            <DetailRow label={t("Km recorridos (servicios entregados)")} value={`${fmt(Math.round(km))} km`} color={BLUE} bold />
+            <DetailRow label={t("Viajes completados")} value={fmt(completados)} />
+            <DetailRow label={t("Promedio por viaje completado")} value={completados > 0 ? `${fmt(Math.round(km / completados))} km` : "—"} />
+          </div>
+        );
+      }
+      case "asignaciones": {
+        const list = hotelAssignments ?? [];
+        const finished = list.filter(a => ["CHECKOUT", "CHECKED_OUT", "FINISHED", "CANCELLED"].includes(norm(a.status))).length;
+        const activas = list.length - finished;
+        const sinHab = list.filter(a => !a.roomId).length;
+        return (
+          <div>
+            <DetailRow label={t("Asignaciones activas")} value={fmt(activas)} color={TEAL} bold />
+            <DetailRow label={t("Finalizadas / canceladas")} value={fmt(finished)} />
+            <DetailRow label={t("Sin habitación asignada")} value={fmt(sinHab)} color={sinHab > 0 ? "#d97706" : undefined} />
+            <DetailRow label={t("Total")} value={fmt(list.length)} bold />
+          </div>
+        );
+      }
+      case "ocupacion": {
+        return (
+          <div>
+            <div style={{ padding: "7px 0", borderBottom: "1px solid #f1f5f9" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                <span style={{ fontSize: 12.5, color: "#334155", fontWeight: 600 }}>{t("Ocupación hotelera")}</span>
+                <span style={{ fontSize: 12.5, fontWeight: 700 }}>{occupancyPct}%</span>
+              </div>
+              <ProgressBar pct={occupancyPct} color={TEAL_LIGHT} height={6} />
+            </div>
+            <DetailRow label={t("Camas ocupadas")} value={fmt(bedStats.occupied)} color={CHARCOAL} bold />
+            <DetailRow label={t("Camas disponibles")} value={fmt(bedStats.available)} color={TEAL} bold />
+            <DetailRow label={t("Total camas")} value={fmt(bedStats.total)} />
+            <DetailRow label={t("Habitaciones disponibles")} value={fmt(roomStats.available)} />
+          </div>
+        );
+      }
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="space-y-6" style={{ animation: "fadeInUp 0.4s ease" }}>
@@ -322,38 +476,84 @@ export default function Page() {
         </button>
       </div>
 
-      {/* ── KPI row */}
+      {/* ── KPI row: la tarjeta expande su detalle; el link al módulo vive dentro del panel */}
       <div className="grid gap-4 grid-cols-2 md:grid-cols-4 lg:grid-cols-7">
-        {kpis.map((kpi, i) => (
-          <Link key={i} href={kpi.link} style={{ textDecoration: "none" }}>
+        {kpis.map((kpi, i) => {
+          const isOpen = expandedKpi === kpi.id;
+          return (
             <div
+              key={kpi.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => setExpandedKpi(prev => prev === kpi.id ? null : kpi.id)}
+              onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setExpandedKpi(prev => prev === kpi.id ? null : kpi.id); } }}
               style={{
-                background: "#ffffff",
-                border: "1px solid #e2e8f0",
-                borderTop: `2px solid ${kpi.color}`,
+                background: isOpen ? `linear-gradient(180deg, ${kpi.color}0d, #ffffff 55%)` : "#ffffff",
+                border: `1px solid ${isOpen ? `${kpi.color}66` : "#e2e8f0"}`,
+                borderTop: `${isOpen ? 3 : 2}px solid ${kpi.color}`,
                 borderRadius: "14px",
                 padding: "16px",
-                boxShadow: "0 1px 6px rgba(15,23,42,0.06)",
+                boxShadow: isOpen ? `0 4px 16px ${kpi.color}22` : "0 1px 6px rgba(15,23,42,0.06)",
                 cursor: "pointer",
-                transition: "transform 120ms ease, box-shadow 120ms ease",
+                transition: "transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease",
                 animation: "fadeInUp 0.4s ease both",
                 animationDelay: `${i * 0.06}s`,
               }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 16px rgba(15,23,42,0.1)"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ""; (e.currentTarget as HTMLElement).style.boxShadow = "0 1px 6px rgba(15,23,42,0.06)"; }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; if (!isOpen) (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 16px rgba(15,23,42,0.1)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ""; if (!isOpen) (e.currentTarget as HTMLElement).style.boxShadow = "0 1px 6px rgba(15,23,42,0.06)"; }}
             >
               <div className="flex items-center justify-between mb-3">
                 <span style={{ color: kpi.color }}>{kpiIcons[kpi.iconKey]}</span>
-                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: kpi.color, display: "inline-block" }} />
+                <span style={{ display: "inline-flex", color: isOpen ? kpi.color : "#cbd5e1", transform: isOpen ? "rotate(180deg)" : "none", transition: "transform 150ms ease, color 150ms ease" }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </span>
               </div>
-              <p style={{ fontSize: "1.65rem", fontWeight: 800, color: kpi.color, lineHeight: 1, fontVariantNumeric: "tabular-nums", opacity: kpi.value === null ? 0.45 : 1, transition: "opacity 200ms ease" }}>
-                {kpi.value ?? "—"}
-              </p>
-              <p style={{ fontSize: "11px", color: "#64748b", marginTop: "5px", fontWeight: 500 }}>{kpi.label}</p>
+              {kpi.value === null ? (
+                <span className="skeleton" style={{ display: "inline-block", width: 58, height: 24, borderRadius: 6 }} />
+              ) : (
+                <p style={{ fontSize: "1.65rem", fontWeight: 800, color: kpi.color, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
+                  {kpi.value}
+                </p>
+              )}
+              <p style={{ fontSize: "11px", color: "#64748b", marginTop: "5px", fontWeight: 500 }}>{t(kpi.label)}</p>
             </div>
-          </Link>
-        ))}
+          );
+        })}
       </div>
+
+      {/* ── Panel de detalle del KPI expandido */}
+      {expanded && (
+        <div style={{
+          background: "#ffffff",
+          border: `1px solid ${expanded.color}44`,
+          borderTop: `3px solid ${expanded.color}`,
+          borderRadius: "16px",
+          padding: "18px 20px",
+          boxShadow: `0 4px 20px ${expanded.color}18`,
+          animation: "fadeInUp 0.25s ease both",
+          marginTop: "-8px",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+              <span style={{ color: expanded.color, display: "inline-flex" }}>{kpiIcons[expanded.iconKey]}</span>
+              <div style={{ minWidth: 0 }}>
+                <p style={{ fontSize: "11px", color: expanded.color, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", margin: 0 }}>{t(expanded.label)}</p>
+                <p style={{ fontSize: "20px", fontWeight: 800, color: "#0f172a", margin: 0, lineHeight: 1.2, fontVariantNumeric: "tabular-nums" }}>{expanded.value ?? "—"}</p>
+              </div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+              <Link href={expanded.link} style={{ fontSize: "12px", color: expanded.color, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
+                {t("Ir al módulo")} →
+              </Link>
+              <button type="button" onClick={() => setExpandedKpi(null)} aria-label={t("Cerrar")}
+                style={{ border: "none", background: "#f1f5f9", borderRadius: 8, width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#64748b" }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+          </div>
+          {renderKpiDetail(expanded.id)}
+        </div>
+      )}
 
       {/* ── Charts row */}
       <div className="grid gap-4 lg:grid-cols-3">
