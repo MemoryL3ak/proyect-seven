@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { apiFetch } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
+import { useIsMobile } from "@/lib/useIsMobile";
 import { getSupabase } from "@/lib/supabase";
 import { downloadCSV } from "@/lib/export";
 import PageHeader from "@/components/ui/PageHeader";
@@ -151,6 +152,7 @@ function clientTypeChip(type: string) {
 
 export default function DriverMonitoringPage() {
   const { t } = useI18n();
+  const isMobile = useIsMobile();
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -403,6 +405,55 @@ export default function DriverMonitoringPage() {
     );
   };
 
+  // ── Pastillas compartidas entre la tabla (desktop) y las tarjetas (móvil) ──
+  const pillEstado = (online: boolean) => (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 10.5, padding: "4px 10px", borderRadius: 99, fontWeight: 700, letterSpacing: "0.02em",
+      background: online ? "linear-gradient(135deg,#dcfce7,#bbf7d0)" : "#eef1f6",
+      color: online ? "#166534" : "#5e6b7a",
+      border: `1px solid ${online ? "#86efac" : "#cbd5e1"}` }}>
+      <span style={{ width: 6, height: 6, borderRadius: "50%", background: online ? "#10b981" : "#94a3b8", animation: online ? "pulse 1.8s infinite" : "none" }} />
+      {online ? t("Conectado") : t("Desconectado")}
+    </span>
+  );
+
+  const pillOcupacion = (isBusy: boolean, tripText: string | null, activeTrips: number) => (
+    isBusy ? (
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 10.5, padding: "4px 10px", borderRadius: 99, fontWeight: 700,
+        background: "linear-gradient(135deg,#ede9fe,#ddd6fe)", color: "#5b21b6", border: "1px solid #c4b5fd" }}>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 17H3v-6l2.5-5h11L19 11v6h-2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg>
+        {tripText ? t(tripText) : `${activeTrips} ${activeTrips === 1 ? t("viaje") : t("viajes")}`}
+      </span>
+    ) : (
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 10.5, padding: "4px 10px", borderRadius: 99, fontWeight: 700,
+        background: "#e0f7fa", color: "#0e7490", border: "1px solid #67e8f9" }}>
+        {t("Disponible")}
+      </span>
+    )
+  );
+
+  const chipDayCount = (n: number) => (
+    n === 0 ? (
+      <span style={{ color: "#cbd5e1", fontSize: 12, fontWeight: 600 }}>0</span>
+    ) : (
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11.5, padding: "3px 9px", borderRadius: 8, fontWeight: 800,
+        background: n >= 5 ? "linear-gradient(135deg,#fef3c7,#fde68a)" : "linear-gradient(135deg,#dbeafe,#bfdbfe)",
+        color: n >= 5 ? "#7a4a00" : "#1e40af",
+        border: n >= 5 ? "1px solid #fcd34d" : "1px solid #93c5fd" }}>
+        {n}
+      </span>
+    )
+  );
+
+  const pillGps = (gpsActive: boolean) => (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, padding: "3px 8px", borderRadius: 6, fontWeight: 700,
+      background: gpsActive ? "#dcfce7" : "#f1f5f9",
+      color: gpsActive ? "#166534" : "#94a3b8",
+      border: `1px solid ${gpsActive ? "#86efac" : "#cbd5e1"}` }}>
+      <span style={{ width: 6, height: 6, borderRadius: "50%", background: gpsActive ? "#10b981" : "#cbd5e1", boxShadow: gpsActive ? "0 0 6px #10b981" : "none" }} />
+      {gpsActive ? t("Reportando") : t("Sin señal")}
+    </span>
+  );
+
   return (
     <div className="min-w-0 space-y-6 overflow-x-hidden">
       <PageHeader
@@ -618,6 +669,89 @@ export default function DriverMonitoringPage() {
             </span>
           </div>
 
+          {isMobile ? (
+            /* ── Vista móvil: una tarjeta por conductor (la tabla de 9
+               columnas obligaba a scrollear horizontal en el teléfono) ── */
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: 12 }}>
+              {visibleDrivers.map((d) => {
+                const gpsActive = d.gpsAgeSeconds != null && d.gpsAgeSeconds < 600;
+                const isBusy = d.activeTrips > 0;
+                const tripText = tripLabel(d.activeTripStatus, d.activeTrips);
+                return (
+                  <div key={d.driverId}
+                    style={{ borderRadius: 12, border: `1px solid ${d.online ? "rgba(33,208,179,0.3)" : "#e2e8f0"}`,
+                      background: "#fff", padding: "12px 14px",
+                      boxShadow: d.online ? "0 2px 10px rgba(33,208,179,0.08)" : "0 1px 4px rgba(15,23,42,0.04)" }}>
+                    {/* Cabecera: avatar + nombre + estado */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{ width: 38, height: 38, borderRadius: "50%",
+                        background: d.online ? "linear-gradient(135deg, #21D0B3 0%, #15B09A 100%)" : "linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%)",
+                        color: "#fff", fontSize: 12, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center",
+                        letterSpacing: "0.04em", flexShrink: 0,
+                        boxShadow: d.online ? "0 2px 8px rgba(33,208,179,0.35)" : "0 1px 3px rgba(15,23,42,0.1)" }}>
+                        {initials(d.fullName)}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", margin: 0, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {d.fullName}
+                        </p>
+                        {d.platform && (
+                          <p style={{ fontSize: 11, color: "#94a3b8", margin: "2px 0 0", textTransform: "capitalize" }}>{d.platform}</p>
+                        )}
+                      </div>
+                      {pillEstado(d.online)}
+                    </div>
+                    {/* Ocupación · viajes del día · GPS */}
+                    <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+                      {pillOcupacion(isBusy, tripText, d.activeTrips)}
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, color: "#64748b", fontWeight: 600 }}>
+                        {isToday ? t("Viajes hoy") : t("Viajes del día")}: {chipDayCount(d.dayTripCount)}
+                      </span>
+                      <span style={{ marginLeft: "auto" }}>{pillGps(gpsActive)}</span>
+                    </div>
+                    {/* Tipos de cliente y disciplinas */}
+                    {((d.allowedClientTypes || []).length > 0 || (d.disciplines || []).length > 0) && (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 8 }}>
+                        {(d.allowedClientTypes || []).map((ct) => {
+                          const meta = clientTypeChip(ct);
+                          return (
+                            <span key={ct} style={{ fontSize: 10, padding: "2px 7px", borderRadius: 6, fontWeight: 700, background: meta.bg, color: meta.color,
+                              border: `1px solid ${meta.border}`, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                              {t(meta.label)}
+                            </span>
+                          );
+                        })}
+                        {(d.disciplines || []).slice(0, 4).map((dx) => (
+                          <span key={dx} style={{ fontSize: 10, padding: "2px 7px", borderRadius: 6, fontWeight: 600, background: "#f0f9ff", color: "#0369a1", border: "1px solid #bae6fd" }}>
+                            {dx}
+                          </span>
+                        ))}
+                        {(d.disciplines || []).length > 4 && (
+                          <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 6, fontWeight: 700, background: "#f1f5f9", color: "#475569", border: "1px solid #cbd5e1" }}>
+                            +{d.disciplines.length - 4}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    {/* Última conexión · sesión */}
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 8, paddingTop: 8, borderTop: "1px dashed #f1f5f9" }}>
+                      <span style={{ fontSize: 11, color: "#64748b" }}>
+                        {t("Última conexión")}: <b style={{ color: "#334155", fontWeight: 600 }}>{ago(d.secondsSinceSeen)}</b>
+                      </span>
+                      <span style={{ fontSize: 11, color: "#64748b", textAlign: "right" }}>
+                        {d.sessionStartedAt
+                          ? <>
+                              {new Date(d.sessionStartedAt).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })}
+                              <span style={{ color: "#94a3b8" }}> · {d.heartbeats ?? 0} {t("latidos")}</span>
+                            </>
+                          : <i style={{ color: "#94a3b8" }}>{t("Nunca usó la app")}</i>}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
           <div className="overflow-x-auto">
             <table className="w-full" style={{ fontSize: 12.5, borderCollapse: "separate", borderSpacing: 0 }}>
               <thead>
@@ -716,98 +850,17 @@ export default function DriverMonitoringPage() {
 
                       {/* Estado conexión */}
                       <td className="p-3" style={{ whiteSpace: "nowrap" }}>
-                        <span
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 5,
-                            fontSize: 10.5,
-                            padding: "4px 10px",
-                            borderRadius: 99,
-                            fontWeight: 700,
-                            letterSpacing: "0.02em",
-                            background: d.online ? "linear-gradient(135deg,#dcfce7,#bbf7d0)" : "#eef1f6",
-                            color: d.online ? "#166534" : "#5e6b7a",
-                            border: `1px solid ${d.online ? "#86efac" : "#cbd5e1"}`,
-                          }}
-                        >
-                          <span
-                            style={{
-                              width: 6,
-                              height: 6,
-                              borderRadius: "50%",
-                              background: d.online ? "#10b981" : "#94a3b8",
-                              animation: d.online ? "pulse 1.8s infinite" : "none",
-                            }}
-                          />
-                          {d.online ? t("Conectado") : t("Desconectado")}
-                        </span>
+                        {pillEstado(d.online)}
                       </td>
 
                       {/* Ocupación */}
                       <td className="p-3" style={{ whiteSpace: "nowrap" }}>
-                        {isBusy ? (
-                          <span
-                            style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: 5,
-                              fontSize: 10.5,
-                              padding: "4px 10px",
-                              borderRadius: 99,
-                              fontWeight: 700,
-                              background: "linear-gradient(135deg,#ede9fe,#ddd6fe)",
-                              color: "#5b21b6",
-                              border: "1px solid #c4b5fd",
-                            }}
-                          >
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 17H3v-6l2.5-5h11L19 11v6h-2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg>
-                            {tripText ? t(tripText) : `${d.activeTrips} ${d.activeTrips === 1 ? t("viaje") : t("viajes")}`}
-                          </span>
-                        ) : (
-                          <span
-                            style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: 5,
-                              fontSize: 10.5,
-                              padding: "4px 10px",
-                              borderRadius: 99,
-                              fontWeight: 700,
-                              background: "#e0f7fa",
-                              color: "#0e7490",
-                              border: "1px solid #67e8f9",
-                            }}
-                          >
-                            {t("Disponible")}
-                          </span>
-                        )}
+                        {pillOcupacion(isBusy, tripText, d.activeTrips)}
                       </td>
 
                       {/* Viajes del día (dayTripCount) */}
                       <td className="p-3" style={{ whiteSpace: "nowrap" }}>
-                        {d.dayTripCount === 0 ? (
-                          <span style={{ color: "#cbd5e1", fontSize: 12, fontWeight: 600 }}>0</span>
-                        ) : (
-                          <span
-                            style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: 4,
-                              fontSize: 11.5,
-                              padding: "3px 9px",
-                              borderRadius: 8,
-                              fontWeight: 800,
-                              background: d.dayTripCount >= 5
-                                ? "linear-gradient(135deg,#fef3c7,#fde68a)"
-                                : "linear-gradient(135deg,#dbeafe,#bfdbfe)",
-                              color: d.dayTripCount >= 5 ? "#7a4a00" : "#1e40af",
-                              border: d.dayTripCount >= 5 ? "1px solid #fcd34d" : "1px solid #93c5fd",
-                            }}
-                          >
-                            {d.dayTripCount}
-                          </span>
-                        )}
+                        {chipDayCount(d.dayTripCount)}
                       </td>
 
                       {/* Tipo cliente chips */}
@@ -909,31 +962,7 @@ export default function DriverMonitoringPage() {
 
                       {/* GPS */}
                       <td className="p-3" style={{ whiteSpace: "nowrap" }}>
-                        <span
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 5,
-                            fontSize: 11,
-                            padding: "3px 8px",
-                            borderRadius: 6,
-                            fontWeight: 700,
-                            background: gpsActive ? "#dcfce7" : "#f1f5f9",
-                            color: gpsActive ? "#166534" : "#94a3b8",
-                            border: `1px solid ${gpsActive ? "#86efac" : "#cbd5e1"}`,
-                          }}
-                        >
-                          <span
-                            style={{
-                              width: 6,
-                              height: 6,
-                              borderRadius: "50%",
-                              background: gpsActive ? "#10b981" : "#cbd5e1",
-                              boxShadow: gpsActive ? "0 0 6px #10b981" : "none",
-                            }}
-                          />
-                          {gpsActive ? t("Reportando") : t("Sin señal")}
-                        </span>
+                        {pillGps(gpsActive)}
                       </td>
                     </tr>
                   );
@@ -941,6 +970,7 @@ export default function DriverMonitoringPage() {
               </tbody>
             </table>
           </div>
+          )}
         </div>
       )}
     </div>

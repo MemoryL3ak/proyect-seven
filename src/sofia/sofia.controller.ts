@@ -1,5 +1,14 @@
 import { StaffOnly } from '../auth/staff-only.decorator';
-import { Body, Controller, Get, Logger, Post, Query, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Logger,
+  Post,
+  Query,
+  Res,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import type { Response } from 'express';
 import { AskSofiaDto } from './dto/ask-sofia.dto';
 import { SofiaService } from './sofia.service';
@@ -14,7 +23,17 @@ export class SofiaController {
   /** Classic non-streaming endpoint (backward-compatible). */
   @Post('ask')
   async ask(@Body() dto: AskSofiaDto) {
-    return this.sofiaService.ask(dto.question, dto.previousResponseId, dto.locale);
+    try {
+      return await this.sofiaService.ask(dto.question, dto.previousResponseId, dto.locale);
+    } catch (err) {
+      // El detalle (modelo inválido, clave vencida, timeout del proveedor…)
+      // queda en el log del servidor; al cliente le llega un 503 accionable
+      // en vez del 500 "Internal server error" que ocultaba la causa.
+      this.logger.error(`ask() failed: ${err instanceof Error ? err.message : err}`);
+      throw new ServiceUnavailableException(
+        'SofIA no está disponible en este momento. Intenta de nuevo en unos minutos.',
+      );
+    }
   }
 
   /** SSE streaming endpoint — sends text deltas + render artifacts as they arrive. */
