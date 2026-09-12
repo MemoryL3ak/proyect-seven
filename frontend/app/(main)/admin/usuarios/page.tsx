@@ -17,7 +17,14 @@ type SupabaseUser = {
   user_metadata: Record<string, string>;
 };
 
-type Role = "Administrador" | "Operador" | "Supervisor" | "Visualizador" | "Coordinador";
+type Role =
+  | "Administrador"
+  | "Operador"
+  | "Supervisor"
+  | "Visualizador"
+  | "Coordinador"
+  | "Coordinador Bvan"
+  | "Coordinador Comité";
 type UserStatus = "active" | "inactive" | "pending";
 
 type AppUser = {
@@ -36,12 +43,27 @@ type AppUser = {
 
 // El catálogo de módulos vive en lib/modules.ts (compartido con Mi Cuenta).
 
-const ROLES: Role[] = ["Administrador", "Supervisor", "Coordinador", "Operador", "Visualizador"];
+const ROLES: Role[] = [
+  "Administrador",
+  "Supervisor",
+  "Coordinador",
+  "Coordinador Bvan",
+  "Coordinador Comité",
+  "Operador",
+  "Visualizador",
+];
+
+// Transporte por grupo: si mañana se agrega un módulo al grupo, los
+// coordinadores acotados lo heredan sin tocar cada preset.
+const TRANSPORTE_MODULES = ALL_MODULES.filter((m) => m.group === "Transporte").map((m) => m.id);
 
 const ROLE_PERMISSIONS: Record<Role, string[]> = {
   Administrador: ALL_MODULES.map((m) => m.id),
   Supervisor: ALL_MODULES.filter((m) => m.group !== "Administración").map((m) => m.id),
   Coordinador: ALL_MODULES.filter((m) => !["Dashboard", "Administración"].includes(m.group)).map((m) => m.id),
+  // Coordinadores acotados: solo los módulos que realmente operan.
+  "Coordinador Bvan": [...TRANSPORTE_MODULES, "sede", "calendario", "alimentacion.general"],
+  "Coordinador Comité": [...TRANSPORTE_MODULES, "sede", "calendario", "dashboard.comercial", "dashboard.operacional"],
   Operador: ALL_MODULES.filter((m) => ["Operación", "Transporte", "Hotelería", "Alimentación", "Acreditaciones", "Documentos"].includes(m.group)).map((m) => m.id),
   Visualizador: ALL_MODULES.filter((m) => ["Dashboard", "Registro"].includes(m.group)).map((m) => m.id),
 };
@@ -469,6 +491,8 @@ export default function UsuariosPage() {
     if (role === "Administrador") return { bg: "rgba(239,68,68,0.12)", border: "rgba(239,68,68,0.3)", color: "#ef4444" };
     if (role === "Supervisor") return { bg: "rgba(249,115,22,0.12)", border: "rgba(249,115,22,0.3)", color: "#f97316" };
     if (role === "Coordinador") return { bg: "rgba(16,185,129,0.12)", border: "rgba(16,185,129,0.3)", color: "#10b981" };
+    if (role === "Coordinador Bvan") return { bg: "rgba(33,208,179,0.12)", border: "rgba(33,208,179,0.32)", color: "#0f9e87" };
+    if (role === "Coordinador Comité") return { bg: "rgba(139,92,246,0.12)", border: "rgba(139,92,246,0.3)", color: "#7c3aed" };
     if (role === "Operador") return { bg: "rgba(59,130,246,0.12)", border: "rgba(59,130,246,0.3)", color: "#3b82f6" };
     return { bg: "rgba(100,116,139,0.12)", border: "rgba(100,116,139,0.3)", color: "#64748b" };
   }

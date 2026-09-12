@@ -2429,6 +2429,14 @@ const translations: Record<Locale, Record<string, string>> = {
     // ── Auditoría i18n (lote 2): claves de los módulos internacionalizados ──
     "Viajes hoy": "Trips today",
     "Última conexión": "Last connection",
+    // ── Claves traducidas vía variable (roles, catálogos) ──
+    "Administrador": "Administrator",
+    "Supervisor": "Supervisor",
+    "Coordinador": "Coordinator",
+    "Coordinador Bvan": "Bvan Coordinator",
+    "Coordinador Comité": "Committee Coordinator",
+    "Operador": "Operator",
+    "Visualizador": "Viewer",
   },
   pt: {
     // ── Nav sections ──────────────────────────────────────────────────────
@@ -4847,6 +4855,14 @@ const translations: Record<Locale, Record<string, string>> = {
     // ── Auditoría i18n (lote 2): claves de los módulos internacionalizados ──
     "Viajes hoy": "Viagens hoje",
     "Última conexión": "Última conexão",
+    // ── Claves traducidas vía variable (roles, catálogos) ──
+    "Administrador": "Administrador",
+    "Supervisor": "Supervisor",
+    "Coordinador": "Coordenador",
+    "Coordinador Bvan": "Coordenador Bvan",
+    "Coordinador Comité": "Coordenador do Comitê",
+    "Operador": "Operador",
+    "Visualizador": "Visualizador",
   }
 };
 
