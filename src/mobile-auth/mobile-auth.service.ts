@@ -65,6 +65,14 @@ export type MobileLoginResult =
       };
     };
 
+type CodeRow = { id: string; full_name: string; email: string | null };
+type ParticipantRow = CodeRow & {
+  provider_id: string;
+  status: string | null;
+  metadata: Record<string, unknown> | null;
+};
+type ProviderRow = { id: string; name: string | null; type: string | null };
+
 export type MobileRecoverResult = {
   status: 'ok';
   message: string;
@@ -157,6 +165,57 @@ export class MobileAuthService {
     return { token, expiresIn };
   }
 
+  /**
+   * Una fuente del login. Que falle no tumba el intento: se registra y se
+   * sigue con las otras, igual que cuando cada lookup se tragaba su error.
+   */
+  private async fetchAll<T>(
+    label: string,
+    run: () => PromiseLike<{ data: unknown; error: unknown }>,
+  ): Promise<T[]> {
+    try {
+      const { data, error } = await run();
+      if (error) {
+        this.logger.error(`${label} lookup error`, JSON.stringify(error));
+        return [];
+      }
+      return (data ?? []) as T[];
+    } catch (error) {
+      this.logger.error(`${label} lookup error`, String(error));
+      return [];
+    }
+  }
+
+  /** El código de acceso son los últimos 6 caracteres del UUID. */
+  private static matchesCode(id: string, code: string): boolean {
+    return String(id).slice(-6).toLowerCase() === code;
+  }
+
+  /** metadata.isDriver viaja como booleano true o como la cadena "true". */
+  private static isDriverFlag(
+    metadata: Record<string, unknown> | null,
+  ): boolean {
+    const meta = metadata ?? {};
+    return meta.isDriver === true || meta.isDriver === 'true';
+  }
+
+  /**
+   * Resuelve el código de acceso de 6 caracteres.
+   *
+   * Las cuatro fuentes salen en paralelo y la prioridad se decide después
+   * sobre los resultados: mismo desenlace que la cascada secuencial anterior
+   * -- atleta gana sobre conductor, y conductor sobre staff -- pero en una
+   * ida y vuelta en vez de hasta cinco. Antes un conductor pagaba el escaneo
+   * completo de atletas antes de que lo buscaran a él, y los participantes
+   * se pedían dos veces (una por la vía conductor y otra por la de staff).
+   *
+   * El match sigue hecho en Node y no en SQL a propósito: el código es un
+   * sufijo del UUID, que PostgREST no sabe filtrar sin una columna generada.
+   * Hacerlo por DATABASE_URL sí permitiría filtrar, pero ese host
+   * (pooler us-east-1) está a ~131 ms mientras la API REST responde en ~5 ms:
+   * sale más caro el viaje que lo que ahorra el filtro. Para filtrar en el
+   * servidor hace falta una columna generada right(id::text,6) indexada.
+   */
   async login(input: { code: string }): Promise<MobileLoginResult> {
     const code = String(input.code || '').trim().toLowerCase();
 
@@ -164,80 +223,133 @@ export class MobileAuthService {
       throw new UnauthorizedException('Código inválido');
     }
 
-    const athleteResult = await this.tryAthleteByCode(code);
-    if (athleteResult) return athleteResult;
+    const [athletes, drivers, participants, providers] = await Promise.all([
+      this.fetchAll<CodeRow>('Athlete', () =>
+        this.supabase
+          .schema('core')
+          .from('athletes')
+          .select('id, full_name, email')
+          .neq('status', 'DELETED'),
+      ),
+      this.fetchAll<CodeRow>('Driver', () =>
+        this.supabase
+          .schema('transport')
+          .from('drivers')
+          .select('id, full_name, email')
+          .neq('status', 'DELETED'),
+      ),
+      this.fetchAll<ParticipantRow>('Participant', () =>
+        this.supabase
+          .schema('core')
+          .from('provider_participants')
+          .select('id, full_name, email, provider_id, status, metadata')
+          .neq('status', 'DELETED'),
+      ),
+      this.fetchAll<ProviderRow>('Provider', () =>
+        this.supabase.schema('core').from('providers').select('id, name, type'),
+      ),
+    ]);
 
-    const driverResult = await this.tryDriverByCode(code);
-    if (driverResult) return driverResult;
-
-    const staffResult = await this.tryStaffByCode(code);
-    if (staffResult) return staffResult;
-
-    throw new UnauthorizedException('Código inválido');
-  }
-
-  /**
-   * Staff de proveedor para el portal de control de acceso: participante de
-   * un proveedor de tipo "staff", no conductor, no dado de baja. Antes el
-   * portal descargaba proveedores y participantes completos para matchear el
-   * código en el cliente (SA-BACKEND-03); ahora el match es server-side.
-   */
-  private async tryStaffByCode(
-    code: string,
-  ): Promise<Extract<MobileLoginResult, { kind: 'staff' }> | null> {
-    const { data: providers, error: providersError } = await this.supabase
-      .schema('core')
-      .from('providers')
-      .select('id, name, type');
-    if (providersError) {
-      this.logger.error('Provider lookup error', JSON.stringify(providersError));
-      return null;
-    }
+    const athleteMatches = athletes.filter((row) =>
+      MobileAuthService.matchesCode(row.id, code),
+    );
+    const driverMatches = drivers.filter((row) =>
+      MobileAuthService.matchesCode(row.id, code),
+    );
+    const participantDriverMatches = participants.filter(
+      (row) =>
+        MobileAuthService.matchesCode(row.id, code) &&
+        MobileAuthService.isDriverFlag(row.metadata),
+    );
     const staffProviders = new Map<string, string>();
-    (providers ?? []).forEach((p) => {
+    providers.forEach((p) => {
       if (String(p.type ?? '').toLowerCase() === 'staff') {
         staffProviders.set(p.id, p.name ?? '');
       }
     });
-    if (staffProviders.size === 0) return null;
+    const staffMatches = participants.filter(
+      (row) =>
+        MobileAuthService.matchesCode(row.id, code) &&
+        staffProviders.has(row.provider_id) &&
+        String(row.status ?? '').toUpperCase() !== 'DISABLED' &&
+        !MobileAuthService.isDriverFlag(row.metadata),
+    );
 
-    const { data: participants, error } = await this.supabase
-      .schema('core')
-      .from('provider_participants')
-      .select('id, full_name, email, provider_id, status, metadata')
-      .neq('status', 'DELETED');
-    if (error) {
-      this.logger.error('Staff lookup error', JSON.stringify(error));
-      return null;
-    }
-
-    const matches = (participants ?? []).filter((row) => {
-      if (String(row.id).slice(-6).toLowerCase() !== code) return false;
-      if (!staffProviders.has(row.provider_id)) return false;
-      if (String(row.status ?? '').toUpperCase() === 'DISABLED') return false;
-      const meta = (row.metadata ?? {}) as Record<string, unknown>;
-      return !(meta.isDriver === true || meta.isDriver === 'true');
-    });
-    if (matches.length === 0) return null;
-    if (matches.length > 1) {
+    // Colisiones: un código repetido dentro de una categoría la descarta (no
+    // elige al azar) y el login sigue probando las siguientes - exactamente
+    // lo que hacía cada try*ByCode al devolver null.
+    if (athleteMatches.length > 1) {
       this.logger.warn(
-        `Code collision in staff participants for ${code} (${matches.length} matches)`,
+        `Code collision in athletes for ${code} (${athleteMatches.length} matches)`,
       );
-      return null;
+    } else if (athleteMatches.length === 1) {
+      const match = athleteMatches[0];
+      return {
+        kind: 'athlete',
+        athleteId: match.id,
+        profile: {
+          id: match.id,
+          fullName: match.full_name,
+          email: match.email ?? null,
+        },
+      };
     }
 
-    const match = matches[0];
-    return {
-      kind: 'staff',
-      staffId: match.id,
-      profile: {
-        id: match.id,
-        fullName: match.full_name,
-        email: match.email ?? null,
-        providerId: match.provider_id,
-        providerName: staffProviders.get(match.provider_id) ?? '',
-      },
-    };
+    // Conductor: primero transport.drivers y solo si ahí no hubo nada se mira
+    // core.provider_participants, igual que antes. Una colisión en drivers
+    // descarta la vía conductor completa y pasa a staff.
+    if (driverMatches.length > 1) {
+      this.logger.warn(
+        `Code collision in drivers for ${code} (${driverMatches.length} matches)`,
+      );
+    } else if (driverMatches.length === 1) {
+      const match = driverMatches[0];
+      return {
+        kind: 'driver',
+        driverId: match.id,
+        profile: {
+          id: match.id,
+          fullName: match.full_name,
+          email: match.email ?? null,
+        },
+      };
+    } else if (participantDriverMatches.length > 1) {
+      this.logger.warn(
+        `Code collision in provider_participants for ${code} (${participantDriverMatches.length} matches)`,
+      );
+    } else if (participantDriverMatches.length === 1) {
+      const match = participantDriverMatches[0];
+      return {
+        kind: 'driver',
+        driverId: match.id,
+        profile: {
+          id: match.id,
+          fullName: match.full_name,
+          email: match.email ?? null,
+        },
+      };
+    }
+
+    if (staffMatches.length > 1) {
+      this.logger.warn(
+        `Code collision in staff participants for ${code} (${staffMatches.length} matches)`,
+      );
+    } else if (staffMatches.length === 1) {
+      const match = staffMatches[0];
+      return {
+        kind: 'staff',
+        staffId: match.id,
+        profile: {
+          id: match.id,
+          fullName: match.full_name,
+          email: match.email ?? null,
+          providerId: match.provider_id,
+          providerName: staffProviders.get(match.provider_id) ?? '',
+        },
+      };
+    }
+
+    throw new UnauthorizedException('Código inválido');
   }
 
   // ── Sesión por usuario (un dispositivo activo, sin bloqueo) ─────────────────
@@ -644,120 +756,4 @@ export class MobileAuthService {
     return null;
   }
 
-  private async tryAthleteByCode(
-    code: string,
-  ): Promise<Extract<MobileLoginResult, { kind: 'athlete' }> | null> {
-    const { data, error } = await this.supabase
-      .schema('core')
-      .from('athletes')
-      .select('id, full_name, email')
-      .neq('status', 'DELETED');
-
-    if (error) {
-      this.logger.error('Athlete lookup error', JSON.stringify(error));
-      return null;
-    }
-
-    const matches = (data ?? []).filter(
-      (row) => String(row.id).slice(-6).toLowerCase() === code,
-    );
-
-    if (matches.length === 0) return null;
-    if (matches.length > 1) {
-      this.logger.warn(
-        `Code collision in athletes for ${code} (${matches.length} matches)`,
-      );
-      return null;
-    }
-
-    const match = matches[0];
-    return {
-      kind: 'athlete',
-      athleteId: match.id,
-      profile: {
-        id: match.id,
-        fullName: match.full_name,
-        email: match.email ?? null,
-      },
-    };
-  }
-
-  private async tryDriverByCode(
-    code: string,
-  ): Promise<Extract<MobileLoginResult, { kind: 'driver' }> | null> {
-    // 1. transport.drivers
-    const { data: driverData, error: driverError } = await this.supabase
-      .schema('transport')
-      .from('drivers')
-      .select('id, full_name, email')
-      .neq('status', 'DELETED');
-
-    if (driverError) {
-      this.logger.error('Driver lookup error', JSON.stringify(driverError));
-    }
-
-    const driverMatches = (driverData ?? []).filter(
-      (row) => String(row.id).slice(-6).toLowerCase() === code,
-    );
-
-    if (driverMatches.length > 1) {
-      this.logger.warn(
-        `Code collision in drivers for ${code} (${driverMatches.length} matches)`,
-      );
-      return null;
-    }
-
-    if (driverMatches.length === 1) {
-      const match = driverMatches[0];
-      return {
-        kind: 'driver',
-        driverId: match.id,
-        profile: {
-          id: match.id,
-          fullName: match.full_name,
-          email: match.email ?? null,
-        },
-      };
-    }
-
-    // 2. core.provider_participants flagged as driver
-    const { data: participantData, error: participantError } = await this.supabase
-      .schema('core')
-      .from('provider_participants')
-      .select('id, full_name, email, metadata')
-      .neq('status', 'DELETED');
-
-    if (participantError) {
-      this.logger.error(
-        'Participant lookup error',
-        JSON.stringify(participantError),
-      );
-      return null;
-    }
-
-    const participantMatches = (participantData ?? []).filter((row) => {
-      if (String(row.id).slice(-6).toLowerCase() !== code) return false;
-      const meta = (row.metadata ?? {}) as Record<string, unknown>;
-      return meta.isDriver === true || meta.isDriver === 'true';
-    });
-
-    if (participantMatches.length === 0) return null;
-    if (participantMatches.length > 1) {
-      this.logger.warn(
-        `Code collision in provider_participants for ${code} (${participantMatches.length} matches)`,
-      );
-      return null;
-    }
-
-    const match = participantMatches[0];
-    return {
-      kind: 'driver',
-      driverId: match.id,
-      profile: {
-        id: match.id,
-        fullName: match.full_name,
-        email: match.email ?? null,
-      },
-    };
-  }
 }
