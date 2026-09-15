@@ -859,23 +859,28 @@ export default function DriverPortalPage() {
     await updateTrip(pickupTrip.id, "PICKED_UP");
   };
 
+  // `trip` es opcional: el monitoreo necesita la posición desde que el chofer
+  // abre la app, tenga o no un viaje. Sin viaje el backend igual guarda el fix
+  // (trip_id queda null) y lo etiqueta solo si hay uno activo — ver
+  // VehiclePositionsService.create.
   const sendPosition = async (
-    trip: Trip,
+    trip: Trip | null,
     latitude: number,
     longitude: number,
     speed?: number | null,
     heading?: number | null
   ) => {
-    const resolvedDriverId = trip.driverId || driverProfile?.id;
+    const resolvedDriverId = trip?.driverId || driverProfile?.id;
     if (!resolvedDriverId) return;
+    const eventId = trip?.eventId || driverProfile?.eventId;
     try {
       await apiFetch(`/vehicle-positions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...(trip.eventId ? { eventId: trip.eventId } : {}),
+          ...(eventId ? { eventId } : {}),
           driverId: resolvedDriverId,
-          ...(trip.vehicleId ? { vehicleId: trip.vehicleId } : {}),
+          ...(trip?.vehicleId ? { vehicleId: trip.vehicleId } : {}),
           timestamp: new Date().toISOString(),
           location: { type: "Point", coordinates: [longitude, latitude] },
           speed,
@@ -896,9 +901,12 @@ export default function DriverPortalPage() {
   // the app is open, which is what the driver-monitoring panel needs. We never
   // stop it here (the native shell stops it on logout), and we don't gate it on
   // trips. Permissions already granted won't re-prompt on later mounts. Pure-web
-  // drivers (no native shell) fall back to the browser-geolocation effect below
-  // during active trips.
+  // drivers (no native shell) quedan cubiertos por el efecto de geolocalización
+  // del navegador de más abajo, que hoy también transmite sin viaje.
   const trackingArmedRef = useRef(false);
+  // Marca de tiempo del último fix enviado: el efecto de GPS se rearma cuando
+  // cambian los viajes y sin esto cada rearme dispararía un envío extra.
+  const lastFixSentRef = useRef(0);
   useEffect(() => {
     if (!isNativeAvailable()) return;
     const driverId = driverProfile?.id;
@@ -959,49 +967,61 @@ export default function DriverPortalPage() {
     };
   }, [trackingTripId]);
 
-  // GPS tracking: send position every 5s + watchPosition + visibility resume.
-  // Inside the mobile app the native shell tracks continuously (from login), so
-  // we skip this browser path there to avoid duplicate points. It only runs for
-  // pure-web drivers, keeping their active trip covered.
+  // GPS tracking: transmite mientras la sesión del conductor esté abierta,
+  // tenga o no viaje asignado. El panel de monitoreo marca "activo" a quien
+  // reportó un fix en los últimos 100 s (ONLINE_WINDOW en DriverPresenceService);
+  // antes esto solo corría con un viaje en curso, así que un chofer con la app
+  // abierta y sin viaje figuraba desconectado.
+  // Cadencia: 5 s con viaje activo — el seguimiento del viaje y los avisos de
+  // proximidad lo necesitan — y 20 s en reposo. Los 20 s no son arbitrarios:
+  // el monitor pinta el marcador en verde solo si el fix tiene menos de 30 s
+  // (LIVE_WINDOW_MS), así que una cadencia de 30 s lo dejaría parpadeando.
   useEffect(() => {
-    if (!trackingTripId) return;
+    if (!driverProfile?.id) return;
     // ⚠ TRANSITORIO: mientras el shell tenga colgado su tracker (ver
     // tracking.start arriba), la vía web de GPS corre TAMBIÉN dentro de la
-    // app — así los viajes activos siguen rastreados. Al restaurar el shell,
-    // reponer el salto: if (isNativeAvailable()) return;
+    // app. Al restaurar el shell, reponer el salto: if (isNativeAvailable()) return;
     const trip = getTripById(trackingTripId);
-    if (!trip) return;
+    const periodMs = trip ? 5000 : 20000;
 
     let interval: number | null = null;
     let watchId: number | null = null;
 
-    const tick = () => {
-      if (!navigator.geolocation) return;
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const { latitude, longitude, speed, heading } = pos.coords;
-          sendPosition(trip, latitude, longitude, speed ?? null, heading ?? null);
-        },
-        () => {},
-        { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 }
-      );
+    const push = (pos: GeolocationPosition) => {
+      // Con viaje activo se envía cada fix, igual que antes: la ruta del viaje
+      // se reconstruye con esos puntos y ralearlos la degradaría. El throttle
+      // aplica solo en reposo, donde el efecto se rearma con cada refresco de
+      // viajes y si no cada rearme dispararía un envío extra.
+      if (!trip) {
+        const now = Date.now();
+        if (now - lastFixSentRef.current < periodMs - 500) return;
+        lastFixSentRef.current = now;
+      }
+      const { latitude, longitude, speed, heading } = pos.coords;
+      sendPosition(trip, latitude, longitude, speed ?? null, heading ?? null);
     };
 
-    // watchPosition fires on every movement (more reliable than polling alone)
-    if (navigator.geolocation) {
-      watchId = navigator.geolocation.watchPosition(
-        (pos) => {
-          const { latitude, longitude, speed, heading } = pos.coords;
-          sendPosition(trip, latitude, longitude, speed ?? null, heading ?? null);
-        },
-        () => {},
-        { enableHighAccuracy: true, maximumAge: 5000 }
-      );
+    const tick = () => {
+      if (!navigator.geolocation) return;
+      navigator.geolocation.getCurrentPosition(push, () => {}, {
+        enableHighAccuracy: true,
+        maximumAge: trip ? 5000 : 15000,
+        timeout: 20000,
+      });
+    };
+
+    // watchPosition fires on every movement (more reliable than polling alone).
+    // Solo durante el viaje: en reposo el poll basta y ahorra batería.
+    if (trip && navigator.geolocation) {
+      watchId = navigator.geolocation.watchPosition(push, () => {}, {
+        enableHighAccuracy: true,
+        maximumAge: 5000,
+      });
     }
 
     // Polling as backup (watchPosition can be unreliable on some devices)
     tick();
-    interval = window.setInterval(tick, 5000);
+    interval = window.setInterval(tick, periodMs);
 
     // Resume immediately when tab becomes visible
     const onVisibility = () => {
@@ -1009,7 +1029,7 @@ export default function DriverPortalPage() {
         tick();
         // Restart interval (it may have been throttled in background)
         if (interval) window.clearInterval(interval);
-        interval = window.setInterval(tick, 5000);
+        interval = window.setInterval(tick, periodMs);
       }
     };
     document.addEventListener("visibilitychange", onVisibility);
@@ -1019,7 +1039,7 @@ export default function DriverPortalPage() {
       if (watchId !== null) navigator.geolocation.clearWatch(watchId);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [trackingTripId, trips]);
+  }, [trackingTripId, trips, driverProfile?.id]);
 
   // Continuously watch driver GPS position for live map marker (Safari-friendly)
   useEffect(() => {
@@ -1108,8 +1128,11 @@ export default function DriverPortalPage() {
           platform: "web",
           userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
         }),
-      }).catch(() => {
-        /* presencia es best-effort, no interrumpe al conductor */
+      }).catch((err) => {
+        // Best-effort: nunca interrumpe al conductor. Pero el fallo se registra
+        // — transport.driver_sessions lleva meses vacía y este catch mudo era
+        // la razón de que nadie lo notara.
+        dlog(`heartbeat falló: ${err instanceof Error ? err.message : String(err)}`);
       });
     };
 
