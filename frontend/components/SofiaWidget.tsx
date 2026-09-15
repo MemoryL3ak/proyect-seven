@@ -825,6 +825,8 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
   // demasiado contenido: se usa la versión compacta aunque no sea portal.
   const isSmallScreen = useIsMobile();
 
+  // Bajo 768px el chat deja de ser tarjeta flotante y pasa a hoja inferior.
+  const sheetMode = isSmallScreen;
   const smallFab = compact || isSmallScreen;
   const FAB_SIZE = smallFab ? 56 : 96;
 
@@ -1206,47 +1208,83 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
         </button>
       </div>
 
+      {/* ── Fondo atenuado: solo con la hoja móvil ── */}
+      {open && sheetMode && (
+        <div
+          onClick={() => setOpen(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 45,
+            background: "rgba(2,8,20,0.5)",
+            animation: "sofiaFadeIn 0.2s ease both",
+          }}
+        />
+      )}
+
       {/* ── Chat panel ── */}
       {open && (
         <div
+          className={sheetMode ? "sofia-sheet" : undefined}
           style={{
             position: "fixed",
             zIndex: 50,
-            borderRadius: 20,
             overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
             background: "linear-gradient(180deg, #1e293b 0%, #263548 100%)",
             border: "1px solid rgba(255,255,255,0.08)",
             boxShadow: "0 24px 64px rgba(0,0,0,0.3), 0 4px 16px rgba(0,0,0,0.15)",
-            animation: "sofiaToastIn 0.25s cubic-bezier(0.16,1,0.3,1) both",
-            // Modo portal: panel acotado que deja ver el contenido de atrás.
-            // Si el usuario movió el FAB, el panel se abre junto a él.
-            ...(fabPos
-              ? (() => {
-                  // El panel nunca puede ser más ancho que la pantalla (en la
-                  // app staff los 400px fijos desbordaban el viewport).
-                  const panelWidth = Math.min(compact ? 320 : 400, window.innerWidth - 24);
-                  const left = Math.min(
-                    Math.max(12, fabPos.x + FAB_SIZE / 2 - panelWidth / 2),
-                    window.innerWidth - panelWidth - 12,
-                  );
-                  const openUp = fabPos.y > window.innerHeight / 2;
-                  return {
-                    left,
-                    width: panelWidth,
-                    ...(openUp
-                      ? { bottom: Math.max(12, window.innerHeight - fabPos.y + 12) }
-                      : { top: fabPos.y + FAB_SIZE + 12 }),
-                  };
-                })()
-              : compact
-              ? { bottom: 152, right: 12, width: "min(320px, calc(100vw - 24px))" }
-              : { bottom: 92, right: isSmallScreen ? 12 : 24, width: "min(400px, calc(100vw - 24px))" }),
+            ...(sheetMode
+              ? {
+                  // Teléfono: hoja inferior a ancho completo. El panel flotante
+                  // de 320-400px dejaba ilegibles los gráficos, mapas y tablas
+                  // que SofIA devuelve dentro de sus respuestas.
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  width: "100%",
+                  borderRadius: "22px 22px 0 0",
+                  borderBottom: "none",
+                  animation: "sofiaSheetIn 0.28s cubic-bezier(0.16,1,0.3,1) both",
+                }
+              : {
+                  borderRadius: 20,
+                  animation: "sofiaToastIn 0.25s cubic-bezier(0.16,1,0.3,1) both",
+                  // Si el usuario movió el FAB, el panel se abre junto a él.
+                  ...(fabPos
+                    ? (() => {
+                        const panelWidth = Math.min(compact ? 320 : 400, window.innerWidth - 24);
+                        const left = Math.min(
+                          Math.max(12, fabPos.x + FAB_SIZE / 2 - panelWidth / 2),
+                          window.innerWidth - panelWidth - 12,
+                        );
+                        const openUp = fabPos.y > window.innerHeight / 2;
+                        return {
+                          left,
+                          width: panelWidth,
+                          ...(openUp
+                            ? { bottom: Math.max(12, window.innerHeight - fabPos.y + 12) }
+                            : { top: fabPos.y + FAB_SIZE + 12 }),
+                        };
+                      })()
+                    : compact
+                    ? { bottom: 152, right: 12, width: "min(320px, calc(100vw - 24px))" }
+                    : { bottom: 92, right: 24, width: "min(400px, calc(100vw - 24px))" }),
+                }),
           }}
         >
+          {/* Asa de arrastre visual de la hoja */}
+          {sheetMode && (
+            <div style={{ display: "flex", justifyContent: "center", padding: "8px 0 0", flexShrink: 0 }}>
+              <span style={{ width: 40, height: 4, borderRadius: 99, background: "rgba(255,255,255,0.2)" }} />
+            </div>
+          )}
           {/* Header */}
           <div
             style={{
-              padding: "16px 20px",
+              flexShrink: 0,
+              padding: sheetMode ? "10px 18px 14px" : "16px 20px",
               background: "rgba(33,208,179,0.06)",
               borderBottom: "1px solid rgba(255,255,255,0.06)",
             }}
@@ -1338,9 +1376,15 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
           {/* Messages */}
           <div
             style={{
-              minHeight: compact ? "min(240px, 32vh)" : isSmallScreen ? "min(280px, 40vh)" : "min(460px, 58vh)",
-              maxHeight: compact ? "42vh" : isSmallScreen ? "55vh" : "72vh",
+              // En hoja: crece hasta llenar la pantalla. Flotante: topes en vh.
+              ...(sheetMode
+                ? { flex: 1, minHeight: 0 }
+                : {
+                    minHeight: compact ? "min(240px, 32vh)" : "min(460px, 58vh)",
+                    maxHeight: compact ? "42vh" : "72vh",
+                  }),
               overflowY: "auto",
+              WebkitOverflowScrolling: "touch",
               padding: "16px 18px",
               display: "flex",
               flexDirection: "column",
@@ -1514,7 +1558,11 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
           {/* Input */}
           <div
             style={{
-              padding: "12px 16px 16px",
+              flexShrink: 0,
+              // En la hoja, respeta la barra inferior del teléfono.
+              padding: sheetMode
+                ? "12px 16px calc(16px + env(safe-area-inset-bottom))"
+                : "12px 16px 16px",
               borderTop: "1px solid rgba(255,255,255,0.06)",
               background: "rgba(0,0,0,0.15)",
             }}
@@ -1528,7 +1576,8 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
                   background: "rgba(255,255,255,0.06)",
                   border: "1px solid rgba(255,255,255,0.1)",
                   color: "#f1f5f9",
-                  fontSize: 13,
+                  // 16px en móvil: bajo ese tamaño iOS hace zoom al enfocar.
+                  fontSize: isSmallScreen ? 16 : 13,
                   outline: "none",
                 }}
                 placeholder={t("Escribe tu pregunta")}
@@ -1582,6 +1631,22 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
           to {
             opacity: 1;
             transform: translateY(0) scale(1);
+          }
+        }
+        @keyframes sofiaSheetIn {
+          from {
+            transform: translateY(100%);
+          }
+          to {
+            transform: translateY(0);
+          }
+        }
+        @keyframes sofiaFadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
           }
         }
       `}</style>

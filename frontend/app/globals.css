@@ -1214,6 +1214,21 @@ label > *:first-child {
 
 /* ── Mobile responsive layout ─────────────────────────────── */
 @media (max-width: 767px) {
+  /* iOS hace auto-zoom al enfocar cualquier campo con letra < 16px, y el zoom
+     queda pegado al navegar: la página completa se ve ampliada y cortada por
+     la derecha. Subir el piso a 16px lo evita en origen, en la app y en el
+     navegador, sin recurrir a maximum-scale=1 (que anula el pinch-zoom y solo
+     se aplicaba cuando se detectaba el shell nativo).
+     Va con !important porque muchos campos traen su fontSize inline. */
+  .input,
+  input[type="text"], input[type="email"], input[type="password"],
+  input[type="number"], input[type="search"], input[type="tel"],
+  input[type="url"], input[type="date"], input[type="datetime-local"],
+  input[type="time"], input[type="month"], input[type="week"],
+  select, textarea {
+    font-size: 16px !important;
+  }
+
   .sidebar-wrapper {
     position: fixed !important;
     top: 0 !important;
@@ -1321,6 +1336,16 @@ input[type="number"]::-webkit-outer-spin-button {
   box-shadow: 0 6px 18px rgba(15,23,42,0.10);
   transform: translateY(-2px);
   z-index: 4;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   ASISTENTE SofIA — hoja inferior en teléfonos
+   dvh evita que la barra dinámica del navegador (o la WebView de la
+   app) recorte el campo de escritura al final de la hoja.
+───────────────────────────────────────────────────────────── */
+.sofia-sheet {
+  height: 88vh;
+  height: 88dvh;
 }
 
 /* Badge circular del día de hoy */
