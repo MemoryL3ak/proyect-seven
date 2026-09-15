@@ -2437,6 +2437,9 @@ const translations: Record<Locale, Record<string, string>> = {
     "Coordinador Comité": "Committee Coordinator",
     "Operador": "Operator",
     "Visualizador": "Viewer",
+    // ── Claves traducidas vía variable (roles, catálogos) ──
+    "Comité Transporte": "Transport Committee",
+    "Panel Financiero": "Financial Panel",
   },
   pt: {
     // ── Nav sections ──────────────────────────────────────────────────────
@@ -4863,6 +4866,9 @@ const translations: Record<Locale, Record<string, string>> = {
     "Coordinador Comité": "Coordenador do Comitê",
     "Operador": "Operador",
     "Visualizador": "Visualizador",
+    // ── Claves traducidas vía variable (roles, catálogos) ──
+    "Comité Transporte": "Comitê de Transporte",
+    "Panel Financiero": "Painel Financeiro",
   }
 };
 

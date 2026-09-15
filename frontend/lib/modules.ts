@@ -19,6 +19,9 @@ export const ALL_MODULES: AppModule[] = [
   { id: "operacion.tracking", label: "Tracking de Viajes", group: "Transporte", icon: "📍" },
   { id: "operacion.viajes", label: "Viajes", group: "Transporte", icon: "🚌" },
   { id: "operacion.scanner", label: "Escáner QR", group: "Transporte", icon: "🔍" },
+  // Módulo propio: el Panel Financiero expone tarifas de proveedores, costos
+  // y consumo real, y no todo quien opera transporte debe verlos.
+  { id: "operacion.finanzas", label: "Panel Financiero", group: "Transporte", icon: "💵" },
   { id: "hoteleria.tracking", label: "Tracking Hotelería", group: "Hotelería", icon: "🏨" },
   { id: "hoteleria.hoteles", label: "Hoteles", group: "Hotelería", icon: "🏩" },
   { id: "hoteleria.habitaciones", label: "Habitaciones", group: "Hotelería", icon: "🛏️" },

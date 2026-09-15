@@ -230,7 +230,12 @@ const HREF_TO_MODULE: Record<string, string> = {
   "/operations/daily-transport": "operacion.viajes",
   "/operations/vehicle-positions": "operacion.tracking",
   "/operations/trips": "operacion.viajes",
-  "/operations/transport-finance": "operacion.viajes",
+  // Faltaba en el mapa: sin entrada, canSee() lo daba por visible para
+  // cualquier usuario, sin importar sus módulos.
+  "/operations/trip-requests": "operacion.viajes",
+  // Con módulo propio: antes colgaba de "operacion.viajes" y no había forma
+  // de dar transporte sin exponer tarifas de proveedores y consumo real.
+  "/operations/transport-finance": "operacion.finanzas",
   "/operations/driver-heatmap": "operacion.viajes",
   "/operations/fleet": "operacion.viajes",
   "/operations/driver-monitoring": "operacion.tracking",

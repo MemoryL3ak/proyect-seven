@@ -24,7 +24,8 @@ type Role =
   | "Visualizador"
   | "Coordinador"
   | "Coordinador Bvan"
-  | "Coordinador Comité";
+  | "Coordinador Comité"
+  | "Comité Transporte";
 type UserStatus = "active" | "inactive" | "pending";
 
 type AppUser = {
@@ -49,6 +50,7 @@ const ROLES: Role[] = [
   "Coordinador",
   "Coordinador Bvan",
   "Coordinador Comité",
+  "Comité Transporte",
   "Operador",
   "Visualizador",
 ];
@@ -56,6 +58,9 @@ const ROLES: Role[] = [
 // Transporte por grupo: si mañana se agrega un módulo al grupo, los
 // coordinadores acotados lo heredan sin tocar cada preset.
 const TRANSPORTE_MODULES = ALL_MODULES.filter((m) => m.group === "Transporte").map((m) => m.id);
+// Transporte operativo, sin la información económica del Panel Financiero
+// (tarifas de proveedores, costos y consumo real).
+const TRANSPORTE_OPERATIVO = TRANSPORTE_MODULES.filter((id) => id !== "operacion.finanzas");
 
 const ROLE_PERMISSIONS: Record<Role, string[]> = {
   Administrador: ALL_MODULES.map((m) => m.id),
@@ -64,6 +69,9 @@ const ROLE_PERMISSIONS: Record<Role, string[]> = {
   // Coordinadores acotados: solo los módulos que realmente operan.
   "Coordinador Bvan": [...TRANSPORTE_MODULES, "sede", "calendario", "alimentacion.general"],
   "Coordinador Comité": [...TRANSPORTE_MODULES, "sede", "calendario", "dashboard.comercial", "dashboard.operacional"],
+  // Comité de transporte: operación y seguimiento, sin panel de proveedores
+  // ni consumo real (Panel Financiero y Dashboard Comercial quedan fuera).
+  "Comité Transporte": [...TRANSPORTE_OPERATIVO, "calendario"],
   Operador: ALL_MODULES.filter((m) => ["Operación", "Transporte", "Hotelería", "Alimentación", "Acreditaciones", "Documentos"].includes(m.group)).map((m) => m.id),
   Visualizador: ALL_MODULES.filter((m) => ["Dashboard", "Registro"].includes(m.group)).map((m) => m.id),
 };
@@ -493,6 +501,7 @@ export default function UsuariosPage() {
     if (role === "Coordinador") return { bg: "rgba(16,185,129,0.12)", border: "rgba(16,185,129,0.3)", color: "#10b981" };
     if (role === "Coordinador Bvan") return { bg: "rgba(33,208,179,0.12)", border: "rgba(33,208,179,0.32)", color: "#0f9e87" };
     if (role === "Coordinador Comité") return { bg: "rgba(139,92,246,0.12)", border: "rgba(139,92,246,0.3)", color: "#7c3aed" };
+    if (role === "Comité Transporte") return { bg: "rgba(31,205,255,0.12)", border: "rgba(31,205,255,0.32)", color: "#0891b2" };
     if (role === "Operador") return { bg: "rgba(59,130,246,0.12)", border: "rgba(59,130,246,0.3)", color: "#3b82f6" };
     return { bg: "rgba(100,116,139,0.12)", border: "rgba(100,116,139,0.3)", color: "#64748b" };
   }
