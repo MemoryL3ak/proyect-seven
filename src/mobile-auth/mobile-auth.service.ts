@@ -70,8 +70,10 @@ type ParticipantRow = CodeRow & {
   provider_id: string;
   status: string | null;
   metadata: Record<string, unknown> | null;
+  // Proveedor embebido por PostgREST via la FK provider_id: evita una
+  // consulta aparte a core.providers solo para saber si es de tipo staff.
+  providers: { name: string | null; type: string | null } | null;
 };
-type ProviderRow = { id: string; name: string | null; type: string | null };
 
 export type MobileRecoverResult = {
   status: 'ok';
@@ -223,7 +225,7 @@ export class MobileAuthService {
       throw new UnauthorizedException('Código inválido');
     }
 
-    const [athletes, drivers, participants, providers] = await Promise.all([
+    const [athletes, drivers, participants] = await Promise.all([
       this.fetchAll<CodeRow>('Athlete', () =>
         this.supabase
           .schema('core')
@@ -242,11 +244,10 @@ export class MobileAuthService {
         this.supabase
           .schema('core')
           .from('provider_participants')
-          .select('id, full_name, email, provider_id, status, metadata')
+          .select(
+            'id, full_name, email, provider_id, status, metadata, providers(name, type)',
+          )
           .neq('status', 'DELETED'),
-      ),
-      this.fetchAll<ProviderRow>('Provider', () =>
-        this.supabase.schema('core').from('providers').select('id, name, type'),
       ),
     ]);
 
@@ -261,16 +262,13 @@ export class MobileAuthService {
         MobileAuthService.matchesCode(row.id, code) &&
         MobileAuthService.isDriverFlag(row.metadata),
     );
-    const staffProviders = new Map<string, string>();
-    providers.forEach((p) => {
-      if (String(p.type ?? '').toLowerCase() === 'staff') {
-        staffProviders.set(p.id, p.name ?? '');
-      }
-    });
+    // Sin proveedor embebido (provider_id nulo o colgado) no hay tipo que
+    // mirar, asi que no es staff -- mismo desenlace que cuando el Map no
+    // contenia ese provider_id.
     const staffMatches = participants.filter(
       (row) =>
         MobileAuthService.matchesCode(row.id, code) &&
-        staffProviders.has(row.provider_id) &&
+        String(row.providers?.type ?? '').toLowerCase() === 'staff' &&
         String(row.status ?? '').toUpperCase() !== 'DISABLED' &&
         !MobileAuthService.isDriverFlag(row.metadata),
     );
@@ -344,7 +342,7 @@ export class MobileAuthService {
           fullName: match.full_name,
           email: match.email ?? null,
           providerId: match.provider_id,
-          providerName: staffProviders.get(match.provider_id) ?? '',
+          providerName: match.providers?.name ?? '',
         },
       };
     }
