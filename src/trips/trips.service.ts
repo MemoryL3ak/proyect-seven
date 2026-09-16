@@ -369,17 +369,26 @@ export class TripsService {
     }
 
     const safeLinks = (links ?? []) as TripAthleteRow[];
-    if (safeLinks.length === 0) {
+
+    // El solicitante se resuelve en la MISMA consulta que los pasajeros: sin
+    // esto la API devolvia requesterAthleteId crudo y la pantalla no podia
+    // decir quien pidio el viaje sin bajarse la tabla de atletas entera.
+    const requesterIds = trips
+      .map((trip) => trip.requesterAthleteId)
+      .filter((id): id is string => Boolean(id));
+
+    const athleteIds = Array.from(
+      new Set([...safeLinks.map((link) => link.athlete_id), ...requesterIds]),
+    );
+
+    if (athleteIds.length === 0) {
       return trips.map((trip) => ({
         ...trip,
         athleteIds: [],
         athleteNames: [],
+        requesterName: null,
       }));
     }
-
-    const athleteIds = Array.from(
-      new Set(safeLinks.map((link) => link.athlete_id)),
-    );
 
     const { data: athletes, error: athletesError } = await this.supabase
       .schema('core')
@@ -415,6 +424,9 @@ export class TripsService {
         ...trip,
         athleteIds: ids,
         athleteNames: names,
+        requesterName: trip.requesterAthleteId
+          ? athleteMap.get(trip.requesterAthleteId) ?? null
+          : null,
       };
     });
   }

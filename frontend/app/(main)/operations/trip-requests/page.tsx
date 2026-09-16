@@ -36,6 +36,10 @@ type Trip = {
   childTrips?: Trip[];
   /** Bitácora del viaje: la escribe TripsService en cada cambio. */
   metadata?: { log?: LogEntry[] } & Record<string, unknown>;
+  /** Quién pidió el viaje; lo resuelve el backend junto a los pasajeros. */
+  requesterName?: string | null;
+  /** Pasajeros ligados al viaje (transport.trip_athletes). */
+  athleteNames?: string[];
 };
 
 /** Entrada de la bitácora tal como la escribe el backend. */
@@ -710,8 +714,8 @@ export default function TripRequestsPage() {
 
               <div className="grid grid-cols-2 gap-3 text-xs">
                 {[
+                  [t("Solicitante"), detail.requesterName ?? t("No registrado")],
                   [t("Agendada"), fmtStamp(detail.scheduledAt ?? detail.requestedAt)],
-                  [t("Pasajeros"), detail.passengerCount != null ? String(detail.passengerCount) : "—"],
                   [t("Conductor"), dr ? driverName(dr) : t("Sin asignar")],
                   [t("Vehículo"), detail.vehiclePlate ?? "—"],
                 ].map(([k, v]) => (
@@ -720,6 +724,27 @@ export default function TripRequestsPage() {
                     <p style={{ color: "#0f172a", fontWeight: 700, margin: "2px 0 0" }}>{v}</p>
                   </div>
                 ))}
+              </div>
+
+              <div>
+                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "#94a3b8", marginBottom: 6 }}>
+                  {t("Pasajeros")}
+                  {detail.passengerCount != null && (
+                    <span style={{ marginLeft: 6, color: "#64748b", letterSpacing: 0 }}>· {detail.passengerCount}</span>
+                  )}
+                </p>
+                {(detail.athleteNames ?? []).length > 0 ? (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {(detail.athleteNames ?? []).map((name, i) => (
+                      <span key={`${name}-${i}`} className="text-xs font-semibold"
+                        style={{ color: "#334155", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 99, padding: "3px 10px" }}>
+                        {name}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs" style={{ color: "#94a3b8" }}>{t("Sin pasajeros ligados a la solicitud.")}</p>
+                )}
               </div>
 
               {detail.notes && (
