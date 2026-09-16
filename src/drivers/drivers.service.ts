@@ -342,6 +342,20 @@ export class DriversService {
   }
 
   /**
+   * La foto puede venir bajo distintas claves segun quien escribio la metadata.
+   * Acreditaciones ya probaba las seis; al centralizar la lista de conductores
+   * hay que probar las mismas o la credencial se queda sin foto.
+   */
+  private photoFrom(meta: Record<string, unknown>): string | null {
+    const keys = ['photoUrl', 'photo_url', 'avatar', 'avatarUrl', 'imageUrl', 'image_url'];
+    for (const key of keys) {
+      const value = meta[key];
+      if (typeof value === 'string' && value.trim()) return value.trim();
+    }
+    return null;
+  }
+
+  /**
    * Choferes de proveedor (core.provider_participants con isDriver) mapeados a
    * la forma de un conductor. La acreditacion vive espejada en su metadata
    * (ver AccreditationsService.syncSubjectSnapshot), asi que se eleva a campos
@@ -377,7 +391,7 @@ export class DriversService {
           userId: null,
           vehicleId: null,
           status: row.status ?? null,
-          photoUrl: typeof meta.photoUrl === 'string' ? meta.photoUrl : null,
+          photoUrl: this.photoFrom(meta),
           accreditationStatus:
             typeof meta.accreditationStatus === 'string'
               ? meta.accreditationStatus

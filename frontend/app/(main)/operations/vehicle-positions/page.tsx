@@ -201,7 +201,7 @@ export default function VehiclePositionsPage() {
     setLoading(true);
     setError(null);
     try {
-      const [tripData, eventData, driverData, vehicleData, athleteData, delegationData, positionData, venueData, participantData] =
+      const [tripData, eventData, driverData, vehicleData, athleteData, delegationData, positionData, venueData] =
         await Promise.all([
           apiFetch<Trip[]>("/trips"),
           apiFetch<EventItem[]>("/events"),
@@ -211,7 +211,6 @@ export default function VehiclePositionsPage() {
           apiFetch<DelegationItem[]>("/delegations"),
           apiFetch<PositionItem[]>("/vehicle-positions"),
           apiFetch<VenueItem[]>("/venues"),
-          apiFetch<Record<string, any>[]>("/provider-participants")
         ]);
 
       const nextTrips = tripData || [];
@@ -263,11 +262,7 @@ export default function VehiclePositionsPage() {
         acc[driver.id] = driver;
         return acc;
       }, {});
-      (participantData || []).forEach((p) => {
-        if (!driverMap[p.id]) {
-          driverMap[p.id] = { id: p.id, fullName: p.fullName || p.id, userId: null, vehicleId: null } as any;
-        }
-      });
+      // /drivers ya incluye a los choferes de proveedor.
       setDrivers(driverMap);
 
       setVehicles(
