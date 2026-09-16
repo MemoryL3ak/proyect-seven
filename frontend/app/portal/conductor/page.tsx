@@ -176,6 +176,23 @@ const participantToDriver = (p: ProviderParticipant): Driver => {
   };
 };
 
+/**
+ * Día (YYYY-MM-DD) en zona Chile. La operación es chilena, así que el "día" de
+ * un viaje no puede salir de UTC: un viaje de las 23:55 en Chile cae en el día
+ * UTC siguiente, y el filtro "hoy" lo mostraba al conductor el día equivocado.
+ * Sin argumento devuelve el día de hoy.
+ */
+function chileDay(value?: string | null): string {
+  const d = value ? new Date(value) : new Date();
+  if (Number.isNaN(d.getTime())) return "";
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Santiago",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+}
+
 const statusLabel: Record<string, string> = {
   SCHEDULED: "Programado",
   EN_ROUTE: "En ruta al punto de encuentro",
@@ -533,14 +550,13 @@ export default function DriverPortalPage() {
       // viaje viejo ni aparecía para poder cerrarlo: bloqueo sin salida.
       // Mismo criterio de "hoy" que el filtro de la lista, para que un viaje
       // que sí bloquea esté siempre a la vista.
-      const todayIso = new Date().toISOString().slice(0, 10);
+      const hoy = chileDay();
       const activeTrip = filteredTrips.find((trip) => {
         if (trip.status !== "EN_ROUTE" && trip.status !== "PICKED_UP") return false;
         // Agendado hoy O iniciado hoy: un viaje agendado para mañana que el
         // conductor ya arrancó sigue siendo un viaje en curso.
-        const day = (trip.scheduledAt || "").slice(0, 10);
-        const started = (trip.startedAt || "").slice(0, 10);
-        return day === todayIso || started === todayIso || (!day && !started);
+        if (!trip.scheduledAt && !trip.startedAt) return true;
+        return chileDay(trip.scheduledAt) === hoy || chileDay(trip.startedAt) === hoy;
       });
       if (activeTrip) {
         setTrackingTripId(activeTrip.id);
@@ -1229,7 +1245,7 @@ export default function DriverPortalPage() {
   const typeOptions = Array.from(
     new Set(trips.map((trip) => trip.tripType).filter(Boolean))
   ) as string[];
-  const todayKey = new Date().toISOString().slice(0, 10);
+  const todayKey = chileDay();
   const filteredTrips = trips.filter((trip) => {
     const matchesType = typeFilter === "all" || trip.tripType === typeFilter;
     const destination = (trip.destination || "").toLowerCase();
@@ -1238,7 +1254,7 @@ export default function DriverPortalPage() {
       destination.includes(destinationFilter.trim().toLowerCase());
     const status = trip.status ?? "";
     const isActive = ["SCHEDULED", "EN_ROUTE", "PICKED_UP"].includes(status);
-    const tripDay = (trip.scheduledAt || trip.startedAt || "").slice(0, 10);
+    const tripDay = chileDay(trip.scheduledAt || trip.startedAt);
     const isToday = tripDay === todayKey || !tripDay;
     const matchesStatus =
       statusFilter === "en_curso" ? (status === "EN_ROUTE" || status === "PICKED_UP") :
