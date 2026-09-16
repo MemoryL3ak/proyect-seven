@@ -98,7 +98,15 @@ type LivePosition = {
 
 // A driver counts as "reporting live" (green) when their freshest fix is under
 // this old. Beyond it, the marker stays on the map but greys out.
-const LIVE_WINDOW_MS = 30 * 1000;
+//
+// Son 3 latidos de la cadencia en reposo del portal conductor (20 s), no un
+// número redondo: con la ventana en 30 s quedaban 10 s de margen y el navegador
+// estira ese temporizador cuando la pantalla se atenúa. Medido el 16-09 sobre
+// un conductor real: mediana de 20 s pero p90 de 73 s, con 12 de 55 intervalos
+// pasados de 30 s — se apagaba en pantalla el 22% del tiempo aunque estuviera
+// transmitiendo. Lo que se paga a cambio es que alguien que cierra la app tarda
+// hasta un minuto en ponerse gris; es preferible a parpadear todo el día.
+const LIVE_WINDOW_MS = 60 * 1000;
 // Keep showing a driver's marker until their last fix is this stale.
 const SHOW_WINDOW_MS = 10 * 60 * 1000;
 
