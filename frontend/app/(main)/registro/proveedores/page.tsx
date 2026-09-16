@@ -264,6 +264,25 @@ export default function ProveedoresPage() {
   const [participantError, setParticipantError] = useState<string | null>(null);
   // Envío manual del correo de bienvenida con el código de acceso
   const [sendingMailId, setSendingMailId] = useState<string | null>(null);
+  /** Participante cuyo código se acaba de copiar, para confirmarlo en pantalla. */
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  /**
+   * Código de acceso del portal: los últimos 6 caracteres del UUID. Es el mismo
+   * que resuelve MobileAuthService.login y el que sale en el correo de
+   * bienvenida; hasta ahora sólo se podía enviar por correo, sin verlo.
+   */
+  const accessCode = (id: string) => String(id).slice(-6).toLowerCase();
+
+  const copyAccessCode = async (id: string) => {
+    try {
+      await navigator.clipboard.writeText(accessCode(id));
+      setCopiedId(id);
+      setTimeout(() => setCopiedId((current) => (current === id ? null : current)), 1500);
+    } catch {
+      /* sin permiso de portapapeles: el código igual queda a la vista */
+    }
+  };
   const [mailToast, setMailToast] = useState<{ ok: boolean; msg: string } | null>(null);
   useEffect(() => {
     if (!mailToast) return;
@@ -1171,6 +1190,26 @@ export default function ProveedoresPage() {
                         {p.countryCode && (
                           <span style={{ fontSize: "11px", color: "var(--text-faint)" }}>{p.countryCode}</span>
                         )}
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); void copyAccessCode(p.id); }}
+                          title={t("Copiar código de acceso")}
+                          style={{
+                            fontSize: "11px",
+                            fontWeight: 700,
+                            fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+                            letterSpacing: "0.06em",
+                            color: copiedId === p.id ? "#10b981" : "#21D0B3",
+                            background: "rgba(33,208,179,0.08)",
+                            border: "1px solid rgba(33,208,179,0.25)",
+                            borderRadius: "6px",
+                            padding: "0 6px",
+                            cursor: "pointer",
+                            lineHeight: "16px",
+                          }}
+                        >
+                          {copiedId === p.id ? t("copiado") : accessCode(p.id)}
+                        </button>
                       </div>
                     </div>
 
