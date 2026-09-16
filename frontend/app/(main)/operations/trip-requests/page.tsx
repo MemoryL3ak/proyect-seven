@@ -40,12 +40,6 @@ type Trip = {
   requesterName?: string | null;
   /** Pasajeros ligados al viaje (transport.trip_athletes). */
   athleteNames?: string[];
-  /** Tipo de cliente de quienes viajan (pasajeros + solicitante). */
-  passengerClientTypes?: string[];
-  /** Tipo de cliente de quien pidió el viaje. */
-  requesterClientType?: string | null;
-  /** Cada pasajero con su propio tipo de cliente. */
-  passengers?: Array<{ id: string; name: string | null; clientType: string | null }>;
 };
 
 /** Entrada de la bitácora tal como la escribe el backend. */
@@ -71,18 +65,6 @@ function flattenLegs(trips: Trip[]): Trip[] {
     }
   }
   return out;
-}
-
-/**
- * Pasajeros de categoría prioritaria (T1/VIP) que van en el viaje. Un traslado
- * pedido por un TA que lleva a un VIP entra a esta pantalla justamente por
- * ellos, así que hay que poder señalarlos: si no, el detalle muestra "TA" y la
- * razón por la que el viaje está acá queda invisible.
- */
-function prioritarios(trip: Trip): Array<{ name: string | null; clientType: string | null }> {
-  return (trip.passengers ?? []).filter((p) =>
-    CLIENT_TYPES_EN_PANTALLA.has(normalizeClientType(p.clientType)),
-  );
 }
 
 /** Cómo se lee cada acción de la bitácora en el detalle. */
@@ -239,18 +221,10 @@ export default function TripRequestsPage() {
       // vuelta no aparecía en ninguna pantalla: no se le podía asignar
       // conductor y quedaba congelado en SCHEDULED para siempre.
       const flat = flattenLegs(data ?? []);
-      // Entra el viaje si es de un cliente T1/VIP O si traslada a alguien de
-      // esas categorías. Un traslado pedido por un TA que lleva a un VIP es un
-      // viaje VIP para la operación, aunque el viaje herede el tipo del que lo
-      // pidió: son 12 viajes hoy, uno de ellos en curso.
+      // Los viajes de clientes T1 y VIP, sin importar si los pidió el pasajero
+      // desde la app o los creó operaciones desde el panel.
       setTrips(
-        flat.filter(
-          (t) =>
-            CLIENT_TYPES_EN_PANTALLA.has(normalizeClientType(t.clientType)) ||
-            (t.passengerClientTypes ?? []).some((tipo) =>
-              CLIENT_TYPES_EN_PANTALLA.has(normalizeClientType(tipo)),
-            ),
-        ),
+        flat.filter((t) => CLIENT_TYPES_EN_PANTALLA.has(normalizeClientType(t.clientType))),
       );
       setError(null);
     } catch (err) {
@@ -491,12 +465,6 @@ export default function TripRequestsPage() {
                         </p>
                         <p style={{ fontSize: "10.5px", color: "#94a3b8", marginTop: "1px" }}>
                           {r.driverId ? (driverLabel(r.driverId) ? driverName(driverLabel(r.driverId)!) : t("Conductor asignado")) : t("Sin conductor")}
-                          {prioritarios(r).length > 0 &&
-                            !CLIENT_TYPES_EN_PANTALLA.has(normalizeClientType(r.clientType)) && (
-                              <span style={{ marginLeft: 5, color: "#a16207", fontWeight: 700 }}>
-                                · {t("lleva")} {clientTypeLabel(prioritarios(r)[0].clientType)}
-                              </span>
-                            )}
                         </p>
                       </button>
                     );
@@ -718,13 +686,6 @@ export default function TripRequestsPage() {
                       {t(sm.label)}
                     </span>
                     <span className="text-xs font-bold" style={{ color: "#64748b" }}>{clientTypeLabel(detail.clientType)}</span>
-                    {prioritarios(detail).length > 0 &&
-                      !CLIENT_TYPES_EN_PANTALLA.has(normalizeClientType(detail.clientType)) && (
-                        <span className="text-[10px] font-bold rounded px-1.5 py-0.5"
-                          style={{ color: "#a16207", background: "#fefce8", border: "1px solid #fde68a" }}>
-                          {t("Lleva")} {clientTypeLabel(prioritarios(detail)[0].clientType)}
-                        </span>
-                      )}
                     {detail.legType === "RETURN" && (
                       <span className="text-[10px] font-bold rounded px-1.5 py-0.5"
                         style={{ color: "#7c3aed", background: "#f5f3ff", border: "1px solid #ddd6fe" }}>{t("Vuelta")}</span>
@@ -754,41 +715,18 @@ export default function TripRequestsPage() {
               <div>
                 <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "#94a3b8", marginBottom: 6 }}>
                   {t("Pasajeros")}
-                  <span style={{ marginLeft: 6, color: "#64748b", letterSpacing: 0 }}>
-                    · {(detail.passengers ?? detail.athleteNames ?? []).length}
-                  </span>
-                  {/* El contador declarado en la solicitud y los pasajeros
-                      efectivamente ligados no siempre coinciden: se muestran
-                      los dos en vez de esconder la diferencia. */}
-                  {detail.passengerCount != null &&
-                    detail.passengerCount !== (detail.passengers ?? detail.athleteNames ?? []).length && (
-                      <span style={{ marginLeft: 6, color: "#a16207", letterSpacing: 0, fontWeight: 600 }}>
-                        ({t("declarados")}: {detail.passengerCount})
-                      </span>
-                    )}
+                  {detail.passengerCount != null && (
+                    <span style={{ marginLeft: 6, color: "#64748b", letterSpacing: 0 }}>· {detail.passengerCount}</span>
+                  )}
                 </p>
-                {(detail.passengers ?? []).length > 0 ? (
+                {(detail.athleteNames ?? []).length > 0 ? (
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                    {(detail.passengers ?? []).map((p, i) => {
-                      const destacado = CLIENT_TYPES_EN_PANTALLA.has(normalizeClientType(p.clientType));
-                      return (
-                        <span key={`${p.id}-${i}`} className="text-xs font-semibold"
-                          style={{
-                            color: destacado ? "#7c3aed" : "#334155",
-                            background: destacado ? "#f5f3ff" : "#f8fafc",
-                            border: `1px solid ${destacado ? "#ddd6fe" : "#e2e8f0"}`,
-                            borderRadius: 99,
-                            padding: "3px 10px",
-                          }}>
-                          {p.name ?? "—"}
-                          {p.clientType && (
-                            <span style={{ marginLeft: 5, opacity: 0.75, fontWeight: 700 }}>
-                              {clientTypeLabel(p.clientType)}
-                            </span>
-                          )}
-                        </span>
-                      );
-                    })}
+                    {(detail.athleteNames ?? []).map((name, i) => (
+                      <span key={`${name}-${i}`} className="text-xs font-semibold"
+                        style={{ color: "#334155", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 99, padding: "3px 10px" }}>
+                        {name}
+                      </span>
+                    ))}
                   </div>
                 ) : (
                   <p className="text-xs" style={{ color: "#94a3b8" }}>{t("Sin pasajeros ligados a la solicitud.")}</p>
