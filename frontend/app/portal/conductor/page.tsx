@@ -525,11 +525,23 @@ export default function DriverPortalPage() {
       const filteredTrips = allLegs.filter((trip) => driverKeys.has(trip.driverId));
       setTrips(filteredTrips);
 
-      // Auto-resume tracking if there's already an active trip
-      // Only auto-resume tracking for trips already in progress (not just scheduled)
-      const activeTrip = filteredTrips.find(
-        (trip) => trip.status === "EN_ROUTE" || trip.status === "PICKED_UP"
-      );
+      // Auto-resume tracking if there's already an active trip.
+      // Sólo si es de hoy: un viaje que quedó en EN_ROUTE/PICKED_UP hace
+      // semanas no es un viaje en curso, pero al restaurarlo dejaba al
+      // conductor sin el botón de iniciar en TODOS los demás ("Finaliza el
+      // viaje en curso…"). Y como la lista filtra por "hoy" por defecto, ese
+      // viaje viejo ni aparecía para poder cerrarlo: bloqueo sin salida.
+      // Mismo criterio de "hoy" que el filtro de la lista, para que un viaje
+      // que sí bloquea esté siempre a la vista.
+      const todayIso = new Date().toISOString().slice(0, 10);
+      const activeTrip = filteredTrips.find((trip) => {
+        if (trip.status !== "EN_ROUTE" && trip.status !== "PICKED_UP") return false;
+        // Agendado hoy O iniciado hoy: un viaje agendado para mañana que el
+        // conductor ya arrancó sigue siendo un viaje en curso.
+        const day = (trip.scheduledAt || "").slice(0, 10);
+        const started = (trip.startedAt || "").slice(0, 10);
+        return day === todayIso || started === todayIso || (!day && !started);
+      });
       if (activeTrip) {
         setTrackingTripId(activeTrip.id);
       }
@@ -1247,6 +1259,43 @@ export default function DriverPortalPage() {
     return timeOf(a) - timeOf(b);
   });
 
+  /**
+   * Reemplaza al botón de iniciar cuando ya hay un viaje en curso. Nombra cuál
+   * es y lleva hasta él: antes decía sólo "finaliza el viaje en curso" sin
+   * indicar cuál, y si ese viaje no era de hoy no estaba en la lista.
+   */
+  const renderBlockedNotice = (kind: "viaje" | "servicio") => {
+    const blocker = trips.find((item) => item.id === trackingTripId);
+    const label = blocker?.destination || blocker?.origin || null;
+    const when = blocker?.scheduledAt
+      ? new Date(blocker.scheduledAt).toLocaleDateString("es-CL", { day: "2-digit", month: "2-digit" })
+      : null;
+    return (
+      <div style={{ padding:10,borderRadius:12,background:"#f8fafc",border:"1px solid #e2e8f0",textAlign:"center" }}>
+        <p style={{ fontSize:11,color:"#94a3b8",margin:0 }}>
+          {kind === "servicio"
+            ? t("Finaliza el servicio en curso para iniciar este")
+            : t("Finaliza el viaje en curso para iniciar este")}
+        </p>
+        {label && (
+          <p style={{ fontSize:11,color:"#64748b",margin:"4px 0 0",fontWeight:700 }}>
+            {label}{when ? ` · ${when}` : ""}
+          </p>
+        )}
+        <button
+          type="button"
+          onClick={() => {
+            setStatusFilter("en_curso");
+            if (trackingTripId) setSelectedTripId(trackingTripId);
+          }}
+          style={{ marginTop:8,padding:"6px 10px",borderRadius:8,border:"1px solid #e2e8f0",background:"#fff",color:"#475569",fontSize:11,fontWeight:700,cursor:"pointer" }}
+        >
+          {t("Ver el viaje en curso")}
+        </button>
+      </div>
+    );
+  };
+
   const buildMapsLink = (value?: string | null) => {
     if (!value) return "#";
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(value)}`;
@@ -1951,9 +2000,7 @@ export default function DriverPortalPage() {
                               /* ── Disposición 12h: 2-step flow ── */
                               status === "SCHEDULED" ? (
                                 trackingTripId && trackingTripId !== trip.id ? (
-                                  <div style={{ padding:10,borderRadius:12,background:"#f8fafc",border:"1px solid #e2e8f0",textAlign:"center" }}>
-                                    <p style={{ fontSize:11,color:"#94a3b8",margin:0 }}>Finaliza el servicio en curso para iniciar este</p>
-                                  </div>
+                                  renderBlockedNotice("servicio")
                                 ) : (
                                   <button type="button" onClick={() => updateTrip(trip.id, "PICKED_UP")} disabled={loading}
                                     style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:"linear-gradient(135deg,#818cf8,#6366f1)",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(99,102,241,0.3)",opacity:loading?0.7:1 }}>
@@ -1968,9 +2015,7 @@ export default function DriverPortalPage() {
                               ) : null
                             ) : status === "SCHEDULED" ? (
                               trackingTripId && trackingTripId !== trip.id ? (
-                                <div style={{ padding:10,borderRadius:12,background:"#f8fafc",border:"1px solid #e2e8f0",textAlign:"center" }}>
-                                  <p style={{ fontSize:11,color:"#94a3b8",margin:0 }}>Finaliza el viaje en curso para iniciar este</p>
-                                </div>
+                                renderBlockedNotice("viaje")
                               ) : (
                                 <button type="button" onClick={() => updateTrip(trip.id, "EN_ROUTE")} disabled={loading}
                                   style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:`linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})`,color:"#0d1b3e",fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(33,208,179,0.3)",opacity:loading?0.7:1 }}>
