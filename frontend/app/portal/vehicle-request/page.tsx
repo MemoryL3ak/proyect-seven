@@ -549,10 +549,16 @@ export default function VehicleRequestPortalPage() {
   const ganttScrollKey = useRef("");
 
   const loadPortal = async (matchedAthlete: Athlete) => {
-    const [tripData, venueData, driverData, vehicleData, eventData, delegationData, accommodationData, foodLocData, foodMenuData] = await Promise.all([
+    const [tripData, venueData, driverData, participantData, vehicleData, eventData, delegationData, accommodationData, foodLocData, foodMenuData] = await Promise.all([
       apiFetch<Trip[]>("/trips"),
       apiFetch<Venue[]>("/venues"),
       apiFetch<Driver[]>("/drivers"),
+      // Los choferes de proveedor viven en core.provider_participants, no en
+      // transport.drivers: sin esto el pasajero veía "Por asignar" en todo
+      // viaje que no fuera de flota propia, aunque tuviera conductor.
+      apiFetch<Record<string, unknown>[]>("/provider-participants").catch(
+        () => [] as Record<string, unknown>[],
+      ),
       apiFetch<Vehicle[]>("/transports"),
       apiFetch<EventItem[]>("/events"),
       apiFetch<DelegationItem[]>("/delegations"),
@@ -582,12 +588,25 @@ export default function VehicleRequestPortalPage() {
         (venue) => !matchedAthlete.eventId || venue.eventId === matchedAthlete.eventId,
       ),
     );
+    const participantDrivers: Driver[] = (participantData || [])
+      .filter((p) => {
+        const meta = (p.metadata ?? {}) as Record<string, unknown>;
+        return meta.isDriver === true || meta.isDriver === "true";
+      })
+      .map((p) => ({
+        id: String(p.id),
+        fullName: (p.fullName as string) ?? (p.full_name as string) ?? null,
+        phone: (p.phone as string) ?? null,
+      }));
     setDrivers(
-      (driverData || []).reduce<Record<string, Driver>>((acc, item) => {
-        acc[item.id] = item;
-        if (item.userId) acc[item.userId] = item;
-        return acc;
-      }, {}),
+      [...(driverData || []), ...participantDrivers].reduce<Record<string, Driver>>(
+        (acc, item) => {
+          acc[item.id] = item;
+          if (item.userId) acc[item.userId] = item;
+          return acc;
+        },
+        {},
+      ),
     );
     setVehicles(
       (vehicleData || []).reduce<Record<string, Vehicle>>((acc, item) => {
