@@ -95,6 +95,8 @@ type Trip = {
   passengerLat?: number | null;
   passengerLng?: number | null;
   notes?: string | null;
+  /** Tramos de vuelta que /trips anida dentro de su viaje de ida. */
+  childTrips?: Trip[];
 };
 
 type Driver = {
@@ -506,7 +508,21 @@ export default function DriverPortalPage() {
           (value): value is string => Boolean(value)
         )
       );
-      const filteredTrips = (tripsData || []).filter((trip) => driverKeys.has(trip.driverId));
+      // /trips anida el tramo de vuelta dentro de su viaje de ida y sólo
+      // devuelve los de primer nivel. Sin desplegarlos, un tramo asignado a
+      // este conductor quedaba invisible —oculto dentro del viaje de otro— y
+      // no había forma de ponerlo En ruta: los tramos de vuelta se quedaban
+      // en SCHEDULED para siempre.
+      const allLegs: Trip[] = [];
+      const seenLegs = new Set<string>();
+      for (const trip of tripsData || []) {
+        for (const leg of [trip, ...(trip.childTrips ?? [])]) {
+          if (seenLegs.has(leg.id)) continue;
+          seenLegs.add(leg.id);
+          allLegs.push(leg);
+        }
+      }
+      const filteredTrips = allLegs.filter((trip) => driverKeys.has(trip.driverId));
       setTrips(filteredTrips);
 
       // Auto-resume tracking if there's already an active trip

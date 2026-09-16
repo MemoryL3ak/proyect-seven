@@ -31,11 +31,32 @@ type Trip = {
   driverId?: string | null;
   vehicleId?: string | null;
   vehiclePlate?: string | null;
+  legType?: string | null;
+  /** Tramos de vuelta que /trips anida dentro de su viaje de ida. */
+  childTrips?: Trip[];
 };
 
 type EventItem = { id: string; name?: string | null };
 type DriverItem = { id: string; fullName?: string | null; full_name?: string | null };
 type VehicleItem = { id: string; plate?: string | null };
+
+/**
+ * Despliega los tramos anidados que devuelve /trips. Cada tramo necesita su
+ * propia fila: tiene conductor y estado propios, y la vuelta suele quedar sin
+ * asignar cuando termina la ida.
+ */
+function flattenLegs(trips: Trip[]): Trip[] {
+  const out: Trip[] = [];
+  const seen = new Set<string>();
+  for (const trip of trips) {
+    for (const leg of [trip, ...(trip.childTrips ?? [])]) {
+      if (seen.has(leg.id)) continue;
+      seen.add(leg.id);
+      out.push(leg);
+    }
+  }
+  return out;
+}
 
 /** Tipos de viaje originados en la app del pasajero. */
 const PORTAL_TRIP_TYPES = new Set(["PORTAL_REQUEST", "VIAJE_IDA", "VIAJE_IDA_REGRESO"]);
@@ -145,8 +166,13 @@ export default function TripRequestsPage() {
   const load = useCallback(async () => {
     try {
       const data = await apiFetch<Trip[]>("/trips");
+      // /trips anida el tramo de vuelta dentro de su viaje de ida y sólo
+      // devuelve los de primer nivel. Sin aplanar, el RETURN de un ida y
+      // vuelta no aparecía en ninguna pantalla: no se le podía asignar
+      // conductor y quedaba congelado en SCHEDULED para siempre.
+      const flat = flattenLegs(data ?? []);
       // Sólo solicitudes originadas en la app del pasajero.
-      setTrips((data ?? []).filter((t) => PORTAL_TRIP_TYPES.has(t.tripType ?? "")));
+      setTrips(flat.filter((t) => PORTAL_TRIP_TYPES.has(t.tripType ?? "")));
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("No se pudieron cargar las solicitudes."));
@@ -472,6 +498,12 @@ export default function TripRequestsPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3" style={{ color: "#334155" }}>
+                      {r.legType === "RETURN" && (
+                        <span className="inline-flex items-center text-[10px] font-bold rounded px-1.5 py-0.5 mr-1.5"
+                          style={{ color: "#7c3aed", background: "#f5f3ff", border: "1px solid #ddd6fe" }}>
+                          {t("Vuelta")}
+                        </span>
+                      )}
                       <span className="font-medium">{r.origin ?? "—"}</span>
                       <span style={{ color: "#94a3b8" }}> → </span>
                       <span className="font-medium">{r.destination ?? "—"}</span>
