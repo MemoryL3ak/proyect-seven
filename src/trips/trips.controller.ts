@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req } from '@nestjs/common';
+import type { ApiRequest } from '../auth/api-auth.guard';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
 import { BulkFromScheduleDto } from './dto/bulk-from-schedule.dto';
@@ -72,8 +73,14 @@ export class TripsController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateTripDto: UpdateTripDto) {
-    return this.tripsService.update(id, updateTripDto);
+  update(
+    @Param('id') id: string,
+    @Body() updateTripDto: UpdateTripDto,
+    @Req() req: ApiRequest,
+  ) {
+    // El guard global deja en req.apiCaller quien hace el cambio; la bitacora
+    // lo necesita para firmar las entradas con un nombre y no con "Sistema".
+    return this.tripsService.update(id, updateTripDto, req.apiCaller);
   }
 
   @Delete(':id')

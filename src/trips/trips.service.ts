@@ -8,6 +8,7 @@ import {
 import { SupabaseClient } from '@supabase/supabase-js';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MoreThan, Repository } from 'typeorm';
+import type { ApiCaller } from '../auth/api-auth.guard';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
 import { Trip } from './entities/trip.entity';
@@ -741,7 +742,43 @@ export class TripsService {
     return withAthletes;
   }
 
-  async update(id: string, updateTripDto: UpdateTripDto) {
+  /**
+   * Nombre legible de quien hace el cambio, para firmar la bitacora. Antes
+   * todas las entradas automaticas decian "Sistema", asi que el detalle de una
+   * solicitud no permitia saber quien la puso En ruta ni quien la asigno.
+   */
+  private async resolveActorLabel(caller?: ApiCaller | null): Promise<string> {
+    if (!caller) return 'Sistema';
+    try {
+      if (caller.type === 'portal') {
+        if (caller.kind === 'driver') {
+          return await this.resolveDriverLabel(caller.userId);
+        }
+        if (caller.kind === 'athlete') {
+          const rows = (await this.tripRepository.query(
+            `select full_name from core.athletes where id = $1 limit 1`,
+            [caller.userId],
+          )) as Array<{ full_name: string | null }>;
+          return rows[0]?.full_name || 'Pasajero';
+        }
+        return 'Control de acceso';
+      }
+      // Panel: el nombre vive en el metadata de la cuenta de Supabase.
+      const rows = (await this.tripRepository.query(
+        `select coalesce(raw_user_meta_data->>'name',
+                         raw_user_meta_data->>'full_name',
+                         email) as label
+           from auth.users where id = $1 limit 1`,
+        [caller.userId],
+      )) as Array<{ label: string | null }>;
+      return rows[0]?.label || 'Panel';
+    } catch {
+      // Nunca dejar que resolver un nombre rompa la actualizacion del viaje.
+      return 'Sistema';
+    }
+  }
+
+  async update(id: string, updateTripDto: UpdateTripDto, caller?: ApiCaller | null) {
     const currentTrip = await this.findOne(id);
 
     // ── Auto-generate bitácora entries from detected changes ──
@@ -750,7 +787,7 @@ export class TripsService {
     const incomingLog = Array.isArray(updateTripDto.metadata?.log) ? updateTripDto.metadata.log : [];
     const autoEntries: { action: string; by: string; at: string; detail?: string }[] = [];
     const now = new Date().toISOString();
-    const by = 'Sistema';
+    const by = await this.resolveActorLabel(caller);
 
     if (updateTripDto.driverId !== undefined && updateTripDto.driverId !== currentTrip.driverId) {
       autoEntries.push({ action: 'DRIVER_ASSIGNED', by, at: now, detail: await this.resolveDriverLabel(updateTripDto.driverId) });

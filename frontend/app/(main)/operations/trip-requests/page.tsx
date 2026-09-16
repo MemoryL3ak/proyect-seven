@@ -34,7 +34,12 @@ type Trip = {
   legType?: string | null;
   /** Tramos de vuelta que /trips anida dentro de su viaje de ida. */
   childTrips?: Trip[];
+  /** Bitácora del viaje: la escribe TripsService en cada cambio. */
+  metadata?: { log?: LogEntry[] } & Record<string, unknown>;
 };
+
+/** Entrada de la bitácora tal como la escribe el backend. */
+type LogEntry = { action?: string; by?: string; at?: string; detail?: string };
 
 type EventItem = { id: string; name?: string | null };
 type DriverItem = { id: string; fullName?: string | null; full_name?: string | null };
@@ -56,6 +61,38 @@ function flattenLegs(trips: Trip[]): Trip[] {
     }
   }
   return out;
+}
+
+/** Cómo se lee cada acción de la bitácora en el detalle. */
+const LOG_META: Record<string, { label: string; color: string }> = {
+  CREATED:               { label: "Solicitud creada",       color: "#0ea5e9" },
+  DRIVER_ASSIGNED:       { label: "Conductor asignado",     color: "#6366f1" },
+  VEHICLE_ASSIGNED:      { label: "Vehículo asignado",      color: "#6366f1" },
+  STATUS_CHANGED:        { label: "Cambio de estado",       color: "#7c3aed" },
+  SCHEDULE_CHANGED:      { label: "Horario modificado",     color: "#f59e0b" },
+  VEHICLE_TYPE_CHANGED:  { label: "Tipo de vehículo",       color: "#f59e0b" },
+  PASSENGER_COUNT_CHANGED:{ label: "Pasajeros",             color: "#f59e0b" },
+  CANCELLED:             { label: "Cancelada",              color: "#dc2626" },
+};
+
+/** Traduce "SCHEDULED → EN_ROUTE" a los nombres que usa la pantalla. */
+function readableDetail(entry: LogEntry): string | null {
+  if (!entry.detail) return null;
+  if (entry.action !== "STATUS_CHANGED") return entry.detail;
+  return entry.detail.replace(/[A-Z_]+/g, (code) => {
+    const meta = STATUS_META[code];
+    return meta ? meta.label : code;
+  });
+}
+
+function fmtStamp(iso?: string | null): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleString("es-CL", {
+    day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit",
+  });
 }
 
 /** Tipos de viaje originados en la app del pasajero. */
@@ -158,6 +195,7 @@ export default function TripRequestsPage() {
   const [search, setSearch] = useState("");
 
   // Asignación
+  const [detail, setDetail] = useState<Trip | null>(null);
   const [assigning, setAssigning] = useState<Trip | null>(null);
   const [assignDriverId, setAssignDriverId] = useState("");
   const [assignVehicleId, setAssignVehicleId] = useState("");
@@ -398,13 +436,23 @@ export default function TripRequestsPage() {
                     const client = normalizeClientType(r.clientType);
                     const cm = CLIENT_META[client] ?? { color: "#475569", bg: "#f1f5f9", border: "#cbd5e1" };
                     return (
-                      <div key={r.id} style={{
-                        background: "#f8fafc",
-                        border: "1px solid #e2e8f0",
-                        borderLeft: `3px solid ${meta.color}`,
-                        borderRadius: "10px",
-                        padding: "8px 10px",
-                      }}>
+                      <button
+                        key={r.id}
+                        type="button"
+                        onClick={() => setDetail(r)}
+                        title={t("Ver detalle y bitácora")}
+                        style={{
+                          background: "#f8fafc",
+                          border: "1px solid #e2e8f0",
+                          borderLeft: `3px solid ${meta.color}`,
+                          borderRadius: "10px",
+                          padding: "8px 10px",
+                          width: "100%",
+                          textAlign: "left",
+                          cursor: "pointer",
+                          display: "block",
+                        }}
+                      >
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
                           <span style={{ fontSize: "9.5px", fontWeight: 800, padding: "1px 7px", borderRadius: 99, background: cm.bg, color: cm.color, border: `1px solid ${cm.border}` }}>
                             {client}
@@ -419,7 +467,7 @@ export default function TripRequestsPage() {
                         <p style={{ fontSize: "10.5px", color: "#94a3b8", marginTop: "1px" }}>
                           {r.driverId ? (driverLabel(r.driverId) ? driverName(driverLabel(r.driverId)!) : t("Conductor asignado")) : t("Sin conductor")}
                         </p>
-                      </div>
+                      </button>
                     );
                   })}
                   {items.length === 0 && (
@@ -541,6 +589,103 @@ export default function TripRequestsPage() {
           </table>
         </div>
       </section>
+
+      {/* Detalle de la solicitud: datos + bitácora */}
+      {detail && (() => {
+        const sm = STATUS_META[detail.status] ?? { label: detail.status, color: "#475569", bg: "#f1f5f9", border: "#cbd5e1" };
+        const dr = driverLabel(detail.driverId);
+        const entries = [...(detail.metadata?.log ?? [])].sort(
+          (a, b) => new Date(a.at ?? 0).getTime() - new Date(b.at ?? 0).getTime(),
+        );
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(15,23,42,0.45)" }}
+            onClick={() => setDetail(null)}>
+            <div className="surface rounded-2xl p-5 w-full max-w-lg space-y-4" style={{ maxHeight: "86vh", overflowY: "auto" }}
+              onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="inline-flex items-center text-xs font-bold rounded-full px-2.5 py-0.5"
+                      style={{ color: sm.color, background: sm.bg, border: `1px solid ${sm.border}` }}>
+                      {t(sm.label)}
+                    </span>
+                    <span className="text-xs font-bold" style={{ color: "#64748b" }}>{clientTypeLabel(detail.clientType)}</span>
+                    {detail.legType === "RETURN" && (
+                      <span className="text-[10px] font-bold rounded px-1.5 py-0.5"
+                        style={{ color: "#7c3aed", background: "#f5f3ff", border: "1px solid #ddd6fe" }}>{t("Vuelta")}</span>
+                    )}
+                  </div>
+                  <h3 className="text-base font-bold" style={{ color: "#0f172a" }}>
+                    {detail.origin ?? t("¿Origen?")} → {detail.destination ?? t("¿Destino?")}
+                  </h3>
+                </div>
+                <button type="button" className="btn btn-ghost text-xs" onClick={() => setDetail(null)}>{t("Cerrar")}</button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                {[
+                  [t("Agendada"), fmtStamp(detail.scheduledAt ?? detail.requestedAt)],
+                  [t("Pasajeros"), detail.passengerCount != null ? String(detail.passengerCount) : "—"],
+                  [t("Conductor"), dr ? driverName(dr) : t("Sin asignar")],
+                  [t("Vehículo"), detail.vehiclePlate ?? "—"],
+                ].map(([k, v]) => (
+                  <div key={k} style={{ background: "#f8fafc", border: "1px solid #eef2f7", borderRadius: 10, padding: "8px 10px" }}>
+                    <p style={{ color: "#94a3b8", fontWeight: 700, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", margin: 0 }}>{k}</p>
+                    <p style={{ color: "#0f172a", fontWeight: 700, margin: "2px 0 0" }}>{v}</p>
+                  </div>
+                ))}
+              </div>
+
+              {detail.notes && (
+                <p className="text-xs" style={{ color: "#64748b", background: "#f8fafc", border: "1px solid #eef2f7", borderRadius: 10, padding: "8px 10px" }}>
+                  {detail.notes}
+                </p>
+              )}
+
+              <div>
+                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "#94a3b8", marginBottom: 10 }}>
+                  {t("Bitácora")}
+                </p>
+                {entries.length === 0 ? (
+                  <p className="text-xs" style={{ color: "#94a3b8" }}>
+                    {t("Sin movimientos registrados. La bitácora empieza a llenarse con los cambios hechos desde la plataforma.")}
+                  </p>
+                ) : (
+                  <ol style={{ listStyle: "none", margin: 0, padding: 0 }}>
+                    {entries.map((e, i) => {
+                      const lm = LOG_META[e.action ?? ""] ?? { label: e.action ?? t("Movimiento"), color: "#64748b" };
+                      const det = readableDetail(e);
+                      const last = i === entries.length - 1;
+                      return (
+                        <li key={`${e.at}-${i}`} style={{ display: "flex", gap: 10 }}>
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                            <span style={{ width: 9, height: 9, borderRadius: 99, background: lm.color, marginTop: 4, flexShrink: 0 }} />
+                            {!last && <span style={{ width: 2, flex: 1, background: "#e2e8f0", margin: "2px 0" }} />}
+                          </div>
+                          <div style={{ paddingBottom: last ? 0 : 14, minWidth: 0 }}>
+                            <p style={{ fontSize: 12.5, fontWeight: 700, color: "#0f172a", margin: 0 }}>{t(lm.label)}</p>
+                            {det && <p style={{ fontSize: 12, color: "#475569", margin: "1px 0 0" }}>{det}</p>}
+                            <p style={{ fontSize: 11, color: "#94a3b8", margin: "2px 0 0" }}>
+                              {fmtStamp(e.at)}{e.by ? ` · ${e.by}` : ""}
+                            </p>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                )}
+              </div>
+
+              {(detail.status === "REQUESTED" || detail.status === "SCHEDULED") && (
+                <button type="button" className="btn btn-ghost text-xs"
+                  onClick={() => { const r = detail; setDetail(null); openAssign(r); }}>
+                  {detail.status === "SCHEDULED" ? t("Reasignar") : t("Asignar")}
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Modal de asignación */}
       {assigning && (
