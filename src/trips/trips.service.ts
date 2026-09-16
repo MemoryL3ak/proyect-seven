@@ -387,7 +387,9 @@ export class TripsService {
         athleteIds: [],
         athleteNames: [],
         requesterName: null,
+        requesterClientType: null,
         passengerClientTypes: [],
+        passengers: [],
       }));
     }
 
@@ -438,6 +440,13 @@ export class TripsService {
             .filter((value): value is string => Boolean(value)),
         ),
       );
+      // Ademas del conjunto de tipos, cada pasajero con el suyo: la pantalla
+      // necesita poder senalar CUAL es el VIP, no solo que viaja uno.
+      const passengers = ids.map((athleteId) => ({
+        id: athleteId,
+        name: athleteMap.get(athleteId) ?? null,
+        clientType: typeMap.get(athleteId) ?? null,
+      }));
       return {
         ...trip,
         athleteIds: ids,
@@ -445,7 +454,11 @@ export class TripsService {
         requesterName: trip.requesterAthleteId
           ? athleteMap.get(trip.requesterAthleteId) ?? null
           : null,
+        requesterClientType: trip.requesterAthleteId
+          ? typeMap.get(trip.requesterAthleteId) ?? null
+          : null,
         passengerClientTypes: clientTypes,
+        passengers,
       };
     });
   }
