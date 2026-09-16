@@ -266,11 +266,26 @@ async function tryRefreshSession(): Promise<boolean> {
  */
 let deadSessionHandled = false;
 
+/**
+ * Rutas que NO pertenecen al panel: se autentican con la sesión de portal
+ * (headers x-portal-*), no con la cuenta de Supabase. Un 401 aquí jamás debe
+ * terminar en el login del panel.
+ */
+const PORTAL_ROUTE_PREFIXES = ["/portal", "/m/", "/credencial", "/scan", "/athlete", "/driver"];
+
+function isPortalRoute(path: string): boolean {
+  // "/m/" con barra a propósito: "/m" a secas también es el login móvil, pero
+  // sin la barra el prefijo se comería rutas del panel como /masters.
+  return path === "/m" || PORTAL_ROUTE_PREFIXES.some((prefix) => path.startsWith(prefix));
+}
+
 function handleDeadSession() {
   if (typeof window === "undefined") return;
-  // Los portales (atleta, conductor, staff de proveedor) no usan esta sesión:
-  // su credencial son los headers x-portal-*. Un 401 suyo no debe mandarlos al
-  // login del panel de administración.
+  // Los portales (atleta, conductor, staff de proveedor) no usan esta sesión.
+  // Se mira la RUTA y no sólo si hay identidad de portal: mientras el usuario
+  // está iniciando sesión todavía no la tiene, y si el navegador arrastraba un
+  // token viejo del panel esto lo expulsaba a /login en plena entrada.
+  if (isPortalRoute(window.location.pathname)) return;
   if (getPortalIdentity()) return;
   // Ya estamos en el login: redirigir de nuevo seria un bucle.
   if (window.location.pathname.startsWith("/login")) return;

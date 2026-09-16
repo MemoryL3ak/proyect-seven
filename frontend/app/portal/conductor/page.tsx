@@ -279,6 +279,8 @@ export default function DriverPortalPage() {
   const [reportRatingFilter, setReportRatingFilter] = useState<string>("all");
   const [showReportFilters, setShowReportFilters] = useState(false);
   const [idError, setIdError] = useState<string | null>(null);
+  /** El código existe pero pertenece a otro portal: hay que ofrecer salida. */
+  const [wrongPortal, setWrongPortal] = useState<"athlete" | "staff" | null>(null);
   const [pickupTrip, setPickupTrip] = useState<Trip | null>(null);
   const [pickupCode, setPickupCode] = useState("");
   const [pickupError, setPickupError] = useState<string | null>(null);
@@ -404,6 +406,7 @@ export default function DriverPortalPage() {
     setLoading(true);
     setError(null);
     setIdError(null);
+    setWrongPortal(null);
     try {
       // SA-BACKEND-03: la identidad se resuelve server-side ANTES de pedir
       // datos protegidos (ya no se descargan los listados para matchear el
@@ -423,8 +426,16 @@ export default function DriverPortalPage() {
           return;
         }
         if (login.kind !== "driver") {
+          // El código es válido, sólo que de otro portal. Decirlo así evita que
+          // un deportista crea que su código no sirve: antes el mensaje era
+          // "no corresponde a un conductor registrado" y no había salida.
           setDriverProfile(null);
-          setIdError(t("El ID ingresado no corresponde a un conductor registrado."));
+          setWrongPortal(login.kind === "athlete" ? "athlete" : "staff");
+          setIdError(
+            login.kind === "athlete"
+              ? t("Ese código es de un deportista, no de un conductor.")
+              : t("Ese código es de staff de proveedor, no de un conductor."),
+          );
           setTrips([]);
           return;
         }
@@ -1445,14 +1456,14 @@ export default function DriverPortalPage() {
             <div style={{ position: "relative", zIndex: 1, flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: "16px", padding: "24px 0" }}>
               <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", width: "fit-content" }}>
                 <span style={{ width: 7, height: 7, borderRadius: "50%", background: BRAND.teal, boxShadow: `0 0 10px ${BRAND.teal}`, display: "inline-block", animation: "pc-pulse 2s ease-in-out infinite" }} />
-                <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: BRAND.teal }}>Portal de Conductores</span>
+                <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: BRAND.teal }}>{t("Portal de Conductores")}</span>
               </div>
               <h1 style={{ fontSize: "clamp(28px,3vw,44px)", fontWeight: 800, lineHeight: 1.1, color: "#f8fafc", letterSpacing: "-0.02em", margin: 0 }}>
-                Gestiona<br />
-                <span style={{ background: `linear-gradient(90deg,${BRAND.teal} 0%,${BRAND.tealLight} 40%,${BRAND.teal} 80%)`, backgroundSize: "200% auto", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", animation: "pc-shimmer 4s linear infinite" }}>tus viajes</span>
+                {t("Gestiona")}<br />
+                <span style={{ background: `linear-gradient(90deg,${BRAND.teal} 0%,${BRAND.tealLight} 40%,${BRAND.teal} 80%)`, backgroundSize: "200% auto", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", animation: "pc-shimmer 4s linear infinite" }}>{t("tus viajes")}</span>
               </h1>
               <p className="hidden sm:block" style={{ fontSize: "14px", color: "rgba(255,255,255,0.45)", maxWidth: "340px", lineHeight: 1.7, margin: 0 }}>
-                Revisa los traslados asignados, reporta el estado de cada etapa y confirma la recogida de pasajeros.
+                {t("Revisa los traslados asignados, reporta el estado de cada etapa y confirma la recogida de pasajeros.")}
               </p>
               <div className="hidden lg:flex flex-col" style={{ gap: "10px", marginTop: "8px" }}>
                 {([
@@ -1503,6 +1514,21 @@ export default function DriverPortalPage() {
                   {loading ? t("Cargando...") : t("Ver mis viajes")}
                 </button>
                 {idError && <p style={{ color: "#fca5a5", fontSize: "13px", textAlign: "center" }}>{idError}</p>}
+                {wrongPortal && (
+                  <button
+                    type="button"
+                    onClick={() => { window.location.href = "/m/login"; }}
+                    style={{
+                      width: "100%", marginTop: 10, padding: "12px", borderRadius: 14,
+                      border: "1px solid rgba(255,255,255,0.18)", background: "rgba(255,255,255,0.06)",
+                      color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer",
+                    }}
+                  >
+                    {wrongPortal === "athlete"
+                      ? t("Ir al acceso de deportistas")
+                      : t("Ir al acceso de staff")}
+                  </button>
+                )}
                 {error && <p style={{ color: "#fca5a5", fontSize: "13px", textAlign: "center" }}>{error}</p>}
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "12px", margin: "24px 0" }}>

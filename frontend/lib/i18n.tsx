@@ -13,6 +13,17 @@ type I18nContextValue = {
 const translations: Record<Locale, Record<string, string>> = {
   es: {},
   en: {
+    // Encabezado del portal del conductor: dentro de la app el idioma sigue al
+    // del teléfono, y sin estas claves la pantalla quedaba mitad en inglés y
+    // mitad en español.
+    "Portal de Conductores": "Driver Portal",
+    "Gestiona": "Manage",
+    "tus viajes": "your trips",
+    "Revisa los traslados asignados, reporta el estado de cada etapa y confirma la recogida de pasajeros.": "Check your assigned transfers, report the status of each stage and confirm passenger pickup.",
+    "Ese código es de un deportista, no de un conductor.": "That code belongs to an athlete, not a driver.",
+    "Ese código es de staff de proveedor, no de un conductor.": "That code belongs to provider staff, not a driver.",
+    "Ir al acceso de deportistas": "Go to athlete sign-in",
+    "Ir al acceso de staff": "Go to staff sign-in",
     // ── Nav sections ──────────────────────────────────────────────────────
     "Dashboard": "Dashboard",
     "Registro": "Registration",
@@ -2442,6 +2453,14 @@ const translations: Record<Locale, Record<string, string>> = {
     "Panel Financiero": "Financial Panel",
   },
   pt: {
+    "Portal de Conductores": "Portal de Motoristas",
+    "Gestiona": "Gerencie",
+    "tus viajes": "suas viagens",
+    "Revisa los traslados asignados, reporta el estado de cada etapa y confirma la recogida de pasajeros.": "Confira os traslados atribuídos, informe o status de cada etapa e confirme o embarque dos passageiros.",
+    "Ese código es de un deportista, no de un conductor.": "Esse código é de um atleta, não de um motorista.",
+    "Ese código es de staff de proveedor, no de un conductor.": "Esse código é de staff de fornecedor, não de um motorista.",
+    "Ir al acceso de deportistas": "Ir ao acesso de atletas",
+    "Ir al acceso de staff": "Ir ao acesso de staff",
     // ── Nav sections ──────────────────────────────────────────────────────
     "Dashboard": "Painel",
     "Registro": "Registro",
