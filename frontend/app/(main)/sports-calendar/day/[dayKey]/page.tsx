@@ -224,7 +224,7 @@ export default function SportsCalendarDayDetailPage() {
         });
         if (eventId) params.set("eventId", eventId);
 
-        const [entryData, eventData, delegationData, disciplineData, athleteData, flightData, tripData, driverData, vehicleData, participantData] = await Promise.all([
+        const [entryData, eventData, delegationData, disciplineData, athleteData, flightData, tripData, driverData, vehicleData] = await Promise.all([
           apiFetch<SportsEvent[]>(`/sports-calendar/events?${params.toString()}`),
           apiFetch<EventOption[]>("/events"),
           apiFetch<DelegationOption[]>("/delegations"),
@@ -234,7 +234,6 @@ export default function SportsCalendarDayDetailPage() {
           apiFetch<TripOption[]>("/trips"),
           apiFetch<DriverOption[]>("/drivers"),
           apiFetch<VehicleOption[]>("/transports"),
-          apiFetch<any[]>("/provider-participants").catch(() => []),
         ]);
 
         setEntries(Array.isArray(entryData) ? entryData : []);
@@ -244,11 +243,8 @@ export default function SportsCalendarDayDetailPage() {
         setAthletes(filterValidatedAthletes(Array.isArray(athleteData) ? athleteData : []));
         setFlights(Array.isArray(flightData) ? flightData : []);
         setTrips(Array.isArray(tripData) ? tripData : []);
-        // Merge provider participant drivers into drivers list
-        const participantDrivers: DriverOption[] = (Array.isArray(participantData) ? participantData : [])
-          .filter((p: any) => p.metadata?.isDriver === true || p.metadata?.isDriver === "true")
-          .map((p: any) => ({ id: p.id, fullName: p.fullName, metadata: p.metadata }));
-        setDrivers([...(Array.isArray(driverData) ? driverData : []), ...participantDrivers]);
+        // /drivers ya trae flota propia + choferes de proveedor, sin duplicados.
+        setDrivers(Array.isArray(driverData) ? driverData : []);
         setVehicles(Array.isArray(vehicleData) ? vehicleData : []);
       } catch (err) {
         setError(err instanceof Error ? err.message : t("No se pudo cargar el detalle del dia."));

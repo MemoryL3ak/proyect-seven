@@ -116,6 +116,8 @@ type Driver = {
   accessTypes?: string[] | null;
   metadata?: Record<string, unknown> | null;
   _isParticipant?: boolean;
+  /** 'fleet' | 'provider' — lo marca /drivers al unificar ambas fuentes. */
+  source?: string | null;
 };
 
 type EventItem = { id: string; name?: string | null };
@@ -462,7 +464,6 @@ export default function DriverPortalPage() {
         delegationsData,
         athletesData,
         providersData,
-        participantsData,
       ] = await Promise.all([
         apiFetch<Trip[]>("/trips"),
         apiFetch<Driver[]>("/drivers"),
@@ -471,7 +472,6 @@ export default function DriverPortalPage() {
         apiFetch<DelegationItem[]>("/delegations"),
         apiFetch<AthleteItem[]>("/athletes"),
         apiFetch<ProviderItem[]>("/providers"),
-        apiFetch<ProviderParticipant[]>("/provider-participants"),
       ]);
 
       // Sedes, hoteles y vuelos para las pestañas informativas del conductor
@@ -488,12 +488,13 @@ export default function DriverPortalPage() {
         );
       });
 
-      // Merge provider participants who are choferes into the drivers list
-      const participantDrivers: Driver[] = (participantsData || [])
-        .filter((p) => p.metadata?.isDriver === true || p.metadata?.isDriver === "true")
-        .map(participantToDriver);
-
-      const allDrivers: Driver[] = [...(driversData || []), ...participantDrivers]
+      // /drivers ya devuelve flota propia + choferes de proveedor sin duplicar.
+      // De su campo `source` sale _isParticipant, que esta pantalla usa para
+      // saber contra qué endpoint pedir la ficha del conductor: un chofer de
+      // proveedor la pide a /provider-participants, y sin la marca la pedía a
+      // /drivers y recibía 404.
+      const allDrivers: Driver[] = (driversData || [])
+        .map((driver) => ({ ...driver, _isParticipant: driver.source === "provider" }))
         // Las cuentas dadas de baja no pueden volver a iniciar sesión.
         .filter((driver) => (driver.status ?? "").toUpperCase() !== "DELETED");
 

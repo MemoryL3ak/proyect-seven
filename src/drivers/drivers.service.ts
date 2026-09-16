@@ -3,6 +3,7 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -49,6 +50,8 @@ type VehicleRow = {
 
 @Injectable()
 export class DriversService {
+  private readonly logger = new Logger(DriversService.name);
+
   constructor(
     @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
     private readonly configService: ConfigService,
@@ -338,11 +341,102 @@ export class DriversService {
     return this.toEntity(data as DriverRow);
   }
 
+  /**
+   * Choferes de proveedor (core.provider_participants con isDriver) mapeados a
+   * la forma de un conductor. La acreditacion vive espejada en su metadata
+   * (ver AccreditationsService.syncSubjectSnapshot), asi que se eleva a campos
+   * planos igual que hace el portal del conductor.
+   */
+  private async providerDrivers(): Promise<Record<string, unknown>[]> {
+    const { data, error } = await this.supabase
+      .schema('core')
+      .from('provider_participants')
+      .select('id, provider_id, full_name, rut, email, phone, status, metadata')
+      .neq('status', 'DELETED');
+    if (error) {
+      // Que falle esta fuente no puede dejar sin conductores a la plataforma:
+      // se registra y se devuelve al menos la flota propia.
+      this.logger.error('Provider drivers lookup error', JSON.stringify(error));
+      return [];
+    }
+    return (data ?? [])
+      .filter((row) => {
+        const meta = (row.metadata ?? {}) as Record<string, unknown>;
+        return meta.isDriver === true || meta.isDriver === 'true';
+      })
+      .map((row) => {
+        const meta = (row.metadata ?? {}) as Record<string, unknown>;
+        const arr = (value: unknown) => (Array.isArray(value) ? value : []);
+        return {
+          id: row.id,
+          fullName: row.full_name,
+          rut: row.rut ?? null,
+          email: row.email ?? null,
+          phone: row.phone ?? null,
+          providerId: row.provider_id ?? null,
+          userId: null,
+          vehicleId: null,
+          status: row.status ?? null,
+          photoUrl: typeof meta.photoUrl === 'string' ? meta.photoUrl : null,
+          accreditationStatus:
+            typeof meta.accreditationStatus === 'string'
+              ? meta.accreditationStatus
+              : 'PENDING',
+          credentialCode:
+            typeof meta.credentialCode === 'string' ? meta.credentialCode : null,
+          accessTypes: arr(meta.accessTypes),
+          allowedClientTypes: arr(meta.allowedClientTypes),
+          metadata: row.metadata ?? {},
+          source: 'provider',
+        };
+      });
+  }
+
+  /**
+   * Conductores de toda la plataforma: flota propia (transport.drivers) y
+   * choferes de proveedor, en una sola lista sin duplicados.
+   *
+   * Antes esto devolvia SOLO la flota propia y cada pantalla fusionaba las dos
+   * fuentes por su cuenta: el mismo bloque repetido en diez lugares. Donde
+   * alguien se olvidaba, el conductor salia como "Sin asignar" aunque el viaje
+   * lo tuviera asignado (le pasaba al portal del pasajero en 52 de 55 viajes).
+   * Con una sola fuente ese error deja de ser posible.
+   *
+   * Cada fila trae `source`: 'fleet' o 'provider', para las pantallas que si
+   * necesitan distinguir la flota propia.
+   */
   async findAll() {
     try {
-      return await this.driverRepository.find({
-        order: { createdAt: 'DESC' },
-      });
+      const [fleet, providers] = await Promise.all([
+        this.driverRepository.find({ order: { createdAt: 'DESC' } }),
+        this.providerDrivers(),
+      ]);
+
+      // Una misma persona puede estar en las dos fuentes. El chofer se registra
+      // en el proveedor y con esa identidad entra a su portal, asi que esa
+      // manda y se descarta el duplicado de la tabla de flota. Se compara por
+      // id y por nombre normalizado: hoy Alex Arevalo esta en ambas con el
+      // mismo UUID, pero un duplicado con id distinto tambien debe caer.
+      const norm = (value: unknown) =>
+        String(value ?? '')
+          .trim()
+          .toLowerCase();
+      const seenIds = new Set<string>();
+      const seenNames = new Set<string>();
+      const out: Record<string, unknown>[] = [];
+      for (const item of [
+        ...providers,
+        ...fleet.map((d) => ({ ...d, source: 'fleet' })),
+      ] as Record<string, unknown>[]) {
+        const id = String(item.id ?? '');
+        const name = norm(item.fullName);
+        if (id && seenIds.has(id)) continue;
+        if (name && seenNames.has(name)) continue;
+        if (id) seenIds.add(id);
+        if (name) seenNames.add(name);
+        out.push(item);
+      }
+      return out;
     } catch (error) {
       throw new InternalServerErrorException(
         error instanceof Error ? error.message : 'Error fetching drivers',

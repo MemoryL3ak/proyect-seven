@@ -142,6 +142,8 @@ type DriverItem = {
   metadata?: Record<string, unknown> | null;
   /** true = conductor de la Flota propia (VIP/T1); se descarta en Viajes. */
   isFleet?: boolean;
+  /** 'fleet' | 'provider' — lo marca /drivers al unificar ambas fuentes. */
+  source?: string | null;
 };
 
 type ParticipantItem = {
@@ -399,7 +401,7 @@ export default function TripsPage() {
     if (!silent) setLoading(true);
     setError(null);
     try {
-      const [tripData, eventData, athleteData, delegationData, driverData, vehicleData, venueData, participantData] =
+      const [tripData, eventData, athleteData, delegationData, driverData, vehicleData, venueData] =
         await Promise.all([
           apiFetch<Trip[]>("/trips"),
           apiFetch<EventItem[]>("/events"),
@@ -408,7 +410,6 @@ export default function TripsPage() {
           apiFetch<DriverItem[]>("/drivers"),
           apiFetch<VehicleItem[]>("/transports"),
           apiFetch<VenueItem[]>("/venues"),
-          apiFetch<ParticipantItem[]>("/provider-participants").catch(() => [] as ParticipantItem[])
         ]);
 
       const nextTrips = tripData || [];
@@ -441,27 +442,18 @@ export default function TripsPage() {
           return acc;
         }, {})
       );
-      // La tabla `drivers` es la Flota propia (VIP/T1): se mantiene en el mapa
-      // solo para resolver nombres de viajes históricos, pero se descarta del
-      // selector de conductor. Los choferes operativos de Viajes son los
-      // participantes de proveedor marcados como conductores.
+      // La Flota propia (VIP/T1) se mantiene en el mapa sólo para resolver
+      // nombres de viajes históricos, pero se descarta del selector de
+      // conductor: los choferes operativos de Viajes son los de proveedor.
+      // /drivers ya devuelve ambas fuentes y marca cuál es cuál en `source`;
+      // antes esto asumía que todo lo que venía de /drivers era Flota y lo
+      // corregía con un segundo pedido a /provider-participants.
       const driversMap = (driverData || []).reduce<Record<string, DriverItem>>((acc, item) => {
-        const fleetDriver = { ...item, isFleet: true };
-        acc[item.id] = fleetDriver;
-        if (item.userId) acc[item.userId] = fleetDriver;
+        const driver = { ...item, isFleet: item.source === "fleet" };
+        acc[item.id] = driver;
+        if (item.userId) acc[item.userId] = driver;
         return acc;
       }, {});
-      (participantData || []).forEach((p) => {
-        const meta = (p.metadata ?? {}) as Record<string, unknown>;
-        if (meta.isDriver !== true && meta.isDriver !== "true") return;
-        driversMap[p.id] = {
-          id: p.id,
-          fullName: p.fullName ?? p.full_name ?? null,
-          phone: p.phone ?? null,
-          metadata: p.metadata ?? null,
-          isFleet: false,
-        };
-      });
       setDrivers(driversMap);
       setVehicles(
         (vehicleData || []).reduce<Record<string, VehicleItem>>((acc, item) => {

@@ -81,22 +81,17 @@ export default function DriverHeatmapPage() {
   const loadData = async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const [tripsData, driversData, participantsData] = await Promise.all([
+      // /drivers ya devuelve flota propia + choferes de proveedor, sin
+      // duplicados: no hace falta fusionar nada aca.
+      const [tripsData, driversData] = await Promise.all([
         apiFetch<Trip[]>("/trips"),
         apiFetch<DriverItem[]>("/drivers"),
-        apiFetch<ParticipantItem[]>("/provider-participants").catch(() => []),
       ]);
       setTrips(tripsData || []);
       const lookup: Record<string, DriverItem> = {};
       for (const d of driversData || []) {
         if (d.id) lookup[d.id] = d;
         if (d.userId) lookup[d.userId] = d;
-      }
-      for (const p of participantsData || []) {
-        const meta = p.metadata ?? {};
-        if (meta.isDriver === true || meta.isDriver === "true") {
-          lookup[p.id] = { id: p.id, fullName: p.fullName, metadata: p.metadata };
-        }
       }
       setDrivers(lookup);
     } catch {

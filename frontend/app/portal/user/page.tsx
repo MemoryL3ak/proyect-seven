@@ -648,15 +648,13 @@ export default function UserPortalPage() {
       let resolvedDriver: Driver | null = null;
       if (inferredTrip?.driverId) {
         try {
-          const [drivers, participants] = await Promise.all([
-            apiFetch<Driver[]>(`/drivers`),
-            apiFetch<any[]>(`/provider-participants`).catch(() => []),
-          ]);
-          resolvedDriver = (drivers || []).find((d) => d.id === inferredTrip.driverId || d.userId === inferredTrip.driverId) ?? null;
-          if (!resolvedDriver) {
-            const p = (participants || []).find((pp) => pp.id === inferredTrip.driverId);
-            if (p) resolvedDriver = { id: p.id, fullName: p.fullName, userId: null };
-          }
+          // /drivers ya incluye a los choferes de proveedor: sobraba el
+          // segundo pedido y su busqueda de respaldo.
+          const drivers = await apiFetch<Driver[]>(`/drivers`);
+          resolvedDriver =
+            (drivers || []).find(
+              (d) => d.id === inferredTrip.driverId || d.userId === inferredTrip.driverId,
+            ) ?? null;
         } catch { resolvedDriver = null; }
       }
       setDriver(resolvedDriver);

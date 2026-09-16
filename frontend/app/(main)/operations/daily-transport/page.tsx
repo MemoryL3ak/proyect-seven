@@ -366,25 +366,10 @@ export default function DailyTransportPage() {
       setEvents(safe);
       if (!eventId && safe[0]?.id) setEventId(safe[0].id);
     }).catch(() => setEvents([]));
-    // Nombres de chofer: Flota propia + choferes de proveedor (participantes con
-    // isDriver). Sin los segundos, la vista del día mostraba el UUID recortado.
-    Promise.all([
-      apiFetch<Driver[]>("/drivers").catch(() => [] as Driver[]),
-      apiFetch<Array<Record<string, unknown>>>("/provider-participants").catch(
-        () => [] as Array<Record<string, unknown>>,
-      ),
-    ]).then(([fleet, participants]) => {
-      const participantDrivers: Driver[] = (participants || [])
-        .filter((p) => {
-          const meta = (p.metadata ?? {}) as Record<string, unknown>;
-          return meta.isDriver === true || meta.isDriver === "true";
-        })
-        .map((p) => ({
-          id: String(p.id),
-          fullName: String((p.fullName as string) ?? (p.full_name as string) ?? p.id),
-        }));
-      setDrivers([...(fleet || []), ...participantDrivers]);
-    });
+    // /drivers ya devuelve flota propia + choferes de proveedor, sin duplicados.
+    apiFetch<Driver[]>("/drivers")
+      .then((list) => setDrivers(list || []))
+      .catch(() => setDrivers([]));
   }, []);
 
   // ── Import handlers ────────────────────────────────────────────
