@@ -40,6 +40,8 @@ type Trip = {
   requesterName?: string | null;
   /** Pasajeros ligados al viaje (transport.trip_athletes). */
   athleteNames?: string[];
+  /** Tipo de cliente de quienes viajan (pasajeros + solicitante). */
+  passengerClientTypes?: string[];
 };
 
 /** Entrada de la bitácora tal como la escribe el backend. */
@@ -221,10 +223,18 @@ export default function TripRequestsPage() {
       // vuelta no aparecía en ninguna pantalla: no se le podía asignar
       // conductor y quedaba congelado en SCHEDULED para siempre.
       const flat = flattenLegs(data ?? []);
-      // Los viajes de clientes T1 y VIP, sin importar si los pidió el pasajero
-      // desde la app o los creó operaciones desde el panel.
+      // Entra el viaje si es de un cliente T1/VIP O si traslada a alguien de
+      // esas categorías. Un traslado pedido por un TA que lleva a un VIP es un
+      // viaje VIP para la operación, aunque el viaje herede el tipo del que lo
+      // pidió: son 12 viajes hoy, uno de ellos en curso.
       setTrips(
-        flat.filter((t) => CLIENT_TYPES_EN_PANTALLA.has(normalizeClientType(t.clientType))),
+        flat.filter(
+          (t) =>
+            CLIENT_TYPES_EN_PANTALLA.has(normalizeClientType(t.clientType)) ||
+            (t.passengerClientTypes ?? []).some((tipo) =>
+              CLIENT_TYPES_EN_PANTALLA.has(normalizeClientType(tipo)),
+            ),
+        ),
       );
       setError(null);
     } catch (err) {

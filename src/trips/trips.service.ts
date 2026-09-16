@@ -387,13 +387,17 @@ export class TripsService {
         athleteIds: [],
         athleteNames: [],
         requesterName: null,
+        passengerClientTypes: [],
       }));
     }
 
     const { data: athletes, error: athletesError } = await this.supabase
       .schema('core')
       .from('athletes')
-      .select('id, full_name')
+      // user_type es el tipo de cliente de la PERSONA (VIP, T1, TA...). El
+      // viaje guarda el suyo propio, heredado de quien lo pidio, que no siempre
+      // coincide: un TA puede pedir un viaje que traslada a un VIP.
+      .select('id, full_name, user_type')
       .in('id', athleteIds);
 
     if (athletesError) {
@@ -403,9 +407,12 @@ export class TripsService {
     }
 
     const athleteMap = new Map<string, string>();
+    const typeMap = new Map<string, string>();
     (athletes ?? []).forEach((athlete) => {
-      const row = athlete as AthleteRow;
+      const row = athlete as AthleteRow & { user_type?: string | null };
       athleteMap.set(row.id, row.full_name);
+      const userType = String(row.user_type ?? '').trim().toUpperCase();
+      if (userType) typeMap.set(row.id, userType);
     });
 
     const byTrip = new Map<string, string[]>();
@@ -420,6 +427,17 @@ export class TripsService {
       const names = ids
         .map((id) => athleteMap.get(id))
         .filter((name): name is string => Boolean(name));
+      // Tipos de cliente de la gente que viaja (pasajeros + solicitante). Las
+      // pantallas que se ordenan por cliente -- la de T1/VIP, por ejemplo --
+      // necesitan esto: mirar solo trip.clientType dejaba fuera un traslado
+      // que lleva a un VIP solo porque lo pidio alguien de otra categoria.
+      const clientTypes = Array.from(
+        new Set(
+          [...ids, trip.requesterAthleteId ?? '']
+            .map((athleteId) => typeMap.get(athleteId))
+            .filter((value): value is string => Boolean(value)),
+        ),
+      );
       return {
         ...trip,
         athleteIds: ids,
@@ -427,6 +445,7 @@ export class TripsService {
         requesterName: trip.requesterAthleteId
           ? athleteMap.get(trip.requesterAthleteId) ?? null
           : null,
+        passengerClientTypes: clientTypes,
       };
     });
   }
