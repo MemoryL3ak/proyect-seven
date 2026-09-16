@@ -99,8 +99,15 @@ function fmtStamp(iso?: string | null): string {
   });
 }
 
-/** Tipos de viaje originados en la app del pasajero. */
-const PORTAL_TRIP_TYPES = new Set(["PORTAL_REQUEST", "VIAJE_IDA", "VIAJE_IDA_REGRESO"]);
+/**
+ * Esta pantalla es la de los clientes T1 y VIP: el criterio es DE QUIÉN es el
+ * viaje, no cómo se creó.
+ *
+ * Antes filtraba por tipo de viaje (los originados en la app del pasajero), que
+ * es otra cosa: escondía 6 viajes VIP creados desde el panel y mostraba 10 de
+ * clientes TA que no corresponden a esta pantalla.
+ */
+const CLIENT_TYPES_EN_PANTALLA = new Set(["T1", "VIP"]);
 
 // Colores de estado desde el catálogo canónico (TRIP_STATUS_META en
 // lib/design). Labels y bordes son extensión local de esta pantalla:
@@ -214,8 +221,11 @@ export default function TripRequestsPage() {
       // vuelta no aparecía en ninguna pantalla: no se le podía asignar
       // conductor y quedaba congelado en SCHEDULED para siempre.
       const flat = flattenLegs(data ?? []);
-      // Sólo solicitudes originadas en la app del pasajero.
-      setTrips(flat.filter((t) => PORTAL_TRIP_TYPES.has(t.tripType ?? "")));
+      // Los viajes de clientes T1 y VIP, sin importar si los pidió el pasajero
+      // desde la app o los creó operaciones desde el panel.
+      setTrips(
+        flat.filter((t) => CLIENT_TYPES_EN_PANTALLA.has(normalizeClientType(t.clientType))),
+      );
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("No se pudieron cargar las solicitudes."));
@@ -497,7 +507,7 @@ export default function TripRequestsPage() {
           <option value="CANCELLED">{t("Cancelada")}</option>
         </select>
         <select className="input max-w-[140px]" value={clientFilter} onChange={(e) => setClientFilter(e.target.value as typeof clientFilter)}>
-          <option value="">{t("T1 y VIP")}</option>
+          <option value="">{t("T1 y VIP")}</option>{/* ambos: la pantalla ya no trae otros */}
           <option value="T1">{t("Sólo T1")}</option>
           <option value="VIP">{t("Sólo VIP")}</option>
         </select>
