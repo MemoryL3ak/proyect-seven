@@ -196,6 +196,7 @@ export default function TripRequestsPage() {
 
   // Asignación
   const [detail, setDetail] = useState<Trip | null>(null);
+  const [listStatus, setListStatus] = useState<string | null>(null);
   const [assigning, setAssigning] = useState<Trip | null>(null);
   const [assignDriverId, setAssignDriverId] = useState("");
   const [assignVehicleId, setAssignVehicleId] = useState("");
@@ -289,6 +290,14 @@ export default function TripRequestsPage() {
       vip: base.filter((r) => normalizeClientType(r.clientType) === "VIP").length,
     };
   }, [visible]);
+
+  /**
+   * Solicitudes de una columna del tablero. Lo usan la columna y el listado
+   * completo, así que "+N más" siempre abre exactamente lo que cuenta la
+   * columna.
+   */
+  const itemsForStatus = (status: string) =>
+    visible.filter((r) => r.status === status || (status === "COMPLETED" && r.status === "DROPPED_OFF"));
 
   const driverLabel = useCallback(
     (id: string | null | undefined) => (id ? drivers.find((d) => d.id === id) : null),
@@ -406,7 +415,7 @@ export default function TripRequestsPage() {
         <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-5">
           {REQUEST_FLOW.map((status) => {
             const meta = STATUS_META[status];
-            const items = visible.filter((r) => r.status === status || (status === "COMPLETED" && r.status === "DROPPED_OFF"));
+            const items = itemsForStatus(status);
             const hasItems = items.length > 0;
             return (
               <div key={status} style={{
@@ -474,7 +483,16 @@ export default function TripRequestsPage() {
                     <p style={{ fontSize: "12px", color: "#94a3b8", textAlign: "center", padding: "12px 0" }}>{t("Sin solicitudes.")}</p>
                   )}
                   {items.length > 3 && (
-                    <p style={{ fontSize: "11px", color: meta.color, textAlign: "center", fontWeight: 600 }}>+{items.length - 3} {t("más")}</p>
+                    <button
+                      type="button"
+                      onClick={() => setListStatus(status)}
+                      style={{
+                        fontSize: "11px", color: meta.color, textAlign: "center", fontWeight: 700,
+                        background: "transparent", border: "none", cursor: "pointer", padding: "2px 0", width: "100%",
+                      }}
+                    >
+                      +{items.length - 3} {t("más")}
+                    </button>
                   )}
                 </div>
               </div>
@@ -589,6 +607,74 @@ export default function TripRequestsPage() {
           </table>
         </div>
       </section>
+
+      {/* Listado completo de una columna del tablero */}
+      {listStatus && (() => {
+        const meta = STATUS_META[listStatus] ?? { label: listStatus, color: "#475569", bg: "#f1f5f9", border: "#cbd5e1" };
+        const items = itemsForStatus(listStatus);
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(15,23,42,0.45)" }}
+            onClick={() => setListStatus(null)}>
+            <div className="surface rounded-2xl p-5 w-full max-w-lg space-y-3" style={{ maxHeight: "86vh", overflowY: "auto" }}
+              onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center text-xs font-bold rounded-full px-2.5 py-0.5"
+                    style={{ color: meta.color, background: meta.bg, border: `1px solid ${meta.border}` }}>
+                    {t(meta.label)}
+                  </span>
+                  <span className="text-xs font-semibold" style={{ color: "#64748b" }}>
+                    {items.length} {items.length === 1 ? t("solicitud") : t("solicitudes")}
+                  </span>
+                </div>
+                <button type="button" className="btn btn-ghost text-xs" onClick={() => setListStatus(null)}>{t("Cerrar")}</button>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {items.map((r) => {
+                  const client = normalizeClientType(r.clientType);
+                  const cm = CLIENT_META[client] ?? { color: "#475569", bg: "#f1f5f9", border: "#cbd5e1" };
+                  const dr = driverLabel(r.driverId);
+                  return (
+                    <button
+                      key={r.id}
+                      type="button"
+                      onClick={() => { setListStatus(null); setDetail(r); }}
+                      title={t("Ver detalle y bitácora")}
+                      style={{
+                        background: "#f8fafc", border: "1px solid #e2e8f0", borderLeft: `3px solid ${meta.color}`,
+                        borderRadius: 10, padding: "8px 10px", width: "100%", textAlign: "left", cursor: "pointer", display: "block",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
+                        <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <span style={{ fontSize: "9.5px", fontWeight: 800, padding: "1px 7px", borderRadius: 99, background: cm.bg, color: cm.color, border: `1px solid ${cm.border}` }}>
+                            {client}
+                          </span>
+                          {r.legType === "RETURN" && (
+                            <span style={{ fontSize: "9.5px", fontWeight: 800, padding: "1px 6px", borderRadius: 4, color: "#7c3aed", background: "#f5f3ff", border: "1px solid #ddd6fe" }}>
+                              {t("Vuelta")}
+                            </span>
+                          )}
+                        </span>
+                        <span style={{ fontSize: "10.5px", fontWeight: 700, color: "#64748b", fontVariantNumeric: "tabular-nums" }}>
+                          {fmtDate(r.scheduledAt ?? r.requestedAt)}
+                        </span>
+                      </div>
+                      <p style={{ fontSize: "11.5px", fontWeight: 700, color: "#0f172a", marginTop: 5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {r.origin ?? t("¿Origen?")} → {r.destination ?? t("¿Destino?")}
+                      </p>
+                      <p style={{ fontSize: "10.5px", color: "#94a3b8", marginTop: 1 }}>
+                        {dr ? driverName(dr) : t("Sin conductor")}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Detalle de la solicitud: datos + bitácora */}
       {detail && (() => {
