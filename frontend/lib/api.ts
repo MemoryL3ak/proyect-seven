@@ -253,6 +253,35 @@ async function tryRefreshSession(): Promise<boolean> {
   return refreshInFlight;
 }
 
+/**
+ * Sesión del panel irrecuperable: el access token venció y el refresh token ya
+ * había sido rotado (los de Supabase son de un solo uso), así que /auth/refresh
+ * responde 401 y no hay forma de revivirla.
+ *
+ * Hasta ahora apiFetch dejaba que cada request tirara su 401 y nadie limpiaba
+ * nada: el panel seguía mostrando al usuario cacheado en localStorage con todos
+ * los contadores en 0, como si la plataforma se hubiera roto. Cierra la mitad
+ * pendiente del hallazgo S14 de la auditoría ("apiFetch no maneja 401/403: al
+ * expirar la sesión el usuario ve errores crudos").
+ */
+let deadSessionHandled = false;
+
+function handleDeadSession() {
+  if (typeof window === "undefined") return;
+  // Los portales (atleta, conductor, staff de proveedor) no usan esta sesión:
+  // su credencial son los headers x-portal-*. Un 401 suyo no debe mandarlos al
+  // login del panel de administración.
+  if (getPortalIdentity()) return;
+  // Ya estamos en el login: redirigir de nuevo seria un bucle.
+  if (window.location.pathname.startsWith("/login")) return;
+  // Diez requests en paralelo fallan a la vez; una sola redirección.
+  if (deadSessionHandled) return;
+  deadSessionHandled = true;
+  clearTokens();
+  const next = window.location.pathname + window.location.search;
+  window.location.replace(`/login?expired=1&next=${encodeURIComponent(next)}`);
+}
+
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   let { response, base } = await fetchWithBaseFallback(path, {
       ...options,
@@ -269,6 +298,8 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
         headers: withAuthHeaders(options.headers),
         cache: "no-store"
       }));
+    } else {
+      handleDeadSession();
     }
   }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { changeTemporaryPassword, login } from "@/lib/api";
 
@@ -20,6 +20,19 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // apiFetch manda acá con ?expired=1 cuando la sesión ya no se puede
+  // renovar. Sin este aviso el usuario aterriza en el login sin entender por
+  // qué lo sacaron.
+  useEffect(() => {
+    try {
+      if (new URLSearchParams(window.location.search).get("expired") === "1") {
+        setError("Tu sesión expiró. Vuelve a iniciar sesión.");
+      }
+    } catch {
+      /* sin acceso a la URL: el login funciona igual */
+    }
+  }, []);
 
   const normalizedEmail = email.trim().toLowerCase();
   const normalizedPassword = password.trim();
