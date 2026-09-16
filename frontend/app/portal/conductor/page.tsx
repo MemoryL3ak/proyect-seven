@@ -16,7 +16,12 @@ import PortalSkeleton from "@/components/PortalSkeleton";
 import { deletePortalAccount } from "@/lib/account-deletion";
 import EmergencyNumbersSection from "@/components/EmergencyNumbersSection";
 import CredentialQrCard from "@/components/CredentialQrCard";
-import { isAvailable as isNativeAvailable, request as nativeRequest } from "@/lib/native-bridge";
+import {
+  isAvailable as isNativeAvailable,
+  on as nativeOn,
+  request as nativeRequest,
+  send as nativeSend,
+} from "@/lib/native-bridge";
 import PushTokenSync from "@/components/PushTokenSync";
 import QRCode from "qrcode";
 import { buildCredentialHtml } from "@/lib/credential-template";
@@ -118,6 +123,20 @@ type Driver = {
   _isParticipant?: boolean;
   /** 'fleet' | 'provider' — lo marca /drivers al unificar ambas fuentes. */
   source?: string | null;
+};
+
+/**
+ * Lo que informa el shell nativo sobre su rastreo. `running` solo dice que el
+ * servicio está armado; `backgroundOk` es el dato que importa para seguir
+ * transmitiendo con la app minimizada. Sin el permiso "Permitir siempre"
+ * Android arma el servicio y muestra su notificación igual, pero deja de
+ * entregar posiciones apenas la app deja de verse.
+ */
+type ShellTrackingState = {
+  running?: boolean;
+  gpsServices?: boolean;
+  background?: "granted" | "denied" | "undetermined" | "blocked";
+  backgroundOk?: boolean;
 };
 
 type EventItem = { id: string; name?: string | null };
@@ -287,6 +306,8 @@ export default function DriverPortalPage() {
   const [pickupCode, setPickupCode] = useState("");
   const [pickupError, setPickupError] = useState<string | null>(null);
   const [trackingTripId, setTrackingTripId] = useState<string | null>(null);
+  /** Estado del rastreo del shell nativo. null fuera de la app o antes de saberlo. */
+  const [shellTracking, setShellTracking] = useState<ShellTrackingState | null>(null);
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
   const [assistOpen, setAssistOpen] = useState(false);
   const [historyTrip, setHistoryTrip] = useState<Trip | null>(null);
@@ -972,25 +993,71 @@ export default function DriverPortalPage() {
     // para que el shell adjunte headers a sus POST /vehicle-positions) está
     // RETIRADO del payload — el shell instalado congela el WebView al
     // recibirlo, dejando el portal conductor inutilizable dentro de la app.
-    // Hoy el campo no cumple función operativa (la ingesta sigue en modo log,
-    // que acepta POST sin credenciales). Cuando el shell maneje el campo sin
-    // bloquearse, restaurar:
+    //
+    // OJO (16-09): esa causa probablemente sea FALSA. Se escribió el 02-09 a las
+    // 23:39, en medio de una tanda de intentos a ciegas, 13 minutos antes de
+    // apagar el rastreo entero. Leído el shell, `handleIncoming` sólo hace
+    // JSON.parse del sobre: un campo de más no cuelga nada. Lo que sí colgaba
+    // era el await del primer POST (77 s contra los 30 s de la web). Con eso ya
+    // arreglado, conviene probar de nuevo el campo antes de darlo por culpable.
+    // Hoy no cumple función operativa (la ingesta sigue en modo log, que acepta
+    // POST sin credenciales), así que no se restaura sin probarlo en dispositivo.
+    // Cuando se compruebe que el shell lo maneja, restaurar:
     //   const sessionId = getStoredPortalSessionId("driver", driverId);
     //   payload: { driverId, ...(sessionId ? { session: { kind: "driver", userId: driverId, sessionId } } : {}) }
-    // ⚠ DESACTIVADO TRANSITORIAMENTE: el shell instalado (build 1.0.1) se
-    // cuelga al procesar tracking.start — nunca responde (evidencia medida:
-    // `bridge.request("tracking.start") timed out after 30000ms`) y al
-    // colgarse BLOQUEA los toques de toda la pantalla (portal conductor
-    // inutilizable dentro de la app). Hoy ese rastreo del shell no opera de
-    // todos modos (el handler muere); el rastreo de los viajes activos queda
-    // cubierto por la vía web (watchPosition) también dentro de la app.
-    // Restaurar cuando el shell responda al request sin bloquear el WebView:
-    //   dlog("→ shell tracking.start");
-    //   nativeRequest("tracking.start", { driverId }, { timeoutMs: 30_000 })
-    //     .then(() => dlog("shell tracking OK"))
-    //     .catch(() => { trackingArmedRef.current = false; });
-    dlog("shell tracking omitido (shell colgado; GPS web activo)");
+    // Esto estuvo apagado desde el 02-09 porque el shell 1.0.1 se colgaba acá:
+    // su handler esperaba el POST del primer punto, que reintenta 3 veces con
+    // 25 s de timeout cada una (77 s), mientras la web cortaba a los 30 s. Ya
+    // no lo espera. Igual puede demorar lo que el conductor tarde en responder
+    // los diálogos del sistema (permiso de ubicación, encender el GPS), así que
+    // un timeout acá NO significa que falló: el shell sigue y arma el rastreo.
+    // Por eso no se revierte trackingArmedRef —volver a pedirlo le mostraría
+    // los diálogos de nuevo—, se reconcilia con tracking.status, que responde
+    // al instante y no abre ningún diálogo.
+    // Primero se pregunta el estado, que en cualquier versión del shell
+    // responde al instante, sin red ni diálogos. Sirve de detección de versión:
+    // sólo el shell corregido devuelve `backgroundOk`. En el 1.0.1 instalado
+    // hoy, tracking.start sigue colgado (77 s) y con señal mala traba los
+    // toques de toda la pantalla — lo que obligó a apagarlo el 02-09. Con esta
+    // puerta la web se puede desplegar antes de que todos actualicen la app:
+    // cada teléfono activa el rastreo de fondo recién cuando tiene el build
+    // nuevo, y mientras tanto queda exactamente como está hoy.
+    dlog("→ shell tracking.status (detección de versión)");
+    nativeRequest<ShellTrackingState>("tracking.status", undefined, { timeoutMs: 5_000 })
+      .then((status) => {
+        setShellTracking(status ?? null);
+        if (!status || !("backgroundOk" in status)) {
+          dlog("shell 1.0.1: tracking.start omitido (se cuelga); GPS web activo");
+          return;
+        }
+        dlog("→ shell tracking.start");
+        return nativeRequest<ShellTrackingState>("tracking.start", { driverId }, { timeoutMs: 30_000 })
+          .then((res) => {
+            dlog(`shell tracking ${res?.running ? "OK" : "no arrancó"}`);
+            setShellTracking(res ?? null);
+          })
+          .catch((err) => {
+            dlog(`shell tracking sin respuesta (${err?.message ?? err}); consulto estado`);
+            return nativeRequest<ShellTrackingState>("tracking.status", undefined, { timeoutMs: 5_000 })
+              .then((res) => setShellTracking(res ?? null))
+              .catch(() => undefined);
+          });
+      })
+      .catch((err) => {
+        dlog(`shell tracking.status sin respuesta (${err?.message ?? err}); se omite`);
+      });
   }, [driverProfile?.id]);
+
+  // El shell avisa solo cuando algo cambia: el conductor apagó el GPS desde la
+  // barra de notificaciones, o bajó el permiso de "Permitir siempre" a "Solo
+  // con la app abierta" desde Ajustes. Sin esto el aviso de abajo se quedaría
+  // con la foto del momento del login.
+  useEffect(() => {
+    if (!isNativeAvailable()) return;
+    return nativeOn("tracking.statusChanged", (payload) => {
+      setShellTracking(payload as ShellTrackingState);
+    });
+  }, []);
 
   // Wake Lock: keep screen awake while tracking (prevents browser suspension)
   useEffect(() => {
@@ -1320,6 +1387,42 @@ export default function DriverPortalPage() {
         >
           {t("Ver el viaje en curso")}
         </button>
+      </div>
+    );
+  };
+
+  /**
+   * Aviso cuando falta el permiso "Permitir siempre" dentro de la app.
+   *
+   * Es el caso más traicionero del rastreo: Android arma el servicio y muestra
+   * su notificación de "tracking activo", así que desde afuera se ve idéntico a
+   * cuando funciona — pero deja de entregar posiciones apenas la app deja de
+   * verse. El conductor cree que está transmitiendo y en el monitoreo aparece
+   * desconectado. Además, desde Android 11 el permiso no se puede conceder con
+   * un diálogo: hay que entrar a Ajustes a mano, así que el botón es la única
+   * salida real.
+   */
+  const renderBackgroundLocationNotice = () => {
+    if (!isNativeAvailable()) return null;
+    if (!shellTracking || shellTracking.backgroundOk !== false) return null;
+    return (
+      <div style={{ display:"flex",gap:10,alignItems:"flex-start",padding:"10px 12px",borderRadius:12,background:"#fffbeb",border:"1px solid #fde68a",marginBottom:12 }}>
+        <span style={{ fontSize:16,lineHeight:"18px" }}>📍</span>
+        <div style={{ flex:1,minWidth:0 }}>
+          <p style={{ fontSize:12,fontWeight:800,color:"#92400e",margin:0 }}>
+            {t("Tu ubicación se corta al minimizar la app")}
+          </p>
+          <p style={{ fontSize:11,color:"#a16207",margin:"3px 0 0",lineHeight:1.45 }}>
+            {t("Para que siga enviándose con la app cerrada, abrí Ajustes y elegí \"Permitir todo el tiempo\" en el permiso de ubicación.")}
+          </p>
+          <button
+            type="button"
+            onClick={() => nativeSend("device.open-settings")}
+            style={{ marginTop:8,padding:"6px 12px",borderRadius:8,border:"1px solid #fbbf24",background:"#fff",color:"#92400e",fontSize:11,fontWeight:800,cursor:"pointer" }}
+          >
+            {t("Abrir Ajustes")}
+          </button>
+        </div>
       </div>
     );
   };
@@ -1847,6 +1950,8 @@ export default function DriverPortalPage() {
                   </label>
                 </div>
               </div>
+
+              {renderBackgroundLocationNotice()}
 
               {/* Status filter tabs */}
               <div style={{ display:"flex",gap:4,marginBottom:12,background:"#f1f5f9",borderRadius:10,padding:3 }}>
