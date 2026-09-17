@@ -1215,7 +1215,9 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
           style={{
             position: "fixed",
             inset: 0,
-            zIndex: 45,
+            // Por encima de la barra de pestañas del portal (z-index 100), que
+            // si no se dibuja sobre la hoja y tapa el campo de escritura.
+            zIndex: 128,
             background: "rgba(2,8,20,0.5)",
             animation: "sofiaFadeIn 0.2s ease both",
           }}
@@ -1228,7 +1230,10 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
           className={sheetMode ? "sofia-sheet" : undefined}
           style={{
             position: "fixed",
-            zIndex: 50,
+            // En hoja hay que superar la barra de pestañas del portal (100);
+            // queda bajo la credencial a pantalla completa (150) y el visor
+            // de PDF (200), que sí deben poder abrirse encima.
+            zIndex: sheetMode ? 130 : 50,
             overflow: "hidden",
             display: "flex",
             flexDirection: "column",
