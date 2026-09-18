@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import AirlineLogo from "@/components/AirlineLogo";
 import { apiFetch } from "@/lib/api";
+import { RefreshIcon, PlaneIcon, XIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 import { filterValidatedAthletes } from "@/lib/athletes";
 
@@ -817,7 +818,7 @@ export default function FlightsPage() {
                       </td>
                       <td style={{ padding: "10px 14px" }}>
                         {flight ? (
-                          <span style={{ fontSize: "11px", fontWeight: 700, padding: "3px 8px", borderRadius: "6px", background: "rgba(167,139,250,0.1)", color: "#7c3aed", border: "1px solid rgba(167,139,250,0.3)" }}>✈ {flight}</span>
+                          <span style={{ fontSize: "11px", fontWeight: 700, padding: "3px 8px", borderRadius: "6px", background: "rgba(167,139,250,0.1)", color: "#7c3aed", border: "1px solid rgba(167,139,250,0.3)" }}><PlaneIcon size={11} className="inline mr-1" />{flight}</span>
                         ) : (
                           <span style={{ fontSize: "10px", color: "#cbd5e1" }}>—</span>
                         )}
@@ -915,10 +916,10 @@ export default function FlightsPage() {
                 </label>
                 <button onClick={() => doTrack(trackModal.flight)} disabled={tracking}
                   style={{ padding: "6px 14px", borderRadius: "99px", border: "1px solid #e2e8f0", background: "#fff", fontSize: "12px", fontWeight: 600, color: "#475569", cursor: tracking ? "not-allowed" : "pointer", opacity: tracking ? 0.6 : 1 }}>
-                  {tracking ? "..." : "↻"}
+                  {tracking ? "..." : <RefreshIcon size={14} />}
                 </button>
                 <button onClick={() => { setTrackModal(null); setAutoRefresh(false); }}
-                  style={{ padding: "6px 12px", borderRadius: "99px", border: "1px solid #e2e8f0", background: "#fff", fontSize: "13px", color: pal.textMuted, cursor: "pointer" }}>✕</button>
+                  style={{ padding: "6px 12px", borderRadius: "99px", border: "1px solid #e2e8f0", background: "#fff", fontSize: "13px", color: pal.textMuted, cursor: "pointer", display: "inline-flex" }} aria-label="Cerrar"><XIcon size={14} /></button>
               </div>
             </div>
             <div style={{ overflowY: "auto", padding: "0 24px 24px", flex: 1 }}>

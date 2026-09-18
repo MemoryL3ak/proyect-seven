@@ -584,7 +584,7 @@ export default function AccreditationsPage() {
                 <p style={{ fontSize: "13px", color: pal.subtitleColor, marginTop: "4px" }}>{t("Participantes registrados en AND vs. acreditados, por disciplina.")}</p>
               </div>
               <button type="button" onClick={loadData} disabled={loading} style={{ flexShrink: 0, border: "1px solid #e2e8f0", borderRadius: "12px", padding: "8px 16px", fontSize: "13px", fontWeight: 600, color: "#475569", background: "#ffffff", cursor: loading ? "default" : "pointer", opacity: loading ? 0.6 : 1 }}>
-                {loading ? t("Actualizando...") : t("↻ Refrescar KPI")}
+                {loading ? t("Actualizando...") : t("Refrescar KPI")}
               </button>
             </div>
 
@@ -702,7 +702,7 @@ export default function AccreditationsPage() {
             {STATUS_OPTIONS.map((status) => <option key={status} value={status}>{t(statusFilterLabel(status))}</option>)}
           </select>
           <input className="input rounded-xl lg:col-span-3" placeholder={t("Buscar por nombre, ID o codigo credencial")} value={query} onChange={(e) => setQuery(e.target.value)} />
-          <button type="button" className="lg:col-span-2" onClick={loadData} disabled={loading} style={{ border: "1px solid #e2e8f0", borderRadius: "12px", padding: "8px 14px", fontSize: "13px", fontWeight: 600, color: "#475569", background: "#ffffff", cursor: loading ? "default" : "pointer", opacity: loading ? 0.6 : 1 }}>{loading ? t("Actualizando...") : t("↻ Refrescar")}</button>
+          <button type="button" className="lg:col-span-2" onClick={loadData} disabled={loading} style={{ border: "1px solid #e2e8f0", borderRadius: "12px", padding: "8px 14px", fontSize: "13px", fontWeight: 600, color: "#475569", background: "#ffffff", cursor: loading ? "default" : "pointer", opacity: loading ? 0.6 : 1 }}>{loading ? t("Actualizando...") : t("Refrescar")}</button>
         </div>
         {(error || message) ? (
           <div className="mt-3 space-y-1">
@@ -855,11 +855,11 @@ export default function AccreditationsPage() {
                         <div style={{ marginTop: "5px", display: "flex", flexWrap: "wrap", gap: "4px", alignItems: "center" }}>
                           {/* Status */}
                           <span style={{ fontSize: "10px", fontWeight: 700, padding: "2px 8px", borderRadius: "99px", background: accredited ? "rgba(16,185,129,0.12)" : "#f1f5f9", border: accredited ? "1px solid rgba(16,185,129,0.3)" : "1px solid #e2e8f0", color: accredited ? "#10b981" : "#64748b" }}>
-                            {accredited ? t("✓ Acreditado") : t("Pendiente")}
+                            {accredited ? t("Acreditado") : t("Pendiente")}
                           </span>
                           {/* Credential */}
                           <span style={{ fontSize: "10px", fontWeight: 700, padding: "2px 8px", borderRadius: "99px", background: credIssued ? "rgba(33,208,179,0.1)" : "#f8fafc", border: credIssued ? "1px solid rgba(33,208,179,0.25)" : "1px solid #e2e8f0", color: credIssued ? "#21D0B3" : "#94a3b8" }}>
-                            {credIssued ? t("Credencial ✓") : t("Sin credencial")}
+                            {credIssued ? t("Credencial") : t("Sin credencial")}
                           </span>
                           {/* Access chips */}
                           {accessTypes.map(code => <span key={code} style={{ fontSize: "10px", fontWeight: 700, padding: "2px 7px", borderRadius: "99px", background: "rgba(33,208,179,0.1)", border: "1px solid rgba(33,208,179,0.2)", color: "#21D0B3" }}>{code}</span>)}
@@ -937,10 +937,10 @@ export default function AccreditationsPage() {
                         </div>
                         <div style={{ marginTop: "5px", display: "flex", flexWrap: "wrap", gap: "4px", alignItems: "center" }}>
                           <span style={{ fontSize: "10px", fontWeight: 700, padding: "2px 8px", borderRadius: "99px", background: accredited ? "rgba(16,185,129,0.12)" : "#f1f5f9", border: accredited ? "1px solid rgba(16,185,129,0.3)" : "1px solid #e2e8f0", color: accredited ? "#10b981" : "#64748b" }}>
-                            {accredited ? t("✓ Acreditado") : t("Pendiente")}
+                            {accredited ? t("Acreditado") : t("Pendiente")}
                           </span>
                           <span style={{ fontSize: "10px", fontWeight: 700, padding: "2px 8px", borderRadius: "99px", background: credIssued ? "rgba(33,208,179,0.1)" : "#f8fafc", border: credIssued ? "1px solid rgba(33,208,179,0.25)" : "1px solid #e2e8f0", color: credIssued ? "#21D0B3" : "#94a3b8" }}>
-                            {credIssued ? t("Credencial ✓") : t("Sin credencial")}
+                            {credIssued ? t("Credencial") : t("Sin credencial")}
                           </span>
                           {accessTypes.map(code => <span key={code} style={{ fontSize: "10px", fontWeight: 700, padding: "2px 7px", borderRadius: "99px", background: "rgba(33,208,179,0.1)", border: "1px solid rgba(33,208,179,0.2)", color: "#21D0B3" }}>{code}</span>)}
                         </div>

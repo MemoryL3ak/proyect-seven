@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { apiFetch } from "@/lib/api";
+import { XIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -835,7 +836,7 @@ export default function SalonesPage() {
               <h2 style={{ fontSize: "17px", fontWeight: 800, color: pal.text }}>
                 {editingSalon ? t("Editar salón") : t("Nuevo salón")}
               </h2>
-              <button onClick={() => setShowSalonModal(false)} style={{ background: "transparent", border: "none", cursor: "pointer", color: pal.textFaint, fontSize: "18px" }}>✕</button>
+              <button onClick={() => setShowSalonModal(false)} style={{ background: "transparent", border: "none", cursor: "pointer", color: pal.textFaint, display: "inline-flex" }} aria-label="Cerrar"><XIcon size={16} /></button>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
@@ -926,7 +927,7 @@ export default function SalonesPage() {
               <h2 style={{ fontSize: "17px", fontWeight: 800, color: pal.text }}>
                 {editingRes ? t("Editar reserva") : t("Nueva reserva")}
               </h2>
-              <button onClick={() => setShowResModal(false)} style={{ background: "transparent", border: "none", cursor: "pointer", color: pal.textFaint, fontSize: "18px" }}>✕</button>
+              <button onClick={() => setShowResModal(false)} style={{ background: "transparent", border: "none", cursor: "pointer", color: pal.textFaint, display: "inline-flex" }} aria-label="Cerrar"><XIcon size={16} /></button>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>

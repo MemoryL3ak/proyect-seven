@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import EmptyState from "@/components/ui/EmptyState";
-import { CalendarIcon, AlertIcon, SearchIcon, RefreshIcon } from "@/components/ui/Icons";
+import { CalendarIcon, AlertIcon, SearchIcon, RefreshIcon, PlaneIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 
 /* ────────────────────────────────────────────────────────────
@@ -391,7 +391,7 @@ export default function DepartureMonitoringPage() {
                               className="text-[11px] font-bold px-2 py-0.5 rounded"
                               style={{ background: "rgba(167,139,250,0.12)", color: "#7c3aed", border: "1px solid rgba(167,139,250,0.4)" }}
                             >
-                              ✈ {vuelo}
+                              <PlaneIcon size={11} className="inline mr-1" />{vuelo}
                             </span>
                           ) : (
                             <span

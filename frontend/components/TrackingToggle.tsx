@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { isAvailable, on, request } from "@/lib/native-bridge";
+import { SatelliteIcon } from "@/components/ui/Icons";
 
 type PushState = {
   lastAttemptAt: number | null;
@@ -184,7 +185,7 @@ export default function TrackingToggle({ driverId }: Props) {
           gap: 8,
         }}
       >
-        <span style={{ fontSize: 16 }}>🛰️</span>
+        <span style={{ display: "inline-flex" }}><SatelliteIcon size={16} /></span>
         <div style={{ flex: 1 }}>
           <p
             style={{

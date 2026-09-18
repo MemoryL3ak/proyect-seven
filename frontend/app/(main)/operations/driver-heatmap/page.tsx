@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { apiFetch } from "@/lib/api";
+import { StarIcon, MedalIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 
 /* ─── Types ─── */
@@ -290,7 +291,7 @@ export default function DriverHeatmapPage() {
             detail: kpis.activeDrivers > 0 ? `${(kpis.totalTrips / kpis.activeDrivers).toFixed(1)} viajes por conductor` : "sin actividad",
           },
           {
-            label: "Rating promedio", value: kpis.avgRating !== null ? kpis.avgRating.toFixed(1) + " ★" : "—", color: "#6366f1",
+            label: "Rating promedio", value: kpis.avgRating !== null ? kpis.avgRating.toFixed(1) : "—", color: "#6366f1",
             detail: kpis.ratingsCount > 0 ? `sobre ${kpis.ratingsCount} evaluación${kpis.ratingsCount === 1 ? "" : "es"}` : "sin evaluaciones",
           },
           {
@@ -457,7 +458,7 @@ export default function DriverHeatmapPage() {
             ) : (
               sortedRankings.map((r, i) => {
                 const sem = semaphore(r.todayTrips);
-                const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : null;
+                const medalColor = i === 0 ? "#f59e0b" : i === 1 ? "#94a3b8" : i === 2 ? "#b45309" : null;
                 return (
                   <div key={r.driverId} style={{
                     display: "grid", gridTemplateColumns: "40px 1fr 100px 50px",
@@ -465,8 +466,8 @@ export default function DriverHeatmapPage() {
                     background: i % 2 === 0 ? "transparent" : "#fafafa",
                     borderBottom: `1px solid ${pal.cardBorder}`,
                   }}>
-                    <span style={{ fontSize: medal ? "16px" : "13px", fontWeight: 800, color: medal ? undefined : pal.labelColor, textAlign: "center" }}>
-                      {medal || `#${i + 1}`}
+                    <span style={{ fontSize: "13px", fontWeight: 800, color: medalColor ?? pal.labelColor, textAlign: "center", display: "inline-flex", justifyContent: "center" }}>
+                      {medalColor ? <MedalIcon size={16} color={medalColor} /> : `#${i + 1}`}
                     </span>
                     <div>
                       <p style={{ fontSize: "13px", fontWeight: 600, color: pal.textPrimary, margin: 0 }}>{r.name}</p>
@@ -476,7 +477,7 @@ export default function DriverHeatmapPage() {
                       {rankTab === "trips" && <span style={{ fontSize: "16px", fontWeight: 800, color: "#6366f1" }}>{r.totalTrips}</span>}
                       {rankTab === "rating" && (
                         <span style={{ fontSize: "16px", fontWeight: 800, color: "#f59e0b" }}>
-                          {formatRating(r.avgRating)} <span style={{ fontSize: "11px" }}>★</span>
+                          {formatRating(r.avgRating)} <StarIcon size={11} className="inline" />
                         </span>
                       )}
                       {rankTab === "idle" && <span style={{ fontSize: "16px", fontWeight: 800, color: "#ef4444" }}>{r.idleHours}h</span>}
@@ -525,7 +526,7 @@ export default function DriverHeatmapPage() {
               .slice(0, 3)
               .map((r, i) => (
                 <div key={r.driverId} style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
-                  <span style={{ fontSize: "18px" }}>{i === 0 ? "🥇" : i === 1 ? "🥈" : "🥉"}</span>
+                  <MedalIcon size={18} color={i === 0 ? "#f59e0b" : i === 1 ? "#94a3b8" : "#b45309"} />
                   <div style={{ flex: 1 }}>
                     <p style={{ fontSize: "13px", fontWeight: 600, color: pal.textPrimary, margin: 0 }}>{r.name}</p>
                     <p style={{ fontSize: "10px", color: pal.labelColor, margin: 0 }}>{r.completedTrips} viajes completados</p>

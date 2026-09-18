@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { CarIcon, UserIcon, CheckIcon } from "@/components/ui/Icons";
 
 type Recipient = {
   userKind: "athlete" | "driver" | "admin" | "provider_participant";
@@ -184,7 +185,7 @@ export default function AdminNotificacionesPage() {
                       fontSize: 13, fontWeight: 700,
                     }}
                   >
-                    {r.userKind === "driver" ? "🚗" : "🏃"}
+                    {r.userKind === "driver" ? <CarIcon size={14} /> : <UserIcon size={14} />}
                   </span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -289,7 +290,7 @@ export default function AdminNotificacionesPage() {
                 fontSize: 12, color: "#0a7a6b",
               }}
             >
-              ✓ Enviado a las {new Date(result.at).toLocaleTimeString("es-CL")}. Revisá el dispositivo y la campanita del portal.
+              <CheckIcon size={12} className="inline mr-1" />Enviado a las {new Date(result.at).toLocaleTimeString("es-CL")}. Revisá el dispositivo y la campanita del portal.
             </div>
           )}
           {result?.kind === "error" && (

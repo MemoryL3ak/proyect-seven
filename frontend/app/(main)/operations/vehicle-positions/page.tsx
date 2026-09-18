@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { apiFetch } from "@/lib/api";
+import { RefreshIcon, ArrowRightIcon, StarIcon } from "@/components/ui/Icons";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { getSupabase } from "@/lib/supabase";
 import { useI18n } from "@/lib/i18n";
@@ -891,7 +892,7 @@ export default function VehiclePositionsPage() {
               gap: "7px",
             }}
           >
-            <span style={{ fontSize: "14px" }}>↻</span>
+            <span style={{ display: "inline-flex" }}><RefreshIcon size={14} /></span>
             {loading ? t("Actualizando...") : t("Refrescar")}
           </button>
         </div>
@@ -1119,7 +1120,7 @@ export default function VehiclePositionsPage() {
                         <div style={{ fontSize: "11px", color: "#64748b", lineHeight: 1.5, display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
                           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2.2" strokeLinecap="round"><path d="M12 22s6-6 6-11a6 6 0 0 0-12 0c0 5 6 11 6 11z"/><circle cx="12" cy="11" r="2"/></svg>
                           <span>{trip.origin || "Origen"}</span>
-                          <span style={{ color: "#cbd5e1" }}>→</span>
+                          <span style={{ color: "#cbd5e1", display: "inline-flex" }}><ArrowRightIcon size={12} /></span>
                           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h2M14 7h2M8 11h2M14 11h2"/></svg>
                           <span>{venue?.name || trip.destination || "Destino"}</span>
                         </div>
@@ -1222,7 +1223,7 @@ export default function VehiclePositionsPage() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
-                          {originShort} <span style={{ color: "#94a3b8", fontWeight: 400 }}>→</span> {destShort}
+                          {originShort} <span style={{ color: "#94a3b8", display: "inline-flex", verticalAlign: "middle" }}><ArrowRightIcon size={12} /></span> {destShort}
                         </span>
                         <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 99, background: sc.chipBg, border: `1px solid ${sc.chipBorder}`, color: sc.accent }}>
                           {STATUS_LABEL[trip.status || "SCHEDULED"] || trip.status}
@@ -1365,7 +1366,7 @@ export default function VehiclePositionsPage() {
                 {event?.name && field("Evento", event.name)}
                 {trip.driverRating ? (
                   <div style={{ padding: "10px 12px", borderRadius: "12px", background: "#FFFBEB", border: "1px solid #FDE68A", display: "flex", alignItems: "center", gap: "10px" }}>
-                    <span style={{ fontSize: "18px" }}>{"⭐".repeat(trip.driverRating)}</span>
+                    <span style={{ display: "inline-flex", gap: 2, color: "#f59e0b" }}>{Array.from({ length: trip.driverRating }, (_, k) => <StarIcon key={k} size={16} />)}</span>
                     {trip.ratingComment && <span style={{ fontSize: "12px", color: "#92400E", fontStyle: "italic", flex: 1 }}>&ldquo;{trip.ratingComment}&rdquo;</span>}
                   </div>
                 ) : null}

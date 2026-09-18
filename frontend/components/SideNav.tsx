@@ -661,9 +661,9 @@ export default function SideNav({ onClose }: { onClose?: () => void }) {
           /* Collapsed: only active locale, centered */
           <div style={{ display: "flex", justifyContent: "center" }}>
             {[
-              { key: "es", label: "Español", short: "ES", flag: "🇨🇱" },
-              { key: "en", label: "English", short: "EN", flag: "🇺🇸" },
-              { key: "pt", label: "Português", short: "PT", flag: "🇧🇷" }
+              { key: "es", label: "Español", short: "ES" },
+              { key: "en", label: "English", short: "EN" },
+              { key: "pt", label: "Português", short: "PT" }
             ].map((option) => {
               const active = locale === option.key;
               if (!active) return null;
@@ -685,7 +685,6 @@ export default function SideNav({ onClose }: { onClose?: () => void }) {
                   }}
                   title={t(option.label)}
                 >
-                  <span style={{ fontSize: "12px" }}>{option.flag}</span>
                   <span>{option.short}</span>
                 </button>
               );
@@ -694,9 +693,9 @@ export default function SideNav({ onClose }: { onClose?: () => void }) {
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "6px" }}>
             {[
-              { key: "es", label: "Español", short: "ES", flag: "🇨🇱" },
-              { key: "en", label: "English", short: "EN", flag: "🇺🇸" },
-              { key: "pt", label: "Português", short: "PT", flag: "🇧🇷" }
+              { key: "es", label: "Español", short: "ES" },
+              { key: "en", label: "English", short: "EN" },
+              { key: "pt", label: "Português", short: "PT" }
             ].map((option) => {
               const active = locale === option.key;
               return (
@@ -714,7 +713,6 @@ export default function SideNav({ onClose }: { onClose?: () => void }) {
                   }}
                   title={t(option.label)}
                 >
-                  <span style={{ fontSize: "13px" }}>{option.flag}</span>
                   <span>{option.short}</span>
                 </button>
               );

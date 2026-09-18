@@ -10,6 +10,7 @@ import {
   partnerFetch,
 } from "@/lib/partnerAuth";
 import DeleteAccountSection from "@/components/DeleteAccountSection";
+import { CheckIcon, RefreshIcon } from "@/components/ui/Icons";
 
 const TEAL = "#21D0B3";
 const TEAL_MID = "#34F3C6";
@@ -739,7 +740,7 @@ function PreviewScreen({
         <div className="absolute bottom-0 left-0 right-0 h-[1px] shimmer-line opacity-60" />
         <div className="relative z-10">
           <p className="text-[10px] uppercase tracking-widest font-bold text-white opacity-80">
-            ✓ Beneficio válido
+            <CheckIcon size={12} className="inline mr-1" />Beneficio válido
           </p>
           <h2 className="text-xl font-bold text-white leading-tight mt-1">
             {preview.coupon?.title || "Beneficio"}
@@ -809,7 +810,7 @@ function PreviewScreen({
               boxShadow: redeeming ? "none" : "0 6px 18px rgba(46,125,50,0.4)",
               cursor: redeeming ? "not-allowed" : "pointer",
             }}>
-            {redeeming ? "Procesando…" : "✓ Confirmar canje"}
+            {redeeming ? "Procesando…" : <><CheckIcon size={12} className="inline mr-1" />Confirmar canje</>}
           </button>
         </div>
       </div>
@@ -934,7 +935,7 @@ function RecentRedemptionsCard({
           className="text-xs font-medium px-2.5 py-1.5 rounded-lg"
           style={{ background: "#f1f5f9", color: "#475569" }}
           title="Refrescar">
-          ↻
+          <RefreshIcon size={14} />
         </button>
       </div>
 

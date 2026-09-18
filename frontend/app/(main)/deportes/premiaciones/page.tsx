@@ -1,13 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { apiFetch } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiCard from "@/components/ui/KpiCard";
 import StyledSelect from "@/components/StyledSelect";
-import { TrophyIcon, CheckIcon, AlertIcon, CalendarIcon, SearchIcon } from "@/components/ui/Icons";
+import {
+  TrophyIcon,
+  CheckIcon,
+  AlertIcon,
+  CalendarIcon,
+  SearchIcon,
+  XIcon,
+  StarIcon,
+  PinIcon,
+  FileTextIcon,
+  PencilIcon,
+  ClockIcon,
+} from "@/components/ui/Icons";
 
 type Awarder = {
   id?: string;
@@ -38,10 +50,10 @@ type AwarderState = "CONFIRMED" | "DECLINED" | "PENDING";
 const awarderState = (a: Awarder): AwarderState =>
   a.confirmedAt ? "CONFIRMED" : a.declinedAt ? "DECLINED" : "PENDING";
 
-const AWARDER_META: Record<AwarderState, { label: string; color: string; bg: string; icon: string }> = {
-  CONFIRMED: { label: "Confirmó", color: "#059669", bg: "#e7f5ec", icon: "✓" },
-  DECLINED: { label: "Rechazó", color: "#dc2626", bg: "#fde2e2", icon: "✕" },
-  PENDING: { label: "Pendiente", color: "#b45309", bg: "#fef3c7", icon: "⏳" },
+const AWARDER_META: Record<AwarderState, { label: string; color: string; bg: string; icon: ReactNode }> = {
+  CONFIRMED: { label: "Confirmó", color: "#059669", bg: "#e7f5ec", icon: <CheckIcon size={11} /> },
+  DECLINED: { label: "Rechazó", color: "#dc2626", bg: "#fde2e2", icon: <XIcon size={11} /> },
+  PENDING: { label: "Pendiente", color: "#b45309", bg: "#fef3c7", icon: <ClockIcon size={11} /> },
 };
 
 const STATUS_META: Record<string, { label: string; color: string; bg: string }> = {
@@ -319,7 +331,7 @@ export default function PremiacionesPage() {
             {isNext && (
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full inline-block mb-1"
                 style={{ background: "rgba(33,208,179,0.14)", color: "#0f9d84", border: "1px solid rgba(33,208,179,0.45)", letterSpacing: "0.08em" }}>
-                ★ {t("PRÓXIMA CEREMONIA")}
+                <StarIcon size={10} className="inline mr-1" />{t("PRÓXIMA CEREMONIA")}
               </span>
             )}
             <p className="font-bold text-[15px] leading-tight" style={{ color: "#0f172a" }}>{p.title}</p>
@@ -340,7 +352,7 @@ export default function PremiacionesPage() {
         {/* Datos */}
         <div className="text-xs space-y-0.5" style={{ color: "#64748b" }}>
           <p style={{ color: "#0f172a", fontWeight: 600 }}>
-            🗓 {fmtDateTime(p.scheduledAt)}
+            <CalendarIcon size={12} className="inline mr-1" />{fmtDateTime(p.scheduledAt)}
             {rel && (
               <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded"
                 style={{ background: rel === "Hoy" ? "#fef3c7" : "#eef1f6", color: rel === "Hoy" ? "#b45309" : "#64748b" }}>
@@ -349,9 +361,9 @@ export default function PremiacionesPage() {
             )}
           </p>
           {(p.venueName || p.locationDetail) && (
-            <p>📍 {[p.venueName, p.locationDetail].filter(Boolean).join(" · ")}</p>
+            <p><PinIcon size={12} className="inline mr-1" />{[p.venueName, p.locationDetail].filter(Boolean).join(" · ")}</p>
           )}
-          {p.notes && <p style={{ color: "#94a3b8" }}>📝 {p.notes}</p>}
+          {p.notes && <p style={{ color: "#94a3b8" }}><FileTextIcon size={12} className="inline mr-1" />{p.notes}</p>}
         </div>
 
         {/* Entregadores + confirmación */}
@@ -380,7 +392,7 @@ export default function PremiacionesPage() {
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1 flex-shrink-0"
                       style={{ background: meta.bg, color: meta.color }}
                       title={state === "CONFIRMED" && a.confirmedAt ? fmtDateTime(a.confirmedAt) : undefined}>
-                      <span>{meta.icon}</span>{t(meta.label)}
+                      <span style={{ display: "inline-flex" }}>{meta.icon}</span>{t(meta.label)}
                     </span>
                   </div>
                 );
@@ -393,7 +405,7 @@ export default function PremiacionesPage() {
           <button type="button" onClick={() => openEdit(p)}
             className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
             style={{ background: "#fff7ed", color: "#d97706", border: "1px solid #fed7aa", cursor: "pointer" }}>
-            ✎ {t("Editar premiación")}
+            <PencilIcon size={12} className="inline mr-1" />{t("Editar premiación")}
           </button>
           {p.disciplineId && (
             <Link href="/deportes" className="text-xs font-semibold" style={{ color: "#14b8a6" }}>
@@ -568,7 +580,7 @@ export default function PremiacionesPage() {
                             {p.id === nextId && (
                               <span className="ml-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full align-middle"
                                 style={{ background: "rgba(33,208,179,0.14)", color: "#0f9d84", border: "1px solid rgba(33,208,179,0.45)" }}>
-                                ★ {t("PRÓXIMA")}
+                                <StarIcon size={9} className="inline mr-1" />{t("PRÓXIMA")}
                               </span>
                             )}
                           </p>
@@ -723,12 +735,12 @@ export default function PremiacionesPage() {
                           {a.id && (
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1"
                               style={{ background: meta.bg, color: meta.color }}>
-                              <span>{meta.icon}</span>{t(meta.label)}
+                              <span style={{ display: "inline-flex" }}>{meta.icon}</span>{t(meta.label)}
                             </span>
                           )}
                           <button type="button" onClick={() => removeAwarder(a.athleteId)}
                             className="text-[11px] font-bold" style={{ color: "#dc2626", cursor: "pointer" }} title={t("Quitar")}>
-                            ✕
+                            <XIcon size={14} />
                           </button>
                         </div>
                       </div>

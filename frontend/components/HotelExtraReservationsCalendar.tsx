@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { XIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 
 type Reservation = {
@@ -555,7 +556,7 @@ export default function HotelExtraReservationsCalendar({
           >
             <div className="flex items-center justify-between">
               <h2 className="font-bold text-lg">{editingId ? t("Editar reserva") : t("Nueva reserva")}</h2>
-              <button type="button" className="btn btn-ghost" style={{ padding: "4px 10px" }} onClick={() => setShowForm(false)}>✕</button>
+              <button type="button" className="btn btn-ghost" style={{ padding: "4px 10px" }} onClick={() => setShowForm(false)} aria-label="Cerrar"><XIcon size={14} /></button>
             </div>
 
             <div className="space-y-3">

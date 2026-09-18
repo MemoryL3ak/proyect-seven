@@ -3,7 +3,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import PageHeader from "@/components/ui/PageHeader";
-import { TicketIcon, SearchIcon, RefreshIcon, CheckIcon, AlertIcon } from "@/components/ui/Icons";
+import {
+  TicketIcon,
+  SearchIcon,
+  RefreshIcon,
+  CheckIcon,
+  AlertIcon,
+  XIcon,
+  ArrowRightIcon,
+} from "@/components/ui/Icons";
 import { normalizeClientType, clientTypeLabel } from "@/lib/clientTypes";
 import { useI18n } from "@/lib/i18n";
 import { BRAND, TRIP_STATUS_META } from "@/lib/design";
@@ -159,7 +167,7 @@ function RequestTimeline({ status }: { status: string }) {
   if (status === "CANCELLED") {
     return (
       <p className="text-[10px] mt-1.5 font-semibold" style={{ color: "#dc2626" }}>
-        ✕ {t("Flujo interrumpido")}
+        <XIcon size={12} className="inline mr-1" />{t("Flujo interrumpido")}
       </p>
     );
   }
@@ -593,7 +601,7 @@ export default function TripRequestsPage() {
                         </span>
                       )}
                       <span className="font-medium">{r.origin ?? "—"}</span>
-                      <span style={{ color: "#94a3b8" }}> → </span>
+                      <span style={{ color: "#94a3b8", display: "inline-flex", margin: "0 4px", verticalAlign: "middle" }}><ArrowRightIcon size={12} /></span>
                       <span className="font-medium">{r.destination ?? "—"}</span>
                       {r.notes && <p className="text-xs mt-0.5" style={{ color: "#94a3b8" }}>{r.notes}</p>}
                     </td>

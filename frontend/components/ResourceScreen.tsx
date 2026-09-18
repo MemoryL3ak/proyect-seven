@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import { apiFetch } from "@/lib/api";
+import { AlertIcon } from "@/components/ui/Icons";
 import { isAthletePersonalDataValidated } from "@/lib/athletes";
 import type { FieldDef, ResourceConfig } from "@/lib/resources";
 import { useI18n } from "@/lib/i18n";
@@ -2456,7 +2457,7 @@ export default function ResourceScreen({
         {/* Visa warning */}
         {config.endpoint === "/athletes" && (form.visaRequired as string) === "true" && (
           <div style={{ padding: "12px 16px", borderRadius: "12px", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)", display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
-            <span style={{ fontSize: "20px" }}>⚠️</span>
+            <span style={{ display: "inline-flex", color: "#b45309" }}><AlertIcon size={20} /></span>
             <div>
               <p style={{ fontSize: "13px", fontWeight: 700, color: "#92400e", margin: 0 }}>{t("Atención: Visa requerida")}</p>
               <p style={{ fontSize: "12px", color: "#b45309", margin: "2px 0 0" }}>{t("Este participante requiere visa para ingresar al país. Asegúrate de gestionar la documentación correspondiente.")}</p>
@@ -2942,7 +2943,7 @@ export default function ResourceScreen({
                           {form[field.key] ? "Cambiar foto" : "Subir foto"}
                         </label>
                         <span style={{ fontSize: "10px", color: form[field.key] ? "#10b981" : "#94a3b8" }}>
-                          {form[field.key] ? "✓ Foto cargada" : "JPG, PNG — máx 5MB"}
+                          {form[field.key] ? "Foto cargada" : "JPG, PNG — máx 5MB"}
                         </span>
                       </div>
                     </div>

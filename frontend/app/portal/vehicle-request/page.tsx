@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import PlacesAutocompleteInput from "@/components/PlacesAutocompleteInput";
 import { apiFetch } from "@/lib/api";
+import { AlertIcon, UserIcon, PinIcon, PhoneIcon, TrophyIcon, SearchIcon, TicketIcon, SunIcon, MoonIcon, UtensilsIcon, UtensilsCrossedIcon, CalendarIcon, XIcon, MedalIcon, StethoscopeIcon, ClockIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 import { buildDisciplineLabelMap, categoryLabel, genderLabel, normalizeCategory, normalizeGender } from "@/lib/discipline-filters";
 import { getMobileSession, mobileAwareLogout } from "@/lib/mobile-auth";
@@ -963,12 +964,12 @@ export default function VehicleRequestPortalPage() {
         }),
       });
       setTrips((prev) => prev.map((t) => t.id === tripId ? { ...t, driverRating: ratingStars } : t));
-      notify.push(t("Gracias por tu evaluacion!"), "⭐");
+      notify.push(t("Gracias por tu evaluacion!"), "star");
       setRatingTripId(null);
       setRatingStars(0);
       setRatingComment("");
     } catch {
-      notify.push(t("No se pudo enviar la evaluacion"), "❌");
+      notify.push(t("No se pudo enviar la evaluacion"), "error");
     } finally {
       setRatingLoading(false);
     }
@@ -1581,7 +1582,7 @@ export default function VehicleRequestPortalPage() {
             </div>
             {trip.notes && (
               <div style={{ padding:"10px 12px",borderRadius:10,background:"#fffbeb",border:"1px solid #fde68a",borderLeft:"4px solid #f59e0b" }}>
-                <p style={{ fontSize:10,fontWeight:800,color:"#b45309",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>⚠ {t("Observación")}</p>
+                <p style={{ fontSize:10,fontWeight:800,color:"#b45309",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}><AlertIcon size={10} className="inline mr-1" />{t("Observación")}</p>
                 <p style={{ fontSize:13,fontWeight:600,color:"#78350f",margin:"3px 0 0",lineHeight:1.4 }}>{trip.notes.replace(/^\[Portal\]\s*/, "")}</p>
               </div>
             )}
@@ -1932,7 +1933,7 @@ export default function VehicleRequestPortalPage() {
                           <p style={{ fontSize:14.5,fontWeight:800,color:"#fff",margin:"1px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{headline}</p>
                           {drv && (
                             <p style={{ fontSize:11.5,color:"rgba(255,255,255,0.7)",margin:"3px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
-                              🧑 {drv.fullName || t("Conductor")}{veh ? ` · ${[veh.plate, veh.brand, veh.model].filter(Boolean).join(" ")}` : ""}
+                              <UserIcon size={12} className="inline mr-1" />{drv.fullName || t("Conductor")}{veh ? ` · ${[veh.plate, veh.brand, veh.model].filter(Boolean).join(" ")}` : ""}
                             </p>
                           )}
                         </div>
@@ -2024,7 +2025,7 @@ export default function VehicleRequestPortalPage() {
                           {coords && (
                             <a href={buildDirectionsLink(coords.lat, coords.lng, tm.origin)} target="_blank" rel="noreferrer"
                               style={{ display:"block",padding:"9px 12px",background:"rgba(33,208,179,0.08)",fontSize:12,fontWeight:700,color:BRAND.tealInk,textAlign:"center",textDecoration:"none" }}>
-                              📍 {t("Seguir en Google Maps")}
+                              <PinIcon size={11} className="inline mr-1" />{t("Seguir en Google Maps")}
                             </a>
                           )}
                         </div>
@@ -2061,7 +2062,7 @@ export default function VehicleRequestPortalPage() {
                         {drv?.phone && (
                           <a href={`tel:${drv.phone}`}
                             style={{ flex:1,padding:"12px",borderRadius:12,textAlign:"center",textDecoration:"none",fontSize:13,fontWeight:700,background:`linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})`,color:BRAND.navyLight }}>
-                            📞 {t("Llamar conductor")}
+                            <PhoneIcon size={11} className="inline mr-1" />{t("Llamar conductor")}
                           </a>
                         )}
                         <button type="button" onClick={() => { setTripModal(null); setActiveTab("actividades"); setActividadesSubTab("en_curso"); }}
@@ -2560,7 +2561,7 @@ export default function VehicleRequestPortalPage() {
 
                   {premiaciones.length === 0 ? (
                     <div style={{ textAlign:"center",padding:"36px 20px",borderRadius:16,border:"1px dashed #f0deb0",background:"linear-gradient(135deg,#fffbf2 0%,#ffffff 100%)" }}>
-                      <p style={{ fontSize:36,margin:"0 0 8px" }}>🏆</p>
+                      <p style={{ margin:"0 0 8px",color:"#cbd5e1",display:"flex",justifyContent:"center" }}><TrophyIcon size={36} /></p>
                       <p style={{ fontSize:14,fontWeight:800,color:"#7a4a00",margin:"0 0 4px" }}>{loading ? t("Cargando premiaciones…") : t("Sin premiaciones asignadas")}</p>
                       <p style={{ fontSize:12,color:"#a87800",margin:0 }}>{loading ? t("Un momento, estamos actualizando tu información.") : t("Cuando te designemos como premiador de una ceremonia aparecerá aquí.")}</p>
                     </div>
@@ -2706,7 +2707,7 @@ export default function VehicleRequestPortalPage() {
                       {premView === "list" && (
                         visible.length === 0 ? (
                           <div style={{ background:"#fff",borderRadius:14,border:"1px dashed #e2e8f0",padding:"28px 20px",textAlign:"center" }}>
-                            <p style={{ fontSize:32,margin:"0 0 8px" }}>🔍</p>
+                            <p style={{ margin:"0 0 8px",color:"#cbd5e1",display:"flex",justifyContent:"center" }}><SearchIcon size={32} /></p>
                             <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>{t("No hay premiaciones con esos filtros")}</p>
                           </div>
                         ) : (
@@ -2810,7 +2811,7 @@ export default function VehicleRequestPortalPage() {
                 {couponTab === "available" ? (
                   visibleCouponsAvailable.length === 0 ? (
                     <div style={{ padding:24,textAlign:"center",background:"#fff",borderRadius:14,border:"1px solid #e2e8f0" }}>
-                      <p style={{ fontSize:32,margin:"0 0 8px" }}>🎟️</p>
+                      <p style={{ margin:"0 0 8px",color:"#cbd5e1",display:"flex",justifyContent:"center" }}><TicketIcon size={32} /></p>
                       <p style={{ fontSize:14,fontWeight:600,color:"#0f172a",margin:0 }}>{t("No hay beneficios disponibles")}</p>
                       <p style={{ fontSize:12,color:"#94a3b8",margin:"6px 0 0" }}>{t("Vuelve a chequear más tarde, vamos a estar agregando beneficios.")}</p>
                     </div>
@@ -2903,7 +2904,7 @@ export default function VehicleRequestPortalPage() {
                   )
                 ) : couponClaims.length === 0 ? (
                   <div style={{ padding:24,textAlign:"center",background:"#fff",borderRadius:14,border:"1px solid #e2e8f0" }}>
-                    <p style={{ fontSize:32,margin:"0 0 8px" }}>🎟️</p>
+                    <p style={{ margin:"0 0 8px",color:"#cbd5e1",display:"flex",justifyContent:"center" }}><TicketIcon size={32} /></p>
                     <p style={{ fontSize:14,fontWeight:600,color:"#0f172a",margin:0 }}>{t("Todavía no reclamaste ningún beneficio")}</p>
                     <p style={{ fontSize:12,color:"#94a3b8",margin:"6px 0 0" }}>{t("Ve a la pestaña Disponibles y reclama los que quieras.")}</p>
                   </div>
@@ -3149,10 +3150,10 @@ export default function VehicleRequestPortalPage() {
                   const mealOrder = ["DESAYUNO","ALMUERZO","CENA","ONCE"];
                   const sorted = todayMenus.sort((a,b) => mealOrder.indexOf(a.mealType) - mealOrder.indexOf(b.mealType));
                   const mealStyle = (type: string) => {
-                    if (type === "DESAYUNO") return { bg:"#FEF3C7", color:"#92400E", border:"#FDE68A", icon:"☀️", label:"Desayuno" };
-                    if (type === "ALMUERZO") return { bg:"#DBEAFE", color:"#1E40AF", border:"#BFDBFE", icon:"🍽️", label:"Almuerzo" };
-                    if (type === "CENA") return { bg:"#E0E7FF", color:"#3730A3", border:"#C7D2FE", icon:"🌙", label:"Cena" };
-                    return { bg:"#F1F5F9", color:"#475569", border:"#E2E8F0", icon:"🍴", label:type };
+                    if (type === "DESAYUNO") return { bg:"#FEF3C7", color:"#92400E", border:"#FDE68A", icon: SunIcon, label: "Desayuno" };
+                    if (type === "ALMUERZO") return { bg:"#DBEAFE", color:"#1E40AF", border:"#BFDBFE", icon: UtensilsIcon, label: "Almuerzo" };
+                    if (type === "CENA") return { bg:"#E0E7FF", color:"#3730A3", border:"#C7D2FE", icon: MoonIcon, label: "Cena" };
+                    return { bg:"#F1F5F9", color:"#475569", border:"#E2E8F0", icon: UtensilsCrossedIcon, label: type };
                   };
                   return (
                     <div style={{ background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)" }}>
@@ -3171,7 +3172,7 @@ export default function VehicleRequestPortalPage() {
                         const m = mealStyle(fm.mealType);
                         return (
                           <div key={fm.id} style={{ padding:"14px 16px",borderTop:i>0?"1px solid #f1f5f9":"none",display:"flex",gap:12,alignItems:"flex-start" }}>
-                            <div style={{ width:40,height:40,borderRadius:10,background:m.bg,border:`1px solid ${m.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0 }}>{m.icon}</div>
+                            <div style={{ width:40,height:40,borderRadius:10,background:m.bg,border:`1px solid ${m.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0 }}><m.icon size={16} /></div>
                             <div style={{ flex:1,minWidth:0 }}>
                               <div style={{ display:"flex",alignItems:"center",gap:6,flexWrap:"wrap" }}>
                                 <span style={{ fontSize:10,fontWeight:800,padding:"2px 8px",borderRadius:6,textTransform:"uppercase",letterSpacing:"0.05em",background:m.bg,color:m.color }}>{t(m.label)}</span>
@@ -3181,7 +3182,7 @@ export default function VehicleRequestPortalPage() {
                               </div>
                               <p style={{ fontSize:15,fontWeight:700,color:"#0f172a",margin:"5px 0 0" }}>{fm.title}</p>
                               {fm.description && <p style={{ fontSize:12,color:"#64748b",margin:"3px 0 0",lineHeight:1.4 }}>{fm.description}</p>}
-                              {fm.locationDetail && <p style={{ fontSize:11,color:"#94a3b8",margin:"3px 0 0" }}>📍 {fm.locationDetail}</p>}
+                              {fm.locationDetail && <p style={{ fontSize:11,color:"#94a3b8",margin:"3px 0 0" }}><PinIcon size={11} className="inline mr-1" />{fm.locationDetail}</p>}
                             </div>
                           </div>
                         );
@@ -3207,10 +3208,10 @@ export default function VehicleRequestPortalPage() {
                   const mealOrder = ["DESAYUNO","ALMUERZO","CENA","ONCE"];
                   const sorted = tMenus.sort((a,b) => mealOrder.indexOf(a.mealType) - mealOrder.indexOf(b.mealType));
                   const mealStyle = (type: string) => {
-                    if (type === "DESAYUNO") return { bg:"#FEF3C7", color:"#92400E", border:"#FDE68A", icon:"☀️", label:"Desayuno" };
-                    if (type === "ALMUERZO") return { bg:"#DBEAFE", color:"#1E40AF", border:"#BFDBFE", icon:"🍽️", label:"Almuerzo" };
-                    if (type === "CENA") return { bg:"#E0E7FF", color:"#3730A3", border:"#C7D2FE", icon:"🌙", label:"Cena" };
-                    return { bg:"#F1F5F9", color:"#475569", border:"#E2E8F0", icon:"🍴", label:type };
+                    if (type === "DESAYUNO") return { bg:"#FEF3C7", color:"#92400E", border:"#FDE68A", icon: SunIcon, label: "Desayuno" };
+                    if (type === "ALMUERZO") return { bg:"#DBEAFE", color:"#1E40AF", border:"#BFDBFE", icon: UtensilsIcon, label: "Almuerzo" };
+                    if (type === "CENA") return { bg:"#E0E7FF", color:"#3730A3", border:"#C7D2FE", icon: MoonIcon, label: "Cena" };
+                    return { bg:"#F1F5F9", color:"#475569", border:"#E2E8F0", icon: UtensilsCrossedIcon, label: type };
                   };
                   return (
                     <div style={{ background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)",opacity:0.85 }}>
@@ -3225,12 +3226,12 @@ export default function VehicleRequestPortalPage() {
                         const m = mealStyle(fm.mealType);
                         return (
                           <div key={fm.id} style={{ padding:"12px 16px",borderTop:i>0?"1px solid #f1f5f9":"none",display:"flex",gap:12,alignItems:"flex-start" }}>
-                            <div style={{ width:36,height:36,borderRadius:8,background:m.bg,border:`1px solid ${m.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0 }}>{m.icon}</div>
+                            <div style={{ width:36,height:36,borderRadius:8,background:m.bg,border:`1px solid ${m.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0 }}><m.icon size={16} /></div>
                             <div style={{ flex:1,minWidth:0 }}>
                               <span style={{ fontSize:10,fontWeight:800,padding:"2px 7px",borderRadius:6,textTransform:"uppercase",letterSpacing:"0.05em",background:m.bg,color:m.color }}>{t(m.label)}</span>
                               <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:"4px 0 0" }}>{fm.title}</p>
                               {fm.description && <p style={{ fontSize:12,color:"#64748b",margin:"2px 0 0",lineHeight:1.4 }}>{fm.description}</p>}
-                              {fm.locationDetail && <p style={{ fontSize:11,color:"#94a3b8",margin:"2px 0 0" }}>📍 {fm.locationDetail}</p>}
+                              {fm.locationDetail && <p style={{ fontSize:11,color:"#94a3b8",margin:"2px 0 0" }}><PinIcon size={11} className="inline mr-1" />{fm.locationDetail}</p>}
                             </div>
                           </div>
                         );
@@ -3271,7 +3272,7 @@ export default function VehicleRequestPortalPage() {
                           <div style={{ flex:1,minWidth:0 }}>
                             <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>{fl.name}</p>
                             {fl.description && <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0",lineHeight:1.3 }}>{fl.description}</p>}
-                            {acc?.address && <p style={{ fontSize:11,color:"#94a3b8",margin:"2px 0 0",lineHeight:1.3 }}>📍 {acc.address}</p>}
+                            {acc?.address && <p style={{ fontSize:11,color:"#94a3b8",margin:"2px 0 0",lineHeight:1.3 }}><PinIcon size={11} className="inline mr-1" />{acc.address}</p>}
                           </div>
                           {fl.capacity && <span style={{ fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:8,background:"#f1f5f9",color:"#475569",flexShrink:0 }}>{fl.capacity} pax</span>}
                           <button type="button" onClick={() => setFoodMapId(isOpen ? null : fl.id)}
@@ -3332,7 +3333,7 @@ export default function VehicleRequestPortalPage() {
                       {(calDisciplineFilter || calGenderFilter || calCategoryFilter) && (
                         <button type="button" onClick={() => { setCalDisciplineFilter(""); setCalGenderFilter(""); setCalCategoryFilter(""); }}
                           style={{ padding:"9px 12px",borderRadius:10,border:"1px solid #fecaca",background:"#fef2f2",color:"#b91c1c",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0 }}>
-                          ✕
+                          <XIcon size={14} />
                         </button>
                       )}
                     </div>
@@ -3410,7 +3411,7 @@ export default function VehicleRequestPortalPage() {
                   if (rows.length === 0) {
                     return (
                       <div style={{ padding:"32px 16px",textAlign:"center",background:"#fff",borderRadius:12,border:"1px dashed #e2e8f0" }}>
-                        <p style={{ fontSize:28,margin:0 }}>📅</p>
+                        <p style={{ margin:0,color:"#cbd5e1",display:"flex",justifyContent:"center" }}><CalendarIcon size={28} /></p>
                         <p style={{ fontSize:13,fontWeight:600,color:"#475569",margin:"6px 0 0" }}>{t("Sin actividades en")} {calMonthLabel}</p>
                       </div>
                     );
@@ -3579,7 +3580,7 @@ export default function VehicleRequestPortalPage() {
                         <span style={{ fontSize:16,fontWeight:800,color:"#0f172a",textTransform:"capitalize" }}>{ganttDetail.title}</span>
                         <button type="button" onClick={() => setGanttDetail(null)}
                           style={{ background:"#f1f5f9",border:"none",borderRadius:10,padding:"8px 14px",cursor:"pointer",color:"#475569",fontSize:12.5,fontWeight:700 }}>
-                          ✕ {t("Cerrar")}
+                          <XIcon size={12} className="inline mr-1" />{t("Cerrar")}
                         </button>
                       </div>
                       <p style={{ fontSize:12,color:"#64748b",margin:"0 0 12px" }}>
@@ -3732,7 +3733,7 @@ export default function VehicleRequestPortalPage() {
                         photoUrl,
                       });
                       setCredentialHtml(html);
-                    } catch { notify.push(t("No se pudo generar la credencial"), "❌"); }
+                    } catch { notify.push(t("No se pudo generar la credencial"), "error"); }
                   }}
                 />
 
@@ -3740,7 +3741,7 @@ export default function VehicleRequestPortalPage() {
                 <button type="button" onClick={() => setActiveTab("premiaciones")}
                   style={{ width:"100%",padding:"14px 16px",borderRadius:14,border:"1px solid #fde68a",background:"#fffbeb",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,textAlign:"left" }}>
                   <span style={{ display:"flex",alignItems:"center",gap:10 }}>
-                    <span aria-hidden style={{ fontSize:18 }}>🏅</span>
+                    <span aria-hidden style={{ display:"inline-flex" }}><MedalIcon size={18} /></span>
                     <span>
                       <span style={{ display:"block",fontSize:13.5,fontWeight:700,color:"#7a4a00" }}>{t("Premiaciones")}</span>
                       <span style={{ display:"block",fontSize:11.5,color:"#a16207" }}>
@@ -3760,7 +3761,7 @@ export default function VehicleRequestPortalPage() {
                 <a href={`/portal/athlete/salud?id=${athlete.id}`}
                   style={{ width:"100%",padding:"14px 16px",borderRadius:14,border:"1px solid #bfdbfe",background:"#eff6ff",display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,textDecoration:"none",boxSizing:"border-box" }}>
                   <span style={{ display:"flex",alignItems:"center",gap:10 }}>
-                    <span aria-hidden style={{ fontSize:18 }}>🩺</span>
+                    <span aria-hidden style={{ display:"inline-flex" }}><StethoscopeIcon size={18} /></span>
                     <span>
                       <span style={{ display:"block",fontSize:13.5,fontWeight:700,color:"#1e40af" }}>{t("Ficha de salud")}</span>
                       <span style={{ display:"block",fontSize:11.5,color:"#3b82f6" }}>{t("Datos médicos y contacto de emergencia")}</span>
@@ -3943,7 +3944,7 @@ export default function VehicleRequestPortalPage() {
           reporterOriginType="athlete"
           reporterOriginId={athlete.id}
           eventId={athlete.eventId || null}
-          onNewMessage={(name, content) => notify.push(`${name}: ${content.slice(0, 80)}`, "💬")}
+          onNewMessage={(name, content) => notify.push(`${name}: ${content.slice(0, 80)}`, "chat")}
         />
       )}
 
@@ -3967,7 +3968,7 @@ export default function VehicleRequestPortalPage() {
                     // navegaba el WebView y era muy difícil volver.
                     if (isNativeShell() && credentialHtml) setCredentialPdfView(credentialHtml);
                     else downloadCredentialPdf(credentialPdf);
-                  } catch { notify.push(t("No se pudo generar el PDF"), "❌"); }
+                  } catch { notify.push(t("No se pudo generar el PDF"), "error"); }
                 }}
                   title={t("Descargar PDF")}
                   style={{ width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",color:BRAND.teal,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
@@ -3975,7 +3976,7 @@ export default function VehicleRequestPortalPage() {
                 </button>
                 <button type="button" onClick={() => setCredentialHtml(null)}
                   style={{ height:34,padding:"0 12px",borderRadius:10,border:"1px solid rgba(255,255,255,0.25)",background:"rgba(255,255,255,0.08)",color:"#fff",cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6,fontSize:12.5,fontWeight:700,lineHeight:1 }}>
-                  <span aria-hidden style={{ fontSize:15 }}>✕</span> {t("Volver")}
+                  <XIcon size={15} /> {t("Volver")}
                 </button>
               </div>
             </div>
@@ -4041,10 +4042,10 @@ export default function VehicleRequestPortalPage() {
                 </ol>
               </div>
               <div style={{ fontSize:12,color:"#64748b",display:"flex",flexDirection:"column",gap:3 }}>
-                <p style={{ margin:0 }}>📅 {t("Reclamado el")} {fmtCouponFull(activeClaim.claimedAt)}</p>
-                <p style={{ margin:0 }}>⏱️ {t("Expira el")} {fmtCouponFull(activeClaim.expiresAt)} <strong>({couponTimeLeft(activeClaim.expiresAt)} {t("restantes")})</strong></p>
+                <p style={{ margin:0 }}><CalendarIcon size={11} className="inline mr-1" />{t("Reclamado el")} {fmtCouponFull(activeClaim.claimedAt)}</p>
+                <p style={{ margin:0 }}><ClockIcon size={11} className="inline mr-1" />{t("Expira el")} {fmtCouponFull(activeClaim.expiresAt)} <strong>({couponTimeLeft(activeClaim.expiresAt)} {t("restantes")})</strong></p>
                 {activeClaim.coupon?.partnerAddress && (
-                  <p style={{ margin:0 }}>📍 {activeClaim.coupon.partnerAddress}</p>
+                  <p style={{ margin:0 }}><PinIcon size={11} className="inline mr-1" />{activeClaim.coupon.partnerAddress}</p>
                 )}
               </div>
               {activeClaim.coupon?.termsAndConditions && (

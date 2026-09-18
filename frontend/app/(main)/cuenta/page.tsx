@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch, clearTokens, getStoredUser } from "@/lib/api";
+import { Icon } from "@/components/ui/Icons";
 import { ALL_MODULES } from "@/lib/modules";
 import { useI18n } from "@/lib/i18n";
 
@@ -204,10 +205,10 @@ export default function MiCuentaPage() {
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                   {mods.map((m) => (
                     <span key={m.id} style={{
-                      fontSize: 12, fontWeight: 600, padding: "4px 10px", borderRadius: 99,
+                      display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, padding: "4px 10px", borderRadius: 99,
                       background: "rgba(33,208,179,0.08)", color: "#0a7a6b", border: "1px solid rgba(33,208,179,0.25)",
                     }}>
-                      {m.icon} {m.label}
+                      <Icon name={m.icon} size={12} /> {m.label}
                     </span>
                   ))}
                 </div>

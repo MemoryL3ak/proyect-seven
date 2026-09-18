@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, MedalIcon, PinIcon, XIcon } from "@/components/ui/Icons";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { useI18n } from "@/lib/i18n";
 import StyledSelect from "@/components/StyledSelect";
@@ -1109,9 +1110,9 @@ export default function DeportesPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <button onClick={navPrev} className="btn btn-ghost text-xs">←</button>
+                  <button onClick={navPrev} className="btn btn-ghost text-xs" aria-label="Anterior"><ChevronLeftIcon size={16} /></button>
                   <button onClick={() => { const n = new Date(); setCalMonthCursor(new Date(n.getFullYear(), n.getMonth(), 1)); setCalSelectedDay(n); }} className="btn btn-ghost text-xs">Hoy</button>
-                  <button onClick={navNext} className="btn btn-ghost text-xs">→</button>
+                  <button onClick={navNext} className="btn btn-ghost text-xs" aria-label="Siguiente"><ChevronRightIcon size={16} /></button>
                 </div>
 
                 <h3 style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", textTransform: "capitalize", flex: 1 }}>
@@ -1308,9 +1309,9 @@ export default function DeportesPage() {
 
                   {rows.length === 0 ? (
                     <div className="p-12 text-center rounded-2xl" style={{ background: "linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)", border: "1px dashed #e2e8f0" }}>
-                      <p style={{ fontSize: 34, margin: 0 }}>📅</p>
+                      <p style={{ margin: 0, color: "#cbd5e1", display: "flex", justifyContent: "center" }}><CalendarIcon size={34} /></p>
                       <p className="text-sm font-semibold mt-2" style={{ color: "#475569" }}>Sin pruebas en {monthStr}</p>
-                      <p className="text-xs mt-1" style={{ color: "#94a3b8" }}>Usa ← → para cambiar de mes o carga pruebas en la pestaña Pruebas.</p>
+                      <p className="text-xs mt-1" style={{ color: "#94a3b8" }}>Usa las flechas para cambiar de mes o carga pruebas en la pestaña Pruebas.</p>
                     </div>
                   ) : (
                     <div style={{ display: "flex", border: "1px solid #e2e8f0", borderRadius: 14, overflow: "hidden", background: "#fff" }}>
@@ -1357,7 +1358,7 @@ export default function DeportesPage() {
                                       onClick={() => setGanttBar({ title: r.name, cat: meta.label, color: meta.border, events: [...bar.events].sort((a, b) => new Date(a.scheduledAt!).getTime() - new Date(b.scheduledAt!).getTime()) })}
                                       style={{ cursor: "pointer", gridColumn: `${bar.start + 1} / span ${bar.span}`, gridRow: bar.lane + 1, background: meta.bar, border: `1px solid ${meta.border}`, borderLeft: `3px solid ${meta.border}`, borderRadius: 7, height: BAR_H, display: "flex", alignItems: "center", gap: 4, padding: "0 8px", margin: "0 2px", overflow: "hidden", boxShadow: "0 1px 2px rgba(15,23,42,0.06)" }}>
                                       <span style={{ fontSize: 11, fontWeight: 500, color: meta.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{bar.label}</span>
-                                      {bar.cat === "FINAL" && <span style={{ flexShrink: 0 }}>🏅</span>}
+                                      {bar.cat === "FINAL" && <span style={{ flexShrink: 0, display: "inline-flex" }}><MedalIcon size={11} /></span>}
                                     </div>
                                   );
                                 })}
@@ -1501,7 +1502,7 @@ export default function DeportesPage() {
                                 <p style={{ fontSize: 9, opacity: 0.7, fontWeight: 800 }}>{time}</p>
                                 <p style={{ marginTop: 1 }}>{ev.name}</p>
                                 {ev.venueName && (
-                                  <p style={{ fontSize: 9, marginTop: 2, opacity: 0.85 }}>📍 {ev.venueName}</p>
+                                  <p style={{ fontSize: 9, marginTop: 2, opacity: 0.85, display: "flex", alignItems: "center", gap: 3 }}><PinIcon size={10} />{ev.venueName}</p>
                                 )}
                               </div>
                             );
@@ -1520,7 +1521,7 @@ export default function DeportesPage() {
               <section className="relative accent-strip-top animate-fade-up" style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 20, padding: 18, overflow: "hidden", boxShadow: pal.cardShadow }}>
                 {selectedItems.length === 0 ? (
                   <div style={{ padding: "48px 16px", textAlign: "center" }}>
-                    <p style={{ fontSize: 48, marginBottom: 8 }}>📅</p>
+                    <p style={{ marginBottom: 8, color: "#cbd5e1", display: "flex", justifyContent: "center" }}><CalendarIcon size={48} /></p>
                     <p style={{ fontSize: 14, fontWeight: 700, color: "#475569" }}>Sin pruebas para este día</p>
                     <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>Prueba con otra fecha o saca los filtros.</p>
                   </div>
@@ -1553,7 +1554,7 @@ export default function DeportesPage() {
                                   <div style={{ flex: 1, minWidth: 0 }}>
                                     <p style={{ fontSize: 12, fontWeight: 700, margin: 0 }}>{ev.name}</p>
                                     <p style={{ fontSize: 10, opacity: 0.85, margin: "2px 0 0" }}>
-                                      {parentMap.get(ev.parentId!) ?? ""}{ev.venueName ? ` · 📍 ${ev.venueName}` : ""}
+                                      {parentMap.get(ev.parentId!) ?? ""}{ev.venueName ? ` · ${ev.venueName}` : ""}
                                     </p>
                                   </div>
                                   {ev.category && (
@@ -1691,7 +1692,7 @@ export default function DeportesPage() {
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <p style={{ fontSize: 13, fontWeight: 700, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{prueba.name}</p>
                             <p style={{ fontSize: 10.5, opacity: 0.85, margin: "2px 0 0" }}>
-                              {parentMap.get(prueba.parentId!) ?? ""}{prueba.venueName ? ` · 📍 ${prueba.venueName}` : ""}
+                              {parentMap.get(prueba.parentId!) ?? ""}{prueba.venueName ? ` · ${prueba.venueName}` : ""}
                             </p>
                           </div>
                         </div>
@@ -1727,7 +1728,7 @@ export default function DeportesPage() {
                       </div>
                       <button type="button" onClick={() => setCalDayModalOpen(false)} aria-label="Cerrar"
                         style={{ flexShrink: 0, width: 32, height: 32, borderRadius: 10, border: "none", cursor: "pointer", background: "rgba(255,255,255,0.2)", color: "#fff", fontSize: 18, fontWeight: 700, lineHeight: 1 }}>
-                        ✕
+                        <XIcon size={14} />
                       </button>
                     </div>
                   </div>
@@ -1736,7 +1737,7 @@ export default function DeportesPage() {
                   <div className="stagger" style={{ padding: 16, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10 }}>
                     {selectedItems.length === 0 ? (
                       <div style={{ padding: "32px 16px", textAlign: "center" }}>
-                        <p style={{ fontSize: 40, marginBottom: 6 }}>📅</p>
+                        <p style={{ marginBottom: 6, color: "#cbd5e1", display: "flex", justifyContent: "center" }}><CalendarIcon size={40} /></p>
                         <p style={{ fontSize: 14, fontWeight: 700, color: "#475569" }}>Sin pruebas para este día</p>
                         <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>Prueba con otra fecha o saca los filtros.</p>
                       </div>
@@ -1752,7 +1753,7 @@ export default function DeportesPage() {
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <p style={{ fontSize: 13.5, fontWeight: 700, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{prueba.name}</p>
                             <p style={{ fontSize: 11, opacity: 0.85, margin: "2px 0 0" }}>
-                              {parentMap.get(prueba.parentId!) ?? ""}{prueba.venueName ? ` · 📍 ${prueba.venueName}` : ""}
+                              {parentMap.get(prueba.parentId!) ?? ""}{prueba.venueName ? ` · ${prueba.venueName}` : ""}
                             </p>
                           </div>
                           {prueba.category && (
@@ -1803,7 +1804,7 @@ export default function DeportesPage() {
                       </div>
                       <button type="button" onClick={() => setGanttBar(null)} aria-label="Cerrar"
                         style={{ flexShrink: 0, width: 32, height: 32, borderRadius: 10, border: "none", cursor: "pointer", background: "rgba(255,255,255,0.2)", color: "#fff", fontSize: 18, fontWeight: 700, lineHeight: 1 }}>
-                        ✕
+                        <XIcon size={14} />
                       </button>
                     </div>
                   </div>
@@ -1827,7 +1828,7 @@ export default function DeportesPage() {
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <p style={{ fontSize: 13.5, fontWeight: 600, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{prueba.name}</p>
                             <p style={{ fontSize: 11, opacity: 0.85, margin: "2px 0 0" }}>
-                              {parentMap.get(prueba.parentId!) ?? ""}{prueba.venueName ? ` · 📍 ${prueba.venueName}` : ""}
+                              {parentMap.get(prueba.parentId!) ?? ""}{prueba.venueName ? ` · ${prueba.venueName}` : ""}
                             </p>
                           </div>
                           {prueba.category && (

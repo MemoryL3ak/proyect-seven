@@ -30,7 +30,7 @@ export default function NativeDebugOverlay() {
       fontFamily: "Menlo, monospace", fontSize: 9, lineHeight: 1.4,
       padding: "34px 8px 6px", whiteSpace: "pre-wrap",
     }}>
-      {`♥ latido ${beat}  (si este número se detiene, el hilo JS murió ahí)\n${dlogEntries().join("\n")}`}
+      {`latido ${beat}  (si este número se detiene, el hilo JS murió ahí)\n${dlogEntries().join("\n")}`}
     </div>
   );
 }

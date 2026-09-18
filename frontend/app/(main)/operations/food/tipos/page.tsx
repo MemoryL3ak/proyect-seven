@@ -2,21 +2,22 @@
 
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { Icon, type IconName } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 import { filterValidatedAthletes } from "@/lib/athletes";
 
 // All possible types — always show every one
 const ALL_TYPES = [
-  { key: "ESTANDAR",     label: "Estándar",      icon: "🍽️",  bg: "bg-white",               border: "border-slate-200",  text: "text-slate-700",   badge: "bg-slate-100 text-slate-600" },
-  { key: "VEGETARIANO",  label: "Vegetariano",    icon: "🥦",  bg: "bg-green-50",             border: "border-green-200",  text: "text-green-700",   badge: "bg-green-100 text-green-700" },
-  { key: "VEGANO",       label: "Vegano",         icon: "🌿",  bg: "bg-emerald-50",           border: "border-emerald-200",text: "text-emerald-700", badge: "bg-emerald-100 text-emerald-700" },
-  { key: "SIN_GLUTEN",   label: "Sin gluten",     icon: "🌾",  bg: "bg-amber-50",             border: "border-amber-200",  text: "text-amber-700",   badge: "bg-amber-100 text-amber-700" },
-  { key: "SIN_LACTOSA",  label: "Sin lactosa",    icon: "🥛",  bg: "bg-yellow-50",            border: "border-yellow-200", text: "text-yellow-700",  badge: "bg-yellow-100 text-yellow-700" },
-  { key: "HALAL",        label: "Halal",          icon: "☪️",  bg: "bg-teal-50",              border: "border-teal-200",   text: "text-teal-700",    badge: "bg-teal-100 text-teal-700" },
-  { key: "KOSHER",       label: "Kosher",         icon: "✡️",  bg: "bg-blue-50",              border: "border-blue-200",   text: "text-blue-700",    badge: "bg-blue-100 text-blue-700" },
-  { key: "SIN_MARISCOS", label: "Sin mariscos",   icon: "🦐",  bg: "bg-orange-50",            border: "border-orange-200", text: "text-orange-700",  badge: "bg-orange-100 text-orange-700" },
-  { key: "DIABETICO",    label: "Diabético",      icon: "💉",  bg: "bg-red-50",               border: "border-red-200",    text: "text-red-700",     badge: "bg-red-100 text-red-700" },
-  { key: "OTRO",         label: "Otro",           icon: "❓",  bg: "bg-purple-50",            border: "border-purple-200", text: "text-purple-700",  badge: "bg-purple-100 text-purple-700" },
+  { key: "ESTANDAR",     label: "Estándar",      icon: "utensils",  bg: "bg-white",               border: "border-slate-200",  text: "text-slate-700",   badge: "bg-slate-100 text-slate-600" },
+  { key: "VEGETARIANO",  label: "Vegetariano",    icon: "leaf",  bg: "bg-green-50",             border: "border-green-200",  text: "text-green-700",   badge: "bg-green-100 text-green-700" },
+  { key: "VEGANO",       label: "Vegano",         icon: "vegan",  bg: "bg-emerald-50",           border: "border-emerald-200",text: "text-emerald-700", badge: "bg-emerald-100 text-emerald-700" },
+  { key: "SIN_GLUTEN",   label: "Sin gluten",     icon: "wheat-off",  bg: "bg-amber-50",             border: "border-amber-200",  text: "text-amber-700",   badge: "bg-amber-100 text-amber-700" },
+  { key: "SIN_LACTOSA",  label: "Sin lactosa",    icon: "milk-off",  bg: "bg-yellow-50",            border: "border-yellow-200", text: "text-yellow-700",  badge: "bg-yellow-100 text-yellow-700" },
+  { key: "HALAL",        label: "Halal",          icon: "badge-check",  bg: "bg-teal-50",              border: "border-teal-200",   text: "text-teal-700",    badge: "bg-teal-100 text-teal-700" },
+  { key: "KOSHER",       label: "Kosher",         icon: "badge-check",  bg: "bg-blue-50",              border: "border-blue-200",   text: "text-blue-700",    badge: "bg-blue-100 text-blue-700" },
+  { key: "SIN_MARISCOS", label: "Sin mariscos",   icon: "fish-off",  bg: "bg-orange-50",            border: "border-orange-200", text: "text-orange-700",  badge: "bg-orange-100 text-orange-700" },
+  { key: "DIABETICO",    label: "Diabético",      icon: "syringe",  bg: "bg-red-50",               border: "border-red-200",    text: "text-red-700",     badge: "bg-red-100 text-red-700" },
+  { key: "OTRO",         label: "Otro",           icon: "help-circle",  bg: "bg-purple-50",            border: "border-purple-200", text: "text-purple-700",  badge: "bg-purple-100 text-purple-700" },
 ] as const;
 
 type DietaryKey = typeof ALL_TYPES[number]["key"];
@@ -120,7 +121,7 @@ export default function TiposAlimentacionPage() {
                 className={`rounded-2xl border p-4 flex flex-col gap-2 transition-opacity ${dtype.bg} ${dtype.border} ${isEmpty ? "opacity-40" : ""}`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-xl leading-none">{dtype.icon}</span>
+                  <span className={`leading-none inline-flex ${dtype.text}`}><Icon name={dtype.icon as IconName} size={20} /></span>
                   {!isEmpty && (
                     <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${dtype.badge}`}>
                       {pct}%

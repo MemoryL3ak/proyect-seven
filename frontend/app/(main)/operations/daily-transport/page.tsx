@@ -19,6 +19,10 @@ import {
   AlertIcon,
   CheckIcon,
   UsersIcon,
+  ClipboardIcon,
+  AccessibilityIcon,
+  ArrowLeftRightIcon,
+  TicketIcon,
 } from "@/components/ui/Icons";
 
 // Estado de viaje → clase de badge del tema. Los labels salen del catálogo
@@ -682,16 +686,16 @@ export default function DailyTransportPage() {
           {rows.length > 0 && (
             <div className="flex flex-wrap items-center gap-2">
               {[
-                { icon: "📋", label: `${rows.length} servicio${rows.length === 1 ? "" : "s"}` },
-                { icon: "📅", label: `${importStats.dates} fecha${importStats.dates === 1 ? "" : "s"} operativa${importStats.dates === 1 ? "" : "s"}` },
-                { icon: "👥", label: `${importStats.pax} ${t("pasajeros")}` },
-                ...(importStats.wheelchairs > 0 ? [{ icon: "♿", label: `${importStats.wheelchairs} ${t("silla(s) de rueda")}` }] : []),
-                ...(importStats.roundTrips > 0 ? [{ icon: "⇄", label: `${importStats.roundTrips} ${t("con tramo de regreso")}` }] : []),
-                ...(importStats.clients.length > 0 ? [{ icon: "🎫", label: importStats.clients.join(" · ") }] : []),
+                { icon: <ClipboardIcon size={12} />, label: `${rows.length} servicio${rows.length === 1 ? "" : "s"}` },
+                { icon: <CalendarIcon size={12} />, label: `${importStats.dates} fecha${importStats.dates === 1 ? "" : "s"} operativa${importStats.dates === 1 ? "" : "s"}` },
+                { icon: <UsersIcon size={12} />, label: `${importStats.pax} ${t("pasajeros")}` },
+                ...(importStats.wheelchairs > 0 ? [{ icon: <AccessibilityIcon size={12} />, label: `${importStats.wheelchairs} ${t("silla(s) de rueda")}` }] : []),
+                ...(importStats.roundTrips > 0 ? [{ icon: <ArrowLeftRightIcon size={12} />, label: `${importStats.roundTrips} ${t("con tramo de regreso")}` }] : []),
+                ...(importStats.clients.length > 0 ? [{ icon: <TicketIcon size={12} />, label: importStats.clients.join(" · ") }] : []),
               ].map((c) => (
                 <span key={c.label} className="inline-flex items-center gap-1.5 text-xs font-semibold rounded-full px-3 py-1.5"
                   style={{ background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.25)", color: "#0f766e" }}>
-                  <span aria-hidden>{c.icon}</span> {c.label}
+                  <span aria-hidden style={{ display: "inline-flex" }}>{c.icon}</span> {c.label}
                 </span>
               ))}
             </div>
@@ -777,7 +781,7 @@ export default function DailyTransportPage() {
               {(importResult.warnings ?? []).length > 0 && (
                 <div className="rounded-lg p-3 space-y-1" style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.3)" }}>
                   {(importResult.warnings ?? []).map((w, i) => (
-                    <p key={i} className="text-xs" style={{ color: "#b45309" }}>⚠ {w}</p>
+                    <p key={i} className="text-xs" style={{ color: "#b45309" }}><AlertIcon size={11} className="inline mr-1" />{w}</p>
                   ))}
                 </div>
               )}

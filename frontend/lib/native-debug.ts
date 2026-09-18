@@ -40,10 +40,10 @@ export function dlogArmGlobal(): void {
   if (armed || typeof window === "undefined") return;
   armed = true;
   window.addEventListener("error", (e) => {
-    dlog(`❌ error: ${e.message} @${(e.filename || "").split("/").pop()}:${e.lineno}`);
+    dlog(`error: ${e.message} @${(e.filename || "").split("/").pop()}:${e.lineno}`);
   });
   window.addEventListener("unhandledrejection", (e) => {
     const r = e.reason;
-    dlog(`❌ rechazo: ${r instanceof Error ? r.message : String(r).slice(0, 120)}`);
+    dlog(`rechazo: ${r instanceof Error ? r.message : String(r).slice(0, 120)}`);
   });
 }

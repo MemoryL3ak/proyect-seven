@@ -4,6 +4,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import QRCode from "qrcode";
 import { downloadCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
+import { CheckCircleIcon, AlertIcon } from "@/components/ui/Icons";
 
 /**
  * Página de descarga de la credencial en PDF.
@@ -84,7 +85,7 @@ function CredencialDownload() {
         )}
         {status === "listo" && (
           <>
-            <div style={{ fontSize: 40, marginBottom: 8 }}>✅</div>
+            <div style={{ marginBottom: 8, color: "#10b981", display: "flex", justifyContent: "center" }}><CheckCircleIcon size={40} /></div>
             <h1 style={{ fontSize: 18, fontWeight: 800, color: "#fff", margin: 0 }}>Credencial descargada</h1>
             <p style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", margin: "8px 0 18px", lineHeight: 1.5 }}>
               Revisa la carpeta de descargas de tu teléfono. Ya puedes cerrar esta pestaña y volver a la app.
@@ -112,7 +113,7 @@ function CredencialDownload() {
         )}
         {status === "error" && (
           <>
-            <div style={{ fontSize: 40, marginBottom: 8 }}>⚠️</div>
+            <div style={{ marginBottom: 8, color: "#f59e0b", display: "flex", justifyContent: "center" }}><AlertIcon size={40} /></div>
             <h1 style={{ fontSize: 18, fontWeight: 800, color: "#fff", margin: 0 }}>No se pudo generar la credencial</h1>
             <p style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", margin: "8px 0 0", lineHeight: 1.5 }}>
               El enlace es inválido o está incompleto. Vuelve a la app e intenta nuevamente desde tu credencial.

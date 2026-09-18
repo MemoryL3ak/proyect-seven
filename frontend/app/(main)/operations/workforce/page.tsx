@@ -17,6 +17,7 @@ import {
   PlusIcon,
   AlertIcon,
   CheckIcon,
+  XIcon,
 } from "@/components/ui/Icons";
 
 type Person = {
@@ -518,7 +519,7 @@ export default function WorkforcePage() {
                                 {hasKit && (
                                   <span className="ml-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full align-middle"
                                     style={{ background: "#e7f5ec", color: "#1e5125", border: "1px solid #a7f3d0", whiteSpace: "nowrap" }}>
-                                    {t("✓ KIT")}
+                                    <CheckIcon size={11} className="inline mr-1" />{t("KIT")}
                                   </span>
                                 )}
                               </p>
@@ -968,7 +969,7 @@ export default function WorkforcePage() {
                 {(modal.data as any)?.id ? t("Editar") : t("Nuevo")}{" "}
                 {modal.type === "person" ? t("persona") : modal.type === "product" ? t("producto") : t("entrega")}
               </h2>
-              <button className="btn btn-ghost text-sm" type="button" onClick={() => setModal(null)}>{t("Cerrar ✕")}</button>
+              <button className="btn btn-ghost text-sm" type="button" onClick={() => setModal(null)}>{t("Cerrar")}</button>
             </div>
 
             <div className="p-5">
@@ -1364,7 +1365,7 @@ function printBarcodeLabels(items: Array<{ name: string; barcode: string; catego
 <body>
   <div class="toolbar">
     <h1>Etiquetas de productos · ${items.length} ${items.length === 1 ? "etiqueta" : "etiquetas"}</h1>
-    <button onclick="window.print()">🖨 Imprimir</button>
+    <button onclick="window.print()">Imprimir</button>
   </div>
   <div class="sheet">${labelsHtml}</div>
   <script>
@@ -1526,7 +1527,7 @@ function ProductForm({ data, onChange }: { data: Partial<Product>; onChange: (d:
                 {s}
                 <button type="button" className="ml-1 text-[10px]"
                   onClick={() => set("availableSizes", sizes.filter((_, j) => j !== i))}>
-                  ✕
+                  <XIcon size={14} />
                 </button>
               </span>
             ))}
