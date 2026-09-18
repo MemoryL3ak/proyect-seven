@@ -117,6 +117,8 @@ type Trip = {
   clientType?: string | null;
   status?: string | null;
   scheduledAt?: string | null;
+  /** Hora de presentación del conductor (30 min antes del traslado). */
+  presentationAt?: string | null;
   startedAt?: string | null;
   completedAt?: string | null;
   athleteIds?: string[];
@@ -278,6 +280,19 @@ const countryLabels: Record<string, string> = {
 
 const formatDate = (value?: string | null) =>
   value ? new Date(value).toLocaleString("es-CL") : "-";
+
+/**
+ * Hora que ve el conductor: la de presentación. Los viajes creados antes de
+ * que existiera se muestran media hora antes de la hora del traslado.
+ */
+const PRESENTACION_MINUTOS = 30;
+const horaPresentacion = (trip: { presentationAt?: string | null; scheduledAt?: string | null }) => {
+  if (trip.presentationAt) return trip.presentationAt;
+  if (!trip.scheduledAt) return null;
+  return new Date(new Date(trip.scheduledAt).getTime() - PRESENTACION_MINUTOS * 60_000).toISOString();
+};
+const soloHora = (value?: string | null) =>
+  value ? new Date(value).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" }) : "—";
 
 const formatCurrencyCLP = (value?: number | null) => {
   if (value === null || value === undefined) return "-";
@@ -2055,7 +2070,7 @@ export default function DriverPortalPage() {
                               )}
                             </div>
                             <p style={{ fontSize:11,color: isNew ? STATE.info : SURFACE.textFaint,margin:"2px 0 0",fontWeight: isNew ? 600 : 400 }}>
-                              {trip.scheduledAt ? formatDate(trip.scheduledAt) : "—"} · {statusLabel[status] || status}
+                              {horaPresentacion(trip) ? formatDate(horaPresentacion(trip)) : "—"} · {statusLabel[status] || status}
                               {passengerCount > 0 ? ` · ${passengerCount} pax` : ""}
                             </p>
                           </div>
@@ -2071,12 +2086,27 @@ export default function DriverPortalPage() {
                               <div style={{ padding:"12px 14px",borderRadius:12,background:"linear-gradient(135deg,rgba(99,102,241,0.06),rgba(33,208,179,0.06))",border:"1px solid rgba(99,102,241,0.15)",marginBottom:10 }}>
                                 <p style={{ fontSize:11,fontWeight:700,color:ACCENT.indigo,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Servicio a disposición — 12 horas</p>
                                 <p style={{ fontSize:12,color:SURFACE.textMuted,margin:"4px 0 0" }}>
-                                  {trip.scheduledAt ? formatDate(trip.scheduledAt) : "Sin fecha programada"}
+                                  {horaPresentacion(trip) ? formatDate(horaPresentacion(trip)) : "Sin fecha programada"}
                                 </p>
                                 {trip.notes && <p style={{ fontSize:12,color:SURFACE.textStrong,margin:"6px 0 0",lineHeight:1.4 }}>{trip.notes}</p>}
                               </div>
                             ) : (
                               <>
+                              {/* Horas: la del conductor es la de presentación; la del
+                                  pasajero se muestra al lado para que no haya dudas. */}
+                              {trip.scheduledAt && (
+                                <div style={{ display:"flex",gap:8,marginBottom:10 }}>
+                                  <div style={{ flex:1,padding:"10px 12px",borderRadius:12,background:"rgba(33,208,179,0.08)",border:"1px solid rgba(33,208,179,0.25)" }}>
+                                    <p style={{ fontSize:9.5,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:BRAND.tealInk,margin:0 }}>{t("Tu presentación")}</p>
+                                    <p style={{ fontSize:20,fontWeight:800,color:SURFACE.text,margin:"2px 0 0",lineHeight:1.1,fontVariantNumeric:"tabular-nums" }}>{soloHora(horaPresentacion(trip))}</p>
+                                  </div>
+                                  <div style={{ flex:1,padding:"10px 12px",borderRadius:12,background:SURFACE.bg,border:`1px solid ${SURFACE.border}` }}>
+                                    <p style={{ fontSize:9.5,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:SURFACE.textFaint,margin:0 }}>{t("Pasajeros")}</p>
+                                    <p style={{ fontSize:20,fontWeight:800,color:SURFACE.textStrong,margin:"2px 0 0",lineHeight:1.1,fontVariantNumeric:"tabular-nums" }}>{soloHora(trip.scheduledAt)}</p>
+                                  </div>
+                                </div>
+                              )}
+
                               {/* Map */}
                               <div style={{ borderRadius:12,overflow:"hidden",marginBottom:10 }}>
                                 <TripMap origin={trip.origin} destination={trip.destination} driverPosition={driverPosition} userPosition={trip.passengerLat && trip.passengerLng ? { lat: trip.passengerLat, lng: trip.passengerLng } : null} height={180} />
