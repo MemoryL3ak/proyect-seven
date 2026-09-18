@@ -286,6 +286,37 @@ const formatDate = (value?: string | null) =>
  * Hora que ve el conductor: la de presentación. Los viajes creados antes de
  * que existiera se muestran media hora antes de la hora del traslado.
  */
+/**
+ * Distancia aproximada en metros entre dos coordenadas. Para los pocos metros
+ * que separan dos fixes consecutivos, la proyección equirectangular tiene un
+ * error despreciable y cuesta mucho menos que haversine, que aquí correría
+ * varias veces por segundo.
+ */
+const metrosEntre = (aLat: number, aLng: number, bLat: number, bLng: number) => {
+  const latMedia = ((aLat + bLat) / 2) * (Math.PI / 180);
+  const dLat = (bLat - aLat) * 111_320;
+  const dLng = (bLng - aLng) * 111_320 * Math.cos(latMedia);
+  return Math.sqrt(dLat * dLat + dLng * dLng);
+};
+
+/**
+ * Umbral de desplazamiento real para grabar un fix durante un viaje, y tiempo
+ * máximo sin enviar aunque el vehículo esté detenido.
+ *
+ * Medido el 18-09 sobre un viaje real en curso: 672 posiciones en 10 minutos de
+ * un solo conductor, con mediana de 0,97 s entre una y otra y 0 m de
+ * desplazamiento — las 672 a menos de 5 m de la anterior. watchPosition se
+ * dispara con cada micro-variación del GPS, así que el vehículo detenido
+ * escribía ~60 puntos por minuto en la misma coordenada.
+ *
+ * Filtrar por distancia conserva la ruta intacta donde importa: a 30 km/h el
+ * bus recorre 12 m en 1,4 s, así que en movimiento se sigue grabando igual de
+ * fino. El keep-alive mantiene al conductor "en vivo" en el monitor aunque
+ * lleve rato detenido (son 3 latidos dentro de su ventana de 60 s).
+ */
+const MOVIMIENTO_MINIMO_M = 12;
+const KEEPALIVE_MS = 20_000;
+
 const PRESENTACION_MINUTOS = 30;
 const horaPresentacion = (trip: { presentationAt?: string | null; scheduledAt?: string | null }) => {
   if (trip.presentationAt) return trip.presentationAt;
@@ -1032,6 +1063,8 @@ export default function DriverPortalPage() {
   // Marca de tiempo del último fix enviado: el efecto de GPS se rearma cuando
   // cambian los viajes y sin esto cada rearme dispararía un envío extra.
   const lastFixSentRef = useRef(0);
+  // Última posición efectivamente enviada, para medir desplazamiento real.
+  const lastFixPosRef = useRef<{ lat: number; lng: number } | null>(null);
   useEffect(() => {
     if (!isNativeAvailable()) return;
     const driverId = driverProfile?.id;
@@ -1159,16 +1192,29 @@ export default function DriverPortalPage() {
     let watchId: number | null = null;
 
     const push = (pos: GeolocationPosition) => {
-      // Con viaje activo se envía cada fix, igual que antes: la ruta del viaje
-      // se reconstruye con esos puntos y ralearlos la degradaría. El throttle
-      // aplica solo en reposo, donde el efecto se rearma con cada refresco de
-      // viajes y si no cada rearme dispararía un envío extra.
-      if (!trip) {
-        const now = Date.now();
-        if (now - lastFixSentRef.current < periodMs - 500) return;
-        lastFixSentRef.current = now;
-      }
       const { latitude, longitude, speed, heading } = pos.coords;
+      const now = Date.now();
+
+      if (!trip) {
+        // En reposo manda la cadencia del poll. El efecto se rearma con cada
+        // refresco de viajes y sin esto cada rearme dispararía un envío extra.
+        if (now - lastFixSentRef.current < periodMs - 500) return;
+      } else {
+        // Con viaje activo watchPosition dispara con cada micro-variación del
+        // GPS, no solo al avanzar (ver MOVIMIENTO_MINIMO_M). Se graba cuando el
+        // vehículo se movió de verdad; detenido, solo el keep-alive.
+        const prev = lastFixPosRef.current;
+        if (
+          prev &&
+          metrosEntre(prev.lat, prev.lng, latitude, longitude) < MOVIMIENTO_MINIMO_M &&
+          now - lastFixSentRef.current < KEEPALIVE_MS
+        ) {
+          return;
+        }
+      }
+
+      lastFixSentRef.current = now;
+      lastFixPosRef.current = { lat: latitude, lng: longitude };
       sendPosition(trip, latitude, longitude, speed ?? null, heading ?? null);
     };
 

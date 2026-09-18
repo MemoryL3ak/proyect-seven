@@ -2571,6 +2571,25 @@ const translations: Record<Locale, Record<string, string>> = {
     // ── Claves traducidas vía variable (roles, catálogos) ──
     "Comité Transporte": "Transport Committee",
     "Panel Financiero": "Financial Panel",
+    // ── Auditoría i18n (lote 2): claves de los módulos internacionalizados ──
+    "Ver detalle y bitácora": "View details and log",
+    "No registrado": "Not recorded",
+    "Sin pasajeros ligados a la solicitud.": "No passengers linked to the request.",
+    "Bitácora": "Activity log",
+    "Sin movimientos registrados. La bitácora empieza a llenarse con los cambios hechos desde la plataforma.": "No activity recorded. The log starts filling up with changes made from the platform.",
+    "Movimiento": "Activity",
+    "Copiar código de acceso": "Copy access code",
+    "copiado": "copied",
+    "Finaliza el servicio en curso para iniciar este": "Finish the service in progress to start this one",
+    "Finaliza el viaje en curso para iniciar este": "Finish the trip in progress to start this one",
+    "Ver el viaje en curso": "View the trip in progress",
+    "Tu ubicación se corta al minimizar la app": "Your location stops when you minimize the app",
+    "Para que siga enviándose con la app cerrada, abrí Ajustes y elegí \"Permitir todo el tiempo\" en el permiso de ubicación.": "To keep sending it with the app closed, open Settings and choose \"Allow all the time\" under the location permission.",
+    "Abrir Ajustes": "Open Settings",
+    "No estamos recibiendo la ubicación del conductor. El viaje sigue en curso.": "We're not receiving the driver's location. The trip is still in progress.",
+    "Disciplinas de la delegación": "Delegation disciplines",
+    "El evento aún no tiene disciplinas cargadas.": "The event has no disciplines loaded yet.",
+    "Los viajes de esta delegación se asignan a una de estas disciplinas.": "This delegation's trips are assigned to one of these disciplines.",
   },
   pt: {
     // Viajes de la delegación (portal del Jefe de Misión).
@@ -5128,6 +5147,25 @@ const translations: Record<Locale, Record<string, string>> = {
     // ── Claves traducidas vía variable (roles, catálogos) ──
     "Comité Transporte": "Comitê de Transporte",
     "Panel Financiero": "Painel Financeiro",
+    // ── Auditoría i18n (lote 2): claves de los módulos internacionalizados ──
+    "Ver detalle y bitácora": "Ver detalhes e registro",
+    "No registrado": "Não registrado",
+    "Sin pasajeros ligados a la solicitud.": "Sem passageiros vinculados à solicitação.",
+    "Bitácora": "Registro de atividade",
+    "Sin movimientos registrados. La bitácora empieza a llenarse con los cambios hechos desde la plataforma.": "Sem movimentações registradas. O registro começa a ser preenchido com as alterações feitas na plataforma.",
+    "Movimiento": "Movimentação",
+    "Copiar código de acceso": "Copiar código de acesso",
+    "copiado": "copiado",
+    "Finaliza el servicio en curso para iniciar este": "Finalize o serviço em andamento para iniciar este",
+    "Finaliza el viaje en curso para iniciar este": "Finalize a viagem em andamento para iniciar esta",
+    "Ver el viaje en curso": "Ver a viagem em andamento",
+    "Tu ubicación se corta al minimizar la app": "Sua localização é interrompida ao minimizar o app",
+    "Para que siga enviándose con la app cerrada, abrí Ajustes y elegí \"Permitir todo el tiempo\" en el permiso de ubicación.": "Para continuar enviando com o app fechado, abra Configurações e escolha \"Permitir o tempo todo\" na permissão de localização.",
+    "Abrir Ajustes": "Abrir Configurações",
+    "No estamos recibiendo la ubicación del conductor. El viaje sigue en curso.": "Não estamos recebendo a localização do motorista. A viagem continua em andamento.",
+    "Disciplinas de la delegación": "Disciplinas da delegação",
+    "El evento aún no tiene disciplinas cargadas.": "O evento ainda não tem disciplinas carregadas.",
+    "Los viajes de esta delegación se asignan a una de estas disciplinas.": "As viagens desta delegação são atribuídas a uma destas disciplinas.",
   }
 };
 

@@ -338,6 +338,7 @@ export default function UserPortalPage() {
   const [ratingComment, setRatingComment] = useState("");
   const [ratingLoading, setRatingLoading] = useState(false);
   const [driverEta, setDriverEta] = useState<{ distance: string; duration: string } | null>(null);
+  const [rastreoCaido, setRastreoCaido] = useState(false);
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [disciplineParents, setDisciplineParents] = useState<DisciplineParent[]>([]);
   // Etiquetas desambiguadas por variante ("Atletismo · Femenino"): el mismo
@@ -644,6 +645,9 @@ export default function UserPortalPage() {
   // está entregando).
   const lastEtaCalcRef = useRef<{ at: number; pos: { lat: number; lng: number }; segment: string } | null>(null);
   const lastRealtimeFixRef = useRef(0);
+  // Rondas seguidas en que la consulta de posición falló, para avisar en el
+  // mapa en vez de dejarlo vacío sin explicación.
+  const fallosRastreoRef = useRef(0);
   const [bootCheckDone, setBootCheckDone] = useState(false);
 
   const loadAthlete = async (directId?: string) => {
@@ -1118,27 +1122,49 @@ export default function UserPortalPage() {
             // El fix se etiqueta con el viaje activo al ingresar, así que la
             // clave más confiable es el viaje; driver y vehículo son respaldo
             // (muchos viajes no tienen vehicle_id).
-            let pos = await apiFetch<any>(`/vehicle-positions/by-trip/${trip.id}/latest`).catch(() => null);
+            // Un catch vacío hacía indistinguibles dos casos muy distintos:
+            // que aún no haya posición (normal al inicio del viaje) y que la
+            // consulta falle (403, backend caído, pool de conexiones lleno).
+            // En ambos el mapa quedaba sin ícono y nadie se enteraba del error.
+            let falloConsulta = false;
+            const pedirFix = async (ruta: string) => {
+              try {
+                return await apiFetch<any>(ruta);
+              } catch (err) {
+                falloConsulta = true;
+                console.warn(`[rastreo] no se pudo leer la posición en ${ruta}:`, err);
+                return null;
+              }
+            };
+
+            let pos = await pedirFix(`/vehicle-positions/by-trip/${trip.id}/latest`);
             if (!parseFixLatLng(pos)) {
               const driverId = updated.driverId ?? trip.driverId;
               if (driverId) {
-                pos = await apiFetch<any>(`/vehicle-positions/by-driver/${driverId}`).catch(() => null);
+                pos = await pedirFix(`/vehicle-positions/by-driver/${driverId}`);
               }
             }
             if (!parseFixLatLng(pos)) {
               const vehicleId = updated.vehicleId ?? trip.vehicleId;
               if (vehicleId) {
-                pos = await apiFetch<any>(`/vehicle-positions/by-vehicle/${vehicleId}`).catch(() => null);
+                pos = await pedirFix(`/vehicle-positions/by-vehicle/${vehicleId}`);
               }
             }
             const latLng = parseFixLatLng(pos);
             if (latLng) {
+              fallosRastreoRef.current = 0;
+              setRastreoCaido(false);
               handleDriverFix(
                 latLng,
                 updated.status,
                 updated.origin ?? trip.origin,
                 updated.destination ?? trip.destination,
               );
+            } else if (falloConsulta) {
+              // Tres rondas seguidas fallando (~15 s) antes de avisar: así un
+              // corte puntual de red no alarma al jefe de misión.
+              fallosRastreoRef.current += 1;
+              if (fallosRastreoRef.current >= 3) setRastreoCaido(true);
             }
           }
         } else {
@@ -3977,6 +4003,11 @@ export default function UserPortalPage() {
               {/* Map */}
               <div style={{ margin:"0 0 20px" }}>
                 <TripMap origin={trip.origin} destination={trip.destination} driverPosition={driverPos} userPosition={userPos} phase={trip.status} height={260} />
+                {rastreoCaido && !driverPos && (
+                  <p style={{ margin:"8px 24px 0",fontSize:12,color:"#92400E",background:"#FEF3C7",border:"1px solid #fcd34d",borderRadius:8,padding:"7px 10px" }}>
+                    {t("No estamos recibiendo la ubicación del conductor. El viaje sigue en curso.")}
+                  </p>
+                )}
               </div>
               {/* Details */}
               <div style={{ padding:"0 24px",display:"flex",flexDirection:"column",gap:"12px" }}>
