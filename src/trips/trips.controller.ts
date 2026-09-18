@@ -7,6 +7,7 @@ import { AutoAssignDriversDto } from './dto/auto-assign-drivers.dto';
 import { TripsService } from './trips.service';
 import { TripsScheduleService } from './trips-schedule.service';
 import { TripsFinanceService } from './trips-finance.service';
+import { StaffScopeService } from '../auth/staff-scope.service';
 
 @Controller('trips')
 export class TripsController {
@@ -14,6 +15,7 @@ export class TripsController {
     private readonly tripsService: TripsService,
     private readonly scheduleService: TripsScheduleService,
     private readonly financeService: TripsFinanceService,
+    private readonly scope: StaffScopeService,
   ) {}
 
   /* ─── Operatividad diaria ─── */
@@ -34,8 +36,14 @@ export class TripsController {
   }
 
   @Get()
-  findAll(@Query('requesterAthleteId') requesterAthleteId?: string) {
-    return this.tripsService.findAll(requesterAthleteId);
+  async findAll(
+    @Req() req: ApiRequest,
+    @Query('requesterAthleteId') requesterAthleteId?: string,
+  ) {
+    // Jefe de Misión: sólo los viajes de su delegación.
+    const scope = await this.scope.forRequest(req);
+    const delegationId = scope?.kind === 'mission_head' ? scope.delegationId : null;
+    return this.tripsService.findAll(requesterAthleteId, delegationId);
   }
 
   /* ─── Panel financiero ─── */

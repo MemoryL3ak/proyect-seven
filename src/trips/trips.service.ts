@@ -23,6 +23,8 @@ type TripRow = {
   vehicle_id: string | null;
   vehicle_plate: string | null;
   requester_athlete_id: string | null;
+  delegation_id: string | null;
+  discipline_id: string | null;
   destination_venue_id: string | null;
   destination_hotel_id: string | null;
   requested_vehicle_type: string | null;
@@ -162,6 +164,12 @@ export class TripsService {
     }
     if (dto.requesterAthleteId !== undefined) {
       row.requester_athlete_id = dto.requesterAthleteId ?? null;
+    }
+    if (dto.delegationId !== undefined) {
+      row.delegation_id = dto.delegationId || null;
+    }
+    if (dto.disciplineId !== undefined) {
+      row.discipline_id = dto.disciplineId || null;
     }
     if (dto.destinationVenueId !== undefined) {
       row.destination_venue_id = dto.destinationVenueId ?? null;
@@ -337,6 +345,8 @@ export class TripsService {
       presentationAt: row.presentation_at ? new Date(row.presentation_at) : null,
       returnAt: row.return_at ? new Date(row.return_at) : null,
       travelTimeMinutes: row.travel_time_minutes,
+      delegationId: row.delegation_id,
+      disciplineId: row.discipline_id,
       discipline: row.discipline,
       activity: row.activity,
       committeeValidated: row.committee_validated ?? false,
@@ -705,11 +715,18 @@ export class TripsService {
     return this.findOne(outboundData.id);
   }
 
-  async findAll(requesterAthleteId?: string) {
+  /**
+   * @param delegationId Jefe de Misión: sólo los viajes de su delegación (los
+   * de su región y los de sus participantes). El alcance lo resuelve el
+   * controlador, no el navegador.
+   */
+  async findAll(requesterAthleteId?: string, delegationId?: string | null) {
     try {
-      const where = requesterAthleteId ? { requesterAthleteId } : undefined;
+      const where: Record<string, unknown> = {};
+      if (requesterAthleteId) where.requesterAthleteId = requesterAthleteId;
+      if (delegationId) where.delegationId = delegationId;
       const trips = await this.tripRepository.find({
-        where,
+        where: Object.keys(where).length > 0 ? where : undefined,
         order: { createdAt: 'DESC' },
       });
 

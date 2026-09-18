@@ -21,6 +21,16 @@ export class CreateTripDto {
   @IsOptional()
   requesterAthleteId?: string;
 
+  /** Delegación (región) dueña del viaje; el jefe de misión ve los suyos. */
+  @IsString()
+  @IsOptional()
+  delegationId?: string | null;
+
+  /** Disciplina que viaja (equipo completo, sin pasajeros nominados). */
+  @IsString()
+  @IsOptional()
+  disciplineId?: string | null;
+
   @IsString()
   @IsOptional()
   destinationVenueId?: string;
