@@ -1930,7 +1930,7 @@ export default function UserPortalPage() {
                         })}
                       </div>
                       <p style={{ fontSize:11,color:SURFACE.textMuted,margin:"0 0 4px" }}>Completado: {fmt(t.completedAt)}</p>
-                      {t.driverRating && <p style={{ fontSize:11,color:STATE.warning,margin:0 }}><span style={{ display:"inline-flex",gap:1,verticalAlign:"-1px" }}>{Array.from({ length: t.driverRating }, (_, k) => <StarIcon key={k} size={11} />)}</span> {t.ratingComment && `"${t.ratingComment}"`}</p>}
+                      {t.driverRating && <p style={{ fontSize:11,color:STATE.warning,margin:0 }}><span style={{ display:"inline-flex",gap:1,verticalAlign:"-1px" }}>{Array.from({ length: t.driverRating }, (_, k) => <StarIcon key={k} size={11} fill={STATE.warning} />)}</span> {t.ratingComment && `"${t.ratingComment}"`}</p>}
                     </div>
                   ))}
                 </div>
@@ -4130,12 +4130,24 @@ export default function UserPortalPage() {
               <p style={{ fontSize:13,color:SURFACE.textMuted,margin:"0 0 20px" }}>Evalúa a tu conductor</p>
               {/* Stars */}
               <div style={{ display:"flex",justifyContent:"center",gap:8,marginBottom:20 }}>
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button key={star} type="button" onClick={() => setRatingStars(star)}
-                    style={{ background:"none",border:"none",cursor:"pointer",padding:4,transition:"transform .15s",transform: ratingStars >= star ? "scale(1.15)" : "scale(1)" }}>
-                    <StarIcon size={40} />
-                  </button>
-                ))}
+                {[1, 2, 3, 4, 5].map((star) => {
+                  // Las estrellas elegidas se rellenan. Antes todas se
+                  // dibujaban iguales y sin color: el único indicio de la
+                  // selección era un escalado de 1.15 que no se percibe, así
+                  // que parecía que tocarlas no hacía nada.
+                  const elegida = ratingStars >= star;
+                  return (
+                    <button key={star} type="button" onClick={() => setRatingStars(star)}
+                      aria-label={`${star} ${star === 1 ? "estrella" : "estrellas"}`}
+                      style={{ background:"none",border:"none",cursor:"pointer",padding:4,transition:"transform .15s",transform: elegida ? "scale(1.15)" : "scale(1)" }}>
+                      <StarIcon
+                        size={40}
+                        color={elegida ? STATE.warning : SURFACE.borderStrong}
+                        fill={elegida ? STATE.warning : "none"}
+                      />
+                    </button>
+                  );
+                })}
               </div>
               {/* Comment */}
               <textarea

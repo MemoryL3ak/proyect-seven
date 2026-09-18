@@ -2245,7 +2245,7 @@ export default function DriverPortalPage() {
                               <div style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:10,borderRadius:12,background:"rgba(33,208,179,0.06)",border:"1px solid rgba(33,208,179,0.15)" }}>
                                 <CheckIcon size={14} color={BRAND.teal} strokeWidth={2.5} />
                                 <span style={{ fontSize:12,fontWeight:700,color:BRAND.teal }}>{t("Completado")}</span>
-                                {trip.driverRating && <span style={{ display:"inline-flex",gap:1,color:STATE.warning }}>{Array.from({ length: trip.driverRating }, (_, k) => <StarIcon key={k} size={12} />)}</span>}
+                                {trip.driverRating && <span style={{ display:"inline-flex",gap:1,color:STATE.warning }}>{Array.from({ length: trip.driverRating }, (_, k) => <StarIcon key={k} size={12} fill={STATE.warning} />)}</span>}
                               </div>
                             ) : isDisposicion(trip) ? (
                               /* ── Disposición 12h: 2-step flow ── */
@@ -3307,7 +3307,7 @@ export default function DriverPortalPage() {
                 {/* Rating */}
                 {trip.driverRating ? (
                   <div style={{ padding:"10px 12px",borderRadius:12,background:STATE.warningSoft,border:`1px solid ${STATE.warningBorder}`,display:"flex",alignItems:"center",gap:10 }}>
-                    <span style={{ display:"inline-flex",gap:2,color:STATE.warning }}>{Array.from({ length: trip.driverRating }, (_, k) => <StarIcon key={k} size={18} />)}</span>
+                    <span style={{ display:"inline-flex",gap:2,color:STATE.warning }}>{Array.from({ length: trip.driverRating }, (_, k) => <StarIcon key={k} size={18} fill={STATE.warning} />)}</span>
                     {trip.ratingComment && <span style={{ fontSize:12,color:STATE.warningText,fontStyle:"italic",flex:1 }}>&ldquo;{trip.ratingComment}&rdquo;</span>}
                   </div>
                 ) : (

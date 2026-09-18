@@ -1382,7 +1382,7 @@ export default function VehiclePositionsPage() {
                 {event?.name && field("Evento", event.name)}
                 {trip.driverRating ? (
                   <div style={{ padding: "10px 12px", borderRadius: "12px", background: STATE.warningSoft, border: `1px solid ${STATE.warningBorder}`, display: "flex", alignItems: "center", gap: "10px" }}>
-                    <span style={{ display: "inline-flex", gap: 2, color: STATE.warning }}>{Array.from({ length: trip.driverRating }, (_, k) => <StarIcon key={k} size={16} />)}</span>
+                    <span style={{ display: "inline-flex", gap: 2, color: STATE.warning }}>{Array.from({ length: trip.driverRating }, (_, k) => <StarIcon key={k} size={16} fill={STATE.warning} />)}</span>
                     {trip.ratingComment && <span style={{ fontSize: "12px", color: STATE.warningText, fontStyle: "italic", flex: 1 }}>&ldquo;{trip.ratingComment}&rdquo;</span>}
                   </div>
                 ) : null}
