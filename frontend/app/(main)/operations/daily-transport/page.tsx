@@ -159,6 +159,7 @@ const CLIENT_TYPES = [
   { value: "VIP", label: "VIP" },
   { value: "T1", label: "T1" },
   { value: "FAMILIA_PARAPAN", label: "Familia Parapan" },
+  { value: "JEFE_MISION", label: "Jefe de Misión" },
   { value: "COMITE_ORGANIZADOR", label: "Comité Organizador" },
   { value: "PROVEEDORES", label: "Proveedores" },
 ];

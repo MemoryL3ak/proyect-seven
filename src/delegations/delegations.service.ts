@@ -180,9 +180,10 @@ export class DelegationsService {
       // Jefe de Misión: el participante encargado de la delegación.
       this.dataSource.query<Array<{ id: string; delegation_id: string; full_name: string | null; phone: string | null }>>(
         `select id, delegation_id, full_name, phone from core.athletes
-         where delegation_id = any($1::uuid[]) and is_delegation_lead = true
+         where delegation_id = any($1::uuid[])
+           and (is_delegation_lead = true or upper(coalesce(user_type, '')) = 'JEFE_MISION')
            and status is distinct from 'DELETED'
-         order by updated_at desc`,
+         order by is_delegation_lead desc, updated_at desc`,
         [ids],
       ),
     ]);

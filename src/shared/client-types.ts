@@ -12,6 +12,9 @@ export const CLIENT_TYPES = [
   'TA',
   'TF',
   'TM',
+  // Jefe de Misión de una delegación (región): participante con acceso
+  // operativo acotado a su región en el portal.
+  'JEFE_MISION',
   'COMITE_ORGANIZADOR',
   'PROVEEDORES',
 ] as const;

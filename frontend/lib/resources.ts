@@ -549,6 +549,7 @@ export const resources: Record<string, ResourceConfig> = {
           { label: "VIP", value: "VIP" },
           { label: "T1", value: "T1" },
           { label: "Familia Parapan", value: "FAMILIA_PARAPAN" },
+          { label: "Jefe de Misión", value: "JEFE_MISION" },
           { label: "Comité Organizador", value: "COMITE_ORGANIZADOR" },
           { label: "Proveedores", value: "PROVEEDORES" }
         ]
@@ -700,6 +701,7 @@ export const resources: Record<string, ResourceConfig> = {
           { label: "TA (Deportista)", value: "TA" },
           { label: "TF (Oficiales Técnicos)", value: "TF" },
           { label: "TM (Prensa)", value: "TM" },
+          { label: "Jefe de Misión", value: "JEFE_MISION" },
           { label: "Comité Organizador", value: "COMITE_ORGANIZADOR" },
           { label: "Proveedores", value: "PROVEEDORES" }
         ]
@@ -893,6 +895,7 @@ export const resources: Record<string, ResourceConfig> = {
           { label: "TA", value: "TA" },
           { label: "TF", value: "TF" },
           { label: "TM", value: "TM" },
+          { label: "Jefe de Misión", value: "JEFE_MISION" },
           { label: "Comité Organizador", value: "COMITE_ORGANIZADOR" },
           { label: "Proveedores", value: "PROVEEDORES" },
         ]
@@ -1132,6 +1135,7 @@ export const resources: Record<string, ResourceConfig> = {
           { label: "TA (Deportista)", value: "TA" },
           { label: "TF (Oficiales Técnicos)", value: "TF" },
           { label: "TM (Prensa)", value: "TM" },
+          { label: "Jefe de Misión", value: "JEFE_MISION" },
           { label: "Comité Organizador", value: "COMITE_ORGANIZADOR" },
           { label: "Proveedores", value: "PROVEEDORES" }
         ]
@@ -1229,6 +1233,7 @@ export const resources: Record<string, ResourceConfig> = {
           { label: "TA (Deportista)", value: "TA" },
           { label: "TF (Oficiales Técnicos)", value: "TF" },
           { label: "TM (Prensa)", value: "TM" },
+          { label: "Jefe de Misión", value: "JEFE_MISION" },
           { label: "Comité Organizador", value: "COMITE_ORGANIZADOR" },
           { label: "Proveedores", value: "PROVEEDORES" }
         ]

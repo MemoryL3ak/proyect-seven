@@ -5,6 +5,7 @@ export const CLIENT_TYPE_OPTIONS = [
   { label: "TA (Deportista)", value: "TA" },
   { label: "TF (Oficiales Técnicos)", value: "TF" },
   { label: "TM (Prensa)", value: "TM" },
+  { label: "Jefe de Misión", value: "JEFE_MISION" },
   { label: "Comité Organizador", value: "COMITE_ORGANIZADOR" },
   { label: "Proveedores", value: "PROVEEDORES" }
 ] as const;

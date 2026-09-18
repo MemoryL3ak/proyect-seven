@@ -96,6 +96,7 @@ export class CreateDriverDto {
       'VIP',
       'T1',
       'FAMILIA_PARAPAN',
+      'JEFE_MISION',
       'COMITE_ORGANIZADOR',
       'PROVEEDORES',
     ],

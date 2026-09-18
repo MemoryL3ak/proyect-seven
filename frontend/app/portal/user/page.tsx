@@ -529,7 +529,11 @@ export default function UserPortalPage() {
     }
   };
 
-  const isChief = athlete?.isDelegationLead === true;
+  // Jefe de Misión: por tipo de cliente (JEFE_MISION) o por estar designado
+  // como encargado de su delegación en Registro → Delegaciones.
+  const isChief =
+    athlete?.isDelegationLead === true ||
+    normalizeClientType(athlete?.userType) === "JEFE_MISION";
   // Nombre visible de la delegación: región ("Región de Valparaíso") o país.
   const delegationName = delegation ? (delegation.name || countryLabels[delegation.countryCode] || delegation.countryCode) : "";
   // TA (deportistas): vista simplificada — sin premiaciones, sin asistencia,
@@ -3510,7 +3514,7 @@ export default function UserPortalPage() {
                 { icon:<GlobeIcon size={14} color={BRAND.teal} strokeWidth={2} />, label:"Delegación", value:delegation ? (countryLabels[delegation.countryCode]||delegation.countryCode) : "—" },
                 { icon:<ShieldIcon size={14} color={BRAND.teal} strokeWidth={2} />, label:"Tipo", value:athlete.userType || "—" },
                 { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>, label:"Disciplina", value: (() => { if (!athlete.disciplineId) return "—"; const disc = ([...disciplineParents, ...calendarEvents] as any[]).find((d: any) => d.id === athlete.disciplineId); if (!disc) return "—"; const parent = disc.parentId ? disciplineParents.find(p => p.id === disc.parentId) : null; return parent ? `${parent.name} — ${disc.name}` : (disc.name || "—"); })() },
-                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={athlete.isDelegationLead ? STATE.warning : BRAND.teal} strokeWidth="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>, label:"Rol", value:athlete.isDelegationLead ? "Jefe de Misión" : "Participante" },
+                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={isChief ? STATE.warning : BRAND.teal} strokeWidth="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>, label:"Rol", value:isChief ? "Jefe de Misión" : "Participante" },
                 { icon:<LockIcon size={14} color={BRAND.teal} strokeWidth={2} />, label:"ID", value:athlete.id.slice(-6).toUpperCase() },
               ]).map((r,i) => (
                 <div key={r.label} style={{ display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderTop:i>0?`1px solid ${SURFACE.borderMuted}`:"none" }}>
@@ -3526,7 +3530,7 @@ export default function UserPortalPage() {
             <CredentialQrCard
               qrData={`Participante: ${athlete.fullName}\nID: ${athlete.id.slice(-6)}\nDelegación: ${delegation?.countryCode || "—"}`}
               name={athlete.fullName || athlete.id}
-              roleLabel={athlete.isDelegationLead ? "Jefe de Misión" : athlete.userType || "Participante"}
+              roleLabel={isChief ? "Jefe de Misión" : athlete.userType || "Participante"}
               code={athlete.credentialCode || athlete.id.slice(-6)}
               countryTag={athlete.countryCode || delegation?.countryCode || null}
               eventName={event?.name || null}
@@ -3555,7 +3559,7 @@ export default function UserPortalPage() {
                   const html = buildCredentialHtml({
                     eventName: evName,
                     fullName: athlete.fullName,
-                    roleLabel: athlete.isDelegationLead ? "JEFE DE MISIÓN" : "PARTICIPANTE",
+                    roleLabel: isChief ? "JEFE DE MISIÓN" : "PARTICIPANTE",
                     credentialCode: acc?.credentialCode || athlete.credentialCode || athlete.id.slice(-6).toUpperCase(),
                     statusLabel: acc?.status || athlete.accreditationStatus || "PENDING",
                     issuedAtLabel: new Date().toLocaleDateString("es-CL"),
@@ -3569,7 +3573,7 @@ export default function UserPortalPage() {
                   setCredentialPdf({
                     eventName: evName,
                     fullName: athlete.fullName,
-                    roleLabel: athlete.isDelegationLead ? "JEFE DE MISIÓN" : "PARTICIPANTE",
+                    roleLabel: isChief ? "JEFE DE MISIÓN" : "PARTICIPANTE",
                     code: acc?.credentialCode || athlete.credentialCode || athlete.id.slice(-6),
                     countryTag: athlete.countryCode || delegation?.countryCode || undefined,
                     qrDataUrl,
