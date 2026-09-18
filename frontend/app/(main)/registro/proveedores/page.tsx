@@ -119,6 +119,7 @@ const SERVICE_TYPES = [
   { value: "VIAJE_IDA", label: "Viaje de ida" },
   { value: "VIAJE_REGRESO", label: "Viaje de regreso" },
   { value: "VIAJE_IDA_REGRESO", label: "Viaje de ida y regreso" },
+  { value: "COMEDOR", label: "Comedor" },
 ] as const;
 
 type Participant = {
