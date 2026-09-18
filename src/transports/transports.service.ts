@@ -21,6 +21,7 @@ type TransportRow = {
   model: string | null;
   capacity: number;
   status: string;
+  delegation_id: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -120,6 +121,9 @@ export class TransportsService {
     if (dto.status !== undefined) {
       row.status = dto.status;
     }
+    if (dto.delegationId !== undefined) {
+      row.delegation_id = dto.delegationId || null;
+    }
 
     return row;
   }
@@ -134,6 +138,7 @@ export class TransportsService {
       model: row.model,
       capacity: row.capacity,
       status: row.status,
+      delegationId: row.delegation_id ?? null,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
     };

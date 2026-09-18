@@ -37,6 +37,8 @@ export class VenuesService {
       region: createVenueDto.region ?? null,
       commune: createVenueDto.commune ?? null,
       photoUrl: createVenueDto.photoUrl ?? null,
+      coordinatorName: createVenueDto.coordinatorName?.trim() || null,
+      coordinatorPhone: createVenueDto.coordinatorPhone?.trim() || null,
     });
     return this.venuesRepository.save(venue);
   }
@@ -62,6 +64,12 @@ export class VenuesService {
       ...(updateVenueDto.region !== undefined ? { region: updateVenueDto.region ?? null } : {}),
       ...(updateVenueDto.commune !== undefined ? { commune: updateVenueDto.commune ?? null } : {}),
       ...(updateVenueDto.photoUrl !== undefined ? { photoUrl: updateVenueDto.photoUrl ?? null } : {}),
+      ...(updateVenueDto.coordinatorName !== undefined
+        ? { coordinatorName: updateVenueDto.coordinatorName?.trim() || null }
+        : {}),
+      ...(updateVenueDto.coordinatorPhone !== undefined
+        ? { coordinatorPhone: updateVenueDto.coordinatorPhone?.trim() || null }
+        : {}),
     });
     return this.venuesRepository.save(venue);
   }

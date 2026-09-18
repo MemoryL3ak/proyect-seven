@@ -16,6 +16,8 @@ import { VehiclePositionsService } from './vehicle-positions.service';
 import { VehiclePositionsAccessService } from './vehicle-positions.access.service';
 import type { VpRequest } from './vehicle-positions.access.service';
 import { VehiclePositionsGuard } from './vehicle-positions.guard';
+import type { ApiRequest } from '../auth/api-auth.guard';
+import { StaffScopeService } from '../auth/staff-scope.service';
 
 /**
  * SA-BACKEND-02: todo el módulo exige autenticación (guard) y cada endpoint
@@ -27,6 +29,7 @@ export class VehiclePositionsController {
   constructor(
     private readonly vehiclePositionsService: VehiclePositionsService,
     private readonly access: VehiclePositionsAccessService,
+    private readonly scope: StaffScopeService,
   ) {}
 
   /** Ingesta GPS del shell nativo: excluida del guard global mientras dure el modo transicional (VehiclePositionsGuard decide). */
@@ -41,9 +44,11 @@ export class VehiclePositionsController {
   }
 
   @Get()
-  findAll(@Req() req: VpRequest) {
+  async findAll(@Req() req: VpRequest) {
     this.access.requireStaff(req.vpCaller);
-    return this.vehiclePositionsService.findAll();
+    // Jefe de Misión: sólo las posiciones de la flota de su delegación.
+    const delegationId = await this.scope.delegationOf(req as unknown as ApiRequest);
+    return this.vehiclePositionsService.findAll(delegationId);
   }
 
   @Get('by-vehicle/:vehicleId')

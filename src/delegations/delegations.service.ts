@@ -55,6 +55,138 @@ export class DelegationsService {
     return row;
   }
 
+  private touchesMetadata(dto: CreateDelegationDto | UpdateDelegationDto) {
+    return (
+      dto.metadata !== undefined ||
+      dto.name !== undefined ||
+      dto.missionHeadName !== undefined ||
+      dto.missionHeadPhone !== undefined
+    );
+  }
+
+  /**
+   * Metadata resultante: la existente + dto.metadata + los campos planos del
+   * formulario (nombre visible y jefe de misión). Así editar el jefe de misión
+   * no pisa lo demás que viva en metadata.
+   */
+  private mergeMetadata(
+    existing: Record<string, unknown>,
+    dto: CreateDelegationDto | UpdateDelegationDto,
+  ): Record<string, unknown> {
+    const next: Record<string, unknown> = { ...existing, ...(dto.metadata ?? {}) };
+    if (dto.name !== undefined) next.name = dto.name?.trim() || null;
+    if (dto.missionHeadName !== undefined || dto.missionHeadPhone !== undefined) {
+      const prev = (existing.missionHead as Record<string, unknown> | undefined) ?? {};
+      next.missionHead = {
+        ...prev,
+        ...(dto.missionHeadName !== undefined ? { name: dto.missionHeadName?.trim() || null } : {}),
+        ...(dto.missionHeadPhone !== undefined ? { phone: dto.missionHeadPhone?.trim() || null } : {}),
+      };
+    }
+    return next;
+  }
+
+  /** Hoteles y flota fija de la delegación (sólo si el DTO los trae). */
+  private async applyLinks(id: string, dto: CreateDelegationDto | UpdateDelegationDto) {
+    if (dto.accommodationIds) {
+      await this.dataSource.query(
+        `delete from core.delegation_accommodations where delegation_id = $1`,
+        [id],
+      );
+      if (dto.accommodationIds.length > 0) {
+        await this.dataSource.query(
+          `insert into core.delegation_accommodations (delegation_id, accommodation_id)
+           select $1, unnest($2::uuid[]) on conflict do nothing`,
+          [id, dto.accommodationIds],
+        );
+      }
+    }
+    // Flota fija: los seleccionados pasan a esta delegación; los que estaban y
+    // ya no vienen quedan libres. Los choferes viven en dos tablas.
+    if (dto.driverIds) {
+      for (const table of ['core.provider_participants', 'transport.drivers']) {
+        await this.dataSource.query(
+          `update ${table} set delegation_id = null
+           where delegation_id = $1 and not (id = any($2::uuid[]))`,
+          [id, dto.driverIds],
+        );
+        if (dto.driverIds.length > 0) {
+          await this.dataSource.query(
+            `update ${table} set delegation_id = $1 where id = any($2::uuid[])`,
+            [id, dto.driverIds],
+          );
+        }
+      }
+    }
+    if (dto.vehicleIds) {
+      await this.dataSource.query(
+        `update transport.vehicles set delegation_id = null
+         where delegation_id = $1 and not (id = any($2::uuid[]))`,
+        [id, dto.vehicleIds],
+      );
+      if (dto.vehicleIds.length > 0) {
+        await this.dataSource.query(
+          `update transport.vehicles set delegation_id = $1 where id = any($2::uuid[])`,
+          [id, dto.vehicleIds],
+        );
+      }
+    }
+  }
+
+  /**
+   * Campos derivados para la UI: nombre visible, jefe de misión, hoteles y
+   * flota fija. Se leen aparte para no tocar la entidad TypeORM.
+   */
+  private async attachExtras<T extends { id: string; metadata: Record<string, unknown> | null }>(
+    delegations: T[],
+  ) {
+    if (delegations.length === 0) return delegations;
+    const ids = delegations.map((d) => d.id);
+    const [hotels, drivers, vehicles] = await Promise.all([
+      this.dataSource.query<Array<{ delegation_id: string; accommodation_id: string }>>(
+        `select delegation_id, accommodation_id from core.delegation_accommodations
+         where delegation_id = any($1::uuid[])`,
+        [ids],
+      ),
+      this.dataSource.query<Array<{ id: string; delegation_id: string }>>(
+        `select id, delegation_id from core.provider_participants
+         where delegation_id = any($1::uuid[]) and status is distinct from 'DELETED'
+         union all
+         select id, delegation_id from transport.drivers where delegation_id = any($1::uuid[])`,
+        [ids],
+      ),
+      this.dataSource.query<Array<{ id: string; delegation_id: string }>>(
+        `select id, delegation_id from transport.vehicles where delegation_id = any($1::uuid[])`,
+        [ids],
+      ),
+    ]);
+    const group = (rows: Array<{ delegation_id: string }>, key: string) => {
+      const map = new Map<string, string[]>();
+      for (const r of rows) {
+        const list = map.get(r.delegation_id) ?? [];
+        list.push(String((r as Record<string, unknown>)[key]));
+        map.set(r.delegation_id, list);
+      }
+      return map;
+    };
+    const hotelsBy = group(hotels, 'accommodation_id');
+    const driversBy = group(drivers, 'id');
+    const vehiclesBy = group(vehicles, 'id');
+    return delegations.map((d) => {
+      const meta = d.metadata ?? {};
+      const head = (meta.missionHead as Record<string, unknown> | undefined) ?? {};
+      return {
+        ...d,
+        name: typeof meta.name === 'string' ? meta.name : null,
+        missionHeadName: typeof head.name === 'string' ? head.name : null,
+        missionHeadPhone: typeof head.phone === 'string' ? head.phone : null,
+        accommodationIds: hotelsBy.get(d.id) ?? [],
+        driverIds: driversBy.get(d.id) ?? [],
+        vehicleIds: vehiclesBy.get(d.id) ?? [],
+      };
+    });
+  }
+
   private toEntity(row: DelegationRow): Delegation {
     return {
       id: row.id,
@@ -162,6 +294,9 @@ export class DelegationsService {
 
   async create(createDelegationDto: CreateDelegationDto) {
     const row = this.toRow(createDelegationDto);
+    if (this.touchesMetadata(createDelegationDto)) {
+      row.metadata = this.mergeMetadata({}, createDelegationDto);
+    }
     const { data, error } = await this.supabase
       .schema('core')
       .from('delegations')
@@ -181,6 +316,7 @@ export class DelegationsService {
         createDelegationDto.disciplineIds,
       );
     }
+    await this.applyLinks((data as DelegationRow).id, createDelegationDto);
 
     return this.findOne((data as DelegationRow).id);
   }
@@ -190,7 +326,7 @@ export class DelegationsService {
       const delegations = await this.delegationRepository.find({
         order: { createdAt: 'DESC' },
       });
-      return await this.attachDisciplines(delegations);
+      return await this.attachExtras(await this.attachDisciplines(delegations));
     } catch (error) {
       throw new InternalServerErrorException(
         error instanceof Error ? error.message : 'Error fetching delegations',
@@ -212,15 +348,20 @@ export class DelegationsService {
       throw new NotFoundException(`Delegation with id ${id} not found`);
     }
 
-    const [withDisciplines] = await this.attachDisciplines([delegation]);
-    return withDisciplines;
+    const [full] = await this.attachExtras(await this.attachDisciplines([delegation]));
+    return full;
   }
 
   async update(id: string, updateDelegationDto: UpdateDelegationDto) {
+    const row = this.toRow(updateDelegationDto);
+    if (this.touchesMetadata(updateDelegationDto)) {
+      const current = await this.delegationRepository.findOne({ where: { id } });
+      row.metadata = this.mergeMetadata(current?.metadata ?? {}, updateDelegationDto);
+    }
     const { data, error } = await this.supabase
       .schema('core')
       .from('delegations')
-      .update(this.toRow(updateDelegationDto))
+      .update(row)
       .eq('id', id)
       .select('*')
       .maybeSingle();
@@ -238,6 +379,7 @@ export class DelegationsService {
     if (updateDelegationDto.disciplineIds) {
       await this.setDelegationDisciplines(id, updateDelegationDto.disciplineIds);
     }
+    await this.applyLinks(id, updateDelegationDto);
 
     return this.findOne(id);
   }

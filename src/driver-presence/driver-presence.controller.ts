@@ -1,13 +1,23 @@
-import { Body, Controller, Get, Logger, Post, Query, Res } from '@nestjs/common';
+import { Body, Controller, Get, Logger, Post, Query, Req, Res } from '@nestjs/common';
 import type { Response } from 'express';
+import type { ApiRequest } from '../auth/api-auth.guard';
+import { StaffScopeService } from '../auth/staff-scope.service';
 import { DriverPresenceService } from './driver-presence.service';
 import { HeartbeatDto } from './dto/heartbeat.dto';
 
+/**
+ * Presencia de conductores. Un Jefe de Misión (usuario acotado a una
+ * delegación) recibe sólo la flota de su región: el alcance se resuelve en el
+ * backend, no se confía en filtros del navegador.
+ */
 @Controller('driver-presence')
 export class DriverPresenceController {
   private readonly logger = new Logger(DriverPresenceController.name);
 
-  constructor(private readonly service: DriverPresenceService) {}
+  constructor(
+    private readonly service: DriverPresenceService,
+    private readonly scope: StaffScopeService,
+  ) {}
 
   /** Latido enviado por el Portal Conductor mientras la app está abierta. */
   @Post('heartbeat')
@@ -17,36 +27,46 @@ export class DriverPresenceController {
 
   /** Lista de conductores con su estado de presencia. */
   @Get()
-  list(@Query('eventId') eventId?: string, @Query('date') date?: string) {
-    return this.service.list(eventId, date);
+  async list(
+    @Req() req: ApiRequest,
+    @Query('eventId') eventId?: string,
+    @Query('date') date?: string,
+  ) {
+    return this.service.list(eventId, date, await this.scope.delegationOf(req));
   }
 
   /** KPIs agregados de presencia. */
   @Get('stats')
-  stats(@Query('eventId') eventId?: string) {
-    return this.service.stats(eventId);
+  async stats(@Req() req: ApiRequest, @Query('eventId') eventId?: string) {
+    return this.service.stats(eventId, await this.scope.delegationOf(req));
   }
 
   /** Snapshot puntual (lista + stats). */
   @Get('snapshot')
-  snapshot(@Query('eventId') eventId?: string, @Query('date') date?: string) {
-    return this.service.snapshot(eventId, date);
+  async snapshot(
+    @Req() req: ApiRequest,
+    @Query('eventId') eventId?: string,
+    @Query('date') date?: string,
+  ) {
+    return this.service.snapshot(eventId, date, await this.scope.delegationOf(req));
   }
 
   /** SSE: emite un snapshot de presencia cada 8 segundos. */
   @Get('live')
-  live(
+  async live(
+    @Req() req: ApiRequest,
     @Query('eventId') eventId: string | undefined,
     @Query('date') date: string | undefined,
     @Res() res: Response,
   ) {
+    const delegationId = await this.scope.delegationOf(req);
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('X-Accel-Buffering', 'no');
     res.flushHeaders();
 
-    const subject = this.service.liveStream(eventId, date);
+    const subject = this.service.liveStream(eventId, date, delegationId);
     const subscription = subject.subscribe({
       next: (snapshot) => res.write(`data: ${JSON.stringify(snapshot)}\n\n`),
       error: (err) => {

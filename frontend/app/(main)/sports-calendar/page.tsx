@@ -21,6 +21,7 @@ import {
   ChevronRightIcon,
   MedalIcon,
 } from "@/components/ui/Icons";
+import { delegationLabel } from "@/lib/delegations";
 
 type EventOption = { id: string; name: string };
 type VenueOption = { id: string; name: string; address?: string | null; eventId?: string | null };
@@ -150,7 +151,7 @@ function venueLabelById(options: VenueOption[], idOrName?: string | null) {
 function delegationLabelById(options: DelegationOption[], id?: string | null) {
   if (!id) return "";
   const item = options.find((option) => option.id === id);
-  return item?.countryCode || id;
+  return (item ? delegationLabel(item) : "") || id;
 }
 
 function startOfMonth(date: Date) {
@@ -1115,7 +1116,7 @@ export default function SportsCalendarPage() {
             <StyledSelect wrapperClassName="lg:col-span-1" value={selectedDelegationId} onChange={(e) => setSelectedDelegationId(e.target.value)}>
               <option value="">{t("Todas las delegaciones")}</option>
               {filteredDelegationOptions.map((item) => (
-                <option key={item.id} value={item.id}>{item.countryCode || item.id}</option>
+                <option key={item.id} value={item.id}>{delegationLabel(item)}</option>
               ))}
             </StyledSelect>
             <StyledSelect wrapperClassName="lg:col-span-1" value={sportFilter} onChange={(e) => setSportFilter(e.target.value)}>
@@ -1703,7 +1704,7 @@ export default function SportsCalendarPage() {
               >
                 <option value="">{t("Todas / sin delegacion")}</option>
                 {filteredDelegationOptions.map((item) => (
-                  <option key={item.id} value={item.id}>{item.countryCode || item.id}</option>
+                  <option key={item.id} value={item.id}>{delegationLabel(item)}</option>
                 ))}
               </StyledSelect>
               {isTrainingActivity ? (

@@ -26,6 +26,10 @@ export class Driver {
   @Column({ name: 'provider_id', type: 'uuid', nullable: true })
   providerId?: string | null;
 
+  // Flota fija por delegación (región) durante el evento.
+  @Column({ name: 'delegation_id', type: 'uuid', nullable: true })
+  delegationId?: string | null;
+
   @Column({ name: 'user_id', type: 'uuid', nullable: true })
   userId?: string | null;
 

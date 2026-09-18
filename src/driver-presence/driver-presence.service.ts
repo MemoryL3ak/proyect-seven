@@ -16,6 +16,9 @@ export interface DriverPresenceRow {
   driverStatus: string | null;
   eventId: string | null;
   phone: string | null;
+  /** Delegación (región) a la que está asignado como flota fija. */
+  delegationId: string | null;
+  delegationName: string | null;
   online: boolean;
   sessionStartedAt: string | null;
   lastSeenAt: string | null;
@@ -99,7 +102,11 @@ export class DriverPresenceService {
   }
 
   /** Lista todos los conductores con su estado de presencia. */
-  async list(eventId?: string, date?: string): Promise<DriverPresenceRow[]> {
+  async list(
+    eventId?: string,
+    date?: string,
+    delegationId?: string | null,
+  ): Promise<DriverPresenceRow[]> {
     // Validación de formato YYYY-MM-DD; si es inválido se usa "hoy" en zona Chile.
     const safeDate = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null;
     const rows = (await this.dataSource.query(
@@ -109,6 +116,8 @@ export class DriverPresenceService {
          d.status        as driver_status,
          g.event_id      as event_id,
          d.phone         as phone,
+         d.delegation_id as delegation_id,
+         dl.metadata->>'name' as delegation_name,
          -- Tipos de cliente: primero los declarados en el registro del chofer
          -- (metadata.allowedClientTypes, default TA); si no hay, se derivan del
          -- historial de viajes. Vacío = sin restricción.
@@ -149,6 +158,7 @@ export class DriverPresenceService {
        -- transport.drivers table is essentially empty, so sourcing from it hid
        -- every real driver from the monitor.
        from core.provider_participants d
+       left join core.delegations dl on dl.id = d.delegation_id
        left join lateral (
          select * from transport.driver_sessions ds
          where ds.driver_id = d.id
@@ -203,8 +213,10 @@ export class DriverPresenceService {
        ) disc on true
        where d.metadata->>'isDriver' = 'true'
          and ($1::uuid is null or g.event_id = $1)
+         -- Jefe de Misión: sólo la flota fija de su delegación.
+         and ($3::uuid is null or d.delegation_id = $3)
        order by online desc nulls last, s.last_seen_at desc nulls last, d.full_name asc`,
-      [eventId ?? null, safeDate],
+      [eventId ?? null, safeDate, delegationId ?? null],
     )) as Array<Record<string, any>>;
 
     return rows.map((r) => ({
@@ -213,6 +225,8 @@ export class DriverPresenceService {
       driverStatus: r.driver_status ?? null,
       eventId: r.event_id ?? null,
       phone: r.phone ?? null,
+      delegationId: r.delegation_id ?? null,
+      delegationName: r.delegation_name ?? null,
       online: Boolean(r.online),
       sessionStartedAt: r.session_started_at ?? null,
       lastSeenAt: r.last_seen_at ?? null,
@@ -242,7 +256,7 @@ export class DriverPresenceService {
    * historial de posiciones. Medido en producción: 2,5 s de media, picos de
    * 55 s y el 89 % del tiempo de CPU de la base; con el rango, < 1 ms.
    */
-  async stats(eventId?: string) {
+  async stats(eventId?: string, delegationId?: string | null) {
     const rows = (await this.dataSource.query(
       `with hoy as (
          select (date_trunc('day', now() at time zone 'America/Santiago')
@@ -250,10 +264,12 @@ export class DriverPresenceService {
        )
        select
          (select count(*)::int from core.provider_participants
-            where metadata->>'isDriver' = 'true') as total_drivers,
+            where metadata->>'isDriver' = 'true'
+              and ($1::uuid is null or delegation_id = $1)) as total_drivers,
          -- Online = fresh heartbeat OR fresh GPS fix (see list()).
          (select count(*)::int from core.provider_participants d
             where d.metadata->>'isDriver' = 'true'
+              and ($1::uuid is null or d.delegation_id = $1)
               and (
                 exists (select 1 from transport.driver_sessions ds
                          where ds.driver_id = d.id and ds.ended_at is null
@@ -265,6 +281,7 @@ export class DriverPresenceService {
          -- Active today = opened the app (session) or sent a fix today.
          (select count(*)::int from core.provider_participants d
             where d.metadata->>'isDriver' = 'true'
+              and ($1::uuid is null or d.delegation_id = $1)
               and (
                 exists (select 1 from transport.driver_sessions ds, hoy
                          where ds.driver_id = d.id and ds.started_at >= hoy.desde)
@@ -272,8 +289,10 @@ export class DriverPresenceService {
                             where vp.driver_id = d.id and vp.timestamp >= hoy.desde)
               )) as drivers_today,
          (select count(*)::int from transport.driver_sessions, hoy
-            where started_at >= hoy.desde) as sessions_today`,
-      [],
+            where started_at >= hoy.desde
+              and ($1::uuid is null or driver_id in (
+                select id from core.provider_participants where delegation_id = $1))) as sessions_today`,
+      [delegationId ?? null],
     )) as Array<Record<string, any>>;
     const r = rows[0] || {};
     return {
@@ -285,20 +304,23 @@ export class DriverPresenceService {
   }
 
   /** Snapshot combinado (lista + stats) para el feed en vivo. */
-  async snapshot(eventId?: string, date?: string) {
-    const [drivers, stats] = await Promise.all([this.list(eventId, date), this.stats(eventId)]);
+  async snapshot(eventId?: string, date?: string, delegationId?: string | null) {
+    const [drivers, stats] = await Promise.all([
+      this.list(eventId, date, delegationId),
+      this.stats(eventId, delegationId),
+    ]);
     return { ts: new Date().toISOString(), stats, drivers };
   }
 
   /** Stream SSE: emite un snapshot cada 8 segundos. */
-  liveStream(eventId?: string, date?: string): Subject<unknown> {
+  liveStream(eventId?: string, date?: string, delegationId?: string | null): Subject<unknown> {
     const subject = new Subject<unknown>();
     let stopped = false;
 
     const tick = async () => {
       if (stopped) return;
       try {
-        subject.next(await this.snapshot(eventId, date));
+        subject.next(await this.snapshot(eventId, date, delegationId));
       } catch (err) {
         this.logger.error(`driver-presence liveStream error: ${err}`);
       }

@@ -8,6 +8,7 @@ import { BRAND, SURFACE, STATE, ACCENT } from "@/lib/design";
 import { CheckIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 import { filterValidatedAthletes } from "@/lib/athletes";
+import { delegationLabel as delegationDisplayName } from "@/lib/delegations";
 
 type SportsEvent = {
   id: string;
@@ -189,7 +190,7 @@ function isSameDay(value: string | null | undefined, dayKey: string) {
 
 function delegationLabel(options: DelegationOption[], id?: string | null) {
   if (!id) return "Sin delegacion";
-  return options.find((item) => item.id === id)?.countryCode || id;
+  return delegationDisplayName(options.find((item) => item.id === id)) || id;
 }
 
 export default function SportsCalendarDayDetailPage() {

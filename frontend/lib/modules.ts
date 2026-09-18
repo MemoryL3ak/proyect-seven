@@ -31,6 +31,8 @@ export const ALL_MODULES: AppModule[] = [
   { id: "hoteleria.asignaciones", label: "Asignaciones Hotel", group: "Hotelería", icon: "clipboard" },
   { id: "hoteleria.llaves", label: "Gestión de Llaves", group: "Hotelería", icon: "key" },
   { id: "alimentacion.general", label: "Alimentación", group: "Alimentación", icon: "utensils" },
+  // Incidencias: las reportan operaciones y los jefes de misión (acotados a su región).
+  { id: "incidencias", label: "Incidencias", group: "Operación", icon: "siren" },
   { id: "workforce", label: "Staff & Voluntarios", group: "Operación", icon: "briefcase" },
   { id: "beneficios", label: "Beneficios", group: "Beneficios", icon: "ticket" },
   { id: "salud", label: "Salud", group: "Salud", icon: "heart-pulse" },

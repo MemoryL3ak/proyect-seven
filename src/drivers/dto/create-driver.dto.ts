@@ -32,6 +32,11 @@ export class CreateDriverDto {
   @IsOptional()
   providerId?: string;
 
+  // Flota fija por delegación (región) durante el evento.
+  @IsString()
+  @IsOptional()
+  delegationId?: string | null;
+
   @IsString()
   @IsOptional()
   userId?: string;

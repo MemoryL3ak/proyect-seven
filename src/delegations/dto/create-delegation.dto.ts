@@ -5,9 +5,11 @@ export class CreateDelegationDto {
   @IsNotEmpty()
   eventId: string;
 
+  // País ISO 3166-1 ("CHL") o región ISO 3166-2 ("CL-VS"): en los Juegos
+  // Escolares las delegaciones son las regiones de Chile.
   @IsString()
   @IsNotEmpty()
-  @Length(3, 3)
+  @Length(3, 8)
   countryCode: string;
 
   @IsArray()
@@ -18,4 +20,34 @@ export class CreateDelegationDto {
   @IsObject()
   @IsOptional()
   metadata?: Record<string, unknown>;
+
+  /** Nombre visible ("Región de Valparaíso"); se guarda en metadata.name. */
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @IsString()
+  @IsOptional()
+  missionHeadName?: string;
+
+  @IsString()
+  @IsOptional()
+  missionHeadPhone?: string;
+
+  /** Hoteles donde se aloja y come la delegación (alimentación por región). */
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  accommodationIds?: string[];
+
+  /** Flota fija de la delegación durante el evento. */
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  driverIds?: string[];
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  vehicleIds?: string[];
 }
