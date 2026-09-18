@@ -3,7 +3,22 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { apiFetch } from "@/lib/api";
-import { RefreshIcon, ArrowRightIcon, StarIcon } from "@/components/ui/Icons";
+import {
+  RefreshIcon,
+  ArrowRightIcon,
+  StarIcon,
+  TruckIcon,
+  ClockIcon,
+  CalendarIcon,
+  CheckIcon,
+  PinIcon,
+  CheckCircleIcon,
+  XIcon,
+  SearchIcon,
+  ChevronRightIcon,
+  MaximizeIcon,
+  ArrowLeftIcon,
+} from "@/components/ui/Icons";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { getSupabase } from "@/lib/supabase";
 import { useI18n } from "@/lib/i18n";
@@ -900,11 +915,11 @@ export default function VehiclePositionsPage() {
         {/* KPI chips */}
         <div className="flex flex-wrap gap-3 mt-5" style={{ position: "relative" }}>
           {[
-            { label: "Total viajes", value: tripStats.total, color: pal.kpi[0], icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> },
-            { label: "En ruta", value: tripStats.active, color: pal.kpi[1], icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
-            { label: "Programados", value: tripStats.scheduled, color: pal.kpi[2], icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> },
-            { label: "Completados", value: tripStats.completed, color: pal.kpi[3], icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg> },
-            { label: "Con GPS", value: tripStats.withPosition, color: pal.kpi[4], icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> },
+            { label: "Total viajes", value: tripStats.total, color: pal.kpi[0], icon: <TruckIcon size={14} strokeWidth={1.8} /> },
+            { label: "En ruta", value: tripStats.active, color: pal.kpi[1], icon: <ClockIcon size={14} strokeWidth={1.8} /> },
+            { label: "Programados", value: tripStats.scheduled, color: pal.kpi[2], icon: <CalendarIcon size={14} strokeWidth={1.8} /> },
+            { label: "Completados", value: tripStats.completed, color: pal.kpi[3], icon: <CheckIcon size={14} strokeWidth={1.8} /> },
+            { label: "Con GPS", value: tripStats.withPosition, color: pal.kpi[4], icon: <PinIcon size={14} strokeWidth={1.8} /> },
           ].map((stat) => (
             <div key={stat.label} style={{
               background: pal.chipBg,
@@ -978,7 +993,7 @@ export default function VehiclePositionsPage() {
                 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                     <span style={{ color: "#10b981", flexShrink: 0 }}>
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                      <CheckCircleIcon size={20} strokeWidth={2} />
                     </span>
                     <div>
                       <p style={{ fontSize: "13px", fontWeight: 700, color: "#10b981" }}>
@@ -994,7 +1009,7 @@ export default function VehiclePositionsPage() {
                     onClick={() => setCompletedAlerts((prev) => prev.filter((_, j) => j !== i))}
                     style={{ color: "#94a3b8", background: "none", border: "none", cursor: "pointer", padding: "4px 8px", lineHeight: 1 }}
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    <XIcon size={14} strokeWidth={2.5} />
                   </button>
                 </div>
               ))}
@@ -1118,7 +1133,7 @@ export default function VehiclePositionsPage() {
                     {trip && (
                       <>
                         <div style={{ fontSize: "11px", color: "#64748b", lineHeight: 1.5, display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2.2" strokeLinecap="round"><path d="M12 22s6-6 6-11a6 6 0 0 0-12 0c0 5 6 11 6 11z"/><circle cx="12" cy="11" r="2"/></svg>
+                          <PinIcon size={10} color={BRAND.teal} strokeWidth={2.2} />
                           <span>{trip.origin || "Origen"}</span>
                           <span style={{ color: "#cbd5e1", display: "inline-flex" }}><ArrowRightIcon size={12} /></span>
                           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h2M14 7h2M8 11h2M14 11h2"/></svg>
@@ -1158,7 +1173,7 @@ export default function VehiclePositionsPage() {
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <div style={{ position: "relative", flex: 1, minWidth: 200 }}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                <SearchIcon size={15} color="#94a3b8" strokeWidth={2} style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
                 <input value={tableSearch} onChange={(e) => setTableSearch(e.target.value)} placeholder="Buscar origen, destino, conductor, patente…"
                   style={{ width: "100%", padding: "9px 12px 9px 34px", fontSize: 13, borderRadius: 10, border: "1px solid #e2e8f0", outline: "none", background: "#f8fafc", color: "#0f172a", boxSizing: "border-box" }} />
               </div>
@@ -1196,7 +1211,7 @@ export default function VehiclePositionsPage() {
             <p style={{ fontSize: "14px", color: "#64748b" }}>{t("Sin viajes registrados.")}</p>
           ) : visibleTrips.length === 0 ? (
             <div style={{ textAlign: "center", padding: "44px 20px", color: "#94a3b8" }}>
-              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.6" strokeLinecap="round" style={{ margin: "0 auto 10px", display: "block" }}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              <SearchIcon size={30} color="#cbd5e1" strokeWidth={1.6} style={{ margin: "0 auto 10px", display: "block" }} />
               <p style={{ fontSize: 13, margin: 0 }}>Ningún viaje coincide con los filtros.</p>
             </div>
           ) : (
@@ -1238,7 +1253,7 @@ export default function VehiclePositionsPage() {
                           <p style={{ fontSize: 12.5, fontWeight: 800, color: "#0a7a6b", margin: "2px 0 0" }}>${Number(trip.tripCost).toLocaleString("es-CL")}</p>
                         )}
                       </div>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0 }}><polyline points="9 18 15 12 9 6" /></svg>
+                      <ChevronRightIcon size={16} color="#cbd5e1" strokeWidth={2} style={{ flexShrink: 0 }} />
                     </div>
                   </button>
                 );
@@ -1315,7 +1330,7 @@ export default function VehiclePositionsPage() {
                           {detailLoading ? (
                             <><div style={{ width: 26, height: 26, borderRadius: "50%", border: "3px solid rgba(33,208,179,0.25)", borderTopColor: BRAND.teal, animation: "vp-spin 0.8s linear infinite" }} /><span>Cargando recorrido…</span></>
                           ) : (
-                            <><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.8" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span>Sin recorrido GPS registrado para este viaje.</span></>
+                            <><PinIcon size={26} color="#cbd5e1" strokeWidth={1.8} /><span>Sin recorrido GPS registrado para este viaje.</span></>
                           )}
                         </div>
                       )}
@@ -1325,7 +1340,7 @@ export default function VehiclePositionsPage() {
                       {(hasGps || dirEmbed) && (
                         <button type="button" onClick={() => setRouteExpanded(true)}
                           style={{ position: "absolute", bottom: 8, right: 8, display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 999, border: "none", background: "rgba(4,26,46,0.85)", color: BRAND.tealLight, fontSize: 11, fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.25)" }}>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
+                          <MaximizeIcon size={12} strokeWidth={2} />
                           Ver más grande
                         </button>
                       )}
@@ -1399,7 +1414,7 @@ export default function VehiclePositionsPage() {
                   <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: "linear-gradient(135deg,#041a2e,#062240)", flexShrink: 0 }}>
                     <button type="button" onClick={() => setRouteExpanded(false)}
                       style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 16px", borderRadius: 10, border: "1px solid rgba(52,243,198,0.4)", background: "rgba(33,208,179,0.15)", color: BRAND.tealLight, fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>
+                      <ArrowLeftIcon size={14} strokeWidth={2.5} />
                       Volver
                     </button>
                     <p style={{ fontSize: 13.5, fontWeight: 700, color: "#fff", margin: 0, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>

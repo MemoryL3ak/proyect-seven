@@ -259,7 +259,7 @@ export default function DepartureMonitoringPage() {
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.4-.1.9.3 1.1l5.4 3.1-3 3-1.7-.5c-.3-.1-.7 0-.9.2l-.3.3c-.2.3-.1.7.1.9l2.8 2.1 2.1 2.8c.2.3.6.4.9.1l.3-.3c.2-.2.3-.6.2-.9l-.5-1.7 3-3 3.1 5.4c.2.4.7.5 1.1.3l.5-.3c.4-.2.6-.6.5-1.1z"/></svg>
+              <PlaneIcon size={20} color="#21D0B3" strokeWidth={2} />
               <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#21D0B3" }}>{t("Operaciones aéreas")}</p>
             </div>
             <h1 style={{ fontSize: "1.75rem", fontWeight: 800, color: "#0f172a", lineHeight: 1.1 }}>{t("Monitoreo de Salidas")}</h1>

@@ -3,7 +3,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import AirlineLogo from "@/components/AirlineLogo";
 import { apiFetch } from "@/lib/api";
-import { RefreshIcon, PlaneIcon, XIcon } from "@/components/ui/Icons";
+import {
+  RefreshIcon,
+  PlaneIcon,
+  XIcon,
+  PlusIcon,
+  SearchIcon,
+  ChevronRightIcon,
+  ArrowRightIcon,
+  TrashIcon,
+} from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 import { filterValidatedAthletes } from "@/lib/athletes";
 
@@ -433,7 +442,7 @@ export default function FlightsPage() {
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2" strokeLinecap="round"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.4-.1.9.3 1.1l5.4 3.1-3 3-1.7-.5c-.3-.1-.7 0-.9.2l-.3.3c-.2.3-.1.7.1.9l2.8 2.1 2.1 2.8c.2.3.6.4.9.1l.3-.3c.2-.2.3-.6.2-.9l-.5-1.7 3-3 3.1 5.4c.2.4.7.5 1.1.3l.5-.3c.4-.2.6-.6.5-1.1z"/></svg>
+              <PlaneIcon size={20} color="#21D0B3" strokeWidth={2} />
               <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#21D0B3" }}>{t("Operaciones aéreas")}</p>
             </div>
             <h1 style={{ fontSize: "1.75rem", fontWeight: 800, color: pal.textPrimary, lineHeight: 1.1 }}>{t("Monitor de vuelos")}</h1>
@@ -446,7 +455,7 @@ export default function FlightsPage() {
             </select>
             <button onClick={() => { setModal(true); setForm(EMPTY_FORM); setFormError(null); }}
               style={{ padding: "10px 20px", borderRadius: "12px", border: "none", background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 12px rgba(33,208,179,0.4)", display: "flex", alignItems: "center", gap: "6px" }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <PlusIcon size={14} strokeWidth={2.5} />
               {t("Agregar vuelo")}
             </button>
           </div>
@@ -588,7 +597,7 @@ export default function FlightsPage() {
       {/* Filters */}
       <section style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "12px 16px", boxShadow: pal.shadow, display: "flex", flexWrap: "wrap", alignItems: "center", gap: "10px" }}>
         <div style={{ position: "relative", flex: "1 1 200px" }}>
-          <svg style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#94a3b8" strokeWidth={2}><circle cx="11" cy="11" r="8"/><path strokeLinecap="round" d="M21 21l-4.35-4.35"/></svg>
+          <SearchIcon size={14} color="#94a3b8" strokeWidth={2} style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
           <input className="input" style={{ paddingLeft: "32px", borderRadius: "10px", width: "100%" }} placeholder={t("Buscar vuelo, aerolínea u origen...")} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
         </div>
         <input className="input" type="date" style={{ borderRadius: "10px", width: "160px" }} value={filterDate} onChange={e => setFilterDate(e.target.value)} />
@@ -607,7 +616,7 @@ export default function FlightsPage() {
         {activeFilters > 0 && (
           <button onClick={() => { setSearchQuery(""); setFilterDate(""); setFilterDelegation(""); setFilterStatus(""); }}
             style={{ fontSize: "11px", color: "#ef4444", fontWeight: 600, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <XIcon size={12} strokeWidth={2} />
             {t("Limpiar")} ({activeFilters})
           </button>
         )}
@@ -622,7 +631,7 @@ export default function FlightsPage() {
         </div>
       ) : finalFlights.length === 0 ? (
         <div style={{ background: "#fff", borderRadius: "18px", border: "1px solid #e2e8f0", padding: "40px", textAlign: "center" }}>
-          <svg style={{ margin: "0 auto 12px", opacity: 0.3 }} width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="#94a3b8" strokeWidth={1.5}><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.4-.1.9.3 1.1l5.4 3.1-3 3-1.7-.5c-.3-.1-.7 0-.9.2l-.3.3c-.2.3-.1.7.1.9l2.8 2.1 2.1 2.8c.2.3.6.4.9.1l.3-.3c.2-.2.3-.6.2-.9l-.5-1.7 3-3 3.1 5.4c.2.4.7.5 1.1.3l.5-.3c.4-.2.6-.6.5-1.1z"/></svg>
+          <PlaneIcon size={40} color="#94a3b8" strokeWidth={1.5} style={{ margin: "0 auto 12px", opacity: 0.3 }} />
           <p style={{ fontSize: "14px", fontWeight: 600, color: pal.textPrimary }}>{flights.length === 0 ? t("No hay vuelos registrados") : t("Sin resultados")}</p>
           <p style={{ fontSize: "12px", color: pal.textMuted, marginTop: "4px" }}>{flights.length === 0 ? t("Agrega un vuelo o usa la búsqueda rápida.") : t("Ajusta los filtros de búsqueda.")}</p>
         </div>
@@ -652,7 +661,7 @@ export default function FlightsPage() {
                     onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#fafbfc"; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = ""; }}>
                     <td style={{ padding: "10px 8px 10px 14px", width: "24px" }}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" style={{ transition: "transform 0.15s", transform: isExpanded ? "rotate(90deg)" : "rotate(0)" }}><polyline points="9 18 15 12 9 6"/></svg>
+                      <ChevronRightIcon size={12} color="#94a3b8" strokeWidth={2} style={{ transition: "transform 0.15s", transform: isExpanded ? "rotate(90deg)" : "rotate(0)" }} />
                     </td>
                     <td style={{ padding: "10px 14px" }}>
                       <span style={{ fontSize: "14px", fontWeight: 800, color: pal.textPrimary, letterSpacing: "0.03em" }}>{flight.flightNumber}</span>
@@ -665,7 +674,7 @@ export default function FlightsPage() {
                     </td>
                     <td style={{ padding: "10px 14px" }}>
                       <span style={{ fontWeight: 600, color: pal.textPrimary }}>{flight.origin}</span>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2.5" style={{ margin: "0 6px", verticalAlign: "middle" }}><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                      <ArrowRightIcon size={12} color="#21D0B3" strokeWidth={2.5} style={{ margin: "0 6px", verticalAlign: "middle" }} />
                       <span style={{ color: pal.textMuted }}>{t("Destino")}</span>
                     </td>
                     <td style={{ padding: "10px 14px" }}>
@@ -693,7 +702,7 @@ export default function FlightsPage() {
                       <div style={{ display: "flex", gap: "5px" }}>
                         <button onClick={() => openTrack(flight)} style={{ padding: "5px 12px", borderRadius: "8px", border: "none", background: "linear-gradient(135deg,#21D0B3,#14AE98)", color: "#fff", fontSize: "11px", fontWeight: 600, cursor: "pointer" }}>{t("Rastrear")}</button>
                         <button onClick={() => setDeleteConfirm(flight)} style={{ padding: "5px 8px", borderRadius: "8px", border: "1px solid #fecaca", background: "#fff", color: "#f43f5e", cursor: "pointer" }}>
-                          <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                          <TrashIcon size={11} strokeWidth={2} />
                         </button>
                       </div>
                     </td>
@@ -813,7 +822,7 @@ export default function FlightsPage() {
                       <td style={{ padding: "10px 14px", color: pal.textMuted, fontWeight: 500 }}>{trip.clientType || "—"}</td>
                       <td style={{ padding: "10px 14px" }}>
                         <span style={{ fontWeight: 600, color: pal.textPrimary }}>{t("Aeropuerto")}</span>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2.5" style={{ margin: "0 6px", verticalAlign: "middle" }}><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                        <ArrowRightIcon size={12} color="#a78bfa" strokeWidth={2.5} style={{ margin: "0 6px", verticalAlign: "middle" }} />
                         <span style={{ color: pal.textMuted }}>{trip.destination?.split(",")[0] || "—"}</span>
                       </td>
                       <td style={{ padding: "10px 14px" }}>
@@ -967,7 +976,7 @@ export default function FlightsPage() {
                         </div>
                       </div>
                       <div style={{ textAlign: "center" }}>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                        <ArrowRightIcon size={20} color="#21D0B3" strokeWidth={2.5} />
                       </div>
                       <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "14px", padding: "14px 16px" }}>
                         <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: pal.labelColor, marginBottom: "4px" }}>{t("Llegada")}</p>
@@ -1015,7 +1024,7 @@ export default function FlightsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div style={{ background: "#fff", borderRadius: "20px", width: "100%", maxWidth: "380px", padding: "28px", boxShadow: "0 8px 40px rgba(15,23,42,0.2)", textAlign: "center" }}>
             <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "rgba(239,68,68,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              <TrashIcon size={24} color="#ef4444" strokeWidth={2} />
             </div>
             <h3 style={{ fontSize: "16px", fontWeight: 700, color: pal.textPrimary, margin: "0 0 6px" }}>{t("Eliminar vuelo")}</h3>
             <p style={{ fontSize: "13px", color: pal.textMuted, margin: "0 0 20px" }}>

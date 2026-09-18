@@ -10,7 +10,7 @@ import {
   partnerFetch,
 } from "@/lib/partnerAuth";
 import DeleteAccountSection from "@/components/DeleteAccountSection";
-import { CheckIcon, RefreshIcon } from "@/components/ui/Icons";
+import { CheckIcon, RefreshIcon, CameraIcon } from "@/components/ui/Icons";
 
 const TEAL = "#21D0B3";
 const TEAL_MID = "#34F3C6";
@@ -549,11 +549,7 @@ function IdleScreen({ onScan, onManual }: { onScan: () => void; onManual: () => 
               e.currentTarget.style.boxShadow = `0 8px 24px ${TEAL}50`;
             }}>
             <span className="relative z-10 flex items-center justify-center gap-2">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                <circle cx="12" cy="13" r="4" />
-              </svg>
+              <CameraIcon size={20} strokeWidth={2} />
               Escanear QR
             </span>
             <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -966,10 +962,7 @@ function RecentRedemptionsCard({
                     background: "linear-gradient(135deg, #2e7d32 0%, #4caf50 100%)",
                     color: "#fff",
                   }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                    strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
+                  <CheckIcon size={16} strokeWidth={3} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-baseline justify-between gap-2">

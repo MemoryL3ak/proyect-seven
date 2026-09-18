@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { BRAND } from "@/lib/design";
+import { AlertCircleIcon } from "@/components/ui/Icons";
 
 type Props = {
   open: boolean;
@@ -94,9 +95,7 @@ export default function ConfirmDialog({
               <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
             </svg>
           ) : (
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-            </svg>
+            <AlertCircleIcon size={22} color={BRAND.teal} strokeWidth={2} />
           )}
         </div>
 

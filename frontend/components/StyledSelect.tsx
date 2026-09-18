@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { BRAND } from "@/lib/design";
+import { ChevronDownIcon, CheckIcon } from "@/components/ui/Icons";
 
 type Option = { value: string; label: string; disabled?: boolean };
 
@@ -125,14 +126,7 @@ export default function StyledSelect({
         <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {selected?.label ?? ""}
         </span>
-        <svg
-          width="14" height="14" viewBox="0 0 24 24" fill="none"
-          stroke={active ? BRAND.teal : "#94a3b8"}
-          strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-          style={{ flexShrink: 0, marginLeft: "8px", transition: "stroke 150ms ease, transform 150ms ease", transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
-        >
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
+        <ChevronDownIcon size={14} color={active ? BRAND.teal : "#94a3b8"} strokeWidth={2.5} style={{ flexShrink: 0, marginLeft: "8px", transition: "stroke 150ms ease, transform 150ms ease", transform: open ? "rotate(180deg)" : "rotate(0deg)" }} />
       </div>
 
       {/* Dropdown list */}
@@ -181,9 +175,7 @@ export default function StyledSelect({
               >
                 {opt.label}
                 {isSelected && (
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
+                  <CheckIcon size={14} color={BRAND.teal} strokeWidth={2.5} />
                 )}
               </div>
             );

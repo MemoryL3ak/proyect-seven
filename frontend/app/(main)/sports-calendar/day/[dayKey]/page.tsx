@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { CheckIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 import { filterValidatedAthletes } from "@/lib/athletes";
 
@@ -563,7 +564,7 @@ export default function SportsCalendarDayDetailPage() {
                     opacity: validating ? 0.7 : 1,
                   }}>
                   {transportAssignments.every((t: any) => t.committeeValidated) ? (
-                    <><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg> {t("Validado")}</>
+                    <><CheckIcon size={18} color="#fff" strokeWidth={2.5} /> {t("Validado")}</>
                   ) : validating ? t("Validando...") : (
                     <><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg> {t("Validar actividades del día")}</>
                   )}
@@ -586,7 +587,7 @@ export default function SportsCalendarDayDetailPage() {
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                           {(trip as any).committeeValidated && (
                             <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.25)", borderRadius: 99, padding: "3px 10px", fontSize: 10, fontWeight: 700, color: "#22c55e" }}>
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                              <CheckIcon size={10} color="#22c55e" strokeWidth={3} />
                               {t("Validado")}
                             </span>
                           )}

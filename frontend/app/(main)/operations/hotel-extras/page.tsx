@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import ResourceScreen from "@/components/ResourceScreen";
 import HotelExtraReservationsCalendar from "@/components/HotelExtraReservationsCalendar";
 import { resources } from "@/lib/resources";
+import { CalendarIcon } from "@/components/ui/Icons";
 
 export default function HotelExtrasPage() {
   const [tab, setTab] = useState<"catalog" | "reservations">("catalog");
@@ -42,7 +43,7 @@ export default function HotelExtrasPage() {
           <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "12px" }}>
             <div style={{ display: "flex", gap: "8px" }}>
               <button style={tabBtnStyle(reservationView === "calendar")} onClick={() => setReservationView("calendar")} type="button">
-                <svg style={{ display: "inline", marginRight: "6px", verticalAlign: "middle" }} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <CalendarIcon size={13} strokeWidth={2} style={{ display: "inline", marginRight: "6px", verticalAlign: "middle" }} />
                 Calendario
               </button>
               <button style={tabBtnStyle(reservationView === "list")} onClick={() => setReservationView("list")} type="button">

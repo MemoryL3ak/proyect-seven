@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { BRAND } from "@/lib/design";
+import { PinIcon, XIcon } from "@/components/ui/Icons";
 
 type LatLng = { lat: number; lng: number };
 
@@ -395,10 +396,7 @@ export default function TripMap(props: TripMapProps) {
             flexShrink: 0,
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                <circle cx="12" cy="10" r="3" />
-              </svg>
+              <PinIcon size={16} color={BRAND.teal} strokeWidth={2} />
               <span style={{ color: "#fff", fontSize: 14, fontWeight: 700 }}>Mapa del viaje</span>
             </div>
             <button
@@ -417,10 +415,7 @@ export default function TripMap(props: TripMapProps) {
                 cursor: "pointer",
               }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
+              <XIcon size={16} strokeWidth={2.2} />
             </button>
           </div>
 

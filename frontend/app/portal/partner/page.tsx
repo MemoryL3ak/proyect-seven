@@ -8,6 +8,7 @@ import {
   getStoredPartner,
   loginPartner,
 } from "@/lib/partnerAuth";
+import { LockIcon, CheckIcon } from "@/components/ui/Icons";
 
 const TEAL = "#21D0B3";
 const TEAL_MID = "#34F3C6";
@@ -169,11 +170,7 @@ export default function PartnerLoginPage() {
                 style={{
                   background: `linear-gradient(135deg, ${TEAL} 0%, #1eb19a 100%)`,
                 }}>
-                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff"
-                  strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="11" width="18" height="11" rx="2" />
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                </svg>
+                <LockIcon size={30} color="#fff" strokeWidth={2} />
               </div>
               <div>
                 <h1 className="text-2xl font-bold tracking-tight"
@@ -326,10 +323,7 @@ function SessionCard({
         style={{
           background: "linear-gradient(135deg, #2e7d32 0%, #4caf50 100%)",
         }}>
-        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff"
-          strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
+        <CheckIcon size={30} color="#fff" strokeWidth={2.5} />
       </div>
       <div>
         <p className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: "#5e6b7a" }}>

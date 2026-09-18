@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
+import { MonitorIcon } from "@/components/ui/Icons";
 
 /**
  * Credencial digital para la sección "Cuenta" de los portales.
@@ -178,9 +179,7 @@ export default function CredentialQrCard({ qrData, name, roleLabel, code, countr
               gap: 8,
             }}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8" /><path d="M12 17v4" />
-            </svg>
+            <MonitorIcon size={14} strokeWidth={2} />
             Ver credencial completa
           </button>
         )}

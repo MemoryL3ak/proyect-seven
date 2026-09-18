@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useI18n } from "@/lib/i18n";
-import { Icon, type IconName } from "@/components/ui/Icons";
+import { Icon, type IconName, SparkleIcon, CheckIcon, ArrowRightIcon, ClockIcon } from "@/components/ui/Icons";
 
 /* ─────────────────────────────────────────────────────────────
    Estilos custom (keyframes, glass, glow, gradients)
@@ -529,10 +529,10 @@ function RoleCard({
             <>
               <div className="ob-orbit-ring" style={{ inset: -4, borderColor: `${role.color}55` }} />
               <div className="ob-sparkle" style={{ top: -6, right: -4, color: role.color, animationDelay: "0s" }}>
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0l2 8 8 2-8 2-2 8-2-8-8-2 8-2z" /></svg>
+                <SparkleIcon size={11} fill="currentColor" />
               </div>
               <div className="ob-sparkle" style={{ bottom: 4, left: -8, color: role.color, animationDelay: "0.8s" }}>
-                <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0l2 8 8 2-8 2-2 8-2-8-8-2 8-2z" /></svg>
+                <SparkleIcon size={8} fill="currentColor" />
               </div>
             </>
           )}
@@ -567,9 +567,7 @@ function RoleCard({
                   boxShadow: `0 4px 12px ${role.color}66`,
                 }}
               >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
+                <CheckIcon size={12} strokeWidth={3.4} />
               </span>
             )}
           </div>
@@ -644,9 +642,7 @@ function GoalChip({
       <span style={{ display: "inline-flex" }}><Icon name={emoji} size={14} /></span>
       {label}
       {selected && (
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
+        <CheckIcon size={13} strokeWidth={3} />
       )}
     </button>
   );
@@ -691,9 +687,7 @@ function TaskRow({
           }}
         >
           {done && (
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
+            <CheckIcon size={13} color="#fff" strokeWidth={3.5} />
           )}
         </button>
         <div className="flex-1 min-w-0">
@@ -722,9 +716,7 @@ function TaskRow({
           }}
         >
           {done ? t("Ir igual") : t("Ir ahora")}
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
-          </svg>
+          <ArrowRightIcon size={11} strokeWidth={2.5} />
         </Link>
       </div>
     </div>
@@ -878,9 +870,7 @@ export default function OnboardingPage() {
               {estMinutes > 0 && (
                 <span className="inline-flex items-center gap-1"
                   style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", color: "rgba(241,245,249,0.65)", marginLeft: 6, paddingLeft: 8, borderLeft: "1px solid rgba(33,208,179,0.3)" }}>
-                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-                  </svg>
+                  <ClockIcon size={9} strokeWidth={2.4} />
                   ~{estMinutes} min
                 </span>
               )}
@@ -971,9 +961,7 @@ export default function OnboardingPage() {
               <button type="button" onClick={next}
                 className="btn btn-primary text-base px-6 py-3 inline-flex items-center gap-2">
                 {t("Empezar")}
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
-                </svg>
+                <ArrowRightIcon size={14} strokeWidth={2.5} />
               </button>
             </div>
           </div>
@@ -996,9 +984,7 @@ export default function OnboardingPage() {
               <button type="button" onClick={next} disabled={!state.role}
                 className="btn btn-primary inline-flex items-center gap-2">
                 {t("Continuar")}
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
-                </svg>
+                <ArrowRightIcon size={13} strokeWidth={2.5} />
               </button>
             </div>
           </div>
@@ -1062,9 +1048,7 @@ export default function OnboardingPage() {
                 <button type="button" onClick={next} disabled={state.goals.length === 0}
                   className="btn btn-primary inline-flex items-center gap-2">
                   {t("Ver mi plan")}
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
-                  </svg>
+                  <ArrowRightIcon size={13} strokeWidth={2.5} />
                 </button>
               </div>
             </div>
@@ -1126,9 +1110,7 @@ export default function OnboardingPage() {
               <button type="button" onClick={prev} className="btn btn-ghost">{t("← Atrás")}</button>
               <button type="button" onClick={next} className="btn btn-primary inline-flex items-center gap-2">
                 {t("Ver tips")}
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
-                </svg>
+                <ArrowRightIcon size={13} strokeWidth={2.5} />
               </button>
             </div>
           </div>
@@ -1186,9 +1168,7 @@ export default function OnboardingPage() {
                         <p className="text-sm font-bold" style={{ color: "#0f172a" }}>{t(r.title)}</p>
                         <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{t(r.desc)}</p>
                       </div>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 4 }}>
-                        <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
-                      </svg>
+                      <ArrowRightIcon size={14} color="#94a3b8" strokeWidth={2.2} style={{ flexShrink: 0, marginTop: 4 }} />
                     </div>
                   );
                   return isExternal ? (
@@ -1204,9 +1184,7 @@ export default function OnboardingPage() {
               <button type="button" onClick={prev} className="btn btn-ghost">{t("← Atrás")}</button>
               <button type="button" onClick={next} className="btn btn-primary inline-flex items-center gap-2">
                 {t("Finalizar")}
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
+                <CheckIcon size={13} strokeWidth={2.5} />
               </button>
             </div>
           </div>
@@ -1221,9 +1199,7 @@ export default function OnboardingPage() {
                 background: "linear-gradient(135deg, #34F3C6 0%, #21D0B3 50%, #15B09A 100%)",
                 boxShadow: "0 12px 36px rgba(33,208,179,0.4), inset 0 2px 0 rgba(255,255,255,0.3)",
               }}>
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
+              <CheckIcon size={48} color="#fff" strokeWidth={2.5} />
             </div>
 
             <div>

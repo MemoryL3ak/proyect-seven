@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { apiFetch } from "@/lib/api";
-import { PinIcon } from "@/components/ui/Icons";
+import { PinIcon, ClockIcon, ChevronLeftIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 import { CLIENT_TYPE_OPTIONS } from "@/lib/clientTypes";
 import { BRAND } from "@/lib/design";
@@ -27,7 +27,7 @@ type Venue = { id: string; name: string };
 
 const MEAL_META: Record<MealType, { label: string; icon: React.ReactNode }> = {
   DESAYUNO: { label: "Desayuno", icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg> },
-  ALMUERZO: { label: "Almuerzo", icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> },
+  ALMUERZO: { label: "Almuerzo", icon: <ClockIcon size={12} strokeWidth={2.5} /> },
   CENA:     { label: "Cena",     icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg> },
 };
 
@@ -344,7 +344,7 @@ export default function FoodCalendar({ mealType }: { mealType: MealType }) {
       <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "12px 16px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "12px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
           <button type="button" onClick={() => { setCurrentDate(new Date(year, month - 1, 1)); setSelectedDay(null); }} style={{ width: "32px", height: "32px", borderRadius: "8px", border: "1px solid #e2e8f0", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b" }}>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
+            <ChevronLeftIcon size={16} strokeWidth={2} />
           </button>
           <span style={{ fontSize: "17px", fontWeight: 700, color: "#0f172a", width: "210px", textAlign: "center", userSelect: "none", textTransform: "capitalize" }}>{new Date(year, month, 1).toLocaleDateString(dateLocale, { month: "long" })} {year}</span>
           <button type="button" onClick={() => { setCurrentDate(new Date(year, month + 1, 1)); setSelectedDay(null); }} style={{ width: "32px", height: "32px", borderRadius: "8px", border: "1px solid #e2e8f0", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b" }}>

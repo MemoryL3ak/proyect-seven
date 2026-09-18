@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { TruckIcon, HomeIcon, CoffeeIcon, XIcon, FileTextIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 import { CLIENT_TYPE_OPTIONS, clientTypeLabel } from "@/lib/clientTypes";
 import { downloadExcel, downloadPDF } from "@/lib/reports";
@@ -26,9 +27,9 @@ function sem(pct: number, hasData: boolean) {
 }
 
 const BUCKET_ICONS: Record<string, React.ReactNode> = {
-  transport: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>,
-  hospitality: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
-  food: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>,
+  transport: <TruckIcon size={22} strokeWidth={1.6} />,
+  hospitality: <HomeIcon size={22} strokeWidth={1.6} />,
+  food: <CoffeeIcon size={22} strokeWidth={1.6} />,
 };
 
 type BucketData = { key: string; label: string; awarded: number; consumed: number; forecast: number; accentIndex: number };
@@ -137,14 +138,14 @@ export default function CommercialDashboardPage() {
             onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(34,197,94,0.25)"; }}
             onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 1px 4px rgba(34,197,94,0.1)"; }}
             style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 10, border: "1px solid rgba(34,197,94,0.3)", background: "rgba(34,197,94,0.06)", fontSize: 12, fontWeight: 700, color: "#16a34a", cursor: "pointer", transition: "all 150ms ease", boxShadow: "0 1px 4px rgba(34,197,94,0.1)" }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="#16a34a" strokeWidth="1.8"/><path d="M8 7l4 5-4 5" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M16 7l-4 5 4 5" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <XIcon size={16} />
             Excel
           </button>
           <button type="button" onClick={() => downloadPDF("reporte_comercial", "Reporte Comercial — Seven Arena", buildReportSections())}
             onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(239,68,68,0.25)"; }}
             onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 1px 4px rgba(239,68,68,0.1)"; }}
             style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 10, border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.06)", fontSize: 12, fontWeight: 700, color: "#dc2626", cursor: "pointer", transition: "all 150ms ease", boxShadow: "0 1px 4px rgba(239,68,68,0.1)" }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="#dc2626" strokeWidth="1.8"/><polyline points="14 2 14 8 20 8" stroke="#dc2626" strokeWidth="1.8"/><text x="7" y="17" fill="#dc2626" fontSize="7" fontWeight="bold" fontFamily="Arial">PDF</text></svg>
+            <FileTextIcon size={16} />
             PDF
           </button>
         </div>

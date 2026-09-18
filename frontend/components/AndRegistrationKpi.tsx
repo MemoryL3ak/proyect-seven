@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { AlertIcon, GlobeIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 import { filterValidatedAthletes } from "@/lib/athletes";
 
@@ -505,10 +506,7 @@ export default function AndRegistrationKpi({
           return (
             <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderTop: `2px solid ${defColor}`, borderRadius: "16px", padding: "18px", boxShadow: "0 1px 6px rgba(15,23,42,0.06)" }}>
               <div className="flex items-center justify-between mb-3">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={defColor} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-                  <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-                </svg>
+                <AlertIcon size={18} color={defColor} strokeWidth={2.2} />
                 <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: defColor, display: "inline-block" }} />
               </div>
               <p style={{ fontSize: "2rem", fontWeight: 800, color: defColor, lineHeight: 1 }}>
@@ -525,10 +523,7 @@ export default function AndRegistrationKpi({
         {/* Cobertura delegaciones */}
         <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderTop: "2px solid #1FCDFF", borderRadius: "16px", padding: "18px", boxShadow: "0 1px 6px rgba(15,23,42,0.06)" }}>
           <div className="flex items-center justify-between mb-3">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1FCDFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
-              <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>
-            </svg>
+            <GlobeIcon size={18} color="#1FCDFF" strokeWidth={2.2} />
             <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#1FCDFF", display: "inline-block" }} />
           </div>
           <p style={{ fontSize: "2rem", fontWeight: 800, color: "#1FCDFF", lineHeight: 1 }}>

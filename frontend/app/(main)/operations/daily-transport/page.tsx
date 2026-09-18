@@ -23,6 +23,7 @@ import {
   AccessibilityIcon,
   ArrowLeftRightIcon,
   TicketIcon,
+  DownloadIcon,
 } from "@/components/ui/Icons";
 
 // Estado de viaje → clase de badge del tema. Los labels salen del catálogo
@@ -667,11 +668,7 @@ export default function DailyTransportPage() {
               className="btn btn-ghost"
               title={t("Descarga un archivo Excel con todas las columnas esperadas y filas de ejemplo")}
             >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="inline-block mr-1.5 -mt-0.5">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
+              <DownloadIcon size={15} strokeWidth={1.9} className="inline-block mr-1.5 -mt-0.5" />
               {t("Descargar plantilla")}
             </button>
           </div>

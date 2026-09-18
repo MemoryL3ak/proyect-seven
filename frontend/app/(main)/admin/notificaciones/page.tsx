@@ -196,9 +196,7 @@ export default function AdminNotificacionesPage() {
                     </p>
                   </div>
                   {isSelected && (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2.5" strokeLinecap="round">
-                      <path d="M20 6L9 17l-5-5" />
-                    </svg>
+                    <CheckIcon size={16} color="#21D0B3" strokeWidth={2.5} />
                   )}
                 </button>
               );

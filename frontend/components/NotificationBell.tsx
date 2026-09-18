@@ -3,7 +3,20 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { apiFetch } from "@/lib/api";
-import { FileTextIcon } from "@/components/ui/Icons";
+import {
+  FileTextIcon,
+  XIcon,
+  BellIcon,
+  CheckIcon,
+  StarIcon,
+  MessageIcon,
+  TruckIcon,
+  PinIcon,
+  AlertIcon,
+  CameraIcon,
+  CalendarIcon,
+  ChevronRightIcon,
+} from "@/components/ui/Icons";
 import { BRAND } from "@/lib/design";
 
 /* ------------------------------------------------------------------ */
@@ -314,10 +327,7 @@ export default function NotificationBell({
               color: "#94a3b8", cursor: "pointer", flexShrink: 0,
             }}
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
+            <XIcon size={12} strokeWidth={2.5} />
           </button>
         </div>
       </div>
@@ -332,10 +342,7 @@ export default function NotificationBell({
             fontSize: 12.5,
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
           }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-            </svg>
+            <BellIcon size={16} color="#cbd5e1" strokeWidth={1.8} />
             Sin notificaciones
           </div>
         ) : (
@@ -372,27 +379,27 @@ export default function NotificationBell({
                     {isError ? (
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
                     ) : isSuccess ? (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+                      <CheckIcon size={14} color="#10b981" strokeWidth={2.5} />
                     ) : isStar ? (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" strokeWidth="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                      <StarIcon size={14} color="#f59e0b" strokeWidth={1} fill="#f59e0b" />
                     ) : isChat ? (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                      <MessageIcon size={14} color={BRAND.teal} strokeWidth={2} />
                     ) : isCar ? (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2" strokeLinecap="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                      <TruckIcon size={14} color={BRAND.teal} strokeWidth={2} />
                     ) : isPin ? (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                      <PinIcon size={14} color="#3b82f6" strokeWidth={2} />
                     ) : isWarning ? (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                      <AlertIcon size={14} color="#f59e0b" strokeWidth={2} />
                     ) : isCamera ? (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                      <CameraIcon size={14} color="#64748b" strokeWidth={2} />
                     ) : isCal ? (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                      <CalendarIcon size={14} color="#0ea5e9" strokeWidth={2} />
                     ) : isDoc ? (
                       <FileTextIcon size={14} color="#64748b" />
                     ) : isSupport ? (
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><path d="M4.93 4.93l4.24 4.24M14.83 14.83l4.24 4.24M14.83 9.17l4.24-4.24M14.83 9.17l3.53-3.53M4.93 19.07l4.24-4.24"/></svg>
                     ) : (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2" strokeLinecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                      <BellIcon size={14} color={BRAND.teal} strokeWidth={2} />
                     )}
                   </span>
                 );
@@ -416,9 +423,7 @@ export default function NotificationBell({
                 }} />
               )}
               {n.href && (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
+                <ChevronRightIcon size={14} color="#cbd5e1" strokeWidth={2.5} style={{ flexShrink: 0 }} />
               )}
             </div>
           ))
@@ -453,10 +458,7 @@ export default function NotificationBell({
           WebkitTapHighlightColor: "transparent",
         }}
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-        </svg>
+        <BellIcon size={16} color={BRAND.teal} strokeWidth={1.8} />
         {unreadCount > 0 && (
           <span style={{
             position: "absolute", top: -5, right: -5,

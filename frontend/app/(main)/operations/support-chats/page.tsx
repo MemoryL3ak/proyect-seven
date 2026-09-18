@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch, getStoredUser } from "@/lib/api";
+import { ChevronLeftIcon } from "@/components/ui/Icons";
 import { useIsMobile } from "@/lib/useIsMobile";
 
 type Chat = {
@@ -262,7 +263,7 @@ export default function SupportChatsPage() {
                       aria-label="Volver a la bandeja"
                       style={{ flexShrink: 0, width: "32px", height: "32px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "#ffffff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#475569" }}
                     >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+                      <ChevronLeftIcon size={16} strokeWidth={2.5} />
                     </button>
                   )}
                 <div>

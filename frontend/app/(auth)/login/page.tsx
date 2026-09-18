@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { changeTemporaryPassword, login } from "@/lib/api";
+import { LockIcon, EyeIcon } from "@/components/ui/Icons";
 
 type LoginResponse = {
   user?: Record<string, unknown>;
@@ -171,10 +172,7 @@ export default function LoginPage() {
           </label>
           <div style={{ position: "relative" }}>
             <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.25)", pointerEvents: "none" }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                <rect x="3" y="11" width="18" height="11" rx="2" />
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              </svg>
+              <LockIcon size={16} strokeWidth={1.8} />
             </span>
             <input
               type={showPassword ? "text" : "password"}
@@ -215,10 +213,7 @@ export default function LoginPage() {
                   <line x1="1" y1="1" x2="23" y2="23" />
                 </svg>
               ) : (
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                  <circle cx="12" cy="12" r="3" />
-                </svg>
+                <EyeIcon size={17} strokeWidth={1.8} />
               )}
             </button>
           </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { apiFetch } from "@/lib/api";
+import { XIcon, MessageIcon, TruckIcon, UserIcon, ChevronDownIcon, CheckIcon } from "@/components/ui/Icons";
 import { REPORT_CATEGORY, REPORT_REASONS, reportReasonLabel } from "@/lib/chat-report";
 import { BRAND } from "@/lib/design";
 
@@ -295,13 +296,9 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
       {/* ─── FAB ─── */}
       <button type="button" onClick={() => setOpen((v) => !v)} className="tripchat-fab">
         {open ? (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round">
-            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
+          <XIcon size={20} color="#fff" strokeWidth={2.2} />
         ) : (
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
+          <MessageIcon size={22} color="#fff" strokeWidth={1.8} />
         )}
         {unread > 0 && !open && (
           <span className="tripchat-badge">{unread > 9 ? "9+" : unread}</span>
@@ -316,8 +313,8 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
             <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1 }}>
               <div className="tripchat-avatar">
                 {senderType === "PASSENGER"
-                  ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-                  : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  ? <TruckIcon size={16} color={BRAND.teal} strokeWidth={2} />
+                  : <UserIcon size={16} color={BRAND.teal} strokeWidth={2} />
                 }
               </div>
               <div>
@@ -357,9 +354,7 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
               )}
             </div>
             <button type="button" onClick={() => setOpen(false)} className="tripchat-close-btn">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
+              <ChevronDownIcon size={16} strokeWidth={2} />
             </button>
           </div>
 
@@ -368,9 +363,7 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
             {visibleMessages.length === 0 && !blocked && (
               <div className="tripchat-empty">
                 <div className="tripchat-empty-icon">
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                  </svg>
+                  <MessageIcon size={28} color="#cbd5e1" strokeWidth={1.5} />
                 </div>
                 Envía un mensaje para<br />comunicarte con {senderType === "PASSENGER" ? "tu conductor" : "el pasajero"}
               </div>
@@ -388,8 +381,8 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
                 {!isMine(msg) && isFirstInGroup && (
                   <div className="tripchat-msg-avatar">
                     {senderType === "PASSENGER"
-                      ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2.5"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-                      : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                      ? <TruckIcon size={12} color={BRAND.teal} strokeWidth={2.5} />
+                      : <UserIcon size={12} color={BRAND.teal} strokeWidth={2.5} />
                     }
                   </div>
                 )}
@@ -447,7 +440,7 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
             </div>
           ) : isFinished ? (
             <div className="tripchat-finished-bar">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+              <CheckIcon size={14} color="#94a3b8" strokeWidth={2} />
               Viaje finalizado — chat cerrado
             </div>
           ) : (
