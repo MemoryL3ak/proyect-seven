@@ -37,6 +37,13 @@ export class Trip {
   @Column({ name: 'discipline_id', type: 'uuid', nullable: true })
   disciplineId?: string | null;
 
+  /** Sede/hotel de origen: repone "Tipo de origen" al editar el viaje. */
+  @Column({ name: 'origin_venue_id', type: 'uuid', nullable: true })
+  originVenueId?: string | null;
+
+  @Column({ name: 'origin_hotel_id', type: 'uuid', nullable: true })
+  originHotelId?: string | null;
+
   @Column({ name: 'destination_venue_id', type: 'uuid', nullable: true })
   destinationVenueId?: string | null;
 
