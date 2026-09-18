@@ -7,6 +7,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { DataSource, Repository } from 'typeorm';
+import { StaffScopeService } from '../auth/staff-scope.service';
 import { CreateDelegationDto } from './dto/create-delegation.dto';
 import { UpdateDelegationDto } from './dto/update-delegation.dto';
 import { Delegation } from './entities/delegation.entity';
@@ -37,6 +38,7 @@ export class DelegationsService {
     @InjectRepository(Delegation)
     private readonly delegationRepository: Repository<Delegation>,
     private readonly dataSource: DataSource,
+    private readonly scope: StaffScopeService,
   ) {}
 
   private toRow(dto: CreateDelegationDto | UpdateDelegationDto) {
@@ -56,18 +58,12 @@ export class DelegationsService {
   }
 
   private touchesMetadata(dto: CreateDelegationDto | UpdateDelegationDto) {
-    return (
-      dto.metadata !== undefined ||
-      dto.name !== undefined ||
-      dto.missionHeadName !== undefined ||
-      dto.missionHeadPhone !== undefined
-    );
+    return dto.metadata !== undefined || dto.name !== undefined;
   }
 
   /**
-   * Metadata resultante: la existente + dto.metadata + los campos planos del
-   * formulario (nombre visible y jefe de misión). Así editar el jefe de misión
-   * no pisa lo demás que viva en metadata.
+   * Metadata resultante: la existente + dto.metadata + el nombre visible del
+   * formulario. Así editar un campo no pisa lo demás que viva en metadata.
    */
   private mergeMetadata(
     existing: Record<string, unknown>,
@@ -75,15 +71,37 @@ export class DelegationsService {
   ): Record<string, unknown> {
     const next: Record<string, unknown> = { ...existing, ...(dto.metadata ?? {}) };
     if (dto.name !== undefined) next.name = dto.name?.trim() || null;
-    if (dto.missionHeadName !== undefined || dto.missionHeadPhone !== undefined) {
-      const prev = (existing.missionHead as Record<string, unknown> | undefined) ?? {};
-      next.missionHead = {
-        ...prev,
-        ...(dto.missionHeadName !== undefined ? { name: dto.missionHeadName?.trim() || null } : {}),
-        ...(dto.missionHeadPhone !== undefined ? { phone: dto.missionHeadPhone?.trim() || null } : {}),
-      };
-    }
     return next;
+  }
+
+  /**
+   * Jefe de Misión = participante encargado de la delegación. Sólo uno por
+   * delegación: el elegido pasa a is_delegation_lead (y a esta delegación) y
+   * el resto de sus participantes deja de serlo. null destituye al actual.
+   */
+  private async applyMissionHead(id: string, dto: CreateDelegationDto | UpdateDelegationDto) {
+    if (dto.missionHeadId === undefined) return;
+    const headId = dto.missionHeadId?.trim() || null;
+    const [demoted] = await this.dataSource.query<[Array<{ id: string }>, number]>(
+      `update core.athletes set is_delegation_lead = false, updated_at = now()
+       where delegation_id = $1 and is_delegation_lead = true
+         and ($2::uuid is null or id <> $2)
+       returning id`,
+      [id, headId],
+    );
+    for (const row of demoted) this.scope.invalidate(row.id);
+    if (headId) {
+      const [promoted] = await this.dataSource.query<[Array<{ id: string }>, number]>(
+        `update core.athletes set is_delegation_lead = true, delegation_id = $1, updated_at = now()
+         where id = $2 and status is distinct from 'DELETED'
+         returning id`,
+        [id, headId],
+      );
+      if (promoted.length === 0) {
+        throw new NotFoundException(`Participant with id ${headId} not found`);
+      }
+      this.scope.invalidate(headId);
+    }
   }
 
   /** Hoteles y flota fija de la delegación (sólo si el DTO los trae). */
@@ -142,7 +160,7 @@ export class DelegationsService {
   ) {
     if (delegations.length === 0) return delegations;
     const ids = delegations.map((d) => d.id);
-    const [hotels, drivers, vehicles] = await Promise.all([
+    const [hotels, drivers, vehicles, heads] = await Promise.all([
       this.dataSource.query<Array<{ delegation_id: string; accommodation_id: string }>>(
         `select delegation_id, accommodation_id from core.delegation_accommodations
          where delegation_id = any($1::uuid[])`,
@@ -159,6 +177,14 @@ export class DelegationsService {
         `select id, delegation_id from transport.vehicles where delegation_id = any($1::uuid[])`,
         [ids],
       ),
+      // Jefe de Misión: el participante encargado de la delegación.
+      this.dataSource.query<Array<{ id: string; delegation_id: string; full_name: string | null; phone: string | null }>>(
+        `select id, delegation_id, full_name, phone from core.athletes
+         where delegation_id = any($1::uuid[]) and is_delegation_lead = true
+           and status is distinct from 'DELETED'
+         order by updated_at desc`,
+        [ids],
+      ),
     ]);
     const group = (rows: Array<{ delegation_id: string }>, key: string) => {
       const map = new Map<string, string[]>();
@@ -172,14 +198,17 @@ export class DelegationsService {
     const hotelsBy = group(hotels, 'accommodation_id');
     const driversBy = group(drivers, 'id');
     const vehiclesBy = group(vehicles, 'id');
+    const headBy = new Map<string, (typeof heads)[number]>();
+    for (const h of heads) if (!headBy.has(h.delegation_id)) headBy.set(h.delegation_id, h);
     return delegations.map((d) => {
       const meta = d.metadata ?? {};
-      const head = (meta.missionHead as Record<string, unknown> | undefined) ?? {};
+      const head = headBy.get(d.id) ?? null;
       return {
         ...d,
         name: typeof meta.name === 'string' ? meta.name : null,
-        missionHeadName: typeof head.name === 'string' ? head.name : null,
-        missionHeadPhone: typeof head.phone === 'string' ? head.phone : null,
+        missionHeadId: head?.id ?? null,
+        missionHeadName: head?.full_name ?? null,
+        missionHeadPhone: head?.phone ?? null,
         accommodationIds: hotelsBy.get(d.id) ?? [],
         driverIds: driversBy.get(d.id) ?? [],
         vehicleIds: vehiclesBy.get(d.id) ?? [],
@@ -317,6 +346,7 @@ export class DelegationsService {
       );
     }
     await this.applyLinks((data as DelegationRow).id, createDelegationDto);
+    await this.applyMissionHead((data as DelegationRow).id, createDelegationDto);
 
     return this.findOne((data as DelegationRow).id);
   }
@@ -358,28 +388,38 @@ export class DelegationsService {
       const current = await this.delegationRepository.findOne({ where: { id } });
       row.metadata = this.mergeMetadata(current?.metadata ?? {}, updateDelegationDto);
     }
-    const { data, error } = await this.supabase
-      .schema('core')
-      .from('delegations')
-      .update(row)
-      .eq('id', id)
-      .select('*')
-      .maybeSingle();
+    if (Object.keys(row).length > 0) {
+      const { data, error } = await this.supabase
+        .schema('core')
+        .from('delegations')
+        .update(row)
+        .eq('id', id)
+        .select('*')
+        .maybeSingle();
 
-    if (error) {
-      throw new InternalServerErrorException(
-        error.message || 'Error updating delegation',
-      );
-    }
+      if (error) {
+        throw new InternalServerErrorException(
+          error.message || 'Error updating delegation',
+        );
+      }
 
-    if (!data) {
-      throw new NotFoundException(`Delegation with id ${id} not found`);
+      if (!data) {
+        throw new NotFoundException(`Delegation with id ${id} not found`);
+      }
+    } else {
+      // Sólo vínculos (jefe de misión, hoteles, flota): PostgREST no acepta un
+      // update vacío, así que se verifica la existencia aparte.
+      const exists = await this.delegationRepository.findOne({ where: { id } });
+      if (!exists) {
+        throw new NotFoundException(`Delegation with id ${id} not found`);
+      }
     }
 
     if (updateDelegationDto.disciplineIds) {
       await this.setDelegationDisciplines(id, updateDelegationDto.disciplineIds);
     }
     await this.applyLinks(id, updateDelegationDto);
+    await this.applyMissionHead(id, updateDelegationDto);
 
     return this.findOne(id);
   }

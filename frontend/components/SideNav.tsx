@@ -25,6 +25,7 @@ const navSections: NavSection[] = [
     items: [
       { href: "/registro/eventos", label: "Registro Evento", icon: "calendar" },
       { href: "/registro/participantes", label: "Inscripción Participantes", icon: "users" },
+      { href: "/masters/delegations", label: "Delegaciones", icon: "pin" },
       { href: "/registro/proveedores", label: "Proveedores", icon: "provider" },
       { href: "/clientes", label: "Clientes", icon: "users" }
     ]
@@ -224,6 +225,9 @@ const HREF_TO_MODULE: Record<string, string> = {
   "/dashboard/operacional": "dashboard.operacional",
   "/registro/eventos": "registro.eventos",
   "/registro/participantes": "registro.participantes",
+  // Delegaciones (regiones, jefe de misión, hoteles y flota fija): mismo
+  // permiso que la inscripción de participantes.
+  "/masters/delegations": "registro.participantes",
   "/registro/proveedores": "registro.participantes",
   "/operacion/and": "operacion.and",
   "/operacion/cumplimiento-and": "operacion.cumplimiento",

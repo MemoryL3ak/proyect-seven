@@ -60,3 +60,11 @@ create table if not exists core.delegation_accommodations (
   accommodation_id uuid not null references logistics.accommodations(id) on delete cascade,
   primary key (delegation_id, accommodation_id)
 );
+
+-- 2b. Los choferes también viven en transport.drivers (además de
+-- core.provider_participants): la flota fija necesita la columna en ambas.
+-- Faltaba en la primera versión de este script y GET /delegations y GET /drivers
+-- respondían 500 ("column delegation_id does not exist").
+alter table transport.drivers
+  add column if not exists delegation_id uuid references core.delegations(id) on delete set null;
+create index if not exists idx_drivers_delegation on transport.drivers (delegation_id);

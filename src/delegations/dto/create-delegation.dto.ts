@@ -26,13 +26,14 @@ export class CreateDelegationDto {
   @IsOptional()
   name?: string;
 
+  /**
+   * Jefe de Misión: id del participante (core.athletes) de esta delegación que
+   * queda como encargado (is_delegation_lead). Es un participante, no un
+   * usuario del panel: entra por el portal con su código. null lo quita.
+   */
   @IsString()
   @IsOptional()
-  missionHeadName?: string;
-
-  @IsString()
-  @IsOptional()
-  missionHeadPhone?: string;
+  missionHeadId?: string | null;
 
   /** Hoteles donde se aloja y come la delegación (alimentación por región). */
   @IsArray()

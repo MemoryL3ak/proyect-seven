@@ -206,8 +206,12 @@ export const resources: Record<string, ResourceConfig> = {
         ]
       },
       { key: "name", label: "Nombre visible", type: "text" },
-      { key: "missionHeadName", label: "Jefe de misión", type: "text" },
-      { key: "missionHeadPhone", label: "Teléfono jefe de misión", type: "phone" },
+      // Jefe de Misión: es un participante (entra por el portal con su código),
+      // no un usuario del panel. Se elige entre los inscritos en la delegación;
+      // nombre y teléfono se derivan de ese participante.
+      { key: "missionHeadId", label: "Jefe de misión (participante)", type: "select", optionsSource: "athletes" },
+      { key: "missionHeadName", label: "Jefe de misión", type: "text", readOnly: true, formHidden: true },
+      { key: "missionHeadPhone", label: "Teléfono jefe de misión", type: "text", readOnly: true, formHidden: true },
       // Alimentación por delegación: hoteles donde se aloja y come.
       { key: "accommodationIds", label: "Hoteles de la delegación", type: "multiselect", optionsSource: "accommodations" },
       // Flota fija durante el evento (decisión de producto: cada región tiene sus buses y choferes).
@@ -246,7 +250,7 @@ export const resources: Record<string, ResourceConfig> = {
       },
       {
         key: "participantIsDelegationLead",
-        label: "Encargado de delegación",
+        label: "Jefe de misión",
         type: "select",
         transient: true,
         options: [

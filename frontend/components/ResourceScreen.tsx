@@ -2262,6 +2262,13 @@ export default function ResourceScreen({
     if (source === "hotelRooms") return hotelRoomOptions;
     if (source === "hotelBeds") return hotelBedOptions;
     if (field.optionsSource === "athletes") {
+      if (config.endpoint === "/delegations" && field.key === "missionHeadId") {
+        // Jefe de Misión: sólo participantes inscritos en la delegación que se edita.
+        if (!editingId) return [];
+        return (athleteOptions as Array<Option & { delegationId?: string | null }>).filter(
+          (option) => option.delegationId === editingId
+        );
+      }
       if (config.endpoint === "/trips") {
         // Cliente VIP: el detalle de participantes solo ofrece VIPs,
         // nunca la delegación completa.
@@ -3611,7 +3618,7 @@ export default function ResourceScreen({
                           <span style={{ fontWeight: 700, fontSize: "14px", color: "var(--text)" }}>{item.participantFullName ?? "-"}</span>
                           {isLead && (
                             <span style={{ fontSize: "10px", fontWeight: 700, padding: "2px 7px", borderRadius: "20px", background: "rgba(251,191,36,0.15)", color: STATE.warningText, border: "1px solid rgba(251,191,36,0.3)" }}>
-                              {t("Jefe delegación")}
+                              {t("Jefe de misión")}
                             </span>
                           )}
                           {trip && (

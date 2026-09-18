@@ -6,9 +6,10 @@ import { DriverPresenceService } from './driver-presence.service';
 import { HeartbeatDto } from './dto/heartbeat.dto';
 
 /**
- * Presencia de conductores. Un Jefe de Misión (usuario acotado a una
- * delegación) recibe sólo la flota de su región: el alcance se resuelve en el
- * backend, no se confía en filtros del navegador.
+ * Presencia de conductores. Los GET los usan el panel y el Jefe de Misión
+ * (participante del portal): éste recibe sólo la flota de su región. El
+ * alcance se resuelve en el backend, no se confía en filtros del navegador;
+ * cualquier otra sesión de portal recibe 403.
  */
 @Controller('driver-presence')
 export class DriverPresenceController {
@@ -32,13 +33,13 @@ export class DriverPresenceController {
     @Query('eventId') eventId?: string,
     @Query('date') date?: string,
   ) {
-    return this.service.list(eventId, date, await this.scope.delegationOf(req));
+    return this.service.list(eventId, date, (await this.scope.requireOperator(req)).delegationId);
   }
 
   /** KPIs agregados de presencia. */
   @Get('stats')
   async stats(@Req() req: ApiRequest, @Query('eventId') eventId?: string) {
-    return this.service.stats(eventId, await this.scope.delegationOf(req));
+    return this.service.stats(eventId, (await this.scope.requireOperator(req)).delegationId);
   }
 
   /** Snapshot puntual (lista + stats). */
@@ -48,7 +49,7 @@ export class DriverPresenceController {
     @Query('eventId') eventId?: string,
     @Query('date') date?: string,
   ) {
-    return this.service.snapshot(eventId, date, await this.scope.delegationOf(req));
+    return this.service.snapshot(eventId, date, (await this.scope.requireOperator(req)).delegationId);
   }
 
   /** SSE: emite un snapshot de presencia cada 8 segundos. */
@@ -59,7 +60,7 @@ export class DriverPresenceController {
     @Query('date') date: string | undefined,
     @Res() res: Response,
   ) {
-    const delegationId = await this.scope.delegationOf(req);
+    const { delegationId } = await this.scope.requireOperator(req);
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
