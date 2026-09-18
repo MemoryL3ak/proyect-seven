@@ -25,7 +25,6 @@ const navSections: NavSection[] = [
     items: [
       { href: "/registro/eventos", label: "Registro Evento", icon: "calendar" },
       { href: "/registro/participantes", label: "Inscripción Participantes", icon: "users" },
-      { href: "/masters/delegations", label: "Delegaciones", icon: "pin" },
       { href: "/registro/proveedores", label: "Proveedores", icon: "provider" },
       { href: "/clientes", label: "Clientes", icon: "users" }
     ]
@@ -225,8 +224,8 @@ const HREF_TO_MODULE: Record<string, string> = {
   "/dashboard/operacional": "dashboard.operacional",
   "/registro/eventos": "registro.eventos",
   "/registro/participantes": "registro.participantes",
-  // Delegaciones (regiones, jefe de misión, hoteles y flota fija): mismo
-  // permiso que la inscripción de participantes.
+  // Delegaciones se registran como pestaña de Inscripción de Participantes;
+  // la página matriz (/masters/delegations) queda con el mismo permiso.
   "/masters/delegations": "registro.participantes",
   "/registro/proveedores": "registro.participantes",
   "/operacion/and": "operacion.and",

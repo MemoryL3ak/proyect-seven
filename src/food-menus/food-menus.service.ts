@@ -26,6 +26,18 @@ type FoodMenuRow = {
 // Columns to select — date cast to text to avoid pg Date-object timezone issues
 const SELECT_COLS = `id, to_char(date, 'YYYY-MM-DD') as date, meal_type, title, description, dietary_type, accommodation_id, client_types, venue_id, location_detail, created_at, updated_at`;
 
+/** Hoteles de una delegación: vínculo explícito ∪ hoteles de sus participantes. */
+const hotelsOfDelegation = (param: string) => `(
+  select accommodation_id from core.delegation_accommodations where delegation_id = ${param}
+  union
+  select hotel_accommodation_id from core.athletes
+   where delegation_id = ${param} and hotel_accommodation_id is not null
+     and status is distinct from 'DELETED'
+  union
+  select ha.hotel_id from logistics.hotel_assignments ha
+    join core.athletes a on a.id = ha.participant_id
+   where a.delegation_id = ${param})`;
+
 @Injectable()
 export class FoodMenusService {
   constructor(private readonly dataSource: DataSource) {}
@@ -77,7 +89,8 @@ export class FoodMenusService {
 
   /**
    * @param delegationId Jefe de Misión: sólo los menús de los hoteles de su
-   * delegación (core.delegation_accommodations) y los generales sin hotel.
+   * delegación (vínculo explícito o donde se alojan sus participantes) y los
+   * generales sin hotel.
    */
   async findAll(
     filters: { month?: string; accommodationId?: string },
@@ -98,8 +111,7 @@ export class FoodMenusService {
       if (delegationId) {
         params.push(delegationId);
         conditions.push(
-          `(accommodation_id is null or accommodation_id in (
-             select accommodation_id from core.delegation_accommodations where delegation_id = $${params.length}))`,
+          `(accommodation_id is null or accommodation_id in ${hotelsOfDelegation(`$${params.length}`)})`,
         );
       }
 

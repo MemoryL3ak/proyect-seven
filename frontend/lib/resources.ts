@@ -212,11 +212,6 @@ export const resources: Record<string, ResourceConfig> = {
       { key: "missionHeadId", label: "Jefe de misión (participante)", type: "select", optionsSource: "athletes" },
       { key: "missionHeadName", label: "Jefe de misión", type: "text", readOnly: true, formHidden: true },
       { key: "missionHeadPhone", label: "Teléfono jefe de misión", type: "text", readOnly: true, formHidden: true },
-      // Alimentación por delegación: hoteles donde se aloja y come.
-      { key: "accommodationIds", label: "Hoteles de la delegación", type: "multiselect", optionsSource: "accommodations" },
-      // Flota fija durante el evento (decisión de producto: cada región tiene sus buses y choferes).
-      { key: "driverIds", label: "Choferes asignados", type: "multiselect", optionsSource: "drivers" },
-      { key: "vehicleIds", label: "Vehículos asignados", type: "multiselect", optionsSource: "vehicles" },
       {
         key: "disciplineCategory",
         label: "Categoría",

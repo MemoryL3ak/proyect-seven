@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import BulkImportPanel from "@/components/BulkImportPanel";
+import DelegationsRegistry from "@/components/DelegationsRegistry";
 import ResourceScreen from "@/components/ResourceScreen";
 import { resources } from "@/lib/resources";
 import { apiFetch } from "@/lib/api";
@@ -42,7 +43,8 @@ function KpiCard({ label, value, color }: { label: string; value: number | strin
 export default function RegistroParticipantesPage() {
   const { t } = useI18n();
   const [refreshKey, setRefreshKey] = useState(0);
-  const [tab, setTab] = useState<"form" | "table">("form");
+  // "delegaciones": registro de las delegaciones del evento (región + jefe).
+  const [tab, setTab] = useState<"form" | "table" | "delegaciones">("form");
   const [externalEditingId, setExternalEditingId] = useState<string | null>(null);
   const [athletes, setAthletes] = useState<Athlete[]>([]);
   const [delegations, setDelegations] = useState<Delegation[]>([]);
@@ -167,22 +169,33 @@ export default function RegistroParticipantesPage() {
           >
             {t("Registros y validación")}
           </button>
+          <button
+            className={`btn ${tab === "delegaciones" ? "btn-primary" : "btn-ghost"}`}
+            type="button"
+            onClick={() => setTab("delegaciones")}
+          >
+            {t("Delegaciones")}
+          </button>
         </div>
       </section>
 
-      <ResourceScreen
-        config={resources.athletes}
-        refreshKey={refreshKey}
-        viewMode={tab}
-        athleteScope="all"
-        externalEditingId={externalEditingId}
-        onEditRequested={(id) => {
-          setExternalEditingId(id);
-          setTab("form");
-        }}
-        onEditCancelled={() => setExternalEditingId(null)}
-        onDataChanged={() => setRefreshKey((current) => current + 1)}
-      />
+      {tab === "delegaciones" ? (
+        <DelegationsRegistry refreshKey={refreshKey} onChanged={() => setRefreshKey((current) => current + 1)} />
+      ) : (
+        <ResourceScreen
+          config={resources.athletes}
+          refreshKey={refreshKey}
+          viewMode={tab}
+          athleteScope="all"
+          externalEditingId={externalEditingId}
+          onEditRequested={(id) => {
+            setExternalEditingId(id);
+            setTab("form");
+          }}
+          onEditCancelled={() => setExternalEditingId(null)}
+          onDataChanged={() => setRefreshKey((current) => current + 1)}
+        />
+      )}
 
       {/* Photo upload result modal */}
       {photoResult && (
