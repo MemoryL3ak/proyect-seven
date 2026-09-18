@@ -75,7 +75,14 @@ export class FoodMenusService {
     }
   }
 
-  async findAll(filters: { month?: string; accommodationId?: string }) {
+  /**
+   * @param delegationId Jefe de Misión: sólo los menús de los hoteles de su
+   * delegación (core.delegation_accommodations) y los generales sin hotel.
+   */
+  async findAll(
+    filters: { month?: string; accommodationId?: string },
+    delegationId?: string | null,
+  ) {
     try {
       const conditions: string[] = [];
       const params: unknown[] = [];
@@ -87,6 +94,13 @@ export class FoodMenusService {
       if (filters.accommodationId) {
         params.push(filters.accommodationId);
         conditions.push(`accommodation_id = $${params.length}`);
+      }
+      if (delegationId) {
+        params.push(delegationId);
+        conditions.push(
+          `(accommodation_id is null or accommodation_id in (
+             select accommodation_id from core.delegation_accommodations where delegation_id = $${params.length}))`,
+        );
       }
 
       const where =

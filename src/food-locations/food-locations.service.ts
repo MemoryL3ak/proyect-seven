@@ -60,11 +60,21 @@ export class FoodLocationsService {
     }
   }
 
-  async findAll() {
+  /**
+   * @param delegationId Jefe de Misión: sólo los lugares de los hoteles de su
+   * delegación (core.delegation_accommodations) y los puntos generales sin hotel.
+   */
+  async findAll(delegationId?: string | null) {
     try {
-      const rows = (await this.dataSource.query(`
-        select * from logistics.food_locations order by created_at desc
-      `)) as FoodLocationRow[];
+      const rows = await this.dataSource.query<FoodLocationRow[]>(
+        `select * from logistics.food_locations
+         where ($1::uuid is null
+                or accommodation_id is null
+                or accommodation_id in (
+                  select accommodation_id from core.delegation_accommodations where delegation_id = $1))
+         order by created_at desc`,
+        [delegationId ?? null],
+      );
       return rows.map((r) => this.toEntity(r));
     } catch (error) {
       throw new InternalServerErrorException(

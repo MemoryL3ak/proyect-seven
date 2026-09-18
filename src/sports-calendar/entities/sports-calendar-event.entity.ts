@@ -14,6 +14,8 @@ export class SportsCalendarEvent {
   externalId?: string | null;
   source?: string | null;
   metadata: Record<string, unknown>;
+  /** Delegaciones (regiones) que participan; vacío = fila general. */
+  delegationIds?: string[];
   createdAt: Date;
   updatedAt: Date;
 }

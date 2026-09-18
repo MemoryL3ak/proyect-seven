@@ -50,6 +50,9 @@ type PresenceDriver = {
   gpsTimestamp: string | null;
   allowedClientTypes: string[];
   disciplines: string[];
+  /** Flota fija por delegación (región). */
+  delegationId?: string | null;
+  delegationName?: string | null;
 };
 
 function todayChile(): string {
@@ -174,6 +177,7 @@ export default function DriverMonitoringPage() {
   const [clientTypeFilter, setClientTypeFilter] = useState<string>("");
   const [occupancyFilter, setOccupancyFilter] = useState<OccupancyFilter>("");
   const [disciplineFilter, setDisciplineFilter] = useState<string>("");
+  const [regionFilter, setRegionFilter] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   const isToday = selectedDate === today;
@@ -300,6 +304,12 @@ export default function DriverMonitoringPage() {
     return Array.from(set).sort();
   }, [drivers]);
 
+  const regionOptions = useMemo(() => {
+    const set = new Set<string>();
+    drivers.forEach((d) => { if (d.delegationName) set.add(d.delegationName); });
+    return Array.from(set).sort();
+  }, [drivers]);
+
   const disciplineOptions = useMemo(() => {
     const set = new Set<string>();
     drivers.forEach((d) => (d.disciplines || []).forEach((dx) => set.add(dx)));
@@ -312,6 +322,7 @@ export default function DriverMonitoringPage() {
     return drivers.filter((d) => {
       if (clientTypeFilter && !(d.allowedClientTypes || []).includes(clientTypeFilter)) return false;
       if (disciplineFilter && !(d.disciplines || []).includes(disciplineFilter)) return false;
+      if (regionFilter && (d.delegationName || "") !== regionFilter) return false;
       if (occupancyFilter === "BUSY" && d.activeTrips === 0) return false;
       if (occupancyFilter === "FREE" && d.activeTrips > 0) return false;
       if (q) {
@@ -399,11 +410,12 @@ export default function DriverMonitoringPage() {
 
   const busyCount = useMemo(() => drivers.filter((d) => d.activeTrips > 0).length, [drivers]);
   const freeCount = useMemo(() => drivers.filter((d) => d.activeTrips === 0).length, [drivers]);
-  const hasFilters = !!(clientTypeFilter || occupancyFilter || disciplineFilter || searchQuery);
+  const hasFilters = !!(clientTypeFilter || occupancyFilter || disciplineFilter || regionFilter || searchQuery);
   const clearFilters = () => {
     setClientTypeFilter("");
     setOccupancyFilter("");
     setDisciplineFilter("");
+    setRegionFilter("");
     setSearchQuery("");
   };
 
@@ -413,6 +425,7 @@ export default function DriverMonitoringPage() {
       `monitoreo-conductores-${new Date().toISOString().slice(0, 10)}`,
       visibleDrivers.map((d) => ({
         conductor: d.fullName,
+        region: d.delegationName || "",
         estado: d.online ? "Conectado" : "Desconectado",
         ocupacion: d.activeTrips > 0 ? "Ocupado" : "Desocupado",
         viajes_del_dia: d.dayTripCount,
@@ -589,6 +602,9 @@ export default function DriverMonitoringPage() {
         setDisciplineFilter={setDisciplineFilter}
         clientTypeOptions={clientTypeOptions}
         disciplineOptions={disciplineOptions}
+        regionFilter={regionFilter}
+        setRegionFilter={setRegionFilter}
+        regionOptions={regionOptions}
         totalCount={drivers.length}
         busyCount={busyCount}
         freeCount={freeCount}
@@ -786,6 +802,7 @@ export default function DriverMonitoringPage() {
                 >
                   {[
                     "Conductor",
+                    "Región",
                     "Estado",
                     "Ocupación",
                     isToday ? "Viajes hoy" : "Viajes del día",
@@ -869,6 +886,9 @@ export default function DriverMonitoringPage() {
                             )}
                           </div>
                         </div>
+                      </td>
+                      <td className="p-3" style={{ whiteSpace: "nowrap", fontSize: 12.5 }}>
+                        {d.delegationName || "—"}
                       </td>
 
                       {/* Estado conexión */}
@@ -1019,6 +1039,9 @@ type FiltersBarProps = {
   setDisciplineFilter: (s: string) => void;
   clientTypeOptions: string[];
   disciplineOptions: string[];
+  regionFilter: string;
+  setRegionFilter: (s: string) => void;
+  regionOptions: string[];
   totalCount: number;
   busyCount: number;
   freeCount: number;
@@ -1085,6 +1108,27 @@ function FiltersBar(p: FiltersBarProps) {
               <option key={c} value={c}>
                 {t(CLIENT_TYPE_META[c.toUpperCase()]?.label ?? c)}
               </option>
+            ))}
+          </select>
+        </label>
+
+        {/* Región (flota fija por delegación) */}
+        <label className="text-sm block">
+          <span className="block mb-1">{t("Región")}</span>
+          <select
+            className="input"
+            value={p.regionFilter}
+            onChange={(e) => p.setRegionFilter(e.target.value)}
+            disabled={p.regionOptions.length === 0}
+            style={{
+              borderColor: p.regionFilter ? "var(--brand)" : undefined,
+              fontWeight: p.regionFilter ? 600 : 400,
+              opacity: p.regionOptions.length === 0 ? 0.6 : 1,
+            }}
+          >
+            <option value="">{p.regionOptions.length === 0 ? t("Sin regiones asignadas") : t("Todas las regiones")}</option>
+            {p.regionOptions.map((r) => (
+              <option key={r} value={r}>{r}</option>
             ))}
           </select>
         </label>

@@ -7,14 +7,20 @@ import {
   Param,
   Delete,
   Query,
+  Req,
 } from '@nestjs/common';
 import { FoodMenusService } from './food-menus.service';
+import type { ApiRequest } from '../auth/api-auth.guard';
+import { StaffScopeService } from '../auth/staff-scope.service';
 import { CreateFoodMenuDto } from './dto/create-food-menu.dto';
 import { UpdateFoodMenuDto } from './dto/update-food-menu.dto';
 
 @Controller('food-menus')
 export class FoodMenusController {
-  constructor(private readonly foodMenusService: FoodMenusService) {}
+  constructor(
+    private readonly foodMenusService: FoodMenusService,
+    private readonly scope: StaffScopeService,
+  ) {}
 
   @Post()
   create(@Body() dto: CreateFoodMenuDto) {
@@ -22,11 +28,13 @@ export class FoodMenusController {
   }
 
   @Get()
-  findAll(
+  async findAll(
+    @Req() req: ApiRequest,
     @Query('month') month?: string,
     @Query('accommodationId') accommodationId?: string,
   ) {
-    return this.foodMenusService.findAll({ month, accommodationId });
+    // Jefe de Misión: sólo los menús de los hoteles de su delegación.
+    return this.foodMenusService.findAll({ month, accommodationId }, await this.scope.delegationOf(req));
   }
 
   @Get(':id')

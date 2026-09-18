@@ -6,14 +6,20 @@ import {
   Patch,
   Param,
   Delete,
+  Req,
 } from '@nestjs/common';
 import { FoodLocationsService } from './food-locations.service';
+import type { ApiRequest } from '../auth/api-auth.guard';
+import { StaffScopeService } from '../auth/staff-scope.service';
 import { CreateFoodLocationDto } from './dto/create-food-location.dto';
 import { UpdateFoodLocationDto } from './dto/update-food-location.dto';
 
 @Controller('food-locations')
 export class FoodLocationsController {
-  constructor(private readonly foodLocationsService: FoodLocationsService) {}
+  constructor(
+    private readonly foodLocationsService: FoodLocationsService,
+    private readonly scope: StaffScopeService,
+  ) {}
 
   @Post()
   create(@Body() dto: CreateFoodLocationDto) {
@@ -21,8 +27,9 @@ export class FoodLocationsController {
   }
 
   @Get()
-  findAll() {
-    return this.foodLocationsService.findAll();
+  async findAll(@Req() req: ApiRequest) {
+    // Jefe de Misión: sólo la alimentación de los hoteles de su delegación.
+    return this.foodLocationsService.findAll(await this.scope.delegationOf(req));
   }
 
   @Get(':id')

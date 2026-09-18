@@ -5,6 +5,11 @@ export class QuerySportsCalendarEventsDto {
   @IsOptional()
   eventId?: string;
 
+  /** Filas donde participa esta delegación (más las generales). */
+  @IsString()
+  @IsOptional()
+  delegationId?: string;
+
   @IsISO8601()
   @IsOptional()
   from?: string;

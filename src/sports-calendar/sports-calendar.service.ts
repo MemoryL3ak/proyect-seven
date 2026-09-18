@@ -27,6 +27,7 @@ type SportsCalendarEventRow = {
   external_id: string | null;
   source: string | null;
   metadata: Record<string, unknown>;
+  delegation_ids: string[] | null;
   created_at: string;
   updated_at: string;
 };
@@ -61,6 +62,13 @@ export class SportsCalendarService {
     if (dto.externalId !== undefined) row.external_id = dto.externalId ?? null;
     if (dto.source !== undefined) row.source = dto.source ?? null;
     if (dto.metadata !== undefined) row.metadata = dto.metadata;
+    if (dto.delegationIds !== undefined) {
+      row.delegation_ids = dto.delegationIds ?? [];
+    } else if (typeof dto.metadata?.delegationId === 'string' && dto.metadata.delegationId) {
+      // El formulario y la importación CSV guardan una sola delegación en
+      // metadata.delegationId; se refleja en la columna para poder filtrar.
+      row.delegation_ids = [dto.metadata.delegationId];
+    }
 
     return row;
   }
@@ -82,6 +90,7 @@ export class SportsCalendarService {
       externalId: row.external_id,
       source: row.source,
       metadata: row.metadata ?? {},
+      delegationIds: row.delegation_ids ?? [],
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
     };
@@ -126,13 +135,30 @@ export class SportsCalendarService {
     };
   }
 
-  async findAll(filters: QuerySportsCalendarEventsDto) {
+  /**
+   * @param delegationId Jefe de Misión: sólo las filas donde participa su
+   * delegación; las filas sin delegaciones cargadas se consideran generales.
+   */
+  async findAll(filters: QuerySportsCalendarEventsDto, delegationId?: string | null) {
     const where: string[] = [];
     const params: unknown[] = [];
     const pushParam = (value: unknown) => {
       params.push(value);
       return `$${params.length}`;
     };
+
+    const scopedDelegation = delegationId ?? filters.delegationId;
+    if (scopedDelegation) {
+      // Dos parámetros: uno se compara como uuid y otro como texto (metadata);
+      // un mismo $n no puede inferirse con dos tipos.
+      const asUuid = pushParam(scopedDelegation);
+      const asText = pushParam(scopedDelegation);
+      where.push(
+        `(delegation_ids @> array[${asUuid}::uuid]
+          or metadata->>'delegationId' = ${asText}::text
+          or (cardinality(delegation_ids) = 0 and coalesce(metadata->>'delegationId', '') = ''))`,
+      );
+    }
 
     if (filters.from) where.push(`start_at_utc >= ${pushParam(filters.from)}`);
     if (filters.to) where.push(`start_at_utc <= ${pushParam(filters.to)}`);
