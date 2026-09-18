@@ -754,4 +754,32 @@ export class MobileAuthService {
     return null;
   }
 
+  /**
+   * Contacto del Coordinador General para los portales: el usuario de
+   * plataforma con ese rol, activo y con telefono cargado en Administracion.
+   * Decision de producto: el pasajero no llama al chofer, le escribe por
+   * WhatsApp al coordinador. Si hay mas de uno, manda el primero por nombre;
+   * si no hay ninguno con telefono, null y el boton no se muestra.
+   */
+  async findGeneralCoordinator(): Promise<{ name: string; phone: string } | null> {
+    const { data, error } = await this.supabase.auth.admin.listUsers({ perPage: 1000 });
+    if (error) {
+      this.logger.error('findGeneralCoordinator listUsers error', JSON.stringify(error));
+      return null;
+    }
+    const now = Date.now();
+    const candidates = (data?.users ?? [])
+      .map((u) => {
+        const meta = (u.user_metadata ?? {}) as Record<string, unknown>;
+        const phone = typeof meta.phone === 'string' ? meta.phone.trim() : '';
+        const name = typeof meta.name === 'string' ? meta.name.trim() : '';
+        const bannedUntil = (u as { banned_until?: string | null }).banned_until;
+        const banned = bannedUntil ? new Date(bannedUntil).getTime() > now : false;
+        return { role: meta.role, phone, name: name || (u.email ?? '').split('@')[0], banned };
+      })
+      .filter((u) => u.role === 'Coordinador General' && u.phone && !u.banned)
+      .sort((a, b) => a.name.localeCompare(b.name));
+    if (candidates.length === 0) return null;
+    return { name: candidates[0].name, phone: candidates[0].phone };
+  }
 }

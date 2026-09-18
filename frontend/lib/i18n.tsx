@@ -2442,6 +2442,10 @@ const translations: Record<Locale, Record<string, string>> = {
     "Coordinador": "Coordinator",
     "Coordinador Bvan": "Bvan Coordinator",
     "Coordinador Comité": "Committee Coordinator",
+    "Coordinador General": "General Coordinator",
+    "Teléfono (WhatsApp)": "Phone (WhatsApp)",
+    "Con rol Coordinador General, los pasajeros lo ven como contacto de WhatsApp.": "With the General Coordinator role, passengers see it as the WhatsApp contact.",
+    "WhatsApp coordinador": "WhatsApp coordinator",
     "Operador": "Operator",
     "Visualizador": "Viewer",
     // ── Claves traducidas vía variable (roles, catálogos) ──
@@ -4875,6 +4879,10 @@ const translations: Record<Locale, Record<string, string>> = {
     "Coordinador": "Coordenador",
     "Coordinador Bvan": "Coordenador Bvan",
     "Coordinador Comité": "Coordenador do Comitê",
+    "Coordinador General": "Coordenador Geral",
+    "Teléfono (WhatsApp)": "Telefone (WhatsApp)",
+    "Con rol Coordinador General, los pasajeros lo ven como contacto de WhatsApp.": "Com o papel Coordenador Geral, os passageiros o veem como contato de WhatsApp.",
+    "WhatsApp coordinador": "WhatsApp do coordenador",
     "Operador": "Operador",
     "Visualizador": "Visualizador",
     // ── Claves traducidas vía variable (roles, catálogos) ──

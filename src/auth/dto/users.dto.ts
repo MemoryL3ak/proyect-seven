@@ -28,6 +28,12 @@ export class CreateUserDto {
 
   @IsOptional()
   isTemporaryPassword?: boolean;
+
+  // Teléfono de contacto. Hoy lo usa el rol Coordinador General: los portales
+  // ofrecen escribirle por WhatsApp en vez de llamar al chofer.
+  @IsString()
+  @IsOptional()
+  phone?: string;
 }
 
 export class LoginUserDto {
