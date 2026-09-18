@@ -9,6 +9,7 @@ import {
 } from "@/lib/cuadernoCargo";
 import { BookOpenIcon } from "@/components/ui/Icons";
 import { BRAND, SURFACE } from "@/lib/design";
+import CuadernoCargoPdf from "@/components/CuadernoCargoPdf";
 
 /**
  * Cuaderno de Cargo para la sección "Cuenta" de los portales.
@@ -80,6 +81,8 @@ export default function CuadernoCargoSection() {
       {open && (
         <div style={{ padding: "0 16px 16px", borderTop: `1px solid ${SURFACE.borderMuted}` }}>
           <p style={{ fontSize: 11.5, color: SURFACE.textMuted, margin: "12px 0" }}>{CUADERNO_INFO.desc.es}</p>
+          {/* PDF del evento vigente; si no hay, queda el contenido de referencia. */}
+          <CuadernoCargoPdf />
 
           <input
             type="search"

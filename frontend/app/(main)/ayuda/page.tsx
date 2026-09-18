@@ -35,6 +35,7 @@ import {
   FileTextIcon,
 } from "@/components/ui/Icons";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
+import CuadernoCargoPdf from "@/components/CuadernoCargoPdf";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type Locale = "es" | "en" | "pt";
@@ -1098,6 +1099,9 @@ function CuadernoSection({
   const allLabel = loc === "en" ? "All" : "Todas";
   const visibleCats = cat === "all" ? CUADERNO_CATEGORIES : CUADERNO_CATEGORIES.filter((c) => c.key === cat);
 
+  // Cuaderno del evento vigente (PDF subido en Documentos del Evento). Con PDF,
+  // el contenido de referencia de Santiago 2023 queda plegado.
+  const [hasPdf, setHasPdf] = useState(false);
   return (
     <section style={{ background: cBg, border: `1px solid ${cBorder}`, borderRadius: "20px", padding: "24px 28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
       {/* Header */}
@@ -1111,6 +1115,12 @@ function CuadernoSection({
         </div>
       </div>
 
+      <CuadernoCargoPdf onLoaded={setHasPdf} />
+
+      {hasPdf ? (
+        <details style={{ marginTop: 4 }}>
+          <summary style={{ cursor: "pointer", fontSize: 12, color: tFaint }}>{t("Referencia operativa Santiago 2023")}</summary>
+          <div style={{ marginTop: 14 }}>
       {/* Filter help line */}
       <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: tFaint, margin: "0 0 9px" }}>
         {t("Filtrar por sección")}
@@ -1150,6 +1160,51 @@ function CuadernoSection({
           </div>
         );
       })}
+          </div>
+        </details>
+      ) : (
+        <>
+      {/* Filter help line */}
+      <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: tFaint, margin: "0 0 9px" }}>
+        {t("Filtrar por sección")}
+      </p>
+
+      {/* Category chips */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 22 }}>
+        <CuadernoChip selected={cat === "all"} onClick={() => setCat("all")} label={allLabel} count={CUADERNO_ENTRIES.length} color={acc} />
+        {CUADERNO_CATEGORIES.map((c) => (
+          <CuadernoChip
+            key={c.key}
+            selected={cat === c.key}
+            onClick={() => setCat(c.key)}
+            label={c.label[loc]}
+            count={counts[c.key] ?? 0}
+            color={c.color}
+          />
+        ))}
+      </div>
+
+      {/* Entries grouped by category */}
+      {visibleCats.map((c) => {
+        const entries = CUADERNO_ENTRIES.filter((e) => e.category === c.key);
+        if (entries.length === 0) return null;
+        return (
+          <div key={c.key} style={{ marginBottom: 22 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 11 }}>
+              <span style={{ width: 9, height: 9, borderRadius: 3, background: c.color, flexShrink: 0 }} />
+              <h3 style={{ fontSize: 13, fontWeight: 700, color: tPrim, margin: 0 }}>{c.label[loc]}</h3>
+              <span style={{ fontSize: 11, fontWeight: 600, color: tFaint }}>· {entries.length}</span>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
+              {entries.map((entry, i) => (
+                <CuadernoCard key={`${entry.term}-${i}`} entry={entry} loc={loc} />
+              ))}
+            </div>
+          </div>
+        );
+      })}
+        </>
+      )}
     </section>
   );
 }

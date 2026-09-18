@@ -1,4 +1,5 @@
 import {
+  IsArray,
   IsISO8601,
   IsNotEmpty,
   IsNumber,
@@ -71,4 +72,10 @@ export class CreateSportsCalendarEventDto {
   @IsObject()
   @IsOptional()
   metadata?: Record<string, unknown>;
+
+  /** Delegaciones (regiones) que participan: el Jefe de Misión ve sólo las suyas. */
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  delegationIds?: string[];
 }
