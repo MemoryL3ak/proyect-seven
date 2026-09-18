@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { apiFetch } from "@/lib/api";
+import { cleanWhatsappPhone, formatWhatsappPhone, PHONE_PREFIX_CL } from "@/lib/external-link";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import {
   AlertIcon,
@@ -234,7 +235,7 @@ function emptyForm() {
     fullName: "",
     email: "",
     username: "",
-    phone: "",
+    phone: PHONE_PREFIX_CL,
     loginType: "email" as "email" | "username",
     role: "Operador" as Role,
     modules: ROLE_PERMISSIONS["Operador"],
@@ -342,7 +343,7 @@ export default function UsuariosPage() {
       fullName: user.fullName,
       email: uType === "email" ? user.email : "",
       username: uType === "username" ? extractUsername(user.email) : "",
-      phone: user.phone || "",
+      phone: user.phone ? formatWhatsappPhone(user.phone) : PHONE_PREFIX_CL,
       loginType: uType,
       role: user.role,
       modules: user.modules,
@@ -393,11 +394,11 @@ export default function UsuariosPage() {
             name: form.fullName,
             role: form.role,
             modules: form.modules,
-            phone: form.phone.trim(),
+            phone: cleanWhatsappPhone(form.phone),
             ...(form.passwordEditable ? { password: form.tempPassword } : {}),
           }),
         });
-        setUsers((us) => us.map((u) => u.id === editingUser.id ? { ...u, fullName: form.fullName, phone: form.phone.trim(), role: form.role, modules: form.modules, status: form.status } : u));
+        setUsers((us) => us.map((u) => u.id === editingUser.id ? { ...u, fullName: form.fullName, phone: cleanWhatsappPhone(form.phone), role: form.role, modules: form.modules, status: form.status } : u));
       } else {
         // Create: register via backend → Supabase Auth
         const result = await apiFetch<{ user: SupabaseUser }>("/auth/register", {
@@ -410,7 +411,7 @@ export default function UsuariosPage() {
             role: form.role,
             modules: form.modules,
             isTemporaryPassword: !isUsername,
-            ...(form.phone.trim() ? { phone: form.phone.trim() } : {}),
+            ...(cleanWhatsappPhone(form.phone) ? { phone: cleanWhatsappPhone(form.phone) } : {}),
           }),
         });
         const displayEmail = isUsername
@@ -420,7 +421,7 @@ export default function UsuariosPage() {
           id: result.user.id,
           fullName: form.fullName,
           email: displayEmail,
-          phone: form.phone.trim(),
+          phone: cleanWhatsappPhone(form.phone),
           role: form.role,
           modules: form.modules,
           status: form.status,
@@ -1064,8 +1065,11 @@ export default function UsuariosPage() {
                   <input
                     type="tel"
                     value={form.phone}
-                    onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                    onChange={(e) => setForm((f) => ({ ...f, phone: formatWhatsappPhone(e.target.value) }))}
+                    onBlur={() => setForm((f) => (f.phone.trim() === "+" || !f.phone ? { ...f, phone: PHONE_PREFIX_CL } : f))}
                     placeholder="+56 9 1234 5678"
+                    inputMode="tel"
+                    autoComplete="off"
                     style={{ ...selM, padding: "10px 14px", borderRadius: "10px", fontSize: "14px", outline: "none", width: "100%" }}
                   />
                   {form.role === "Coordinador General" && (

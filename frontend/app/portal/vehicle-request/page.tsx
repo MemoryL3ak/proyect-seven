@@ -1965,27 +1965,28 @@ export default function VehicleRequestPortalPage() {
                           <p style={{ fontSize:9.5,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.tealLight,margin:0 }}>
                             {enRoute ? t("En ruta a recogerte") : `${t("Rumbo a")} ${dest}`}
                           </p>
-                          <p style={{ fontSize:14.5,fontWeight:800,color:SURFACE.card,margin:"1px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{headline}</p>
+                          <p style={{ fontSize:14.5,fontWeight:800,color:SURFACE.card,margin:"1px 0 0",lineHeight:1.25 }}>{headline}</p>
                           {drv && (
-                            <p style={{ fontSize:11.5,color:"rgba(255,255,255,0.7)",margin:"3px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                            <p style={{ fontSize:11.5,color:"rgba(255,255,255,0.7)",margin:"3px 0 0",lineHeight:1.3 }}>
                               <UserIcon size={12} className="inline mr-1" />{drv.fullName || t("Conductor")}{veh ? ` · ${[veh.plate, veh.brand, veh.model].filter(Boolean).join(" ")}` : ""}
                             </p>
                           )}
                         </div>
-                        <div style={{ display:"flex",flexDirection:"column",gap:6,flexShrink:0 }}>
-                          <button type="button" onClick={() => setTripModal(trip)}
-                            style={{ padding:"8px 14px",borderRadius:10,border:"none",cursor:"pointer",fontSize:12,fontWeight:700,background:`linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})`,color:BRAND.navyLight,whiteSpace:"nowrap" }}>
-                            {t("Ver viaje")}
+                      </div>
+                      {/* Acciones en fila propia: así el titular no compite con los botones por el ancho. */}
+                      <div style={{ display:"flex",gap:8,marginTop:12 }}>
+                        <button type="button" onClick={() => setTripModal(trip)}
+                          style={{ flex:1,padding:"9px 12px",borderRadius:10,border:"none",cursor:"pointer",fontSize:12.5,fontWeight:700,background:`linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})`,color:BRAND.navyLight,whiteSpace:"nowrap" }}>
+                          {t("Ver viaje")}
+                        </button>
+                        {/* Decisión de producto: no se llama al chofer; se escribe al Coordinador General. */}
+                        {coordinator?.phone && (
+                          <button type="button"
+                            onClick={() => waCoordinator(trip)}
+                            style={{ flex:1,padding:"9px 12px",borderRadius:10,border:"1px solid rgba(52,243,198,0.4)",cursor:"pointer",fontSize:12,fontWeight:700,background:"rgba(33,208,179,0.12)",color:BRAND.tealLight,textAlign:"center",whiteSpace:"nowrap",display:"inline-flex",alignItems:"center",justifyContent:"center",gap:6 }}>
+                            <MessageIcon size={13} />{t("WhatsApp coordinador")}
                           </button>
-                          {/* Decisión de producto: no se llama al chofer; se escribe al Coordinador General. */}
-                          {coordinator?.phone && (
-                            <button type="button"
-                              onClick={() => waCoordinator(trip)}
-                              style={{ padding:"6px 14px",borderRadius:10,border:"1px solid rgba(52,243,198,0.4)",cursor:"pointer",fontSize:11.5,fontWeight:700,background:"rgba(33,208,179,0.12)",color:BRAND.tealLight,textAlign:"center",whiteSpace:"nowrap" }}>
-                              <MessageIcon size={12} className="inline mr-1" />{t("WhatsApp coordinador")}
-                            </button>
-                          )}
-                        </div>
+                        )}
                       </div>
                     </div>
                   );
