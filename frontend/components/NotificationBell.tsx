@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { apiFetch } from "@/lib/api";
+import { FileTextIcon } from "@/components/ui/Icons";
 import { BRAND } from "@/lib/design";
 
 /* ------------------------------------------------------------------ */
@@ -128,7 +129,7 @@ export function useNotifications(opts: UseNotificationsOptions = {}) {
       "Notification" in window &&
       Notification.permission === "granted"
     ) {
-      new Notification(`${emoji} Seven Arena`, {
+      new Notification("Seven Arena", {
         body: message,
         icon: "/branding/LOGO-SEVEN-1.png",
       });
@@ -364,6 +365,7 @@ export default function NotificationBell({
                 const isCamera = e === "📷" || e === "camera" || e === "photo";
                 const isCal = e === "📅" || e === "cal" || e === "calendar";
                 const isSupport = e === "🛟" || e === "support";
+                const isDoc = e === "📄" || e === "doc";
                 const bg = isError ? "rgba(239,68,68,0.08)" : isStar ? "rgba(245,158,11,0.08)" : isWarning ? "rgba(245,158,11,0.08)" : "rgba(33,208,179,0.08)";
                 return (
                   <span style={{ flexShrink:0, width:30, height:30, borderRadius:8, background:bg, display:"flex", alignItems:"center", justifyContent:"center" }}>
@@ -385,6 +387,8 @@ export default function NotificationBell({
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
                     ) : isCal ? (
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    ) : isDoc ? (
+                      <FileTextIcon size={14} color="#64748b" />
                     ) : isSupport ? (
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><path d="M4.93 4.93l4.24 4.24M14.83 14.83l4.24 4.24M14.83 9.17l4.24-4.24M14.83 9.17l3.53-3.53M4.93 19.07l4.24-4.24"/></svg>
                     ) : (

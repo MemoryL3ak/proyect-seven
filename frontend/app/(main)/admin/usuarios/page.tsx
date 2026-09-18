@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { apiFetch } from "@/lib/api";
+import { AlertIcon, MailIcon, UserIcon } from "@/components/ui/Icons";
 import { ALL_MODULES, MODULE_GROUPS, type AppModule } from "@/lib/modules";
 import StyledSelect from "@/components/StyledSelect";
 import { useI18n } from "@/lib/i18n";
@@ -732,7 +733,7 @@ export default function UsuariosPage() {
                             fontSize: "10px", fontWeight: 700, padding: "1px 7px", borderRadius: "99px", width: "fit-content",
                             background: "rgba(245,158,11,0.12)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.3)",
                           }}>
-                            {t("⚠ Email no confirmado")}
+                            <AlertIcon size={11} className="inline mr-1" />{t("Email no confirmado")}
                           </span>
                         )}
                       </div>
@@ -1052,7 +1053,7 @@ export default function UsuariosPage() {
                           color: form.loginType === type ? pal.accent : pal.mTextMuted,
                         }}
                       >
-                        {type === "email" ? t("📧 Con Email") : t("👤 Con Usuario")}
+                        {type === "email" ? <><MailIcon size={13} className="inline mr-1" />{t("Con Email")}</> : <><UserIcon size={13} className="inline mr-1" />{t("Con Usuario")}</>}
                       </button>
                     ))}
                   </div>

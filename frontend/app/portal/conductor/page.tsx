@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { apiFetch } from "@/lib/api";
+import { PinIcon, AlertIcon, StarIcon, ChevronLeftIcon, RefreshIcon, CameraIcon, CompassIcon, XIcon } from "@/components/ui/Icons";
 import { getMobileSession, mobileAwareLogout } from "@/lib/mobile-auth";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { useI18n } from "@/lib/i18n";
@@ -655,7 +656,7 @@ export default function DriverPortalPage() {
   const requestLocationPermission = (): Promise<boolean> => {
     return new Promise((resolve) => {
       if (!navigator.geolocation) {
-        driverNotify.push("Tu navegador no soporta geolocalización", "⚠️");
+        driverNotify.push("Tu navegador no soporta geolocalización", "warning");
         resolve(false);
         return;
       }
@@ -666,7 +667,7 @@ export default function DriverPortalPage() {
             setLocationPermission("denied");
             setShowLocationBlockedModal(true);
           } else {
-            driverNotify.push("No se pudo obtener tu ubicación. Verifica que el GPS esté activado", "📍");
+            driverNotify.push("No se pudo obtener tu ubicación. Verifica que el GPS esté activado", "pin");
           }
           resolve(false);
         },
@@ -785,14 +786,14 @@ export default function DriverPortalPage() {
       );
       driverNotify.push(
         journeyPhoto.kind === "START" ? "Foto de inicio de jornada registrada" : "Foto de término de jornada registrada",
-        "📷",
+        "camera",
       );
       const next = journeyPhoto.nextStatus;
       const tripId = journeyPhoto.tripId;
       setJourneyPhoto(null);
       if (next) await performUpdateTrip(tripId, next);
     } catch {
-      driverNotify.push("No se pudo subir la foto. Intenta de nuevo", "❌");
+      driverNotify.push("No se pudo subir la foto. Intenta de nuevo", "error");
     } finally {
       setJourneyUploading(false);
     }
@@ -1222,9 +1223,9 @@ export default function DriverPortalPage() {
           const fresh = await apiFetch<Trip>(`/trips/${id}`);
           if (fresh.driverRating && !ratedTripIds.current.has(id)) {
             ratedTripIds.current.add(id);
-            const stars = "⭐".repeat(fresh.driverRating);
+            const stars = `${fresh.driverRating} ${fresh.driverRating === 1 ? "estrella" : "estrellas"}`;
             const comment = fresh.ratingComment ? `\n"${fresh.ratingComment}"` : "";
-            driverNotify.push(`Recibiste ${stars}${comment}`, "🌟");
+            driverNotify.push(`Recibiste ${stars}${comment}`, "star");
             setTrips((prev) => prev.map((t) => t.id === id ? fresh : t));
           }
         }
@@ -1407,7 +1408,7 @@ export default function DriverPortalPage() {
     if (!shellTracking || shellTracking.backgroundOk !== false) return null;
     return (
       <div style={{ display:"flex",gap:10,alignItems:"flex-start",padding:"10px 12px",borderRadius:12,background:"#fffbeb",border:"1px solid #fde68a",marginBottom:12 }}>
-        <span style={{ fontSize:16,lineHeight:"18px" }}>📍</span>
+        <span style={{ display:"inline-flex" }}><PinIcon size={16} /></span>
         <div style={{ flex:1,minWidth:0 }}>
           <p style={{ fontSize:12,fontWeight:800,color:"#92400e",margin:0 }}>
             {t("Tu ubicación se corta al minimizar la app")}
@@ -1518,7 +1519,7 @@ export default function DriverPortalPage() {
           kind="driver"
           userId={driverProfile.id}
           onInvalid={() => {
-            dlog("⚠ sesión invalidada (otro claim) → logout");
+            dlog("sesión invalidada (otro claim) → logout");
             clearPortalSession("driver", driverProfile.id);
             try { sessionStorage.removeItem("portal_conductor_id"); } catch {}
             clearPersistedTabs();
@@ -2132,7 +2133,7 @@ export default function DriverPortalPage() {
                             {/* Observación de la solicitud — visible y destacada para el conductor */}
                             {!isDisposicion(trip) && trip.notes && (
                               <div style={{ padding:"10px 12px",borderRadius:10,background:"#fffbeb",border:"1px solid #fde68a",borderLeft:"4px solid #f59e0b",marginBottom:10 }}>
-                                <p style={{ fontSize:10,fontWeight:800,color:"#b45309",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>⚠ Observación</p>
+                                <p style={{ fontSize:10,fontWeight:800,color:"#b45309",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}><AlertIcon size={10} className="inline mr-1" />Observación</p>
                                 <p style={{ fontSize:12.5,fontWeight:600,color:"#78350f",margin:"3px 0 0",lineHeight:1.4 }}>{trip.notes.replace(/^\[Portal\]\s*/, "")}</p>
                               </div>
                             )}
@@ -2142,7 +2143,7 @@ export default function DriverPortalPage() {
                               <div style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:10,borderRadius:12,background:"rgba(33,208,179,0.06)",border:"1px solid rgba(33,208,179,0.15)" }}>
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                                 <span style={{ fontSize:12,fontWeight:700,color:BRAND.teal }}>{t("Completado")}</span>
-                                {trip.driverRating && <span style={{ fontSize:12 }}>{"⭐".repeat(trip.driverRating)}</span>}
+                                {trip.driverRating && <span style={{ display:"inline-flex",gap:1,color:"#f59e0b" }}>{Array.from({ length: trip.driverRating }, (_, k) => <StarIcon key={k} size={12} />)}</span>}
                               </div>
                             ) : isDisposicion(trip) ? (
                               /* ── Disposición 12h: 2-step flow ── */
@@ -2178,7 +2179,7 @@ export default function DriverPortalPage() {
                                 </button>
                                 <button type="button" onClick={() => updateTrip(trip.id, "SCHEDULED")} disabled={loading}
                                   style={{ padding:8,borderRadius:8,border:"1px solid #e2e8f0",background:"#f8fafc",color:"#64748b",fontSize:11,fontWeight:600,cursor:"pointer" }}>
-                                  {t("← Volver a Programado")}
+                                  <ChevronLeftIcon size={12} className="inline mr-1" />{t("Volver a Programado")}
                                 </button>
                               </div>
                             ) : status === "PICKED_UP" ? (
@@ -2253,7 +2254,7 @@ export default function DriverPortalPage() {
                     </div>
                     <div style={{ padding:"12px 8px",borderRadius:12,background:"#fff",border:"1px solid #e2e8f0",textAlign:"center" }}>
                       <p style={{ fontSize:9,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Rating</p>
-                      <p style={{ fontSize:22,fontWeight:800,color:"#f59e0b",margin:"4px 0 0" }}>{avgRating ? `${avgRating} ⭐` : "—"}</p>
+                      <p style={{ fontSize:22,fontWeight:800,color:"#f59e0b",margin:"4px 0 0" }}>{avgRating ? <>{avgRating} <StarIcon size={18} className="inline" /></> : "—"}</p>
                     </div>
                   </div>
 
@@ -2395,8 +2396,8 @@ export default function DriverPortalPage() {
                             ? participantToDriver(await apiFetch<ProviderParticipant>(`/provider-participants/${driverProfile.id}`))
                             : await apiFetch<Driver>(`/drivers/${driverProfile.id}`);
                           setDriverProfile(updated);
-                          driverNotify.push("Foto actualizada", "📷");
-                        } catch { driverNotify.push("No se pudo subir la foto", "❌"); }
+                          driverNotify.push("Foto actualizada", "camera");
+                        } catch { driverNotify.push("No se pudo subir la foto", "error"); }
                         finally { setUploadingPhoto(false); }
                       };
                       input.click();
@@ -2473,7 +2474,7 @@ export default function DriverPortalPage() {
                           photoUrl: driverProfile.photoUrl || ((driverProfile.metadata as any)?.photoUrl as string) || null,
                         });
                         setCredentialHtml(html);
-                      } catch { driverNotify.push("No se pudo generar la credencial", "❌"); }
+                      } catch { driverNotify.push("No se pudo generar la credencial", "error"); }
                     }}
                   />
                 </div>
@@ -2566,8 +2567,8 @@ export default function DriverPortalPage() {
                                   });
                                   const newUrl = result?.metadata?.[doc.key] ?? `uploaded_${Date.now()}`;
                                   setDriverProfile({ ...driverProfile, metadata: { ...(driverProfile.metadata || {}), [doc.key]: newUrl } });
-                                  driverNotify.push(`${doc.label} cargado`, "📄");
-                                } catch (err) { console.error("Doc upload error:", err); driverNotify.push(`Error: ${err instanceof Error ? err.message : "No se pudo subir"} ${doc.label}`, "❌"); }
+                                  driverNotify.push(`${doc.label} cargado`, "doc");
+                                } catch (err) { console.error("Doc upload error:", err); driverNotify.push(`Error: ${err instanceof Error ? err.message : "No se pudo subir"} ${doc.label}`, "error"); }
                                 finally { setUploadingDoc(null); }
                               };
                               input.click();
@@ -2934,7 +2935,7 @@ export default function DriverPortalPage() {
                   onClick={() => rastrearVuelo(trackTarget.flightNumber, trackTarget.airline, trackTarget.arrivalTime ?? null)}
                   style={{ flex:1,padding:12,borderRadius:12,border:"none",background: trackLoading ? "#cbd5e1" : `linear-gradient(135deg,${BRAND.teal},#14AE98)`,color:"#fff",fontSize:13,fontWeight:700,cursor: trackLoading ? "wait" : "pointer" }}
                 >
-                  {trackLoading ? "Actualizando…" : "↻ Actualizar"}
+                  {trackLoading ? "Actualizando…" : <><RefreshIcon size={12} className="inline mr-1" />Actualizar</>}
                 </button>
                 <button
                   type="button"
@@ -2953,7 +2954,7 @@ export default function DriverPortalPage() {
       {journeyPhoto && (
         <div style={{ position:"fixed",inset:0,zIndex:140,background:"rgba(6,15,30,0.6)",backdropFilter:"blur(3px)",display:"flex",alignItems:"center",justifyContent:"center",padding:16 }}>
           <div style={{ background:"#fff",borderRadius:20,padding:"24px 20px",maxWidth:360,width:"100%",textAlign:"center",boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}>
-            <div style={{ fontSize:40,marginBottom:8 }}>📷</div>
+            <div style={{ marginBottom:8,color:"#cbd5e1",display:"flex",justifyContent:"center" }}><CameraIcon size={40} /></div>
             <h3 style={{ fontSize:17,fontWeight:800,color:"#0f172a",margin:0 }}>
               {journeyPhoto.kind === "START" ? "Foto de inicio de jornada" : "Foto de término de jornada"}
             </h3>
@@ -3000,7 +3001,7 @@ export default function DriverPortalPage() {
             onClick={() => setNavPrompt(null)}>
             <div onClick={(e) => e.stopPropagation()}
               style={{ background:"#fff",borderRadius:20,padding:"24px 20px",maxWidth:360,width:"100%",textAlign:"center",boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}>
-              <div style={{ fontSize:40,marginBottom:8 }}>🧭</div>
+              <div style={{ marginBottom:8,color:"#cbd5e1",display:"flex",justifyContent:"center" }}><CompassIcon size={40} /></div>
               <h3 style={{ fontSize:17,fontWeight:800,color:"#0f172a",margin:0 }}>
                 {navPrompt.phase === "pickup" ? "Navegar al punto de encuentro" : "Navegar al destino"}
               </h3>
@@ -3048,7 +3049,7 @@ export default function DriverPortalPage() {
           tripStatus={trips.find((t) => t.id === trackingTripId)?.status}
           reporterOriginType="driver"
           reporterOriginId={driverProfile.id}
-          onNewMessage={(name, content) => driverNotify.push(`${name}: ${content.slice(0, 80)}`, "💬")}
+          onNewMessage={(name, content) => driverNotify.push(`${name}: ${content.slice(0, 80)}`, "chat")}
         />
       )}
 
@@ -3083,7 +3084,7 @@ export default function DriverPortalPage() {
                     // visor propio (con Volver y Guardar).
                     if (isNativeAvailable() && credentialHtml) setCredentialPdfView(credentialHtml);
                     else downloadCredentialPdf(credentialPdf);
-                  } catch { driverNotify.push("No se pudo generar el PDF", "❌"); }
+                  } catch { driverNotify.push("No se pudo generar el PDF", "error"); }
                 }}
                   title="Descargar PDF"
                   style={{ width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",color:BRAND.teal,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
@@ -3091,7 +3092,7 @@ export default function DriverPortalPage() {
                 </button>
                 <button type="button" onClick={() => setCredentialHtml(null)}
                   style={{ height:34,padding:"0 12px",borderRadius:10,border:"1px solid rgba(255,255,255,0.25)",background:"rgba(255,255,255,0.08)",color:"#fff",cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6,fontSize:12.5,fontWeight:700,lineHeight:1 }}>
-                  <span aria-hidden style={{ fontSize:15 }}>✕</span> Volver
+                  <XIcon size={15} /> Volver
                 </button>
               </div>
             </div>
@@ -3207,7 +3208,7 @@ export default function DriverPortalPage() {
                 {/* Rating */}
                 {trip.driverRating ? (
                   <div style={{ padding:"10px 12px",borderRadius:12,background:"#FFFBEB",border:"1px solid #FDE68A",display:"flex",alignItems:"center",gap:10 }}>
-                    <span style={{ fontSize:18 }}>{"⭐".repeat(trip.driverRating)}</span>
+                    <span style={{ display:"inline-flex",gap:2,color:"#f59e0b" }}>{Array.from({ length: trip.driverRating }, (_, k) => <StarIcon key={k} size={18} />)}</span>
                     {trip.ratingComment && <span style={{ fontSize:12,color:"#92400E",fontStyle:"italic",flex:1 }}>&ldquo;{trip.ratingComment}&rdquo;</span>}
                   </div>
                 ) : (

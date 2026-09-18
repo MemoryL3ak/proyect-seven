@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { apiFetch } from "@/lib/api";
+import { type IconComponent, PinIcon, PhoneIcon, MailIcon, PlaneIcon, HotelIcon, CalendarIcon, ClockIcon, UserIcon, XIcon, CheckIcon, StarIcon, TrophyIcon, ArrowRightIcon, SunIcon, MoonIcon, UtensilsIcon, UtensilsCrossedIcon, DumbbellIcon, MedalIcon, HeartPulseIcon, BedIcon } from "@/components/ui/Icons";
 import { buildDisciplineLabelMap } from "@/lib/discipline-filters";
 import { getMobileSession, mobileAwareLogout } from "@/lib/mobile-auth";
 import { filterValidatedAthletes } from "@/lib/athletes";
@@ -849,12 +850,12 @@ export default function UserPortalPage() {
         }),
       });
       setTrip({ ...trip, driverRating: ratingStars });
-      notify.push("¡Gracias por tu evaluación!", "⭐");
+      notify.push("¡Gracias por tu evaluación!", "star");
       setShowRating(false);
       setRatingStars(0);
       setRatingComment("");
     } catch {
-      notify.push("No se pudo enviar la evaluación", "❌");
+      notify.push("No se pudo enviar la evaluación", "error");
     } finally {
       setRatingLoading(false);
     }
@@ -863,11 +864,11 @@ export default function UserPortalPage() {
   /* ─── trip polling + driver ETA + notifications ─── */
   const notifyStatusChange = (status: string) => {
     const msgs: Record<string, { message: string; emoji: string }> = {
-      EN_ROUTE:    { message: "El conductor está en camino a recogerte", emoji: "🚗" },
-      PICKED_UP:   { message: "¡Estás en ruta a tu destino!", emoji: "✅" },
-      DROPPED_OFF: { message: "Has llegado a tu destino", emoji: "🏁" },
-      COMPLETED:   { message: "Viaje completado", emoji: "🎉" },
-      SCHEDULED:   { message: "Tu traslado fue programado", emoji: "📅" },
+      EN_ROUTE:    { message: "El conductor está en camino a recogerte", emoji: "car" },
+      PICKED_UP:   { message: "¡Estás en ruta a tu destino!", emoji: "ok" },
+      DROPPED_OFF: { message: "Has llegado a tu destino", emoji: "pin" },
+      COMPLETED:   { message: "Viaje completado", emoji: "ok" },
+      SCHEDULED:   { message: "Tu traslado fue programado", emoji: "cal" },
     };
     const info = msgs[status];
     if (!info) return;
@@ -928,9 +929,9 @@ export default function UserPortalPage() {
         if (durationSecs <= 180 && arrivedNotified.current !== segmentKey) {
           arrivedNotified.current = segmentKey;
           if (tripStatus === "EN_ROUTE") {
-            notify.push("El conductor está llegando a recogerte", "🚖");
+            notify.push("El conductor está llegando a recogerte", "car");
           } else if (tripStatus === "PICKED_UP") {
-            notify.push("Estás llegando a tu destino", "📍");
+            notify.push("Estás llegando a tu destino", "pin");
           }
         }
       }
@@ -1535,7 +1536,7 @@ export default function UserPortalPage() {
                 )}
                 {driver && (
                   <p style={{ fontSize:11.5,color:"rgba(255,255,255,0.7)",margin:"3px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
-                    🧑 {driver.fullName || "Conductor"}
+                    <UserIcon size={12} className="inline mr-1" />{driver.fullName || "Conductor"}
                   </p>
                 )}
               </div>
@@ -1765,7 +1766,7 @@ export default function UserPortalPage() {
                         </div>
                       </div>
                       <p style={{ fontSize:11,color:"#64748b",margin:"0 0 4px" }}>Completado: {fmt(t.completedAt)}</p>
-                      {t.driverRating && <p style={{ fontSize:11,color:"#f59e0b",margin:0 }}>{"⭐".repeat(t.driverRating)} {t.ratingComment && `"${t.ratingComment}"`}</p>}
+                      {t.driverRating && <p style={{ fontSize:11,color:"#f59e0b",margin:0 }}><span style={{ display:"inline-flex",gap:1,verticalAlign:"-1px" }}>{Array.from({ length: t.driverRating }, (_, k) => <StarIcon key={k} size={11} />)}</span> {t.ratingComment && `"${t.ratingComment}"`}</p>}
                     </div>
                   ))}
                 </div>
@@ -1901,7 +1902,7 @@ export default function UserPortalPage() {
                                 <p style={{ fontSize:11,color:"#64748b",margin:0,fontStyle:"italic" }}>{tr.notes}</p>
                               )}
                               {tr.driverRating ? (
-                                <p style={{ fontSize:11,color:"#f59e0b",margin:0 }}>{"⭐".repeat(tr.driverRating)}{tr.ratingComment ? ` "${tr.ratingComment}"` : ""}</p>
+                                <p style={{ fontSize:11,color:"#f59e0b",margin:0 }}><span style={{ display:"inline-flex",gap:1,verticalAlign:"-1px" }}>{Array.from({ length: tr.driverRating }, (_, k) => <StarIcon key={k} size={11} />)}</span>{tr.ratingComment ? ` "${tr.ratingComment}"` : ""}</p>
                               ) : null}
                             </div>
                           )}
@@ -1923,13 +1924,13 @@ export default function UserPortalPage() {
 
           // ── Tipos de actividad (paleta como leyenda de referencia)
           type CalType = "ENTRENAMIENTO" | "COMPETENCIA" | "MEDICO" | "VIAJE" | "CEREMONIA" | "DESCANSO";
-          const TYPE_CFG: Record<CalType,{ label:string; color:string; soft:string; icon:string }> = {
-            ENTRENAMIENTO: { label:"Entrenamiento", color:"#16a34a", soft:"#dcfce7", icon:"🏃" },
-            COMPETENCIA:   { label:"Competencia",   color:"#dc2626", soft:"#fee2e2", icon:"🏅" },
-            MEDICO:        { label:"Médico",        color:"#7c3aed", soft:"#ede9fe", icon:"➕" },
-            VIAJE:         { label:"Viaje",         color:"#ea580c", soft:"#ffedd5", icon:"✈️" },
-            CEREMONIA:     { label:"Ceremonia",     color:"#eab308", soft:"#fef9c3", icon:"🏆" },
-            DESCANSO:      { label:"Descanso",      color:"#2563eb", soft:"#dbeafe", icon:"🛌" },
+          const TYPE_CFG: Record<CalType,{ label:string; color:string; soft:string; icon:IconComponent }> = {
+            ENTRENAMIENTO: { label:"Entrenamiento", color:"#16a34a", soft:"#dcfce7", icon:DumbbellIcon },
+            COMPETENCIA:   { label:"Competencia",   color:"#dc2626", soft:"#fee2e2", icon:MedalIcon },
+            MEDICO:        { label:"Médico",        color:"#7c3aed", soft:"#ede9fe", icon:HeartPulseIcon },
+            VIAJE:         { label:"Viaje",         color:"#ea580c", soft:"#ffedd5", icon:PlaneIcon },
+            CEREMONIA:     { label:"Ceremonia",     color:"#eab308", soft:"#fef9c3", icon:TrophyIcon },
+            DESCANSO:      { label:"Descanso",      color:"#2563eb", soft:"#dbeafe", icon:BedIcon },
           };
           const classifyEvent = (name?: string | null): CalType => {
             const t = (name || "").toLowerCase();
@@ -2129,7 +2130,7 @@ export default function UserPortalPage() {
                               {selItems.map(it=>{ const cfg=TYPE_CFG[it.type]; return (
                                 <div key={it.id} style={{ display:"flex",alignItems:"center",gap:8,background:"#f8fafc",border:"1px solid #eef2f7",borderLeft:`3px solid ${cfg.color}`,borderRadius:9,padding:"7px 10px" }}>
                                   <span style={{ fontSize:11,fontWeight:800,color:"#0f172a",flexShrink:0,fontVariantNumeric:"tabular-nums" }}>{it.date.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})}</span>
-                                  <span style={{ flex:1,minWidth:0,fontSize:11.5,fontWeight:600,color:"#334155",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{it.title}{it.venue?` · 📍 ${it.venue}`:""}</span>
+                                  <span style={{ flex:1,minWidth:0,fontSize:11.5,fontWeight:600,color:"#334155",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{it.title}{it.venue?` · ${it.venue}`:""}</span>
                                   <span style={{ flexShrink:0,fontSize:10,fontWeight:800,padding:"2px 7px",borderRadius:99,background:cfg.soft,color:cfg.color }}>{cfg.label}</span>
                                 </div>
                               ); })}
@@ -2146,7 +2147,7 @@ export default function UserPortalPage() {
                   <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden auto",maxHeight:"calc(100vh - 240px)" }}>
                     {agendaDays.length===0 ? (
                       <div style={{ padding:"40px 16px",textAlign:"center" }}>
-                        <p style={{ fontSize:34,margin:0 }}>📅</p>
+                        <p style={{ margin:0,color:"#cbd5e1",display:"flex",justifyContent:"center" }}><CalendarIcon size={34} /></p>
                         <p style={{ fontSize:14,fontWeight:700,color:"#475569",margin:"8px 0 0" }}>Sin actividades {calSelectedDay?"este día":"este mes"}</p>
                         <p style={{ fontSize:12,color:"#94a3b8",margin:"4px 0 0" }}>{calTypeFilter?"Prueba quitando el filtro de tipo.":"Navega entre los meses para ver más."}</p>
                       </div>
@@ -2168,12 +2169,12 @@ export default function UserPortalPage() {
                               return (
                                 <div key={it.id} style={{ display:"flex",alignItems:"center",gap:10,padding:"12px 14px",borderTop: ii===0?"none":"1px solid #f8fafc" }}>
                                   <span style={{ flexShrink:0,fontSize:12,fontWeight:700,color:"#64748b",width:42 }}>{it.date.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})}</span>
-                                  <span style={{ flexShrink:0,width:34,height:34,borderRadius:10,background:cfg.soft,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:16 }}>{cfg.icon}</span>
+                                  <span style={{ flexShrink:0,width:34,height:34,borderRadius:10,background:cfg.soft,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:16 }}><cfg.icon size={18} /></span>
                                   <div style={{ flex:1,minWidth:0 }}>
                                     <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0,overflow:"hidden",
                                       display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical" as any,lineHeight:1.25 }}>{it.title}</p>
                                     <p style={{ fontSize:11,color:"#94a3b8",margin:"1px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
-                                      {it.subtitle ? it.subtitle : cfg.label}{it.venue ? ` · 📍 ${it.venue}` : ""}
+                                      {it.subtitle ? it.subtitle : cfg.label}{it.venue ? ` · ${it.venue}` : ""}
                                     </p>
                                   </div>
                                   <span style={{ flexShrink:0,fontSize:10,fontWeight:800,padding:"3px 9px",borderRadius:99,background:cfg.soft,color:cfg.color }}>{cfg.label}</span>
@@ -2194,7 +2195,7 @@ export default function UserPortalPage() {
                 {calView==="gantt" && (
                   gRows.length===0 ? (
                     <div style={{ background:"#fff",borderRadius:14,border:"1px dashed #e2e8f0",padding:"32px 16px",textAlign:"center" }}>
-                      <p style={{ fontSize:28,margin:0 }}>📅</p>
+                      <p style={{ margin:0,color:"#cbd5e1",display:"flex",justifyContent:"center" }}><CalendarIcon size={28} /></p>
                       <p style={{ fontSize:13,fontWeight:700,color:"#475569",margin:"6px 0 0" }}>Sin actividades este mes</p>
                     </div>
                   ) : (
@@ -2257,7 +2258,7 @@ export default function UserPortalPage() {
                                             fontSize:11,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",gap:2,padding:0,
                                             boxShadow:`0 2px 5px ${cfg.color}55` }}>
                                           {evs.length>1?evs.length:""}
-                                          {evs.length===1 && <span style={{ fontSize:10,lineHeight:1 }}>{cfg.icon}</span>}
+                                          {evs.length===1 && <span style={{ display:"inline-flex" }}><cfg.icon size={10} /></span>}
                                         </button>
                                       </div>
                                     );
@@ -2323,7 +2324,7 @@ export default function UserPortalPage() {
                       <div key={it.id} style={{ display:"flex",gap:10,padding:"10px 12px",borderRadius:12,background:"#fff",border:"1px solid #e2e8f0",borderLeft:`4px solid ${cfg.color}` }}>
                         <div style={{ display:"flex",flexDirection:"column",alignItems:"center",flexShrink:0,minWidth:46 }}>
                           <span style={{ fontSize:13,fontWeight:800,color:"#0f172a" }}>{it.date.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})}</span>
-                          <span style={{ fontSize:15,marginTop:2 }}>{cfg.icon}</span>
+                          <span style={{ display:"inline-flex",marginTop:2 }}><cfg.icon size={15} /></span>
                         </div>
                         <div style={{ flex:1,minWidth:0 }}>
                           <p style={{ fontSize:13,fontWeight:600,color:"#0f172a",margin:0 }}>{it.title}</p>
@@ -2346,7 +2347,7 @@ export default function UserPortalPage() {
                     <p style={{ fontSize:12,color:"#64748b",margin:0 }}>
                       {nextComp.date.toLocaleDateString("es-CL",{day:"2-digit",month:"long"})} · {nextComp.date.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})}
                     </p>
-                    {nextComp.venue && <p style={{ fontSize:12,color:"#64748b",margin:"2px 0 0" }}>📍 {nextComp.venue}</p>}
+                    {nextComp.venue && <p style={{ fontSize:12,color:"#64748b",margin:"2px 0 0" }}><PinIcon size={11} className="inline mr-1" />{nextComp.venue}</p>}
                   </div>
                 )}
 
@@ -2407,7 +2408,7 @@ export default function UserPortalPage() {
                   {(calTypeFilter || calDiscFilter || calSelectedDay) && (
                     <button type="button" onClick={()=>{ setCalTypeFilter(""); setCalDiscFilter(""); setCalSelectedDay(null); }}
                       style={{ marginTop:10,width:"100%",fontSize:11,fontWeight:700,color:"#dc2626",background:"#fef2f2",border:"1px solid #fecaca",borderRadius:8,padding:"6px",cursor:"pointer" }}>
-                      ✕ Limpiar filtros
+                      <XIcon size={12} className="inline mr-1" />Limpiar filtros
                     </button>
                   )}
                 </div>
@@ -2588,7 +2589,7 @@ export default function UserPortalPage() {
                   if (mine.confirmedAt) {
                     return (
                       <div style={{ marginTop:10,paddingTop:10,borderTop:"1px dashed #e2e8f0",display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,flexWrap:"wrap" }}>
-                        <span style={{ fontSize:12.5,fontWeight:700,color:"#059669",display:"inline-flex",alignItems:"center",gap:6 }}>✓ Confirmaste tu asistencia</span>
+                        <span style={{ fontSize:12.5,fontWeight:700,color:"#059669",display:"inline-flex",alignItems:"center",gap:6 }}><CheckIcon size={13} />Confirmaste tu asistencia</span>
                         <button type="button" onClick={()=>confirmAwarder(p.id, mine.id!, "DECLINE")}
                           style={{ fontSize:11,fontWeight:600,color:"#dc2626",background:"none",border:"none",cursor:"pointer",textDecoration:"underline",padding:0 }}>Ya no puedo asistir</button>
                       </div>
@@ -2597,7 +2598,7 @@ export default function UserPortalPage() {
                   if (mine.declinedAt) {
                     return (
                       <div style={{ marginTop:10,paddingTop:10,borderTop:"1px dashed #e2e8f0",display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,flexWrap:"wrap" }}>
-                        <span style={{ fontSize:12.5,fontWeight:700,color:"#dc2626",display:"inline-flex",alignItems:"center",gap:6 }}>✕ Rechazaste la asistencia</span>
+                        <span style={{ fontSize:12.5,fontWeight:700,color:"#dc2626",display:"inline-flex",alignItems:"center",gap:6 }}><XIcon size={13} />Rechazaste la asistencia</span>
                         <button type="button" onClick={()=>confirmAwarder(p.id, mine.id!, "CONFIRM")}
                           style={{ fontSize:11,fontWeight:600,color:"#059669",background:"none",border:"none",cursor:"pointer",textDecoration:"underline",padding:0 }}>Confirmar asistencia</button>
                       </div>
@@ -2808,7 +2809,7 @@ export default function UserPortalPage() {
               {premView === "list" && (
                 visible.length === 0 ? (
                   <div style={{ background:"#fff",borderRadius:14,border:"1px dashed #e2e8f0",padding:"28px 20px",textAlign:"center" }}>
-                    <p style={{ fontSize:32,margin:"0 0 8px" }}>🏆</p>
+                    <p style={{ margin:"0 0 8px",color:"#cbd5e1",display:"flex",justifyContent:"center" }}><TrophyIcon size={32} /></p>
                     <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>
                       {hasFilters ? "No hay premiaciones con esos filtros" : "Sin premiaciones cargadas"}
                     </p>
@@ -2984,10 +2985,10 @@ export default function UserPortalPage() {
               const mealOrder = ["DESAYUNO", "ALMUERZO", "CENA", "ONCE"];
               const sorted = todayMenus.sort((a, b) => mealOrder.indexOf(a.mealType) - mealOrder.indexOf(b.mealType));
               const mealStyle = (type: string) => {
-                if (type === "DESAYUNO") return { bg: "#FEF3C7", color: "#92400E", border: "#FDE68A", icon: "☀️", label: "Desayuno" };
-                if (type === "ALMUERZO") return { bg: "#DBEAFE", color: "#1E40AF", border: "#BFDBFE", icon: "🍽️", label: "Almuerzo" };
-                if (type === "CENA") return { bg: "#E0E7FF", color: "#3730A3", border: "#C7D2FE", icon: "🌙", label: "Cena" };
-                return { bg: "#F1F5F9", color: "#475569", border: "#E2E8F0", icon: "🍴", label: type };
+                if (type === "DESAYUNO") return { bg: "#FEF3C7", color: "#92400E", border: "#FDE68A", icon: SunIcon, label: "Desayuno" };
+                if (type === "ALMUERZO") return { bg: "#DBEAFE", color: "#1E40AF", border: "#BFDBFE", icon: UtensilsIcon, label: "Almuerzo" };
+                if (type === "CENA") return { bg: "#E0E7FF", color: "#3730A3", border: "#C7D2FE", icon: MoonIcon, label: "Cena" };
+                return { bg: "#F1F5F9", color: "#475569", border: "#E2E8F0", icon: UtensilsCrossedIcon, label: type };
               };
               return (
                 <div style={{ background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)" }}>
@@ -3007,7 +3008,7 @@ export default function UserPortalPage() {
                     return (
                       <div key={fm.id} style={{ padding:"14px 16px",borderTop:i>0?"1px solid #f1f5f9":"none",display:"flex",gap:12,alignItems:"flex-start" }}>
                         <div style={{ width:40,height:40,borderRadius:10,background:m.bg,border:`1px solid ${m.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0 }}>
-                          {m.icon}
+                          <m.icon size={16} />
                         </div>
                         <div style={{ flex:1,minWidth:0 }}>
                           <div style={{ display:"flex",alignItems:"center",gap:6,flexWrap:"wrap" }}>
@@ -3018,7 +3019,7 @@ export default function UserPortalPage() {
                           </div>
                           <p style={{ fontSize:15,fontWeight:700,color:"#0f172a",margin:"5px 0 0" }}>{fm.title}</p>
                           {fm.description && <p style={{ fontSize:12,color:"#64748b",margin:"3px 0 0",lineHeight:1.4 }}>{fm.description}</p>}
-                          {fm.locationDetail && <p style={{ fontSize:11,color:"#94a3b8",margin:"3px 0 0" }}>📍 {fm.locationDetail}</p>}
+                          {fm.locationDetail && <p style={{ fontSize:11,color:"#94a3b8",margin:"3px 0 0" }}><PinIcon size={11} className="inline mr-1" />{fm.locationDetail}</p>}
                         </div>
                       </div>
                     );
@@ -3044,10 +3045,10 @@ export default function UserPortalPage() {
               const mealOrder = ["DESAYUNO", "ALMUERZO", "CENA", "ONCE"];
               const sorted = tomorrowMenus.sort((a, b) => mealOrder.indexOf(a.mealType) - mealOrder.indexOf(b.mealType));
               const mealStyle = (type: string) => {
-                if (type === "DESAYUNO") return { bg: "#FEF3C7", color: "#92400E", border: "#FDE68A", icon: "☀️", label: "Desayuno" };
-                if (type === "ALMUERZO") return { bg: "#DBEAFE", color: "#1E40AF", border: "#BFDBFE", icon: "🍽️", label: "Almuerzo" };
-                if (type === "CENA") return { bg: "#E0E7FF", color: "#3730A3", border: "#C7D2FE", icon: "🌙", label: "Cena" };
-                return { bg: "#F1F5F9", color: "#475569", border: "#E2E8F0", icon: "🍴", label: type };
+                if (type === "DESAYUNO") return { bg: "#FEF3C7", color: "#92400E", border: "#FDE68A", icon: SunIcon, label: "Desayuno" };
+                if (type === "ALMUERZO") return { bg: "#DBEAFE", color: "#1E40AF", border: "#BFDBFE", icon: UtensilsIcon, label: "Almuerzo" };
+                if (type === "CENA") return { bg: "#E0E7FF", color: "#3730A3", border: "#C7D2FE", icon: MoonIcon, label: "Cena" };
+                return { bg: "#F1F5F9", color: "#475569", border: "#E2E8F0", icon: UtensilsCrossedIcon, label: type };
               };
               return (
                 <div style={{ background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)",opacity:0.85 }}>
@@ -3063,13 +3064,13 @@ export default function UserPortalPage() {
                     return (
                       <div key={fm.id} style={{ padding:"12px 16px",borderTop:i>0?"1px solid #f1f5f9":"none",display:"flex",gap:12,alignItems:"flex-start" }}>
                         <div style={{ width:36,height:36,borderRadius:8,background:m.bg,border:`1px solid ${m.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0 }}>
-                          {m.icon}
+                          <m.icon size={16} />
                         </div>
                         <div style={{ flex:1,minWidth:0 }}>
                           <span style={{ fontSize:10,fontWeight:800,padding:"2px 7px",borderRadius:6,textTransform:"uppercase",letterSpacing:"0.05em",background:m.bg,color:m.color }}>{m.label}</span>
                           <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:"4px 0 0" }}>{fm.title}</p>
                           {fm.description && <p style={{ fontSize:12,color:"#64748b",margin:"2px 0 0",lineHeight:1.4 }}>{fm.description}</p>}
-                          {fm.locationDetail && <p style={{ fontSize:11,color:"#94a3b8",margin:"2px 0 0" }}>📍 {fm.locationDetail}</p>}
+                          {fm.locationDetail && <p style={{ fontSize:11,color:"#94a3b8",margin:"2px 0 0" }}><PinIcon size={11} className="inline mr-1" />{fm.locationDetail}</p>}
                         </div>
                       </div>
                     );
@@ -3115,7 +3116,7 @@ export default function UserPortalPage() {
                       <div style={{ flex:1,minWidth:0 }}>
                         <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>{fl.name}</p>
                         {fl.description && <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0",lineHeight:1.3 }}>{fl.description}</p>}
-                        {acc?.address && <p style={{ fontSize:11,color:"#94a3b8",margin:"2px 0 0",lineHeight:1.3 }}>📍 {acc.address}</p>}
+                        {acc?.address && <p style={{ fontSize:11,color:"#94a3b8",margin:"2px 0 0",lineHeight:1.3 }}><PinIcon size={11} className="inline mr-1" />{acc.address}</p>}
                       </div>
                       {fl.capacity && <span style={{ fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:8,background:"#f1f5f9",color:"#475569",flexShrink:0 }}>{fl.capacity} pax</span>}
                       <button type="button" onClick={() => setExpandedItemId(isOpen ? null : `food-${fl.id}`)}
@@ -3187,10 +3188,10 @@ export default function UserPortalPage() {
                             color: accLabel === "Acreditado" ? "#059669" : accLabel === "Acreditación rechazada" ? "#dc2626" : "#92400E" }}>{accLabel}</span>}
                         </div>
                         <div style={{ display:"flex",flexDirection:"column",gap:2,marginTop:6 }}>
-                          {m.email && <p style={{ fontSize:11,color:"#64748b",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>✉️ {m.email}</p>}
-                          {m.phone && <p style={{ fontSize:11,color:"#64748b",margin:0 }}>📞 {m.phone}</p>}
-                          {memberFlight && <p style={{ fontSize:11,color:"#64748b",margin:0 }}>✈️ {memberFlight}{m.arrivalTime ? ` · ${fmt(m.arrivalTime)}` : ""}</p>}
-                          {memberHotel && <p style={{ fontSize:11,color:"#64748b",margin:0 }}>🏨 {memberHotel}{m.roomNumber ? ` · Hab. ${m.roomNumber}` : ""}</p>}
+                          {m.email && <p style={{ fontSize:11,color:"#64748b",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}><MailIcon size={11} className="inline mr-1" />{m.email}</p>}
+                          {m.phone && <p style={{ fontSize:11,color:"#64748b",margin:0 }}><PhoneIcon size={11} className="inline mr-1" />{m.phone}</p>}
+                          {memberFlight && <p style={{ fontSize:11,color:"#64748b",margin:0 }}><PlaneIcon size={11} className="inline mr-1" />{memberFlight}{m.arrivalTime ? ` · ${fmt(m.arrivalTime)}` : ""}</p>}
+                          {memberHotel && <p style={{ fontSize:11,color:"#64748b",margin:0 }}><HotelIcon size={11} className="inline mr-1" />{memberHotel}{m.roomNumber ? ` · Hab. ${m.roomNumber}` : ""}</p>}
                         </div>
                       </div>
                     </div>
@@ -3504,7 +3505,7 @@ export default function UserPortalPage() {
                     photoUrl,
                   });
                   setCredentialHtml(html);
-                } catch { notify.push("No se pudo generar la credencial","❌"); }
+                } catch { notify.push("No se pudo generar la credencial","error"); }
               }}
             />
             {/* Health form link */}
@@ -3686,7 +3687,7 @@ export default function UserPortalPage() {
                   )}
                   {(trip.origin || trip.destination) && (
                     <p style={{ fontSize:"13px",fontWeight:700,color:"#0f172a",margin:"0 0 10px",lineHeight:1.4,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:3,WebkitBoxOrient:"vertical" as any }}>
-                      {trip.origin || "–"} <span style={{ color:"#0ea5c8",fontWeight:800 }}>→</span> {trip.destination || "–"}
+                      {trip.origin || "–"} <span style={{ color:"#0ea5c8",display:"inline-flex",verticalAlign:"middle" }}><ArrowRightIcon size={12} /></span> {trip.destination || "–"}
                     </p>
                   )}
                   {scheduledFmt && (
@@ -3928,7 +3929,7 @@ export default function UserPortalPage() {
                   <p style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:"#0ea5c8",margin:"0 0 4px" }}>Detalle del viaje</p>
                   {(trip.origin || trip.destination) && (
                     <h2 style={{ fontSize:"20px",fontWeight:800,color:"#0f172a",margin:0,letterSpacing:"-0.02em" }}>
-                      {trip.origin || "–"} <span style={{ color:"#0ea5c8" }}>→</span> {trip.destination || "–"}
+                      {trip.origin || "–"} <span style={{ color:"#0ea5c8",display:"inline-flex",verticalAlign:"middle" }}><ArrowRightIcon size={12} /></span> {trip.destination || "–"}
                     </h2>
                   )}
                 </div>
@@ -4016,8 +4017,8 @@ export default function UserPortalPage() {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
               {/* Emoji */}
-              <div style={{ fontSize:48,marginBottom:12 }}>
-                {ratingStars === 0 ? "🚗" : ratingStars <= 2 ? "😕" : ratingStars <= 3 ? "🙂" : ratingStars <= 4 ? "😊" : "🤩"}
+              <div style={{ marginBottom:12,display:"flex",justifyContent:"center" }}>
+                <StarIcon size={48} color={ratingStars === 0 ? "#cbd5e1" : "#f59e0b"} />
               </div>
               <h3 style={{ fontSize:20,fontWeight:800,color:"#0f172a",margin:"0 0 4px" }}>¿Cómo fue tu viaje?</h3>
               <p style={{ fontSize:13,color:"#64748b",margin:"0 0 20px" }}>Evalúa a tu conductor</p>
@@ -4099,10 +4100,10 @@ export default function UserPortalPage() {
                   </ol>
                 </div>
                 <div style={{ fontSize:12, color:"#64748b", display:"flex", flexDirection:"column", gap:3 }}>
-                  <p style={{ margin:0 }}>📅 Reclamado el {fmtCouponFull(activeClaim.claimedAt)}</p>
-                  <p style={{ margin:0 }}>⏱️ Expira el {fmtCouponFull(activeClaim.expiresAt)} <strong>({couponTimeLeft(activeClaim.expiresAt)} restantes)</strong></p>
+                  <p style={{ margin:0 }}><CalendarIcon size={11} className="inline mr-1" />Reclamado el {fmtCouponFull(activeClaim.claimedAt)}</p>
+                  <p style={{ margin:0 }}><ClockIcon size={11} className="inline mr-1" />Expira el {fmtCouponFull(activeClaim.expiresAt)} <strong>({couponTimeLeft(activeClaim.expiresAt)} restantes)</strong></p>
                   {activeClaim.coupon?.partnerAddress && (
-                    <p style={{ margin:0 }}>📍 {activeClaim.coupon.partnerAddress}</p>
+                    <p style={{ margin:0 }}><PinIcon size={11} className="inline mr-1" />{activeClaim.coupon.partnerAddress}</p>
                   )}
                 </div>
                 {activeClaim.coupon?.termsAndConditions && (
@@ -4135,7 +4136,7 @@ export default function UserPortalPage() {
                       // visor propio (con Volver y Guardar).
                       if (isNativeShell() && credentialHtml) setCredentialPdfView(credentialHtml);
                       else downloadCredentialPdf(credentialPdf);
-                    } catch { notify.push("No se pudo generar el PDF", "❌"); }
+                    } catch { notify.push("No se pudo generar el PDF", "error"); }
                   }}
                     title="Descargar PDF"
                     style={{ width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",color:BRAND.teal,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
@@ -4143,7 +4144,7 @@ export default function UserPortalPage() {
                   </button>
                   <button type="button" onClick={() => setCredentialHtml(null)}
                     style={{ height:34,padding:"0 12px",borderRadius:10,border:"1px solid rgba(255,255,255,0.25)",background:"rgba(255,255,255,0.08)",color:"#fff",cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6,fontSize:12.5,fontWeight:700,lineHeight:1 }}>
-                    <span aria-hidden style={{ fontSize:15 }}>✕</span> Volver
+                    <XIcon size={15} /> Volver
                   </button>
                 </div>
               </div>
@@ -4173,7 +4174,7 @@ export default function UserPortalPage() {
             reporterOriginType="athlete"
             reporterOriginId={athlete.id}
             eventId={athlete.eventId || null}
-            onNewMessage={(name, content) => notify.push(`${name}: ${content.slice(0, 80)}`, "💬")}
+            onNewMessage={(name, content) => notify.push(`${name}: ${content.slice(0, 80)}`, "chat")}
           />
         )}
 

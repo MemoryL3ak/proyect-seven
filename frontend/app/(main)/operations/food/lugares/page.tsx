@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { XIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 
 type FoodLocation = {
@@ -380,7 +381,7 @@ export default function FoodLocationsPage() {
                 onClick={() => setShowForm(false)}
                 style={{ fontSize: "16px", padding: "4px 10px", borderRadius: "8px", border: "1px solid #e2e8f0", background: "#ffffff", color: "#64748b", cursor: "pointer" }}
               >
-                ✕
+                <XIcon size={14} />
               </button>
             </div>
 

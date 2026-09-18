@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { apiFetch } from "@/lib/api";
+import { PinIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 import { CLIENT_TYPE_OPTIONS } from "@/lib/clientTypes";
 import { BRAND } from "@/lib/design";
@@ -460,7 +461,7 @@ export default function FoodCalendar({ mealType }: { mealType: MealType }) {
                             </span>
                           )}
                           {m.description && <p style={{ fontSize: "11px", color: "#64748b", marginTop: "4px" }}>{m.description}</p>}
-                          {m.locationDetail && <p style={{ fontSize: "10.5px", color: "#94a3b8", marginTop: "3px" }}>📍 {m.locationDetail}</p>}
+                          {m.locationDetail && <p style={{ fontSize: "10.5px", color: "#94a3b8", marginTop: "3px" }}><PinIcon size={10} className="inline mr-1" />{m.locationDetail}</p>}
                           {(m.clientTypes?.length ?? 0) > 0 && (
                             <p style={{ fontSize: "10px", color: "#94a3b8", marginTop: "2px" }}>Para: {m.clientTypes!.join(", ")}</p>
                           )}

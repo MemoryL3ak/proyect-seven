@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import * as XLSX from "xlsx";
 import Link from "next/link";
 import PageHeader from "@/components/PageHeader";
@@ -12,6 +12,7 @@ import { filterValidatedAthletes } from "@/lib/athletes";
 import { resources } from "@/lib/resources";
 import { useI18n } from "@/lib/i18n";
 import { CLIENT_TYPE_OPTIONS, clientTypeLabel } from "@/lib/clientTypes";
+import { CrownIcon, FileSpreadsheetIcon, LayoutGridIcon, PenLineIcon, AlertIcon, UploadIcon } from "@/components/ui/Icons";
 
 // ── Trip bulk import ─────────────────────────────────────────────────────────
 const TRIP_IMPORT_HEADERS = [
@@ -241,11 +242,15 @@ const isPortalVipTrip = (t: {
 }): boolean =>
   classifyTripSource(t) === "PORTAL" && PORTAL_CLIENT_TYPES.has(t.clientType || "");
 
-const SOURCE_META: Record<TripSource | "", { label: string; color: string; bg: string; border: string; icon: string }> = {
-  "": { label: "Todos", color: "#0f172a", bg: "#fff", border: "#e2e8f0", icon: "✦" },
-  PORTAL: { label: "VIP / T1", color: "#7c3aed", bg: "rgba(168,85,247,0.10)", border: "rgba(168,85,247,0.35)", icon: "♕" },
-  DAILY: { label: "Operatividad Diaria", color: "#0ea5c8", bg: "rgba(14,165,200,0.10)", border: "rgba(14,165,200,0.35)", icon: "📋" },
-  MANUAL: { label: "Gestión Manual", color: "#21D0B3", bg: "rgba(33,208,179,0.10)", border: "rgba(33,208,179,0.35)", icon: "✋" },
+// Iconos de línea del kit, no emojis: el emoji lo dibuja el sistema operativo
+// (distinto en Windows, Android e iOS) y no respeta el color de la tarjeta.
+// Los SVG heredan `currentColor`, así que el contenedor de abajo los pinta
+// del color del origen o en blanco cuando la tarjeta está activa.
+const SOURCE_META: Record<TripSource | "", { label: string; color: string; bg: string; border: string; icon: ReactNode }> = {
+  "": { label: "Todos", color: "#0f172a", bg: "#fff", border: "#e2e8f0", icon: <LayoutGridIcon size={18} /> },
+  PORTAL: { label: "VIP / T1", color: "#7c3aed", bg: "rgba(168,85,247,0.10)", border: "rgba(168,85,247,0.35)", icon: <CrownIcon size={18} /> },
+  DAILY: { label: "Operatividad Diaria", color: "#0ea5c8", bg: "rgba(14,165,200,0.10)", border: "rgba(14,165,200,0.35)", icon: <FileSpreadsheetIcon size={18} /> },
+  MANUAL: { label: "Gestión Manual", color: "#21D0B3", bg: "rgba(33,208,179,0.10)", border: "rgba(33,208,179,0.35)", icon: <PenLineIcon size={18} /> },
 };
 
 const STATUS_FLOW = ["REQUESTED", "SCHEDULED", "ASSIGNED", "EN_ROUTE", "PICKED_UP", "COMPLETED"] as const;
@@ -949,7 +954,7 @@ export default function TripsPage() {
                 fontWeight: 600,
               }}
             >
-              <span style={{ fontWeight: 800, color: "#b45309" }}>⚠ Observación:</span>{" "}
+              <span style={{ fontWeight: 800, color: "#b45309" }}><AlertIcon size={12} className="inline mr-1" />Observación:</span>{" "}
               {safeText(trip.notes.replace(/^\[Portal\]\s*/, ""), "Sin observaciones operativas.")}
             </p>
           ) : (
@@ -1368,7 +1373,7 @@ export default function TripsPage() {
                 border: "1px solid #cbd5e1", cursor: "pointer",
               }}
             >
-              ⬆ Importar
+              <UploadIcon size={14} className="inline mr-1" />Importar
             </button>
           </div>
         </div>
@@ -1474,7 +1479,7 @@ export default function TripsPage() {
                 </div>
                 {pendingAssignment.length === 0 ? (
                   <div style={{ borderRadius: "20px", border: "1px dashed #86efac", background: "#f0fdf4", padding: "48px 24px", textAlign: "center" as const, fontSize: "14px", color: "#166534" }}>
-                    ✓ No hay servicios pendientes de asignación. Las nuevas solicitudes aparecerán aquí automáticamente.
+                    No hay servicios pendientes de asignación. Las nuevas solicitudes aparecerán aquí automáticamente.
                   </div>
                 ) : (
                   <div className="space-y-4" style={{ maxHeight: 1000, overflowY: "auto", paddingRight: 4 }}>
@@ -1794,7 +1799,7 @@ export default function TripsPage() {
                 </div>
                 {infoTrip.notes && (
                   <p style={{ marginTop: "12px", fontSize: "12.5px", color: "#78350f", background: "#fffbeb", border: "1px solid #fde68a", borderLeft: "4px solid #f59e0b", borderRadius: 10, padding: "8px 12px", fontWeight: 600 }}>
-                    <span style={{ fontWeight: 800, color: "#b45309" }}>⚠ Observación:</span>{" "}
+                    <span style={{ fontWeight: 800, color: "#b45309" }}><AlertIcon size={12} className="inline mr-1" />Observación:</span>{" "}
                     {safeText(infoTrip.notes.replace(/^\[Portal\]\s*/, ""))}
                   </p>
                 )}

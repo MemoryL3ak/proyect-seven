@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useI18n } from "@/lib/i18n";
+import { Icon, type IconName } from "@/components/ui/Icons";
 
 /* ─────────────────────────────────────────────────────────────
    Estilos custom (keyframes, glass, glow, gradients)
@@ -295,30 +296,30 @@ const ROLES: Array<{
   },
 ];
 
-const GOALS: Array<{ key: GoalKey; label: string; emoji: string; tags: RoleKey[] }> = [
-  { key: "create_event",         label: "Crear y configurar evento",          emoji: "📅", tags: ["admin"] },
-  { key: "import_athletes",      label: "Importar participantes desde Excel", emoji: "👥", tags: ["admin"] },
-  { key: "manage_users",         label: "Crear cuentas de usuario",           emoji: "🛡️", tags: ["admin"] },
-  { key: "view_dashboard",       label: "Ver dashboards y métricas",          emoji: "📊", tags: ["admin", "operations", "other"] },
-  { key: "import_schedule",      label: "Importar planilla de viajes diaria", emoji: "📄", tags: ["transport"] },
-  { key: "auto_assign",          label: "Asignar conductores automáticamente",emoji: "⚙️", tags: ["transport"] },
-  { key: "monitor_drivers",      label: "Monitorear conductores activos",     emoji: "🚗", tags: ["transport", "operations"] },
-  { key: "tracking_realtime",    label: "Tracking GPS en tiempo real",        emoji: "📍", tags: ["transport", "operations"] },
-  { key: "setup_hotels",         label: "Configurar hoteles y habitaciones",  emoji: "🏨", tags: ["hotel"] },
-  { key: "assign_rooms",         label: "Asignar habitaciones a atletas",     emoji: "🛏️", tags: ["hotel"] },
-  { key: "manage_keys",          label: "Gestionar entrega de llaves",        emoji: "🔑", tags: ["hotel"] },
-  { key: "hotel_extras",         label: "Reservar salones y servicios",       emoji: "✨", tags: ["hotel"] },
-  { key: "generate_credentials", label: "Generar credenciales QR",            emoji: "🪪", tags: ["accreditation", "admin"] },
-  { key: "qr_scanner",           label: "Escanear QR en accesos",             emoji: "📱", tags: ["accreditation"] },
-  { key: "manage_access",        label: "Configurar tipos de acceso",         emoji: "🔐", tags: ["accreditation"] },
-  { key: "monitor_incidents",    label: "Resolver incidencias y soporte",     emoji: "🆘", tags: ["operations"] },
-  { key: "premiaciones",         label: "Coordinar premiaciones",             emoji: "🏆", tags: ["operations"] },
-  { key: "coupons",              label: "Administrar beneficios y partners",     emoji: "🎟️", tags: ["operations", "other"] },
-  { key: "workforce",            label: "Gestionar staff y voluntarios",      emoji: "👷", tags: ["operations"] },
-  { key: "finance_panel",        label: "Controlar finanzas de transporte",   emoji: "💰", tags: ["admin", "transport"] },
-  { key: "vip_monitoring",       label: "Monitorear ubicación de VIP",        emoji: "⭐", tags: ["transport", "operations"] },
-  { key: "departures_monitor",   label: "Monitorear salidas de participantes",emoji: "✈️", tags: ["operations", "admin"] },
-  { key: "salud",                label: "Gestionar fichas de salud",          emoji: "🩺", tags: ["operations", "admin"] },
+const GOALS: Array<{ key: GoalKey; label: string; emoji: IconName; tags: RoleKey[] }> = [
+  { key: "create_event",         label: "Crear y configurar evento",          emoji: "calendar", tags: ["admin"] },
+  { key: "import_athletes",      label: "Importar participantes desde Excel", emoji: "users", tags: ["admin"] },
+  { key: "manage_users",         label: "Crear cuentas de usuario",           emoji: "shield", tags: ["admin"] },
+  { key: "view_dashboard",       label: "Ver dashboards y métricas",          emoji: "bar-chart", tags: ["admin", "operations", "other"] },
+  { key: "import_schedule",      label: "Importar planilla de viajes diaria", emoji: "file-text", tags: ["transport"] },
+  { key: "auto_assign",          label: "Asignar conductores automáticamente",emoji: "settings", tags: ["transport"] },
+  { key: "monitor_drivers",      label: "Monitorear conductores activos",     emoji: "car", tags: ["transport", "operations"] },
+  { key: "tracking_realtime",    label: "Tracking GPS en tiempo real",        emoji: "pin", tags: ["transport", "operations"] },
+  { key: "setup_hotels",         label: "Configurar hoteles y habitaciones",  emoji: "hotel", tags: ["hotel"] },
+  { key: "assign_rooms",         label: "Asignar habitaciones a atletas",     emoji: "bed", tags: ["hotel"] },
+  { key: "manage_keys",          label: "Gestionar entrega de llaves",        emoji: "key", tags: ["hotel"] },
+  { key: "hotel_extras",         label: "Reservar salones y servicios",       emoji: "sparkle", tags: ["hotel"] },
+  { key: "generate_credentials", label: "Generar credenciales QR",            emoji: "id-card", tags: ["accreditation", "admin"] },
+  { key: "qr_scanner",           label: "Escanear QR en accesos",             emoji: "smartphone", tags: ["accreditation"] },
+  { key: "manage_access",        label: "Configurar tipos de acceso",         emoji: "lock", tags: ["accreditation"] },
+  { key: "monitor_incidents",    label: "Resolver incidencias y soporte",     emoji: "life-buoy", tags: ["operations"] },
+  { key: "premiaciones",         label: "Coordinar premiaciones",             emoji: "trophy", tags: ["operations"] },
+  { key: "coupons",              label: "Administrar beneficios y partners",     emoji: "ticket", tags: ["operations", "other"] },
+  { key: "workforce",            label: "Gestionar staff y voluntarios",      emoji: "hard-hat", tags: ["operations"] },
+  { key: "finance_panel",        label: "Controlar finanzas de transporte",   emoji: "banknote", tags: ["admin", "transport"] },
+  { key: "vip_monitoring",       label: "Monitorear ubicación de VIP",        emoji: "star", tags: ["transport", "operations"] },
+  { key: "departures_monitor",   label: "Monitorear salidas de participantes",emoji: "plane", tags: ["operations", "admin"] },
+  { key: "salud",                label: "Gestionar fichas de salud",          emoji: "stethoscope", tags: ["operations", "admin"] },
 ];
 
 type Task = {
@@ -365,44 +366,44 @@ const TASKS: Task[] = [
   { key: "t-salud", title: "Fichas de salud", description: "Dashboard sanitario del evento, fichas por participante y carga masiva de antecedentes médicos.", href: "/operations/health", goal: "salud" },
 ];
 
-const TIPS_BY_ROLE: Record<RoleKey, Array<{ icon: string; text: string }>> = {
+const TIPS_BY_ROLE: Record<RoleKey, Array<{ icon: IconName; text: string }>> = {
   admin: [
-    { icon: "🤖", text: "SofIA puede crear viajes, asignar conductores y generar reportes con solo pedírselo en lenguaje natural." },
-    { icon: "🔑", text: "Cada usuario ve solo los módulos asignados. Configurás esto en Administración → Gestión de Usuarios." },
-    { icon: "📈", text: "El dashboard comercial se actualiza solo cuando ingresás los montos licitados de los conductores." },
+    { icon: "bot", text: "SofIA puede crear viajes, asignar conductores y generar reportes con solo pedírselo en lenguaje natural." },
+    { icon: "key", text: "Cada usuario ve solo los módulos asignados. Configurás esto en Administración → Gestión de Usuarios." },
+    { icon: "trending-up", text: "El dashboard comercial se actualiza solo cuando ingresás los montos licitados de los conductores." },
   ],
   transport: [
-    { icon: "📥", text: "En 'Operatividad Diaria' tienes un botón para descargar la plantilla con todas las columnas que reconoce el importador." },
-    { icon: "⚙️", text: "La auto-asignación respeta tipo de flota, capacidad, sillas de ruedas, ventana horaria y máx. viajes por conductor." },
-    { icon: "📍", text: "El portal del conductor usa Wake Lock para mantener el GPS activo aunque la pantalla se apague." },
+    { icon: "download", text: "En 'Operatividad Diaria' tienes un botón para descargar la plantilla con todas las columnas que reconoce el importador." },
+    { icon: "settings", text: "La auto-asignación respeta tipo de flota, capacidad, sillas de ruedas, ventana horaria y máx. viajes por conductor." },
+    { icon: "pin", text: "El portal del conductor usa Wake Lock para mantener el GPS activo aunque la pantalla se apague." },
   ],
   hotel: [
-    { icon: "🛏️", text: "Puedes asignar habitaciones manualmente o usar la asignación automática por tipo de habitación." },
-    { icon: "✍️", text: "La entrega de llaves queda registrada con firma digital — útil para auditorías." },
-    { icon: "📅", text: "Early/late check-in se gestiona desde la misma ficha de la asignación, sin doble entrada." },
+    { icon: "bed", text: "Puedes asignar habitaciones manualmente o usar la asignación automática por tipo de habitación." },
+    { icon: "pen-line", text: "La entrega de llaves queda registrada con firma digital — útil para auditorías." },
+    { icon: "calendar", text: "Early/late check-in se gestiona desde la misma ficha de la asignación, sin doble entrada." },
   ],
   accreditation: [
-    { icon: "📷", text: "El scanner funciona desde cualquier celular con cámara, sin instalar nada." },
-    { icon: "🟢", text: "El QR muestra en verde/rojo si el acceso al área es válido en tiempo real." },
-    { icon: "🛡️", text: "Cada credencial puede combinar múltiples tipos de acceso (C+TR+H, por ejemplo)." },
+    { icon: "camera", text: "El scanner funciona desde cualquier celular con cámara, sin instalar nada." },
+    { icon: "check-circle", text: "El QR muestra en verde/rojo si el acceso al área es válido en tiempo real." },
+    { icon: "shield", text: "Cada credencial puede combinar múltiples tipos de acceso (C+TR+H, por ejemplo)." },
   ],
   operations: [
-    { icon: "🆘", text: "El Centro de Incidencias recibe tickets de los portales (conductor, atleta) y los puedes asignar al equipo." },
-    { icon: "🏆", text: "Las premiaciones tienen estados (Programada/Realizada) y soportan multi-entregador con confirmación." },
-    { icon: "🖨️", text: "En Workforce puedes imprimir códigos de barra de los productos del kit para inventario." },
+    { icon: "life-buoy", text: "El Centro de Incidencias recibe tickets de los portales (conductor, atleta) y los puedes asignar al equipo." },
+    { icon: "trophy", text: "Las premiaciones tienen estados (Programada/Realizada) y soportan multi-entregador con confirmación." },
+    { icon: "printer", text: "En Workforce puedes imprimir códigos de barra de los productos del kit para inventario." },
   ],
   other: [
-    { icon: "🌐", text: "Cambia el idioma en la parte inferior del menú lateral — soporta ES/EN/PT." },
-    { icon: "🌙", text: "4 temas visuales disponibles: Light, Dark, Obsidian y Atlas." },
-    { icon: "💬", text: "El widget de SofIA en la esquina inferior derecha responde cualquier consulta operativa." },
+    { icon: "globe", text: "Cambia el idioma en la parte inferior del menú lateral — soporta ES/EN/PT." },
+    { icon: "moon", text: "4 temas visuales disponibles: Light, Dark, Obsidian y Atlas." },
+    { icon: "message", text: "El widget de SofIA en la esquina inferior derecha responde cualquier consulta operativa." },
   ],
 };
 
 const RESOURCES = [
-  { icon: "📚", title: "Centro de Ayuda", desc: "Módulos, FAQ y Cuaderno de Cargo filtrable.", href: "/ayuda" },
-  { icon: "📄", title: "Manual completo (PDF)", desc: "Documento descargable con toda la operación detallada.", href: "/ayuda/manual" },
-  { icon: "💬", title: "SofIA — asistente IA", desc: "Pídele acciones, predicciones o resúmenes en lenguaje natural.", href: "/dashboard/operacional" },
-  { icon: "📞", title: "Soporte técnico", desc: "Si el equipo se queda atorado, contactalos directo.", href: "mailto:soporte@sevenarena.cl" },
+  { icon: "book-open", title: "Centro de Ayuda", desc: "Módulos, FAQ y Cuaderno de Cargo filtrable.", href: "/ayuda" },
+  { icon: "file-text", title: "Manual completo (PDF)", desc: "Documento descargable con toda la operación detallada.", href: "/ayuda/manual" },
+  { icon: "message", title: "SofIA — asistente IA", desc: "Pídele acciones, predicciones o resúmenes en lenguaje natural.", href: "/dashboard/operacional" },
+  { icon: "phone", title: "Soporte técnico", desc: "Si el equipo se queda atorado, contactalos directo.", href: "mailto:soporte@sevenarena.cl" },
 ];
 
 /* ─────────────────────────────────────────────────────────────
@@ -583,7 +584,7 @@ function RoleCard({
                 return (
                   <span key={g} className="inline-flex items-center gap-1 text-[10px] font-bold rounded-full px-2 py-0.5"
                     style={{ background: `${role.color}18`, color: role.color, border: `1px solid ${role.color}30` }}>
-                    <span>{goal.emoji}</span>{t(goal.label)}
+                    <span style={{ display: "inline-flex" }}><Icon name={goal.emoji} size={11} /></span>{t(goal.label)}
                   </span>
                 );
               })}
@@ -607,7 +608,7 @@ function GoalChip({
   onClick,
 }: {
   label: string;
-  emoji: string;
+  emoji: IconName;
   selected: boolean;
   onClick: () => void;
 }) {
@@ -640,7 +641,7 @@ function GoalChip({
         }
       }}
     >
-      <span style={{ fontSize: 14 }}>{emoji}</span>
+      <span style={{ display: "inline-flex" }}><Icon name={emoji} size={14} /></span>
       {label}
       {selected && (
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -924,9 +925,9 @@ export default function OnboardingPage() {
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 ob-stagger">
               {[
-                { icon: "⚡", title: "3 minutos",        text: "Lo que dura este recorrido — adaptado a vos.",       accent: "#fbbf24", bg: "linear-gradient(135deg, #fff4d6 0%, #ffffff 70%)" },
-                { icon: "🎯", title: "Personalizado",    text: "Las recomendaciones cambian según tu rol y objetivos.", accent: "#21D0B3", bg: "linear-gradient(135deg, #f0fdfb 0%, #ffffff 70%)" },
-                { icon: "💾", title: "Progreso guardado",text: "Cerrás y volvés cuando quieras — todo queda registrado.", accent: "#7c5ec4", bg: "linear-gradient(135deg, #f4f0fb 0%, #ffffff 70%)" },
+                { icon: "zap", title: "3 minutos",        text: "Lo que dura este recorrido — adaptado a vos.",       accent: "#fbbf24", bg: "linear-gradient(135deg, #fff4d6 0%, #ffffff 70%)" },
+                { icon: "target", title: "Personalizado",    text: "Las recomendaciones cambian según tu rol y objetivos.", accent: "#21D0B3", bg: "linear-gradient(135deg, #f0fdfb 0%, #ffffff 70%)" },
+                { icon: "save", title: "Progreso guardado",text: "Cerrás y volvés cuando quieras — todo queda registrado.", accent: "#7c5ec4", bg: "linear-gradient(135deg, #f4f0fb 0%, #ffffff 70%)" },
               ].map((b) => (
                 <div key={b.title} className="ob-tilt rounded-2xl p-4 relative overflow-hidden"
                   style={{ background: b.bg, border: `1px solid ${b.accent}40`, boxShadow: `0 2px 8px ${b.accent}18` }}>
@@ -934,7 +935,7 @@ export default function OnboardingPage() {
                     position: "absolute", top: -20, right: -20, width: 80, height: 80, borderRadius: "50%",
                     background: `radial-gradient(circle, ${b.accent}30 0%, transparent 65%)`, pointerEvents: "none",
                   }} />
-                  <span className="text-3xl relative">{b.icon}</span>
+                  <span className="relative inline-flex"><Icon name={b.icon as IconName} size={30} /></span>
                   <p className="text-sm font-bold mt-2 relative" style={{ color: "#0f172a" }}>{t(b.title)}</p>
                   <p className="text-xs mt-1 relative" style={{ color: "var(--text-muted)" }}>{t(b.text)}</p>
                 </div>
@@ -1147,7 +1148,7 @@ export default function OnboardingPage() {
                       background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
                       border: "1px solid #e2e8f0",
                     }}>
-                    <span className="text-2xl">{tip.icon}</span>
+                    <span className="inline-flex flex-shrink-0" style={{ color: "var(--text-muted)" }}><Icon name={tip.icon} size={22} /></span>
                     <p className="text-[12.5px] mt-2 leading-relaxed" style={{ color: "#334155" }}>
                       {t(tip.text)}
                     </p>
@@ -1180,7 +1181,7 @@ export default function OnboardingPage() {
                         (e.currentTarget as HTMLElement).style.boxShadow = "none";
                       }}
                     >
-                      <span className="text-2xl flex-shrink-0">{r.icon}</span>
+                      <span className="inline-flex flex-shrink-0" style={{ color: "var(--text-muted)" }}><Icon name={r.icon as IconName} size={22} /></span>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold" style={{ color: "#0f172a" }}>{t(r.title)}</p>
                         <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{t(r.desc)}</p>

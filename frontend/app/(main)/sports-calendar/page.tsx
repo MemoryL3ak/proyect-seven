@@ -8,7 +8,18 @@ import { filterValidatedAthletes } from "@/lib/athletes";
 import StyledSelect from "@/components/StyledSelect";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiCard from "@/components/ui/KpiCard";
-import { CalendarIcon, TruckIcon, AlertIcon, CheckIcon, FilterIcon, SearchIcon } from "@/components/ui/Icons";
+import {
+  CalendarIcon,
+  TruckIcon,
+  AlertIcon,
+  CheckIcon,
+  FilterIcon,
+  SearchIcon,
+  XIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  MedalIcon,
+} from "@/components/ui/Icons";
 
 type EventOption = { id: string; name: string };
 type VenueOption = { id: string; name: string; address?: string | null; eventId?: string | null };
@@ -1049,7 +1060,7 @@ export default function SportsCalendarPage() {
               }}
               className="btn btn-ghost text-xs"
               style={{ color: "#b91c1c", borderColor: "#fecaca", background: "#fef2f2" }}>
-              ✕ {t("Limpiar")}
+              <XIcon size={12} className="inline mr-1" />{t("Limpiar")}
             </button>
           )}
         </div>
@@ -1208,14 +1219,14 @@ export default function SportsCalendarPage() {
                   if (view === "month" || view === "timeline") setMonthCursor((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
                   else if (view === "week") setSelectedDay((prev) => { const d = new Date(prev); d.setDate(d.getDate() - 7); return d; });
                   else setSelectedDay((prev) => { const d = new Date(prev); d.setDate(d.getDate() - 1); return d; });
-                }}>← {view === "month" || view === "timeline" ? t("Mes anterior") : view === "week" ? t("Semana anterior") : t("Día anterior")}</button>
+                }}><ChevronLeftIcon size={14} className="inline mr-1" />{view === "month" || view === "timeline" ? t("Mes anterior") : view === "week" ? t("Semana anterior") : t("Día anterior")}</button>
               <button className="btn btn-ghost" type="button" onClick={() => { const now = new Date(); setMonthCursor(startOfMonth(now)); setSelectedDay(now); }}>{t("Hoy")}</button>
               <button className="btn btn-ghost" type="button"
                 onClick={() => {
                   if (view === "month" || view === "timeline") setMonthCursor((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
                   else if (view === "week") setSelectedDay((prev) => { const d = new Date(prev); d.setDate(d.getDate() + 7); return d; });
                   else setSelectedDay((prev) => { const d = new Date(prev); d.setDate(d.getDate() + 1); return d; });
-                }}>{view === "month" || view === "timeline" ? t("Mes siguiente") : view === "week" ? t("Semana siguiente") : t("Día siguiente")} →</button>
+                }}>{view === "month" || view === "timeline" ? t("Mes siguiente") : view === "week" ? t("Semana siguiente") : t("Día siguiente")} <ChevronRightIcon size={14} className="inline ml-1" /></button>
             </div>
             <h2 style={{ fontSize: "18px", fontWeight: 800, color: "#0f172a", textTransform: "capitalize" }}>
               {view === "month" || view === "timeline"
@@ -1317,7 +1328,7 @@ export default function SportsCalendarPage() {
                           <span className="truncate">{titleFromEvent(entry)}</span>
                         </p>
                         <p className="text-[11px]" style={{ opacity: 0.8 }}>
-                          {t(scheduleTypeLabel(tipo))}{entry.venue && ` · 📍 ${venueLabelById(venueOptions, entry.venue)}`}
+                          {t(scheduleTypeLabel(tipo))}{entry.venue && ` · ${venueLabelById(venueOptions, entry.venue)}`}
                         </p>
                       </div>
                       <span className="text-[10px] px-2 py-0.5 rounded-full font-bold" style={{ background: "rgba(255,255,255,0.55)", color: theme.fg, whiteSpace: "nowrap" }}>
@@ -1571,7 +1582,7 @@ export default function SportsCalendarPage() {
                               return (
                                 <div key={bi} title={`${bar.label} · ${bar.count} actividad(es)`} style={{ gridColumn: `${bar.start + 1} / span ${bar.span}`, gridRow: bar.lane + 1, background: meta.bar, border: `1px solid ${meta.border}`, borderLeft: `3px solid ${meta.border}`, borderRadius: 7, height: BAR_H, display: "flex", alignItems: "center", gap: 4, padding: "0 8px", margin: "0 2px", overflow: "hidden", boxShadow: "0 1px 2px rgba(15,23,42,0.06)" }}>
                                   <span style={{ fontSize: 11, fontWeight: 700, color: meta.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{bar.label}</span>
-                                  {bar.cat === "FINAL" && <span style={{ flexShrink: 0 }}>🏅</span>}
+                                  {bar.cat === "FINAL" && <span style={{ flexShrink: 0, display: "inline-flex" }}><MedalIcon size={11} /></span>}
                                 </div>
                               );
                             })}
@@ -1893,7 +1904,7 @@ export default function SportsCalendarPage() {
                   aria-label={t("Cerrar")}
                   style={{ flexShrink: 0, width: 32, height: 32, borderRadius: 10, border: "none", cursor: "pointer", background: "rgba(255,255,255,0.2)", color: "#fff", fontSize: 18, fontWeight: 700, lineHeight: 1 }}
                 >
-                  ✕
+                  <XIcon size={14} />
                 </button>
               </div>
               {/* Resumen por tipo */}
@@ -1916,7 +1927,7 @@ export default function SportsCalendarPage() {
             <div className="stagger" style={{ padding: 16, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10 }}>
               {selectedDayEntries.length === 0 ? (
                 <div style={{ padding: "32px 16px", textAlign: "center" }}>
-                  <p style={{ fontSize: 40, marginBottom: 6 }}>📅</p>
+                  <p style={{ marginBottom: 6, color: "#cbd5e1", display: "flex", justifyContent: "center" }}><CalendarIcon size={40} /></p>
                   <p style={{ fontSize: 14, fontWeight: 700, color: "#475569" }}>{t("Sin actividades para este día")}</p>
                   <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>{t("Programá una desde el panel lateral.")}</p>
                 </div>
@@ -1934,7 +1945,7 @@ export default function SportsCalendarPage() {
                           <span className="truncate">{titleFromEvent(entry)}</span>
                         </p>
                         <p style={{ fontSize: 11.5, opacity: 0.82, marginTop: 2 }}>
-                          {entry.sport} / {entry.league}{entry.venue ? ` · 📍 ${venueLabelById(venueOptions, entry.venue)}` : ""}
+                          {entry.sport} / {entry.league}{entry.venue ? ` · ${venueLabelById(venueOptions, entry.venue)}` : ""}
                         </p>
                       </div>
                       <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 800, padding: "3px 9px", borderRadius: 99, background: "rgba(255,255,255,0.6)", color: theme.fg, whiteSpace: "nowrap" }}>

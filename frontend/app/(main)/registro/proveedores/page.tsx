@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { CheckIcon, XIcon, AlertIcon } from "@/components/ui/Icons";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import CountrySelect from "@/components/CountrySelect";
 import { CLIENT_TYPE_OPTIONS } from "@/lib/clientTypes";
@@ -166,7 +167,7 @@ function DocRow({
       <span style={{ flex: 1, fontSize: "12px", color: "var(--text)", fontWeight: 500 }}>{label}</span>
       <span style={{ fontSize: "11px", maxWidth: "120px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
         color: hasNew ? "#21D0B3" : hasUploaded ? "#10b981" : "var(--text-faint)" }}>
-        {hasNew ? file.name : hasUploaded ? "✓ " + t("Cargado") : "—"}
+        {hasNew ? file.name : hasUploaded ? t("Cargado") : "—"}
       </span>
       {hasUploaded && url && (
         <a href={url} target="_blank" rel="noreferrer"
@@ -196,7 +197,7 @@ function DocRow({
       {hasNew && (
         <button type="button" disabled={disabled} onClick={() => onFile(docKey, null)}
           style={{ fontSize: "13px", color: "#f43f5e", background: "none", border: "none", cursor: "pointer", padding: "2px", flexShrink: 0, lineHeight: 1 }}>
-          ✕
+          <XIcon size={14} />
         </button>
       )}
     </div>
@@ -1038,7 +1039,7 @@ export default function ProveedoresPage() {
                   background: "rgba(33,208,179,0.1)", border: "1px solid rgba(33,208,179,0.3)",
                   color: "#21D0B3", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
               >
-                {activeFilterProvider.name} ✕
+                {activeFilterProvider.name} <XIcon size={11} className="inline ml-1" />
               </button>
             )}
             <span style={{ fontSize: "12px", color: "var(--text-faint)" }}>
@@ -1323,7 +1324,7 @@ export default function ProveedoresPage() {
           borderRadius: "12px", padding: "12px 18px", fontSize: "13px", fontWeight: 600,
           boxShadow: "0 8px 24px rgba(15,23,42,0.15)", maxWidth: "360px",
         }}>
-          {mailToast.ok ? "✓ " : "✕ "}{mailToast.msg}
+          {mailToast.ok ? <CheckIcon size={12} className="inline mr-1" /> : <XIcon size={12} className="inline mr-1" />}{mailToast.msg}
         </div>
       )}
       {providerModal && (
@@ -1776,14 +1777,14 @@ export default function ProveedoresPage() {
                                 border: `1px solid ${sel ? "#21D0B3" : "var(--border)"}`,
                               }}
                             >
-                              {sel ? "✓ " : ""}{t(o.label)}
+                              {sel ? <CheckIcon size={12} className="inline mr-1" /> : null}{t(o.label)}
                             </button>
                           );
                         })}
                       </div>
                       {participantForm.allowedClientTypes.length === 0 && (
                         <p style={{ fontSize: "11px", color: "#f59e0b", marginTop: "8px" }}>
-                          ⚠ {t("Sin tipos seleccionados se guardará con TA (Deportista) por defecto.")}
+                          <AlertIcon size={11} className="inline mr-1" />{t("Sin tipos seleccionados se guardará con TA (Deportista) por defecto.")}
                         </p>
                       )}
                     </div>
@@ -1805,7 +1806,7 @@ export default function ProveedoresPage() {
                               <span style={{ fontSize: "10px", color: "#f87171", fontWeight: 500 }}>{plateError}</span>
                             )}
                             {!lookingUpPlate && !plateError && participantForm.vehicleMarca && (
-                              <span style={{ fontSize: "10px", color: "#21D0B3", fontWeight: 500 }}>✓ {t("Datos encontrados")}</span>
+                              <span style={{ fontSize: "10px", color: "#21D0B3", fontWeight: 500 }}><CheckIcon size={10} className="inline mr-1" />{t("Datos encontrados")}</span>
                             )}
                           </span>
                           <input

@@ -16,6 +16,8 @@ import {
   CheckIcon,
   RefreshIcon,
   UploadIcon,
+  SearchIcon,
+  ChevronLeftIcon,
 } from "@/components/ui/Icons";
 import type { PresenceMarker } from "@/components/DriverPresenceMap";
 
@@ -655,7 +657,7 @@ export default function DriverMonitoringPage() {
             border: "1px dashed #e2e8f0",
           }}
         >
-          <p style={{ fontSize: 32, margin: "0 0 8px" }}>🔍</p>
+          <p style={{ margin: "0 0 8px", color: "#cbd5e1", display: "flex", justifyContent: "center" }}><SearchIcon size={32} /></p>
           <p style={{ fontSize: 14, fontWeight: 600, color: "#475569", margin: 0 }}>
             {t("No hay conductores que coincidan con los filtros")}
           </p>
@@ -1200,7 +1202,7 @@ function FiltersBar(p: FiltersBarProps) {
               style={{ padding: "5px 10px" }}
               title={t("Volver a hoy")}
             >
-              ← {t("Volver a hoy")}
+              <ChevronLeftIcon size={14} className="inline mr-1" />{t("Volver a hoy")}
             </button>
           )
         )}

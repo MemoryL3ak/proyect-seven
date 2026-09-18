@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
+import { DownloadIcon, Icon, type IconName } from "@/components/ui/Icons";
 
 // ── Print styles injected via a style tag ────────────────────────────────────
 const PRINT_CSS = `
@@ -24,14 +25,14 @@ const PRINT_CSS = `
 // ── Types ────────────────────────────────────────────────────────────────────
 type Locale = "es" | "en" | "pt";
 type Subsection = { title: string; content: string };
-type Section = { num: string; title: string; icon: string; content: string; subsections: Subsection[] };
+type Section = { num: string; title: string; icon: IconName; content: string; subsections: Subsection[] };
 
 // ── Data ─────────────────────────────────────────────────────────────────────
 const SECTIONS_ES: Section[] = [
   {
     num: "1",
     title: "Introducción a Seven Arena",
-    icon: "🏟️",
+    icon: "landmark",
     content: `Seven Arena es una plataforma integral de gestión de eventos deportivos. Centraliza en un único sistema todas las operaciones logísticas de un evento: inscripción de participantes, transporte, hotelería, alimentación, salud, acreditación y seguimiento comercial.
 
 La plataforma está diseñada para equipos de organización de eventos de mediano y gran escala, con soporte multiusuario, roles diferenciados y acceso desde cualquier dispositivo (desktop y móvil).`,
@@ -49,7 +50,7 @@ La plataforma está diseñada para equipos de organización de eventos de median
   {
     num: "2",
     title: "Inicio de sesión y acceso",
-    icon: "🔐",
+    icon: "lock",
     content: `Accede a la plataforma desde la URL provista por tu organización. El sistema admite dos modalidades de login: con correo electrónico y contraseña, o con nombre de usuario y contraseña (para usuarios sin email corporativo).`,
     subsections: [
       {
@@ -65,7 +66,7 @@ La plataforma está diseñada para equipos de organización de eventos de median
   {
     num: "3",
     title: "Dashboard",
-    icon: "📊",
+    icon: "bar-chart",
     content: `La sección Dashboard ofrece dos vistas ejecutivas de la operación del evento: el Dashboard Comercial y el Dashboard Operacional.`,
     subsections: [
       {
@@ -81,7 +82,7 @@ La plataforma está diseñada para equipos de organización de eventos de median
   {
     num: "4",
     title: "Registro",
-    icon: "📋",
+    icon: "clipboard",
     content: `El módulo de Registro centraliza la creación y configuración de los elementos base del evento: el evento mismo, los participantes y los proveedores.`,
     subsections: [
       {
@@ -101,7 +102,7 @@ La plataforma está diseñada para equipos de organización de eventos de median
   {
     num: "5",
     title: "Operación — Transporte",
-    icon: "🚌",
+    icon: "bus",
     content: `El módulo de transporte gestiona todo el ciclo de vida de los traslados del evento: conductores, vehículos, viajes y seguimiento en tiempo real.`,
     subsections: [
       {
@@ -125,7 +126,7 @@ La plataforma está diseñada para equipos de organización de eventos de median
   {
     num: "6",
     title: "Operación — Hotelería",
-    icon: "🏨",
+    icon: "hotel",
     content: `El módulo de hotelería gestiona el alojamiento de todos los participantes del evento, desde la configuración de los hoteles hasta la entrega de llaves y servicios extra.`,
     subsections: [
       {
@@ -149,7 +150,7 @@ La plataforma está diseñada para equipos de organización de eventos de median
   {
     num: "7",
     title: "Operación — Alimentación",
-    icon: "🍽️",
+    icon: "utensils",
     content: `Gestiona todos los servicios de alimentación del evento: comedores, menús y servicios por tipo (desayuno, almuerzo, cena).`,
     subsections: [
       {
@@ -165,7 +166,7 @@ La plataforma está diseñada para equipos de organización de eventos de median
   {
     num: "8",
     title: "Operación — Salud",
-    icon: "🏥",
+    icon: "heart-pulse",
     content: `Módulo de control sanitario y médico del evento, incluyendo la gestión del programa antidopaje (AND).`,
     subsections: [
       {
@@ -181,7 +182,7 @@ La plataforma está diseñada para equipos de organización de eventos de median
   {
     num: "9",
     title: "Acreditación",
-    icon: "🛡️",
+    icon: "shield",
     content: `Sistema de control de acceso basado en credenciales QR para todos los participantes y personal del evento.`,
     subsections: [
       {
@@ -201,7 +202,7 @@ La plataforma está diseñada para equipos de organización de eventos de median
   {
     num: "10",
     title: "Portales de usuario",
-    icon: "🖥️",
+    icon: "monitor",
     content: `La plataforma ofrece portales simplificados para usuarios finales que no necesitan acceso al sistema completo de administración.`,
     subsections: [
       {
@@ -221,7 +222,7 @@ La plataforma está diseñada para equipos de organización de eventos de median
   {
     num: "11",
     title: "Administración de Usuarios",
-    icon: "👥",
+    icon: "users",
     content: `Módulo exclusivo para administradores. Gestiona los accesos y permisos de todos los usuarios de la plataforma.`,
     subsections: [
       {
@@ -245,7 +246,7 @@ La plataforma está diseñada para equipos de organización de eventos de median
   {
     num: "12",
     title: "Calendario Operacional",
-    icon: "📅",
+    icon: "calendar",
     content: `Vista de planificación de disciplinas, competencias y actividades del evento organizadas por día.`,
     subsections: [
       {
@@ -257,7 +258,7 @@ La plataforma está diseñada para equipos de organización de eventos de median
   {
     num: "13",
     title: "Preguntas frecuentes",
-    icon: "💬",
+    icon: "message",
     content: "",
     subsections: [
       {
@@ -296,7 +297,7 @@ const SECTIONS_EN: Section[] = [
   {
     num: "1",
     title: "Introduction to Seven Arena",
-    icon: "🏟️",
+    icon: "landmark",
     content: `Seven Arena is a comprehensive sports event management platform. It centralizes all logistical operations of an event in a single system: participant registration, transport, hospitality, food, health, accreditation and commercial tracking.
 
 The platform is designed for medium and large-scale event organization teams, with multi-user support, differentiated roles and access from any device (desktop and mobile).`,
@@ -314,7 +315,7 @@ The platform is designed for medium and large-scale event organization teams, wi
   {
     num: "2",
     title: "Login and access",
-    icon: "🔐",
+    icon: "lock",
     content: `Access the platform from the URL provided by your organization. The system supports two login methods: with email and password, or with username and password (for users without a corporate email).`,
     subsections: [
       {
@@ -330,7 +331,7 @@ The platform is designed for medium and large-scale event organization teams, wi
   {
     num: "3",
     title: "Dashboard",
-    icon: "📊",
+    icon: "bar-chart",
     content: `The Dashboard section offers two executive views of the event operation: the Commercial Dashboard and the Operational Dashboard.`,
     subsections: [
       {
@@ -346,7 +347,7 @@ The platform is designed for medium and large-scale event organization teams, wi
   {
     num: "4",
     title: "Registration",
-    icon: "📋",
+    icon: "clipboard",
     content: `The Registration module centralizes the creation and configuration of the base elements of the event: the event itself, participants and providers.`,
     subsections: [
       {
@@ -366,7 +367,7 @@ The platform is designed for medium and large-scale event organization teams, wi
   {
     num: "5",
     title: "Operations — Transport",
-    icon: "🚌",
+    icon: "bus",
     content: `The transport module manages the entire lifecycle of event transfers: drivers, vehicles, trips and real-time tracking.`,
     subsections: [
       {
@@ -390,7 +391,7 @@ The platform is designed for medium and large-scale event organization teams, wi
   {
     num: "6",
     title: "Operations — Hospitality",
-    icon: "🏨",
+    icon: "hotel",
     content: `The hospitality module manages the accommodation of all event participants, from hotel configuration to key delivery and extra services.`,
     subsections: [
       {
@@ -414,7 +415,7 @@ The platform is designed for medium and large-scale event organization teams, wi
   {
     num: "7",
     title: "Operations — Food",
-    icon: "🍽️",
+    icon: "utensils",
     content: `Manage all event food services: dining rooms, menus and services by type (breakfast, lunch, dinner).`,
     subsections: [
       {
@@ -430,7 +431,7 @@ The platform is designed for medium and large-scale event organization teams, wi
   {
     num: "8",
     title: "Operations — Health",
-    icon: "🏥",
+    icon: "heart-pulse",
     content: `Event health and medical control module, including management of the anti-doping program (AND).`,
     subsections: [
       {
@@ -446,7 +447,7 @@ The platform is designed for medium and large-scale event organization teams, wi
   {
     num: "9",
     title: "Accreditation",
-    icon: "🛡️",
+    icon: "shield",
     content: `QR credential-based access control system for all event participants and personnel.`,
     subsections: [
       {
@@ -466,7 +467,7 @@ The platform is designed for medium and large-scale event organization teams, wi
   {
     num: "10",
     title: "User portals",
-    icon: "🖥️",
+    icon: "monitor",
     content: `The platform offers simplified portals for end users who do not need access to the full administration system.`,
     subsections: [
       {
@@ -486,7 +487,7 @@ The platform is designed for medium and large-scale event organization teams, wi
   {
     num: "11",
     title: "User Administration",
-    icon: "👥",
+    icon: "users",
     content: `Exclusive module for administrators. Manages the access and permissions of all platform users.`,
     subsections: [
       {
@@ -510,7 +511,7 @@ The platform is designed for medium and large-scale event organization teams, wi
   {
     num: "12",
     title: "Operational Calendar",
-    icon: "📅",
+    icon: "calendar",
     content: `Planning view of event disciplines, competitions and activities organized by day.`,
     subsections: [
       {
@@ -522,7 +523,7 @@ The platform is designed for medium and large-scale event organization teams, wi
   {
     num: "13",
     title: "Frequently asked questions",
-    icon: "💬",
+    icon: "message",
     content: "",
     subsections: [
       {
@@ -561,7 +562,7 @@ const SECTIONS_PT: Section[] = [
   {
     num: "1",
     title: "Introdução ao Seven Arena",
-    icon: "🏟️",
+    icon: "landmark",
     content: `Seven Arena é uma plataforma abrangente de gestão de eventos esportivos. Centraliza em um único sistema todas as operações logísticas de um evento: inscrição de participantes, transporte, hotelaria, alimentação, saúde, acreditação e acompanhamento comercial.
 
 A plataforma é projetada para equipes de organização de eventos de médio e grande porte, com suporte multiusuário, funções diferenciadas e acesso de qualquer dispositivo (desktop e celular).`,
@@ -579,7 +580,7 @@ A plataforma é projetada para equipes de organização de eventos de médio e g
   {
     num: "2",
     title: "Login e acesso",
-    icon: "🔐",
+    icon: "lock",
     content: `Acesse a plataforma pela URL fornecida pela sua organização. O sistema suporta dois métodos de login: com e-mail e senha, ou com nome de usuário e senha (para usuários sem e-mail corporativo).`,
     subsections: [
       {
@@ -595,7 +596,7 @@ A plataforma é projetada para equipes de organização de eventos de médio e g
   {
     num: "3",
     title: "Painel",
-    icon: "📊",
+    icon: "bar-chart",
     content: `A seção Painel oferece duas visões executivas da operação do evento: o Painel Comercial e o Painel Operacional.`,
     subsections: [
       {
@@ -611,7 +612,7 @@ A plataforma é projetada para equipes de organização de eventos de médio e g
   {
     num: "4",
     title: "Registro",
-    icon: "📋",
+    icon: "clipboard",
     content: `O módulo de Registro centraliza a criação e configuração dos elementos base do evento: o próprio evento, os participantes e os fornecedores.`,
     subsections: [
       {
@@ -631,7 +632,7 @@ A plataforma é projetada para equipes de organização de eventos de médio e g
   {
     num: "5",
     title: "Operação — Transporte",
-    icon: "🚌",
+    icon: "bus",
     content: `O módulo de transporte gerencia todo o ciclo de vida dos traslados do evento: motoristas, veículos, viagens e rastreio em tempo real.`,
     subsections: [
       {
@@ -655,7 +656,7 @@ A plataforma é projetada para equipes de organização de eventos de médio e g
   {
     num: "6",
     title: "Operação — Hotelaria",
-    icon: "🏨",
+    icon: "hotel",
     content: `O módulo de hotelaria gerencia a acomodação de todos os participantes do evento, desde a configuração dos hotéis até a entrega de chaves e serviços extras.`,
     subsections: [
       {
@@ -679,7 +680,7 @@ A plataforma é projetada para equipes de organização de eventos de médio e g
   {
     num: "7",
     title: "Operação — Alimentação",
-    icon: "🍽️",
+    icon: "utensils",
     content: `Gerencie todos os serviços de alimentação do evento: refeitórios, cardápios e serviços por tipo (café da manhã, almoço, jantar).`,
     subsections: [
       {
@@ -695,7 +696,7 @@ A plataforma é projetada para equipes de organização de eventos de médio e g
   {
     num: "8",
     title: "Operação — Saúde",
-    icon: "🏥",
+    icon: "heart-pulse",
     content: `Módulo de controle sanitário e médico do evento, incluindo a gestão do programa antidopagem (AND).`,
     subsections: [
       {
@@ -711,7 +712,7 @@ A plataforma é projetada para equipes de organização de eventos de médio e g
   {
     num: "9",
     title: "Acreditação",
-    icon: "🛡️",
+    icon: "shield",
     content: `Sistema de controle de acesso baseado em credenciais QR para todos os participantes e pessoal do evento.`,
     subsections: [
       {
@@ -731,7 +732,7 @@ A plataforma é projetada para equipes de organização de eventos de médio e g
   {
     num: "10",
     title: "Portais de usuário",
-    icon: "🖥️",
+    icon: "monitor",
     content: `A plataforma oferece portais simplificados para usuários finais que não precisam de acesso ao sistema completo de administração.`,
     subsections: [
       {
@@ -751,7 +752,7 @@ A plataforma é projetada para equipes de organização de eventos de médio e g
   {
     num: "11",
     title: "Administração de Usuários",
-    icon: "👥",
+    icon: "users",
     content: `Módulo exclusivo para administradores. Gerencia os acessos e permissões de todos os usuários da plataforma.`,
     subsections: [
       {
@@ -775,7 +776,7 @@ A plataforma é projetada para equipes de organização de eventos de médio e g
   {
     num: "12",
     title: "Calendário Operacional",
-    icon: "📅",
+    icon: "calendar",
     content: `Vista de planejamento de disciplinas, competições e atividades do evento organizadas por dia.`,
     subsections: [
       {
@@ -787,7 +788,7 @@ A plataforma é projetada para equipes de organização de eventos de médio e g
   {
     num: "13",
     title: "Perguntas frequentes",
-    icon: "💬",
+    icon: "message",
     content: "",
     subsections: [
       {
@@ -896,7 +897,7 @@ export default function ManualPage() {
             cursor: "pointer",
           }}
         >
-          <span>⬇</span>
+          <DownloadIcon size={14} />
           {t("Descargar PDF")}
         </button>
       </div>
@@ -1000,7 +1001,7 @@ export default function ManualPage() {
                     minWidth: 20,
                   }}
                 />
-                <span style={{ color: "#64748b", fontSize: 12 }}>{s.icon}</span>
+                <span style={{ color: "#64748b", display: "inline-flex" }}><Icon name={s.icon} size={12} /></span>
               </div>
             ))}
           </div>
@@ -1020,7 +1021,7 @@ export default function ManualPage() {
                 borderBottom: "2px solid #1e4ed8",
               }}
             >
-              <span style={{ fontSize: 24 }}>{section.icon}</span>
+              <span style={{ display: "inline-flex" }}><Icon name={section.icon} size={24} /></span>
               <div>
                 <p
                   style={{

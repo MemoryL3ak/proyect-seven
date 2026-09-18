@@ -269,7 +269,7 @@ export default function LiveTrackingMap({
               </div>
               <div style="font-size:12px;background:#f8fafc;border-radius:8px;padding:8px 10px;line-height:1.7;margin-bottom:8px;">
                 <span style="color:#10b981;">●</span> ${m.origin}<br/>
-                <span style="color:#94a3b8;padding-left:4px;">↓</span><br/>
+                <span style="color:#94a3b8;padding-left:4px;display:inline-flex;vertical-align:middle;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg></span><br/>
                 <span style="color:#ef4444;">●</span> ${m.destination}
               </div>
               <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">

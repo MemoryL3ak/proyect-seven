@@ -7,6 +7,7 @@ import {
   CUADERNO_INFO,
   type CuadernoCategoryKey,
 } from "@/lib/cuadernoCargo";
+import { BookOpenIcon } from "@/components/ui/Icons";
 
 /**
  * Cuaderno de Cargo para la sección "Cuenta" de los portales.
@@ -60,7 +61,7 @@ export default function CuadernoCargoSection() {
         }}
       >
         <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span aria-hidden style={{ fontSize: 18 }}>📒</span>
+          <span aria-hidden style={{ display: "inline-flex" }}><BookOpenIcon size={18} /></span>
           <span>
             <span style={{ display: "block", fontSize: 13.5, fontWeight: 700, color: "#0f172a" }}>
               Cuaderno de Cargo

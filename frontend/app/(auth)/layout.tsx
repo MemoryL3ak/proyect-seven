@@ -197,25 +197,25 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             <div style={{ height: "108px", overflow: "hidden", position: "relative" }}>
               <div style={{ animation: "ticker-scroll 14s linear infinite" }}>
                 {[
-                  { flag: "🇨🇱", name: "C. Rodríguez", sport: "Natación",  status: "Acreditado", color: "#22c55e" },
-                  { flag: "🇦🇷", name: "M. Fernández", sport: "Boxeo",     status: "Check-in",   color: "#34F3C6" },
-                  { flag: "🇧🇷", name: "A. Santos",    sport: "Fútbol",    status: "Acreditado", color: "#22c55e" },
-                  { flag: "🇨🇴", name: "L. García",    sport: "Ciclismo",  status: "Pendiente",  color: "#f59e0b" },
-                  { flag: "🇵🇪", name: "V. Torres",    sport: "Gimnasia",  status: "Acreditado", color: "#22c55e" },
-                  { flag: "🇺🇾", name: "D. López",     sport: "Pesas",     status: "Check-in",   color: "#34F3C6" },
-                  { flag: "🇨🇱", name: "C. Rodríguez", sport: "Natación",  status: "Acreditado", color: "#22c55e" },
-                  { flag: "🇦🇷", name: "M. Fernández", sport: "Boxeo",     status: "Check-in",   color: "#34F3C6" },
-                  { flag: "🇧🇷", name: "A. Santos",    sport: "Fútbol",    status: "Acreditado", color: "#22c55e" },
-                  { flag: "🇨🇴", name: "L. García",    sport: "Ciclismo",  status: "Pendiente",  color: "#f59e0b" },
-                  { flag: "🇵🇪", name: "V. Torres",    sport: "Gimnasia",  status: "Acreditado", color: "#22c55e" },
-                  { flag: "🇺🇾", name: "D. López",     sport: "Pesas",     status: "Check-in",   color: "#34F3C6" },
+                  { code: "CL", name: "C. Rodríguez", sport: "Natación",  status: "Acreditado", color: "#22c55e" },
+                  { code: "AR", name: "M. Fernández", sport: "Boxeo",     status: "Check-in",   color: "#34F3C6" },
+                  { code: "BR", name: "A. Santos",    sport: "Fútbol",    status: "Acreditado", color: "#22c55e" },
+                  { code: "CO", name: "L. García",    sport: "Ciclismo",  status: "Pendiente",  color: "#f59e0b" },
+                  { code: "PE", name: "V. Torres",    sport: "Gimnasia",  status: "Acreditado", color: "#22c55e" },
+                  { code: "UY", name: "D. López",     sport: "Pesas",     status: "Check-in",   color: "#34F3C6" },
+                  { code: "CL", name: "C. Rodríguez", sport: "Natación",  status: "Acreditado", color: "#22c55e" },
+                  { code: "AR", name: "M. Fernández", sport: "Boxeo",     status: "Check-in",   color: "#34F3C6" },
+                  { code: "BR", name: "A. Santos",    sport: "Fútbol",    status: "Acreditado", color: "#22c55e" },
+                  { code: "CO", name: "L. García",    sport: "Ciclismo",  status: "Pendiente",  color: "#f59e0b" },
+                  { code: "PE", name: "V. Torres",    sport: "Gimnasia",  status: "Acreditado", color: "#22c55e" },
+                  { code: "UY", name: "D. López",     sport: "Pesas",     status: "Check-in",   color: "#34F3C6" },
                 ].map((row, i) => (
                   <div key={i} style={{
                     display: "flex", alignItems: "center", justifyContent: "space-between",
                     padding: "9px 14px", borderBottom: "1px solid rgba(255,255,255,0.06)",
                   }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "9px", minWidth: "130px" }}>
-                      <span style={{ fontSize: "13px" }}>{row.flag}</span>
+                      <span style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.06em", padding: "1px 5px", borderRadius: 4, background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.75)" }}>{row.code}</span>
                       <span style={{ fontSize: "12px", fontWeight: 600, color: "rgba(255,255,255,0.9)" }}>{row.name}</span>
                     </div>
                     <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.45)", flex: 1, textAlign: "center" }}>{row.sport}</span>

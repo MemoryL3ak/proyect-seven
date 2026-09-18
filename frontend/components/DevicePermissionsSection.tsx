@@ -10,12 +10,13 @@ import {
   type PermissionState,
   type PermissionsStatus,
 } from "@/lib/device-permissions";
+import { BellIcon, PinIcon, CameraIcon, ImageIcon, SettingsIcon } from "@/components/ui/Icons";
 
 type ItemConfig = {
   kind: PermissionKind;
   title: string;
   description: string;
-  icon: string;
+  icon: JSX.Element;
 };
 
 const ITEMS: ItemConfig[] = [
@@ -23,25 +24,25 @@ const ITEMS: ItemConfig[] = [
     kind: "notifications",
     title: "Notificaciones",
     description: "Avisos de cambios en tus traslados y viajes próximos.",
-    icon: "🔔",
+    icon: <BellIcon size={18} />,
   },
   {
     kind: "location",
     title: "Ubicación",
     description: "Rutas y traslados cercanos a tu posición actual.",
-    icon: "📍",
+    icon: <PinIcon size={18} />,
   },
   {
     kind: "camera",
     title: "Cámara",
     description: "Tomar fotos de credenciales, documentos o evidencias.",
-    icon: "📷",
+    icon: <CameraIcon size={18} />,
   },
   {
     kind: "gallery",
     title: "Galería",
     description: "Subir fotos o documentos guardados en tu dispositivo.",
-    icon: "🖼️",
+    icon: <ImageIcon size={18} />,
   },
 ];
 
@@ -129,7 +130,7 @@ export default function DevicePermissionsSection() {
           gap: 8,
         }}
       >
-        <span style={{ fontSize: 16 }}>⚙️</span>
+        <span style={{ display: "inline-flex" }}><SettingsIcon size={16} /></span>
         <div style={{ flex: 1 }}>
           <p
             style={{
@@ -172,7 +173,7 @@ export default function DevicePermissionsSection() {
               gap: 10,
             }}
           >
-            <span style={{ fontSize: 18, flexShrink: 0 }}>{item.icon}</span>
+            <span style={{ display: "inline-flex", flexShrink: 0, color: "#0f172a" }}>{item.icon}</span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <p
                 style={{
@@ -286,12 +287,12 @@ export function DevicePermissionsBanner({
 
   const bannerIcon =
     kind === "location"
-      ? "📍"
+      ? <PinIcon size={16} />
       : kind === "camera"
-        ? "📷"
+        ? <CameraIcon size={16} />
         : kind === "gallery"
-          ? "🖼️"
-          : "🔔";
+          ? <ImageIcon size={16} />
+          : <BellIcon size={16} />;
 
   return (
     <div
@@ -305,7 +306,7 @@ export function DevicePermissionsBanner({
         gap: 10,
       }}
     >
-      <span style={{ fontSize: 18 }}>{bannerIcon}</span>
+      <span style={{ display: "inline-flex", color: "#b45309" }}>{bannerIcon}</span>
       <p
         style={{
           flex: 1,

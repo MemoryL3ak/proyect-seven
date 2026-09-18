@@ -11,6 +11,7 @@ import {
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { apiFetch } from "@/lib/api";
+import { CheckIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -223,24 +224,24 @@ function SpanishDateField({ value, onChange }: { value: string; onChange: (v: st
 // ─── Teléfono con código de país ─────────────────────────────────────────────
 
 const PHONE_COUNTRIES = [
-  { code: "CL", dial: "+56", flag: "🇨🇱", name: "Chile" },
-  { code: "AR", dial: "+54", flag: "🇦🇷", name: "Argentina" },
-  { code: "BO", dial: "+591", flag: "🇧🇴", name: "Bolivia" },
-  { code: "BR", dial: "+55", flag: "🇧🇷", name: "Brasil" },
-  { code: "CO", dial: "+57", flag: "🇨🇴", name: "Colombia" },
-  { code: "EC", dial: "+593", flag: "🇪🇨", name: "Ecuador" },
-  { code: "PY", dial: "+595", flag: "🇵🇾", name: "Paraguay" },
-  { code: "PE", dial: "+51", flag: "🇵🇪", name: "Perú" },
-  { code: "UY", dial: "+598", flag: "🇺🇾", name: "Uruguay" },
-  { code: "VE", dial: "+58", flag: "🇻🇪", name: "Venezuela" },
-  { code: "MX", dial: "+52", flag: "🇲🇽", name: "México" },
-  { code: "US", dial: "+1", flag: "🇺🇸", name: "Estados Unidos" },
-  { code: "ES", dial: "+34", flag: "🇪🇸", name: "España" },
-  { code: "PT", dial: "+351", flag: "🇵🇹", name: "Portugal" },
-  { code: "FR", dial: "+33", flag: "🇫🇷", name: "Francia" },
-  { code: "DE", dial: "+49", flag: "🇩🇪", name: "Alemania" },
-  { code: "IT", dial: "+39", flag: "🇮🇹", name: "Italia" },
-  { code: "GB", dial: "+44", flag: "🇬🇧", name: "Reino Unido" },
+  { code: "CL", dial: "+56", name: "Chile" },
+  { code: "AR", dial: "+54", name: "Argentina" },
+  { code: "BO", dial: "+591", name: "Bolivia" },
+  { code: "BR", dial: "+55", name: "Brasil" },
+  { code: "CO", dial: "+57", name: "Colombia" },
+  { code: "EC", dial: "+593", name: "Ecuador" },
+  { code: "PY", dial: "+595", name: "Paraguay" },
+  { code: "PE", dial: "+51", name: "Perú" },
+  { code: "UY", dial: "+598", name: "Uruguay" },
+  { code: "VE", dial: "+58", name: "Venezuela" },
+  { code: "MX", dial: "+52", name: "México" },
+  { code: "US", dial: "+1", name: "Estados Unidos" },
+  { code: "ES", dial: "+34", name: "España" },
+  { code: "PT", dial: "+351", name: "Portugal" },
+  { code: "FR", dial: "+33", name: "Francia" },
+  { code: "DE", dial: "+49", name: "Alemania" },
+  { code: "IT", dial: "+39", name: "Italia" },
+  { code: "GB", dial: "+44", name: "Reino Unido" },
 ];
 
 /** Separa un teléfono guardado ("+56 912345678") en país + número local. */
@@ -289,7 +290,7 @@ function PhoneField({ value, onChange }: { value: string; onChange: (v: string) 
         aria-label={t("País")}
       >
         {PHONE_COUNTRIES.map((c) => (
-          <option key={c.code} value={c.code}>{c.flag} {c.dial}</option>
+          <option key={c.code} value={c.code}>{c.code} {c.dial}</option>
         ))}
       </select>
       <input
@@ -582,7 +583,7 @@ function StepBar({ current }: { current: Step }) {
                   : { background: "var(--elevated)", color: "var(--text-faint)" }
               }
             >
-              {i < idx ? "✓" : i + 1}
+              {i < idx ? <CheckIcon size={12} /> : i + 1}
             </div>
             <span
               className="text-[10px] font-medium"

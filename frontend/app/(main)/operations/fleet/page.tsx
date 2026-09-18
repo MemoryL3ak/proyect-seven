@@ -4,7 +4,17 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import PageHeader from "@/components/ui/PageHeader";
-import { TruckIcon, UsersIcon, SearchIcon, RefreshIcon, CheckIcon, AlertIcon } from "@/components/ui/Icons";
+import {
+  TruckIcon,
+  UsersIcon,
+  SearchIcon,
+  RefreshIcon,
+  CheckIcon,
+  AlertIcon,
+  CarIcon,
+  UserIcon,
+  XIcon,
+} from "@/components/ui/Icons";
 
 type DriverAvailability = {
   id: string;
@@ -179,9 +189,9 @@ export default function FleetAvailabilityPage() {
       <section className="surface rounded-2xl p-3">
         <div className="flex gap-1 p-1 rounded-xl flex-wrap" style={{ background: "#f1f5f9" }}>
           {([
-            { v: "availability", label: "📊 Disponibilidad", hint: "Vista en tiempo real" },
-            { v: "drivers", label: "🧑‍✈ Conductores", hint: "Registro de conductores" },
-            { v: "vehicles", label: "🚗 Vehículos", hint: "Registro de vehículos" },
+            { v: "availability", label: "Disponibilidad", hint: "Vista en tiempo real" },
+            { v: "drivers", label: "Conductores", hint: "Registro de conductores" },
+            { v: "vehicles", label: "Vehículos", hint: "Registro de vehículos" },
           ] as const).map(s => {
             const active = section === s.v;
             return (
@@ -507,7 +517,7 @@ function CrudSection({
         </section>
       ) : filtered.length === 0 ? (
         <section className="surface rounded-2xl p-12 text-center">
-          <p className="text-3xl mb-2">{section === "drivers" ? "🧑‍✈" : "🚗"}</p>
+          <p className="mb-2" style={{ color: "#cbd5e1", display: "flex", justifyContent: "center" }}>{section === "drivers" ? <UserIcon size={36} /> : <CarIcon size={36} />}</p>
           <p className="text-sm font-bold" style={{ color: "#0f172a" }}>
             {section === "drivers" ? t("Sin conductores registrados") : t("Sin vehículos registrados")}
           </p>
@@ -680,7 +690,7 @@ function DriverFormModal({ eventId, onClose, onSaved }: {
         onClick={(e) => e.stopPropagation()}>
         <div className="p-5 border-b flex items-center justify-between sticky top-0 bg-white rounded-t-2xl">
           <h2 className="text-lg font-bold">{t("Nuevo conductor")}</h2>
-          <button onClick={onClose} className="text-sm">✕</button>
+          <button onClick={onClose} className="text-sm" aria-label="Cerrar"><XIcon size={16} /></button>
         </div>
         <div className="p-5 space-y-3">
           <label className="text-sm block">
@@ -729,7 +739,7 @@ function DriverFormModal({ eventId, onClose, onSaved }: {
                       background: sel ? "#1f4e8c" : "#eef1f6",
                       color: sel ? "#fff" : "#1f4e8c",
                     }}>
-                    {sel ? "✓ " : ""}{t(o.label)}
+                    {sel ? <CheckIcon size={12} className="inline mr-1" /> : null}{t(o.label)}
                   </button>
                 );
               })}
@@ -751,7 +761,7 @@ function DriverFormModal({ eventId, onClose, onSaved }: {
                       background: sel ? "#21D0B3" : "#eef1f6",
                       color: sel ? "#fff" : "#0a7a6b",
                     }}>
-                    {sel ? "✓ " : ""}{t(o.label)}
+                    {sel ? <CheckIcon size={12} className="inline mr-1" /> : null}{t(o.label)}
                   </button>
                 );
               })}
@@ -809,7 +819,7 @@ function VehicleFormModal({ eventId, onClose, onSaved }: {
         onClick={(e) => e.stopPropagation()}>
         <div className="p-5 border-b flex items-center justify-between">
           <h2 className="text-lg font-bold">{t("Nuevo vehículo")}</h2>
-          <button onClick={onClose} className="text-sm">✕</button>
+          <button onClick={onClose} className="text-sm" aria-label="Cerrar"><XIcon size={16} /></button>
         </div>
         <div className="p-5 space-y-3">
           <div className="grid grid-cols-2 gap-3">
@@ -975,7 +985,7 @@ function DriverColumn({ drivers, filter, setFilter, counts }: {
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-sm truncate" style={{ color: "#0f172a" }}>{d.fullName}</p>
                 <p className="text-[11px] truncate" style={{ color: "#64748b" }}>
-                  {d.preferredVehiclePlate && <>🚗 {d.preferredVehiclePlate} · </>}
+                  {d.preferredVehiclePlate && <><CarIcon size={12} className="inline mr-1" />{d.preferredVehiclePlate} · </>}
                   {d.allowedClientTypes.length > 0 ? d.allowedClientTypes.join(", ") : t("Sin tipos asignados")}
                 </p>
                 {d.availability === "ON_TRIP" && d.activeTripDestination && (
@@ -1070,11 +1080,11 @@ function VehicleColumn({ vehicles, filter, setFilter, counts }: {
                   {[v.brand, v.model].filter(Boolean).join(" ") || v.type}
                 </p>
                 <p className="text-[11px] truncate" style={{ color: "#64748b" }}>
-                  {v.type} · 👥 {v.capacity} pax
+                  {v.type} · <UsersIcon size={12} className="inline mr-1" />{v.capacity} pax
                 </p>
                 {v.availability === "ON_TRIP" && (
                   <p className="text-[10px] mt-0.5" style={{ color: "#7c3aed", fontWeight: 600 }}>
-                    {v.activeTripDriverName && <>🧑‍✈ {v.activeTripDriverName} · </>}
+                    {v.activeTripDriverName && <><UserIcon size={12} className="inline mr-1" />{v.activeTripDriverName} · </>}
                     {v.activeTripDestination && <>→ {v.activeTripDestination}</>}
                   </p>
                 )}

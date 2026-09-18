@@ -1,14 +1,109 @@
 "use client";
 
-// SVG icons inline (no dependency on external libs).
+// Kit de iconos del panel. Dos fuentes con la MISMA firma y el mismo trazo:
+//  - los SVG dibujados a mano de más abajo (los 19 originales), y
+//  - los respaldados por lucide-react al final del archivo.
+// Hasta sep-2026 el kit no admitía librerías externas y tenía 19 iconos; las
+// pantallas necesitaban cientos, y lo que llenó el hueco fueron emojis y
+// dingbats (477 y 376 en 69 archivos). lucide-react ya estaba instalado, sin
+// usar, y habla la misma gramática (cuadrícula de 24, trazo redondeado), así
+// que se adopta como fuente para todo icono nuevo. Fuera de este archivo no
+// se importa lucide-react directamente: todo pasa por acá para que tamaño,
+// trazo y color se ajusten en un solo lugar.
 // All icons accept className and size, default stroke 1.8.
+import {
+  Accessibility,
+  Ambulance,
+  Anchor,
+  Bell,
+  Building2,
+  Camera,
+  Compass,
+  Dumbbell,
+  Fingerprint,
+  Flame,
+  HardHat,
+  Image as ImageGlyph,
+  Landmark,
+  LifeBuoy,
+  Lock,
+  MessageCircle,
+  Monitor,
+  Moon,
+  Phone,
+  Save,
+  Siren,
+  Smartphone,
+  Stethoscope,
+  Sun,
+  Target,
+  UtensilsCrossed,
+  Zap,
+  ArrowLeftRight,
+  ArrowRight,
+  BadgeCheck,
+  Banknote,
+  BarChart3,
+  BedDouble,
+  BookOpen,
+  Bot,
+  Briefcase,
+  Bus,
+  CalendarDays,
+  Car,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  CircleHelp,
+  Clock,
+  Crown,
+  Download,
+  FileSpreadsheet,
+  FileText,
+  FishOff,
+  Globe,
+  Handshake,
+  HeartPulse,
+  Hotel,
+  IdCard,
+  KeyRound,
+  LayoutGrid,
+  Leaf,
+  Mail,
+  MapPinned,
+  Medal,
+  MilkOff,
+  Pencil,
+  PenLine,
+  Plane,
+  Printer,
+  QrCode,
+  Satellite,
+  Shield,
+  Star,
+  Syringe,
+  TrendingUp,
+  Undo2,
+  UserRound,
+  Utensils,
+  Vegan,
+  WheatOff,
+  X,
+} from "lucide-react";
 
-type IconProps = {
+export type IconProps = {
   size?: number;
   className?: string;
   color?: string;
   strokeWidth?: number;
 };
+
+/**
+ * Para catálogos que guardan el icono y lo pintan en varios tamaños: se guarda
+ * la referencia al componente (`icon: MedalIcon`) y cada sitio elige el suyo
+ * (`<cfg.icon size={10} />`). Si el tamaño es fijo, alcanza con un elemento.
+ */
+export type IconComponent = (p: IconProps) => JSX.Element;
 
 const sw = (n?: number) => n ?? 1.8;
 
@@ -210,3 +305,200 @@ export const TrophyIcon = (p: IconProps) =>
     </>,
     p,
   );
+
+// ── Respaldados por lucide-react ────────────────────────────────────────────
+// Todos los glifos de lucide comparten tipo, así que `typeof LayoutGrid` sirve
+// para cualquiera. La fábrica aplica los mismos defaults que `svg()` de arriba
+// (20px, currentColor, trazo 1.8) para que un consumidor no note la diferencia.
+const fromLucide =
+  (Glyph: typeof LayoutGrid) =>
+  ({ size = 20, className, color = "currentColor", strokeWidth }: IconProps) => (
+    <Glyph size={size} className={className} color={color} strokeWidth={sw(strokeWidth)} />
+  );
+
+/** Vista "todos": cuadrícula. */
+export const LayoutGridIcon = fromLucide(LayoutGrid);
+/** Cliente prioritario (VIP / T1). */
+export const CrownIcon = fromLucide(Crown);
+/** Planilla diaria (importación Excel). */
+export const FileSpreadsheetIcon = fromLucide(FileSpreadsheet);
+/** Carga manual. */
+export const PenLineIcon = fromLucide(PenLine);
+
+// Acciones y navegación: cerrar, anterior/siguiente, estrella, descargar,
+// deshacer, editar, imprimir. Reemplazan los dingbats que se usaban como texto.
+export const XIcon = fromLucide(X);
+export const ChevronLeftIcon = fromLucide(ChevronLeft);
+export const ChevronRightIcon = fromLucide(ChevronRight);
+/** Conector origen → destino en rutas; no para texto corrido. */
+export const ArrowRightIcon = fromLucide(ArrowRight);
+export const BookOpenIcon = fromLucide(BookOpen);
+export const SatelliteIcon = fromLucide(Satellite);
+export const PlaneIcon = fromLucide(Plane);
+
+// Portales, tutoriales y catálogos (bloques 2 y 3).
+export const BellIcon = fromLucide(Bell);
+export const MessageIcon = fromLucide(MessageCircle);
+export const PhoneIcon = fromLucide(Phone);
+export const CameraIcon = fromLucide(Camera);
+export const ImageIcon = fromLucide(ImageGlyph);
+export const CompassIcon = fromLucide(Compass);
+export const SunIcon = fromLucide(Sun);
+export const MoonIcon = fromLucide(Moon);
+export const UtensilsCrossedIcon = fromLucide(UtensilsCrossed);
+export const DumbbellIcon = fromLucide(Dumbbell);
+export const StethoscopeIcon = fromLucide(Stethoscope);
+export const BuildingIcon = fromLucide(Building2);
+export const LandmarkIcon = fromLucide(Landmark);
+export const LockIcon = fromLucide(Lock);
+export const MonitorIcon = fromLucide(Monitor);
+export const SmartphoneIcon = fromLucide(Smartphone);
+export const LifeBuoyIcon = fromLucide(LifeBuoy);
+export const HardHatIcon = fromLucide(HardHat);
+export const ZapIcon = fromLucide(Zap);
+export const TargetIcon = fromLucide(Target);
+export const SaveIcon = fromLucide(Save);
+// Números de emergencia.
+export const AmbulanceIcon = fromLucide(Ambulance);
+export const FlameIcon = fromLucide(Flame);
+export const SirenIcon = fromLucide(Siren);
+export const FingerprintIcon = fromLucide(Fingerprint);
+export const AnchorIcon = fromLucide(Anchor);
+export const StarIcon = fromLucide(Star);
+export const DownloadIcon = fromLucide(Download);
+export const UndoIcon = fromLucide(Undo2);
+export const PencilIcon = fromLucide(Pencil);
+export const PrinterIcon = fromLucide(Printer);
+export const CheckCircleIcon = fromLucide(CheckCircle2);
+export const ClockIcon = fromLucide(Clock);
+export const MailIcon = fromLucide(Mail);
+export const HelpCircleIcon = fromLucide(CircleHelp);
+export const BadgeCheckIcon = fromLucide(BadgeCheck);
+export const BotIcon = fromLucide(Bot);
+
+// Dominio (módulos, catálogos, tarjetas).
+export const BarChartIcon = fromLucide(BarChart3);
+export const TrendingUpIcon = fromLucide(TrendingUp);
+export const UserIcon = fromLucide(UserRound);
+export const ShieldIcon = fromLucide(Shield);
+export const BusIcon = fromLucide(Bus);
+export const CarIcon = fromLucide(Car);
+export const QrCodeIcon = fromLucide(QrCode);
+export const BanknoteIcon = fromLucide(Banknote);
+export const HotelIcon = fromLucide(Hotel);
+export const BedIcon = fromLucide(BedDouble);
+export const KeyIcon = fromLucide(KeyRound);
+export const UtensilsIcon = fromLucide(Utensils);
+export const BriefcaseIcon = fromLucide(Briefcase);
+export const HeartPulseIcon = fromLucide(HeartPulse);
+export const HandshakeIcon = fromLucide(Handshake);
+export const MedalIcon = fromLucide(Medal);
+export const MapPinnedIcon = fromLucide(MapPinned);
+export const CalendarDaysIcon = fromLucide(CalendarDays);
+export const IdCardIcon = fromLucide(IdCard);
+export const FileTextIcon = fromLucide(FileText);
+export const GlobeIcon = fromLucide(Globe);
+export const AccessibilityIcon = fromLucide(Accessibility);
+export const ArrowLeftRightIcon = fromLucide(ArrowLeftRight);
+
+// Tipos de dieta (alimentación).
+export const LeafIcon = fromLucide(Leaf);
+export const VeganIcon = fromLucide(Vegan);
+export const WheatOffIcon = fromLucide(WheatOff);
+export const MilkOffIcon = fromLucide(MilkOff);
+export const FishOffIcon = fromLucide(FishOff);
+export const SyringeIcon = fromLucide(Syringe);
+
+// ── Registro por nombre ──────────────────────────────────────────────────────
+// Para catálogos que viven en archivos .ts sin JSX (lib/modules.ts, tipos de
+// dieta): guardan un `IconName` y la pantalla lo resuelve con <Icon name=…/>.
+// Antes esos catálogos guardaban un emoji como string y lo pintaban tal cual.
+export const ICONS = {
+  "bar-chart": BarChartIcon,
+  "trending-up": TrendingUpIcon,
+  calendar: CalendarIcon,
+  "calendar-days": CalendarDaysIcon,
+  user: UserIcon,
+  users: UsersIcon,
+  shield: ShieldIcon,
+  "check-circle": CheckCircleIcon,
+  pin: PinIcon,
+  "map-pinned": MapPinnedIcon,
+  route: RouteIcon,
+  bus: BusIcon,
+  car: CarIcon,
+  truck: TruckIcon,
+  "qr-code": QrCodeIcon,
+  banknote: BanknoteIcon,
+  hotel: HotelIcon,
+  bed: BedIcon,
+  key: KeyIcon,
+  utensils: UtensilsIcon,
+  briefcase: BriefcaseIcon,
+  ticket: TicketIcon,
+  "heart-pulse": HeartPulseIcon,
+  handshake: HandshakeIcon,
+  medal: MedalIcon,
+  trophy: TrophyIcon,
+  "id-card": IdCardIcon,
+  "file-text": FileTextIcon,
+  globe: GlobeIcon,
+  clipboard: ClipboardIcon,
+  leaf: LeafIcon,
+  vegan: VeganIcon,
+  "wheat-off": WheatOffIcon,
+  "milk-off": MilkOffIcon,
+  "fish-off": FishOffIcon,
+  syringe: SyringeIcon,
+  "help-circle": HelpCircleIcon,
+  "badge-check": BadgeCheckIcon,
+  // Tutoriales (Ayuda, Manual, Inicio guiado) y portales.
+  building: BuildingIcon,
+  landmark: LandmarkIcon,
+  sun: SunIcon,
+  moon: MoonIcon,
+  "utensils-crossed": UtensilsCrossedIcon,
+  smartphone: SmartphoneIcon,
+  monitor: MonitorIcon,
+  refresh: RefreshIcon,
+  download: DownloadIcon,
+  upload: UploadIcon,
+  lock: LockIcon,
+  message: MessageIcon,
+  settings: SettingsIcon,
+  sparkle: SparkleIcon,
+  "life-buoy": LifeBuoyIcon,
+  "hard-hat": HardHatIcon,
+  plane: PlaneIcon,
+  stethoscope: StethoscopeIcon,
+  bot: BotIcon,
+  "pen-line": PenLineIcon,
+  camera: CameraIcon,
+  image: ImageIcon,
+  printer: PrinterIcon,
+  "book-open": BookOpenIcon,
+  phone: PhoneIcon,
+  zap: ZapIcon,
+  target: TargetIcon,
+  save: SaveIcon,
+  bell: BellIcon,
+  compass: CompassIcon,
+  dumbbell: DumbbellIcon,
+  star: StarIcon,
+  check: CheckIcon,
+  x: XIcon,
+  search: SearchIcon,
+  "arrow-right": ArrowRightIcon,
+  ambulance: AmbulanceIcon,
+  flame: FlameIcon,
+  siren: SirenIcon,
+  fingerprint: FingerprintIcon,
+  anchor: AnchorIcon,
+} as const;
+
+export type IconName = keyof typeof ICONS;
+
+export const Icon = ({ name, ...p }: IconProps & { name: IconName }) => {
+  const Glyph = ICONS[name];
+  return <Glyph {...p} />;
+};

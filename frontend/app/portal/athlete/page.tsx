@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
+import { PlaneIcon, HotelIcon, ClipboardIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 
 type Athlete = {
@@ -217,9 +218,9 @@ export default function AthletePortalPage() {
                 Consulta tu vuelo, hotel y transporte asignado para el evento. Registra tu llegada y check-ins.
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "8px" }}>
-                {[["✈️", "Vuelo y hora de arribo"], ["🏨", "Hotel y habitación asignada"], ["📋", "Check-ins y confirmaciones"]].map(([icon, label]) => (
+                {[{ icon: <PlaneIcon size={16} />, label: "Vuelo y hora de arribo" }, { icon: <HotelIcon size={16} />, label: "Hotel y habitación asignada" }, { icon: <ClipboardIcon size={16} />, label: "Check-ins y confirmaciones" }].map(({ icon, label }) => (
                   <div key={label} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <span style={{ fontSize: "16px" }}>{icon}</span>
+                    <span style={{ display: "inline-flex", color: "rgba(255,255,255,0.7)" }}>{icon}</span>
                     <span style={{ fontSize: "13px", color: "rgba(255,255,255,0.6)", fontWeight: 500 }}>{label}</span>
                   </div>
                 ))}

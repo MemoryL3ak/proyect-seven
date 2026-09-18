@@ -16,6 +16,7 @@ import {
   Legend,
 } from "recharts";
 import { apiFetch, getTokens } from "@/lib/api";
+import { DownloadIcon, UndoIcon, XIcon, CheckCircleIcon, AlertIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 import { useIsMobile } from "@/lib/useIsMobile";
 import { downloadCSV, downloadChartPng, slugify } from "@/lib/export";
@@ -243,11 +244,11 @@ function ExportButtons({ onCsv, onPng }: { onCsv: () => void; onPng?: () => void
   return (
     <div style={{ display: "flex", gap: 5 }}>
       <button type="button" style={btn} onClick={onCsv} title="Descargar datos en CSV">
-        ⬇ CSV
+        <DownloadIcon size={12} className="inline mr-1" />CSV
       </button>
       {onPng && (
         <button type="button" style={btn} onClick={onPng} title="Descargar gráfico en PNG">
-          ⬇ PNG
+          <DownloadIcon size={12} className="inline mr-1" />PNG
         </button>
       )}
     </div>
@@ -387,7 +388,7 @@ function ActionCard({
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ fontSize: 14 }}>{ok ? "✅" : "⚠️"}</span>
+        <span style={{ display: "inline-flex", color: ok ? "#059669" : "#b45309" }}>{ok ? <CheckCircleIcon size={14} /> : <AlertIcon size={14} />}</span>
         <span style={{ fontSize: 11.5, fontWeight: 800, color: ok ? "#21D0B3" : "#fb7185" }}>
           {action.label}
         </span>
@@ -411,7 +412,7 @@ function ActionCard({
             cursor: "pointer",
           }}
         >
-          ↩ Deshacer
+          <UndoIcon size={12} className="inline mr-1" />Deshacer
         </button>
       )}
     </div>
@@ -657,7 +658,7 @@ function AlertsPanel({ eventId }: { eventId: string | null | undefined }) {
                 gap: 7,
               }}
             >
-              <span style={{ fontSize: 12 }}>{high ? "🔴" : "🟡"}</span>
+              <span aria-hidden style={{ display: "inline-block", width: 8, height: 8, borderRadius: 99, background: high ? "#dc2626" : "#f59e0b" }} />
               <span style={{ fontSize: 11, color: "rgba(255,255,255,0.8)", lineHeight: 1.45 }}>{a.message}</span>
             </div>
           );
@@ -1116,7 +1117,7 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
               padding: 2,
             }}
           >
-            ✕
+            <XIcon size={14} />
           </button>
         </div>
       )}

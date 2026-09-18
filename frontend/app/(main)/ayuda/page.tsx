@@ -11,26 +11,27 @@ import {
   type CuadernoEntry,
   type CuadernoLocale,
 } from "@/lib/cuadernoCargo";
+import { Icon, type IconName } from "@/components/ui/Icons";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type Locale = "es" | "en" | "pt";
 type FaqItem = { q: string; a: string };
 type ModuleCard = {
-  icon: string;
+  icon: IconName;
   title: string;
   desc: string;
   badge?: string;
   badgeColor?: string;
   items: string[];
 };
-type StepCard = { step: string; title: string; desc: string; icon: string; href: string };
-type TipItem = { icon: string; tip: string };
+type StepCard = { step: string; title: string; desc: string; icon: IconName; href: string };
+type TipItem = { icon: IconName; tip: string };
 
 // ── Module catalog ─────────────────────────────────────────────────────────
 const MODULES_DATA: Record<Locale, ModuleCard[]> = {
   es: [
     {
-      icon: "📊", title: "Dashboard Comercial",
+      icon: "bar-chart", title: "Dashboard Comercial",
       desc: "Vista ejecutiva del presupuesto y adjudicación por área operativa.",
       badge: "Comercial", badgeColor: "#6366f1",
       items: [
@@ -40,7 +41,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
       ],
     },
     {
-      icon: "📈", title: "Dashboard Operacional",
+      icon: "trending-up", title: "Dashboard Operacional",
       desc: "Indicadores de operación en tiempo real: viajes, hotelería, alimentación y salud.",
       badge: "Operacional", badgeColor: "#0ea5e9",
       items: [
@@ -50,7 +51,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
       ],
     },
     {
-      icon: "📅", title: "Registro de Eventos",
+      icon: "calendar", title: "Registro de Eventos",
       desc: "Creación y configuración del evento deportivo principal.",
       badge: "Registro", badgeColor: "#10b981",
       items: [
@@ -60,7 +61,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
       ],
     },
     {
-      icon: "👤", title: "Inscripción de Participantes",
+      icon: "user", title: "Inscripción de Participantes",
       desc: "Gestión de atletas, delegaciones y acreditaciones.",
       badge: "Registro", badgeColor: "#10b981",
       items: [
@@ -71,7 +72,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
       ],
     },
     {
-      icon: "🏢", title: "Proveedores",
+      icon: "building", title: "Proveedores",
       desc: "Catálogo de proveedores externos clasificados por tipo y subtipo.",
       badge: "Registro", badgeColor: "#10b981",
       items: [
@@ -81,7 +82,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
       ],
     },
     {
-      icon: "🚌", title: "Transporte",
+      icon: "bus", title: "Transporte",
       desc: "Gestión de conductores, vehículos y viajes.",
       badge: "Operación", badgeColor: "#f59e0b",
       items: [
@@ -93,7 +94,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
       ],
     },
     {
-      icon: "🏨", title: "Hotelería",
+      icon: "hotel", title: "Hotelería",
       desc: "Asignación de habitaciones, llaves y extras de hotel.",
       badge: "Operación", badgeColor: "#f59e0b",
       items: [
@@ -105,7 +106,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
       ],
     },
     {
-      icon: "🍽️", title: "Alimentación",
+      icon: "utensils", title: "Alimentación",
       desc: "Control de menús, comedores y servicios de alimentación.",
       badge: "Operación", badgeColor: "#f59e0b",
       items: [
@@ -116,7 +117,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
       ],
     },
     {
-      icon: "🏥", title: "Salud",
+      icon: "heart-pulse", title: "Salud",
       desc: "Registro de atenciones médicas y control antidopaje.",
       badge: "Operación", badgeColor: "#f59e0b",
       items: [
@@ -127,7 +128,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
       ],
     },
     {
-      icon: "🛡️", title: "Acreditación",
+      icon: "shield", title: "Acreditación",
       desc: "Control de acceso y credenciales para el evento.",
       badge: "Acreditación", badgeColor: "#8b5cf6",
       items: [
@@ -138,7 +139,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
       ],
     },
     {
-      icon: "📅", title: "Calendario Operacional",
+      icon: "calendar", title: "Calendario Operacional",
       desc: "Vista de disciplinas, competencias y actividades por día.",
       badge: "Planificación", badgeColor: "#64748b",
       items: [
@@ -148,7 +149,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
       ],
     },
     {
-      icon: "👥", title: "Administración de Usuarios",
+      icon: "users", title: "Administración de Usuarios",
       desc: "Gestión de accesos y roles de los operadores de la plataforma.",
       badge: "Admin", badgeColor: "#ef4444",
       items: [
@@ -161,7 +162,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
   ],
   en: [
     {
-      icon: "📊", title: "Commercial Dashboard",
+      icon: "bar-chart", title: "Commercial Dashboard",
       desc: "Executive budget and award-by-area view.",
       badge: "Commercial", badgeColor: "#6366f1",
       items: [
@@ -171,7 +172,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
       ],
     },
     {
-      icon: "📈", title: "Operational Dashboard",
+      icon: "trending-up", title: "Operational Dashboard",
       desc: "Real-time operational indicators: trips, hospitality, food and health.",
       badge: "Operational", badgeColor: "#0ea5e9",
       items: [
@@ -181,7 +182,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
       ],
     },
     {
-      icon: "📅", title: "Event Registration",
+      icon: "calendar", title: "Event Registration",
       desc: "Creation and configuration of the main sports event.",
       badge: "Registration", badgeColor: "#10b981",
       items: [
@@ -191,7 +192,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
       ],
     },
     {
-      icon: "👤", title: "Participant Registration",
+      icon: "user", title: "Participant Registration",
       desc: "Management of athletes, delegations and accreditations.",
       badge: "Registration", badgeColor: "#10b981",
       items: [
@@ -202,7 +203,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
       ],
     },
     {
-      icon: "🏢", title: "Providers",
+      icon: "building", title: "Providers",
       desc: "Catalog of external providers classified by type and subtype.",
       badge: "Registration", badgeColor: "#10b981",
       items: [
@@ -212,7 +213,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
       ],
     },
     {
-      icon: "🚌", title: "Transport",
+      icon: "bus", title: "Transport",
       desc: "Management of drivers, vehicles and trips.",
       badge: "Operations", badgeColor: "#f59e0b",
       items: [
@@ -224,7 +225,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
       ],
     },
     {
-      icon: "🏨", title: "Hospitality",
+      icon: "hotel", title: "Hospitality",
       desc: "Room assignments, keys and hotel extras.",
       badge: "Operations", badgeColor: "#f59e0b",
       items: [
@@ -236,7 +237,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
       ],
     },
     {
-      icon: "🍽️", title: "Food",
+      icon: "utensils", title: "Food",
       desc: "Control of menus, dining rooms and catering services.",
       badge: "Operations", badgeColor: "#f59e0b",
       items: [
@@ -247,7 +248,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
       ],
     },
     {
-      icon: "🏥", title: "Health",
+      icon: "heart-pulse", title: "Health",
       desc: "Medical care registry and anti-doping control.",
       badge: "Operations", badgeColor: "#f59e0b",
       items: [
@@ -258,7 +259,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
       ],
     },
     {
-      icon: "🛡️", title: "Accreditation",
+      icon: "shield", title: "Accreditation",
       desc: "Access control and credentials for the event.",
       badge: "Accreditation", badgeColor: "#8b5cf6",
       items: [
@@ -269,7 +270,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
       ],
     },
     {
-      icon: "📅", title: "Operational Calendar",
+      icon: "calendar", title: "Operational Calendar",
       desc: "View of disciplines, competitions and daily activities.",
       badge: "Planning", badgeColor: "#64748b",
       items: [
@@ -279,7 +280,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
       ],
     },
     {
-      icon: "👥", title: "User Administration",
+      icon: "users", title: "User Administration",
       desc: "Management of platform operator access and roles.",
       badge: "Admin", badgeColor: "#ef4444",
       items: [
@@ -292,7 +293,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
   ],
   pt: [
     {
-      icon: "📊", title: "Painel Comercial",
+      icon: "bar-chart", title: "Painel Comercial",
       desc: "Visão executiva do orçamento e adjudicação por área operacional.",
       badge: "Comercial", badgeColor: "#6366f1",
       items: [
@@ -302,7 +303,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
       ],
     },
     {
-      icon: "📈", title: "Painel Operacional",
+      icon: "trending-up", title: "Painel Operacional",
       desc: "Indicadores operacionais em tempo real: viagens, hotelaria, alimentação e saúde.",
       badge: "Operacional", badgeColor: "#0ea5e9",
       items: [
@@ -312,7 +313,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
       ],
     },
     {
-      icon: "📅", title: "Registro de Eventos",
+      icon: "calendar", title: "Registro de Eventos",
       desc: "Criação e configuração do evento esportivo principal.",
       badge: "Registro", badgeColor: "#10b981",
       items: [
@@ -322,7 +323,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
       ],
     },
     {
-      icon: "👤", title: "Inscrição de Participantes",
+      icon: "user", title: "Inscrição de Participantes",
       desc: "Gestão de atletas, delegações e acreditações.",
       badge: "Registro", badgeColor: "#10b981",
       items: [
@@ -333,7 +334,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
       ],
     },
     {
-      icon: "🏢", title: "Fornecedores",
+      icon: "building", title: "Fornecedores",
       desc: "Catálogo de fornecedores externos classificados por tipo e subtipo.",
       badge: "Registro", badgeColor: "#10b981",
       items: [
@@ -343,7 +344,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
       ],
     },
     {
-      icon: "🚌", title: "Transporte",
+      icon: "bus", title: "Transporte",
       desc: "Gestão de motoristas, veículos e viagens.",
       badge: "Operação", badgeColor: "#f59e0b",
       items: [
@@ -355,7 +356,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
       ],
     },
     {
-      icon: "🏨", title: "Hotelaria",
+      icon: "hotel", title: "Hotelaria",
       desc: "Atribuição de quartos, chaves e extras de hotel.",
       badge: "Operação", badgeColor: "#f59e0b",
       items: [
@@ -367,7 +368,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
       ],
     },
     {
-      icon: "🍽️", title: "Alimentação",
+      icon: "utensils", title: "Alimentação",
       desc: "Controle de cardápios, refeitórios e serviços de alimentação.",
       badge: "Operação", badgeColor: "#f59e0b",
       items: [
@@ -378,7 +379,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
       ],
     },
     {
-      icon: "🏥", title: "Saúde",
+      icon: "heart-pulse", title: "Saúde",
       desc: "Registro de atendimentos médicos e controle antidopagem.",
       badge: "Operação", badgeColor: "#f59e0b",
       items: [
@@ -389,7 +390,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
       ],
     },
     {
-      icon: "🛡️", title: "Acreditação",
+      icon: "shield", title: "Acreditação",
       desc: "Controle de acesso e credenciais para o evento.",
       badge: "Acreditação", badgeColor: "#8b5cf6",
       items: [
@@ -400,7 +401,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
       ],
     },
     {
-      icon: "📅", title: "Calendário Operacional",
+      icon: "calendar", title: "Calendário Operacional",
       desc: "Vista de disciplinas, competições e atividades por dia.",
       badge: "Planejamento", badgeColor: "#64748b",
       items: [
@@ -410,7 +411,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
       ],
     },
     {
-      icon: "👥", title: "Administração de Usuários",
+      icon: "users", title: "Administração de Usuários",
       desc: "Gestão de acessos e funções dos operadores da plataforma.",
       badge: "Admin", badgeColor: "#ef4444",
       items: [
@@ -556,56 +557,56 @@ const FAQ_DATA: Record<Locale, FaqItem[]> = {
 // ── Steps ───────────────────────────────────────────────────────────────────
 const STEPS_DATA: Record<Locale, StepCard[]> = {
   es: [
-    { step: "1", title: "Configura el evento", desc: "Ve a Registro → Registro Evento y crea el evento principal con fechas, sede y disciplinas.", icon: "📅", href: "/registro/eventos" },
-    { step: "2", title: "Inscribe participantes", desc: "En Registro → Inscripción Participantes agrega atletas manualmente o importa desde Excel.", icon: "👤", href: "/registro/participantes" },
-    { step: "3", title: "Registra conductores", desc: "En Operación → Transporte ingresa conductores con su vehículo y monto licitado.", icon: "🚌", href: "/masters/drivers" },
-    { step: "4", title: "Asigna hoteles", desc: "En Operación → Hotelería → Asignaciones Hotel distribuye atletas en las habitaciones disponibles.", icon: "🏨", href: "/operations/hotel-assignments" },
-    { step: "5", title: "Monitorea el dashboard", desc: "El Dashboard Comercial y Operacional muestran el estado en tiempo real de toda la operación.", icon: "📊", href: "/dashboard/comercial" },
-    { step: "6", title: "Gestiona accesos", desc: "En Administración → Gestión de Usuarios crea cuentas para tu equipo con los roles adecuados.", icon: "🛡️", href: "/admin/usuarios" },
+    { step: "1", title: "Configura el evento", desc: "Ve a Registro → Registro Evento y crea el evento principal con fechas, sede y disciplinas.", icon: "calendar", href: "/registro/eventos" },
+    { step: "2", title: "Inscribe participantes", desc: "En Registro → Inscripción Participantes agrega atletas manualmente o importa desde Excel.", icon: "user", href: "/registro/participantes" },
+    { step: "3", title: "Registra conductores", desc: "En Operación → Transporte ingresa conductores con su vehículo y monto licitado.", icon: "bus", href: "/masters/drivers" },
+    { step: "4", title: "Asigna hoteles", desc: "En Operación → Hotelería → Asignaciones Hotel distribuye atletas en las habitaciones disponibles.", icon: "hotel", href: "/operations/hotel-assignments" },
+    { step: "5", title: "Monitorea el dashboard", desc: "El Dashboard Comercial y Operacional muestran el estado en tiempo real de toda la operación.", icon: "bar-chart", href: "/dashboard/comercial" },
+    { step: "6", title: "Gestiona accesos", desc: "En Administración → Gestión de Usuarios crea cuentas para tu equipo con los roles adecuados.", icon: "shield", href: "/admin/usuarios" },
   ],
   en: [
-    { step: "1", title: "Configure the event", desc: "Go to Registration → Event Registration and create the main event with dates, venue and disciplines.", icon: "📅", href: "/registro/eventos" },
-    { step: "2", title: "Register participants", desc: "In Registration → Participant Registration add athletes manually or import from Excel.", icon: "👤", href: "/registro/participantes" },
-    { step: "3", title: "Register drivers", desc: "In Operations → Transport enter drivers with their vehicle and tendered amount.", icon: "🚌", href: "/masters/drivers" },
-    { step: "4", title: "Assign hotels", desc: "In Operations → Hospitality → Hotel Assignments distribute athletes to available rooms.", icon: "🏨", href: "/operations/hotel-assignments" },
-    { step: "5", title: "Monitor the dashboard", desc: "The Commercial and Operational Dashboards show the real-time status of the entire operation.", icon: "📊", href: "/dashboard/comercial" },
-    { step: "6", title: "Manage access", desc: "In Administration → User Management create accounts for your team with the appropriate roles.", icon: "🛡️", href: "/admin/usuarios" },
+    { step: "1", title: "Configure the event", desc: "Go to Registration → Event Registration and create the main event with dates, venue and disciplines.", icon: "calendar", href: "/registro/eventos" },
+    { step: "2", title: "Register participants", desc: "In Registration → Participant Registration add athletes manually or import from Excel.", icon: "user", href: "/registro/participantes" },
+    { step: "3", title: "Register drivers", desc: "In Operations → Transport enter drivers with their vehicle and tendered amount.", icon: "bus", href: "/masters/drivers" },
+    { step: "4", title: "Assign hotels", desc: "In Operations → Hospitality → Hotel Assignments distribute athletes to available rooms.", icon: "hotel", href: "/operations/hotel-assignments" },
+    { step: "5", title: "Monitor the dashboard", desc: "The Commercial and Operational Dashboards show the real-time status of the entire operation.", icon: "bar-chart", href: "/dashboard/comercial" },
+    { step: "6", title: "Manage access", desc: "In Administration → User Management create accounts for your team with the appropriate roles.", icon: "shield", href: "/admin/usuarios" },
   ],
   pt: [
-    { step: "1", title: "Configure o evento", desc: "Vá para Registro → Registro de Evento e crie o evento principal com datas, sede e disciplinas.", icon: "📅", href: "/registro/eventos" },
-    { step: "2", title: "Inscreva participantes", desc: "Em Registro → Inscrição de Participantes adicione atletas manualmente ou importe do Excel.", icon: "👤", href: "/registro/participantes" },
-    { step: "3", title: "Registre motoristas", desc: "Em Operação → Transporte insira motoristas com seu veículo e valor licitado.", icon: "🚌", href: "/masters/drivers" },
-    { step: "4", title: "Atribua hotéis", desc: "Em Operação → Hotelaria → Atribuições de Hotel distribua atletas nos quartos disponíveis.", icon: "🏨", href: "/operations/hotel-assignments" },
-    { step: "5", title: "Monitore o painel", desc: "O Painel Comercial e Operacional mostram o status em tempo real de toda a operação.", icon: "📊", href: "/dashboard/comercial" },
-    { step: "6", title: "Gerencie acessos", desc: "Em Administração → Gestão de Usuários crie contas para sua equipe com as funções adequadas.", icon: "🛡️", href: "/admin/usuarios" },
+    { step: "1", title: "Configure o evento", desc: "Vá para Registro → Registro de Evento e crie o evento principal com datas, sede e disciplinas.", icon: "calendar", href: "/registro/eventos" },
+    { step: "2", title: "Inscreva participantes", desc: "Em Registro → Inscrição de Participantes adicione atletas manualmente ou importe do Excel.", icon: "user", href: "/registro/participantes" },
+    { step: "3", title: "Registre motoristas", desc: "Em Operação → Transporte insira motoristas com seu veículo e valor licitado.", icon: "bus", href: "/masters/drivers" },
+    { step: "4", title: "Atribua hotéis", desc: "Em Operação → Hotelaria → Atribuições de Hotel distribua atletas nos quartos disponíveis.", icon: "hotel", href: "/operations/hotel-assignments" },
+    { step: "5", title: "Monitore o painel", desc: "O Painel Comercial e Operacional mostram o status em tempo real de toda a operação.", icon: "bar-chart", href: "/dashboard/comercial" },
+    { step: "6", title: "Gerencie acessos", desc: "Em Administração → Gestão de Usuários crie contas para sua equipe com as funções adequadas.", icon: "shield", href: "/admin/usuarios" },
   ],
 };
 
 // ── Tips ────────────────────────────────────────────────────────────────────
 const TIPS_DATA: Record<Locale, TipItem[]> = {
   es: [
-    { icon: "🌙", tip: "Cambia el tema desde el botón en la barra superior (claro, oscuro, obsidian, atlas)." },
-    { icon: "🌐", tip: "La interfaz está disponible en Español, English y Português. Cambia el idioma al final del menú lateral." },
-    { icon: "📱", tip: "En móvil, el menú lateral se abre con el botón ☰ en la esquina superior izquierda." },
-    { icon: "🔄", tip: "Los datos del Dashboard Comercial se actualizan cada vez que modificas el monto licitado de un conductor." },
-    { icon: "📥", tip: "Para importar participantes masivamente usa el botón 'Importar' en la sección de Inscripción. Descarga la plantilla primero." },
-    { icon: "🔑", tip: "Cada usuario puede tener acceso solo a los módulos que necesita. Configura esto en Administración → Gestión de Usuarios." },
+    { icon: "moon", tip: "Cambia el tema desde el botón en la barra superior (claro, oscuro, obsidian, atlas)." },
+    { icon: "globe", tip: "La interfaz está disponible en Español, English y Português. Cambia el idioma al final del menú lateral." },
+    { icon: "smartphone", tip: "En móvil, el menú lateral se abre con el botón ☰ en la esquina superior izquierda." },
+    { icon: "refresh", tip: "Los datos del Dashboard Comercial se actualizan cada vez que modificas el monto licitado de un conductor." },
+    { icon: "download", tip: "Para importar participantes masivamente usa el botón 'Importar' en la sección de Inscripción. Descarga la plantilla primero." },
+    { icon: "key", tip: "Cada usuario puede tener acceso solo a los módulos que necesita. Configura esto en Administración → Gestión de Usuarios." },
   ],
   en: [
-    { icon: "🌙", tip: "Change the theme from the button in the top bar (light, dark, obsidian, atlas)." },
-    { icon: "🌐", tip: "The interface is available in Spanish, English and Portuguese. Change the language at the bottom of the sidebar." },
-    { icon: "📱", tip: "On mobile, the sidebar opens with the ☰ button in the top left corner." },
-    { icon: "🔄", tip: "The Commercial Dashboard data updates every time you modify the tendered amount of a driver." },
-    { icon: "📥", tip: "To bulk import participants use the 'Import' button in the Registration section. Download the template first." },
-    { icon: "🔑", tip: "Each user can have access only to the modules they need. Configure this in Administration → User Management." },
+    { icon: "moon", tip: "Change the theme from the button in the top bar (light, dark, obsidian, atlas)." },
+    { icon: "globe", tip: "The interface is available in Spanish, English and Portuguese. Change the language at the bottom of the sidebar." },
+    { icon: "smartphone", tip: "On mobile, the sidebar opens with the ☰ button in the top left corner." },
+    { icon: "refresh", tip: "The Commercial Dashboard data updates every time you modify the tendered amount of a driver." },
+    { icon: "download", tip: "To bulk import participants use the 'Import' button in the Registration section. Download the template first." },
+    { icon: "key", tip: "Each user can have access only to the modules they need. Configure this in Administration → User Management." },
   ],
   pt: [
-    { icon: "🌙", tip: "Mude o tema pelo botão na barra superior (claro, escuro, obsidian, atlas)." },
-    { icon: "🌐", tip: "A interface está disponível em Espanhol, Inglês e Português. Mude o idioma no final do menu lateral." },
-    { icon: "📱", tip: "No celular, o menu lateral abre com o botão ☰ no canto superior esquerdo." },
-    { icon: "🔄", tip: "Os dados do Painel Comercial são atualizados sempre que você modifica o valor licitado de um motorista." },
-    { icon: "📥", tip: "Para importar participantes em massa use o botão 'Importar' na seção de Inscrição. Baixe o modelo primeiro." },
-    { icon: "🔑", tip: "Cada usuário pode ter acesso apenas aos módulos que precisa. Configure isso em Administração → Gestão de Usuários." },
+    { icon: "moon", tip: "Mude o tema pelo botão na barra superior (claro, escuro, obsidian, atlas)." },
+    { icon: "globe", tip: "A interface está disponível em Espanhol, Inglês e Português. Mude o idioma no final do menu lateral." },
+    { icon: "smartphone", tip: "No celular, o menu lateral abre com o botão ☰ no canto superior esquerdo." },
+    { icon: "refresh", tip: "Os dados do Painel Comercial são atualizados sempre que você modifica o valor licitado de um motorista." },
+    { icon: "download", tip: "Para importar participantes em massa use o botão 'Importar' na seção de Inscrição. Baixe o modelo primeiro." },
+    { icon: "key", tip: "Cada usuário pode ter acesso apenas aos módulos que precisa. Configure isso em Administração → Gestão de Usuários." },
   ],
 };
 

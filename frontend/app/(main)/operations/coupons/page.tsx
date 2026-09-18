@@ -15,6 +15,7 @@ import {
   UsersIcon,
   ClipboardIcon,
   SettingsIcon,
+  XIcon,
 } from "@/components/ui/Icons";
 import { CLIENT_TYPE_OPTIONS, clientTypeLabel, normalizeClientType } from "@/lib/clientTypes";
 import { useI18n } from "@/lib/i18n";
@@ -435,7 +436,7 @@ function CatalogTab({
                   )}
                   {expired && (
                     <p className="text-[11px] font-medium" style={{ color: "#b3231b" }}>
-                      ⚠ {t("Expirado")}
+                      <AlertIcon size={11} className="inline mr-1" />{t("Expirado")}
                     </p>
                   )}
                 </div>
@@ -464,7 +465,7 @@ function CatalogTab({
                 {(form as any).id ? t("Editar beneficio") : t("Nuevo beneficio")}
               </h2>
               <button className="btn btn-ghost text-sm" type="button" onClick={() => setModalOpen(false)}>
-                {t("Cerrar")} ✕
+                {t("Cerrar")} <XIcon size={12} className="inline ml-1" />
               </button>
             </div>
             <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -580,7 +581,7 @@ function CatalogTab({
                           color: sel ? "#fff" : "#1f4e8c",
                         }}
                         onClick={() => toggleAudience(a.value)}>
-                        {sel ? "✓ " : ""}{t(a.label)}
+                        {sel ? <CheckIcon size={12} className="inline mr-1" /> : null}{t(a.label)}
                       </button>
                     );
                   })}
@@ -775,7 +776,7 @@ function PartnersTab({
                 {(form as any).id ? t("Editar partner") : t("Nuevo partner")}
               </h2>
               <button className="btn btn-ghost text-sm" type="button"
-                onClick={() => setModalOpen(false)}>{t("Cerrar")} ✕</button>
+                onClick={() => setModalOpen(false)}>{t("Cerrar")} <XIcon size={12} className="inline ml-1" /></button>
             </div>
             <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-3">
               <Field label={t("Código del local *")}>
@@ -822,7 +823,7 @@ function PartnersTab({
                           border: sel ? "none" : "1px solid #d4dae2",
                         }}
                         onClick={() => toggleAllowed(c.id)}>
-                        {sel ? "✓ " : ""}{c.code} · {c.title.slice(0, 24)}{c.title.length > 24 ? "…" : ""}
+                        {sel ? <CheckIcon size={12} className="inline mr-1" /> : null}{c.code} · {c.title.slice(0, 24)}{c.title.length > 24 ? "…" : ""}
                       </button>
                     );
                   })}

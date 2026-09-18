@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { isAvailable as nativeAvailable, send as nativeSend } from "@/lib/native-bridge";
+import { AmbulanceIcon, FlameIcon, SirenIcon, FingerprintIcon, AnchorIcon, LifeBuoyIcon } from "@/components/ui/Icons";
 
 /**
  * Números de emergencia para la sección "Cuenta" de los portales.
@@ -18,15 +19,15 @@ type EmergencyNumber = {
   label: string;
   number: string;
   detail?: string;
-  emoji: string;
+  emoji: JSX.Element;
 };
 
 const NUMEROS: EmergencyNumber[] = [
-  { label: "Ambulancia (SAMU)", number: "131", emoji: "🚑" },
-  { label: "Bomberos", number: "132", emoji: "🚒" },
-  { label: "Carabineros", number: "133", emoji: "🚓" },
-  { label: "PDI", number: "134", detail: "Policía de Investigaciones", emoji: "🕵️" },
-  { label: "Rescate marítimo", number: "137", emoji: "⚓" },
+  { label: "Ambulancia (SAMU)", number: "131", emoji: <AmbulanceIcon size={16} /> },
+  { label: "Bomberos", number: "132", emoji: <FlameIcon size={16} /> },
+  { label: "Carabineros", number: "133", emoji: <SirenIcon size={16} /> },
+  { label: "PDI", number: "134", detail: "Policía de Investigaciones", emoji: <FingerprintIcon size={16} /> },
+  { label: "Rescate marítimo", number: "137", emoji: <AnchorIcon size={16} /> },
 ];
 
 /** Dispara el marcador vía iframe oculto, sin navegar el documento. */
@@ -131,7 +132,7 @@ export default function EmergencyNumbersSection() {
       }}
     >
       <div style={{ padding: "14px 16px 10px", display: "flex", alignItems: "center", gap: 10 }}>
-        <span aria-hidden style={{ fontSize: 18 }}>🆘</span>
+        <span aria-hidden style={{ display: "inline-flex", color: "#dc2626" }}><LifeBuoyIcon size={18} /></span>
         <div>
           <p style={{ fontSize: 13.5, fontWeight: 700, color: "#0f172a", margin: 0 }}>
             Números de emergencia
@@ -164,7 +165,7 @@ export default function EmergencyNumbersSection() {
             }}
           >
             <span style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-              <span aria-hidden style={{ fontSize: 16 }}>{n.emoji}</span>
+              <span aria-hidden style={{ display: "inline-flex" }}>{n.emoji}</span>
               <span style={{ minWidth: 0 }}>
                 <span style={{ display: "block", fontSize: 12.5, fontWeight: 600, color: "#0f172a" }}>
                   {n.label}
@@ -215,7 +216,7 @@ export default function EmergencyNumbersSection() {
             }}
           >
             <p style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", margin: 0 }}>
-              {fallback.emoji} {fallback.label}
+              <span style={{ display: "inline-flex", verticalAlign: "-3px", marginRight: 6 }}>{fallback.emoji}</span>{fallback.label}
             </p>
             <p
               style={{
@@ -275,7 +276,7 @@ export default function EmergencyNumbersSection() {
                   cursor: "pointer",
                 }}
               >
-                {copied ? "✓ Número copiado" : "Copiar número"}
+                {copied ? "Número copiado" : "Copiar número"}
               </button>
               <button
                 type="button"
