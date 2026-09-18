@@ -984,11 +984,13 @@ export default function DriverPortalPage() {
   const isDisposicion = (trip: Trip) => trip.tripType === "DISPOSICION_12H";
 
   const confirmPickup = (trip: Trip) => {
-    // Cliente TA en viajes de ida / regreso / ida y regreso: la recogida se
-    // confirma sin pedir el código de verificación del pasajero.
-    const esTa = (trip.clientType || "").toUpperCase() === "TA";
-    const viajeSinCodigo = ["VIAJE_IDA", "VIAJE_REGRESO", "VIAJE_IDA_REGRESO"].includes(trip.tripType || "");
-    if (esTa && viajeSinCodigo) {
+    // El código de verificación se pide SOLO en viajes VIP. Para el resto
+    // —jefes de misión, TA y los demás tipos— la recogida se confirma directo.
+    // Antes la excepción cubría únicamente a TA en viajes de ida/regreso, así
+    // que al jefe de misión (client_type JEFE_MISION) se le pedía un código
+    // que no tiene a mano, y eso frenaba la salida del bus.
+    const esVip = (trip.clientType || "").toUpperCase() === "VIP";
+    if (!esVip) {
       void updateTrip(trip.id, "PICKED_UP");
       return;
     }
