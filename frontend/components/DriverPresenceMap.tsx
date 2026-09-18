@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { STATE, SURFACE } from "@/lib/design";
+import { STATE, SURFACE, ACCENT } from "@/lib/design";
 
 export type PresenceMarker = {
   id: string;
@@ -27,11 +27,11 @@ export type PresenceMarker = {
 
 // Colores de chip por tipo de cliente — mismos tonos que la tabla de monitoreo.
 const CLIENT_TYPE_CHIP: Record<string, { label: string; bg: string; color: string; border: string }> = {
-  VIP: { label: "VIP", bg: "#fef3c7", color: "#7a4a00", border: "#fcd34d" },
-  T1: { label: "T1", bg: "#fee2e2", color: "#991b1b", border: "#fca5a5" },
-  TA: { label: "TA", bg: "#dbeafe", color: "#1e40af", border: "#93c5fd" },
+  VIP: { label: "VIP", bg: STATE.warningSoft, color: STATE.warningText, border: STATE.warning },
+  T1: { label: "T1", bg: STATE.dangerSoft, color: STATE.dangerText, border: STATE.dangerBorder },
+  TA: { label: "TA", bg: STATE.infoSoft, color: STATE.infoText, border: STATE.infoBorder },
   TF: { label: "TF", bg: "#e0f2fe", color: "#075985", border: "#7dd3fc" },
-  TM: { label: "TM", bg: "#ede9fe", color: "#5b21b6", border: "#c4b5fd" },
+  TM: { label: "TM", bg: ACCENT.violetSoft, color: "#5b21b6", border: "#c4b5fd" },
   FAMILIA_PARAPAN: { label: "Familia Parapan", bg: "#fce7f3", color: "#9d174d", border: "#f9a8d4" },
   COMITE_ORGANIZADOR: { label: "Comité Org.", bg: "#e0f2fe", color: "#075985", border: "#7dd3fc" },
   PROVEEDORES: { label: "Proveedores", bg: SURFACE.borderMuted, color: SURFACE.textStrong, border: SURFACE.borderStrong },

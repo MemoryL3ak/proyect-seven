@@ -218,7 +218,7 @@ export default function SupportChatsPage() {
                     width: "100%", textAlign: "left",
                     padding: "12px 14px", borderBottom: `1px solid ${SURFACE.borderMuted}`,
                     background: selected ? "#f0fdfa" : "transparent",
-                    borderLeft: selected ? "3px solid #14b8a6" : "3px solid transparent",
+                    borderLeft: selected ? `3px solid ${BRAND.teal}` : "3px solid transparent",
                     cursor: "pointer", border: "none",
                   }}
                 >
@@ -302,9 +302,9 @@ export default function SupportChatsPage() {
                     <div key={m.id} style={{ display: "flex", justifyContent: isAgent ? "flex-end" : isSystem ? "center" : "flex-start", marginBottom: "10px" }}>
                       <div style={{
                         maxWidth: "68%",
-                        background: m.is_internal_note ? "#fef3c7" : isAgent ? BRAND.teal : SURFACE.card,
-                        color: m.is_internal_note ? "#92400e" : isAgent ? SURFACE.card : SURFACE.text,
-                        border: m.is_internal_note ? "1px dashed #fbbf24" : !isAgent ? `1px solid ${SURFACE.border}` : "none",
+                        background: m.is_internal_note ? STATE.warningSoft : isAgent ? BRAND.teal : SURFACE.card,
+                        color: m.is_internal_note ? STATE.warningText : isAgent ? SURFACE.card : SURFACE.text,
+                        border: m.is_internal_note ? `1px dashed ${STATE.warning}` : !isAgent ? `1px solid ${SURFACE.border}` : "none",
                         padding: "10px 14px",
                         borderRadius: "14px",
                         fontSize: "13px",
@@ -340,7 +340,7 @@ export default function SupportChatsPage() {
                     style={{
                       flex: 1, padding: "10px 12px", borderRadius: "10px",
                       border: isNote ? `1px dashed ${STATE.warning}` : `1px solid ${SURFACE.border}`,
-                      background: isNote ? "#fffbeb" : SURFACE.card,
+                      background: isNote ? STATE.warningSoft : SURFACE.card,
                       fontSize: "13px", resize: "none", outline: "none",
                     }}
                   />

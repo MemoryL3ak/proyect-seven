@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
-import { BRAND, STATE, SURFACE } from "@/lib/design";
+import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import EmptyState from "@/components/ui/EmptyState";
 import { CalendarIcon, AlertIcon, SearchIcon, RefreshIcon, PlaneIcon } from "@/components/ui/Icons";
@@ -390,14 +390,14 @@ export default function DepartureMonitoringPage() {
                           {vuelo ? (
                             <span
                               className="text-[11px] font-bold px-2 py-0.5 rounded"
-                              style={{ background: "rgba(167,139,250,0.12)", color: "#7c3aed", border: "1px solid rgba(167,139,250,0.4)" }}
+                              style={{ background: "rgba(167,139,250,0.12)", color: ACCENT.violet, border: "1px solid rgba(167,139,250,0.4)" }}
                             >
                               <PlaneIcon size={11} className="inline mr-1" />{vuelo}
                             </span>
                           ) : (
                             <span
                               className="text-[11px] font-semibold px-2 py-0.5 rounded"
-                              style={{ background: "#fef2f2", color: "#b91c1c", border: "1px solid #fecaca" }}
+                              style={{ background: STATE.dangerSoft, color: STATE.dangerText, border: `1px solid ${STATE.dangerBorder}` }}
                             >
                               {t("Sin vuelo")}
                             </span>

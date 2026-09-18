@@ -160,11 +160,11 @@ const SERVICIO_LABEL: Record<string, string> = {
 };
 
 const ORIGEN_VALOR_META: Record<string, { label: string; tone: string; bg: string; border: string }> = {
-  PACTADO: { label: "Valor pactado", tone: "#0f766e", bg: "#f0fdfa", border: "#99f6e4" },
-  TARIFA: { label: "Tarifa del proveedor", tone: "#1d4ed8", bg: "#eff6ff", border: "#bfdbfe" },
-  PACTADO_SIN_TARIFA: { label: "Pactado sin tarifa", tone: "#a16207", bg: "#fefce8", border: "#fde68a" },
+  PACTADO: { label: "Valor pactado", tone: BRAND.tealInk, bg: "#f0fdfa", border: "#99f6e4" },
+  TARIFA: { label: "Tarifa del proveedor", tone: STATE.infoText, bg: STATE.infoSoft, border: STATE.infoBorder },
+  PACTADO_SIN_TARIFA: { label: "Pactado sin tarifa", tone: STATE.warningText, bg: STATE.warningSoft, border: STATE.warningBorder },
   REFERENCIA: { label: "Tarifa de referencia", tone: "#c2410c", bg: "#fff7ed", border: "#fed7aa" },
-  SIN_VALORIZAR: { label: "Sin valorizar", tone: "#b91c1c", bg: "#fef2f2", border: "#fecaca" },
+  SIN_VALORIZAR: { label: "Sin valorizar", tone: STATE.dangerText, bg: STATE.dangerSoft, border: STATE.dangerBorder },
 };
 
 // Labels de estado: base canónica (TRIP_STATUS_META en lib/design) + fraseo
@@ -734,7 +734,7 @@ function EjecucionPresupuestaria({
         </div>
         <span
           className="text-xs font-semibold px-2.5 py-1 rounded-full"
-          style={{ background: "var(--brand-dim)", color: "#0f766e" }}
+          style={{ background: "var(--brand-dim)", color: BRAND.tealInk }}
         >
           {p.proveedoresConLicitacion} proveedor{p.proveedoresConLicitacion === 1 ? "" : "es"}
         </span>
@@ -748,12 +748,12 @@ function EjecucionPresupuestaria({
         <>
           <div className="grid grid-cols-3 gap-3 mb-4">
             <Cifra etiqueta={t("Adjudicado")} valor={clpCorto(p.adjudicado)} detalle={clp(p.adjudicado)} />
-            <Cifra etiqueta={t("Consumido")} valor={clpCorto(p.consumido)} detalle={pct(p.pctConsumido, 2)} color="#0f766e" />
+            <Cifra etiqueta={t("Consumido")} valor={clpCorto(p.consumido)} detalle={pct(p.pctConsumido, 2)} color={BRAND.tealInk} />
             <Cifra
               etiqueta={t("Disponible")}
               valor={clpCorto(p.disponible)}
               detalle={p.disponible < 0 ? t("Sobre ejecutado") : t("Saldo del contrato")}
-              color={p.disponible < 0 ? "#b91c1c" : undefined}
+              color={p.disponible < 0 ? STATE.dangerText : undefined}
             />
           </div>
 
@@ -763,7 +763,7 @@ function EjecucionPresupuestaria({
               titulo={t("Servicios realizados")}
               porcentaje={pctViajes}
               detalle={`${viajesActivos} de ${p.viajesLicitados || "—"} licitados`}
-              tono="#1d4ed8"
+              tono={STATE.infoText}
             />
           </div>
         </>
@@ -819,8 +819,8 @@ function ComposicionIngreso({ t: tot }: { t: Resumen["totales"] }) {
   const { t } = useI18n();
   const base = tot.ingresoPrestado + tot.ingresoComprometido;
   const filas = [
-    { etiqueta: "Devengado (servicio entregado)", valor: tot.ingresoPrestado, color: "#16a34a" },
-    { etiqueta: "Comprometido (programado)", valor: tot.ingresoComprometido, color: "#d97706" },
+    { etiqueta: "Devengado (servicio entregado)", valor: tot.ingresoPrestado, color: STATE.success },
+    { etiqueta: "Comprometido (programado)", valor: tot.ingresoComprometido, color: STATE.warningText },
     { etiqueta: "Anulado (cancelados)", valor: tot.ingresoAnulado, color: SURFACE.textFaint },
   ];
 
@@ -855,7 +855,7 @@ function ComposicionIngreso({ t: tot }: { t: Resumen["totales"] }) {
           <span className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
             {t("Margen sobre lo entregado")}
           </span>
-          <span className="text-lg font-bold" style={{ color: "#0f766e" }}>
+          <span className="text-lg font-bold" style={{ color: BRAND.tealInk }}>
             {clpCorto(tot.margenPrestado)}
           </span>
         </div>
@@ -888,7 +888,7 @@ function SerieDiaria({ serie }: { serie: Resumen["serieDiaria"] }) {
         </div>
         <div className="flex items-center gap-4">
           <Leyenda color={BRAND.teal} texto={t("Ingreso")} />
-          <Leyenda color="#f43f5e" texto={t("Costo")} />
+          <Leyenda color={STATE.danger} texto={t("Costo")} />
           <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
             {t("Promedio diario")} {clpCorto(promedio)}
           </span>
@@ -903,7 +903,7 @@ function SerieDiaria({ serie }: { serie: Resumen["serieDiaria"] }) {
             const [, mes, dia] = d.fecha.split("-");
             return (
               <div key={d.fecha} className="flex flex-col items-center gap-1" style={{ minWidth: 38, flex: 1 }}>
-                <span className="text-[10px] font-bold" style={{ color: "#0f766e" }}>{clpCorto(d.ingreso)}</span>
+                <span className="text-[10px] font-bold" style={{ color: BRAND.tealInk }}>{clpCorto(d.ingreso)}</span>
                 <div className="flex items-end gap-0.5" style={{ height: 152 }}>
                   <div
                     title={`${t("Ingreso")} ${clp(d.ingreso)}`}
@@ -916,7 +916,7 @@ function SerieDiaria({ serie }: { serie: Resumen["serieDiaria"] }) {
                     title={`${t("Costo")} ${clp(d.costo)}`}
                     style={{
                       width: 14, height: hCosto, borderRadius: "3px 3px 0 0",
-                      background: "linear-gradient(180deg, #fda4af, #f43f5e)",
+                      background: `linear-gradient(180deg, ${STATE.dangerBorder}, ${STATE.danger})`,
                     }}
                   />
                 </div>
@@ -976,7 +976,7 @@ function TablaProveedores({ filas }: { filas: Resumen["porProveedor"] }) {
                 <td className="px-4 py-3 text-right" style={{ color: "var(--text-muted)" }}>{f.viajes}</td>
                 <td className="px-4 py-3 text-right font-semibold" style={{ color: "var(--text)" }}>{clp(f.ingreso)}</td>
                 <td className="px-4 py-3 text-right" style={{ color: "var(--text-muted)" }}>{clp(f.costo)}</td>
-                <td className="px-4 py-3 text-right font-bold" style={{ color: f.margen >= 0 ? "#0f766e" : "#b91c1c" }}>
+                <td className="px-4 py-3 text-right font-bold" style={{ color: f.margen >= 0 ? BRAND.tealInk : STATE.dangerText }}>
                   {clp(f.margen)}
                 </td>
                 <td className="px-4 py-3">
@@ -1012,9 +1012,9 @@ function TablaProveedores({ filas }: { filas: Resumen["porProveedor"] }) {
 }
 
 function ChipMargen({ valor }: { valor: number }) {
-  const tono = valor >= 30 ? { c: "#0f766e", b: "#f0fdfa", bd: "#99f6e4" }
-    : valor >= 15 ? { c: "#a16207", b: "#fefce8", bd: "#fde68a" }
-    : { c: "#b91c1c", b: "#fef2f2", bd: "#fecaca" };
+  const tono = valor >= 30 ? { c: BRAND.tealInk, b: "#f0fdfa", bd: "#99f6e4" }
+    : valor >= 15 ? { c: STATE.warningText, b: STATE.warningSoft, bd: STATE.warningBorder }
+    : { c: STATE.dangerText, b: STATE.dangerSoft, bd: STATE.dangerBorder };
   return (
     <span
       className="text-xs font-bold px-2 py-1 rounded-md"
@@ -1070,7 +1070,7 @@ function DesgloseBarras({
             <div className="h-2 rounded-full overflow-hidden flex" style={{ background: "var(--elevated)" }}>
               {/* Costo y margen dentro de la misma barra: se lee la estructura del ingreso */}
               <div
-                style={{ width: `${(f.costo / max) * 100}%`, background: "#fda4af" }}
+                style={{ width: `${(f.costo / max) * 100}%`, background: STATE.dangerBorder }}
                 title={`${t("Costo")} ${clp(f.costo)}`}
               />
               <div
@@ -1082,7 +1082,7 @@ function DesgloseBarras({
               <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>
                 {f.viajes} serv. · ticket {clpCorto(f.ticketPromedio)}
               </span>
-              <span className="text-[10px] font-semibold" style={{ color: f.margenPct >= 15 ? "#0f766e" : "#a16207" }}>
+              <span className="text-[10px] font-semibold" style={{ color: f.margenPct >= 15 ? BRAND.tealInk : STATE.warningText }}>
                 {t("margen")} {pct(f.margenPct)}
               </span>
             </div>
@@ -1140,7 +1140,7 @@ function TopConductores({ filas }: { filas: Resumen["topConductores"] }) {
                 <td className="px-4 py-3 text-right" style={{ color: "var(--text-muted)" }}>{f.viajes}</td>
                 <td className="px-4 py-3 text-right font-semibold" style={{ color: "var(--text)" }}>{clp(f.ingreso)}</td>
                 <td className="px-4 py-3 text-right" style={{ color: "var(--text-muted)" }}>{clp(f.ticketPromedio)}</td>
-                <td className="px-4 py-3 text-right font-bold" style={{ color: "#0f766e" }}>{clp(f.margen)}</td>
+                <td className="px-4 py-3 text-right font-bold" style={{ color: BRAND.tealInk }}>{clp(f.margen)}</td>
               </tr>
             ))}
           </tbody>
@@ -1215,7 +1215,7 @@ function TablaDetalle({
                 >
                   <td className="px-3 py-2.5 whitespace-nowrap" style={{ color: "var(--text-muted)" }}>{f.fecha ?? "—"}</td>
                   <td className="px-3 py-2.5 whitespace-nowrap">
-                    <span className="text-[11px] font-semibold" style={{ color: cancelado ? "#b91c1c" : "var(--text)" }}>
+                    <span className="text-[11px] font-semibold" style={{ color: cancelado ? STATE.dangerText : "var(--text)" }}>
                       {t(STATUS_LABEL[f.status] ?? f.status)}
                     </span>
                   </td>
@@ -1242,7 +1242,7 @@ function TablaDetalle({
                   </td>
                   <td
                     className="px-3 py-2.5 text-right font-bold whitespace-nowrap"
-                    style={{ color: f.margen >= 0 ? "#0f766e" : "#b91c1c" }}
+                    style={{ color: f.margen >= 0 ? BRAND.tealInk : STATE.dangerText }}
                   >
                     {clp(f.margen)}
                   </td>
@@ -1346,7 +1346,7 @@ function CalidadDatos({
                       <td className="px-4 py-2.5" style={{ color: "var(--text-muted)" }}>
                         {f.flotaNormalizada
                           ? t(FLOTA_LABEL[f.flotaNormalizada] ?? f.flotaNormalizada)
-                          : <span style={{ color: "#b91c1c" }}>{t("No reconocida")}</span>}
+                          : <span style={{ color: STATE.dangerText }}>{t("No reconocida")}</span>}
                       </td>
                       <td className="px-4 py-2.5" style={{ color: "var(--text-muted)" }}>
                         {t(SERVICIO_LABEL[f.servicio] ?? f.servicio)}

@@ -75,7 +75,7 @@ import SofiaWidget from "@/components/SofiaWidget";
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
 import QrFullscreenOverlay from "@/components/QrFullscreenOverlay";
 import QRCode from "qrcode";
-import { BRAND, tripStatusMeta, STATE, SURFACE } from "@/lib/design";
+import { BRAND, tripStatusMeta, STATE, SURFACE, ACCENT } from "@/lib/design";
 
 type Athlete = {
   id: string;
@@ -196,17 +196,17 @@ type CouponClaim = {
 };
 
 const COUPON_CATEGORIES: Record<string, { label: string; color: string; bg: string }> = {
-  COMIDA: { label: "Comida", color: "#c78c00", bg: "#fff4d6" },
-  ENTRETENIMIENTO: { label: "Entretenimiento", color: "#5e3aab", bg: "#f4f0fb" },
-  TIENDA: { label: "Tienda", color: "#2e7d32", bg: "#e7f5ec" },
-  OTHER: { label: "Otros", color: "#5e6b7a", bg: "#eef1f6" },
+  COMIDA: { label: "Comida", color: STATE.warningText, bg: STATE.warningSoft },
+  ENTRETENIMIENTO: { label: "Entretenimiento", color: ACCENT.violet, bg: "#f4f0fb" },
+  TIENDA: { label: "Tienda", color: STATE.successText, bg: STATE.successSoft },
+  OTHER: { label: "Otros", color: SURFACE.textMuted, bg: SURFACE.borderMuted },
 };
 
 const COUPON_STATUS_META: Record<string, { label: string; color: string; bg: string }> = {
-  CLAIMED: { label: "Activo", color: "#1f4e8c", bg: "#e3edfa" },
-  REDEEMED: { label: "Canjeado", color: "#2e7d32", bg: "#e7f5ec" },
-  EXPIRED: { label: "Expirado", color: "#b3231b", bg: "#fde2e2" },
-  REVOKED: { label: "Anulado", color: "#5e6b7a", bg: "#eef1f6" },
+  CLAIMED: { label: "Activo", color: STATE.infoText, bg: "#e3edfa" },
+  REDEEMED: { label: "Canjeado", color: STATE.successText, bg: STATE.successSoft },
+  EXPIRED: { label: "Expirado", color: STATE.dangerText, bg: STATE.dangerSoft },
+  REVOKED: { label: "Anulado", color: SURFACE.textMuted, bg: SURFACE.borderMuted },
 };
 
 function couponDiscountDisplay(c: Coupon) {
@@ -1313,10 +1313,10 @@ export default function UserPortalPage() {
                 style={{ width:"100%",padding:"16px",borderRadius:"14px",border:"1px solid rgba(33,208,179,0.2)",background:"rgba(255,255,255,0.05)",color:"rgba(255,255,255,0.9)",fontSize:"15px",outline:"none",fontWeight:500,boxSizing:"border-box",transition:"border-color .2s,box-shadow .2s" }} />
             </div>
             <button type="button" onClick={() => loadAthlete()} disabled={loading}
-              style={{ width:"100%",padding:"17px",borderRadius:"14px",border:"none",background:`linear-gradient(135deg,${BRAND.tealLight} 0%,${BRAND.teal} 50%,#15B09A 100%)`,color:"#0d1b3e",fontSize:"16px",fontWeight:700,cursor:loading?"not-allowed":"pointer",opacity:loading?0.7:1,letterSpacing:"0.03em",boxShadow:"0 4px 20px rgba(33,208,179,0.35)",transition:"opacity .2s,transform .1s" }}>
+              style={{ width:"100%",padding:"17px",borderRadius:"14px",border:"none",background:`linear-gradient(135deg,${BRAND.tealLight} 0%,${BRAND.teal} 50%,#15B09A 100%)`,color:SURFACE.text,fontSize:"16px",fontWeight:700,cursor:loading?"not-allowed":"pointer",opacity:loading?0.7:1,letterSpacing:"0.03em",boxShadow:"0 4px 20px rgba(33,208,179,0.35)",transition:"opacity .2s,transform .1s" }}>
               {loading ? t("Cargando...") : t("Ver mi información")}
             </button>
-            {error && <p style={{ color:"#fca5a5",fontSize:"13px",textAlign:"center",margin:0 }}>{error}</p>}
+            {error && <p style={{ color:STATE.dangerBorder,fontSize:"13px",textAlign:"center",margin:0 }}>{error}</p>}
           </div>
           <div style={{ display:"flex",alignItems:"center",gap:"12px",margin:"24px 0" }}>
             <div style={{ flex:1,height:1,background:"rgba(255,255,255,0.08)" }} />
@@ -1335,7 +1335,7 @@ export default function UserPortalPage() {
               {requestLoading ? t("Enviando...") : t("Solicitar código")}
             </button>
             {requestStatus && <p style={{ color:"#6ee7b7",fontSize:"13px",margin:0 }}>{requestStatus}</p>}
-            {requestError && <p style={{ color:"#fca5a5",fontSize:"13px",margin:0 }}>{requestError}</p>}
+            {requestError && <p style={{ color:STATE.dangerBorder,fontSize:"13px",margin:0 }}>{requestError}</p>}
           </div>
         </div>
       </div>
@@ -1621,7 +1621,7 @@ export default function UserPortalPage() {
                       </div>
                       <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between" }}>
                         <span style={{ fontSize:11,color:SURFACE.textMuted }}>Check-out</span>
-                        <span style={{ fontSize:11.5,fontWeight:700,color: hotelAssignment?.checkoutAt ? "#d97706" : SURFACE.textFaint }}>
+                        <span style={{ fontSize:11.5,fontWeight:700,color: hotelAssignment?.checkoutAt ? STATE.warningText : SURFACE.textFaint }}>
                           {hotelAssignment?.checkoutAt ? fmt(hotelAssignment.checkoutAt) : "Pendiente"}
                         </span>
                       </div>
@@ -1957,12 +1957,12 @@ export default function UserPortalPage() {
           // ── Tipos de actividad (paleta como leyenda de referencia)
           type CalType = "ENTRENAMIENTO" | "COMPETENCIA" | "MEDICO" | "VIAJE" | "CEREMONIA" | "DESCANSO";
           const TYPE_CFG: Record<CalType,{ label:string; color:string; soft:string; icon:IconComponent }> = {
-            ENTRENAMIENTO: { label:"Entrenamiento", color:"#16a34a", soft:"#dcfce7", icon:DumbbellIcon },
-            COMPETENCIA:   { label:"Competencia",   color:STATE.dangerText, soft:"#fee2e2", icon:MedalIcon },
-            MEDICO:        { label:"Médico",        color:"#7c3aed", soft:"#ede9fe", icon:HeartPulseIcon },
+            ENTRENAMIENTO: { label:"Entrenamiento", color:STATE.success, soft:STATE.successSoft, icon:DumbbellIcon },
+            COMPETENCIA:   { label:"Competencia",   color:STATE.dangerText, soft:STATE.dangerSoft, icon:MedalIcon },
+            MEDICO:        { label:"Médico",        color:ACCENT.violet, soft:ACCENT.violetSoft, icon:HeartPulseIcon },
             VIAJE:         { label:"Viaje",         color:"#ea580c", soft:"#ffedd5", icon:PlaneIcon },
-            CEREMONIA:     { label:"Ceremonia",     color:"#eab308", soft:"#fef9c3", icon:TrophyIcon },
-            DESCANSO:      { label:"Descanso",      color:STATE.infoText, soft:"#dbeafe", icon:BedIcon },
+            CEREMONIA:     { label:"Ceremonia",     color:"#eab308", soft:STATE.warningSoft, icon:TrophyIcon },
+            DESCANSO:      { label:"Descanso",      color:STATE.infoText, soft:STATE.infoSoft, icon:BedIcon },
           };
           const classifyEvent = (name?: string | null): CalType => {
             const t = (name || "").toLowerCase();
@@ -2135,10 +2135,10 @@ export default function UserPortalPage() {
                           <button key={i} type="button" disabled={!day}
                             onClick={() => { if(!day) return; setCalSelectedDay(isSel?null:day); setCalCursor(new Date(y,m,day)); }}
                             style={{ minHeight:64,padding:"4px",borderRadius:10,
-                              border: isSel?`2px solid ${BRAND.teal}`:isTodayCell?`1px solid ${BRAND.teal}`:"1px solid #eef2f7",
+                              border: isSel?`2px solid ${BRAND.teal}`:isTodayCell?`1px solid ${BRAND.teal}`:`1px solid ${SURFACE.borderMuted}`,
                               cursor:day?"pointer":"default",
                               background:isSel?"#f0fdfa":day?SURFACE.card:"transparent",display:"flex",flexDirection:"column",alignItems:"flex-start",gap:3 }}>
-                            <span style={{ fontSize:12,fontWeight:(isSel||isTodayCell)?800:600,color:day?(isTodayCell?"#0e9384":SURFACE.text):"transparent" }}>{day||""}</span>
+                            <span style={{ fontSize:12,fontWeight:(isSel||isTodayCell)?800:600,color:day?(isTodayCell?BRAND.tealDark:SURFACE.text):"transparent" }}>{day||""}</span>
                             <div style={{ display:"flex",flexWrap:"wrap",gap:2 }}>
                               {dayItems.slice(0,3).map(it => <span key={it.id} style={{ width:6,height:6,borderRadius:"50%",background:TYPE_CFG[it.type].color }} />)}
                               {dayItems.length>3 && <span style={{ fontSize:8,fontWeight:800,color:SURFACE.textFaint }}>+{dayItems.length-3}</span>}
@@ -2152,7 +2152,7 @@ export default function UserPortalPage() {
                       const selItems = inMonth.filter(it => it.date.getDate()===calSelectedDay).sort((a,b)=>a.date.getTime()-b.date.getTime());
                       return (
                         <div style={{ marginTop:12,borderTop:`1px solid ${SURFACE.borderMuted}`,paddingTop:10 }}>
-                          <p style={{ fontSize:11,fontWeight:800,letterSpacing:"0.1em",textTransform:"uppercase",color:"#0e9384",margin:"0 0 8px" }}>
+                          <p style={{ fontSize:11,fontWeight:800,letterSpacing:"0.1em",textTransform:"uppercase",color:BRAND.tealDark,margin:"0 0 8px" }}>
                             {cap1(new Date(y,m,calSelectedDay).toLocaleDateString("es-CL",{weekday:"long",day:"2-digit",month:"long"}))}
                           </p>
                           {selItems.length===0 ? (
@@ -2160,7 +2160,7 @@ export default function UserPortalPage() {
                           ) : (
                             <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
                               {selItems.map(it=>{ const cfg=TYPE_CFG[it.type]; return (
-                                <div key={it.id} style={{ display:"flex",alignItems:"center",gap:8,background:SURFACE.bg,border:"1px solid #eef2f7",borderLeft:`3px solid ${cfg.color}`,borderRadius:9,padding:"7px 10px" }}>
+                                <div key={it.id} style={{ display:"flex",alignItems:"center",gap:8,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}`,borderLeft:`3px solid ${cfg.color}`,borderRadius:9,padding:"7px 10px" }}>
                                   <span style={{ fontSize:11,fontWeight:800,color:SURFACE.text,flexShrink:0,fontVariantNumeric:"tabular-nums" }}>{it.date.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})}</span>
                                   <span style={{ flex:1,minWidth:0,fontSize:11.5,fontWeight:600,color:SURFACE.textStrong,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{it.title}{it.venue?` · ${it.venue}`:""}</span>
                                   <span style={{ flexShrink:0,fontSize:10,fontWeight:800,padding:"2px 7px",borderRadius:99,background:cfg.soft,color:cfg.color }}>{cfg.label}</span>
@@ -2190,8 +2190,8 @@ export default function UserPortalPage() {
                         <div key={dayNum} style={{ display:"flex",gap:0,borderTop: di===0?"none":`1px solid ${SURFACE.borderMuted}` }}>
                           {/* Chip de fecha */}
                           <div style={{ flex:"0 0 64px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-start",padding:"14px 0",background:isToday?"#f0fdfa":SURFACE.bg,borderRight:`1px solid ${SURFACE.borderMuted}` }}>
-                            <span style={{ fontSize:10,fontWeight:800,letterSpacing:"0.08em",color:isToday?"#0e9384":SURFACE.textFaint }}>{fmtDow(dayDate)}</span>
-                            <span style={{ fontSize:22,fontWeight:800,color:isToday?"#0e9384":SURFACE.text,lineHeight:1.1 }}>{dayNum}</span>
+                            <span style={{ fontSize:10,fontWeight:800,letterSpacing:"0.08em",color:isToday?BRAND.tealDark:SURFACE.textFaint }}>{fmtDow(dayDate)}</span>
+                            <span style={{ fontSize:22,fontWeight:800,color:isToday?BRAND.tealDark:SURFACE.text,lineHeight:1.1 }}>{dayNum}</span>
                             <span style={{ fontSize:9,fontWeight:700,color:SURFACE.textFaint }}>{fmtMon(dayDate)}</span>
                           </div>
                           {/* Actividades del día */}
@@ -2268,8 +2268,8 @@ export default function UserPortalPage() {
                                   <div key={d.getDate()} style={{ display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:1,
                                     background:isToday?"rgba(33,208,179,0.14)":wknd?SURFACE.borderMuted:"transparent",
                                     borderBottom:isToday?`2px solid ${BRAND.teal}`:"none" }}>
-                                    <span style={{ fontSize:8,fontWeight:700,color:isToday?"#0e9384":SURFACE.textFaint }}>{["DO","LU","MA","MI","JU","VI","SA"][d.getDay()]}</span>
-                                    <span style={{ fontSize:12,fontWeight:800,color:isToday?"#0e9384":SURFACE.textStrong }}>{d.getDate()}</span>
+                                    <span style={{ fontSize:8,fontWeight:700,color:isToday?BRAND.tealDark:SURFACE.textFaint }}>{["DO","LU","MA","MI","JU","VI","SA"][d.getDay()]}</span>
+                                    <span style={{ fontSize:12,fontWeight:800,color:isToday?BRAND.tealDark:SURFACE.textStrong }}>{d.getDate()}</span>
                                   </div>
                                 ); })}
                               </div>
@@ -2278,10 +2278,10 @@ export default function UserPortalPage() {
                                   {gDays.map(d=>{
                                     const wknd=d.getDay()===0||d.getDay()===6;
                                     const evs=r.byDay.get(d.getDate());
-                                    if(!evs||!evs.length) return <div key={d.getDate()} style={{ height:"100%",background:wknd?"#fafbfc":"transparent" }} />;
+                                    if(!evs||!evs.length) return <div key={d.getDate()} style={{ height:"100%",background:wknd?SURFACE.bg:"transparent" }} />;
                                     const cfg=TYPE_CFG[evs[0].type];
                                     return (
-                                      <div key={d.getDate()} style={{ height:"100%",display:"flex",alignItems:"center",background:wknd?"#fafbfc":"transparent" }}>
+                                      <div key={d.getDate()} style={{ height:"100%",display:"flex",alignItems:"center",background:wknd?SURFACE.bg:"transparent" }}>
                                         <button type="button"
                                           onClick={()=>{ setCalCursor(new Date(d)); setCalMonthCursor(new Date(d.getFullYear(),d.getMonth(),1)); setCalView("dia"); }}
                                           title={`${evs.length} actividad(es) · ${d.toLocaleDateString("es-CL",{day:"2-digit",month:"short"})}`}
@@ -2316,23 +2316,23 @@ export default function UserPortalPage() {
                           <span style={{
                             flexShrink:0,width:38,height:38,borderRadius:10,display:"inline-flex",flexDirection:"column",
                             alignItems:"center",justifyContent:"center",lineHeight:1.1,
-                            background:isToday?BRAND.teal:SURFACE.bg,border:isToday?"none":"1px solid #eef2f7",
+                            background:isToday?BRAND.teal:SURFACE.bg,border:isToday?"none":`1px solid ${SURFACE.borderMuted}`,
                           }}>
                             <span style={{ fontSize:8,fontWeight:800,letterSpacing:"0.08em",color:isToday?"rgba(255,255,255,0.85)":SURFACE.textFaint }}>{fmtDow(day)}</span>
                             <span style={{ fontSize:15,fontWeight:800,color:isToday?SURFACE.card:SURFACE.text }}>{day.getDate()}</span>
                           </span>
-                          <span style={{ flex:1,fontSize:12.5,fontWeight:700,color:isToday?"#0e9384":SURFACE.text }}>
+                          <span style={{ flex:1,fontSize:12.5,fontWeight:700,color:isToday?BRAND.tealDark:SURFACE.text }}>
                             {cap1(day.toLocaleDateString("es-CL",{weekday:"long"}))}
-                            {isToday && <span style={{ marginLeft:6,fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:"#0e9384",background:"rgba(33,208,179,0.14)",borderRadius:99,padding:"2px 7px" }}>HOY</span>}
+                            {isToday && <span style={{ marginLeft:6,fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:BRAND.tealDark,background:"rgba(33,208,179,0.14)",borderRadius:99,padding:"2px 7px" }}>HOY</span>}
                           </span>
                           {events.length>0
-                            ? <span style={{ fontSize:10,fontWeight:800,color:"#0e9384",background:"rgba(33,208,179,0.12)",borderRadius:20,padding:"2px 9px" }}>{events.length}</span>
+                            ? <span style={{ fontSize:10,fontWeight:800,color:BRAND.tealDark,background:"rgba(33,208,179,0.12)",borderRadius:20,padding:"2px 9px" }}>{events.length}</span>
                             : <span style={{ fontSize:10.5,fontWeight:600,color:SURFACE.borderStrong }}>Sin actividades</span>}
                         </div>
                         {events.length>0 && (
                           <div style={{ padding:"0 14px 10px 62px",display:"flex",flexDirection:"column",gap:6 }}>
                             {events.map(it=>{ const cfg=TYPE_CFG[it.type]; return (
-                              <div key={it.id} style={{ display:"flex",alignItems:"center",gap:8,background:SURFACE.bg,border:"1px solid #eef2f7",borderLeft:`3px solid ${cfg.color}`,borderRadius:9,padding:"7px 10px" }}>
+                              <div key={it.id} style={{ display:"flex",alignItems:"center",gap:8,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}`,borderLeft:`3px solid ${cfg.color}`,borderRadius:9,padding:"7px 10px" }}>
                                 <span style={{ fontSize:11,fontWeight:800,color:SURFACE.text,flexShrink:0,fontVariantNumeric:"tabular-nums" }}>{it.date.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})}</span>
                                 <span style={{ flex:1,minWidth:0,fontSize:11.5,fontWeight:600,color:SURFACE.textStrong,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{it.title}{it.subtitle?` · ${it.subtitle}`:""}</span>
                                 <span style={{ flexShrink:0,fontSize:10,fontWeight:800,padding:"2px 7px",borderRadius:99,background:cfg.soft,color:cfg.color }}>{cfg.label}</span>
@@ -2439,7 +2439,7 @@ export default function UserPortalPage() {
                   )}
                   {(calTypeFilter || calDiscFilter || calSelectedDay) && (
                     <button type="button" onClick={()=>{ setCalTypeFilter(""); setCalDiscFilter(""); setCalSelectedDay(null); }}
-                      style={{ marginTop:10,width:"100%",fontSize:11,fontWeight:700,color:STATE.dangerText,background:"#fef2f2",border:"1px solid #fecaca",borderRadius:8,padding:"6px",cursor:"pointer" }}>
+                      style={{ marginTop:10,width:"100%",fontSize:11,fontWeight:700,color:STATE.dangerText,background:STATE.dangerSoft,border:`1px solid ${STATE.dangerBorder}`,borderRadius:8,padding:"6px",cursor:"pointer" }}>
                       <XIcon size={12} className="inline mr-1" />Limpiar filtros
                     </button>
                   )}
@@ -2544,7 +2544,7 @@ export default function UserPortalPage() {
 
           const renderPremCard = (p: Premiacion) => {
             const isDone = p.status === "REALIZADA";
-            const accent = isDone ? "#2e7d32" : "#c78c00";
+            const accent = isDone ? STATE.successText : STATE.warningText;
             const cnt = (p.awarders||[]).length;
             const focused = p.id === premFocusId;
             return (
@@ -2555,8 +2555,8 @@ export default function UserPortalPage() {
                   opacity: isDone ? 0.82 : 1,transition:"box-shadow .4s,border-color .4s" }}>
                 <div style={{ display:"flex",alignItems:"flex-start",gap:10 }}>
                   <div style={{ width:38,height:38,borderRadius:11,flexShrink:0,
-                    background: isDone ? "linear-gradient(135deg,#e7f5ec 0%,#cfe9d6 100%)" : "linear-gradient(135deg,#fff4d6 0%,rgba(245,200,66,0.5) 100%)",
-                    color: isDone ? "#2e7d32" : "#a87800",
+                    background: isDone ? `linear-gradient(135deg,${STATE.successSoft} 0%,#cfe9d6 100%)` : `linear-gradient(135deg,${STATE.warningSoft} 0%,rgba(245,200,66,0.5) 100%)`,
+                    color: isDone ? STATE.successText : STATE.warningText,
                     border:`1px solid ${isDone?"#2e7d3233":"#c78c0033"}`,
                     display:"flex",alignItems:"center",justifyContent:"center",
                     boxShadow:`0 2px 8px ${isDone?"rgba(46,125,50,0.18)":"rgba(199,140,0,0.22)"}` }}>
@@ -2585,8 +2585,8 @@ export default function UserPortalPage() {
                     {p.notes && <p style={{ fontSize:11,color:SURFACE.textMuted,margin:"6px 0 0",fontStyle:"italic",lineHeight:1.4 }}>{p.notes}</p>}
                   </div>
                   <span style={{ flexShrink:0,display:"inline-flex",alignItems:"center",gap:5,fontSize:10,padding:"3px 9px",borderRadius:20,fontWeight:800,letterSpacing:"0.06em",textTransform:"uppercase",
-                    background:isDone?"#e7f5ec":"#fff4d6",
-                    color:isDone?"#1e5125":"#7a4a00",
+                    background:isDone?STATE.successSoft:STATE.warningSoft,
+                    color:isDone?"#1e5125":STATE.warningText,
                     border:`1px solid ${isDone?"#2e7d3233":"#c78c0033"}` }}>
                     <span style={{ width:5,height:5,borderRadius:"50%",background:accent,animation:isDone?"none":"pulse 1.8s infinite" }} />
                     {isDone?"Realizada":"Programada"}
@@ -2599,10 +2599,10 @@ export default function UserPortalPage() {
                       const counts: Record<string, number> = {};
                       (p.awarders||[]).forEach(a => { const r = String(a.role||"AWARDER").toUpperCase(); counts[r] = (counts[r]||0)+1; });
                       const roleMeta: Record<string,{label:string;color:string;bg:string}> = {
-                        GOLD:{label:"Oro",color:"#7a4a00",bg:"#fef3c7"},
+                        GOLD:{label:"Oro",color:STATE.warningText,bg:STATE.warningSoft},
                         SILVER:{label:"Plata",color:SURFACE.textSecondary,bg:SURFACE.borderMuted},
                         BRONZE:{label:"Bronce",color:"#7c2d12",bg:"#fed7aa"},
-                        AUTHORITY:{label:"Autoridad",color:"#1e40af",bg:"#dbeafe"},
+                        AUTHORITY:{label:"Autoridad",color:STATE.infoText,bg:STATE.infoSoft},
                         AWARDER:{label:"Entregador",color:SURFACE.textSecondary,bg:SURFACE.borderMuted},
                       };
                       return Object.entries(counts).map(([r,n]) => {
@@ -2638,12 +2638,12 @@ export default function UserPortalPage() {
                   }
                   return (
                     <div style={{ marginTop:10,paddingTop:10,borderTop:`1px dashed ${SURFACE.border}` }}>
-                      <span style={{ fontSize:10,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:"#a87800" }}>Confirma tu asistencia</span>
+                      <span style={{ fontSize:10,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:STATE.warningText }}>Confirma tu asistencia</span>
                       <div style={{ display:"flex",gap:8,marginTop:6 }}>
                         <button type="button" onClick={()=>confirmAwarder(p.id, mine.id!, "CONFIRM")}
                           style={{ flex:1,padding:"9px",borderRadius:10,border:"none",cursor:"pointer",fontSize:13,fontWeight:700,color:SURFACE.card,background:`linear-gradient(135deg,${BRAND.teal},#15B09A)` }}>Confirmar</button>
                         <button type="button" onClick={()=>confirmAwarder(p.id, mine.id!, "DECLINE")}
-                          style={{ flex:1,padding:"9px",borderRadius:10,border:"1px solid #fecaca",cursor:"pointer",fontSize:13,fontWeight:700,color:STATE.dangerText,background:"#fef2f2" }}>No puedo</button>
+                          style={{ flex:1,padding:"9px",borderRadius:10,border:`1px solid ${STATE.dangerBorder}`,cursor:"pointer",fontSize:13,fontWeight:700,color:STATE.dangerText,background:STATE.dangerSoft }}>No puedo</button>
                       </div>
                     </div>
                   );
@@ -2654,13 +2654,13 @@ export default function UserPortalPage() {
 
           return (
             <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
-              <div style={{ background:`linear-gradient(135deg,#fffbf2 0%,${SURFACE.card} 70%)`,borderRadius:14,border:"1px solid #f0deb0",padding:"14px 16px",display:"flex",alignItems:"center",gap:12 }}>
-                <div style={{ width:42,height:42,borderRadius:12,background:"linear-gradient(135deg,#d4a017 0%,#f5c842 50%,#e3a808 100%)",display:"flex",alignItems:"center",justifyContent:"center",color:SURFACE.card,flexShrink:0,boxShadow:"0 4px 12px rgba(199,140,0,0.35)" }}>
+              <div style={{ background:`linear-gradient(135deg,#fffbf2 0%,${SURFACE.card} 70%)`,borderRadius:14,border:`1px solid ${STATE.warningBorder}`,padding:"14px 16px",display:"flex",alignItems:"center",gap:12 }}>
+                <div style={{ width:42,height:42,borderRadius:12,background:`linear-gradient(135deg,${STATE.warningText} 0%,#f5c842 50%,#e3a808 100%)`,display:"flex",alignItems:"center",justifyContent:"center",color:SURFACE.card,flexShrink:0,boxShadow:"0 4px 12px rgba(199,140,0,0.35)" }}>
                   <TrophyIcon size={22} strokeWidth={2} />
                 </div>
                 <div style={{ flex:1,minWidth:0 }}>
-                  <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:"#a87800",margin:0 }}>Premiaciones</p>
-                  <p style={{ fontSize:13,color:"#7a4a00",margin:"2px 0 0",fontWeight:600 }}>{premiaciones.length} ceremonias · {totalProg} programadas · {totalReal} realizadas</p>
+                  <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:STATE.warningText,margin:0 }}>Premiaciones</p>
+                  <p style={{ fontSize:13,color:STATE.warningText,margin:"2px 0 0",fontWeight:600 }}>{premiaciones.length} ceremonias · {totalProg} programadas · {totalReal} realizadas</p>
                 </div>
               </div>
 
@@ -2680,7 +2680,7 @@ export default function UserPortalPage() {
                       <button key={opt.v} type="button" onClick={() => setPremView(opt.v)}
                         style={{ flex:1,padding:"7px 10px",borderRadius:8,border:"none",cursor:"pointer",
                           background:active ? SURFACE.card : "transparent",
-                          color:active ? "#7a4a00" : SURFACE.textMuted,
+                          color:active ? STATE.warningText : SURFACE.textMuted,
                           fontSize:12,fontWeight:700,
                           boxShadow:active ? "0 1px 3px rgba(15,23,42,0.1)" : "none",
                           display:"inline-flex",alignItems:"center",justifyContent:"center",gap:6,
@@ -2708,11 +2708,11 @@ export default function UserPortalPage() {
                     return (
                       <button key={opt.v||"all"} type="button" onClick={() => setPremStatusFilter(opt.v)}
                         style={{ padding:"6px 11px",borderRadius:20,border:active ? `1px solid ${isDone?"#2e7d32":isProg?"#c78c00":BRAND.teal}` : `1px solid ${SURFACE.border}`,
-                          background:active ? (isDone?"#e7f5ec":isProg?"#fff4d6":"rgba(33,208,179,0.12)") : SURFACE.card,
-                          color:active ? (isDone?"#1e5125":isProg?"#7a4a00":BRAND.tealInk) : SURFACE.textSecondary,
+                          background:active ? (isDone?STATE.successSoft:isProg?STATE.warningSoft:"rgba(33,208,179,0.12)") : SURFACE.card,
+                          color:active ? (isDone?"#1e5125":isProg?STATE.warningText:BRAND.tealInk) : SURFACE.textSecondary,
                           fontSize:11,fontWeight:700,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6,letterSpacing:"0.02em" }}>
                         {opt.label}
-                        <span style={{ fontSize:10,padding:"1px 6px",borderRadius:10,background:active?"rgba(255,255,255,0.6)":SURFACE.borderMuted,color:active ? (isDone?"#1e5125":isProg?"#7a4a00":BRAND.tealInk) : SURFACE.textMuted }}>{opt.count}</span>
+                        <span style={{ fontSize:10,padding:"1px 6px",borderRadius:10,background:active?"rgba(255,255,255,0.6)":SURFACE.borderMuted,color:active ? (isDone?"#1e5125":isProg?STATE.warningText:BRAND.tealInk) : SURFACE.textMuted }}>{opt.count}</span>
                       </button>
                     );
                   })}
@@ -2737,7 +2737,7 @@ export default function UserPortalPage() {
                 )}
                 {hasFilters && (
                   <button type="button" onClick={clearAll}
-                    style={{ alignSelf:"flex-start",padding:"4px 10px",borderRadius:8,border:"1px solid #fecaca",background:"#fef2f2",color:"#b91c1c",fontSize:11,fontWeight:600,cursor:"pointer" }}>
+                    style={{ alignSelf:"flex-start",padding:"4px 10px",borderRadius:8,border:`1px solid ${STATE.dangerBorder}`,background:STATE.dangerSoft,color:STATE.dangerText,fontSize:11,fontWeight:600,cursor:"pointer" }}>
                     Limpiar filtros
                   </button>
                 )}
@@ -2746,19 +2746,19 @@ export default function UserPortalPage() {
               {/* Calendar view */}
               {premView === "calendar" && (
                 <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
-                  <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #f0deb0",padding:"12px",boxShadow:"0 1px 3px rgba(199,140,0,0.06)" }}>
+                  <div style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${STATE.warningBorder}`,padding:"12px",boxShadow:"0 1px 3px rgba(199,140,0,0.06)" }}>
                     <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10 }}>
                       <button type="button" onClick={() => { setPremCalCursor(new Date(calY, calM - 1, 1)); setPremCalSelectedKey(null); }}
-                        style={{ width:30,height:30,borderRadius:8,border:"1px solid #f0deb0",background:"#fffbf2",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
-                        <ChevronLeftIcon size={14} color="#a87800" strokeWidth={2.5} />
+                        style={{ width:30,height:30,borderRadius:8,border:`1px solid ${STATE.warningBorder}`,background:"#fffbf2",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
+                        <ChevronLeftIcon size={14} color={STATE.warningText} strokeWidth={2.5} />
                       </button>
                       <div style={{ display:"flex",flexDirection:"column",alignItems:"center" }}>
-                        <span style={{ fontSize:14,fontWeight:800,color:"#7a4a00",textTransform:"capitalize",letterSpacing:"-0.01em" }}>{monthLabel}</span>
-                        <span style={{ fontSize:9,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"#c78c00",marginTop:2 }}>{itemsByDay.size} día{itemsByDay.size === 1 ? "" : "s"} con premiaciones</span>
+                        <span style={{ fontSize:14,fontWeight:800,color:STATE.warningText,textTransform:"capitalize",letterSpacing:"-0.01em" }}>{monthLabel}</span>
+                        <span style={{ fontSize:9,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:STATE.warningText,marginTop:2 }}>{itemsByDay.size} día{itemsByDay.size === 1 ? "" : "s"} con premiaciones</span>
                       </div>
                       <button type="button" onClick={() => { setPremCalCursor(new Date(calY, calM + 1, 1)); setPremCalSelectedKey(null); }}
-                        style={{ width:30,height:30,borderRadius:8,border:"1px solid #f0deb0",background:"#fffbf2",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
-                        <ChevronRightIcon size={14} color="#a87800" strokeWidth={2.5} />
+                        style={{ width:30,height:30,borderRadius:8,border:`1px solid ${STATE.warningBorder}`,background:"#fffbf2",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
+                        <ChevronRightIcon size={14} color={STATE.warningText} strokeWidth={2.5} />
                       </button>
                     </div>
                     <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:3,textAlign:"center" }}>
@@ -2774,20 +2774,20 @@ export default function UserPortalPage() {
                         const anyProg = dayItems.some(p => p.status === "PROGRAMADA");
                         return (
                           <button key={dayKey} type="button" onClick={() => setPremCalSelectedKey(isSelected ? null : dayKey)}
-                            style={{ aspectRatio:"1",borderRadius:8,border:isSelected ? "2px solid #d4a017" : isToday ? "1.5px solid #d4a017" : "1px solid transparent",
-                              background:isSelected ? "linear-gradient(135deg,#d4a017 0%,#f5c842 100%)"
-                                : hasItems ? "linear-gradient(135deg,#fff4d6 0%,#fffbf2 100%)"
+                            style={{ aspectRatio:"1",borderRadius:8,border:isSelected ? `2px solid ${STATE.warningText}` : isToday ? `1.5px solid ${STATE.warningText}` : "1px solid transparent",
+                              background:isSelected ? `linear-gradient(135deg,${STATE.warningText} 0%,#f5c842 100%)`
+                                : hasItems ? `linear-gradient(135deg,${STATE.warningSoft} 0%,#fffbf2 100%)`
                                 : SURFACE.card,
-                              color:isSelected ? SURFACE.card : isToday ? "#7a4a00" : hasItems ? SURFACE.text : SURFACE.text,
+                              color:isSelected ? SURFACE.card : isToday ? STATE.warningText : hasItems ? SURFACE.text : SURFACE.text,
                               fontSize:12,fontWeight:isSelected||isToday?800:hasItems?700:500,cursor:"pointer",position:"relative",
                               boxShadow:isSelected ? "0 3px 8px rgba(199,140,0,0.35)" : hasItems ? "0 1px 2px rgba(199,140,0,0.1)" : "none",
                               transition:"all .15s",padding:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2 }}>
                             <span>{dn}</span>
                             {hasItems && !isSelected && (
                               <div style={{ display:"flex",gap:2,alignItems:"center" }}>
-                                {anyProg && <span style={{ width:4,height:4,borderRadius:"50%",background:"#c78c00" }} />}
-                                {anyDone && <span style={{ width:4,height:4,borderRadius:"50%",background:"#2e7d32" }} />}
-                                {dayItems.length > 2 && <span style={{ fontSize:8,fontWeight:800,color:"#c78c00",marginLeft:1 }}>+{dayItems.length-2}</span>}
+                                {anyProg && <span style={{ width:4,height:4,borderRadius:"50%",background:STATE.warningText }} />}
+                                {anyDone && <span style={{ width:4,height:4,borderRadius:"50%",background:STATE.successText }} />}
+                                {dayItems.length > 2 && <span style={{ fontSize:8,fontWeight:800,color:STATE.warningText,marginLeft:1 }}>+{dayItems.length-2}</span>}
                               </div>
                             )}
                             {isSelected && hasItems && (
@@ -2798,16 +2798,16 @@ export default function UserPortalPage() {
                       })}
                     </div>
                     {/* Legend */}
-                    <div style={{ display:"flex",alignItems:"center",gap:14,marginTop:10,paddingTop:10,borderTop:"1px dashed #f0deb0",justifyContent:"center" }}>
-                      <span style={{ display:"inline-flex",alignItems:"center",gap:5,fontSize:11,color:"#7a4a00",fontWeight:600 }}>
-                        <span style={{ width:6,height:6,borderRadius:"50%",background:"#c78c00" }} />Programada
+                    <div style={{ display:"flex",alignItems:"center",gap:14,marginTop:10,paddingTop:10,borderTop:`1px dashed ${STATE.warningBorder}`,justifyContent:"center" }}>
+                      <span style={{ display:"inline-flex",alignItems:"center",gap:5,fontSize:11,color:STATE.warningText,fontWeight:600 }}>
+                        <span style={{ width:6,height:6,borderRadius:"50%",background:STATE.warningText }} />Programada
                       </span>
                       <span style={{ display:"inline-flex",alignItems:"center",gap:5,fontSize:11,color:"#1e5125",fontWeight:600 }}>
-                        <span style={{ width:6,height:6,borderRadius:"50%",background:"#2e7d32" }} />Realizada
+                        <span style={{ width:6,height:6,borderRadius:"50%",background:STATE.successText }} />Realizada
                       </span>
                       {todayNum && (
-                        <span style={{ display:"inline-flex",alignItems:"center",gap:5,fontSize:11,color:"#7a4a00",fontWeight:600 }}>
-                          <span style={{ width:8,height:8,borderRadius:4,border:"1.5px solid #d4a017",background:SURFACE.card }} />Hoy
+                        <span style={{ display:"inline-flex",alignItems:"center",gap:5,fontSize:11,color:STATE.warningText,fontWeight:600 }}>
+                          <span style={{ width:8,height:8,borderRadius:4,border:`1.5px solid ${STATE.warningText}`,background:SURFACE.card }} />Hoy
                         </span>
                       )}
                     </div>
@@ -2817,10 +2817,10 @@ export default function UserPortalPage() {
                   {selectedDayNum ? (
                     selectedItems.length > 0 ? (
                       <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
-                        <div style={{ padding:"6px 10px",borderRadius:10,background:"linear-gradient(135deg,#fff4d6 0%,#fffbf2 100%)",display:"flex",alignItems:"center",gap:8,border:"1px solid #f0deb0" }}>
-                          <div style={{ width:6,height:6,borderRadius:"50%",background:"#d4a017",boxShadow:"0 0 6px #d4a017" }} />
-                          <p style={{ fontSize:11,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",color:"#7a4a00",margin:0 }}>{fmtDateLong(premCalSelectedKey!)}</p>
-                          <span style={{ marginLeft:"auto",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:SURFACE.card,color:"#a87800",border:"1px solid #f0deb0" }}>{selectedItems.length}</span>
+                        <div style={{ padding:"6px 10px",borderRadius:10,background:`linear-gradient(135deg,${STATE.warningSoft} 0%,#fffbf2 100%)`,display:"flex",alignItems:"center",gap:8,border:`1px solid ${STATE.warningBorder}` }}>
+                          <div style={{ width:6,height:6,borderRadius:"50%",background:STATE.warningText,boxShadow:`0 0 6px ${STATE.warningText}` }} />
+                          <p style={{ fontSize:11,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",color:STATE.warningText,margin:0 }}>{fmtDateLong(premCalSelectedKey!)}</p>
+                          <span style={{ marginLeft:"auto",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:SURFACE.card,color:STATE.warningText,border:`1px solid ${STATE.warningBorder}` }}>{selectedItems.length}</span>
                         </div>
                         {selectedItems.map(p => renderPremCard(p))}
                       </div>
@@ -2850,21 +2850,21 @@ export default function UserPortalPage() {
                   <div style={{ display:"flex",flexDirection:"column",gap:14 }}>
                     {pendingDays.length > 0 && (
                       <button type="button" onClick={() => setPremPendingOpen(v => !v)}
-                        style={{ display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:12,background:"linear-gradient(135deg,#fff4d6 0%,#fffbeb 100%)",border:"1px solid #f2d98a",cursor:"pointer",width:"100%",textAlign:"left" }}>
+                        style={{ display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:12,background:`linear-gradient(135deg,${STATE.warningSoft} 0%,${STATE.warningSoft} 100%)`,border:"1px solid #f2d98a",cursor:"pointer",width:"100%",textAlign:"left" }}>
                         <span style={{ width:8,height:8,borderRadius:"50%",background:"#e3a808",boxShadow:"0 0 8px #e3a808",flexShrink:0 }} />
-                        <p style={{ fontSize:11.5,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:"#7a4a00",margin:0 }}>Por realizar</p>
-                        <span style={{ marginLeft:"auto",fontSize:10,fontWeight:800,padding:"2px 9px",borderRadius:99,background:SURFACE.card,color:"#a87800",border:"1px solid #f0deb0" }}>
+                        <p style={{ fontSize:11.5,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:STATE.warningText,margin:0 }}>Por realizar</p>
+                        <span style={{ marginLeft:"auto",fontSize:10,fontWeight:800,padding:"2px 9px",borderRadius:99,background:SURFACE.card,color:STATE.warningText,border:`1px solid ${STATE.warningBorder}` }}>
                           {pendingDays.reduce((s,[,items]) => s + items.length, 0)}
                         </span>
-                        <ChevronDownIcon size={14} color="#a87800" strokeWidth={2.5} style={{ flexShrink:0,transform:premPendingOpen?"rotate(180deg)":"none",transition:"transform .2s" }} />
+                        <ChevronDownIcon size={14} color={STATE.warningText} strokeWidth={2.5} style={{ flexShrink:0,transform:premPendingOpen?"rotate(180deg)":"none",transition:"transform .2s" }} />
                       </button>
                     )}
                     {premPendingOpen && pendingDays.map(([day, items]) => (
                       <div key={day} style={{ display:"flex",flexDirection:"column",gap:6 }}>
-                        <div style={{ position:"sticky",top:0,zIndex:2,background:"linear-gradient(180deg,#fffbeb 0%,rgba(255,251,235,0.92) 100%)",backdropFilter:"blur(6px)",padding:"6px 10px",borderRadius:10,display:"flex",alignItems:"center",gap:8,border:"1px solid #f2d98a" }}>
-                          <div style={{ width:6,height:6,borderRadius:"50%",background:"#d4a017",boxShadow:"0 0 6px #d4a017" }} />
-                          <p style={{ fontSize:11,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",color:"#7a4a00",margin:0 }}>{fmtDateLong(day)}</p>
-                          <span style={{ marginLeft:"auto",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:SURFACE.card,color:"#a87800",border:"1px solid #f0deb0" }}>{items.length}</span>
+                        <div style={{ position:"sticky",top:0,zIndex:2,background:`linear-gradient(180deg,${STATE.warningSoft} 0%,rgba(255,251,235,0.92) 100%)`,backdropFilter:"blur(6px)",padding:"6px 10px",borderRadius:10,display:"flex",alignItems:"center",gap:8,border:"1px solid #f2d98a" }}>
+                          <div style={{ width:6,height:6,borderRadius:"50%",background:STATE.warningText,boxShadow:`0 0 6px ${STATE.warningText}` }} />
+                          <p style={{ fontSize:11,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",color:STATE.warningText,margin:0 }}>{fmtDateLong(day)}</p>
+                          <span style={{ marginLeft:"auto",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:SURFACE.card,color:STATE.warningText,border:`1px solid ${STATE.warningBorder}` }}>{items.length}</span>
                         </div>
                         {items.map(p => renderPremCard(p))}
                       </div>
@@ -2872,7 +2872,7 @@ export default function UserPortalPage() {
                     {doneDays.length > 0 && (
                       <button type="button" onClick={() => setPremDoneOpen(v => !v)}
                         style={{ display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:12,background:SURFACE.borderMuted,border:`1px solid ${SURFACE.border}`,marginTop: pendingDays.length > 0 ? 6 : 0,cursor:"pointer",width:"100%",textAlign:"left" }}>
-                        <span style={{ width:8,height:8,borderRadius:"50%",background:"#2e7d32",flexShrink:0 }} />
+                        <span style={{ width:8,height:8,borderRadius:"50%",background:STATE.successText,flexShrink:0 }} />
                         <p style={{ fontSize:11.5,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:SURFACE.textMuted,margin:0 }}>Realizadas</p>
                         <span style={{ marginLeft:"auto",fontSize:10,fontWeight:800,padding:"2px 9px",borderRadius:99,background:SURFACE.card,color:SURFACE.textMuted,border:`1px solid ${SURFACE.border}` }}>
                           {doneDays.reduce((s,[,items]) => s + items.length, 0)}
@@ -3011,8 +3011,8 @@ export default function UserPortalPage() {
               const mealOrder = ["DESAYUNO", "ALMUERZO", "CENA", "ONCE"];
               const sorted = todayMenus.sort((a, b) => mealOrder.indexOf(a.mealType) - mealOrder.indexOf(b.mealType));
               const mealStyle = (type: string) => {
-                if (type === "DESAYUNO") return { bg: "#FEF3C7", color: "#92400E", border: "#FDE68A", icon: SunIcon, label: "Desayuno" };
-                if (type === "ALMUERZO") return { bg: "#DBEAFE", color: "#1E40AF", border: "#BFDBFE", icon: UtensilsIcon, label: "Almuerzo" };
+                if (type === "DESAYUNO") return { bg: STATE.warningSoft, color: STATE.warningText, border: STATE.warningBorder, icon: SunIcon, label: "Desayuno" };
+                if (type === "ALMUERZO") return { bg: STATE.infoSoft, color: STATE.infoText, border: STATE.infoBorder, icon: UtensilsIcon, label: "Almuerzo" };
                 if (type === "CENA") return { bg: "#E0E7FF", color: "#3730A3", border: "#C7D2FE", icon: MoonIcon, label: "Cena" };
                 return { bg: SURFACE.borderMuted, color: SURFACE.textSecondary, border: SURFACE.border, icon: UtensilsCrossedIcon, label: type };
               };
@@ -3040,7 +3040,7 @@ export default function UserPortalPage() {
                           <div style={{ display:"flex",alignItems:"center",gap:6,flexWrap:"wrap" }}>
                             <span style={{ fontSize:10,fontWeight:800,padding:"2px 8px",borderRadius:6,textTransform:"uppercase",letterSpacing:"0.05em",background:m.bg,color:m.color }}>{m.label}</span>
                             {fm.dietaryType && fm.dietaryType !== "ESTANDAR" && (
-                              <span style={{ fontSize:10,fontWeight:700,padding:"2px 7px",borderRadius:6,background:"#f0fdf4",color:"#166534",border:"1px solid #bbf7d0" }}>{fm.dietaryType}</span>
+                              <span style={{ fontSize:10,fontWeight:700,padding:"2px 7px",borderRadius:6,background:STATE.successSoft,color:STATE.successText,border:`1px solid ${STATE.successBorder}` }}>{fm.dietaryType}</span>
                             )}
                           </div>
                           <p style={{ fontSize:15,fontWeight:700,color:SURFACE.text,margin:"5px 0 0" }}>{fm.title}</p>
@@ -3071,8 +3071,8 @@ export default function UserPortalPage() {
               const mealOrder = ["DESAYUNO", "ALMUERZO", "CENA", "ONCE"];
               const sorted = tomorrowMenus.sort((a, b) => mealOrder.indexOf(a.mealType) - mealOrder.indexOf(b.mealType));
               const mealStyle = (type: string) => {
-                if (type === "DESAYUNO") return { bg: "#FEF3C7", color: "#92400E", border: "#FDE68A", icon: SunIcon, label: "Desayuno" };
-                if (type === "ALMUERZO") return { bg: "#DBEAFE", color: "#1E40AF", border: "#BFDBFE", icon: UtensilsIcon, label: "Almuerzo" };
+                if (type === "DESAYUNO") return { bg: STATE.warningSoft, color: STATE.warningText, border: STATE.warningBorder, icon: SunIcon, label: "Desayuno" };
+                if (type === "ALMUERZO") return { bg: STATE.infoSoft, color: STATE.infoText, border: STATE.infoBorder, icon: UtensilsIcon, label: "Almuerzo" };
                 if (type === "CENA") return { bg: "#E0E7FF", color: "#3730A3", border: "#C7D2FE", icon: MoonIcon, label: "Cena" };
                 return { bg: SURFACE.borderMuted, color: SURFACE.textSecondary, border: SURFACE.border, icon: UtensilsCrossedIcon, label: type };
               };
@@ -3208,10 +3208,10 @@ export default function UserPortalPage() {
                         <div style={{ display:"flex",gap:4,flexWrap:"wrap",marginTop:3 }}>
                           {m.userType && <span style={{ fontSize:10,fontWeight:600,padding:"1px 6px",borderRadius:4,background:SURFACE.borderMuted,color:SURFACE.textMuted }}>{m.userType}</span>}
                           {discLabel && <span style={{ fontSize:10,fontWeight:600,padding:"1px 6px",borderRadius:4,background:"rgba(33,208,179,0.1)",color:BRAND.tealInk }}>{discLabel}</span>}
-                          {m.countryCode && <span style={{ fontSize:10,fontWeight:600,padding:"1px 6px",borderRadius:4,background:"rgba(99,102,241,0.08)",color:"#6366f1" }}>{m.countryCode}</span>}
+                          {m.countryCode && <span style={{ fontSize:10,fontWeight:600,padding:"1px 6px",borderRadius:4,background:"rgba(99,102,241,0.08)",color:ACCENT.indigo }}>{m.countryCode}</span>}
                           {accLabel && <span style={{ fontSize:10,fontWeight:600,padding:"1px 6px",borderRadius:4,
-                            background: accLabel === "Acreditado" ? "rgba(16,185,129,0.1)" : accLabel === "Acreditación rechazada" ? "rgba(239,68,68,0.1)" : "#FEF3C7",
-                            color: accLabel === "Acreditado" ? STATE.successText : accLabel === "Acreditación rechazada" ? STATE.dangerText : "#92400E" }}>{accLabel}</span>}
+                            background: accLabel === "Acreditado" ? "rgba(16,185,129,0.1)" : accLabel === "Acreditación rechazada" ? "rgba(239,68,68,0.1)" : STATE.warningSoft,
+                            color: accLabel === "Acreditado" ? STATE.successText : accLabel === "Acreditación rechazada" ? STATE.dangerText : STATE.warningText }}>{accLabel}</span>}
                         </div>
                         <div style={{ display:"flex",flexDirection:"column",gap:2,marginTop:6 }}>
                           {m.email && <p style={{ fontSize:11,color:SURFACE.textMuted,margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}><MailIcon size={11} className="inline mr-1" />{m.email}</p>}
@@ -3270,7 +3270,7 @@ export default function UserPortalPage() {
             </div>
 
             {couponError && (
-              <div style={{ borderRadius:14, padding:"10px 14px", background:"#fde2e2", border:"1px solid #fca5a5", color:"#7a1313", fontSize:13 }}>
+              <div style={{ borderRadius:14, padding:"10px 14px", background:STATE.dangerSoft, border:`1px solid ${STATE.dangerBorder}`, color:"#7a1313", fontSize:13 }}>
                 {couponError}
               </div>
             )}
@@ -3420,7 +3420,7 @@ export default function UserPortalPage() {
                               {coupon ? couponDiscountDisplay(coupon) : "—"}
                             </p>
                             {c.status === "CLAIMED" && (
-                              <p style={{ fontSize:10.5, fontWeight:600, color:"#c78c00", margin:"2px 0 0" }}>
+                              <p style={{ fontSize:10.5, fontWeight:600, color:STATE.warningText, margin:"2px 0 0" }}>
                                 Expira en {couponTimeLeft(c.expiresAt)}
                               </p>
                             )}
@@ -3432,7 +3432,7 @@ export default function UserPortalPage() {
                           </div>
                         </div>
                         {c.status === "CLAIMED" && (
-                          <p style={{ fontSize:11, fontWeight:600, color:"#1f4e8c", margin:"8px 0 0" }}>Toca para mostrar el QR</p>
+                          <p style={{ fontSize:11, fontWeight:600, color:STATE.infoText, margin:"8px 0 0" }}>Toca para mostrar el QR</p>
                         )}
                       </button>
                     </article>
@@ -3539,7 +3539,7 @@ export default function UserPortalPage() {
               style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:8,padding:14,borderRadius:12,background:SURFACE.card,border:`1px solid ${SURFACE.border}`,color:SURFACE.text,fontSize:13,fontWeight:700,textDecoration:"none" }}>
               <ActivityIcon size={16} color={BRAND.teal} strokeWidth={2} />
               Ficha de salud
-              {healthRecord ? <span style={{ fontSize:10,padding:"2px 8px",borderRadius:6,background:"rgba(33,208,179,0.1)",color:BRAND.tealInk }}>Completada</span> : <span style={{ fontSize:10,padding:"2px 8px",borderRadius:6,background:"#FEF3C7",color:"#92400E" }}>Pendiente</span>}
+              {healthRecord ? <span style={{ fontSize:10,padding:"2px 8px",borderRadius:6,background:"rgba(33,208,179,0.1)",color:BRAND.tealInk }}>Completada</span> : <span style={{ fontSize:10,padding:"2px 8px",borderRadius:6,background:STATE.warningSoft,color:STATE.warningText }}>Pendiente</span>}
             </a>
             {/* Números de emergencia */}
             <EmergencyNumbersSection />
@@ -3695,11 +3695,11 @@ export default function UserPortalPage() {
             </div>
             {trip ? (() => {
               const tripStatusColors: Record<string, { bg: string; color: string; label: string }> = {
-                REQUESTED:  { bg:"rgba(251,191,36,0.12)",  color:"#d97706", label:"Solicitado" },
-                SCHEDULED:  { bg:"rgba(33,208,179,0.12)",  color:"#0f9e87", label:"Programado" },
+                REQUESTED:  { bg:"rgba(251,191,36,0.12)",  color:STATE.warningText, label:"Solicitado" },
+                SCHEDULED:  { bg:"rgba(33,208,179,0.12)",  color:BRAND.tealDark, label:"Programado" },
                 EN_ROUTE:   { bg:"rgba(59,130,246,0.12)",  color:STATE.infoText, label:"En ruta" },
-                PICKED_UP:  { bg:"rgba(139,92,246,0.12)",  color:"#7c3aed", label:"En curso" },
-                DROPPED_OFF:{ bg:"rgba(33,208,179,0.12)",  color:"#0f9e87", label:"Llegado al destino" },
+                PICKED_UP:  { bg:"rgba(139,92,246,0.12)",  color:ACCENT.violet, label:"En curso" },
+                DROPPED_OFF:{ bg:"rgba(33,208,179,0.12)",  color:BRAND.tealDark, label:"Llegado al destino" },
                 COMPLETED:  { bg:"rgba(100,116,139,0.1)",  color:SURFACE.textSecondary, label:"Completado" },
               };
               const statusInfo = trip.status ? (tripStatusColors[trip.status] ?? { bg:"rgba(100,116,139,0.1)", color:SURFACE.textMuted, label: trip.status }) : null;
@@ -3860,7 +3860,7 @@ export default function UserPortalPage() {
         </div>
 
         {error && (
-          <div style={{ color:STATE.dangerText,fontSize:"13px",textAlign:"center",background:"#fef2f2",border:"1px solid #fecaca",borderRadius:"14px",padding:"12px 20px",marginBottom:"16px" }}>{error}</div>
+          <div style={{ color:STATE.dangerText,fontSize:"13px",textAlign:"center",background:STATE.dangerSoft,border:`1px solid ${STATE.dangerBorder}`,borderRadius:"14px",padding:"12px 20px",marginBottom:"16px" }}>{error}</div>
         )}
 
         {/* ── Sports Calendar ── */}
@@ -3971,11 +3971,11 @@ export default function UserPortalPage() {
                 {/* Status */}
                 {(() => {
                   const tripStatusColors: Record<string, { bg: string; color: string; label: string }> = {
-                    REQUESTED:  { bg:"rgba(251,191,36,0.12)",  color:"#d97706", label:"Solicitado" },
-                    SCHEDULED:  { bg:"rgba(33,208,179,0.12)",  color:"#0f9e87", label:"Programado" },
+                    REQUESTED:  { bg:"rgba(251,191,36,0.12)",  color:STATE.warningText, label:"Solicitado" },
+                    SCHEDULED:  { bg:"rgba(33,208,179,0.12)",  color:BRAND.tealDark, label:"Programado" },
                     EN_ROUTE:   { bg:"rgba(59,130,246,0.12)",  color:STATE.infoText, label:"En ruta" },
-                    PICKED_UP:  { bg:"rgba(139,92,246,0.12)",  color:"#7c3aed", label:"En curso" },
-                    DROPPED_OFF:{ bg:"rgba(33,208,179,0.12)",  color:"#0f9e87", label:"Llegado al destino" },
+                    PICKED_UP:  { bg:"rgba(139,92,246,0.12)",  color:ACCENT.violet, label:"En curso" },
+                    DROPPED_OFF:{ bg:"rgba(33,208,179,0.12)",  color:BRAND.tealDark, label:"Llegado al destino" },
                     COMPLETED:  { bg:"rgba(100,116,139,0.1)",  color:SURFACE.textSecondary, label:"Completado" },
                   };
                   const s = trip.status ? (tripStatusColors[trip.status] ?? { bg:"rgba(100,116,139,0.1)", color:SURFACE.textMuted, label: trip.status }) : null;
@@ -4063,7 +4063,7 @@ export default function UserPortalPage() {
               />
               {/* Submit */}
               <button type="button" onClick={submitRating} disabled={ratingStars === 0 || ratingLoading}
-                style={{ width:"100%",padding:16,borderRadius:14,border:"none",background: ratingStars > 0 ? `linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})` : SURFACE.border,color: ratingStars > 0 ? "#0d1b3e" : SURFACE.textFaint,fontSize:16,fontWeight:700,cursor: ratingStars > 0 ? "pointer" : "not-allowed",opacity: ratingLoading ? 0.7 : 1 }}>
+                style={{ width:"100%",padding:16,borderRadius:14,border:"none",background: ratingStars > 0 ? `linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})` : SURFACE.border,color: ratingStars > 0 ? SURFACE.text : SURFACE.textFaint,fontSize:16,fontWeight:700,cursor: ratingStars > 0 ? "pointer" : "not-allowed",opacity: ratingLoading ? 0.7 : 1 }}>
                 {ratingLoading ? "Enviando..." : "Enviar evaluación"}
               </button>
               <button type="button" onClick={() => { setShowRating(false); setRatingStars(0); setRatingComment(""); }}
@@ -4108,11 +4108,11 @@ export default function UserPortalPage() {
                 </div>
                 <div style={{ textAlign:"center" }}>
                   <p style={{ fontSize:11, textTransform:"uppercase", letterSpacing:"0.1em", color:SURFACE.textMuted, margin:"0 0 4px" }}>Código de respaldo</p>
-                  <p style={{ fontSize:22, fontFamily:"ui-monospace, SFMono-Regular, monospace", fontWeight:800, letterSpacing:"0.1em", color:"#1f4e8c", margin:0 }}>{activeClaim.uniqueCode}</p>
+                  <p style={{ fontSize:22, fontFamily:"ui-monospace, SFMono-Regular, monospace", fontWeight:800, letterSpacing:"0.1em", color:STATE.infoText, margin:0 }}>{activeClaim.uniqueCode}</p>
                   <p style={{ fontSize:11, color:SURFACE.textFaint, margin:"4px 0 0" }}>Si el QR no escanea, dictá este código al comercio.</p>
                 </div>
-                <div style={{ padding:12, borderRadius:12, background:"linear-gradient(135deg,#fff8e1 0%,#fff4d6 100%)" }}>
-                  <p style={{ fontSize:12, fontWeight:700, color:"#c78c00", margin:"0 0 4px" }}>Cómo canjearlo</p>
+                <div style={{ padding:12, borderRadius:12, background:`linear-gradient(135deg,#fff8e1 0%,${STATE.warningSoft} 100%)` }}>
+                  <p style={{ fontSize:12, fontWeight:700, color:STATE.warningText, margin:"0 0 4px" }}>Cómo canjearlo</p>
                   <ol style={{ fontSize:12, color:"#7a5800", margin:0, paddingLeft:18, lineHeight:1.5 }}>
                     <li>Ve al local del comercio.</li>
                     <li>Muestra esta pantalla con el QR.</li>

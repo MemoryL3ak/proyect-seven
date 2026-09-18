@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
-import { SURFACE } from "@/lib/design";
+import { SURFACE, STATE } from "@/lib/design";
 import { downloadCSV } from "@/lib/export";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiCard from "@/components/ui/KpiCard";
@@ -136,7 +136,7 @@ export default function SofiaActionsPage() {
       {error && (
         <section
           className="surface rounded-2xl p-4"
-          style={{ borderLeft: "4px solid #b3231b", backgroundColor: "#fde2e2" }}
+          style={{ borderLeft: `4px solid ${STATE.dangerText}`, backgroundColor: STATE.dangerSoft }}
         >
           <p className="text-sm" style={{ color: "#7a1313" }}>{error}</p>
           <p className="text-xs mt-1" style={{ color: "#7a1313", opacity: 0.8 }}>
@@ -159,7 +159,7 @@ export default function SofiaActionsPage() {
         <div className="surface rounded-2xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
-              <thead style={{ backgroundColor: "#1f4e8c", color: SURFACE.card }}>
+              <thead style={{ backgroundColor: STATE.infoText, color: SURFACE.card }}>
                 <tr>
                   <th className="p-3 text-left">Acción</th>
                   <th className="p-3 text-left">Detalle</th>
@@ -182,8 +182,8 @@ export default function SofiaActionsPage() {
                           className="text-[10px] px-2 py-0.5 rounded-full font-medium"
                           style={
                             e.status === "success"
-                              ? { backgroundColor: "#e7f5ec", color: "#2e7d32" }
-                              : { backgroundColor: "#fde2e2", color: "#b3231b" }
+                              ? { backgroundColor: STATE.successSoft, color: STATE.successText }
+                              : { backgroundColor: STATE.dangerSoft, color: STATE.dangerText }
                           }
                         >
                           {e.status === "success" ? "Ejecutada" : "Error"}
@@ -191,7 +191,7 @@ export default function SofiaActionsPage() {
                         {e.undone && (
                           <span
                             className="text-[10px] px-2 py-0.5 rounded-full font-medium"
-                            style={{ backgroundColor: "#fff4d6", color: "#c78c00" }}
+                            style={{ backgroundColor: STATE.warningSoft, color: STATE.warningText }}
                           >
                             Deshecha
                           </span>

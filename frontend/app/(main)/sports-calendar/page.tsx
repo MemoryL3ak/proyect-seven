@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
-import { BRAND, STATE, SURFACE } from "@/lib/design";
+import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import StyledSelect from "@/components/StyledSelect";
@@ -123,10 +123,10 @@ function scheduleTypeBadgeClass(value?: string | null) {
 // Paleta dinámica por tipo de actividad — gradientes, color de acento y texto
 type ScheduleTheme = { bg: string; fg: string; ring: string; soft: string };
 const SCHEDULE_TYPE_THEME: Record<string, ScheduleTheme> = {
-  ARRIVAL: { bg: "linear-gradient(135deg,#dbeafe,#bfdbfe)", fg: "#1e3a8a", ring: STATE.infoText, soft: "rgba(37,99,235,0.12)" },
-  TRAINING: { bg: "linear-gradient(135deg,#fef3c7,#fde68a)", fg: "#78350f", ring: "#d97706", soft: "rgba(217,119,6,0.12)" },
+  ARRIVAL: { bg: `linear-gradient(135deg,${STATE.infoSoft},${STATE.infoBorder})`, fg: "#1e3a8a", ring: STATE.infoText, soft: "rgba(37,99,235,0.12)" },
+  TRAINING: { bg: `linear-gradient(135deg,${STATE.warningSoft},${STATE.warningBorder})`, fg: STATE.warningText, ring: STATE.warningText, soft: "rgba(217,119,6,0.12)" },
   COMPETITION: { bg: "linear-gradient(135deg,#d1fae5,#a7f3d0)", fg: "#064e3b", ring: STATE.successText, soft: "rgba(5,150,105,0.12)" },
-  DEPARTURE: { bg: "linear-gradient(135deg,#fee2e2,#fecaca)", fg: "#7f1d1d", ring: STATE.dangerText, soft: "rgba(220,38,38,0.12)" },
+  DEPARTURE: { bg: `linear-gradient(135deg,${STATE.dangerSoft},${STATE.dangerBorder})`, fg: "#7f1d1d", ring: STATE.dangerText, soft: "rgba(220,38,38,0.12)" },
 };
 const SCHEDULE_THEME_FALLBACK: ScheduleTheme = {
   bg: `linear-gradient(135deg,${SURFACE.borderMuted},${SURFACE.border})`,
@@ -970,7 +970,7 @@ export default function SportsCalendarPage() {
   const scheduleTypeChips: Array<{ value: "" | ScheduleType; label: string; color: string; bg: string }> = [
     { value: "", label: "Todos", color: BRAND.teal, bg: "rgba(33,208,179,0.10)" },
     { value: "ARRIVAL", label: "Llegadas", color: BRAND.blue, bg: "rgba(31,205,255,0.10)" },
-    { value: "TRAINING", label: "Entrenamientos", color: "#d97706", bg: "rgba(245,158,11,0.12)" },
+    { value: "TRAINING", label: "Entrenamientos", color: STATE.warningText, bg: "rgba(245,158,11,0.12)" },
     { value: "COMPETITION", label: "Pruebas", color: STATE.successText, bg: "rgba(16,185,129,0.12)" },
     { value: "DEPARTURE", label: "Retiros", color: STATE.dangerText, bg: "rgba(220,38,38,0.10)" },
   ];
@@ -1060,7 +1060,7 @@ export default function SportsCalendarPage() {
                 setStatusFilter("ALL");
               }}
               className="btn btn-ghost text-xs"
-              style={{ color: "#b91c1c", borderColor: "#fecaca", background: "#fef2f2" }}>
+              style={{ color: STATE.dangerText, borderColor: STATE.dangerBorder, background: STATE.dangerSoft }}>
               <XIcon size={12} className="inline mr-1" />{t("Limpiar")}
             </button>
           )}
@@ -1178,7 +1178,7 @@ export default function SportsCalendarPage() {
                     {row.trainingDates.length ? (
                       <div className="flex flex-wrap gap-1">
                         {row.trainingDates.map((value) => (
-                          <span key={value} style={{ display: "inline-flex", borderRadius: "99px", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.2)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: "#d97706" }}>
+                          <span key={value} style={{ display: "inline-flex", borderRadius: "99px", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.2)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: STATE.warningText }}>
                             {formatDateShort(value)}
                           </span>
                         ))}
@@ -1255,7 +1255,7 @@ export default function SportsCalendarPage() {
                       borderRadius: 14,
                       padding: 10,
                       textAlign: "left",
-                      background: isSelected ? "linear-gradient(160deg,#eff6ff,#dbeafe)" : isToday ? `linear-gradient(160deg,#f0fdfa,${SURFACE.card})` : SURFACE.card,
+                      background: isSelected ? `linear-gradient(160deg,${STATE.infoSoft},${STATE.infoSoft})` : isToday ? `linear-gradient(160deg,#f0fdfa,${SURFACE.card})` : SURFACE.card,
                       border: isSelected ? "2px solid #1e4ed8" : isToday ? `2px solid ${BRAND.teal}` : `1px solid ${SURFACE.border}`,
                       cursor: "pointer",
                       boxShadow: "0 1px 4px rgba(15,23,42,0.06)",
@@ -1380,7 +1380,7 @@ export default function SportsCalendarPage() {
                       : isPast
                         ? "#eef2f8"
                         : isSelected
-                          ? "linear-gradient(160deg,#eff6ff,#dbeafe)"
+                          ? `linear-gradient(160deg,${STATE.infoSoft},${STATE.infoSoft})`
                           : isToday
                             ? `linear-gradient(160deg,#f0fdfa,${SURFACE.card})`
                             : SURFACE.card,
@@ -1446,9 +1446,9 @@ export default function SportsCalendarPage() {
           {view === "timeline" && (() => {
             type TLCat = "TRAINING" | "CLASIFICATORIA" | "FINAL" | "CEREMONY" | "OTHER";
             const TL_CAT_META: Record<TLCat, { label: string; bar: string; border: string; text: string; dot: string }> = {
-              CLASIFICATORIA: { label: "Clasificatorias", bar: "#dbeafe", border: STATE.info, text: "#1e3a8a", dot: STATE.info },
-              FINAL: { label: "Finales", bar: "#dcfce7", border: "#22c55e", text: "#14532d", dot: "#22c55e" },
-              TRAINING: { label: "Entrenamientos", bar: "#fef3c7", border: STATE.warning, text: "#78350f", dot: STATE.warning },
+              CLASIFICATORIA: { label: "Clasificatorias", bar: STATE.infoSoft, border: STATE.info, text: "#1e3a8a", dot: STATE.info },
+              FINAL: { label: "Finales", bar: STATE.successSoft, border: STATE.success, text: "#14532d", dot: STATE.success },
+              TRAINING: { label: "Entrenamientos", bar: STATE.warningSoft, border: STATE.warning, text: STATE.warningText, dot: STATE.warning },
               CEREMONY: { label: "Ceremonias", bar: "#f3e8ff", border: "#a855f7", text: "#581c87", dot: "#a855f7" },
               OTHER: { label: "Otros", bar: "#e5e7eb", border: "#9ca3af", text: "#374151", dot: "#9ca3af" },
             };
@@ -1555,7 +1555,7 @@ export default function SportsCalendarPage() {
                         {t("Disciplina")}
                       </div>
                       {rows.map((r, i) => (
-                        <div key={r.sport} style={{ height: rowHeight(r.lanes), display: "flex", alignItems: "center", padding: "0 14px", borderBottom: i < rows.length - 1 ? `1px solid ${SURFACE.borderMuted}` : "none", background: i % 2 === 0 ? SURFACE.card : "#fafbfc" }}>
+                        <div key={r.sport} style={{ height: rowHeight(r.lanes), display: "flex", alignItems: "center", padding: "0 14px", borderBottom: i < rows.length - 1 ? `1px solid ${SURFACE.borderMuted}` : "none", background: i % 2 === 0 ? SURFACE.card : SURFACE.bg }}>
                           <span style={{ fontSize: 13, fontWeight: 700, color: SURFACE.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.sport}</span>
                         </div>
                       ))}
@@ -1569,15 +1569,15 @@ export default function SportsCalendarPage() {
                             const isToday = k === todayKey;
                             const isWeekend = d.getDay() === 0 || d.getDay() === 6;
                             return (
-                              <div key={k} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", borderLeft: i === 0 ? "none" : "1px solid #eef2f7", background: isToday ? "rgba(33,208,179,0.12)" : isWeekend ? SURFACE.borderMuted : "transparent" }}>
-                                <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: isToday ? "#0e9384" : SURFACE.textFaint }}>{t(WEEK_LABELS[(d.getDay() + 6) % 7])}</span>
-                                <span style={{ fontSize: 13, fontWeight: 800, color: isToday ? "#0e9384" : SURFACE.text }}>{d.getDate()}</span>
+                              <div key={k} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", borderLeft: i === 0 ? "none" : `1px solid ${SURFACE.borderMuted}`, background: isToday ? "rgba(33,208,179,0.12)" : isWeekend ? SURFACE.borderMuted : "transparent" }}>
+                                <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: isToday ? BRAND.tealDark : SURFACE.textFaint }}>{t(WEEK_LABELS[(d.getDay() + 6) % 7])}</span>
+                                <span style={{ fontSize: 13, fontWeight: 800, color: isToday ? BRAND.tealDark : SURFACE.text }}>{d.getDate()}</span>
                               </div>
                             );
                           })}
                         </div>
                         {rows.map((r, ri) => (
-                          <div key={r.sport} style={{ position: "relative", height: rowHeight(r.lanes), borderBottom: ri < rows.length - 1 ? `1px solid ${SURFACE.borderMuted}` : "none", background: ri % 2 === 0 ? SURFACE.card : "#fafbfc", backgroundImage: gridLines, display: "grid", gridTemplateColumns: `repeat(${N}, minmax(${COL_MIN}px, 1fr))`, gridTemplateRows: `repeat(${r.lanes}, ${BAR_H}px)`, alignContent: "center", rowGap: LANE_GAP, padding: "8px 0" }}>
+                          <div key={r.sport} style={{ position: "relative", height: rowHeight(r.lanes), borderBottom: ri < rows.length - 1 ? `1px solid ${SURFACE.borderMuted}` : "none", background: ri % 2 === 0 ? SURFACE.card : SURFACE.bg, backgroundImage: gridLines, display: "grid", gridTemplateColumns: `repeat(${N}, minmax(${COL_MIN}px, 1fr))`, gridTemplateRows: `repeat(${r.lanes}, ${BAR_H}px)`, alignContent: "center", rowGap: LANE_GAP, padding: "8px 0" }}>
                             {r.bars.map((bar, bi) => {
                               const meta = TL_CAT_META[bar.cat];
                               return (
@@ -1825,7 +1825,7 @@ export default function SportsCalendarPage() {
                       {t(scheduleTypeLabel(getMetaString(entry.metadata, "scheduleType")))}
                     </span>
                     {getMetaString(entry.metadata, "delegationId") ? (
-                      <span style={{ display: "inline-flex", borderRadius: "99px", background: "rgba(99,102,241,0.1)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: "#6366f1" }}>
+                      <span style={{ display: "inline-flex", borderRadius: "99px", background: "rgba(99,102,241,0.1)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: ACCENT.indigo }}>
                         {delegationLabelById(delegationOptions, getMetaString(entry.metadata, "delegationId"))}
                       </span>
                     ) : null}
@@ -1835,7 +1835,7 @@ export default function SportsCalendarPage() {
                       </span>
                     ) : null}
                     {entry.source === "and-derived" && getMetaString(entry.metadata, "disciplineCount") ? (
-                      <span style={{ display: "inline-flex", borderRadius: "99px", background: "rgba(139,92,246,0.1)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: "#7c3aed" }}>
+                      <span style={{ display: "inline-flex", borderRadius: "99px", background: "rgba(139,92,246,0.1)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: ACCENT.violet }}>
                         {getMetaString(entry.metadata, "disciplineCount")} {t("disciplinas")}
                       </span>
                     ) : null}

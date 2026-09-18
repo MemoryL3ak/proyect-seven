@@ -3,7 +3,7 @@
 import React, { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import { apiFetch } from "@/lib/api";
-import { BRAND, STATE, SURFACE } from "@/lib/design";
+import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { useI18n } from "@/lib/i18n";
 import StyledSelect from "@/components/StyledSelect";
@@ -1257,7 +1257,7 @@ export default function HealthPage() {
             {/* ── Secondary KPI row */}
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4" style={{ marginTop: "16px" }}>
               {[
-                { label: t("Celíacos"),       value: healthDashboard.celiacCount,      color: "#a78bfa", icon: "leaf" as KpiIconType },
+                { label: t("Celíacos"),       value: healthDashboard.celiacCount,      color: ACCENT.violetLight, icon: "leaf" as KpiIconType },
                 { label: t("Veganos"),         value: healthDashboard.veganCount,       color: "#34d399", icon: "sprout" as KpiIconType },
                 { label: t("Vegetarianos"),    value: healthDashboard.vegetarianCount,  color: "#6ee7b7", icon: "leaf" as KpiIconType },
                 { label: t("Con medicación"),  value: healthDashboard.medicationsCount, color: "#f472b6", icon: "syringe" as KpiIconType },
@@ -1337,7 +1337,7 @@ export default function HealthPage() {
               <div className="flex flex-wrap items-center justify-between gap-3" style={{ marginBottom: "14px" }}>
                 <div className="flex items-center gap-2">
                   <KpiIcon type="clipboard" color={BRAND.teal} size={16} />
-                  <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "#0f9d84" }}>
+                  <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: BRAND.tealDark }}>
                     {t("Estado de fichas por participante")}
                   </p>
                 </div>
@@ -1427,7 +1427,7 @@ export default function HealthPage() {
                                   {row.completion >= 100 ? t("Completa") : t("Incompleta")}
                                 </span>
                               ) : (
-                                <span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 10px", borderRadius: "99px", background: "rgba(239,68,68,0.1)", color: "#b91c1c", border: "1px solid rgba(239,68,68,0.35)" }}>
+                                <span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 10px", borderRadius: "99px", background: "rgba(239,68,68,0.1)", color: STATE.dangerText, border: "1px solid rgba(239,68,68,0.35)" }}>
                                   {t("Sin ficha")}
                                 </span>
                               )}
@@ -1435,7 +1435,7 @@ export default function HealthPage() {
                             <td style={{ padding: "8px 12px", textAlign: "right", whiteSpace: "nowrap" }}>
                               <button type="button"
                                 onClick={() => { onPickAthlete(row.id); setActiveSubsection("record"); }}
-                                style={{ fontSize: "12px", fontWeight: 700, color: "#0f9d84", background: "rgba(33,208,179,0.1)", border: "1px solid rgba(33,208,179,0.35)", borderRadius: "8px", padding: "4px 12px", cursor: "pointer" }}>
+                                style={{ fontSize: "12px", fontWeight: 700, color: BRAND.tealDark, background: "rgba(33,208,179,0.1)", border: "1px solid rgba(33,208,179,0.35)", borderRadius: "8px", padding: "4px 12px", cursor: "pointer" }}>
                                 {row.hasRecord ? t("Ver ficha") : t("Crear ficha")}
                               </button>
                             </td>

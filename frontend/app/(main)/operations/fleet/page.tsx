@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
-import { BRAND, STATE, SURFACE } from "@/lib/design";
+import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
 import PageHeader from "@/components/ui/PageHeader";
 import {
@@ -65,16 +65,16 @@ type Snapshot = {
 };
 
 const DRIVER_AVAILABILITY_META: Record<DriverAvailability["availability"], { label: string; color: string; bg: string; border: string }> = {
-  FREE:     { label: "Libre",      color: STATE.successText, bg: "#dcfce7", border: "#86efac" },
-  ON_TRIP:  { label: "En viaje",   color: "#7c3aed", bg: "#ede9fe", border: "#c4b5fd" },
+  FREE:     { label: "Libre",      color: STATE.successText, bg: STATE.successSoft, border: STATE.successBorder },
+  ON_TRIP:  { label: "En viaje",   color: ACCENT.violet, bg: ACCENT.violetSoft, border: "#c4b5fd" },
   OFFLINE:  { label: "Offline",    color: SURFACE.textMuted, bg: SURFACE.borderMuted, border: SURFACE.borderStrong },
-  INACTIVE: { label: "Inactivo",   color: STATE.dangerText, bg: "#fee2e2", border: "#fca5a5" },
+  INACTIVE: { label: "Inactivo",   color: STATE.dangerText, bg: STATE.dangerSoft, border: STATE.dangerBorder },
 };
 
 const VEHICLE_AVAILABILITY_META: Record<VehicleAvailability["availability"], { label: string; color: string; bg: string; border: string }> = {
-  FREE:           { label: "Disponible", color: STATE.successText, bg: "#dcfce7", border: "#86efac" },
-  ON_TRIP:        { label: "En ruta",    color: "#7c3aed", bg: "#ede9fe", border: "#c4b5fd" },
-  OUT_OF_SERVICE: { label: "Fuera de servicio", color: STATE.dangerText, bg: "#fee2e2", border: "#fca5a5" },
+  FREE:           { label: "Disponible", color: STATE.successText, bg: STATE.successSoft, border: STATE.successBorder },
+  ON_TRIP:        { label: "En ruta",    color: ACCENT.violet, bg: ACCENT.violetSoft, border: "#c4b5fd" },
+  OUT_OF_SERVICE: { label: "Fuera de servicio", color: STATE.dangerText, bg: STATE.dangerSoft, border: STATE.dangerBorder },
 };
 
 function ago(seconds: number | null): string {
@@ -168,7 +168,7 @@ export default function FleetAvailabilityPage() {
         meta={
           section === "availability" ? (
             <span className="inline-flex items-center gap-2 text-xs font-semibold rounded-full px-3 py-1"
-              style={{ background: "#e7f5ec", color: "#1eb19a" }}>
+              style={{ background: STATE.successSoft, color: BRAND.tealDark }}>
               <span style={{
                 width: 7, height: 7, borderRadius: "50%", background: BRAND.teal,
                 boxShadow: "0 0 0 3px rgba(33,208,179,0.25)", animation: "pulse 1.8s infinite",
@@ -227,7 +227,7 @@ export default function FleetAvailabilityPage() {
       </div>}
 
       {section === "availability" && error && (
-        <section className="surface rounded-2xl p-4" style={{ borderLeft: "4px solid #b3231b", backgroundColor: "#fde2e2" }}>
+        <section className="surface rounded-2xl p-4" style={{ borderLeft: `4px solid ${STATE.dangerText}`, backgroundColor: STATE.dangerSoft }}>
           <p className="text-sm" style={{ color: "#7a1313" }}>{error}</p>
         </section>
       )}
@@ -243,7 +243,7 @@ export default function FleetAvailabilityPage() {
           icon={<UsersIcon size={20} />}
           stats={[
             { label: "Libres", value: sd.free, color: STATE.successText },
-            { label: "En viaje", value: sd.onTrip, color: "#7c3aed" },
+            { label: "En viaje", value: sd.onTrip, color: ACCENT.violet },
             { label: "Offline", value: sd.offline, color: SURFACE.textMuted },
           ]}
         />
@@ -253,7 +253,7 @@ export default function FleetAvailabilityPage() {
           icon={<TruckIcon size={20} />}
           stats={[
             { label: "Disponibles", value: sv.free, color: STATE.successText },
-            { label: "En ruta", value: sv.onTrip, color: "#7c3aed" },
+            { label: "En ruta", value: sv.onTrip, color: ACCENT.violet },
             { label: "Fuera servicio", value: sv.outOfService, color: STATE.dangerText },
           ]}
         />
@@ -504,10 +504,10 @@ function CrudSection({
           </p>
         )}
         {error && (
-          <p className="text-xs mt-2" style={{ color: "#b3231b" }}>{error}</p>
+          <p className="text-xs mt-2" style={{ color: STATE.dangerText }}>{error}</p>
         )}
         {message && !error && (
-          <p className="text-xs mt-2" style={{ color: "#2e7d32" }}>{message}</p>
+          <p className="text-xs mt-2" style={{ color: STATE.successText }}>{message}</p>
         )}
       </section>
 
@@ -556,7 +556,7 @@ function CrudSection({
               </thead>
               <tbody>
                 {section === "drivers" && (filtered as DriverRow[]).map((d, i) => (
-                  <tr key={d.id} style={{ background: i % 2 === 0 ? SURFACE.card : "#fafbfc", borderBottom: `1px solid ${SURFACE.borderMuted}` }}>
+                  <tr key={d.id} style={{ background: i % 2 === 0 ? SURFACE.card : SURFACE.bg, borderBottom: `1px solid ${SURFACE.borderMuted}` }}>
                     <td className="p-3 font-semibold">{d.fullName}</td>
                     <td className="p-3 font-mono text-[11px]">{d.rut}</td>
                     <td className="p-3" style={{ color: "var(--text-muted)" }}>
@@ -570,7 +570,7 @@ function CrudSection({
                       <div className="flex flex-wrap gap-1">
                         {(d.allowedClientTypes || []).slice(0, 3).map(c => (
                           <span key={c} className="text-[9px] px-1.5 py-0.5 rounded font-bold"
-                            style={{ background: "#dbeafe", color: "#1e40af" }}>{c}</span>
+                            style={{ background: STATE.infoSoft, color: STATE.infoText }}>{c}</span>
                         ))}
                         {(d.allowedClientTypes?.length ?? 0) > 3 && (
                           <span className="text-[9px] text-gray-400">+{(d.allowedClientTypes!.length - 3)}</span>
@@ -580,26 +580,26 @@ function CrudSection({
                     <td className="p-3">
                       <span className="text-[10px] px-2 py-0.5 rounded-full font-bold"
                         style={{
-                          background: d.status === "ACTIVE" ? "#dcfce7" : SURFACE.borderMuted,
-                          color: d.status === "ACTIVE" ? "#166534" : SURFACE.textMuted,
+                          background: d.status === "ACTIVE" ? STATE.successSoft : SURFACE.borderMuted,
+                          color: d.status === "ACTIVE" ? STATE.successText : SURFACE.textMuted,
                         }}>
                         {d.status === "ACTIVE" ? t("Activo") : (d.status || "—")}
                       </span>
                     </td>
                     <td className="p-3 text-right">
-                      <button className="text-[11px] underline" style={{ color: "#b3231b" }}
+                      <button className="text-[11px] underline" style={{ color: STATE.dangerText }}
                         onClick={() => remove(d.id, d.fullName)}>{t("Eliminar")}</button>
                     </td>
                   </tr>
                 ))}
                 {section === "vehicles" && (filtered as VehicleRow[]).map((v, i) => (
-                  <tr key={v.id} style={{ background: i % 2 === 0 ? SURFACE.card : "#fafbfc", borderBottom: `1px solid ${SURFACE.borderMuted}` }}>
+                  <tr key={v.id} style={{ background: i % 2 === 0 ? SURFACE.card : SURFACE.bg, borderBottom: `1px solid ${SURFACE.borderMuted}` }}>
                     <td className="p-3">
                       <span style={{
                         background: SURFACE.text, color: SURFACE.card,
                         fontFamily: "monospace", fontWeight: 800, fontSize: 12,
                         padding: "4px 10px", borderRadius: 5,
-                        border: "2px solid #fde68a",
+                        border: `2px solid ${STATE.warningBorder}`,
                       }}>{v.plate}</span>
                     </td>
                     <td className="p-3 font-semibold">
@@ -610,14 +610,14 @@ function CrudSection({
                     <td className="p-3">
                       <span className="text-[10px] px-2 py-0.5 rounded-full font-bold"
                         style={{
-                          background: v.status === "AVAILABLE" ? "#dcfce7" : "#fef2f2",
-                          color: v.status === "AVAILABLE" ? "#166534" : "#7a1313",
+                          background: v.status === "AVAILABLE" ? STATE.successSoft : STATE.dangerSoft,
+                          color: v.status === "AVAILABLE" ? STATE.successText : "#7a1313",
                         }}>
                         {v.status === "AVAILABLE" ? t("Disponible") : (v.status || "—")}
                       </span>
                     </td>
                     <td className="p-3 text-right">
-                      <button className="text-[11px] underline" style={{ color: "#b3231b" }}
+                      <button className="text-[11px] underline" style={{ color: STATE.dangerText }}
                         onClick={() => remove(v.id, v.plate)}>{t("Eliminar")}</button>
                     </td>
                   </tr>
@@ -737,8 +737,8 @@ function DriverFormModal({ eventId, onClose, onSaved }: {
                     onClick={() => toggleArray("allowedClientTypes", o.value)}
                     className="text-[11px] px-2.5 py-1 rounded-full font-bold transition"
                     style={{
-                      background: sel ? "#1f4e8c" : "#eef1f6",
-                      color: sel ? SURFACE.card : "#1f4e8c",
+                      background: sel ? STATE.infoText : SURFACE.borderMuted,
+                      color: sel ? SURFACE.card : STATE.infoText,
                     }}>
                     {sel ? <CheckIcon size={12} className="inline mr-1" /> : null}{t(o.label)}
                   </button>
@@ -759,7 +759,7 @@ function DriverFormModal({ eventId, onClose, onSaved }: {
                     onClick={() => toggleArray("accessTypes", o.value)}
                     className="text-[11px] px-2.5 py-1 rounded-full font-bold transition"
                     style={{
-                      background: sel ? BRAND.teal : "#eef1f6",
+                      background: sel ? BRAND.teal : SURFACE.borderMuted,
                       color: sel ? SURFACE.card : BRAND.tealInk,
                     }}>
                     {sel ? <CheckIcon size={12} className="inline mr-1" /> : null}{t(o.label)}
@@ -769,7 +769,7 @@ function DriverFormModal({ eventId, onClose, onSaved }: {
             </div>
           </div>
 
-          {error && <p className="text-xs" style={{ color: "#b3231b" }}>{error}</p>}
+          {error && <p className="text-xs" style={{ color: STATE.dangerText }}>{error}</p>}
         </div>
         <div className="p-5 border-t flex justify-end gap-2 sticky bottom-0 bg-white rounded-b-2xl">
           <button className="btn btn-ghost" onClick={onClose} disabled={saving}>{t("Cancelar")}</button>
@@ -868,7 +868,7 @@ function VehicleFormModal({ eventId, onClose, onSaved }: {
               </select>
             </label>
           </div>
-          {error && <p className="text-xs" style={{ color: "#b3231b" }}>{error}</p>}
+          {error && <p className="text-xs" style={{ color: STATE.dangerText }}>{error}</p>}
         </div>
         <div className="p-5 border-t flex justify-end gap-2">
           <button className="btn btn-ghost" onClick={onClose} disabled={saving}>{t("Cancelar")}</button>
@@ -932,7 +932,7 @@ function DriverColumn({ drivers, filter, setFilter, counts }: {
   const { t } = useI18n();
   return (
     <section className="surface rounded-2xl overflow-hidden">
-      <header className="p-4 border-b flex items-center justify-between flex-wrap gap-2" style={{ borderColor: "#eef1f6" }}>
+      <header className="p-4 border-b flex items-center justify-between flex-wrap gap-2" style={{ borderColor: SURFACE.borderMuted }}>
         <div>
           <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: SURFACE.textMuted }}>
             {t("Conductores")}
@@ -963,7 +963,7 @@ function DriverColumn({ drivers, filter, setFilter, counts }: {
           })}
         </div>
       </header>
-      <div className="divide-y" style={{ borderColor: "#eef1f6", maxHeight: 600, overflowY: "auto" }}>
+      <div className="divide-y" style={{ borderColor: SURFACE.borderMuted, maxHeight: 600, overflowY: "auto" }}>
         {drivers.length === 0 ? (
           <div className="p-8 text-center">
             <p className="text-sm font-semibold" style={{ color: SURFACE.textSecondary }}>{t("Sin conductores")}</p>
@@ -990,7 +990,7 @@ function DriverColumn({ drivers, filter, setFilter, counts }: {
                   {d.allowedClientTypes.length > 0 ? d.allowedClientTypes.join(", ") : t("Sin tipos asignados")}
                 </p>
                 {d.availability === "ON_TRIP" && d.activeTripDestination && (
-                  <p className="text-[10px] mt-0.5" style={{ color: "#7c3aed", fontWeight: 600 }}>
+                  <p className="text-[10px] mt-0.5" style={{ color: ACCENT.violet, fontWeight: 600 }}>
                     → {d.activeTripDestination}{d.activeTripClientType && ` · ${d.activeTripClientType}`}
                   </p>
                 )}
@@ -1024,7 +1024,7 @@ function VehicleColumn({ vehicles, filter, setFilter, counts }: {
   const { t } = useI18n();
   return (
     <section className="surface rounded-2xl overflow-hidden">
-      <header className="p-4 border-b flex items-center justify-between flex-wrap gap-2" style={{ borderColor: "#eef1f6" }}>
+      <header className="p-4 border-b flex items-center justify-between flex-wrap gap-2" style={{ borderColor: SURFACE.borderMuted }}>
         <div>
           <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: SURFACE.textMuted }}>
             {t("Vehículos")}
@@ -1055,7 +1055,7 @@ function VehicleColumn({ vehicles, filter, setFilter, counts }: {
           })}
         </div>
       </header>
-      <div className="divide-y" style={{ borderColor: "#eef1f6", maxHeight: 600, overflowY: "auto" }}>
+      <div className="divide-y" style={{ borderColor: SURFACE.borderMuted, maxHeight: 600, overflowY: "auto" }}>
         {vehicles.length === 0 ? (
           <div className="p-8 text-center">
             <p className="text-sm font-semibold" style={{ color: SURFACE.textSecondary }}>{t("Sin vehículos")}</p>
@@ -1072,7 +1072,7 @@ function VehicleColumn({ vehicles, filter, setFilter, counts }: {
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontFamily: "monospace", letterSpacing: "0.04em",
                 flexShrink: 0,
-                border: "2px solid #fde68a",
+                border: `2px solid ${STATE.warningBorder}`,
               }}>
                 {v.plate}
               </div>
@@ -1084,7 +1084,7 @@ function VehicleColumn({ vehicles, filter, setFilter, counts }: {
                   {v.type} · <UsersIcon size={12} className="inline mr-1" />{v.capacity} pax
                 </p>
                 {v.availability === "ON_TRIP" && (
-                  <p className="text-[10px] mt-0.5" style={{ color: "#7c3aed", fontWeight: 600 }}>
+                  <p className="text-[10px] mt-0.5" style={{ color: ACCENT.violet, fontWeight: 600 }}>
                     {v.activeTripDriverName && <><UserIcon size={12} className="inline mr-1" />{v.activeTripDriverName} · </>}
                     {v.activeTripDestination && <>→ {v.activeTripDestination}</>}
                   </p>

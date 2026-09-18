@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import AirlineLogo from "@/components/AirlineLogo";
 import { apiFetch } from "@/lib/api";
-import { BRAND, STATE, SURFACE } from "@/lib/design";
+import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import {
   RefreshIcon,
   PlaneIcon,
@@ -96,7 +96,7 @@ type TrackResult = {
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; border: string; pulse: boolean }> = {
   scheduled:  { label: "Programado",  color: STATE.info, bg: "rgba(59,130,246,0.1)",  border: "rgba(59,130,246,0.3)",  pulse: false },
-  boarding:   { label: "Embarcando",  color: "#8b5cf6", bg: "rgba(139,92,246,0.1)",  border: "rgba(139,92,246,0.3)",  pulse: true  },
+  boarding:   { label: "Embarcando",  color: ACCENT.violetLight, bg: "rgba(139,92,246,0.1)",  border: "rgba(139,92,246,0.3)",  pulse: true  },
   active:     { label: "En vuelo",    color: STATE.success, bg: "rgba(16,185,129,0.1)",  border: "rgba(16,185,129,0.3)",  pulse: true  },
   approaching:{ label: "Aproximando", color: STATE.success, bg: "rgba(16,185,129,0.1)",  border: "rgba(16,185,129,0.3)",  pulse: true  },
   delayed:    { label: "Retrasado",   color: STATE.warning, bg: "rgba(245,158,11,0.1)",  border: "rgba(245,158,11,0.3)",  pulse: false },
@@ -470,7 +470,7 @@ export default function FlightsPage() {
             { label: "Hoy", value: stats.today, color: STATE.warning, accent: STATE.warning },
             { label: "Próximos", value: stats.upcoming, color: STATE.info, accent: STATE.info },
             { label: "Pasajeros AND", value: stats.totalPax, color: BRAND.teal, accent: BRAND.teal },
-            { label: "Transfer In", value: transferInTrips.length, color: "#a78bfa", accent: "#a78bfa" },
+            { label: "Transfer In", value: transferInTrips.length, color: ACCENT.violetLight, accent: ACCENT.violetLight },
           ].map(k => (
             <div key={k.label} style={{ background: SURFACE.bg, borderRadius: "14px", padding: "12px 14px", border: `1px solid ${SURFACE.border}`, borderTop: `2px solid ${k.accent}` }}>
               <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: pal.labelColor }}>{t(k.label)}</p>
@@ -482,14 +482,14 @@ export default function FlightsPage() {
 
       {/* Quick flight search */}
       <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "18px", padding: "16px 20px", boxShadow: pal.shadow }}>
-        <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#a78bfa", marginBottom: "8px" }}>{t("Búsqueda rápida de vuelo")}</p>
+        <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: ACCENT.violetLight, marginBottom: "8px" }}>{t("Búsqueda rápida de vuelo")}</p>
         <div style={{ display: "flex", gap: "8px" }}>
           <input className="input flex-1" placeholder={t("Ingresa número de vuelo (ej: LA180, AV457)...")} value={quickSearch}
             onChange={e => setQuickSearch(e.target.value.toUpperCase())}
             onKeyDown={e => e.key === "Enter" && doQuickSearch()}
             style={{ borderRadius: "12px" }} />
           <button onClick={doQuickSearch} disabled={quickSearching || !quickSearch.trim()}
-            style={{ padding: "10px 20px", borderRadius: "12px", border: "none", background: "linear-gradient(135deg, #a78bfa, #7c3aed)", color: SURFACE.card, fontSize: "13px", fontWeight: 700, cursor: "pointer", opacity: quickSearching ? 0.6 : 1 }}>
+            style={{ padding: "10px 20px", borderRadius: "12px", border: "none", background: `linear-gradient(135deg, ${ACCENT.violetLight}, ${ACCENT.violet})`, color: SURFACE.card, fontSize: "13px", fontWeight: 700, cursor: "pointer", opacity: quickSearching ? 0.6 : 1 }}>
             {quickSearching ? t("Buscando...") : t("Buscar vuelo")}
           </button>
         </div>
@@ -565,7 +565,7 @@ export default function FlightsPage() {
                   <p style={{ fontSize: "11px", fontWeight: 700, color: pal.textMuted, marginBottom: "3px" }}>{duration ?? " "}</p>
                   <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                     <span style={{ flex: 1, height: "2px", background: `linear-gradient(90deg,${SURFACE.border},#a78bfa)`, borderRadius: "2px" }} />
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="#7c3aed" style={{ flexShrink: 0 }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill={ACCENT.violet} style={{ flexShrink: 0 }}>
                       <path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z"/>
                     </svg>
                     <span style={{ flex: 1, height: "2px", background: `linear-gradient(90deg,#a78bfa,${SURFACE.border})`, borderRadius: "2px" }} />
@@ -643,7 +643,7 @@ export default function FlightsPage() {
           <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", minWidth: "820px", borderCollapse: "collapse", fontSize: "13px" }}>
             <thead>
-              <tr style={{ borderBottom: `2px solid ${SURFACE.border}`, background: "#fafbfc" }}>
+              <tr style={{ borderBottom: `2px solid ${SURFACE.border}`, background: SURFACE.bg }}>
                 {["", "Vuelo", "Aerolínea", "Ruta", "Llegada", "Estado", "Delegaciones", "Pax", "Acciones"].map(h => (
                   <th key={h} style={{ padding: "12px 14px", textAlign: "left", fontSize: "9px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: pal.labelColor }}>{h ? t(h) : h}</th>
                 ))}
@@ -659,7 +659,7 @@ export default function FlightsPage() {
                   <>
                   <tr key={flight.id} style={{ borderBottom: isExpanded ? "none" : `1px solid ${SURFACE.borderMuted}`, cursor: "pointer", transition: "background 0.1s" }}
                     onClick={() => setExpandedFlightId(isExpanded ? null : flight.id)}
-                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#fafbfc"; }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = SURFACE.bg; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = ""; }}>
                     <td style={{ padding: "10px 8px 10px 14px", width: "24px" }}>
                       <ChevronRightIcon size={12} color={SURFACE.textFaint} strokeWidth={2} style={{ transition: "transform 0.15s", transform: isExpanded ? "rotate(90deg)" : "rotate(0)" }} />
@@ -690,7 +690,7 @@ export default function FlightsPage() {
                     <td style={{ padding: "10px 14px" }}>
                       <div style={{ display: "flex", gap: "3px", flexWrap: "wrap" }}>
                         {delegationCodes.slice(0, 3).map(code => (
-                          <span key={code} style={{ fontSize: "9px", fontWeight: 700, padding: "2px 6px", borderRadius: "4px", background: "rgba(99,102,241,0.08)", color: "#6366f1", border: "1px solid rgba(99,102,241,0.15)" }}>{code}</span>
+                          <span key={code} style={{ fontSize: "9px", fontWeight: 700, padding: "2px 6px", borderRadius: "4px", background: "rgba(99,102,241,0.08)", color: ACCENT.indigo, border: "1px solid rgba(99,102,241,0.15)" }}>{code}</span>
                         ))}
                         {delegationCodes.length > 3 && <span style={{ fontSize: "9px", color: pal.labelColor }}>+{delegationCodes.length - 3}</span>}
                         {delegationCodes.length === 0 && <span style={{ fontSize: "10px", color: SURFACE.borderStrong }}>—</span>}
@@ -702,7 +702,7 @@ export default function FlightsPage() {
                     <td style={{ padding: "10px 14px" }} onClick={e => e.stopPropagation()}>
                       <div style={{ display: "flex", gap: "5px" }}>
                         <button onClick={() => openTrack(flight)} style={{ padding: "5px 12px", borderRadius: "8px", border: "none", background: `linear-gradient(135deg,${BRAND.teal},#14AE98)`, color: SURFACE.card, fontSize: "11px", fontWeight: 600, cursor: "pointer" }}>{t("Rastrear")}</button>
-                        <button onClick={() => setDeleteConfirm(flight)} style={{ padding: "5px 8px", borderRadius: "8px", border: "1px solid #fecaca", background: SURFACE.card, color: "#f43f5e", cursor: "pointer" }}>
+                        <button onClick={() => setDeleteConfirm(flight)} style={{ padding: "5px 8px", borderRadius: "8px", border: `1px solid ${STATE.dangerBorder}`, background: SURFACE.card, color: STATE.danger, cursor: "pointer" }}>
                           <TrashIcon size={11} strokeWidth={2} />
                         </button>
                       </div>
@@ -711,7 +711,7 @@ export default function FlightsPage() {
                   {/* Expanded detail row */}
                   {isExpanded && (
                     <tr key={`${flight.id}-detail`}>
-                      <td colSpan={9} style={{ padding: "0 14px 14px", background: "#fafbfc", borderBottom: `1px solid ${SURFACE.border}` }}>
+                      <td colSpan={9} style={{ padding: "0 14px 14px", background: SURFACE.bg, borderBottom: `1px solid ${SURFACE.border}` }}>
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", padding: "14px 0" }}>
                           {/* Passengers */}
                           <div>
@@ -727,7 +727,7 @@ export default function FlightsPage() {
                                   return (
                                     <div key={p.id} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", padding: "4px 8px", borderRadius: "8px", background: SURFACE.card, border: `1px solid ${SURFACE.borderMuted}` }}>
                                       <span style={{ fontWeight: 600, color: pal.textPrimary, flex: 1 }}>{p.fullName || p.id}</span>
-                                      {del && <span style={{ fontSize: "9px", fontWeight: 700, padding: "1px 5px", borderRadius: "4px", background: "rgba(99,102,241,0.08)", color: "#6366f1" }}>{del.countryCode}</span>}
+                                      {del && <span style={{ fontSize: "9px", fontWeight: 700, padding: "1px 5px", borderRadius: "4px", background: "rgba(99,102,241,0.08)", color: ACCENT.indigo }}>{del.countryCode}</span>}
                                       {(parentDisc || disc) && <span style={{ fontSize: "9px", fontWeight: 600, padding: "1px 5px", borderRadius: "4px", background: "rgba(33,208,179,0.08)", color: BRAND.tealInk }}>{parentDisc?.name || disc?.name}</span>}
                                     </div>
                                   );
@@ -737,7 +737,7 @@ export default function FlightsPage() {
                           </div>
                           {/* Flight details */}
                           <div>
-                            <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#a78bfa", marginBottom: "8px" }}>{t("Detalle del vuelo")}</p>
+                            <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: ACCENT.violetLight, marginBottom: "8px" }}>{t("Detalle del vuelo")}</p>
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
                               {[
                                 { label: "Aerolínea", value: flight.airline },
@@ -780,10 +780,10 @@ export default function FlightsPage() {
         <div style={{ background: SURFACE.card, borderRadius: "18px", border: `1px solid ${SURFACE.border}`, overflow: "hidden", boxShadow: pal.shadow }}>
           <div style={{ padding: "16px 20px 12px", borderBottom: `1px solid ${SURFACE.borderMuted}`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
             <div>
-              <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#a78bfa" }}>{t("Llegadas Transfer In")}</p>
+              <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: ACCENT.violetLight }}>{t("Llegadas Transfer In")}</p>
               <p style={{ fontSize: "12px", color: pal.textMuted, marginTop: "2px" }}>{t("Viajes aeropuerto → hotel/sede creados en Transporte")}</p>
             </div>
-            <span style={{ fontSize: "12px", fontWeight: 700, color: "#7c3aed", background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.3)", borderRadius: "99px", padding: "4px 12px" }}>
+            <span style={{ fontSize: "12px", fontWeight: 700, color: ACCENT.violet, background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.3)", borderRadius: "99px", padding: "4px 12px" }}>
               {displayTransferIns.length} {displayTransferIns.length === 1 ? t("viaje") : t("viajes")}
             </span>
           </div>
@@ -795,7 +795,7 @@ export default function FlightsPage() {
             <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", minWidth: "680px", borderCollapse: "collapse", fontSize: "13px" }}>
               <thead>
-                <tr style={{ borderBottom: `2px solid ${SURFACE.border}`, background: "#fafbfc" }}>
+                <tr style={{ borderBottom: `2px solid ${SURFACE.border}`, background: SURFACE.bg }}>
                   {["Llegada", "Pasajero", "Tipo cliente", "Destino", "Vuelo", "Estado"].map(h => (
                     <th key={h} style={{ padding: "12px 14px", textAlign: "left", fontSize: "9px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: pal.labelColor }}>{t(h)}</th>
                   ))}
@@ -817,18 +817,18 @@ export default function FlightsPage() {
                       <td style={{ padding: "10px 14px" }}>
                         <span style={{ fontWeight: 600, color: pal.textPrimary }}>{requester?.fullName || "—"}</span>
                         {del?.countryCode && (
-                          <span style={{ marginLeft: "6px", fontSize: "9px", fontWeight: 700, padding: "2px 6px", borderRadius: "4px", background: "rgba(99,102,241,0.08)", color: "#6366f1", border: "1px solid rgba(99,102,241,0.15)" }}>{del.countryCode}</span>
+                          <span style={{ marginLeft: "6px", fontSize: "9px", fontWeight: 700, padding: "2px 6px", borderRadius: "4px", background: "rgba(99,102,241,0.08)", color: ACCENT.indigo, border: "1px solid rgba(99,102,241,0.15)" }}>{del.countryCode}</span>
                         )}
                       </td>
                       <td style={{ padding: "10px 14px", color: pal.textMuted, fontWeight: 500 }}>{trip.clientType || "—"}</td>
                       <td style={{ padding: "10px 14px" }}>
                         <span style={{ fontWeight: 600, color: pal.textPrimary }}>{t("Aeropuerto")}</span>
-                        <ArrowRightIcon size={12} color="#a78bfa" strokeWidth={2.5} style={{ margin: "0 6px", verticalAlign: "middle" }} />
+                        <ArrowRightIcon size={12} color={ACCENT.violetLight} strokeWidth={2.5} style={{ margin: "0 6px", verticalAlign: "middle" }} />
                         <span style={{ color: pal.textMuted }}>{trip.destination?.split(",")[0] || "—"}</span>
                       </td>
                       <td style={{ padding: "10px 14px" }}>
                         {flight ? (
-                          <span style={{ fontSize: "11px", fontWeight: 700, padding: "3px 8px", borderRadius: "6px", background: "rgba(167,139,250,0.1)", color: "#7c3aed", border: "1px solid rgba(167,139,250,0.3)" }}><PlaneIcon size={11} className="inline mr-1" />{flight}</span>
+                          <span style={{ fontSize: "11px", fontWeight: 700, padding: "3px 8px", borderRadius: "6px", background: "rgba(167,139,250,0.1)", color: ACCENT.violet, border: "1px solid rgba(167,139,250,0.3)" }}><PlaneIcon size={11} className="inline mr-1" />{flight}</span>
                         ) : (
                           <span style={{ fontSize: "10px", color: SURFACE.borderStrong }}>—</span>
                         )}
@@ -893,7 +893,7 @@ export default function FlightsPage() {
                 {t("Hora de llegada *")}
                 <input className="input" style={{ borderRadius: "10px" }} type="datetime-local" value={form.arrivalTime} onChange={e => setForm(f => ({ ...f, arrivalTime: e.target.value }))} />
               </label>
-              {formError && <p style={{ fontSize: "12px", color: "#f43f5e" }}>{formError}</p>}
+              {formError && <p style={{ fontSize: "12px", color: STATE.danger }}>{formError}</p>}
             </div>
             <div style={{ padding: "12px 24px 20px", display: "flex", justifyContent: "flex-end", gap: "10px", borderTop: `1px solid ${SURFACE.borderMuted}` }}>
               <button onClick={() => setModal(false)} disabled={saving} style={{ padding: "10px 20px", borderRadius: "10px", border: `1px solid ${SURFACE.border}`, background: SURFACE.card, color: pal.textMuted, fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>{t("Cancelar")}</button>

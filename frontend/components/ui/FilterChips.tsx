@@ -35,7 +35,7 @@ export default function FilterChips({
             style={{
               background: active
                 ? `linear-gradient(135deg, ${BRAND.teal} 0%, #1eb19a 100%)`
-                : "#eef1f6",
+                : SURFACE.borderMuted,
               color: active ? SURFACE.card : SURFACE.textSecondary,
               boxShadow: active ? "0 1px 4px rgba(33, 208, 179, 0.30)" : "none",
             }}

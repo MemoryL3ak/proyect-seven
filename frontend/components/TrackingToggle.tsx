@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { isAvailable, on, request } from "@/lib/native-bridge";
 import { SatelliteIcon } from "@/components/ui/Icons";
-import { BRAND, SURFACE } from "@/lib/design";
+import { BRAND, SURFACE, STATE } from "@/lib/design";
 
 type PushState = {
   lastAttemptAt: number | null;
@@ -153,7 +153,7 @@ export default function TrackingToggle({ driverId }: Props) {
   } else if (isOn && gpsOff) {
     chipLabel = "GPS apagado";
     chipBg = "rgba(234,179,8,0.16)";
-    chipColor = "#92400e";
+    chipColor = STATE.warningText;
   } else {
     chipLabel = "Inactivo";
     chipBg = SURFACE.borderMuted;
@@ -244,7 +244,7 @@ export default function TrackingToggle({ driverId }: Props) {
               background: "rgba(234,179,8,0.12)",
               border: "1px solid rgba(234,179,8,0.35)",
               fontSize: 11.5,
-              color: "#92400e",
+              color: STATE.warningText,
               lineHeight: 1.45,
             }}
           >
@@ -264,9 +264,9 @@ export default function TrackingToggle({ driverId }: Props) {
             border: "none",
             background:
               isOn && !gpsOff
-                ? "#fee2e2"
+                ? STATE.dangerSoft
                 : `linear-gradient(135deg,${BRAND.teal},#14AE98)`,
-            color: isOn && !gpsOff ? "#b91c1c" : SURFACE.card,
+            color: isOn && !gpsOff ? STATE.dangerText : SURFACE.card,
             fontSize: 13,
             fontWeight: 700,
             cursor: busy ? "wait" : "pointer",
@@ -299,7 +299,7 @@ export default function TrackingToggle({ driverId }: Props) {
               }`,
               fontSize: 11,
               lineHeight: 1.5,
-              color: lastPush.lastError ? "#991b1b" : SURFACE.textSecondary,
+              color: lastPush.lastError ? STATE.dangerText : SURFACE.textSecondary,
             }}
           >
             <p style={{ margin: 0, fontWeight: 700 }}>

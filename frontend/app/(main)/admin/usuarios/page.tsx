@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { apiFetch } from "@/lib/api";
-import { BRAND, STATE, SURFACE } from "@/lib/design";
+import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import {
   AlertIcon,
   MailIcon,
@@ -105,16 +105,16 @@ const ROLE_PERMISSIONS: Record<Role, string[]> = {
   Visualizador: ALL_MODULES.filter((m) => ["Dashboard", "Registro"].includes(m.group)).map((m) => m.id),
 };
 
-const AVATAR_COLORS = ["#6366f1", "#ec4899", STATE.success, STATE.warning, STATE.info, "#8b5cf6", STATE.danger, "#14b8a6"];
+const AVATAR_COLORS = [ACCENT.indigo, "#ec4899", STATE.success, STATE.warning, STATE.info, ACCENT.violetLight, STATE.danger, BRAND.teal];
 
 // ── Seed data ──────────────────────────────────────────────────────────────
 const SEED_USERS: AppUser[] = [
-  { id: "1", fullName: "Carlos Rodríguez", email: "carlos@sevenarana.com", role: "Administrador", modules: ROLE_PERMISSIONS["Administrador"], status: "active", emailConfirmed: true, createdAt: "2024-01-15", lastLogin: "hace 2 horas", initials: "CR", color: "#6366f1" },
+  { id: "1", fullName: "Carlos Rodríguez", email: "carlos@sevenarana.com", role: "Administrador", modules: ROLE_PERMISSIONS["Administrador"], status: "active", emailConfirmed: true, createdAt: "2024-01-15", lastLogin: "hace 2 horas", initials: "CR", color: ACCENT.indigo },
   { id: "2", fullName: "Ana González", email: "ana@sevenarana.com", role: "Supervisor", modules: ROLE_PERMISSIONS["Supervisor"], status: "active", emailConfirmed: true, createdAt: "2024-02-20", lastLogin: "hace 1 día", initials: "AG", color: "#ec4899" },
   { id: "3", fullName: "Marco Silva", email: "marco@sevenarana.com", role: "Coordinador", modules: ROLE_PERMISSIONS["Coordinador"], status: "active", emailConfirmed: true, createdAt: "2024-03-10", lastLogin: "hace 3 días", initials: "MS", color: STATE.success },
   { id: "4", fullName: "Valentina Torres", email: "valen@sevenarana.com", role: "Operador", modules: ROLE_PERMISSIONS["Operador"], status: "active", emailConfirmed: true, createdAt: "2024-04-05", lastLogin: "hoy", initials: "VT", color: STATE.warning },
   { id: "5", fullName: "Felipe Muñoz", email: "felipe@sevenarana.com", role: "Visualizador", modules: ROLE_PERMISSIONS["Visualizador"], status: "inactive", emailConfirmed: true, createdAt: "2024-05-12", lastLogin: "hace 2 semanas", initials: "FM", color: STATE.info },
-  { id: "6", fullName: "Daniela Pérez", email: "dani@sevenarana.com", role: "Operador", modules: ROLE_PERMISSIONS["Operador"], status: "pending", emailConfirmed: false, createdAt: "2024-06-01", initials: "DP", color: "#8b5cf6" },
+  { id: "6", fullName: "Daniela Pérez", email: "dani@sevenarana.com", role: "Operador", modules: ROLE_PERMISSIONS["Operador"], status: "pending", emailConfirmed: false, createdAt: "2024-06-01", initials: "DP", color: ACCENT.violetLight },
 ];
 
 function formatRelative(iso: string) {
@@ -457,15 +457,15 @@ export default function UsuariosPage() {
     if (role === "Administrador") return { bg: "rgba(239,68,68,0.12)", border: "rgba(239,68,68,0.3)", color: STATE.danger };
     if (role === "Supervisor") return { bg: "rgba(249,115,22,0.12)", border: "rgba(249,115,22,0.3)", color: "#f97316" };
     if (role === "Coordinador") return { bg: "rgba(16,185,129,0.12)", border: "rgba(16,185,129,0.3)", color: STATE.success };
-    if (role === "Coordinador Bvan") return { bg: "rgba(33,208,179,0.12)", border: "rgba(33,208,179,0.32)", color: "#0f9e87" };
-    if (role === "Coordinador Comité") return { bg: "rgba(139,92,246,0.12)", border: "rgba(139,92,246,0.3)", color: "#7c3aed" };
+    if (role === "Coordinador Bvan") return { bg: "rgba(33,208,179,0.12)", border: "rgba(33,208,179,0.32)", color: BRAND.tealDark };
+    if (role === "Coordinador Comité") return { bg: "rgba(139,92,246,0.12)", border: "rgba(139,92,246,0.3)", color: ACCENT.violet };
     if (role === "Comité Transporte") return { bg: "rgba(31,205,255,0.12)", border: "rgba(31,205,255,0.32)", color: "#0891b2" };
     if (role === "Operador") return { bg: "rgba(59,130,246,0.12)", border: "rgba(59,130,246,0.3)", color: STATE.info };
     return { bg: "rgba(100,116,139,0.12)", border: "rgba(100,116,139,0.3)", color: SURFACE.textMuted };
   }
 
   function statusInfo(s: UserStatus) {
-    if (s === "active") return { label: "Activo", color: "#22c55e", bg: "rgba(34,197,94,0.1)" };
+    if (s === "active") return { label: "Activo", color: STATE.success, bg: "rgba(34,197,94,0.1)" };
     if (s === "inactive") return { label: "Inactivo", color: SURFACE.textFaint, bg: "rgba(148,163,184,0.1)" };
     return { label: "Pendiente", color: STATE.warning, bg: "rgba(245,158,11,0.1)" };
   }
@@ -502,7 +502,7 @@ export default function UsuariosPage() {
           {(
             [
               { label: "Total Usuarios", value: kpis.total, Icon: UsersIcon, sub: "en el sistema", color: BRAND.teal },
-              { label: "Activos", value: kpis.active, Icon: ActiveIcon, sub: "usuarios activos", color: "#22c55e" },
+              { label: "Activos", value: kpis.active, Icon: ActiveIcon, sub: "usuarios activos", color: STATE.success },
               { label: "Administradores", value: kpis.admins, Icon: ShieldIcon, sub: "con acceso total", color: STATE.danger },
               { label: "Pendientes", value: kpis.pending, Icon: ClockIcon, sub: "por confirmar", color: STATE.warning },
             ] as { label: string; value: number; Icon: (p: { color: string; size?: number }) => React.JSX.Element; sub: string; color: string }[]
@@ -771,16 +771,16 @@ export default function UsuariosPage() {
                             background: SURFACE.bg, border: `1px solid ${SURFACE.border}`,
                             borderRadius: "8px", padding: "6px",
                             cursor: "pointer",
-                            color: user.status === "active" ? SURFACE.textMuted : "#22c55e",
+                            color: user.status === "active" ? SURFACE.textMuted : STATE.success,
                             transition: "all 150ms",
                           }}
                           title={user.status === "active" ? t("Deshabilitar acceso") : t("Habilitar acceso")}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.color = user.status === "active" ? STATE.danger : "#22c55e";
-                            e.currentTarget.style.borderColor = user.status === "active" ? STATE.danger : "#22c55e";
+                            e.currentTarget.style.color = user.status === "active" ? STATE.danger : STATE.success;
+                            e.currentTarget.style.borderColor = user.status === "active" ? STATE.danger : STATE.success;
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.color = user.status === "active" ? SURFACE.textMuted : "#22c55e";
+                            e.currentTarget.style.color = user.status === "active" ? SURFACE.textMuted : STATE.success;
                             e.currentTarget.style.borderColor = SURFACE.border;
                           }}
                         >
@@ -1119,7 +1119,7 @@ export default function UsuariosPage() {
                         type="button"
                         onClick={copyTempPassword}
                         title={t("Copiar")}
-                        style={{ background: "none", border: "none", cursor: "pointer", color: copiedPwd ? "#22c55e" : pal.mTextMuted, padding: "2px", transition: "color 150ms" }}
+                        style={{ background: "none", border: "none", cursor: "pointer", color: copiedPwd ? STATE.success : pal.mTextMuted, padding: "2px", transition: "color 150ms" }}
                       >
                         {copiedPwd ? (
                           <CheckIcon size={15} strokeWidth={2.5} />
@@ -1319,13 +1319,13 @@ export default function UsuariosPage() {
       {/* ── Confirm Delete Modal ─────────────────────────────────────── */}
       {confirmDelete && (() => {
         const isDisabling = confirmDelete.status === "active";
-        const actionColor = isDisabling ? STATE.danger : "#22c55e";
+        const actionColor = isDisabling ? STATE.danger : STATE.success;
         const actionColorLight = isDisabling ? "rgba(239,68,68,0.12)" : "rgba(34,197,94,0.12)";
         const actionColorBorder = isDisabling ? "rgba(239,68,68,0.25)" : "rgba(34,197,94,0.25)";
         const actionGlow = isDisabling ? "rgba(239,68,68,0.35)" : "rgba(34,197,94,0.35)";
         const actionGradient = isDisabling
           ? `linear-gradient(135deg, ${STATE.danger}, ${STATE.dangerText})`
-          : "linear-gradient(135deg, #22c55e, #16a34a)";
+          : `linear-gradient(135deg, ${STATE.success}, ${STATE.success})`;
         return (
           <div style={{
             position: "fixed", inset: 0, zIndex: 60,

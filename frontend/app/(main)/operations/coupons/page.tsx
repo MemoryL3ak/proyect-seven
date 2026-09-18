@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
-import { SURFACE } from "@/lib/design";
+import { SURFACE, ACCENT, STATE } from "@/lib/design";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiCard from "@/components/ui/KpiCard";
 import Tabs from "@/components/ui/Tabs";
@@ -77,10 +77,10 @@ type Stats = {
 };
 
 const CATEGORIES = [
-  { value: "COMIDA", label: "Comida", color: "#c78c00", bg: "#fff4d6" },
-  { value: "ENTRETENIMIENTO", label: "Entretenimiento", color: "#5e3aab", bg: "#f4f0fb" },
-  { value: "TIENDA", label: "Tienda", color: "#2e7d32", bg: "#e7f5ec" },
-  { value: "OTHER", label: "Otros", color: "#5e6b7a", bg: "#eef1f6" },
+  { value: "COMIDA", label: "Comida", color: STATE.warningText, bg: STATE.warningSoft },
+  { value: "ENTRETENIMIENTO", label: "Entretenimiento", color: ACCENT.violet, bg: "#f4f0fb" },
+  { value: "TIENDA", label: "Tienda", color: STATE.successText, bg: STATE.successSoft },
+  { value: "OTHER", label: "Otros", color: SURFACE.textMuted, bg: SURFACE.borderMuted },
 ];
 
 const DISCOUNT_TYPES = [
@@ -102,10 +102,10 @@ const AUDIENCE_OPTIONS = CLIENT_TYPE_OPTIONS.map((t) => ({
 }));
 
 const CLAIM_STATUS_META: Record<string, { label: string; color: string; bg: string }> = {
-  CLAIMED: { label: "Activo", color: "#1f4e8c", bg: "#e3edfa" },
-  REDEEMED: { label: "Canjeado", color: "#2e7d32", bg: "#e7f5ec" },
-  EXPIRED: { label: "Expirado", color: "#b3231b", bg: "#fde2e2" },
-  REVOKED: { label: "Anulado", color: "#5e6b7a", bg: "#eef1f6" },
+  CLAIMED: { label: "Activo", color: STATE.infoText, bg: "#e3edfa" },
+  REDEEMED: { label: "Canjeado", color: STATE.successText, bg: STATE.successSoft },
+  EXPIRED: { label: "Expirado", color: STATE.dangerText, bg: STATE.dangerSoft },
+  REVOKED: { label: "Anulado", color: SURFACE.textMuted, bg: SURFACE.borderMuted },
 };
 
 const fmtDate = (iso?: string | null) =>
@@ -213,7 +213,7 @@ export default function CouponsAdminPage() {
         title={t("Beneficios")}
         description={t("Sistema de beneficios con QR para atletas, VIPs y staff. El atleta los reclama desde su portal y los presenta en el comercio.")}
         icon={<TicketIcon size={24} />}
-        iconBg="linear-gradient(135deg, #d4a017 0%, #e3a808 100%)"
+        iconBg={`linear-gradient(135deg, ${STATE.warningText} 0%, #e3a808 100%)`}
       />
 
       {/* KPIs */}
@@ -247,13 +247,13 @@ export default function CouponsAdminPage() {
 
       {error && (
         <section className="surface rounded-2xl p-4"
-          style={{ borderLeft: "4px solid #b3231b", backgroundColor: "#fde2e2" }}>
+          style={{ borderLeft: `4px solid ${STATE.dangerText}`, backgroundColor: STATE.dangerSoft }}>
           <p className="text-sm" style={{ color: "#7a1313" }}>{error}</p>
         </section>
       )}
       {message && !error && (
         <section className="surface rounded-2xl p-4"
-          style={{ borderLeft: "4px solid #2e7d32", backgroundColor: "#e7f5ec" }}>
+          style={{ borderLeft: `4px solid ${STATE.successText}`, backgroundColor: STATE.successSoft }}>
           <p className="text-sm" style={{ color: "#1e5125" }}>{message}</p>
         </section>
       )}
@@ -413,7 +413,7 @@ function CatalogTab({
                       {t(cat.label)}
                     </span>
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded font-medium"
-                      style={{ backgroundColor: "#eef1f6", color: "#1f4e8c" }}>
+                      style={{ backgroundColor: SURFACE.borderMuted, color: STATE.infoText }}>
                       {c.code}
                     </span>
                   </div>
@@ -436,13 +436,13 @@ function CatalogTab({
                     </p>
                   )}
                   {expired && (
-                    <p className="text-[11px] font-medium" style={{ color: "#b3231b" }}>
+                    <p className="text-[11px] font-medium" style={{ color: STATE.dangerText }}>
                       <AlertIcon size={11} className="inline mr-1" />{t("Expirado")}
                     </p>
                   )}
                 </div>
                 <div className="border-t px-4 py-2 flex gap-1 justify-end"
-                  style={{ backgroundColor: "#fafbfc" }}>
+                  style={{ backgroundColor: SURFACE.bg }}>
                   <button className="btn btn-ghost text-xs py-1 px-2" type="button"
                     onClick={() => openModal(c)}>{t("Editar")}</button>
                   <button className="btn btn-ghost text-xs py-1 px-2" type="button"
@@ -578,8 +578,8 @@ function CatalogTab({
                       <button key={a.value} type="button"
                         className="text-xs px-3 py-1.5 rounded-full font-medium transition"
                         style={{
-                          backgroundColor: sel ? "#1f4e8c" : "#eef1f6",
-                          color: sel ? SURFACE.card : "#1f4e8c",
+                          backgroundColor: sel ? STATE.infoText : SURFACE.borderMuted,
+                          color: sel ? SURFACE.card : STATE.infoText,
                         }}
                         onClick={() => toggleAudience(a.value)}>
                         {sel ? <CheckIcon size={12} className="inline mr-1" /> : null}{t(a.label)}
@@ -694,7 +694,7 @@ function PartnersTab({
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <p className="text-sm" style={{ color: "var(--text-muted)" }}>
           {t("Comercios con acceso al scanner. Cada partner usa su")} <strong>{t("código + PIN")}</strong> {t("para entrar en")}
-          <a href="/portal/partner" className="ml-1 underline" style={{ color: "#1f4e8c" }}>
+          <a href="/portal/partner" className="ml-1 underline" style={{ color: STATE.infoText }}>
             /portal/partner
           </a>.
         </p>
@@ -725,13 +725,13 @@ function PartnersTab({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-[10px] px-2 py-0.5 rounded font-medium"
-                      style={{ backgroundColor: "#eef1f6", color: "#1f4e8c" }}>
+                      style={{ backgroundColor: SURFACE.borderMuted, color: STATE.infoText }}>
                       {p.code}
                     </span>
                     <span className="text-[10px] px-2 py-0.5 rounded-full font-medium"
                       style={{
-                        backgroundColor: p.active ? "#e7f5ec" : "#eef1f6",
-                        color: p.active ? "#2e7d32" : "#5e6b7a",
+                        backgroundColor: p.active ? STATE.successSoft : SURFACE.borderMuted,
+                        color: p.active ? STATE.successText : SURFACE.textMuted,
                       }}>
                       {p.active ? t("Activo") : t("Inactivo")}
                     </span>
@@ -812,15 +812,15 @@ function PartnersTab({
                   {t("Si no seleccionás ninguno, puede canjear todos los beneficios del sistema.")}
                 </p>
                 <div className="flex flex-wrap gap-1 max-h-40 overflow-y-auto p-1 rounded-lg"
-                  style={{ backgroundColor: "#fafbfc" }}>
+                  style={{ backgroundColor: SURFACE.bg }}>
                   {coupons.map((c) => {
                     const sel = (form.allowedCouponIds || []).includes(c.id);
                     return (
                       <button key={c.id} type="button"
                         className="text-[11px] px-2 py-1 rounded-full font-medium transition"
                         style={{
-                          backgroundColor: sel ? "#1f4e8c" : SURFACE.card,
-                          color: sel ? SURFACE.card : "#1f4e8c",
+                          backgroundColor: sel ? STATE.infoText : SURFACE.card,
+                          color: sel ? SURFACE.card : STATE.infoText,
                           border: sel ? "none" : "1px solid #d4dae2",
                         }}
                         onClick={() => toggleAllowed(c.id)}>
@@ -929,7 +929,7 @@ function ClaimsTab({
         <div className="surface rounded-2xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
-              <thead style={{ backgroundColor: "#1f4e8c", color: SURFACE.card }}>
+              <thead style={{ backgroundColor: STATE.infoText, color: SURFACE.card }}>
                 <tr>
                   <th className="p-3 text-left">{t("Código")}</th>
                   <th className="p-3 text-left">{t("Beneficio")}</th>
@@ -973,7 +973,7 @@ function ClaimsTab({
                       <td className="p-3">
                         {c.status === "CLAIMED" && (
                           <button type="button" className="text-[11px] underline"
-                            style={{ color: "#b3231b" }}
+                            style={{ color: STATE.dangerText }}
                             onClick={() => revoke(c.id)}>
                             {t("Anular")}
                           </button>

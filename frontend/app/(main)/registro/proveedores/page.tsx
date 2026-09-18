@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
-import { BRAND, STATE, SURFACE } from "@/lib/design";
+import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import {
   CheckIcon,
   XIcon,
@@ -29,13 +29,13 @@ type TypeEntry = { label: string; subtypes: string[]; color: string; bg: string 
 const PROVIDER_TYPES: Record<string, TypeEntry> = {
   TRANSPORTE:       { label: "Transporte",           subtypes: [],                                                                    color: BRAND.blue, bg: "rgba(31,205,255,0.08)" },
   LOGISTICA:        { label: "Logística",             subtypes: [],                                                                    color: BRAND.teal, bg: "rgba(33,208,179,0.08)" },
-  HOTELERIA:        { label: "Hotelería",             subtypes: [],                                                                    color: "#a78bfa", bg: "rgba(167,139,250,0.08)" },
+  HOTELERIA:        { label: "Hotelería",             subtypes: [],                                                                    color: ACCENT.violetLight, bg: "rgba(167,139,250,0.08)" },
   ALIMENTACION:     { label: "Alimentación",          subtypes: [],                                                                    color: "#fb923c", bg: "rgba(251,146,60,0.08)"  },
   PRODUCTORA:       { label: "Productora",            subtypes: [],                                                                    color: "#f472b6", bg: "rgba(244,114,182,0.08)" },
   VOLUNTARIOS:      { label: "Voluntarios",           subtypes: [],                                                                    color: "#34d399", bg: "rgba(52,211,153,0.08)"  },
   SEGURIDAD:        { label: "Seguridad",             subtypes: [],                                                                    color: "#f87171", bg: "rgba(248,113,113,0.08)" },
   STAFF:            { label: "Staff",                 subtypes: ["Recursos Humanos", "Dpto de Compras", "Sport Manager", "Comité Organizador"], color: "#60a5fa", bg: "rgba(96,165,250,0.08)"  },
-  INFRAESTRUCTURA:  { label: "Infraestructura",       subtypes: ["Recintos"],                                                          color: "#fbbf24", bg: "rgba(251,191,36,0.08)"  },
+  INFRAESTRUCTURA:  { label: "Infraestructura",       subtypes: ["Recintos"],                                                          color: STATE.warning, bg: "rgba(251,191,36,0.08)"  },
   CONTROL_TECNICO:  { label: "Control Técnico",       subtypes: ["Jueces", "Mesa de Control"],                                         color: "#e879f9", bg: "rgba(232,121,249,0.08)" },
   SALUD:            { label: "Salud",                 subtypes: ["Antidopaje"],                                                        color: "#4ade80", bg: "rgba(74,222,128,0.08)"  },
   BROADCAST:        { label: "Broadcast y Medios",    subtypes: [],                                                                    color: STATE.warning, bg: "rgba(245,158,11,0.08)"  },
@@ -211,7 +211,7 @@ function DocRow({
       </button>
       {hasNew && (
         <button type="button" disabled={disabled} onClick={() => onFile(docKey, null)}
-          style={{ fontSize: "13px", color: "#f43f5e", background: "none", border: "none", cursor: "pointer", padding: "2px", flexShrink: 0, lineHeight: 1 }}>
+          style={{ fontSize: "13px", color: STATE.danger, background: "none", border: "none", cursor: "pointer", padding: "2px", flexShrink: 0, lineHeight: 1 }}>
           <XIcon size={14} />
         </button>
       )}
@@ -943,7 +943,7 @@ export default function ProveedoresPage() {
                                 <button
                                   onClick={() => removeProvider(p)}
                                   style={{ padding: "5px", borderRadius: "7px", background: "none", border: "none", cursor: "pointer", color: "var(--text-faint)", transition: "all 0.15s" }}
-                                  onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = "rgba(244,63,94,0.1)"; el.style.color = "#f43f5e"; }}
+                                  onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = "rgba(244,63,94,0.1)"; el.style.color = STATE.danger; }}
                                   onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = "none"; el.style.color = "var(--text-faint)"; }}
                                   title={t("Eliminar")}
                                 >
@@ -1051,10 +1051,10 @@ export default function ProveedoresPage() {
           </section>
 
           {/* Bulk photo upload */}
-          <section className="surface" style={{ borderRadius: "14px", padding: "14px 18px", borderTop: "2px solid #a78bfa", boxShadow: "0 1px 6px rgba(15,23,42,0.06)" }}>
+          <section className="surface" style={{ borderRadius: "14px", padding: "14px 18px", borderTop: `2px solid ${ACCENT.violetLight}`, boxShadow: "0 1px 6px rgba(15,23,42,0.06)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
               <div>
-                <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#a78bfa", marginBottom: "4px" }}>
+                <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: ACCENT.violetLight, marginBottom: "4px" }}>
                   {t("Carga masiva de fotos")}
                 </p>
                 <p style={{ fontSize: "12px", color: SURFACE.textMuted, margin: 0 }}>
@@ -1063,7 +1063,7 @@ export default function ProveedoresPage() {
               </div>
               <label style={{
                 display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 16px", borderRadius: "12px",
-                background: "linear-gradient(135deg, #a78bfa, #7c3aed)", color: SURFACE.card, fontSize: "12px", fontWeight: 700,
+                background: `linear-gradient(135deg, ${ACCENT.violetLight}, ${ACCENT.violet})`, color: SURFACE.card, fontSize: "12px", fontWeight: 700,
                 cursor: "pointer", boxShadow: "0 2px 10px rgba(167,139,250,0.35)",
               }}>
                 <UploadIcon size={14} strokeWidth={2.5} />
@@ -1129,7 +1129,7 @@ export default function ProveedoresPage() {
                   </div>
                   <div style={{ padding: "8px 16px", borderRadius: "10px", background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)" }}>
                     <p style={{ fontSize: "20px", fontWeight: 800, color: STATE.danger, margin: 0 }}>{bulkPhotoResult.notFound}</p>
-                    <p style={{ fontSize: "10px", fontWeight: 600, color: "#991b1b", margin: 0 }}>{t("Sin match")}</p>
+                    <p style={{ fontSize: "10px", fontWeight: 600, color: STATE.dangerText, margin: 0 }}>{t("Sin match")}</p>
                   </div>
                 </div>
                 {bulkPhotoResult.names.length > 0 && (
@@ -1300,7 +1300,7 @@ export default function ProveedoresPage() {
                         onClick={() => removeParticipant(p)}
                         className="transition-colors p-1.5"
                         style={{ color: "var(--text-faint)" }}
-                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#f43f5e"; }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = STATE.danger; }}
                         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-faint)"; }}
                         title={t("Eliminar")}
                       >
@@ -1321,9 +1321,9 @@ export default function ProveedoresPage() {
       {mailToast && (
         <div style={{
           position: "fixed", bottom: "24px", right: "24px", zIndex: 60,
-          background: mailToast.ok ? "#ecfdf5" : "#fef2f2",
+          background: mailToast.ok ? "#ecfdf5" : STATE.dangerSoft,
           border: `1px solid ${mailToast.ok ? "#a7f3d0" : "#fecaca"}`,
-          color: mailToast.ok ? "#047857" : "#b91c1c",
+          color: mailToast.ok ? "#047857" : STATE.dangerText,
           borderRadius: "12px", padding: "12px 18px", fontSize: "13px", fontWeight: 600,
           boxShadow: "0 8px 24px rgba(15,23,42,0.15)", maxWidth: "360px",
         }}>
@@ -1508,7 +1508,7 @@ export default function ProveedoresPage() {
                             const service = SERVICE_TYPES.find((s) => s.value === rate.tripType);
                             const isFirstOfFleet = idx === 0 || providerRates[idx - 1].fleetType !== rate.fleetType;
                             return (
-                              <tr key={`${rate.fleetType}-${rate.tripType}`} style={{ borderBottom: `1px solid ${SURFACE.borderMuted}`, background: isFirstOfFleet ? "#fafbfc" : SURFACE.card }}>
+                              <tr key={`${rate.fleetType}-${rate.tripType}`} style={{ borderBottom: `1px solid ${SURFACE.borderMuted}`, background: isFirstOfFleet ? SURFACE.bg : SURFACE.card }}>
                                 <td style={{ padding: "6px 10px", fontWeight: isFirstOfFleet ? 700 : 400, color: SURFACE.text }}>
                                   {isFirstOfFleet ? t(fleet?.label || rate.fleetType) : ""}
                                 </td>
@@ -1542,7 +1542,7 @@ export default function ProveedoresPage() {
                 </div>
               )}
 
-              {providerError && <p className="text-sm" style={{ color: "#f43f5e" }}>{providerError}</p>}
+              {providerError && <p className="text-sm" style={{ color: STATE.danger }}>{providerError}</p>}
             </div>
 
             <div className="px-6 py-4 flex justify-end gap-3 flex-shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
@@ -1896,7 +1896,7 @@ export default function ProveedoresPage() {
                 </div>
               )}
 
-              {participantError && <p className="text-sm" style={{ color: "#f43f5e" }}>{participantError}</p>}
+              {participantError && <p className="text-sm" style={{ color: STATE.danger }}>{participantError}</p>}
             </div>
 
             <div className="px-6 py-4 flex justify-end gap-3 flex-shrink-0" style={{ borderTop: "1px solid var(--border)" }}>

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
-import { BRAND, STATE, SURFACE } from "@/lib/design";
+import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { UsersIcon, CheckIcon, ClockIcon, BuildingIcon, BedIcon, RefreshIcon } from "@/components/ui/Icons";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { useI18n } from "@/lib/i18n";
@@ -58,7 +58,7 @@ const pal = {
   cardBg: SURFACE.card, cardBorder: SURFACE.border, cardShadow: "0 1px 4px rgba(15,23,42,0.06)",
   textPrimary: SURFACE.text, textMuted: SURFACE.textMuted, labelColor: SURFACE.textFaint,
   progressTrack: SURFACE.borderMuted,
-  kpi: [STATE.info, STATE.success, STATE.warning, "#a855f7", "#6366f1", "#14b8a6"],
+  kpi: [STATE.info, STATE.success, STATE.warning, "#a855f7", ACCENT.indigo, BRAND.teal],
 };
 
 const KPI_ICONS = [

@@ -502,7 +502,7 @@ function VenueCard({
               {t("Editar")}
             </button>
             <button
-              style={{ borderRadius: "10px", background: "rgba(239,68,68,0.18)", border: "1px solid rgba(239,68,68,0.3)", padding: "6px 12px", fontSize: "12px", fontWeight: 600, color: "#fca5a5", cursor: "pointer", backdropFilter: "blur(4px)" }}
+              style={{ borderRadius: "10px", background: "rgba(239,68,68,0.18)", border: "1px solid rgba(239,68,68,0.3)", padding: "6px 12px", fontSize: "12px", fontWeight: 600, color: STATE.dangerBorder, cursor: "pointer", backdropFilter: "blur(4px)" }}
               type="button"
               onClick={() => onDelete(venue.id)}
             >
@@ -528,7 +528,7 @@ function VenueCard({
                 onClick={() => onEdit(venue)}
               >{t("Editar")}</button>
               <button
-                style={{ borderRadius: "10px", border: "1px solid #fecaca", background: "#fff1f2", padding: "6px 14px", fontSize: "12px", fontWeight: 600, color: STATE.danger, cursor: "pointer" }}
+                style={{ borderRadius: "10px", border: `1px solid ${STATE.dangerBorder}`, background: "#fff1f2", padding: "6px 14px", fontSize: "12px", fontWeight: 600, color: STATE.danger, cursor: "pointer" }}
                 type="button"
                 onClick={() => onDelete(venue.id)}
               >{t("Eliminar")}</button>

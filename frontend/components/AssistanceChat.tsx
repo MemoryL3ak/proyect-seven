@@ -375,7 +375,7 @@ export default function AssistanceChat({
                     value={newFlightNumber}
                     onChange={(e) => setNewFlightNumber(e.target.value.toUpperCase())}
                     placeholder={t("Ej: LA123")}
-                    style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid " + (newFlightNumber.trim() ? SURFACE.border : "#fcd34d"), fontSize: "13px", marginTop: "4px", background: newFlightNumber.trim() ? SURFACE.card : "#fffbeb" }}
+                    style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid " + (newFlightNumber.trim() ? SURFACE.border : STATE.warning), fontSize: "13px", marginTop: "4px", background: newFlightNumber.trim() ? SURFACE.card : STATE.warningSoft }}
                   />
                   {!newFlightNumber.trim() && (
                     <p style={{ fontSize: "10.5px", color: STATE.warningText, margin: "4px 0 0" }}>
@@ -516,7 +516,7 @@ export default function AssistanceChat({
                 {t("Cancelar")}
               </button>
               <button type="button" disabled={reportSending} onClick={submitReport}
-                style={{ borderRadius: "12px", padding: "10px 16px", fontSize: "13px", fontWeight: 700, border: "none", background: "linear-gradient(135deg, #f43f5e, #e11d48)", color: SURFACE.card, cursor: reportSending ? "not-allowed" : "pointer", opacity: reportSending ? 0.6 : 1 }}>
+                style={{ borderRadius: "12px", padding: "10px 16px", fontSize: "13px", fontWeight: 700, border: "none", background: `linear-gradient(135deg, ${STATE.danger}, #e11d48)`, color: SURFACE.card, cursor: reportSending ? "not-allowed" : "pointer", opacity: reportSending ? 0.6 : 1 }}>
                 {reportSending ? t("Enviando…") : t("Enviar denuncia")}
               </button>
             </div>

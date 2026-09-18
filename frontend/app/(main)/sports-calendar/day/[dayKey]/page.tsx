@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
-import { BRAND, SURFACE, STATE } from "@/lib/design";
+import { BRAND, SURFACE, STATE, ACCENT } from "@/lib/design";
 import { CheckIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 import { filterValidatedAthletes } from "@/lib/athletes";
@@ -458,7 +458,7 @@ export default function SportsCalendarDayDetailPage() {
           { label: "Llegadas", value: kpis.arrivals, color: "#38bdf8" },
           { label: "Retiros", value: kpis.departures, color: "#f472b6" },
           { label: "Actividades", value: kpis.activities, color: BRAND.teal },
-          { label: "Delegaciones activas", value: kpis.activeDelegations, color: "#a78bfa" },
+          { label: "Delegaciones activas", value: kpis.activeDelegations, color: ACCENT.violetLight },
         ].map((kpi) => (
           <div key={kpi.label} style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderTop: `3px solid ${kpi.color}`, borderRadius: "16px", padding: "16px 20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)", transition: "transform 120ms ease" }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; }}
@@ -488,7 +488,7 @@ export default function SportsCalendarDayDetailPage() {
       {!loading && (
         <div style={{ display: "flex", gap: 0, background: SURFACE.card, borderRadius: 14, border: `1px solid ${SURFACE.border}`, overflow: "hidden", boxShadow: "0 1px 4px rgba(15,23,42,0.04)" }}>
           {([
-            { key: "terrestre" as const, label: "Op. Terrestre", count: transportAssignments.length, color: "#a78bfa" },
+            { key: "terrestre" as const, label: "Op. Terrestre", count: transportAssignments.length, color: ACCENT.violetLight },
             { key: "llegadas" as const, label: "Llegadas", count: arrivals.length, color: "#38bdf8" },
             { key: "agenda" as const, label: "Agenda Operativa", count: dayEntries.length, color: BRAND.teal },
             { key: "aerea" as const, label: "Op. Aérea", count: flightsOfDay.length, color: "#fb923c" },
@@ -555,7 +555,7 @@ export default function SportsCalendarDayDetailPage() {
                     display: "inline-flex", alignItems: "center", gap: 8,
                     padding: "12px 24px", borderRadius: 14, border: "none", cursor: transportAssignments.length === 0 ? "not-allowed" : "pointer",
                     background: transportAssignments.every((t: any) => t.committeeValidated)
-                      ? "linear-gradient(135deg, #22c55e, #16a34a)"
+                      ? `linear-gradient(135deg, ${STATE.success}, ${STATE.success})`
                       : `linear-gradient(135deg, ${STATE.warning}, #d97706)`,
                     color: SURFACE.card, fontSize: 13, fontWeight: 800,
                     boxShadow: transportAssignments.every((t: any) => t.committeeValidated)
@@ -587,8 +587,8 @@ export default function SportsCalendarDayDetailPage() {
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                           {(trip as any).committeeValidated && (
-                            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.25)", borderRadius: 99, padding: "3px 10px", fontSize: 10, fontWeight: 700, color: "#22c55e" }}>
-                              <CheckIcon size={10} color="#22c55e" strokeWidth={3} />
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.25)", borderRadius: 99, padding: "3px 10px", fontSize: 10, fontWeight: 700, color: STATE.success }}>
+                              <CheckIcon size={10} color={STATE.success} strokeWidth={3} />
                               {t("Validado")}
                             </span>
                           )}
@@ -603,7 +603,7 @@ export default function SportsCalendarDayDetailPage() {
                       </div>
                       <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 4 }}>
                         {trip.linkedDelegations.map((item) => (
-                          <span key={`${trip.id}-${item}`} style={{ borderRadius: 99, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)", padding: "2px 8px", fontSize: 10, fontWeight: 700, color: "#6366f1" }}>{delegationLabel(delegations, item)}</span>
+                          <span key={`${trip.id}-${item}`} style={{ borderRadius: 99, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)", padding: "2px 8px", fontSize: 10, fontWeight: 700, color: ACCENT.indigo }}>{delegationLabel(delegations, item)}</span>
                         ))}
                       </div>
                       {trip.linkedAthletes.length > 0 && (
@@ -693,7 +693,7 @@ export default function SportsCalendarDayDetailPage() {
                     </div>
                     <div style={{ marginTop: "8px", display: "flex", flexWrap: "wrap", gap: "6px" }}>
                       {getMetaString(entry.metadata, "delegationId") ? (
-                        <span style={{ borderRadius: "99px", background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: "#6366f1" }}>
+                        <span style={{ borderRadius: "99px", background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: ACCENT.indigo }}>
                           {delegationLabel(delegations, getMetaString(entry.metadata, "delegationId"))}
                         </span>
                       ) : null}
@@ -751,7 +751,7 @@ export default function SportsCalendarDayDetailPage() {
                     <p style={{ marginTop: "6px", fontSize: "12px", color: SURFACE.textMuted }}><strong>{t("Terminal:")}</strong> {flight.terminal}</p>
                     <div style={{ marginTop: "8px", display: "flex", flexWrap: "wrap", gap: "4px" }}>
                       {Array.from(new Set(flight.people.map((person) => delegationLabel(delegations, person.delegationId)))).map((delegation) => (
-                        <span key={delegation} style={{ borderRadius: "99px", background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: "#6366f1" }}>
+                        <span key={delegation} style={{ borderRadius: "99px", background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: ACCENT.indigo }}>
                           {delegation}
                         </span>
                       ))}

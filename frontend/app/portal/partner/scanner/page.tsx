@@ -11,7 +11,7 @@ import {
 } from "@/lib/partnerAuth";
 import DeleteAccountSection from "@/components/DeleteAccountSection";
 import { CheckIcon, RefreshIcon, CameraIcon } from "@/components/ui/Icons";
-import { BRAND, STATE, SURFACE } from "@/lib/design";
+import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 
 const TEAL = BRAND.teal;
 const TEAL_MID = BRAND.tealLight;
@@ -315,8 +315,8 @@ export default function PartnerScannerPage() {
             />
             <div className="min-w-0">
               <p className="text-[9px] font-bold tracking-[0.25em] uppercase"
-                style={{ color: "#0e9384" }}>Partner</p>
-              <h1 className="text-sm font-bold truncate" style={{ color: "#0d1e3a" }}>
+                style={{ color: BRAND.tealDark }}>Partner</p>
+              <h1 className="text-sm font-bold truncate" style={{ color: SURFACE.text }}>
                 {partner?.name || "..."}
               </h1>
               <p className="text-[10px] font-mono" style={{ color: SURFACE.textMuted }}>
@@ -333,7 +333,7 @@ export default function PartnerScannerPage() {
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = "#e6ebf2";
-              e.currentTarget.style.color = "#0d1e3a";
+              e.currentTarget.style.color = SURFACE.text;
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.background = SURFACE.borderMuted;
@@ -350,7 +350,7 @@ export default function PartnerScannerPage() {
         {/* Stats cards — siempre visibles (placeholders 0 si aún no cargó) */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <StatCard label="Canjes hoy" value={stats?.todayRedemptions ?? 0} color={BRAND.tealLight} />
-          <StatCard label="Total acumulado" value={stats?.totalRedemptions ?? 0} color="#a78bfa" />
+          <StatCard label="Total acumulado" value={stats?.totalRedemptions ?? 0} color={ACCENT.violetLight} />
           <StatCard
             label="Beneficios"
             value={stats?.eligibleCoupons ?? 0}
@@ -360,7 +360,7 @@ export default function PartnerScannerPage() {
           <StatCard
             label="Por validar"
             value={stats?.pendingClaims ?? 0}
-            color="#fcd34d"
+            color={STATE.warning}
             hint="reclamados sin canjear"
           />
           <StatCard
@@ -526,10 +526,10 @@ function IdleScreen({ onScan, onManual }: { onScan: () => void; onManual: () => 
         </div>
 
         <div>
-          <h2 className="text-2xl font-bold tracking-tight" style={{ color: "#0d1e3a" }}>
+          <h2 className="text-2xl font-bold tracking-tight" style={{ color: SURFACE.text }}>
             Validar beneficio
           </h2>
-          <p className="text-sm mt-2 max-w-xs mx-auto" style={{ color: "#5e6b7a" }}>
+          <p className="text-sm mt-2 max-w-xs mx-auto" style={{ color: SURFACE.textMuted }}>
             Escanea el QR del atleta con la cámara o ingresa el código manualmente.
           </p>
         </div>
@@ -564,7 +564,7 @@ function IdleScreen({ onScan, onManual }: { onScan: () => void; onManual: () => 
             className="w-full py-3.5 rounded-2xl text-sm font-medium transition-all btn-press"
             style={{
               background: SURFACE.borderMuted,
-              color: "#0d1e3a",
+              color: SURFACE.text,
               border: `1px solid ${SURFACE.border}`,
             }}
             onMouseEnter={(e) => {
@@ -593,22 +593,22 @@ function ScannerScreen({
       style={{
         background: "rgba(255,255,255,0.97)",
         backdropFilter: "blur(20px)",
-        boxShadow: "0 4px 16px rgba(15,23,42,0.08), 0 0 0 1px #eef1f6",
+        boxShadow: `0 4px 16px rgba(15,23,42,0.08), 0 0 0 1px ${SURFACE.borderMuted}`,
       }}>
       <div className="absolute top-0 left-0 right-0 h-[1px] shimmer-line z-10" />
       <div className="px-5 py-3.5 border-b flex items-center justify-between"
-        style={{ borderColor: "#eef1f6" }}>
+        style={{ borderColor: SURFACE.borderMuted }}>
         <div>
           <p className="text-[10px] uppercase tracking-widest font-bold" style={{ color: TEAL }}>
             Escaneando
           </p>
-          <p className="text-sm font-semibold" style={{ color: "#0d1e3a" }}>
+          <p className="text-sm font-semibold" style={{ color: SURFACE.text }}>
             Apuntá la cámara al QR
           </p>
         </div>
         <button type="button"
           className="text-sm font-medium px-3 py-1.5 rounded-lg"
-          style={{ background: SURFACE.borderMuted, color: "#5e6b7a" }}
+          style={{ background: SURFACE.borderMuted, color: SURFACE.textMuted }}
           onClick={onCancel}>
           Cancelar
         </button>
@@ -652,17 +652,17 @@ function ManualScreen({
       style={{
         background: "rgba(255,255,255,0.97)",
         backdropFilter: "blur(20px)",
-        boxShadow: "0 4px 16px rgba(15,23,42,0.08), 0 0 0 1px #eef1f6",
+        boxShadow: `0 4px 16px rgba(15,23,42,0.08), 0 0 0 1px ${SURFACE.borderMuted}`,
       }}>
       <div className="absolute top-0 left-0 right-0 h-[1px] shimmer-line" />
       <div>
         <p className="text-[10px] uppercase tracking-widest font-bold" style={{ color: TEAL }}>
           Ingreso manual
         </p>
-        <h2 className="text-xl font-bold mt-0.5" style={{ color: "#0d1e3a" }}>
+        <h2 className="text-xl font-bold mt-0.5" style={{ color: SURFACE.text }}>
           Código del beneficio
         </h2>
-        <p className="text-xs mt-1" style={{ color: "#5e6b7a" }}>
+        <p className="text-xs mt-1" style={{ color: SURFACE.textMuted }}>
           Pedile al atleta que te dicte el código debajo de su QR (formato: CPN-XXXXXX).
         </p>
       </div>
@@ -674,7 +674,7 @@ function ManualScreen({
           background: SURFACE.bg,
           border: `2px solid ${SURFACE.border}`,
           outline: "none",
-          color: "#0d1e3a",
+          color: SURFACE.text,
         }}
         placeholder="CPN-AB12CD"
         value={code}
@@ -688,7 +688,7 @@ function ManualScreen({
       <div className="flex gap-2.5">
         <button type="button"
           className="flex-1 py-3.5 rounded-2xl text-sm font-medium transition-all"
-          style={{ background: SURFACE.borderMuted, color: "#0d1e3a", border: `1px solid ${SURFACE.border}` }}
+          style={{ background: SURFACE.borderMuted, color: SURFACE.text, border: `1px solid ${SURFACE.border}` }}
           onClick={onCancel}>
           Volver
         </button>
@@ -724,7 +724,7 @@ function PreviewScreen({
       style={{
         background: "rgba(255,255,255,0.97)",
         backdropFilter: "blur(20px)",
-        boxShadow: "0 4px 16px rgba(15,23,42,0.08), 0 0 0 1px #eef1f6",
+        boxShadow: `0 4px 16px rgba(15,23,42,0.08), 0 0 0 1px ${SURFACE.borderMuted}`,
       }}>
       <div className="p-5 relative overflow-hidden"
         style={{ background: `linear-gradient(135deg, ${TEAL} 0%, #1eb19a 100%)` }}>
@@ -752,9 +752,9 @@ function PreviewScreen({
         <DetailRow label="Atleta" value={preview.userName || "—"} />
         <DetailRow label="Tipo" value={preview.userType || "—"} />
         <DetailRow label="Código" value={preview.uniqueCode}
-          valueClass="font-mono font-bold" valueColor="#0d1e3a" />
+          valueClass="font-mono font-bold" valueColor={SURFACE.text} />
         <DetailRow label="Reclamado" value={fmtFull(preview.claimedAt)} />
-        <DetailRow label="Expira" value={fmtFull(preview.expiresAt)} valueColor="#c78c00" />
+        <DetailRow label="Expira" value={fmtFull(preview.expiresAt)} valueColor={STATE.warningText} />
 
         {preview.coupon?.termsAndConditions && (
           <details className="text-xs pt-1">
@@ -762,7 +762,7 @@ function PreviewScreen({
               Ver términos y condiciones
             </summary>
             <p className="mt-2 leading-relaxed p-3 rounded-lg"
-              style={{ color: "#5e6b7a", background: SURFACE.bg }}>
+              style={{ color: SURFACE.textMuted, background: SURFACE.bg }}>
               {preview.coupon.termsAndConditions}
             </p>
           </details>
@@ -770,7 +770,7 @@ function PreviewScreen({
 
         <label className="block pt-1">
           <span className="block text-[10px] uppercase tracking-widest font-bold mb-1.5"
-            style={{ color: "#5e6b7a" }}>
+            style={{ color: SURFACE.textMuted }}>
             Validado por (opcional)
           </span>
           <input type="text"
@@ -779,7 +779,7 @@ function PreviewScreen({
               background: SURFACE.bg,
               border: `2px solid ${SURFACE.border}`,
               outline: "none",
-              color: "#0d1e3a",
+              color: SURFACE.text,
             }}
             placeholder="Tu nombre"
             value={redeemedBy}
@@ -793,7 +793,7 @@ function PreviewScreen({
           <button type="button"
             disabled={redeeming}
             className="flex-1 py-3.5 rounded-2xl text-sm font-medium transition-all"
-            style={{ background: SURFACE.borderMuted, color: "#0d1e3a", border: `1px solid ${SURFACE.border}` }}
+            style={{ background: SURFACE.borderMuted, color: SURFACE.text, border: `1px solid ${SURFACE.border}` }}
             onClick={onCancel}>
             Cancelar
           </button>
@@ -803,7 +803,7 @@ function PreviewScreen({
             className="flex-1 py-3.5 rounded-2xl text-sm font-semibold text-white transition-all"
             style={{
               background: redeeming ? "#9ba3ad"
-                : "linear-gradient(135deg, #2e7d32 0%, #4caf50 100%)",
+                : `linear-gradient(135deg, ${STATE.successText} 0%, #4caf50 100%)`,
               boxShadow: redeeming ? "none" : "0 6px 18px rgba(46,125,50,0.4)",
               cursor: redeeming ? "not-allowed" : "pointer",
             }}>
@@ -825,19 +825,19 @@ function ResultScreen({
 }) {
   const isSuccess = kind === "success";
   const grad = isSuccess
-    ? "linear-gradient(135deg, #2e7d32 0%, #4caf50 100%)"
-    : "linear-gradient(135deg, #b3231b 0%, #d32f2f 100%)";
+    ? `linear-gradient(135deg, ${STATE.successText} 0%, #4caf50 100%)`
+    : `linear-gradient(135deg, ${STATE.dangerText} 0%, #d32f2f 100%)`;
   const shadow = isSuccess
     ? "0 12px 32px rgba(46,125,50,0.5)"
     : "0 12px 32px rgba(179,35,27,0.5)";
-  const accent = isSuccess ? "#2e7d32" : "#b3231b";
+  const accent = isSuccess ? STATE.successText : STATE.dangerText;
 
   return (
     <div className="rounded-3xl p-8 text-center space-y-5 anim-fade-up relative overflow-hidden"
       style={{
         background: "rgba(255,255,255,0.97)",
         backdropFilter: "blur(20px)",
-        boxShadow: "0 4px 16px rgba(15,23,42,0.08), 0 0 0 1px #eef1f6",
+        boxShadow: `0 4px 16px rgba(15,23,42,0.08), 0 0 0 1px ${SURFACE.borderMuted}`,
       }}>
       <div className="absolute top-0 left-0 right-0 h-[1px] shimmer-line" />
       {/* Halo del color del resultado */}
@@ -858,7 +858,7 @@ function ResultScreen({
       <div>
         <h2 className="text-2xl font-bold" style={{ color: accent }}>{title}</h2>
         {subtitle && (
-          <p className="text-sm mt-1.5" style={{ color: "#5e6b7a" }}>{subtitle}</p>
+          <p className="text-sm mt-1.5" style={{ color: SURFACE.textMuted }}>{subtitle}</p>
         )}
       </div>
       <button type="button" onClick={onContinue}
@@ -918,12 +918,12 @@ function RecentRedemptionsCard({
 
       {/* Header */}
       <div className="p-4 border-b flex items-center justify-between"
-        style={{ borderColor: "#eef1f6" }}>
+        style={{ borderColor: SURFACE.borderMuted }}>
         <div>
           <p className="text-[10px] uppercase tracking-widest font-bold" style={{ color: TEAL }}>
             Actividad reciente
           </p>
-          <h3 className="text-lg font-bold mt-0.5" style={{ color: "#0d1e3a" }}>
+          <h3 className="text-lg font-bold mt-0.5" style={{ color: SURFACE.text }}>
             Últimos canjes
           </h3>
         </div>
@@ -947,42 +947,42 @@ function RecentRedemptionsCard({
                 <path d="M3 7v2a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2z" />
               </svg>
             </div>
-            <p className="text-sm font-semibold" style={{ color: "#0d1e3a" }}>
+            <p className="text-sm font-semibold" style={{ color: SURFACE.text }}>
               Sin canjes aún
             </p>
-            <p className="text-xs mt-1" style={{ color: "#5e6b7a" }}>
+            <p className="text-xs mt-1" style={{ color: SURFACE.textMuted }}>
               Cuando valides el primer beneficio aparecerá acá.
             </p>
           </div>
         ) : (
-          <div className="divide-y" style={{ borderColor: "#eef1f6" }}>
+          <div className="divide-y" style={{ borderColor: SURFACE.borderMuted }}>
             {items.map((r) => (
               <div key={r.id} className="p-3 flex items-start gap-3 hover:bg-gray-50 transition-colors">
                 <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
                   style={{
-                    background: "linear-gradient(135deg, #2e7d32 0%, #4caf50 100%)",
+                    background: `linear-gradient(135deg, ${STATE.successText} 0%, #4caf50 100%)`,
                     color: SURFACE.card,
                   }}>
                   <CheckIcon size={16} strokeWidth={3} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-baseline justify-between gap-2">
-                    <p className="text-sm font-semibold truncate" style={{ color: "#0d1e3a" }}>
+                    <p className="text-sm font-semibold truncate" style={{ color: SURFACE.text }}>
                       {r.coupon?.title || "Beneficio"}
                     </p>
                     {discountText(r.coupon) && (
-                      <span className="text-xs font-bold flex-shrink-0" style={{ color: "#2e7d32" }}>
+                      <span className="text-xs font-bold flex-shrink-0" style={{ color: STATE.successText }}>
                         {discountText(r.coupon)}
                       </span>
                     )}
                   </div>
-                  <p className="text-xs mt-0.5 truncate" style={{ color: "#5e6b7a" }}>
+                  <p className="text-xs mt-0.5 truncate" style={{ color: SURFACE.textMuted }}>
                     {r.userName || "Anónimo"}
                     {r.userType && <span className="ml-1.5 text-[10px] font-mono">· {r.userType}</span>}
                   </p>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-[10px] font-mono px-1.5 py-0.5 rounded"
-                      style={{ background: "#eef1f6", color: SURFACE.textSecondary }}>
+                      style={{ background: SURFACE.borderMuted, color: SURFACE.textSecondary }}>
                       {r.uniqueCode}
                     </span>
                     <span className="text-[10px]" style={{ color: SURFACE.textFaint }}>
@@ -1014,11 +1014,11 @@ function DetailRow({
 }) {
   return (
     <div className="flex items-center justify-between gap-3 py-2 border-b last:border-0"
-      style={{ borderColor: "#eef1f6" }}>
+      style={{ borderColor: SURFACE.borderMuted }}>
       <span className="text-[10px] uppercase tracking-widest font-bold"
-        style={{ color: "#5e6b7a" }}>{label}</span>
+        style={{ color: SURFACE.textMuted }}>{label}</span>
       <span className={`text-sm text-right ${valueClass || "font-medium"}`}
-        style={{ color: valueColor || "#0d1e3a" }}>
+        style={{ color: valueColor || SURFACE.text }}>
         {value}
       </span>
     </div>

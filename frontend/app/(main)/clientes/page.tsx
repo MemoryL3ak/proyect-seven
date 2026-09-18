@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
-import { BRAND, STATE, SURFACE } from "@/lib/design";
+import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { UsersIcon, UserIcon } from "@/components/ui/Icons";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import StyledSelect from "@/components/StyledSelect";
@@ -27,7 +27,7 @@ const normalizeType = (value?: string | null) => {
   return cleaned.length > 0 ? cleaned : "SIN_TIPO";
 };
 
-const TYPE_COLORS = ["#38bdf8", STATE.success, STATE.warning, "#a78bfa", "#f472b6", "#34d399", "#fb923c"];
+const TYPE_COLORS = ["#38bdf8", STATE.success, STATE.warning, ACCENT.violetLight, "#f472b6", "#34d399", "#fb923c"];
 
 const pal = {
   accent: BRAND.teal,

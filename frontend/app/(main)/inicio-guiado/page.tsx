@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useI18n } from "@/lib/i18n";
 import { Icon, type IconName, SparkleIcon, CheckIcon, ArrowRightIcon, ClockIcon } from "@/components/ui/Icons";
-import { BRAND, STATE, SURFACE } from "@/lib/design";
+import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 
 /* ─────────────────────────────────────────────────────────────
    Estilos custom (keyframes, glass, glow, gradients)
@@ -165,9 +165,9 @@ const ROLES: Array<{
     key: "admin",
     label: "Administrador general",
     desc: "Acceso total a la plataforma: eventos, usuarios, presupuestos y configuración.",
-    color: "#5e3aab",
+    color: ACCENT.violet,
     bgGradient: `linear-gradient(135deg, #f4f0fb 0%, ${SURFACE.card} 60%)`,
-    iconBg: "linear-gradient(135deg, #7c5ec4 0%, #5e3aab 100%)",
+    iconBg: `linear-gradient(135deg, #7c5ec4 0%, ${ACCENT.violet} 100%)`,
     suggested: ["create_event", "import_athletes", "manage_users", "view_dashboard", "finance_panel"],
     icon: (
       <svg width="34" height="34" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
@@ -189,9 +189,9 @@ const ROLES: Array<{
     key: "transport",
     label: "Coordinador de transporte",
     desc: "Cronograma diario, asignación de conductores, tracking en tiempo real y panel de conductores.",
-    color: "#1f4e8c",
+    color: STATE.infoText,
     bgGradient: `linear-gradient(135deg, #eef4fb 0%, ${SURFACE.card} 60%)`,
-    iconBg: "linear-gradient(135deg, #2d6aa8 0%, #1f4e8c 100%)",
+    iconBg: `linear-gradient(135deg, #2d6aa8 0%, ${STATE.infoText} 100%)`,
     suggested: ["import_schedule", "auto_assign", "monitor_drivers", "tracking_realtime", "vip_monitoring", "finance_panel"],
     icon: (
       <svg width="36" height="36" viewBox="0 0 36 36" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
@@ -202,7 +202,7 @@ const ROLES: Array<{
         <circle cx="25" cy="26" r="3" fill="rgba(0,0,0,0.25)" stroke="currentColor" />
         <circle cx="25" cy="26" r="1.2" fill="currentColor" stroke="none" />
         <rect x="6" y="14" width="6" height="5" rx="0.8" fill="rgba(255,255,255,0.35)" stroke="none" />
-        <circle cx="32" cy="6" r="2.4" fill="#fbbf24" stroke="currentColor" strokeWidth="1.2" />
+        <circle cx="32" cy="6" r="2.4" fill={STATE.warning} stroke="currentColor" strokeWidth="1.2" />
         <line x1="32" y1="3.5" x2="32" y2="8.5" stroke="currentColor" strokeWidth="0.7" opacity="0.7" />
       </svg>
     ),
@@ -218,12 +218,12 @@ const ROLES: Array<{
     icon: (
       <svg width="34" height="34" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
         <path d="M5 28V8a2 2 0 012-2h18a2 2 0 012 2v20" fill="rgba(255,255,255,0.18)" stroke="currentColor" />
-        <rect x="9" y="10" width="3.5" height="3" rx="0.4" fill="#fbbf24" stroke="none" opacity="0.9" />
-        <rect x="14.5" y="10" width="3.5" height="3" rx="0.4" fill="#fbbf24" stroke="none" opacity="0.4" />
-        <rect x="20" y="10" width="3.5" height="3" rx="0.4" fill="#fbbf24" stroke="none" opacity="0.9" />
-        <rect x="9" y="15" width="3.5" height="3" rx="0.4" fill="#fbbf24" stroke="none" opacity="0.6" />
-        <rect x="14.5" y="15" width="3.5" height="3" rx="0.4" fill="#fbbf24" stroke="none" opacity="0.9" />
-        <rect x="20" y="15" width="3.5" height="3" rx="0.4" fill="#fbbf24" stroke="none" opacity="0.4" />
+        <rect x="9" y="10" width="3.5" height="3" rx="0.4" fill={STATE.warning} stroke="none" opacity="0.9" />
+        <rect x="14.5" y="10" width="3.5" height="3" rx="0.4" fill={STATE.warning} stroke="none" opacity="0.4" />
+        <rect x="20" y="10" width="3.5" height="3" rx="0.4" fill={STATE.warning} stroke="none" opacity="0.9" />
+        <rect x="9" y="15" width="3.5" height="3" rx="0.4" fill={STATE.warning} stroke="none" opacity="0.6" />
+        <rect x="14.5" y="15" width="3.5" height="3" rx="0.4" fill={STATE.warning} stroke="none" opacity="0.9" />
+        <rect x="20" y="15" width="3.5" height="3" rx="0.4" fill={STATE.warning} stroke="none" opacity="0.4" />
         <rect x="13" y="20" width="6" height="8" rx="0.6" fill="rgba(0,0,0,0.2)" stroke="currentColor" />
         <circle cx="17" cy="24" r="0.6" fill="currentColor" stroke="none" />
         <path d="M3 28h26" stroke="currentColor" strokeWidth="2" />
@@ -258,7 +258,7 @@ const ROLES: Array<{
     desc: "Vista panorámica de la operación, incidencias, premiaciones y workforce.",
     color: STATE.warning,
     bgGradient: `linear-gradient(135deg, #fff4d6 0%, ${SURFACE.card} 60%)`,
-    iconBg: "linear-gradient(135deg, #fbbf24 0%, #d97706 100%)",
+    iconBg: `linear-gradient(135deg, ${STATE.warning} 0%, ${STATE.warningText} 100%)`,
     suggested: ["view_dashboard", "monitor_incidents", "premiaciones", "workforce", "vip_monitoring", "departures_monitor", "salud"],
     icon: (
       <svg width="34" height="34" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
@@ -266,7 +266,7 @@ const ROLES: Array<{
         <line x1="3" y1="9" x2="29" y2="9" stroke="currentColor" opacity="0.7" />
         <circle cx="6" cy="6" r="0.9" fill="currentColor" />
         <rect x="6" y="13" width="4" height="7" rx="0.6" fill="#34d399" stroke="none" />
-        <rect x="11.5" y="11" width="4" height="9" rx="0.6" fill="#fbbf24" stroke="none" />
+        <rect x="11.5" y="11" width="4" height="9" rx="0.6" fill={STATE.warning} stroke="none" />
         <rect x="17" y="14" width="4" height="6" rx="0.6" fill="#fb7185" stroke="none" />
         <polyline points="6,16 11,12 17,15 23,10 27,13" stroke="rgba(255,255,255,0.95)" strokeWidth="1.5" fill="none" />
         <circle cx="27" cy="13" r="1.4" fill="rgba(255,255,255,0.95)" stroke="none" />
@@ -285,7 +285,7 @@ const ROLES: Array<{
     icon: (
       <svg width="34" height="34" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="16" cy="16" r="12" fill="rgba(255,255,255,0.15)" stroke="currentColor" />
-        <polygon points="16,8 20,17 16,15 12,17" fill="#fbbf24" stroke="currentColor" strokeWidth="1.2" />
+        <polygon points="16,8 20,17 16,15 12,17" fill={STATE.warning} stroke="currentColor" strokeWidth="1.2" />
         <polygon points="16,24 12,15 16,17 20,15" fill="rgba(255,255,255,0.65)" stroke="currentColor" strokeWidth="1.2" />
         <circle cx="16" cy="16" r="1.6" fill="currentColor" stroke="rgba(255,255,255,0.95)" strokeWidth="1.2" />
         <line x1="16" y1="2" x2="16" y2="4" stroke="currentColor" opacity="0.5" />
@@ -452,7 +452,7 @@ function StepIndicator({ current, total, onJump }: { current: number; total: num
 /** Confetti pieces for completion step */
 function Confetti() {
   const pieces = useMemo(() => {
-    const colors = [BRAND.teal, BRAND.tealLight, "#fbbf24", "#f472b6", "#7c5ec4", "#34d399"];
+    const colors = [BRAND.teal, BRAND.tealLight, STATE.warning, "#f472b6", "#7c5ec4", "#34d399"];
     return Array.from({ length: 60 }, (_, i) => ({
       id: i,
       left: Math.random() * 100,
@@ -710,7 +710,7 @@ function TaskRow({
           className="flex-shrink-0 inline-flex items-center gap-1.5 text-xs font-bold rounded-lg px-3 py-2 transition-all"
           style={{
             background: done ? "transparent" : `linear-gradient(135deg, ${BRAND.teal} 0%, #15B09A 100%)`,
-            color: done ? "#1eb19a" : SURFACE.card,
+            color: done ? BRAND.tealDark : SURFACE.card,
             border: done ? "1px solid #34d39966" : "none",
             boxShadow: done ? "none" : "0 4px 14px rgba(33,208,179,0.32)",
             textDecoration: "none",
@@ -845,9 +845,9 @@ export default function OnboardingPage() {
           { top: "12%", left: "8%",  size: 6, color: BRAND.teal, delay: "0s" },
           { top: "22%", left: "30%", size: 4, color: BRAND.tealLight, delay: "1s" },
           { top: "60%", left: "12%", size: 5, color: BRAND.teal, delay: "2s" },
-          { top: "32%", left: "60%", size: 3, color: "#fbbf24", delay: "1.5s" },
+          { top: "32%", left: "60%", size: 3, color: STATE.warning, delay: "1.5s" },
           { top: "75%", left: "55%", size: 5, color: BRAND.tealLight, delay: "0.5s" },
-          { top: "18%", left: "85%", size: 4, color: "#fbbf24", delay: "2.5s" },
+          { top: "18%", left: "85%", size: 4, color: STATE.warning, delay: "2.5s" },
           { top: "65%", left: "88%", size: 6, color: BRAND.teal, delay: "1.8s" },
         ].map((p, i) => (
           <span key={i} className="ob-particle"
@@ -916,7 +916,7 @@ export default function OnboardingPage() {
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 ob-stagger">
               {[
-                { icon: "zap", title: "3 minutos",        text: "Lo que dura este recorrido — adaptado a vos.",       accent: "#fbbf24", bg: `linear-gradient(135deg, #fff4d6 0%, ${SURFACE.card} 70%)` },
+                { icon: "zap", title: "3 minutos",        text: "Lo que dura este recorrido — adaptado a vos.",       accent: STATE.warning, bg: `linear-gradient(135deg, #fff4d6 0%, ${SURFACE.card} 70%)` },
                 { icon: "target", title: "Personalizado",    text: "Las recomendaciones cambian según tu rol y objetivos.", accent: BRAND.teal, bg: `linear-gradient(135deg, #f0fdfb 0%, ${SURFACE.card} 70%)` },
                 { icon: "save", title: "Progreso guardado",text: "Cerrás y volvés cuando quieras — todo queda registrado.", accent: "#7c5ec4", bg: `linear-gradient(135deg, #f4f0fb 0%, ${SURFACE.card} 70%)` },
               ].map((b) => (
@@ -938,7 +938,7 @@ export default function OnboardingPage() {
                 background: `linear-gradient(135deg, #f0fdfb 0%, ${SURFACE.card} 70%)`,
                 border: "1px solid rgba(33,208,179,0.25)",
               }}>
-              <label className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#1eb19a" }}>
+              <label className="text-xs font-semibold uppercase tracking-wider" style={{ color: BRAND.tealDark }}>
                 {t("¿Cómo te llamamos?")}
               </label>
               <input
@@ -1015,7 +1015,7 @@ export default function OnboardingPage() {
             )}
 
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.14em] mb-2" style={{ color: "#1eb19a" }}>
+              <p className="text-[11px] font-bold uppercase tracking-[0.14em] mb-2" style={{ color: BRAND.tealDark }}>
                 {t("Sugeridos para tu rol")}
               </p>
               <div className="flex flex-wrap gap-2">
@@ -1070,7 +1070,7 @@ export default function OnboardingPage() {
                   {t("Tu progreso")}
                 </p>
                 <span className="text-[13px] font-bold tabular-nums"
-                  style={{ color: "#1eb19a" }}>
+                  style={{ color: BRAND.tealDark }}>
                   {progressTasks} / {relevantTasks.length}
                 </span>
               </div>
@@ -1100,7 +1100,7 @@ export default function OnboardingPage() {
               {relevantTasks.length === 0 && (
                 <p className="text-sm text-center py-6" style={{ color: "var(--text-muted)" }}>
                   {t("No seleccionaste objetivos.")} <button type="button" onClick={prev}
-                    className="underline font-semibold" style={{ color: "#1eb19a" }}>
+                    className="underline font-semibold" style={{ color: BRAND.tealDark }}>
                     {t("Volver atrás")}
                   </button> {t("para elegir.")}
                 </p>
@@ -1121,7 +1121,7 @@ export default function OnboardingPage() {
         {state.step === 4 && (
           <div className="space-y-6">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.14em] mb-3" style={{ color: "#1eb19a" }}>
+              <p className="text-[11px] font-bold uppercase tracking-[0.14em] mb-3" style={{ color: BRAND.tealDark }}>
                 {t("Tips para tu rol")}
               </p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 ob-stagger">
@@ -1141,7 +1141,7 @@ export default function OnboardingPage() {
             </div>
 
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.14em] mb-3" style={{ color: "#d4a017" }}>
+              <p className="text-[11px] font-bold uppercase tracking-[0.14em] mb-3" style={{ color: STATE.warningText }}>
                 {t("Recursos a mano")}
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 ob-stagger">
@@ -1232,7 +1232,7 @@ export default function OnboardingPage() {
               <p className="text-xs italic" style={{ color: "var(--text-muted)" }}>
                 {t("Quedaron")} {relevantTasks.length - progressTasks} {t("tareas pendientes —")}
                 <button type="button" onClick={() => setState((s) => ({ ...s, step: 3 }))}
-                  className="ml-1 underline font-semibold" style={{ color: "#1eb19a" }}>
+                  className="ml-1 underline font-semibold" style={{ color: BRAND.tealDark }}>
                   {t("retomalas cuando quieras")}
                 </button>
               </p>

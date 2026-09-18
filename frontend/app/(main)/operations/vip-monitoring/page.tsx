@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { apiFetch } from "@/lib/api";
-import { BRAND, SURFACE } from "@/lib/design";
+import { BRAND, SURFACE, STATE } from "@/lib/design";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiCard from "@/components/ui/KpiCard";
 import EmptyState from "@/components/ui/EmptyState";
@@ -365,7 +365,7 @@ export default function VipMonitoringPage() {
                       <span className="text-[11px] font-bold px-2 py-0.5 rounded"
                         style={v.trip.active
                           ? { background: "rgba(16,185,129,0.12)", color: "#047857", border: "1px solid rgba(16,185,129,0.4)" }
-                          : { background: "rgba(37,99,235,0.10)", color: "#1e40af", border: "1px solid rgba(37,99,235,0.35)" }}>
+                          : { background: "rgba(37,99,235,0.10)", color: STATE.infoText, border: "1px solid rgba(37,99,235,0.35)" }}>
                         {TRIP_LABEL[v.trip.status] ?? v.trip.status}
                       </span>
                     ) : (
@@ -391,8 +391,8 @@ export default function VipMonitoringPage() {
                     {v.position ? (
                       <span className="text-[11px] font-bold px-2 py-0.5 rounded"
                         style={v.position.source === "PASSENGER"
-                          ? { background: "#fef3c7", color: "#7a4a00", border: "1px solid #fcd34d" }
-                          : { background: "#dbeafe", color: "#1e40af", border: "1px solid #93c5fd" }}>
+                          ? { background: STATE.warningSoft, color: STATE.warningText, border: `1px solid ${STATE.warning}` }
+                          : { background: STATE.infoSoft, color: STATE.infoText, border: `1px solid ${STATE.infoBorder}` }}>
                         {v.position.source === "PASSENGER" ? "GPS del VIP" : "GPS del vehículo"}
                       </span>
                     ) : (

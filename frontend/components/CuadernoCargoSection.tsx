@@ -106,7 +106,7 @@ export default function CuadernoCargoSection() {
                 border: "1px solid",
                 borderColor: categoria === "all" ? BRAND.teal : SURFACE.border,
                 background: categoria === "all" ? "rgba(33,208,179,0.1)" : SURFACE.card,
-                color: categoria === "all" ? "#0f766e" : SURFACE.textMuted,
+                color: categoria === "all" ? BRAND.tealInk : SURFACE.textMuted,
                 fontSize: 11,
                 fontWeight: 700,
                 cursor: "pointer",

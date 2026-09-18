@@ -8,7 +8,7 @@ import PageHeader from "@/components/PageHeader";
 import ResourceScreen from "@/components/ResourceScreen";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { apiFetch } from "@/lib/api";
-import { BRAND, STATE, SURFACE } from "@/lib/design";
+import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { resources } from "@/lib/resources";
 import { useI18n } from "@/lib/i18n";
@@ -205,7 +205,7 @@ const STATUS_COLORS: Record<string, { accent: string; chipBg: string; chipBorder
   ASSIGNED:   { accent: "#eab308", chipBg: "rgba(234,179,8,0.12)",   chipBorder: "rgba(234,179,8,0.3)",   pulse: false },
   EN_ROUTE:   { accent: STATE.success, chipBg: "rgba(16,185,129,0.12)",  chipBorder: "rgba(16,185,129,0.3)",  pulse: true  },
   PICKED_UP:  { accent: STATE.success, chipBg: "rgba(16,185,129,0.12)",  chipBorder: "rgba(16,185,129,0.3)",  pulse: true  },
-  DROPPED_OFF:{ accent: "#14b8a6", chipBg: "rgba(20,184,166,0.12)",  chipBorder: "rgba(20,184,166,0.3)",  pulse: false },
+  DROPPED_OFF:{ accent: BRAND.teal, chipBg: "rgba(20,184,166,0.12)",  chipBorder: "rgba(20,184,166,0.3)",  pulse: false },
   COMPLETED:  { accent: SURFACE.textMuted, chipBg: "rgba(100,116,139,0.1)",  chipBorder: "rgba(100,116,139,0.25)", pulse: false },
   CANCELLED:  { accent: STATE.danger, chipBg: "rgba(239,68,68,0.1)",    chipBorder: "rgba(239,68,68,0.25)",  pulse: false },
 };
@@ -261,7 +261,7 @@ const isPortalVipTrip = (t: {
 // del color del origen o en blanco cuando la tarjeta está activa.
 const SOURCE_META: Record<TripSource | "", { label: string; color: string; bg: string; border: string; icon: ReactNode }> = {
   "": { label: "Todos", color: SURFACE.text, bg: SURFACE.card, border: SURFACE.border, icon: <LayoutGridIcon size={18} /> },
-  PORTAL: { label: "VIP / T1", color: "#7c3aed", bg: "rgba(168,85,247,0.10)", border: "rgba(168,85,247,0.35)", icon: <CrownIcon size={18} /> },
+  PORTAL: { label: "VIP / T1", color: ACCENT.violet, bg: "rgba(168,85,247,0.10)", border: "rgba(168,85,247,0.35)", icon: <CrownIcon size={18} /> },
   DAILY: { label: "Operatividad Diaria", color: "#0ea5c8", bg: "rgba(14,165,200,0.10)", border: "rgba(14,165,200,0.35)", icon: <FileSpreadsheetIcon size={18} /> },
   MANUAL: { label: "Gestión Manual", color: BRAND.teal, bg: "rgba(33,208,179,0.10)", border: "rgba(33,208,179,0.35)", icon: <PenLineIcon size={18} /> },
 };
@@ -308,7 +308,7 @@ export default function TripsPage() {
   const pal = {
     cardBg: SURFACE.card, cardBorder: SURFACE.border, shadow: "0 1px 4px rgba(15,23,42,0.06)",
     textPrimary: SURFACE.text, textMuted: SURFACE.textMuted, labelColor: SURFACE.textFaint,
-    kpi: [STATE.warning, STATE.info, "#6366f1", STATE.success, SURFACE.textFaint],
+    kpi: [STATE.warning, STATE.info, ACCENT.indigo, STATE.success, SURFACE.textFaint],
     filterBg: SURFACE.card, filterBorder: SURFACE.border,
     btnBorder: SURFACE.border, btnColor: SURFACE.textSecondary,
   };
@@ -824,7 +824,7 @@ export default function TripsPage() {
       <article
         key={trip.id}
         style={{
-          background: hasDriver ? pal.cardBg : "#fffbeb",
+          background: hasDriver ? pal.cardBg : STATE.warningSoft,
           border: `1px solid ${hasDriver ? pal.cardBorder : "#fde68a"}`,
           borderLeft: `4px solid ${sc.accent}`,
           borderRadius: "20px",
@@ -861,7 +861,7 @@ export default function TripsPage() {
                 </span>
               )}
               {trip.isRoundTrip && (
-                <span style={{ background: "rgba(20,184,166,0.1)", border: "1px solid rgba(20,184,166,0.3)", borderRadius: "99px", padding: "3px 10px", fontSize: "11px", fontWeight: 700, color: "#14b8a6", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                <span style={{ background: "rgba(20,184,166,0.1)", border: "1px solid rgba(20,184,166,0.3)", borderRadius: "99px", padding: "3px 10px", fontSize: "11px", fontWeight: 700, color: BRAND.teal, display: "inline-flex", alignItems: "center", gap: "4px" }}>
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
                   Ida y vuelta
                 </span>
@@ -907,7 +907,7 @@ export default function TripsPage() {
 
         {trip.isRoundTrip && trip.childTrips && trip.childTrips.length > 0 && (
           <div className="mt-4" style={{ borderRadius: "16px", border: "1px solid rgba(20,184,166,0.25)", background: "rgba(20,184,166,0.04)", padding: "14px 16px" }}>
-            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "#14b8a6", marginBottom: "10px" }}>Tramo de regreso</p>
+            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: BRAND.teal, marginBottom: "10px" }}>Tramo de regreso</p>
             {trip.childTrips.map((child) => {
               const childSc = STATUS_COLORS[child.status ?? "REQUESTED"] ?? STATUS_COLORS.REQUESTED;
               const childTone = statusTone(child.status);
@@ -943,7 +943,7 @@ export default function TripsPage() {
                     setActiveTab("editor");
                     setSelectedTripId(child.id);
                   }}
-                  style={{ background: "rgba(20,184,166,0.1)", border: "1px solid rgba(20,184,166,0.3)", borderRadius: "99px", padding: "6px 14px", fontSize: "12px", fontWeight: 600, color: "#14b8a6", cursor: "pointer" }}
+                  style={{ background: "rgba(20,184,166,0.1)", border: "1px solid rgba(20,184,166,0.3)", borderRadius: "99px", padding: "6px 14px", fontSize: "12px", fontWeight: 600, color: BRAND.teal, cursor: "pointer" }}
                 >
                   Gestionar regreso
                 </button>
@@ -957,10 +957,10 @@ export default function TripsPage() {
             <p
               style={{
                 fontSize: "13px",
-                color: "#78350f",
+                color: STATE.warningText,
                 maxWidth: "600px",
-                background: "#fffbeb",
-                border: "1px solid #fde68a",
+                background: STATE.warningSoft,
+                border: `1px solid ${STATE.warningBorder}`,
                 borderLeft: `4px solid ${STATE.warning}`,
                 borderRadius: 10,
                 padding: "8px 12px",
@@ -1006,7 +1006,7 @@ export default function TripsPage() {
             </button>
             {CANCELLABLE_STATUSES.has(trip.status || "") && (
               <button type="button" onClick={() => setPendingAction({ trip, kind: "cancel" })}
-                style={{ background: SURFACE.card, border: "1px solid rgba(245,158,11,0.5)", borderRadius: "99px", padding: "7px 16px", fontSize: "13px", fontWeight: 600, color: "#d97706", cursor: "pointer" }}>
+                style={{ background: SURFACE.card, border: "1px solid rgba(245,158,11,0.5)", borderRadius: "99px", padding: "7px 16px", fontSize: "13px", fontWeight: 600, color: STATE.warningText, cursor: "pointer" }}>
                 Cancelar
               </button>
             )}
@@ -1438,27 +1438,27 @@ export default function TripsPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div style={{
                 borderRadius: "16px", padding: "14px 18px",
-                background: pendingAssignment.length > 0 ? "linear-gradient(135deg, #fffbeb, #fef3c7)" : "#f0fdf4",
+                background: pendingAssignment.length > 0 ? `linear-gradient(135deg, ${STATE.warningSoft}, ${STATE.warningSoft})` : STATE.successSoft,
                 border: `1px solid ${pendingAssignment.length > 0 ? "#fcd34d" : "#86efac"}`,
               }}>
-                <p style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.18em", textTransform: "uppercase", color: pendingAssignment.length > 0 ? STATE.warningText : "#166534" }}>
+                <p style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.18em", textTransform: "uppercase", color: pendingAssignment.length > 0 ? STATE.warningText : STATE.successText }}>
                   Asignación pendiente
                 </p>
-                <p style={{ fontSize: "28px", fontWeight: 800, lineHeight: 1.1, marginTop: 4, color: pendingAssignment.length > 0 ? "#d97706" : "#16a34a" }}>
+                <p style={{ fontSize: "28px", fontWeight: 800, lineHeight: 1.1, marginTop: 4, color: pendingAssignment.length > 0 ? STATE.warningText : STATE.success }}>
                   {pendingAssignment.length}
                 </p>
-                <p style={{ fontSize: "11px", color: pendingAssignment.length > 0 ? "#92400e" : "#166534", marginTop: 2 }}>
+                <p style={{ fontSize: "11px", color: pendingAssignment.length > 0 ? STATE.warningText : STATE.successText, marginTop: 2 }}>
                   {pendingAssignment.length > 0 ? "servicios a la espera de conductor" : "programación completamente cubierta"}
                 </p>
               </div>
-              <div style={{ borderRadius: "16px", padding: "14px 18px", background: "#f0fdf4", border: "1px solid #bbf7d0" }}>
-                <p style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.18em", textTransform: "uppercase", color: "#166534" }}>
+              <div style={{ borderRadius: "16px", padding: "14px 18px", background: STATE.successSoft, border: `1px solid ${STATE.successBorder}` }}>
+                <p style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.18em", textTransform: "uppercase", color: STATE.successText }}>
                   Servicios confirmados
                 </p>
-                <p style={{ fontSize: "28px", fontWeight: 800, lineHeight: 1.1, marginTop: 4, color: "#16a34a" }}>
+                <p style={{ fontSize: "28px", fontWeight: 800, lineHeight: 1.1, marginTop: 4, color: STATE.success }}>
                   {readyToGo.length}
                 </p>
-                <p style={{ fontSize: "11px", color: "#166534", marginTop: 2 }}>con conductor · pasan a Activos al iniciar</p>
+                <p style={{ fontSize: "11px", color: STATE.successText, marginTop: 2 }}>con conductor · pasan a Activos al iniciar</p>
               </div>
               <div style={{ borderRadius: "16px", padding: "14px 18px", background: SURFACE.card, border: `1px solid ${pal.cardBorder}` }}>
                 <p style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.18em", textTransform: "uppercase", color: pal.labelColor }}>
@@ -1486,12 +1486,12 @@ export default function TripsPage() {
                       Solicitudes del portal, planilla operativa y registros manuales sin conductor, ordenados por hora de salida.
                     </p>
                   </div>
-                  <span style={{ display: "inline-flex", alignItems: "center", borderRadius: "99px", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)", padding: "6px 16px", fontSize: "13px", fontWeight: 700, color: "#d97706" }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", borderRadius: "99px", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)", padding: "6px 16px", fontSize: "13px", fontWeight: 700, color: STATE.warningText }}>
                     {pendingAssignment.length} pendiente{pendingAssignment.length === 1 ? "" : "s"}
                   </span>
                 </div>
                 {pendingAssignment.length === 0 ? (
-                  <div style={{ borderRadius: "20px", border: "1px dashed #86efac", background: "#f0fdf4", padding: "48px 24px", textAlign: "center" as const, fontSize: "14px", color: "#166534" }}>
+                  <div style={{ borderRadius: "20px", border: `1px dashed ${STATE.successBorder}`, background: STATE.successSoft, padding: "48px 24px", textAlign: "center" as const, fontSize: "14px", color: STATE.successText }}>
                     No hay servicios pendientes de asignación. Las nuevas solicitudes aparecerán aquí automáticamente.
                   </div>
                 ) : (
@@ -1504,7 +1504,7 @@ export default function TripsPage() {
               <section className="space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase" as const, color: "#166534" }}>Programación confirmada</p>
+                    <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase" as const, color: STATE.successText }}>Programación confirmada</p>
                     <h3 style={{ marginTop: "4px", fontWeight: 700, fontSize: "18px", color: SURFACE.text }}>Servicios confirmados</h3>
                     <p style={{ marginTop: "2px", fontSize: "12px", color: pal.textMuted }}>
                       Con conductor y vehículo definidos, a la espera del inicio del servicio.
@@ -1811,7 +1811,7 @@ export default function TripsPage() {
                   ))}
                 </div>
                 {infoTrip.notes && (
-                  <p style={{ marginTop: "12px", fontSize: "12.5px", color: "#78350f", background: "#fffbeb", border: "1px solid #fde68a", borderLeft: `4px solid ${STATE.warning}`, borderRadius: 10, padding: "8px 12px", fontWeight: 600 }}>
+                  <p style={{ marginTop: "12px", fontSize: "12.5px", color: STATE.warningText, background: STATE.warningSoft, border: `1px solid ${STATE.warningBorder}`, borderLeft: `4px solid ${STATE.warning}`, borderRadius: 10, padding: "8px 12px", fontWeight: 600 }}>
                     <span style={{ fontWeight: 800, color: STATE.warningText }}><AlertIcon size={12} className="inline mr-1" />Observación:</span>{" "}
                     {safeText(infoTrip.notes.replace(/^\[Portal\]\s*/, ""))}
                   </p>
@@ -1863,7 +1863,7 @@ export default function TripsPage() {
                   CANCELLED: { label: "Cancelado por usuario", color: STATE.danger },
                   DRIVER_ASSIGNED: { label: "Conductor asignado", color: STATE.success },
                   VEHICLE_ASSIGNED: { label: "Vehículo asignado", color: STATE.success },
-                  STATUS_CHANGED: { label: "Estado actualizado", color: "#8b5cf6" },
+                  STATUS_CHANGED: { label: "Estado actualizado", color: ACCENT.violetLight },
                   SCHEDULE_CHANGED: { label: "Horario modificado", color: "#0ea5e9" },
                   VEHICLE_TYPE_CHANGED: { label: "Tipo vehículo cambiado", color: STATE.warning },
                   PASSENGER_COUNT_CHANGED: { label: "Pasajeros modificados", color: STATE.warning },

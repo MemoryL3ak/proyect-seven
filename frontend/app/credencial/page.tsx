@@ -101,7 +101,7 @@ function CredencialDownload() {
                 borderRadius: 12,
                 border: "none",
                 background: `linear-gradient(135deg, ${BRAND.tealLight} 0%, ${BRAND.teal} 100%)`,
-                color: "#0d1b3e",
+                color: SURFACE.text,
                 fontSize: 14,
                 fontWeight: 800,
                 cursor: "pointer",

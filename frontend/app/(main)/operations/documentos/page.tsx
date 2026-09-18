@@ -4,7 +4,7 @@ import { ChangeEvent, FormEvent, useCallback, useEffect, useState } from "react"
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
 import StyledSelect from "@/components/StyledSelect";
 import { apiFetch } from "@/lib/api";
-import { STATE, SURFACE, BRAND } from "@/lib/design";
+import { STATE, SURFACE, BRAND, ACCENT } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
 import {
   AUDIENCE_LABELS,
@@ -204,7 +204,7 @@ export default function EventDocumentsPage() {
   return (
     <div className="space-y-4">
       <section style={{ background: pal.cardBg, border: `1px solid ${pal.cardBorder}`, borderRadius: 18, padding: "18px 20px", boxShadow: pal.shadow }}>
-        <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#a78bfa", marginBottom: 4 }}>
+        <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: ACCENT.violetLight, marginBottom: 4 }}>
           {t("Documentos del evento")}
         </p>
         <h1 style={{ fontSize: 20, fontWeight: 800, color: pal.textPrimary }}>
@@ -282,7 +282,7 @@ export default function EventDocumentsPage() {
                       padding: "7px 14px", borderRadius: 99, fontSize: 12, fontWeight: 700, cursor: "pointer",
                       border: `1px solid ${active ? "rgba(124,58,237,0.35)" : pal.cardBorder}`,
                       background: active ? "rgba(167,139,250,0.14)" : SURFACE.card,
-                      color: active ? "#7c3aed" : pal.textMuted,
+                      color: active ? ACCENT.violet : pal.textMuted,
                     }}>
                     {t(AUDIENCE_LABELS[a])}
                   </button>
@@ -303,7 +303,7 @@ export default function EventDocumentsPage() {
             <button type="submit" disabled={saving}
               style={{
                 padding: "10px 22px", borderRadius: 12, border: "none",
-                background: "linear-gradient(135deg,#a78bfa,#7c3aed)", color: SURFACE.card,
+                background: `linear-gradient(135deg,${ACCENT.violetLight},${ACCENT.violet})`, color: SURFACE.card,
                 fontSize: 13, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1,
               }}>
               {saving ? t("Guardando...") : editingId ? t("Guardar cambios") : t("Publicar documento")}
@@ -336,7 +336,7 @@ export default function EventDocumentsPage() {
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
-                <tr style={{ borderBottom: `2px solid ${pal.cardBorder}`, background: "#fafbfc" }}>
+                <tr style={{ borderBottom: `2px solid ${pal.cardBorder}`, background: SURFACE.bg }}>
                   {["Documento", "Evento", "Portales", "Estado", "Acciones"].map(h => (
                     <th key={h} style={{ padding: "12px 14px", textAlign: "left", fontSize: 9, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: pal.labelColor }}>{t(h)}</th>
                   ))}
@@ -360,7 +360,7 @@ export default function EventDocumentsPage() {
                       <td style={{ padding: "10px 14px" }}>
                         <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
                           {doc.audiences?.map(a => (
-                            <span key={a} style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 99, background: "rgba(167,139,250,0.14)", color: "#7c3aed" }}>
+                            <span key={a} style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 99, background: "rgba(167,139,250,0.14)", color: ACCENT.violet }}>
                               {t(AUDIENCE_LABELS[a] ?? a)}
                             </span>
                           ))}

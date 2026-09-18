@@ -5,7 +5,7 @@ import BulkImportPanel from "@/components/BulkImportPanel";
 import ResourceScreen from "@/components/ResourceScreen";
 import { resources } from "@/lib/resources";
 import { apiFetch } from "@/lib/api";
-import { BRAND, STATE, SURFACE } from "@/lib/design";
+import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { UploadIcon, CheckIcon, AlertCircleIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 
@@ -82,10 +82,10 @@ export default function RegistroParticipantesPage() {
       />
 
       {/* Bulk photo upload */}
-      <section className="surface" style={{ borderRadius: "14px", padding: "16px 20px", borderTop: "2px solid #a78bfa", boxShadow: "0 1px 6px rgba(15,23,42,0.06)" }}>
+      <section className="surface" style={{ borderRadius: "14px", padding: "16px 20px", borderTop: `2px solid ${ACCENT.violetLight}`, boxShadow: "0 1px 6px rgba(15,23,42,0.06)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
           <div>
-            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#a78bfa", marginBottom: "4px" }}>
+            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: ACCENT.violetLight, marginBottom: "4px" }}>
               {t("Carga masiva de fotos")}
             </p>
             <p style={{ fontSize: "12px", color: SURFACE.textMuted, margin: 0 }}>
@@ -98,7 +98,7 @@ export default function RegistroParticipantesPage() {
             </span>
             <label style={{
               display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 18px", borderRadius: "12px",
-              background: "linear-gradient(135deg, #a78bfa, #7c3aed)", color: SURFACE.card, fontSize: "13px", fontWeight: 700,
+              background: `linear-gradient(135deg, ${ACCENT.violetLight}, ${ACCENT.violet})`, color: SURFACE.card, fontSize: "13px", fontWeight: 700,
               cursor: "pointer", boxShadow: "0 2px 10px rgba(167,139,250,0.35)", transition: "opacity 0.15s",
             }}>
               <UploadIcon size={14} strokeWidth={2.5} />
@@ -205,7 +205,7 @@ export default function RegistroParticipantesPage() {
               </div>
               <div style={{ padding: "8px 16px", borderRadius: "10px", background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)" }}>
                 <p style={{ fontSize: "20px", fontWeight: 800, color: STATE.danger, margin: 0 }}>{photoResult.notFound}</p>
-                <p style={{ fontSize: "10px", fontWeight: 600, color: "#991b1b", margin: 0 }}>Sin match</p>
+                <p style={{ fontSize: "10px", fontWeight: 600, color: STATE.dangerText, margin: 0 }}>Sin match</p>
               </div>
             </div>
             {photoResult.names.length > 0 && (

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import { apiFetch } from "@/lib/api";
-import { BRAND, STATE, SURFACE } from "@/lib/design";
+import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { AlertIcon, ChevronDownIcon, CameraIcon, UploadIcon, CheckIcon } from "@/components/ui/Icons";
 import { isAthletePersonalDataValidated } from "@/lib/athletes";
 import type { FieldDef, ResourceConfig } from "@/lib/resources";
@@ -2326,7 +2326,7 @@ export default function ResourceScreen({
   const STATUS_KEYS = new Set(["status", "estado", "state", "accreditationStatus", "paymentStatus"]);
   const STATUS_BADGE: Record<string, { bg: string; color: string }> = {
     COMPLETED: { bg: "rgba(100,116,139,0.12)", color: SURFACE.textSecondary },
-    DROPPED_OFF: { bg: "rgba(20,184,166,0.12)", color: "#0f766e" },
+    DROPPED_OFF: { bg: "rgba(20,184,166,0.12)", color: BRAND.tealInk },
     CANCELLED: { bg: "rgba(239,68,68,0.1)", color: STATE.dangerText },
     CANCELED: { bg: "rgba(239,68,68,0.1)", color: STATE.dangerText },
     SCHEDULED: { bg: "rgba(59,130,246,0.12)", color: STATE.infoText },
@@ -2460,7 +2460,7 @@ export default function ResourceScreen({
           <div style={{ padding: "12px 16px", borderRadius: "12px", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)", display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
             <span style={{ display: "inline-flex", color: STATE.warningText }}><AlertIcon size={20} /></span>
             <div>
-              <p style={{ fontSize: "13px", fontWeight: 700, color: "#92400e", margin: 0 }}>{t("Atención: Visa requerida")}</p>
+              <p style={{ fontSize: "13px", fontWeight: 700, color: STATE.warningText, margin: 0 }}>{t("Atención: Visa requerida")}</p>
               <p style={{ fontSize: "12px", color: STATE.warningText, margin: "2px 0 0" }}>{t("Este participante requiere visa para ingresar al país. Asegúrate de gestionar la documentación correspondiente.")}</p>
             </div>
           </div>
@@ -3547,7 +3547,7 @@ export default function ResourceScreen({
                 <span style={{ fontSize: "12px", fontWeight: 600, color: BRAND.teal, background: "rgba(33,208,179,0.1)", borderRadius: "20px", padding: "3px 10px", border: "1px solid rgba(33,208,179,0.2)" }}>
                   {arrivalCount} {t("llegadas")}
                 </span>
-                <span style={{ fontSize: "12px", fontWeight: 600, color: "#a78bfa", background: "rgba(167,139,250,0.1)", borderRadius: "20px", padding: "3px 10px", border: "1px solid rgba(167,139,250,0.2)" }}>
+                <span style={{ fontSize: "12px", fontWeight: 600, color: ACCENT.violetLight, background: "rgba(167,139,250,0.1)", borderRadius: "20px", padding: "3px 10px", border: "1px solid rgba(167,139,250,0.2)" }}>
                   {departureCount} {t("salidas")}
                 </span>
                 <span style={{ fontSize: "12px", color: "var(--text-muted)", marginLeft: "4px" }}>— {items.length} {t("total")}</span>
@@ -3564,9 +3564,9 @@ export default function ResourceScreen({
                 {(["all", "ARRIVAL", "DEPARTURE"] as const).map((f) => (
                   <button key={f} type="button" onClick={() => setAndTripFilter(f)} style={{
                     fontSize: "12px", fontWeight: 600, padding: "5px 14px", borderRadius: "20px", cursor: "pointer", border: "1.5px solid",
-                    borderColor: andTripFilter === f ? (f === "ARRIVAL" ? BRAND.teal : f === "DEPARTURE" ? "#a78bfa" : BRAND.blue) : "var(--border)",
+                    borderColor: andTripFilter === f ? (f === "ARRIVAL" ? BRAND.teal : f === "DEPARTURE" ? ACCENT.violetLight : BRAND.blue) : "var(--border)",
                     background: andTripFilter === f ? (f === "ARRIVAL" ? "rgba(33,208,179,0.1)" : f === "DEPARTURE" ? "rgba(167,139,250,0.1)" : "rgba(31,205,255,0.1)") : "transparent",
-                    color: andTripFilter === f ? (f === "ARRIVAL" ? BRAND.teal : f === "DEPARTURE" ? "#a78bfa" : BRAND.blue) : "var(--text-muted)",
+                    color: andTripFilter === f ? (f === "ARRIVAL" ? BRAND.teal : f === "DEPARTURE" ? ACCENT.violetLight : BRAND.blue) : "var(--text-muted)",
                   }}>
                     {f === "all" ? t("Todos") : f === "ARRIVAL" ? t("Llegadas") : t("Salidas")}
                   </button>
@@ -3581,11 +3581,11 @@ export default function ResourceScreen({
                   const trip = (item.participantTripType ?? "").toUpperCase();
                   const isArrival = trip === "ARRIVAL";
                   const isDeparture = trip === "DEPARTURE";
-                  const borderColor = isArrival ? BRAND.teal : isDeparture ? "#a78bfa" : SURFACE.borderStrong;
+                  const borderColor = isArrival ? BRAND.teal : isDeparture ? ACCENT.violetLight : SURFACE.borderStrong;
                   const bgColor = isArrival ? "rgba(33,208,179,0.03)" : isDeparture ? "rgba(167,139,250,0.03)" : "#fafafa";
                   const initials = (item.participantFullName ?? "?").split(" ").slice(0, 2).map((w: string) => w[0] ?? "").join("").toUpperCase();
                   const avatarBg = isArrival ? "rgba(33,208,179,0.15)" : isDeparture ? "rgba(167,139,250,0.12)" : "rgba(148,163,184,0.12)";
-                  const avatarColor = isArrival ? STATE.successText : isDeparture ? "#7c3aed" : SURFACE.textMuted;
+                  const avatarColor = isArrival ? STATE.successText : isDeparture ? ACCENT.violet : SURFACE.textMuted;
                   const eventLabel = eventOptions.find((o) => o.value === item.eventId)?.label ?? null;
                   const disciplineLabel = disciplineOptions.find((o: any) => o.value === item.participantDisciplineId)?.label ?? null;
                   const userTypeLabel = USER_TYPE_LABELS[item.participantUserType ?? ""] ?? item.participantUserType ?? null;
@@ -3617,7 +3617,7 @@ export default function ResourceScreen({
                             <span style={{
                               fontSize: "10px", fontWeight: 700, letterSpacing: "0.06em", padding: "2px 8px", borderRadius: "20px",
                               background: isArrival ? "rgba(33,208,179,0.12)" : isDeparture ? "rgba(167,139,250,0.12)" : "rgba(148,163,184,0.1)",
-                              color: isArrival ? BRAND.teal : isDeparture ? "#a78bfa" : "var(--text-muted)",
+                              color: isArrival ? BRAND.teal : isDeparture ? ACCENT.violetLight : "var(--text-muted)",
                               border: `1px solid ${isArrival ? "rgba(33,208,179,0.25)" : isDeparture ? "rgba(167,139,250,0.25)" : "var(--border)"}`,
                             }}>
                               {isArrival ? t("LLEGADA") : isDeparture ? t("SALIDA") : trip}
@@ -3627,7 +3627,7 @@ export default function ResourceScreen({
                         {/* Tags */}
                         <div style={{ display: "flex", gap: "5px", flexWrap: "wrap", marginBottom: "5px" }}>
                           {item.participantCountryCode && (
-                            <span style={{ fontSize: "10px", fontWeight: 600, padding: "1px 7px", borderRadius: "4px", background: "rgba(99,102,241,0.08)", color: "#6366f1", border: "1px solid rgba(99,102,241,0.15)" }}>
+                            <span style={{ fontSize: "10px", fontWeight: 600, padding: "1px 7px", borderRadius: "4px", background: "rgba(99,102,241,0.08)", color: ACCENT.indigo, border: "1px solid rgba(99,102,241,0.15)" }}>
                               {item.participantCountryCode}
                             </span>
                           )}
@@ -3817,7 +3817,7 @@ export default function ResourceScreen({
                             </span>
                           )}
                           {item.countryCode && (
-                            <span style={{ fontSize: "10px", fontWeight: 600, padding: "1px 7px", borderRadius: "4px", background: "rgba(99,102,241,0.08)", color: "#6366f1", border: "1px solid rgba(99,102,241,0.15)" }}>
+                            <span style={{ fontSize: "10px", fontWeight: 600, padding: "1px 7px", borderRadius: "4px", background: "rgba(99,102,241,0.08)", color: ACCENT.indigo, border: "1px solid rgba(99,102,241,0.15)" }}>
                               {item.countryCode}
                             </span>
                           )}

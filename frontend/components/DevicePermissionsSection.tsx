@@ -56,16 +56,16 @@ const STATE_LABEL: Record<PermissionState, string> = {
 
 const STATE_COLOR: Record<PermissionState, string> = {
   granted: BRAND.tealInk,
-  denied: "#92400E",
+  denied: STATE.warningText,
   undetermined: SURFACE.textSecondary,
-  blocked: "#b91c1c",
+  blocked: STATE.dangerText,
 };
 
 const STATE_BG: Record<PermissionState, string> = {
   granted: "rgba(33,208,179,0.12)",
-  denied: "#FEF3C7",
+  denied: STATE.warningSoft,
   undetermined: SURFACE.borderMuted,
-  blocked: "#FEE2E2",
+  blocked: STATE.dangerSoft,
 };
 
 export default function DevicePermissionsSection() {
@@ -298,8 +298,8 @@ export function DevicePermissionsBanner({
   return (
     <div
       style={{
-        background: "linear-gradient(135deg,#fff7ed,#fef3c7)",
-        border: "1px solid #fde68a",
+        background: `linear-gradient(135deg,#fff7ed,${STATE.warningSoft})`,
+        border: `1px solid ${STATE.warningBorder}`,
         borderRadius: 12,
         padding: "10px 12px",
         display: "flex",
@@ -313,7 +313,7 @@ export function DevicePermissionsBanner({
           flex: 1,
           margin: 0,
           fontSize: 12.5,
-          color: "#78350F",
+          color: STATE.warningText,
           lineHeight: 1.35,
         }}
       >
@@ -328,7 +328,7 @@ export function DevicePermissionsBanner({
           padding: "7px 12px",
           borderRadius: 8,
           border: "none",
-          background: "#92400E",
+          background: STATE.warningText,
           color: SURFACE.card,
           fontSize: 11.5,
           fontWeight: 700,
