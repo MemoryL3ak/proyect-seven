@@ -133,7 +133,7 @@ type HotelAssignment = {
 type HotelRoom = { id: string; roomNumber: string; roomType: string };
 type HotelBed = { id: string; bedType: string };
 type Vehicle = { id: string; plate: string; type: string };
-type Trip = { id: string; driverId: string; delegationId?: string | null; disciplineId?: string | null; vehicleId?: string | null; athleteIds?: string[]; athleteNames?: string[]; requesterAthleteId?: string | null; clientType?: string | null; origin?: string | null; destination?: string | null; status?: string | null; scheduledAt?: string | null; startedAt?: string | null; completedAt?: string | null; tripType?: string | null; discipline?: string | null; notes?: string | null; driverRating?: number | null; ratingComment?: string | null; ratedAt?: string | null; passengerLat?: number | null; passengerLng?: number | null };
+type Trip = { id: string; driverId: string; delegationId?: string | null; disciplineId?: string | null; originVenueId?: string | null; originHotelId?: string | null; destinationVenueId?: string | null; destinationHotelId?: string | null; vehicleId?: string | null; athleteIds?: string[]; athleteNames?: string[]; requesterAthleteId?: string | null; clientType?: string | null; origin?: string | null; destination?: string | null; status?: string | null; scheduledAt?: string | null; startedAt?: string | null; completedAt?: string | null; tripType?: string | null; discipline?: string | null; notes?: string | null; driverRating?: number | null; ratingComment?: string | null; ratedAt?: string | null; passengerLat?: number | null; passengerLng?: number | null };
 type Driver = { id: string; fullName: string; userId?: string | null };
 type Event = { id: string; name: string };
 // name: las delegaciones de los Juegos Escolares son regiones con nombre visible.
@@ -531,6 +531,24 @@ export default function UserPortalPage() {
 
   // Jefe de Misión: por tipo de cliente (JEFE_MISION) o por estar designado
   // como encargado de su delegación en Registro → Delegaciones.
+  // Nombre del recinto de un viaje: "Bordeplaza", "Elías Figueroa (Martillo)".
+  // Sin recinto asignado sólo queda la dirección escrita a mano.
+  const nombreRecinto = useMemo(() => {
+    const mapa = new Map<string, string>();
+    for (const v of venues) if (v.id && v.name) mapa.set(v.id, v.name);
+    for (const a of allAccommodations) if (a.id && a.name) mapa.set(a.id, a.name);
+    return mapa;
+  }, [venues, allAccommodations]);
+  const puntoViaje = (
+    t: { originVenueId?: string | null; originHotelId?: string | null; destinationVenueId?: string | null; destinationHotelId?: string | null; origin?: string | null; destination?: string | null },
+    extremo: "origin" | "destination",
+  ) => {
+    const id = extremo === "origin" ? (t.originVenueId ?? t.originHotelId) : (t.destinationVenueId ?? t.destinationHotelId);
+    const direccion = (extremo === "origin" ? t.origin : t.destination) ?? "";
+    const nombre = id ? nombreRecinto.get(id) ?? null : null;
+    return { nombre, direccion };
+  };
+
   const isChief =
     athlete?.isDelegationLead === true ||
     normalizeClientType(athlete?.userType) === "JEFE_MISION";
@@ -1792,14 +1810,24 @@ export default function UserPortalPage() {
                   {/* Origen/destino en filas compactas con recorte: las
                       direcciones largas ya no llenan la tarjeta de texto. */}
                   <div style={{ display:"flex",flexDirection:"column",gap:3,margin:"0 0 6px" }}>
-                    <div style={{ display:"flex",alignItems:"baseline",gap:6,minWidth:0 }}>
-                      <span style={{ fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:SURFACE.textFaint,flexShrink:0,width:48 }}>ORIGEN</span>
-                      <span style={{ fontSize:13,fontWeight:700,color:SURFACE.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{trip.origin || "–"}</span>
-                    </div>
-                    <div style={{ display:"flex",alignItems:"baseline",gap:6,minWidth:0 }}>
-                      <span style={{ fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:SURFACE.textFaint,flexShrink:0,width:48 }}>DESTINO</span>
-                      <span style={{ fontSize:13,fontWeight:700,color:SURFACE.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{trip.destination || "–"}</span>
-                    </div>
+                    {(["origin","destination"] as const).map((extremo) => {
+                      const punto = puntoViaje(trip, extremo);
+                      return (
+                        <div key={extremo} style={{ display:"flex",alignItems:"baseline",gap:6,minWidth:0 }}>
+                          <span style={{ fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:SURFACE.textFaint,flexShrink:0,width:48 }}>{extremo === "origin" ? t("ORIGEN") : t("DESTINO")}</span>
+                          <span style={{ minWidth:0 }}>
+                            <span style={{ display:"block",fontSize:13,fontWeight:700,color:SURFACE.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                              {punto.nombre || punto.direccion || "–"}
+                            </span>
+                            {punto.nombre && punto.direccion && (
+                              <span style={{ display:"block",fontSize:11,color:SURFACE.textMuted,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                                {punto.direccion}
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                   {trip.scheduledAt && <p style={{ fontSize:12,color:SURFACE.textMuted,margin:"0 0 6px" }}>Programado: {fmt(trip.scheduledAt)}</p>}
                   {driver?.fullName && <p style={{ fontSize:12,color:SURFACE.textStrong,margin:0 }}>Conductor: {driver.fullName}</p>}
@@ -1815,14 +1843,24 @@ export default function UserPortalPage() {
                   {completed.map(t => (
                     <div key={t.id} style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,padding:"12px 14px" }}>
                       <div style={{ display:"flex",flexDirection:"column",gap:2,margin:"0 0 4px" }}>
-                        <div style={{ display:"flex",alignItems:"baseline",gap:6,minWidth:0 }}>
-                          <span style={{ fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:SURFACE.textFaint,flexShrink:0,width:48 }}>ORIGEN</span>
-                          <span style={{ fontSize:12.5,fontWeight:700,color:SURFACE.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{t.origin || "–"}</span>
-                        </div>
-                        <div style={{ display:"flex",alignItems:"baseline",gap:6,minWidth:0 }}>
-                          <span style={{ fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:SURFACE.textFaint,flexShrink:0,width:48 }}>DESTINO</span>
-                          <span style={{ fontSize:12.5,fontWeight:700,color:SURFACE.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{t.destination || "–"}</span>
-                        </div>
+                        {(["origin","destination"] as const).map((extremo) => {
+                          const punto = puntoViaje(t, extremo);
+                          return (
+                            <div key={extremo} style={{ display:"flex",alignItems:"baseline",gap:6,minWidth:0 }}>
+                              <span style={{ fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:SURFACE.textFaint,flexShrink:0,width:48 }}>{extremo === "origin" ? "ORIGEN" : "DESTINO"}</span>
+                              <span style={{ minWidth:0 }}>
+                                <span style={{ display:"block",fontSize:12.5,fontWeight:700,color:SURFACE.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                                  {punto.nombre || punto.direccion || "–"}
+                                </span>
+                                {punto.nombre && punto.direccion && (
+                                  <span style={{ display:"block",fontSize:10.5,color:SURFACE.textMuted,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                                    {punto.direccion}
+                                  </span>
+                                )}
+                              </span>
+                            </div>
+                          );
+                        })}
                       </div>
                       <p style={{ fontSize:11,color:SURFACE.textMuted,margin:"0 0 4px" }}>Completado: {fmt(t.completedAt)}</p>
                       {t.driverRating && <p style={{ fontSize:11,color:STATE.warning,margin:0 }}><span style={{ display:"inline-flex",gap:1,verticalAlign:"-1px" }}>{Array.from({ length: t.driverRating }, (_, k) => <StarIcon key={k} size={11} />)}</span> {t.ratingComment && `"${t.ratingComment}"`}</p>}
@@ -2318,8 +2356,8 @@ export default function UserPortalPage() {
 
                 {/* Filtros — ocultos para TA: su calendario queda fijo en su disciplina */}
                 {!isTA && (
-                <div style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,padding:"12px 14px" }}>
-                  <p style={{ fontSize:10,fontWeight:800,letterSpacing:"0.14em",textTransform:"uppercase",color:SURFACE.textFaint,margin:"0 0 8px" }}>Filtros</p>
+                <div style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,padding:"12px 14px",minWidth:0,overflow:"hidden" }}>
+                  <p style={{ fontSize:10,fontWeight:800,letterSpacing:"0.14em",textTransform:"uppercase",color:SURFACE.textFaint,margin:"0 0 8px" }}>{t("Filtros")}</p>
                   <label style={{ fontSize:11,fontWeight:600,color:SURFACE.textMuted }}>{t("Tipo de evento")}</label>
                   <ChipFilter
                     style={{ marginTop:6 }}
