@@ -63,6 +63,7 @@ const chip = (bg: string, color: string): React.CSSProperties => ({
 export default function MissionTrips({
   trips,
   delegationId,
+  delegationName,
   memberIds,
   disciplines,
   venues,
@@ -70,6 +71,8 @@ export default function MissionTrips({
 }: {
   trips: MissionTrip[];
   delegationId?: string | null;
+  /** Región del jefe: la lista está acotada a ella. */
+  delegationName?: string;
   memberIds: string[];
   disciplines: DisciplineLike[];
   venues: NamedPlace[];
@@ -134,14 +137,12 @@ export default function MissionTrips({
       if (estadoFiltro === "TERMINADOS") return !ACTIVOS.has(estado);
       return true;
     });
+    // Del más temprano al más tarde, sin excepciones: el jefe lee la jornada
+    // de corrido. Los viajes sin hora quedan al final.
     return list.sort((a, b) => {
-      const activoA = ACTIVOS.has(norm(a.status));
-      const activoB = ACTIVOS.has(norm(b.status));
-      if (activoA !== activoB) return activoA ? -1 : 1;
-      const ta = new Date(a.scheduledAt ?? 0).getTime();
-      const tb = new Date(b.scheduledAt ?? 0).getTime();
-      // Los que vienen, del más próximo al más lejano; los terminados, al revés.
-      return activoA ? ta - tb : tb - ta;
+      const ta = a.scheduledAt ? new Date(a.scheduledAt).getTime() : Infinity;
+      const tb = b.scheduledAt ? new Date(b.scheduledAt).getTime() : Infinity;
+      return ta - tb;
     });
   }, [propios, disciplinaFiltro, estadoFiltro, labels]);
 
@@ -164,6 +165,7 @@ export default function MissionTrips({
           {t("Viajes de mi delegación")}
         </p>
         <p style={{ fontSize: 11.5, color: SURFACE.textFaint, margin: "3px 0 0" }}>
+          {delegationName ? `${delegationName} · ` : ""}
           {visibles.length} {visibles.length === 1 ? t("traslado") : t("traslados")}
           {estadoFiltro === "ACTIVOS" ? ` · ${t("por realizar")}` : ""}
         </p>

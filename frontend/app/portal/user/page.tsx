@@ -1874,6 +1874,7 @@ export default function UserPortalPage() {
               <MissionTrips
                 trips={delegationTrips}
                 delegationId={athlete.delegationId}
+                delegationName={delegationName}
                 memberIds={[athlete.id, ...delegationMembers.map((m) => m.id)]}
                 disciplines={disciplineParents}
                 venues={venues}
