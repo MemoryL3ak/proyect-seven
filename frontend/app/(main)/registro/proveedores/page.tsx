@@ -221,6 +221,23 @@ function DocRow({
 
 // ── Empty forms ──────────────────────────────────────────────────────────────
 const EMPTY_PROVIDER_FORM = { name: "", type: "", subtype: "", email: "", rut: "", phone: "", address: "", city: "", contactName: "", invoiceType: "", bidAmount: "", bidTripCount: "" };
+/**
+ * Capacidad sugerida por tipo de vehículo. Es el valor que la app asumía
+ * cuando la ficha no traía capacidad; ahora sólo se propone al elegir el tipo
+ * y se puede corregir (un bus de 50 asientos dejaba de aparecer para 46 PAX).
+ */
+const CAPACIDAD_SUGERIDA: Record<string, number> = {
+  SEDAN: 4, SUV: 6, VAN_10: 10, VAN_15: 17, VAN_19: 19, MINIBUS: 33, BUS: 45,
+};
+
+/** Capacidad guardada en la ficha, venga como número o como texto. */
+const capacidadDeMetadata = (meta?: Record<string, unknown> | null): string => {
+  const c = meta?.vehicleCapacity;
+  if (typeof c === 'number' && Number.isFinite(c)) return String(c);
+  if (typeof c === 'string' && c.trim()) return c.trim();
+  return '';
+};
+
 const EMPTY_PARTICIPANT_FORM = {
   providerId: "",
   fullName: "",
@@ -247,6 +264,7 @@ const EMPTY_PARTICIPANT_FORM = {
   vehicleAno: "",
   vehiclePatente: "",
   vehicleTipo: "",
+  vehicleCapacidad: "",
   photoDataUrl: "",
 };
 
@@ -582,6 +600,7 @@ export default function ProveedoresPage() {
       vehicleAno: (p.metadata?.vehicleAno as string) ?? "",
       vehiclePatente: (p.metadata?.vehiclePatente as string) ?? "",
       vehicleTipo: (p.metadata?.vehicleTipo as string) ?? "",
+      vehicleCapacidad: capacidadDeMetadata(p.metadata),
       photoDataUrl: (p.metadata?.photoUrl as string) ?? "",
     });
     setParticipantDocFiles({});
@@ -624,6 +643,9 @@ export default function ProveedoresPage() {
             vehicleAno: participantForm.vehicleAno || null,
             vehiclePatente: participantForm.vehiclePatente || null,
             vehicleTipo: participantForm.vehicleTipo || null,
+            vehicleCapacity: participantForm.vehicleCapacidad
+              ? Number(participantForm.vehicleCapacidad)
+              : null,
           } : {}),
         } : undefined,
       };
@@ -1837,7 +1859,20 @@ export default function ProveedoresPage() {
                           </label>
                           <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
                             {t("Tipo")}
-                            <select className="input" value={participantForm.vehicleTipo} onChange={e => setParticipantForm(f => ({ ...f, vehicleTipo: e.target.value }))}>
+                            <select
+                              className="input"
+                              value={participantForm.vehicleTipo}
+                              onChange={e => {
+                                const tipo = e.target.value;
+                                setParticipantForm(f => ({
+                                  ...f,
+                                  vehicleTipo: tipo,
+                                  // Propone la capacidad del tipo sólo si aún no
+                                  // se escribió una (nunca pisa lo cargado).
+                                  vehicleCapacidad: f.vehicleCapacidad || (CAPACIDAD_SUGERIDA[tipo] ? String(CAPACIDAD_SUGERIDA[tipo]) : ""),
+                                }));
+                              }}
+                            >
                               <option value="">{t("— Tipo —")}</option>
                               <option value="SEDAN">{t("Sedán")}</option>
                               <option value="SUV">{t("SUV")}</option>
@@ -1847,6 +1882,23 @@ export default function ProveedoresPage() {
                               <option value="MINIBUS">{t("Minibus")}</option>
                               <option value="BUS">{t("Bus")}</option>
                             </select>
+                          </label>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
+                            {t("Capacidad (pasajeros)")}
+                            <input
+                              className="input"
+                              type="number"
+                              min={1}
+                              max={80}
+                              value={participantForm.vehicleCapacidad}
+                              onChange={e => setParticipantForm(f => ({ ...f, vehicleCapacidad: e.target.value }))}
+                              placeholder={participantForm.vehicleTipo && CAPACIDAD_SUGERIDA[participantForm.vehicleTipo] ? String(CAPACIDAD_SUGERIDA[participantForm.vehicleTipo]) : "0"}
+                            />
+                            <span style={{ fontSize: "10.5px", fontWeight: 500, letterSpacing: "0.01em", textTransform: "none", color: "var(--text-muted)" }}>
+                              {t("Asientos disponibles para pasajeros. Con este dato el chofer aparece en los viajes según la cantidad de personas.")}
+                            </span>
                           </label>
                         </div>
                       </div>
