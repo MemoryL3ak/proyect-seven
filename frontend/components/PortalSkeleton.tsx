@@ -20,7 +20,7 @@ export default function PortalSkeleton({
 }) {
   return (
     <div style={{ minHeight: "100vh", background: "#eef1f8", display: "flex", flexDirection: "column" }} aria-busy="true" aria-live="polite">
-      <style>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         @keyframes ps-shimmer{100%{transform:translateX(100%)}}
         @keyframes ps-fade{from{opacity:0}to{opacity:1}}
         .ps-root{animation:ps-fade .25s ease both}
@@ -41,7 +41,7 @@ export default function PortalSkeleton({
           .ps-b::after{animation:none}
           .ps-root{animation:none}
         }
-      `}</style>
+      ` }} />
 
       <div className="ps-root" style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         {/* Banner superior */}

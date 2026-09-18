@@ -1389,7 +1389,7 @@ export default function UserPortalPage() {
       )}
       {/* Asistente IA para el jefe de delegación */}
       {athlete && isChief && <SofiaWidget compact />}
-      <style>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         @keyframes db-in{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
         @keyframes db-badge{from{opacity:0;transform:scale(0.85)}to{opacity:1;transform:scale(1)}}
         @keyframes db-shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
@@ -1477,7 +1477,7 @@ export default function UserPortalPage() {
           .db-banner-tag{display:none;}
           .db-cards-grid{grid-template-columns:1fr 1fr;gap:8px;}
         }
-      `}</style>
+      ` }} />
 
       {/* Decorative background shapes */}
       <div style={{ position:"fixed",top:"-120px",right:"-120px",width:"500px",height:"500px",borderRadius:"50%",background:"radial-gradient(ellipse,rgba(33,208,179,0.07) 0%,transparent 65%)",pointerEvents:"none",zIndex:0 }} />
