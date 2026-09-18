@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
+import { delegationLabel } from "@/lib/delegations";
 
 type EventItem = {
   id: string;
@@ -371,7 +372,7 @@ export default function EventAndCapacityPlanner() {
                   <tbody>
                     {eventDelegations.map((delegation) => (
                       <tr key={delegation.id}>
-                        <td className="font-medium text-white">{delegation.countryCode || delegation.id}</td>
+                        <td className="font-medium text-white">{delegationLabel(delegation)}</td>
                         <td className="w-[220px]">
                           <input
                             className="input"

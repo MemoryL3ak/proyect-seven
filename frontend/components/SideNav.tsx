@@ -59,7 +59,8 @@ const navSections: NavSection[] = [
       {
         title: "Sede", icon: "pin",
         items: [
-          { href: "/sede", label: "Sede", icon: "pin" }
+          { href: "/sede", label: "Sede", icon: "pin" },
+          { href: "/incidents", label: "Incidencias", icon: "shield" }
         ]
       },
       {
@@ -261,6 +262,7 @@ const HREF_TO_MODULE: Record<string, string> = {
   "/deportes": "deportes",
   "/deportes/premiaciones": "deportes",
   "/sede": "sede",
+  "/incidents": "incidencias",
   "/sports-calendar": "calendario",
   // Con módulo propio: antes colgaban de "operacion.viajes" y cualquier
   // usuario con Viajes veía Staff & Voluntarios y Beneficios sin quererlo.

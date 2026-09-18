@@ -23,6 +23,7 @@ type DriverRow = {
   rut: string;
   email: string | null;
   provider_id: string | null;
+  delegation_id: string | null;
   user_id: string | null;
   license_number: string | null;
   phone: string | null;
@@ -89,6 +90,9 @@ export class DriversService {
     }
     if (dto.providerId !== undefined) {
       row.provider_id = dto.providerId ?? null;
+    }
+    if (dto.delegationId !== undefined) {
+      row.delegation_id = dto.delegationId || null;
     }
     if (dto.userId !== undefined) {
       row.user_id = dto.userId ?? null;
@@ -160,6 +164,7 @@ export class DriversService {
       rut: row.rut,
       email: row.email,
       providerId: row.provider_id,
+      delegationId: row.delegation_id ?? null,
       userId: row.user_id,
       licenseNumber: row.license_number,
       phone: row.phone,
@@ -365,7 +370,7 @@ export class DriversService {
     const { data, error } = await this.supabase
       .schema('core')
       .from('provider_participants')
-      .select('id, provider_id, full_name, rut, email, phone, status, metadata')
+      .select('id, provider_id, delegation_id, full_name, rut, email, phone, status, metadata')
       .neq('status', 'DELETED');
     if (error) {
       // Que falle esta fuente no puede dejar sin conductores a la plataforma:
@@ -388,6 +393,7 @@ export class DriversService {
           email: row.email ?? null,
           phone: row.phone ?? null,
           providerId: row.provider_id ?? null,
+          delegationId: (row.delegation_id as string | null) ?? null,
           userId: null,
           vehicleId: null,
           status: row.status ?? null,

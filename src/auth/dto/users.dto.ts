@@ -34,6 +34,16 @@ export class CreateUserDto {
   @IsString()
   @IsOptional()
   phone?: string;
+
+  // Alcance de datos: un Jefe de Misión queda acotado a su delegación (región)
+  // y el backend filtra monitoreo, incidencias, alimentación y calendario.
+  @IsString()
+  @IsOptional()
+  delegationId?: string;
+
+  @IsString()
+  @IsOptional()
+  delegationLabel?: string;
 }
 
 export class LoginUserDto {

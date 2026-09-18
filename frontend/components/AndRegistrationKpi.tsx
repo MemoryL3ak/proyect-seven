@@ -6,6 +6,7 @@ import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { AlertIcon, GlobeIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 import { filterValidatedAthletes } from "@/lib/athletes";
+import { delegationLabel } from "@/lib/delegations";
 
 type EventItem = {
   id: string;
@@ -244,7 +245,7 @@ export default function AndRegistrationKpi({
     const delegationNameByCode = new Map(
       filteredDelegations.map((item) => [
         normalizeDelegationKey(item.countryCode || item.id),
-        item.countryCode || item.id || t("Sin delegación"),
+        delegationLabel(item) || t("Sin delegación"),
       ]),
     );
     const selectedDelegationCode = selectedDelegationId
@@ -450,7 +451,7 @@ export default function AndRegistrationKpi({
         <select className="input" value={selectedDelegationId} onChange={(e) => setSelectedDelegationId(e.target.value)}>
           <option value="">{t("Todas las delegaciones")}</option>
           {filteredDelegations.map((delegation) => (
-            <option key={delegation.id} value={delegation.id}>{delegation.countryCode || delegation.id}</option>
+            <option key={delegation.id} value={delegation.id}>{delegationLabel(delegation)}</option>
           ))}
         </select>
         <select className="input" value={selectedDisciplineId} onChange={(e) => setSelectedDisciplineId(e.target.value)}>

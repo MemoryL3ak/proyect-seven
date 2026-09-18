@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { apiFetch } from "@/lib/api";
 import { cleanWhatsappPhone, formatWhatsappPhone, PHONE_PREFIX_CL } from "@/lib/external-link";
+import { delegationLabel, type DelegationLike } from "@/lib/delegations";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import {
   AlertIcon,
@@ -56,6 +57,7 @@ type Role =
   | "Coordinador Bvan"
   | "Coordinador Comité"
   | "Coordinador General"
+  | "Jefe de Misión"
   | "Comité Transporte";
 type UserStatus = "active" | "inactive" | "pending";
 
@@ -65,6 +67,9 @@ type AppUser = {
   email: string;
   /** Contacto. Con rol Coordinador General, los portales lo muestran para WhatsApp. */
   phone?: string;
+  /** Alcance: con rol Jefe de Misión, la delegación (región) que ve. */
+  delegationId?: string;
+  delegationLabel?: string;
   role: Role;
   modules: string[];
   status: UserStatus;
@@ -84,6 +89,7 @@ const ROLES: Role[] = [
   "Coordinador Bvan",
   "Coordinador Comité",
   "Coordinador General",
+  "Jefe de Misión",
   "Comité Transporte",
   "Operador",
   "Visualizador",
@@ -106,6 +112,10 @@ const ROLE_PERMISSIONS: Record<Role, string[]> = {
   // Coordinador General: el contacto operativo que ven los portales (WhatsApp
   // en vez de llamar al chofer). Ve toda la operación; no administra usuarios.
   "Coordinador General": ALL_MODULES.filter((m) => m.group !== "Administración").map((m) => m.id),
+  // Jefe de Misión: responsable de una delegación (región). Ve monitoreo,
+  // incidencias, sedes, alimentación y calendario, y el backend acota todo a
+  // su delegación (user_metadata.delegationId).
+  "Jefe de Misión": ["operacion.tracking", "incidencias", "sede", "alimentacion.general", "calendario"],
   // Comité de transporte: operación y seguimiento, sin panel de proveedores
   // ni consumo real (Panel Financiero y Dashboard Comercial quedan fuera).
   "Comité Transporte": [...TRANSPORTE_OPERATIVO, "calendario"],
@@ -236,6 +246,7 @@ function emptyForm() {
     email: "",
     username: "",
     phone: PHONE_PREFIX_CL,
+    delegationId: "",
     loginType: "email" as "email" | "username",
     role: "Operador" as Role,
     modules: ROLE_PERMISSIONS["Operador"],
@@ -276,6 +287,19 @@ export default function UsuariosPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState<AppUser | null>(null);
   const [form, setForm] = useState(emptyForm());
+  // Delegaciones (regiones) para el alcance del Jefe de Misión.
+  const [delegationOptions, setDelegationOptions] = useState<Array<{ id: string; label: string }>>([]);
+  useEffect(() => {
+    apiFetch<Array<Record<string, unknown>>>("/delegations")
+      .then((rows) =>
+        setDelegationOptions(
+          (rows || [])
+            .map((d) => ({ id: String(d.id), label: delegationLabel(d as DelegationLike) }))
+            .sort((a, b) => a.label.localeCompare(b.label)),
+        ),
+      )
+      .catch(() => setDelegationOptions([]));
+  }, []);
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const [showTempPassword, setShowTempPassword] = useState(false);
   const [copiedPwd, setCopiedPwd] = useState(false);
@@ -295,6 +319,8 @@ export default function UsuariosPage() {
           fullName: u.user_metadata?.name || u.email?.split("@")[0] || "Sin nombre",
           email: u.email || "",
           phone: typeof u.user_metadata?.phone === "string" ? u.user_metadata.phone : "",
+          delegationId: typeof u.user_metadata?.delegationId === "string" ? u.user_metadata.delegationId : "",
+          delegationLabel: typeof u.user_metadata?.delegationLabel === "string" ? u.user_metadata.delegationLabel : "",
           role: (u.user_metadata?.role as Role) || "Operador",
           modules: Array.isArray(u.user_metadata?.modules) ? u.user_metadata.modules : (ROLE_PERMISSIONS[(u.user_metadata?.role as Role) || "Operador"] || []),
           status: u.banned_until ? "inactive" : "active",
@@ -344,6 +370,7 @@ export default function UsuariosPage() {
       email: uType === "email" ? user.email : "",
       username: uType === "username" ? extractUsername(user.email) : "",
       phone: user.phone ? formatWhatsappPhone(user.phone) : PHONE_PREFIX_CL,
+      delegationId: user.delegationId || "",
       loginType: uType,
       role: user.role,
       modules: user.modules,
@@ -383,6 +410,15 @@ export default function UsuariosPage() {
     if (!form.fullName) return;
     if (isUsername && !form.username) return;
     if (!isUsername && !form.email) return;
+    // Alcance por delegación: sólo tiene sentido con rol Jefe de Misión; con
+    // cualquier otro rol se borra (null) para que el backend deje de acotar.
+    const delegationPayload =
+      form.role === "Jefe de Misión" && form.delegationId
+        ? {
+            delegationId: form.delegationId,
+            delegationLabel: delegationOptions.find((d) => d.id === form.delegationId)?.label ?? null,
+          }
+        : { delegationId: null, delegationLabel: null };
     setSaveError(null);
     setSaving(true);
     try {
@@ -395,10 +431,11 @@ export default function UsuariosPage() {
             role: form.role,
             modules: form.modules,
             phone: cleanWhatsappPhone(form.phone),
+            ...delegationPayload,
             ...(form.passwordEditable ? { password: form.tempPassword } : {}),
           }),
         });
-        setUsers((us) => us.map((u) => u.id === editingUser.id ? { ...u, fullName: form.fullName, phone: cleanWhatsappPhone(form.phone), role: form.role, modules: form.modules, status: form.status } : u));
+        setUsers((us) => us.map((u) => u.id === editingUser.id ? { ...u, fullName: form.fullName, phone: cleanWhatsappPhone(form.phone), delegationId: delegationPayload.delegationId ?? undefined, delegationLabel: delegationPayload.delegationLabel ?? undefined, role: form.role, modules: form.modules, status: form.status } : u));
       } else {
         // Create: register via backend → Supabase Auth
         const result = await apiFetch<{ user: SupabaseUser }>("/auth/register", {
@@ -412,6 +449,7 @@ export default function UsuariosPage() {
             modules: form.modules,
             isTemporaryPassword: !isUsername,
             ...(cleanWhatsappPhone(form.phone) ? { phone: cleanWhatsappPhone(form.phone) } : {}),
+            ...(delegationPayload.delegationId ? delegationPayload : {}),
           }),
         });
         const displayEmail = isUsername
@@ -422,6 +460,8 @@ export default function UsuariosPage() {
           fullName: form.fullName,
           email: displayEmail,
           phone: cleanWhatsappPhone(form.phone),
+          delegationId: delegationPayload.delegationId ?? undefined,
+          delegationLabel: delegationPayload.delegationLabel ?? undefined,
           role: form.role,
           modules: form.modules,
           status: form.status,
@@ -474,6 +514,7 @@ export default function UsuariosPage() {
     if (role === "Coordinador Bvan") return { bg: "rgba(33,208,179,0.12)", border: "rgba(33,208,179,0.32)", color: BRAND.tealDark };
     if (role === "Coordinador Comité") return { bg: "rgba(139,92,246,0.12)", border: "rgba(139,92,246,0.3)", color: ACCENT.violet };
     if (role === "Coordinador General") return { bg: "rgba(5,150,105,0.12)", border: "rgba(5,150,105,0.32)", color: STATE.successText };
+    if (role === "Jefe de Misión") return { bg: "rgba(124,58,237,0.12)", border: "rgba(124,58,237,0.32)", color: ACCENT.violet };
     if (role === "Comité Transporte") return { bg: "rgba(31,205,255,0.12)", border: "rgba(31,205,255,0.32)", color: "#0891b2" };
     if (role === "Operador") return { bg: "rgba(59,130,246,0.12)", border: "rgba(59,130,246,0.3)", color: STATE.info };
     return { bg: "rgba(100,116,139,0.12)", border: "rgba(100,116,139,0.3)", color: SURFACE.textMuted };
@@ -1078,6 +1119,26 @@ export default function UsuariosPage() {
                     </p>
                   )}
                 </div>
+                {form.role === "Jefe de Misión" && (
+                  <div style={{ marginTop: "12px" }}>
+                    <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: pal.mTextMuted, marginBottom: "6px" }}>
+                      {t("Delegación (región)")}
+                    </label>
+                    <select
+                      value={form.delegationId}
+                      onChange={(e) => setForm((f) => ({ ...f, delegationId: e.target.value }))}
+                      style={{ ...selM, padding: "10px 14px", borderRadius: "10px", fontSize: "14px", outline: "none", width: "100%" }}
+                    >
+                      <option value="">{t("Selecciona la delegación")}</option>
+                      {delegationOptions.map((d) => (
+                        <option key={d.id} value={d.id}>{d.label}</option>
+                      ))}
+                    </select>
+                    <p style={{ fontSize: "11.5px", color: pal.mTextFaint, margin: "6px 0 0" }}>
+                      {t("El Jefe de Misión ve sólo la flota, incidencias, alimentación y calendario de su delegación.")}
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Role + Status */}

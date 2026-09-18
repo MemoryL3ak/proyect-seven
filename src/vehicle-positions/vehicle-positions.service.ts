@@ -261,9 +261,13 @@ export class VehiclePositionsService {
   // thousands of rows) was the main cause of perceived "non-realtime" lag
   // during field testing — most of the time was serialization + transport,
   // not DB work.
-  async findAll() {
+  /**
+   * Última posición de cada chofer activo en los últimos 30 minutos.
+   * @param delegationId acota a la flota de una delegación (Jefe de Misión).
+   */
+  async findAll(delegationId?: string | null) {
     try {
-      const rows = await this.vehiclePositionRepository.query(
+      const rows = await this.vehiclePositionRepository.query<VehiclePositionRow[]>(
         `SELECT DISTINCT ON (driver_id)
            id,
            event_id,
@@ -279,7 +283,11 @@ export class VehiclePositionsService {
            created_at
          FROM telemetry.vehicle_positions
          WHERE created_at > NOW() - INTERVAL '30 minutes'
+           AND ($1::uuid IS NULL OR driver_id IN (
+             SELECT id FROM core.provider_participants WHERE delegation_id = $1
+           ))
          ORDER BY driver_id, "timestamp" DESC`,
+        [delegationId ?? null],
       );
       return rows.map((row: VehiclePositionRow) => this.mapRow(row));
     } catch (error) {

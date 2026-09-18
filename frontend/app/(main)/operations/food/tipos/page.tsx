@@ -6,6 +6,7 @@ import { SURFACE } from "@/lib/design";
 import { Icon, type IconName } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 import { filterValidatedAthletes } from "@/lib/athletes";
+import { delegationLabel } from "@/lib/delegations";
 
 // All possible types — always show every one
 const ALL_TYPES = [
@@ -53,7 +54,7 @@ export default function TiposAlimentacionPage() {
   const specialCount = athletes.filter((a) => a.dietaryNeeds && a.dietaryNeeds !== "ESTANDAR").length;
 
   // Delegation name map: id → countryCode
-  const delegMap = Object.fromEntries(delegations.map((d) => [d.id, d.countryCode]));
+  const delegMap = Object.fromEntries(delegations.map((d) => [d.id, delegationLabel(d)]));
 
   // Breakdown: delegationId → { dietaryKey → count }
   const delegBreakdown = athletes.reduce<Record<string, Record<string, number>>>((acc, a) => {

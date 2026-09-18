@@ -1,4 +1,6 @@
-﻿export type FieldType =
+﻿import { CHILE_REGIONS } from "./delegations";
+
+export type FieldType =
   | "text"
   | "number"
   | "datetime"
@@ -128,6 +130,8 @@ export const resources: Record<string, ResourceConfig> = {
     tableOrder: [
       "eventId",
       "countryCode",
+      "name",
+      "missionHeadName",
       "disciplineCategory",
       "disciplineGender",
       "participantFullName",
@@ -175,10 +179,11 @@ export const resources: Record<string, ResourceConfig> = {
       { key: "eventId", label: "Evento", type: "select", required: true, optionsSource: "events" },
       {
         key: "countryCode",
-        label: "País",
+        label: "País o región",
         type: "select",
         required: true,
         options: [
+          ...CHILE_REGIONS,
           { label: "Argentina", value: "ARG" },
           { label: "Bolivia", value: "BOL" },
           { label: "Brasil", value: "BRA" },
@@ -200,6 +205,14 @@ export const resources: Record<string, ResourceConfig> = {
           { label: "Reino Unido", value: "GBR" }
         ]
       },
+      { key: "name", label: "Nombre visible", type: "text" },
+      { key: "missionHeadName", label: "Jefe de misión", type: "text" },
+      { key: "missionHeadPhone", label: "Teléfono jefe de misión", type: "phone" },
+      // Alimentación por delegación: hoteles donde se aloja y come.
+      { key: "accommodationIds", label: "Hoteles de la delegación", type: "multiselect", optionsSource: "accommodations" },
+      // Flota fija durante el evento (decisión de producto: cada región tiene sus buses y choferes).
+      { key: "driverIds", label: "Choferes asignados", type: "multiselect", optionsSource: "drivers" },
+      { key: "vehicleIds", label: "Vehículos asignados", type: "multiselect", optionsSource: "vehicles" },
       {
         key: "disciplineCategory",
         label: "Categoría",
@@ -460,6 +473,7 @@ export const resources: Record<string, ResourceConfig> = {
         ]
       },
       { key: "capacity", label: "Capacidad", type: "number" },
+      { key: "delegationId", label: "Delegación (región)", type: "select", optionsSource: "delegations" },
       {
         key: "status",
         label: "Estado",
@@ -493,6 +507,7 @@ export const resources: Record<string, ResourceConfig> = {
     tableOrder: ["fullName", "rut", "eventId", "email", "phone", "accessTypes"],
     fields: [
       { key: "providerId", label: "Proveedor", type: "select", required: true, optionsSource: "providers" },
+      { key: "delegationId", label: "Delegación (región)", type: "select", optionsSource: "delegations" },
       { key: "eventId", label: "Evento", type: "select", required: true, optionsSource: "events" },
       { key: "fullName", label: "Nombre completo", type: "text", required: true },
       { key: "rut", label: "RUT", type: "text", required: true },
@@ -622,7 +637,10 @@ export const resources: Record<string, ResourceConfig> = {
       { key: "name", label: "Sede", type: "text", required: true },
       { key: "address", label: "Dirección", type: "places", required: true },
       { key: "region", label: "Región", type: "text" },
-      { key: "commune", label: "Comuna", type: "text" }
+      { key: "commune", label: "Comuna", type: "text" },
+      // Lo ven los jefes de misión junto al Coordinador General.
+      { key: "coordinatorName", label: "Coordinador de sede", type: "text" },
+      { key: "coordinatorPhone", label: "Teléfono coordinador de sede", type: "phone" }
     ]
   },
   athletes: {

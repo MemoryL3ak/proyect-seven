@@ -26,6 +26,11 @@ export class CreateTransportDto {
   @IsOptional()
   status?: string;
 
+  // Flota fija por delegación (región) durante el evento.
+  @IsString()
+  @IsOptional()
+  delegationId?: string | null;
+
   @IsString()
   @IsNotEmpty()
   type: string;

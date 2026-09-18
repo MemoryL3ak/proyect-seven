@@ -24,4 +24,13 @@ export class CreateVenueDto {
   @IsString()
   @IsOptional()
   photoUrl?: string;
+
+  // Coordinador de sede: lo ven los jefes de misión junto al Coordinador General.
+  @IsString()
+  @IsOptional()
+  coordinatorName?: string | null;
+
+  @IsString()
+  @IsOptional()
+  coordinatorPhone?: string | null;
 }

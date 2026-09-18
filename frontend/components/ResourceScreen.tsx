@@ -10,6 +10,7 @@ import type { FieldDef, ResourceConfig } from "@/lib/resources";
 import { useI18n } from "@/lib/i18n";
 import StyledSelect from "@/components/StyledSelect";
 import PlacesAutocompleteInput from "@/components/PlacesAutocompleteInput";
+import { delegationLabel } from "@/lib/delegations";
 
 type Option = { label: string; value: string };
 
@@ -662,7 +663,7 @@ export default function ResourceScreen({
     try {
       const data = await apiFetch<Record<string, any>[]>("/delegations");
       const options = (data || []).map((delegation) => ({
-        label: delegation.countryCode ?? delegation.id,
+        label: delegationLabel(delegation),
         value: delegation.id,
         eventId: delegation.eventId
       }));

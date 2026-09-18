@@ -32,6 +32,10 @@ export class Transport {
   @Column({ length: 32, default: 'AVAILABLE' })
   status: string;
 
+  // Flota fija por delegación (región) durante el evento.
+  @Column({ name: 'delegation_id', type: 'uuid', nullable: true })
+  delegationId?: string | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

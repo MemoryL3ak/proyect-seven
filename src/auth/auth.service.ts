@@ -33,6 +33,8 @@ export class AuthService {
     modules,
     isTemporaryPassword,
     phone,
+    delegationId,
+    delegationLabel,
   }: CreateUserDto): Promise<{ user: User }> {
     const resolvedEmail = email
       ? String(email).trim().toLowerCase()
@@ -55,6 +57,9 @@ export class AuthService {
         ...(Array.isArray(modules) && modules.length > 0 ? { modules } : {}),
         ...(username ? { username } : {}),
         ...(phone?.trim() ? { phone: phone.trim() } : {}),
+        ...(delegationId?.trim()
+          ? { delegationId: delegationId.trim(), delegationLabel: delegationLabel?.trim() || null }
+          : {}),
         forcePasswordChange: forceChange,
         force_password_change: forceChange,
       },
@@ -90,7 +95,15 @@ export class AuthService {
 
   async updateUser(
     id: string,
-    data: { name?: string; role?: string; password?: string; modules?: string[]; phone?: string },
+    data: {
+      name?: string;
+      role?: string;
+      password?: string;
+      modules?: string[];
+      phone?: string;
+      delegationId?: string | null;
+      delegationLabel?: string | null;
+    },
   ): Promise<{ user: User }> {
     const { data: result, error } = await this.supabase.auth.admin.updateUserById(id, {
       ...(data.password ? { password: data.password } : {}),
@@ -101,6 +114,14 @@ export class AuthService {
         ...(data.modules ? { modules: data.modules } : {}),
         // Se guarda aunque venga vacio: es la forma de borrar un telefono.
         ...(data.phone !== undefined ? { phone: data.phone.trim() } : {}),
+        // null borra el alcance (el usuario deja de ser Jefe de Misión). El
+        // caché de StaffScopeService expira solo (60 s).
+        ...(data.delegationId !== undefined
+          ? {
+              delegationId: data.delegationId?.trim() || null,
+              delegationLabel: data.delegationId?.trim() ? data.delegationLabel?.trim() || null : null,
+            }
+          : {}),
         ...(data.password
           ? {
               forcePasswordChange: true,

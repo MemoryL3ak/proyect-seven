@@ -25,7 +25,16 @@ export class AuthController {
   @Put('users/:id')
   async updateUser(
     @Param('id') id: string,
-    @Body() body: { name?: string; role?: string; password?: string; modules?: string[]; phone?: string },
+    @Body()
+    body: {
+      name?: string;
+      role?: string;
+      password?: string;
+      modules?: string[];
+      phone?: string;
+      delegationId?: string | null;
+      delegationLabel?: string | null;
+    },
   ) {
     return this.authService.updateUser(id, body);
   }

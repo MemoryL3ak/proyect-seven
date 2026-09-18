@@ -29,6 +29,13 @@ export class Venue {
   @Column({ name: 'photo_url', type: 'text', nullable: true })
   photoUrl?: string | null;
 
+  // Coordinador de sede: lo ven los jefes de misión junto al Coordinador General.
+  @Column({ name: 'coordinator_name', type: 'text', nullable: true })
+  coordinatorName?: string | null;
+
+  @Column({ name: 'coordinator_phone', type: 'text', nullable: true })
+  coordinatorPhone?: string | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
