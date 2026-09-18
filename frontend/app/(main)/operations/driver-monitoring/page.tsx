@@ -319,6 +319,17 @@ export default function DriverMonitoringPage() {
     });
   }, [drivers, clientTypeFilter, disciplineFilter, occupancyFilter, searchQuery]);
 
+  // Edad del último punto GPS de un conductor, con la MISMA fuente que usa el
+  // marcador del mapa: primero la capa en vivo (Realtime + poll), si no la del
+  // snapshot. La pastilla "Reportando" de la tabla usaba sólo el snapshot y una
+  // ventana de 600 s, así que un punto de 9 minutos salía "Reportando" en la
+  // tabla y gris en el mapa al mismo tiempo. Una sola edad, una sola ventana.
+  const gpsAgeMs = (d: (typeof visibleDrivers)[number]) => {
+    const live = livePositions[d.driverId];
+    if (live) return nowTick - new Date(live.receivedAt).getTime();
+    return d.gpsAgeSeconds != null ? d.gpsAgeSeconds * 1000 : Infinity;
+  };
+
   const markers = useMemo<PresenceMarker[]>(
     () =>
       // Respect the active filters (Ariel's filter bar) while keeping the live
@@ -682,7 +693,7 @@ export default function DriverMonitoringPage() {
                columnas obligaba a scrollear horizontal en el teléfono) ── */
             <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: 12 }}>
               {visibleDrivers.map((d) => {
-                const gpsActive = d.gpsAgeSeconds != null && d.gpsAgeSeconds < 600;
+                const gpsActive = gpsAgeMs(d) < LIVE_WINDOW_MS;
                 const isBusy = d.activeTrips > 0;
                 const tripText = tripLabel(d.activeTripStatus, d.activeTrips);
                 return (
@@ -799,7 +810,7 @@ export default function DriverMonitoringPage() {
               </thead>
               <tbody>
                 {visibleDrivers.map((d, i) => {
-                  const gpsActive = d.gpsAgeSeconds != null && d.gpsAgeSeconds < 600;
+                  const gpsActive = gpsAgeMs(d) < LIVE_WINDOW_MS;
                   const isBusy = d.activeTrips > 0;
                   const tripText = tripLabel(d.activeTripStatus, d.activeTrips);
                   return (
