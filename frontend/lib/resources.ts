@@ -1050,7 +1050,9 @@ export const resources: Record<string, ResourceConfig> = {
         label: "Tipo de origen",
         type: "select",
         transient: true,
-        showWhen: { field: "tripType", value: "TRANSFER_OUT" },
+        // Disponible en todo viaje salvo Transfer In, donde el origen es
+        // siempre el aeropuerto (espejo del tipo de destino).
+        hideWhen: { field: "tripType", value: "TRANSFER_IN" },
         options: [
           { label: "Sede", value: "SEDE" },
           { label: "Hotel", value: "HOTEL" },
@@ -1063,6 +1065,7 @@ export const resources: Record<string, ResourceConfig> = {
         transient: true,
         optionsSource: "venues",
         showWhen: { field: "originTypeFilter", value: "SEDE" },
+        hideWhen: { field: "tripType", value: "TRANSFER_IN" },
       },
       {
         key: "originHotelId",
@@ -1071,6 +1074,7 @@ export const resources: Record<string, ResourceConfig> = {
         transient: true,
         optionsSource: "accommodations",
         showWhen: { field: "originTypeFilter", value: "HOTEL" },
+        hideWhen: { field: "tripType", value: "TRANSFER_IN" },
       },
       {
         key: "destinationTypeFilter",
