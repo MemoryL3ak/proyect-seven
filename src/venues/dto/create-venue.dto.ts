@@ -13,6 +13,11 @@ export class CreateVenueDto {
   @IsOptional()
   address?: string;
 
+  /** SEDE (por defecto) o COMEDOR. */
+  @IsString()
+  @IsOptional()
+  venueType?: string;
+
   @IsString()
   @IsOptional()
   region?: string;

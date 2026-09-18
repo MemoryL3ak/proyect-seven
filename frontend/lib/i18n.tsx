@@ -14,6 +14,9 @@ const translations: Record<Locale, Record<string, string>> = {
   es: {},
   en: {
     // Viajes de la delegación (portal del Jefe de Misión).
+    "Comedores": "Dining halls",
+    "No hay comedores registrados": "No dining halls registered",
+    // Viajes de la delegación (portal del Jefe de Misión).
     "Hoteles": "Hotels",
     "No hay hoteles registrados": "No hotels registered",
     "Hoteles donde se aloja tu delegación.": "Hotels where your delegation is staying.",
@@ -2568,6 +2571,9 @@ const translations: Record<Locale, Record<string, string>> = {
     "Panel Financiero": "Financial Panel",
   },
   pt: {
+    // Viajes de la delegación (portal del Jefe de Misión).
+    "Comedores": "Refeitórios",
+    "No hay comedores registrados": "Não há refeitórios registrados",
     // Viajes de la delegación (portal del Jefe de Misión).
     "Hoteles": "Hotéis",
     "No hay hoteles registrados": "Não há hotéis registrados",

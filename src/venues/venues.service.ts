@@ -34,6 +34,8 @@ export class VenuesService {
       eventId: createVenueDto.eventId,
       name: createVenueDto.name,
       address: createVenueDto.address ?? null,
+      // SEDE de competencia o COMEDOR; por defecto, sede.
+      venueType: createVenueDto.venueType?.trim().toUpperCase() || 'SEDE',
       region: createVenueDto.region ?? null,
       commune: createVenueDto.commune ?? null,
       photoUrl: createVenueDto.photoUrl ?? null,
@@ -61,6 +63,9 @@ export class VenuesService {
       ...(updateVenueDto.eventId !== undefined ? { eventId: updateVenueDto.eventId } : {}),
       ...(updateVenueDto.name !== undefined ? { name: updateVenueDto.name } : {}),
       ...(updateVenueDto.address !== undefined ? { address: updateVenueDto.address ?? null } : {}),
+      ...(updateVenueDto.venueType !== undefined
+        ? { venueType: updateVenueDto.venueType?.trim().toUpperCase() || 'SEDE' }
+        : {}),
       ...(updateVenueDto.region !== undefined ? { region: updateVenueDto.region ?? null } : {}),
       ...(updateVenueDto.commune !== undefined ? { commune: updateVenueDto.commune ?? null } : {}),
       ...(updateVenueDto.photoUrl !== undefined ? { photoUrl: updateVenueDto.photoUrl ?? null } : {}),
