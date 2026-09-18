@@ -1343,9 +1343,18 @@ input[type="number"]::-webkit-outer-spin-button {
    dvh evita que la barra dinámica del navegador (o la WebView de la
    app) recorte el campo de escritura al final de la hoja.
 ───────────────────────────────────────────────────────────── */
+/* Hoja de SofIA en teléfono. Con 88dvh tapaba la pantalla entera; ahora
+   abre a poco más de la mitad —se sigue viendo el contexto de arriba— y el
+   asa la expande cuando la respuesta trae un gráfico o un mapa. */
 .sofia-sheet {
-  height: 88vh;
-  height: 88dvh;
+  height: 62vh;
+  height: 62dvh;
+  max-height: calc(100dvh - 72px);
+  transition: height 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.sofia-sheet.is-expanded {
+  height: 92vh;
+  height: 92dvh;
 }
 
 /* Badge circular del día de hoy */

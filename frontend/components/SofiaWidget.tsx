@@ -798,6 +798,12 @@ type SofiaWidgetProps = {
 export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
   const { t, locale } = useI18n();
   const [open, setOpen] = useState(false);
+  // Hoja móvil: abre a 62dvh; el asa la lleva a 92dvh cuando la respuesta
+  // necesita más alto (gráfico, mapa, tabla). Se vuelve a plegar al cerrar.
+  const [sheetExpanded, setSheetExpanded] = useState(false);
+  useEffect(() => {
+    if (!open) setSheetExpanded(false);
+  }, [open]);
   const [messages, setMessages] = useState<SofiaMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -1132,10 +1138,15 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
         onPointerCancel={handleFabPointerCancel}
         style={{
           position: "fixed",
-          zIndex: 40,
+          // En los portales (compact) convive con el lanzador del chat de
+          // asistencia, que va en bottom 72 con 48 px de alto y z 110. SofIA se
+          // apila ENCIMA de él (72 + 48 + 12) y con más z que el lanzador, pero
+          // menos que el panel del chat abierto (115): con bottom 88 quedaba
+          // tapado por la pastilla del chat y no se podía tocar.
+          zIndex: compact ? 112 : 40,
           ...(fabPos
             ? { left: fabPos.x, top: fabPos.y }
-            : { bottom: compact ? 88 : 24, right: compact ? 16 : 24 }),
+            : { bottom: compact ? 132 : 24, right: compact ? 16 : 24 }),
           touchAction: "none",
         }}
       >
@@ -1224,7 +1235,7 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
       {/* ── Chat panel ── */}
       {open && (
         <div
-          className={sheetMode ? "sofia-sheet" : undefined}
+          className={sheetMode ? `sofia-sheet${sheetExpanded ? " is-expanded" : ""}` : undefined}
           style={{
             position: "fixed",
             zIndex: 50,
@@ -1268,16 +1279,21 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
                         };
                       })()
                     : compact
-                    ? { bottom: 152, right: 12, width: "min(320px, calc(100vw - 24px))" }
+                    ? { bottom: 132 + FAB_SIZE + 12, right: 12, width: "min(320px, calc(100vw - 24px))" }
                     : { bottom: 92, right: 24, width: "min(400px, calc(100vw - 24px))" }),
                 }),
           }}
         >
-          {/* Asa de arrastre visual de la hoja */}
+          {/* Asa de la hoja: tocarla alterna entre media pantalla y casi completa */}
           {sheetMode && (
-            <div style={{ display: "flex", justifyContent: "center", padding: "8px 0 0", flexShrink: 0 }}>
-              <span style={{ width: 40, height: 4, borderRadius: 99, background: "rgba(255,255,255,0.2)" }} />
-            </div>
+            <button
+              type="button"
+              onClick={() => setSheetExpanded((v) => !v)}
+              aria-label={sheetExpanded ? "Reducir SofIA" : "Expandir SofIA"}
+              style={{ display: "flex", justifyContent: "center", padding: "10px 0 2px", flexShrink: 0, width: "100%", background: "transparent", border: "none", cursor: "pointer" }}
+            >
+              <span style={{ width: 40, height: 4, borderRadius: 99, background: "rgba(255,255,255,0.28)" }} />
+            </button>
           )}
           {/* Header */}
           <div
