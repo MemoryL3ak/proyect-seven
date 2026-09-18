@@ -12,6 +12,7 @@ import * as https from 'https';
 import { accessCodeEmailHtml } from '../shared/email-templates';
 import { ConfigService } from '@nestjs/config';
 import { DataSource, Repository } from 'typeorm';
+import { StaffScopeService } from '../auth/staff-scope.service';
 import { MobileAuthService } from '../mobile-auth/mobile-auth.service';
 import { CreateAthleteDto } from './dto/create-athlete.dto';
 import { UpdateAthleteDto } from './dto/update-athlete.dto';
@@ -94,6 +95,7 @@ export class AthletesService {
     private readonly athleteRepository: Repository<Athlete>,
     private readonly dataSource: DataSource,
     private readonly mobileAuth: MobileAuthService,
+    private readonly scope: StaffScopeService,
   ) {}
 
   private getAdminClient() {
@@ -381,6 +383,13 @@ export class AthletesService {
     }
 
     const athlete = this.toEntity(rows[0]);
+    if (
+      updateAthleteDto.isDelegationLead !== undefined ||
+      updateAthleteDto.delegationId !== undefined ||
+      updateAthleteDto.status !== undefined
+    ) {
+      this.scope.invalidate(id);
+    }
     const shouldSyncHotel =
       updateAthleteDto.hotelAccommodationId !== undefined ||
       updateAthleteDto.roomNumber !== undefined ||

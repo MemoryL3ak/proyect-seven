@@ -6,6 +6,7 @@ import {
   type IconComponent,
   PinIcon,
   PhoneIcon,
+  MessageIcon,
   MailIcon,
   PlaneIcon,
   HotelIcon,
@@ -63,6 +64,11 @@ import EventDocumentsSection from "@/components/EventDocumentsSection";
 import PortalSkeleton from "@/components/PortalSkeleton";
 import { deletePortalAccount } from "@/lib/account-deletion";
 import CuadernoCargoSection from "@/components/CuadernoCargoSection";
+import GeneralCoordinatorCard from "@/components/portal/GeneralCoordinatorCard";
+import MissionCalendar from "@/components/portal/MissionCalendar";
+import MissionFleet from "@/components/portal/MissionFleet";
+import MissionIncidents from "@/components/portal/MissionIncidents";
+import { openExternal, whatsappHref } from "@/lib/external-link";
 import EmergencyNumbersSection from "@/components/EmergencyNumbersSection";
 import PushTokenSync from "@/components/PushTokenSync";
 import { buildCredentialHtml } from "@/lib/credential-template";
@@ -128,7 +134,8 @@ type Vehicle = { id: string; plate: string; type: string };
 type Trip = { id: string; driverId: string; vehicleId?: string | null; athleteIds?: string[]; athleteNames?: string[]; requesterAthleteId?: string | null; clientType?: string | null; origin?: string | null; destination?: string | null; status?: string | null; scheduledAt?: string | null; startedAt?: string | null; completedAt?: string | null; tripType?: string | null; discipline?: string | null; notes?: string | null; driverRating?: number | null; ratingComment?: string | null; ratedAt?: string | null; passengerLat?: number | null; passengerLng?: number | null };
 type Driver = { id: string; fullName: string; userId?: string | null };
 type Event = { id: string; name: string };
-type Delegation = { id: string; countryCode: string };
+// name: las delegaciones de los Juegos Escolares son regiones con nombre visible.
+type Delegation = { id: string; countryCode: string; name?: string | null };
 type CalendarEvent = {
   id: string;
   name?: string | null;
@@ -139,7 +146,7 @@ type CalendarEvent = {
   gender?: string | null;
 };
 type DisciplineParent = { id: string; name?: string | null; category?: string | null; gender?: string | null };
-type Venue = { id: string; eventId?: string | null; name?: string | null; address?: string | null; region?: string | null; commune?: string | null; photoUrl?: string | null };
+type Venue = { id: string; eventId?: string | null; name?: string | null; address?: string | null; region?: string | null; commune?: string | null; photoUrl?: string | null; coordinatorName?: string | null; coordinatorPhone?: string | null };
 type Accommodation = { id: string; eventId?: string | null; name?: string | null; address?: string | null; city?: string | null; country?: string | null; checkIn?: string | null; checkOut?: string | null; roomType?: string | null; contactPhone?: string | null; photoUrl?: string | null };
 type FoodLocation = { id: string; accommodationId?: string | null; name: string; description?: string | null; capacity?: number | null; clientTypes: string[] };
 type FoodMenu = { id: string; date: string; mealType: string; title: string; description?: string | null; dietaryType?: string | null; accommodationId?: string | null; clientTypes?: string[] | null; locationDetail?: string | null };
@@ -162,7 +169,8 @@ type Premiacion = {
   notes?: string | null;
   awarders?: PremAwarder[] | null;
 };
-type PortalTab = "itinerario" | "actividades" | "calendario" | "premiaciones" | "sedes" | "alimentacion" | "delegacion" | "cupones" | "documentos" | "cuenta";
+// flota / incidencias: sólo para el Jefe de Misión (participante encargado de su delegación).
+type PortalTab = "itinerario" | "flota" | "incidencias" | "actividades" | "calendario" | "premiaciones" | "sedes" | "alimentacion" | "delegacion" | "cupones" | "documentos" | "cuenta";
 
 type Coupon = {
   id: string;
@@ -522,6 +530,8 @@ export default function UserPortalPage() {
   };
 
   const isChief = athlete?.isDelegationLead === true;
+  // Nombre visible de la delegación: región ("Región de Valparaíso") o país.
+  const delegationName = delegation ? (delegation.name || countryLabels[delegation.countryCode] || delegation.countryCode) : "";
   // TA (deportistas): vista simplificada — sin premiaciones, sin asistencia,
   // sin historial de viajes y con el calendario fijo en su disciplina.
   // El jefe de delegación conserva la vista completa aunque sea TA.
@@ -529,6 +539,8 @@ export default function UserPortalPage() {
   const portalTabs = useMemo(() => {
     const all: { key: PortalTab; label: string; icon: React.ReactNode }[] = [
       { key:"itinerario", label:"Itinerario", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="5" r="3"/><line x1="12" y1="8" x2="12" y2="16"/><circle cx="12" cy="19" r="3"/></svg> },
+      { key:"flota", label:"Flota", icon:<CarIcon size={16} strokeWidth={1.8} /> },
+      { key:"incidencias", label:"Incidencias", icon:<ShieldIcon size={16} strokeWidth={1.8} /> },
       { key:"actividades", label:"Actividades", icon:<TruckIcon size={16} strokeWidth={1.8} /> },
       { key:"calendario", label:"Calendario", icon:<CalendarIcon size={16} strokeWidth={1.8} /> },
       { key:"premiaciones", label:"Premiaciones", icon:<TrophyIcon size={16} strokeWidth={1.8} /> },
@@ -541,7 +553,7 @@ export default function UserPortalPage() {
     ];
     if (isTA) return all.filter(t => ["actividades","calendario","sedes","alimentacion","cupones","documentos","cuenta"].includes(t.key));
     if (!isChief) return all.filter(t => ["actividades","calendario","premiaciones","sedes","alimentacion","cupones","documentos","cuenta"].includes(t.key));
-    // Jefe de delegación: vista completa, sin premiaciones (no oficia como entregador).
+    // Jefe de Misión: vista completa (con flota e incidencias), sin premiaciones (no oficia como entregador).
     return all.filter(t => t.key !== "premiaciones");
   }, [isChief, isTA]);
 
@@ -549,7 +561,7 @@ export default function UserPortalPage() {
   // en una hoja inferior. Orden de prioridad para elegir cuáles quedan fijas.
   const { primaryTabs, overflowTabs } = useMemo(() => {
     const MAX_PRIMARY = 4;
-    const PRIORITY = ["itinerario", "actividades", "calendario", "delegacion", "alimentacion", "sedes", "cuenta", "documentos", "premiaciones", "cupones"];
+    const PRIORITY = ["itinerario", "flota", "incidencias", "actividades", "calendario", "delegacion", "alimentacion", "sedes", "cuenta", "documentos", "premiaciones", "cupones"];
     if (portalTabs.length <= MAX_PRIMARY + 1) {
       return { primaryTabs: portalTabs, overflowTabs: [] as typeof portalTabs };
     }
@@ -1532,7 +1544,7 @@ export default function UserPortalPage() {
                 )}
                 {delegation && (
                   <span style={{ fontSize:"11px",fontWeight:600,padding:"4px 12px",borderRadius:"20px",background:SURFACE.borderMuted,color:SURFACE.textStrong,border:"1px solid #dde3ed",animation:"db-badge .4s cubic-bezier(0.16,1,0.3,1) both",animationDelay:".3s" }}>
-                    {countryLabels[delegation.countryCode] || delegation.countryCode}
+                    {delegationName}
                   </span>
                 )}
               </div>
@@ -1949,6 +1961,9 @@ export default function UserPortalPage() {
         )}
 
         {/* ─── Calendario tab (chief only) ─── */}
+        {activeTab === "calendario" && isChief && (
+          <MissionCalendar eventId={athlete.eventId} delegationName={delegationName} />
+        )}
         {activeTab === "calendario" && (() => {
           const y = calMonthCursor.getFullYear(), m = calMonthCursor.getMonth();
           const cells = getMonthGrid(calMonthCursor);
@@ -2901,6 +2916,7 @@ export default function UserPortalPage() {
         {activeTab === "sedes" && (
           <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
             {/* Sedes */}
+            {isChief && <GeneralCoordinatorCard />}
             <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.teal,margin:0 }}>Sedes del evento</p>
             {venues.length === 0 && <p style={{ fontSize:13,color:SURFACE.textFaint,textAlign:"center",padding:20 }}>No hay sedes registradas</p>}
             {venues.map(v => {
@@ -2923,6 +2939,21 @@ export default function UserPortalPage() {
                         <img src={v.photoUrl} alt={v.name || "Sede"} style={{ width:"100%",height:140,objectFit:"cover",borderRadius:10 }} />
                       )}
                       {addr && <p style={{ fontSize:12,color:SURFACE.textStrong,margin:0 }}>{addr}</p>}
+                      {isChief && (v.coordinatorName || v.coordinatorPhone) && (
+                        <div style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 10px",borderRadius:10,background:SURFACE.borderMuted }}>
+                          <div style={{ flex:1,minWidth:0 }}>
+                            <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:SURFACE.textMuted,margin:0 }}>{t("Coordinador de sede")}</p>
+                            <p style={{ fontSize:12.5,fontWeight:700,color:SURFACE.text,margin:"2px 0 0" }}>{v.coordinatorName || "—"}</p>
+                            {v.coordinatorPhone && <p style={{ fontSize:11.5,color:SURFACE.textMuted,margin:0 }}>{v.coordinatorPhone}</p>}
+                          </div>
+                          {v.coordinatorPhone && (
+                            <button type="button" onClick={() => openExternal(whatsappHref(v.coordinatorPhone as string))} title="WhatsApp"
+                              style={{ width:34,height:34,borderRadius:"50%",border:`1px solid ${SURFACE.border}`,background:SURFACE.card,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:BRAND.tealInk,flexShrink:0 }}>
+                              <MessageIcon size={15} />
+                            </button>
+                          )}
+                        </div>
+                      )}
                       {addr && <VenueMap title={v.name || "Sede"} query={addr} />}
                     </div>
                   )}
@@ -2968,6 +2999,11 @@ export default function UserPortalPage() {
         {/* ─── Alimentación tab ─── */}
         {activeTab === "alimentacion" && (
           <div style={{ display:"flex",flexDirection:"column",gap:14 }}>
+            {isChief && (
+              <p style={{ fontSize:12,color:SURFACE.textMuted,margin:0,padding:"8px 12px",borderRadius:10,background:SURFACE.borderMuted }}>
+                {t("Alimentación de tu delegación: lugares y menús de sus hoteles, más los puntos generales.")}
+              </p>
+            )}
 
             {/* Credencial QR para validar en el comedor */}
             {mealQrDataUrl && (
@@ -3179,7 +3215,7 @@ export default function UserPortalPage() {
           <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
             <div style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,padding:"14px",borderLeft:`4px solid ${STATE.warning}` }}>
               <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:STATE.warning,margin:"0 0 6px" }}>Mi Delegación</p>
-              <p style={{ fontSize:13,fontWeight:700,color:SURFACE.text,margin:0 }}>{delegation ? (countryLabels[delegation.countryCode] || delegation.countryCode) : "—"}</p>
+              <p style={{ fontSize:13,fontWeight:700,color:SURFACE.text,margin:0 }}>{delegationName || "—"}</p>
               <p style={{ fontSize:12,color:SURFACE.textMuted,margin:"3px 0 0" }}>{delegationMembers.length} deportista(s) registrado(s)</p>
             </div>
             {delegationMembers.length === 0 ? (
@@ -3226,6 +3262,16 @@ export default function UserPortalPage() {
               </div>
             )}
           </div>
+        )}
+
+        {/* ─── Flota (Jefe de Misión) ─── */}
+        {activeTab === "flota" && isChief && (
+          <MissionFleet eventId={athlete.eventId} delegationName={delegationName} />
+        )}
+
+        {/* ─── Incidencias (Jefe de Misión) ─── */}
+        {activeTab === "incidencias" && isChief && (
+          <MissionIncidents eventId={athlete.eventId} delegationName={delegationName} venues={venues} />
         )}
 
         {/* ─── Cupones tab ─── */}
@@ -3445,7 +3491,10 @@ export default function UserPortalPage() {
 
         {/* ─── Documentos tab ─── */}
         {activeTab === "documentos" && (
-          <EventDocumentsSection audience="PARTICIPANTE" eventId={athlete.eventId} />
+          <div style={{ display:"flex",flexDirection:"column",gap:12 }}>
+            {isChief && <CuadernoCargoSection />}
+            <EventDocumentsSection audience="PARTICIPANTE" eventId={athlete.eventId} />
+          </div>
         )}
 
         {/* ─── Cuenta tab ─── */}
@@ -3461,7 +3510,7 @@ export default function UserPortalPage() {
                 { icon:<GlobeIcon size={14} color={BRAND.teal} strokeWidth={2} />, label:"Delegación", value:delegation ? (countryLabels[delegation.countryCode]||delegation.countryCode) : "—" },
                 { icon:<ShieldIcon size={14} color={BRAND.teal} strokeWidth={2} />, label:"Tipo", value:athlete.userType || "—" },
                 { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>, label:"Disciplina", value: (() => { if (!athlete.disciplineId) return "—"; const disc = ([...disciplineParents, ...calendarEvents] as any[]).find((d: any) => d.id === athlete.disciplineId); if (!disc) return "—"; const parent = disc.parentId ? disciplineParents.find(p => p.id === disc.parentId) : null; return parent ? `${parent.name} — ${disc.name}` : (disc.name || "—"); })() },
-                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={athlete.isDelegationLead ? STATE.warning : BRAND.teal} strokeWidth="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>, label:"Rol", value:athlete.isDelegationLead ? "Jefe de Delegación" : "Participante" },
+                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={athlete.isDelegationLead ? STATE.warning : BRAND.teal} strokeWidth="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>, label:"Rol", value:athlete.isDelegationLead ? "Jefe de Misión" : "Participante" },
                 { icon:<LockIcon size={14} color={BRAND.teal} strokeWidth={2} />, label:"ID", value:athlete.id.slice(-6).toUpperCase() },
               ]).map((r,i) => (
                 <div key={r.label} style={{ display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderTop:i>0?`1px solid ${SURFACE.borderMuted}`:"none" }}>
@@ -3477,7 +3526,7 @@ export default function UserPortalPage() {
             <CredentialQrCard
               qrData={`Participante: ${athlete.fullName}\nID: ${athlete.id.slice(-6)}\nDelegación: ${delegation?.countryCode || "—"}`}
               name={athlete.fullName || athlete.id}
-              roleLabel={athlete.isDelegationLead ? "Jefe delegación" : athlete.userType || "Participante"}
+              roleLabel={athlete.isDelegationLead ? "Jefe de Misión" : athlete.userType || "Participante"}
               code={athlete.credentialCode || athlete.id.slice(-6)}
               countryTag={athlete.countryCode || delegation?.countryCode || null}
               eventName={event?.name || null}
@@ -3506,7 +3555,7 @@ export default function UserPortalPage() {
                   const html = buildCredentialHtml({
                     eventName: evName,
                     fullName: athlete.fullName,
-                    roleLabel: athlete.isDelegationLead ? "JEFE DELEGACIÓN" : "PARTICIPANTE",
+                    roleLabel: athlete.isDelegationLead ? "JEFE DE MISIÓN" : "PARTICIPANTE",
                     credentialCode: acc?.credentialCode || athlete.credentialCode || athlete.id.slice(-6).toUpperCase(),
                     statusLabel: acc?.status || athlete.accreditationStatus || "PENDING",
                     issuedAtLabel: new Date().toLocaleDateString("es-CL"),
@@ -3520,7 +3569,7 @@ export default function UserPortalPage() {
                   setCredentialPdf({
                     eventName: evName,
                     fullName: athlete.fullName,
-                    roleLabel: athlete.isDelegationLead ? "JEFE DELEGACIÓN" : "PARTICIPANTE",
+                    roleLabel: athlete.isDelegationLead ? "JEFE DE MISIÓN" : "PARTICIPANTE",
                     code: acc?.credentialCode || athlete.credentialCode || athlete.id.slice(-6),
                     countryTag: athlete.countryCode || delegation?.countryCode || undefined,
                     qrDataUrl,

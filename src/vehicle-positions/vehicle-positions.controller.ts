@@ -43,11 +43,10 @@ export class VehiclePositionsController {
     return this.vehiclePositionsService.create(createVehiclePositionDto);
   }
 
+  /** Listado completo: panel o Jefe de Misión (sólo la flota de su delegación). */
   @Get()
   async findAll(@Req() req: VpRequest) {
-    this.access.requireStaff(req.vpCaller);
-    // Jefe de Misión: sólo las posiciones de la flota de su delegación.
-    const delegationId = await this.scope.delegationOf(req as unknown as ApiRequest);
+    const { delegationId } = await this.scope.requireOperator(req as unknown as ApiRequest);
     return this.vehiclePositionsService.findAll(delegationId);
   }
 
