@@ -16,7 +16,7 @@ import {
   Legend,
 } from "recharts";
 import { apiFetch, getTokens } from "@/lib/api";
-import { BRAND, STATE, SURFACE } from "@/lib/design";
+import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { DownloadIcon, UndoIcon, XIcon, CheckCircleIcon, AlertIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 import { useIsMobile } from "@/lib/useIsMobile";
@@ -582,7 +582,7 @@ function LiveMapPanel({ eventId }: { eventId: string | null | undefined }) {
 }
 
 const TRIP_STATUS_COLOR: Record<string, string> = {
-  SCHEDULED: "#6366f1",
+  SCHEDULED: ACCENT.indigo,
   IN_PROGRESS: BRAND.teal,
   PICKED_UP: "#0ea5e9",
   REQUESTED: STATE.warning,
@@ -1550,7 +1550,7 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
                 </span>
               </div>
             )}
-            {error && <p style={{ color: "#f43f5e", fontSize: 12, margin: 0 }}>{error}</p>}
+            {error && <p style={{ color: STATE.danger, fontSize: 12, margin: 0 }}>{error}</p>}
             <div ref={messagesEndRef} />
           </div>
 

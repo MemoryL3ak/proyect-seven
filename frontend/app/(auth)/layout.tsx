@@ -188,7 +188,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                 <span style={{ fontSize: "10px", fontWeight: 700, color: "rgba(255,255,255,0.7)", letterSpacing: "0.14em" }}>EN VIVO</span>
               </div>
               <div style={{ display: "flex", gap: "5px" }}>
-                {[STATE.danger,STATE.warning,"#22c55e"].map(c => (
+                {[STATE.danger,STATE.warning,STATE.success].map(c => (
                   <span key={c} style={{ width: 7, height: 7, borderRadius: "50%", background: c, opacity: 0.75 }} />
                 ))}
               </div>
@@ -198,17 +198,17 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             <div style={{ height: "108px", overflow: "hidden", position: "relative" }}>
               <div style={{ animation: "ticker-scroll 14s linear infinite" }}>
                 {[
-                  { code: "CL", name: "C. Rodríguez", sport: "Natación",  status: "Acreditado", color: "#22c55e" },
+                  { code: "CL", name: "C. Rodríguez", sport: "Natación",  status: "Acreditado", color: STATE.success },
                   { code: "AR", name: "M. Fernández", sport: "Boxeo",     status: "Check-in",   color: BRAND.tealLight },
-                  { code: "BR", name: "A. Santos",    sport: "Fútbol",    status: "Acreditado", color: "#22c55e" },
+                  { code: "BR", name: "A. Santos",    sport: "Fútbol",    status: "Acreditado", color: STATE.success },
                   { code: "CO", name: "L. García",    sport: "Ciclismo",  status: "Pendiente",  color: STATE.warning },
-                  { code: "PE", name: "V. Torres",    sport: "Gimnasia",  status: "Acreditado", color: "#22c55e" },
+                  { code: "PE", name: "V. Torres",    sport: "Gimnasia",  status: "Acreditado", color: STATE.success },
                   { code: "UY", name: "D. López",     sport: "Pesas",     status: "Check-in",   color: BRAND.tealLight },
-                  { code: "CL", name: "C. Rodríguez", sport: "Natación",  status: "Acreditado", color: "#22c55e" },
+                  { code: "CL", name: "C. Rodríguez", sport: "Natación",  status: "Acreditado", color: STATE.success },
                   { code: "AR", name: "M. Fernández", sport: "Boxeo",     status: "Check-in",   color: BRAND.tealLight },
-                  { code: "BR", name: "A. Santos",    sport: "Fútbol",    status: "Acreditado", color: "#22c55e" },
+                  { code: "BR", name: "A. Santos",    sport: "Fútbol",    status: "Acreditado", color: STATE.success },
                   { code: "CO", name: "L. García",    sport: "Ciclismo",  status: "Pendiente",  color: STATE.warning },
-                  { code: "PE", name: "V. Torres",    sport: "Gimnasia",  status: "Acreditado", color: "#22c55e" },
+                  { code: "PE", name: "V. Torres",    sport: "Gimnasia",  status: "Acreditado", color: STATE.success },
                   { code: "UY", name: "D. López",     sport: "Pesas",     status: "Check-in",   color: BRAND.tealLight },
                 ].map((row, i) => (
                   <div key={i} style={{

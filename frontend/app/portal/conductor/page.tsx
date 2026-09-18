@@ -58,7 +58,7 @@ import { claimPortalSession, clearPortalSession, ensurePortalIdentity, getStored
 import { dlog } from "@/lib/native-debug";
 import PortalSessionGuard from "@/components/PortalSessionGuard";
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
-import { BRAND, STATE, SURFACE } from "@/lib/design";
+import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 
 const TripMap = dynamic(() => import("@/components/TripMap"), {
   ssr: false,
@@ -85,7 +85,7 @@ type FlightTrack = {
 
 const FLIGHT_STATUS_ES: Record<string, { label: string; color: string }> = {
   scheduled:   { label: "Programado",  color: STATE.info },
-  boarding:    { label: "Embarcando",  color: "#8b5cf6" },
+  boarding:    { label: "Embarcando",  color: ACCENT.violetLight },
   active:      { label: "En vuelo",    color: STATE.success },
   approaching: { label: "Aproximando", color: STATE.success },
   delayed:     { label: "Retrasado",   color: STATE.warning },
@@ -1433,19 +1433,19 @@ export default function DriverPortalPage() {
     if (!isNativeAvailable()) return null;
     if (!shellTracking || shellTracking.backgroundOk !== false) return null;
     return (
-      <div style={{ display:"flex",gap:10,alignItems:"flex-start",padding:"10px 12px",borderRadius:12,background:"#fffbeb",border:"1px solid #fde68a",marginBottom:12 }}>
+      <div style={{ display:"flex",gap:10,alignItems:"flex-start",padding:"10px 12px",borderRadius:12,background:STATE.warningSoft,border:`1px solid ${STATE.warningBorder}`,marginBottom:12 }}>
         <span style={{ display:"inline-flex" }}><PinIcon size={16} /></span>
         <div style={{ flex:1,minWidth:0 }}>
-          <p style={{ fontSize:12,fontWeight:800,color:"#92400e",margin:0 }}>
+          <p style={{ fontSize:12,fontWeight:800,color:STATE.warningText,margin:0 }}>
             {t("Tu ubicación se corta al minimizar la app")}
           </p>
-          <p style={{ fontSize:11,color:"#a16207",margin:"3px 0 0",lineHeight:1.45 }}>
+          <p style={{ fontSize:11,color:STATE.warningText,margin:"3px 0 0",lineHeight:1.45 }}>
             {t("Para que siga enviándose con la app cerrada, abrí Ajustes y elegí \"Permitir todo el tiempo\" en el permiso de ubicación.")}
           </p>
           <button
             type="button"
             onClick={() => nativeSend("device.open-settings")}
-            style={{ marginTop:8,padding:"6px 12px",borderRadius:8,border:"1px solid #fbbf24",background:SURFACE.card,color:"#92400e",fontSize:11,fontWeight:800,cursor:"pointer" }}
+            style={{ marginTop:8,padding:"6px 12px",borderRadius:8,border:`1px solid ${STATE.warning}`,background:SURFACE.card,color:STATE.warningText,fontSize:11,fontWeight:800,cursor:"pointer" }}
           >
             {t("Abrir Ajustes")}
           </button>
@@ -1641,10 +1641,10 @@ export default function DriverPortalPage() {
                   />
                 </div>
                 <button type="button" onClick={() => loadTrips()} disabled={loading}
-                  style={{ width: "100%", padding: "17px", borderRadius: "14px", border: "none", background: `linear-gradient(135deg,${BRAND.tealLight} 0%,${BRAND.teal} 50%,#15B09A 100%)`, color: "#0d1b3e", fontSize: "16px", fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1, letterSpacing: "0.03em", boxShadow: "0 4px 20px rgba(33,208,179,0.35)" }}>
+                  style={{ width: "100%", padding: "17px", borderRadius: "14px", border: "none", background: `linear-gradient(135deg,${BRAND.tealLight} 0%,${BRAND.teal} 50%,#15B09A 100%)`, color: SURFACE.text, fontSize: "16px", fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1, letterSpacing: "0.03em", boxShadow: "0 4px 20px rgba(33,208,179,0.35)" }}>
                   {loading ? t("Cargando...") : t("Ver mis viajes")}
                 </button>
-                {idError && <p style={{ color: "#fca5a5", fontSize: "13px", textAlign: "center" }}>{idError}</p>}
+                {idError && <p style={{ color: STATE.dangerBorder, fontSize: "13px", textAlign: "center" }}>{idError}</p>}
                 {wrongPortal && (
                   <button
                     type="button"
@@ -1660,7 +1660,7 @@ export default function DriverPortalPage() {
                       : t("Ir al acceso de staff")}
                   </button>
                 )}
-                {error && <p style={{ color: "#fca5a5", fontSize: "13px", textAlign: "center" }}>{error}</p>}
+                {error && <p style={{ color: STATE.dangerBorder, fontSize: "13px", textAlign: "center" }}>{error}</p>}
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "12px", margin: "24px 0" }}>
                 <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.08)" }} />
@@ -1678,7 +1678,7 @@ export default function DriverPortalPage() {
                   {requestLoading ? t("Enviando...") : t("Solicitar código")}
                 </button>
                 {requestStatus && <p style={{ color: "#6ee7b7", fontSize: "13px" }}>{requestStatus}</p>}
-                {requestError && <p style={{ color: "#fca5a5", fontSize: "13px" }}>{requestError}</p>}
+                {requestError && <p style={{ color: STATE.dangerBorder, fontSize: "13px" }}>{requestError}</p>}
               </div>
             </div>
           </div>
@@ -2032,7 +2032,7 @@ export default function DriverPortalPage() {
                           <div style={{ position:"relative",flexShrink:0 }}>
                             <span style={{
                               width:10,height:10,borderRadius:"50%",display:"block",
-                              background: isActive ? "#7c3aed" : isCompleted ? BRAND.teal : isNew ? STATE.info : "#0ea5e9",
+                              background: isActive ? ACCENT.violet : isCompleted ? BRAND.teal : isNew ? STATE.info : "#0ea5e9",
                               boxShadow: isActive ? "0 0 8px rgba(124,58,237,0.4)" : isNew ? "0 0 8px rgba(59,130,246,0.4)" : "none",
                             }} />
                             {isNew && <span style={{ position:"absolute",top:"-6px",right:"-8px",width:6,height:6,borderRadius:"50%",background:STATE.danger,border:"1px solid #fff" }} />}
@@ -2040,7 +2040,7 @@ export default function DriverPortalPage() {
                           {/* Route summary */}
                           <div style={{ flex:1,minWidth:0 }}>
                             <div style={{ display:"flex",alignItems:"center",gap:6 }}>
-                              <p style={{ fontSize:13,fontWeight: isNew ? 800 : 600,color: isNew ? "#1e40af" : SURFACE.text,margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                              <p style={{ fontSize:13,fontWeight: isNew ? 800 : 600,color: isNew ? STATE.infoText : SURFACE.text,margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
                                 {isDisposicion(trip)
                                   ? "Disposición 12h"
                                   : `${trip.origin?.split(",")[0] || "—"} → ${trip.destination?.split(",")[0] || "—"}`}
@@ -2064,7 +2064,7 @@ export default function DriverPortalPage() {
                             {isDisposicion(trip) ? (
                               /* Disposición 12h: simplified header, no map/route */
                               <div style={{ padding:"12px 14px",borderRadius:12,background:"linear-gradient(135deg,rgba(99,102,241,0.06),rgba(33,208,179,0.06))",border:"1px solid rgba(99,102,241,0.15)",marginBottom:10 }}>
-                                <p style={{ fontSize:11,fontWeight:700,color:"#6366f1",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Servicio a disposición — 12 horas</p>
+                                <p style={{ fontSize:11,fontWeight:700,color:ACCENT.indigo,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Servicio a disposición — 12 horas</p>
                                 <p style={{ fontSize:12,color:SURFACE.textMuted,margin:"4px 0 0" }}>
                                   {trip.scheduledAt ? formatDate(trip.scheduledAt) : "Sin fecha programada"}
                                 </p>
@@ -2148,9 +2148,9 @@ export default function DriverPortalPage() {
 
                             {/* Observación de la solicitud — visible y destacada para el conductor */}
                             {!isDisposicion(trip) && trip.notes && (
-                              <div style={{ padding:"10px 12px",borderRadius:10,background:"#fffbeb",border:"1px solid #fde68a",borderLeft:`4px solid ${STATE.warning}`,marginBottom:10 }}>
+                              <div style={{ padding:"10px 12px",borderRadius:10,background:STATE.warningSoft,border:`1px solid ${STATE.warningBorder}`,borderLeft:`4px solid ${STATE.warning}`,marginBottom:10 }}>
                                 <p style={{ fontSize:10,fontWeight:800,color:STATE.warningText,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}><AlertIcon size={10} className="inline mr-1" />Observación</p>
-                                <p style={{ fontSize:12.5,fontWeight:600,color:"#78350f",margin:"3px 0 0",lineHeight:1.4 }}>{trip.notes.replace(/^\[Portal\]\s*/, "")}</p>
+                                <p style={{ fontSize:12.5,fontWeight:600,color:STATE.warningText,margin:"3px 0 0",lineHeight:1.4 }}>{trip.notes.replace(/^\[Portal\]\s*/, "")}</p>
                               </div>
                             )}
 
@@ -2168,13 +2168,13 @@ export default function DriverPortalPage() {
                                   renderBlockedNotice("servicio")
                                 ) : (
                                   <button type="button" onClick={() => updateTrip(trip.id, "PICKED_UP")} disabled={loading}
-                                    style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:"linear-gradient(135deg,#818cf8,#6366f1)",color:SURFACE.card,fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(99,102,241,0.3)",opacity:loading?0.7:1 }}>
+                                    style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:`linear-gradient(135deg,#818cf8,${ACCENT.indigo})`,color:SURFACE.card,fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(99,102,241,0.3)",opacity:loading?0.7:1 }}>
                                     {t("Iniciar servicio")}
                                   </button>
                                 )
                               ) : status === "EN_ROUTE" || status === "PICKED_UP" ? (
                                 <button type="button" onClick={() => updateTrip(trip.id, "COMPLETED")} disabled={loading}
-                                  style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:`linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})`,color:"#0d1b3e",fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(33,208,179,0.3)",opacity:loading?0.7:1 }}>
+                                  style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:`linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})`,color:SURFACE.text,fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(33,208,179,0.3)",opacity:loading?0.7:1 }}>
                                   {t("Finalizar servicio")}
                                 </button>
                               ) : null
@@ -2183,14 +2183,14 @@ export default function DriverPortalPage() {
                                 renderBlockedNotice("viaje")
                               ) : (
                                 <button type="button" onClick={() => updateTrip(trip.id, "EN_ROUTE")} disabled={loading}
-                                  style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:`linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})`,color:"#0d1b3e",fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(33,208,179,0.3)",opacity:loading?0.7:1 }}>
+                                  style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:`linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})`,color:SURFACE.text,fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(33,208,179,0.3)",opacity:loading?0.7:1 }}>
                                   {t("Iniciar — En ruta al punto de encuentro")}
                                 </button>
                               )
                             ) : status === "EN_ROUTE" ? (
                               <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
                                 <button type="button" onClick={() => confirmPickup(trip)} disabled={loading}
-                                  style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:`linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})`,color:"#0d1b3e",fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(33,208,179,0.3)",opacity:loading?0.7:1 }}>
+                                  style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:`linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})`,color:SURFACE.text,fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(33,208,179,0.3)",opacity:loading?0.7:1 }}>
                                   {isPortalRequest(trip) ? t("Pasajero recogido — En curso") : t("Pasajero recogido")}
                                 </button>
                                 <button type="button" onClick={() => updateTrip(trip.id, "SCHEDULED")} disabled={loading}
@@ -2202,12 +2202,12 @@ export default function DriverPortalPage() {
                               <button type="button"
                                 onClick={() => isPortalRequest(trip) ? updateTrip(trip.id, "COMPLETED") : updateTrip(trip.id, "DROPPED_OFF")}
                                 disabled={loading}
-                                style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:`linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})`,color:"#0d1b3e",fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(33,208,179,0.3)",opacity:loading?0.7:1 }}>
+                                style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:`linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})`,color:SURFACE.text,fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(33,208,179,0.3)",opacity:loading?0.7:1 }}>
                                 {isPortalRequest(trip) ? t("Finalizar viaje") : t("Llegamos al destino")}
                               </button>
                             ) : status === "DROPPED_OFF" ? (
                               <button type="button" onClick={() => updateTrip(trip.id, "COMPLETED")} disabled={loading}
-                                style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:`linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})`,color:"#0d1b3e",fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(33,208,179,0.3)",opacity:loading?0.7:1 }}>
+                                style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:`linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})`,color:SURFACE.text,fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(33,208,179,0.3)",opacity:loading?0.7:1 }}>
                                 {t("Confirmar viaje completado")}
                               </button>
                             ) : null}
@@ -2344,7 +2344,7 @@ export default function DriverPortalPage() {
                               </div>
                               {trip.driverRating && (
                                 <div style={{ display:"flex",alignItems:"center",gap:2,flexShrink:0 }}>
-                                  <StarIcon size={11} color={STATE.warning} strokeWidth={1.5} fill="#FBBF24" />
+                                  <StarIcon size={11} color={STATE.warning} strokeWidth={1.5} fill={STATE.warning} />
                                   <span style={{ fontSize:11,fontWeight:700,color:STATE.warning }}>{trip.driverRating}</span>
                                 </div>
                               )}
@@ -2438,7 +2438,7 @@ export default function DriverPortalPage() {
                     <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:BRAND.teal,margin:0 }}>Credencial</p>
                     <span style={{ fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:6,
                       background: driverProfile.accreditationStatus === "APPROVED" ? "rgba(33,208,179,0.1)" : "rgba(245,158,11,0.1)",
-                      color: driverProfile.accreditationStatus === "APPROVED" ? BRAND.tealInk : "#92400e",
+                      color: driverProfile.accreditationStatus === "APPROVED" ? BRAND.tealInk : STATE.warningText,
                       border: `1px solid ${driverProfile.accreditationStatus === "APPROVED" ? "rgba(33,208,179,0.3)" : "rgba(245,158,11,0.3)"}`,
                     }}>
                       {driverProfile.accreditationStatus === "APPROVED" ? "Aprobada" : driverProfile.accreditationStatus === "CREDENTIAL_ISSUED" ? "Emitida" : driverProfile.accreditationStatus || "Pendiente"}
@@ -2908,7 +2908,7 @@ export default function DriverPortalPage() {
                 )}
               </div>
               {trackLoading && <p style={{ fontSize:13,color:SURFACE.textMuted,textAlign:"center",padding:"24px 0" }}>Consultando información del vuelo…</p>}
-              {trackError && <p style={{ fontSize:13,color:"#b91c1c",textAlign:"center",padding:"18px 0" }}>{trackError}</p>}
+              {trackError && <p style={{ fontSize:13,color:STATE.dangerText,textAlign:"center",padding:"18px 0" }}>{trackError}</p>}
               {trackInfo && !trackLoading && (
                 <>
                   <p style={{ fontSize:12,color:SURFACE.textMuted,margin:"0 0 12px" }}>
@@ -2976,7 +2976,7 @@ export default function DriverPortalPage() {
                 : "Terminaste tu último viaje del día: sube una foto del vehículo para cerrar la jornada."}
             </p>
             <label
-              style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",padding:14,borderRadius:14,border:"none",background: journeyUploading ? SURFACE.borderStrong : `linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})`,color:"#0d1b3e",fontSize:14,fontWeight:800,cursor: journeyUploading ? "wait" : "pointer",boxSizing:"border-box" }}
+              style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",padding:14,borderRadius:14,border:"none",background: journeyUploading ? SURFACE.borderStrong : `linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})`,color:SURFACE.text,fontSize:14,fontWeight:800,cursor: journeyUploading ? "wait" : "pointer",boxSizing:"border-box" }}
             >
               <input
                 type="file"
@@ -3219,9 +3219,9 @@ export default function DriverPortalPage() {
 
                 {/* Rating */}
                 {trip.driverRating ? (
-                  <div style={{ padding:"10px 12px",borderRadius:12,background:"#FFFBEB",border:"1px solid #FDE68A",display:"flex",alignItems:"center",gap:10 }}>
+                  <div style={{ padding:"10px 12px",borderRadius:12,background:STATE.warningSoft,border:`1px solid ${STATE.warningBorder}`,display:"flex",alignItems:"center",gap:10 }}>
                     <span style={{ display:"inline-flex",gap:2,color:STATE.warning }}>{Array.from({ length: trip.driverRating }, (_, k) => <StarIcon key={k} size={18} />)}</span>
-                    {trip.ratingComment && <span style={{ fontSize:12,color:"#92400E",fontStyle:"italic",flex:1 }}>&ldquo;{trip.ratingComment}&rdquo;</span>}
+                    {trip.ratingComment && <span style={{ fontSize:12,color:STATE.warningText,fontStyle:"italic",flex:1 }}>&ldquo;{trip.ratingComment}&rdquo;</span>}
                   </div>
                 ) : (
                   <p style={{ fontSize:11.5,color:SURFACE.textFaint,margin:0,textAlign:"center" }}>Sin evaluación del pasajero</p>

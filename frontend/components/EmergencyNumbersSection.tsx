@@ -127,7 +127,7 @@ export default function EmergencyNumbersSection() {
     <div
       style={{
         background: SURFACE.card,
-        border: "1px solid #fecaca",
+        border: `1px solid ${STATE.dangerBorder}`,
         borderRadius: 16,
         overflow: "hidden",
       }}
@@ -180,7 +180,7 @@ export default function EmergencyNumbersSection() {
               style={{
                 fontSize: 13,
                 fontWeight: 800,
-                color: "#b91c1c",
+                color: STATE.dangerText,
                 whiteSpace: "nowrap",
                 fontVariantNumeric: "tabular-nums",
               }}
@@ -223,7 +223,7 @@ export default function EmergencyNumbersSection() {
               style={{
                 fontSize: 44,
                 fontWeight: 800,
-                color: "#b91c1c",
+                color: STATE.dangerText,
                 margin: "8px 0 4px",
                 letterSpacing: "0.06em",
                 fontVariantNumeric: "tabular-nums",
@@ -254,7 +254,7 @@ export default function EmergencyNumbersSection() {
                   padding: "12px 16px",
                   borderRadius: 12,
                   border: "none",
-                  background: "#b91c1c",
+                  background: STATE.dangerText,
                   color: SURFACE.card,
                   fontSize: 14,
                   fontWeight: 800,

@@ -463,7 +463,7 @@ export default function NotificationBell({
           <span style={{
             position: "absolute", top: -5, right: -5,
             minWidth: 16, height: 16, borderRadius: 8,
-            background: "#f43f5e", color: SURFACE.card,
+            background: STATE.danger, color: SURFACE.card,
             fontSize: 10, fontWeight: 800,
             display: "flex", alignItems: "center", justifyContent: "center",
             padding: "0 5px",

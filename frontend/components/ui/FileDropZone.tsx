@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { CheckIcon, UploadIcon } from "@/components/ui/Icons";
+import { STATE, SURFACE } from "@/lib/design";
 
 type FileDropZoneProps = {
   accept?: string;
@@ -52,12 +53,12 @@ export default function FileDropZone({
       }}
       className="cursor-pointer transition-all rounded-xl border-2 border-dashed p-8 text-center"
       style={{
-        borderColor: dragging ? "#1f4e8c" : selectedFileName ? "#2e7d32" : "#d0d7de",
+        borderColor: dragging ? STATE.infoText : selectedFileName ? STATE.successText : "#d0d7de",
         background: dragging
           ? "linear-gradient(135deg, #eef4fb 0%, #d6e4f5 100%)"
           : selectedFileName
-          ? "linear-gradient(135deg, #f7fcf8 0%, #e7f5ec 100%)"
-          : "#fafbfc",
+          ? `linear-gradient(135deg, #f7fcf8 0%, ${STATE.successSoft} 100%)`
+          : SURFACE.bg,
         opacity: disabled ? 0.6 : 1,
       }}
     >
@@ -75,14 +76,14 @@ export default function FileDropZone({
           className="w-14 h-14 rounded-full flex items-center justify-center"
           style={{
             background: selectedFileName
-              ? "linear-gradient(135deg, #e7f5ec 0%, #c9ead2 100%)"
+              ? `linear-gradient(135deg, ${STATE.successSoft} 0%, #c9ead2 100%)`
               : "linear-gradient(135deg, #eef4fb 0%, #d6e4f5 100%)",
           }}
         >
           {selectedFileName ? (
-            <CheckIcon size={28} color="#2e7d32" strokeWidth={2} />
+            <CheckIcon size={28} color={STATE.successText} strokeWidth={2} />
           ) : (
-            <UploadIcon size={28} color="#1f4e8c" strokeWidth={1.8} />
+            <UploadIcon size={28} color={STATE.infoText} strokeWidth={1.8} />
           )}
         </div>
 

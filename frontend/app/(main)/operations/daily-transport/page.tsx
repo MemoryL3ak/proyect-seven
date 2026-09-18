@@ -619,7 +619,7 @@ export default function DailyTransportPage() {
                   width: 34, height: 34, borderRadius: 10, flexShrink: 0,
                   display: "inline-flex", alignItems: "center", justifyContent: "center",
                   background: active ? "rgba(255,255,255,0.22)" : "rgba(33,208,179,0.1)",
-                  color: active ? SURFACE.card : "#1eb19a",
+                  color: active ? SURFACE.card : BRAND.tealDark,
                 }}>
                   {s.icon}
                 </span>
@@ -627,7 +627,7 @@ export default function DailyTransportPage() {
                   <span style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                     <span style={{ fontSize: 10, fontWeight: 800, color: active ? "rgba(255,255,255,0.7)" : SURFACE.textFaint, letterSpacing: "0.1em" }}>{t("PASO")} {s.n}</span>
                     {s.badge && (
-                      <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 7px", borderRadius: 99, background: active ? "rgba(255,255,255,0.25)" : "rgba(33,208,179,0.12)", color: active ? SURFACE.card : "#1eb19a", whiteSpace: "nowrap" }}>
+                      <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 7px", borderRadius: 99, background: active ? "rgba(255,255,255,0.25)" : "rgba(33,208,179,0.12)", color: active ? SURFACE.card : BRAND.tealDark, whiteSpace: "nowrap" }}>
                         {s.badge}
                       </span>
                     )}
@@ -691,7 +691,7 @@ export default function DailyTransportPage() {
                 ...(importStats.clients.length > 0 ? [{ icon: <TicketIcon size={12} />, label: importStats.clients.join(" · ") }] : []),
               ].map((c) => (
                 <span key={c.label} className="inline-flex items-center gap-1.5 text-xs font-semibold rounded-full px-3 py-1.5"
-                  style={{ background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.25)", color: "#0f766e" }}>
+                  style={{ background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.25)", color: BRAND.tealInk }}>
                   <span aria-hidden style={{ display: "inline-flex" }}>{c.icon}</span> {c.label}
                 </span>
               ))}
@@ -899,7 +899,7 @@ export default function DailyTransportPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <label className="text-sm">
                   <span className="block text-xs mb-1 font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
-                    {t("Buffer entre servicios:")} <strong style={{ color: "#0f766e" }}>{bufferMinutes} min</strong>
+                    {t("Buffer entre servicios:")} <strong style={{ color: BRAND.tealInk }}>{bufferMinutes} min</strong>
                   </span>
                   <input type="range" min={0} max={240} step={15} className="block w-full mt-1"
                     value={bufferMinutes} onChange={(e) => setBufferMinutes(Number(e.target.value))} />
@@ -1080,7 +1080,7 @@ export default function DailyTransportPage() {
                   transition: "width 300ms ease",
                 }} />
               </div>
-              <span className="text-xs font-extrabold" style={{ color: viewKpis.assigned === viewKpis.total ? "#16a34a" : "#d97706", whiteSpace: "nowrap" }}>
+              <span className="text-xs font-extrabold" style={{ color: viewKpis.assigned === viewKpis.total ? STATE.success : STATE.warningText, whiteSpace: "nowrap" }}>
                 {viewKpis.assigned}/{viewKpis.total}
               </span>
             </div>

@@ -476,11 +476,11 @@ export default function AccessControlPortalPage() {
                 type="button"
                 onClick={attemptAuth}
                 disabled={authLoading || !codeInput.trim()}
-                style={{ width: "100%", padding: "17px", borderRadius: "14px", border: "none", background: `linear-gradient(135deg,${BRAND.tealLight} 0%,${BRAND.teal} 50%,#15B09A 100%)`, color: "#0d1b3e", fontSize: "16px", fontWeight: 700, cursor: authLoading ? "not-allowed" : "pointer", opacity: authLoading ? 0.7 : 1, letterSpacing: "0.03em", boxShadow: "0 4px 20px rgba(33,208,179,0.35)" }}
+                style={{ width: "100%", padding: "17px", borderRadius: "14px", border: "none", background: `linear-gradient(135deg,${BRAND.tealLight} 0%,${BRAND.teal} 50%,#15B09A 100%)`, color: SURFACE.text, fontSize: "16px", fontWeight: 700, cursor: authLoading ? "not-allowed" : "pointer", opacity: authLoading ? 0.7 : 1, letterSpacing: "0.03em", boxShadow: "0 4px 20px rgba(33,208,179,0.35)" }}
               >
                 {authLoading ? t("Validando...") : t("Ingresar al scanner")}
               </button>
-              {authError && <p style={{ color: "#fca5a5", fontSize: "13px", textAlign: "center" }}>{authError}</p>}
+              {authError && <p style={{ color: STATE.dangerBorder, fontSize: "13px", textAlign: "center" }}>{authError}</p>}
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: "12px", margin: "24px 0" }}>
@@ -510,7 +510,7 @@ export default function AccessControlPortalPage() {
                 {requestLoading ? t("Enviando...") : t("Solicitar código")}
               </button>
               {requestStatus && <p style={{ color: "#6ee7b7", fontSize: "13px" }}>{requestStatus}</p>}
-              {requestError && <p style={{ color: "#fca5a5", fontSize: "13px" }}>{requestError}</p>}
+              {requestError && <p style={{ color: STATE.dangerBorder, fontSize: "13px" }}>{requestError}</p>}
             </div>
 
             <p style={{ fontSize: "11px", color: "rgba(255,255,255,0.35)", marginTop: "24px", textAlign: "center", lineHeight: 1.6 }}>
@@ -524,7 +524,7 @@ export default function AccessControlPortalPage() {
 
   // ── Scanner screen (replicates ScannerPortal UX)
   return (
-    <main style={{ minHeight: "100vh", background: "#f0f3fa", color: SURFACE.text, fontFamily: "inherit" }}>
+    <main style={{ minHeight: "100vh", background: SURFACE.borderMuted, color: SURFACE.text, fontFamily: "inherit" }}>
       <style>{`
         @keyframes scanLine {
           0%   { top: 0%; opacity: 1; }

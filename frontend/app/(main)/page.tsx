@@ -418,7 +418,7 @@ export default function Page() {
           <div>
             <DetailRow label={t("Asignaciones activas")} value={fmt(activas)} color={TEAL} bold />
             <DetailRow label={t("Finalizadas / canceladas")} value={fmt(finished)} />
-            <DetailRow label={t("Sin habitación asignada")} value={fmt(sinHab)} color={sinHab > 0 ? "#d97706" : undefined} />
+            <DetailRow label={t("Sin habitación asignada")} value={fmt(sinHab)} color={sinHab > 0 ? STATE.warningText : undefined} />
             <DetailRow label={t("Total")} value={fmt(list.length)} bold />
           </div>
         );
@@ -453,7 +453,7 @@ export default function Page() {
         <button type="button" onClick={() => downloadExcel("reporte_operacional", buildOperationalReport())}
           onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(34,197,94,0.25)"; }}
           onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 1px 4px rgba(34,197,94,0.1)"; }}
-          style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 10, border: "1px solid rgba(34,197,94,0.3)", background: "rgba(34,197,94,0.06)", fontSize: 12, fontWeight: 700, color: "#16a34a", cursor: "pointer", transition: "all 150ms ease", boxShadow: "0 1px 4px rgba(34,197,94,0.1)" }}>
+          style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 10, border: "1px solid rgba(34,197,94,0.3)", background: "rgba(34,197,94,0.06)", fontSize: 12, fontWeight: 700, color: STATE.success, cursor: "pointer", transition: "all 150ms ease", boxShadow: "0 1px 4px rgba(34,197,94,0.1)" }}>
           <XIcon size={16} />
           Excel
         </button>
@@ -650,7 +650,7 @@ export default function Page() {
             const totalCupos = Array.from(capacityByDiscipline.values()).reduce((s, v) => s + v, 0);
             const totalRegistered = Array.from(athletesByDiscipline.values()).reduce((s, v) => s + v, 0);
             const fillPct = totalCupos > 0 ? Math.round((totalRegistered / totalCupos) * 100) : 0;
-            const semColor = fillPct >= 85 ? "#22c55e" : fillPct >= 60 ? STATE.warning : STATE.danger;
+            const semColor = fillPct >= 85 ? STATE.success : fillPct >= 60 ? STATE.warning : STATE.danger;
             return (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                 <div style={{ background: SURFACE.bg, border: `1px solid ${SURFACE.border}`, borderRadius: 12, padding: "12px 14px" }}>
@@ -696,7 +696,7 @@ export default function Page() {
                 .sort((a, b) => b.cupos - a.cupos);
 
               return rows.map((row) => {
-                const semColor = row.pct >= 85 ? "#22c55e" : row.pct >= 60 ? STATE.warning : STATE.danger;
+                const semColor = row.pct >= 85 ? STATE.success : row.pct >= 60 ? STATE.warning : STATE.danger;
                 return (
                   <div key={row.discId}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>

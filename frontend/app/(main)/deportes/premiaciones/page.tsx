@@ -52,14 +52,14 @@ const awarderState = (a: Awarder): AwarderState =>
   a.confirmedAt ? "CONFIRMED" : a.declinedAt ? "DECLINED" : "PENDING";
 
 const AWARDER_META: Record<AwarderState, { label: string; color: string; bg: string; icon: ReactNode }> = {
-  CONFIRMED: { label: "Confirmó", color: STATE.successText, bg: "#e7f5ec", icon: <CheckIcon size={11} /> },
-  DECLINED: { label: "Rechazó", color: STATE.dangerText, bg: "#fde2e2", icon: <XIcon size={11} /> },
-  PENDING: { label: "Pendiente", color: STATE.warningText, bg: "#fef3c7", icon: <ClockIcon size={11} /> },
+  CONFIRMED: { label: "Confirmó", color: STATE.successText, bg: STATE.successSoft, icon: <CheckIcon size={11} /> },
+  DECLINED: { label: "Rechazó", color: STATE.dangerText, bg: STATE.dangerSoft, icon: <XIcon size={11} /> },
+  PENDING: { label: "Pendiente", color: STATE.warningText, bg: STATE.warningSoft, icon: <ClockIcon size={11} /> },
 };
 
 const STATUS_META: Record<string, { label: string; color: string; bg: string }> = {
-  PROGRAMADA: { label: "Programada", color: "#1f4e8c", bg: "#e3edfa" },
-  REALIZADA: { label: "Realizada", color: STATE.successText, bg: "#e7f5ec" },
+  PROGRAMADA: { label: "Programada", color: STATE.infoText, bg: "#e3edfa" },
+  REALIZADA: { label: "Realizada", color: STATE.successText, bg: STATE.successSoft },
 };
 
 function fmtDateTime(iso?: string | null) {
@@ -331,13 +331,13 @@ export default function PremiacionesPage() {
           <div style={{ minWidth: 0 }}>
             {isNext && (
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full inline-block mb-1"
-                style={{ background: "rgba(33,208,179,0.14)", color: "#0f9d84", border: "1px solid rgba(33,208,179,0.45)", letterSpacing: "0.08em" }}>
+                style={{ background: "rgba(33,208,179,0.14)", color: BRAND.tealDark, border: "1px solid rgba(33,208,179,0.45)", letterSpacing: "0.08em" }}>
                 <StarIcon size={10} className="inline mr-1" />{t("PRÓXIMA CEREMONIA")}
               </span>
             )}
             <p className="font-bold text-[15px] leading-tight" style={{ color: SURFACE.text }}>{p.title}</p>
             {p.discipline && (
-              <p className="text-xs mt-0.5" style={{ color: "#14b8a6", fontWeight: 600 }}>{p.discipline}</p>
+              <p className="text-xs mt-0.5" style={{ color: BRAND.teal, fontWeight: 600 }}>{p.discipline}</p>
             )}
           </div>
           <select value={p.status} disabled={savingId === p.id}
@@ -356,7 +356,7 @@ export default function PremiacionesPage() {
             <CalendarIcon size={12} className="inline mr-1" />{fmtDateTime(p.scheduledAt)}
             {rel && (
               <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded"
-                style={{ background: rel === "Hoy" ? "#fef3c7" : "#eef1f6", color: rel === "Hoy" ? STATE.warningText : SURFACE.textMuted }}>
+                style={{ background: rel === "Hoy" ? STATE.warningSoft : SURFACE.borderMuted, color: rel === "Hoy" ? STATE.warningText : SURFACE.textMuted }}>
                 {t(rel)}
               </span>
             )}
@@ -368,13 +368,13 @@ export default function PremiacionesPage() {
         </div>
 
         {/* Entregadores + confirmación */}
-        <div className="rounded-xl p-3" style={{ background: SURFACE.bg, border: "1px solid #eef1f6" }}>
+        <div className="rounded-xl p-3" style={{ background: SURFACE.bg, border: `1px solid ${SURFACE.borderMuted}` }}>
           <div className="flex items-center justify-between mb-2">
             <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: SURFACE.textMuted }}>
               {t("Entregadores (VIP)")}
             </span>
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-              style={{ background: confirmed === awarders.length && awarders.length > 0 ? "#e7f5ec" : "#eef1f6", color: confirmed === awarders.length && awarders.length > 0 ? STATE.successText : SURFACE.textMuted }}>
+              style={{ background: confirmed === awarders.length && awarders.length > 0 ? STATE.successSoft : SURFACE.borderMuted, color: confirmed === awarders.length && awarders.length > 0 ? STATE.successText : SURFACE.textMuted }}>
               {confirmed}/{awarders.length} {t("confirmaron")}
             </span>
           </div>
@@ -405,11 +405,11 @@ export default function PremiacionesPage() {
         <div className="flex items-center justify-between gap-2">
           <button type="button" onClick={() => openEdit(p)}
             className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
-            style={{ background: "#fff7ed", color: "#d97706", border: "1px solid #fed7aa", cursor: "pointer" }}>
+            style={{ background: "#fff7ed", color: STATE.warningText, border: "1px solid #fed7aa", cursor: "pointer" }}>
             <PencilIcon size={12} className="inline mr-1" />{t("Editar premiación")}
           </button>
           {p.disciplineId && (
-            <Link href="/deportes" className="text-xs font-semibold" style={{ color: "#14b8a6" }}>
+            <Link href="/deportes" className="text-xs font-semibold" style={{ color: BRAND.teal }}>
               {t("Ver prueba")} →
             </Link>
           )}
@@ -426,7 +426,7 @@ export default function PremiacionesPage() {
         title={t("Premiaciones")}
         description={t("Ceremonias de premiación por prueba, con sus entregadores VIP y el estado de confirmación de asistencia.")}
         icon={<TrophyIcon size={26} />}
-        iconBg="linear-gradient(135deg, #fbbf24 0%, #d97706 100%)"
+        iconBg={`linear-gradient(135deg, ${STATE.warning} 0%, ${STATE.warningText} 100%)`}
         accentStrip="gold"
         action={
           <button type="button" onClick={openCreate} className="btn btn-primary text-xs">
@@ -492,7 +492,7 @@ export default function PremiacionesPage() {
         </div>
       </section>
 
-      {message && !formOpen && <p className="text-sm" style={{ color: "#b91c1c" }}>{message}</p>}
+      {message && !formOpen && <p className="text-sm" style={{ color: STATE.dangerText }}>{message}</p>}
 
       {/* Lista */}
       {loading ? (
@@ -502,7 +502,7 @@ export default function PremiacionesPage() {
           <TrophyIcon size={36} color={SURFACE.borderStrong} />
           <p className="text-sm font-semibold mt-3" style={{ color: SURFACE.textSecondary }}>{t("No hay premiaciones para mostrar")}</p>
           <p className="text-xs mt-1" style={{ color: SURFACE.textFaint }}>
-            {t("Crea la primera con el botón")} <button type="button" onClick={openCreate} style={{ color: "#14b8a6", fontWeight: 600, cursor: "pointer" }}>+ {t("Nueva premiación")}</button>.
+            {t("Crea la primera con el botón")} <button type="button" onClick={openCreate} style={{ color: BRAND.teal, fontWeight: 600, cursor: "pointer" }}>+ {t("Nueva premiación")}</button>.
           </p>
         </div>
       ) : viewMode === "timeline" ? (
@@ -532,17 +532,17 @@ export default function PremiacionesPage() {
                   empty: "Sin ceremonias hoy.",
                 },
                 {
-                  key: "proximas", label: "Próximas", accent: STATE.infoText, chipBg: "#dbeafe", chipBorder: "#93c5fd",
+                  key: "proximas", label: "Próximas", accent: STATE.infoText, chipBg: STATE.infoSoft, chipBorder: STATE.infoBorder,
                   items: all.filter((p) => p.status !== "REALIZADA" && when(p) >= tomorrowStart),
                   empty: "Sin ceremonias futuras.",
                 },
                 {
-                  key: "atrasadas", label: "Atrasadas", accent: STATE.warning, chipBg: "#fef3c7", chipBorder: "#fcd34d",
+                  key: "atrasadas", label: "Atrasadas", accent: STATE.warning, chipBg: STATE.warningSoft, chipBorder: STATE.warning,
                   items: all.filter((p) => p.status !== "REALIZADA" && when(p) < todayStart).sort((a, b) => when(b) - when(a)),
                   empty: "Nada pendiente de cerrar.",
                 },
                 {
-                  key: "realizadas", label: "Realizadas", accent: STATE.successText, chipBg: "#e7f5ec", chipBorder: "#86efac",
+                  key: "realizadas", label: "Realizadas", accent: STATE.successText, chipBg: STATE.successSoft, chipBorder: STATE.successBorder,
                   items: all.filter((p) => p.status === "REALIZADA").sort((a, b) => when(b) - when(a)),
                   empty: "Aún sin ceremonias realizadas.",
                 },
@@ -580,7 +580,7 @@ export default function PremiacionesPage() {
                             {p.title}
                             {p.id === nextId && (
                               <span className="ml-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full align-middle"
-                                style={{ background: "rgba(33,208,179,0.14)", color: "#0f9d84", border: "1px solid rgba(33,208,179,0.45)" }}>
+                                style={{ background: "rgba(33,208,179,0.14)", color: BRAND.tealDark, border: "1px solid rgba(33,208,179,0.45)" }}>
                                 <StarIcon size={9} className="inline mr-1" />{t("PRÓXIMA")}
                               </span>
                             )}
@@ -611,9 +611,9 @@ export default function PremiacionesPage() {
         <div className="space-y-5">
           {upcoming.length > 0 && (
             <section className="space-y-3">
-              <h2 className="text-xs font-bold uppercase tracking-widest flex items-center gap-2" style={{ color: "#0f9d84" }}>
+              <h2 className="text-xs font-bold uppercase tracking-widest flex items-center gap-2" style={{ color: BRAND.tealDark }}>
                 {t("Próximas ceremonias")}
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(33,208,179,0.12)", color: "#0f9d84" }}>{upcoming.length}</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(33,208,179,0.12)", color: BRAND.tealDark }}>{upcoming.length}</span>
               </h2>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                 {upcoming.map((p, i) => renderCard(p, i === 0))}
@@ -624,7 +624,7 @@ export default function PremiacionesPage() {
             <section className="space-y-3">
               <h2 className="text-xs font-bold uppercase tracking-widest flex items-center gap-2" style={{ color: SURFACE.textFaint }}>
                 {t("Realizadas y pasadas")}
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "#eef1f6", color: SURFACE.textMuted }}>{past.length}</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: SURFACE.borderMuted, color: SURFACE.textMuted }}>{past.length}</span>
               </h2>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                 {past.map((p) => renderCard(p, false))}
@@ -721,7 +721,7 @@ export default function PremiacionesPage() {
                     .filter((a) => !formAwarders.some((e) => e.athleteId === a.id))
                     .map((a) => <option key={a.id} value={a.id}>{a.fullName || a.id.slice(0, 8)}</option>)}
                 </StyledSelect>
-                <div className="rounded-xl p-3 space-y-1.5 mt-2" style={{ background: SURFACE.bg, border: "1px solid #eef1f6", maxHeight: 200, overflowY: "auto" }}>
+                <div className="rounded-xl p-3 space-y-1.5 mt-2" style={{ background: SURFACE.bg, border: `1px solid ${SURFACE.borderMuted}`, maxHeight: 200, overflowY: "auto" }}>
                   {formAwarders.length === 0 ? (
                     <p className="text-[12px]" style={{ color: SURFACE.textFaint }}>{t("Sin entregadores asignados.")}</p>
                   ) : formAwarders.map((a) => {
@@ -754,13 +754,13 @@ export default function PremiacionesPage() {
               </div>
             </div>
 
-            {message && <p className="text-sm" style={{ color: "#b91c1c" }}>{message}</p>}
+            {message && <p className="text-sm" style={{ color: STATE.dangerText }}>{message}</p>}
 
             <div className="flex items-center justify-between gap-2">
               {formEditingId ? (
                 <button type="button" onClick={deletePremiacion} disabled={savingForm || deleting}
                   className="text-xs font-semibold px-3 py-1.5 rounded-lg"
-                  style={{ background: "#fef2f2", color: STATE.dangerText, border: "1px solid #fecaca", cursor: "pointer" }}>
+                  style={{ background: STATE.dangerSoft, color: STATE.dangerText, border: `1px solid ${STATE.dangerBorder}`, cursor: "pointer" }}>
                   {deleting ? t("Eliminando…") : t("Eliminar")}
                 </button>
               ) : <span />}

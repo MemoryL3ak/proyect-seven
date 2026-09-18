@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
-import { STATE, SURFACE } from "@/lib/design";
+import { STATE, SURFACE, ACCENT } from "@/lib/design";
 import { XIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 
@@ -320,7 +320,7 @@ export default function HotelExtraReservationsCalendar({
                     alignItems: "center",
                     gap: "3px",
                     border: isSelected
-                      ? "2px solid var(--accent, #6366f1)"
+                      ? `2px solid var(--accent, ${ACCENT.indigo})`
                       : isToday
                       ? "2px solid rgba(99,102,241,0.35)"
                       : "2px solid transparent",
@@ -343,7 +343,7 @@ export default function HotelExtraReservationsCalendar({
                       borderRadius: "50%",
                       fontSize: "13px",
                       fontWeight: isToday ? 800 : 500,
-                      background: isToday ? "var(--accent, #6366f1)" : "transparent",
+                      background: isToday ? `var(--accent, ${ACCENT.indigo})` : "transparent",
                       color: isToday ? SURFACE.card : "inherit",
                     }}
                   >

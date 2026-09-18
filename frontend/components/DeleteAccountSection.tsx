@@ -51,7 +51,7 @@ export default function DeleteAccountSection({ onDelete, onDeleted, compact }: P
         width: compact ? undefined : "100%",
         padding: compact ? "8px 14px" : 12,
         borderRadius: compact ? 10 : 12,
-        border: "1px solid #fecaca",
+        border: `1px solid ${STATE.dangerBorder}`,
         background: SURFACE.card,
         color: STATE.danger,
         fontSize: compact ? 12 : 13,
@@ -76,7 +76,7 @@ export default function DeleteAccountSection({ onDelete, onDeleted, compact }: P
           {errorLine}
         </div>
       ) : (
-        <div style={{ background: SURFACE.card, borderRadius: 14, border: "1px solid #fecaca", padding: 14, display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ background: SURFACE.card, borderRadius: 14, border: `1px solid ${STATE.dangerBorder}`, padding: 14, display: "flex", flexDirection: "column", gap: 8 }}>
           <span style={{ fontSize: 10, fontWeight: 700, color: STATE.danger, textTransform: "uppercase", letterSpacing: "0.08em" }}>
             Eliminar cuenta
           </span>

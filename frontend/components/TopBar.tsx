@@ -120,7 +120,7 @@ export default function TopBar({ onMenuOpen }: { onMenuOpen?: () => void }) {
             width: "36px",
             height: "36px",
             borderRadius: "8px",
-            background: "#f0f3fa",
+            background: SURFACE.borderMuted,
             border: `1px solid ${SURFACE.border}`,
             cursor: "pointer",
             color: BRAND.charcoal,

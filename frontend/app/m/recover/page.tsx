@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { mobileRecover } from "@/lib/api";
-import { SURFACE, BRAND } from "@/lib/design";
+import { SURFACE, BRAND, STATE } from "@/lib/design";
 
 export default function MobileRecoverPage() {
   const router = useRouter();
@@ -158,7 +158,7 @@ export default function MobileRecoverPage() {
             </div>
 
             {error && (
-              <p style={{ color: "#fca5a5", fontSize: "13px", textAlign: "center", margin: 0 }}>{error}</p>
+              <p style={{ color: STATE.dangerBorder, fontSize: "13px", textAlign: "center", margin: 0 }}>{error}</p>
             )}
 
             <button
@@ -171,7 +171,7 @@ export default function MobileRecoverPage() {
                 borderRadius: "12px",
                 border: "none",
                 background: `linear-gradient(135deg, ${BRAND.tealLight} 0%, ${BRAND.teal} 50%, #15B09A 100%)`,
-                color: "#0d1b3e",
+                color: SURFACE.text,
                 fontSize: "16px",
                 fontWeight: 700,
                 cursor: loading || !isValid ? "not-allowed" : "pointer",

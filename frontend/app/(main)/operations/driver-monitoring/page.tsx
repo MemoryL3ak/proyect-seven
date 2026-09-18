@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { apiFetch } from "@/lib/api";
-import { BRAND, STATE, SURFACE } from "@/lib/design";
+import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
 import { useIsMobile } from "@/lib/useIsMobile";
 import { getSupabase } from "@/lib/supabase";
@@ -141,18 +141,18 @@ function initials(name: string): string {
 }
 
 const CLIENT_TYPE_META: Record<string, { label: string; bg: string; color: string; border: string }> = {
-  VIP: { label: "VIP", bg: "#fef3c7", color: "#7a4a00", border: "#fcd34d" },
-  T1: { label: "T1", bg: "#fee2e2", color: "#991b1b", border: "#fca5a5" },
-  TA: { label: "TA", bg: "#dbeafe", color: "#1e40af", border: "#93c5fd" },
+  VIP: { label: "VIP", bg: STATE.warningSoft, color: STATE.warningText, border: STATE.warning },
+  T1: { label: "T1", bg: STATE.dangerSoft, color: STATE.dangerText, border: STATE.dangerBorder },
+  TA: { label: "TA", bg: STATE.infoSoft, color: STATE.infoText, border: STATE.infoBorder },
   TF: { label: "TF", bg: "#e0f2fe", color: "#075985", border: "#7dd3fc" },
-  TM: { label: "TM", bg: "#ede9fe", color: "#5b21b6", border: "#c4b5fd" },
+  TM: { label: "TM", bg: ACCENT.violetSoft, color: "#5b21b6", border: "#c4b5fd" },
   FAMILIA_PARAPAN: { label: "Familia Parapan", bg: "#fce7f3", color: "#9d174d", border: "#f9a8d4" },
   COMITE_ORGANIZADOR: { label: "Comité Org.", bg: "#e0f2fe", color: "#075985", border: "#7dd3fc" },
   PROVEEDORES: { label: "Proveedores", bg: SURFACE.borderMuted, color: SURFACE.textStrong, border: SURFACE.borderStrong },
-  PRENSA: { label: "Prensa", bg: "#ede9fe", color: "#5b21b6", border: "#c4b5fd" },
-  OFICIAL: { label: "Oficial", bg: "#fee2e2", color: "#991b1b", border: "#fca5a5" },
+  PRENSA: { label: "Prensa", bg: ACCENT.violetSoft, color: "#5b21b6", border: "#c4b5fd" },
+  OFICIAL: { label: "Oficial", bg: STATE.dangerSoft, color: STATE.dangerText, border: STATE.dangerBorder },
   STAFF: { label: "Staff", bg: "#e0f2fe", color: "#075985", border: "#7dd3fc" },
-  ATHLETE: { label: "Atleta", bg: "#dcfce7", color: "#166534", border: "#86efac" },
+  ATHLETE: { label: "Atleta", bg: STATE.successSoft, color: STATE.successText, border: STATE.successBorder },
 };
 
 function clientTypeChip(type: string) {
@@ -431,8 +431,8 @@ export default function DriverMonitoringPage() {
   // ── Pastillas compartidas entre la tabla (desktop) y las tarjetas (móvil) ──
   const pillEstado = (online: boolean) => (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 10.5, padding: "4px 10px", borderRadius: 99, fontWeight: 700, letterSpacing: "0.02em",
-      background: online ? "linear-gradient(135deg,#dcfce7,#bbf7d0)" : "#eef1f6",
-      color: online ? "#166534" : "#5e6b7a",
+      background: online ? `linear-gradient(135deg,${STATE.successSoft},${STATE.successBorder})` : SURFACE.borderMuted,
+      color: online ? STATE.successText : SURFACE.textMuted,
       border: `1px solid ${online ? "#86efac" : "#cbd5e1"}` }}>
       <span style={{ width: 6, height: 6, borderRadius: "50%", background: online ? STATE.success : SURFACE.textFaint, animation: online ? "pulse 1.8s infinite" : "none" }} />
       {online ? t("Conectado") : t("Desconectado")}
@@ -442,7 +442,7 @@ export default function DriverMonitoringPage() {
   const pillOcupacion = (isBusy: boolean, tripText: string | null, activeTrips: number) => (
     isBusy ? (
       <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 10.5, padding: "4px 10px", borderRadius: 99, fontWeight: 700,
-        background: "linear-gradient(135deg,#ede9fe,#ddd6fe)", color: "#5b21b6", border: "1px solid #c4b5fd" }}>
+        background: `linear-gradient(135deg,${ACCENT.violetSoft},#ddd6fe)`, color: "#5b21b6", border: "1px solid #c4b5fd" }}>
         <CarIcon size={11} strokeWidth={2.5} />
         {tripText ? t(tripText) : `${activeTrips} ${activeTrips === 1 ? t("viaje") : t("viajes")}`}
       </span>
@@ -459,9 +459,9 @@ export default function DriverMonitoringPage() {
       <span style={{ color: SURFACE.borderStrong, fontSize: 12, fontWeight: 600 }}>0</span>
     ) : (
       <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11.5, padding: "3px 9px", borderRadius: 8, fontWeight: 800,
-        background: n >= 5 ? "linear-gradient(135deg,#fef3c7,#fde68a)" : "linear-gradient(135deg,#dbeafe,#bfdbfe)",
-        color: n >= 5 ? "#7a4a00" : "#1e40af",
-        border: n >= 5 ? "1px solid #fcd34d" : "1px solid #93c5fd" }}>
+        background: n >= 5 ? `linear-gradient(135deg,${STATE.warningSoft},${STATE.warningBorder})` : `linear-gradient(135deg,${STATE.infoSoft},${STATE.infoBorder})`,
+        color: n >= 5 ? STATE.warningText : STATE.infoText,
+        border: n >= 5 ? `1px solid ${STATE.warning}` : `1px solid ${STATE.infoBorder}` }}>
         {n}
       </span>
     )
@@ -469,8 +469,8 @@ export default function DriverMonitoringPage() {
 
   const pillGps = (gpsActive: boolean) => (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, padding: "3px 8px", borderRadius: 6, fontWeight: 700,
-      background: gpsActive ? "#dcfce7" : SURFACE.borderMuted,
-      color: gpsActive ? "#166534" : SURFACE.textFaint,
+      background: gpsActive ? STATE.successSoft : SURFACE.borderMuted,
+      color: gpsActive ? STATE.successText : SURFACE.textFaint,
       border: `1px solid ${gpsActive ? "#86efac" : "#cbd5e1"}` }}>
       <span style={{ width: 6, height: 6, borderRadius: "50%", background: gpsActive ? STATE.success : SURFACE.borderStrong, boxShadow: gpsActive ? `0 0 6px ${STATE.success}` : "none" }} />
       {gpsActive ? t("Reportando") : t("Sin señal")}
@@ -487,7 +487,7 @@ export default function DriverMonitoringPage() {
           isToday ? (
             <span
               className="inline-flex items-center gap-2 text-xs font-semibold rounded-full px-3 py-1"
-              style={{ background: "#e7f5ec", color: "#1eb19a" }}
+              style={{ background: STATE.successSoft, color: BRAND.tealDark }}
             >
               <span
                 style={{
@@ -504,14 +504,14 @@ export default function DriverMonitoringPage() {
           ) : (
             <span
               className="inline-flex items-center gap-2 text-xs font-semibold rounded-full px-3 py-1"
-              style={{ background: "#fef3c7", color: "#7a4a00" }}
+              style={{ background: STATE.warningSoft, color: STATE.warningText }}
             >
               <span
                 style={{
                   width: 7,
                   height: 7,
                   borderRadius: "50%",
-                  background: "#d4a017",
+                  background: STATE.warningText,
                 }}
               />
               {t("Histórico · snapshot del")} {new Date(selectedDate + "T12:00:00").toLocaleDateString("es-CL", {
@@ -567,7 +567,7 @@ export default function DriverMonitoringPage() {
       {error && (
         <section
           className="surface rounded-2xl p-4"
-          style={{ borderLeft: "4px solid #b3231b", backgroundColor: "#fde2e2" }}
+          style={{ borderLeft: `4px solid ${STATE.dangerText}`, backgroundColor: STATE.dangerSoft }}
         >
           <p className="text-sm" style={{ color: "#7a1313" }}>{error}</p>
         </section>
@@ -822,14 +822,14 @@ export default function DriverMonitoringPage() {
                       key={d.driverId}
                       style={{
                         borderBottom: i === visibleDrivers.length - 1 ? "none" : `1px solid ${SURFACE.borderMuted}`,
-                        background: i % 2 === 0 ? SURFACE.card : "#fafbfc",
+                        background: i % 2 === 0 ? SURFACE.card : SURFACE.bg,
                         transition: "background 0.15s",
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.background = "#f0fdf4";
+                        e.currentTarget.style.background = STATE.successSoft;
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.background = i % 2 === 0 ? SURFACE.card : "#fafbfc";
+                        e.currentTarget.style.background = i % 2 === 0 ? SURFACE.card : SURFACE.bg;
                       }}
                     >
                       {/* Conductor (avatar + nombre) */}
@@ -1043,8 +1043,8 @@ function FiltersBar(p: FiltersBarProps) {
             max={p.today}
             onChange={(e) => p.setSelectedDate(e.target.value || p.today)}
             style={{
-              borderColor: p.isToday ? "var(--brand)" : "#fcd34d",
-              background: p.isToday ? "rgba(33,208,179,0.04)" : "#fffbeb",
+              borderColor: p.isToday ? "var(--brand)" : STATE.warning,
+              background: p.isToday ? "rgba(33,208,179,0.04)" : STATE.warningSoft,
               fontWeight: 600,
             }}
           />
@@ -1153,7 +1153,7 @@ function FiltersBar(p: FiltersBarProps) {
               style={{
                 background: active
                   ? `linear-gradient(135deg, ${BRAND.teal} 0%, #15B09A 100%)`
-                  : "#eef1f6",
+                  : SURFACE.borderMuted,
                 color: active ? SURFACE.card : SURFACE.textSecondary,
                 boxShadow: active ? "0 1px 4px rgba(33,208,179,0.3)" : "none",
               }}

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
-import { BRAND, STATE, SURFACE } from "@/lib/design";
+import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { TruckIcon, HomeIcon, CoffeeIcon, XIcon, FileTextIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 import { CLIENT_TYPE_OPTIONS, clientTypeLabel } from "@/lib/clientTypes";
@@ -18,11 +18,11 @@ type TripItem = { id: string; tripCost?: number | null; status?: string | null; 
 const TEAL     = BRAND.teal;
 const BLUE     = BRAND.blue;
 const CHARCOAL = BRAND.charcoal;
-const ACCENTS  = [TEAL, BLUE, CHARCOAL, "#a78bfa", "#fb923c", "#f472b6"];
+const ACCENTS  = [TEAL, BLUE, CHARCOAL, ACCENT.violetLight, "#fb923c", "#f472b6"];
 
 function sem(pct: number, hasData: boolean) {
   if (!hasData) return { color: SURFACE.textFaint, bg: SURFACE.bg, glow: "transparent" };
-  if (pct < 60) return { color: "#22c55e", bg: "rgba(34,197,94,0.08)", glow: "rgba(34,197,94,0.25)" };
+  if (pct < 60) return { color: STATE.success, bg: "rgba(34,197,94,0.08)", glow: "rgba(34,197,94,0.25)" };
   if (pct < 85) return { color: STATE.warning, bg: "rgba(245,158,11,0.08)", glow: "rgba(245,158,11,0.25)" };
   return { color: STATE.danger, bg: "rgba(239,68,68,0.08)", glow: "rgba(239,68,68,0.25)" };
 }
@@ -138,7 +138,7 @@ export default function CommercialDashboardPage() {
           <button type="button" onClick={() => downloadExcel("reporte_comercial", buildReportSections())}
             onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(34,197,94,0.25)"; }}
             onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 1px 4px rgba(34,197,94,0.1)"; }}
-            style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 10, border: "1px solid rgba(34,197,94,0.3)", background: "rgba(34,197,94,0.06)", fontSize: 12, fontWeight: 700, color: "#16a34a", cursor: "pointer", transition: "all 150ms ease", boxShadow: "0 1px 4px rgba(34,197,94,0.1)" }}>
+            style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 10, border: "1px solid rgba(34,197,94,0.3)", background: "rgba(34,197,94,0.06)", fontSize: 12, fontWeight: 700, color: STATE.success, cursor: "pointer", transition: "all 150ms ease", boxShadow: "0 1px 4px rgba(34,197,94,0.1)" }}>
             <XIcon size={16} />
             Excel
           </button>
@@ -157,7 +157,7 @@ export default function CommercialDashboardPage() {
         {[
           { label: t("Adjudicado"), value: formatCurrency(totals.awarded), color: TEAL },
           { label: t("Consumido"), value: formatCurrency(totals.consumed), color: BLUE },
-          { label: t("Restante"), value: formatCurrency(Math.max(0, totals.awarded - totals.consumed)), color: "#a78bfa" },
+          { label: t("Restante"), value: formatCurrency(Math.max(0, totals.awarded - totals.consumed)), color: ACCENT.violetLight },
           { label: t("Viajes restantes"), value: `${Math.max(0, tripCounts.bid - tripCounts.completed)}`, color: "#fb923c" },
           { label: t("Uso total"), value: `${usePct}%`, color: totalSem.color },
         ].map((kpi, i) => (
@@ -208,7 +208,7 @@ export default function CommercialDashboardPage() {
                   </div>
                   <p style={{ fontSize: 14, fontWeight: 700, color: SURFACE.text, margin: 0 }}>{t(bucket.label)}</p>
                 </div>
-                {has && <span style={{ width: 12, height: 12, borderRadius: "50%", background: hasCon ? s.color : "#22c55e", boxShadow: `0 0 8px ${hasCon ? s.glow : "rgba(34,197,94,0.25)"}` }} />}
+                {has && <span style={{ width: 12, height: 12, borderRadius: "50%", background: hasCon ? s.color : STATE.success, boxShadow: `0 0 8px ${hasCon ? s.glow : "rgba(34,197,94,0.25)"}` }} />}
               </div>
 
               {has ? (
@@ -396,7 +396,7 @@ export default function CommercialDashboardPage() {
                     </div>
                     <span style={{ fontSize: 13, fontWeight: 700, color: SURFACE.text }}>{bucket.label}</span>
                   </div>
-                  <span style={{ width: 12, height: 12, borderRadius: "50%", background: hasCon ? s.color : (has ? "#22c55e" : SURFACE.textFaint), boxShadow: `0 0 8px ${hasCon ? s.glow : "transparent"}` }} />
+                  <span style={{ width: 12, height: 12, borderRadius: "50%", background: hasCon ? s.color : (has ? STATE.success : SURFACE.textFaint), boxShadow: `0 0 8px ${hasCon ? s.glow : "transparent"}` }} />
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", fontSize: 12, color: SURFACE.textMuted, marginBottom: 6 }}>
                   <span>{hasCon ? `${formatCurrency(bucket.consumed)} consumido de ${formatCurrency(bucket.awarded)}` : has ? `${formatCurrency(bucket.awarded)} adjudicado` : "Sin monto adjudicado"}</span>

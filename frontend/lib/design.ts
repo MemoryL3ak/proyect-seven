@@ -41,12 +41,29 @@ export const SURFACE = {
 export const STATE = {
   danger: "#ef4444",
   dangerText: "#dc2626",
+  dangerSoft: "#fee2e2",     // fondo de pastilla / aviso
+  dangerBorder: "#fecaca",
   warning: "#f59e0b",
   warningText: "#b45309",
+  warningSoft: "#fef3c7",
+  warningBorder: "#fde68a",
   success: "#10b981",
   successText: "#059669",
+  successSoft: "#dcfce7",
+  successBorder: "#bbf7d0",
   info: "#3b82f6",
   infoText: "#2563eb",
+  infoSoft: "#dbeafe",
+  infoBorder: "#bfdbfe",
+};
+
+// Acento violeta: prioritario / VIP y el estado "en curso". No es semántico
+// como STATE pero sí es un significado fijo en esta plataforma.
+export const ACCENT = {
+  violet: "#7c3aed",
+  violetLight: "#a78bfa",
+  violetSoft: "#ede9fe",
+  indigo: "#6366f1",
 };
 
 // Sin `as const` a propósito: con literales, useState(SURFACE.text) queda

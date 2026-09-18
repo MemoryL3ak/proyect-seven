@@ -90,7 +90,7 @@ export default function TripRouteMap({ points, height = 460 }: Props) {
 
   if (failed) {
     return (
-      <div style={{ width: "100%", height, display: "flex", alignItems: "center", justifyContent: "center", color: SURFACE.textFaint, fontSize: 13, background: "#eef2f7" }}>
+      <div style={{ width: "100%", height, display: "flex", alignItems: "center", justifyContent: "center", color: SURFACE.textFaint, fontSize: 13, background: SURFACE.borderMuted }}>
         No se pudo cargar el mapa.
       </div>
     );

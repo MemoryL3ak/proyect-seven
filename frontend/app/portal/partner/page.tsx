@@ -9,7 +9,7 @@ import {
   loginPartner,
 } from "@/lib/partnerAuth";
 import { LockIcon, CheckIcon } from "@/components/ui/Icons";
-import { BRAND, SURFACE } from "@/lib/design";
+import { BRAND, SURFACE, STATE } from "@/lib/design";
 
 const TEAL = BRAND.teal;
 const TEAL_MID = BRAND.tealLight;
@@ -48,7 +48,7 @@ export default function PartnerLoginPage() {
   return (
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4"
       style={{
-        background: "linear-gradient(175deg, #0d1e3a 0%, #1a2d4f 50%, #0d1e3a 100%)",
+        background: `linear-gradient(175deg, ${SURFACE.text} 0%, #1a2d4f 50%, ${SURFACE.text} 100%)`,
       }}>
       <style jsx global>{`
         @keyframes float-orb-1 {
@@ -175,8 +175,8 @@ export default function PartnerLoginPage() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold tracking-tight"
-                  style={{ color: "#0d1e3a" }}>Iniciar sesión</h1>
-                <p className="text-[13px] mt-1" style={{ color: "#5e6b7a" }}>
+                  style={{ color: SURFACE.text }}>Iniciar sesión</h1>
+                <p className="text-[13px] mt-1" style={{ color: SURFACE.textMuted }}>
                   Acceso para comercios habilitados.
                 </p>
               </div>
@@ -185,7 +185,7 @@ export default function PartnerLoginPage() {
             <div className="space-y-3">
               <label className="block">
                 <span className="block text-[11px] font-semibold mb-1.5 tracking-wider uppercase"
-                  style={{ color: "#5e6b7a" }}>
+                  style={{ color: SURFACE.textMuted }}>
                   Código del local
                 </span>
                 <input
@@ -215,7 +215,7 @@ export default function PartnerLoginPage() {
 
               <label className="block">
                 <span className="block text-[11px] font-semibold mb-1.5 tracking-wider uppercase"
-                  style={{ color: "#5e6b7a" }}>
+                  style={{ color: SURFACE.textMuted }}>
                   PIN
                 </span>
                 <input
@@ -283,14 +283,14 @@ export default function PartnerLoginPage() {
 
               {error && (
                 <div className="rounded-xl px-4 py-2.5 text-sm font-medium anim-fade-up"
-                  style={{ background: "#fde2e2", color: "#7a1313", borderLeft: "3px solid #b3231b" }}>
+                  style={{ background: STATE.dangerSoft, color: "#7a1313", borderLeft: `3px solid ${STATE.dangerText}` }}>
                   {error}
                 </div>
               )}
             </div>
 
             <p className="text-[11px] text-center pt-2 border-t"
-              style={{ color: "#5e6b7a", borderColor: "#eef1f6" }}>
+              style={{ color: SURFACE.textMuted, borderColor: SURFACE.borderMuted }}>
               ¿Sin credenciales? Contacta al comité organizador.
             </p>
           </div>
@@ -322,16 +322,16 @@ function SessionCard({
 
       <div className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center anim-pulse-glow"
         style={{
-          background: "linear-gradient(135deg, #2e7d32 0%, #4caf50 100%)",
+          background: `linear-gradient(135deg, ${STATE.successText} 0%, #4caf50 100%)`,
         }}>
         <CheckIcon size={30} color={SURFACE.card} strokeWidth={2.5} />
       </div>
       <div>
-        <p className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: "#5e6b7a" }}>
+        <p className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: SURFACE.textMuted }}>
           Sesión activa
         </p>
-        <h1 className="text-xl font-bold mt-1" style={{ color: "#0d1e3a" }}>{partner.name}</h1>
-        <p className="text-xs font-mono mt-1" style={{ color: "#5e6b7a" }}>{partner.code}</p>
+        <h1 className="text-xl font-bold mt-1" style={{ color: SURFACE.text }}>{partner.name}</h1>
+        <p className="text-xs font-mono mt-1" style={{ color: SURFACE.textMuted }}>{partner.code}</p>
       </div>
       <div className="flex flex-col gap-2">
         <button type="button" onClick={onContinue}
@@ -352,7 +352,7 @@ function SessionCard({
         </button>
         <button type="button" onClick={onClear}
           className="w-full py-2.5 rounded-xl text-sm font-medium transition-all"
-          style={{ background: "transparent", color: "#5e6b7a" }}>
+          style={{ background: "transparent", color: SURFACE.textMuted }}>
           Cerrar sesión
         </button>
       </div>

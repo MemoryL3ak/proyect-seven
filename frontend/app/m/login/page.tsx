@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { mobileLogin } from "@/lib/api";
-import { BRAND, SURFACE } from "@/lib/design";
+import { BRAND, SURFACE, STATE } from "@/lib/design";
 import { getMobileSession, markFromApp, setMobileSession, postToReactNative } from "@/lib/mobile-auth";
 import { claimPortalSession, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
 import { clearPersistedTabs } from "@/lib/portal-tab";
@@ -307,7 +307,7 @@ export default function MobileLoginPage() {
         </div>
 
         {error && (
-          <p style={{ color: "#fca5a5", fontSize: "13px", textAlign: "center", margin: 0 }}>{error}</p>
+          <p style={{ color: STATE.dangerBorder, fontSize: "13px", textAlign: "center", margin: 0 }}>{error}</p>
         )}
 
         <button
@@ -320,7 +320,7 @@ export default function MobileLoginPage() {
             borderRadius: "12px",
             border: "none",
             background: `linear-gradient(135deg, ${BRAND.tealLight} 0%, ${BRAND.teal} 50%, #15B09A 100%)`,
-            color: "#0d1b3e",
+            color: SURFACE.text,
             fontSize: "16px",
             fontWeight: 700,
             cursor: loading || !isComplete ? "not-allowed" : "pointer",

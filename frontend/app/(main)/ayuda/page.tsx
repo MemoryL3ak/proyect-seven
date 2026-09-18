@@ -34,7 +34,7 @@ import {
   BookOpenIcon,
   FileTextIcon,
 } from "@/components/ui/Icons";
-import { BRAND, STATE, SURFACE } from "@/lib/design";
+import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type Locale = "es" | "en" | "pt";
@@ -56,7 +56,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
     {
       icon: "bar-chart", title: "Dashboard Comercial",
       desc: "Vista ejecutiva del presupuesto y adjudicación por área operativa.",
-      badge: "Comercial", badgeColor: "#6366f1",
+      badge: "Comercial", badgeColor: ACCENT.indigo,
       items: [
         "Muestra el monto adjudicado real de Transporte (suma de presupuestos de conductores).",
         "Compara adjudicado vs. consumido vs. forecast por área.",
@@ -153,7 +153,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
     {
       icon: "shield", title: "Acreditación",
       desc: "Control de acceso y credenciales para el evento.",
-      badge: "Acreditación", badgeColor: "#8b5cf6",
+      badge: "Acreditación", badgeColor: ACCENT.violetLight,
       items: [
         "Generación de credenciales QR individuales.",
         "Escáner QR para validación de acceso en puertas.",
@@ -187,7 +187,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
     {
       icon: "bar-chart", title: "Commercial Dashboard",
       desc: "Executive budget and award-by-area view.",
-      badge: "Commercial", badgeColor: "#6366f1",
+      badge: "Commercial", badgeColor: ACCENT.indigo,
       items: [
         "Shows the actual awarded amount for Transport (sum of driver budgets).",
         "Compares awarded vs. consumed vs. forecast by area.",
@@ -284,7 +284,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
     {
       icon: "shield", title: "Accreditation",
       desc: "Access control and credentials for the event.",
-      badge: "Accreditation", badgeColor: "#8b5cf6",
+      badge: "Accreditation", badgeColor: ACCENT.violetLight,
       items: [
         "Individual QR credential generation.",
         "QR scanner for access validation at doors.",
@@ -318,7 +318,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
     {
       icon: "bar-chart", title: "Painel Comercial",
       desc: "Visão executiva do orçamento e adjudicação por área operacional.",
-      badge: "Comercial", badgeColor: "#6366f1",
+      badge: "Comercial", badgeColor: ACCENT.indigo,
       items: [
         "Mostra o valor adjudicado real de Transporte (soma dos orçamentos dos motoristas).",
         "Compara adjudicado vs. consumido vs. previsão por área.",
@@ -415,7 +415,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
     {
       icon: "shield", title: "Acreditação",
       desc: "Controle de acesso e credenciais para o evento.",
-      badge: "Acreditação", badgeColor: "#8b5cf6",
+      badge: "Acreditação", badgeColor: ACCENT.violetLight,
       items: [
         "Geração de credenciais QR individuais.",
         "Scanner QR para validação de acesso nas entradas.",

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
-import { SURFACE } from "@/lib/design";
+import { SURFACE, STATE } from "@/lib/design";
 import { PlaneIcon, HotelIcon, ClipboardIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 
@@ -259,10 +259,10 @@ export default function AthletePortalPage() {
                   />
                 </div>
                 <button type="button" onClick={loadAthlete} disabled={loading}
-                  style={{ width: "100%", padding: "17px", borderRadius: "14px", border: "none", background: "linear-gradient(135deg,#d4a843 0%,#c9a84c 50%,#b8933a 100%)", color: "#0d1b3e", fontSize: "16px", fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1, letterSpacing: "0.03em", boxShadow: "0 4px 20px rgba(201,168,76,0.4)" }}>
+                  style={{ width: "100%", padding: "17px", borderRadius: "14px", border: "none", background: "linear-gradient(135deg,#d4a843 0%,#c9a84c 50%,#b8933a 100%)", color: SURFACE.text, fontSize: "16px", fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1, letterSpacing: "0.03em", boxShadow: "0 4px 20px rgba(201,168,76,0.4)" }}>
                   {loading ? t("Cargando...") : t("Ver mi información")}
                 </button>
-                {error && <p style={{ color: "#fca5a5", fontSize: "13px", textAlign: "center" }}>{error}</p>}
+                {error && <p style={{ color: STATE.dangerBorder, fontSize: "13px", textAlign: "center" }}>{error}</p>}
               </div>
             </div>
           </div>

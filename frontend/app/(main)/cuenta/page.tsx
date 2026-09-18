@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch, clearTokens, getStoredUser } from "@/lib/api";
-import { BRAND, STATE, SURFACE } from "@/lib/design";
+import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { Icon } from "@/components/ui/Icons";
 import { ALL_MODULES } from "@/lib/modules";
 import { useI18n } from "@/lib/i18n";
@@ -166,7 +166,7 @@ export default function MiCuentaPage() {
                 {role}
               </span>
               {isUsernameAccount(user?.email) ? (
-                <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 99, background: "rgba(99,102,241,0.1)", color: "#6366f1", border: "1px solid rgba(99,102,241,0.25)" }}>
+                <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 99, background: "rgba(99,102,241,0.1)", color: ACCENT.indigo, border: "1px solid rgba(99,102,241,0.25)" }}>
                   {t("Cuenta con usuario")}
                 </span>
               ) : (

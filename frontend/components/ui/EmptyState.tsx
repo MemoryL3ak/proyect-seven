@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
-import { BRAND, SURFACE } from "@/lib/design";
+import { BRAND, SURFACE, ACCENT, STATE } from "@/lib/design";
 
 type EmptyStateProps = {
   icon?: ReactNode;
@@ -23,30 +23,30 @@ const VARIANT_STYLES: Record<
     shadow: "0 20px 60px rgba(33,208,179,0.45)",
   },
   warning: {
-    coreBg: "linear-gradient(135deg, #d4a017 0%, #f5c842 50%, #e3a808 100%)",
+    coreBg: `linear-gradient(135deg, ${STATE.warningText} 0%, #f5c842 50%, #e3a808 100%)`,
     haloColor: "rgba(212,160,23,0.25)",
-    particleColor: "linear-gradient(135deg, #f5c842, #d4a017)",
+    particleColor: `linear-gradient(135deg, #f5c842, ${STATE.warningText})`,
     ringColor: "rgba(212,160,23,0.3)",
     shadow: "0 20px 60px rgba(212,160,23,0.45)",
   },
   success: {
-    coreBg: "linear-gradient(135deg, #2e7d32 0%, #4caf50 50%, #2e7d32 100%)",
+    coreBg: `linear-gradient(135deg, ${STATE.successText} 0%, #4caf50 50%, ${STATE.successText} 100%)`,
     haloColor: "rgba(46,125,50,0.25)",
-    particleColor: "linear-gradient(135deg, #4caf50, #2e7d32)",
+    particleColor: `linear-gradient(135deg, #4caf50, ${STATE.successText})`,
     ringColor: "rgba(46,125,50,0.3)",
     shadow: "0 20px 60px rgba(46,125,50,0.45)",
   },
   info: {
-    coreBg: "linear-gradient(135deg, #1f4e8c 0%, #2d6aa8 50%, #1f4e8c 100%)",
+    coreBg: `linear-gradient(135deg, ${STATE.infoText} 0%, #2d6aa8 50%, ${STATE.infoText} 100%)`,
     haloColor: "rgba(31,78,140,0.25)",
-    particleColor: "linear-gradient(135deg, #2d6aa8, #1f4e8c)",
+    particleColor: `linear-gradient(135deg, #2d6aa8, ${STATE.infoText})`,
     ringColor: "rgba(31,78,140,0.3)",
     shadow: "0 20px 60px rgba(31,78,140,0.45)",
   },
   purple: {
-    coreBg: "linear-gradient(135deg, #5e3aab 0%, #7c5ec4 50%, #5e3aab 100%)",
+    coreBg: `linear-gradient(135deg, ${ACCENT.violet} 0%, #7c5ec4 50%, ${ACCENT.violet} 100%)`,
     haloColor: "rgba(94,58,171,0.25)",
-    particleColor: "linear-gradient(135deg, #7c5ec4, #5e3aab)",
+    particleColor: `linear-gradient(135deg, #7c5ec4, ${ACCENT.violet})`,
     ringColor: "rgba(94,58,171,0.3)",
     shadow: "0 20px 60px rgba(94,58,171,0.45)",
   },

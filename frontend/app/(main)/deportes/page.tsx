@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
-import { BRAND, STATE, SURFACE } from "@/lib/design";
+import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import {
   CalendarIcon,
   ChevronLeftIcon,
@@ -131,7 +131,7 @@ function quotaKey(delegationCode: string, disciplineId: string) {
 
 const CATEGORY_COLORS: Record<string, string> = {
   CONVENTIONAL: "#38bdf8",
-  PARALYMPIC: "#a78bfa",
+  PARALYMPIC: ACCENT.violetLight,
 };
 const GENDER_COLORS: Record<string, string> = {
   MALE: "#60a5fa", FEMALE: "#f472b6", MIXED: "#34d399",
@@ -991,11 +991,11 @@ export default function DeportesPage() {
 
         // Sedes únicas con paleta de colores estilo Excel
         const VENUE_PALETTE = [
-          { bg: "linear-gradient(135deg,#fecaca,#fda4af)", fg: "#7f1d1d", ring: STATE.dangerText }, // rojo
-          { bg: "linear-gradient(135deg,#fde68a,#fcd34d)", fg: "#78350f", ring: "#d97706" }, // amarillo
-          { bg: "linear-gradient(135deg,#bfdbfe,#93c5fd)", fg: "#1e3a8a", ring: "#1d4ed8" }, // azul
+          { bg: `linear-gradient(135deg,${STATE.dangerBorder},${STATE.dangerBorder})`, fg: "#7f1d1d", ring: STATE.dangerText }, // rojo
+          { bg: `linear-gradient(135deg,${STATE.warningBorder},${STATE.warning})`, fg: STATE.warningText, ring: STATE.warningText }, // amarillo
+          { bg: `linear-gradient(135deg,${STATE.infoBorder},${STATE.infoBorder})`, fg: "#1e3a8a", ring: STATE.infoText }, // azul
           { bg: "linear-gradient(135deg,#a7f3d0,#6ee7b7)", fg: "#064e3b", ring: STATE.successText }, // verde
-          { bg: "linear-gradient(135deg,#ddd6fe,#c4b5fd)", fg: "#4c1d95", ring: "#7c3aed" }, // violeta
+          { bg: "linear-gradient(135deg,#ddd6fe,#c4b5fd)", fg: "#4c1d95", ring: ACCENT.violet }, // violeta
           { bg: "linear-gradient(135deg,#fbcfe8,#f9a8d4)", fg: "#831843", ring: "#db2777" }, // rosa
           { bg: "linear-gradient(135deg,#a5f3fc,#67e8f9)", fg: "#164e63", ring: "#0891b2" }, // cyan
         ];
@@ -1079,8 +1079,8 @@ export default function DeportesPage() {
               {[
                 { label: "Pruebas totales", value: kpiTotal, color: BRAND.teal, bg: "rgba(33,208,179,0.10)" },
                 { label: "Hoy", value: kpiToday, color: BRAND.blue, bg: "rgba(31,205,255,0.10)" },
-                { label: "Próximas 24h", value: kpiUpcoming, color: kpiUpcoming > 0 ? "#d97706" : SURFACE.textFaint, bg: kpiUpcoming > 0 ? "rgba(245,158,11,0.10)" : SURFACE.borderMuted },
-                { label: "Sedes activas", value: kpiVenues, color: "#7c3aed", bg: "rgba(124,58,237,0.10)" },
+                { label: "Próximas 24h", value: kpiUpcoming, color: kpiUpcoming > 0 ? STATE.warningText : SURFACE.textFaint, bg: kpiUpcoming > 0 ? "rgba(245,158,11,0.10)" : SURFACE.borderMuted },
+                { label: "Sedes activas", value: kpiVenues, color: ACCENT.violet, bg: "rgba(124,58,237,0.10)" },
               ].map(k => (
                 <div key={k.label} className="rounded-2xl p-4 relative overflow-hidden"
                   style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, boxShadow: "0 1px 4px rgba(15,23,42,0.06)", borderLeft: `4px solid ${k.color}` }}>
@@ -1154,7 +1154,7 @@ export default function DeportesPage() {
                     onClick={() => setCalVenueFilter("")}
                     className="text-xs font-bold px-3 py-1 rounded-full transition-all"
                     style={{
-                      background: !calVenueFilter ? `linear-gradient(135deg, ${BRAND.teal}, #1eb19a)` : "#eef1f6",
+                      background: !calVenueFilter ? `linear-gradient(135deg, ${BRAND.teal}, #1eb19a)` : SURFACE.borderMuted,
                       color: !calVenueFilter ? SURFACE.card : SURFACE.textSecondary,
                     }}>
                     Todas
@@ -1190,7 +1190,7 @@ export default function DeportesPage() {
                   <button type="button" onClick={() => setCalCategoryFilter("")}
                     className="text-xs font-bold px-3 py-1 rounded-full transition-all"
                     style={{
-                      background: !calCategoryFilter ? `linear-gradient(135deg, ${BRAND.teal}, #1eb19a)` : "#eef1f6",
+                      background: !calCategoryFilter ? `linear-gradient(135deg, ${BRAND.teal}, #1eb19a)` : SURFACE.borderMuted,
                       color: !calCategoryFilter ? SURFACE.card : SURFACE.textSecondary,
                     }}>
                     Todas
@@ -1220,11 +1220,11 @@ export default function DeportesPage() {
             {calView === "gantt" && (() => {
               type GCat = "CLASIFICATORIA" | "FINAL" | "TRAINING" | "CEREMONY" | "PRUEBA";
               const GCAT: Record<GCat, { label: string; bar: string; border: string; text: string; dot: string }> = {
-                CLASIFICATORIA: { label: "Clasificatorias", bar: "#dbeafe", border: STATE.info, text: "#1e3a8a", dot: STATE.info },
-                FINAL:          { label: "Finales",         bar: "#dcfce7", border: "#22c55e", text: "#14532d", dot: "#22c55e" },
-                TRAINING:       { label: "Entrenamientos",  bar: "#fef3c7", border: STATE.warning, text: "#78350f", dot: STATE.warning },
+                CLASIFICATORIA: { label: "Clasificatorias", bar: STATE.infoSoft, border: STATE.info, text: "#1e3a8a", dot: STATE.info },
+                FINAL:          { label: "Finales",         bar: STATE.successSoft, border: STATE.success, text: "#14532d", dot: STATE.success },
+                TRAINING:       { label: "Entrenamientos",  bar: STATE.warningSoft, border: STATE.warning, text: STATE.warningText, dot: STATE.warning },
                 CEREMONY:       { label: "Ceremonias",      bar: "#f3e8ff", border: "#a855f7", text: "#581c87", dot: "#a855f7" },
-                PRUEBA:         { label: "Pruebas",         bar: "#ccfbf1", border: "#14b8a6", text: "#115e59", dot: "#14b8a6" },
+                PRUEBA:         { label: "Pruebas",         bar: "#ccfbf1", border: BRAND.teal, text: "#115e59", dot: BRAND.teal },
               };
               const classifyCat = (name?: string | null): GCat => {
                 const tx = (name || "").toLowerCase();
@@ -1244,7 +1244,7 @@ export default function DeportesPage() {
 
               // Filas por disciplina (parent), solo pruebas visibles del mes
               const DISC_PALETTE = [
-                STATE.dangerText, "#d97706", "#1d4ed8", STATE.successText, "#7c3aed", "#db2777", "#0891b2", "#65a30d",
+                STATE.dangerText, STATE.warningText, STATE.infoText, STATE.successText, ACCENT.violet, "#db2777", "#0891b2", "#65a30d",
               ];
               const rowMap = new Map<string, { name: string; evs: typeof calendarPruebas }>();
               calendarPruebas.forEach(d => {
@@ -1328,7 +1328,7 @@ export default function DeportesPage() {
                           Disciplina
                         </div>
                         {rows.map((r, i) => (
-                          <div key={r.pid} style={{ height: rowH(r.lanes), display: "flex", alignItems: "center", gap: 8, padding: "0 12px", borderBottom: i < rows.length - 1 ? `1px solid ${SURFACE.borderMuted}` : "none", background: i % 2 === 0 ? SURFACE.card : "#fafbfc" }}>
+                          <div key={r.pid} style={{ height: rowH(r.lanes), display: "flex", alignItems: "center", gap: 8, padding: "0 12px", borderBottom: i < rows.length - 1 ? `1px solid ${SURFACE.borderMuted}` : "none", background: i % 2 === 0 ? SURFACE.card : SURFACE.bg }}>
                             <span style={{ flexShrink: 0, width: 26, height: 26, borderRadius: "50%", background: `${r.color}14`, color: r.color, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600 }}>
                               {r.name.slice(0, 2).toUpperCase()}
                             </span>
@@ -1347,9 +1347,9 @@ export default function DeportesPage() {
                               const isToday = k === todayK;
                               const isWeekend = d.getDay() === 0 || d.getDay() === 6;
                               return (
-                                <div key={k} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", borderLeft: i === 0 ? "none" : "1px solid #eef2f7", background: isToday ? "rgba(33,208,179,0.12)" : isWeekend ? SURFACE.borderMuted : "transparent" }}>
-                                  <span style={{ fontSize: 9, fontWeight: 500, letterSpacing: "0.04em", textTransform: "uppercase", color: isToday ? "#0e9384" : SURFACE.textFaint }}>{["DO", "LU", "MA", "MI", "JU", "VI", "SA"][d.getDay()]}</span>
-                                  <span style={{ fontSize: 13, fontWeight: 600, color: isToday ? "#0e9384" : SURFACE.textStrong }}>{d.getDate()}</span>
+                                <div key={k} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", borderLeft: i === 0 ? "none" : `1px solid ${SURFACE.borderMuted}`, background: isToday ? "rgba(33,208,179,0.12)" : isWeekend ? SURFACE.borderMuted : "transparent" }}>
+                                  <span style={{ fontSize: 9, fontWeight: 500, letterSpacing: "0.04em", textTransform: "uppercase", color: isToday ? BRAND.tealDark : SURFACE.textFaint }}>{["DO", "LU", "MA", "MI", "JU", "VI", "SA"][d.getDay()]}</span>
+                                  <span style={{ fontSize: 13, fontWeight: 600, color: isToday ? BRAND.tealDark : SURFACE.textStrong }}>{d.getDate()}</span>
                                 </div>
                               );
                             })}
@@ -1357,7 +1357,7 @@ export default function DeportesPage() {
                           {rows.map((r, ri) => {
                             const gridLines = `repeating-linear-gradient(to right, transparent 0, transparent calc(${100 / N}% - 1px), #eef2f7 calc(${100 / N}% - 1px), #eef2f7 ${100 / N}%)`;
                             return (
-                              <div key={r.pid} style={{ position: "relative", height: rowH(r.lanes), borderBottom: ri < rows.length - 1 ? `1px solid ${SURFACE.borderMuted}` : "none", background: ri % 2 === 0 ? SURFACE.card : "#fafbfc", backgroundImage: gridLines, display: "grid", gridTemplateColumns: `repeat(${N}, minmax(${COL_MIN}px, 1fr))`, gridTemplateRows: `repeat(${r.lanes}, ${BAR_H}px)`, alignContent: "center", rowGap: LANE_GAP, padding: "8px 0" }}>
+                              <div key={r.pid} style={{ position: "relative", height: rowH(r.lanes), borderBottom: ri < rows.length - 1 ? `1px solid ${SURFACE.borderMuted}` : "none", background: ri % 2 === 0 ? SURFACE.card : SURFACE.bg, backgroundImage: gridLines, display: "grid", gridTemplateColumns: `repeat(${N}, minmax(${COL_MIN}px, 1fr))`, gridTemplateRows: `repeat(${r.lanes}, ${BAR_H}px)`, alignContent: "center", rowGap: LANE_GAP, padding: "8px 0" }}>
                                 {r.bars.map((bar, bi) => {
                                   const meta = GCAT[bar.cat];
                                   return (
@@ -1542,7 +1542,7 @@ export default function DeportesPage() {
                             {String(h).padStart(2, "0")}:00
                           </div>
                           <div style={{ minHeight: 36, padding: "2px 0 4px", borderBottom: `1px solid ${SURFACE.bg}` }}>
-                            {items.length === 0 && <div style={{ height: 1, background: "#fafbfc" }} />}
+                            {items.length === 0 && <div style={{ height: 1, background: SURFACE.bg }} />}
                             {items.map(ev => {
                               const pal2 = venueColor(ev.venueName);
                               const time = new Date(ev.scheduledAt!).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
@@ -1614,13 +1614,13 @@ export default function DeportesPage() {
                             <tr key={ev.id}
                               onClick={() => openEditPrueba(ev)}
                               style={{
-                                background: i % 2 === 0 ? SURFACE.card : "#fafbfc",
+                                background: i % 2 === 0 ? SURFACE.card : SURFACE.bg,
                                 borderBottom: `1px solid ${SURFACE.borderMuted}`,
                                 cursor: "pointer",
                                 transition: "background 0.1s",
                               }}
                               onMouseEnter={e => (e.currentTarget.style.background = "#f0fdfa")}
-                              onMouseLeave={e => (e.currentTarget.style.background = i % 2 === 0 ? SURFACE.card : "#fafbfc")}>
+                              onMouseLeave={e => (e.currentTarget.style.background = i % 2 === 0 ? SURFACE.card : SURFACE.bg)}>
                               <td style={{ padding: "10px 12px", fontWeight: 800, color: SURFACE.textMuted, textAlign: "center", minWidth: 40 }}>{i + 1}</td>
                               <td style={{ padding: "10px 12px", fontWeight: 700, color: SURFACE.text }}>{dateStr}</td>
                               <td style={{ padding: "10px 12px", fontWeight: 800, color: BRAND.teal, fontFamily: "monospace" }}>{time}</td>
@@ -1997,7 +1997,7 @@ export default function DeportesPage() {
                         <button
                           type="button"
                           onClick={() => setPremiacion(p => ({ ...p, awarders: [...p.awarders, { athleteId: "", role: "AWARDER" }] }))}
-                          style={{ fontSize: 11, padding: "4px 10px", borderRadius: 8, border: `1px solid ${BRAND.teal}`, background: "rgba(33,208,179,0.08)", color: "#14b8a6", cursor: "pointer", fontWeight: 700 }}
+                          style={{ fontSize: 11, padding: "4px 10px", borderRadius: 8, border: `1px solid ${BRAND.teal}`, background: "rgba(33,208,179,0.08)", color: BRAND.teal, cursor: "pointer", fontWeight: 700 }}
                         >
                           + {t("Agregar VIP")}
                         </button>
@@ -2037,7 +2037,7 @@ export default function DeportesPage() {
                           <button
                             type="button"
                             onClick={() => setPremiacion(p => ({ ...p, awarders: p.awarders.filter((_, j) => j !== i) }))}
-                            style={{ padding: "6px 10px", border: "none", background: "#fee2e2", color: STATE.danger, borderRadius: 6, cursor: "pointer", fontSize: 12 }}
+                            style={{ padding: "6px 10px", border: "none", background: STATE.dangerSoft, color: STATE.danger, borderRadius: 6, cursor: "pointer", fontSize: 12 }}
                           >×</button>
                         </div>
                       ))}

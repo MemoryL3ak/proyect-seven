@@ -149,7 +149,7 @@ export default function AdminNotificacionesPage() {
 
           <div style={{ overflowY: "auto", maxHeight: 480 }}>
             {loadError && (
-              <div style={{ padding: 14, fontSize: 12, color: "#b91c1c", background: "#FEE2E2" }}>
+              <div style={{ padding: 14, fontSize: 12, color: STATE.dangerText, background: STATE.dangerSoft }}>
                 {loadError}
               </div>
             )}
@@ -296,8 +296,8 @@ export default function AdminNotificacionesPage() {
             <div
               style={{
                 marginBottom: 12, padding: "8px 10px", borderRadius: 8,
-                background: "#FEE2E2", border: "1px solid rgba(239,68,68,0.25)",
-                fontSize: 12, color: "#b91c1c",
+                background: STATE.dangerSoft, border: "1px solid rgba(239,68,68,0.25)",
+                fontSize: 12, color: STATE.dangerText,
               }}
             >
               {result.message}

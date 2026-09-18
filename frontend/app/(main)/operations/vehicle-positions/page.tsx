@@ -22,7 +22,7 @@ import {
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { getSupabase } from "@/lib/supabase";
 import { useI18n } from "@/lib/i18n";
-import { BRAND, TRIP_STATUS_META, STATE, SURFACE } from "@/lib/design";
+import { BRAND, TRIP_STATUS_META, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { useIsMobile } from "@/lib/useIsMobile";
 import type {
   DestinationPin,
@@ -851,7 +851,7 @@ export default function VehiclePositionsPage() {
     subtitleColor: SURFACE.textMuted,
     chipBg: SURFACE.bg, chipBorder: SURFACE.border, chipLabel: SURFACE.textMuted,
     btnBg: SURFACE.card, btnBorder: SURFACE.border, btnColor: SURFACE.textSecondary,
-    kpi: [BRAND.teal, STATE.success, STATE.warning, STATE.info, "#8b5cf6"],
+    kpi: [BRAND.teal, STATE.success, STATE.warning, STATE.info, ACCENT.violetLight],
   };
 
   return (
@@ -1094,7 +1094,7 @@ export default function VehiclePositionsPage() {
                 return (
                   <div key={driver.id} style={{
                     background: selectedTripId === markerId ? "#f0fdfa" : SURFACE.card,
-                    border: selectedTripId === markerId ? "2px solid #14b8a6" : `1px solid ${SURFACE.border}`,
+                    border: selectedTripId === markerId ? `2px solid ${BRAND.teal}` : `1px solid ${SURFACE.border}`,
                     borderLeft: `4px solid ${accent}`,
                     borderRadius: "14px",
                     padding: "12px 14px",
@@ -1140,7 +1140,7 @@ export default function VehiclePositionsPage() {
                           <span>{venue?.name || trip.destination || "Destino"}</span>
                         </div>
                         {routeMeta && (
-                          <div style={{ marginTop: "6px", fontSize: "10px", color: "#0f766e", fontWeight: 600 }}>
+                          <div style={{ marginTop: "6px", fontSize: "10px", color: BRAND.tealInk, fontWeight: 600 }}>
                             Ruta: {routeMeta.distanceKm.toFixed(1)} km · ~{routeMeta.durationMin} min
                             {elapsedMin !== null ? ` · iniciado hace ${elapsedMin}m` : ""}
                           </div>
@@ -1190,7 +1190,7 @@ export default function VehiclePositionsPage() {
               )}
             </div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              {[{ key: "", label: "Todos", accent: "#14b8a6", count: trips.length }].concat(
+              {[{ key: "", label: "Todos", accent: BRAND.teal, count: trips.length }].concat(
                 Object.keys(statusCounts).map((s) => ({ key: s, label: STATUS_LABEL[s] || s, accent: (STATUS_COLORS[s] ?? STATUS_COLORS.SCHEDULED).accent, count: statusCounts[s] }))
               ).map((chip) => {
                 const active = tableStatus === chip.key;
@@ -1320,7 +1320,7 @@ export default function VehiclePositionsPage() {
                 {(() => {
                   const dirEmbed = buildDirectionsEmbed(trip.origin, trip.destination);
                   return (
-                    <div style={{ borderRadius: "14px", overflow: "hidden", border: `1px solid ${SURFACE.border}`, background: "#eef2f7", position: "relative" }}>
+                    <div style={{ borderRadius: "14px", overflow: "hidden", border: `1px solid ${SURFACE.border}`, background: SURFACE.borderMuted, position: "relative" }}>
                       {hasGps ? (
                         <TripRouteMap points={detailPositions} height={460} />
                       ) : dirEmbed ? (
@@ -1380,9 +1380,9 @@ export default function VehiclePositionsPage() {
                 {/* Evento + rating */}
                 {event?.name && field("Evento", event.name)}
                 {trip.driverRating ? (
-                  <div style={{ padding: "10px 12px", borderRadius: "12px", background: "#FFFBEB", border: "1px solid #FDE68A", display: "flex", alignItems: "center", gap: "10px" }}>
+                  <div style={{ padding: "10px 12px", borderRadius: "12px", background: STATE.warningSoft, border: `1px solid ${STATE.warningBorder}`, display: "flex", alignItems: "center", gap: "10px" }}>
                     <span style={{ display: "inline-flex", gap: 2, color: STATE.warning }}>{Array.from({ length: trip.driverRating }, (_, k) => <StarIcon key={k} size={16} />)}</span>
-                    {trip.ratingComment && <span style={{ fontSize: "12px", color: "#92400E", fontStyle: "italic", flex: 1 }}>&ldquo;{trip.ratingComment}&rdquo;</span>}
+                    {trip.ratingComment && <span style={{ fontSize: "12px", color: STATE.warningText, fontStyle: "italic", flex: 1 }}>&ldquo;{trip.ratingComment}&rdquo;</span>}
                   </div>
                 ) : null}
                 {trip.notes && field("Notas", trip.notes)}

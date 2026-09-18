@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
-import { BRAND, STATE, SURFACE } from "@/lib/design";
+import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { XIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 
@@ -28,7 +28,7 @@ const CLIENT_TYPES: { value: string; label: string; color: string; bg: string; b
   { value: "FAMILIA_PARAPAN",   label: "Familia Parapan",   color: STATE.warning, bg: "rgba(245,158,11,0.12)",  border: "rgba(245,158,11,0.3)" },
   { value: "TA",                label: "TA",                color: STATE.success, bg: "rgba(16,185,129,0.12)",  border: "rgba(16,185,129,0.3)" },
   { value: "TF",                label: "TF",                color: "#06b6d4", bg: "rgba(6,182,212,0.12)",   border: "rgba(6,182,212,0.3)"  },
-  { value: "TM",                label: "TM",                color: "#8b5cf6", bg: "rgba(139,92,246,0.12)",  border: "rgba(139,92,246,0.3)" },
+  { value: "TM",                label: "TM",                color: ACCENT.violetLight, bg: "rgba(139,92,246,0.12)",  border: "rgba(139,92,246,0.3)" },
   { value: "COMITE_ORGANIZADOR",label: "Comité Org.",       color: SURFACE.textMuted, bg: "rgba(100,116,139,0.1)",  border: "rgba(100,116,139,0.25)"},
   { value: "PROVEEDORES",       label: "Proveedores",       color: SURFACE.textFaint, bg: "rgba(148,163,184,0.1)",  border: "rgba(148,163,184,0.25)"},
 ];

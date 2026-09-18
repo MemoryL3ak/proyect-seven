@@ -57,7 +57,7 @@ export default function Tabs<T extends string>({
                   background: active
                     ? "rgba(255,255,255,0.25)"
                     : "rgba(33, 208, 179, 0.12)",
-                  color: active ? SURFACE.card : "#1eb19a",
+                  color: active ? SURFACE.card : BRAND.tealDark,
                   minWidth: "18px",
                   textAlign: "center",
                 }}

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { isAvailable as isNativeBridge, send as nativeSend } from "@/lib/native-bridge";
-import { BRAND, SURFACE } from "@/lib/design";
+import { BRAND, SURFACE, STATE } from "@/lib/design";
 
 /**
  * Visor de PDF que dibuja el documento completo con PDF.js.
@@ -191,7 +191,7 @@ export default function PdfCanvasViewer({ src }: { src: string }) {
 
         {status === "error" && (
           <div style={{ textAlign: "center", padding: "28px 12px" }}>
-            <p style={{ color: "#fca5a5", fontSize: 13, marginBottom: 12 }}>
+            <p style={{ color: STATE.dangerBorder, fontSize: 13, marginBottom: 12 }}>
               No se pudo mostrar el documento aquí.
             </p>
             <button

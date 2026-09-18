@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import JsBarcode from "jsbarcode";
 import * as XLSX from "xlsx";
 import { apiFetch } from "@/lib/api";
-import { BRAND, STATE, SURFACE } from "@/lib/design";
+import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiCard from "@/components/ui/KpiCard";
@@ -281,12 +281,12 @@ export default function WorkforcePage() {
       />
 
       {error && (
-        <section className="surface rounded-2xl p-4" style={{ borderLeft: "4px solid #b3231b", backgroundColor: "#fde2e2" }}>
+        <section className="surface rounded-2xl p-4" style={{ borderLeft: `4px solid ${STATE.dangerText}`, backgroundColor: STATE.dangerSoft }}>
           <p className="text-sm" style={{ color: "#7a1313" }}>{error}</p>
         </section>
       )}
       {message && !error && (
-        <section className="surface rounded-2xl p-4" style={{ borderLeft: "4px solid #2e7d32", backgroundColor: "#e7f5ec" }}>
+        <section className="surface rounded-2xl p-4" style={{ borderLeft: `4px solid ${STATE.successText}`, backgroundColor: STATE.successSoft }}>
           <p className="text-sm" style={{ color: "#1e5125" }}>{message}</p>
         </section>
       )}
@@ -338,7 +338,7 @@ export default function WorkforcePage() {
             <div className="grid gap-3 md:grid-cols-3">
               {([
                 {
-                  key: "sinKit", label: t("Sin kit"), accent: STATE.warning, chipBg: "#fef3c7", chipBorder: "#fcd34d",
+                  key: "sinKit", label: t("Sin kit"), accent: STATE.warning, chipBg: STATE.warningSoft, chipBorder: STATE.warning,
                   empty: t("Todas las personas tienen kit."),
                   items: kitBoard.sinKit.map((p) => ({
                     id: p.id,
@@ -348,7 +348,7 @@ export default function WorkforcePage() {
                   })),
                 },
                 {
-                  key: "entregadas", label: t("Entregado · por validar"), accent: STATE.infoText, chipBg: "#dbeafe", chipBorder: "#93c5fd",
+                  key: "entregadas", label: t("Entregado · por validar"), accent: STATE.infoText, chipBg: STATE.infoSoft, chipBorder: STATE.infoBorder,
                   empty: t("Sin entregas pendientes de validar."),
                   items: kitBoard.entregadas.map((d) => ({
                     id: d.id,
@@ -360,7 +360,7 @@ export default function WorkforcePage() {
                   })),
                 },
                 {
-                  key: "validadas", label: t("Validado"), accent: STATE.successText, chipBg: "#e7f5ec", chipBorder: "#86efac",
+                  key: "validadas", label: t("Validado"), accent: STATE.successText, chipBg: STATE.successSoft, chipBorder: STATE.successBorder,
                   empty: t("Aún sin entregas validadas."),
                   items: kitBoard.validadas.map((d) => ({
                     id: d.id,
@@ -416,21 +416,21 @@ export default function WorkforcePage() {
             <section
               className="rounded-2xl p-4 flex items-start gap-3"
               style={{
-                borderLeft: "4px solid #c78c00",
-                background: "linear-gradient(135deg, #fff8e6 0%, #fff4d6 100%)",
+                borderLeft: `4px solid ${STATE.warningText}`,
+                background: `linear-gradient(135deg, #fff8e6 0%, ${STATE.warningSoft} 100%)`,
               }}
             >
               <div
                 className="flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center"
-                style={{ background: "rgba(199, 140, 0, 0.18)", color: "#c78c00" }}
+                style={{ background: "rgba(199, 140, 0, 0.18)", color: STATE.warningText }}
               >
                 <AlertIcon size={18} />
               </div>
               <div>
-                <p className="text-sm font-semibold" style={{ color: "#7a4a00" }}>
+                <p className="text-sm font-semibold" style={{ color: STATE.warningText }}>
                   {dashboard.deliveries.pending} {t("entrega(s) pendientes de validación")}
                 </p>
-                <p className="text-xs mt-0.5" style={{ color: "#7a4a00" }}>
+                <p className="text-xs mt-0.5" style={{ color: STATE.warningText }}>
                   {t("Ve a la pestaña")} <strong>{t("Entregas")}</strong> {t("para revisarlas.")}
                 </p>
               </div>
@@ -444,7 +444,7 @@ export default function WorkforcePage() {
         <section className="surface-premium p-5 space-y-4 anim-fade-up-soft relative overflow-hidden">
           <div className="ambient-orb" style={{ width: 220, height: 220, top: -70, right: -50, background: "radial-gradient(circle, rgba(94,58,171,0.10) 0%, transparent 65%)" }} />
           <SectionHeader
-            accentColor="#5e3aab"
+            accentColor={ACCENT.violet}
             icon={<UsersIcon size={20} />}
             label={t("Personas registradas")}
             sub={persons.length > 0
@@ -526,7 +526,7 @@ export default function WorkforcePage() {
                                 {p.fullName}
                                 {hasKit && (
                                   <span className="ml-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full align-middle"
-                                    style={{ background: "#e7f5ec", color: "#1e5125", border: "1px solid #a7f3d0", whiteSpace: "nowrap" }}>
+                                    style={{ background: STATE.successSoft, color: "#1e5125", border: "1px solid #a7f3d0", whiteSpace: "nowrap" }}>
                                     <CheckIcon size={11} className="inline mr-1" />{t("KIT")}
                                   </span>
                                 )}
@@ -568,7 +568,7 @@ export default function WorkforcePage() {
                         <td className="p-3 text-right">
                           <div className="inline-flex flex-col items-end gap-1">
                             <span className="font-semibold tabular-nums" style={{ color: SURFACE.textStrong }}>{p.daysCount || 0}</span>
-                            <MiniBar value={p.daysCount || 0} max={maxDays} color={isVolunteer ? "#5e3aab" : "#1f4e8c"} />
+                            <MiniBar value={p.daysCount || 0} max={maxDays} color={isVolunteer ? ACCENT.violet : STATE.infoText} />
                           </div>
                         </td>
                         <td className="p-3 text-right">
@@ -596,7 +596,7 @@ export default function WorkforcePage() {
                       {t("Total nómina mano de obra")}
                     </td>
                     <td className="p-3 text-right">
-                      <span className="font-bold tabular-nums text-sm" style={{ color: "#5e3aab" }}>
+                      <span className="font-bold tabular-nums text-sm" style={{ color: ACCENT.violet }}>
                         {fmt$(persons.reduce((s, p) => s + Number(p.dailyRate || 0) * Number(p.daysCount || 0), 0))}
                       </span>
                     </td>
@@ -614,7 +614,7 @@ export default function WorkforcePage() {
         <section className="surface-premium p-5 space-y-4 anim-fade-up-soft relative overflow-hidden">
           <div className="ambient-orb" style={{ width: 220, height: 220, top: -70, right: -50, background: "radial-gradient(circle, rgba(199,140,0,0.10) 0%, transparent 65%)" }} />
           <SectionHeader
-            accentColor="#c78c00"
+            accentColor={STATE.warningText}
             icon={<PackageIcon size={20} />}
             label={t("Catálogo de productos")}
             sub={products.length > 0
@@ -705,8 +705,8 @@ export default function WorkforcePage() {
                               className="flex-shrink-0 inline-flex items-center justify-center rounded-xl"
                               style={{
                                 width: 34, height: 34,
-                                background: "linear-gradient(135deg, #fff4d6 0%, #fce6a8 100%)",
-                                color: "#c78c00",
+                                background: `linear-gradient(135deg, ${STATE.warningSoft} 0%, #fce6a8 100%)`,
+                                color: STATE.warningText,
                                 border: "1px solid #c78c0033",
                                 boxShadow: "0 2px 6px rgba(199,140,0,0.18)",
                               }}
@@ -744,7 +744,7 @@ export default function WorkforcePage() {
                             <div className="flex flex-wrap gap-1">
                               {p.availableSizes.map((s) => (
                                 <span key={s} className="text-[10px] px-1.5 py-0.5 rounded font-mono font-bold"
-                                  style={{ background: "#eef4fb", color: "#1f4e8c", border: "1px solid #c7d8ed", minWidth: 22, textAlign: "center" }}>{s}</span>
+                                  style={{ background: "#eef4fb", color: STATE.infoText, border: "1px solid #c7d8ed", minWidth: 22, textAlign: "center" }}>{s}</span>
                               ))}
                             </div>
                           ) : (
@@ -755,13 +755,13 @@ export default function WorkforcePage() {
                         <td className="p-3 text-right">
                           <div className="inline-flex flex-col items-end gap-1">
                             <span className="inline-flex items-center gap-1.5 font-bold tabular-nums"
-                              style={{ color: noStock ? "#b3231b" : lowStock ? "#c78c00" : SURFACE.text }}>
+                              style={{ color: noStock ? STATE.dangerText : lowStock ? STATE.warningText : SURFACE.text }}>
                               {(noStock || lowStock) && (
-                                <span style={{ width: 6, height: 6, borderRadius: "50%", background: noStock ? "#b3231b" : "#c78c00", animation: "pulse 1.8s infinite" }} />
+                                <span style={{ width: 6, height: 6, borderRadius: "50%", background: noStock ? STATE.dangerText : STATE.warningText, animation: "pulse 1.8s infinite" }} />
                               )}
                               {stock}
                             </span>
-                            <MiniBar value={stock} max={maxStock} color={noStock ? "#b3231b" : lowStock ? "#c78c00" : "#1eb19a"} />
+                            <MiniBar value={stock} max={maxStock} color={noStock ? STATE.dangerText : lowStock ? STATE.warningText : BRAND.tealDark} />
                           </div>
                         </td>
                         <td className="p-3 text-right">
@@ -800,7 +800,7 @@ export default function WorkforcePage() {
                       {t("Valor total de inventario")}
                     </td>
                     <td className="p-3 text-right">
-                      <span className="font-bold tabular-nums text-sm" style={{ color: "#c78c00" }}>
+                      <span className="font-bold tabular-nums text-sm" style={{ color: STATE.warningText }}>
                         {fmt$(products.reduce((s, p) => s + Number(p.unitCost || 0) * (p.stockQuantity || 0), 0))}
                       </span>
                     </td>
@@ -818,7 +818,7 @@ export default function WorkforcePage() {
         <section className="surface-premium p-5 space-y-4 anim-fade-up-soft relative overflow-hidden">
           <div className="ambient-orb" style={{ width: 220, height: 220, top: -70, right: -50, background: "radial-gradient(circle, rgba(33,208,179,0.10) 0%, transparent 65%)" }} />
           <SectionHeader
-            accentColor="#1eb19a"
+            accentColor={BRAND.tealDark}
             icon={<ClipboardIcon size={20} />}
             label={t("Registro de entregas")}
             sub={deliveries.length > 0
@@ -897,8 +897,8 @@ export default function WorkforcePage() {
                                 className="flex-shrink-0 inline-flex items-center justify-center rounded-lg"
                                 style={{
                                   width: 28, height: 28,
-                                  background: "linear-gradient(135deg, #fff4d6 0%, #fce6a8 100%)",
-                                  color: "#c78c00",
+                                  background: `linear-gradient(135deg, ${STATE.warningSoft} 0%, #fce6a8 100%)`,
+                                  color: STATE.warningText,
                                   border: "1px solid #c78c0033",
                                 }}
                               >
@@ -913,7 +913,7 @@ export default function WorkforcePage() {
                         <td className="p-3">
                           {d.size ? (
                             <span className="text-[10px] px-2 py-0.5 rounded font-mono font-bold"
-                              style={{ background: "#eef4fb", color: "#1f4e8c", border: "1px solid #c7d8ed", minWidth: 24, display: "inline-block", textAlign: "center" }}>{d.size}</span>
+                              style={{ background: "#eef4fb", color: STATE.infoText, border: "1px solid #c7d8ed", minWidth: 24, display: "inline-block", textAlign: "center" }}>{d.size}</span>
                           ) : (
                             <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>—</span>
                           )}
@@ -947,7 +947,7 @@ export default function WorkforcePage() {
                       {t("Total entregado")}
                     </td>
                     <td className="p-3 text-right">
-                      <span className="font-bold tabular-nums text-sm" style={{ color: "#1eb19a" }}>
+                      <span className="font-bold tabular-nums text-sm" style={{ color: BRAND.tealDark }}>
                         {fmt$(deliveries.reduce((s, d) => s + Number(d.unitCost || 0) * Number(d.quantity || 0), 0))}
                       </span>
                     </td>
@@ -1056,8 +1056,8 @@ function getInitials(name: string): string {
 function PersonAvatar({ name, type }: { name: string; type: string }) {
   const isStaff = type === "STAFF";
   const gradient = isStaff
-    ? "linear-gradient(135deg, #2d6aa8 0%, #1f4e8c 100%)"
-    : "linear-gradient(135deg, #7c5ec4 0%, #5e3aab 100%)";
+    ? `linear-gradient(135deg, #2d6aa8 0%, ${STATE.infoText} 100%)`
+    : `linear-gradient(135deg, #7c5ec4 0%, ${ACCENT.violet} 100%)`;
   const shadow = isStaff ? "rgba(31,78,140,0.30)" : "rgba(94,58,171,0.30)";
   return (
     <div
@@ -1117,22 +1117,22 @@ function ContactCell({ email, phone }: { email?: string | null; phone?: string |
 function CategoryChip({ value }: { value: string | null | undefined }) {
   const { t } = useI18n();
   const meta: Record<string, { label: string; bg: string; color: string; icon: React.ReactNode }> = {
-    CLOTHING:    { label: "Vestimenta",  bg: "#eef4fb", color: "#1f4e8c", icon: (
+    CLOTHING:    { label: "Vestimenta",  bg: "#eef4fb", color: STATE.infoText, icon: (
       <TrophyIcon size={11} strokeWidth={1.9} />
     )},
-    ACCESSORY:   { label: "Accesorio",   bg: "#f4f0fb", color: "#5e3aab", icon: (
+    ACCESSORY:   { label: "Accesorio",   bg: "#f4f0fb", color: ACCENT.violet, icon: (
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
     )},
-    EQUIPMENT:   { label: "Equipo",      bg: "#fff4d6", color: "#7a4a00", icon: (
+    EQUIPMENT:   { label: "Equipo",      bg: STATE.warningSoft, color: STATE.warningText, icon: (
       <WrenchIcon size={11} strokeWidth={1.9} />
     )},
-    UNIFORME:    { label: "Uniforme",    bg: "#eef4fb", color: "#1f4e8c", icon: (
+    UNIFORME:    { label: "Uniforme",    bg: "#eef4fb", color: STATE.infoText, icon: (
       <TrophyIcon size={11} strokeWidth={1.9} />
     )},
-    ACREDITACION:{ label: "Acreditación",bg: "#e7f5ec", color: "#1e5125", icon: (
+    ACREDITACION:{ label: "Acreditación",bg: STATE.successSoft, color: "#1e5125", icon: (
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M15 8h3M15 12h3M5 18h14"/></svg>
     )},
-    ALIMENTACION:{ label: "Alimentación",bg: "#fde2e2", color: "#7a1313", icon: (
+    ALIMENTACION:{ label: "Alimentación",bg: STATE.dangerSoft, color: "#7a1313", icon: (
       <CoffeeIcon size={11} strokeWidth={1.9} />
     )},
   };
@@ -1150,7 +1150,7 @@ function CategoryChip({ value }: { value: string | null | undefined }) {
 function PersonTypeBadge({ type }: { type: string }) {
   const { t } = useI18n();
   const isStaff = type === "STAFF";
-  const color = isStaff ? "#1f4e8c" : "#5e3aab";
+  const color = isStaff ? STATE.infoText : ACCENT.violet;
   const bg    = isStaff ? "#eef4fb" : "#f4f0fb";
   return (
     <span
@@ -1169,9 +1169,9 @@ function ValidationPill({ at }: { at: string | null | undefined }) {
     return (
       <span
         className="inline-flex items-center gap-1.5 text-[10px] px-2.5 py-1 rounded-full font-semibold"
-        style={{ backgroundColor: "#e7f5ec", color: "#1e5125", border: "1px solid #2e7d3233" }}
+        style={{ backgroundColor: STATE.successSoft, color: "#1e5125", border: "1px solid #2e7d3233" }}
       >
-        <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#2e7d32" }} />
+        <span style={{ width: 5, height: 5, borderRadius: "50%", background: STATE.successText }} />
         {t("Validada")} · {new Date(at).toLocaleDateString("es-CL", { day: "2-digit", month: "short" })}
       </span>
     );
@@ -1179,9 +1179,9 @@ function ValidationPill({ at }: { at: string | null | undefined }) {
   return (
     <span
       className="inline-flex items-center gap-1.5 text-[10px] px-2.5 py-1 rounded-full font-semibold"
-      style={{ backgroundColor: "#fff4d6", color: "#7a4a00", border: "1px solid #c78c0033" }}
+      style={{ backgroundColor: STATE.warningSoft, color: STATE.warningText, border: "1px solid #c78c0033" }}
     >
-      <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#c78c00", animation: "pulse 1.8s infinite" }} />
+      <span style={{ width: 5, height: 5, borderRadius: "50%", background: STATE.warningText, animation: "pulse 1.8s infinite" }} />
       {t("Pendiente")}
     </span>
   );
@@ -1197,9 +1197,9 @@ function IconActionButton({
   disabled?: boolean;
 }) {
   const palette: Record<string, { bg: string; color: string; hover: string }> = {
-    edit:     { bg: "#eef4fb", color: "#1f4e8c", hover: "#dbe7f5" },
-    delete:   { bg: "#fde2e2", color: "#b3231b", hover: "#fbcaca" },
-    validate: { bg: "#e7f5ec", color: "#1e5125", hover: "#cfe9d6" },
+    edit:     { bg: "#eef4fb", color: STATE.infoText, hover: "#dbe7f5" },
+    delete:   { bg: STATE.dangerSoft, color: STATE.dangerText, hover: "#fbcaca" },
+    validate: { bg: STATE.successSoft, color: "#1e5125", hover: "#cfe9d6" },
     print:    { bg: SURFACE.borderMuted, color: SURFACE.textStrong, hover: SURFACE.border },
   };
   const s = palette[variant];
@@ -1467,7 +1467,7 @@ function ProductForm({ data, onChange }: { data: Partial<Product>; onChange: (d:
         <div className="input flex items-center gap-2 font-mono"
           style={{
             background: SURFACE.bg,
-            color: data.barcode ? "#0d1e3a" : SURFACE.textFaint,
+            color: data.barcode ? SURFACE.text : SURFACE.textFaint,
             cursor: "not-allowed",
           }}>
           {/* Mini-render visual de barras */}
@@ -1481,7 +1481,7 @@ function ProductForm({ data, onChange }: { data: Partial<Product>; onChange: (d:
                   display: "inline-block",
                   width: `${((parseInt(d, 10) % 3) + 1)}px`,
                   height: "100%",
-                  background: "#0d1e3a",
+                  background: SURFACE.text,
                 }} />
               ))}
             </span>
@@ -1514,7 +1514,7 @@ function ProductForm({ data, onChange }: { data: Partial<Product>; onChange: (d:
           <div className="flex gap-2 flex-wrap items-center mb-2">
             {sizes.map((s, i) => (
               <span key={i} className="text-xs px-2 py-1 rounded-full font-medium"
-                style={{ backgroundColor: "#eef4fb", color: "#1f4e8c" }}>
+                style={{ backgroundColor: "#eef4fb", color: STATE.infoText }}>
                 {s}
                 <button type="button" className="ml-1 text-[10px]"
                   onClick={() => set("availableSizes", sizes.filter((_, j) => j !== i))}>
@@ -1746,7 +1746,7 @@ function WorkforceBulkImport({ kind, onDone }: { kind: "persons" | "products"; o
       </label>
       {result && <span className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>{result}</span>}
       {rowErrors.length > 0 && (
-        <ul className="w-full text-[11px] space-y-0.5 mt-1" style={{ color: "#b3231b" }}>
+        <ul className="w-full text-[11px] space-y-0.5 mt-1" style={{ color: STATE.dangerText }}>
           {rowErrors.slice(0, 8).map((e, i) => <li key={i}>{e}</li>)}
           {rowErrors.length > 8 && <li>… {t("y")} {rowErrors.length - 8} {t("errores más.")}</li>}
         </ul>

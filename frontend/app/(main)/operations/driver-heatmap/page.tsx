@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { apiFetch } from "@/lib/api";
-import { BRAND, STATE, SURFACE } from "@/lib/design";
+import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { StarIcon, MedalIcon, RefreshIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 
@@ -292,7 +292,7 @@ export default function DriverHeatmapPage() {
             detail: kpis.activeDrivers > 0 ? `${(kpis.totalTrips / kpis.activeDrivers).toFixed(1)} viajes por conductor` : "sin actividad",
           },
           {
-            label: "Rating promedio", value: kpis.avgRating !== null ? kpis.avgRating.toFixed(1) : "—", color: "#6366f1",
+            label: "Rating promedio", value: kpis.avgRating !== null ? kpis.avgRating.toFixed(1) : "—", color: ACCENT.indigo,
             detail: kpis.ratingsCount > 0 ? `sobre ${kpis.ratingsCount} evaluación${kpis.ratingsCount === 1 ? "" : "es"}` : "sin evaluaciones",
           },
           {
@@ -434,7 +434,7 @@ export default function DriverHeatmapPage() {
         {/* Left: Ranking table */}
         <div style={{ background: pal.cardBg, borderRadius: "20px", border: `1px solid ${pal.cardBorder}`, boxShadow: pal.shadow, overflow: "hidden" }}>
           <div style={{ padding: "18px 20px 12px", borderBottom: `1px solid ${pal.cardBorder}` }}>
-            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "#6366f1", margin: "0 0 8px" }}>Rankings generales</p>
+            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: ACCENT.indigo, margin: "0 0 8px" }}>Rankings generales</p>
             <div style={{ display: "flex", gap: "4px" }}>
               {([
                 { key: "trips" as const, label: "Más viajes" },
@@ -444,7 +444,7 @@ export default function DriverHeatmapPage() {
                 <button key={tab.key} type="button" onClick={() => setRankTab(tab.key)}
                   style={{
                     padding: "6px 14px", borderRadius: "99px", border: "none", fontSize: "11px", fontWeight: 700, cursor: "pointer",
-                    background: rankTab === tab.key ? "linear-gradient(135deg,#6366f1,#4f46e5)" : SURFACE.borderMuted,
+                    background: rankTab === tab.key ? `linear-gradient(135deg,${ACCENT.indigo},#4f46e5)` : SURFACE.borderMuted,
                     color: rankTab === tab.key ? SURFACE.card : pal.textMuted,
                     boxShadow: rankTab === tab.key ? "0 2px 8px rgba(99,102,241,0.3)" : "none",
                   }}>
@@ -475,7 +475,7 @@ export default function DriverHeatmapPage() {
                       <p style={{ fontSize: "10px", color: pal.labelColor, margin: 0 }}>{r.todayTrips} viajes hoy · {r.activeHours}h activo</p>
                     </div>
                     <div style={{ textAlign: "right" }}>
-                      {rankTab === "trips" && <span style={{ fontSize: "16px", fontWeight: 800, color: "#6366f1" }}>{r.totalTrips}</span>}
+                      {rankTab === "trips" && <span style={{ fontSize: "16px", fontWeight: 800, color: ACCENT.indigo }}>{r.totalTrips}</span>}
                       {rankTab === "rating" && (
                         <span style={{ fontSize: "16px", fontWeight: 800, color: STATE.warning }}>
                           {formatRating(r.avgRating)} <StarIcon size={11} className="inline" />

@@ -444,7 +444,7 @@ export default function HotelKeysPage() {
                           </button>
                         )}
                         <button type="button" onClick={() => setDeleteKeyConfirm(key.id)}
-                          style={{ background: "rgba(239,68,68,0.04)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: "99px", padding: "6px 10px", fontSize: "12px", fontWeight: 600, color: "#f43f5e", cursor: "pointer", display: "flex", alignItems: "center" }}
+                          style={{ background: "rgba(239,68,68,0.04)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: "99px", padding: "6px 10px", fontSize: "12px", fontWeight: 600, color: STATE.danger, cursor: "pointer", display: "flex", alignItems: "center" }}
                           title={t("Eliminar llave")}>
                           <TrashIcon size={13} strokeWidth={2} />
                         </button>

@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/Icons";
 import { normalizeClientType, clientTypeLabel } from "@/lib/clientTypes";
 import { useI18n } from "@/lib/i18n";
-import { BRAND, TRIP_STATUS_META, STATE, SURFACE } from "@/lib/design";
+import { BRAND, TRIP_STATUS_META, STATE, SURFACE, ACCENT } from "@/lib/design";
 
 /**
  * Solicitudes de viaje generadas desde la app (portal del pasajero).
@@ -96,9 +96,9 @@ function prioritarios(trip: Trip): Array<{ name: string | null; clientType: stri
 /** Cómo se lee cada acción de la bitácora en el detalle. */
 const LOG_META: Record<string, { label: string; color: string }> = {
   CREATED:               { label: "Solicitud creada",       color: "#0ea5e9" },
-  DRIVER_ASSIGNED:       { label: "Conductor asignado",     color: "#6366f1" },
-  VEHICLE_ASSIGNED:      { label: "Vehículo asignado",      color: "#6366f1" },
-  STATUS_CHANGED:        { label: "Cambio de estado",       color: "#7c3aed" },
+  DRIVER_ASSIGNED:       { label: "Conductor asignado",     color: ACCENT.indigo },
+  VEHICLE_ASSIGNED:      { label: "Vehículo asignado",      color: ACCENT.indigo },
+  STATUS_CHANGED:        { label: "Cambio de estado",       color: ACCENT.violet },
   SCHEDULE_CHANGED:      { label: "Horario modificado",     color: STATE.warning },
   VEHICLE_TYPE_CHANGED:  { label: "Tipo de vehículo",       color: STATE.warning },
   PASSENGER_COUNT_CHANGED:{ label: "Pasajeros",             color: STATE.warning },
@@ -144,7 +144,7 @@ const statusMetaLocal = (status: string, label: string, border: string) => {
   return { label, color: m.color, bg: m.bg, border };
 };
 const STATUS_META: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  REQUESTED:   statusMetaLocal("REQUESTED",   "Pendiente",  "#fcd34d"),
+  REQUESTED:   statusMetaLocal("REQUESTED",   "Pendiente",  STATE.warning),
   SCHEDULED:   statusMetaLocal("SCHEDULED",   "Agendada",   "rgba(33,208,179,0.35)"),
   EN_ROUTE:    statusMetaLocal("EN_ROUTE",    "En ruta",    "rgba(59,130,246,0.35)"),
   PICKED_UP:   statusMetaLocal("PICKED_UP",   "En curso",   "rgba(139,92,246,0.35)"),
@@ -154,8 +154,8 @@ const STATUS_META: Record<string, { label: string; color: string; bg: string; bo
 };
 
 const CLIENT_META: Record<string, { color: string; bg: string; border: string }> = {
-  T1:  { color: "#1f4e8c", bg: "#dbeafe", border: "#93c5fd" },
-  VIP: { color: "#92400e", bg: "#fef3c7", border: "#fbbf24" },
+  T1:  { color: STATE.infoText, bg: STATE.infoSoft, border: STATE.infoBorder },
+  VIP: { color: STATE.warningText, bg: STATE.warningSoft, border: STATE.warning },
 };
 
 /** Flujo normal de una solicitud, para el timeline de progreso. */
@@ -385,7 +385,7 @@ export default function TripRequestsPage() {
         accentStrip="teal"
         meta={
           <span className="inline-flex items-center gap-2 text-xs font-semibold rounded-full px-3 py-1"
-            style={{ background: "#e7f5ec", color: "#1eb19a" }}>
+            style={{ background: STATE.successSoft, color: BRAND.tealDark }}>
             <span style={{
               width: 7, height: 7, borderRadius: "50%", background: BRAND.teal,
               boxShadow: "0 0 0 3px rgba(33,208,179,0.25)", animation: "pulse 1.8s infinite",
@@ -401,7 +401,7 @@ export default function TripRequestsPage() {
       />
 
       {error && (
-        <section className="surface rounded-2xl p-4 flex items-center justify-between" style={{ borderLeft: "4px solid #b3231b", backgroundColor: "#fde2e2" }}>
+        <section className="surface rounded-2xl p-4 flex items-center justify-between" style={{ borderLeft: `4px solid ${STATE.dangerText}`, backgroundColor: STATE.dangerSoft }}>
           <p className="text-sm flex items-center gap-2" style={{ color: "#7a1313" }}>
             <AlertIcon size={15} /> {error}
           </p>
@@ -412,11 +412,11 @@ export default function TripRequestsPage() {
       {/* Resumen */}
       <section className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {[
-          { label: "Total", value: summary.total, color: "#1f4e8c" },
+          { label: "Total", value: summary.total, color: STATE.infoText },
           { label: "Pendientes", value: summary.pending, color: STATE.warningText },
-          { label: "Agendadas", value: summary.scheduled, color: "#7c3aed" },
-          { label: "T1", value: summary.t1, color: "#1f4e8c" },
-          { label: "VIP", value: summary.vip, color: "#92400e" },
+          { label: "Agendadas", value: summary.scheduled, color: ACCENT.violet },
+          { label: "T1", value: summary.t1, color: STATE.infoText },
+          { label: "VIP", value: summary.vip, color: STATE.warningText },
         ].map((c) => (
           <div key={c.label} className="surface rounded-2xl p-4">
             <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: SURFACE.textMuted }}>{t(c.label)}</p>
@@ -586,7 +586,7 @@ export default function TripRequestsPage() {
                 const dr = driverLabel(r.driverId);
                 const canManage = r.status === "REQUESTED" || r.status === "SCHEDULED";
                 return (
-                  <tr key={r.id} style={{ borderTop: "1px solid #eef2f7" }}>
+                  <tr key={r.id} style={{ borderTop: `1px solid ${SURFACE.borderMuted}` }}>
                     <td className="px-4 py-3">
                       <span className="inline-flex items-center text-xs font-bold rounded-full px-2.5 py-0.5"
                         style={{ color: cm.color, background: cm.bg, border: `1px solid ${cm.border}` }}>
@@ -596,7 +596,7 @@ export default function TripRequestsPage() {
                     <td className="px-4 py-3" style={{ color: SURFACE.textStrong }}>
                       {r.legType === "RETURN" && (
                         <span className="inline-flex items-center text-[10px] font-bold rounded px-1.5 py-0.5 mr-1.5"
-                          style={{ color: "#7c3aed", background: "#f5f3ff", border: "1px solid #ddd6fe" }}>
+                          style={{ color: ACCENT.violet, background: ACCENT.violetSoft, border: "1px solid #ddd6fe" }}>
                           {t("Vuelta")}
                         </span>
                       )}
@@ -682,7 +682,7 @@ export default function TripRequestsPage() {
                             {client}
                           </span>
                           {r.legType === "RETURN" && (
-                            <span style={{ fontSize: "9.5px", fontWeight: 800, padding: "1px 6px", borderRadius: 4, color: "#7c3aed", background: "#f5f3ff", border: "1px solid #ddd6fe" }}>
+                            <span style={{ fontSize: "9.5px", fontWeight: 800, padding: "1px 6px", borderRadius: 4, color: ACCENT.violet, background: ACCENT.violetSoft, border: "1px solid #ddd6fe" }}>
                               {t("Vuelta")}
                             </span>
                           )}
@@ -735,7 +735,7 @@ export default function TripRequestsPage() {
                       )}
                     {detail.legType === "RETURN" && (
                       <span className="text-[10px] font-bold rounded px-1.5 py-0.5"
-                        style={{ color: "#7c3aed", background: "#f5f3ff", border: "1px solid #ddd6fe" }}>{t("Vuelta")}</span>
+                        style={{ color: ACCENT.violet, background: ACCENT.violetSoft, border: "1px solid #ddd6fe" }}>{t("Vuelta")}</span>
                     )}
                   </div>
                   <h3 className="text-base font-bold" style={{ color: SURFACE.text }}>
@@ -752,7 +752,7 @@ export default function TripRequestsPage() {
                   [t("Conductor"), dr ? driverName(dr) : t("Sin asignar")],
                   [t("Vehículo"), detail.vehiclePlate ?? "—"],
                 ].map(([k, v]) => (
-                  <div key={k} style={{ background: SURFACE.bg, border: "1px solid #eef2f7", borderRadius: 10, padding: "8px 10px" }}>
+                  <div key={k} style={{ background: SURFACE.bg, border: `1px solid ${SURFACE.borderMuted}`, borderRadius: 10, padding: "8px 10px" }}>
                     <p style={{ color: SURFACE.textFaint, fontWeight: 700, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", margin: 0 }}>{k}</p>
                     <p style={{ color: SURFACE.text, fontWeight: 700, margin: "2px 0 0" }}>{v}</p>
                   </div>
@@ -804,7 +804,7 @@ export default function TripRequestsPage() {
               </div>
 
               {detail.notes && (
-                <p className="text-xs" style={{ color: SURFACE.textMuted, background: SURFACE.bg, border: "1px solid #eef2f7", borderRadius: 10, padding: "8px 10px" }}>
+                <p className="text-xs" style={{ color: SURFACE.textMuted, background: SURFACE.bg, border: `1px solid ${SURFACE.borderMuted}`, borderRadius: 10, padding: "8px 10px" }}>
                   {detail.notes}
                 </p>
               )}
@@ -859,7 +859,7 @@ export default function TripRequestsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(15,23,42,0.45)" }}>
           <div className="surface rounded-2xl p-5 w-full max-w-md space-y-4">
             <div>
-              <h3 className="text-lg font-bold" style={{ color: "#1f4e8c" }}>{t("Asignar solicitud")} {clientTypeLabel(assigning.clientType)}</h3>
+              <h3 className="text-lg font-bold" style={{ color: STATE.infoText }}>{t("Asignar solicitud")} {clientTypeLabel(assigning.clientType)}</h3>
               <p className="text-xs" style={{ color: SURFACE.textFaint }}>{assigning.origin ?? "—"} → {assigning.destination ?? "—"}</p>
             </div>
             <label className="block text-sm">

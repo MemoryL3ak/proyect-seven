@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { changeTemporaryPassword, login } from "@/lib/api";
-import { BRAND, SURFACE } from "@/lib/design";
+import { BRAND, SURFACE, STATE } from "@/lib/design";
 import { LockIcon, EyeIcon } from "@/components/ui/Icons";
 
 type LoginResponse = {
@@ -263,7 +263,7 @@ export default function LoginPage() {
               style={{
                 width: "100%", padding: "13px", borderRadius: "10px", border: "none",
                 background: `linear-gradient(135deg, ${BRAND.tealLight} 0%, ${BRAND.teal} 50%, #15B09A 100%)`,
-                color: "#0d1b3e", fontSize: "14px", fontWeight: 700,
+                color: SURFACE.text, fontSize: "14px", fontWeight: 700,
                 cursor: savingPassword ? "not-allowed" : "pointer",
                 opacity: savingPassword ? 0.7 : 1,
               }}
@@ -274,7 +274,7 @@ export default function LoginPage() {
         )}
 
         {error && (
-          <p style={{ color: "#fca5a5", fontSize: "12.5px", textAlign: "center", margin: 0 }}>{error}</p>
+          <p style={{ color: STATE.dangerBorder, fontSize: "12.5px", textAlign: "center", margin: 0 }}>{error}</p>
         )}
 
         <button
@@ -287,7 +287,7 @@ export default function LoginPage() {
             borderRadius: "12px",
             border: "none",
             background: `linear-gradient(135deg, ${BRAND.tealLight} 0%, ${BRAND.teal} 50%, #15B09A 100%)`,
-            color: "#0d1b3e",
+            color: SURFACE.text,
             fontSize: "15px",
             fontWeight: 700,
             cursor: loading || requiresPasswordChange ? "not-allowed" : "pointer",

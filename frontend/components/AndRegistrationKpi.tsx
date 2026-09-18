@@ -578,7 +578,7 @@ export default function AndRegistrationKpi({
                 <td>{row.disciplineGender}</td>
                 <td>{row.hasDelegationExpected ? row.expected : "-"}</td>
                 <td>{row.registered}</td>
-                <td style={{ color: row.variance === null ? "var(--text-faint)" : row.variance < 0 ? "#f87171" : row.variance > 0 ? "#fbbf24" : "#34d399" }}>
+                <td style={{ color: row.variance === null ? "var(--text-faint)" : row.variance < 0 ? "#f87171" : row.variance > 0 ? STATE.warning : "#34d399" }}>
                   {row.variance === null ? "-" : row.variance > 0 ? `+${row.variance}` : row.variance}
                 </td>
                 <td>
