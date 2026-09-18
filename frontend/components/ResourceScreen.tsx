@@ -3546,7 +3546,8 @@ export default function ResourceScreen({
           const departureCount = items.filter((i) => (i.participantTripType ?? "").toUpperCase() === "DEPARTURE").length;
           const USER_TYPE_LABELS: Record<string, string> = {
             VIP: "VIP", FAMILIA_PARAPAN: "Familia Parapan", TA: "Deportista",
-            TF: "Oficiales Técnicos", TM: "Prensa", COMITE_ORGANIZADOR: "Comité Organizador", PROVEEDORES: "Proveedores",
+            TF: "Oficiales Técnicos", TM: "Prensa", JEFE_MISION: "Jefe de Misión",
+            COMITE_ORGANIZADOR: "Comité Organizador", PROVEEDORES: "Proveedores",
           };
           return (
             <div>
@@ -3708,6 +3709,7 @@ export default function ResourceScreen({
             TA: "TA (Deportista)",
             TF: "TF (Oficiales Técnicos)",
             TM: "TM (Prensa)",
+            JEFE_MISION: "Jefe de Misión",
             COMITE_ORGANIZADOR: "Comité Organizador",
             PROVEEDORES: "Proveedores",
           };

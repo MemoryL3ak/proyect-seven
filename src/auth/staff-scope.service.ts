@@ -28,6 +28,9 @@ export type StaffScope = {
 
 export const MISSION_HEAD_ROLE = 'Jefe de Misión';
 
+/** Tipo de cliente que identifica al Jefe de Misión de una delegación. */
+export const MISSION_HEAD_CLIENT_TYPE = 'JEFE_MISION';
+
 const CACHE_TTL_MS = 60_000;
 
 const asString = (value: unknown): string | null =>
@@ -38,6 +41,7 @@ type AthleteScopeRow = {
   full_name: string | null;
   delegation_id: string | null;
   is_delegation_lead: boolean | null;
+  user_type: string | null;
 };
 
 /**
@@ -100,14 +104,19 @@ export class StaffScopeService {
     if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.scope;
     try {
       const rows = await this.dataSource.query<AthleteScopeRow[]>(
-        `select id, full_name, delegation_id, is_delegation_lead
+        `select id, full_name, delegation_id, is_delegation_lead, user_type
          from core.athletes
          where id = $1 and status is distinct from 'DELETED'`,
         [athleteId],
       );
       const row = rows[0];
       if (!row) return null;
-      const isHead = row.is_delegation_lead === true && Boolean(row.delegation_id);
+      // Sin delegación no hay alcance posible: se trata como participante
+      // común (si no, vería la operación completa).
+      const isHead =
+        (row.is_delegation_lead === true ||
+          String(row.user_type ?? '').trim().toUpperCase() === MISSION_HEAD_CLIENT_TYPE) &&
+        Boolean(row.delegation_id);
       const scope: StaffScope = {
         kind: isHead ? 'mission_head' : 'participant',
         userId: row.id,

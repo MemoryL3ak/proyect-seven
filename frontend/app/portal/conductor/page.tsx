@@ -172,12 +172,17 @@ type VehicleItem = { id: string; plate?: string | null; type?: string | null; br
 
 type DelegationItem = { id: string; countryCode?: string | null };
 
+/** Jefe de delegación: marcado en Delegaciones o con tipo de cliente Jefe de Misión. */
+const esJefeDelegacion = (a: { isDelegationLead?: boolean | null; userType?: string | null }) =>
+  a.isDelegationLead === true || String(a.userType ?? "").trim().toUpperCase() === "JEFE_MISION";
+
 type AthleteItem = {
   id: string;
   fullName?: string | null;
   delegationId?: string | null;
   email?: string | null;
   isDelegationLead?: boolean | null;
+  userType?: string | null;
   arrivalFlightId?: string | null;
   flightNumber?: string | null;
   airline?: string | null;
@@ -911,7 +916,7 @@ export default function DriverPortalPage() {
     const uniqueDelegations = Array.from(new Set(delegationIds));
     uniqueDelegations.forEach((delegationId) => {
       const lead = Object.values(athletes).find(
-        (athlete) => athlete.delegationId === delegationId && athlete.isDelegationLead
+        (athlete) => athlete.delegationId === delegationId && esJefeDelegacion(athlete)
       );
       if (lead?.id) {
         const suffix = lead.id.slice(-6);
@@ -1328,7 +1333,7 @@ export default function DriverPortalPage() {
     const leads = unique
       .map((delegationId) => {
         const lead = Object.values(athletes).find(
-          (athlete) => athlete.delegationId === delegationId && athlete.isDelegationLead
+          (athlete) => athlete.delegationId === delegationId && esJefeDelegacion(athlete)
         );
         if (!lead) return null;
         return lead.fullName || lead.email || lead.id;

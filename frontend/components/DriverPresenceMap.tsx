@@ -33,6 +33,7 @@ const CLIENT_TYPE_CHIP: Record<string, { label: string; bg: string; color: strin
   TF: { label: "TF", bg: "#e0f2fe", color: "#075985", border: "#7dd3fc" },
   TM: { label: "TM", bg: ACCENT.violetSoft, color: "#5b21b6", border: "#c4b5fd" },
   FAMILIA_PARAPAN: { label: "Familia Parapan", bg: "#fce7f3", color: "#9d174d", border: "#f9a8d4" },
+  JEFE_MISION: { label: "Jefe de Misión", bg: "#ccfbf1", color: "#0f766e", border: "#5eead4" },
   COMITE_ORGANIZADOR: { label: "Comité Org.", bg: "#e0f2fe", color: "#075985", border: "#7dd3fc" },
   PROVEEDORES: { label: "Proveedores", bg: SURFACE.borderMuted, color: SURFACE.textStrong, border: SURFACE.borderStrong },
 };
