@@ -13,6 +13,9 @@ type I18nContextValue = {
 const translations: Record<Locale, Record<string, string>> = {
   es: {},
   en: {
+    // Capacidad del vehículo en la ficha de chofer (Proveedores).
+    "Capacidad (pasajeros)": "Capacity (passengers)",
+    "Asientos disponibles para pasajeros. Con este dato el chofer aparece en los viajes según la cantidad de personas.": "Seats available for passengers. With this value the driver shows up in trips according to the number of people.",
     // Registro de delegaciones (pestaña de Inscripción de Participantes).
     "Editar delegación": "Edit delegation",
     "Nueva delegación": "New delegation",
@@ -2542,6 +2545,9 @@ const translations: Record<Locale, Record<string, string>> = {
     "Panel Financiero": "Financial Panel",
   },
   pt: {
+    // Capacidad del vehículo en la ficha de chofer (Proveedores).
+    "Capacidad (pasajeros)": "Capacidade (passageiros)",
+    "Asientos disponibles para pasajeros. Con este dato el chofer aparece en los viajes según la cantidad de personas.": "Assentos disponíveis para passageiros. Com este dado o motorista aparece nas viagens conforme a quantidade de pessoas.",
     // Registro de delegaciones (pestaña de Inscripción de Participantes).
     "Editar delegación": "Editar delegação",
     "Nueva delegación": "Nova delegação",

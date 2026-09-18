@@ -890,8 +890,9 @@ export class TripsScheduleService {
           allowedClientTypes: declaredTypes,
           vehicleId: null,
           vehicleType: tipo,
-          // Capacidad desconocida (0 = no se aplica el tope de PAX).
-          vehicleCapacity: 0,
+          // Capacidad declarada en la ficha del chofer; 0 = sin dato, y
+          // entonces no se aplica el tope de PAX.
+          vehicleCapacity: Number(meta.vehicleCapacity ?? 0) || 0,
           vehiclePlate: String(meta.vehiclePatente ?? '').trim() || null,
           isWheelchairCapable: tipo != null && /(M5|ADAPT)/.test(tipo),
         });
