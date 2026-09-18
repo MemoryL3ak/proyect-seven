@@ -60,6 +60,7 @@ import CredentialQrCard from "@/components/CredentialQrCard";
 import { buildCredentialHtml } from "@/lib/credential-template";
 import { downloadCredentialPdf, saveCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
 import { isAvailable as isNativeShell } from "@/lib/native-bridge";
+import { dialPhone, telHref } from "@/lib/dial";
 import { clearPersistedTabs, persistTab, restoreOnReload, startTabHeartbeat } from "@/lib/portal-tab";
 import { claimPortalSession, clearPortalSession, ensurePortalIdentity, portalLogin, releasePortalSession, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
 import PortalSessionGuard from "@/components/PortalSessionGuard";
@@ -1962,7 +1963,9 @@ export default function VehicleRequestPortalPage() {
                             {t("Ver viaje")}
                           </button>
                           {drv?.phone && (
-                            <a href={`tel:${drv.phone}`}
+                            /* Dentro de la app el WebView no maneja tel:; el marcado va por el shell (lib/dial). */
+                            <a href={telHref(drv.phone)}
+                              onClick={(e) => { if (drv.phone && dialPhone(drv.phone)) e.preventDefault(); }}
                               style={{ padding:"6px 14px",borderRadius:10,border:"1px solid rgba(52,243,198,0.4)",cursor:"pointer",fontSize:11.5,fontWeight:700,background:"rgba(33,208,179,0.12)",color:BRAND.tealLight,textAlign:"center",textDecoration:"none" }}>
                               {t("Llamar")}
                             </a>
@@ -2079,7 +2082,8 @@ export default function VehicleRequestPortalPage() {
                       {/* Acciones */}
                       <div style={{ display:"flex",gap:8,marginTop:2 }}>
                         {drv?.phone && (
-                          <a href={`tel:${drv.phone}`}
+                          <a href={telHref(drv.phone)}
+                            onClick={(e) => { if (drv.phone && dialPhone(drv.phone)) e.preventDefault(); }}
                             style={{ flex:1,padding:"12px",borderRadius:12,textAlign:"center",textDecoration:"none",fontSize:13,fontWeight:700,background:`linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})`,color:BRAND.navyLight }}>
                             <PhoneIcon size={11} className="inline mr-1" />{t("Llamar conductor")}
                           </a>
