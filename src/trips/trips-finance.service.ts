@@ -100,7 +100,7 @@ export class TripsFinanceService {
             else null
           end as fleet_norm,
           case
-            when n.trip_type in ('VIAJE_IDA','VIAJE_REGRESO','VIAJE_IDA_REGRESO','TRANSFER_IN_OUT','DISPOSICION_12H')
+            when n.trip_type in ('VIAJE_IDA','VIAJE_REGRESO','VIAJE_IDA_REGRESO','TRANSFER_IN_OUT','DISPOSICION_12H','COMEDOR')
               then n.trip_type
             when coalesce(n.is_round_trip, false) then 'VIAJE_IDA_REGRESO'
             when n.leg_type = 'RETURN' then 'VIAJE_REGRESO'

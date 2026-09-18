@@ -157,6 +157,7 @@ const SERVICIO_LABEL: Record<string, string> = {
   VIAJE_IDA_REGRESO: "Ida y regreso",
   TRANSFER_IN_OUT: "Transfer in/out",
   DISPOSICION_12H: "Disposición 12 h",
+  COMEDOR: "Comedor",
 };
 
 const ORIGEN_VALOR_META: Record<string, { label: string; tone: string; bg: string; border: string }> = {

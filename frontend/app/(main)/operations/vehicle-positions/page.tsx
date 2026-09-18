@@ -147,7 +147,8 @@ const countryLabels: Record<string, string> = {
 const tripTypeLabels: Record<string, string> = {
   TRANSFER_IN_OUT: "Transfer In Out",
   DISPOSICION_12H: "Disposición 12 horas",
-  IDA_VUELTA: "Viaje Ida-Vuelta"
+  IDA_VUELTA: "Viaje Ida-Vuelta",
+  COMEDOR: "Comedor"
 };
 
 const formatDate = (value?: string | null) =>

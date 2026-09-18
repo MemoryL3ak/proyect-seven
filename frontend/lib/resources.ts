@@ -1036,6 +1036,8 @@ export const resources: Record<string, ResourceConfig> = {
           { label: "Viaje de ida", value: "VIAJE_IDA" },
           { label: "Viaje de regreso", value: "VIAJE_REGRESO" },
           { label: "Viaje de ida y regreso", value: "VIAJE_IDA_REGRESO" },
+          // Traslado de la delegación al comedor (ida o vuelta del almuerzo).
+          { label: "Comedor", value: "COMEDOR" },
           { label: "Solicitud portal", value: "PORTAL_REQUEST" },
         ]
       },

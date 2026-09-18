@@ -150,6 +150,7 @@ function tripTypeLabel(value?: string | null) {
     VIAJE_IDA_REGRESO: "Ida y regreso",
     VIAJE_REGRESO: "Viaje de regreso",
     PORTAL_REQUEST: "Solicitud portal",
+    COMEDOR: "Comedor",
   };
   return labels[value ?? ""] || "Traslado";
 }
