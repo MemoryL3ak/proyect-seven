@@ -149,7 +149,9 @@ export default function StyledSelect({
             borderTop: "none",
             borderRadius: "0 0 10px 10px",
             boxShadow: "0 8px 24px rgba(15,23,42,0.12)",
-            maxHeight: "200px",
+            // 200px cortaba la lista en la sexta fila: los tipos de cliente
+            // quedaban ocultos tras el scroll y parecian no existir.
+            maxHeight: "320px",
             overflowY: "auto",
           }}
         >
