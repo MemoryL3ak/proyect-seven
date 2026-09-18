@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useI18n } from "@/lib/i18n";
 import { Icon, type IconName, SparkleIcon, CheckIcon, ArrowRightIcon, ClockIcon } from "@/components/ui/Icons";
+import { BRAND, STATE, SURFACE } from "@/lib/design";
 
 /* ─────────────────────────────────────────────────────────────
    Estilos custom (keyframes, glass, glow, gradients)
@@ -172,8 +173,8 @@ const ROLES: Array<{
       <svg width="34" height="34" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
         <defs>
           <linearGradient id="ob-admin-1" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#fff" stopOpacity="0.95" />
-            <stop offset="100%" stopColor="#fff" stopOpacity="0.7" />
+            <stop offset="0%" stopColor={SURFACE.card} stopOpacity="0.95" />
+            <stop offset="100%" stopColor={SURFACE.card} stopOpacity="0.7" />
           </linearGradient>
         </defs>
         <path d="M16 3l10 5v6c0 7-4.5 11-10 12-5.5-1-10-5-10-12V8l10-5z" fill="url(#ob-admin-1)" stroke="currentColor" />
@@ -233,7 +234,7 @@ const ROLES: Array<{
     key: "accreditation",
     label: "Encargado de acreditación",
     desc: "Generación de credenciales QR, escáner en puertas, control de tipos de acceso.",
-    color: "#10b981",
+    color: STATE.success,
     bgGradient: "linear-gradient(135deg, #e7f5ec 0%, #ffffff 60%)",
     iconBg: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
     suggested: ["generate_credentials", "qr_scanner", "manage_access"],
@@ -255,7 +256,7 @@ const ROLES: Array<{
     key: "operations",
     label: "Supervisor operativo",
     desc: "Vista panorámica de la operación, incidencias, premiaciones y workforce.",
-    color: "#f59e0b",
+    color: STATE.warning,
     bgGradient: "linear-gradient(135deg, #fff4d6 0%, #ffffff 60%)",
     iconBg: "linear-gradient(135deg, #fbbf24 0%, #d97706 100%)",
     suggested: ["view_dashboard", "monitor_incidents", "premiaciones", "workforce", "vip_monitoring", "departures_monitor", "salud"],
@@ -277,7 +278,7 @@ const ROLES: Array<{
     key: "other",
     label: "Otro perfil",
     desc: "Quiero explorar libremente todos los módulos de la plataforma.",
-    color: "#64748b",
+    color: SURFACE.textMuted,
     bgGradient: "linear-gradient(135deg, #f1f5f9 0%, #ffffff 60%)",
     iconBg: "linear-gradient(135deg, #94a3b8 0%, #64748b 100%)",
     suggested: ["view_dashboard", "coupons", "premiaciones", "workforce"],
@@ -451,7 +452,7 @@ function StepIndicator({ current, total, onJump }: { current: number; total: num
 /** Confetti pieces for completion step */
 function Confetti() {
   const pieces = useMemo(() => {
-    const colors = ["#21D0B3", "#34F3C6", "#fbbf24", "#f472b6", "#7c5ec4", "#34d399"];
+    const colors = [BRAND.teal, BRAND.tealLight, "#fbbf24", "#f472b6", "#7c5ec4", "#34d399"];
     return Array.from({ length: 60 }, (_, i) => ({
       id: i,
       left: Math.random() * 100,
@@ -502,7 +503,7 @@ function RoleCard({
       className={`ob-role-card ob-tilt text-left rounded-2xl p-4 transition-all ${selected ? "is-selected" : ""}`}
       style={{
         ["--ob-gradient" as any]: gradient,
-        background: selected ? role.bgGradient : "#ffffff",
+        background: selected ? role.bgGradient : SURFACE.card,
         border: `2px solid ${selected ? "transparent" : "#e2e8f0"}`,
         boxShadow: selected
           ? `0 16px 32px ${role.color}33, 0 2px 6px rgba(15,23,42,0.1)`
@@ -517,7 +518,7 @@ function RoleCard({
       }}
       onMouseLeave={(e) => {
         if (!selected) {
-          (e.currentTarget as HTMLElement).style.borderColor = "#e2e8f0";
+          (e.currentTarget as HTMLElement).style.borderColor = SURFACE.border;
           (e.currentTarget as HTMLElement).style.boxShadow = "0 1px 3px rgba(15,23,42,0.06)";
         }
       }}
@@ -540,7 +541,7 @@ function RoleCard({
             className={`w-14 h-14 rounded-2xl flex items-center justify-center ${selected ? "ob-bounce-in" : ""}`}
             style={{
               background: role.iconBg,
-              color: "#fff",
+              color: SURFACE.card,
               boxShadow: selected
                 ? `0 10px 24px ${role.color}66, 0 0 0 4px ${role.color}1a, inset 0 1px 0 rgba(255,255,255,0.3)`
                 : `0 6px 16px ${role.color}33, inset 0 1px 0 rgba(255,255,255,0.25)`,
@@ -554,7 +555,7 @@ function RoleCard({
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-[15px] font-bold leading-tight" style={{ color: "#0f172a" }}>
+            <p className="text-[15px] font-bold leading-tight" style={{ color: SURFACE.text }}>
               {t(role.label)}
             </p>
             {selected && (
@@ -563,7 +564,7 @@ function RoleCard({
                 style={{
                   width: 22, height: 22,
                   background: `linear-gradient(135deg, ${role.color} 0%, ${role.color}dd 100%)`,
-                  color: "#fff",
+                  color: SURFACE.card,
                   boxShadow: `0 4px 12px ${role.color}66`,
                 }}
               >
@@ -618,8 +619,8 @@ function GoalChip({
       style={{
         background: selected
           ? "linear-gradient(135deg, #21D0B3 0%, #15B09A 100%)"
-          : "#ffffff",
-        color: selected ? "#fff" : "#334155",
+          : SURFACE.card,
+        color: selected ? SURFACE.card : SURFACE.textStrong,
         border: `1.5px solid ${selected ? "#15B09A" : "#e2e8f0"}`,
         boxShadow: selected
           ? "0 6px 16px rgba(33,208,179,0.30), inset 0 1px 0 rgba(255,255,255,0.2)"
@@ -634,8 +635,8 @@ function GoalChip({
       }}
       onMouseLeave={(e) => {
         if (!selected) {
-          (e.currentTarget as HTMLElement).style.borderColor = "#e2e8f0";
-          (e.currentTarget as HTMLElement).style.background = "#ffffff";
+          (e.currentTarget as HTMLElement).style.borderColor = SURFACE.border;
+          (e.currentTarget as HTMLElement).style.background = SURFACE.card;
         }
       }}
     >
@@ -664,7 +665,7 @@ function TaskRow({
       style={{
         background: done
           ? "linear-gradient(135deg, #f0fdfb 0%, #ffffff 70%)"
-          : "#ffffff",
+          : SURFACE.card,
         border: `1px solid ${done ? "#34d39966" : "#e2e8f0"}`,
         opacity: done ? 0.85 : 1,
       }}
@@ -687,14 +688,14 @@ function TaskRow({
           }}
         >
           {done && (
-            <CheckIcon size={13} color="#fff" strokeWidth={3.5} />
+            <CheckIcon size={13} color={SURFACE.card} strokeWidth={3.5} />
           )}
         </button>
         <div className="flex-1 min-w-0">
           <p
             className="text-[14px] font-bold leading-tight"
             style={{
-              color: done ? "#475569" : "#0f172a",
+              color: done ? SURFACE.textSecondary : SURFACE.text,
               textDecoration: done ? "line-through" : "none",
             }}
           >
@@ -709,7 +710,7 @@ function TaskRow({
           className="flex-shrink-0 inline-flex items-center gap-1.5 text-xs font-bold rounded-lg px-3 py-2 transition-all"
           style={{
             background: done ? "transparent" : "linear-gradient(135deg, #21D0B3 0%, #15B09A 100%)",
-            color: done ? "#1eb19a" : "#fff",
+            color: done ? "#1eb19a" : SURFACE.card,
             border: done ? "1px solid #34d39966" : "none",
             boxShadow: done ? "none" : "0 4px 14px rgba(33,208,179,0.32)",
             textDecoration: "none",
@@ -841,13 +842,13 @@ export default function OnboardingPage() {
 
         {/* Partículas flotantes */}
         {[
-          { top: "12%", left: "8%",  size: 6, color: "#21D0B3", delay: "0s" },
-          { top: "22%", left: "30%", size: 4, color: "#34F3C6", delay: "1s" },
-          { top: "60%", left: "12%", size: 5, color: "#21D0B3", delay: "2s" },
+          { top: "12%", left: "8%",  size: 6, color: BRAND.teal, delay: "0s" },
+          { top: "22%", left: "30%", size: 4, color: BRAND.tealLight, delay: "1s" },
+          { top: "60%", left: "12%", size: 5, color: BRAND.teal, delay: "2s" },
           { top: "32%", left: "60%", size: 3, color: "#fbbf24", delay: "1.5s" },
-          { top: "75%", left: "55%", size: 5, color: "#34F3C6", delay: "0.5s" },
+          { top: "75%", left: "55%", size: 5, color: BRAND.tealLight, delay: "0.5s" },
           { top: "18%", left: "85%", size: 4, color: "#fbbf24", delay: "2.5s" },
-          { top: "65%", left: "88%", size: 6, color: "#21D0B3", delay: "1.8s" },
+          { top: "65%", left: "88%", size: 6, color: BRAND.teal, delay: "1.8s" },
         ].map((p, i) => (
           <span key={i} className="ob-particle"
             style={{
@@ -863,8 +864,8 @@ export default function OnboardingPage() {
           <div className="min-w-0">
             <div className="inline-flex items-center gap-2"
               style={{ background: "rgba(33,208,179,0.12)", border: "1px solid rgba(33,208,179,0.28)", borderRadius: 99, padding: "4px 12px" }}>
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#21D0B3", boxShadow: "0 0 10px #21D0B3", animation: "pulse 2s infinite" }} />
-              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#21D0B3" }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: BRAND.teal, boxShadow: "0 0 10px #21D0B3", animation: "pulse 2s infinite" }} />
+              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: BRAND.teal }}>
                 {t("Inicio guiado")}
               </span>
               {estMinutes > 0 && (
@@ -875,7 +876,7 @@ export default function OnboardingPage() {
                 </span>
               )}
             </div>
-            <h1 className="mt-3 text-3xl md:text-4xl font-extrabold tracking-tight" style={{ color: "#f1f5f9", letterSpacing: "-0.02em" }}>
+            <h1 className="mt-3 text-3xl md:text-4xl font-extrabold tracking-tight" style={{ color: SURFACE.borderMuted, letterSpacing: "-0.02em" }}>
               {state.step === 0
                 ? <>{t("Bienvenido a")} <span className="ob-shimmer-text">Seven Arena</span></>
                 : state.step === 1 ? t("Contanos qué hacés")
@@ -916,7 +917,7 @@ export default function OnboardingPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 ob-stagger">
               {[
                 { icon: "zap", title: "3 minutos",        text: "Lo que dura este recorrido — adaptado a vos.",       accent: "#fbbf24", bg: "linear-gradient(135deg, #fff4d6 0%, #ffffff 70%)" },
-                { icon: "target", title: "Personalizado",    text: "Las recomendaciones cambian según tu rol y objetivos.", accent: "#21D0B3", bg: "linear-gradient(135deg, #f0fdfb 0%, #ffffff 70%)" },
+                { icon: "target", title: "Personalizado",    text: "Las recomendaciones cambian según tu rol y objetivos.", accent: BRAND.teal, bg: "linear-gradient(135deg, #f0fdfb 0%, #ffffff 70%)" },
                 { icon: "save", title: "Progreso guardado",text: "Cerrás y volvés cuando quieras — todo queda registrado.", accent: "#7c5ec4", bg: "linear-gradient(135deg, #f4f0fb 0%, #ffffff 70%)" },
               ].map((b) => (
                 <div key={b.title} className="ob-tilt rounded-2xl p-4 relative overflow-hidden"
@@ -926,7 +927,7 @@ export default function OnboardingPage() {
                     background: `radial-gradient(circle, ${b.accent}30 0%, transparent 65%)`, pointerEvents: "none",
                   }} />
                   <span className="relative inline-flex"><Icon name={b.icon as IconName} size={30} /></span>
-                  <p className="text-sm font-bold mt-2 relative" style={{ color: "#0f172a" }}>{t(b.title)}</p>
+                  <p className="text-sm font-bold mt-2 relative" style={{ color: SURFACE.text }}>{t(b.title)}</p>
                   <p className="text-xs mt-1 relative" style={{ color: "var(--text-muted)" }}>{t(b.text)}</p>
                 </div>
               ))}
@@ -947,8 +948,8 @@ export default function OnboardingPage() {
                 onChange={(e) => setState((s) => ({ ...s, name: e.target.value }))}
                 style={{
                   marginTop: 6, width: "100%", padding: "10px 14px",
-                  borderRadius: 10, border: "1px solid #cbd5e1", background: "#fff",
-                  fontSize: 14, color: "#0f172a", outline: "none",
+                  borderRadius: 10, border: "1px solid #cbd5e1", background: SURFACE.card,
+                  fontSize: 14, color: SURFACE.text, outline: "none",
                 }}
               />
             </div>
@@ -996,14 +997,14 @@ export default function OnboardingPage() {
             {role && (
               <div className="flex items-center gap-3">
                 <div className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
-                  style={{ background: role.iconBg, color: "#fff" }}>
+                  style={{ background: role.iconBg, color: SURFACE.card }}>
                   {role.icon}
                 </div>
                 <div>
                   <p className="text-[11px] font-bold uppercase tracking-[0.14em]" style={{ color: role.color }}>
                     {t("Tu rol")}
                   </p>
-                  <p className="text-sm font-bold" style={{ color: "#0f172a" }}>{t(role.label)}</p>
+                  <p className="text-sm font-bold" style={{ color: SURFACE.text }}>{t(role.label)}</p>
                 </div>
                 <button type="button" onClick={prev}
                   className="text-xs underline ml-auto"
@@ -1065,7 +1066,7 @@ export default function OnboardingPage() {
                 border: "1px solid rgba(33,208,179,0.25)",
               }}>
               <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-bold" style={{ color: "#0f172a" }}>
+                <p className="text-sm font-bold" style={{ color: SURFACE.text }}>
                   {t("Tu progreso")}
                 </p>
                 <span className="text-[13px] font-bold tabular-nums"
@@ -1073,7 +1074,7 @@ export default function OnboardingPage() {
                   {progressTasks} / {relevantTasks.length}
                 </span>
               </div>
-              <div style={{ width: "100%", height: 8, background: "#e2e8f0", borderRadius: 999, overflow: "hidden" }}>
+              <div style={{ width: "100%", height: 8, background: SURFACE.border, borderRadius: 999, overflow: "hidden" }}>
                 <div
                   style={{
                     width: `${relevantTasks.length > 0 ? (progressTasks / relevantTasks.length) * 100 : 0}%`,
@@ -1131,7 +1132,7 @@ export default function OnboardingPage() {
                       border: "1px solid #e2e8f0",
                     }}>
                     <span className="inline-flex flex-shrink-0" style={{ color: "var(--text-muted)" }}><Icon name={tip.icon} size={22} /></span>
-                    <p className="text-[12.5px] mt-2 leading-relaxed" style={{ color: "#334155" }}>
+                    <p className="text-[12.5px] mt-2 leading-relaxed" style={{ color: SURFACE.textStrong }}>
                       {t(tip.text)}
                     </p>
                   </div>
@@ -1149,7 +1150,7 @@ export default function OnboardingPage() {
                   const inner = (
                     <div className="rounded-2xl p-4 transition-all flex items-start gap-3"
                       style={{
-                        background: "#ffffff",
+                        background: SURFACE.card,
                         border: "1px solid #e2e8f0",
                       }}
                       onMouseEnter={(e) => {
@@ -1158,17 +1159,17 @@ export default function OnboardingPage() {
                         (e.currentTarget as HTMLElement).style.boxShadow = "0 8px 20px rgba(15,23,42,0.08)";
                       }}
                       onMouseLeave={(e) => {
-                        (e.currentTarget as HTMLElement).style.borderColor = "#e2e8f0";
+                        (e.currentTarget as HTMLElement).style.borderColor = SURFACE.border;
                         (e.currentTarget as HTMLElement).style.transform = "none";
                         (e.currentTarget as HTMLElement).style.boxShadow = "none";
                       }}
                     >
                       <span className="inline-flex flex-shrink-0" style={{ color: "var(--text-muted)" }}><Icon name={r.icon as IconName} size={22} /></span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold" style={{ color: "#0f172a" }}>{t(r.title)}</p>
+                        <p className="text-sm font-bold" style={{ color: SURFACE.text }}>{t(r.title)}</p>
                         <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{t(r.desc)}</p>
                       </div>
-                      <ArrowRightIcon size={14} color="#94a3b8" strokeWidth={2.2} style={{ flexShrink: 0, marginTop: 4 }} />
+                      <ArrowRightIcon size={14} color={SURFACE.textFaint} strokeWidth={2.2} style={{ flexShrink: 0, marginTop: 4 }} />
                     </div>
                   );
                   return isExternal ? (
@@ -1199,11 +1200,11 @@ export default function OnboardingPage() {
                 background: "linear-gradient(135deg, #34F3C6 0%, #21D0B3 50%, #15B09A 100%)",
                 boxShadow: "0 12px 36px rgba(33,208,179,0.4), inset 0 2px 0 rgba(255,255,255,0.3)",
               }}>
-              <CheckIcon size={48} color="#fff" strokeWidth={2.5} />
+              <CheckIcon size={48} color={SURFACE.card} strokeWidth={2.5} />
             </div>
 
             <div>
-              <h2 className="text-2xl font-extrabold tracking-tight" style={{ color: "#0f172a" }}>
+              <h2 className="text-2xl font-extrabold tracking-tight" style={{ color: SURFACE.text }}>
                 {state.name ? `${t("¡Listo,")} ${state.name}!` : t("¡Estás listo!")}
               </h2>
               <p className="mt-2 text-sm max-w-md mx-auto" style={{ color: "var(--text-muted)" }}>

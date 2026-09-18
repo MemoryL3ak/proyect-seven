@@ -58,7 +58,7 @@ import { claimPortalSession, clearPortalSession, ensurePortalIdentity, getStored
 import { dlog } from "@/lib/native-debug";
 import PortalSessionGuard from "@/components/PortalSessionGuard";
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
-import { BRAND } from "@/lib/design";
+import { BRAND, STATE, SURFACE } from "@/lib/design";
 
 const TripMap = dynamic(() => import("@/components/TripMap"), {
   ssr: false,
@@ -84,14 +84,14 @@ type FlightTrack = {
 };
 
 const FLIGHT_STATUS_ES: Record<string, { label: string; color: string }> = {
-  scheduled:   { label: "Programado",  color: "#3b82f6" },
+  scheduled:   { label: "Programado",  color: STATE.info },
   boarding:    { label: "Embarcando",  color: "#8b5cf6" },
-  active:      { label: "En vuelo",    color: "#10b981" },
-  approaching: { label: "Aproximando", color: "#10b981" },
-  delayed:     { label: "Retrasado",   color: "#f59e0b" },
+  active:      { label: "En vuelo",    color: STATE.success },
+  approaching: { label: "Aproximando", color: STATE.success },
+  delayed:     { label: "Retrasado",   color: STATE.warning },
   landed:      { label: "Aterrizó",    color: BRAND.teal },
-  cancelled:   { label: "Cancelado",   color: "#ef4444" },
-  diverted:    { label: "Desviado",    color: "#f59e0b" },
+  cancelled:   { label: "Cancelado",   color: STATE.danger },
+  diverted:    { label: "Desviado",    color: STATE.warning },
   incident:    { label: "Incidente",   color: "#f97316" },
 };
 
@@ -1393,14 +1393,14 @@ export default function DriverPortalPage() {
       ? new Date(blocker.scheduledAt).toLocaleDateString("es-CL", { day: "2-digit", month: "2-digit" })
       : null;
     return (
-      <div style={{ padding:10,borderRadius:12,background:"#f8fafc",border:"1px solid #e2e8f0",textAlign:"center" }}>
-        <p style={{ fontSize:11,color:"#94a3b8",margin:0 }}>
+      <div style={{ padding:10,borderRadius:12,background:SURFACE.bg,border:"1px solid #e2e8f0",textAlign:"center" }}>
+        <p style={{ fontSize:11,color:SURFACE.textFaint,margin:0 }}>
           {kind === "servicio"
             ? t("Finaliza el servicio en curso para iniciar este")
             : t("Finaliza el viaje en curso para iniciar este")}
         </p>
         {label && (
-          <p style={{ fontSize:11,color:"#64748b",margin:"4px 0 0",fontWeight:700 }}>
+          <p style={{ fontSize:11,color:SURFACE.textMuted,margin:"4px 0 0",fontWeight:700 }}>
             {label}{when ? ` · ${when}` : ""}
           </p>
         )}
@@ -1410,7 +1410,7 @@ export default function DriverPortalPage() {
             setStatusFilter("en_curso");
             if (trackingTripId) setSelectedTripId(trackingTripId);
           }}
-          style={{ marginTop:8,padding:"6px 10px",borderRadius:8,border:"1px solid #e2e8f0",background:"#fff",color:"#475569",fontSize:11,fontWeight:700,cursor:"pointer" }}
+          style={{ marginTop:8,padding:"6px 10px",borderRadius:8,border:"1px solid #e2e8f0",background:SURFACE.card,color:SURFACE.textSecondary,fontSize:11,fontWeight:700,cursor:"pointer" }}
         >
           {t("Ver el viaje en curso")}
         </button>
@@ -1445,7 +1445,7 @@ export default function DriverPortalPage() {
           <button
             type="button"
             onClick={() => nativeSend("device.open-settings")}
-            style={{ marginTop:8,padding:"6px 12px",borderRadius:8,border:"1px solid #fbbf24",background:"#fff",color:"#92400e",fontSize:11,fontWeight:800,cursor:"pointer" }}
+            style={{ marginTop:8,padding:"6px 12px",borderRadius:8,border:"1px solid #fbbf24",background:SURFACE.card,color:"#92400e",fontSize:11,fontWeight:800,cursor:"pointer" }}
           >
             {t("Abrir Ajustes")}
           </button>
@@ -1589,7 +1589,7 @@ export default function DriverPortalPage() {
                 <span style={{ width: 7, height: 7, borderRadius: "50%", background: BRAND.teal, boxShadow: `0 0 10px ${BRAND.teal}`, display: "inline-block", animation: "pc-pulse 2s ease-in-out infinite" }} />
                 <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: BRAND.teal }}>{t("Portal de Conductores")}</span>
               </div>
-              <h1 style={{ fontSize: "clamp(28px,3vw,44px)", fontWeight: 800, lineHeight: 1.1, color: "#f8fafc", letterSpacing: "-0.02em", margin: 0 }}>
+              <h1 style={{ fontSize: "clamp(28px,3vw,44px)", fontWeight: 800, lineHeight: 1.1, color: SURFACE.bg, letterSpacing: "-0.02em", margin: 0 }}>
                 {t("Gestiona")}<br />
                 <span style={{ background: `linear-gradient(90deg,${BRAND.teal} 0%,${BRAND.tealLight} 40%,${BRAND.teal} 80%)`, backgroundSize: "200% auto", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", animation: "pc-shimmer 4s linear infinite" }}>{t("tus viajes")}</span>
               </h1>
@@ -1652,7 +1652,7 @@ export default function DriverPortalPage() {
                     style={{
                       width: "100%", marginTop: 10, padding: "12px", borderRadius: 14,
                       border: "1px solid rgba(255,255,255,0.18)", background: "rgba(255,255,255,0.06)",
-                      color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer",
+                      color: SURFACE.card, fontSize: 13, fontWeight: 700, cursor: "pointer",
                     }}
                   >
                     {wrongPortal === "athlete"
@@ -1800,7 +1800,7 @@ export default function DriverPortalPage() {
                         {enCurso ? "En curso" : "En ruta al punto de encuentro"}
                       </span>
                     </span>
-                    <span style={{ display:"block",fontSize:14,fontWeight:700,color:"#fff",margin:"4px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                    <span style={{ display:"block",fontSize:14,fontWeight:700,color:SURFACE.card,margin:"4px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
                       {isDisposicion(enViaje) ? "Disposición 12h" : `${enViaje.origin?.split(",")[0] || "—"} → ${enViaje.destination?.split(",")[0] || "—"}`}
                     </span>
                   </span>
@@ -1829,7 +1829,7 @@ export default function DriverPortalPage() {
                   <h1 className="dc-profile-name">{driverProfile.fullName || t("Conductor")}</h1>
                   <div className="dc-profile-badges" style={{ display:"flex",flexWrap:"wrap",gap:"6px" }}>
                     {driverProfile.rut && (
-                      <span style={{ fontSize:"11px",fontWeight:600,padding:"4px 12px",borderRadius:"20px",background:"#f1f5f9",color:"#334155",border:"1px solid #dde3ed" }}>
+                      <span style={{ fontSize:"11px",fontWeight:600,padding:"4px 12px",borderRadius:"20px",background:SURFACE.borderMuted,color:SURFACE.textStrong,border:"1px solid #dde3ed" }}>
                         RUT: {driverProfile.rut}
                       </span>
                     )}
@@ -1857,7 +1857,7 @@ export default function DriverPortalPage() {
                   </div>
                   <span style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:BRAND.teal }}>{t("Correo")}</span>
                 </div>
-                <p style={{ fontSize:"15px",fontWeight:700,color:"#0f172a",margin:0,wordBreak:"break-all" }}>{driverProfile.email || "-"}</p>
+                <p style={{ fontSize:"15px",fontWeight:700,color:SURFACE.text,margin:0,wordBreak:"break-all" }}>{driverProfile.email || "-"}</p>
               </div>
 
               {/* Vehículo */}
@@ -1880,14 +1880,14 @@ export default function DriverPortalPage() {
                   const type = veh?.type || metaType;
                   const brand = veh?.brand || metaBrand;
                   const model = veh?.model || metaModel;
-                  if (!plate && !brand && !model) return <p style={{ fontSize:"14px",color:"#94a3b8",margin:0,fontStyle:"italic" }}>{t("Sin vehículo asignado")}</p>;
+                  if (!plate && !brand && !model) return <p style={{ fontSize:"14px",color:SURFACE.textFaint,margin:0,fontStyle:"italic" }}>{t("Sin vehículo asignado")}</p>;
                   return (
                     <>
-                      <p style={{ fontSize:"15px",fontWeight:700,color:"#0f172a",margin:"0 0 8px" }}>{plate?.toUpperCase() || "-"}</p>
+                      <p style={{ fontSize:"15px",fontWeight:700,color:SURFACE.text,margin:"0 0 8px" }}>{plate?.toUpperCase() || "-"}</p>
                       <div style={{ display:"flex",flexWrap:"wrap",gap:"6px" }}>
                         {type && <span style={{ fontSize:"11px",padding:"3px 9px",borderRadius:"8px",background:"#f0fdf8",color:BRAND.tealInk,border:"1px solid rgba(33,208,179,0.2)",fontWeight:600 }}>{type.toUpperCase()}</span>}
-                        {brand && <span style={{ fontSize:"11px",padding:"3px 9px",borderRadius:"8px",background:"#f1f5f9",color:"#475569",border:"1px solid #e2e8f0",fontWeight:500 }}>{brand.toUpperCase()}</span>}
-                        {model && <span style={{ fontSize:"11px",padding:"3px 9px",borderRadius:"8px",background:"#f1f5f9",color:"#475569",border:"1px solid #e2e8f0",fontWeight:500 }}>{model.toUpperCase()}</span>}
+                        {brand && <span style={{ fontSize:"11px",padding:"3px 9px",borderRadius:"8px",background:SURFACE.borderMuted,color:SURFACE.textSecondary,border:"1px solid #e2e8f0",fontWeight:500 }}>{brand.toUpperCase()}</span>}
+                        {model && <span style={{ fontSize:"11px",padding:"3px 9px",borderRadius:"8px",background:SURFACE.borderMuted,color:SURFACE.textSecondary,border:"1px solid #e2e8f0",fontWeight:500 }}>{model.toUpperCase()}</span>}
                       </div>
                     </>
                   );
@@ -1905,11 +1905,11 @@ export default function DriverPortalPage() {
                 </div>
                 {(() => {
                   const prov = driverProfile.providerId ? providers[driverProfile.providerId] : null;
-                  if (!prov) return <p style={{ fontSize:"14px",color:"#94a3b8",margin:0,fontStyle:"italic" }}>{t("Sin proveedor asignado")}</p>;
+                  if (!prov) return <p style={{ fontSize:"14px",color:SURFACE.textFaint,margin:0,fontStyle:"italic" }}>{t("Sin proveedor asignado")}</p>;
                   return (
                     <>
-                      <p style={{ fontSize:"15px",fontWeight:700,color:"#0f172a",margin:"0 0 4px" }}>{prov.name}</p>
-                      {prov.rut && <p style={{ fontSize:"12px",color:"#64748b",margin:0 }}>RUT: {prov.rut}</p>}
+                      <p style={{ fontSize:"15px",fontWeight:700,color:SURFACE.text,margin:"0 0 4px" }}>{prov.name}</p>
+                      {prov.rut && <p style={{ fontSize:"12px",color:SURFACE.textMuted,margin:0 }}>RUT: {prov.rut}</p>}
                     </>
                   );
                 })()}
@@ -1944,8 +1944,8 @@ export default function DriverPortalPage() {
               <div style={{ display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"space-between",gap:"12px",marginBottom:"20px",position:"relative" }}>
                 <div>
                   <div style={{ display:"flex",alignItems:"center",gap:10,flexWrap:"wrap" }}>
-                    <h2 style={{ fontSize:"18px",fontWeight:800,color:"#0f172a",margin:0,letterSpacing:"-0.01em" }}>
-                      {t("Viajes")} <span style={{ color:"#64748b",fontWeight:600 }}>({filteredTrips.length})</span>
+                    <h2 style={{ fontSize:"18px",fontWeight:800,color:SURFACE.text,margin:0,letterSpacing:"-0.01em" }}>
+                      {t("Viajes")} <span style={{ color:SURFACE.textMuted,fontWeight:600 }}>({filteredTrips.length})</span>
                     </h2>
                     {trackingTripId && (
                       <div style={{ display:"inline-flex",alignItems:"center",gap:5,padding:"3px 10px",borderRadius:"20px",background:"rgba(33,208,179,0.1)",border:"1px solid rgba(33,208,179,0.3)" }}>
@@ -1956,14 +1956,14 @@ export default function DriverPortalPage() {
                   </div>
                 </div>
                 <div className="dc-trips-filters" style={{ display:"flex",flexWrap:"wrap",gap:"8px",alignItems:"center" }}>
-                  <label style={{ display:"flex",alignItems:"center",gap:"8px",fontSize:"13px",color:"#64748b" }}>
+                  <label style={{ display:"flex",alignItems:"center",gap:"8px",fontSize:"13px",color:SURFACE.textMuted }}>
                     {t("Tipo")}
                     <select className="input h-9 min-w-[140px] pr-10 !text-[12px] !leading-tight !pt-[0.4rem] !pb-[0.2rem]" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
                       <option value="all">{t("Todos")}</option>
                       {typeOptions.map((v) => <option key={v} value={v}>{v}</option>)}
                     </select>
                   </label>
-                  <label style={{ display:"flex",alignItems:"center",gap:"8px",fontSize:"13px",color:"#64748b" }}>
+                  <label style={{ display:"flex",alignItems:"center",gap:"8px",fontSize:"13px",color:SURFACE.textMuted }}>
                     {t("Destino")}
                     <input className="input h-9" value={destinationFilter} onChange={(e) => setDestinationFilter(e.target.value)} placeholder={t("Filtrar por destino")} />
                   </label>
@@ -1973,7 +1973,7 @@ export default function DriverPortalPage() {
               {renderBackgroundLocationNotice()}
 
               {/* Status filter tabs */}
-              <div style={{ display:"flex",gap:4,marginBottom:12,background:"#f1f5f9",borderRadius:10,padding:3 }}>
+              <div style={{ display:"flex",gap:4,marginBottom:12,background:SURFACE.borderMuted,borderRadius:10,padding:3 }}>
                 {([
                   { key: "en_curso", label: "En curso", count: trips.filter((t) => t.status === "EN_ROUTE" || t.status === "PICKED_UP").length, unread: 0 },
                   { key: "hoy", label: "Hoy", count: trips.filter((t) => ["SCHEDULED","EN_ROUTE","PICKED_UP"].includes(t.status ?? "") && ((t.scheduledAt || t.startedAt || "").slice(0,10) === todayKey || !(t.scheduledAt || t.startedAt))).length, unread: trips.filter((t) => t.status === "SCHEDULED" && !seenTripIds.has(t.id) && ((t.scheduledAt || t.startedAt || "").slice(0,10) === todayKey || !(t.scheduledAt || t.startedAt))).length },
@@ -1982,9 +1982,9 @@ export default function DriverPortalPage() {
                   <button key={key} type="button" onClick={() => setStatusFilter(key)}
                     style={{
                       flex:1,padding:"7px 8px",borderRadius:8,border:"none",
-                      background: statusFilter === key ? "#fff" : "transparent",
+                      background: statusFilter === key ? SURFACE.card : "transparent",
                       boxShadow: statusFilter === key ? "0 1px 4px rgba(0,0,0,0.1)" : "none",
-                      color: statusFilter === key ? "#0f172a" : "#94a3b8",
+                      color: statusFilter === key ? SURFACE.text : SURFACE.textFaint,
                       fontSize:12,fontWeight: statusFilter === key ? 700 : 500,cursor:"pointer",transition:"all .15s",
                       display:"flex",alignItems:"center",justifyContent:"center",gap:4,
                     }}>
@@ -1995,7 +1995,7 @@ export default function DriverPortalPage() {
                       color: statusFilter === key ? BRAND.tealInk : "#b0b8c4",
                     }}>{count}</span>
                     {unread > 0 && (
-                      <span style={{ fontSize:10,fontWeight:800,padding:"2px 6px",borderRadius:"99px",background:"#ef4444",color:"#fff",minWidth:16,textAlign:"center" }}>{unread}</span>
+                      <span style={{ fontSize:10,fontWeight:800,padding:"2px 6px",borderRadius:"99px",background:STATE.danger,color:SURFACE.card,minWidth:16,textAlign:"center" }}>{unread}</span>
                     )}
                   </button>
                 ))}
@@ -2003,7 +2003,7 @@ export default function DriverPortalPage() {
 
               {filteredTrips.length === 0 ? (
                 <div style={{ textAlign:"center",padding:"32px 20px" }}>
-                  <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>{t("No hay viajes asignados aún.")}</p>
+                  <p style={{ fontSize:13,color:SURFACE.textFaint,margin:0 }}>{t("No hay viajes asignados aún.")}</p>
                 </div>
               ) : (
                 <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
@@ -2021,7 +2021,7 @@ export default function DriverPortalPage() {
                       <div key={trip.id} style={{
                         borderRadius:14,
                         border: isSelected ? "1px solid rgba(33,208,179,0.4)" : isNew ? "1px solid rgba(59,130,246,0.3)" : "1px solid #f1f5f9",
-                        background: isNew ? "rgba(59,130,246,0.03)" : "#fff",
+                        background: isNew ? "rgba(59,130,246,0.03)" : SURFACE.card,
                         overflow:"hidden",transition:"all .15s",
                       }}>
 
@@ -2032,30 +2032,30 @@ export default function DriverPortalPage() {
                           <div style={{ position:"relative",flexShrink:0 }}>
                             <span style={{
                               width:10,height:10,borderRadius:"50%",display:"block",
-                              background: isActive ? "#7c3aed" : isCompleted ? BRAND.teal : isNew ? "#3b82f6" : "#0ea5e9",
+                              background: isActive ? "#7c3aed" : isCompleted ? BRAND.teal : isNew ? STATE.info : "#0ea5e9",
                               boxShadow: isActive ? "0 0 8px rgba(124,58,237,0.4)" : isNew ? "0 0 8px rgba(59,130,246,0.4)" : "none",
                             }} />
-                            {isNew && <span style={{ position:"absolute",top:"-6px",right:"-8px",width:6,height:6,borderRadius:"50%",background:"#ef4444",border:"1px solid #fff" }} />}
+                            {isNew && <span style={{ position:"absolute",top:"-6px",right:"-8px",width:6,height:6,borderRadius:"50%",background:STATE.danger,border:"1px solid #fff" }} />}
                           </div>
                           {/* Route summary */}
                           <div style={{ flex:1,minWidth:0 }}>
                             <div style={{ display:"flex",alignItems:"center",gap:6 }}>
-                              <p style={{ fontSize:13,fontWeight: isNew ? 800 : 600,color: isNew ? "#1e40af" : "#0f172a",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                              <p style={{ fontSize:13,fontWeight: isNew ? 800 : 600,color: isNew ? "#1e40af" : SURFACE.text,margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
                                 {isDisposicion(trip)
                                   ? "Disposición 12h"
                                   : `${trip.origin?.split(",")[0] || "—"} → ${trip.destination?.split(",")[0] || "—"}`}
                               </p>
                               {isNew && (
-                                <span style={{ fontSize:10,fontWeight:800,padding:"2px 6px",borderRadius:"99px",background:"#3b82f6",color:"#fff",flexShrink:0,letterSpacing:"0.05em" }}>NUEVO</span>
+                                <span style={{ fontSize:10,fontWeight:800,padding:"2px 6px",borderRadius:"99px",background:STATE.info,color:SURFACE.card,flexShrink:0,letterSpacing:"0.05em" }}>NUEVO</span>
                               )}
                             </div>
-                            <p style={{ fontSize:11,color: isNew ? "#3b82f6" : "#94a3b8",margin:"2px 0 0",fontWeight: isNew ? 600 : 400 }}>
+                            <p style={{ fontSize:11,color: isNew ? STATE.info : SURFACE.textFaint,margin:"2px 0 0",fontWeight: isNew ? 600 : 400 }}>
                               {trip.scheduledAt ? formatDate(trip.scheduledAt) : "—"} · {statusLabel[status] || status}
                               {passengerCount > 0 ? ` · ${passengerCount} pax` : ""}
                             </p>
                           </div>
                           {/* Expand arrow */}
-                          <ChevronDownIcon size={14} color="#94a3b8" strokeWidth={2} style={{ flexShrink:0,transition:"transform .2s",transform:isSelected?"rotate(180deg)":"rotate(0)" }} />
+                          <ChevronDownIcon size={14} color={SURFACE.textFaint} strokeWidth={2} style={{ flexShrink:0,transition:"transform .2s",transform:isSelected?"rotate(180deg)":"rotate(0)" }} />
                         </button>
 
                         {/* ── Expanded detail ── */}
@@ -2065,10 +2065,10 @@ export default function DriverPortalPage() {
                               /* Disposición 12h: simplified header, no map/route */
                               <div style={{ padding:"12px 14px",borderRadius:12,background:"linear-gradient(135deg,rgba(99,102,241,0.06),rgba(33,208,179,0.06))",border:"1px solid rgba(99,102,241,0.15)",marginBottom:10 }}>
                                 <p style={{ fontSize:11,fontWeight:700,color:"#6366f1",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Servicio a disposición — 12 horas</p>
-                                <p style={{ fontSize:12,color:"#64748b",margin:"4px 0 0" }}>
+                                <p style={{ fontSize:12,color:SURFACE.textMuted,margin:"4px 0 0" }}>
                                   {trip.scheduledAt ? formatDate(trip.scheduledAt) : "Sin fecha programada"}
                                 </p>
-                                {trip.notes && <p style={{ fontSize:12,color:"#334155",margin:"6px 0 0",lineHeight:1.4 }}>{trip.notes}</p>}
+                                {trip.notes && <p style={{ fontSize:12,color:SURFACE.textStrong,margin:"6px 0 0",lineHeight:1.4 }}>{trip.notes}</p>}
                               </div>
                             ) : (
                               <>
@@ -2088,7 +2088,7 @@ export default function DriverPortalPage() {
                                     href={target.waze}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    style={{ flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"10px 0",borderRadius:10,border:"1px solid #e2e8f0",background:"#fff",textDecoration:"none",fontSize:12,fontWeight:700,color:"#33ccff" }}
+                                    style={{ flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"10px 0",borderRadius:10,border:"1px solid #e2e8f0",background:SURFACE.card,textDecoration:"none",fontSize:12,fontWeight:700,color:"#33ccff" }}
                                   >
                                     <img src="https://www.waze.com/favicon.ico" alt="Waze" width="20" height="20" style={{ borderRadius:4 }} />
                                     Waze
@@ -2097,7 +2097,7 @@ export default function DriverPortalPage() {
                                     href={target.gmaps}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    style={{ flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"10px 0",borderRadius:10,border:"1px solid #e2e8f0",background:"#fff",textDecoration:"none",fontSize:12,fontWeight:700,color:"#4285F4" }}
+                                    style={{ flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"10px 0",borderRadius:10,border:"1px solid #e2e8f0",background:SURFACE.card,textDecoration:"none",fontSize:12,fontWeight:700,color:"#4285F4" }}
                                   >
                                     <img src="https://maps.google.com/favicon.ico" alt="Google Maps" width="20" height="20" style={{ borderRadius:4 }} />
                                     Google Maps
@@ -2111,16 +2111,16 @@ export default function DriverPortalPage() {
                                 <div style={{ display:"flex",flexDirection:"column",alignItems:"center",paddingTop:2 }}>
                                   <span style={{ width:8,height:8,borderRadius:"50%",background:BRAND.teal,flexShrink:0 }} />
                                   <div style={{ width:2,flex:1,background:`linear-gradient(180deg,${BRAND.teal},#ef4444)`,margin:"3px 0",opacity:0.3,borderRadius:1 }} />
-                                  <span style={{ width:8,height:8,borderRadius:"50%",background:"#ef4444",flexShrink:0 }} />
+                                  <span style={{ width:8,height:8,borderRadius:"50%",background:STATE.danger,flexShrink:0 }} />
                                 </div>
                                 <div style={{ flex:1,display:"flex",flexDirection:"column",justifyContent:"space-between",gap:4 }}>
                                   <div>
-                                    <p style={{ fontSize:11,color:"#94a3b8",margin:0 }}>{t("Recogida")}</p>
-                                    <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:"1px 0 0" }}>{trip.origin || "—"}</p>
+                                    <p style={{ fontSize:11,color:SURFACE.textFaint,margin:0 }}>{t("Recogida")}</p>
+                                    <p style={{ fontSize:13,fontWeight:700,color:SURFACE.text,margin:"1px 0 0" }}>{trip.origin || "—"}</p>
                                   </div>
                                   <div>
-                                    <p style={{ fontSize:11,color:"#94a3b8",margin:0 }}>{t("Destino")}</p>
-                                    <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:"1px 0 0" }}>{trip.destination || "—"}</p>
+                                    <p style={{ fontSize:11,color:SURFACE.textFaint,margin:0 }}>{t("Destino")}</p>
+                                    <p style={{ fontSize:13,fontWeight:700,color:SURFACE.text,margin:"1px 0 0" }}>{trip.destination || "—"}</p>
                                   </div>
                                 </div>
                               </div>
@@ -2130,7 +2130,7 @@ export default function DriverPortalPage() {
                             {/* Info chips */}
                             <div style={{ display:"flex",flexWrap:"wrap",gap:4,marginBottom:10 }}>
                               {tripVehicle?.plate && (
-                                <span style={{ fontSize:10,fontWeight:600,padding:"3px 8px",borderRadius:6,background:"#f8fafc",border:"1px solid #e2e8f0",color:"#334155" }}>
+                                <span style={{ fontSize:10,fontWeight:600,padding:"3px 8px",borderRadius:6,background:SURFACE.bg,border:"1px solid #e2e8f0",color:SURFACE.textStrong }}>
                                   {tripVehicle.plate.toUpperCase()}
                                 </span>
                               )}
@@ -2140,7 +2140,7 @@ export default function DriverPortalPage() {
                                 </span>
                               )}
                               {resolveDelegations(trip) !== "-" && (
-                                <span style={{ fontSize:10,fontWeight:600,padding:"3px 8px",borderRadius:6,background:"#f8fafc",border:"1px solid #e2e8f0",color:"#334155" }}>
+                                <span style={{ fontSize:10,fontWeight:600,padding:"3px 8px",borderRadius:6,background:SURFACE.bg,border:"1px solid #e2e8f0",color:SURFACE.textStrong }}>
                                   {resolveDelegations(trip)}
                                 </span>
                               )}
@@ -2149,7 +2149,7 @@ export default function DriverPortalPage() {
                             {/* Observación de la solicitud — visible y destacada para el conductor */}
                             {!isDisposicion(trip) && trip.notes && (
                               <div style={{ padding:"10px 12px",borderRadius:10,background:"#fffbeb",border:"1px solid #fde68a",borderLeft:"4px solid #f59e0b",marginBottom:10 }}>
-                                <p style={{ fontSize:10,fontWeight:800,color:"#b45309",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}><AlertIcon size={10} className="inline mr-1" />Observación</p>
+                                <p style={{ fontSize:10,fontWeight:800,color:STATE.warningText,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}><AlertIcon size={10} className="inline mr-1" />Observación</p>
                                 <p style={{ fontSize:12.5,fontWeight:600,color:"#78350f",margin:"3px 0 0",lineHeight:1.4 }}>{trip.notes.replace(/^\[Portal\]\s*/, "")}</p>
                               </div>
                             )}
@@ -2159,7 +2159,7 @@ export default function DriverPortalPage() {
                               <div style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:10,borderRadius:12,background:"rgba(33,208,179,0.06)",border:"1px solid rgba(33,208,179,0.15)" }}>
                                 <CheckIcon size={14} color={BRAND.teal} strokeWidth={2.5} />
                                 <span style={{ fontSize:12,fontWeight:700,color:BRAND.teal }}>{t("Completado")}</span>
-                                {trip.driverRating && <span style={{ display:"inline-flex",gap:1,color:"#f59e0b" }}>{Array.from({ length: trip.driverRating }, (_, k) => <StarIcon key={k} size={12} />)}</span>}
+                                {trip.driverRating && <span style={{ display:"inline-flex",gap:1,color:STATE.warning }}>{Array.from({ length: trip.driverRating }, (_, k) => <StarIcon key={k} size={12} />)}</span>}
                               </div>
                             ) : isDisposicion(trip) ? (
                               /* ── Disposición 12h: 2-step flow ── */
@@ -2168,7 +2168,7 @@ export default function DriverPortalPage() {
                                   renderBlockedNotice("servicio")
                                 ) : (
                                   <button type="button" onClick={() => updateTrip(trip.id, "PICKED_UP")} disabled={loading}
-                                    style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:"linear-gradient(135deg,#818cf8,#6366f1)",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(99,102,241,0.3)",opacity:loading?0.7:1 }}>
+                                    style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:"linear-gradient(135deg,#818cf8,#6366f1)",color:SURFACE.card,fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(99,102,241,0.3)",opacity:loading?0.7:1 }}>
                                     {t("Iniciar servicio")}
                                   </button>
                                 )
@@ -2194,7 +2194,7 @@ export default function DriverPortalPage() {
                                   {isPortalRequest(trip) ? t("Pasajero recogido — En curso") : t("Pasajero recogido")}
                                 </button>
                                 <button type="button" onClick={() => updateTrip(trip.id, "SCHEDULED")} disabled={loading}
-                                  style={{ padding:8,borderRadius:8,border:"1px solid #e2e8f0",background:"#f8fafc",color:"#64748b",fontSize:11,fontWeight:600,cursor:"pointer" }}>
+                                  style={{ padding:8,borderRadius:8,border:"1px solid #e2e8f0",background:SURFACE.bg,color:SURFACE.textMuted,fontSize:11,fontWeight:600,cursor:"pointer" }}>
                                   <ChevronLeftIcon size={12} className="inline mr-1" />{t("Volver a Programado")}
                                 </button>
                               </div>
@@ -2260,57 +2260,57 @@ export default function DriverPortalPage() {
                 <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
                   {/* Summary stats */}
                   <div style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8 }}>
-                    <div style={{ padding:"12px 8px",borderRadius:12,background:"#fff",border:"1px solid #e2e8f0",textAlign:"center" }}>
-                      <p style={{ fontSize:9,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Viajes</p>
-                      <p style={{ fontSize:22,fontWeight:800,color:"#0f172a",margin:"4px 0 0" }}>{completed.length}</p>
+                    <div style={{ padding:"12px 8px",borderRadius:12,background:SURFACE.card,border:"1px solid #e2e8f0",textAlign:"center" }}>
+                      <p style={{ fontSize:9,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Viajes</p>
+                      <p style={{ fontSize:22,fontWeight:800,color:SURFACE.text,margin:"4px 0 0" }}>{completed.length}</p>
                     </div>
-                    <div style={{ padding:"12px 8px",borderRadius:12,background:"#fff",border:"1px solid #e2e8f0",textAlign:"center" }}>
-                      <p style={{ fontSize:9,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Total</p>
+                    <div style={{ padding:"12px 8px",borderRadius:12,background:SURFACE.card,border:"1px solid #e2e8f0",textAlign:"center" }}>
+                      <p style={{ fontSize:9,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Total</p>
                       <p style={{ fontSize:22,fontWeight:800,color:BRAND.teal,margin:"4px 0 0" }}>${totalCost.toLocaleString("es-CL")}</p>
                     </div>
-                    <div style={{ padding:"12px 8px",borderRadius:12,background:"#fff",border:"1px solid #e2e8f0",textAlign:"center" }}>
-                      <p style={{ fontSize:9,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Rating</p>
-                      <p style={{ fontSize:22,fontWeight:800,color:"#f59e0b",margin:"4px 0 0" }}>{avgRating ? <>{avgRating} <StarIcon size={18} className="inline" /></> : "—"}</p>
+                    <div style={{ padding:"12px 8px",borderRadius:12,background:SURFACE.card,border:"1px solid #e2e8f0",textAlign:"center" }}>
+                      <p style={{ fontSize:9,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Rating</p>
+                      <p style={{ fontSize:22,fontWeight:800,color:STATE.warning,margin:"4px 0 0" }}>{avgRating ? <>{avgRating} <StarIcon size={18} className="inline" /></> : "—"}</p>
                     </div>
                   </div>
 
                   {/* Filter toggle button */}
                   <button type="button" onClick={() => setShowReportFilters(!showReportFilters)}
                     style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"8px",borderRadius:10,
-                      background: hasActiveFilters ? BRAND.teal : "#fff", border:"1px solid #e2e8f0",cursor:"pointer",width:"100%" }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={hasActiveFilters ? "#fff" : "#64748b"} strokeWidth="2" strokeLinecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
-                    <span style={{ fontSize:12,fontWeight:600,color: hasActiveFilters ? "#fff" : "#64748b" }}>
+                      background: hasActiveFilters ? BRAND.teal : SURFACE.card, border:"1px solid #e2e8f0",cursor:"pointer",width:"100%" }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={hasActiveFilters ? SURFACE.card : SURFACE.textMuted} strokeWidth="2" strokeLinecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+                    <span style={{ fontSize:12,fontWeight:600,color: hasActiveFilters ? SURFACE.card : SURFACE.textMuted }}>
                       {showReportFilters ? "Ocultar filtros" : "Filtrar"}
                     </span>
-                    {hasActiveFilters && <span style={{ background:"#fff",color:BRAND.teal,borderRadius:10,padding:"0 6px",fontSize:10,fontWeight:800 }}>{completed.length}/{allCompleted.length}</span>}
+                    {hasActiveFilters && <span style={{ background:SURFACE.card,color:BRAND.teal,borderRadius:10,padding:"0 6px",fontSize:10,fontWeight:800 }}>{completed.length}/{allCompleted.length}</span>}
                   </button>
 
                   {/* Collapsible filters */}
                   {showReportFilters && (
-                    <div style={{ background:"#fff",borderRadius:12,border:"1px solid #e2e8f0",padding:"10px 14px",display:"flex",flexDirection:"column",gap:8 }}>
+                    <div style={{ background:SURFACE.card,borderRadius:12,border:"1px solid #e2e8f0",padding:"10px 14px",display:"flex",flexDirection:"column",gap:8 }}>
                       <div style={{ display:"flex",gap:10,alignItems:"center" }}>
                         <label style={{ display:"flex",alignItems:"center",gap:6,flex:1,minWidth:0 }}>
-                          <span style={{ fontSize:11,fontWeight:700,color:"#64748b",flexShrink:0 }}>Desde</span>
+                          <span style={{ fontSize:11,fontWeight:700,color:SURFACE.textMuted,flexShrink:0 }}>Desde</span>
                           <input type="date" value={reportDateFrom} onChange={(e) => setReportDateFrom(e.target.value)}
-                            style={{ flex:1,minWidth:0,padding:"7px 6px",borderRadius:8,border:"1px solid #e2e8f0",fontSize:12,color:"#0f172a",background:"#f8fafc",boxSizing:"border-box" }} />
+                            style={{ flex:1,minWidth:0,padding:"7px 6px",borderRadius:8,border:"1px solid #e2e8f0",fontSize:12,color:SURFACE.text,background:SURFACE.bg,boxSizing:"border-box" }} />
                         </label>
                         <label style={{ display:"flex",alignItems:"center",gap:6,flex:1,minWidth:0 }}>
-                          <span style={{ fontSize:11,fontWeight:700,color:"#64748b",flexShrink:0 }}>Hasta</span>
+                          <span style={{ fontSize:11,fontWeight:700,color:SURFACE.textMuted,flexShrink:0 }}>Hasta</span>
                           <input type="date" value={reportDateTo} onChange={(e) => setReportDateTo(e.target.value)}
-                            style={{ flex:1,minWidth:0,padding:"7px 6px",borderRadius:8,border:"1px solid #e2e8f0",fontSize:12,color:"#0f172a",background:"#f8fafc",boxSizing:"border-box" }} />
+                            style={{ flex:1,minWidth:0,padding:"7px 6px",borderRadius:8,border:"1px solid #e2e8f0",fontSize:12,color:SURFACE.text,background:SURFACE.bg,boxSizing:"border-box" }} />
                         </label>
                       </div>
                       <label style={{ display:"flex",alignItems:"center",gap:6 }}>
-                        <span style={{ fontSize:11,fontWeight:700,color:"#64748b",flexShrink:0 }}>Tipo</span>
+                        <span style={{ fontSize:11,fontWeight:700,color:SURFACE.textMuted,flexShrink:0 }}>Tipo</span>
                         <select value={reportTypeFilter} onChange={(e) => setReportTypeFilter(e.target.value)}
-                          style={{ flex:1,padding:"7px 10px",borderRadius:8,border:"1px solid #e2e8f0",fontSize:12,color:"#0f172a",background:"#f8fafc",boxSizing:"border-box" }}>
+                          style={{ flex:1,padding:"7px 10px",borderRadius:8,border:"1px solid #e2e8f0",fontSize:12,color:SURFACE.text,background:SURFACE.bg,boxSizing:"border-box" }}>
                           <option value="all">Todos</option>
                           {tripTypes.map((tt) => <option key={tt} value={tt}>{tt}</option>)}
                         </select>
                       </label>
                       {hasActiveFilters && (
                         <button type="button" onClick={() => { setReportDateFrom(""); setReportDateTo(""); setReportTypeFilter("all"); setReportRatingFilter("all"); }}
-                          style={{ fontSize:12,color:"#ef4444",background:"none",border:"none",cursor:"pointer",fontWeight:600,padding:0,alignSelf:"flex-end" }}>
+                          style={{ fontSize:12,color:STATE.danger,background:"none",border:"none",cursor:"pointer",fontWeight:600,padding:0,alignSelf:"flex-end" }}>
                           Limpiar filtros
                         </button>
                       )}
@@ -2318,12 +2318,12 @@ export default function DriverPortalPage() {
                   )}
 
                   {/* Trip list */}
-                  <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+                  <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
                     <div style={{ padding:"12px 14px 8px" }}>
                       <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:BRAND.teal,margin:0 }}>Historial</p>
                     </div>
                     {completed.length === 0 ? (
-                      <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:"20px 14px" }}>Sin viajes completados</p>
+                      <p style={{ fontSize:13,color:SURFACE.textFaint,textAlign:"center",padding:"20px 14px" }}>Sin viajes completados</p>
                     ) : (
                       <div style={{ display:"flex",flexDirection:"column" }}>
                         {completed.map((trip) => {
@@ -2331,27 +2331,27 @@ export default function DriverPortalPage() {
                           return (
                             <button key={trip.id} type="button" onClick={() => openHistoryDetail(trip)}
                               style={{ width:"100%",display:"flex",alignItems:"center",gap:8,padding:"11px 14px",background:"none",border:"none",borderTop:"1px solid #f1f5f9",cursor:"pointer",textAlign:"left",transition:"background .15s" }}
-                              onMouseEnter={(e)=>{(e.currentTarget as HTMLElement).style.background="#f8fafc";}}
+                              onMouseEnter={(e)=>{(e.currentTarget as HTMLElement).style.background=SURFACE.bg;}}
                               onMouseLeave={(e)=>{(e.currentTarget as HTMLElement).style.background="transparent";}}>
                               <span style={{ width:8,height:8,borderRadius:"50%",background:BRAND.teal,flexShrink:0 }} />
                               <div style={{ flex:1,minWidth:0 }}>
-                                <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                                <p style={{ fontSize:12.5,fontWeight:600,color:SURFACE.text,margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
                                   {(trip.origin?.split(",")[0] || "—")} → {(trip.destination?.split(",")[0] || "—")}
                                 </p>
-                                <p style={{ fontSize:11,color:"#94a3b8",margin:"1px 0 0" }}>
+                                <p style={{ fontSize:11,color:SURFACE.textFaint,margin:"1px 0 0" }}>
                                   {completedDate ? new Date(completedDate).toLocaleDateString("es-CL",{ day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit" }) : "—"}
                                 </p>
                               </div>
                               {trip.driverRating && (
                                 <div style={{ display:"flex",alignItems:"center",gap:2,flexShrink:0 }}>
-                                  <StarIcon size={11} color="#F59E0B" strokeWidth={1.5} fill="#FBBF24" />
-                                  <span style={{ fontSize:11,fontWeight:700,color:"#f59e0b" }}>{trip.driverRating}</span>
+                                  <StarIcon size={11} color={STATE.warning} strokeWidth={1.5} fill="#FBBF24" />
+                                  <span style={{ fontSize:11,fontWeight:700,color:STATE.warning }}>{trip.driverRating}</span>
                                 </div>
                               )}
                               {trip.tripCost != null && (
                                 <span style={{ fontSize:11,fontWeight:700,color:BRAND.tealInk,flexShrink:0 }}>{formatCurrencyCLP(trip.tripCost)}</span>
                               )}
-                              <ChevronRightIcon size={14} color="#cbd5e1" strokeWidth={2} style={{ flexShrink:0 }} />
+                              <ChevronRightIcon size={14} color={SURFACE.borderStrong} strokeWidth={2} style={{ flexShrink:0 }} />
                             </button>
                           );
                         })}
@@ -2372,12 +2372,12 @@ export default function DriverPortalPage() {
                 />
 
                 {/* Profile + Photo */}
-                <div style={{ background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",padding:"16px 14px",display:"flex",alignItems:"center",gap:14 }}>
+                <div style={{ background:SURFACE.card,borderRadius:16,border:"1px solid #e2e8f0",padding:"16px 14px",display:"flex",alignItems:"center",gap:14 }}>
                   <div style={{ position:"relative",flexShrink:0 }}>
                     {(driverProfile.photoUrl || (driverProfile.metadata as any)?.photoUrl) ? (
                       <img src={driverProfile.photoUrl || (driverProfile.metadata as any)?.photoUrl} alt="" style={{ width:64,height:64,borderRadius:"50%",objectFit:"cover",border:`3px solid ${BRAND.teal}` }} />
                     ) : (
-                      <div style={{ width:64,height:64,borderRadius:"50%",background:`linear-gradient(135deg,${BRAND.teal},${BRAND.navyLight})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:900,color:"#fff",border:`3px solid ${BRAND.teal}` }}>
+                      <div style={{ width:64,height:64,borderRadius:"50%",background:`linear-gradient(135deg,${BRAND.teal},${BRAND.navyLight})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:900,color:SURFACE.card,border:`3px solid ${BRAND.teal}` }}>
                         {(driverProfile.fullName || "C").split(" ").slice(0,2).map((w: string) => w[0] ?? "").join("").toUpperCase()}
                       </div>
                     )}
@@ -2417,23 +2417,23 @@ export default function DriverPortalPage() {
                       input.click();
                     }} disabled={uploadingPhoto}
                       style={{ position:"absolute",bottom:-2,right:-2,width:24,height:24,borderRadius:"50%",background:BRAND.teal,border:"2px solid #fff",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}>
-                      <CameraIcon size={10} color="#fff" strokeWidth={2.5} />
+                      <CameraIcon size={10} color={SURFACE.card} strokeWidth={2.5} />
                     </button>
                   </div>
                   <div style={{ flex:1,minWidth:0 }}>
-                    <h2 style={{ fontSize:16,fontWeight:800,color:"#0f172a",margin:"0 0 2px" }}>{driverProfile.fullName || "Conductor"}</h2>
-                    {driverProfile.rut && <p style={{ fontSize:12,color:"#64748b",margin:0 }}>RUT: {driverProfile.rut}</p>}
-                    {driverProfile.phone && <p style={{ fontSize:12,color:"#64748b",margin:"2px 0 0" }}>Teléfono: +{String(driverProfile.phone).replace(/^\+/, "")}</p>}
-                    {driverProfile.email && <p style={{ fontSize:12,color:"#64748b",margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{driverProfile.email}</p>}
+                    <h2 style={{ fontSize:16,fontWeight:800,color:SURFACE.text,margin:"0 0 2px" }}>{driverProfile.fullName || "Conductor"}</h2>
+                    {driverProfile.rut && <p style={{ fontSize:12,color:SURFACE.textMuted,margin:0 }}>RUT: {driverProfile.rut}</p>}
+                    {driverProfile.phone && <p style={{ fontSize:12,color:SURFACE.textMuted,margin:"2px 0 0" }}>Teléfono: +{String(driverProfile.phone).replace(/^\+/, "")}</p>}
+                    {driverProfile.email && <p style={{ fontSize:12,color:SURFACE.textMuted,margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{driverProfile.email}</p>}
                     <div style={{ display:"flex",alignItems:"center",gap:6,marginTop:4 }}>
-                      <span style={{ width:7,height:7,borderRadius:"50%",background: driverProfile.status === "ACTIVE" ? BRAND.teal : "#f59e0b" }} />
-                      <span style={{ fontSize:11,color:"#64748b",fontWeight:600 }}>{driverProfile.status === "ACTIVE" ? "Activo" : driverProfile.status || "—"}</span>
+                      <span style={{ width:7,height:7,borderRadius:"50%",background: driverProfile.status === "ACTIVE" ? BRAND.teal : STATE.warning }} />
+                      <span style={{ fontSize:11,color:SURFACE.textMuted,fontWeight:600 }}>{driverProfile.status === "ACTIVE" ? "Activo" : driverProfile.status || "—"}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Credencial digital - generate from template */}
-                <div style={{ background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",padding:"14px",overflow:"hidden" }}>
+                <div style={{ background:SURFACE.card,borderRadius:16,border:"1px solid #e2e8f0",padding:"14px",overflow:"hidden" }}>
                   <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12 }}>
                     <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:BRAND.teal,margin:0 }}>Credencial</p>
                     <span style={{ fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:6,
@@ -2507,16 +2507,16 @@ export default function DriverPortalPage() {
                     { icon: <BriefcaseIcon size={14} color={BRAND.teal} strokeWidth={2} />, label: "Proveedor", value: prov?.name || "Sin asignar", sub: prov?.rut ? `RUT: ${prov.rut}` : undefined },
                   ];
                   return (
-                    <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+                    <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
                       {rows.map((r, i) => (
                         <div key={r.label} style={{ display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderTop: i > 0 ? "1px solid #f1f5f9" : "none" }}>
                           <span style={{ flexShrink:0 }}>{r.icon}</span>
                           <div style={{ flex:1,minWidth:0 }}>
                             <div style={{ display:"flex",alignItems:"baseline",gap:6 }}>
-                              <span style={{ fontSize:10,fontWeight:700,color:"#94a3b8",textTransform:"uppercase",letterSpacing:"0.08em",flexShrink:0 }}>{r.label}</span>
-                              <span style={{ fontSize:13,fontWeight:600,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{r.value}</span>
+                              <span style={{ fontSize:10,fontWeight:700,color:SURFACE.textFaint,textTransform:"uppercase",letterSpacing:"0.08em",flexShrink:0 }}>{r.label}</span>
+                              <span style={{ fontSize:13,fontWeight:600,color:SURFACE.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{r.value}</span>
                             </div>
-                            {r.sub && <p style={{ fontSize:11,color:"#64748b",margin:"1px 0 0" }}>{r.sub}</p>}
+                            {r.sub && <p style={{ fontSize:11,color:SURFACE.textMuted,margin:"1px 0 0" }}>{r.sub}</p>}
                           </div>
                         </div>
                       ))}
@@ -2525,9 +2525,9 @@ export default function DriverPortalPage() {
                 })()}
 
                 {/* Documents section */}
-                <div style={{ background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",padding:"14px",overflow:"hidden" }}>
+                <div style={{ background:SURFACE.card,borderRadius:16,border:"1px solid #e2e8f0",padding:"14px",overflow:"hidden" }}>
                   <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:BRAND.teal,margin:"0 0 4px" }}>Documentos</p>
-                  <p style={{ fontSize:11,color:"#94a3b8",margin:"0 0 10px" }}>Sube tus documentos desde el celular o galería</p>
+                  <p style={{ fontSize:11,color:SURFACE.textFaint,margin:"0 0 10px" }}>Sube tus documentos desde el celular o galería</p>
                   <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
                     {([
                       { key: "doc_carnet", label: "Fotocopia Carnet" },
@@ -2545,16 +2545,16 @@ export default function DriverPortalPage() {
                       const uploaded = !!docValue;
                       const isUploading = uploadingDoc === doc.key;
                       return (
-                        <div key={doc.key} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9",gap:8 }}>
+                        <div key={doc.key} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:"1px solid #f1f5f9",gap:8 }}>
                           <div style={{ display:"flex",alignItems:"center",gap:8,flex:1,minWidth:0 }}>
-                            <span style={{ width:7,height:7,borderRadius:"50%",background:uploaded ? BRAND.teal : "#e2e8f0",flexShrink:0 }} />
-                            <span style={{ fontSize:12,fontWeight:500,color:uploaded ? "#0f172a" : "#94a3b8",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{doc.label}</span>
+                            <span style={{ width:7,height:7,borderRadius:"50%",background:uploaded ? BRAND.teal : SURFACE.border,flexShrink:0 }} />
+                            <span style={{ fontSize:12,fontWeight:500,color:uploaded ? SURFACE.text : SURFACE.textFaint,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{doc.label}</span>
                           </div>
                           <div style={{ display:"flex",gap:4,flexShrink:0 }}>
                             {uploaded && typeof docValue === "string" && (docValue.startsWith("http") || docValue.startsWith("data:")) && (
                               <a href={docValue} target="_blank" rel="noreferrer"
-                                style={{ display:"flex",alignItems:"center",justifyContent:"center",width:28,height:28,borderRadius:7,border:"1px solid #e2e8f0",background:"#fff",cursor:"pointer",flexShrink:0 }}>
-                                <EyeIcon size={12} color="#64748b" strokeWidth={2} />
+                                style={{ display:"flex",alignItems:"center",justifyContent:"center",width:28,height:28,borderRadius:7,border:"1px solid #e2e8f0",background:SURFACE.card,cursor:"pointer",flexShrink:0 }}>
+                                <EyeIcon size={12} color={SURFACE.textMuted} strokeWidth={2} />
                               </a>
                             )}
                             <button type="button" disabled={isUploading} onClick={() => {
@@ -2592,8 +2592,8 @@ export default function DriverPortalPage() {
                                 height:28,borderRadius:7,border:"none",cursor: isUploading ? "not-allowed" : "pointer",
                                 fontSize:10,fontWeight:600,flexShrink:0,gap:4,
                                 padding: uploaded ? "0 8px" : "0 10px",
-                                background: uploaded ? "#f1f5f9" : `linear-gradient(135deg,${BRAND.teal},#14AE98)`,
-                                color: uploaded ? "#64748b" : "#fff",
+                                background: uploaded ? SURFACE.borderMuted : `linear-gradient(135deg,${BRAND.teal},#14AE98)`,
+                                color: uploaded ? SURFACE.textMuted : SURFACE.card,
                                 opacity: isUploading ? 0.5 : 1,
                               }}>
                               {isUploading ? (
@@ -2701,11 +2701,11 @@ export default function DriverPortalPage() {
               const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
               const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("es-CL", { weekday: "short", day: "2-digit", month: "short" });
               const FlightCard = ({ f, showDate }: { f: PassengerFlight; showDate?: boolean }) => (
-                <div style={{ background:"#fff",borderRadius:12,border:"1px solid #e2e8f0",padding:"10px 14px",display:"flex",alignItems:"center",gap:10 }}>
+                <div style={{ background:SURFACE.card,borderRadius:12,border:"1px solid #e2e8f0",padding:"10px 14px",display:"flex",alignItems:"center",gap:10 }}>
                   <PlaneIcon size={18} color={BRAND.teal} strokeWidth={1.8} style={{ flexShrink:0 }} />
                   <div style={{ flex:1,minWidth:0 }}>
-                    <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0 }}>{f.airline ? `${f.airline} · ` : ""}{f.flightNumber}</p>
-                    <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                    <p style={{ fontSize:13,fontWeight:700,color:SURFACE.text,margin:0 }}>{f.airline ? `${f.airline} · ` : ""}{f.flightNumber}</p>
+                    <p style={{ fontSize:11,color:SURFACE.textMuted,margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
                       {f.origin ? `Desde ${f.origin}` : "Origen no informado"}{f.terminal ? ` · Terminal ${f.terminal}` : ""}
                     </p>
                     {f.passengers.length > 0 && (
@@ -2717,13 +2717,13 @@ export default function DriverPortalPage() {
                   {f.arrivalTime && (
                     <div style={{ textAlign:"right",flexShrink:0 }}>
                       <p style={{ fontSize:14,fontWeight:800,color:BRAND.tealInk,margin:0 }}>{fmtTime(f.arrivalTime)}</p>
-                      {showDate && <p style={{ fontSize:11,color:"#94a3b8",margin:"1px 0 0" }}>{fmtDate(f.arrivalTime)}</p>}
+                      {showDate && <p style={{ fontSize:11,color:SURFACE.textFaint,margin:"1px 0 0" }}>{fmtDate(f.arrivalTime)}</p>}
                     </div>
                   )}
                   <button
                     type="button"
                     onClick={() => rastrearVuelo(f.flightNumber, f.airline, f.arrivalTime)}
-                    style={{ flexShrink:0,padding:"7px 12px",borderRadius:10,border:"none",background:`linear-gradient(135deg,${BRAND.teal},#14AE98)`,color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer" }}
+                    style={{ flexShrink:0,padding:"7px 12px",borderRadius:10,border:"none",background:`linear-gradient(135deg,${BRAND.teal},#14AE98)`,color:SURFACE.card,fontSize:11,fontWeight:700,cursor:"pointer" }}
                   >
                     Rastrear
                   </button>
@@ -2732,20 +2732,20 @@ export default function DriverPortalPage() {
               return (
                 <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
                   <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.teal,margin:0 }}>Llegadas de hoy</p>
-                  {today.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:14 }}>Sin vuelos de tus pasajeros para hoy</p>}
+                  {today.length === 0 && <p style={{ fontSize:13,color:SURFACE.textFaint,textAlign:"center",padding:14 }}>Sin vuelos de tus pasajeros para hoy</p>}
                   {today.map(f => <FlightCard key={f.id} f={f} />)}
                   <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.tealDark,margin:"10px 0 0" }}>Próximas llegadas</p>
-                  {upcoming.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:14 }}>Sin vuelos próximos de tus pasajeros</p>}
+                  {upcoming.length === 0 && <p style={{ fontSize:13,color:SURFACE.textFaint,textAlign:"center",padding:14 }}>Sin vuelos próximos de tus pasajeros</p>}
                   {upcoming.slice(0, 25).map(f => <FlightCard key={f.id} f={f} showDate />)}
                   {past.length > 0 && (
                     <>
-                      <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#94a3b8",margin:"10px 0 0" }}>Llegadas anteriores</p>
+                      <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:SURFACE.textFaint,margin:"10px 0 0" }}>Llegadas anteriores</p>
                       {past.slice(0, 10).map(f => <FlightCard key={f.id} f={f} showDate />)}
                     </>
                   )}
                   {noSchedule.length > 0 && (
                     <>
-                      <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#94a3b8",margin:"10px 0 0" }}>Sin horario informado</p>
+                      <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:SURFACE.textFaint,margin:"10px 0 0" }}>Sin horario informado</p>
                       {noSchedule.slice(0, 10).map(f => <FlightCard key={f.id} f={f} />)}
                     </>
                   )}
@@ -2757,27 +2757,27 @@ export default function DriverPortalPage() {
             {activeTab === "sedes" && (
               <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
                 <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.teal,margin:0 }}>Sedes del evento</p>
-                {venues.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:20 }}>No hay sedes registradas</p>}
+                {venues.length === 0 && <p style={{ fontSize:13,color:SURFACE.textFaint,textAlign:"center",padding:20 }}>No hay sedes registradas</p>}
                 {venues.map(v => {
                   const isOpen = expandedSiteId === `venue-${v.id}`;
                   const addr = [v.address, v.commune, v.region].filter(Boolean).join(", ");
                   return (
-                    <div key={v.id} style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+                    <div key={v.id} style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
                       <button type="button" onClick={() => setExpandedSiteId(isOpen?null:`venue-${v.id}`)}
                         style={{ width:"100%",display:"flex",alignItems:"center",gap:10,padding:"12px 14px",background:"none",border:"none",cursor:"pointer",textAlign:"left" }}>
                         <PinIcon size={16} color={BRAND.teal} strokeWidth={2} />
                         <div style={{ flex:1,minWidth:0 }}>
-                          <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>{v.name || "–"}</p>
-                          {v.address && <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{v.address}</p>}
+                          <p style={{ fontSize:14,fontWeight:700,color:SURFACE.text,margin:0 }}>{v.name || "–"}</p>
+                          {v.address && <p style={{ fontSize:11,color:SURFACE.textMuted,margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{v.address}</p>}
                         </div>
-                        <ChevronDownIcon size={12} color="#94a3b8" strokeWidth={2} style={{ transition:"transform .15s",transform:isOpen?"rotate(180deg)":"rotate(0)",flexShrink:0 }} />
+                        <ChevronDownIcon size={12} color={SURFACE.textFaint} strokeWidth={2} style={{ transition:"transform .15s",transform:isOpen?"rotate(180deg)":"rotate(0)",flexShrink:0 }} />
                       </button>
                       {isOpen && (
                         <div style={{ padding:"0 14px 14px",display:"flex",flexDirection:"column",gap:8 }}>
                           {v.photoUrl && (
                             <img src={v.photoUrl} alt={v.name || "Sede"} style={{ width:"100%",height:140,objectFit:"cover",borderRadius:10 }} />
                           )}
-                          {addr && <p style={{ fontSize:12,color:"#334155",margin:0 }}>{addr}</p>}
+                          {addr && <p style={{ fontSize:12,color:SURFACE.textStrong,margin:0 }}>{addr}</p>}
                           {addr && <VenueMap title={v.name || "Sede"} query={addr} />}
                         </div>
                       )}
@@ -2785,28 +2785,28 @@ export default function DriverPortalPage() {
                   );
                 })}
                 <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.tealDark,margin:"8px 0 0" }}>Hoteles</p>
-                {accommodations.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:20 }}>No hay hoteles registrados</p>}
+                {accommodations.length === 0 && <p style={{ fontSize:13,color:SURFACE.textFaint,textAlign:"center",padding:20 }}>No hay hoteles registrados</p>}
                 {accommodations.map(h => {
                   const isOpen = expandedSiteId === `hotel-${h.id}`;
                   const addr = [h.address, h.city, h.country].filter(Boolean).join(", ");
                   return (
-                    <div key={h.id} style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+                    <div key={h.id} style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
                       <button type="button" onClick={() => setExpandedSiteId(isOpen?null:`hotel-${h.id}`)}
                         style={{ width:"100%",display:"flex",alignItems:"center",gap:10,padding:"12px 14px",background:"none",border:"none",cursor:"pointer",textAlign:"left" }}>
                         <BuildingIcon size={16} color={BRAND.tealDark} strokeWidth={1.8} />
                         <div style={{ flex:1,minWidth:0 }}>
-                          <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>{h.name || "–"}</p>
-                          {addr && <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{addr}</p>}
+                          <p style={{ fontSize:14,fontWeight:700,color:SURFACE.text,margin:0 }}>{h.name || "–"}</p>
+                          {addr && <p style={{ fontSize:11,color:SURFACE.textMuted,margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{addr}</p>}
                         </div>
-                        <ChevronDownIcon size={12} color="#94a3b8" strokeWidth={2} style={{ transition:"transform .15s",transform:isOpen?"rotate(180deg)":"rotate(0)",flexShrink:0 }} />
+                        <ChevronDownIcon size={12} color={SURFACE.textFaint} strokeWidth={2} style={{ transition:"transform .15s",transform:isOpen?"rotate(180deg)":"rotate(0)",flexShrink:0 }} />
                       </button>
                       {isOpen && (
                         <div style={{ padding:"0 14px 14px",display:"flex",flexDirection:"column",gap:6 }}>
                           {h.photoUrl && (
                             <img src={h.photoUrl} alt={h.name || "Hotel"} style={{ width:"100%",height:140,objectFit:"cover",borderRadius:10 }} />
                           )}
-                          {addr && <p style={{ fontSize:12,color:"#334155",margin:0 }}>{addr}</p>}
-                          {h.contactPhone && <p style={{ fontSize:11,color:"#64748b",margin:0 }}>Teléfono: {h.contactPhone}</p>}
+                          {addr && <p style={{ fontSize:12,color:SURFACE.textStrong,margin:0 }}>{addr}</p>}
+                          {h.contactPhone && <p style={{ fontSize:11,color:SURFACE.textMuted,margin:0 }}>Teléfono: {h.contactPhone}</p>}
                           {addr && <VenueMap title={h.name || "Hotel"} query={addr} />}
                         </div>
                       )}
@@ -2828,7 +2828,7 @@ export default function DriverPortalPage() {
               { key: "cuenta" as const, label: "Cuenta", icon: <UserIcon size={20} strokeWidth={1.8} /> },
             ]).map((tab) => (
               <button key={tab.key} type="button" className="dc-tab-btn" onClick={() => setActiveTab(tab.key)}
-                style={{ color: activeTab === tab.key ? BRAND.teal : "#94a3b8" }}>
+                style={{ color: activeTab === tab.key ? BRAND.teal : SURFACE.textFaint }}>
                 {tab.icon}
                 <span>{tab.label}</span>
               </button>
@@ -2888,30 +2888,30 @@ export default function DriverPortalPage() {
       {/* ── Rastreo de vuelo (pestaña Vuelos) ── */}
       {trackTarget && (() => {
         const st = trackInfo?.flightStatus
-          ? (FLIGHT_STATUS_ES[trackInfo.flightStatus.toLowerCase()] ?? { label: trackInfo.flightStatus, color: "#94a3b8" })
+          ? (FLIGHT_STATUS_ES[trackInfo.flightStatus.toLowerCase()] ?? { label: trackInfo.flightStatus, color: SURFACE.textFaint })
           : null;
         const Row = ({ label, value }: { label: string; value?: string | null }) => (
           <div style={{ display:"flex",justifyContent:"space-between",gap:10,padding:"5px 0",borderBottom:"1px solid #f1f5f9" }}>
-            <span style={{ fontSize:12,color:"#64748b" }}>{label}</span>
-            <span style={{ fontSize:12,fontWeight:700,color:"#0f172a",textAlign:"right" }}>{value || "—"}</span>
+            <span style={{ fontSize:12,color:SURFACE.textMuted }}>{label}</span>
+            <span style={{ fontSize:12,fontWeight:700,color:SURFACE.text,textAlign:"right" }}>{value || "—"}</span>
           </div>
         );
         return (
           <div style={{ position:"fixed",inset:0,zIndex:150,background:"rgba(6,15,30,0.6)",backdropFilter:"blur(3px)",display:"flex",alignItems:"center",justifyContent:"center",padding:16 }}>
-            <div style={{ background:"#fff",borderRadius:20,padding:"20px 18px",maxWidth:380,width:"100%",maxHeight:"85vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}>
+            <div style={{ background:SURFACE.card,borderRadius:20,padding:"20px 18px",maxWidth:380,width:"100%",maxHeight:"85vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}>
               <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,marginBottom:4 }}>
-                <h3 style={{ fontSize:17,fontWeight:800,color:"#0f172a",margin:0 }}>
+                <h3 style={{ fontSize:17,fontWeight:800,color:SURFACE.text,margin:0 }}>
                   {(trackInfo?.airlineName || trackTarget.airline) ? `${trackInfo?.airlineName || trackTarget.airline} · ` : ""}{trackTarget.flightNumber}
                 </h3>
                 {st && (
                   <span style={{ flexShrink:0,fontSize:11,fontWeight:700,color:st.color,background:`${st.color}1a`,border:`1px solid ${st.color}55`,borderRadius:99,padding:"3px 10px" }}>{st.label}</span>
                 )}
               </div>
-              {trackLoading && <p style={{ fontSize:13,color:"#64748b",textAlign:"center",padding:"24px 0" }}>Consultando información del vuelo…</p>}
+              {trackLoading && <p style={{ fontSize:13,color:SURFACE.textMuted,textAlign:"center",padding:"24px 0" }}>Consultando información del vuelo…</p>}
               {trackError && <p style={{ fontSize:13,color:"#b91c1c",textAlign:"center",padding:"18px 0" }}>{trackError}</p>}
               {trackInfo && !trackLoading && (
                 <>
-                  <p style={{ fontSize:12,color:"#64748b",margin:"0 0 12px" }}>
+                  <p style={{ fontSize:12,color:SURFACE.textMuted,margin:"0 0 12px" }}>
                     {(trackInfo.depCity || trackInfo.depIata || "Origen")} → {(trackInfo.arrCity || trackInfo.arrIata || "Destino")}
                     {trackInfo.flightDate ? ` · ${trackInfo.flightDate}` : ""}
                   </p>
@@ -2934,7 +2934,7 @@ export default function DriverPortalPage() {
                     <Row label="Terminal / Cinta" value={[trackInfo.arrTerminal, trackInfo.arrBaggage].filter(Boolean).join(" / ")} />
                   )}
                   {typeof trackInfo.arrDelayMinutes === "number" && trackInfo.arrDelayMinutes > 0 && (
-                    <p style={{ fontSize:12,fontWeight:700,color:"#b45309",margin:"10px 0 0",textAlign:"center" }}>
+                    <p style={{ fontSize:12,fontWeight:700,color:STATE.warningText,margin:"10px 0 0",textAlign:"center" }}>
                       Retraso de llegada: {trackInfo.arrDelayMinutes} min
                     </p>
                   )}
@@ -2945,14 +2945,14 @@ export default function DriverPortalPage() {
                   type="button"
                   disabled={trackLoading}
                   onClick={() => rastrearVuelo(trackTarget.flightNumber, trackTarget.airline, trackTarget.arrivalTime ?? null)}
-                  style={{ flex:1,padding:12,borderRadius:12,border:"none",background: trackLoading ? "#cbd5e1" : `linear-gradient(135deg,${BRAND.teal},#14AE98)`,color:"#fff",fontSize:13,fontWeight:700,cursor: trackLoading ? "wait" : "pointer" }}
+                  style={{ flex:1,padding:12,borderRadius:12,border:"none",background: trackLoading ? SURFACE.borderStrong : `linear-gradient(135deg,${BRAND.teal},#14AE98)`,color:SURFACE.card,fontSize:13,fontWeight:700,cursor: trackLoading ? "wait" : "pointer" }}
                 >
                   {trackLoading ? "Actualizando…" : <><RefreshIcon size={12} className="inline mr-1" />Actualizar</>}
                 </button>
                 <button
                   type="button"
                   onClick={() => { setTrackTarget(null); setTrackInfo(null); setTrackError(null); }}
-                  style={{ flex:1,padding:12,borderRadius:12,border:"1px solid #e2e8f0",background:"#f8fafc",color:"#475569",fontSize:13,fontWeight:700,cursor:"pointer" }}
+                  style={{ flex:1,padding:12,borderRadius:12,border:"1px solid #e2e8f0",background:SURFACE.bg,color:SURFACE.textSecondary,fontSize:13,fontWeight:700,cursor:"pointer" }}
                 >
                   Cerrar
                 </button>
@@ -2965,18 +2965,18 @@ export default function DriverPortalPage() {
       {/* ── Foto de jornada (primer / último viaje del día) ── */}
       {journeyPhoto && (
         <div style={{ position:"fixed",inset:0,zIndex:140,background:"rgba(6,15,30,0.6)",backdropFilter:"blur(3px)",display:"flex",alignItems:"center",justifyContent:"center",padding:16 }}>
-          <div style={{ background:"#fff",borderRadius:20,padding:"24px 20px",maxWidth:360,width:"100%",textAlign:"center",boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}>
-            <div style={{ marginBottom:8,color:"#cbd5e1",display:"flex",justifyContent:"center" }}><CameraIcon size={40} /></div>
-            <h3 style={{ fontSize:17,fontWeight:800,color:"#0f172a",margin:0 }}>
+          <div style={{ background:SURFACE.card,borderRadius:20,padding:"24px 20px",maxWidth:360,width:"100%",textAlign:"center",boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}>
+            <div style={{ marginBottom:8,color:SURFACE.borderStrong,display:"flex",justifyContent:"center" }}><CameraIcon size={40} /></div>
+            <h3 style={{ fontSize:17,fontWeight:800,color:SURFACE.text,margin:0 }}>
               {journeyPhoto.kind === "START" ? "Foto de inicio de jornada" : "Foto de término de jornada"}
             </h3>
-            <p style={{ fontSize:13,color:"#64748b",margin:"8px 0 16px",lineHeight:1.5 }}>
+            <p style={{ fontSize:13,color:SURFACE.textMuted,margin:"8px 0 16px",lineHeight:1.5 }}>
               {journeyPhoto.kind === "START"
                 ? "Es tu primer viaje del día: sube una foto del vehículo antes de partir."
                 : "Terminaste tu último viaje del día: sube una foto del vehículo para cerrar la jornada."}
             </p>
             <label
-              style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",padding:14,borderRadius:14,border:"none",background: journeyUploading ? "#cbd5e1" : `linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})`,color:"#0d1b3e",fontSize:14,fontWeight:800,cursor: journeyUploading ? "wait" : "pointer",boxSizing:"border-box" }}
+              style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",padding:14,borderRadius:14,border:"none",background: journeyUploading ? SURFACE.borderStrong : `linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})`,color:"#0d1b3e",fontSize:14,fontWeight:800,cursor: journeyUploading ? "wait" : "pointer",boxSizing:"border-box" }}
             >
               <input
                 type="file"
@@ -2996,7 +2996,7 @@ export default function DriverPortalPage() {
               type="button"
               onClick={() => void skipJourneyPhoto()}
               disabled={journeyUploading}
-              style={{ marginTop:10,width:"100%",padding:12,borderRadius:12,border:"1px solid #e2e8f0",background:"#fff",color:"#64748b",fontSize:13,fontWeight:600,cursor:"pointer" }}
+              style={{ marginTop:10,width:"100%",padding:12,borderRadius:12,border:"1px solid #e2e8f0",background:SURFACE.card,color:SURFACE.textMuted,fontSize:13,fontWeight:600,cursor:"pointer" }}
             >
               Ahora no
             </button>
@@ -3012,12 +3012,12 @@ export default function DriverPortalPage() {
           <div style={{ position:"fixed",inset:0,zIndex:130,background:"rgba(6,15,30,0.6)",backdropFilter:"blur(3px)",display:"flex",alignItems:"center",justifyContent:"center",padding:16 }}
             onClick={() => setNavPrompt(null)}>
             <div onClick={(e) => e.stopPropagation()}
-              style={{ background:"#fff",borderRadius:20,padding:"24px 20px",maxWidth:360,width:"100%",textAlign:"center",boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}>
-              <div style={{ marginBottom:8,color:"#cbd5e1",display:"flex",justifyContent:"center" }}><CompassIcon size={40} /></div>
-              <h3 style={{ fontSize:17,fontWeight:800,color:"#0f172a",margin:0 }}>
+              style={{ background:SURFACE.card,borderRadius:20,padding:"24px 20px",maxWidth:360,width:"100%",textAlign:"center",boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}>
+              <div style={{ marginBottom:8,color:SURFACE.borderStrong,display:"flex",justifyContent:"center" }}><CompassIcon size={40} /></div>
+              <h3 style={{ fontSize:17,fontWeight:800,color:SURFACE.text,margin:0 }}>
                 {navPrompt.phase === "pickup" ? "Navegar al punto de encuentro" : "Navegar al destino"}
               </h3>
-              <p style={{ fontSize:13,color:"#64748b",margin:"8px 0 16px",lineHeight:1.5,overflow:"hidden",textOverflow:"ellipsis" }}>
+              <p style={{ fontSize:13,color:SURFACE.textMuted,margin:"8px 0 16px",lineHeight:1.5,overflow:"hidden",textOverflow:"ellipsis" }}>
                 {target.label}
               </p>
               <a
@@ -3025,7 +3025,7 @@ export default function DriverPortalPage() {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setNavPrompt(null)}
-                style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",padding:14,borderRadius:14,border:"none",background:"linear-gradient(135deg,#33ccff,#0f9ed8)",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",textDecoration:"none",boxSizing:"border-box" }}
+                style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",padding:14,borderRadius:14,border:"none",background:"linear-gradient(135deg,#33ccff,#0f9ed8)",color:SURFACE.card,fontSize:14,fontWeight:800,cursor:"pointer",textDecoration:"none",boxSizing:"border-box" }}
               >
                 <img src="https://www.waze.com/favicon.ico" alt="" width="20" height="20" style={{ borderRadius:4 }} />
                 Abrir en Waze
@@ -3035,7 +3035,7 @@ export default function DriverPortalPage() {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setNavPrompt(null)}
-                style={{ marginTop:8,display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",padding:13,borderRadius:14,border:"1px solid #e2e8f0",background:"#fff",color:"#4285F4",fontSize:13,fontWeight:700,cursor:"pointer",textDecoration:"none",boxSizing:"border-box" }}
+                style={{ marginTop:8,display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",padding:13,borderRadius:14,border:"1px solid #e2e8f0",background:SURFACE.card,color:"#4285F4",fontSize:13,fontWeight:700,cursor:"pointer",textDecoration:"none",boxSizing:"border-box" }}
               >
                 <img src="https://maps.google.com/favicon.ico" alt="" width="18" height="18" style={{ borderRadius:4 }} />
                 Abrir en Google Maps
@@ -3043,7 +3043,7 @@ export default function DriverPortalPage() {
               <button
                 type="button"
                 onClick={() => setNavPrompt(null)}
-                style={{ marginTop:10,width:"100%",padding:12,borderRadius:12,border:"none",background:"transparent",color:"#64748b",fontSize:13,fontWeight:600,cursor:"pointer" }}
+                style={{ marginTop:10,width:"100%",padding:12,borderRadius:12,border:"none",background:"transparent",color:SURFACE.textMuted,fontSize:13,fontWeight:600,cursor:"pointer" }}
               >
                 Ahora no
               </button>
@@ -3082,8 +3082,8 @@ export default function DriverPortalPage() {
         <div onClick={() => setCredentialHtml(null)}
           style={{ position:"fixed",inset:0,zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:16,background:"rgba(2,12,24,0.78)",backdropFilter:"blur(6px)" }}>
           <div onClick={(e) => e.stopPropagation()}
-            style={{ background:"#fff",borderRadius:20,width:"100%",maxWidth:480,maxHeight:"95vh",display:"flex",flexDirection:"column",overflow:"hidden",boxShadow:"0 24px 80px rgba(0,0,0,0.5)" }}>
-            <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",borderBottom:"1px solid #e2e8f0",background:`linear-gradient(135deg,${BRAND.navy},${BRAND.navyLight})`,color:"#fff" }}>
+            style={{ background:SURFACE.card,borderRadius:20,width:"100%",maxWidth:480,maxHeight:"95vh",display:"flex",flexDirection:"column",overflow:"hidden",boxShadow:"0 24px 80px rgba(0,0,0,0.5)" }}>
+            <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",borderBottom:"1px solid #e2e8f0",background:`linear-gradient(135deg,${BRAND.navy},${BRAND.navyLight})`,color:SURFACE.card }}>
               <div>
                 <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:BRAND.teal,margin:0 }}>Credencial digital</p>
                 <p style={{ fontSize:14,fontWeight:700,margin:"2px 0 0" }}>{driverProfile?.fullName || "Conductor"}</p>
@@ -3103,13 +3103,13 @@ export default function DriverPortalPage() {
                   <DownloadIcon size={16} strokeWidth={2} />
                 </button>
                 <button type="button" onClick={() => setCredentialHtml(null)}
-                  style={{ height:34,padding:"0 12px",borderRadius:10,border:"1px solid rgba(255,255,255,0.25)",background:"rgba(255,255,255,0.08)",color:"#fff",cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6,fontSize:12.5,fontWeight:700,lineHeight:1 }}>
+                  style={{ height:34,padding:"0 12px",borderRadius:10,border:"1px solid rgba(255,255,255,0.25)",background:"rgba(255,255,255,0.08)",color:SURFACE.card,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6,fontSize:12.5,fontWeight:700,lineHeight:1 }}>
                   <XIcon size={15} /> Volver
                 </button>
               </div>
             </div>
             <iframe srcDoc={credentialHtml} title="Credencial"
-              style={{ flex:1,width:"100%",minHeight:"60vh",border:"none",background:"#fff" }} />
+              style={{ flex:1,width:"100%",minHeight:"60vh",border:"none",background:SURFACE.card }} />
           </div>
         </div>
       )}
@@ -3131,9 +3131,9 @@ export default function DriverPortalPage() {
         const pax = getTripAthleteIds(trip).length;
         const km = historyPositions.length >= 2 ? routeKm(historyPositions) : null;
         const close = () => { setHistoryTrip(null); setHistoryPositions([]); };
-        const stat = (label: string, value: string, color = "#0f172a") => (
-          <div style={{ padding:"10px 8px",borderRadius:12,background:"#f8fafc",border:"1px solid #f1f5f9",textAlign:"center" }}>
-            <p style={{ fontSize:8.5,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.08em" }}>{label}</p>
+        const stat = (label: string, value: string, color = SURFACE.text) => (
+          <div style={{ padding:"10px 8px",borderRadius:12,background:SURFACE.bg,border:"1px solid #f1f5f9",textAlign:"center" }}>
+            <p style={{ fontSize:8.5,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase",letterSpacing:"0.08em" }}>{label}</p>
             <p style={{ fontSize:15,fontWeight:800,color,margin:"3px 0 0" }}>{value}</p>
           </div>
         );
@@ -3141,9 +3141,9 @@ export default function DriverPortalPage() {
           <div onClick={close}
             style={{ position:"fixed",inset:0,zIndex:200,display:"flex",alignItems:"flex-end",justifyContent:"center",padding:0,background:"rgba(2,12,24,0.7)",backdropFilter:"blur(6px)" }}>
             <div onClick={(e) => e.stopPropagation()}
-              style={{ background:"#fff",borderRadius:"24px 24px 0 0",width:"100%",maxWidth:520,maxHeight:"92vh",display:"flex",flexDirection:"column",overflow:"hidden",boxShadow:"0 -8px 60px rgba(0,0,0,0.5)",animation:"dc-in .3s cubic-bezier(0.16,1,0.3,1) both" }}>
+              style={{ background:SURFACE.card,borderRadius:"24px 24px 0 0",width:"100%",maxWidth:520,maxHeight:"92vh",display:"flex",flexDirection:"column",overflow:"hidden",boxShadow:"0 -8px 60px rgba(0,0,0,0.5)",animation:"dc-in .3s cubic-bezier(0.16,1,0.3,1) both" }}>
               {/* Header */}
-              <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:10,padding:"16px 18px 12px",borderBottom:"1px solid #f1f5f9",background:`linear-gradient(135deg,${BRAND.navy},${BRAND.navyLight})`,color:"#fff",flexShrink:0 }}>
+              <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:10,padding:"16px 18px 12px",borderBottom:"1px solid #f1f5f9",background:`linear-gradient(135deg,${BRAND.navy},${BRAND.navyLight})`,color:SURFACE.card,flexShrink:0 }}>
                 <div style={{ minWidth:0 }}>
                   <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:BRAND.tealLight,margin:0 }}>Viaje realizado</p>
                   <p style={{ fontSize:15,fontWeight:800,margin:"3px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
@@ -3154,7 +3154,7 @@ export default function DriverPortalPage() {
                   </p>
                 </div>
                 <button type="button" onClick={close}
-                  style={{ flexShrink:0,width:32,height:32,borderRadius:10,border:"1px solid rgba(255,255,255,0.2)",background:"rgba(255,255,255,0.08)",color:"#fff",cursor:"pointer",fontSize:19,lineHeight:1,display:"flex",alignItems:"center",justifyContent:"center" }}>×</button>
+                  style={{ flexShrink:0,width:32,height:32,borderRadius:10,border:"1px solid rgba(255,255,255,0.2)",background:"rgba(255,255,255,0.08)",color:SURFACE.card,cursor:"pointer",fontSize:19,lineHeight:1,display:"flex",alignItems:"center",justifyContent:"center" }}>×</button>
               </div>
 
               {/* Body */}
@@ -3167,71 +3167,71 @@ export default function DriverPortalPage() {
 
                 {/* Stats principales */}
                 <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8 }}>
-                  {stat("Distancia", km != null ? `${km.toFixed(1)} km` : (historyRouteLoading ? "…" : "—"), "#0f172a")}
+                  {stat("Distancia", km != null ? `${km.toFixed(1)} km` : (historyRouteLoading ? "…" : "—"), SURFACE.text)}
                   {stat("Valor", trip.tripCost != null ? formatCurrencyCLP(trip.tripCost) : "—", BRAND.tealInk)}
-                  {stat("Duración", formatDuration(trip.startedAt, trip.completedAt), "#0f172a")}
-                  {stat("Pasajeros", pax ? String(pax) : "—", "#0f172a")}
+                  {stat("Duración", formatDuration(trip.startedAt, trip.completedAt), SURFACE.text)}
+                  {stat("Pasajeros", pax ? String(pax) : "—", SURFACE.text)}
                 </div>
                 {km == null && !historyRouteLoading && (
-                  <p style={{ fontSize:11,color:"#94a3b8",margin:"-4px 0 0",textAlign:"center" }}>
+                  <p style={{ fontSize:11,color:SURFACE.textFaint,margin:"-4px 0 0",textAlign:"center" }}>
                     Sin registro GPS para calcular la distancia de este viaje.
                   </p>
                 )}
 
                 {/* Origen / Destino */}
-                <div style={{ display:"flex",gap:10,alignItems:"stretch",padding:"12px 14px",borderRadius:14,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
+                <div style={{ display:"flex",gap:10,alignItems:"stretch",padding:"12px 14px",borderRadius:14,background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
                   <div style={{ display:"flex",flexDirection:"column",alignItems:"center",paddingTop:3 }}>
                     <span style={{ width:9,height:9,borderRadius:"50%",background:BRAND.teal,flexShrink:0 }} />
                     <div style={{ width:2,flex:1,background:`linear-gradient(180deg,${BRAND.teal},#ef4444)`,margin:"3px 0",opacity:0.35,borderRadius:1,minHeight:18 }} />
-                    <span style={{ width:9,height:9,borderRadius:"50%",background:"#ef4444",flexShrink:0 }} />
+                    <span style={{ width:9,height:9,borderRadius:"50%",background:STATE.danger,flexShrink:0 }} />
                   </div>
                   <div style={{ flex:1,minWidth:0,display:"flex",flexDirection:"column",justifyContent:"space-between",gap:8 }}>
                     <div>
-                      <p style={{ fontSize:9,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.08em" }}>Origen</p>
-                      <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"1px 0 0",lineHeight:1.3 }}>{trip.origin || "—"}</p>
+                      <p style={{ fontSize:9,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase",letterSpacing:"0.08em" }}>Origen</p>
+                      <p style={{ fontSize:12.5,fontWeight:600,color:SURFACE.text,margin:"1px 0 0",lineHeight:1.3 }}>{trip.origin || "—"}</p>
                     </div>
                     <div>
-                      <p style={{ fontSize:9,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase",letterSpacing:"0.08em" }}>Destino</p>
-                      <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:"1px 0 0",lineHeight:1.3 }}>{trip.destination || "—"}</p>
+                      <p style={{ fontSize:9,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase",letterSpacing:"0.08em" }}>Destino</p>
+                      <p style={{ fontSize:12.5,fontWeight:600,color:SURFACE.text,margin:"1px 0 0",lineHeight:1.3 }}>{trip.destination || "—"}</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Tiempos + vehículo + delegación */}
                 <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:8 }}>
-                  <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                    <p style={{ fontSize:9,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase" }}>Inicio</p>
-                    <p style={{ fontSize:11.5,fontWeight:600,color:"#0f172a",margin:"1px 0 0" }}>{trip.startedAt ? formatDate(trip.startedAt) : "—"}</p>
+                  <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
+                    <p style={{ fontSize:9,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase" }}>Inicio</p>
+                    <p style={{ fontSize:11.5,fontWeight:600,color:SURFACE.text,margin:"1px 0 0" }}>{trip.startedAt ? formatDate(trip.startedAt) : "—"}</p>
                   </div>
-                  <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                    <p style={{ fontSize:9,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase" }}>Fin</p>
-                    <p style={{ fontSize:11.5,fontWeight:600,color:"#0f172a",margin:"1px 0 0" }}>{trip.completedAt ? formatDate(trip.completedAt) : "—"}</p>
+                  <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
+                    <p style={{ fontSize:9,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase" }}>Fin</p>
+                    <p style={{ fontSize:11.5,fontWeight:600,color:SURFACE.text,margin:"1px 0 0" }}>{trip.completedAt ? formatDate(trip.completedAt) : "—"}</p>
                   </div>
-                  <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                    <p style={{ fontSize:9,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase" }}>Vehículo</p>
-                    <p style={{ fontSize:11.5,fontWeight:600,color:"#0f172a",margin:"1px 0 0" }}>{veh?.plate?.toUpperCase() || "—"}</p>
+                  <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
+                    <p style={{ fontSize:9,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase" }}>Vehículo</p>
+                    <p style={{ fontSize:11.5,fontWeight:600,color:SURFACE.text,margin:"1px 0 0" }}>{veh?.plate?.toUpperCase() || "—"}</p>
                   </div>
-                  <div style={{ padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                    <p style={{ fontSize:9,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase" }}>Delegación</p>
-                    <p style={{ fontSize:11.5,fontWeight:600,color:"#0f172a",margin:"1px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{resolveDelegations(trip) !== "-" ? resolveDelegations(trip) : "—"}</p>
+                  <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
+                    <p style={{ fontSize:9,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase" }}>Delegación</p>
+                    <p style={{ fontSize:11.5,fontWeight:600,color:SURFACE.text,margin:"1px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{resolveDelegations(trip) !== "-" ? resolveDelegations(trip) : "—"}</p>
                   </div>
                 </div>
 
                 {/* Rating */}
                 {trip.driverRating ? (
                   <div style={{ padding:"10px 12px",borderRadius:12,background:"#FFFBEB",border:"1px solid #FDE68A",display:"flex",alignItems:"center",gap:10 }}>
-                    <span style={{ display:"inline-flex",gap:2,color:"#f59e0b" }}>{Array.from({ length: trip.driverRating }, (_, k) => <StarIcon key={k} size={18} />)}</span>
+                    <span style={{ display:"inline-flex",gap:2,color:STATE.warning }}>{Array.from({ length: trip.driverRating }, (_, k) => <StarIcon key={k} size={18} />)}</span>
                     {trip.ratingComment && <span style={{ fontSize:12,color:"#92400E",fontStyle:"italic",flex:1 }}>&ldquo;{trip.ratingComment}&rdquo;</span>}
                   </div>
                 ) : (
-                  <p style={{ fontSize:11.5,color:"#94a3b8",margin:0,textAlign:"center" }}>Sin evaluación del pasajero</p>
+                  <p style={{ fontSize:11.5,color:SURFACE.textFaint,margin:0,textAlign:"center" }}>Sin evaluación del pasajero</p>
                 )}
 
                 {/* Notas */}
                 {trip.notes && (
-                  <div style={{ padding:"8px 12px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                    <p style={{ fontSize:9,fontWeight:700,color:"#94a3b8",margin:0,textTransform:"uppercase" }}>Notas</p>
-                    <p style={{ fontSize:12,color:"#334155",margin:"2px 0 0",lineHeight:1.4 }}>{trip.notes}</p>
+                  <div style={{ padding:"8px 12px",borderRadius:10,background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
+                    <p style={{ fontSize:9,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase" }}>Notas</p>
+                    <p style={{ fontSize:12,color:SURFACE.textStrong,margin:"2px 0 0",lineHeight:1.4 }}>{trip.notes}</p>
                   </div>
                 )}
               </div>
@@ -3242,30 +3242,30 @@ export default function DriverPortalPage() {
 
       {showLocationBlockedModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div style={{ background:"#fff",borderRadius:"24px",width:"100%",maxWidth:"380px",padding:"32px 28px",boxShadow:"0 8px 40px rgba(15,23,42,0.2)",textAlign:"center" }}>
+          <div style={{ background:SURFACE.card,borderRadius:"24px",width:"100%",maxWidth:"380px",padding:"32px 28px",boxShadow:"0 8px 40px rgba(15,23,42,0.2)",textAlign:"center" }}>
             <div style={{ width:"56px",height:"56px",borderRadius:"50%",background:"rgba(239,68,68,0.1)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 18px" }}>
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={STATE.danger} strokeWidth="2" strokeLinecap="round">
                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
-                <line x1="2" y1="2" x2="22" y2="22" stroke="#ef4444" strokeWidth="2.5"/>
+                <line x1="2" y1="2" x2="22" y2="22" stroke={STATE.danger} strokeWidth="2.5"/>
               </svg>
             </div>
-            <h3 style={{ fontSize:"18px",fontWeight:800,color:"#0f172a",margin:"0 0 8px" }}>Ubicación no disponible</h3>
-            <p style={{ fontSize:"13px",color:"#64748b",lineHeight:1.5,margin:"0 0 8px" }}>
+            <h3 style={{ fontSize:"18px",fontWeight:800,color:SURFACE.text,margin:"0 0 8px" }}>Ubicación no disponible</h3>
+            <p style={{ fontSize:"13px",color:SURFACE.textMuted,lineHeight:1.5,margin:"0 0 8px" }}>
               Para continuar necesitas activar la ubicación en tu navegador.
             </p>
-            <div style={{ background:"#f8fafc",borderRadius:"12px",padding:"12px 16px",margin:"0 0 20px",textAlign:"left" }}>
-              <p style={{ fontSize:"12px",fontWeight:700,color:"#334155",margin:"0 0 6px" }}>Cómo activarla:</p>
-              <p style={{ fontSize:"11px",color:"#64748b",margin:"0 0 4px",lineHeight:1.4 }}>1. Toca el ícono de candado o ajustes en la barra de dirección</p>
-              <p style={{ fontSize:"11px",color:"#64748b",margin:"0 0 4px",lineHeight:1.4 }}>2. Busca "Ubicación" o "Location"</p>
-              <p style={{ fontSize:"11px",color:"#64748b",margin:0,lineHeight:1.4 }}>3. Cambia a "Permitir" y recarga la página</p>
+            <div style={{ background:SURFACE.bg,borderRadius:"12px",padding:"12px 16px",margin:"0 0 20px",textAlign:"left" }}>
+              <p style={{ fontSize:"12px",fontWeight:700,color:SURFACE.textStrong,margin:"0 0 6px" }}>Cómo activarla:</p>
+              <p style={{ fontSize:"11px",color:SURFACE.textMuted,margin:"0 0 4px",lineHeight:1.4 }}>1. Toca el ícono de candado o ajustes en la barra de dirección</p>
+              <p style={{ fontSize:"11px",color:SURFACE.textMuted,margin:"0 0 4px",lineHeight:1.4 }}>2. Busca "Ubicación" o "Location"</p>
+              <p style={{ fontSize:"11px",color:SURFACE.textMuted,margin:0,lineHeight:1.4 }}>3. Cambia a "Permitir" y recarga la página</p>
             </div>
             <div style={{ display:"flex",gap:"10px" }}>
               <button type="button" onClick={() => setShowLocationBlockedModal(false)}
-                style={{ flex:1,padding:"12px",borderRadius:"14px",border:"1px solid #e2e8f0",background:"#f8fafc",color:"#475569",fontSize:"13px",fontWeight:700,cursor:"pointer" }}>
+                style={{ flex:1,padding:"12px",borderRadius:"14px",border:"1px solid #e2e8f0",background:SURFACE.bg,color:SURFACE.textSecondary,fontSize:"13px",fontWeight:700,cursor:"pointer" }}>
                 Cerrar
               </button>
               <button type="button" onClick={() => { setShowLocationBlockedModal(false); window.location.reload(); }}
-                style={{ flex:1,padding:"12px",borderRadius:"14px",border:"none",background:`linear-gradient(135deg,${BRAND.teal},#14AE98)`,color:"#fff",fontSize:"13px",fontWeight:700,cursor:"pointer",boxShadow:"0 2px 10px rgba(33,208,179,0.3)" }}>
+                style={{ flex:1,padding:"12px",borderRadius:"14px",border:"none",background:`linear-gradient(135deg,${BRAND.teal},#14AE98)`,color:SURFACE.card,fontSize:"13px",fontWeight:700,cursor:"pointer",boxShadow:"0 2px 10px rgba(33,208,179,0.3)" }}>
                 Recargar página
               </button>
             </div>

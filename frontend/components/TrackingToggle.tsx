@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { isAvailable, on, request } from "@/lib/native-bridge";
 import { SatelliteIcon } from "@/components/ui/Icons";
+import { BRAND, SURFACE } from "@/lib/design";
 
 type PushState = {
   lastAttemptAt: number | null;
@@ -148,15 +149,15 @@ export default function TrackingToggle({ driverId }: Props) {
   if (transmitting) {
     chipLabel = "● Transmitiendo";
     chipBg = "rgba(33,208,179,0.14)";
-    chipColor = "#0a7a6b";
+    chipColor = BRAND.tealInk;
   } else if (isOn && gpsOff) {
     chipLabel = "GPS apagado";
     chipBg = "rgba(234,179,8,0.16)";
     chipColor = "#92400e";
   } else {
     chipLabel = "Inactivo";
-    chipBg = "#f1f5f9";
-    chipColor = "#64748b";
+    chipBg = SURFACE.borderMuted;
+    chipColor = SURFACE.textMuted;
   }
 
   const btnLabel = busy
@@ -170,7 +171,7 @@ export default function TrackingToggle({ driverId }: Props) {
   return (
     <div
       style={{
-        background: "#fff",
+        background: SURFACE.card,
         borderRadius: 14,
         border: "1px solid #e2e8f0",
         overflow: "hidden",
@@ -192,7 +193,7 @@ export default function TrackingToggle({ driverId }: Props) {
               margin: 0,
               fontSize: 13,
               fontWeight: 700,
-              color: "#0f172a",
+              color: SURFACE.text,
             }}
           >
             Tracking GPS
@@ -201,7 +202,7 @@ export default function TrackingToggle({ driverId }: Props) {
             style={{
               margin: "2px 0 0",
               fontSize: 11.5,
-              color: "#64748b",
+              color: SURFACE.textMuted,
             }}
           >
             Enviá tu ubicación al panel del admin
@@ -226,7 +227,7 @@ export default function TrackingToggle({ driverId }: Props) {
           style={{
             margin: "0 0 12px",
             fontSize: 12.5,
-            color: "#475569",
+            color: SURFACE.textSecondary,
             lineHeight: 1.5,
           }}
         >
@@ -265,7 +266,7 @@ export default function TrackingToggle({ driverId }: Props) {
               isOn && !gpsOff
                 ? "#fee2e2"
                 : "linear-gradient(135deg,#21D0B3,#14AE98)",
-            color: isOn && !gpsOff ? "#b91c1c" : "#fff",
+            color: isOn && !gpsOff ? "#b91c1c" : SURFACE.card,
             fontSize: 13,
             fontWeight: 700,
             cursor: busy ? "wait" : "pointer",
@@ -279,7 +280,7 @@ export default function TrackingToggle({ driverId }: Props) {
             style={{
               margin: "10px 0 0",
               fontSize: 11.5,
-              color: transmitting ? "#0a7a6b" : "#475569",
+              color: transmitting ? BRAND.tealInk : SURFACE.textSecondary,
               lineHeight: 1.5,
             }}
           >
@@ -292,13 +293,13 @@ export default function TrackingToggle({ driverId }: Props) {
               marginTop: 10,
               padding: "8px 10px",
               borderRadius: 8,
-              background: lastPush.lastError ? "rgba(239,68,68,0.08)" : "#f8fafc",
+              background: lastPush.lastError ? "rgba(239,68,68,0.08)" : SURFACE.bg,
               border: `1px solid ${
                 lastPush.lastError ? "rgba(239,68,68,0.25)" : "#e2e8f0"
               }`,
               fontSize: 11,
               lineHeight: 1.5,
-              color: lastPush.lastError ? "#991b1b" : "#475569",
+              color: lastPush.lastError ? "#991b1b" : SURFACE.textSecondary,
             }}
           >
             <p style={{ margin: 0, fontWeight: 700 }}>

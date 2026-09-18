@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/Icons";
 import { normalizeClientType, clientTypeLabel } from "@/lib/clientTypes";
 import { useI18n } from "@/lib/i18n";
-import { BRAND, TRIP_STATUS_META } from "@/lib/design";
+import { BRAND, TRIP_STATUS_META, STATE, SURFACE } from "@/lib/design";
 
 /**
  * Solicitudes de viaje generadas desde la app (portal del pasajero).
@@ -81,10 +81,10 @@ const LOG_META: Record<string, { label: string; color: string }> = {
   DRIVER_ASSIGNED:       { label: "Conductor asignado",     color: "#6366f1" },
   VEHICLE_ASSIGNED:      { label: "Vehículo asignado",      color: "#6366f1" },
   STATUS_CHANGED:        { label: "Cambio de estado",       color: "#7c3aed" },
-  SCHEDULE_CHANGED:      { label: "Horario modificado",     color: "#f59e0b" },
-  VEHICLE_TYPE_CHANGED:  { label: "Tipo de vehículo",       color: "#f59e0b" },
-  PASSENGER_COUNT_CHANGED:{ label: "Pasajeros",             color: "#f59e0b" },
-  CANCELLED:             { label: "Cancelada",              color: "#dc2626" },
+  SCHEDULE_CHANGED:      { label: "Horario modificado",     color: STATE.warning },
+  VEHICLE_TYPE_CHANGED:  { label: "Tipo de vehículo",       color: STATE.warning },
+  PASSENGER_COUNT_CHANGED:{ label: "Pasajeros",             color: STATE.warning },
+  CANCELLED:             { label: "Cancelada",              color: STATE.dangerText },
 };
 
 /** Traduce "SCHEDULED → EN_ROUTE" a los nombres que usa la pantalla. */
@@ -130,8 +130,8 @@ const STATUS_META: Record<string, { label: string; color: string; bg: string; bo
   SCHEDULED:   statusMetaLocal("SCHEDULED",   "Agendada",   "rgba(33,208,179,0.35)"),
   EN_ROUTE:    statusMetaLocal("EN_ROUTE",    "En ruta",    "rgba(59,130,246,0.35)"),
   PICKED_UP:   statusMetaLocal("PICKED_UP",   "En curso",   "rgba(139,92,246,0.35)"),
-  DROPPED_OFF: statusMetaLocal("DROPPED_OFF", "En destino", "#cbd5e1"),
-  COMPLETED:   statusMetaLocal("COMPLETED",   "Completada", "#cbd5e1"),
+  DROPPED_OFF: statusMetaLocal("DROPPED_OFF", "En destino", SURFACE.borderStrong),
+  COMPLETED:   statusMetaLocal("COMPLETED",   "Completada", SURFACE.borderStrong),
   CANCELLED:   statusMetaLocal("CANCELLED",   "Cancelada",  "rgba(239,68,68,0.35)"),
 };
 
@@ -148,7 +148,7 @@ function RequestTimeline({ status }: { status: string }) {
   const { t } = useI18n();
   if (status === "CANCELLED") {
     return (
-      <p className="text-[10px] mt-1.5 font-semibold" style={{ color: "#dc2626" }}>
+      <p className="text-[10px] mt-1.5 font-semibold" style={{ color: STATE.dangerText }}>
         <XIcon size={12} className="inline mr-1" />{t("Flujo interrumpido")}
       </p>
     );
@@ -172,14 +172,14 @@ function RequestTimeline({ status }: { status: string }) {
                 width: current ? 10 : 8,
                 height: current ? 10 : 8,
                 borderRadius: "50%",
-                background: reached ? meta.color : "#e2e8f0",
+                background: reached ? meta.color : SURFACE.border,
                 boxShadow: current ? `0 0 0 3px ${meta.bg}` : "none",
                 flexShrink: 0,
                 transition: "all 150ms",
               }}
             />
             {i < REQUEST_FLOW.length - 1 && (
-              <span style={{ width: 14, height: 2, background: idx > i ? meta.color : "#e2e8f0", flexShrink: 0 }} />
+              <span style={{ width: 14, height: 2, background: idx > i ? meta.color : SURFACE.border, flexShrink: 0 }} />
             )}
           </div>
         );
@@ -387,13 +387,13 @@ export default function TripRequestsPage() {
       <section className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {[
           { label: "Total", value: summary.total, color: "#1f4e8c" },
-          { label: "Pendientes", value: summary.pending, color: "#b45309" },
+          { label: "Pendientes", value: summary.pending, color: STATE.warningText },
           { label: "Agendadas", value: summary.scheduled, color: "#7c3aed" },
           { label: "T1", value: summary.t1, color: "#1f4e8c" },
           { label: "VIP", value: summary.vip, color: "#92400e" },
         ].map((c) => (
           <div key={c.label} className="surface rounded-2xl p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "#64748b" }}>{t(c.label)}</p>
+            <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: SURFACE.textMuted }}>{t(c.label)}</p>
             <p className="text-2xl font-bold" style={{ color: c.color }}>{c.value}</p>
           </div>
         ))}
@@ -403,10 +403,10 @@ export default function TripRequestsPage() {
       <section className="surface rounded-2xl p-4">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div>
-            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase", color: "#94a3b8" }}>{t("Timeline operativa")}</p>
-            <h3 style={{ marginTop: "3px", fontWeight: 700, fontSize: "16px", color: "#0f172a" }}>{t("Estado general de solicitudes")}</h3>
+            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase", color: SURFACE.textFaint }}>{t("Timeline operativa")}</p>
+            <h3 style={{ marginTop: "3px", fontWeight: 700, fontSize: "16px", color: SURFACE.text }}>{t("Estado general de solicitudes")}</h3>
           </div>
-          <span style={{ fontSize: "12px", fontWeight: 600, color: "#64748b", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "99px", padding: "4px 12px" }}>
+          <span style={{ fontSize: "12px", fontWeight: 600, color: SURFACE.textMuted, background: SURFACE.bg, border: "1px solid #e2e8f0", borderRadius: "99px", padding: "4px 12px" }}>
             {visible.length} {visible.length === 1 ? t("solicitud") : t("solicitudes")} {t("con los filtros actuales")}
           </span>
         </div>
@@ -417,7 +417,7 @@ export default function TripRequestsPage() {
             const hasItems = items.length > 0;
             return (
               <div key={status} style={{
-                background: "#fff",
+                background: SURFACE.card,
                 border: "1px solid #e2e8f0",
                 borderTop: `3px solid ${meta.color}`,
                 borderRadius: "16px",
@@ -431,8 +431,8 @@ export default function TripRequestsPage() {
                   <span style={{
                     minWidth: "22px", height: "22px", borderRadius: "99px", display: "inline-flex", alignItems: "center", justifyContent: "center",
                     fontSize: "11px", fontWeight: 800,
-                    background: hasItems ? meta.bg : "#f1f5f9",
-                    color: hasItems ? meta.color : "#64748b",
+                    background: hasItems ? meta.bg : SURFACE.borderMuted,
+                    color: hasItems ? meta.color : SURFACE.textMuted,
                     border: `1px solid ${hasItems ? meta.border : "#e2e8f0"}`,
                   }}>
                     {items.length}
@@ -441,7 +441,7 @@ export default function TripRequestsPage() {
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                   {items.slice(0, 3).map((r) => {
                     const client = normalizeClientType(r.clientType);
-                    const cm = CLIENT_META[client] ?? { color: "#475569", bg: "#f1f5f9", border: "#cbd5e1" };
+                    const cm = CLIENT_META[client] ?? { color: SURFACE.textSecondary, bg: SURFACE.borderMuted, border: SURFACE.borderStrong };
                     return (
                       <button
                         key={r.id}
@@ -449,7 +449,7 @@ export default function TripRequestsPage() {
                         onClick={() => setDetail(r)}
                         title={t("Ver detalle y bitácora")}
                         style={{
-                          background: "#f8fafc",
+                          background: SURFACE.bg,
                           border: "1px solid #e2e8f0",
                           borderLeft: `3px solid ${meta.color}`,
                           borderRadius: "10px",
@@ -464,21 +464,21 @@ export default function TripRequestsPage() {
                           <span style={{ fontSize: "9.5px", fontWeight: 800, padding: "1px 7px", borderRadius: 99, background: cm.bg, color: cm.color, border: `1px solid ${cm.border}` }}>
                             {client}
                           </span>
-                          <span style={{ fontSize: "10.5px", fontWeight: 700, color: "#64748b", fontVariantNumeric: "tabular-nums" }}>
+                          <span style={{ fontSize: "10.5px", fontWeight: 700, color: SURFACE.textMuted, fontVariantNumeric: "tabular-nums" }}>
                             {fmtDate(r.scheduledAt ?? r.requestedAt)}
                           </span>
                         </div>
-                        <p style={{ fontSize: "11.5px", fontWeight: 700, color: "#0f172a", marginTop: "5px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <p style={{ fontSize: "11.5px", fontWeight: 700, color: SURFACE.text, marginTop: "5px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {r.origin ?? t("¿Origen?")} → {r.destination ?? t("¿Destino?")}
                         </p>
-                        <p style={{ fontSize: "10.5px", color: "#94a3b8", marginTop: "1px" }}>
+                        <p style={{ fontSize: "10.5px", color: SURFACE.textFaint, marginTop: "1px" }}>
                           {r.driverId ? (driverLabel(r.driverId) ? driverName(driverLabel(r.driverId)!) : t("Conductor asignado")) : t("Sin conductor")}
                         </p>
                       </button>
                     );
                   })}
                   {items.length === 0 && (
-                    <p style={{ fontSize: "12px", color: "#94a3b8", textAlign: "center", padding: "12px 0" }}>{t("Sin solicitudes.")}</p>
+                    <p style={{ fontSize: "12px", color: SURFACE.textFaint, textAlign: "center", padding: "12px 0" }}>{t("Sin solicitudes.")}</p>
                   )}
                   {items.length > 3 && (
                     <button
@@ -520,7 +520,7 @@ export default function TripRequestsPage() {
           <option value="VIP">{t("Sólo VIP")}</option>
         </select>
         <div className="relative flex-1 min-w-[200px]">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#94a3b8" }}>
+          <span className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: SURFACE.textFaint }}>
             <SearchIcon size={15} />
           </span>
           <input className="input pl-9 w-full" placeholder={t("Buscar origen, destino, notas…")} value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -532,7 +532,7 @@ export default function TripRequestsPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr style={{ background: "#f8fafc", color: "#475569" }} className="text-left text-xs uppercase tracking-wide">
+              <tr style={{ background: SURFACE.bg, color: SURFACE.textSecondary }} className="text-left text-xs uppercase tracking-wide">
                 <th className="px-4 py-3">{t("Cliente")}</th>
                 <th className="px-4 py-3">{t("Ruta")}</th>
                 <th className="px-4 py-3">{t("Pax")}</th>
@@ -544,13 +544,13 @@ export default function TripRequestsPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={7} className="px-4 py-10 text-center" style={{ color: "#94a3b8" }}>{t("Cargando…")}</td></tr>
+                <tr><td colSpan={7} className="px-4 py-10 text-center" style={{ color: SURFACE.textFaint }}>{t("Cargando…")}</td></tr>
               ) : visible.length === 0 ? (
-                <tr><td colSpan={7} className="px-4 py-10 text-center" style={{ color: "#94a3b8" }}>{t("No hay solicitudes que coincidan con los filtros.")}</td></tr>
+                <tr><td colSpan={7} className="px-4 py-10 text-center" style={{ color: SURFACE.textFaint }}>{t("No hay solicitudes que coincidan con los filtros.")}</td></tr>
               ) : visible.map((r) => {
-                const sm = STATUS_META[r.status] ?? { label: r.status, color: "#475569", bg: "#f1f5f9", border: "#cbd5e1" };
+                const sm = STATUS_META[r.status] ?? { label: r.status, color: SURFACE.textSecondary, bg: SURFACE.borderMuted, border: SURFACE.borderStrong };
                 const client = normalizeClientType(r.clientType);
-                const cm = CLIENT_META[client] ?? { color: "#475569", bg: "#f1f5f9", border: "#cbd5e1" };
+                const cm = CLIENT_META[client] ?? { color: SURFACE.textSecondary, bg: SURFACE.borderMuted, border: SURFACE.borderStrong };
                 const dr = driverLabel(r.driverId);
                 const canManage = r.status === "REQUESTED" || r.status === "SCHEDULED";
                 return (
@@ -561,7 +561,7 @@ export default function TripRequestsPage() {
                         {clientTypeLabel(r.clientType)}
                       </span>
                     </td>
-                    <td className="px-4 py-3" style={{ color: "#334155" }}>
+                    <td className="px-4 py-3" style={{ color: SURFACE.textStrong }}>
                       {r.legType === "RETURN" && (
                         <span className="inline-flex items-center text-[10px] font-bold rounded px-1.5 py-0.5 mr-1.5"
                           style={{ color: "#7c3aed", background: "#f5f3ff", border: "1px solid #ddd6fe" }}>
@@ -569,15 +569,15 @@ export default function TripRequestsPage() {
                         </span>
                       )}
                       <span className="font-medium">{r.origin ?? "—"}</span>
-                      <span style={{ color: "#94a3b8", display: "inline-flex", margin: "0 4px", verticalAlign: "middle" }}><ArrowRightIcon size={12} /></span>
+                      <span style={{ color: SURFACE.textFaint, display: "inline-flex", margin: "0 4px", verticalAlign: "middle" }}><ArrowRightIcon size={12} /></span>
                       <span className="font-medium">{r.destination ?? "—"}</span>
-                      {r.notes && <p className="text-xs mt-0.5" style={{ color: "#94a3b8" }}>{r.notes}</p>}
+                      {r.notes && <p className="text-xs mt-0.5" style={{ color: SURFACE.textFaint }}>{r.notes}</p>}
                     </td>
-                    <td className="px-4 py-3" style={{ color: "#334155" }}>{r.passengerCount ?? "—"}</td>
-                    <td className="px-4 py-3" style={{ color: "#334155" }}>{fmtDate(r.scheduledAt ?? r.requestedAt)}</td>
-                    <td className="px-4 py-3" style={{ color: "#334155" }}>
-                      {dr ? driverName(dr) : <span style={{ color: "#94a3b8" }}>{t("Sin asignar")}</span>}
-                      {r.vehiclePlate && <span className="text-xs" style={{ color: "#94a3b8" }}> · {r.vehiclePlate}</span>}
+                    <td className="px-4 py-3" style={{ color: SURFACE.textStrong }}>{r.passengerCount ?? "—"}</td>
+                    <td className="px-4 py-3" style={{ color: SURFACE.textStrong }}>{fmtDate(r.scheduledAt ?? r.requestedAt)}</td>
+                    <td className="px-4 py-3" style={{ color: SURFACE.textStrong }}>
+                      {dr ? driverName(dr) : <span style={{ color: SURFACE.textFaint }}>{t("Sin asignar")}</span>}
+                      {r.vehiclePlate && <span className="text-xs" style={{ color: SURFACE.textFaint }}> · {r.vehiclePlate}</span>}
                     </td>
                     <td className="px-4 py-3">
                       <span className="inline-flex items-center text-xs font-semibold rounded-full px-2.5 py-0.5"
@@ -592,7 +592,7 @@ export default function TripRequestsPage() {
                           <button type="button" className="btn btn-ghost text-xs" onClick={() => openAssign(r)}>
                             {r.status === "SCHEDULED" ? t("Reasignar") : t("Asignar")}
                           </button>
-                          <button type="button" className="btn btn-ghost text-xs" style={{ color: "#dc2626" }} onClick={() => cancelRequest(r)}>
+                          <button type="button" className="btn btn-ghost text-xs" style={{ color: STATE.dangerText }} onClick={() => cancelRequest(r)}>
                             {t("Cancelar")}
                           </button>
                         </>
@@ -608,7 +608,7 @@ export default function TripRequestsPage() {
 
       {/* Listado completo de una columna del tablero */}
       {listStatus && (() => {
-        const meta = STATUS_META[listStatus] ?? { label: listStatus, color: "#475569", bg: "#f1f5f9", border: "#cbd5e1" };
+        const meta = STATUS_META[listStatus] ?? { label: listStatus, color: SURFACE.textSecondary, bg: SURFACE.borderMuted, border: SURFACE.borderStrong };
         const items = itemsForStatus(listStatus);
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(15,23,42,0.45)" }}
@@ -621,7 +621,7 @@ export default function TripRequestsPage() {
                     style={{ color: meta.color, background: meta.bg, border: `1px solid ${meta.border}` }}>
                     {t(meta.label)}
                   </span>
-                  <span className="text-xs font-semibold" style={{ color: "#64748b" }}>
+                  <span className="text-xs font-semibold" style={{ color: SURFACE.textMuted }}>
                     {items.length} {items.length === 1 ? t("solicitud") : t("solicitudes")}
                   </span>
                 </div>
@@ -631,7 +631,7 @@ export default function TripRequestsPage() {
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {items.map((r) => {
                   const client = normalizeClientType(r.clientType);
-                  const cm = CLIENT_META[client] ?? { color: "#475569", bg: "#f1f5f9", border: "#cbd5e1" };
+                  const cm = CLIENT_META[client] ?? { color: SURFACE.textSecondary, bg: SURFACE.borderMuted, border: SURFACE.borderStrong };
                   const dr = driverLabel(r.driverId);
                   return (
                     <button
@@ -640,7 +640,7 @@ export default function TripRequestsPage() {
                       onClick={() => { setListStatus(null); setDetail(r); }}
                       title={t("Ver detalle y bitácora")}
                       style={{
-                        background: "#f8fafc", border: "1px solid #e2e8f0", borderLeft: `3px solid ${meta.color}`,
+                        background: SURFACE.bg, border: "1px solid #e2e8f0", borderLeft: `3px solid ${meta.color}`,
                         borderRadius: 10, padding: "8px 10px", width: "100%", textAlign: "left", cursor: "pointer", display: "block",
                       }}
                     >
@@ -655,14 +655,14 @@ export default function TripRequestsPage() {
                             </span>
                           )}
                         </span>
-                        <span style={{ fontSize: "10.5px", fontWeight: 700, color: "#64748b", fontVariantNumeric: "tabular-nums" }}>
+                        <span style={{ fontSize: "10.5px", fontWeight: 700, color: SURFACE.textMuted, fontVariantNumeric: "tabular-nums" }}>
                           {fmtDate(r.scheduledAt ?? r.requestedAt)}
                         </span>
                       </div>
-                      <p style={{ fontSize: "11.5px", fontWeight: 700, color: "#0f172a", marginTop: 5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <p style={{ fontSize: "11.5px", fontWeight: 700, color: SURFACE.text, marginTop: 5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {r.origin ?? t("¿Origen?")} → {r.destination ?? t("¿Destino?")}
                       </p>
-                      <p style={{ fontSize: "10.5px", color: "#94a3b8", marginTop: 1 }}>
+                      <p style={{ fontSize: "10.5px", color: SURFACE.textFaint, marginTop: 1 }}>
                         {dr ? driverName(dr) : t("Sin conductor")}
                       </p>
                     </button>
@@ -676,7 +676,7 @@ export default function TripRequestsPage() {
 
       {/* Detalle de la solicitud: datos + bitácora */}
       {detail && (() => {
-        const sm = STATUS_META[detail.status] ?? { label: detail.status, color: "#475569", bg: "#f1f5f9", border: "#cbd5e1" };
+        const sm = STATUS_META[detail.status] ?? { label: detail.status, color: SURFACE.textSecondary, bg: SURFACE.borderMuted, border: SURFACE.borderStrong };
         const dr = driverLabel(detail.driverId);
         const entries = [...(detail.metadata?.log ?? [])].sort(
           (a, b) => new Date(a.at ?? 0).getTime() - new Date(b.at ?? 0).getTime(),
@@ -693,13 +693,13 @@ export default function TripRequestsPage() {
                       style={{ color: sm.color, background: sm.bg, border: `1px solid ${sm.border}` }}>
                       {t(sm.label)}
                     </span>
-                    <span className="text-xs font-bold" style={{ color: "#64748b" }}>{clientTypeLabel(detail.clientType)}</span>
+                    <span className="text-xs font-bold" style={{ color: SURFACE.textMuted }}>{clientTypeLabel(detail.clientType)}</span>
                     {detail.legType === "RETURN" && (
                       <span className="text-[10px] font-bold rounded px-1.5 py-0.5"
                         style={{ color: "#7c3aed", background: "#f5f3ff", border: "1px solid #ddd6fe" }}>{t("Vuelta")}</span>
                     )}
                   </div>
-                  <h3 className="text-base font-bold" style={{ color: "#0f172a" }}>
+                  <h3 className="text-base font-bold" style={{ color: SURFACE.text }}>
                     {detail.origin ?? t("¿Origen?")} → {detail.destination ?? t("¿Destino?")}
                   </h3>
                 </div>
@@ -713,64 +713,64 @@ export default function TripRequestsPage() {
                   [t("Conductor"), dr ? driverName(dr) : t("Sin asignar")],
                   [t("Vehículo"), detail.vehiclePlate ?? "—"],
                 ].map(([k, v]) => (
-                  <div key={k} style={{ background: "#f8fafc", border: "1px solid #eef2f7", borderRadius: 10, padding: "8px 10px" }}>
-                    <p style={{ color: "#94a3b8", fontWeight: 700, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", margin: 0 }}>{k}</p>
-                    <p style={{ color: "#0f172a", fontWeight: 700, margin: "2px 0 0" }}>{v}</p>
+                  <div key={k} style={{ background: SURFACE.bg, border: "1px solid #eef2f7", borderRadius: 10, padding: "8px 10px" }}>
+                    <p style={{ color: SURFACE.textFaint, fontWeight: 700, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", margin: 0 }}>{k}</p>
+                    <p style={{ color: SURFACE.text, fontWeight: 700, margin: "2px 0 0" }}>{v}</p>
                   </div>
                 ))}
               </div>
 
               <div>
-                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "#94a3b8", marginBottom: 6 }}>
+                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: SURFACE.textFaint, marginBottom: 6 }}>
                   {t("Pasajeros")}
                   {detail.passengerCount != null && (
-                    <span style={{ marginLeft: 6, color: "#64748b", letterSpacing: 0 }}>· {detail.passengerCount}</span>
+                    <span style={{ marginLeft: 6, color: SURFACE.textMuted, letterSpacing: 0 }}>· {detail.passengerCount}</span>
                   )}
                 </p>
                 {(detail.athleteNames ?? []).length > 0 ? (
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                     {(detail.athleteNames ?? []).map((name, i) => (
                       <span key={`${name}-${i}`} className="text-xs font-semibold"
-                        style={{ color: "#334155", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 99, padding: "3px 10px" }}>
+                        style={{ color: SURFACE.textStrong, background: SURFACE.bg, border: "1px solid #e2e8f0", borderRadius: 99, padding: "3px 10px" }}>
                         {name}
                       </span>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs" style={{ color: "#94a3b8" }}>{t("Sin pasajeros ligados a la solicitud.")}</p>
+                  <p className="text-xs" style={{ color: SURFACE.textFaint }}>{t("Sin pasajeros ligados a la solicitud.")}</p>
                 )}
               </div>
 
               {detail.notes && (
-                <p className="text-xs" style={{ color: "#64748b", background: "#f8fafc", border: "1px solid #eef2f7", borderRadius: 10, padding: "8px 10px" }}>
+                <p className="text-xs" style={{ color: SURFACE.textMuted, background: SURFACE.bg, border: "1px solid #eef2f7", borderRadius: 10, padding: "8px 10px" }}>
                   {detail.notes}
                 </p>
               )}
 
               <div>
-                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "#94a3b8", marginBottom: 10 }}>
+                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: SURFACE.textFaint, marginBottom: 10 }}>
                   {t("Bitácora")}
                 </p>
                 {entries.length === 0 ? (
-                  <p className="text-xs" style={{ color: "#94a3b8" }}>
+                  <p className="text-xs" style={{ color: SURFACE.textFaint }}>
                     {t("Sin movimientos registrados. La bitácora empieza a llenarse con los cambios hechos desde la plataforma.")}
                   </p>
                 ) : (
                   <ol style={{ listStyle: "none", margin: 0, padding: 0 }}>
                     {entries.map((e, i) => {
-                      const lm = LOG_META[e.action ?? ""] ?? { label: e.action ?? t("Movimiento"), color: "#64748b" };
+                      const lm = LOG_META[e.action ?? ""] ?? { label: e.action ?? t("Movimiento"), color: SURFACE.textMuted };
                       const det = readableDetail(e);
                       const last = i === entries.length - 1;
                       return (
                         <li key={`${e.at}-${i}`} style={{ display: "flex", gap: 10 }}>
                           <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                             <span style={{ width: 9, height: 9, borderRadius: 99, background: lm.color, marginTop: 4, flexShrink: 0 }} />
-                            {!last && <span style={{ width: 2, flex: 1, background: "#e2e8f0", margin: "2px 0" }} />}
+                            {!last && <span style={{ width: 2, flex: 1, background: SURFACE.border, margin: "2px 0" }} />}
                           </div>
                           <div style={{ paddingBottom: last ? 0 : 14, minWidth: 0 }}>
-                            <p style={{ fontSize: 12.5, fontWeight: 700, color: "#0f172a", margin: 0 }}>{t(lm.label)}</p>
-                            {det && <p style={{ fontSize: 12, color: "#475569", margin: "1px 0 0" }}>{det}</p>}
-                            <p style={{ fontSize: 11, color: "#94a3b8", margin: "2px 0 0" }}>
+                            <p style={{ fontSize: 12.5, fontWeight: 700, color: SURFACE.text, margin: 0 }}>{t(lm.label)}</p>
+                            {det && <p style={{ fontSize: 12, color: SURFACE.textSecondary, margin: "1px 0 0" }}>{det}</p>}
+                            <p style={{ fontSize: 11, color: SURFACE.textFaint, margin: "2px 0 0" }}>
                               {fmtStamp(e.at)}{e.by ? ` · ${e.by}` : ""}
                             </p>
                           </div>
@@ -798,17 +798,17 @@ export default function TripRequestsPage() {
           <div className="surface rounded-2xl p-5 w-full max-w-md space-y-4">
             <div>
               <h3 className="text-lg font-bold" style={{ color: "#1f4e8c" }}>{t("Asignar solicitud")} {clientTypeLabel(assigning.clientType)}</h3>
-              <p className="text-xs" style={{ color: "#94a3b8" }}>{assigning.origin ?? "—"} → {assigning.destination ?? "—"}</p>
+              <p className="text-xs" style={{ color: SURFACE.textFaint }}>{assigning.origin ?? "—"} → {assigning.destination ?? "—"}</p>
             </div>
             <label className="block text-sm">
-              <span className="font-semibold" style={{ color: "#475569" }}>{t("Conductor")}</span>
+              <span className="font-semibold" style={{ color: SURFACE.textSecondary }}>{t("Conductor")}</span>
               <select className="input w-full mt-1" value={assignDriverId} onChange={(e) => setAssignDriverId(e.target.value)}>
                 <option value="">{t("— Sin conductor —")}</option>
                 {drivers.map((d) => <option key={d.id} value={d.id}>{driverName(d)}</option>)}
               </select>
             </label>
             <label className="block text-sm">
-              <span className="font-semibold" style={{ color: "#475569" }}>{t("Vehículo")}</span>
+              <span className="font-semibold" style={{ color: SURFACE.textSecondary }}>{t("Vehículo")}</span>
               <select className="input w-full mt-1" value={assignVehicleId} onChange={(e) => setAssignVehicleId(e.target.value)}>
                 <option value="">{t("— Sin vehículo —")}</option>
                 {vehicles.map((v) => <option key={v.id} value={v.id}>{v.plate ?? v.id}</option>)}

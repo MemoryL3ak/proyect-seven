@@ -1,5 +1,6 @@
 "use client";
 import { ArrowLeftIcon } from "@/components/ui/Icons";
+import { BRAND, SURFACE } from "@/lib/design";
 
 /**
  * QR a pantalla completa DENTRO del portal, con botón "← Volver" siempre
@@ -52,7 +53,7 @@ export default function QrFullscreenOverlay({
             borderRadius: 10,
             border: "1px solid rgba(52,243,198,0.4)",
             background: "rgba(33,208,179,0.15)",
-            color: "#34F3C6",
+            color: BRAND.tealLight,
             fontSize: 14,
             fontWeight: 700,
             cursor: "pointer",
@@ -66,7 +67,7 @@ export default function QrFullscreenOverlay({
           style={{
             fontSize: 13.5,
             fontWeight: 700,
-            color: "#fff",
+            color: SURFACE.card,
             margin: 0,
             flex: 1,
             minWidth: 0,
@@ -93,7 +94,7 @@ export default function QrFullscreenOverlay({
         <div
           onClick={(e) => e.stopPropagation()}
           style={{
-            background: "#fff",
+            background: SURFACE.card,
             borderRadius: 20,
             padding: 18,
             boxShadow: "0 24px 80px rgba(0,0,0,0.5)",
@@ -116,7 +117,7 @@ export default function QrFullscreenOverlay({
               fontSize: 22,
               fontWeight: 800,
               letterSpacing: "0.3em",
-              color: "#34F3C6",
+              color: BRAND.tealLight,
               margin: 0,
             }}
           >

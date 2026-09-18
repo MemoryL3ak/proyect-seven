@@ -8,6 +8,7 @@ import {
   type CuadernoCategoryKey,
 } from "@/lib/cuadernoCargo";
 import { BookOpenIcon } from "@/components/ui/Icons";
+import { BRAND, SURFACE } from "@/lib/design";
 
 /**
  * Cuaderno de Cargo para la sección "Cuenta" de los portales.
@@ -33,12 +34,12 @@ export default function CuadernoCargoSection() {
   }, [categoria, busqueda]);
 
   const colorDe = (key: CuadernoCategoryKey) =>
-    CUADERNO_CATEGORIES.find((c) => c.key === key)?.color || "#64748b";
+    CUADERNO_CATEGORIES.find((c) => c.key === key)?.color || SURFACE.textMuted;
 
   return (
     <div
       style={{
-        background: "#ffffff",
+        background: SURFACE.card,
         border: "1px solid #e2e8f0",
         borderRadius: 16,
         overflow: "hidden",
@@ -63,22 +64,22 @@ export default function CuadernoCargoSection() {
         <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span aria-hidden style={{ display: "inline-flex" }}><BookOpenIcon size={18} /></span>
           <span>
-            <span style={{ display: "block", fontSize: 13.5, fontWeight: 700, color: "#0f172a" }}>
+            <span style={{ display: "block", fontSize: 13.5, fontWeight: 700, color: SURFACE.text }}>
               Cuaderno de Cargo
             </span>
-            <span style={{ display: "block", fontSize: 11.5, color: "#64748b" }}>
+            <span style={{ display: "block", fontSize: 11.5, color: SURFACE.textMuted }}>
               Referencia operativa de transporte: glosario, roles, recintos y coordinadores
             </span>
           </span>
         </span>
-        <span aria-hidden style={{ color: "#94a3b8", transform: open ? "rotate(90deg)" : "none", transition: "transform 150ms ease" }}>
+        <span aria-hidden style={{ color: SURFACE.textFaint, transform: open ? "rotate(90deg)" : "none", transition: "transform 150ms ease" }}>
           ›
         </span>
       </button>
 
       {open && (
         <div style={{ padding: "0 16px 16px", borderTop: "1px solid #f1f5f9" }}>
-          <p style={{ fontSize: 11.5, color: "#64748b", margin: "12px 0" }}>{CUADERNO_INFO.desc.es}</p>
+          <p style={{ fontSize: 11.5, color: SURFACE.textMuted, margin: "12px 0" }}>{CUADERNO_INFO.desc.es}</p>
 
           <input
             type="search"
@@ -103,9 +104,9 @@ export default function CuadernoCargoSection() {
                 padding: "4px 10px",
                 borderRadius: 999,
                 border: "1px solid",
-                borderColor: categoria === "all" ? "#21D0B3" : "#e2e8f0",
-                background: categoria === "all" ? "rgba(33,208,179,0.1)" : "#fff",
-                color: categoria === "all" ? "#0f766e" : "#64748b",
+                borderColor: categoria === "all" ? BRAND.teal : SURFACE.border,
+                background: categoria === "all" ? "rgba(33,208,179,0.1)" : SURFACE.card,
+                color: categoria === "all" ? "#0f766e" : SURFACE.textMuted,
                 fontSize: 11,
                 fontWeight: 700,
                 cursor: "pointer",
@@ -122,9 +123,9 @@ export default function CuadernoCargoSection() {
                   padding: "4px 10px",
                   borderRadius: 999,
                   border: "1px solid",
-                  borderColor: categoria === c.key ? c.color : "#e2e8f0",
-                  background: categoria === c.key ? `${c.color}18` : "#fff",
-                  color: categoria === c.key ? c.color : "#64748b",
+                  borderColor: categoria === c.key ? c.color : SURFACE.border,
+                  background: categoria === c.key ? `${c.color}18` : SURFACE.card,
+                  color: categoria === c.key ? c.color : SURFACE.textMuted,
                   fontSize: 11,
                   fontWeight: 700,
                   cursor: "pointer",
@@ -137,7 +138,7 @@ export default function CuadernoCargoSection() {
 
           <div style={{ maxHeight: 320, overflowY: "auto", display: "grid", gap: 8 }}>
             {entradas.length === 0 ? (
-              <p style={{ fontSize: 12.5, color: "#94a3b8", textAlign: "center", padding: "16px 0" }}>
+              <p style={{ fontSize: 12.5, color: SURFACE.textFaint, textAlign: "center", padding: "16px 0" }}>
                 Sin resultados para la búsqueda.
               </p>
             ) : (
@@ -152,8 +153,8 @@ export default function CuadernoCargoSection() {
                     background: "#fbfdff",
                   }}
                 >
-                  <p style={{ fontSize: 12.5, fontWeight: 700, color: "#0f172a", margin: 0 }}>{e.term}</p>
-                  <p style={{ fontSize: 12, color: "#475569", margin: "4px 0 0", lineHeight: 1.5 }}>{e.detail}</p>
+                  <p style={{ fontSize: 12.5, fontWeight: 700, color: SURFACE.text, margin: 0 }}>{e.term}</p>
+                  <p style={{ fontSize: 12, color: SURFACE.textSecondary, margin: "4px 0 0", lineHeight: 1.5 }}>{e.detail}</p>
                 </div>
               ))
             )}

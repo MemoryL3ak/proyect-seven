@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import QRCode from "qrcode";
 import { downloadCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
 import { CheckCircleIcon, AlertIcon } from "@/components/ui/Icons";
+import { STATE, SURFACE } from "@/lib/design";
 
 /**
  * Página de descarga de la credencial en PDF.
@@ -77,7 +78,7 @@ function CredencialDownload() {
         />
         {status === "generando" && (
           <>
-            <h1 style={{ fontSize: 18, fontWeight: 800, color: "#fff", margin: 0 }}>Generando tu credencial…</h1>
+            <h1 style={{ fontSize: 18, fontWeight: 800, color: SURFACE.card, margin: 0 }}>Generando tu credencial…</h1>
             <p style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", margin: "8px 0 0" }}>
               La descarga comenzará en un instante.
             </p>
@@ -85,8 +86,8 @@ function CredencialDownload() {
         )}
         {status === "listo" && (
           <>
-            <div style={{ marginBottom: 8, color: "#10b981", display: "flex", justifyContent: "center" }}><CheckCircleIcon size={40} /></div>
-            <h1 style={{ fontSize: 18, fontWeight: 800, color: "#fff", margin: 0 }}>Credencial descargada</h1>
+            <div style={{ marginBottom: 8, color: STATE.success, display: "flex", justifyContent: "center" }}><CheckCircleIcon size={40} /></div>
+            <h1 style={{ fontSize: 18, fontWeight: 800, color: SURFACE.card, margin: 0 }}>Credencial descargada</h1>
             <p style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", margin: "8px 0 18px", lineHeight: 1.5 }}>
               Revisa la carpeta de descargas de tu teléfono. Ya puedes cerrar esta pestaña y volver a la app.
             </p>
@@ -113,8 +114,8 @@ function CredencialDownload() {
         )}
         {status === "error" && (
           <>
-            <div style={{ marginBottom: 8, color: "#f59e0b", display: "flex", justifyContent: "center" }}><AlertIcon size={40} /></div>
-            <h1 style={{ fontSize: 18, fontWeight: 800, color: "#fff", margin: 0 }}>No se pudo generar la credencial</h1>
+            <div style={{ marginBottom: 8, color: STATE.warning, display: "flex", justifyContent: "center" }}><AlertIcon size={40} /></div>
+            <h1 style={{ fontSize: 18, fontWeight: 800, color: SURFACE.card, margin: 0 }}>No se pudo generar la credencial</h1>
             <p style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", margin: "8px 0 0", lineHeight: 1.5 }}>
               El enlace es inválido o está incompleto. Vuelve a la app e intenta nuevamente desde tu credencial.
             </p>

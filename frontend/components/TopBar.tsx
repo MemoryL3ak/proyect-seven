@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { clearTokens, getStoredUser } from "@/lib/api";
+import { BRAND, SURFACE } from "@/lib/design";
 import { humanizePath } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n";
 
@@ -122,7 +123,7 @@ export default function TopBar({ onMenuOpen }: { onMenuOpen?: () => void }) {
             background: "#f0f3fa",
             border: "1px solid #e2e8f0",
             cursor: "pointer",
-            color: "#30455B",
+            color: BRAND.charcoal,
             flexShrink: 0,
           }}
         >
@@ -142,7 +143,7 @@ export default function TopBar({ onMenuOpen }: { onMenuOpen?: () => void }) {
         />
         <div style={{ width: "1px", height: "22px", background: "linear-gradient(to bottom, transparent, #cbd5e1, transparent)" }} />
         <div>
-          <h2 style={{ fontSize: "1.25rem", fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.1, color: "#0f172a" }}>
+          <h2 style={{ fontSize: "1.25rem", fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.1, color: SURFACE.text }}>
             {title}
           </h2>
         </div>
@@ -155,7 +156,7 @@ export default function TopBar({ onMenuOpen }: { onMenuOpen?: () => void }) {
           display: "flex",
           alignItems: "center",
           gap: "10px",
-          background: "#ffffff",
+          background: SURFACE.card,
           border: "1px solid #e2e8f0",
           borderRadius: "12px",
           padding: "6px 10px",
@@ -168,7 +169,7 @@ export default function TopBar({ onMenuOpen }: { onMenuOpen?: () => void }) {
             height: "30px",
             borderRadius: "50%",
             background: "rgba(33,208,179,0.12)",
-            color: "#21D0B3",
+            color: BRAND.teal,
             display: "grid",
             placeItems: "center",
             fontSize: "12px",
@@ -182,7 +183,7 @@ export default function TopBar({ onMenuOpen }: { onMenuOpen?: () => void }) {
               margin: 0,
               fontSize: "12px",
               fontWeight: 700,
-              color: "#0f172a",
+              color: SURFACE.text,
               whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -194,7 +195,7 @@ export default function TopBar({ onMenuOpen }: { onMenuOpen?: () => void }) {
               margin: 0,
               fontSize: "10px",
               fontWeight: 600,
-              color: "#64748b",
+              color: SURFACE.textMuted,
               letterSpacing: "0.04em",
               textTransform: "uppercase",
               whiteSpace: "nowrap",
@@ -219,8 +220,8 @@ export default function TopBar({ onMenuOpen }: { onMenuOpen?: () => void }) {
             padding: "0 14px",
             borderRadius: "12px",
             border: "1px solid #e2e8f0",
-            background: "#ffffff",
-            color: "#475569",
+            background: SURFACE.card,
+            color: SURFACE.textSecondary,
             fontSize: "13px",
             fontWeight: 600,
             cursor: "pointer",

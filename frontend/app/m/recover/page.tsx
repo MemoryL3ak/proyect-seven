@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { mobileRecover } from "@/lib/api";
+import { SURFACE } from "@/lib/design";
 
 export default function MobileRecoverPage() {
   const router = useRouter();
@@ -48,7 +49,7 @@ export default function MobileRecoverPage() {
           alt="Seven Arena"
           style={{ height: 88, width: "auto", objectFit: "contain", marginBottom: "16px" }}
         />
-        <h1 style={{ fontSize: "22px", fontWeight: 700, color: "#f1f5f9", margin: 0 }}>
+        <h1 style={{ fontSize: "22px", fontWeight: 700, color: SURFACE.borderMuted, margin: 0 }}>
           Recordarme mi código
         </h1>
         <p
@@ -104,7 +105,7 @@ export default function MobileRecoverPage() {
                 borderRadius: "12px",
                 border: "1px solid rgba(255,255,255,0.18)",
                 background: "rgba(255,255,255,0.06)",
-                color: "#f1f5f9",
+                color: SURFACE.borderMuted,
                 fontSize: "15px",
                 fontWeight: 600,
                 cursor: "pointer",
@@ -147,7 +148,7 @@ export default function MobileRecoverPage() {
                   borderRadius: "12px",
                   border: `1px solid ${email ? "rgba(52,243,198,0.5)" : "rgba(255,255,255,0.12)"}`,
                   background: "rgba(255,255,255,0.08)",
-                  color: "#f1f5f9",
+                  color: SURFACE.borderMuted,
                   fontSize: "15px",
                   outline: "none",
                   transition: "border-color 150ms",

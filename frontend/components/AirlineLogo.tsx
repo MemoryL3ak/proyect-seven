@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { SURFACE } from "@/lib/design";
 
 /**
  * Logo de aerolínea. Si el código IATA no viene, lo deduce del número de vuelo
@@ -28,13 +29,13 @@ export default function AirlineLogo({
   const box: React.CSSProperties = {
     width: size, height: size, borderRadius: "10px", flexShrink: 0,
     display: "flex", alignItems: "center", justifyContent: "center",
-    background: "#fff", border: "1px solid #e2e8f0", overflow: "hidden",
+    background: SURFACE.card, border: "1px solid #e2e8f0", overflow: "hidden",
   };
 
   if (!code || failed) {
     return (
       <div style={{ ...box, background: "linear-gradient(135deg,#e2e8f0,#f1f5f9)" }} title={name ?? undefined}>
-        <span style={{ fontSize: size * 0.34, fontWeight: 800, color: "#64748b", letterSpacing: "0.04em" }}>
+        <span style={{ fontSize: size * 0.34, fontWeight: 800, color: SURFACE.textMuted, letterSpacing: "0.04em" }}>
           {code || (name ?? "?").slice(0, 2).toUpperCase()}
         </span>
       </div>

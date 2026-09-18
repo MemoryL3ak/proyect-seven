@@ -34,6 +34,7 @@ import {
   BookOpenIcon,
   FileTextIcon,
 } from "@/components/ui/Icons";
+import { BRAND, STATE, SURFACE } from "@/lib/design";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type Locale = "es" | "en" | "pt";
@@ -75,7 +76,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
     {
       icon: "calendar", title: "Registro de Eventos",
       desc: "Creación y configuración del evento deportivo principal.",
-      badge: "Registro", badgeColor: "#10b981",
+      badge: "Registro", badgeColor: STATE.success,
       items: [
         "Define nombre, fechas, sede y disciplinas del evento.",
         "El evento es el contenedor de todos los participantes, conductores y operaciones.",
@@ -85,7 +86,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
     {
       icon: "user", title: "Inscripción de Participantes",
       desc: "Gestión de atletas, delegaciones y acreditaciones.",
-      badge: "Registro", badgeColor: "#10b981",
+      badge: "Registro", badgeColor: STATE.success,
       items: [
         "Importación masiva de participantes mediante archivo Excel.",
         "Asignación de delegación, disciplina y categoría.",
@@ -96,7 +97,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
     {
       icon: "building", title: "Proveedores",
       desc: "Catálogo de proveedores externos clasificados por tipo y subtipo.",
-      badge: "Registro", badgeColor: "#10b981",
+      badge: "Registro", badgeColor: STATE.success,
       items: [
         "Tipos: Transporte, Logística, Hotelería, Alimentación, Staff, Infraestructura, etc.",
         "Cada proveedor puede tener subtipo (ej. Staff → Recursos Humanos).",
@@ -106,7 +107,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
     {
       icon: "bus", title: "Transporte",
       desc: "Gestión de conductores, vehículos y viajes.",
-      badge: "Operación", badgeColor: "#f59e0b",
+      badge: "Operación", badgeColor: STATE.warning,
       items: [
         "Registro de conductores con licencia, vehículo y monto licitado/presupuesto.",
         "El campo 'Monto licitado' alimenta el Dashboard Comercial con datos reales.",
@@ -118,7 +119,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
     {
       icon: "hotel", title: "Hotelería",
       desc: "Asignación de habitaciones, llaves y extras de hotel.",
-      badge: "Operación", badgeColor: "#f59e0b",
+      badge: "Operación", badgeColor: STATE.warning,
       items: [
         "Configuración de hoteles, habitaciones y camas.",
         "Asignación de atletas a habitaciones (individual o automática por tipo).",
@@ -130,7 +131,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
     {
       icon: "utensils", title: "Alimentación",
       desc: "Control de menús, comedores y servicios de alimentación.",
-      badge: "Operación", badgeColor: "#f59e0b",
+      badge: "Operación", badgeColor: STATE.warning,
       items: [
         "Define tipos de alimentación (Desayuno, Almuerzo, Cena).",
         "Configura lugares de comida (comedores, restaurantes).",
@@ -141,7 +142,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
     {
       icon: "heart-pulse", title: "Salud",
       desc: "Registro de atenciones médicas y control antidopaje.",
-      badge: "Operación", badgeColor: "#f59e0b",
+      badge: "Operación", badgeColor: STATE.warning,
       items: [
         "Registro de atenciones médicas por participante.",
         "Control de documentos de salud requeridos.",
@@ -163,7 +164,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
     {
       icon: "calendar", title: "Calendario Operacional",
       desc: "Vista de disciplinas, competencias y actividades por día.",
-      badge: "Planificación", badgeColor: "#64748b",
+      badge: "Planificación", badgeColor: SURFACE.textMuted,
       items: [
         "Navega por día para ver las competencias programadas.",
         "Cada disciplina muestra su venue, hora y estado.",
@@ -173,7 +174,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
     {
       icon: "users", title: "Administración de Usuarios",
       desc: "Gestión de accesos y roles de los operadores de la plataforma.",
-      badge: "Admin", badgeColor: "#ef4444",
+      badge: "Admin", badgeColor: STATE.danger,
       items: [
         "Creación de usuarios con email o nombre de usuario.",
         "Roles disponibles: Administrador, Supervisor, Operador, Coordinador, Visualizador.",
@@ -206,7 +207,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
     {
       icon: "calendar", title: "Event Registration",
       desc: "Creation and configuration of the main sports event.",
-      badge: "Registration", badgeColor: "#10b981",
+      badge: "Registration", badgeColor: STATE.success,
       items: [
         "Defines event name, dates, venue and disciplines.",
         "The event is the container for all participants, drivers and operations.",
@@ -216,7 +217,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
     {
       icon: "user", title: "Participant Registration",
       desc: "Management of athletes, delegations and accreditations.",
-      badge: "Registration", badgeColor: "#10b981",
+      badge: "Registration", badgeColor: STATE.success,
       items: [
         "Bulk import of participants via Excel file.",
         "Assignment of delegation, discipline and category.",
@@ -227,7 +228,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
     {
       icon: "building", title: "Providers",
       desc: "Catalog of external providers classified by type and subtype.",
-      badge: "Registration", badgeColor: "#10b981",
+      badge: "Registration", badgeColor: STATE.success,
       items: [
         "Types: Transport, Logistics, Hospitality, Food, Staff, Infrastructure, etc.",
         "Each provider can have a subtype (e.g. Staff → Human Resources).",
@@ -237,7 +238,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
     {
       icon: "bus", title: "Transport",
       desc: "Management of drivers, vehicles and trips.",
-      badge: "Operations", badgeColor: "#f59e0b",
+      badge: "Operations", badgeColor: STATE.warning,
       items: [
         "Driver registration with license, vehicle and tendered/budget amount.",
         "The 'Tendered amount' field feeds the Commercial Dashboard with real data.",
@@ -249,7 +250,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
     {
       icon: "hotel", title: "Hospitality",
       desc: "Room assignments, keys and hotel extras.",
-      badge: "Operations", badgeColor: "#f59e0b",
+      badge: "Operations", badgeColor: STATE.warning,
       items: [
         "Configuration of hotels, rooms and beds.",
         "Assignment of athletes to rooms (individual or automatic by type).",
@@ -261,7 +262,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
     {
       icon: "utensils", title: "Food",
       desc: "Control of menus, dining rooms and catering services.",
-      badge: "Operations", badgeColor: "#f59e0b",
+      badge: "Operations", badgeColor: STATE.warning,
       items: [
         "Define food types (Breakfast, Lunch, Dinner).",
         "Configure food venues (dining rooms, restaurants).",
@@ -272,7 +273,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
     {
       icon: "heart-pulse", title: "Health",
       desc: "Medical care registry and anti-doping control.",
-      badge: "Operations", badgeColor: "#f59e0b",
+      badge: "Operations", badgeColor: STATE.warning,
       items: [
         "Medical care registry per participant.",
         "Control of required health documents.",
@@ -294,7 +295,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
     {
       icon: "calendar", title: "Operational Calendar",
       desc: "View of disciplines, competitions and daily activities.",
-      badge: "Planning", badgeColor: "#64748b",
+      badge: "Planning", badgeColor: SURFACE.textMuted,
       items: [
         "Navigate by day to see scheduled competitions.",
         "Each discipline shows its venue, time and status.",
@@ -304,7 +305,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
     {
       icon: "users", title: "User Administration",
       desc: "Management of platform operator access and roles.",
-      badge: "Admin", badgeColor: "#ef4444",
+      badge: "Admin", badgeColor: STATE.danger,
       items: [
         "User creation with email or username.",
         "Available roles: Administrator, Supervisor, Operator, Coordinator, Viewer.",
@@ -337,7 +338,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
     {
       icon: "calendar", title: "Registro de Eventos",
       desc: "Criação e configuração do evento esportivo principal.",
-      badge: "Registro", badgeColor: "#10b981",
+      badge: "Registro", badgeColor: STATE.success,
       items: [
         "Define nome, datas, sede e disciplinas do evento.",
         "O evento é o contêiner de todos os participantes, motoristas e operações.",
@@ -347,7 +348,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
     {
       icon: "user", title: "Inscrição de Participantes",
       desc: "Gestão de atletas, delegações e acreditações.",
-      badge: "Registro", badgeColor: "#10b981",
+      badge: "Registro", badgeColor: STATE.success,
       items: [
         "Importação em massa de participantes via arquivo Excel.",
         "Atribuição de delegação, disciplina e categoria.",
@@ -358,7 +359,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
     {
       icon: "building", title: "Fornecedores",
       desc: "Catálogo de fornecedores externos classificados por tipo e subtipo.",
-      badge: "Registro", badgeColor: "#10b981",
+      badge: "Registro", badgeColor: STATE.success,
       items: [
         "Tipos: Transporte, Logística, Hotelaria, Alimentação, Staff, Infraestrutura, etc.",
         "Cada fornecedor pode ter subtipo (ex. Staff → Recursos Humanos).",
@@ -368,7 +369,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
     {
       icon: "bus", title: "Transporte",
       desc: "Gestão de motoristas, veículos e viagens.",
-      badge: "Operação", badgeColor: "#f59e0b",
+      badge: "Operação", badgeColor: STATE.warning,
       items: [
         "Registro de motoristas com carteira, veículo e valor licitado/orçamento.",
         "O campo 'Valor licitado' alimenta o Painel Comercial com dados reais.",
@@ -380,7 +381,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
     {
       icon: "hotel", title: "Hotelaria",
       desc: "Atribuição de quartos, chaves e extras de hotel.",
-      badge: "Operação", badgeColor: "#f59e0b",
+      badge: "Operação", badgeColor: STATE.warning,
       items: [
         "Configuração de hotéis, quartos e camas.",
         "Atribuição de atletas a quartos (individual ou automática por tipo).",
@@ -392,7 +393,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
     {
       icon: "utensils", title: "Alimentação",
       desc: "Controle de cardápios, refeitórios e serviços de alimentação.",
-      badge: "Operação", badgeColor: "#f59e0b",
+      badge: "Operação", badgeColor: STATE.warning,
       items: [
         "Define tipos de alimentação (Café da manhã, Almoço, Jantar).",
         "Configura locais de alimentação (refeitórios, restaurantes).",
@@ -403,7 +404,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
     {
       icon: "heart-pulse", title: "Saúde",
       desc: "Registro de atendimentos médicos e controle antidopagem.",
-      badge: "Operação", badgeColor: "#f59e0b",
+      badge: "Operação", badgeColor: STATE.warning,
       items: [
         "Registro de atendimentos médicos por participante.",
         "Controle de documentos de saúde necessários.",
@@ -425,7 +426,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
     {
       icon: "calendar", title: "Calendário Operacional",
       desc: "Vista de disciplinas, competições e atividades por dia.",
-      badge: "Planejamento", badgeColor: "#64748b",
+      badge: "Planejamento", badgeColor: SURFACE.textMuted,
       items: [
         "Navegue por dia para ver as competições programadas.",
         "Cada disciplina mostra seu local, horário e status.",
@@ -435,7 +436,7 @@ const MODULES_DATA: Record<Locale, ModuleCard[]> = {
     {
       icon: "users", title: "Administração de Usuários",
       desc: "Gestão de acessos e funções dos operadores da plataforma.",
-      badge: "Admin", badgeColor: "#ef4444",
+      badge: "Admin", badgeColor: STATE.danger,
       items: [
         "Criação de usuários com e-mail ou nome de usuário.",
         "Funções disponíveis: Administrador, Supervisor, Operador, Coordenador, Visualizador.",
@@ -633,12 +634,12 @@ const TIPS_DATA: Record<Locale, TipItem[]> = {
 };
 
 // ── Palette ──────────────────────────────────────────────────────────────────
-const acc = "#21D0B3";
-const cBg = "#ffffff";
-const cBorder = "#e2e8f0";
-const tPrim = "#0f172a";
-const tMuted = "#64748b";
-const tFaint = "#94a3b8";
+const acc = BRAND.teal;
+const cBg = SURFACE.card;
+const cBorder = SURFACE.border;
+const tPrim = SURFACE.text;
+const tMuted = SURFACE.textMuted;
+const tFaint = SURFACE.textFaint;
 
 // ── Inline SVG helpers ────────────────────────────────────────────────────────
 function SvgIcon({ d, size = 16, color = "currentColor", extra }: { d: string; size?: number; color?: string; extra?: React.ReactNode }) {
@@ -781,7 +782,7 @@ export default function AyudaPage() {
             placeholder={t("Buscar en la ayuda...")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={{ width: "100%", padding: "10px 14px 10px 36px", borderRadius: 10, border: `1px solid ${cBorder}`, background: "#f8fafc", color: tPrim, fontSize: 13.5, outline: "none", boxSizing: "border-box" }}
+            style={{ width: "100%", padding: "10px 14px 10px 36px", borderRadius: 10, border: `1px solid ${cBorder}`, background: SURFACE.bg, color: tPrim, fontSize: 13.5, outline: "none", boxSizing: "border-box" }}
           />
         </div>
 
@@ -804,7 +805,7 @@ export default function AyudaPage() {
             </div>
             <Link
               href="/ayuda/manual"
-              style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 16px", borderRadius: 10, fontSize: 13, fontWeight: 600, background: acc, color: "#fff", textDecoration: "none", flexShrink: 0, boxShadow: "0 4px 14px rgba(33,208,179,0.3)" }}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 16px", borderRadius: 10, fontSize: 13, fontWeight: 600, background: acc, color: SURFACE.card, textDecoration: "none", flexShrink: 0, boxShadow: "0 4px 14px rgba(33,208,179,0.3)" }}
             >
               <FileTextIcon size={13} strokeWidth={2} />
               {t("Manual de usuario (PDF)")}
@@ -824,7 +825,7 @@ export default function AyudaPage() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 14, marginBottom: 32 }}>
             {STEPS.map((card) => (
               <Link key={card.step} href={card.href} style={{ textDecoration: "none" }}>
-                <div style={{ background: "#f8fafc", border: `1px solid ${cBorder}`, borderRadius: 14, padding: "18px", display: "flex", gap: 14, alignItems: "flex-start", transition: "border-color 150ms, box-shadow 150ms" }}
+                <div style={{ background: SURFACE.bg, border: `1px solid ${cBorder}`, borderRadius: 14, padding: "18px", display: "flex", gap: 14, alignItems: "flex-start", transition: "border-color 150ms, box-shadow 150ms" }}
                   onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = `${acc}60`; (e.currentTarget as HTMLElement).style.boxShadow = `0 4px 16px rgba(33,208,179,0.08)`; }}
                   onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = cBorder; (e.currentTarget as HTMLElement).style.boxShadow = "none"; }}
                 >
@@ -851,7 +852,7 @@ export default function AyudaPage() {
           </div>
           <div style={{ border: `1px solid ${cBorder}`, borderRadius: 12, overflow: "hidden" }}>
             {TIPS.map((tip, i, arr) => (
-              <div key={i} style={{ padding: "13px 18px", display: "flex", gap: 12, alignItems: "flex-start", borderBottom: i < arr.length - 1 ? `1px solid ${cBorder}` : "none", background: i % 2 === 0 ? cBg : "#f8fafc" }}>
+              <div key={i} style={{ padding: "13px 18px", display: "flex", gap: 12, alignItems: "flex-start", borderBottom: i < arr.length - 1 ? `1px solid ${cBorder}` : "none", background: i % 2 === 0 ? cBg : SURFACE.bg }}>
                 <span style={{ flexShrink: 0, marginTop: 1, display: "flex" }}>{TIP_ICONS[i % TIP_ICONS.length]}</span>
                 <p style={{ fontSize: 13, color: tPrim, margin: 0, lineHeight: 1.55 }}>{tip.tip}</p>
               </div>
@@ -953,7 +954,7 @@ function ModuleCardItem({ mod, highlight }: { mod: ModuleCard; highlight?: strin
         style={{ width: "100%", padding: "16px 18px", display: "flex", alignItems: "flex-start", gap: 12, background: "transparent", border: "none", cursor: "pointer", textAlign: "left" }}
       >
         <div style={{ width: 38, height: 38, borderRadius: 10, background: `${mod.badgeColor ?? "#64748b"}15`, border: `1px solid ${mod.badgeColor ?? "#64748b"}25`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <ModBadgeIcon badge={mod.badge} color={mod.badgeColor ?? "#64748b"} size={18} />
+          <ModBadgeIcon badge={mod.badge} color={mod.badgeColor ?? SURFACE.textMuted} size={18} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3, flexWrap: "wrap" }}>
@@ -961,7 +962,7 @@ function ModuleCardItem({ mod, highlight }: { mod: ModuleCard; highlight?: strin
               {highlight ? <Highlight text={mod.title} term={highlight} /> : mod.title}
             </span>
             {mod.badge && (
-              <span style={{ fontSize: 10, fontWeight: 600, color: "#fff", background: mod.badgeColor ?? "#64748b", padding: "2px 7px", borderRadius: 8, letterSpacing: "0.04em", flexShrink: 0 }}>
+              <span style={{ fontSize: 10, fontWeight: 600, color: SURFACE.card, background: mod.badgeColor ?? SURFACE.textMuted, padding: "2px 7px", borderRadius: 8, letterSpacing: "0.04em", flexShrink: 0 }}>
                 {mod.badge}
               </span>
             )}
@@ -993,7 +994,7 @@ function FaqSection({ faq, open, setOpen }: { faq: FaqItem[]; open: number | nul
       {faq.map((item, i) => {
         const isOpen = open === i;
         return (
-          <div key={i} style={{ background: isOpen ? "#f8fafc" : cBg, border: `1px solid ${isOpen ? acc + "40" : cBorder}`, borderRadius: 10, overflow: "hidden", transition: "border-color 180ms ease, background 150ms ease" }}>
+          <div key={i} style={{ background: isOpen ? SURFACE.bg : cBg, border: `1px solid ${isOpen ? acc + "40" : cBorder}`, borderRadius: 10, overflow: "hidden", transition: "border-color 180ms ease, background 150ms ease" }}>
             <button
               type="button"
               onClick={() => setOpen(isOpen ? null : i)}
@@ -1039,7 +1040,7 @@ function CuadernoCard({ entry, loc, highlight }: { entry: CuadernoEntry; loc: Cu
   const cat = cuadernoCategoryOf(entry.category);
   return (
     <div style={{ background: cBg, border: `1px solid ${cBorder}`, borderLeft: `3px solid ${cat.color}`, borderRadius: 12, padding: "13px 15px" }}>
-      <span style={{ display: "inline-block", fontSize: 9.5, fontWeight: 700, color: "#fff", background: cat.color, padding: "2px 7px", borderRadius: 6, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 7 }}>
+      <span style={{ display: "inline-block", fontSize: 9.5, fontWeight: 700, color: SURFACE.card, background: cat.color, padding: "2px 7px", borderRadius: 6, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 7 }}>
         {cat.label[loc]}
       </span>
       <p style={{ fontSize: 13.5, fontWeight: 700, color: tPrim, margin: "0 0 4px", lineHeight: 1.35 }}>
@@ -1074,7 +1075,7 @@ function CuadernoChip({
       <span style={{
         fontSize: 10.5, fontWeight: 700,
         color: selected ? color : tFaint,
-        background: selected ? `${color}22` : "#f1f5f9",
+        background: selected ? `${color}22` : SURFACE.borderMuted,
         borderRadius: 6, padding: "1px 6px",
       }}>
         {count}

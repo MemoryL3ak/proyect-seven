@@ -15,17 +15,43 @@ export const BRAND = {
   charcoal: "#30455B",
   navy: "#041a2e",          // gradiente oscuro del portal
   navyLight: "#062240",
-} as const;
+};
 
 export const SURFACE = {
   bg: "#f8fafc",            // fondo de página del portal
   card: "#ffffff",
   border: "#e2e8f0",
   borderMuted: "#f1f5f9",
+  borderStrong: "#cbd5e1",  // --border-strong en globals.css
   text: "#0f172a",
+  textStrong: "#334155",    // títulos secundarios, valores en tablas
+  textSecondary: "#475569", // texto de apoyo con más peso que textMuted
   textMuted: "#64748b",
   textFaint: "#94a3b8",
-} as const;
+};
+
+// ── Colores de estado para código TS/inline ──────────────────
+// Los tonos "500" (danger, warning, success, info) pintan iconos, puntos y
+// fondos suaves; los "Text" son el mismo color un paso más oscuro, para texto
+// sobre fondo claro. globals.css usa tonos distintos (--danger: #dc2626,
+// --warning: #d97706…) porque ahí conviven con los 4 temas; no unificar sin
+// revisar contraste en cada uno. Antes había 6.152 hex sueltos en 97 archivos
+// y el mismo rojo era #ef4444 en una pantalla y #dc2626 en la siguiente sin
+// criterio: esta tabla es el criterio.
+export const STATE = {
+  danger: "#ef4444",
+  dangerText: "#dc2626",
+  warning: "#f59e0b",
+  warningText: "#b45309",
+  success: "#10b981",
+  successText: "#059669",
+  info: "#3b82f6",
+  infoText: "#2563eb",
+};
+
+// Sin `as const` a propósito: con literales, useState(SURFACE.text) queda
+// tipado como "#0f172a" y ya no acepta BRAND.tealInk. Los tokens de color son
+// strings intercambiables; el catálogo es la fuente, no el tipo.
 
 // Escala tipográfica móvil (px). Piso legible en pantalla táctil:
 // nada informativo bajo `caption`; `micro` queda solo para chips/etiquetas.

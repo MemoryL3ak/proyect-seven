@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
-import { BRAND } from "@/lib/design";
+import { BRAND, SURFACE } from "@/lib/design";
 
 type EmptyStateProps = {
   icon?: ReactNode;
@@ -125,7 +125,7 @@ export default function EmptyState({
                 inset: "26px",
                 background: styles.coreBg,
                 boxShadow: `${styles.shadow}, 0 8px 20px rgba(0,0,0,0.15), inset 0 2px 4px rgba(255,255,255,0.3)`,
-                color: "#fff",
+                color: SURFACE.card,
               }}>
               {icon}
             </div>

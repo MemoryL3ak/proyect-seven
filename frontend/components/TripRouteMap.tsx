@@ -7,7 +7,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { loadGoogleMaps, type LatLng } from "@/lib/google-maps";
-import { BRAND } from "@/lib/design";
+import { BRAND, STATE, SURFACE } from "@/lib/design";
 
 type Props = {
   points: LatLng[];
@@ -63,20 +63,20 @@ export default function TripRouteMap({ points, height = 460 }: Props) {
         new google.maps.Marker({
           position,
           map,
-          label: { text: label, color: "#ffffff", fontWeight: "700", fontSize: "11px" },
+          label: { text: label, color: SURFACE.card, fontWeight: "700", fontSize: "11px" },
           icon: {
             path: google.maps.SymbolPath.CIRCLE,
             scale: 10,
             fillColor: color,
             fillOpacity: 1,
-            strokeColor: "#ffffff",
+            strokeColor: SURFACE.card,
             strokeWeight: 2,
           },
         });
       overlaysRef.current = [
         line,
         marker(points[0], "A", BRAND.teal),
-        marker(points[points.length - 1], "B", "#ef4444"),
+        marker(points[points.length - 1], "B", STATE.danger),
       ];
 
       const bounds = new google.maps.LatLngBounds();
@@ -90,7 +90,7 @@ export default function TripRouteMap({ points, height = 460 }: Props) {
 
   if (failed) {
     return (
-      <div style={{ width: "100%", height, display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", fontSize: 13, background: "#eef2f7" }}>
+      <div style={{ width: "100%", height, display: "flex", alignItems: "center", justifyContent: "center", color: SURFACE.textFaint, fontSize: 13, background: "#eef2f7" }}>
         No se pudo cargar el mapa.
       </div>
     );

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { AlertIcon, GlobeIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 import { filterValidatedAthletes } from "@/lib/athletes";
@@ -415,21 +416,21 @@ export default function AndRegistrationKpi({
 
   const varianceColor = totals.variance === null
     ? "var(--text-muted)"
-    : totals.variance < 0 ? "#ef4444"
-    : totals.variance > 0 ? "#f59e0b"
-    : "#10b981";
+    : totals.variance < 0 ? STATE.danger
+    : totals.variance > 0 ? STATE.warning
+    : STATE.success;
 
   const complianceColor = totals.pct === null
     ? "var(--text-muted)"
-    : (totals.pct ?? 0) >= 100 ? "#10b981"
-    : (totals.pct ?? 0) >= 75 ? "#f59e0b"
-    : "#ef4444";
+    : (totals.pct ?? 0) >= 100 ? STATE.success
+    : (totals.pct ?? 0) >= 75 ? STATE.warning
+    : STATE.danger;
 
   return (
     <section className="surface rounded-3xl p-5" style={{ border: "1px solid var(--border)", borderTop: "2px solid #21D0B3", boxShadow: "0 1px 6px rgba(15,23,42,0.06)" }}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#21D0B3", marginBottom: "4px" }}>{eyebrow}</p>
+          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: BRAND.teal, marginBottom: "4px" }}>{eyebrow}</p>
           <h2 className="mt-1 text-2xl font-semibold" style={{ color: "var(--text)" }}>{t(title)}</h2>
           <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>{t(subtitle)}</p>
         </div>
@@ -474,7 +475,7 @@ export default function AndRegistrationKpi({
             {totals.pct === null ? t("N/D") : formatPercent(totals.pct)}
           </p>
           <p style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "6px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.14em" }}>{t("Cumplimiento total")}</p>
-          <div style={{ marginTop: "10px", height: "4px", borderRadius: "99px", background: "#f1f5f9" }}>
+          <div style={{ marginTop: "10px", height: "4px", borderRadius: "99px", background: SURFACE.borderMuted }}>
             <div style={{ height: "4px", borderRadius: "99px", width: `${Math.min(totals.pct ?? 0, 100)}%`, background: complianceColor, transition: "width 0.5s ease" }} />
           </div>
         </div>
@@ -502,7 +503,7 @@ export default function AndRegistrationKpi({
 
         {/* Disciplinas con déficit */}
         {(() => {
-          const defColor = deficitStats.deficit > 0 ? "#ef4444" : "#10b981";
+          const defColor = deficitStats.deficit > 0 ? STATE.danger : STATE.success;
           return (
             <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderTop: `2px solid ${defColor}`, borderRadius: "16px", padding: "18px", boxShadow: "0 1px 6px rgba(15,23,42,0.06)" }}>
               <div className="flex items-center justify-between mb-3">
@@ -523,10 +524,10 @@ export default function AndRegistrationKpi({
         {/* Cobertura delegaciones */}
         <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderTop: "2px solid #1FCDFF", borderRadius: "16px", padding: "18px", boxShadow: "0 1px 6px rgba(15,23,42,0.06)" }}>
           <div className="flex items-center justify-between mb-3">
-            <GlobeIcon size={18} color="#1FCDFF" strokeWidth={2.2} />
-            <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#1FCDFF", display: "inline-block" }} />
+            <GlobeIcon size={18} color={BRAND.blue} strokeWidth={2.2} />
+            <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: BRAND.blue, display: "inline-block" }} />
           </div>
-          <p style={{ fontSize: "2rem", fontWeight: 800, color: "#1FCDFF", lineHeight: 1 }}>
+          <p style={{ fontSize: "2rem", fontWeight: 800, color: BRAND.blue, lineHeight: 1 }}>
             {filteredDelegations.length}
           </p>
           <p style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "6px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.14em" }}>{t("Delegaciones")}</p>
@@ -536,7 +537,7 @@ export default function AndRegistrationKpi({
         </div>
       </div>
 
-      {error ? <p className="mt-3 text-sm" style={{ color: "#ef4444" }}>{error}</p> : null}
+      {error ? <p className="mt-3 text-sm" style={{ color: STATE.danger }}>{error}</p> : null}
 
       <div className="mt-4 flex items-center justify-between gap-3">
         <p className="text-xs" style={{ color: "var(--text-muted)" }}>
@@ -562,7 +563,7 @@ export default function AndRegistrationKpi({
           <thead>
             <tr>
               {["Delegación","Disciplina","Tipo","Género","Esperado","Registrado","Brecha","Cumplimiento"].map((col) => (
-                <th key={col} className="sticky top-0 z-10" style={{ background: "linear-gradient(to bottom, #eaf4fb, #e8f0f8)", color: "#1FCDFF", fontSize: "10px", letterSpacing: "0.16em", textTransform: "uppercase", borderBottom: "2px solid rgba(31,205,255,0.25)", fontWeight: 700 }}>
+                <th key={col} className="sticky top-0 z-10" style={{ background: "linear-gradient(to bottom, #eaf4fb, #e8f0f8)", color: BRAND.blue, fontSize: "10px", letterSpacing: "0.16em", textTransform: "uppercase", borderBottom: "2px solid rgba(31,205,255,0.25)", fontWeight: 700 }}>
                   {t(col)}
                 </th>
               ))}
@@ -587,7 +588,7 @@ export default function AndRegistrationKpi({
                         className="h-2 rounded-full"
                         style={{
                           width: `${Math.min(row.pct ?? 0, 100)}%`,
-                          background: row.statusTone === "good" ? "#10b981" : row.statusTone === "over" ? "#f59e0b" : "#06b6d4"
+                          background: row.statusTone === "good" ? STATE.success : row.statusTone === "over" ? STATE.warning : "#06b6d4"
                         }}
                       />
                     </div>

@@ -7,7 +7,7 @@ import { useI18n } from "@/lib/i18n";
 import { claimPortalSession, ensurePortalIdentity, portalLogin, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
 import DeleteAccountSection from "@/components/DeleteAccountSection";
 import { deletePortalAccount } from "@/lib/account-deletion";
-import { BRAND } from "@/lib/design";
+import { BRAND, STATE, SURFACE } from "@/lib/design";
 
 type ScanLocation = "ESTADIO" | "HOTEL" | "GIMNASIO" | "CASINO";
 
@@ -53,9 +53,9 @@ const SCAN_LOCATIONS: Array<{
   bg: string;
   border: string;
 }> = [
-  { value: "ESTADIO", label: "Estadio", color: "#3b82f6", bg: "rgba(59,130,246,0.08)", border: "rgba(59,130,246,0.3)" },
-  { value: "HOTEL", label: "Hotel", color: "#10b981", bg: "rgba(16,185,129,0.08)", border: "rgba(16,185,129,0.3)" },
-  { value: "GIMNASIO", label: "Gimnasio", color: "#f59e0b", bg: "rgba(245,158,11,0.08)", border: "rgba(245,158,11,0.3)" },
+  { value: "ESTADIO", label: "Estadio", color: STATE.info, bg: "rgba(59,130,246,0.08)", border: "rgba(59,130,246,0.3)" },
+  { value: "HOTEL", label: "Hotel", color: STATE.success, bg: "rgba(16,185,129,0.08)", border: "rgba(16,185,129,0.3)" },
+  { value: "GIMNASIO", label: "Gimnasio", color: STATE.warning, bg: "rgba(245,158,11,0.08)", border: "rgba(245,158,11,0.3)" },
   { value: "CASINO", label: "Casino", color: "#a855f7", bg: "rgba(168,85,247,0.08)", border: "rgba(168,85,247,0.3)" },
 ];
 
@@ -420,7 +420,7 @@ export default function AccessControlPortalPage() {
               <span style={{ width: 7, height: 7, borderRadius: "50%", background: BRAND.teal, boxShadow: `0 0 10px ${BRAND.teal}`, display: "inline-block", animation: "pc-pulse 2s ease-in-out infinite" }} />
               <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: BRAND.teal }}>{t("Portal de Control de Acceso")}</span>
             </div>
-            <h1 style={{ fontSize: "clamp(28px,3vw,44px)", fontWeight: 800, lineHeight: 1.1, color: "#f8fafc", letterSpacing: "-0.02em", margin: 0 }}>
+            <h1 style={{ fontSize: "clamp(28px,3vw,44px)", fontWeight: 800, lineHeight: 1.1, color: SURFACE.bg, letterSpacing: "-0.02em", margin: 0 }}>
               {t("Valida")}<br />
               <span style={{ background: `linear-gradient(90deg,${BRAND.teal} 0%,${BRAND.tealLight} 40%,${BRAND.teal} 80%)`, backgroundSize: "200% auto", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", animation: "pc-shimmer 4s linear infinite" }}>{t("credenciales QR")}</span>
             </h1>
@@ -524,7 +524,7 @@ export default function AccessControlPortalPage() {
 
   // ── Scanner screen (replicates ScannerPortal UX)
   return (
-    <main style={{ minHeight: "100vh", background: "#f0f3fa", color: "#0f172a", fontFamily: "inherit" }}>
+    <main style={{ minHeight: "100vh", background: "#f0f3fa", color: SURFACE.text, fontFamily: "inherit" }}>
       <style>{`
         @keyframes scanLine {
           0%   { top: 0%; opacity: 1; }
@@ -548,7 +548,7 @@ export default function AccessControlPortalPage() {
         {/* ── Header banner */}
         <section style={{
           borderRadius: "24px",
-          background: "#ffffff",
+          background: SURFACE.card,
           border: "1px solid #e2e8f0",
           padding: "24px 28px",
           boxShadow: "0 1px 4px rgba(15,23,42,0.06)",
@@ -559,10 +559,10 @@ export default function AccessControlPortalPage() {
                 <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: BRAND.teal, display: "inline-block" }} />
                 {t("Control de acceso")}
               </span>
-              <h1 style={{ marginTop: "10px", fontSize: "clamp(1.4rem, 2.5vw, 2rem)", fontWeight: 800, lineHeight: 1.1, color: "#0f172a" }}>
+              <h1 style={{ marginTop: "10px", fontSize: "clamp(1.4rem, 2.5vw, 2rem)", fontWeight: 800, lineHeight: 1.1, color: SURFACE.text }}>
                 {t("Escaneo QR de credenciales")}
               </h1>
-              <p style={{ marginTop: "6px", fontSize: "14px", color: "#64748b", maxWidth: "480px" }}>
+              <p style={{ marginTop: "6px", fontSize: "14px", color: SURFACE.textMuted, maxWidth: "480px" }}>
                 {staff.fullName} · {staff.providerName || t("Staff")}
               </p>
             </div>
@@ -580,7 +580,7 @@ export default function AccessControlPortalPage() {
                       style={{
                         borderRadius: "14px",
                         border: active ? `2px solid ${item.color}` : "1px solid #e2e8f0",
-                        background: active ? item.bg : "#f8fafc",
+                        background: active ? item.bg : SURFACE.bg,
                         padding: "10px 8px",
                         cursor: "pointer",
                         transition: "all 200ms",
@@ -588,11 +588,11 @@ export default function AccessControlPortalPage() {
                         boxShadow: active ? `0 2px 12px ${item.border}` : "none",
                       }}
                     >
-                      <div style={{ color: active ? item.color : "#94a3b8", marginBottom: "4px" }}>
+                      <div style={{ color: active ? item.color : SURFACE.textFaint, marginBottom: "4px" }}>
                         {LOCATION_ICONS[item.value]}
                       </div>
-                      <div style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: active ? item.color : "#94a3b8" }}>{t("Lugar")}</div>
-                      <div style={{ fontSize: "13px", fontWeight: 700, color: active ? "#0f172a" : "#64748b", marginTop: "2px" }}>{t(item.label)}</div>
+                      <div style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: active ? item.color : SURFACE.textFaint }}>{t("Lugar")}</div>
+                      <div style={{ fontSize: "13px", fontWeight: 700, color: active ? SURFACE.text : SURFACE.textMuted, marginTop: "2px" }}>{t(item.label)}</div>
                     </button>
                   );
                 })}
@@ -601,13 +601,13 @@ export default function AccessControlPortalPage() {
                 type="button"
                 onClick={logout}
                 style={{
-                  background: "#ffffff",
+                  background: SURFACE.card,
                   border: "1px solid #e2e8f0",
                   borderRadius: "10px",
                   padding: "8px 14px",
                   fontSize: "12px",
                   fontWeight: 600,
-                  color: "#64748b",
+                  color: SURFACE.textMuted,
                   cursor: "pointer",
                   alignSelf: "flex-start",
                 }}
@@ -627,11 +627,11 @@ export default function AccessControlPortalPage() {
         <div style={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: "16px", flex: 1, alignItems: "start" }}>
 
           {/* Camera panel */}
-          <div style={{ borderRadius: "24px", border: "1px solid #e2e8f0", background: "#ffffff", boxShadow: "0 1px 4px rgba(15,23,42,0.06)", overflow: "hidden" }}>
-            <div style={{ borderBottom: "1px solid #e2e8f0", background: "#f8fafc", padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
+          <div style={{ borderRadius: "24px", border: "1px solid #e2e8f0", background: SURFACE.card, boxShadow: "0 1px 4px rgba(15,23,42,0.06)", overflow: "hidden" }}>
+            <div style={{ borderBottom: "1px solid #e2e8f0", background: SURFACE.bg, padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
               <div>
-                <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#94a3b8" }}>{t("Cámara activa")}</p>
-                <p style={{ marginTop: "3px", fontSize: "16px", fontWeight: 700, color: "#0f172a", display: "flex", alignItems: "center", gap: "8px" }}>
+                <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: SURFACE.textFaint }}>{t("Cámara activa")}</p>
+                <p style={{ marginTop: "3px", fontSize: "16px", fontWeight: 700, color: SURFACE.text, display: "flex", alignItems: "center", gap: "8px" }}>
                   <span style={{ color: loc.color }}>{LOCATION_ICONS[selectedLocation]}</span>
                   {t("Escaneo en")} {t(loc.label)}
                 </p>
@@ -646,7 +646,7 @@ export default function AccessControlPortalPage() {
                     border: scanning ? `1px solid ${loc.border}` : "none",
                     borderRadius: "10px", padding: "8px 18px",
                     fontSize: "13px", fontWeight: 700,
-                    color: scanning ? loc.color : "#ffffff",
+                    color: scanning ? loc.color : SURFACE.card,
                     cursor: scanning || !scannerReady ? "not-allowed" : "pointer",
                     boxShadow: scanning ? "none" : "0 2px 10px rgba(33,208,179,0.35)",
                     display: "flex", alignItems: "center", gap: "6px",
@@ -668,7 +668,7 @@ export default function AccessControlPortalPage() {
                   type="button"
                   disabled={!scanning}
                   onClick={() => void stopScanner()}
-                  style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "8px 16px", fontSize: "13px", fontWeight: 600, color: scanning ? "#475569" : "#cbd5e1", cursor: scanning ? "pointer" : "not-allowed" }}
+                  style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "10px", padding: "8px 16px", fontSize: "13px", fontWeight: 600, color: scanning ? SURFACE.textSecondary : SURFACE.borderStrong, cursor: scanning ? "pointer" : "not-allowed" }}
                 >
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style={{ marginRight: "6px" }}><rect x="3" y="3" width="18" height="18" /></svg>
                   {t("Detener")}
@@ -713,8 +713,8 @@ export default function AccessControlPortalPage() {
 
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px", padding: "0 4px" }}>
                   <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)" }}>{t("Cámara posterior")}</span>
-                  <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: scanning ? "#10b981" : "rgba(255,255,255,0.3)", display: "flex", alignItems: "center", gap: "5px" }}>
-                    {scanning && <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#10b981", animation: "scannerPulse 1s infinite", display: "inline-block" }} />}
+                  <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: scanning ? STATE.success : "rgba(255,255,255,0.3)", display: "flex", alignItems: "center", gap: "5px" }}>
+                    {scanning && <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: STATE.success, animation: "scannerPulse 1s infinite", display: "inline-block" }} />}
                     {scanning ? t("Activa") : t("En espera")}
                   </span>
                 </div>
@@ -723,7 +723,7 @@ export default function AccessControlPortalPage() {
               </div>
 
               {error && (
-                <div style={{ marginTop: "12px", borderRadius: "12px", border: "1px solid rgba(239,68,68,0.25)", background: "rgba(239,68,68,0.06)", padding: "10px 14px", fontSize: "13px", color: "#ef4444", display: "flex", alignItems: "center", gap: "8px" }}>
+                <div style={{ marginTop: "12px", borderRadius: "12px", border: "1px solid rgba(239,68,68,0.25)", background: "rgba(239,68,68,0.06)", padding: "10px 14px", fontSize: "13px", color: STATE.danger, display: "flex", alignItems: "center", gap: "8px" }}>
                   <AlertCircleIcon size={14} strokeWidth={2} />
                   {error}
                 </div>
@@ -747,7 +747,7 @@ export default function AccessControlPortalPage() {
             {flashDenied && (
               <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
                 <div style={{ background: "rgba(239,68,68,0.12)", border: "2px solid #ef4444", borderRadius: "50%", width: "160px", height: "160px", display: "flex", alignItems: "center", justifyContent: "center", animation: "successFlash 1.8s ease forwards", boxShadow: "0 0 60px rgba(239,68,68,0.4)" }}>
-                  <XIcon size={64} color="#ef4444" strokeWidth={2.5} />
+                  <XIcon size={64} color={STATE.danger} strokeWidth={2.5} />
                 </div>
               </div>
             )}
@@ -756,20 +756,20 @@ export default function AccessControlPortalPage() {
             <div style={{
               borderRadius: "20px",
               border: `1px solid ${currentScan ? (currentScan.authorized ? loc.color + "40" : "rgba(239,68,68,0.4)") : "#e2e8f0"}`,
-              background: "#ffffff",
+              background: SURFACE.card,
               overflow: "hidden",
               boxShadow: currentScan ? (currentScan.authorized ? `0 4px 20px ${loc.border}` : "0 4px 20px rgba(239,68,68,0.15)") : "0 1px 4px rgba(15,23,42,0.06)",
               transition: "box-shadow 0.4s, border-color 0.4s",
             }}>
               <div style={{
                 borderBottom: `1px solid ${currentScan ? (currentScan.authorized ? loc.color + "25" : "rgba(239,68,68,0.3)") : "#e2e8f0"}`,
-                background: currentScan ? (currentScan.authorized ? loc.bg : "rgba(239,68,68,0.06)") : "#f8fafc",
+                background: currentScan ? (currentScan.authorized ? loc.bg : "rgba(239,68,68,0.06)") : SURFACE.bg,
                 padding: "14px 18px",
               }}>
-                <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: currentScan ? (currentScan.authorized ? loc.color : "#ef4444") : "#94a3b8" }}>
+                <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: currentScan ? (currentScan.authorized ? loc.color : STATE.danger) : SURFACE.textFaint }}>
                   {currentScan ? (currentScan.authorized ? t("Acceso autorizado") : t("Acceso denegado")) : t("Último escaneo")}
                 </p>
-                <p style={{ marginTop: "3px", fontSize: "16px", fontWeight: 700, color: "#0f172a" }}>{t("Resultado de validación")}</p>
+                <p style={{ marginTop: "3px", fontSize: "16px", fontWeight: 700, color: SURFACE.text }}>{t("Resultado de validación")}</p>
               </div>
               <div style={{ padding: "16px" }}>
                 {currentScan ? (
@@ -784,20 +784,20 @@ export default function AccessControlPortalPage() {
                       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                         <div style={{
                           width: "40px", height: "40px", borderRadius: "12px",
-                          background: "#ffffff",
+                          background: SURFACE.card,
                           border: `1px solid ${currentScan.authorized ? loc.border : "rgba(239,68,68,0.3)"}`,
                           display: "flex", alignItems: "center", justifyContent: "center",
-                          color: currentScan.authorized ? loc.color : "#ef4444",
+                          color: currentScan.authorized ? loc.color : STATE.danger,
                           flexShrink: 0,
                         }}>
                           {LOCATION_ICONS[currentScan.location]}
                         </div>
                         <div style={{ flex: 1 }}>
-                          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "#94a3b8" }}>
+                          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: SURFACE.textFaint }}>
                             {currentScan.authorized ? t("Acceso validado") : currentScan.reason}
                           </p>
-                          <p style={{ fontSize: "18px", fontWeight: 800, color: "#0f172a" }}>{t(SCAN_LOCATIONS.find((l) => l.value === currentScan.location)?.label ?? "")}</p>
-                          <p style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>{currentScan.scannedAt}</p>
+                          <p style={{ fontSize: "18px", fontWeight: 800, color: SURFACE.text }}>{t(SCAN_LOCATIONS.find((l) => l.value === currentScan.location)?.label ?? "")}</p>
+                          <p style={{ fontSize: "11px", color: SURFACE.textMuted, marginTop: "2px" }}>{currentScan.scannedAt}</p>
                         </div>
                         <div style={{
                           width: "36px", height: "36px", borderRadius: "50%",
@@ -809,16 +809,16 @@ export default function AccessControlPortalPage() {
                           {currentScan.authorized ? (
                             <CheckIcon size={18} color={BRAND.teal} strokeWidth={2.5} />
                           ) : (
-                            <XIcon size={18} color="#ef4444" strokeWidth={2.5} />
+                            <XIcon size={18} color={STATE.danger} strokeWidth={2.5} />
                           )}
                         </div>
                       </div>
                     </div>
 
                     {/* Name */}
-                    <div style={{ borderRadius: "12px", border: "1px solid #e2e8f0", background: "#f8fafc", padding: "12px 14px" }}>
-                      <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "#94a3b8" }}>{t("Nombre")}</p>
-                      <p style={{ marginTop: "4px", fontSize: "18px", fontWeight: 800, color: "#0f172a" }}>{currentScan.fullName}</p>
+                    <div style={{ borderRadius: "12px", border: "1px solid #e2e8f0", background: SURFACE.bg, padding: "12px 14px" }}>
+                      <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: SURFACE.textFaint }}>{t("Nombre")}</p>
+                      <p style={{ marginTop: "4px", fontSize: "18px", fontWeight: 800, color: SURFACE.text }}>{currentScan.fullName}</p>
                     </div>
 
                     {/* 2-col grid */}
@@ -837,30 +837,30 @@ export default function AccessControlPortalPage() {
                         },
                         { label: "Evento", value: currentScan.eventName },
                       ].map((item) => (
-                        <div key={item.label} style={{ borderRadius: "12px", border: "1px solid #e2e8f0", background: "#f8fafc", padding: "10px 12px" }}>
-                          <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#94a3b8" }}>{t(item.label)}</p>
-                          <p style={{ marginTop: "4px", fontSize: "13px", fontWeight: 700, color: "#0f172a" }}>{item.value}</p>
+                        <div key={item.label} style={{ borderRadius: "12px", border: "1px solid #e2e8f0", background: SURFACE.bg, padding: "10px 12px" }}>
+                          <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: SURFACE.textFaint }}>{t(item.label)}</p>
+                          <p style={{ marginTop: "4px", fontSize: "13px", fontWeight: 700, color: SURFACE.text }}>{item.value}</p>
                         </div>
                       ))}
                     </div>
                   </div>
                 ) : (
-                  <div style={{ borderRadius: "14px", border: "1px dashed #e2e8f0", background: "#f8fafc", padding: "40px 20px", textAlign: "center" }}>
+                  <div style={{ borderRadius: "14px", border: "1px dashed #e2e8f0", background: SURFACE.bg, padding: "40px 20px", textAlign: "center" }}>
                     <div style={{ display: "flex", justifyContent: "center", marginBottom: "12px", opacity: 0.3 }}>
-                      <CameraIcon size={36} color="#94a3b8" strokeWidth={1.5} />
+                      <CameraIcon size={36} color={SURFACE.textFaint} strokeWidth={1.5} />
                     </div>
-                    <p style={{ fontSize: "14px", color: "#94a3b8", lineHeight: 1.6 }}>{t("Aún no hay lecturas.")}<br />{t("Selecciona el lugar y escanea una credencial.")}</p>
+                    <p style={{ fontSize: "14px", color: SURFACE.textFaint, lineHeight: 1.6 }}>{t("Aún no hay lecturas.")}<br />{t("Selecciona el lugar y escanea una credencial.")}</p>
                   </div>
                 )}
               </div>
             </div>
 
             {/* History */}
-            <div style={{ borderRadius: "20px", border: "1px solid #e2e8f0", background: "#ffffff", overflow: "hidden", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
-              <div style={{ borderBottom: "1px solid #e2e8f0", background: "#f8fafc", padding: "14px 18px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ borderRadius: "20px", border: "1px solid #e2e8f0", background: SURFACE.card, overflow: "hidden", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+              <div style={{ borderBottom: "1px solid #e2e8f0", background: SURFACE.bg, padding: "14px 18px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <div>
-                  <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#94a3b8" }}>{t("Historial")}</p>
-                  <p style={{ marginTop: "3px", fontSize: "16px", fontWeight: 700, color: "#0f172a" }}>{t("Últimas validaciones")}</p>
+                  <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: SURFACE.textFaint }}>{t("Historial")}</p>
+                  <p style={{ marginTop: "3px", fontSize: "16px", fontWeight: 700, color: SURFACE.text }}>{t("Últimas validaciones")}</p>
                 </div>
                 {history.length > 0 && (
                   <span style={{ background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.25)", borderRadius: "99px", padding: "3px 10px", fontSize: "12px", fontWeight: 700, color: BRAND.teal }}>
@@ -870,13 +870,13 @@ export default function AccessControlPortalPage() {
               </div>
               <div style={{ padding: "12px", display: "flex", flexDirection: "column", gap: "8px" }}>
                 {history.length === 0 ? (
-                  <div style={{ borderRadius: "12px", border: "1px dashed #e2e8f0", background: "#f8fafc", padding: "28px 16px", textAlign: "center", fontSize: "13px", color: "#94a3b8" }}>
+                  <div style={{ borderRadius: "12px", border: "1px dashed #e2e8f0", background: SURFACE.bg, padding: "28px 16px", textAlign: "center", fontSize: "13px", color: SURFACE.textFaint }}>
                     {t("Sin escaneos registrados en esta sesión.")}
                   </div>
                 ) : (
                   history.map((item, index) => {
                     const itemLoc = SCAN_LOCATIONS.find((l) => l.value === item.location) ?? SCAN_LOCATIONS[0];
-                    const okColor = item.authorized ? itemLoc.color : "#ef4444";
+                    const okColor = item.authorized ? itemLoc.color : STATE.danger;
                     const okBg = item.authorized ? itemLoc.bg : "rgba(239,68,68,0.08)";
                     const okBorder = item.authorized ? itemLoc.border : "rgba(239,68,68,0.3)";
                     return (
@@ -884,15 +884,15 @@ export default function AccessControlPortalPage() {
                         borderRadius: "14px",
                         border: `1px solid ${okBorder}`,
                         borderLeft: `3px solid ${okColor}`,
-                        background: index === 0 ? okBg : "#f8fafc",
+                        background: index === 0 ? okBg : SURFACE.bg,
                         padding: "10px 14px",
                         display: "flex", alignItems: "center", gap: "12px",
                       }}>
                         <div style={{ color: okColor, flexShrink: 0 }}>{LOCATION_ICONS[item.location]}</div>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{ fontWeight: 700, fontSize: "13px", color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.fullName}</p>
-                          <p style={{ marginTop: "2px", fontSize: "11px", color: "#64748b" }}>{item.delegation} · {item.discipline}</p>
-                          <p style={{ marginTop: "1px", fontSize: "11px", color: "#94a3b8", fontVariantNumeric: "tabular-nums" }}>{item.scannedAt}</p>
+                          <p style={{ fontWeight: 700, fontSize: "13px", color: SURFACE.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.fullName}</p>
+                          <p style={{ marginTop: "2px", fontSize: "11px", color: SURFACE.textMuted }}>{item.delegation} · {item.discipline}</p>
+                          <p style={{ marginTop: "1px", fontSize: "11px", color: SURFACE.textFaint, fontVariantNumeric: "tabular-nums" }}>{item.scannedAt}</p>
                         </div>
                         <span style={{
                           background: okBg,

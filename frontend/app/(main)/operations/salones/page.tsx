@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { apiFetch } from "@/lib/api";
+import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { XIcon, PencilIcon, UsersIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 
@@ -65,9 +66,9 @@ const RES_STATUS = [
 ];
 
 const RES_STATUS_COLOR: Record<string, { bg: string; text: string; border: string; dot: string }> = {
-  CONFIRMED: { bg: "rgba(16,185,129,0.12)", text: "#10b981", border: "rgba(16,185,129,0.3)", dot: "#10b981" },
-  PENDING:   { bg: "rgba(245,158,11,0.12)", text: "#f59e0b", border: "rgba(245,158,11,0.3)", dot: "#f59e0b" },
-  CANCELLED: { bg: "rgba(239,68,68,0.12)",  text: "#ef4444", border: "rgba(239,68,68,0.3)",  dot: "#ef4444" },
+  CONFIRMED: { bg: "rgba(16,185,129,0.12)", text: STATE.success, border: "rgba(16,185,129,0.3)", dot: STATE.success },
+  PENDING:   { bg: "rgba(245,158,11,0.12)", text: STATE.warning, border: "rgba(245,158,11,0.3)", dot: STATE.warning },
+  CANCELLED: { bg: "rgba(239,68,68,0.12)",  text: STATE.danger, border: "rgba(239,68,68,0.3)",  dot: STATE.danger },
 };
 
 // Calendar hours: 07:00 → 23:00
@@ -151,13 +152,13 @@ export default function SalonesPage() {
 
   // ── Palette ─────────────────────────────────────────────────────────────────
   const pal = {
-    panelBg: "#ffffff", panelBorder: "#e2e8f0",
-    cardBg: "#ffffff", cardBorder: "#e2e8f0", shadow: "0 1px 4px rgba(15,23,42,0.06)",
-    accent: "#21D0B3",
-    text: "#0f172a", textMuted: "#64748b", textFaint: "#94a3b8",
-    gridLine: "#f1f5f9",
-    today: "rgba(33,208,179,0.04)", inputBg: "#f8fafc",
-    calHeader: "#f8fafc", headerBorder: "#e2e8f0",
+    panelBg: SURFACE.card, panelBorder: SURFACE.border,
+    cardBg: SURFACE.card, cardBorder: SURFACE.border, shadow: "0 1px 4px rgba(15,23,42,0.06)",
+    accent: BRAND.teal,
+    text: SURFACE.text, textMuted: SURFACE.textMuted, textFaint: SURFACE.textFaint,
+    gridLine: SURFACE.borderMuted,
+    today: "rgba(33,208,179,0.04)", inputBg: SURFACE.bg,
+    calHeader: SURFACE.bg, headerBorder: SURFACE.border,
   };
 
   // ── State ────────────────────────────────────────────────────────────────────
@@ -398,21 +399,21 @@ export default function SalonesPage() {
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", marginBottom: "24px" }}>
         <div>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.25)", borderRadius: "99px", padding: "3px 12px", fontSize: "10px", fontWeight: 700, letterSpacing: "0.25em", textTransform: "uppercase", color: "#21D0B3" }}>
-            <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#21D0B3", display: "inline-block" }} />
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.25)", borderRadius: "99px", padding: "3px 12px", fontSize: "10px", fontWeight: 700, letterSpacing: "0.25em", textTransform: "uppercase", color: BRAND.teal }}>
+            <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: BRAND.teal, display: "inline-block" }} />
             {t("Hotelería")}
           </span>
-          <h1 style={{ fontSize: "22px", fontWeight: 800, color: "#0f172a", marginTop: "8px" }}>
+          <h1 style={{ fontSize: "22px", fontWeight: 800, color: SURFACE.text, marginTop: "8px" }}>
             {t("Reserva de salones")}
           </h1>
-          <p style={{ fontSize: "13px", color: "#64748b", marginTop: "2px" }}>
+          <p style={{ fontSize: "13px", color: SURFACE.textMuted, marginTop: "2px" }}>
             {t("Gestiona salones, reservas y visualiza la ocupación semanal")}
           </p>
         </div>
         <div style={{ display: "flex", gap: "8px" }}>
           <button onClick={openCreateSalon} style={{
             padding: "8px 16px", borderRadius: "10px", fontSize: "13px", fontWeight: 600,
-            background: "#ffffff", border: "1px solid #e2e8f0", color: "#64748b", cursor: "pointer",
+            background: SURFACE.card, border: "1px solid #e2e8f0", color: SURFACE.textMuted, cursor: "pointer",
           }}>
             {t("+ Nuevo salón")}
           </button>
@@ -421,7 +422,7 @@ export default function SalonesPage() {
             disabled={!selectedSalonId}
             style={{
               padding: "8px 18px", borderRadius: "10px", fontSize: "13px", fontWeight: 600,
-              background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: "#fff", border: "none",
+              background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: SURFACE.card, border: "none",
               cursor: selectedSalonId ? "pointer" : "not-allowed", opacity: selectedSalonId ? 1 : 0.5,
               boxShadow: "0 2px 10px rgba(33,208,179,0.3)",
             }}
@@ -432,7 +433,7 @@ export default function SalonesPage() {
       </div>
 
       {error && (
-        <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "10px", padding: "10px 14px", marginBottom: "16px", fontSize: "13px", color: "#ef4444" }}>
+        <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "10px", padding: "10px 14px", marginBottom: "16px", fontSize: "13px", color: STATE.danger }}>
           {error}
         </div>
       )}
@@ -446,13 +447,13 @@ export default function SalonesPage() {
             <p style={{ color: pal.textFaint, fontSize: "13px" }}>{t("Cargando...")}</p>
           ) : salones.length === 0 ? (
             <div style={{
-              background: "#ffffff", border: "1px dashed #e2e8f0",
+              background: SURFACE.card, border: "1px dashed #e2e8f0",
               borderRadius: "14px", padding: "24px", textAlign: "center",
             }}>
-              <p style={{ color: "#64748b", fontSize: "13px" }}>{t("Sin salones creados")}</p>
+              <p style={{ color: SURFACE.textMuted, fontSize: "13px" }}>{t("Sin salones creados")}</p>
               <button onClick={openCreateSalon} style={{
                 marginTop: "12px", padding: "7px 14px", borderRadius: "8px", fontSize: "12px",
-                background: pal.accent, color: "#fff", border: "none", cursor: "pointer", fontWeight: 600,
+                background: pal.accent, color: SURFACE.card, border: "none", cursor: "pointer", fontWeight: 600,
               }}>
                 {t("Crear primer salón")}
               </button>
@@ -483,7 +484,7 @@ export default function SalonesPage() {
                   </div>
                   <button
                     onClick={(e) => { e.stopPropagation(); openEditSalon(salon); }}
-                    style={{ background: "transparent", border: "none", cursor: "pointer", color: "#94a3b8", padding: "2px 4px", display: "flex", alignItems: "center" }}
+                    style={{ background: "transparent", border: "none", cursor: "pointer", color: SURFACE.textFaint, padding: "2px 4px", display: "flex", alignItems: "center" }}
                   >
                     <PencilIcon size={14} strokeWidth={2} />
                   </button>
@@ -493,13 +494,13 @@ export default function SalonesPage() {
                   <span style={{
                     fontSize: "10px", fontWeight: 600, padding: "2px 8px", borderRadius: "99px",
                     background: salon.status === "ACTIVE" ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)",
-                    color: salon.status === "ACTIVE" ? "#10b981" : "#ef4444",
+                    color: salon.status === "ACTIVE" ? STATE.success : STATE.danger,
                     border: `1px solid ${salon.status === "ACTIVE" ? "rgba(16,185,129,0.25)" : "rgba(239,68,68,0.25)"}`,
                   }}>
                     {t(SALON_STATUS.find((s) => s.value === salon.status)?.label ?? salon.status)}
                   </span>
                   {salon.capacity > 0 && (
-                    <span style={{ fontSize: "10px", color: "#94a3b8" }}>
+                    <span style={{ fontSize: "10px", color: SURFACE.textFaint }}>
                       <UsersIcon size={11} strokeWidth={2} style={{ display: "inline", marginRight: "3px", verticalAlign: "middle" }} />
                       {salon.capacity}
                     </span>
@@ -523,11 +524,11 @@ export default function SalonesPage() {
 
           {!selectedSalon ? (
             <div style={{
-              background: "#ffffff", border: "1px dashed #e2e8f0",
+              background: SURFACE.card, border: "1px dashed #e2e8f0",
               borderRadius: "16px", padding: "60px 24px", textAlign: "center",
             }}>
-              <p style={{ color: "#64748b", fontSize: "15px", fontWeight: 600 }}>{t("Selecciona un salón")}</p>
-              <p style={{ color: "#94a3b8", fontSize: "13px", marginTop: "4px" }}>{t("para ver su calendario de ocupación")}</p>
+              <p style={{ color: SURFACE.textMuted, fontSize: "15px", fontWeight: 600 }}>{t("Selecciona un salón")}</p>
+              <p style={{ color: SURFACE.textFaint, fontSize: "13px", marginTop: "4px" }}>{t("para ver su calendario de ocupación")}</p>
             </div>
           ) : (
             <>
@@ -565,7 +566,7 @@ export default function SalonesPage() {
                     }}>›</button>
                     <button onClick={() => openCreateRes()} style={{
                       padding: "5px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: 600,
-                      background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: "#fff", border: "none", cursor: "pointer",
+                      background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: SURFACE.card, border: "none", cursor: "pointer",
                     }}>+ {t("Reserva")}</button>
                   </div>
                 </div>
@@ -770,10 +771,10 @@ export default function SalonesPage() {
                               {res.title}
                             </p>
                             <div style={{ display: "flex", gap: "8px", marginTop: "4px", flexWrap: "wrap", alignItems: "center" }}>
-                              <span style={{ fontSize: "11px", color: "#64748b" }}>
+                              <span style={{ fontSize: "11px", color: SURFACE.textMuted }}>
                                 {isoToDisplay(res.startDate)}{res.endDate !== res.startDate ? ` → ${isoToDisplay(res.endDate)}` : ""}
                               </span>
-                              <span style={{ fontSize: "11px", color: "#64748b" }}>
+                              <span style={{ fontSize: "11px", color: SURFACE.textMuted }}>
                                 {formatTime(res.startTime)} – {formatTime(res.endTime)}
                               </span>
                               {dur && (
@@ -785,10 +786,10 @@ export default function SalonesPage() {
                                 </span>
                               )}
                               {res.organizerName && (
-                                <span style={{ fontSize: "11px", color: "#64748b" }}>{res.organizerName}</span>
+                                <span style={{ fontSize: "11px", color: SURFACE.textMuted }}>{res.organizerName}</span>
                               )}
                               {res.attendees && (
-                                <span style={{ fontSize: "11px", color: "#64748b" }}>{res.attendees} {t("asistentes")}</span>
+                                <span style={{ fontSize: "11px", color: SURFACE.textMuted }}>{res.attendees} {t("asistentes")}</span>
                               )}
                             </div>
                           </div>
@@ -801,7 +802,7 @@ export default function SalonesPage() {
                             </span>
                             <button
                               onClick={(e) => { e.stopPropagation(); setConfirmDelete({ type: "res", id: res.id }); }}
-                              style={{ background: "transparent", border: "none", cursor: "pointer", color: "#ef4444", padding: "2px", display: "flex", alignItems: "center" }}
+                              style={{ background: "transparent", border: "none", cursor: "pointer", color: STATE.danger, padding: "2px", display: "flex", alignItems: "center" }}
                             >
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
                             </button>
@@ -882,14 +883,14 @@ export default function SalonesPage() {
             </div>
 
             {modalError && (
-              <p style={{ marginTop: "12px", fontSize: "12px", color: "#ef4444" }}>{modalError}</p>
+              <p style={{ marginTop: "12px", fontSize: "12px", color: STATE.danger }}>{modalError}</p>
             )}
 
             <div style={{ display: "flex", gap: "8px", marginTop: "20px", justifyContent: "flex-end" }}>
               {editingSalon && (
                 <button
                   onClick={() => { setShowSalonModal(false); setConfirmDelete({ type: "salon", id: editingSalon.id }); }}
-                  style={{ padding: "8px 14px", borderRadius: "9px", fontSize: "13px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#ef4444", cursor: "pointer" }}
+                  style={{ padding: "8px 14px", borderRadius: "9px", fontSize: "13px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: STATE.danger, cursor: "pointer" }}
                 >
                   {t("Eliminar")}
                 </button>
@@ -899,7 +900,7 @@ export default function SalonesPage() {
               </button>
               <button onClick={saveSalon} disabled={saving} style={{
                 padding: "8px 20px", borderRadius: "9px", fontSize: "13px", fontWeight: 700,
-                background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: "#fff", border: "none", cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1,
+                background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: SURFACE.card, border: "none", cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1,
               }}>
                 {saving ? t("Guardando...") : editingSalon ? t("Actualizar") : t("Crear salón")}
               </button>
@@ -1006,14 +1007,14 @@ export default function SalonesPage() {
             </div>
 
             {modalError && (
-              <p style={{ marginTop: "12px", fontSize: "12px", color: "#ef4444" }}>{modalError}</p>
+              <p style={{ marginTop: "12px", fontSize: "12px", color: STATE.danger }}>{modalError}</p>
             )}
 
             <div style={{ display: "flex", gap: "8px", marginTop: "20px", justifyContent: "flex-end" }}>
               {editingRes && (
                 <button
                   onClick={() => { setShowResModal(false); setConfirmDelete({ type: "res", id: editingRes.id }); }}
-                  style={{ padding: "8px 14px", borderRadius: "9px", fontSize: "13px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#ef4444", cursor: "pointer" }}
+                  style={{ padding: "8px 14px", borderRadius: "9px", fontSize: "13px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: STATE.danger, cursor: "pointer" }}
                 >
                   {t("Eliminar")}
                 </button>
@@ -1023,7 +1024,7 @@ export default function SalonesPage() {
               </button>
               <button onClick={saveReservation} disabled={saving} style={{
                 padding: "8px 20px", borderRadius: "9px", fontSize: "13px", fontWeight: 700,
-                background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: "#fff", border: "none", cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1,
+                background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: SURFACE.card, border: "none", cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1,
               }}>
                 {saving ? t("Guardando...") : editingRes ? t("Actualizar") : t("Crear reserva")}
               </button>
@@ -1045,7 +1046,7 @@ export default function SalonesPage() {
             borderRadius: "18px", padding: "28px", width: "100%", maxWidth: "380px",
             boxShadow: "0 24px 80px rgba(0,0,0,0.5)", textAlign: "center",
           }}>
-            <p style={{ fontWeight: 700, fontSize: "16px", color: "#0f172a" }}>{t("¿Confirmar eliminación?")}</p>
+            <p style={{ fontWeight: 700, fontSize: "16px", color: SURFACE.text }}>{t("¿Confirmar eliminación?")}</p>
             <p style={{ color: pal.textMuted, fontSize: "13px", marginTop: "6px" }}>
               {confirmDelete.type === "salon"
                 ? t("Se eliminará el salón y todas sus reservas.")
@@ -1057,7 +1058,7 @@ export default function SalonesPage() {
               </button>
               <button
                 onClick={() => confirmDelete.type === "salon" ? deleteSalon(confirmDelete.id) : deleteReservation(confirmDelete.id)}
-                style={{ padding: "9px 18px", borderRadius: "9px", fontSize: "13px", fontWeight: 700, background: "#ef4444", color: "#fff", border: "none", cursor: "pointer" }}
+                style={{ padding: "9px 18px", borderRadius: "9px", fontSize: "13px", fontWeight: 700, background: STATE.danger, color: SURFACE.card, border: "none", cursor: "pointer" }}
               >
                 {t("Eliminar")}
               </button>

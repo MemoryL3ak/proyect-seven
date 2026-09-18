@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { loadGoogleMaps, type LatLng } from "@/lib/google-maps";
+import { STATE } from "@/lib/design";
 
 export type TrackingMarker = {
   tripId: string;
@@ -436,7 +437,7 @@ export default function LiveTrackingMap({
       const isSelected = m.tripId === selectedTripId;
       const initials = getInitials(m.driverName);
       gm.setIcon({
-        url: createDriverCarIcon(initials, isSelected ? "#f59e0b" : m.accent),
+        url: createDriverCarIcon(initials, isSelected ? STATE.warning : m.accent),
         scaledSize: new google.maps.Size(isSelected ? 80 : 64, isSelected ? 90 : 72),
         anchor: new google.maps.Point(isSelected ? 40 : 32, isSelected ? 90 : 68),
       });

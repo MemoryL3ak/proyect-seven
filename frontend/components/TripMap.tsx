@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { BRAND } from "@/lib/design";
+import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { PinIcon, XIcon } from "@/components/ui/Icons";
 
 type LatLng = { lat: number; lng: number };
@@ -263,7 +263,7 @@ function MapCanvas({
           pickupRouteRendererRef.current = new google.maps.DirectionsRenderer({
             suppressMarkers: true,
             preserveViewport: true,
-            polylineOptions: { strokeColor: "#2563eb", strokeWeight: 5, strokeOpacity: 0.85 },
+            polylineOptions: { strokeColor: STATE.infoText, strokeWeight: 5, strokeOpacity: 0.85 },
           });
           pickupRouteRendererRef.current.setMap(mapRef.current);
         }
@@ -363,7 +363,7 @@ export default function TripMap(props: TripMapProps) {
           }}
           title="Ampliar mapa"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={SURFACE.textStrong} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 3 21 3 21 9" />
             <polyline points="9 21 3 21 3 15" />
             <line x1="21" y1="3" x2="14" y2="10" />
@@ -397,7 +397,7 @@ export default function TripMap(props: TripMapProps) {
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <PinIcon size={16} color={BRAND.teal} strokeWidth={2} />
-              <span style={{ color: "#fff", fontSize: 14, fontWeight: 700 }}>Mapa del viaje</span>
+              <span style={{ color: SURFACE.card, fontSize: 14, fontWeight: 700 }}>Mapa del viaje</span>
             </div>
             <button
               type="button"
@@ -411,7 +411,7 @@ export default function TripMap(props: TripMapProps) {
                 borderRadius: 10,
                 background: "rgba(255,255,255,0.1)",
                 border: "1px solid rgba(255,255,255,0.2)",
-                color: "#fff",
+                color: SURFACE.card,
                 cursor: "pointer",
               }}
             >
@@ -439,11 +439,11 @@ export default function TripMap(props: TripMapProps) {
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ width: 10, height: 10, borderRadius: "50%", background: BRAND.teal, border: `2px solid ${BRAND.navyLight}` }} />
-              <span style={{ fontSize: 11, color: "#94a3b8" }}>Conductor</span>
+              <span style={{ fontSize: 11, color: SURFACE.textFaint }}>Conductor</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#2563eb", border: "2px solid #fff" }} />
-              <span style={{ fontSize: 11, color: "#94a3b8" }}>Tu posición</span>
+              <span style={{ width: 10, height: 10, borderRadius: "50%", background: STATE.infoText, border: "2px solid #fff" }} />
+              <span style={{ fontSize: 11, color: SURFACE.textFaint }}>Tu posición</span>
             </div>
           </div>
 

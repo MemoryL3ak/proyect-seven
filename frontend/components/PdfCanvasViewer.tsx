@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { isAvailable as isNativeBridge, send as nativeSend } from "@/lib/native-bridge";
+import { BRAND, SURFACE } from "@/lib/design";
 
 /**
  * Visor de PDF que dibuja el documento completo con PDF.js.
@@ -165,7 +166,7 @@ export default function PdfCanvasViewer({ src }: { src: string }) {
   }, [status, numPages, baseWidth, renderPage]);
 
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, background: "#334155" }}>
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, background: SURFACE.textStrong }}>
       {status === "ready" && numPages > 0 && (
         <div style={{
           display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
@@ -173,7 +174,7 @@ export default function PdfCanvasViewer({ src }: { src: string }) {
         }}>
           <button type="button" onClick={() => setZoom(z => Math.max(0.6, +(z - 0.25).toFixed(2)))}
             aria-label="Alejar" style={zoomBtn}>−</button>
-          <span style={{ fontSize: 12, color: "#94a3b8", minWidth: 96, textAlign: "center" }}>
+          <span style={{ fontSize: 12, color: SURFACE.textFaint, minWidth: 96, textAlign: "center" }}>
             {numPages} {numPages === 1 ? "página" : "páginas"} · {Math.round(zoom * 100)}%
           </span>
           <button type="button" onClick={() => setZoom(z => Math.min(3, +(z + 0.25).toFixed(2)))}
@@ -183,7 +184,7 @@ export default function PdfCanvasViewer({ src }: { src: string }) {
 
       <div ref={containerRef} style={{ flex: 1, overflow: "auto", padding: 12, WebkitOverflowScrolling: "touch" }}>
         {status === "loading" && (
-          <p style={{ color: "#cbd5e1", fontSize: 13, textAlign: "center", padding: "28px 12px" }}>
+          <p style={{ color: SURFACE.borderStrong, fontSize: 13, textAlign: "center", padding: "28px 12px" }}>
             Cargando documento…
           </p>
         )}
@@ -199,12 +200,12 @@ export default function PdfCanvasViewer({ src }: { src: string }) {
               style={{
                 padding: "10px 18px", borderRadius: 10, cursor: "pointer",
                 background: "rgba(33,208,179,0.15)", border: "1px solid rgba(52,243,198,0.4)",
-                color: "#34F3C6", fontSize: 13, fontWeight: 700,
+                color: BRAND.tealLight, fontSize: 13, fontWeight: 700,
               }}>
               Abrir en el navegador
             </button>
             {errorDetail && (
-              <p style={{ marginTop: 16, color: "#64748b", fontSize: 10.5, wordBreak: "break-word" }}>
+              <p style={{ marginTop: 16, color: SURFACE.textMuted, fontSize: 10.5, wordBreak: "break-word" }}>
                 {errorDetail}
               </p>
             )}
@@ -217,7 +218,7 @@ export default function PdfCanvasViewer({ src }: { src: string }) {
             data-page={i + 1}
             style={{
               // Alto provisional: se ajusta solo al insertarse el canvas.
-              minHeight: 220, marginBottom: 12, background: "#fff",
+              minHeight: 220, marginBottom: 12, background: SURFACE.card,
               borderRadius: 6, boxShadow: "0 2px 10px rgba(0,0,0,0.25)",
             }}
           />
@@ -230,5 +231,5 @@ export default function PdfCanvasViewer({ src }: { src: string }) {
 const zoomBtn: React.CSSProperties = {
   width: 30, height: 30, borderRadius: 8, cursor: "pointer",
   border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.08)",
-  color: "#fff", fontSize: 17, fontWeight: 700, lineHeight: 1,
+  color: SURFACE.card, fontSize: 17, fontWeight: 700, lineHeight: 1,
 };

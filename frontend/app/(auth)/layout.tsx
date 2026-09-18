@@ -1,3 +1,4 @@
+import { BRAND, STATE, SURFACE } from "@/lib/design";
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex flex-col lg:flex-row" style={{ background: "#060e16", height: "100vh", overflow: "hidden" }}>
@@ -94,11 +95,11 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className="flex lg:hidden items-center gap-3 auth-left-content" style={{ position: "relative", zIndex: 1, marginBottom: "24px" }}>
           <img src="/branding/LOGO-SEVEN-1.png" alt="Seven Arena" style={{ height: 52, width: "auto", objectFit: "contain" }} />
           <div>
-            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#34F3C6", margin: 0 }}>
+            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: BRAND.tealLight, margin: 0 }}>
               Plataforma Deportiva
             </p>
-            <p style={{ fontSize: "13px", fontWeight: 700, color: "#f1f5f9", margin: "2px 0 0" }}>
-              Gestión de alto <span style={{ color: "#34F3C6" }}>rendimiento</span>
+            <p style={{ fontSize: "13px", fontWeight: 700, color: SURFACE.borderMuted, margin: "2px 0 0" }}>
+              Gestión de alto <span style={{ color: BRAND.tealLight }}>rendimiento</span>
             </p>
           </div>
         </div>
@@ -117,7 +118,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               flex: 1, textAlign: "center",
               borderRight: i < 2 ? "1px solid rgba(255,255,255,0.06)" : "none",
             }}>
-              <p style={{ fontSize: "18px", fontWeight: 800, color: "#34F3C6", margin: 0 }}>{s.value}</p>
+              <p style={{ fontSize: "18px", fontWeight: 800, color: BRAND.tealLight, margin: 0 }}>{s.value}</p>
               <p style={{ fontSize: "10px", color: "rgba(255,255,255,0.35)", margin: "2px 0 0", textTransform: "uppercase", letterSpacing: "0.05em" }}>{s.label}</p>
             </div>
           ))}
@@ -141,7 +142,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
           {/* Divider */}
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <div style={{ width: "32px", height: "2px", background: "#34F3C6", borderRadius: "1px" }} />
+            <div style={{ width: "32px", height: "2px", background: BRAND.tealLight, borderRadius: "1px" }} />
             <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "rgba(52,243,198,0.7)" }}>
               Plataforma de Gestión Deportiva
             </span>
@@ -149,7 +150,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
           <h1 style={{
             fontSize: "clamp(30px, 2.8vw, 44px)", fontWeight: 800,
-            lineHeight: 1.12, color: "#f1f5f9",
+            lineHeight: 1.12, color: SURFACE.borderMuted,
             letterSpacing: "-0.025em", margin: 0,
           }}>
             Gestión de alto<br />
@@ -181,13 +182,13 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
                 <span style={{
-                  width: 6, height: 6, borderRadius: "50%", background: "#ef4444",
+                  width: 6, height: 6, borderRadius: "50%", background: STATE.danger,
                   animation: "pulse-dot 1.4s ease-in-out infinite", display: "inline-block",
                 }} />
                 <span style={{ fontSize: "10px", fontWeight: 700, color: "rgba(255,255,255,0.7)", letterSpacing: "0.14em" }}>EN VIVO</span>
               </div>
               <div style={{ display: "flex", gap: "5px" }}>
-                {["#ef4444","#f59e0b","#22c55e"].map(c => (
+                {[STATE.danger,STATE.warning,"#22c55e"].map(c => (
                   <span key={c} style={{ width: 7, height: 7, borderRadius: "50%", background: c, opacity: 0.75 }} />
                 ))}
               </div>
@@ -198,17 +199,17 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               <div style={{ animation: "ticker-scroll 14s linear infinite" }}>
                 {[
                   { code: "CL", name: "C. Rodríguez", sport: "Natación",  status: "Acreditado", color: "#22c55e" },
-                  { code: "AR", name: "M. Fernández", sport: "Boxeo",     status: "Check-in",   color: "#34F3C6" },
+                  { code: "AR", name: "M. Fernández", sport: "Boxeo",     status: "Check-in",   color: BRAND.tealLight },
                   { code: "BR", name: "A. Santos",    sport: "Fútbol",    status: "Acreditado", color: "#22c55e" },
-                  { code: "CO", name: "L. García",    sport: "Ciclismo",  status: "Pendiente",  color: "#f59e0b" },
+                  { code: "CO", name: "L. García",    sport: "Ciclismo",  status: "Pendiente",  color: STATE.warning },
                   { code: "PE", name: "V. Torres",    sport: "Gimnasia",  status: "Acreditado", color: "#22c55e" },
-                  { code: "UY", name: "D. López",     sport: "Pesas",     status: "Check-in",   color: "#34F3C6" },
+                  { code: "UY", name: "D. López",     sport: "Pesas",     status: "Check-in",   color: BRAND.tealLight },
                   { code: "CL", name: "C. Rodríguez", sport: "Natación",  status: "Acreditado", color: "#22c55e" },
-                  { code: "AR", name: "M. Fernández", sport: "Boxeo",     status: "Check-in",   color: "#34F3C6" },
+                  { code: "AR", name: "M. Fernández", sport: "Boxeo",     status: "Check-in",   color: BRAND.tealLight },
                   { code: "BR", name: "A. Santos",    sport: "Fútbol",    status: "Acreditado", color: "#22c55e" },
-                  { code: "CO", name: "L. García",    sport: "Ciclismo",  status: "Pendiente",  color: "#f59e0b" },
+                  { code: "CO", name: "L. García",    sport: "Ciclismo",  status: "Pendiente",  color: STATE.warning },
                   { code: "PE", name: "V. Torres",    sport: "Gimnasia",  status: "Acreditado", color: "#22c55e" },
-                  { code: "UY", name: "D. López",     sport: "Pesas",     status: "Check-in",   color: "#34F3C6" },
+                  { code: "UY", name: "D. López",     sport: "Pesas",     status: "Check-in",   color: BRAND.tealLight },
                 ].map((row, i) => (
                   <div key={i} style={{
                     display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -231,7 +232,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             <div style={{ padding: "10px 14px", borderTop: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px" }}>
                 <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.5)", letterSpacing: "0.06em" }}>ACREDITACIONES HOY</span>
-                <span style={{ fontSize: "10px", color: "#34F3C6", fontWeight: 700 }}>847 / 1,200</span>
+                <span style={{ fontSize: "10px", color: BRAND.tealLight, fontWeight: 700 }}>847 / 1,200</span>
               </div>
               <div style={{ height: "3px", background: "rgba(255,255,255,0.1)", borderRadius: "2px", overflow: "hidden" }}>
                 <div style={{
@@ -262,7 +263,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                 animationDelay: `${0.3 + i * 0.12}s`,
                 opacity: 0,
               }}>
-                <p style={{ fontSize: "20px", fontWeight: 800, color: "#34F3C6", margin: 0, lineHeight: 1 }}>{s.value}</p>
+                <p style={{ fontSize: "20px", fontWeight: 800, color: BRAND.tealLight, margin: 0, lineHeight: 1 }}>{s.value}</p>
                 <p style={{ fontSize: "10px", color: "rgba(255,255,255,0.3)", margin: "4px 0 0", letterSpacing: "0.06em", textTransform: "uppercase" }}>{s.label}</p>
               </div>
             ))}

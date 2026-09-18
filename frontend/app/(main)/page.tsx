@@ -9,7 +9,7 @@ import { useI18n } from "@/lib/i18n";
 import DonutChart from "@/components/charts/DonutChart";
 import BarChart from "@/components/charts/BarChart";
 import { downloadExcel, downloadPDF } from "@/lib/reports";
-import { BRAND } from "@/lib/design";
+import { BRAND, STATE, SURFACE } from "@/lib/design";
 import DetailRow from "@/components/ui/DetailRow";
 
 // ── Brand palette — Seven Arena (tokens compartidos) ───────────
@@ -39,7 +39,7 @@ const fmt  = (n: number) => new Intl.NumberFormat("es-CL").format(n);
 function Card({ children, accentColor, style }: { children: React.ReactNode; accentColor?: string; style?: React.CSSProperties }) {
   return (
     <div style={{
-      background: "#ffffff",
+      background: SURFACE.card,
       border: "1px solid #e2e8f0",
       borderTop: accentColor ? `2px solid ${accentColor}` : "1px solid #e2e8f0",
       borderRadius: "16px",
@@ -62,7 +62,7 @@ function SectionLabel({ color, children }: { color: string; children: React.Reac
 
 function ProgressBar({ pct, color, height = 6 }: { pct: number; color: string; height?: number }) {
   return (
-    <div style={{ height, background: "#f1f5f9", borderRadius: "99px", overflow: "hidden", position: "relative" }}>
+    <div style={{ height, background: SURFACE.borderMuted, borderRadius: "99px", overflow: "hidden", position: "relative" }}>
       <div style={{
         height: "100%", width: `${Math.min(100, pct)}%`,
         background: `linear-gradient(90deg, ${color}, ${color}cc)`,
@@ -324,13 +324,13 @@ export default function Page() {
         const rest = rows.slice(8).reduce((s, r) => s + r.count, 0);
         return (
           <div>
-            <p style={{ fontSize: 12, color: "#94a3b8", margin: "0 0 8px" }}>{t("Participantes validados por disciplina")}</p>
-            {shown.length === 0 && <p style={{ fontSize: 13, color: "#94a3b8" }}>{t("Sin participantes registrados")}</p>}
+            <p style={{ fontSize: 12, color: SURFACE.textFaint, margin: "0 0 8px" }}>{t("Participantes validados por disciplina")}</p>
+            {shown.length === 0 && <p style={{ fontSize: 13, color: SURFACE.textFaint }}>{t("Sin participantes registrados")}</p>}
             {shown.map(r => (
               <div key={r.name} style={{ padding: "7px 0", borderBottom: "1px solid #f1f5f9" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                  <span style={{ fontSize: 12.5, color: "#334155", fontWeight: 600 }}>{r.name}</span>
-                  <span style={{ fontSize: 12.5, fontWeight: 700, color: "#0f172a", fontVariantNumeric: "tabular-nums" }}>
+                  <span style={{ fontSize: 12.5, color: SURFACE.textStrong, fontWeight: 600 }}>{r.name}</span>
+                  <span style={{ fontSize: 12.5, fontWeight: 700, color: SURFACE.text, fontVariantNumeric: "tabular-nums" }}>
                     {fmt(r.count)}{r.cupos > 0 ? ` / ${fmt(r.cupos)}` : ""}
                   </span>
                 </div>
@@ -345,7 +345,7 @@ export default function Page() {
       case "eventos": {
         return (
           <div>
-            {eventsList.length === 0 && <p style={{ fontSize: 13, color: "#94a3b8" }}>{t("Sin eventos creados")}</p>}
+            {eventsList.length === 0 && <p style={{ fontSize: 13, color: SURFACE.textFaint }}>{t("Sin eventos creados")}</p>}
             {eventsList.map(ev => {
               const cupos = (ev.expectedCapacities || []).reduce((s, c) => s + (c.expectedCount || 0), 0);
               return <DetailRow key={ev.id} label={ev.name || ev.id}
@@ -357,7 +357,7 @@ export default function Page() {
       case "hoteles": {
         return (
           <div>
-            {accommodationsList.length === 0 && <p style={{ fontSize: 13, color: "#94a3b8" }}>{t("Sin hoteles registrados")}</p>}
+            {accommodationsList.length === 0 && <p style={{ fontSize: 13, color: SURFACE.textFaint }}>{t("Sin hoteles registrados")}</p>}
             {accommodationsList.slice(0, 10).map(h => (
               <DetailRow key={h.id} label={h.name || h.id} value={h.city || "—"} />
             ))}
@@ -376,19 +376,19 @@ export default function Page() {
           { label: "En curso", value: tripStats.active, color: TEAL_LIGHT },
           { label: "Completados", value: tripStats.completed, color: TEAL },
           { label: "Cancelados", value: tripStats.cancelled, color: "#f87171" },
-          { label: "Otros estados", value: tripStats.other, color: "#94a3b8" },
+          { label: "Otros estados", value: tripStats.other, color: SURFACE.textFaint },
         ].filter(s => s.value > 0);
         return (
           <div>
             {seg.map(s => (
               <div key={s.label} style={{ padding: "7px 0", borderBottom: "1px solid #f1f5f9" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                  <span style={{ fontSize: 12.5, color: "#334155", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: 12.5, color: SURFACE.textStrong, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
                     <span style={{ width: 8, height: 8, borderRadius: "50%", background: s.color, display: "inline-block" }} />
                     {t(s.label)}
                   </span>
                   <span style={{ fontSize: 12.5, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
-                    {fmt(s.value)} <span style={{ color: "#94a3b8", fontWeight: 500 }}>({total > 0 ? Math.round((s.value / total) * 100) : 0}%)</span>
+                    {fmt(s.value)} <span style={{ color: SURFACE.textFaint, fontWeight: 500 }}>({total > 0 ? Math.round((s.value / total) * 100) : 0}%)</span>
                   </span>
                 </div>
                 <ProgressBar pct={total > 0 ? Math.round((s.value / total) * 100) : 0} color={s.color} height={5} />
@@ -428,7 +428,7 @@ export default function Page() {
           <div>
             <div style={{ padding: "7px 0", borderBottom: "1px solid #f1f5f9" }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                <span style={{ fontSize: 12.5, color: "#334155", fontWeight: 600 }}>{t("Ocupación hotelera")}</span>
+                <span style={{ fontSize: 12.5, color: SURFACE.textStrong, fontWeight: 600 }}>{t("Ocupación hotelera")}</span>
                 <span style={{ fontSize: 12.5, fontWeight: 700 }}>{occupancyPct}%</span>
               </div>
               <ProgressBar pct={occupancyPct} color={TEAL_LIGHT} height={6} />
@@ -460,7 +460,7 @@ export default function Page() {
         <button type="button" onClick={() => downloadPDF("reporte_operacional", "Reporte Operacional — Seven Arena", buildOperationalReport())}
           onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(239,68,68,0.25)"; }}
           onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 1px 4px rgba(239,68,68,0.1)"; }}
-          style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 10, border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.06)", fontSize: 12, fontWeight: 700, color: "#dc2626", cursor: "pointer", transition: "all 150ms ease", boxShadow: "0 1px 4px rgba(239,68,68,0.1)" }}>
+          style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 10, border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.06)", fontSize: 12, fontWeight: 700, color: STATE.dangerText, cursor: "pointer", transition: "all 150ms ease", boxShadow: "0 1px 4px rgba(239,68,68,0.1)" }}>
           <FileTextIcon size={16} />
           PDF
         </button>
@@ -478,7 +478,7 @@ export default function Page() {
               onClick={() => setExpandedKpi(prev => prev === kpi.id ? null : kpi.id)}
               onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setExpandedKpi(prev => prev === kpi.id ? null : kpi.id); } }}
               style={{
-                background: isOpen ? `linear-gradient(180deg, ${kpi.color}0d, #ffffff 55%)` : "#ffffff",
+                background: isOpen ? `linear-gradient(180deg, ${kpi.color}0d, #ffffff 55%)` : SURFACE.card,
                 border: `1px solid ${isOpen ? `${kpi.color}66` : "#e2e8f0"}`,
                 borderTop: `${isOpen ? 3 : 2}px solid ${kpi.color}`,
                 borderRadius: "14px",
@@ -494,7 +494,7 @@ export default function Page() {
             >
               <div className="flex items-center justify-between mb-3">
                 <span style={{ color: kpi.color }}>{kpiIcons[kpi.iconKey]}</span>
-                <span style={{ display: "inline-flex", color: isOpen ? kpi.color : "#cbd5e1", transform: isOpen ? "rotate(180deg)" : "none", transition: "transform 150ms ease, color 150ms ease" }}>
+                <span style={{ display: "inline-flex", color: isOpen ? kpi.color : SURFACE.borderStrong, transform: isOpen ? "rotate(180deg)" : "none", transition: "transform 150ms ease, color 150ms ease" }}>
                   <ChevronDownIcon size={14} strokeWidth={2.2} />
                 </span>
               </div>
@@ -505,7 +505,7 @@ export default function Page() {
                   {kpi.value}
                 </p>
               )}
-              <p style={{ fontSize: "11px", color: "#64748b", marginTop: "5px", fontWeight: 500 }}>{t(kpi.label)}</p>
+              <p style={{ fontSize: "11px", color: SURFACE.textMuted, marginTop: "5px", fontWeight: 500 }}>{t(kpi.label)}</p>
             </div>
           );
         })}
@@ -514,7 +514,7 @@ export default function Page() {
       {/* ── Panel de detalle del KPI expandido */}
       {expanded && (
         <div style={{
-          background: "#ffffff",
+          background: SURFACE.card,
           border: `1px solid ${expanded.color}44`,
           borderTop: `3px solid ${expanded.color}`,
           borderRadius: "16px",
@@ -528,7 +528,7 @@ export default function Page() {
               <span style={{ color: expanded.color, display: "inline-flex" }}>{kpiIcons[expanded.iconKey]}</span>
               <div style={{ minWidth: 0 }}>
                 <p style={{ fontSize: "11px", color: expanded.color, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", margin: 0 }}>{t(expanded.label)}</p>
-                <p style={{ fontSize: "20px", fontWeight: 800, color: "#0f172a", margin: 0, lineHeight: 1.2, fontVariantNumeric: "tabular-nums" }}>{expanded.value ?? "—"}</p>
+                <p style={{ fontSize: "20px", fontWeight: 800, color: SURFACE.text, margin: 0, lineHeight: 1.2, fontVariantNumeric: "tabular-nums" }}>{expanded.value ?? "—"}</p>
               </div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
@@ -536,7 +536,7 @@ export default function Page() {
                 {t("Ir al módulo")} →
               </Link>
               <button type="button" onClick={() => setExpandedKpi(null)} aria-label={t("Cerrar")}
-                style={{ border: "none", background: "#f1f5f9", borderRadius: 8, width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#64748b" }}>
+                style={{ border: "none", background: SURFACE.borderMuted, borderRadius: 8, width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: SURFACE.textMuted }}>
                 <XIcon size={13} strokeWidth={2.4} />
               </button>
             </div>
@@ -553,7 +553,7 @@ export default function Page() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <SectionLabel color={TEAL}>Transporte</SectionLabel>
-              <p style={{ fontSize: "15px", fontWeight: 600, color: "#0f172a", marginTop: "2px" }}>Estado de viajes</p>
+              <p style={{ fontSize: "15px", fontWeight: 600, color: SURFACE.text, marginTop: "2px" }}>Estado de viajes</p>
             </div>
             <Link href="/operations/trips" style={{ fontSize: "11px", color: TEAL, fontWeight: 600, textDecoration: "none" }}>Ver todos →</Link>
           </div>
@@ -561,7 +561,7 @@ export default function Page() {
             {tripDonutSegments.length > 0 ? (
               <DonutChart segments={tripDonutSegments} size={140} thickness={20} label={fmt(trips?.length ?? 0)} sublabel="total" />
             ) : (
-              <p style={{ color: "#94a3b8", fontSize: "13px" }}>Sin datos</p>
+              <p style={{ color: SURFACE.textFaint, fontSize: "13px" }}>Sin datos</p>
             )}
           </div>
           {tripDonutSegments.length > 0 && (
@@ -569,7 +569,7 @@ export default function Page() {
               {tripDonutSegments.map((s) => (
                 <div key={s.label} className="flex items-center gap-1.5">
                   <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: s.color, display: "inline-block", flexShrink: 0 }} />
-                  <span style={{ fontSize: "11px", color: "#64748b" }}>{s.label}</span>
+                  <span style={{ fontSize: "11px", color: SURFACE.textMuted }}>{s.label}</span>
                 </div>
               ))}
             </div>
@@ -581,7 +581,7 @@ export default function Page() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <SectionLabel color={BLUE}>Hotelería</SectionLabel>
-              <p style={{ fontSize: "15px", fontWeight: 600, color: "#0f172a", marginTop: "2px" }}>Ocupación de camas</p>
+              <p style={{ fontSize: "15px", fontWeight: 600, color: SURFACE.text, marginTop: "2px" }}>Ocupación de camas</p>
             </div>
             <Link href="/operations/hotel-tracking" style={{ fontSize: "11px", color: BLUE, fontWeight: 600, textDecoration: "none" }}>Ver tracking →</Link>
           </div>
@@ -589,7 +589,7 @@ export default function Page() {
             {hotelDonutSegments.length > 0 ? (
               <DonutChart segments={hotelDonutSegments} size={140} thickness={20} label={`${occupancyPct}%`} sublabel="ocupado" />
             ) : (
-              <p style={{ color: "#94a3b8", fontSize: "13px" }}>Sin datos</p>
+              <p style={{ color: SURFACE.textFaint, fontSize: "13px" }}>Sin datos</p>
             )}
           </div>
           {hotelDonutSegments.length > 0 && (
@@ -597,7 +597,7 @@ export default function Page() {
               {hotelDonutSegments.map((s) => (
                 <div key={s.label} className="flex items-center gap-1.5">
                   <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: s.color, display: "inline-block", flexShrink: 0 }} />
-                  <span style={{ fontSize: "11px", color: "#64748b" }}>{s.label}</span>
+                  <span style={{ fontSize: "11px", color: SURFACE.textMuted }}>{s.label}</span>
                 </div>
               ))}
             </div>
@@ -609,7 +609,7 @@ export default function Page() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <SectionLabel color={CHARCOAL}>Distribución</SectionLabel>
-              <p style={{ fontSize: "15px", fontWeight: 600, color: "#0f172a", marginTop: "2px" }}>Viajes por estado</p>
+              <p style={{ fontSize: "15px", fontWeight: 600, color: SURFACE.text, marginTop: "2px" }}>Viajes por estado</p>
             </div>
           </div>
           <BarChart
@@ -630,7 +630,7 @@ export default function Page() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <SectionLabel color={CHARCOAL}>Acreditación deportiva</SectionLabel>
-              <p style={{ fontSize: "15px", fontWeight: 600, color: "#0f172a", marginTop: "2px" }}>Cupos por disciplina vs registrados AND</p>
+              <p style={{ fontSize: "15px", fontWeight: 600, color: SURFACE.text, marginTop: "2px" }}>Cupos por disciplina vs registrados AND</p>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               {[
@@ -639,7 +639,7 @@ export default function Page() {
               ].map((l) => (
                 <div key={l.label} className="flex items-center gap-1.5">
                   <span style={{ width: 8, height: 8, borderRadius: "50%", background: l.color, display: "inline-block" }} />
-                  <span style={{ fontSize: "11px", color: "#64748b" }}>{l.label}</span>
+                  <span style={{ fontSize: "11px", color: SURFACE.textMuted }}>{l.label}</span>
                 </div>
               ))}
             </div>
@@ -650,19 +650,19 @@ export default function Page() {
             const totalCupos = Array.from(capacityByDiscipline.values()).reduce((s, v) => s + v, 0);
             const totalRegistered = Array.from(athletesByDiscipline.values()).reduce((s, v) => s + v, 0);
             const fillPct = totalCupos > 0 ? Math.round((totalRegistered / totalCupos) * 100) : 0;
-            const semColor = fillPct >= 85 ? "#22c55e" : fillPct >= 60 ? "#f59e0b" : "#ef4444";
+            const semColor = fillPct >= 85 ? "#22c55e" : fillPct >= 60 ? STATE.warning : STATE.danger;
             return (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-                <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: "12px 14px" }}>
-                  <p style={{ fontSize: "10px", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 600 }}>Total cupos</p>
+                <div style={{ background: SURFACE.bg, border: "1px solid #e2e8f0", borderRadius: 12, padding: "12px 14px" }}>
+                  <p style={{ fontSize: "10px", color: SURFACE.textFaint, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 600 }}>Total cupos</p>
                   <p style={{ fontSize: "1.3rem", fontWeight: 800, color: CHARCOAL, marginTop: 4, fontVariantNumeric: "tabular-nums" }}>{fmt(totalCupos)}</p>
                 </div>
-                <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: "12px 14px" }}>
-                  <p style={{ fontSize: "10px", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 600 }}>Registrados AND</p>
+                <div style={{ background: SURFACE.bg, border: "1px solid #e2e8f0", borderRadius: 12, padding: "12px 14px" }}>
+                  <p style={{ fontSize: "10px", color: SURFACE.textFaint, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 600 }}>Registrados AND</p>
                   <p style={{ fontSize: "1.3rem", fontWeight: 800, color: TEAL, marginTop: 4, fontVariantNumeric: "tabular-nums" }}>{fmt(totalRegistered)}</p>
                 </div>
-                <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: "12px 14px" }}>
-                  <p style={{ fontSize: "10px", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 600 }}>% cobertura</p>
+                <div style={{ background: SURFACE.bg, border: "1px solid #e2e8f0", borderRadius: 12, padding: "12px 14px" }}>
+                  <p style={{ fontSize: "10px", color: SURFACE.textFaint, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 600 }}>% cobertura</p>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
                     <span style={{ width: 10, height: 10, borderRadius: "50%", background: semColor, display: "inline-block", boxShadow: `0 0 6px ${semColor}40` }} />
                     <p style={{ fontSize: "1.3rem", fontWeight: 800, color: semColor, fontVariantNumeric: "tabular-nums", margin: 0 }}>{fillPct}%</p>
@@ -674,9 +674,9 @@ export default function Page() {
 
           {/* Per-discipline bars */}
           {capacityByDiscipline.size === 0 ? (
-            <div style={{ padding: "20px", borderRadius: 10, background: "#f8fafc", border: "1px dashed #e2e8f0", textAlign: "center" }}>
-              <p style={{ fontSize: "13px", fontWeight: 600, color: "#94a3b8", margin: 0 }}>Sin cupos configurados</p>
-              <p style={{ fontSize: "11px", color: "#cbd5e1", margin: "4px 0 0" }}>Configura los cupos esperados en la sección de Deportes.</p>
+            <div style={{ padding: "20px", borderRadius: 10, background: SURFACE.bg, border: "1px dashed #e2e8f0", textAlign: "center" }}>
+              <p style={{ fontSize: "13px", fontWeight: 600, color: SURFACE.textFaint, margin: 0 }}>Sin cupos configurados</p>
+              <p style={{ fontSize: "11px", color: SURFACE.borderStrong, margin: "4px 0 0" }}>Configura los cupos esperados en la sección de Deportes.</p>
             </div>
           ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 360, overflowY: "auto" }}>
@@ -696,22 +696,22 @@ export default function Page() {
                 .sort((a, b) => b.cupos - a.cupos);
 
               return rows.map((row) => {
-                const semColor = row.pct >= 85 ? "#22c55e" : row.pct >= 60 ? "#f59e0b" : "#ef4444";
+                const semColor = row.pct >= 85 ? "#22c55e" : row.pct >= 60 ? STATE.warning : STATE.danger;
                 return (
                   <div key={row.discId}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
                         <span style={{ width: 8, height: 8, borderRadius: "50%", background: semColor, flexShrink: 0, boxShadow: `0 0 4px ${semColor}40` }} />
-                        <span style={{ fontSize: "12px", fontWeight: 600, color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <span style={{ fontSize: "12px", fontWeight: 600, color: SURFACE.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {row.parent ? `${row.parent} — ` : ""}{row.name}
-                          {row.tags && <span style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", marginLeft: 6 }}>({row.tags})</span>}
+                          {row.tags && <span style={{ fontSize: 10, fontWeight: 600, color: SURFACE.textFaint, marginLeft: 6 }}>({row.tags})</span>}
                         </span>
                       </div>
                       <span style={{ fontSize: "11px", fontWeight: 700, color: semColor, flexShrink: 0, marginLeft: 8, fontVariantNumeric: "tabular-nums" }}>
                         {row.registered}/{row.cupos}
                       </span>
                     </div>
-                    <div style={{ height: 6, background: "#f1f5f9", borderRadius: "99px", overflow: "hidden" }}>
+                    <div style={{ height: 6, background: SURFACE.borderMuted, borderRadius: "99px", overflow: "hidden" }}>
                       <div style={{ height: "100%", width: `${Math.min(100, row.pct)}%`, background: semColor, borderRadius: "99px", transition: "width 0.8s ease" }} />
                     </div>
                   </div>
@@ -728,13 +728,13 @@ export default function Page() {
         <SectionLabel color={TEAL}>Inventario hotelero</SectionLabel>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
           {[
-            { label: "Total habitaciones", value: fmt(roomStats.total),    color: "#0f172a" },
+            { label: "Total habitaciones", value: fmt(roomStats.total),    color: SURFACE.text },
             { label: "Disponibles",        value: fmt(roomStats.available), color: TEAL },
-            { label: "Total camas",        value: fmt(bedStats.total),      color: "#0f172a" },
+            { label: "Total camas",        value: fmt(bedStats.total),      color: SURFACE.text },
             { label: "Camas libres",       value: fmt(bedStats.available),  color: TEAL_LIGHT },
           ].map((item, i) => (
-            <div key={i} style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "14px" }}>
-              <p style={{ fontSize: "10px", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.12em" }}>{item.label}</p>
+            <div key={i} style={{ background: SURFACE.bg, border: "1px solid #e2e8f0", borderRadius: "12px", padding: "14px" }}>
+              <p style={{ fontSize: "10px", color: SURFACE.textFaint, textTransform: "uppercase", letterSpacing: "0.12em" }}>{item.label}</p>
               <p style={{ fontSize: "1.5rem", fontWeight: 700, color: item.color, marginTop: "4px", fontVariantNumeric: "tabular-nums" }}>
                 {hotelLoading ? "—" : item.value}
               </p>
@@ -748,7 +748,7 @@ export default function Page() {
               pct: roomStats.total > 0 ? Math.round((roomStats.available / roomStats.total) * 100) : 0 },
           ].map((row, i) => (
             <div key={i}>
-              <div className="flex justify-between text-xs mb-1" style={{ color: "#64748b" }}>
+              <div className="flex justify-between text-xs mb-1" style={{ color: SURFACE.textMuted }}>
                 <span>{row.label}</span>
                 <span style={{ color: row.color, fontWeight: 600 }}>{row.value} / {row.total}</span>
               </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { BRAND } from "@/lib/design";
+import { BRAND, SURFACE } from "@/lib/design";
 
 type Option = {
   value: string;
@@ -36,7 +36,7 @@ export default function FilterChips({
               background: active
                 ? `linear-gradient(135deg, ${BRAND.teal} 0%, #1eb19a 100%)`
                 : "#eef1f6",
-              color: active ? "#fff" : "#475569",
+              color: active ? SURFACE.card : SURFACE.textSecondary,
               boxShadow: active ? "0 1px 4px rgba(33, 208, 179, 0.30)" : "none",
             }}
           >

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import JsBarcode from "jsbarcode";
 import * as XLSX from "xlsx";
 import { apiFetch } from "@/lib/api";
+import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiCard from "@/components/ui/KpiCard";
@@ -324,20 +325,20 @@ export default function WorkforcePage() {
             />
           </section>
           {/* Timeline operativa de entregas de kit (tablero por estado) */}
-          <section style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, padding: 16, boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+          <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: 16, padding: 16, boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <div>
-                <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase" as const, color: "#94a3b8" }}>{t("Timeline operativa")}</p>
-                <h3 style={{ marginTop: "3px", fontWeight: 700, fontSize: "16px", color: "#0f172a" }}>{t("Estado de entregas de kit")}</h3>
+                <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase" as const, color: SURFACE.textFaint }}>{t("Timeline operativa")}</p>
+                <h3 style={{ marginTop: "3px", fontWeight: 700, fontSize: "16px", color: SURFACE.text }}>{t("Estado de entregas de kit")}</h3>
               </div>
-              <span style={{ fontSize: "12px", fontWeight: 600, color: "#64748b", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "99px", padding: "4px 12px" }}>
+              <span style={{ fontSize: "12px", fontWeight: 600, color: SURFACE.textMuted, background: SURFACE.bg, border: "1px solid #e2e8f0", borderRadius: "99px", padding: "4px 12px" }}>
                 {deliveries.length} {t("entregas")} · {persons.length} {t("personas")}
               </span>
             </div>
             <div className="grid gap-3 md:grid-cols-3">
               {([
                 {
-                  key: "sinKit", label: t("Sin kit"), accent: "#f59e0b", chipBg: "#fef3c7", chipBorder: "#fcd34d",
+                  key: "sinKit", label: t("Sin kit"), accent: STATE.warning, chipBg: "#fef3c7", chipBorder: "#fcd34d",
                   empty: t("Todas las personas tienen kit."),
                   items: kitBoard.sinKit.map((p) => ({
                     id: p.id,
@@ -347,7 +348,7 @@ export default function WorkforcePage() {
                   })),
                 },
                 {
-                  key: "entregadas", label: t("Entregado · por validar"), accent: "#2563eb", chipBg: "#dbeafe", chipBorder: "#93c5fd",
+                  key: "entregadas", label: t("Entregado · por validar"), accent: STATE.infoText, chipBg: "#dbeafe", chipBorder: "#93c5fd",
                   empty: t("Sin entregas pendientes de validar."),
                   items: kitBoard.entregadas.map((d) => ({
                     id: d.id,
@@ -359,7 +360,7 @@ export default function WorkforcePage() {
                   })),
                 },
                 {
-                  key: "validadas", label: t("Validado"), accent: "#059669", chipBg: "#e7f5ec", chipBorder: "#86efac",
+                  key: "validadas", label: t("Validado"), accent: STATE.successText, chipBg: "#e7f5ec", chipBorder: "#86efac",
                   empty: t("Aún sin entregas validadas."),
                   items: kitBoard.validadas.map((d) => ({
                     id: d.id,
@@ -372,7 +373,7 @@ export default function WorkforcePage() {
                 },
               ] as const).map((col) => (
                 <div key={col.key} style={{
-                  background: "#fff", border: "1px solid #e2e8f0", borderTop: `3px solid ${col.accent}`,
+                  background: SURFACE.card, border: "1px solid #e2e8f0", borderTop: `3px solid ${col.accent}`,
                   borderRadius: "16px", padding: "12px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)",
                 }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
@@ -382,8 +383,8 @@ export default function WorkforcePage() {
                     <span style={{
                       minWidth: "22px", height: "22px", borderRadius: "99px", display: "inline-flex", alignItems: "center", justifyContent: "center",
                       fontSize: "11px", fontWeight: 800,
-                      background: col.items.length > 0 ? col.chipBg : "#f1f5f9",
-                      color: col.items.length > 0 ? col.accent : "#64748b",
+                      background: col.items.length > 0 ? col.chipBg : SURFACE.borderMuted,
+                      color: col.items.length > 0 ? col.accent : SURFACE.textMuted,
                       border: col.items.length > 0 ? `1px solid ${col.chipBorder}` : "1px solid #e2e8f0",
                     }}>
                       {col.items.length}
@@ -392,16 +393,16 @@ export default function WorkforcePage() {
                   <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                     {col.items.slice(0, 4).map((item) => (
                       <div key={item.id} style={{
-                        background: "#f8fafc", border: "1px solid #e2e8f0", borderLeft: `3px solid ${col.accent}`,
+                        background: SURFACE.bg, border: "1px solid #e2e8f0", borderLeft: `3px solid ${col.accent}`,
                         borderRadius: "10px", padding: "8px 10px",
                       }}>
-                        <p style={{ fontSize: "12px", fontWeight: 700, color: "#0f172a" }}>{item.title}</p>
-                        <p style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>{item.line1}</p>
-                        <p style={{ fontSize: "11px", color: "#94a3b8" }}>{item.line2}</p>
+                        <p style={{ fontSize: "12px", fontWeight: 700, color: SURFACE.text }}>{item.title}</p>
+                        <p style={{ fontSize: "11px", color: SURFACE.textMuted, marginTop: "2px" }}>{item.line1}</p>
+                        <p style={{ fontSize: "11px", color: SURFACE.textFaint }}>{item.line2}</p>
                       </div>
                     ))}
                     {col.items.length === 0 && (
-                      <p style={{ fontSize: "12px", color: "#94a3b8", textAlign: "center", padding: "12px 0" }}>{col.empty}</p>
+                      <p style={{ fontSize: "12px", color: SURFACE.textFaint, textAlign: "center", padding: "12px 0" }}>{col.empty}</p>
                     )}
                     {col.items.length > 4 && (
                       <p style={{ fontSize: "11px", color: col.accent, textAlign: "center", fontWeight: 600 }}>+{col.items.length - 4} {t("más")}</p>
@@ -521,7 +522,7 @@ export default function WorkforcePage() {
                           <div className="flex items-center gap-2.5 min-w-0">
                             <PersonAvatar name={p.fullName} type={p.personType} />
                             <div className="min-w-0">
-                              <p className="font-semibold leading-tight truncate" style={{ color: "#0f172a" }}>
+                              <p className="font-semibold leading-tight truncate" style={{ color: SURFACE.text }}>
                                 {p.fullName}
                                 {hasKit && (
                                   <span className="ml-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full align-middle"
@@ -541,16 +542,16 @@ export default function WorkforcePage() {
                         <td className="p-3">
                           {p.rut ? (
                             <span className="font-mono text-[11px] px-2 py-0.5 rounded font-semibold"
-                              style={{ background: "#f1f5f9", color: "#334155", border: "1px solid #e2e8f0" }}>
+                              style={{ background: SURFACE.borderMuted, color: SURFACE.textStrong, border: "1px solid #e2e8f0" }}>
                               {p.rut}
                             </span>
                           ) : <span style={{ color: "var(--text-muted)" }}>—</span>}
                         </td>
                         <td className="p-3"><PersonTypeBadge type={p.personType} /></td>
-                        <td className="p-3" style={{ color: "#334155" }}>
+                        <td className="p-3" style={{ color: SURFACE.textStrong }}>
                           {p.role ? (
                             <span className="inline-flex items-center gap-1.5 text-[11.5px]">
-                              <BriefcaseIcon size={11} strokeWidth={1.9} style={{ color: "#94a3b8", flexShrink: 0 }} />
+                              <BriefcaseIcon size={11} strokeWidth={1.9} style={{ color: SURFACE.textFaint, flexShrink: 0 }} />
                               {p.role}
                             </span>
                           ) : <span style={{ color: "var(--text-muted)" }}>—</span>}
@@ -558,20 +559,20 @@ export default function WorkforcePage() {
                         <td className="p-3"><ContactCell email={p.email} phone={p.phone} /></td>
                         <td className="p-3 text-right">
                           <div className="inline-flex flex-col items-end">
-                            <span className="font-semibold tabular-nums" style={{ color: isVolunteer ? "#94a3b8" : "#0f172a" }}>
+                            <span className="font-semibold tabular-nums" style={{ color: isVolunteer ? SURFACE.textFaint : SURFACE.text }}>
                               {fmt$(p.dailyRate)}
                             </span>
-                            {!isVolunteer && <span className="text-[9.5px] uppercase tracking-wider" style={{ color: "#94a3b8" }}>{t("diario")}</span>}
+                            {!isVolunteer && <span className="text-[9.5px] uppercase tracking-wider" style={{ color: SURFACE.textFaint }}>{t("diario")}</span>}
                           </div>
                         </td>
                         <td className="p-3 text-right">
                           <div className="inline-flex flex-col items-end gap-1">
-                            <span className="font-semibold tabular-nums" style={{ color: "#334155" }}>{p.daysCount || 0}</span>
+                            <span className="font-semibold tabular-nums" style={{ color: SURFACE.textStrong }}>{p.daysCount || 0}</span>
                             <MiniBar value={p.daysCount || 0} max={maxDays} color={isVolunteer ? "#5e3aab" : "#1f4e8c"} />
                           </div>
                         </td>
                         <td className="p-3 text-right">
-                          <span className="font-bold tabular-nums text-[13px]" style={{ color: isVolunteer ? "#94a3b8" : "#0f172a" }}>{fmt$(total)}</span>
+                          <span className="font-bold tabular-nums text-[13px]" style={{ color: isVolunteer ? SURFACE.textFaint : SURFACE.text }}>{fmt$(total)}</span>
                         </td>
                         <td className="p-3">
                           <div className="inline-flex items-center justify-center gap-1.5">
@@ -713,7 +714,7 @@ export default function WorkforcePage() {
                               <PackageIcon size={17} />
                             </div>
                             <div className="min-w-0">
-                              <p className="font-semibold leading-tight" style={{ color: "#0f172a" }}>{p.name}</p>
+                              <p className="font-semibold leading-tight" style={{ color: SURFACE.text }}>{p.name}</p>
                               {p.description && (
                                 <p className="text-[10.5px] mt-0.5 line-clamp-1" style={{ color: "var(--text-muted)" }}>{p.description}</p>
                               )}
@@ -724,17 +725,17 @@ export default function WorkforcePage() {
                         <td className="p-3">
                           {p.barcode ? (
                             <span className="inline-flex items-center gap-1.5">
-                              <span style={{ display: "inline-flex", alignItems: "center", gap: 1, height: 22, padding: "0 4px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 4 }}>
+                              <span style={{ display: "inline-flex", alignItems: "center", gap: 1, height: 22, padding: "0 4px", background: SURFACE.bg, border: "1px solid #e2e8f0", borderRadius: 4 }}>
                                 {p.barcode.split("").slice(0, 10).map((ch, j) => (
                                   <span key={j} style={{
                                     display: "inline-block",
                                     width: `${(ch.charCodeAt(0) % 3) + 1}px`,
                                     height: "100%",
-                                    background: "#0f172a",
+                                    background: SURFACE.text,
                                   }} />
                                 ))}
                               </span>
-                              <span className="text-[10.5px] tracking-wider font-mono" style={{ color: "#475569" }}>{p.barcode}</span>
+                              <span className="text-[10.5px] tracking-wider font-mono" style={{ color: SURFACE.textSecondary }}>{p.barcode}</span>
                             </span>
                           ) : <span style={{ color: "var(--text-muted)" }}>—</span>}
                         </td>
@@ -748,13 +749,13 @@ export default function WorkforcePage() {
                             </div>
                           ) : (
                             <span className="inline-flex items-center text-[10px] px-2 py-0.5 rounded-full"
-                              style={{ background: "#f1f5f9", color: "#94a3b8" }}>{t("Talla única")}</span>
+                              style={{ background: SURFACE.borderMuted, color: SURFACE.textFaint }}>{t("Talla única")}</span>
                           )}
                         </td>
                         <td className="p-3 text-right">
                           <div className="inline-flex flex-col items-end gap-1">
                             <span className="inline-flex items-center gap-1.5 font-bold tabular-nums"
-                              style={{ color: noStock ? "#b3231b" : lowStock ? "#c78c00" : "#0f172a" }}>
+                              style={{ color: noStock ? "#b3231b" : lowStock ? "#c78c00" : SURFACE.text }}>
                               {(noStock || lowStock) && (
                                 <span style={{ width: 6, height: 6, borderRadius: "50%", background: noStock ? "#b3231b" : "#c78c00", animation: "pulse 1.8s infinite" }} />
                               )}
@@ -765,12 +766,12 @@ export default function WorkforcePage() {
                         </td>
                         <td className="p-3 text-right">
                           <div className="inline-flex flex-col items-end">
-                            <span className="font-semibold tabular-nums" style={{ color: "#334155" }}>{fmt$(p.unitCost)}</span>
-                            <span className="text-[9.5px] uppercase tracking-wider" style={{ color: "#94a3b8" }}>{t("por unidad")}</span>
+                            <span className="font-semibold tabular-nums" style={{ color: SURFACE.textStrong }}>{fmt$(p.unitCost)}</span>
+                            <span className="text-[9.5px] uppercase tracking-wider" style={{ color: SURFACE.textFaint }}>{t("por unidad")}</span>
                           </div>
                         </td>
                         <td className="p-3 text-right">
-                          <span className="font-bold tabular-nums text-[13px]" style={{ color: "#0f172a" }}>{fmt$(inventory)}</span>
+                          <span className="font-bold tabular-nums text-[13px]" style={{ color: SURFACE.text }}>{fmt$(inventory)}</span>
                         </td>
                         <td className="p-3">
                           <div className="inline-flex items-center justify-center gap-1.5">
@@ -870,7 +871,7 @@ export default function WorkforcePage() {
                       <tr key={d.id}>
                         <td className="p-3 whitespace-nowrap">
                           <div className="inline-flex flex-col">
-                            <span className="font-semibold" style={{ color: "#0f172a" }}>{fmtDate(d.deliveredAt)}</span>
+                            <span className="font-semibold" style={{ color: SURFACE.text }}>{fmtDate(d.deliveredAt)}</span>
                             {d.deliveredBy && (
                               <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>{t("por")} {d.deliveredBy}</span>
                             )}
@@ -881,7 +882,7 @@ export default function WorkforcePage() {
                             <div className="flex items-center gap-2.5 min-w-0">
                               <PersonAvatar name={per.fullName} type={per.personType} />
                               <div className="min-w-0">
-                                <p className="font-semibold leading-tight" style={{ color: "#0f172a" }}>{per.fullName}</p>
+                                <p className="font-semibold leading-tight" style={{ color: SURFACE.text }}>{per.fullName}</p>
                                 <p className="text-[10.5px] mt-0.5" style={{ color: "var(--text-muted)" }}>{per.role || (per.personType === "STAFF" ? t("Staff") : t("Voluntario"))}</p>
                               </div>
                             </div>
@@ -903,7 +904,7 @@ export default function WorkforcePage() {
                               >
                                 <PackageIcon size={14} />
                               </div>
-                              <span className="font-medium" style={{ color: "#334155" }}>{prod.name}</span>
+                              <span className="font-medium" style={{ color: SURFACE.textStrong }}>{prod.name}</span>
                             </div>
                           ) : (
                             <span className="font-mono text-[11px]" style={{ color: "var(--text-muted)" }}>{d.productId.slice(0, 8)}…</span>
@@ -918,10 +919,10 @@ export default function WorkforcePage() {
                           )}
                         </td>
                         <td className="p-3 text-right">
-                          <span className="font-semibold tabular-nums" style={{ color: "#334155" }}>×{d.quantity}</span>
+                          <span className="font-semibold tabular-nums" style={{ color: SURFACE.textStrong }}>×{d.quantity}</span>
                         </td>
                         <td className="p-3 text-right">
-                          <span className="font-bold tabular-nums text-[13px]" style={{ color: "#0f172a" }}>{fmt$(cost)}</span>
+                          <span className="font-bold tabular-nums text-[13px]" style={{ color: SURFACE.text }}>{fmt$(cost)}</span>
                         </td>
                         <td className="p-3"><ValidationPill at={d.validatedAt} /></td>
                         <td className="p-3">
@@ -1065,7 +1066,7 @@ function PersonAvatar({ name, type }: { name: string; type: string }) {
         width: 34,
         height: 34,
         background: gradient,
-        color: "#fff",
+        color: SURFACE.card,
         fontSize: 11.5,
         letterSpacing: "0.04em",
         boxShadow: `0 2px 6px ${shadow}, inset 0 1px 0 rgba(255,255,255,0.18)`,
@@ -1079,7 +1080,7 @@ function PersonAvatar({ name, type }: { name: string; type: string }) {
 function MiniBar({ value, max, color }: { value: number; max: number; color: string }) {
   const pct = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0;
   return (
-    <div style={{ width: 56, height: 4, borderRadius: 4, background: "#e2e8f0", overflow: "hidden" }}>
+    <div style={{ width: 56, height: 4, borderRadius: 4, background: SURFACE.border, overflow: "hidden" }}>
       <div style={{ width: `${pct}%`, height: "100%", background: color, borderRadius: 4, transition: "width 220ms ease" }} />
     </div>
   );
@@ -1093,9 +1094,9 @@ function ContactCell({ email, phone }: { email?: string | null; phone?: string |
         <a
           href={`mailto:${email}`}
           className="inline-flex items-center gap-1.5 text-[11.5px] hover:underline"
-          style={{ color: "#334155" }}
+          style={{ color: SURFACE.textStrong }}
         >
-          <MailIcon size={12} strokeWidth={1.8} style={{ flexShrink: 0, color: "#94a3b8" }} />
+          <MailIcon size={12} strokeWidth={1.8} style={{ flexShrink: 0, color: SURFACE.textFaint }} />
           {email}
         </a>
       )}
@@ -1105,7 +1106,7 @@ function ContactCell({ email, phone }: { email?: string | null; phone?: string |
           className="inline-flex items-center gap-1.5 text-[11px] hover:underline"
           style={{ color: "var(--text-muted)" }}
         >
-          <PhoneIcon size={11} strokeWidth={1.8} style={{ flexShrink: 0, color: "#94a3b8" }} />
+          <PhoneIcon size={11} strokeWidth={1.8} style={{ flexShrink: 0, color: SURFACE.textFaint }} />
           {phone}
         </a>
       )}
@@ -1199,7 +1200,7 @@ function IconActionButton({
     edit:     { bg: "#eef4fb", color: "#1f4e8c", hover: "#dbe7f5" },
     delete:   { bg: "#fde2e2", color: "#b3231b", hover: "#fbcaca" },
     validate: { bg: "#e7f5ec", color: "#1e5125", hover: "#cfe9d6" },
-    print:    { bg: "#f1f5f9", color: "#334155", hover: "#e2e8f0" },
+    print:    { bg: SURFACE.borderMuted, color: SURFACE.textStrong, hover: SURFACE.border },
   };
   const s = palette[variant];
   const ICONS: Record<string, React.ReactNode> = {
@@ -1265,7 +1266,7 @@ function printBarcodeLabels(items: Array<{ name: string; barcode: string; catego
         fontOptions: "bold",
         textMargin: 4,
         margin: 6,
-        background: "#ffffff",
+        background: SURFACE.card,
         lineColor: "#000000",
       });
     } catch (e) {
@@ -1465,8 +1466,8 @@ function ProductForm({ data, onChange }: { data: Partial<Product>; onChange: (d:
       <Field label={t("Código de barras (auto-generado)")}>
         <div className="input flex items-center gap-2 font-mono"
           style={{
-            background: "#f8fafc",
-            color: data.barcode ? "#0d1e3a" : "#94a3b8",
+            background: SURFACE.bg,
+            color: data.barcode ? "#0d1e3a" : SURFACE.textFaint,
             cursor: "not-allowed",
           }}>
           {/* Mini-render visual de barras */}
@@ -1726,7 +1727,7 @@ function WorkforceBulkImport({ kind, onDone }: { kind: "persons" | "products"; o
   return (
     <div className="rounded-xl p-3 flex flex-wrap items-center gap-2"
       style={{ border: "1px dashed var(--border)", background: "var(--elevated)" }}>
-      <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "#21D0B3" }}>
+      <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: BRAND.teal }}>
         {t("Carga masiva")}
       </span>
       <button type="button" className="btn btn-ghost text-xs" onClick={downloadTemplate}>

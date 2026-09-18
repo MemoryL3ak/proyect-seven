@@ -9,9 +9,10 @@ import {
   loginPartner,
 } from "@/lib/partnerAuth";
 import { LockIcon, CheckIcon } from "@/components/ui/Icons";
+import { BRAND, SURFACE } from "@/lib/design";
 
-const TEAL = "#21D0B3";
-const TEAL_MID = "#34F3C6";
+const TEAL = BRAND.teal;
+const TEAL_MID = BRAND.tealLight;
 
 export default function PartnerLoginPage() {
   const router = useRouter();
@@ -170,7 +171,7 @@ export default function PartnerLoginPage() {
                 style={{
                   background: `linear-gradient(135deg, ${TEAL} 0%, #1eb19a 100%)`,
                 }}>
-                <LockIcon size={30} color="#fff" strokeWidth={2} />
+                <LockIcon size={30} color={SURFACE.card} strokeWidth={2} />
               </div>
               <div>
                 <h1 className="text-2xl font-bold tracking-tight"
@@ -191,7 +192,7 @@ export default function PartnerLoginPage() {
                   type="text"
                   className="w-full px-4 py-3 rounded-xl text-lg font-mono uppercase text-center tracking-wider transition-all"
                   style={{
-                    background: "#f8fafc",
+                    background: SURFACE.bg,
                     border: "2px solid #e2e8f0",
                     outline: "none",
                   }}
@@ -200,12 +201,12 @@ export default function PartnerLoginPage() {
                   onChange={(e) => setCode(e.target.value.toUpperCase())}
                   onFocus={(e) => {
                     e.target.style.borderColor = TEAL;
-                    e.target.style.background = "#fff";
+                    e.target.style.background = SURFACE.card;
                     e.target.style.boxShadow = `0 0 0 4px ${TEAL}15`;
                   }}
                   onBlur={(e) => {
-                    e.target.style.borderColor = "#e2e8f0";
-                    e.target.style.background = "#f8fafc";
+                    e.target.style.borderColor = SURFACE.border;
+                    e.target.style.background = SURFACE.bg;
                     e.target.style.boxShadow = "none";
                   }}
                   autoFocus
@@ -221,7 +222,7 @@ export default function PartnerLoginPage() {
                   type="password"
                   className="w-full px-4 py-3 rounded-xl text-2xl font-mono text-center tracking-[0.5em] transition-all"
                   style={{
-                    background: "#f8fafc",
+                    background: SURFACE.bg,
                     border: "2px solid #e2e8f0",
                     outline: "none",
                   }}
@@ -230,12 +231,12 @@ export default function PartnerLoginPage() {
                   onChange={(e) => setPin(e.target.value)}
                   onFocus={(e) => {
                     e.target.style.borderColor = TEAL;
-                    e.target.style.background = "#fff";
+                    e.target.style.background = SURFACE.card;
                     e.target.style.boxShadow = `0 0 0 4px ${TEAL}15`;
                   }}
                   onBlur={(e) => {
-                    e.target.style.borderColor = "#e2e8f0";
-                    e.target.style.background = "#f8fafc";
+                    e.target.style.borderColor = SURFACE.border;
+                    e.target.style.background = SURFACE.bg;
                     e.target.style.boxShadow = "none";
                   }}
                   onKeyDown={(e) => e.key === "Enter" && submit()}
@@ -323,7 +324,7 @@ function SessionCard({
         style={{
           background: "linear-gradient(135deg, #2e7d32 0%, #4caf50 100%)",
         }}>
-        <CheckIcon size={30} color="#fff" strokeWidth={2.5} />
+        <CheckIcon size={30} color={SURFACE.card} strokeWidth={2.5} />
       </div>
       <div>
         <p className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: "#5e6b7a" }}>

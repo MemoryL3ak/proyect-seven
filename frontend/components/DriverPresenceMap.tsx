@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { STATE, SURFACE } from "@/lib/design";
 
 export type PresenceMarker = {
   id: string;
@@ -33,7 +34,7 @@ const CLIENT_TYPE_CHIP: Record<string, { label: string; bg: string; color: strin
   TM: { label: "TM", bg: "#ede9fe", color: "#5b21b6", border: "#c4b5fd" },
   FAMILIA_PARAPAN: { label: "Familia Parapan", bg: "#fce7f3", color: "#9d174d", border: "#f9a8d4" },
   COMITE_ORGANIZADOR: { label: "Comité Org.", bg: "#e0f2fe", color: "#075985", border: "#7dd3fc" },
-  PROVEEDORES: { label: "Proveedores", bg: "#f1f5f9", color: "#334155", border: "#cbd5e1" },
+  PROVEEDORES: { label: "Proveedores", bg: SURFACE.borderMuted, color: SURFACE.textStrong, border: SURFACE.borderStrong },
 };
 
 function clientTypeChipsHtml(types: string[]): string {
@@ -47,7 +48,7 @@ function clientTypeChipsHtml(types: string[]): string {
   }
   return types
     .map((t) => {
-      const c = CLIENT_TYPE_CHIP[String(t).toUpperCase()] ?? { label: t, bg: "#f1f5f9", color: "#475569", border: "#cbd5e1" };
+      const c = CLIENT_TYPE_CHIP[String(t).toUpperCase()] ?? { label: t, bg: SURFACE.borderMuted, color: SURFACE.textSecondary, border: SURFACE.borderStrong };
       return `<span style="display:inline-block;font-size:9.5px;font-weight:700;padding:3px 8px;border-radius:99px;background:${c.bg};color:${c.color};border:1px solid ${c.border};letter-spacing:0.04em;text-transform:uppercase;margin:2px 4px 0 0;">${c.label}</span>`;
     })
     .join("");
@@ -57,9 +58,9 @@ function clientTypeChipsHtml(types: string[]): string {
 // stale/last-known = grey. Kept in one place so the pin icon, the info window
 // and the zIndex all agree.
 function markerAccent(m: PresenceMarker): string {
-  if (m.onTrip) return "#10b981";
-  if (m.online) return "#2563eb";
-  return "#94a3b8";
+  if (m.onTrip) return STATE.success;
+  if (m.online) return STATE.infoText;
+  return SURFACE.textFaint;
 }
 
 function markerStatusLabel(m: PresenceMarker): string {

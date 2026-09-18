@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { mobileLogin } from "@/lib/api";
+import { BRAND, SURFACE } from "@/lib/design";
 import { getMobileSession, markFromApp, setMobileSession, postToReactNative } from "@/lib/mobile-auth";
 import { claimPortalSession, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
 import { clearPersistedTabs } from "@/lib/portal-tab";
@@ -145,7 +146,7 @@ export default function MobileLoginPage() {
             height: 36,
             borderRadius: "50%",
             border: "3px solid rgba(52,243,198,0.25)",
-            borderTopColor: "#34F3C6",
+            borderTopColor: BRAND.tealLight,
             animation: "ml-spin 0.8s linear infinite",
           }}
         />
@@ -171,7 +172,7 @@ export default function MobileLoginPage() {
           alt="Seven Arena"
           style={{ height: 88, width: "auto", objectFit: "contain", marginBottom: "16px" }}
         />
-        <h1 style={{ fontSize: "22px", fontWeight: 700, color: "#f1f5f9", margin: 0 }}>Iniciar sesión</h1>
+        <h1 style={{ fontSize: "22px", fontWeight: 700, color: SURFACE.borderMuted, margin: 0 }}>Iniciar sesión</h1>
         <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.45)", margin: "6px 0 0", textAlign: "center" }}>
           Ingresa el código de acceso que recibiste por correo.
         </p>
@@ -238,7 +239,7 @@ export default function MobileLoginPage() {
                       }`,
                       boxShadow: isCursor || isActive ? "0 0 0 3px rgba(52,243,198,0.15)" : "none",
                       background: "rgba(255,255,255,0.08)",
-                      color: "#f1f5f9",
+                      color: SURFACE.borderMuted,
                       fontSize: "22px",
                       fontWeight: 700,
                       transition: "border-color 150ms, box-shadow 150ms",
@@ -249,7 +250,7 @@ export default function MobileLoginPage() {
                         style={{
                           width: 2,
                           height: 24,
-                          background: "#34F3C6",
+                          background: BRAND.tealLight,
                           borderRadius: 1,
                           animation: "ml-caret 1.1s step-end infinite",
                         }}
@@ -341,7 +342,7 @@ export default function MobileLoginPage() {
             marginTop: "-4px",
           }}
         >
-          <span style={{ color: "#34F3C6", fontWeight: 600 }}>Recordarme mi código</span>
+          <span style={{ color: BRAND.tealLight, fontWeight: 600 }}>Recordarme mi código</span>
         </Link>
       </div>
     </div>
