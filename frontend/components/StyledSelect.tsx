@@ -108,8 +108,12 @@ export default function StyledSelect({
           justifyContent: "space-between",
           padding: "7px 12px",
           borderRadius: open ? "10px 10px 0 0" : "10px",
-          border: `1px solid ${borderColor}`,
-          borderBottom: open ? `1px solid #e2e8f0` : `1px solid ${borderColor}`,
+          // Sólo longhands: mezclar `border` con `borderBottom` hace que React
+          // avise "Updating a style property during rerender" al abrir/cerrar.
+          borderTop: `1px solid ${borderColor}`,
+          borderRight: `1px solid ${borderColor}`,
+          borderLeft: `1px solid ${borderColor}`,
+          borderBottom: open ? `1px solid ${SURFACE.border}` : `1px solid ${borderColor}`,
           background: SURFACE.bg,
           fontSize: "13px",
           lineHeight: "1.5",
