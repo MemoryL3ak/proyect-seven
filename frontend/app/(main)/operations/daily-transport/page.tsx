@@ -926,7 +926,7 @@ export default function DailyTransportPage() {
 
             {/* ── Tarjeta de ejecución ── */}
             <div className="rounded-2xl p-5 space-y-4"
-              style={{ background: "linear-gradient(160deg, #0f172a 0%, #1f4e8c 130%)", boxShadow: "0 8px 24px rgba(15,23,42,0.25)" }}>
+              style={{ background: `linear-gradient(160deg, ${SURFACE.text} 0%, #1f4e8c 130%)`, boxShadow: "0 8px 24px rgba(15,23,42,0.25)" }}>
               <div>
                 <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.2em", textTransform: "uppercase", color: BRAND.teal }}>
                   {t("Motor de asignación")}
@@ -1076,7 +1076,7 @@ export default function DailyTransportPage() {
                   height: "100%", borderRadius: 99,
                   background: viewKpis.assigned === viewKpis.total
                     ? `linear-gradient(90deg, ${BRAND.teal}, #1eb19a)`
-                    : "linear-gradient(90deg, #f59e0b, #d97706)",
+                    : `linear-gradient(90deg, ${STATE.warning}, #d97706)`,
                   transition: "width 300ms ease",
                 }} />
               </div>

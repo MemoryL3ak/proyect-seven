@@ -117,7 +117,7 @@ export default function MiCuentaPage() {
 
   const card: React.CSSProperties = {
     background: SURFACE.card,
-    border: "1px solid #e2e8f0",
+    border: `1px solid ${SURFACE.border}`,
     borderRadius: 16,
     padding: 20,
     boxShadow: "0 1px 6px rgba(15,23,42,0.06)",
@@ -134,7 +134,7 @@ export default function MiCuentaPage() {
     width: "100%",
     padding: "11px 13px",
     borderRadius: 10,
-    border: "1px solid #e2e8f0",
+    border: `1px solid ${SURFACE.border}`,
     background: SURFACE.bg,
     // 16px mínimo: evita el auto-zoom de iOS dentro del WebView de la app.
     fontSize: 16,
@@ -183,7 +183,7 @@ export default function MiCuentaPage() {
             { label: t("Cuenta creada"), value: fmtDate(user?.created_at) },
             { label: t("Último acceso"), value: fmtDate(user?.last_sign_in_at) },
           ].map((row) => (
-            <div key={row.label} style={{ background: SURFACE.bg, border: "1px solid #e2e8f0", borderRadius: 12, padding: "10px 14px" }}>
+            <div key={row.label} style={{ background: SURFACE.bg, border: `1px solid ${SURFACE.border}`, borderRadius: 12, padding: "10px 14px" }}>
               <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: SURFACE.textFaint, margin: 0 }}>{row.label}</p>
               <p style={{ fontSize: 14, fontWeight: 600, color: SURFACE.text, margin: "3px 0 0", overflow: "hidden", textOverflow: "ellipsis" }}>{row.value}</p>
             </div>
@@ -237,7 +237,7 @@ export default function MiCuentaPage() {
           <button type="button" onClick={handleChangePassword} disabled={pwSaving}
             style={{
               padding: "10px 18px", borderRadius: 10, border: "none",
-              background: pwSaving ? "rgba(33,208,179,0.4)" : "linear-gradient(135deg, #21D0B3, #14AE98)",
+              background: pwSaving ? "rgba(33,208,179,0.4)" : `linear-gradient(135deg, ${BRAND.teal}, #14AE98)`,
               color: SURFACE.card, fontSize: 13, fontWeight: 700, cursor: pwSaving ? "not-allowed" : "pointer",
             }}>
             {pwSaving ? t("Guardando...") : t("Actualizar contraseña")}
@@ -268,7 +268,7 @@ export default function MiCuentaPage() {
       {/* ── Modal de confirmación ── */}
       {deleteOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => !deleting && setDeleteOpen(false)}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: SURFACE.card, borderRadius: 20, width: "100%", maxWidth: 420, borderTop: "3px solid #ef4444", boxShadow: "0 8px 40px rgba(15,23,42,0.25)", padding: 24 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: SURFACE.card, borderRadius: 20, width: "100%", maxWidth: 420, borderTop: `3px solid ${STATE.danger}`, boxShadow: "0 8px 40px rgba(15,23,42,0.25)", padding: 24 }}>
             <h3 style={{ fontSize: 17, fontWeight: 800, color: SURFACE.text, margin: 0 }}>{t("Eliminar cuenta")}</h3>
             <p style={{ fontSize: 13, color: SURFACE.textMuted, margin: "10px 0 0", lineHeight: 1.5 }}>
               {t("Se eliminará permanentemente la cuenta")} <strong>{name}</strong>. {t("Para confirmar, escribe")} <strong>ELIMINAR</strong>:
@@ -283,7 +283,7 @@ export default function MiCuentaPage() {
             {deleteError && <p style={{ fontSize: 12.5, color: STATE.danger, margin: "10px 0 0" }}>{deleteError}</p>}
             <div style={{ display: "flex", gap: 8, marginTop: 18, justifyContent: "flex-end" }}>
               <button type="button" onClick={() => setDeleteOpen(false)} disabled={deleting}
-                style={{ padding: "9px 16px", borderRadius: 10, border: "1px solid #e2e8f0", background: SURFACE.card, color: SURFACE.textSecondary, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                style={{ padding: "9px 16px", borderRadius: 10, border: `1px solid ${SURFACE.border}`, background: SURFACE.card, color: SURFACE.textSecondary, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
                 {t("Cancelar")}
               </button>
               <button type="button" onClick={handleDelete} disabled={deleting || deleteText.trim().toUpperCase() !== "ELIMINAR"}

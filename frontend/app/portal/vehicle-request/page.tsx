@@ -1471,7 +1471,7 @@ export default function VehicleRequestPortalPage() {
 
     return (
       <div key={trip.id} style={{
-        borderRadius:16,border:"1px solid #e2e8f0",background:SURFACE.card,
+        borderRadius:16,border:`1px solid ${SURFACE.border}`,background:SURFACE.card,
         overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)",
       }}>
         {/* Compact header */}
@@ -1545,7 +1545,7 @@ export default function VehicleRequestPortalPage() {
               onChange={(e) => setRatingComment(e.target.value)}
               placeholder={t("Comentario opcional...")}
               rows={2}
-              style={{ width:"100%",padding:10,borderRadius:10,border:"1px solid #e2e8f0",fontSize:13,resize:"none",outline:"none",boxSizing:"border-box",fontFamily:"inherit" }}
+              style={{ width:"100%",padding:10,borderRadius:10,border:`1px solid ${SURFACE.border}`,fontSize:13,resize:"none",outline:"none",boxSizing:"border-box",fontFamily:"inherit" }}
             />
             <div style={{ display:"flex",gap:8,width:"100%" }}>
               <button type="button" onClick={() => submitRating(trip.id)} disabled={ratingStars === 0 || ratingLoading}
@@ -1553,7 +1553,7 @@ export default function VehicleRequestPortalPage() {
                 {ratingLoading ? "..." : t("Enviar")}
               </button>
               <button type="button" onClick={() => { setRatingTripId(null); setRatingStars(0); setRatingComment(""); }}
-                style={{ padding:"10px 14px",borderRadius:10,border:"1px solid #e2e8f0",background:SURFACE.bg,color:SURFACE.textMuted,fontSize:13,fontWeight:600,cursor:"pointer" }}>
+                style={{ padding:"10px 14px",borderRadius:10,border:`1px solid ${SURFACE.border}`,background:SURFACE.bg,color:SURFACE.textMuted,fontSize:13,fontWeight:600,cursor:"pointer" }}>
                 {t("Omitir")}
               </button>
             </div>
@@ -1574,41 +1574,41 @@ export default function VehicleRequestPortalPage() {
         {isExpanded && (
           <div style={{ padding:"0 14px 14px",display:"flex",flexDirection:"column",gap:8 }}>
             <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:6 }}>
-              <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
+              <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}` }}>
                 <p style={{ fontSize:10,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Origen")}</p>
                 <p style={{ fontSize:12.5,fontWeight:600,color:SURFACE.text,margin:"3px 0 0",lineHeight:1.3 }}>{trip.origin || t("Pendiente")}</p>
               </div>
-              <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
+              <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}` }}>
                 <p style={{ fontSize:10,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Destino")}</p>
                 <p style={{ fontSize:12.5,fontWeight:600,color:SURFACE.text,margin:"3px 0 0",lineHeight:1.3 }}>{trip.destination || venue?.name || t("Pendiente")}</p>
               </div>
-              <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
+              <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}` }}>
                 <p style={{ fontSize:10,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Conductor")}</p>
                 <p style={{ fontSize:12.5,fontWeight:600,color:SURFACE.text,margin:"3px 0 0" }}>{driver?.fullName || t("Pendiente")}</p>
                 {driver?.phone && <p style={{ fontSize:11,color:SURFACE.textMuted,margin:"2px 0 0" }}>{driver.phone}</p>}
               </div>
-              <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
+              <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}` }}>
                 <p style={{ fontSize:10,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Vehiculo")}</p>
                 <p style={{ fontSize:12.5,fontWeight:600,color:SURFACE.text,margin:"3px 0 0" }}>{vehicle?.plate || t("Pendiente")}</p>
                 {vehicle && <p style={{ fontSize:11,color:SURFACE.textMuted,margin:"2px 0 0" }}>{[vehicle.type, vehicle.brand, vehicle.model].filter(Boolean).join(" · ")}</p>}
               </div>
-              <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
+              <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}` }}>
                 <p style={{ fontSize:10,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Personas")}</p>
                 <p style={{ fontSize:12.5,fontWeight:600,color:SURFACE.text,margin:"3px 0 0" }}>{trip.passengerCount || "-"}</p>
               </div>
-              <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
+              <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}` }}>
                 <p style={{ fontSize:10,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Tipo")}</p>
                 <p style={{ fontSize:12.5,fontWeight:600,color:SURFACE.text,margin:"3px 0 0" }}>{t(vehicleTypeLabel(trip.requestedVehicleType))}</p>
               </div>
               {trip.requestedAt && (
-                <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
+                <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}` }}>
                   <p style={{ fontSize:10,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Solicitado")}</p>
                   <p style={{ fontSize:12.5,fontWeight:600,color:SURFACE.text,margin:"3px 0 0" }}>{formatDateTime(trip.requestedAt)}</p>
                 </div>
               )}
             </div>
             {trip.notes && (
-              <div style={{ padding:"10px 12px",borderRadius:10,background:"#fffbeb",border:"1px solid #fde68a",borderLeft:"4px solid #f59e0b" }}>
+              <div style={{ padding:"10px 12px",borderRadius:10,background:"#fffbeb",border:"1px solid #fde68a",borderLeft:`4px solid ${STATE.warning}` }}>
                 <p style={{ fontSize:10,fontWeight:800,color:STATE.warningText,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}><AlertIcon size={10} className="inline mr-1" />{t("Observación")}</p>
                 <p style={{ fontSize:13,fontWeight:600,color:"#78350f",margin:"3px 0 0",lineHeight:1.4 }}>{trip.notes.replace(/^\[Portal\]\s*/, "")}</p>
               </div>
@@ -1629,21 +1629,21 @@ export default function VehicleRequestPortalPage() {
                         <span style={{ fontSize:11,fontWeight:700,color:childStatus.color }}>{t(childStatus.label)}</span>
                       </div>
                       <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:6 }}>
-                        <div style={{ padding:"6px 8px",borderRadius:8,background:SURFACE.card,border:"1px solid #e2e8f0" }}>
+                        <div style={{ padding:"6px 8px",borderRadius:8,background:SURFACE.card,border:`1px solid ${SURFACE.border}` }}>
                           <p style={{ fontSize:10,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Fecha regreso")}</p>
                           <p style={{ fontSize:12.5,fontWeight:600,color:SURFACE.text,margin:"3px 0 0" }}>{formatDateTime(child.scheduledAt)}</p>
                         </div>
-                        <div style={{ padding:"6px 8px",borderRadius:8,background:SURFACE.card,border:"1px solid #e2e8f0" }}>
+                        <div style={{ padding:"6px 8px",borderRadius:8,background:SURFACE.card,border:`1px solid ${SURFACE.border}` }}>
                           <p style={{ fontSize:10,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Destino")}</p>
                           <p style={{ fontSize:12.5,fontWeight:600,color:SURFACE.text,margin:"3px 0 0",lineHeight:1.3 }}>
                             {returnVenue?.name || child.destination || child.origin || t("Pendiente")}
                           </p>
                         </div>
-                        <div style={{ padding:"6px 8px",borderRadius:8,background:SURFACE.card,border:"1px solid #e2e8f0" }}>
+                        <div style={{ padding:"6px 8px",borderRadius:8,background:SURFACE.card,border:`1px solid ${SURFACE.border}` }}>
                           <p style={{ fontSize:10,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Conductor")}</p>
                           <p style={{ fontSize:12.5,fontWeight:600,color:SURFACE.text,margin:"3px 0 0" }}>{returnDriver?.fullName || t("Pendiente")}</p>
                         </div>
-                        <div style={{ padding:"6px 8px",borderRadius:8,background:SURFACE.card,border:"1px solid #e2e8f0" }}>
+                        <div style={{ padding:"6px 8px",borderRadius:8,background:SURFACE.card,border:`1px solid ${SURFACE.border}` }}>
                           <p style={{ fontSize:10,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Origen")}</p>
                           <p style={{ fontSize:12.5,fontWeight:600,color:SURFACE.text,margin:"3px 0 0",lineHeight:1.3 }}>{child.origin || t("Pendiente")}</p>
                         </div>
@@ -1686,13 +1686,13 @@ export default function VehicleRequestPortalPage() {
             {isCompleted && (
               <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:6 }}>
                 {trip.startedAt && (
-                  <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
+                  <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}` }}>
                     <p style={{ fontSize:10,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Inicio")}</p>
                     <p style={{ fontSize:12.5,fontWeight:600,color:SURFACE.text,margin:"3px 0 0" }}>{formatDateTime(trip.startedAt)}</p>
                   </div>
                 )}
                 {trip.completedAt && (
-                  <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
+                  <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}` }}>
                     <p style={{ fontSize:10,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Fin")}</p>
                     <p style={{ fontSize:12.5,fontWeight:600,color:SURFACE.text,margin:"3px 0 0" }}>{formatDateTime(trip.completedAt)}</p>
                   </div>
@@ -1714,7 +1714,7 @@ export default function VehicleRequestPortalPage() {
             {editable && (
               <div style={{ display:"flex",gap:8,marginTop:4 }}>
                 <button type="button" onClick={() => startEditingTrip(trip)}
-                  style={{ flex:1,padding:"8px 12px",borderRadius:10,border:"1px solid #e2e8f0",background:SURFACE.bg,color:SURFACE.textStrong,fontSize:12,fontWeight:600,cursor:"pointer" }}>
+                  style={{ flex:1,padding:"8px 12px",borderRadius:10,border:`1px solid ${SURFACE.border}`,background:SURFACE.bg,color:SURFACE.textStrong,fontSize:12,fontWeight:600,cursor:"pointer" }}>
                   {t("Modificar")}
                 </button>
                 <button type="button" onClick={() => cancelTrip(trip)}
@@ -1987,7 +1987,7 @@ export default function VehicleRequestPortalPage() {
               const isActive = tm.status === "EN_ROUTE" || tm.status === "PICKED_UP";
               const liveLabel = tm.status === "PICKED_UP" ? t("Viaje en curso") : tm.status === "EN_ROUTE" ? t("Tu conductor está en camino") : t(st.label);
               const Field = ({ label, value, sub }: { label: string; value: string; sub?: string | null }) => (
-                <div style={{ padding:"9px 11px",borderRadius:12,background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
+                <div style={{ padding:"9px 11px",borderRadius:12,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}` }}>
                   <p style={{ fontSize:9.5,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{label}</p>
                   <p style={{ fontSize:13,fontWeight:700,color:SURFACE.text,margin:"3px 0 0",lineHeight:1.3 }}>{value}</p>
                   {sub && <p style={{ fontSize:11,color:SURFACE.textMuted,margin:"2px 0 0" }}>{sub}</p>}
@@ -2085,7 +2085,7 @@ export default function VehicleRequestPortalPage() {
                           </a>
                         )}
                         <button type="button" onClick={() => { setTripModal(null); setActiveTab("actividades"); setActividadesSubTab("en_curso"); }}
-                          style={{ flex:1,padding:"12px",borderRadius:12,border:"1px solid #e2e8f0",background:SURFACE.card,color:SURFACE.textStrong,fontSize:13,fontWeight:700,cursor:"pointer" }}>
+                          style={{ flex:1,padding:"12px",borderRadius:12,border:`1px solid ${SURFACE.border}`,background:SURFACE.card,color:SURFACE.textStrong,fontSize:13,fontWeight:700,cursor:"pointer" }}>
                           {t("Ver en Actividades")}
                         </button>
                       </div>
@@ -2121,7 +2121,7 @@ export default function VehicleRequestPortalPage() {
             {activeTab === "solicitud" && (
               <section style={{ display:"flex",flexDirection:"column",gap:"12px" }}>
               <section>
-                <div style={{ borderRadius:16,border:"1px solid #e2e8f0",background:SURFACE.card,padding:"16px 14px",boxShadow:"0 1px 4px rgba(15,23,42,0.04)" }}>
+                <div style={{ borderRadius:16,border:`1px solid ${SURFACE.border}`,background:SURFACE.card,padding:"16px 14px",boxShadow:"0 1px 4px rgba(15,23,42,0.04)" }}>
                   <p style={{ fontSize:14,fontWeight:700,color:SURFACE.text,margin:"0 0 12px" }}>
                     {editingTripId ? t("Modificar solicitud") : t("Solicitar vehiculo")}
                   </p>
@@ -2186,7 +2186,7 @@ export default function VehicleRequestPortalPage() {
                         {([["SEDE","Sede"],["HOTEL","Hotel"]] as const).map(([v,label]) => (
                           <button key={v} type="button" onClick={() => setDestinationType(v)}
                             style={{ flex:1,height:36,borderRadius:10,cursor:"pointer",fontSize:12.5,fontWeight:700,
-                              border: destinationType === v ? `1.5px solid ${BRAND.teal}` : "1px solid #e2e8f0",
+                              border: destinationType === v ? `1.5px solid ${BRAND.teal}` : `1px solid ${SURFACE.border}`,
                               background: destinationType === v ? "rgba(33,208,179,0.1)" : SURFACE.card,
                               color: destinationType === v ? "#0e9384" : SURFACE.textMuted }}>
                             {t(label)}
@@ -2291,7 +2291,7 @@ export default function VehicleRequestPortalPage() {
                     </button>
                     {editingTripId && (
                       <button type="button" onClick={resetRequestForm}
-                        style={{ width:"100%",height:38,borderRadius:10,border:"1px solid #e2e8f0",background:SURFACE.bg,color:SURFACE.textMuted,fontSize:13,fontWeight:600,cursor:"pointer" }}>
+                        style={{ width:"100%",height:38,borderRadius:10,border:`1px solid ${SURFACE.border}`,background:SURFACE.bg,color:SURFACE.textMuted,fontSize:13,fontWeight:600,cursor:"pointer" }}>
                         {t("Cancelar")}
                       </button>
                     )}
@@ -2307,7 +2307,7 @@ export default function VehicleRequestPortalPage() {
                 <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.teal,margin:0 }}>{t("Mis viajes")}</p>
 
                 {/* Sub-tabs */}
-                <div style={{ display:"flex",gap:0,background:SURFACE.card,borderRadius:12,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+                <div style={{ display:"flex",gap:0,background:SURFACE.card,borderRadius:12,border:`1px solid ${SURFACE.border}`,overflow:"hidden" }}>
                   {([
                     { key: "en_curso" as ActividadesSubTab, label: "En curso", count: enCursoTrips.length },
                     { key: "historial" as ActividadesSubTab, label: "Historial", count: historialTrips.length },
@@ -2371,7 +2371,7 @@ export default function VehicleRequestPortalPage() {
             {activeTab === "premiaciones" && (() => {
               const ROLE_META: Record<string, { label: string; color: string; bg: string; ring: string }> = {
                 GOLD:      { label: "Medalla de Oro",   color: "#a87800", bg: "linear-gradient(135deg,#fff4d6 0%,#fde68a 100%)", ring: "#eab308" },
-                SILVER:    { label: "Medalla de Plata", color: SURFACE.textSecondary, bg: "linear-gradient(135deg,#f1f5f9 0%,#cbd5e1 100%)", ring: SURFACE.textFaint },
+                SILVER:    { label: "Medalla de Plata", color: SURFACE.textSecondary, bg: `linear-gradient(135deg,${SURFACE.borderMuted} 0%,${SURFACE.borderStrong} 100%)`, ring: SURFACE.textFaint },
                 BRONZE:    { label: "Medalla de Bronce",color: "#7c2d12", bg: "linear-gradient(135deg,#fed7aa 0%,#fdba74 100%)", ring: STATE.warningText },
                 AUTHORITY: { label: "Autoridad",        color: "#5b21b6", bg: "linear-gradient(135deg,#ede9fe 0%,#c4b5fd 100%)", ring: "#8b5cf6" },
                 AWARDER:   { label: "Premiador",        color: "#0f766e", bg: "linear-gradient(135deg,#ccfbf1 0%,#5eead4 100%)", ring: "#14b8a6" },
@@ -2473,7 +2473,7 @@ export default function VehicleRequestPortalPage() {
                 return (
                   <article key={p.id} id={`prem-${p.id}`}
                     style={{ position:"relative",
-                      background: isDone ? SURFACE.bg : "linear-gradient(135deg,#fffbeb 0%,#ffffff 70%)",
+                      background: isDone ? SURFACE.bg : `linear-gradient(135deg,#fffbeb 0%,${SURFACE.card} 70%)`,
                       border:`1px solid ${focused ? BRAND.teal : isDone ? "#e2e8f0" : "#f2d98a"}`,
                       borderLeft:`4px solid ${focused ? BRAND.teal : isDone ? "#cbd5e1" : "#e3a808"}`,
                       borderRadius:16,padding:"14px 16px",
@@ -2509,12 +2509,12 @@ export default function VehicleRequestPortalPage() {
                             {isDone?t("Realizada"):t("Programada")}
                           </span>
                         </div>
-                        {p.notes && <p style={{ margin:"8px 0 0",fontSize:11.5,color:SURFACE.textMuted,fontStyle:"italic",lineHeight:1.45,padding:"6px 10px",background:SURFACE.bg,borderRadius:8,borderLeft:"2px solid #cbd5e1" }}>{p.notes}</p>}
+                        {p.notes && <p style={{ margin:"8px 0 0",fontSize:11.5,color:SURFACE.textMuted,fontStyle:"italic",lineHeight:1.45,padding:"6px 10px",background:SURFACE.bg,borderRadius:8,borderLeft:`2px solid ${SURFACE.borderStrong}` }}>{p.notes}</p>}
                       </div>
                     </div>
                     {/* Attendance row */}
                     {a && (
-                      <div style={{ position:"relative",marginTop:12,paddingTop:10,borderTop:"1px dashed #e2e8f0" }}>
+                      <div style={{ position:"relative",marginTop:12,paddingTop:10,borderTop:`1px dashed ${SURFACE.border}` }}>
                         {attendance === "CONFIRMED" ? (
                           <div style={{ display:"inline-flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:99,background:"linear-gradient(135deg,#dcfce7 0%,#bbf7d0 100%)",color:"#166534",fontSize:11.5,fontWeight:800,border:"1px solid #86efac" }}>
                             <CheckIcon size={13} strokeWidth={2.5} />
@@ -2530,7 +2530,7 @@ export default function VehicleRequestPortalPage() {
                             <span style={{ fontSize:10,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:"#a87800" }}>{t("Confirma tu asistencia")}</span>
                             <div style={{ display:"flex",gap:6,marginLeft:"auto" }}>
                               <button type="button" onClick={() => confirmAwarder(p.id, a.id, "CONFIRM")}
-                                style={{ padding:"7px 14px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#10b981 0%,#059669 100%)",color:SURFACE.card,fontSize:11.5,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 8px rgba(16,185,129,0.3)",display:"inline-flex",alignItems:"center",gap:5 }}>
+                                style={{ padding:"7px 14px",borderRadius:10,border:"none",background:`linear-gradient(135deg,${STATE.success} 0%,${STATE.successText} 100%)`,color:SURFACE.card,fontSize:11.5,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 8px rgba(16,185,129,0.3)",display:"inline-flex",alignItems:"center",gap:5 }}>
                                 <CheckIcon size={12} strokeWidth={2.5} />
                                 {t("Confirmar")}
                               </button>
@@ -2550,7 +2550,7 @@ export default function VehicleRequestPortalPage() {
               return (
                 <section style={{ display:"flex",flexDirection:"column",gap:10 }}>
                   {/* Premium header with stats */}
-                  <div style={{ position:"relative",background:"linear-gradient(135deg,#fffbf2 0%,#fff4d6 50%,#ffffff 100%)",borderRadius:16,border:"1px solid #f0deb0",padding:"14px 16px",overflow:"hidden" }}>
+                  <div style={{ position:"relative",background:`linear-gradient(135deg,#fffbf2 0%,#fff4d6 50%,${SURFACE.card} 100%)`,borderRadius:16,border:"1px solid #f0deb0",padding:"14px 16px",overflow:"hidden" }}>
                     <div style={{ position:"absolute",top:-30,right:-30,width:140,height:140,borderRadius:"50%",background:"radial-gradient(circle,rgba(245,200,66,0.25),transparent 70%)",pointerEvents:"none" }} />
                     <div style={{ position:"relative",display:"flex",alignItems:"center",gap:12 }}>
                       <div style={{ width:46,height:46,borderRadius:13,background:"linear-gradient(135deg,#d4a017 0%,#f5c842 50%,#e3a808 100%)",display:"flex",alignItems:"center",justifyContent:"center",color:SURFACE.card,flexShrink:0,boxShadow:"0 6px 16px rgba(199,140,0,0.4)" }}>
@@ -2579,7 +2579,7 @@ export default function VehicleRequestPortalPage() {
                   </div>
 
                   {premiaciones.length === 0 ? (
-                    <div style={{ textAlign:"center",padding:"36px 20px",borderRadius:16,border:"1px dashed #f0deb0",background:"linear-gradient(135deg,#fffbf2 0%,#ffffff 100%)" }}>
+                    <div style={{ textAlign:"center",padding:"36px 20px",borderRadius:16,border:"1px dashed #f0deb0",background:`linear-gradient(135deg,#fffbf2 0%,${SURFACE.card} 100%)` }}>
                       <p style={{ margin:"0 0 8px",color:SURFACE.borderStrong,display:"flex",justifyContent:"center" }}><TrophyIcon size={36} /></p>
                       <p style={{ fontSize:14,fontWeight:800,color:"#7a4a00",margin:"0 0 4px" }}>{loading ? t("Cargando premiaciones…") : t("Sin premiaciones asignadas")}</p>
                       <p style={{ fontSize:12,color:"#a87800",margin:0 }}>{loading ? t("Un momento, estamos actualizando tu información.") : t("Cuando te designemos como premiador de una ceremonia aparecerá aquí.")}</p>
@@ -2587,7 +2587,7 @@ export default function VehicleRequestPortalPage() {
                   ) : (
                     <>
                       {/* View toggle + filters */}
-                      <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",padding:"10px",display:"flex",flexDirection:"column",gap:8 }}>
+                      <div style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,padding:"10px",display:"flex",flexDirection:"column",gap:8 }}>
                         <div style={{ display:"flex",gap:0,background:SURFACE.borderMuted,borderRadius:10,padding:3 }}>
                           {([
                             { v:"calendar" as const, label:"Calendario", icon:(<CalendarIcon size={13} strokeWidth={2} />)},
@@ -2617,7 +2617,7 @@ export default function VehicleRequestPortalPage() {
                             value={premSearch}
                             onChange={(e) => setPremSearch(e.target.value)}
                             placeholder={t("Buscar por ceremonia, disciplina, sede…")}
-                            style={{ width:"100%",padding:"8px 10px 8px 32px",borderRadius:10,border:"1px solid #e2e8f0",fontSize:12.5,boxSizing:"border-box" }}
+                            style={{ width:"100%",padding:"8px 10px 8px 32px",borderRadius:10,border:`1px solid ${SURFACE.border}`,fontSize:12.5,boxSizing:"border-box" }}
                           />
                         </div>
 
@@ -2707,12 +2707,12 @@ export default function VehicleRequestPortalPage() {
                                 {selectedItems.map(renderPremCard)}
                               </div>
                             ) : (
-                              <div style={{ background:SURFACE.card,borderRadius:14,border:"1px dashed #e2e8f0",padding:"20px",textAlign:"center" }}>
+                              <div style={{ background:SURFACE.card,borderRadius:14,border:`1px dashed ${SURFACE.border}`,padding:"20px",textAlign:"center" }}>
                                 <p style={{ fontSize:13,color:SURFACE.textFaint,margin:0 }}>{t("Sin premiaciones este día")}</p>
                               </div>
                             )
                           ) : (
-                            <div style={{ background:SURFACE.card,borderRadius:14,border:"1px dashed #e2e8f0",padding:"20px",textAlign:"center" }}>
+                            <div style={{ background:SURFACE.card,borderRadius:14,border:`1px dashed ${SURFACE.border}`,padding:"20px",textAlign:"center" }}>
                               <p style={{ fontSize:13,color:SURFACE.textFaint,margin:0 }}>{t("Selecciona un día para ver tus premiaciones")}</p>
                             </div>
                           )}
@@ -2722,7 +2722,7 @@ export default function VehicleRequestPortalPage() {
                       {/* List view */}
                       {premView === "list" && (
                         visible.length === 0 ? (
-                          <div style={{ background:SURFACE.card,borderRadius:14,border:"1px dashed #e2e8f0",padding:"28px 20px",textAlign:"center" }}>
+                          <div style={{ background:SURFACE.card,borderRadius:14,border:`1px dashed ${SURFACE.border}`,padding:"28px 20px",textAlign:"center" }}>
                             <p style={{ margin:"0 0 8px",color:SURFACE.borderStrong,display:"flex",justifyContent:"center" }}><SearchIcon size={32} /></p>
                             <p style={{ fontSize:13,color:SURFACE.textFaint,margin:0 }}>{t("No hay premiaciones con esos filtros")}</p>
                           </div>
@@ -2751,10 +2751,10 @@ export default function VehicleRequestPortalPage() {
                             ))}
                             {doneDays.length > 0 && (
                               <button type="button" onClick={() => setPremDoneOpen(v => !v)}
-                                style={{ display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:12,background:SURFACE.borderMuted,border:"1px solid #e2e8f0",marginTop: pendingDays.length > 0 ? 6 : 0,cursor:"pointer",width:"100%",textAlign:"left" }}>
+                                style={{ display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:12,background:SURFACE.borderMuted,border:`1px solid ${SURFACE.border}`,marginTop: pendingDays.length > 0 ? 6 : 0,cursor:"pointer",width:"100%",textAlign:"left" }}>
                                 <span style={{ width:8,height:8,borderRadius:"50%",background:"#2e7d32",flexShrink:0 }} />
                                 <p style={{ fontSize:11.5,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:SURFACE.textMuted,margin:0 }}>{t("Realizadas")}</p>
-                                <span style={{ marginLeft:"auto",fontSize:10,fontWeight:800,padding:"2px 9px",borderRadius:99,background:SURFACE.card,color:SURFACE.textMuted,border:"1px solid #e2e8f0" }}>
+                                <span style={{ marginLeft:"auto",fontSize:10,fontWeight:800,padding:"2px 9px",borderRadius:99,background:SURFACE.card,color:SURFACE.textMuted,border:`1px solid ${SURFACE.border}` }}>
                                   {doneDays.reduce((s,[,items]) => s + items.length, 0)}
                                 </span>
                                 <ChevronDownIcon size={14} color={SURFACE.textMuted} strokeWidth={2.5} style={{ flexShrink:0,transform:premDoneOpen?"rotate(180deg)":"none",transition:"transform .2s" }} />
@@ -2762,10 +2762,10 @@ export default function VehicleRequestPortalPage() {
                             )}
                             {premDoneOpen && doneDays.map(([day, items]) => (
                               <div key={day} style={{ display:"flex",flexDirection:"column",gap:6 }}>
-                                <div style={{ position:"sticky",top:0,zIndex:2,background:"linear-gradient(180deg,#f8fafc 0%,rgba(248,250,252,0.92) 100%)",backdropFilter:"blur(6px)",padding:"6px 10px",borderRadius:10,display:"flex",alignItems:"center",gap:8,border:"1px solid #e2e8f0" }}>
+                                <div style={{ position:"sticky",top:0,zIndex:2,background:`linear-gradient(180deg,${SURFACE.bg} 0%,rgba(248,250,252,0.92) 100%)`,backdropFilter:"blur(6px)",padding:"6px 10px",borderRadius:10,display:"flex",alignItems:"center",gap:8,border:`1px solid ${SURFACE.border}` }}>
                                   <div style={{ width:6,height:6,borderRadius:"50%",background:SURFACE.textFaint }} />
                                   <p style={{ fontSize:11,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",color:SURFACE.textMuted,margin:0 }}>{fmtDateLong(day)}</p>
-                                  <span style={{ marginLeft:"auto",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:SURFACE.card,color:SURFACE.textMuted,border:"1px solid #e2e8f0" }}>{items.length}</span>
+                                  <span style={{ marginLeft:"auto",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:SURFACE.card,color:SURFACE.textMuted,border:`1px solid ${SURFACE.border}` }}>{items.length}</span>
                                 </div>
                                 {items.map(renderPremCard)}
                               </div>
@@ -2783,7 +2783,7 @@ export default function VehicleRequestPortalPage() {
             {activeTab === "cupones" && (
               <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
                 {/* Sub-tabs */}
-                <div style={{ background:SURFACE.card,border:"1px solid #e2e8f0",borderRadius:14,padding:4,display:"flex",gap:4,boxShadow:"0 1px 4px rgba(15,23,42,0.05)" }}>
+                <div style={{ background:SURFACE.card,border:`1px solid ${SURFACE.border}`,borderRadius:14,padding:4,display:"flex",gap:4,boxShadow:"0 1px 4px rgba(15,23,42,0.05)" }}>
                   <button type="button" onClick={() => setCouponTab("available")}
                     style={{ flex:1,padding:"10px 12px",borderRadius:10,border:"none",cursor:"pointer",fontSize:13,fontWeight:800,letterSpacing:"0.01em",
                       background:couponTab==="available"?`linear-gradient(135deg,${BRAND.teal} 0%,#15B09A 100%)`:"transparent",
@@ -2820,7 +2820,7 @@ export default function VehicleRequestPortalPage() {
 
                 {couponTab === "available" ? (
                   visibleCouponsAvailable.length === 0 ? (
-                    <div style={{ padding:24,textAlign:"center",background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0" }}>
+                    <div style={{ padding:24,textAlign:"center",background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}` }}>
                       <p style={{ margin:"0 0 8px",color:SURFACE.borderStrong,display:"flex",justifyContent:"center" }}><TicketIcon size={32} /></p>
                       <p style={{ fontSize:14,fontWeight:600,color:SURFACE.text,margin:0 }}>{t("No hay beneficios disponibles")}</p>
                       <p style={{ fontSize:12,color:SURFACE.textFaint,margin:"6px 0 0" }}>{t("Vuelve a chequear más tarde, vamos a estar agregando beneficios.")}</p>
@@ -2890,7 +2890,7 @@ export default function VehicleRequestPortalPage() {
                             </div>
                             <button type="button" disabled={exhausted || couponClaiming === c.id} onClick={() => claimCoupon(c.id)}
                               style={{ width:"100%",marginTop:10,padding:"12px 0",border:"none",fontSize:13,fontWeight:800,color:SURFACE.card,
-                                background: exhausted ? "linear-gradient(135deg,#94a3b8 0%,#64748b 100%)" : `linear-gradient(135deg, ${cat.color} 0%, ${cat.color}dd 100%)`,
+                                background: exhausted ? `linear-gradient(135deg,${SURFACE.textFaint} 0%,${SURFACE.textMuted} 100%)` : `linear-gradient(135deg, ${cat.color} 0%, ${cat.color}dd 100%)`,
                                 cursor: exhausted ? "not-allowed" : "pointer",letterSpacing:"0.02em",
                                 display:"inline-flex",alignItems:"center",justifyContent:"center",gap:8 }}>
                               {exhausted ? (
@@ -2913,7 +2913,7 @@ export default function VehicleRequestPortalPage() {
                     </div>
                   )
                 ) : couponClaims.length === 0 ? (
-                  <div style={{ padding:24,textAlign:"center",background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0" }}>
+                  <div style={{ padding:24,textAlign:"center",background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}` }}>
                     <p style={{ margin:"0 0 8px",color:SURFACE.borderStrong,display:"flex",justifyContent:"center" }}><TicketIcon size={32} /></p>
                     <p style={{ fontSize:14,fontWeight:600,color:SURFACE.text,margin:0 }}>{t("Todavía no reclamaste ningún beneficio")}</p>
                     <p style={{ fontSize:12,color:SURFACE.textFaint,margin:"6px 0 0" }}>{t("Ve a la pestaña Disponibles y reclama los que quieras.")}</p>
@@ -2925,7 +2925,7 @@ export default function VehicleRequestPortalPage() {
                       const cat = coupon ? (COUPON_CATEGORIES[coupon.category] || COUPON_CATEGORIES.OTHER) : COUPON_CATEGORIES.OTHER;
                       const statusMeta = COUPON_STATUS_META[c.status];
                       return (
-                        <article key={c.id} style={{ background:SURFACE.card,borderRadius:14,overflow:"hidden",border:"1px solid #e2e8f0",borderLeft:`5px solid ${cat.color}` }}>
+                        <article key={c.id} style={{ background:SURFACE.card,borderRadius:14,overflow:"hidden",border:`1px solid ${SURFACE.border}`,borderLeft:`5px solid ${cat.color}` }}>
                           <button type="button" onClick={() => c.status === "CLAIMED" && setActiveClaim(c)}
                             style={{ width:"100%",textAlign:"left",padding:"12px 14px",background:"none",border:"none",cursor: c.status === "CLAIMED" ? "pointer" : "default" }}>
                             <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12 }}>
@@ -2978,7 +2978,7 @@ export default function VehicleRequestPortalPage() {
                 {venues.map(v => {
                   const isOpen = expandedItemId === `venue-${v.id}`;
                   return (
-                    <div key={v.id} style={{ background:SURFACE.card,borderRadius:12,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+                    <div key={v.id} style={{ background:SURFACE.card,borderRadius:12,border:`1px solid ${SURFACE.border}`,overflow:"hidden" }}>
                       <button
                         type="button"
                         onClick={() => setExpandedItemId(isOpen ? null : `venue-${v.id}`)}
@@ -2997,7 +2997,7 @@ export default function VehicleRequestPortalPage() {
                             <img src={v.photoUrl} alt={v.name || t("Sede")} style={{ width:"100%",height:140,objectFit:"cover",borderRadius:10 }} />
                           )}
                           {v.address && (
-                            <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
+                            <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}` }}>
                               <p style={{ fontSize:10,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Direccion")}</p>
                               <p style={{ fontSize:12.5,fontWeight:600,color:SURFACE.text,margin:"3px 0 0",lineHeight:1.3 }}>{v.address}</p>
                             </div>
@@ -3005,13 +3005,13 @@ export default function VehicleRequestPortalPage() {
                           {(v.commune || v.region) && (
                             <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:6 }}>
                               {v.commune && (
-                                <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
+                                <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}` }}>
                                   <p style={{ fontSize:10,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Comuna")}</p>
                                   <p style={{ fontSize:12.5,fontWeight:600,color:SURFACE.text,margin:"3px 0 0" }}>{v.commune}</p>
                                 </div>
                               )}
                               {v.region && (
-                                <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
+                                <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}` }}>
                                   <p style={{ fontSize:10,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Region")}</p>
                                   <p style={{ fontSize:12.5,fontWeight:600,color:SURFACE.text,margin:"3px 0 0" }}>{v.region}</p>
                                 </div>
@@ -3035,7 +3035,7 @@ export default function VehicleRequestPortalPage() {
                 {accommodations.map(acc => {
                   const isOpen = expandedItemId === `acc-${acc.id}`;
                   return (
-                    <div key={acc.id} style={{ background:SURFACE.card,borderRadius:12,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+                    <div key={acc.id} style={{ background:SURFACE.card,borderRadius:12,border:`1px solid ${SURFACE.border}`,overflow:"hidden" }}>
                       <button
                         type="button"
                         onClick={() => setExpandedItemId(isOpen ? null : `acc-${acc.id}`)}
@@ -3054,47 +3054,47 @@ export default function VehicleRequestPortalPage() {
                         <div style={{ padding:"0 14px 14px",display:"flex",flexDirection:"column",gap:8 }}>
                           {acc.photoUrl && (
                             <img src={acc.photoUrl} alt={acc.name || t("Hotel")}
-                              style={{ width:"100%",height:150,objectFit:"cover",borderRadius:10,border:"1px solid #e2e8f0" }} />
+                              style={{ width:"100%",height:150,objectFit:"cover",borderRadius:10,border:`1px solid ${SURFACE.border}` }} />
                           )}
                           {acc.address && (
-                            <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
+                            <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}` }}>
                               <p style={{ fontSize:10,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Direccion")}</p>
                               <p style={{ fontSize:12.5,fontWeight:600,color:SURFACE.text,margin:"3px 0 0",lineHeight:1.3 }}>{acc.address}</p>
                             </div>
                           )}
                           <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:6 }}>
                             {acc.city && (
-                              <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
+                              <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}` }}>
                                 <p style={{ fontSize:10,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Ciudad")}</p>
                                 <p style={{ fontSize:12.5,fontWeight:600,color:SURFACE.text,margin:"3px 0 0" }}>{acc.city}</p>
                               </div>
                             )}
                             {acc.country && (
-                              <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
+                              <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}` }}>
                                 <p style={{ fontSize:10,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Pais")}</p>
                                 <p style={{ fontSize:12.5,fontWeight:600,color:SURFACE.text,margin:"3px 0 0" }}>{acc.country}</p>
                               </div>
                             )}
                             {acc.checkIn && (
-                              <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
+                              <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}` }}>
                                 <p style={{ fontSize:10,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Check-in</p>
                                 <p style={{ fontSize:12.5,fontWeight:600,color:SURFACE.text,margin:"3px 0 0" }}>{formatDateTime(acc.checkIn)}</p>
                               </div>
                             )}
                             {acc.checkOut && (
-                              <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
+                              <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}` }}>
                                 <p style={{ fontSize:10,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Check-out</p>
                                 <p style={{ fontSize:12.5,fontWeight:600,color:SURFACE.text,margin:"3px 0 0" }}>{formatDateTime(acc.checkOut)}</p>
                               </div>
                             )}
                             {acc.roomType && (
-                              <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
+                              <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}` }}>
                                 <p style={{ fontSize:10,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Habitacion")}</p>
                                 <p style={{ fontSize:12.5,fontWeight:600,color:SURFACE.text,margin:"3px 0 0" }}>{acc.roomType}</p>
                               </div>
                             )}
                             {acc.contactPhone && (
-                              <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
+                              <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}` }}>
                                 <p style={{ fontSize:10,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Telefono")}</p>
                                 <p style={{ fontSize:12.5,fontWeight:600,color:SURFACE.text,margin:"3px 0 0" }}>{acc.contactPhone}</p>
                               </div>
@@ -3160,8 +3160,8 @@ export default function VehicleRequestPortalPage() {
                     return { bg:SURFACE.borderMuted, color:SURFACE.textSecondary, border:SURFACE.border, icon: UtensilsCrossedIcon, label: type };
                   };
                   return (
-                    <div style={{ background:SURFACE.card,borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)" }}>
-                      <div style={{ padding:"14px 16px",background:"linear-gradient(135deg,rgba(33,208,179,0.08),rgba(33,208,179,0.02))",borderBottom:"1px solid #e2e8f0",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+                    <div style={{ background:SURFACE.card,borderRadius:16,border:`1px solid ${SURFACE.border}`,overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)" }}>
+                      <div style={{ padding:"14px 16px",background:"linear-gradient(135deg,rgba(33,208,179,0.08),rgba(33,208,179,0.02))",borderBottom:`1px solid ${SURFACE.border}`,display:"flex",alignItems:"center",justifyContent:"space-between" }}>
                         <div style={{ display:"flex",alignItems:"center",gap:8 }}>
                           <div style={{ width:32,height:32,borderRadius:10,background:"rgba(33,208,179,0.12)",display:"flex",alignItems:"center",justifyContent:"center" }}>
                             <CoffeeIcon size={16} color={BRAND.teal} strokeWidth={2} />
@@ -3175,7 +3175,7 @@ export default function VehicleRequestPortalPage() {
                       {sorted.length > 0 ? sorted.map((fm, i) => {
                         const m = mealStyle(fm.mealType);
                         return (
-                          <div key={fm.id} style={{ padding:"14px 16px",borderTop:i>0?"1px solid #f1f5f9":"none",display:"flex",gap:12,alignItems:"flex-start" }}>
+                          <div key={fm.id} style={{ padding:"14px 16px",borderTop:i>0?`1px solid ${SURFACE.borderMuted}`:"none",display:"flex",gap:12,alignItems:"flex-start" }}>
                             <div style={{ width:40,height:40,borderRadius:10,background:m.bg,border:`1px solid ${m.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0 }}><m.icon size={16} /></div>
                             <div style={{ flex:1,minWidth:0 }}>
                               <div style={{ display:"flex",alignItems:"center",gap:6,flexWrap:"wrap" }}>
@@ -3218,8 +3218,8 @@ export default function VehicleRequestPortalPage() {
                     return { bg:SURFACE.borderMuted, color:SURFACE.textSecondary, border:SURFACE.border, icon: UtensilsCrossedIcon, label: type };
                   };
                   return (
-                    <div style={{ background:SURFACE.card,borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)",opacity:0.85 }}>
-                      <div style={{ padding:"12px 16px",background:SURFACE.bg,borderBottom:"1px solid #e2e8f0",display:"flex",alignItems:"center",gap:8 }}>
+                    <div style={{ background:SURFACE.card,borderRadius:16,border:`1px solid ${SURFACE.border}`,overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)",opacity:0.85 }}>
+                      <div style={{ padding:"12px 16px",background:SURFACE.bg,borderBottom:`1px solid ${SURFACE.border}`,display:"flex",alignItems:"center",gap:8 }}>
                         <CalendarIcon size={14} color={SURFACE.textMuted} strokeWidth={2} />
                         <div>
                           <p style={{ fontSize:13,fontWeight:700,color:SURFACE.text,margin:0 }}>{t("Menú de mañana")}</p>
@@ -3229,7 +3229,7 @@ export default function VehicleRequestPortalPage() {
                       {sorted.length > 0 ? sorted.map((fm, i) => {
                         const m = mealStyle(fm.mealType);
                         return (
-                          <div key={fm.id} style={{ padding:"12px 16px",borderTop:i>0?"1px solid #f1f5f9":"none",display:"flex",gap:12,alignItems:"flex-start" }}>
+                          <div key={fm.id} style={{ padding:"12px 16px",borderTop:i>0?`1px solid ${SURFACE.borderMuted}`:"none",display:"flex",gap:12,alignItems:"flex-start" }}>
                             <div style={{ width:36,height:36,borderRadius:8,background:m.bg,border:`1px solid ${m.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0 }}><m.icon size={16} /></div>
                             <div style={{ flex:1,minWidth:0 }}>
                               <span style={{ fontSize:10,fontWeight:800,padding:"2px 7px",borderRadius:6,textTransform:"uppercase",letterSpacing:"0.05em",background:m.bg,color:m.color }}>{t(m.label)}</span>
@@ -3256,8 +3256,8 @@ export default function VehicleRequestPortalPage() {
                     return types.length === 0 || types.includes(userType);
                   });
                   return myLocations.length > 0 ? (
-                  <div style={{ background:SURFACE.card,borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)" }}>
-                    <div style={{ padding:"14px 16px",background:"linear-gradient(135deg,rgba(33,208,179,0.06),rgba(31,205,255,0.04))",borderBottom:"1px solid #e2e8f0" }}>
+                  <div style={{ background:SURFACE.card,borderRadius:16,border:`1px solid ${SURFACE.border}`,overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)" }}>
+                    <div style={{ padding:"14px 16px",background:"linear-gradient(135deg,rgba(33,208,179,0.06),rgba(31,205,255,0.04))",borderBottom:`1px solid ${SURFACE.border}` }}>
                       <div style={{ display:"flex",alignItems:"center",gap:8 }}>
                         <PinIcon size={16} color={BRAND.teal} strokeWidth={2} />
                         <p style={{ fontSize:13,fontWeight:700,color:SURFACE.text,margin:0 }}>{t("Tus lugares de comida")}</p>
@@ -3268,7 +3268,7 @@ export default function VehicleRequestPortalPage() {
                       const mapQuery = [acc?.name || fl.name, acc?.address].filter(Boolean).join(", ");
                       const isOpen = foodMapId === fl.id;
                       return (
-                      <div key={fl.id} style={{ borderTop:i>0?"1px solid #f1f5f9":"none" }}>
+                      <div key={fl.id} style={{ borderTop:i>0?`1px solid ${SURFACE.borderMuted}`:"none" }}>
                         <div style={{ padding:"12px 16px",display:"flex",alignItems:"center",gap:12 }}>
                           <div style={{ width:36,height:36,borderRadius:10,background:"rgba(33,208,179,0.08)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
                             <CoffeeIcon size={16} color={BRAND.teal} strokeWidth={2} />
@@ -3295,7 +3295,7 @@ export default function VehicleRequestPortalPage() {
                     })}
                   </div>
                 ) : (
-                  <div style={{ background:SURFACE.card,borderRadius:16,border:"1px dashed #e2e8f0",padding:24,textAlign:"center" }}>
+                  <div style={{ background:SURFACE.card,borderRadius:16,border:`1px dashed ${SURFACE.border}`,padding:24,textAlign:"center" }}>
                     <CoffeeIcon size={28} color={SURFACE.borderStrong} strokeWidth={1.5} style={{ margin:"0 auto 8px" }} />
                     <p style={{ fontSize:13,fontWeight:600,color:SURFACE.textFaint,margin:0 }}>
                       {loading ? t("Cargando lugares de comida…") : t("No hay lugares de comida asignados a tu perfil")}
@@ -3364,7 +3364,7 @@ export default function VehicleRequestPortalPage() {
 
                 {/* ── Navegación (mes para Gantt, día/semana para las otras) ── */}
                 {calView === "gantt" ? (
-                  <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",background:SURFACE.card,borderRadius:12,border:"1px solid #e2e8f0",padding:"10px 14px" }}>
+                  <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",background:SURFACE.card,borderRadius:12,border:`1px solid ${SURFACE.border}`,padding:"10px 14px" }}>
                     <button type="button" onClick={() => setCalMonthCursor(new Date(calYear, calMonth - 1, 1))}
                       style={{ background:"none",border:"none",cursor:"pointer",padding:4,display:"flex",alignItems:"center" }}>
                       <ChevronLeftIcon size={18} color={SURFACE.text} strokeWidth={2} />
@@ -3376,7 +3376,7 @@ export default function VehicleRequestPortalPage() {
                     </button>
                   </div>
                 ) : (
-                  <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",background:SURFACE.card,borderRadius:12,border:"1px solid #e2e8f0",padding:"10px 14px" }}>
+                  <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",background:SURFACE.card,borderRadius:12,border:`1px solid ${SURFACE.border}`,padding:"10px 14px" }}>
                     <button type="button" onClick={() => setCalCursor((d) => { const x = new Date(d); x.setDate(x.getDate() - (calView === "week" ? 7 : 1)); return x; })}
                       style={{ background:"none",border:"none",cursor:"pointer",padding:4,display:"flex",alignItems:"center" }}>
                       <ChevronLeftIcon size={18} color={SURFACE.text} strokeWidth={2} />
@@ -3414,7 +3414,7 @@ export default function VehicleRequestPortalPage() {
                   const COL = 30, NAME_W = 104, todayK = calKeyOf(new Date());
                   if (rows.length === 0) {
                     return (
-                      <div style={{ padding:"32px 16px",textAlign:"center",background:SURFACE.card,borderRadius:12,border:"1px dashed #e2e8f0" }}>
+                      <div style={{ padding:"32px 16px",textAlign:"center",background:SURFACE.card,borderRadius:12,border:`1px dashed ${SURFACE.border}` }}>
                         <p style={{ margin:0,color:SURFACE.borderStrong,display:"flex",justifyContent:"center" }}><CalendarIcon size={28} /></p>
                         <p style={{ fontSize:13,fontWeight:600,color:SURFACE.textSecondary,margin:"6px 0 0" }}>{t("Sin actividades en")} {calMonthLabel}</p>
                       </div>
@@ -3430,12 +3430,12 @@ export default function VehicleRequestPortalPage() {
                           </span>
                         ))}
                       </div>
-                      <div style={{ display:"flex",background:SURFACE.card,border:"1px solid #e2e8f0",borderRadius:12,overflow:"hidden" }}>
+                      <div style={{ display:"flex",background:SURFACE.card,border:`1px solid ${SURFACE.border}`,borderRadius:12,overflow:"hidden" }}>
                         {/* Columna disciplinas */}
-                        <div style={{ flex:`0 0 ${NAME_W}px`,borderRight:"1px solid #e2e8f0" }}>
-                          <div style={{ height:34,borderBottom:"1px solid #e2e8f0",background:SURFACE.bg }} />
+                        <div style={{ flex:`0 0 ${NAME_W}px`,borderRight:`1px solid ${SURFACE.border}` }}>
+                          <div style={{ height:34,borderBottom:`1px solid ${SURFACE.border}`,background:SURFACE.bg }} />
                           {rows.map((r, i) => (
-                            <div key={i} style={{ height:38,display:"flex",alignItems:"center",padding:"0 10px",borderBottom: i < rows.length-1 ? "1px solid #f1f5f9" : "none" }}>
+                            <div key={i} style={{ height:38,display:"flex",alignItems:"center",padding:"0 10px",borderBottom: i < rows.length-1 ? `1px solid ${SURFACE.borderMuted}` : "none" }}>
                               <span style={{ fontSize:11.5,fontWeight:600,color:SURFACE.textStrong,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{r.name}</span>
                             </div>
                           ))}
@@ -3457,7 +3457,7 @@ export default function VehicleRequestPortalPage() {
                           }}>
                           <div style={{ minWidth:N*COL }}>
                             {/* Header días */}
-                            <div style={{ height:34,display:"grid",gridTemplateColumns:`repeat(${N},${COL}px)`,borderBottom:"1px solid #e2e8f0",background:SURFACE.bg }}>
+                            <div style={{ height:34,display:"grid",gridTemplateColumns:`repeat(${N},${COL}px)`,borderBottom:`1px solid ${SURFACE.border}`,background:SURFACE.bg }}>
                               {days.map((d) => {
                                 const isToday = calKeyOf(d) === todayK;
                                 const wknd = d.getDay() === 0 || d.getDay() === 6;
@@ -3471,7 +3471,7 @@ export default function VehicleRequestPortalPage() {
                             </div>
                             {/* Filas */}
                             {rows.map((r, ri) => (
-                              <div key={ri} style={{ height:38,display:"grid",gridTemplateColumns:`repeat(${N},${COL}px)`,borderBottom: ri < rows.length-1 ? "1px solid #f1f5f9" : "none",alignItems:"center" }}>
+                              <div key={ri} style={{ height:38,display:"grid",gridTemplateColumns:`repeat(${N},${COL}px)`,borderBottom: ri < rows.length-1 ? `1px solid ${SURFACE.borderMuted}` : "none",alignItems:"center" }}>
                                 {days.map((d) => {
                                   const evs = r.byDay.get(d.getDate());
                                   if (!evs || evs.length === 0) return <div key={d.getDate()} />;
@@ -3543,7 +3543,7 @@ export default function VehicleRequestPortalPage() {
                 {calView === "day" && (
                   <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
                     {calCursorDayEvents.length === 0 ? (
-                      <div style={{ padding:"28px 16px",textAlign:"center",background:SURFACE.card,borderRadius:12,border:"1px dashed #e2e8f0" }}>
+                      <div style={{ padding:"28px 16px",textAlign:"center",background:SURFACE.card,borderRadius:12,border:`1px dashed ${SURFACE.border}` }}>
                         <p style={{ fontSize:13,color:SURFACE.textFaint,margin:0 }}>{t("Sin actividades este día")}</p>
                       </div>
                     ) : (
@@ -3551,7 +3551,7 @@ export default function VehicleRequestPortalPage() {
                         const meta = GCAT[classifyCat(ce.name)];
                         const parentName = ce.parentId ? (parentNameMap.get(ce.parentId) || "") : "";
                         return (
-                          <div key={ce.id} style={{ display:"flex",gap:10,padding:"10px 12px",borderRadius:12,background:SURFACE.card,border:"1px solid #e2e8f0",borderLeft:`4px solid ${meta.border}` }}>
+                          <div key={ce.id} style={{ display:"flex",gap:10,padding:"10px 12px",borderRadius:12,background:SURFACE.card,border:`1px solid ${SURFACE.border}`,borderLeft:`4px solid ${meta.border}` }}>
                             <div style={{ display:"flex",flexDirection:"column",alignItems:"center",flexShrink:0,minWidth:44 }}>
                               <span style={{ fontSize:13,fontWeight:800,color:SURFACE.text }}>
                                 {new Date(ce.scheduledAt!).toLocaleTimeString("es-CL",{ hour:"2-digit",minute:"2-digit" })}
@@ -3668,7 +3668,7 @@ export default function VehicleRequestPortalPage() {
                       ["Tipo de usuario", athlete.userType || "-"],
                       ["ID", athlete.id?.slice(-6) || "-"],
                     ] as [string, string][]).map(([label, value]) => (
-                      <div key={label} style={{ display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 10px",borderRadius:8,background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
+                      <div key={label} style={{ display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 10px",borderRadius:8,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}` }}>
                         <span style={{ fontSize:11,fontWeight:600,color:SURFACE.textFaint,textTransform:"uppercase",letterSpacing:"0.08em" }}>{t(label)}</span>
                         <span style={{ fontSize:12.5,fontWeight:600,color:SURFACE.text }}>{value}</span>
                       </div>
@@ -3683,7 +3683,7 @@ export default function VehicleRequestPortalPage() {
                       { label:"Activas", value:requestStats.active, color:STATE.warning },
                       { label:"Cerradas", value:requestStats.completed, color:STATE.success },
                     ] as const).map(s => (
-                      <div key={s.label} style={{ textAlign:"center",padding:"8px 4px",borderRadius:"10px",background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
+                      <div key={s.label} style={{ textAlign:"center",padding:"8px 4px",borderRadius:"10px",background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}` }}>
                         <div style={{ fontSize:"8px",fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:SURFACE.textFaint }}>{t(s.label)}</div>
                         <div style={{ fontSize:"20px",fontWeight:700,color:s.color,marginTop:"2px" }}>{s.value}</div>
                       </div>
@@ -3806,7 +3806,7 @@ export default function VehicleRequestPortalPage() {
           </div>
 
           {/* Bottom tab bar — 4 fijas + Más */}
-          <div style={{ position:"fixed",bottom:0,left:0,right:0,display:"flex",background:SURFACE.card,borderTop:"1px solid #e2e8f0",zIndex:100,paddingTop:6,paddingBottom:6,boxShadow:"0 -2px 12px rgba(0,0,0,0.06)" }}>
+          <div style={{ position:"fixed",bottom:0,left:0,right:0,display:"flex",background:SURFACE.card,borderTop:`1px solid ${SURFACE.border}`,zIndex:100,paddingTop:6,paddingBottom:6,boxShadow:"0 -2px 12px rgba(0,0,0,0.06)" }}>
             {vipPrimary.map(tab => (
               <button key={tab.key} onClick={() => setActiveTab(tab.key)} style={{ flex:1,padding:"6px 0 4px",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:1 }}>
                 {tab.icon(activeTab===tab.key ? BRAND.teal : SURFACE.textFaint)}
@@ -3918,7 +3918,7 @@ export default function VehicleRequestPortalPage() {
                 onChange={(e) => setRatingComment(e.target.value)}
                 placeholder={t("Comentario opcional...")}
                 rows={2}
-                style={{ width:"100%",padding:10,borderRadius:12,border:"1px solid #e2e8f0",fontSize:13,resize:"none",outline:"none",boxSizing:"border-box",fontFamily:"inherit",marginBottom:14 }}
+                style={{ width:"100%",padding:10,borderRadius:12,border:`1px solid ${SURFACE.border}`,fontSize:13,resize:"none",outline:"none",boxSizing:"border-box",fontFamily:"inherit",marginBottom:14 }}
               />
 
               <button type="button" onClick={() => submitRating(rTrip.id)} disabled={ratingStars === 0 || ratingLoading}
@@ -3954,7 +3954,7 @@ export default function VehicleRequestPortalPage() {
           style={{ position:"fixed",inset:0,zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:16,background:"rgba(2,12,24,0.78)",backdropFilter:"blur(6px)" }}>
           <div onClick={(e) => e.stopPropagation()}
             style={{ background:SURFACE.card,borderRadius:20,width:"100%",maxWidth:480,maxHeight:"95vh",display:"flex",flexDirection:"column",overflow:"hidden",boxShadow:"0 24px 80px rgba(0,0,0,0.5)" }}>
-            <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",borderBottom:"1px solid #e2e8f0",background:`linear-gradient(135deg,${BRAND.navy},${BRAND.navyLight})`,color:SURFACE.card }}>
+            <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",borderBottom:`1px solid ${SURFACE.border}`,background:`linear-gradient(135deg,${BRAND.navy},${BRAND.navyLight})`,color:SURFACE.card }}>
               <div>
                 <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:BRAND.teal,margin:0 }}>{t("Credencial digital")}</p>
                 <p style={{ fontSize:14,fontWeight:700,margin:"2px 0 0" }}>{athlete?.fullName || t("Participante")}</p>
@@ -4005,7 +4005,7 @@ export default function VehicleRequestPortalPage() {
             <div style={{ display:"flex",justifyContent:"center",padding:"12px 0 4px" }}>
               <div style={{ width:40,height:4,borderRadius:4,background:SURFACE.border }} />
             </div>
-            <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between",padding:"8px 20px 12px",borderBottom:"1px solid #f1f5f9" }}>
+            <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between",padding:"8px 20px 12px",borderBottom:`1px solid ${SURFACE.borderMuted}` }}>
               <div style={{ flex:1,minWidth:0 }}>
                 <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:SURFACE.textMuted,margin:0 }}>{t("Tu beneficio")}</p>
                 <h2 style={{ fontSize:18,fontWeight:800,color:SURFACE.text,margin:"2px 0 0",lineHeight:1.2 }}>{activeClaim.coupon?.title}</h2>
@@ -4014,7 +4014,7 @@ export default function VehicleRequestPortalPage() {
                 )}
               </div>
               <button type="button" onClick={() => setActiveClaim(null)}
-                style={{ width:32,height:32,borderRadius:"50%",border:"1px solid #e2e8f0",background:SURFACE.bg,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,fontSize:18,lineHeight:1 }}>×</button>
+                style={{ width:32,height:32,borderRadius:"50%",border:`1px solid ${SURFACE.border}`,background:SURFACE.bg,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,fontSize:18,lineHeight:1 }}>×</button>
             </div>
             <div style={{ padding:20,display:"flex",flexDirection:"column",gap:16 }}>
               <div style={{ display:"flex",justifyContent:"center" }}>

@@ -129,7 +129,7 @@ const SCHEDULE_TYPE_THEME: Record<string, ScheduleTheme> = {
   DEPARTURE: { bg: "linear-gradient(135deg,#fee2e2,#fecaca)", fg: "#7f1d1d", ring: STATE.dangerText, soft: "rgba(220,38,38,0.12)" },
 };
 const SCHEDULE_THEME_FALLBACK: ScheduleTheme = {
-  bg: "linear-gradient(135deg,#f1f5f9,#e2e8f0)",
+  bg: `linear-gradient(135deg,${SURFACE.borderMuted},${SURFACE.border})`,
   fg: SURFACE.text,
   ring: SURFACE.textFaint,
   soft: "rgba(148,163,184,0.12)",
@@ -981,7 +981,7 @@ export default function SportsCalendarPage() {
         title={t("Calendario Operacional")}
         description={t("Programación de llegadas, entrenamientos, pruebas y retiros. Filtra por tipo, sede, delegación o disciplina.")}
         icon={<CalendarIcon size={26} />}
-        iconBg="linear-gradient(135deg, #1FCDFF 0%, #1f4e8c 100%)"
+        iconBg={`linear-gradient(135deg, ${BRAND.blue} 0%, #1f4e8c 100%)`}
         accentStrip="teal"
         action={
           <div className="flex gap-2">
@@ -1025,7 +1025,7 @@ export default function SportsCalendarPage() {
                 <button key={v} type="button" onClick={() => setView(v)}
                   className="px-4 py-1.5 rounded-lg text-xs font-bold transition-all"
                   style={{
-                    background: active ? "linear-gradient(135deg, #21D0B3, #1eb19a)" : "transparent",
+                    background: active ? `linear-gradient(135deg, ${BRAND.teal}, #1eb19a)` : "transparent",
                     color: active ? SURFACE.card : SURFACE.textSecondary,
                     boxShadow: active ? "0 2px 6px rgba(33,208,179,0.35)" : "none",
                   }}>
@@ -1134,7 +1134,7 @@ export default function SportsCalendarPage() {
         </details>
       </section>
 
-      <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+      <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
           <div>
             <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: SURFACE.textFaint }}>{t("Agenda AND por delegacion")}</span>
@@ -1151,13 +1151,13 @@ export default function SportsCalendarPage() {
             <thead>
               <tr style={{ background: SURFACE.bg }}>
                 {["Delegacion", "Personas", "Disciplinas", "Fecha de llegada (AND)", "Fechas de entrenamiento", "Fechas de pruebas", "Fecha de retiro (AND)"].map((h) => (
-                  <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: SURFACE.textFaint, borderBottom: "1px solid #e2e8f0", whiteSpace: "nowrap" }}>{t(h)}</th>
+                  <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: SURFACE.textFaint, borderBottom: `1px solid ${SURFACE.border}`, whiteSpace: "nowrap" }}>{t(h)}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {andDelegationScheduleRows.map((row, idx) => (
-                <tr key={row.delegationId} style={{ borderBottom: "1px solid #f1f5f9", background: idx % 2 === 0 ? SURFACE.card : SURFACE.bg }}>
+                <tr key={row.delegationId} style={{ borderBottom: `1px solid ${SURFACE.borderMuted}`, background: idx % 2 === 0 ? SURFACE.card : SURFACE.bg }}>
                   <td style={{ padding: "10px 14px", fontWeight: 700, color: SURFACE.text }}>{row.delegationLabel}</td>
                   <td style={{ padding: "10px 14px", color: SURFACE.textSecondary }}>{row.peopleCount}</td>
                   <td style={{ padding: "10px 14px" }}>
@@ -1212,7 +1212,7 @@ export default function SportsCalendarPage() {
       </section>
 
       <section className={`grid gap-4 ${view === "timeline" ? "" : "xl:grid-cols-[2fr_1fr]"}`}>
-        <div className="relative accent-strip-top anim-fade-up-soft" style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px 16px 16px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)", overflow: "hidden" }}>
+        <div className="relative accent-strip-top anim-fade-up-soft" style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", padding: "20px 16px 16px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)", overflow: "hidden" }}>
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <button className="btn btn-ghost" type="button"
@@ -1255,8 +1255,8 @@ export default function SportsCalendarPage() {
                       borderRadius: 14,
                       padding: 10,
                       textAlign: "left",
-                      background: isSelected ? "linear-gradient(160deg,#eff6ff,#dbeafe)" : isToday ? "linear-gradient(160deg,#f0fdfa,#ffffff)" : SURFACE.card,
-                      border: isSelected ? "2px solid #1e4ed8" : isToday ? "2px solid #21D0B3" : "1px solid #e2e8f0",
+                      background: isSelected ? "linear-gradient(160deg,#eff6ff,#dbeafe)" : isToday ? `linear-gradient(160deg,#f0fdfa,${SURFACE.card})` : SURFACE.card,
+                      border: isSelected ? "2px solid #1e4ed8" : isToday ? `2px solid ${BRAND.teal}` : `1px solid ${SURFACE.border}`,
                       cursor: "pointer",
                       boxShadow: "0 1px 4px rgba(15,23,42,0.06)",
                     }}>
@@ -1305,7 +1305,7 @@ export default function SportsCalendarPage() {
             <div className="space-y-2">
               {selectedDayEntries.length === 0 ? (
                 <div className="p-12 text-center rounded-2xl"
-                  style={{ background: "linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)", border: "1px dashed #e2e8f0" }}>
+                  style={{ background: `linear-gradient(135deg, ${SURFACE.bg} 0%, ${SURFACE.card} 100%)`, border: `1px dashed ${SURFACE.border}` }}>
                   <CalendarIcon size={36} color={SURFACE.borderStrong} />
                   <p className="text-sm font-semibold mt-3" style={{ color: SURFACE.textSecondary }}>
                     {t("Sin actividades para este día")}
@@ -1382,13 +1382,13 @@ export default function SportsCalendarPage() {
                         : isSelected
                           ? "linear-gradient(160deg,#eff6ff,#dbeafe)"
                           : isToday
-                            ? "linear-gradient(160deg,#f0fdfa,#ffffff)"
+                            ? `linear-gradient(160deg,#f0fdfa,${SURFACE.card})`
                             : SURFACE.card,
                     border: isSelected
                       ? "2px solid #1e4ed8"
                       : isToday
-                        ? "2px solid #21D0B3"
-                        : "1px solid #e2e8f0",
+                        ? `2px solid ${BRAND.teal}`
+                        : `1px solid ${SURFACE.border}`,
                     opacity: !inMonth ? 0.5 : 1,
                     outline: "none",
                     cursor: "pointer",
@@ -1543,19 +1543,19 @@ export default function SportsCalendarPage() {
                 </div>
 
                 {rows.length === 0 ? (
-                  <div className="p-12 text-center rounded-2xl" style={{ background: "linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)", border: "1px dashed #e2e8f0" }}>
+                  <div className="p-12 text-center rounded-2xl" style={{ background: `linear-gradient(135deg, ${SURFACE.bg} 0%, ${SURFACE.card} 100%)`, border: `1px dashed ${SURFACE.border}` }}>
                     <CalendarIcon size={36} color={SURFACE.borderStrong} />
                     <p className="text-sm font-semibold mt-3" style={{ color: SURFACE.textSecondary }}>{t("Sin actividades para mostrar")}</p>
                     <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{t("Ajusta los filtros o carga actividades en el calendario.")}</p>
                   </div>
                 ) : (
-                  <div style={{ display: "flex", border: "1px solid #e2e8f0", borderRadius: 14, overflow: "hidden", background: SURFACE.card }}>
-                    <div style={{ flex: "0 0 190px", borderRight: "1px solid #e2e8f0", background: SURFACE.card }}>
-                      <div style={{ height: HEADER_H, display: "flex", alignItems: "center", padding: "0 14px", fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: SURFACE.textFaint, borderBottom: "1px solid #e2e8f0", background: SURFACE.bg }}>
+                  <div style={{ display: "flex", border: `1px solid ${SURFACE.border}`, borderRadius: 14, overflow: "hidden", background: SURFACE.card }}>
+                    <div style={{ flex: "0 0 190px", borderRight: `1px solid ${SURFACE.border}`, background: SURFACE.card }}>
+                      <div style={{ height: HEADER_H, display: "flex", alignItems: "center", padding: "0 14px", fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: SURFACE.textFaint, borderBottom: `1px solid ${SURFACE.border}`, background: SURFACE.bg }}>
                         {t("Disciplina")}
                       </div>
                       {rows.map((r, i) => (
-                        <div key={r.sport} style={{ height: rowHeight(r.lanes), display: "flex", alignItems: "center", padding: "0 14px", borderBottom: i < rows.length - 1 ? "1px solid #f1f5f9" : "none", background: i % 2 === 0 ? SURFACE.card : "#fafbfc" }}>
+                        <div key={r.sport} style={{ height: rowHeight(r.lanes), display: "flex", alignItems: "center", padding: "0 14px", borderBottom: i < rows.length - 1 ? `1px solid ${SURFACE.borderMuted}` : "none", background: i % 2 === 0 ? SURFACE.card : "#fafbfc" }}>
                           <span style={{ fontSize: 13, fontWeight: 700, color: SURFACE.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.sport}</span>
                         </div>
                       ))}
@@ -1563,7 +1563,7 @@ export default function SportsCalendarPage() {
 
                     <div style={{ flex: 1, overflowX: "auto" }}>
                       <div style={{ minWidth: N * COL_MIN }}>
-                        <div style={{ height: HEADER_H, display: "grid", gridTemplateColumns: `repeat(${N}, minmax(${COL_MIN}px, 1fr))`, borderBottom: "1px solid #e2e8f0", background: SURFACE.bg }}>
+                        <div style={{ height: HEADER_H, display: "grid", gridTemplateColumns: `repeat(${N}, minmax(${COL_MIN}px, 1fr))`, borderBottom: `1px solid ${SURFACE.border}`, background: SURFACE.bg }}>
                           {days.map((d, i) => {
                             const k = dayKeys[i];
                             const isToday = k === todayKey;
@@ -1577,7 +1577,7 @@ export default function SportsCalendarPage() {
                           })}
                         </div>
                         {rows.map((r, ri) => (
-                          <div key={r.sport} style={{ position: "relative", height: rowHeight(r.lanes), borderBottom: ri < rows.length - 1 ? "1px solid #f1f5f9" : "none", background: ri % 2 === 0 ? SURFACE.card : "#fafbfc", backgroundImage: gridLines, display: "grid", gridTemplateColumns: `repeat(${N}, minmax(${COL_MIN}px, 1fr))`, gridTemplateRows: `repeat(${r.lanes}, ${BAR_H}px)`, alignContent: "center", rowGap: LANE_GAP, padding: "8px 0" }}>
+                          <div key={r.sport} style={{ position: "relative", height: rowHeight(r.lanes), borderBottom: ri < rows.length - 1 ? `1px solid ${SURFACE.borderMuted}` : "none", background: ri % 2 === 0 ? SURFACE.card : "#fafbfc", backgroundImage: gridLines, display: "grid", gridTemplateColumns: `repeat(${N}, minmax(${COL_MIN}px, 1fr))`, gridTemplateRows: `repeat(${r.lanes}, ${BAR_H}px)`, alignContent: "center", rowGap: LANE_GAP, padding: "8px 0" }}>
                             {r.bars.map((bar, bi) => {
                               const meta = TL_CAT_META[bar.cat];
                               return (
@@ -1599,7 +1599,7 @@ export default function SportsCalendarPage() {
         </div>
 
         {view !== "timeline" && (<div className="space-y-4">
-          <form onSubmit={createEntry} style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "16px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+          <form onSubmit={createEntry} style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", padding: "16px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
             <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: BRAND.teal }}>{t("Programar actividad")}</span>
             <h3 style={{ marginTop: "2px", fontSize: "16px", fontWeight: 800, color: SURFACE.text }}>
               {t(entryFormTitle(getMetaString(newEntry.metadata, "scheduleType"), Boolean(editingEntryId)))}
@@ -1800,7 +1800,7 @@ export default function SportsCalendarPage() {
             </div>
           </form>
 
-          <div style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "16px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+          <div style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", padding: "16px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
               <div>
                 <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: SURFACE.textFaint }}>{t("Actividades del dia")}</span>
@@ -1817,7 +1817,7 @@ export default function SportsCalendarPage() {
             {!loading && selectedDayEntries.length === 0 ? <p style={{ marginTop: "8px", fontSize: "13px", color: SURFACE.textFaint }}>{t("Sin actividades en esta fecha.")}</p> : null}
             <div className="mt-2 space-y-2">
               {selectedDayEntries.map((entry) => (
-                <div key={entry.id} style={{ borderRadius: "10px", border: "1px solid #e2e8f0", borderLeft: "3px solid #21D0B3", background: SURFACE.bg, padding: "10px 12px" }}>
+                <div key={entry.id} style={{ borderRadius: "10px", border: `1px solid ${SURFACE.border}`, borderLeft: `3px solid ${BRAND.teal}`, background: SURFACE.bg, padding: "10px 12px" }}>
                   <p style={{ fontSize: "11px", color: SURFACE.textFaint }}>{formatTime(entry.startAtUtc)} · {entry.sport} / {entry.league}</p>
                   <p style={{ fontSize: "13px", fontWeight: 700, color: SURFACE.text, marginTop: "2px" }}>{titleFromEvent(entry)}</p>
                   <div className="mt-1 flex flex-wrap gap-1.5">
@@ -1889,7 +1889,7 @@ export default function SportsCalendarPage() {
             }}
           >
             {/* Header con gradiente */}
-            <div style={{ position: "relative", padding: "18px 20px", background: "linear-gradient(135deg, #21D0B3 0%, #1FCDFF 100%)", overflow: "hidden" }}>
+            <div style={{ position: "relative", padding: "18px 20px", background: `linear-gradient(135deg, ${BRAND.teal} 0%, ${BRAND.blue} 100%)`, overflow: "hidden" }}>
               <div className="ambient-orb" style={{ width: 160, height: 160, top: -60, right: -40, background: "radial-gradient(circle, rgba(255,255,255,0.35) 0%, transparent 65%)" }} />
               <div className="relative flex items-start justify-between gap-3">
                 <div style={{ minWidth: 0 }}>
@@ -1985,7 +1985,7 @@ export default function SportsCalendarPage() {
             </div>
 
             {/* Footer */}
-            <div style={{ padding: "12px 16px", borderTop: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", gap: 10, background: SURFACE.bg }}>
+            <div style={{ padding: "12px 16px", borderTop: `1px solid ${SURFACE.border}`, display: "flex", justifyContent: "space-between", gap: 10, background: SURFACE.bg }}>
               <button type="button" className="btn btn-ghost" onClick={() => setDayModalOpen(false)}>{t("Cerrar")}</button>
               <Link
                 href={`/sports-calendar/day/${selectedDayKey}?eventId=${encodeURIComponent(selectedEventId || "")}&delegationId=${encodeURIComponent(selectedDelegationId || "")}`}

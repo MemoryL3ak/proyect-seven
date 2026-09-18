@@ -100,7 +100,7 @@ export default function EventDocumentsSection({
                   style={{
                     display: "flex", alignItems: "center", gap: 12,
                     padding: "12px 14px", borderRadius: 14,
-                    border: "1px solid #e2e8f0", background: SURFACE.bg,
+                    border: `1px solid ${SURFACE.border}`, background: SURFACE.bg,
                   }}
                 >
                   <div style={{
@@ -132,7 +132,7 @@ export default function EventDocumentsSection({
                         onClick={() => setViewing(doc)}
                         style={{
                           padding: "8px 12px", borderRadius: 10, border: "none",
-                          background: "linear-gradient(135deg,#21D0B3,#14AE98)",
+                          background: `linear-gradient(135deg,${BRAND.teal},#14AE98)`,
                           color: SURFACE.card, fontSize: 12, fontWeight: 700, cursor: "pointer",
                         }}
                       >
@@ -145,7 +145,7 @@ export default function EventDocumentsSection({
                       title="Descargar"
                       style={{
                         padding: "8px 12px", borderRadius: 10,
-                        border: "1px solid #e2e8f0", background: SURFACE.card,
+                        border: `1px solid ${SURFACE.border}`, background: SURFACE.card,
                         color: SURFACE.textSecondary, fontSize: 12, fontWeight: 700, cursor: "pointer",
                       }}
                     >

@@ -439,7 +439,7 @@ export default function FlightsPage() {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <section style={{ background: SURFACE.card, borderRadius: "24px", padding: "28px 32px", boxShadow: "0 2px 12px rgba(15,23,42,0.06)", borderTop: "3px solid #21D0B3" }}>
+      <section style={{ background: SURFACE.card, borderRadius: "24px", padding: "28px 32px", boxShadow: "0 2px 12px rgba(15,23,42,0.06)", borderTop: `3px solid ${BRAND.teal}` }}>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
@@ -455,7 +455,7 @@ export default function FlightsPage() {
               {events.map(ev => <option key={ev.id} value={ev.id}>{ev.name || ev.id}</option>)}
             </select>
             <button onClick={() => { setModal(true); setForm(EMPTY_FORM); setFormError(null); }}
-              style={{ padding: "10px 20px", borderRadius: "12px", border: "none", background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: SURFACE.card, fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 12px rgba(33,208,179,0.4)", display: "flex", alignItems: "center", gap: "6px" }}>
+              style={{ padding: "10px 20px", borderRadius: "12px", border: "none", background: `linear-gradient(135deg, ${BRAND.teal}, #14AE98)`, color: SURFACE.card, fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 12px rgba(33,208,179,0.4)", display: "flex", alignItems: "center", gap: "6px" }}>
               <PlusIcon size={14} strokeWidth={2.5} />
               {t("Agregar vuelo")}
             </button>
@@ -472,7 +472,7 @@ export default function FlightsPage() {
             { label: "Pasajeros AND", value: stats.totalPax, color: BRAND.teal, accent: BRAND.teal },
             { label: "Transfer In", value: transferInTrips.length, color: "#a78bfa", accent: "#a78bfa" },
           ].map(k => (
-            <div key={k.label} style={{ background: SURFACE.bg, borderRadius: "14px", padding: "12px 14px", border: "1px solid #e2e8f0", borderTop: `2px solid ${k.accent}` }}>
+            <div key={k.label} style={{ background: SURFACE.bg, borderRadius: "14px", padding: "12px 14px", border: `1px solid ${SURFACE.border}`, borderTop: `2px solid ${k.accent}` }}>
               <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: pal.labelColor }}>{t(k.label)}</p>
               <p style={{ fontSize: "22px", fontWeight: 800, color: k.color, marginTop: "2px" }}>{k.value}</p>
             </div>
@@ -481,7 +481,7 @@ export default function FlightsPage() {
       </section>
 
       {/* Quick flight search */}
-      <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "18px", padding: "16px 20px", boxShadow: pal.shadow }}>
+      <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "18px", padding: "16px 20px", boxShadow: pal.shadow }}>
         <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#a78bfa", marginBottom: "8px" }}>{t("Búsqueda rápida de vuelo")}</p>
         <div style={{ display: "flex", gap: "8px" }}>
           <input className="input flex-1" placeholder={t("Ingresa número de vuelo (ej: LA180, AV457)...")} value={quickSearch}
@@ -526,7 +526,7 @@ export default function FlightsPage() {
           );
 
           return (
-            <div style={{ marginTop: "12px", background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "16px 18px", boxShadow: pal.shadow }}>
+            <div style={{ marginTop: "12px", background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", padding: "16px 18px", boxShadow: pal.shadow }}>
               {/* Encabezado: logo, vuelo, aerolínea y estado */}
               <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
                 <AirlineLogo iata={quickResult.airlineIata} flightNumber={quickResult.flightNumber} name={quickResult.airlineName} size={38} />
@@ -548,7 +548,7 @@ export default function FlightsPage() {
                   </p>
                 </div>
                 <button onClick={() => { setQuickResult(null); setQuickSearch(""); }}
-                  style={{ marginLeft: "auto", padding: "6px 12px", borderRadius: "8px", border: "1px solid #e2e8f0", background: SURFACE.card, fontSize: "11px", color: pal.textMuted, cursor: "pointer" }}>{t("Cerrar")}</button>
+                  style={{ marginLeft: "auto", padding: "6px 12px", borderRadius: "8px", border: `1px solid ${SURFACE.border}`, background: SURFACE.card, fontSize: "11px", color: pal.textMuted, cursor: "pointer" }}>{t("Cerrar")}</button>
               </div>
 
               {/* Ruta: origen — trayecto — destino */}
@@ -564,11 +564,11 @@ export default function FlightsPage() {
                 <div style={{ textAlign: "center", paddingBottom: "18px" }}>
                   <p style={{ fontSize: "11px", fontWeight: 700, color: pal.textMuted, marginBottom: "3px" }}>{duration ?? " "}</p>
                   <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                    <span style={{ flex: 1, height: "2px", background: "linear-gradient(90deg,#e2e8f0,#a78bfa)", borderRadius: "2px" }} />
+                    <span style={{ flex: 1, height: "2px", background: `linear-gradient(90deg,${SURFACE.border},#a78bfa)`, borderRadius: "2px" }} />
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="#7c3aed" style={{ flexShrink: 0 }}>
                       <path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z"/>
                     </svg>
-                    <span style={{ flex: 1, height: "2px", background: "linear-gradient(90deg,#a78bfa,#e2e8f0)", borderRadius: "2px" }} />
+                    <span style={{ flex: 1, height: "2px", background: `linear-gradient(90deg,#a78bfa,${SURFACE.border})`, borderRadius: "2px" }} />
                   </div>
                   {quickResult.aircraftModel && (
                     <p style={{ fontSize: "10px", color: pal.labelColor, marginTop: "4px" }}>{quickResult.aircraftModel}</p>
@@ -584,7 +584,7 @@ export default function FlightsPage() {
                 })}
               </div>
 
-              <p style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px solid #f1f5f9", fontSize: "10px", color: pal.labelColor }}>
+              <p style={{ marginTop: "10px", paddingTop: "10px", borderTop: `1px solid ${SURFACE.borderMuted}`, fontSize: "10px", color: pal.labelColor }}>
                 {t("Horarios en hora local de cada aeropuerto")}
                 {quickResult.depTimezone ? ` · ${tzCity(quickResult.depTimezone)} → ${tzCity(quickResult.arrTimezone)}` : ""}
                 {quickResult.aircraftReg ? ` · ${t("Matrícula")} ${quickResult.aircraftReg}` : ""}
@@ -596,7 +596,7 @@ export default function FlightsPage() {
       </section>
 
       {/* Filters */}
-      <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "12px 16px", boxShadow: pal.shadow, display: "flex", flexWrap: "wrap", alignItems: "center", gap: "10px" }}>
+      <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", padding: "12px 16px", boxShadow: pal.shadow, display: "flex", flexWrap: "wrap", alignItems: "center", gap: "10px" }}>
         <div style={{ position: "relative", flex: "1 1 200px" }}>
           <SearchIcon size={14} color={SURFACE.textFaint} strokeWidth={2} style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
           <input className="input" style={{ paddingLeft: "32px", borderRadius: "10px", width: "100%" }} placeholder={t("Buscar vuelo, aerolínea u origen...")} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
@@ -626,24 +626,24 @@ export default function FlightsPage() {
       {/* Flight list */}
       {loading ? (
         <div style={{ background: SURFACE.card, borderRadius: "18px", padding: "40px", textAlign: "center", color: pal.labelColor, fontSize: "13px" }}>
-          <div style={{ width: "32px", height: "32px", border: "3px solid #e2e8f0", borderTopColor: BRAND.teal, borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 12px" }} />
+          <div style={{ width: "32px", height: "32px", border: `3px solid ${SURFACE.border}`, borderTopColor: BRAND.teal, borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 12px" }} />
           {t("Cargando vuelos...")}
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       ) : finalFlights.length === 0 ? (
-        <div style={{ background: SURFACE.card, borderRadius: "18px", border: "1px solid #e2e8f0", padding: "40px", textAlign: "center" }}>
+        <div style={{ background: SURFACE.card, borderRadius: "18px", border: `1px solid ${SURFACE.border}`, padding: "40px", textAlign: "center" }}>
           <PlaneIcon size={40} color={SURFACE.textFaint} strokeWidth={1.5} style={{ margin: "0 auto 12px", opacity: 0.3 }} />
           <p style={{ fontSize: "14px", fontWeight: 600, color: pal.textPrimary }}>{flights.length === 0 ? t("No hay vuelos registrados") : t("Sin resultados")}</p>
           <p style={{ fontSize: "12px", color: pal.textMuted, marginTop: "4px" }}>{flights.length === 0 ? t("Agrega un vuelo o usa la búsqueda rápida.") : t("Ajusta los filtros de búsqueda.")}</p>
         </div>
       ) : (
-        <div style={{ background: SURFACE.card, borderRadius: "18px", border: "1px solid #e2e8f0", overflow: "hidden", boxShadow: pal.shadow }}>
+        <div style={{ background: SURFACE.card, borderRadius: "18px", border: `1px solid ${SURFACE.border}`, overflow: "hidden", boxShadow: pal.shadow }}>
           {/* overflow hidden del card recortaba columnas en móvil: la tabla
               scrollea horizontal dentro de su propio contenedor. */}
           <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", minWidth: "820px", borderCollapse: "collapse", fontSize: "13px" }}>
             <thead>
-              <tr style={{ borderBottom: "2px solid #e2e8f0", background: "#fafbfc" }}>
+              <tr style={{ borderBottom: `2px solid ${SURFACE.border}`, background: "#fafbfc" }}>
                 {["", "Vuelo", "Aerolínea", "Ruta", "Llegada", "Estado", "Delegaciones", "Pax", "Acciones"].map(h => (
                   <th key={h} style={{ padding: "12px 14px", textAlign: "left", fontSize: "9px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: pal.labelColor }}>{h ? t(h) : h}</th>
                 ))}
@@ -657,7 +657,7 @@ export default function FlightsPage() {
                 const isExpanded = expandedFlightId === flight.id;
                 return (
                   <>
-                  <tr key={flight.id} style={{ borderBottom: isExpanded ? "none" : "1px solid #f1f5f9", cursor: "pointer", transition: "background 0.1s" }}
+                  <tr key={flight.id} style={{ borderBottom: isExpanded ? "none" : `1px solid ${SURFACE.borderMuted}`, cursor: "pointer", transition: "background 0.1s" }}
                     onClick={() => setExpandedFlightId(isExpanded ? null : flight.id)}
                     onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#fafbfc"; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = ""; }}>
@@ -701,7 +701,7 @@ export default function FlightsPage() {
                     </td>
                     <td style={{ padding: "10px 14px" }} onClick={e => e.stopPropagation()}>
                       <div style={{ display: "flex", gap: "5px" }}>
-                        <button onClick={() => openTrack(flight)} style={{ padding: "5px 12px", borderRadius: "8px", border: "none", background: "linear-gradient(135deg,#21D0B3,#14AE98)", color: SURFACE.card, fontSize: "11px", fontWeight: 600, cursor: "pointer" }}>{t("Rastrear")}</button>
+                        <button onClick={() => openTrack(flight)} style={{ padding: "5px 12px", borderRadius: "8px", border: "none", background: `linear-gradient(135deg,${BRAND.teal},#14AE98)`, color: SURFACE.card, fontSize: "11px", fontWeight: 600, cursor: "pointer" }}>{t("Rastrear")}</button>
                         <button onClick={() => setDeleteConfirm(flight)} style={{ padding: "5px 8px", borderRadius: "8px", border: "1px solid #fecaca", background: SURFACE.card, color: "#f43f5e", cursor: "pointer" }}>
                           <TrashIcon size={11} strokeWidth={2} />
                         </button>
@@ -711,7 +711,7 @@ export default function FlightsPage() {
                   {/* Expanded detail row */}
                   {isExpanded && (
                     <tr key={`${flight.id}-detail`}>
-                      <td colSpan={9} style={{ padding: "0 14px 14px", background: "#fafbfc", borderBottom: "1px solid #e2e8f0" }}>
+                      <td colSpan={9} style={{ padding: "0 14px 14px", background: "#fafbfc", borderBottom: `1px solid ${SURFACE.border}` }}>
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", padding: "14px 0" }}>
                           {/* Passengers */}
                           <div>
@@ -725,7 +725,7 @@ export default function FlightsPage() {
                                   const disc = p.disciplineId ? disciplineById[p.disciplineId] : null;
                                   const parentDisc = disc?.parentId ? disciplineById[disc.parentId] : null;
                                   return (
-                                    <div key={p.id} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", padding: "4px 8px", borderRadius: "8px", background: SURFACE.card, border: "1px solid #f1f5f9" }}>
+                                    <div key={p.id} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", padding: "4px 8px", borderRadius: "8px", background: SURFACE.card, border: `1px solid ${SURFACE.borderMuted}` }}>
                                       <span style={{ fontWeight: 600, color: pal.textPrimary, flex: 1 }}>{p.fullName || p.id}</span>
                                       {del && <span style={{ fontSize: "9px", fontWeight: 700, padding: "1px 5px", borderRadius: "4px", background: "rgba(99,102,241,0.08)", color: "#6366f1" }}>{del.countryCode}</span>}
                                       {(parentDisc || disc) && <span style={{ fontSize: "9px", fontWeight: 600, padding: "1px 5px", borderRadius: "4px", background: "rgba(33,208,179,0.08)", color: BRAND.tealInk }}>{parentDisc?.name || disc?.name}</span>}
@@ -745,7 +745,7 @@ export default function FlightsPage() {
                                 { label: "Origen", value: flight.origin },
                                 { label: "Llegada", value: `${fmtTime(flight.arrivalTime)} · ${fmtDate(flight.arrivalTime)}` },
                               ].map(d => (
-                                <div key={d.label} style={{ padding: "8px 10px", borderRadius: "10px", background: SURFACE.card, border: "1px solid #f1f5f9" }}>
+                                <div key={d.label} style={{ padding: "8px 10px", borderRadius: "10px", background: SURFACE.card, border: `1px solid ${SURFACE.borderMuted}` }}>
                                   <p style={{ fontSize: "9px", fontWeight: 700, color: pal.labelColor, textTransform: "uppercase", letterSpacing: "0.1em" }}>{t(d.label)}</p>
                                   <p style={{ fontSize: "12px", fontWeight: 600, color: pal.textPrimary, marginTop: "2px" }}>{d.value}</p>
                                 </div>
@@ -777,8 +777,8 @@ export default function FlightsPage() {
 
       {/* Llegadas Transfer In (aeropuerto → hotel/sede) */}
       {!loading && (
-        <div style={{ background: SURFACE.card, borderRadius: "18px", border: "1px solid #e2e8f0", overflow: "hidden", boxShadow: pal.shadow }}>
-          <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
+        <div style={{ background: SURFACE.card, borderRadius: "18px", border: `1px solid ${SURFACE.border}`, overflow: "hidden", boxShadow: pal.shadow }}>
+          <div style={{ padding: "16px 20px 12px", borderBottom: `1px solid ${SURFACE.borderMuted}`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
             <div>
               <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#a78bfa" }}>{t("Llegadas Transfer In")}</p>
               <p style={{ fontSize: "12px", color: pal.textMuted, marginTop: "2px" }}>{t("Viajes aeropuerto → hotel/sede creados en Transporte")}</p>
@@ -795,7 +795,7 @@ export default function FlightsPage() {
             <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", minWidth: "680px", borderCollapse: "collapse", fontSize: "13px" }}>
               <thead>
-                <tr style={{ borderBottom: "2px solid #e2e8f0", background: "#fafbfc" }}>
+                <tr style={{ borderBottom: `2px solid ${SURFACE.border}`, background: "#fafbfc" }}>
                   {["Llegada", "Pasajero", "Tipo cliente", "Destino", "Vuelo", "Estado"].map(h => (
                     <th key={h} style={{ padding: "12px 14px", textAlign: "left", fontSize: "9px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: pal.labelColor }}>{t(h)}</th>
                   ))}
@@ -809,7 +809,7 @@ export default function FlightsPage() {
                   const flight = typeof flightRaw === "string" && flightRaw ? flightRaw : null;
                   const st = trip.scheduledAt ? getFlightStatus(trip.scheduledAt) : { label: "Sin fecha", color: SURFACE.textFaint, bg: SURFACE.borderMuted };
                   return (
-                    <tr key={trip.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                    <tr key={trip.id} style={{ borderBottom: `1px solid ${SURFACE.borderMuted}` }}>
                       <td style={{ padding: "10px 14px" }}>
                         <div><span style={{ fontWeight: 700, color: pal.textPrimary }}>{fmtTime(trip.scheduledAt)}</span></div>
                         <div style={{ fontSize: "10px", color: pal.textMuted }}>{fmtDate(trip.scheduledAt)}</div>
@@ -851,7 +851,7 @@ export default function FlightsPage() {
       {/* Add flight modal */}
       {modal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div style={{ background: SURFACE.card, borderRadius: "24px", width: "100%", maxWidth: "440px", borderTop: "3px solid #21D0B3", boxShadow: "0 8px 40px rgba(15,23,42,0.2)" }}>
+          <div style={{ background: SURFACE.card, borderRadius: "24px", width: "100%", maxWidth: "440px", borderTop: `3px solid ${BRAND.teal}`, boxShadow: "0 8px 40px rgba(15,23,42,0.2)" }}>
             <div style={{ padding: "24px 24px 16px" }}>
               <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: BRAND.teal, marginBottom: "4px" }}>{t("Nuevo")}</p>
               <h2 style={{ fontSize: "1.25rem", fontWeight: 800, color: pal.textPrimary }}>{t("Agregar vuelo")}</h2>
@@ -870,7 +870,7 @@ export default function FlightsPage() {
                   <input className="input flex-1" style={{ borderRadius: "10px" }} value={form.flightNumber} placeholder={t("ej: LA180")}
                     onChange={e => setForm(f => ({ ...f, flightNumber: e.target.value.toUpperCase() }))} />
                   <button type="button" onClick={() => lookupAirline(form.flightNumber)} disabled={lookingUp || !form.flightNumber.trim()}
-                    style={{ padding: "0 14px", borderRadius: "10px", border: "1px solid #e2e8f0", background: SURFACE.bg, fontSize: "12px", fontWeight: 600, color: SURFACE.textSecondary, cursor: "pointer", opacity: lookingUp ? 0.6 : 1, whiteSpace: "nowrap" }}>
+                    style={{ padding: "0 14px", borderRadius: "10px", border: `1px solid ${SURFACE.border}`, background: SURFACE.bg, fontSize: "12px", fontWeight: 600, color: SURFACE.textSecondary, cursor: "pointer", opacity: lookingUp ? 0.6 : 1, whiteSpace: "nowrap" }}>
                     {lookingUp ? "..." : "Auto"}
                   </button>
                 </div>
@@ -895,9 +895,9 @@ export default function FlightsPage() {
               </label>
               {formError && <p style={{ fontSize: "12px", color: "#f43f5e" }}>{formError}</p>}
             </div>
-            <div style={{ padding: "12px 24px 20px", display: "flex", justifyContent: "flex-end", gap: "10px", borderTop: "1px solid #f1f5f9" }}>
-              <button onClick={() => setModal(false)} disabled={saving} style={{ padding: "10px 20px", borderRadius: "10px", border: "1px solid #e2e8f0", background: SURFACE.card, color: pal.textMuted, fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>{t("Cancelar")}</button>
-              <button onClick={saveFlightForm} disabled={saving} style={{ padding: "10px 20px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: SURFACE.card, fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
+            <div style={{ padding: "12px 24px 20px", display: "flex", justifyContent: "flex-end", gap: "10px", borderTop: `1px solid ${SURFACE.borderMuted}` }}>
+              <button onClick={() => setModal(false)} disabled={saving} style={{ padding: "10px 20px", borderRadius: "10px", border: `1px solid ${SURFACE.border}`, background: SURFACE.card, color: pal.textMuted, fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>{t("Cancelar")}</button>
+              <button onClick={saveFlightForm} disabled={saving} style={{ padding: "10px 20px", borderRadius: "10px", border: "none", background: `linear-gradient(135deg, ${BRAND.teal}, #14AE98)`, color: SURFACE.card, fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
                 {saving ? t("Guardando...") : t("Guardar")}
               </button>
             </div>
@@ -908,7 +908,7 @@ export default function FlightsPage() {
       {/* Track modal */}
       {trackModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div style={{ background: SURFACE.card, borderRadius: "24px", width: "100%", maxWidth: "560px", borderTop: "3px solid #21D0B3", boxShadow: "0 8px 40px rgba(15,23,42,0.2)", maxHeight: "90vh", display: "flex", flexDirection: "column" }}>
+          <div style={{ background: SURFACE.card, borderRadius: "24px", width: "100%", maxWidth: "560px", borderTop: `3px solid ${BRAND.teal}`, boxShadow: "0 8px 40px rgba(15,23,42,0.2)", maxHeight: "90vh", display: "flex", flexDirection: "column" }}>
             <div style={{ padding: "24px 24px 16px", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", flexShrink: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
                 <AirlineLogo iata={trackResult?.airlineIata} flightNumber={trackModal.flight.flightNumber} name={trackResult?.airlineName ?? trackModal.flight.airline} size={40} />
@@ -925,11 +925,11 @@ export default function FlightsPage() {
                   <input type="checkbox" checked={autoRefresh} onChange={e => setAutoRefresh(e.target.checked)} /> {t("Auto 30s")}
                 </label>
                 <button onClick={() => doTrack(trackModal.flight)} disabled={tracking}
-                  style={{ padding: "6px 14px", borderRadius: "99px", border: "1px solid #e2e8f0", background: SURFACE.card, fontSize: "12px", fontWeight: 600, color: SURFACE.textSecondary, cursor: tracking ? "not-allowed" : "pointer", opacity: tracking ? 0.6 : 1 }}>
+                  style={{ padding: "6px 14px", borderRadius: "99px", border: `1px solid ${SURFACE.border}`, background: SURFACE.card, fontSize: "12px", fontWeight: 600, color: SURFACE.textSecondary, cursor: tracking ? "not-allowed" : "pointer", opacity: tracking ? 0.6 : 1 }}>
                   {tracking ? "..." : <RefreshIcon size={14} />}
                 </button>
                 <button onClick={() => { setTrackModal(null); setAutoRefresh(false); }}
-                  style={{ padding: "6px 12px", borderRadius: "99px", border: "1px solid #e2e8f0", background: SURFACE.card, fontSize: "13px", color: pal.textMuted, cursor: "pointer", display: "inline-flex" }} aria-label="Cerrar"><XIcon size={14} /></button>
+                  style={{ padding: "6px 12px", borderRadius: "99px", border: `1px solid ${SURFACE.border}`, background: SURFACE.card, fontSize: "13px", color: pal.textMuted, cursor: "pointer", display: "inline-flex" }} aria-label="Cerrar"><XIcon size={14} /></button>
               </div>
             </div>
             <div style={{ overflowY: "auto", padding: "0 24px 24px", flex: 1 }}>
@@ -963,7 +963,7 @@ export default function FlightsPage() {
                       </div>
                     )}
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 40px 1fr", gap: "8px", alignItems: "center" }}>
-                      <div style={{ background: SURFACE.bg, border: "1px solid #e2e8f0", borderRadius: "14px", padding: "14px 16px" }}>
+                      <div style={{ background: SURFACE.bg, border: `1px solid ${SURFACE.border}`, borderRadius: "14px", padding: "14px 16px" }}>
                         <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: pal.labelColor, marginBottom: "4px" }}>{t("Salida")}</p>
                         <p style={{ fontSize: "20px", fontWeight: 900, color: pal.textPrimary, letterSpacing: "0.06em" }}>{trackResult.depIata ?? "—"}</p>
                         <p style={{ fontSize: "12px", color: pal.textMuted, marginTop: "2px" }}>{trackResult.depCity ?? trackResult.depAirport ?? "—"}</p>
@@ -979,7 +979,7 @@ export default function FlightsPage() {
                       <div style={{ textAlign: "center" }}>
                         <ArrowRightIcon size={20} color={BRAND.teal} strokeWidth={2.5} />
                       </div>
-                      <div style={{ background: SURFACE.bg, border: "1px solid #e2e8f0", borderRadius: "14px", padding: "14px 16px" }}>
+                      <div style={{ background: SURFACE.bg, border: `1px solid ${SURFACE.border}`, borderRadius: "14px", padding: "14px 16px" }}>
                         <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: pal.labelColor, marginBottom: "4px" }}>{t("Llegada")}</p>
                         <p style={{ fontSize: "20px", fontWeight: 900, color: pal.textPrimary, letterSpacing: "0.06em" }}>{trackResult.arrIata ?? "—"}</p>
                         <p style={{ fontSize: "12px", color: pal.textMuted, marginTop: "2px" }}>{trackResult.arrCity ?? trackResult.arrAirport ?? "—"}</p>
@@ -1033,11 +1033,11 @@ export default function FlightsPage() {
             </p>
             <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
               <button onClick={() => setDeleteConfirm(null)}
-                style={{ padding: "10px 24px", borderRadius: "10px", border: "1px solid #e2e8f0", background: SURFACE.card, color: pal.textMuted, fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
+                style={{ padding: "10px 24px", borderRadius: "10px", border: `1px solid ${SURFACE.border}`, background: SURFACE.card, color: pal.textMuted, fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
                 {t("Cancelar")}
               </button>
               <button onClick={() => removeFlight(deleteConfirm)}
-                style={{ padding: "10px 24px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #ef4444, #dc2626)", color: SURFACE.card, fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 10px rgba(239,68,68,0.3)" }}>
+                style={{ padding: "10px 24px", borderRadius: "10px", border: "none", background: `linear-gradient(135deg, ${STATE.danger}, ${STATE.dangerText})`, color: SURFACE.card, fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 10px rgba(239,68,68,0.3)" }}>
                 {t("Sí, eliminar")}
               </button>
             </div>

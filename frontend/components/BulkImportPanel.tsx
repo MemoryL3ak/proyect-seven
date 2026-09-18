@@ -1084,7 +1084,7 @@ export default function BulkImportPanel({
   return (
     <section
       className="surface max-w-full min-w-0 overflow-hidden rounded-3xl p-6 space-y-4"
-      style={{ borderTop: "2px solid #21D0B3", boxShadow: "0 1px 6px rgba(15,23,42,0.06)" }}
+      style={{ borderTop: `2px solid ${BRAND.teal}`, boxShadow: "0 1px 6px rgba(15,23,42,0.06)" }}
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>

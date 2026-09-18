@@ -961,7 +961,7 @@ export default function TripsPage() {
                 maxWidth: "600px",
                 background: "#fffbeb",
                 border: "1px solid #fde68a",
-                borderLeft: "4px solid #f59e0b",
+                borderLeft: `4px solid ${STATE.warning}`,
                 borderRadius: 10,
                 padding: "8px 12px",
                 fontWeight: 600,
@@ -989,7 +989,7 @@ export default function TripsPage() {
                   }, 120);
                 }}
                 style={{
-                  background: hasDriver ? sc.chipBg : "linear-gradient(135deg, #f59e0b, #d97706)",
+                  background: hasDriver ? sc.chipBg : `linear-gradient(135deg, ${STATE.warning}, #d97706)`,
                   border: hasDriver ? `1px solid ${sc.chipBorder}` : "none",
                   borderRadius: "99px", padding: "7px 16px", fontSize: "13px", fontWeight: 700,
                   color: hasDriver ? sc.accent : SURFACE.card,
@@ -1038,7 +1038,7 @@ export default function TripsPage() {
             type="button"
             onClick={() => loadData()}
             disabled={loading}
-            style={{ border: "1px solid #e2e8f0", borderRadius: "12px", padding: "8px 16px", fontSize: "13px", fontWeight: 600, color: SURFACE.textSecondary, background: SURFACE.card, cursor: loading ? "default" : "pointer", opacity: loading ? 0.6 : 1 }}
+            style={{ border: `1px solid ${SURFACE.border}`, borderRadius: "12px", padding: "8px 16px", fontSize: "13px", fontWeight: 600, color: SURFACE.textSecondary, background: SURFACE.card, cursor: loading ? "default" : "pointer", opacity: loading ? 0.6 : 1 }}
           >
             {loading ? "Actualizando..." : "Refrescar ahora"}
           </button>
@@ -1075,7 +1075,7 @@ export default function TripsPage() {
         {summaryCards.map((card, i) => (
           <article key={card.label} style={{
             background: SURFACE.card,
-            border: "1px solid #e2e8f0",
+            border: `1px solid ${SURFACE.border}`,
             borderTop: `3px solid ${pal.kpi[i]}`,
             borderRadius: 16,
             padding: "14px 16px",
@@ -1095,7 +1095,7 @@ export default function TripsPage() {
       </section>
 
       {/* ── Filtros: una sola card con grid horizontal */}
-      <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: 16, padding: 16, boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+      <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: 16, padding: 16, boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div className="grid gap-3 grid-cols-1 md:grid-cols-2 xl:grid-cols-4">
           <label className="text-sm block">
             <span className="block mb-1">{t("Evento")}</span>
@@ -1138,7 +1138,7 @@ export default function TripsPage() {
         className="surface rounded-2xl p-3"
         style={{
           background: SURFACE.card,
-          border: "1px solid #e2e8f0",
+          border: `1px solid ${SURFACE.border}`,
           boxShadow: "0 1px 4px rgba(15,23,42,0.06)",
         }}
       >
@@ -1174,7 +1174,7 @@ export default function TripsPage() {
                   color: active ? meta.color : SURFACE.textSecondary,
                   border: active
                     ? `1.5px solid ${meta.color}`
-                    : "1px solid #e2e8f0",
+                    : `1px solid ${SURFACE.border}`,
                   fontSize: 13,
                   fontWeight: 700,
                   cursor: "pointer",
@@ -1241,7 +1241,7 @@ export default function TripsPage() {
       </section>
 
       {/* ── Timeline operativa: estado general de viajes (siempre visible, respeta los filtros) ── */}
-      <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: 16, padding: 16, boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+      <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: 16, padding: 16, boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div>
             <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase" as const, color: pal.labelColor }}>{t("Timeline operativa")}</p>
@@ -1317,7 +1317,7 @@ export default function TripsPage() {
         </div>
       </section>
 
-      <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: 16, padding: 16, boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+      <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: 16, padding: 16, boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         {/* Banda compacta: chips de status + acciones */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 12 }}>
           <div className="flex items-center gap-2 flex-wrap">
@@ -1335,7 +1335,7 @@ export default function TripsPage() {
                   className="inline-flex items-center gap-2 text-xs font-bold rounded-full transition-all"
                   style={{
                     padding: "7px 14px",
-                    background: selected ? "linear-gradient(135deg, #21D0B3, #1eb19a)" : SURFACE.borderMuted,
+                    background: selected ? `linear-gradient(135deg, ${BRAND.teal}, #1eb19a)` : SURFACE.borderMuted,
                     color: selected ? SURFACE.card : SURFACE.textSecondary,
                     boxShadow: selected ? "0 2px 8px rgba(33,208,179,0.35)" : "none",
                   }}>
@@ -1369,7 +1369,7 @@ export default function TripsPage() {
               className="inline-flex items-center gap-1 text-xs font-bold rounded-lg"
               style={{
                 padding: "7px 14px",
-                background: "linear-gradient(135deg, #21D0B3 0%, #15B09A 100%)",
+                background: `linear-gradient(135deg, ${BRAND.teal} 0%, #15B09A 100%)`,
                 color: SURFACE.card, border: "none", cursor: "pointer",
                 boxShadow: "0 2px 8px rgba(33,208,179,0.35)",
               }}
@@ -1383,7 +1383,7 @@ export default function TripsPage() {
               style={{
                 padding: "7px 14px",
                 background: SURFACE.card, color: SURFACE.textSecondary,
-                border: "1px solid #cbd5e1", cursor: "pointer",
+                border: `1px solid ${SURFACE.borderStrong}`, cursor: "pointer",
               }}
             >
               <UploadIcon size={14} className="inline mr-1" />Importar
@@ -1537,7 +1537,7 @@ export default function TripsPage() {
               </div>
               <Link
                 href="/operations/vehicle-positions"
-                style={{ display: "inline-flex", alignItems: "center", borderRadius: "99px", border: "1px solid #e2e8f0", padding: "6px 16px", fontSize: "13px", fontWeight: 600, color: SURFACE.textSecondary, textDecoration: "none", background: SURFACE.card }}
+                style={{ display: "inline-flex", alignItems: "center", borderRadius: "99px", border: `1px solid ${SURFACE.border}`, padding: "6px 16px", fontSize: "13px", fontWeight: 600, color: SURFACE.textSecondary, textDecoration: "none", background: SURFACE.card }}
               >
                 Abrir tracking completo
               </Link>
@@ -1595,7 +1595,7 @@ export default function TripsPage() {
                         <span style={{ fontSize: "13px", color: pal.textMuted }}>{resolveDriver(trip)}</span>
                         <span style={{ fontSize: "12px", color: pal.labelColor, fontVariantNumeric: "tabular-nums" }}>{formatDateTime(trip.completedAt || trip.updatedAt)}</span>
                         <button type="button" onClick={() => setLogTrip(trip)}
-                          style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "5px 12px", borderRadius: "8px", border: "1px solid #e2e8f0", background: SURFACE.bg, color: SURFACE.textSecondary, fontSize: "11px", fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+                          style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "5px 12px", borderRadius: "8px", border: `1px solid ${SURFACE.border}`, background: SURFACE.bg, color: SURFACE.textSecondary, fontSize: "11px", fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
                           <FileTextIcon size={12} strokeWidth={2} />
                           Ver bitácora
                         </button>
@@ -1750,7 +1750,7 @@ export default function TripsPage() {
       )}
 
       {showAdminEditor && activeTab === "editor" && (
-        <section id="trip-editor-section" style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "24px", padding: "24px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+        <section id="trip-editor-section" style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "24px", padding: "24px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div>
               <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase" as const, color: pal.labelColor }}>{t("Gestion manual")}</p>
@@ -1762,7 +1762,7 @@ export default function TripsPage() {
             <button
               type="button"
               onClick={() => { setShowAdminEditor(false); setSelectedTripId(null); setActiveTab("dispatch"); }}
-              style={{ display: "inline-flex", alignItems: "center", borderRadius: "99px", border: "1px solid #e2e8f0", padding: "6px 16px", fontSize: "13px", fontWeight: 600, color: SURFACE.textSecondary, background: SURFACE.card, cursor: "pointer" }}
+              style={{ display: "inline-flex", alignItems: "center", borderRadius: "99px", border: `1px solid ${SURFACE.border}`, padding: "6px 16px", fontSize: "13px", fontWeight: 600, color: SURFACE.textSecondary, background: SURFACE.card, cursor: "pointer" }}
             >
               Cerrar editor
             </button>
@@ -1791,7 +1791,7 @@ export default function TripsPage() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setInfoTrip(null)}>
             <div onClick={(e) => e.stopPropagation()} style={{ background: SURFACE.card, borderRadius: "20px", width: "100%", maxWidth: "520px", maxHeight: "85vh", display: "flex", flexDirection: "column", boxShadow: "0 8px 40px rgba(15,23,42,0.2)" }}>
               {/* Header */}
-              <div style={{ padding: "20px 24px 14px", borderBottom: "1px solid #f1f5f9", flexShrink: 0, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
+              <div style={{ padding: "20px 24px 14px", borderBottom: `1px solid ${SURFACE.borderMuted}`, flexShrink: 0, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
                 <div>
                   <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: BRAND.teal, margin: "0 0 4px" }}>Detalle del viaje</p>
                   <p style={{ fontSize: "15px", fontWeight: 700, color: SURFACE.text, margin: 0 }}>{resolveRequester(infoTrip)}</p>
@@ -1804,27 +1804,27 @@ export default function TripsPage() {
               <div style={{ padding: "16px 24px", overflowY: "auto" }}>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
                   {fields.map((f) => (
-                    <div key={f.label} style={{ background: SURFACE.bg, border: "1px solid #e2e8f0", borderRadius: "12px", padding: "9px 12px", gridColumn: f.label === "Destino" || f.label === "Origen" || f.label === "Participantes" ? "1 / -1" : undefined }}>
+                    <div key={f.label} style={{ background: SURFACE.bg, border: `1px solid ${SURFACE.border}`, borderRadius: "12px", padding: "9px 12px", gridColumn: f.label === "Destino" || f.label === "Origen" || f.label === "Participantes" ? "1 / -1" : undefined }}>
                       <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: SURFACE.textFaint, margin: "0 0 3px" }}>{f.label}</p>
                       <p style={{ fontSize: "13px", fontWeight: 600, color: SURFACE.text, margin: 0 }}>{f.value}</p>
                     </div>
                   ))}
                 </div>
                 {infoTrip.notes && (
-                  <p style={{ marginTop: "12px", fontSize: "12.5px", color: "#78350f", background: "#fffbeb", border: "1px solid #fde68a", borderLeft: "4px solid #f59e0b", borderRadius: 10, padding: "8px 12px", fontWeight: 600 }}>
+                  <p style={{ marginTop: "12px", fontSize: "12.5px", color: "#78350f", background: "#fffbeb", border: "1px solid #fde68a", borderLeft: `4px solid ${STATE.warning}`, borderRadius: 10, padding: "8px 12px", fontWeight: 600 }}>
                     <span style={{ fontWeight: 800, color: STATE.warningText }}><AlertIcon size={12} className="inline mr-1" />Observación:</span>{" "}
                     {safeText(infoTrip.notes.replace(/^\[Portal\]\s*/, ""))}
                   </p>
                 )}
               </div>
               {/* Acciones */}
-              <div style={{ padding: "14px 24px 18px", borderTop: "1px solid #f1f5f9", flexShrink: 0, display: "flex", gap: "8px", justifyContent: "flex-end", flexWrap: "wrap" }}>
+              <div style={{ padding: "14px 24px 18px", borderTop: `1px solid ${SURFACE.borderMuted}`, flexShrink: 0, display: "flex", gap: "8px", justifyContent: "flex-end", flexWrap: "wrap" }}>
                 <button type="button" onClick={() => setInfoTrip(null)}
-                  style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "99px", padding: "8px 16px", fontSize: "13px", fontWeight: 600, color: SURFACE.textMuted, cursor: "pointer" }}>
+                  style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "99px", padding: "8px 16px", fontSize: "13px", fontWeight: 600, color: SURFACE.textMuted, cursor: "pointer" }}>
                   Cerrar
                 </button>
                 <button type="button" onClick={() => { setLogTrip(infoTrip); setInfoTrip(null); }}
-                  style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "99px", padding: "8px 16px", fontSize: "13px", fontWeight: 600, color: SURFACE.textSecondary, cursor: "pointer" }}>
+                  style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "99px", padding: "8px 16px", fontSize: "13px", fontWeight: 600, color: SURFACE.textSecondary, cursor: "pointer" }}>
                   Ver bitácora
                 </button>
                 <button type="button" onClick={() => {
@@ -1837,7 +1837,7 @@ export default function TripsPage() {
                       document.getElementById("trip-editor-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
                     }, 120);
                   }}
-                  style={{ background: "linear-gradient(135deg, #21D0B3, #14b8a6)", border: "none", borderRadius: "99px", padding: "8px 18px", fontSize: "13px", fontWeight: 700, color: SURFACE.card, cursor: "pointer", boxShadow: "0 2px 8px rgba(20,184,166,0.35)" }}>
+                  style={{ background: `linear-gradient(135deg, ${BRAND.teal}, #14b8a6)`, border: "none", borderRadius: "99px", padding: "8px 18px", fontSize: "13px", fontWeight: 700, color: SURFACE.card, cursor: "pointer", boxShadow: "0 2px 8px rgba(20,184,166,0.35)" }}>
                   Editar viaje
                 </button>
               </div>
@@ -1849,7 +1849,7 @@ export default function TripsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setLogTrip(null)}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: SURFACE.card, borderRadius: "20px", width: "100%", maxWidth: "480px", maxHeight: "80vh", display: "flex", flexDirection: "column", boxShadow: "0 8px 40px rgba(15,23,42,0.2)" }}>
             {/* Header */}
-            <div style={{ padding: "20px 24px 14px", borderBottom: "1px solid #f1f5f9", flexShrink: 0 }}>
+            <div style={{ padding: "20px 24px 14px", borderBottom: `1px solid ${SURFACE.borderMuted}`, flexShrink: 0 }}>
               <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: BRAND.teal, margin: "0 0 4px" }}>Bitácora del viaje</p>
               <p style={{ fontSize: "14px", fontWeight: 600, color: SURFACE.text, margin: 0 }}>{resolveRequester(logTrip)} → {logTrip.destination || "Sin destino"}</p>
             </div>
@@ -1925,7 +1925,7 @@ export default function TripsPage() {
                   .sort((a) => (a.kind === "start" ? -1 : 1));
                 if (photos.length === 0) return null;
                 return (
-                  <div style={{ marginTop: 18, paddingTop: 14, borderTop: "1px solid #f1f5f9" }}>
+                  <div style={{ marginTop: 18, paddingTop: 14, borderTop: `1px solid ${SURFACE.borderMuted}` }}>
                     <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: BRAND.teal, margin: "0 0 10px" }}>
                       Fotos de jornada del conductor
                     </p>
@@ -1939,7 +1939,7 @@ export default function TripsPage() {
                           <a key={`${p.date}-${p.kind}`} href={p.url} target="_blank" rel="noreferrer" title="Abrir foto en tamaño completo"
                             style={{ textDecoration: "none", width: "150px" }}>
                             <img src={p.url} alt={p.kind === "start" ? "Foto de inicio de jornada" : "Foto de término de jornada"}
-                              style={{ width: "150px", height: "100px", objectFit: "cover", borderRadius: "10px", border: "1px solid #e2e8f0", display: "block" }} />
+                              style={{ width: "150px", height: "100px", objectFit: "cover", borderRadius: "10px", border: `1px solid ${SURFACE.border}`, display: "block" }} />
                             <p style={{ fontSize: "11.5px", fontWeight: 700, color: SURFACE.text, margin: "6px 0 0" }}>
                               {p.kind === "start" ? "Inicio de jornada" : "Término de jornada"}
                             </p>
@@ -1953,9 +1953,9 @@ export default function TripsPage() {
               })()}
             </div>
             {/* Footer */}
-            <div style={{ padding: "12px 24px", borderTop: "1px solid #f1f5f9", flexShrink: 0, textAlign: "center" }}>
+            <div style={{ padding: "12px 24px", borderTop: `1px solid ${SURFACE.borderMuted}`, flexShrink: 0, textAlign: "center" }}>
               <button type="button" onClick={() => setLogTrip(null)}
-                style={{ padding: "10px 32px", borderRadius: "12px", border: "none", background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: SURFACE.card, fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 10px rgba(33,208,179,0.3)" }}>
+                style={{ padding: "10px 32px", borderRadius: "12px", border: "none", background: `linear-gradient(135deg, ${BRAND.teal}, #14AE98)`, color: SURFACE.card, fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 10px rgba(33,208,179,0.3)" }}>
                 Cerrar
               </button>
             </div>

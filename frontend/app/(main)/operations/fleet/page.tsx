@@ -163,7 +163,7 @@ export default function FleetAvailabilityPage() {
         title={t("Flota")}
         description={t("Conductores y vehículos de la flota propia, exclusiva para clientes VIP y T1. Registra nuevos o mira la disponibilidad en tiempo real para asignar viajes.")}
         icon={<TruckIcon size={26} />}
-        iconBg="linear-gradient(135deg, #21D0B3 0%, #1f4e8c 100%)"
+        iconBg={`linear-gradient(135deg, ${BRAND.teal} 0%, #1f4e8c 100%)`}
         accentStrip="teal"
         meta={
           section === "availability" ? (
@@ -199,7 +199,7 @@ export default function FleetAvailabilityPage() {
               <button key={s.v} type="button" onClick={() => setSection(s.v)}
                 className="px-4 py-2 rounded-lg text-xs font-bold transition-all"
                 style={{
-                  background: active ? "linear-gradient(135deg, #21D0B3, #1eb19a)" : "transparent",
+                  background: active ? `linear-gradient(135deg, ${BRAND.teal}, #1eb19a)` : "transparent",
                   color: active ? SURFACE.card : SURFACE.textSecondary,
                   boxShadow: active ? "0 2px 6px rgba(33,208,179,0.35)" : "none",
                   textAlign: "left",
@@ -291,7 +291,7 @@ export default function FleetAvailabilityPage() {
                 <button key={tab} type="button" onClick={() => setActiveTab(tab)}
                   className="px-4 py-1.5 rounded-lg text-xs font-bold transition-all"
                   style={{
-                    background: active ? "linear-gradient(135deg, #21D0B3, #1eb19a)" : "transparent",
+                    background: active ? `linear-gradient(135deg, ${BRAND.teal}, #1eb19a)` : "transparent",
                     color: active ? SURFACE.card : SURFACE.textSecondary,
                     boxShadow: active ? "0 2px 6px rgba(33,208,179,0.35)" : "none",
                   }}>
@@ -556,7 +556,7 @@ function CrudSection({
               </thead>
               <tbody>
                 {section === "drivers" && (filtered as DriverRow[]).map((d, i) => (
-                  <tr key={d.id} style={{ background: i % 2 === 0 ? SURFACE.card : "#fafbfc", borderBottom: "1px solid #f1f5f9" }}>
+                  <tr key={d.id} style={{ background: i % 2 === 0 ? SURFACE.card : "#fafbfc", borderBottom: `1px solid ${SURFACE.borderMuted}` }}>
                     <td className="p-3 font-semibold">{d.fullName}</td>
                     <td className="p-3 font-mono text-[11px]">{d.rut}</td>
                     <td className="p-3" style={{ color: "var(--text-muted)" }}>
@@ -593,7 +593,7 @@ function CrudSection({
                   </tr>
                 ))}
                 {section === "vehicles" && (filtered as VehicleRow[]).map((v, i) => (
-                  <tr key={v.id} style={{ background: i % 2 === 0 ? SURFACE.card : "#fafbfc", borderBottom: "1px solid #f1f5f9" }}>
+                  <tr key={v.id} style={{ background: i % 2 === 0 ? SURFACE.card : "#fafbfc", borderBottom: `1px solid ${SURFACE.borderMuted}` }}>
                     <td className="p-3">
                       <span style={{
                         background: SURFACE.text, color: SURFACE.card,
@@ -953,7 +953,7 @@ function DriverColumn({ drivers, filter, setFilter, counts }: {
               <button key={v || "all"} type="button" onClick={() => setFilter(v as any)}
                 className="text-[11px] font-bold px-2.5 py-1 rounded-full transition-all inline-flex items-center gap-1.5"
                 style={{
-                  background: active ? "linear-gradient(135deg, #21D0B3, #1eb19a)" : SURFACE.borderMuted,
+                  background: active ? `linear-gradient(135deg, ${BRAND.teal}, #1eb19a)` : SURFACE.borderMuted,
                   color: active ? SURFACE.card : SURFACE.textSecondary,
                 }}>
                 {t(label)}
@@ -975,7 +975,7 @@ function DriverColumn({ drivers, filter, setFilter, counts }: {
             <div key={d.id} className="p-3 flex items-center gap-3 hover:bg-gray-50 transition-colors">
               <div style={{
                 width: 38, height: 38, borderRadius: "50%",
-                background: d.online ? "linear-gradient(135deg, #21D0B3, #1eb19a)" : "linear-gradient(135deg, #cbd5e1, #94a3b8)",
+                background: d.online ? `linear-gradient(135deg, ${BRAND.teal}, #1eb19a)` : `linear-gradient(135deg, ${SURFACE.borderStrong}, ${SURFACE.textFaint})`,
                 color: SURFACE.card, fontSize: 12, fontWeight: 800,
                 display: "flex", alignItems: "center", justifyContent: "center",
                 boxShadow: d.online ? "0 2px 6px rgba(33,208,179,0.3)" : "none",
@@ -1045,7 +1045,7 @@ function VehicleColumn({ vehicles, filter, setFilter, counts }: {
               <button key={v || "all"} type="button" onClick={() => setFilter(v as any)}
                 className="text-[11px] font-bold px-2.5 py-1 rounded-full transition-all inline-flex items-center gap-1.5"
                 style={{
-                  background: active ? "linear-gradient(135deg, #21D0B3, #1eb19a)" : SURFACE.borderMuted,
+                  background: active ? `linear-gradient(135deg, ${BRAND.teal}, #1eb19a)` : SURFACE.borderMuted,
                   color: active ? SURFACE.card : SURFACE.textSecondary,
                 }}>
                 {t(label)}
@@ -1067,7 +1067,7 @@ function VehicleColumn({ vehicles, filter, setFilter, counts }: {
             <div key={v.id} className="p-3 flex items-center gap-3 hover:bg-gray-50 transition-colors">
               <div style={{
                 width: 50, height: 30, borderRadius: 6,
-                background: "linear-gradient(135deg, #0f172a, #1e293b)",
+                background: `linear-gradient(135deg, ${SURFACE.text}, #1e293b)`,
                 color: SURFACE.card, fontSize: 11, fontWeight: 800,
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontFamily: "monospace", letterSpacing: "0.04em",

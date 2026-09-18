@@ -79,7 +79,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div style={{
           position: "absolute", left: 0, top: 0, bottom: 0,
           width: "4px",
-          background: "linear-gradient(180deg, transparent 0%, #34F3C6 20%, #21D0B3 70%, transparent 100%)",
+          background: `linear-gradient(180deg, transparent 0%, ${BRAND.tealLight} 20%, ${BRAND.teal} 70%, transparent 100%)`,
           zIndex: 1,
         }} />
 
@@ -155,7 +155,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           }}>
             Gestión de alto<br />
             <span style={{
-              background: "linear-gradient(90deg, #34F3C6 0%, #1FCDFF 50%, #34F3C6 100%)",
+              background: `linear-gradient(90deg, ${BRAND.tealLight} 0%, ${BRAND.blue} 50%, ${BRAND.tealLight} 100%)`,
               backgroundSize: "200% auto",
               WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
               backgroundClip: "text", animation: "shimmer 5s linear infinite",
@@ -237,7 +237,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               <div style={{ height: "3px", background: "rgba(255,255,255,0.1)", borderRadius: "2px", overflow: "hidden" }}>
                 <div style={{
                   height: "100%", width: "71%",
-                  background: "linear-gradient(90deg, #21D0B3, #34F3C6)",
+                  background: `linear-gradient(90deg, ${BRAND.teal}, ${BRAND.tealLight})`,
                   borderRadius: "2px",
                   animation: "bar-fill 8s ease-in-out infinite",
                 }} />

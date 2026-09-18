@@ -1079,7 +1079,7 @@ export default function HealthPage() {
 
   const fieldStyle: React.CSSProperties = {
     width: "100%", padding: "8px 12px", borderRadius: "10px",
-    border: "1px solid #e2e8f0", background: SURFACE.bg,
+    border: `1px solid ${SURFACE.border}`, background: SURFACE.bg,
     fontSize: "14px", color: SURFACE.text, outline: "none",
   };
 
@@ -1097,12 +1097,12 @@ export default function HealthPage() {
   return (
     <div className="space-y-6">
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "flex-end", gap: "12px", marginBottom: "8px" }}>
-        <div style={{ borderRadius: "8px", padding: "6px 12px", fontSize: "13px", background: SURFACE.card, border: "1px solid #e2e8f0", color: SURFACE.textMuted }}>
+        <div style={{ borderRadius: "8px", padding: "6px 12px", fontSize: "13px", background: SURFACE.card, border: `1px solid ${SURFACE.border}`, color: SURFACE.textMuted }}>
           {activeSubsection === "record" ? <>{t("Avance ficha")}: <span style={{ fontWeight: 600, color: SURFACE.text }}>{completion}%</span></> : <>{t("Subsección")}: <span style={{ fontWeight: 600, color: SURFACE.text }}>{t(HEALTH_SUBSECTIONS.find((item) => item.id === activeSubsection)?.label ?? "")}</span></>}
         </div>
       </div>
 
-      <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+      <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div className="grid gap-3 lg:grid-cols-12">
           <StyledSelect wrapperClassName="lg:col-span-4" value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)}>
             <option value="">{t("Selecciona evento")}</option>
@@ -1118,7 +1118,7 @@ export default function HealthPage() {
           </StyledSelect>
           <div className="relative lg:col-span-5">
             <input
-              style={{ width: "100%", paddingRight: "36px", padding: "8px 36px 8px 12px", borderRadius: "10px", border: "1px solid #e2e8f0", background: SURFACE.bg, fontSize: "14px", color: SURFACE.text, outline: "none" }}
+              style={{ width: "100%", paddingRight: "36px", padding: "8px 36px 8px 12px", borderRadius: "10px", border: `1px solid ${SURFACE.border}`, background: SURFACE.bg, fontSize: "14px", color: SURFACE.text, outline: "none" }}
               value={athleteSearch}
               onFocus={() => setAthletePickerOpen(true)}
               onBlur={() => setTimeout(() => setAthletePickerOpen(false), 120)}
@@ -1143,7 +1143,7 @@ export default function HealthPage() {
               v
             </button>
             {athletePickerOpen ? (
-              <div style={{ position: "absolute", zIndex: 30, marginTop: "4px", maxHeight: "224px", width: "100%", overflowY: "auto", borderRadius: "12px", padding: "4px", boxShadow: "0 8px 24px rgba(15,23,42,0.12)", background: SURFACE.card, border: "1px solid #e2e8f0" }}>
+              <div style={{ position: "absolute", zIndex: 30, marginTop: "4px", maxHeight: "224px", width: "100%", overflowY: "auto", borderRadius: "12px", padding: "4px", boxShadow: "0 8px 24px rgba(15,23,42,0.12)", background: SURFACE.card, border: `1px solid ${SURFACE.border}` }}>
                 {searchableAthletes.length === 0 ? (
                   <div style={{ padding: "8px 12px", fontSize: "14px", color: SURFACE.textFaint }}>{t("Sin resultados")}</div>
                 ) : (
@@ -1168,8 +1168,8 @@ export default function HealthPage() {
         {loading ? <p style={{ marginTop: "12px", fontSize: "13px", color: SURFACE.textFaint }}>{t("Cargando...")}</p> : null}
       </section>
 
-      <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "12px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
-        <div style={{ display: "inline-flex", flexWrap: "wrap", borderRadius: "12px", border: "1px solid #e2e8f0", background: SURFACE.bg, padding: "4px" }}>
+      <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", padding: "12px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+        <div style={{ display: "inline-flex", flexWrap: "wrap", borderRadius: "12px", border: `1px solid ${SURFACE.border}`, background: SURFACE.bg, padding: "4px" }}>
           {HEALTH_SUBSECTIONS.map((item) => {
             const active = item.id === activeSubsection;
             return (
@@ -1179,7 +1179,7 @@ export default function HealthPage() {
                 style={{
                   minWidth: "132px", borderRadius: "10px", padding: "8px 16px",
                   fontSize: "14px", fontWeight: 600, border: "none", cursor: "pointer", transition: "all 150ms",
-                  background: active ? "linear-gradient(135deg, #21D0B3, #14AE98)" : "transparent",
+                  background: active ? `linear-gradient(135deg, ${BRAND.teal}, #14AE98)` : "transparent",
                   color: active ? SURFACE.card : SURFACE.textMuted,
                   boxShadow: active ? "0 2px 8px rgba(33,208,179,0.3)" : "none",
                 }}
@@ -1333,7 +1333,7 @@ export default function HealthPage() {
             </div>
 
             {/* ── Estado de fichas por participante ── */}
-            <div style={{ marginTop: "20px", background: pal.cardBg, border: `1px solid ${pal.cardBorder}`, borderTop: "3px solid #21D0B3", borderRadius: "18px", padding: "18px", boxShadow: pal.cardShadow }}>
+            <div style={{ marginTop: "20px", background: pal.cardBg, border: `1px solid ${pal.cardBorder}`, borderTop: `3px solid ${BRAND.teal}`, borderRadius: "18px", padding: "18px", boxShadow: pal.cardShadow }}>
               <div className="flex flex-wrap items-center justify-between gap-3" style={{ marginBottom: "14px" }}>
                 <div className="flex items-center gap-2">
                   <KpiIcon type="clipboard" color={BRAND.teal} size={16} />
@@ -1452,7 +1452,7 @@ export default function HealthPage() {
       ) : null}
 
       {activeSubsection === "bulk" ? (
-        <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+        <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: "16px" }}>
             <div>
               <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: SURFACE.textFaint }}>{t("Subsección Salud / Carga masiva")}</span>
@@ -1461,17 +1461,17 @@ export default function HealthPage() {
                 {t("Actualiza fichas por lote usando `athlete_id` o `passport_number`, respetando el filtro actual.")}
               </p>
             </div>
-            <button type="button" onClick={downloadHealthTemplate} style={{ padding: "8px 16px", borderRadius: "10px", border: "1px solid #e2e8f0", background: SURFACE.card, color: SURFACE.textMuted, fontWeight: 600, fontSize: "13px", cursor: "pointer" }}>
+            <button type="button" onClick={downloadHealthTemplate} style={{ padding: "8px 16px", borderRadius: "10px", border: `1px solid ${SURFACE.border}`, background: SURFACE.card, color: SURFACE.textMuted, fontWeight: 600, fontSize: "13px", cursor: "pointer" }}>
               {t("Descargar template")}
             </button>
           </div>
 
           <div className="mt-5 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
-            <div style={{ borderRadius: "12px", border: "1px solid #e2e8f0", background: SURFACE.bg, padding: "16px" }}>
+            <div style={{ borderRadius: "12px", border: `1px solid ${SURFACE.border}`, background: SURFACE.bg, padding: "16px" }}>
               <span style={{ fontSize: "14px", fontWeight: 600, color: SURFACE.text }}>{t("Archivo Excel")}</span>
               <input ref={bulkFileRef} id="health-bulk-file" className="sr-only" type="file" accept=".xlsx,.xls" onChange={onBulkFileChange} />
               <div style={{ marginTop: "8px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "12px" }}>
-                <label htmlFor="health-bulk-file" style={{ padding: "8px 16px", borderRadius: "10px", border: "1px solid #e2e8f0", background: SURFACE.card, color: SURFACE.textMuted, fontWeight: 600, fontSize: "13px", cursor: "pointer" }}>
+                <label htmlFor="health-bulk-file" style={{ padding: "8px 16px", borderRadius: "10px", border: `1px solid ${SURFACE.border}`, background: SURFACE.card, color: SURFACE.textMuted, fontWeight: 600, fontSize: "13px", cursor: "pointer" }}>
                   {t("Seleccionar archivo")}
                 </label>
                 <span style={{ fontSize: "12px", color: SURFACE.textFaint }}>{bulkFileName ?? t("Sin archivo seleccionado")}</span>
@@ -1481,17 +1481,17 @@ export default function HealthPage() {
                 <p><strong style={{ color: SURFACE.text }}>{t("Evento filtrado:")}</strong> {events.find((item) => item.id === selectedEventId)?.name || t("Sin filtro")}</p>
               </div>
               <div style={{ marginTop: "16px", display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                <button type="button" onClick={runBulkImport} disabled={bulkLoading || bulkRows.length === 0} style={{ padding: "9px 18px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: SURFACE.card, fontWeight: 700, fontSize: "13px", cursor: bulkLoading || bulkRows.length === 0 ? "not-allowed" : "pointer", opacity: bulkLoading || bulkRows.length === 0 ? 0.6 : 1, boxShadow: "0 2px 8px rgba(33,208,179,0.3)" }}>
+                <button type="button" onClick={runBulkImport} disabled={bulkLoading || bulkRows.length === 0} style={{ padding: "9px 18px", borderRadius: "10px", border: "none", background: `linear-gradient(135deg, ${BRAND.teal}, #14AE98)`, color: SURFACE.card, fontWeight: 700, fontSize: "13px", cursor: bulkLoading || bulkRows.length === 0 ? "not-allowed" : "pointer", opacity: bulkLoading || bulkRows.length === 0 ? 0.6 : 1, boxShadow: "0 2px 8px rgba(33,208,179,0.3)" }}>
                   {bulkLoading ? t("Importando...") : t("Ejecutar carga")}
                 </button>
-                <button type="button" onClick={() => { setBulkRows([]); setBulkFileName(null); setBulkErrors([]); setBulkResult(null); if (bulkFileRef.current) bulkFileRef.current.value = ""; }} style={{ padding: "9px 16px", borderRadius: "10px", border: "1px solid #e2e8f0", background: SURFACE.card, color: SURFACE.textMuted, fontWeight: 600, fontSize: "13px", cursor: "pointer" }}>
+                <button type="button" onClick={() => { setBulkRows([]); setBulkFileName(null); setBulkErrors([]); setBulkResult(null); if (bulkFileRef.current) bulkFileRef.current.value = ""; }} style={{ padding: "9px 16px", borderRadius: "10px", border: `1px solid ${SURFACE.border}`, background: SURFACE.card, color: SURFACE.textMuted, fontWeight: 600, fontSize: "13px", cursor: "pointer" }}>
                   {t("Limpiar")}
                 </button>
               </div>
               {bulkResult ? <p style={{ marginTop: "12px", fontSize: "13px", fontWeight: 600, color: BRAND.teal }}>{bulkResult}</p> : null}
             </div>
 
-            <div style={{ borderRadius: "12px", border: "1px solid #e2e8f0", background: SURFACE.bg, padding: "16px" }}>
+            <div style={{ borderRadius: "12px", border: `1px solid ${SURFACE.border}`, background: SURFACE.bg, padding: "16px" }}>
               <p style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: SURFACE.textFaint }}>{t("Vista previa")}</p>
               {bulkPreview.length === 0 ? (
                 <p style={{ marginTop: "12px", fontSize: "13px", color: SURFACE.textFaint }}>{t("Aún no hay archivo cargado.")}</p>
@@ -1499,7 +1499,7 @@ export default function HealthPage() {
                 <div style={{ marginTop: "12px", overflowX: "auto" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
                     <thead>
-                      <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
+                      <tr style={{ borderBottom: `1px solid ${SURFACE.border}` }}>
                         {[t("Fila"), "Athlete ID", t("Pasaporte"), t("Nombre"), t("Dieta"), t("Crónico")].map((h) => (
                           <th key={h} style={{ textAlign: "left", padding: "6px 10px", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: SURFACE.textFaint }}>{h}</th>
                         ))}
@@ -1538,7 +1538,7 @@ export default function HealthPage() {
       ) : null}
 
       {activeSubsection === "record" ? <form onSubmit={save} className="space-y-4">
-        <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+        <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
           <p style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: SURFACE.textFaint }}>{t("Antecedentes personales")}</p>
           <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
@@ -1577,7 +1577,7 @@ export default function HealthPage() {
           </div>
         </section>
 
-        <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+        <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
           <p style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: SURFACE.textFaint }}>{t("Contacto, representación y emergencia")}</p>
           <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             <label style={{ display: "flex", flexDirection: "column", gap: "4px" }} className="md:col-span-2"><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Dirección")}</span><input style={fieldStyle} value={record.contact.address} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, address: e.target.value } }))} /></label>
@@ -1602,7 +1602,7 @@ export default function HealthPage() {
           </div>
         </section>
 
-        <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+        <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
           <p style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: SURFACE.textFaint }}>{t("Certificados y autorizaciones")}</p>
           <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Cert. salud: nombre deportista")}</span><input style={fieldStyle} value={record.healthCertificate.athleteName} onChange={(e) => setRecord((p) => ({ ...p, healthCertificate: { ...p.healthCertificate, athleteName: e.target.value } }))} /></label>
@@ -1624,15 +1624,15 @@ export default function HealthPage() {
           </div>
         </section>
 
-        <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+        <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
             <div style={{ fontSize: "13px", color: SURFACE.textMuted }}>
               {selectedAthlete ? `${t("Participante seleccionado:")} ${selectedAthlete.fullName || selectedAthlete.id}` : t("Selecciona un participante para guardar la ficha.")}
             </div>
-            <button style={{ padding: "9px 28px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: SURFACE.card, fontWeight: 700, fontSize: "14px", cursor: !selectedAthleteId || saving ? "not-allowed" : "pointer", opacity: !selectedAthleteId || saving ? 0.6 : 1, boxShadow: "0 2px 8px rgba(33,208,179,0.3)" }} type="submit" disabled={!selectedAthleteId || saving}>
+            <button style={{ padding: "9px 28px", borderRadius: "10px", border: "none", background: `linear-gradient(135deg, ${BRAND.teal}, #14AE98)`, color: SURFACE.card, fontWeight: 700, fontSize: "14px", cursor: !selectedAthleteId || saving ? "not-allowed" : "pointer", opacity: !selectedAthleteId || saving ? 0.6 : 1, boxShadow: "0 2px 8px rgba(33,208,179,0.3)" }} type="submit" disabled={!selectedAthleteId || saving}>
               {saving ? t("Guardando...") : t("Guardar ficha de salud")}
             </button>
-            <button style={{ padding: "9px 20px", borderRadius: "10px", border: "1px solid #e2e8f0", background: SURFACE.card, color: SURFACE.textMuted, fontWeight: 600, fontSize: "14px", cursor: !selectedAthleteId ? "not-allowed" : "pointer", opacity: !selectedAthleteId ? 0.5 : 1 }} type="button" disabled={!selectedAthleteId} onClick={exportHealthSheet}>
+            <button style={{ padding: "9px 20px", borderRadius: "10px", border: `1px solid ${SURFACE.border}`, background: SURFACE.card, color: SURFACE.textMuted, fontWeight: 600, fontSize: "14px", cursor: !selectedAthleteId ? "not-allowed" : "pointer", opacity: !selectedAthleteId ? 0.5 : 1 }} type="button" disabled={!selectedAthleteId} onClick={exportHealthSheet}>
               {t("Exportar ficha (PDF)")}
             </button>
           </div>

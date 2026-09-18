@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import QRCode from "qrcode";
 import { downloadCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
 import { CheckCircleIcon, AlertIcon } from "@/components/ui/Icons";
-import { STATE, SURFACE } from "@/lib/design";
+import { STATE, SURFACE, BRAND } from "@/lib/design";
 
 /**
  * Página de descarga de la credencial en PDF.
@@ -63,7 +63,7 @@ function CredencialDownload() {
     <div
       style={{
         minHeight: "100vh",
-        background: "linear-gradient(160deg, #041a2e 0%, #062240 100%)",
+        background: `linear-gradient(160deg, ${BRAND.navy} 0%, ${BRAND.navyLight} 100%)`,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -100,7 +100,7 @@ function CredencialDownload() {
                 padding: "13px 22px",
                 borderRadius: 12,
                 border: "none",
-                background: "linear-gradient(135deg, #34F3C6 0%, #21D0B3 100%)",
+                background: `linear-gradient(135deg, ${BRAND.tealLight} 0%, ${BRAND.teal} 100%)`,
                 color: "#0d1b3e",
                 fontSize: 14,
                 fontWeight: 800,

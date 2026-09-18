@@ -1584,8 +1584,8 @@ export default function UserPortalPage() {
         {activeTab === "itinerario" && isChief && (
           <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
             {/* Flight info */}
-            <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
-              <div style={{ padding:"12px 14px",borderBottom:"1px solid #f1f5f9",display:"flex",alignItems:"center",gap:10 }}>
+            <div style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,overflow:"hidden" }}>
+              <div style={{ padding:"12px 14px",borderBottom:`1px solid ${SURFACE.borderMuted}`,display:"flex",alignItems:"center",gap:10 }}>
                 <IcoPlane />
                 <span style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.teal }}>Vuelo</span>
               </div>
@@ -1600,8 +1600,8 @@ export default function UserPortalPage() {
               </div>
             </div>
             {/* Hotel info */}
-            <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
-              <div style={{ padding:"12px 14px",borderBottom:"1px solid #f1f5f9",display:"flex",alignItems:"center",gap:10 }}>
+            <div style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,overflow:"hidden" }}>
+              <div style={{ padding:"12px 14px",borderBottom:`1px solid ${SURFACE.borderMuted}`,display:"flex",alignItems:"center",gap:10 }}>
                 <IcoHotel />
                 <span style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.tealDark }}>Hotel</span>
               </div>
@@ -1611,10 +1611,10 @@ export default function UserPortalPage() {
                     <p style={{ fontSize:15,fontWeight:700,color:SURFACE.text,margin:"0 0 6px" }}>{hotel.name}</p>
                     <div style={{ display:"flex",flexWrap:"wrap",gap:4 }}>
                       {hotelRoom_ && <span style={{ fontSize:10,padding:"3px 8px",borderRadius:6,background:"#f0fdf8",color:BRAND.tealInk,border:"1px solid rgba(33,208,179,0.2)",fontWeight:600 }}>Hab. {hotelRoom_}</span>}
-                      {hotelBed_ && <span style={{ fontSize:10,padding:"3px 8px",borderRadius:6,background:SURFACE.borderMuted,color:SURFACE.textSecondary,border:"1px solid #e2e8f0" }}>Cama {hotelBed_}</span>}
+                      {hotelBed_ && <span style={{ fontSize:10,padding:"3px 8px",borderRadius:6,background:SURFACE.borderMuted,color:SURFACE.textSecondary,border:`1px solid ${SURFACE.border}` }}>Cama {hotelBed_}</span>}
                     </div>
                     {/* Info de check-in / check-out */}
-                    <div style={{ marginTop:10,display:"flex",flexDirection:"column",gap:4,borderTop:"1px solid #f1f5f9",paddingTop:8 }}>
+                    <div style={{ marginTop:10,display:"flex",flexDirection:"column",gap:4,borderTop:`1px solid ${SURFACE.borderMuted}`,paddingTop:8 }}>
                       <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between" }}>
                         <span style={{ fontSize:11,color:SURFACE.textMuted }}>Check-in</span>
                         <span style={{ fontSize:11.5,fontWeight:700,color: hotelAssignment?.checkinAt ? BRAND.tealInk : SURFACE.textFaint }}>{hotelAssignment?.checkinAt ? fmt(hotelAssignment.checkinAt) : "Pendiente"}</span>
@@ -1631,7 +1631,7 @@ export default function UserPortalPage() {
               </div>
             </div>
             {/* Check-ins */}
-            <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",padding:"12px 14px" }}>
+            <div style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,padding:"12px 14px" }}>
               <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:SURFACE.textSecondary,margin:"0 0 10px" }}>Check-ins · {checkinsDone}/{checkins.length}</p>
               <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
                 {checkins.map(({ label, ts }) => {
@@ -1667,15 +1667,15 @@ export default function UserPortalPage() {
               });
               const flights = Array.from(byFlight.values()).sort((a, b) => new Date(a.arrival || 0).getTime() - new Date(b.arrival || 0).getTime());
               return (
-                <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
-                  <div style={{ padding:"12px 14px",borderBottom:"1px solid #f1f5f9",display:"flex",alignItems:"center",gap:10 }}>
+                <div style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,overflow:"hidden" }}>
+                  <div style={{ padding:"12px 14px",borderBottom:`1px solid ${SURFACE.borderMuted}`,display:"flex",alignItems:"center",gap:10 }}>
                     <IcoPlane />
                     <span style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.teal }}>Vuelos de la delegación</span>
                   </div>
                   <div style={{ padding:"12px 14px",display:"flex",flexDirection:"column",gap:8 }}>
                     {flights.length === 0 && <p style={{ fontSize:13,color:SURFACE.textFaint,margin:0 }}>Sin vuelos asignados a la delegación</p>}
                     {flights.map(f => (
-                      <div key={f.label} style={{ padding:"10px 12px",borderRadius:10,background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
+                      <div key={f.label} style={{ padding:"10px 12px",borderRadius:10,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}` }}>
                         <p style={{ fontSize:13,fontWeight:700,color:SURFACE.text,margin:0 }}>{f.label}</p>
                         <p style={{ fontSize:11,color:SURFACE.textMuted,margin:"2px 0 6px" }}>
                           {f.arrival ? `Arribo: ${fmt(f.arrival)}` : "Sin horario"}{f.origin ? ` · Origen: ${f.origin}` : ""}
@@ -1706,15 +1706,15 @@ export default function UserPortalPage() {
               });
               const hotels = Array.from(byHotel.values()).sort((a, b) => a.name.localeCompare(b.name));
               return (
-                <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
-                  <div style={{ padding:"12px 14px",borderBottom:"1px solid #f1f5f9",display:"flex",alignItems:"center",gap:10 }}>
+                <div style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,overflow:"hidden" }}>
+                  <div style={{ padding:"12px 14px",borderBottom:`1px solid ${SURFACE.borderMuted}`,display:"flex",alignItems:"center",gap:10 }}>
                     <IcoHotel />
                     <span style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.tealDark }}>Hoteles de la delegación</span>
                   </div>
                   <div style={{ padding:"12px 14px",display:"flex",flexDirection:"column",gap:8 }}>
                     {hotels.length === 0 && <p style={{ fontSize:13,color:SURFACE.textFaint,margin:0 }}>Sin hoteles asignados a la delegación</p>}
                     {hotels.map(h => (
-                      <div key={h.name} style={{ padding:"10px 12px",borderRadius:10,background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
+                      <div key={h.name} style={{ padding:"10px 12px",borderRadius:10,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}` }}>
                         <p style={{ fontSize:13,fontWeight:700,color:SURFACE.text,margin:"0 0 6px" }}>{h.name} <span style={{ fontSize:11,fontWeight:600,color:SURFACE.textMuted }}>· {h.members.length} persona(s)</span></p>
                         <div style={{ display:"flex",flexWrap:"wrap",gap:4 }}>
                           {h.members.map(mm => (
@@ -1754,7 +1754,7 @@ export default function UserPortalPage() {
             )}
             {(actSubTab === "curso" || isTA) && (
               trip && ["SCHEDULED","EN_ROUTE","PICKED_UP"].includes(trip.status ?? "") ? (
-                <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",padding:"14px",cursor:"pointer" }} onClick={() => setShowTripModal(true)}>
+                <div style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,padding:"14px",cursor:"pointer" }} onClick={() => setShowTripModal(true)}>
                   <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:10 }}>
                     {trip.status && <span style={{ padding:"3px 10px",borderRadius:20,fontSize:11,fontWeight:700,
                       background:tripStatusMeta(trip.status).bg,
@@ -1786,7 +1786,7 @@ export default function UserPortalPage() {
               return completed.length > 0 ? (
                 <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
                   {completed.map(t => (
-                    <div key={t.id} style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",padding:"12px 14px" }}>
+                    <div key={t.id} style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,padding:"12px 14px" }}>
                       <div style={{ display:"flex",flexDirection:"column",gap:2,margin:"0 0 4px" }}>
                         <div style={{ display:"flex",alignItems:"baseline",gap:6,minWidth:0 }}>
                           <span style={{ fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:SURFACE.textFaint,flexShrink:0,width:48 }}>ORIGEN</span>
@@ -1825,8 +1825,8 @@ export default function UserPortalPage() {
                 )
                 .sort((a, b) => new Date(b.scheduledAt || 0).getTime() - new Date(a.scheduledAt || 0).getTime());
               return (
-                <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
-                  <div style={{ padding:"12px 14px",borderBottom:"1px solid #f1f5f9" }}>
+                <div style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,overflow:"hidden" }}>
+                  <div style={{ padding:"12px 14px",borderBottom:`1px solid ${SURFACE.borderMuted}` }}>
                     <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.teal,margin:0 }}>Viajes de mi delegación</p>
                     <p style={{ fontSize:11,color:SURFACE.textFaint,margin:"3px 0 0" }}>Traslados de los miembros y disciplinas de tu delegación</p>
                   </div>
@@ -1867,7 +1867,7 @@ export default function UserPortalPage() {
                             </p>
                           )}
                           {open && (
-                            <div style={{ marginTop:8,paddingTop:8,borderTop:"1px dashed #e2e8f0",display:"flex",flexDirection:"column",gap:6 }}>
+                            <div style={{ marginTop:8,paddingTop:8,borderTop:`1px dashed ${SURFACE.border}`,display:"flex",flexDirection:"column",gap:6 }}>
                               {/* Recorrido completo sin recorte */}
                               <div style={{ display:"flex",flexDirection:"column",gap:3 }}>
                                 <div style={{ display:"flex",alignItems:"baseline",gap:6 }}>
@@ -2084,7 +2084,7 @@ export default function UserPortalPage() {
               {/* ════ Columna principal: agenda ════ */}
               <div style={{ flex:"1 1 340px",minWidth:0,display:"flex",flexDirection:"column",gap:12 }}>
                 {/* Barra de control: navegación mes + toggle vista */}
-                <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",padding:"12px 14px",display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"space-between",gap:10 }}>
+                <div style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,padding:"12px 14px",display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"space-between",gap:10 }}>
                   {(() => {
                     const dayWeek = calView==="semana" || calView==="dia";
                     const step = calView==="semana" ? 7 : 1;
@@ -2100,11 +2100,11 @@ export default function UserPortalPage() {
                         : cap1(calCursor.toLocaleDateString("es-CL",{weekday:"long",day:"2-digit",month:"long"}));
                     return (
                       <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-                        <button type="button" onClick={() => { const t=new Date(); goToDate(t); setCalSelectedDay(null); }} style={{ fontSize:12,fontWeight:700,color:SURFACE.text,background:SURFACE.borderMuted,border:"1px solid #e2e8f0",borderRadius:8,padding:"6px 12px",cursor:"pointer" }}>Hoy</button>
-                        <button type="button" onClick={() => { if(dayWeek){ shift(-1); } else { shiftMonth(-1); } }} style={{ background:SURFACE.card,border:"1px solid #e2e8f0",borderRadius:8,cursor:"pointer",padding:6,display:"inline-flex" }}>
+                        <button type="button" onClick={() => { const t=new Date(); goToDate(t); setCalSelectedDay(null); }} style={{ fontSize:12,fontWeight:700,color:SURFACE.text,background:SURFACE.borderMuted,border:`1px solid ${SURFACE.border}`,borderRadius:8,padding:"6px 12px",cursor:"pointer" }}>Hoy</button>
+                        <button type="button" onClick={() => { if(dayWeek){ shift(-1); } else { shiftMonth(-1); } }} style={{ background:SURFACE.card,border:`1px solid ${SURFACE.border}`,borderRadius:8,cursor:"pointer",padding:6,display:"inline-flex" }}>
                           <ChevronLeftIcon size={16} color={SURFACE.textMuted} strokeWidth={2} />
                         </button>
-                        <button type="button" onClick={() => { if(dayWeek){ shift(1); } else { shiftMonth(1); } }} style={{ background:SURFACE.card,border:"1px solid #e2e8f0",borderRadius:8,cursor:"pointer",padding:6,display:"inline-flex" }}>
+                        <button type="button" onClick={() => { if(dayWeek){ shift(1); } else { shiftMonth(1); } }} style={{ background:SURFACE.card,border:`1px solid ${SURFACE.border}`,borderRadius:8,cursor:"pointer",padding:6,display:"inline-flex" }}>
                           <ChevronRightIcon size={16} color={SURFACE.textMuted} strokeWidth={2} />
                         </button>
                         <span style={{ fontSize:14,fontWeight:800,color:SURFACE.text }}>{label}</span>
@@ -2124,7 +2124,7 @@ export default function UserPortalPage() {
 
                 {/* Vista MES: cuadrícula */}
                 {calView==="mes" && (
-                  <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",padding:"12px" }}>
+                  <div style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,padding:"12px" }}>
                     <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4,textAlign:"center" }}>
                       {["L","M","M","J","V","S","D"].map((d,i) => <div key={i} style={{ fontSize:10,fontWeight:700,color:SURFACE.textFaint,padding:4 }}>{d}</div>)}
                       {cells.map((day,i) => {
@@ -2151,7 +2151,7 @@ export default function UserPortalPage() {
                     {calSelectedDay !== null && (() => {
                       const selItems = inMonth.filter(it => it.date.getDate()===calSelectedDay).sort((a,b)=>a.date.getTime()-b.date.getTime());
                       return (
-                        <div style={{ marginTop:12,borderTop:"1px solid #f1f5f9",paddingTop:10 }}>
+                        <div style={{ marginTop:12,borderTop:`1px solid ${SURFACE.borderMuted}`,paddingTop:10 }}>
                           <p style={{ fontSize:11,fontWeight:800,letterSpacing:"0.1em",textTransform:"uppercase",color:"#0e9384",margin:"0 0 8px" }}>
                             {cap1(new Date(y,m,calSelectedDay).toLocaleDateString("es-CL",{weekday:"long",day:"2-digit",month:"long"}))}
                           </p>
@@ -2176,7 +2176,7 @@ export default function UserPortalPage() {
 
                 {/* Vista AGENDA: lista por día con chip de fecha */}
                 {calView==="agenda" && (
-                  <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden auto",maxHeight:"calc(100vh - 240px)" }}>
+                  <div style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,overflow:"hidden auto",maxHeight:"calc(100vh - 240px)" }}>
                     {agendaDays.length===0 ? (
                       <div style={{ padding:"40px 16px",textAlign:"center" }}>
                         <p style={{ margin:0,color:SURFACE.borderStrong,display:"flex",justifyContent:"center" }}><CalendarIcon size={34} /></p>
@@ -2187,9 +2187,9 @@ export default function UserPortalPage() {
                       const dayDate = new Date(y,m,dayNum);
                       const isToday = dayDate.toDateString()===now.toDateString();
                       return (
-                        <div key={dayNum} style={{ display:"flex",gap:0,borderTop: di===0?"none":"1px solid #f1f5f9" }}>
+                        <div key={dayNum} style={{ display:"flex",gap:0,borderTop: di===0?"none":`1px solid ${SURFACE.borderMuted}` }}>
                           {/* Chip de fecha */}
-                          <div style={{ flex:"0 0 64px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-start",padding:"14px 0",background:isToday?"#f0fdfa":SURFACE.bg,borderRight:"1px solid #f1f5f9" }}>
+                          <div style={{ flex:"0 0 64px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-start",padding:"14px 0",background:isToday?"#f0fdfa":SURFACE.bg,borderRight:`1px solid ${SURFACE.borderMuted}` }}>
                             <span style={{ fontSize:10,fontWeight:800,letterSpacing:"0.08em",color:isToday?"#0e9384":SURFACE.textFaint }}>{fmtDow(dayDate)}</span>
                             <span style={{ fontSize:22,fontWeight:800,color:isToday?"#0e9384":SURFACE.text,lineHeight:1.1 }}>{dayNum}</span>
                             <span style={{ fontSize:9,fontWeight:700,color:SURFACE.textFaint }}>{fmtMon(dayDate)}</span>
@@ -2199,7 +2199,7 @@ export default function UserPortalPage() {
                             {byDay.get(dayNum)!.sort((a,b)=>a.date.getTime()-b.date.getTime()).map((it, ii) => {
                               const cfg = TYPE_CFG[it.type];
                               return (
-                                <div key={it.id} style={{ display:"flex",alignItems:"center",gap:10,padding:"12px 14px",borderTop: ii===0?"none":"1px solid #f8fafc" }}>
+                                <div key={it.id} style={{ display:"flex",alignItems:"center",gap:10,padding:"12px 14px",borderTop: ii===0?"none":`1px solid ${SURFACE.bg}` }}>
                                   <span style={{ flexShrink:0,fontSize:12,fontWeight:700,color:SURFACE.textMuted,width:42 }}>{it.date.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})}</span>
                                   <span style={{ flexShrink:0,width:34,height:34,borderRadius:10,background:cfg.soft,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:16 }}><cfg.icon size={18} /></span>
                                   <div style={{ flex:1,minWidth:0 }}>
@@ -2226,20 +2226,20 @@ export default function UserPortalPage() {
                 {/* Vista GANTT: disciplinas × días del mes */}
                 {calView==="gantt" && (
                   gRows.length===0 ? (
-                    <div style={{ background:SURFACE.card,borderRadius:14,border:"1px dashed #e2e8f0",padding:"32px 16px",textAlign:"center" }}>
+                    <div style={{ background:SURFACE.card,borderRadius:14,border:`1px dashed ${SURFACE.border}`,padding:"32px 16px",textAlign:"center" }}>
                       <p style={{ margin:0,color:SURFACE.borderStrong,display:"flex",justifyContent:"center" }}><CalendarIcon size={28} /></p>
                       <p style={{ fontSize:13,fontWeight:700,color:SURFACE.textSecondary,margin:"6px 0 0" }}>Sin actividades este mes</p>
                     </div>
                   ) : (
-                    <div style={{ display:"flex",background:SURFACE.card,border:"1px solid #e2e8f0",borderRadius:14,overflow:"hidden" }}>
-                      <div style={{ flex:"0 0 128px",borderRight:"1px solid #e2e8f0",boxShadow:"2px 0 6px rgba(15,23,42,0.04)",zIndex:1 }}>
-                        <div style={{ height:40,borderBottom:"1px solid #e2e8f0",background:SURFACE.bg,display:"flex",alignItems:"center",padding:"0 10px" }}>
+                    <div style={{ display:"flex",background:SURFACE.card,border:`1px solid ${SURFACE.border}`,borderRadius:14,overflow:"hidden" }}>
+                      <div style={{ flex:"0 0 128px",borderRight:`1px solid ${SURFACE.border}`,boxShadow:"2px 0 6px rgba(15,23,42,0.04)",zIndex:1 }}>
+                        <div style={{ height:40,borderBottom:`1px solid ${SURFACE.border}`,background:SURFACE.bg,display:"flex",alignItems:"center",padding:"0 10px" }}>
                           <span style={{ fontSize:9,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:SURFACE.textFaint }}>Disciplina</span>
                         </div>
                         {gRows.map((r,i)=>{
                           const total = Array.from(r.byDay.values()).reduce((a,evs)=>a+evs.length,0);
                           return (
-                            <div key={i} style={{ height:44,display:"flex",alignItems:"center",gap:6,padding:"0 10px",borderBottom: i<gRows.length-1?"1px solid #f1f5f9":"none" }}>
+                            <div key={i} style={{ height:44,display:"flex",alignItems:"center",gap:6,padding:"0 10px",borderBottom: i<gRows.length-1?`1px solid ${SURFACE.borderMuted}`:"none" }}>
                               <span style={{ flex:1,minWidth:0,fontSize:11.5,fontWeight:700,color:SURFACE.textStrong,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{r.name}</span>
                               <span style={{ flexShrink:0,fontSize:10,fontWeight:800,color:SURFACE.textMuted,background:SURFACE.borderMuted,borderRadius:99,padding:"2px 6px" }}>{total}</span>
                             </div>
@@ -2263,7 +2263,7 @@ export default function UserPortalPage() {
                               if (Number.isFinite(firstActiveDay)) el.scrollLeft = Math.max(0, (firstActiveDay - 2) * CELL);
                             }}>
                             <div style={{ minWidth:gN*CELL }}>
-                              <div style={{ height:40,display:"grid",gridTemplateColumns:`repeat(${gN},${CELL}px)`,borderBottom:"1px solid #e2e8f0",background:SURFACE.bg }}>
+                              <div style={{ height:40,display:"grid",gridTemplateColumns:`repeat(${gN},${CELL}px)`,borderBottom:`1px solid ${SURFACE.border}`,background:SURFACE.bg }}>
                                 {gDays.map(d=>{ const isToday=keyOf(d)===keyOf(now); const wknd=d.getDay()===0||d.getDay()===6; return (
                                   <div key={d.getDate()} style={{ display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:1,
                                     background:isToday?"rgba(33,208,179,0.14)":wknd?SURFACE.borderMuted:"transparent",
@@ -2274,7 +2274,7 @@ export default function UserPortalPage() {
                                 ); })}
                               </div>
                               {gRows.map((r,ri)=>(
-                                <div key={ri} style={{ height:44,display:"grid",gridTemplateColumns:`repeat(${gN},${CELL}px)`,borderBottom: ri<gRows.length-1?"1px solid #f1f5f9":"none",alignItems:"center" }}>
+                                <div key={ri} style={{ height:44,display:"grid",gridTemplateColumns:`repeat(${gN},${CELL}px)`,borderBottom: ri<gRows.length-1?`1px solid ${SURFACE.borderMuted}`:"none",alignItems:"center" }}>
                                   {gDays.map(d=>{
                                     const wknd=d.getDay()===0||d.getDay()===6;
                                     const evs=r.byDay.get(d.getDate());
@@ -2308,9 +2308,9 @@ export default function UserPortalPage() {
                 {/* Vista SEMANA: un solo contenedor; los días sin actividad quedan
                     como fila compacta en vez de tarjetas vacías con "—". */}
                 {calView==="semana" && (
-                  <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+                  <div style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,overflow:"hidden" }}>
                     {weekDays.map(({day,events},di)=>{ const isToday=keyOf(day)===keyOf(now); return (
-                      <div key={keyOf(day)} style={{ borderTop: di===0?"none":"1px solid #f1f5f9" }}>
+                      <div key={keyOf(day)} style={{ borderTop: di===0?"none":`1px solid ${SURFACE.borderMuted}` }}>
                         <div style={{ display:"flex",alignItems:"center",gap:10,padding: events.length?"10px 14px 6px":"9px 14px",
                           background:isToday?"rgba(33,208,179,0.06)":"transparent" }}>
                           <span style={{
@@ -2349,11 +2349,11 @@ export default function UserPortalPage() {
                 {calView==="dia" && (
                   <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
                     {cursorDayItems.length===0 ? (
-                      <div style={{ background:SURFACE.card,borderRadius:14,border:"1px dashed #e2e8f0",padding:"28px 16px",textAlign:"center" }}>
+                      <div style={{ background:SURFACE.card,borderRadius:14,border:`1px dashed ${SURFACE.border}`,padding:"28px 16px",textAlign:"center" }}>
                         <p style={{ fontSize:13,color:SURFACE.textFaint,margin:0 }}>Sin actividades este día</p>
                       </div>
                     ) : cursorDayItems.map(it=>{ const cfg=TYPE_CFG[it.type]; return (
-                      <div key={it.id} style={{ display:"flex",gap:10,padding:"10px 12px",borderRadius:12,background:SURFACE.card,border:"1px solid #e2e8f0",borderLeft:`4px solid ${cfg.color}` }}>
+                      <div key={it.id} style={{ display:"flex",gap:10,padding:"10px 12px",borderRadius:12,background:SURFACE.card,border:`1px solid ${SURFACE.border}`,borderLeft:`4px solid ${cfg.color}` }}>
                         <div style={{ display:"flex",flexDirection:"column",alignItems:"center",flexShrink:0,minWidth:46 }}>
                           <span style={{ fontSize:13,fontWeight:800,color:SURFACE.text }}>{it.date.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})}</span>
                           <span style={{ display:"inline-flex",marginTop:2 }}><cfg.icon size={15} /></span>
@@ -2373,7 +2373,7 @@ export default function UserPortalPage() {
               <div style={{ flex:"0 1 260px",minWidth:230,display:"flex",flexDirection:"column",gap:12 }}>
                 {/* Próxima competencia — lo más valioso, primero (clave en móvil) */}
                 {nextComp && (
-                  <div style={{ background:"linear-gradient(135deg,#fff1f2,#ffffff)",borderRadius:14,border:"1px solid #fecdd3",padding:"14px" }}>
+                  <div style={{ background:`linear-gradient(135deg,#fff1f2,${SURFACE.card})`,borderRadius:14,border:"1px solid #fecdd3",padding:"14px" }}>
                     <p style={{ fontSize:10,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:"#e11d48",margin:0 }}>Próxima competencia</p>
                     <p style={{ fontSize:14,fontWeight:800,color:SURFACE.text,margin:"6px 0 2px" }}>{nextComp.title}</p>
                     <p style={{ fontSize:12,color:SURFACE.textMuted,margin:0 }}>
@@ -2384,7 +2384,7 @@ export default function UserPortalPage() {
                 )}
 
                 {/* Mini calendario — solo escritorio: en móvil duplica la vista Mes */}
-                <div className="hidden lg:block" style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",padding:"12px" }}>
+                <div className="hidden lg:block" style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,padding:"12px" }}>
                   <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8 }}>
                     <button type="button" onClick={() => { setCalMonthCursor(new Date(y,m-1,1)); setCalCursor(new Date(y,m-1,1)); setCalSelectedDay(null); }} style={{ background:"none",border:"none",cursor:"pointer",padding:2 }}>
                       <ChevronLeftIcon size={15} color={SURFACE.textMuted} strokeWidth={2} />
@@ -2418,11 +2418,11 @@ export default function UserPortalPage() {
 
                 {/* Filtros — ocultos para TA: su calendario queda fijo en su disciplina */}
                 {!isTA && (
-                <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",padding:"12px 14px" }}>
+                <div style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,padding:"12px 14px" }}>
                   <p style={{ fontSize:10,fontWeight:800,letterSpacing:"0.14em",textTransform:"uppercase",color:SURFACE.textFaint,margin:"0 0 8px" }}>Filtros</p>
                   <label style={{ fontSize:11,fontWeight:600,color:SURFACE.textMuted }}>Tipo de evento</label>
                   <select value={calTypeFilter} onChange={(e)=>setCalTypeFilter(e.target.value)}
-                    style={{ width:"100%",marginTop:4,padding:"7px 10px",borderRadius:8,border:"1px solid #e2e8f0",fontSize:12,color:SURFACE.text,background:SURFACE.card }}>
+                    style={{ width:"100%",marginTop:4,padding:"7px 10px",borderRadius:8,border:`1px solid ${SURFACE.border}`,fontSize:12,color:SURFACE.text,background:SURFACE.card }}>
                     <option value="">Todos</option>
                     {(Object.keys(TYPE_CFG) as CalType[]).map(tp => <option key={tp} value={tp}>{TYPE_CFG[tp].label}</option>)}
                   </select>
@@ -2431,7 +2431,7 @@ export default function UserPortalPage() {
                     <>
                       <label style={{ fontSize:11,fontWeight:600,color:SURFACE.textMuted,display:"block",marginTop:10 }}>Disciplina</label>
                       <select value={calDiscFilter} onChange={(e)=>setCalDiscFilter(e.target.value)}
-                        style={{ width:"100%",marginTop:4,padding:"7px 10px",borderRadius:8,border:"1px solid #e2e8f0",fontSize:12,color:SURFACE.text,background:SURFACE.card }}>
+                        style={{ width:"100%",marginTop:4,padding:"7px 10px",borderRadius:8,border:`1px solid ${SURFACE.border}`,fontSize:12,color:SURFACE.text,background:SURFACE.card }}>
                         <option value="">Todas las disciplinas</option>
                         {discOptions.map(([id,name]) => <option key={id} value={id}>{name}</option>)}
                       </select>
@@ -2448,7 +2448,7 @@ export default function UserPortalPage() {
 
                 {/* Leyenda — oculta para TA junto con los filtros */}
                 {!isTA && (
-                <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",padding:"12px 14px" }}>
+                <div style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,padding:"12px 14px" }}>
                   <p style={{ fontSize:10,fontWeight:800,letterSpacing:"0.14em",textTransform:"uppercase",color:SURFACE.textFaint,margin:"0 0 8px" }}>Leyenda</p>
                   <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
                     {(Object.keys(TYPE_CFG) as CalType[]).map(tp => (
@@ -2549,7 +2549,7 @@ export default function UserPortalPage() {
             const focused = p.id === premFocusId;
             return (
               <article key={p.id} id={`prem-${p.id}`}
-                style={{ background:isDone ? SURFACE.bg : "linear-gradient(135deg,#fffbeb 0%,#ffffff 70%)",
+                style={{ background:isDone ? SURFACE.bg : `linear-gradient(135deg,#fffbeb 0%,${SURFACE.card} 70%)`,
                   borderRadius:14,border:`1px solid ${focused ? BRAND.teal : isDone?"#e2e8f0":"#f2d98a"}`,borderLeft:`4px solid ${focused ? BRAND.teal : isDone ? "#cbd5e1" : "#e3a808"}`,padding:"12px 14px",
                   boxShadow: focused ? "0 0 0 3px rgba(33,208,179,0.4), 0 8px 24px rgba(33,208,179,0.25)" : isDone ? undefined : "0 2px 10px rgba(199,140,0,0.14)",
                   opacity: isDone ? 0.82 : 1,transition:"box-shadow .4s,border-color .4s" }}>
@@ -2593,7 +2593,7 @@ export default function UserPortalPage() {
                   </span>
                 </div>
                 {cnt > 0 && (
-                  <div style={{ marginTop:10,paddingTop:10,borderTop:"1px dashed #e2e8f0",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap" }}>
+                  <div style={{ marginTop:10,paddingTop:10,borderTop:`1px dashed ${SURFACE.border}`,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap" }}>
                     <span style={{ fontSize:10,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:SURFACE.textFaint }}>Entregadores</span>
                     {(() => {
                       const counts: Record<string, number> = {};
@@ -2620,7 +2620,7 @@ export default function UserPortalPage() {
                   if (!mine) return null;
                   if (mine.confirmedAt) {
                     return (
-                      <div style={{ marginTop:10,paddingTop:10,borderTop:"1px dashed #e2e8f0",display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,flexWrap:"wrap" }}>
+                      <div style={{ marginTop:10,paddingTop:10,borderTop:`1px dashed ${SURFACE.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,flexWrap:"wrap" }}>
                         <span style={{ fontSize:12.5,fontWeight:700,color:STATE.successText,display:"inline-flex",alignItems:"center",gap:6 }}><CheckIcon size={13} />Confirmaste tu asistencia</span>
                         <button type="button" onClick={()=>confirmAwarder(p.id, mine.id!, "DECLINE")}
                           style={{ fontSize:11,fontWeight:600,color:STATE.dangerText,background:"none",border:"none",cursor:"pointer",textDecoration:"underline",padding:0 }}>Ya no puedo asistir</button>
@@ -2629,7 +2629,7 @@ export default function UserPortalPage() {
                   }
                   if (mine.declinedAt) {
                     return (
-                      <div style={{ marginTop:10,paddingTop:10,borderTop:"1px dashed #e2e8f0",display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,flexWrap:"wrap" }}>
+                      <div style={{ marginTop:10,paddingTop:10,borderTop:`1px dashed ${SURFACE.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,flexWrap:"wrap" }}>
                         <span style={{ fontSize:12.5,fontWeight:700,color:STATE.dangerText,display:"inline-flex",alignItems:"center",gap:6 }}><XIcon size={13} />Rechazaste la asistencia</span>
                         <button type="button" onClick={()=>confirmAwarder(p.id, mine.id!, "CONFIRM")}
                           style={{ fontSize:11,fontWeight:600,color:STATE.successText,background:"none",border:"none",cursor:"pointer",textDecoration:"underline",padding:0 }}>Confirmar asistencia</button>
@@ -2637,7 +2637,7 @@ export default function UserPortalPage() {
                     );
                   }
                   return (
-                    <div style={{ marginTop:10,paddingTop:10,borderTop:"1px dashed #e2e8f0" }}>
+                    <div style={{ marginTop:10,paddingTop:10,borderTop:`1px dashed ${SURFACE.border}` }}>
                       <span style={{ fontSize:10,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:"#a87800" }}>Confirma tu asistencia</span>
                       <div style={{ display:"flex",gap:8,marginTop:6 }}>
                         <button type="button" onClick={()=>confirmAwarder(p.id, mine.id!, "CONFIRM")}
@@ -2654,7 +2654,7 @@ export default function UserPortalPage() {
 
           return (
             <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
-              <div style={{ background:"linear-gradient(135deg,#fffbf2 0%,#ffffff 70%)",borderRadius:14,border:"1px solid #f0deb0",padding:"14px 16px",display:"flex",alignItems:"center",gap:12 }}>
+              <div style={{ background:`linear-gradient(135deg,#fffbf2 0%,${SURFACE.card} 70%)`,borderRadius:14,border:"1px solid #f0deb0",padding:"14px 16px",display:"flex",alignItems:"center",gap:12 }}>
                 <div style={{ width:42,height:42,borderRadius:12,background:"linear-gradient(135deg,#d4a017 0%,#f5c842 50%,#e3a808 100%)",display:"flex",alignItems:"center",justifyContent:"center",color:SURFACE.card,flexShrink:0,boxShadow:"0 4px 12px rgba(199,140,0,0.35)" }}>
                   <TrophyIcon size={22} strokeWidth={2} />
                 </div>
@@ -2664,7 +2664,7 @@ export default function UserPortalPage() {
                 </div>
               </div>
 
-              <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",padding:"10px",display:"flex",flexDirection:"column",gap:8 }}>
+              <div style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,padding:"10px",display:"flex",flexDirection:"column",gap:8 }}>
                 {/* View toggle */}
                 <div style={{ display:"flex",gap:0,background:SURFACE.borderMuted,borderRadius:10,padding:3 }}>
                   {([
@@ -2694,7 +2694,7 @@ export default function UserPortalPage() {
                 <div style={{ position:"relative" }}>
                   <SearchIcon size={14} color={SURFACE.textFaint} strokeWidth={2} style={{ position:"absolute",top:"50%",left:10,transform:"translateY(-50%)",pointerEvents:"none" }} />
                   <input type="text" value={premSearchQuery} onChange={e => setPremSearchQuery(e.target.value)} placeholder="Buscar premiación, disciplina, sede..."
-                    style={{ width:"100%",padding:"9px 10px 9px 32px",borderRadius:10,border:"1px solid #e2e8f0",fontSize:13,outline:"none",background:SURFACE.bg,boxSizing:"border-box" }} />
+                    style={{ width:"100%",padding:"9px 10px 9px 32px",borderRadius:10,border:`1px solid ${SURFACE.border}`,fontSize:13,outline:"none",background:SURFACE.bg,boxSizing:"border-box" }} />
                 </div>
                 <div style={{ display:"flex",gap:6,flexWrap:"wrap" }}>
                   {([
@@ -2707,7 +2707,7 @@ export default function UserPortalPage() {
                     const isProg = opt.v === "PROGRAMADA";
                     return (
                       <button key={opt.v||"all"} type="button" onClick={() => setPremStatusFilter(opt.v)}
-                        style={{ padding:"6px 11px",borderRadius:20,border:active ? `1px solid ${isDone?"#2e7d32":isProg?"#c78c00":BRAND.teal}` : "1px solid #e2e8f0",
+                        style={{ padding:"6px 11px",borderRadius:20,border:active ? `1px solid ${isDone?"#2e7d32":isProg?"#c78c00":BRAND.teal}` : `1px solid ${SURFACE.border}`,
                           background:active ? (isDone?"#e7f5ec":isProg?"#fff4d6":"rgba(33,208,179,0.12)") : SURFACE.card,
                           color:active ? (isDone?"#1e5125":isProg?"#7a4a00":BRAND.tealInk) : SURFACE.textSecondary,
                           fontSize:11,fontWeight:700,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6,letterSpacing:"0.02em" }}>
@@ -2721,14 +2721,14 @@ export default function UserPortalPage() {
                   <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:6 }}>
                     {disciplineOpts.length > 0 && (
                       <select value={premDisciplineFilter} onChange={e => setPremDisciplineFilter(e.target.value)}
-                        style={{ padding:"8px 10px",borderRadius:10,border:"1px solid #e2e8f0",fontSize:12,background:SURFACE.bg,color:SURFACE.text,outline:"none",fontWeight:500 }}>
+                        style={{ padding:"8px 10px",borderRadius:10,border:`1px solid ${SURFACE.border}`,fontSize:12,background:SURFACE.bg,color:SURFACE.text,outline:"none",fontWeight:500 }}>
                         <option value="">Todas las disciplinas</option>
                         {disciplineOpts.map(d => <option key={d} value={d}>{d}</option>)}
                       </select>
                     )}
                     {venueOpts.length > 0 && (
                       <select value={premVenueFilter} onChange={e => setPremVenueFilter(e.target.value)}
-                        style={{ padding:"8px 10px",borderRadius:10,border:"1px solid #e2e8f0",fontSize:12,background:SURFACE.bg,color:SURFACE.text,outline:"none",fontWeight:500 }}>
+                        style={{ padding:"8px 10px",borderRadius:10,border:`1px solid ${SURFACE.border}`,fontSize:12,background:SURFACE.bg,color:SURFACE.text,outline:"none",fontWeight:500 }}>
                         <option value="">Todas las sedes</option>
                         {venueOpts.map(v => <option key={v} value={v}>{v}</option>)}
                       </select>
@@ -2825,12 +2825,12 @@ export default function UserPortalPage() {
                         {selectedItems.map(p => renderPremCard(p))}
                       </div>
                     ) : (
-                      <div style={{ background:SURFACE.card,borderRadius:14,border:"1px dashed #e2e8f0",padding:"20px",textAlign:"center" }}>
+                      <div style={{ background:SURFACE.card,borderRadius:14,border:`1px dashed ${SURFACE.border}`,padding:"20px",textAlign:"center" }}>
                         <p style={{ fontSize:13,color:SURFACE.textFaint,margin:0 }}>Sin premiaciones este día</p>
                       </div>
                     )
                   ) : (
-                    <div style={{ background:SURFACE.card,borderRadius:14,border:"1px dashed #e2e8f0",padding:"20px",textAlign:"center" }}>
+                    <div style={{ background:SURFACE.card,borderRadius:14,border:`1px dashed ${SURFACE.border}`,padding:"20px",textAlign:"center" }}>
                       <p style={{ fontSize:13,color:SURFACE.textFaint,margin:0 }}>Selecciona un día para ver sus premiaciones</p>
                     </div>
                   )}
@@ -2840,7 +2840,7 @@ export default function UserPortalPage() {
               {/* List view */}
               {premView === "list" && (
                 visible.length === 0 ? (
-                  <div style={{ background:SURFACE.card,borderRadius:14,border:"1px dashed #e2e8f0",padding:"28px 20px",textAlign:"center" }}>
+                  <div style={{ background:SURFACE.card,borderRadius:14,border:`1px dashed ${SURFACE.border}`,padding:"28px 20px",textAlign:"center" }}>
                     <p style={{ margin:"0 0 8px",color:SURFACE.borderStrong,display:"flex",justifyContent:"center" }}><TrophyIcon size={32} /></p>
                     <p style={{ fontSize:13,color:SURFACE.textFaint,margin:0 }}>
                       {hasFilters ? "No hay premiaciones con esos filtros" : "Sin premiaciones cargadas"}
@@ -2871,10 +2871,10 @@ export default function UserPortalPage() {
                     ))}
                     {doneDays.length > 0 && (
                       <button type="button" onClick={() => setPremDoneOpen(v => !v)}
-                        style={{ display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:12,background:SURFACE.borderMuted,border:"1px solid #e2e8f0",marginTop: pendingDays.length > 0 ? 6 : 0,cursor:"pointer",width:"100%",textAlign:"left" }}>
+                        style={{ display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:12,background:SURFACE.borderMuted,border:`1px solid ${SURFACE.border}`,marginTop: pendingDays.length > 0 ? 6 : 0,cursor:"pointer",width:"100%",textAlign:"left" }}>
                         <span style={{ width:8,height:8,borderRadius:"50%",background:"#2e7d32",flexShrink:0 }} />
                         <p style={{ fontSize:11.5,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:SURFACE.textMuted,margin:0 }}>Realizadas</p>
-                        <span style={{ marginLeft:"auto",fontSize:10,fontWeight:800,padding:"2px 9px",borderRadius:99,background:SURFACE.card,color:SURFACE.textMuted,border:"1px solid #e2e8f0" }}>
+                        <span style={{ marginLeft:"auto",fontSize:10,fontWeight:800,padding:"2px 9px",borderRadius:99,background:SURFACE.card,color:SURFACE.textMuted,border:`1px solid ${SURFACE.border}` }}>
                           {doneDays.reduce((s,[,items]) => s + items.length, 0)}
                         </span>
                         <ChevronDownIcon size={14} color={SURFACE.textMuted} strokeWidth={2.5} style={{ flexShrink:0,transform:premDoneOpen?"rotate(180deg)":"none",transition:"transform .2s" }} />
@@ -2882,10 +2882,10 @@ export default function UserPortalPage() {
                     )}
                     {premDoneOpen && doneDays.map(([day, items]) => (
                       <div key={day} style={{ display:"flex",flexDirection:"column",gap:6 }}>
-                        <div style={{ position:"sticky",top:0,zIndex:2,background:"linear-gradient(180deg,#f8fafc 0%,rgba(248,250,252,0.92) 100%)",backdropFilter:"blur(6px)",padding:"6px 10px",borderRadius:10,display:"flex",alignItems:"center",gap:8,border:"1px solid #e2e8f0" }}>
+                        <div style={{ position:"sticky",top:0,zIndex:2,background:`linear-gradient(180deg,${SURFACE.bg} 0%,rgba(248,250,252,0.92) 100%)`,backdropFilter:"blur(6px)",padding:"6px 10px",borderRadius:10,display:"flex",alignItems:"center",gap:8,border:`1px solid ${SURFACE.border}` }}>
                           <div style={{ width:6,height:6,borderRadius:"50%",background:SURFACE.textFaint }} />
                           <p style={{ fontSize:11,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",color:SURFACE.textMuted,margin:0 }}>{fmtDateLong(day)}</p>
-                          <span style={{ marginLeft:"auto",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:SURFACE.card,color:SURFACE.textMuted,border:"1px solid #e2e8f0" }}>{items.length}</span>
+                          <span style={{ marginLeft:"auto",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:SURFACE.card,color:SURFACE.textMuted,border:`1px solid ${SURFACE.border}` }}>{items.length}</span>
                         </div>
                         {items.map(p => renderPremCard(p))}
                       </div>
@@ -2907,7 +2907,7 @@ export default function UserPortalPage() {
               const isOpen = expandedItemId === `venue-${v.id}`;
               const addr = [v.address, v.commune, v.region].filter(Boolean).join(", ");
               return (
-                <div key={v.id} style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+                <div key={v.id} style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,overflow:"hidden" }}>
                   <button type="button" onClick={() => setExpandedItemId(isOpen?null:`venue-${v.id}`)}
                     style={{ width:"100%",display:"flex",alignItems:"center",gap:10,padding:"12px 14px",background:"none",border:"none",cursor:"pointer",textAlign:"left" }}>
                     <PinIcon size={16} color={BRAND.teal} strokeWidth={2} />
@@ -2936,7 +2936,7 @@ export default function UserPortalPage() {
               const isOpen = expandedItemId === `hotel-${h.id}`;
               const addr = [h.address, h.city, h.country].filter(Boolean).join(", ");
               return (
-                <div key={h.id} style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+                <div key={h.id} style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,overflow:"hidden" }}>
                   <button type="button" onClick={() => setExpandedItemId(isOpen?null:`hotel-${h.id}`)}
                     style={{ width:"100%",display:"flex",alignItems:"center",gap:10,padding:"12px 14px",background:"none",border:"none",cursor:"pointer",textAlign:"left" }}>
                     <IcoHotel />
@@ -3017,8 +3017,8 @@ export default function UserPortalPage() {
                 return { bg: SURFACE.borderMuted, color: SURFACE.textSecondary, border: SURFACE.border, icon: UtensilsCrossedIcon, label: type };
               };
               return (
-                <div style={{ background:SURFACE.card,borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)" }}>
-                  <div style={{ padding:"14px 16px",background:"linear-gradient(135deg,rgba(33,208,179,0.08),rgba(33,208,179,0.02))",borderBottom:"1px solid #e2e8f0",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+                <div style={{ background:SURFACE.card,borderRadius:16,border:`1px solid ${SURFACE.border}`,overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)" }}>
+                  <div style={{ padding:"14px 16px",background:"linear-gradient(135deg,rgba(33,208,179,0.08),rgba(33,208,179,0.02))",borderBottom:`1px solid ${SURFACE.border}`,display:"flex",alignItems:"center",justifyContent:"space-between" }}>
                     <div style={{ display:"flex",alignItems:"center",gap:8 }}>
                       <div style={{ width:32,height:32,borderRadius:10,background:"rgba(33,208,179,0.12)",display:"flex",alignItems:"center",justifyContent:"center" }}>
                         <CoffeeIcon size={16} color={BRAND.teal} strokeWidth={2} />
@@ -3032,7 +3032,7 @@ export default function UserPortalPage() {
                   {sorted.length > 0 ? sorted.map((fm, i) => {
                     const m = mealStyle(fm.mealType);
                     return (
-                      <div key={fm.id} style={{ padding:"14px 16px",borderTop:i>0?"1px solid #f1f5f9":"none",display:"flex",gap:12,alignItems:"flex-start" }}>
+                      <div key={fm.id} style={{ padding:"14px 16px",borderTop:i>0?`1px solid ${SURFACE.borderMuted}`:"none",display:"flex",gap:12,alignItems:"flex-start" }}>
                         <div style={{ width:40,height:40,borderRadius:10,background:m.bg,border:`1px solid ${m.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0 }}>
                           <m.icon size={16} />
                         </div>
@@ -3077,8 +3077,8 @@ export default function UserPortalPage() {
                 return { bg: SURFACE.borderMuted, color: SURFACE.textSecondary, border: SURFACE.border, icon: UtensilsCrossedIcon, label: type };
               };
               return (
-                <div style={{ background:SURFACE.card,borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)",opacity:0.85 }}>
-                  <div style={{ padding:"12px 16px",background:SURFACE.bg,borderBottom:"1px solid #e2e8f0",display:"flex",alignItems:"center",gap:8 }}>
+                <div style={{ background:SURFACE.card,borderRadius:16,border:`1px solid ${SURFACE.border}`,overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)",opacity:0.85 }}>
+                  <div style={{ padding:"12px 16px",background:SURFACE.bg,borderBottom:`1px solid ${SURFACE.border}`,display:"flex",alignItems:"center",gap:8 }}>
                     <CalendarIcon size={14} color={SURFACE.textMuted} strokeWidth={2} />
                     <div>
                       <p style={{ fontSize:13,fontWeight:700,color:SURFACE.text,margin:0 }}>Menú de mañana</p>
@@ -3088,7 +3088,7 @@ export default function UserPortalPage() {
                   {sorted.length > 0 ? sorted.map((fm, i) => {
                     const m = mealStyle(fm.mealType);
                     return (
-                      <div key={fm.id} style={{ padding:"12px 16px",borderTop:i>0?"1px solid #f1f5f9":"none",display:"flex",gap:12,alignItems:"flex-start" }}>
+                      <div key={fm.id} style={{ padding:"12px 16px",borderTop:i>0?`1px solid ${SURFACE.borderMuted}`:"none",display:"flex",gap:12,alignItems:"flex-start" }}>
                         <div style={{ width:36,height:36,borderRadius:8,background:m.bg,border:`1px solid ${m.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0 }}>
                           <m.icon size={16} />
                         </div>
@@ -3122,8 +3122,8 @@ export default function UserPortalPage() {
               return (
               <>
               {myLocations.length > 0 && (
-              <div style={{ background:SURFACE.card,borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)" }}>
-                <div style={{ padding:"14px 16px",background:"linear-gradient(135deg,rgba(33,208,179,0.06),rgba(31,205,255,0.04))",borderBottom:"1px solid #e2e8f0" }}>
+              <div style={{ background:SURFACE.card,borderRadius:16,border:`1px solid ${SURFACE.border}`,overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)" }}>
+                <div style={{ padding:"14px 16px",background:"linear-gradient(135deg,rgba(33,208,179,0.06),rgba(31,205,255,0.04))",borderBottom:`1px solid ${SURFACE.border}` }}>
                   <div style={{ display:"flex",alignItems:"center",gap:8 }}>
                     <PinIcon size={16} color={BRAND.teal} strokeWidth={2} />
                     <p style={{ fontSize:13,fontWeight:700,color:SURFACE.text,margin:0 }}>Tus lugares de comida</p>
@@ -3134,7 +3134,7 @@ export default function UserPortalPage() {
                   const mapQuery = [acc?.name || fl.name, acc?.address].filter(Boolean).join(", ");
                   const isOpen = expandedItemId === `food-${fl.id}`;
                   return (
-                  <div key={fl.id} style={{ borderTop:i>0?"1px solid #f1f5f9":"none" }}>
+                  <div key={fl.id} style={{ borderTop:i>0?`1px solid ${SURFACE.borderMuted}`:"none" }}>
                     <div style={{ padding:"12px 16px",display:"flex",alignItems:"center",gap:12 }}>
                       <div style={{ width:36,height:36,borderRadius:10,background:"rgba(33,208,179,0.08)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
                         <CoffeeIcon size={16} color={BRAND.teal} strokeWidth={2} />
@@ -3162,7 +3162,7 @@ export default function UserPortalPage() {
               </div>
               )}
               {myLocations.length === 0 && (
-              <div style={{ background:SURFACE.card,borderRadius:16,border:"1px dashed #e2e8f0",padding:24,textAlign:"center" }}>
+              <div style={{ background:SURFACE.card,borderRadius:16,border:`1px dashed ${SURFACE.border}`,padding:24,textAlign:"center" }}>
                 <CoffeeIcon size={28} color={SURFACE.borderStrong} strokeWidth={1.5} style={{ margin:"0 auto 8px" }} />
                 <p style={{ fontSize:13,fontWeight:600,color:SURFACE.textFaint,margin:0 }}>{loading ? "Cargando lugares de comida…" : "No hay lugares asignados a tu perfil"}</p>
               </div>
@@ -3177,13 +3177,13 @@ export default function UserPortalPage() {
         {/* ─── Mi Delegación tab ─── */}
         {activeTab === "delegacion" && isChief && (
           <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
-            <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",padding:"14px",borderLeft:"4px solid #f59e0b" }}>
+            <div style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,padding:"14px",borderLeft:`4px solid ${STATE.warning}` }}>
               <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:STATE.warning,margin:"0 0 6px" }}>Mi Delegación</p>
               <p style={{ fontSize:13,fontWeight:700,color:SURFACE.text,margin:0 }}>{delegation ? (countryLabels[delegation.countryCode] || delegation.countryCode) : "—"}</p>
               <p style={{ fontSize:12,color:SURFACE.textMuted,margin:"3px 0 0" }}>{delegationMembers.length} deportista(s) registrado(s)</p>
             </div>
             {delegationMembers.length === 0 ? (
-              <div style={{ padding:20,textAlign:"center",background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0" }}>
+              <div style={{ padding:20,textAlign:"center",background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}` }}>
                 <p style={{ fontSize:13,color:SURFACE.textFaint,margin:0 }}>No hay otros participantes en tu delegación.</p>
               </div>
             ) : (
@@ -3199,7 +3199,7 @@ export default function UserPortalPage() {
                     : accreditation === "REJECTED" ? "Acreditación rechazada"
                     : accreditation ? "Acreditación pendiente" : null;
                   return (
-                    <div key={m.id} style={{ background:SURFACE.card,borderRadius:12,border:"1px solid #e2e8f0",padding:"10px 14px",display:"flex",alignItems:"flex-start",gap:10 }}>
+                    <div key={m.id} style={{ background:SURFACE.card,borderRadius:12,border:`1px solid ${SURFACE.border}`,padding:"10px 14px",display:"flex",alignItems:"flex-start",gap:10 }}>
                       <div style={{ width:36,height:36,borderRadius:"50%",background:SURFACE.borderMuted,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:SURFACE.textMuted,flexShrink:0 }}>
                         {(m.fullName || "?").split(" ").slice(0,2).map(w => w[0] || "").join("").toUpperCase()}
                       </div>
@@ -3232,7 +3232,7 @@ export default function UserPortalPage() {
         {activeTab === "cupones" && (
           <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
             {/* Sub-tabs */}
-            <div className="rounded-2xl p-1 flex gap-1" style={{ background:SURFACE.card, border:"1px solid #e2e8f0", boxShadow:"0 1px 4px rgba(15,23,42,0.05)" }}>
+            <div className="rounded-2xl p-1 flex gap-1" style={{ background:SURFACE.card, border:`1px solid ${SURFACE.border}`, boxShadow:"0 1px 4px rgba(15,23,42,0.05)" }}>
               <button type="button" onClick={() => setCouponTab("available")}
                 className="flex-1 py-2.5 px-3 rounded-xl text-sm font-bold transition-all inline-flex items-center justify-center gap-2"
                 style={{
@@ -3277,7 +3277,7 @@ export default function UserPortalPage() {
 
             {couponTab === "available" ? (
               visibleCouponsAvailable.length === 0 ? (
-                <div style={{ padding:24, textAlign:"center", background:SURFACE.card, borderRadius:14, border:"1px solid #e2e8f0" }}>
+                <div style={{ padding:24, textAlign:"center", background:SURFACE.card, borderRadius:14, border:`1px solid ${SURFACE.border}` }}>
                   <p style={{ fontSize:14, fontWeight:600, color:SURFACE.text, margin:0 }}>No hay beneficios disponibles</p>
                   <p style={{ fontSize:12, color:SURFACE.textFaint, margin:"6px 0 0" }}>Vuelve a chequear más tarde, vamos a estar agregando beneficios durante el evento.</p>
                 </div>
@@ -3362,7 +3362,7 @@ export default function UserPortalPage() {
                         <button type="button" disabled={exhausted || couponClaiming === c.id} onClick={() => claimCoupon(c.id)}
                           style={{
                             width:"100%", marginTop:10, padding:"12px 0", border:"none", fontSize:13, fontWeight:800, color:SURFACE.card,
-                            background: exhausted ? "linear-gradient(135deg,#94a3b8 0%,#64748b 100%)" : `linear-gradient(135deg, ${cat.color} 0%, ${cat.color}dd 100%)`,
+                            background: exhausted ? `linear-gradient(135deg,${SURFACE.textFaint} 0%,${SURFACE.textMuted} 100%)` : `linear-gradient(135deg, ${cat.color} 0%, ${cat.color}dd 100%)`,
                             cursor: exhausted ? "not-allowed" : "pointer", letterSpacing:"0.02em",
                             display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
                           }}>
@@ -3386,7 +3386,7 @@ export default function UserPortalPage() {
                 </div>
               )
             ) : couponClaims.length === 0 ? (
-              <div style={{ padding:24, textAlign:"center", background:SURFACE.card, borderRadius:14, border:"1px solid #e2e8f0" }}>
+              <div style={{ padding:24, textAlign:"center", background:SURFACE.card, borderRadius:14, border:`1px solid ${SURFACE.border}` }}>
                 <p style={{ fontSize:14, fontWeight:600, color:SURFACE.text, margin:0 }}>Todavía no reclamaste ningún beneficio</p>
                 <p style={{ fontSize:12, color:SURFACE.textFaint, margin:"6px 0 0" }}>Ve a la pestaña Disponibles y reclama los que quieras.</p>
               </div>
@@ -3397,7 +3397,7 @@ export default function UserPortalPage() {
                   const cat = coupon ? (COUPON_CATEGORIES[coupon.category] || COUPON_CATEGORIES.OTHER) : COUPON_CATEGORIES.OTHER;
                   const statusMeta = COUPON_STATUS_META[c.status];
                   return (
-                    <article key={c.id} style={{ background:SURFACE.card, borderRadius:14, overflow:"hidden", border:"1px solid #e2e8f0", borderLeft:`5px solid ${cat.color}` }}>
+                    <article key={c.id} style={{ background:SURFACE.card, borderRadius:14, overflow:"hidden", border:`1px solid ${SURFACE.border}`, borderLeft:`5px solid ${cat.color}` }}>
                       <button type="button" onClick={() => c.status === "CLAIMED" && setActiveClaim(c)}
                         style={{ width:"100%", textAlign:"left", padding:"12px 14px", background:"none", border:"none", cursor: c.status === "CLAIMED" ? "pointer" : "default" }}>
                         <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:12 }}>
@@ -3452,7 +3452,7 @@ export default function UserPortalPage() {
         {activeTab === "cuenta" && (
           <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
             {/* Info rows */}
-            <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+            <div style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,overflow:"hidden" }}>
               {([
                 { icon:<UserIcon size={14} color={BRAND.teal} strokeWidth={2} />, label:"Nombre", value:athlete.fullName },
                 { icon:<MailIcon size={14} color={BRAND.teal} strokeWidth={2} />, label:"Correo", value:athlete.email || "—" },
@@ -3464,7 +3464,7 @@ export default function UserPortalPage() {
                 { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={athlete.isDelegationLead ? STATE.warning : BRAND.teal} strokeWidth="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>, label:"Rol", value:athlete.isDelegationLead ? "Jefe de Delegación" : "Participante" },
                 { icon:<LockIcon size={14} color={BRAND.teal} strokeWidth={2} />, label:"ID", value:athlete.id.slice(-6).toUpperCase() },
               ]).map((r,i) => (
-                <div key={r.label} style={{ display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderTop:i>0?"1px solid #f1f5f9":"none" }}>
+                <div key={r.label} style={{ display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderTop:i>0?`1px solid ${SURFACE.borderMuted}`:"none" }}>
                   <span style={{ flexShrink:0 }}>{r.icon}</span>
                   <div style={{ flex:1,minWidth:0,display:"flex",alignItems:"baseline",gap:6 }}>
                     <span style={{ fontSize:10,fontWeight:700,color:SURFACE.textFaint,textTransform:"uppercase",flexShrink:0 }}>{r.label}</span>
@@ -3536,7 +3536,7 @@ export default function UserPortalPage() {
             />
             {/* Health form link */}
             <a href={`/portal/athlete/salud?id=${athlete.id}`}
-              style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:8,padding:14,borderRadius:12,background:SURFACE.card,border:"1px solid #e2e8f0",color:SURFACE.text,fontSize:13,fontWeight:700,textDecoration:"none" }}>
+              style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:8,padding:14,borderRadius:12,background:SURFACE.card,border:`1px solid ${SURFACE.border}`,color:SURFACE.text,fontSize:13,fontWeight:700,textDecoration:"none" }}>
               <ActivityIcon size={16} color={BRAND.teal} strokeWidth={2} />
               Ficha de salud
               {healthRecord ? <span style={{ fontSize:10,padding:"2px 8px",borderRadius:6,background:"rgba(33,208,179,0.1)",color:BRAND.tealInk }}>Completada</span> : <span style={{ fontSize:10,padding:"2px 8px",borderRadius:6,background:"#FEF3C7",color:"#92400E" }}>Pendiente</span>}
@@ -3549,7 +3549,7 @@ export default function UserPortalPage() {
             <DevicePermissionsSection />
             {/* Logout */}
             <button type="button" onClick={() => { if (athlete) clearPortalSession("athlete", athlete.id); setAthlete(null); setAthleteId(""); try { sessionStorage.removeItem("portal_user_id"); } catch {} clearPersistedTabs(); setActiveTab("itinerario"); }}
-              style={{ width:"100%",padding:12,borderRadius:12,border:"1px solid #e2e8f0",background:SURFACE.card,color:STATE.danger,fontSize:13,fontWeight:600,cursor:"pointer" }}>
+              style={{ width:"100%",padding:12,borderRadius:12,border:`1px solid ${SURFACE.border}`,background:SURFACE.card,color:STATE.danger,fontSize:13,fontWeight:600,cursor:"pointer" }}>
               Cerrar sesión
             </button>
             {/* Eliminar cuenta */}
@@ -3568,7 +3568,7 @@ export default function UserPortalPage() {
         </div>{/* end tab content */}
 
         {/* ── Bottom tab bar ── */}
-        <div style={{ position:"fixed",bottom:0,left:0,right:0,display:"flex",background:SURFACE.card,borderTop:"1px solid #e2e8f0",zIndex:100,paddingTop:6,paddingBottom:6,boxShadow:"0 -2px 12px rgba(0,0,0,0.06)" }}>
+        <div style={{ position:"fixed",bottom:0,left:0,right:0,display:"flex",background:SURFACE.card,borderTop:`1px solid ${SURFACE.border}`,zIndex:100,paddingTop:6,paddingBottom:6,boxShadow:"0 -2px 12px rgba(0,0,0,0.06)" }}>
           {primaryTabs.map(tab => (
             <button key={tab.key} type="button" onClick={() => setActiveTab(tab.key)}
               style={{ flex:1,padding:"4px 0 2px",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,
@@ -3667,8 +3667,8 @@ export default function UserPortalPage() {
                 <p className="db-card-title" style={{ fontSize:"17px",fontWeight:800,color:SURFACE.text,margin:"0 0 8px",letterSpacing:"-0.01em" }}>{hotel.name}</p>
                 <div style={{ display:"flex",flexWrap:"wrap",gap:"4px" }}>
                   {hotelRoom_ && <span style={{ fontSize:"10px",padding:"3px 8px",borderRadius:"6px",background:"#f0fdf8",color:BRAND.tealInk,border:"1px solid rgba(33,208,179,0.2)",fontWeight:600 }}>Hab. {hotelRoom_}</span>}
-                  {hotelBed_ && <span style={{ fontSize:"10px",padding:"3px 8px",borderRadius:"6px",background:SURFACE.borderMuted,color:SURFACE.textSecondary,border:"1px solid #e2e8f0",fontWeight:500 }}>Cama {hotelBed_}</span>}
-                  {luggage_ && <span style={{ display:"inline-flex",alignItems:"center",gap:"3px",fontSize:"10px",padding:"3px 8px",borderRadius:"6px",background:SURFACE.borderMuted,color:SURFACE.textSecondary,border:"1px solid #e2e8f0",fontWeight:500 }}><IcoBag />{luggage_}</span>}
+                  {hotelBed_ && <span style={{ fontSize:"10px",padding:"3px 8px",borderRadius:"6px",background:SURFACE.borderMuted,color:SURFACE.textSecondary,border:`1px solid ${SURFACE.border}`,fontWeight:500 }}>Cama {hotelBed_}</span>}
+                  {luggage_ && <span style={{ display:"inline-flex",alignItems:"center",gap:"3px",fontSize:"10px",padding:"3px 8px",borderRadius:"6px",background:SURFACE.borderMuted,color:SURFACE.textSecondary,border:`1px solid ${SURFACE.border}`,fontWeight:500 }}><IcoBag />{luggage_}</span>}
                 </div>
               </>
             ) : (
@@ -3722,7 +3722,7 @@ export default function UserPortalPage() {
                       {scheduledFmt}
                     </p>
                   )}
-                  <div style={{ borderTop:"1px solid #f1f5f9",paddingTop:"10px",display:"flex",flexDirection:"column",gap:"5px" }}>
+                  <div style={{ borderTop:`1px solid ${SURFACE.borderMuted}`,paddingTop:"10px",display:"flex",flexDirection:"column",gap:"5px" }}>
                     {driver?.fullName && (
                       <p style={{ fontSize:"13px",color:SURFACE.textStrong,margin:0,display:"flex",alignItems:"center",gap:"6px" }}>
                         <UserIcon size={13} color="#0ea5c8" strokeWidth={2} />
@@ -3754,7 +3754,7 @@ export default function UserPortalPage() {
             <div style={{ position:"absolute",top:0,right:0,width:"120px",height:"120px",borderRadius:"50%",background:"radial-gradient(ellipse,rgba(33,208,179,0.05) 0%,transparent 70%)",transform:"translate(30px,-30px)",pointerEvents:"none" }} />
             <div className="db-card-header" style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"14px" }}>
               <div style={{ display:"flex",alignItems:"center",gap:"12px" }}>
-                <div className="db-card-icon" style={{ width:"40px",height:"40px",borderRadius:"12px",background:"linear-gradient(135deg,#f8fafc,#f1f5f9)",border:"1px solid #e2e8f0",display:"flex",alignItems:"center",justifyContent:"center",color:SURFACE.textMuted,flexShrink:0 }}>
+                <div className="db-card-icon" style={{ width:"40px",height:"40px",borderRadius:"12px",background:`linear-gradient(135deg,${SURFACE.bg},${SURFACE.borderMuted})`,border:`1px solid ${SURFACE.border}`,display:"flex",alignItems:"center",justifyContent:"center",color:SURFACE.textMuted,flexShrink:0 }}>
                   <IcoCheck />
                 </div>
                 <span style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:SURFACE.textSecondary }}>{t("Check-ins")}</span>
@@ -3880,7 +3880,7 @@ export default function UserPortalPage() {
                 const parentName = ce.parentId ? (discLabelMap.get(ce.parentId) || "") : "";
                 const isPast = new Date(ce.scheduledAt!) < new Date();
                 return (
-                  <div key={ce.id} style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:"1px solid #f1f5f9",opacity:isPast ? 0.5 : 1 }}>
+                  <div key={ce.id} style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}`,opacity:isPast ? 0.5 : 1 }}>
                     <span style={{ width:8,height:8,borderRadius:"50%",background:isPast ? SURFACE.textFaint : BRAND.teal,flexShrink:0 }} />
                     <div style={{ flex:1,minWidth:0 }}>
                       <p style={{ fontSize:12.5,fontWeight:600,color:SURFACE.text,margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
@@ -3958,7 +3958,7 @@ export default function UserPortalPage() {
                 <button
                   type="button"
                   onClick={() => setShowTripModal(false)}
-                  style={{ width:36,height:36,borderRadius:"50%",border:"1px solid #e2e8f0",background:SURFACE.bg,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0 }}>
+                  style={{ width:36,height:36,borderRadius:"50%",border:`1px solid ${SURFACE.border}`,background:SURFACE.bg,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0 }}>
                   <XIcon size={16} color={SURFACE.textMuted} strokeWidth={2} />
                 </button>
               </div>
@@ -4016,7 +4016,7 @@ export default function UserPortalPage() {
                 )}
                 {/* Notes */}
                 {trip.notes && (
-                  <div style={{ padding:"12px 16px",borderRadius:"12px",background:SURFACE.bg,border:"1px solid #e2e8f0",fontSize:"13px",color:SURFACE.textSecondary }}>
+                  <div style={{ padding:"12px 16px",borderRadius:"12px",background:SURFACE.bg,border:`1px solid ${SURFACE.border}`,fontSize:"13px",color:SURFACE.textSecondary }}>
                     <strong style={{ color:SURFACE.text }}>Notas:</strong> {trip.notes}
                   </div>
                 )}
@@ -4059,7 +4059,7 @@ export default function UserPortalPage() {
                 onChange={(e) => setRatingComment(e.target.value)}
                 placeholder="Comentario opcional..."
                 rows={2}
-                style={{ width:"100%",padding:12,borderRadius:12,border:"1px solid #e2e8f0",fontSize:14,resize:"none",outline:"none",boxSizing:"border-box",marginBottom:16,fontFamily:"inherit" }}
+                style={{ width:"100%",padding:12,borderRadius:12,border:`1px solid ${SURFACE.border}`,fontSize:14,resize:"none",outline:"none",boxSizing:"border-box",marginBottom:16,fontFamily:"inherit" }}
               />
               {/* Submit */}
               <button type="button" onClick={submitRating} disabled={ratingStars === 0 || ratingLoading}
@@ -4083,7 +4083,7 @@ export default function UserPortalPage() {
               <div style={{ display:"flex", justifyContent:"center", padding:"12px 0 4px" }}>
                 <div style={{ width:40, height:4, borderRadius:4, background:SURFACE.border }} />
               </div>
-              <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", padding:"8px 20px 12px", borderBottom:"1px solid #f1f5f9" }}>
+              <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", padding:"8px 20px 12px", borderBottom:`1px solid ${SURFACE.borderMuted}` }}>
                 <div style={{ flex:1, minWidth:0 }}>
                   <p style={{ fontSize:10, fontWeight:700, letterSpacing:"0.2em", textTransform:"uppercase", color:SURFACE.textMuted, margin:0 }}>Tu beneficio</p>
                   <h2 style={{ fontSize:18, fontWeight:800, color:SURFACE.text, margin:"2px 0 0", lineHeight:1.2 }}>{activeClaim.coupon?.title}</h2>
@@ -4092,7 +4092,7 @@ export default function UserPortalPage() {
                   )}
                 </div>
                 <button type="button" onClick={() => setActiveClaim(null)}
-                  style={{ width:32, height:32, borderRadius:"50%", border:"1px solid #e2e8f0", background:SURFACE.bg, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0, fontSize:18, lineHeight:1 }}>×</button>
+                  style={{ width:32, height:32, borderRadius:"50%", border:`1px solid ${SURFACE.border}`, background:SURFACE.bg, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0, fontSize:18, lineHeight:1 }}>×</button>
               </div>
               <div style={{ padding:20, display:"flex", flexDirection:"column", gap:16 }}>
                 <div style={{ display:"flex", justifyContent:"center" }}>
@@ -4143,7 +4143,7 @@ export default function UserPortalPage() {
             style={{ position:"fixed",inset:0,zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:16,background:"rgba(2,12,24,0.78)",backdropFilter:"blur(6px)" }}>
             <div onClick={(e) => e.stopPropagation()}
               style={{ background:SURFACE.card,borderRadius:20,width:"100%",maxWidth:480,maxHeight:"95vh",display:"flex",flexDirection:"column",overflow:"hidden",boxShadow:"0 24px 80px rgba(0,0,0,0.5)" }}>
-              <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",borderBottom:"1px solid #e2e8f0",background:`linear-gradient(135deg,${BRAND.navy},${BRAND.navyLight})`,color:SURFACE.card }}>
+              <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",borderBottom:`1px solid ${SURFACE.border}`,background:`linear-gradient(135deg,${BRAND.navy},${BRAND.navyLight})`,color:SURFACE.card }}>
                 <div>
                   <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:BRAND.teal,margin:0 }}>Credencial digital</p>
                   <p style={{ fontSize:14,fontWeight:700,margin:"2px 0 0" }}>{athlete?.fullName || "Participante"}</p>

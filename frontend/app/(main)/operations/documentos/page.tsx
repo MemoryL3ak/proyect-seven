@@ -4,7 +4,7 @@ import { ChangeEvent, FormEvent, useCallback, useEffect, useState } from "react"
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
 import StyledSelect from "@/components/StyledSelect";
 import { apiFetch } from "@/lib/api";
-import { STATE, SURFACE } from "@/lib/design";
+import { STATE, SURFACE, BRAND } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
 import {
   AUDIENCE_LABELS,
@@ -349,7 +349,7 @@ export default function EventDocumentsPage() {
                     ? events.find(e => e.id === doc.eventId)?.name || "—"
                     : t("Todos");
                   return (
-                    <tr key={doc.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                    <tr key={doc.id} style={{ borderBottom: `1px solid ${SURFACE.borderMuted}` }}>
                       <td style={{ padding: "10px 14px" }}>
                         <p style={{ fontWeight: 700, color: pal.textPrimary }}>{doc.title}</p>
                         <p style={{ fontSize: 11, color: pal.textMuted }}>
@@ -381,7 +381,7 @@ export default function EventDocumentsPage() {
                         <div style={{ display: "flex", gap: 6 }}>
                           {isPdf(doc) && (
                             <button onClick={() => setViewing(doc)}
-                              style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: "linear-gradient(135deg,#21D0B3,#14AE98)", color: SURFACE.card, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                              style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: `linear-gradient(135deg,${BRAND.teal},#14AE98)`, color: SURFACE.card, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
                               {t("Ver")}
                             </button>
                           )}

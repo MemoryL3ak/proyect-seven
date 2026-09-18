@@ -28,7 +28,7 @@ export default function QrFullscreenOverlay({
         position: "fixed",
         inset: 0,
         zIndex: 400,
-        background: "linear-gradient(160deg, #041a2e 0%, #062240 100%)",
+        background: `linear-gradient(160deg, ${BRAND.navy} 0%, ${BRAND.navyLight} 100%)`,
         display: "flex",
         flexDirection: "column",
       }}

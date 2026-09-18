@@ -256,7 +256,7 @@ export default function DepartureMonitoringPage() {
   return (
     <div className="p-4 md:p-6 space-y-5">
       {/* Header estilo Monitor de Vuelos */}
-      <section style={{ background: SURFACE.card, borderRadius: "24px", padding: "28px 32px", boxShadow: "0 2px 12px rgba(15,23,42,0.06)", borderTop: "3px solid #21D0B3" }}>
+      <section style={{ background: SURFACE.card, borderRadius: "24px", padding: "28px 32px", boxShadow: "0 2px 12px rgba(15,23,42,0.06)", borderTop: `3px solid ${BRAND.teal}` }}>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
@@ -280,7 +280,7 @@ export default function DepartureMonitoringPage() {
             { label: "Ya salieron", value: kpis.pasadas, color: SURFACE.textMuted, accent: SURFACE.textMuted },
             { label: "Sin vuelo", value: kpis.sinVuelo, color: kpis.sinVuelo > 0 ? STATE.danger : SURFACE.text, accent: STATE.danger },
           ].map(k => (
-            <div key={k.label} style={{ background: SURFACE.bg, borderRadius: "14px", padding: "12px 14px", border: "1px solid #e2e8f0", borderTop: `2px solid ${k.accent}` }}>
+            <div key={k.label} style={{ background: SURFACE.bg, borderRadius: "14px", padding: "12px 14px", border: `1px solid ${SURFACE.border}`, borderTop: `2px solid ${k.accent}` }}>
               <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: SURFACE.textFaint }}>{t(k.label)}</p>
               <p style={{ fontSize: "22px", fontWeight: 800, color: k.color, marginTop: "2px" }}>{k.value}</p>
             </div>

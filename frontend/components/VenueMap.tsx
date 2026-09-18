@@ -47,7 +47,7 @@ export default function VenueMap({ title, query }: { title: string; query: strin
           display: "block",
           width: "100%",
           padding: 0,
-          border: "1px solid #e2e8f0",
+          border: `1px solid ${SURFACE.border}`,
           borderRadius: 10,
           overflow: "hidden",
           cursor: "pointer",
@@ -99,7 +99,7 @@ export default function VenueMap({ title, query }: { title: string; query: strin
               alignItems: "center",
               gap: 10,
               padding: "12px 14px",
-              background: "linear-gradient(135deg,#041a2e,#062240)",
+              background: `linear-gradient(135deg,${BRAND.navy},${BRAND.navyLight})`,
               flexShrink: 0,
             }}
           >

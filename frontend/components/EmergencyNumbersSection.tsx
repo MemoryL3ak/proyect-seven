@@ -160,7 +160,7 @@ export default function EmergencyNumbersSection() {
               gap: 10,
               padding: "10px 12px",
               borderRadius: 10,
-              border: "1px solid #f1f5f9",
+              border: `1px solid ${SURFACE.borderMuted}`,
               background: "#fff7f7",
               textDecoration: "none",
             }}
@@ -269,7 +269,7 @@ export default function EmergencyNumbersSection() {
                 style={{
                   padding: "12px 16px",
                   borderRadius: 12,
-                  border: "1px solid #e2e8f0",
+                  border: `1px solid ${SURFACE.border}`,
                   background: SURFACE.bg,
                   color: SURFACE.text,
                   fontSize: 13.5,

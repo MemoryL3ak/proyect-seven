@@ -77,12 +77,12 @@ const emptyReturnForm = (): ReturnForm => ({ actorName: "", notes: "" });
 
 const inputStyle: React.CSSProperties = {
   width: "100%", height: "38px", padding: "0 12px", borderRadius: "10px",
-  border: "1px solid #e2e8f0", background: SURFACE.card, color: SURFACE.text,
+  border: `1px solid ${SURFACE.border}`, background: SURFACE.card, color: SURFACE.text,
   fontSize: "13px", outline: "none",
 };
 const textareaStyle: React.CSSProperties = {
   width: "100%", padding: "10px 12px", borderRadius: "10px",
-  border: "1px solid #e2e8f0", background: SURFACE.card, color: SURFACE.text,
+  border: `1px solid ${SURFACE.border}`, background: SURFACE.card, color: SURFACE.text,
   fontSize: "13px", outline: "none", resize: "vertical" as const, minHeight: "80px",
 };
 const selectStyle: React.CSSProperties = { ...inputStyle };
@@ -291,7 +291,7 @@ export default function HotelKeysPage() {
   return (
     <div className="space-y-6">
       {/* ── Command panel */}
-      <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "20px", padding: "24px 28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+      <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "20px", padding: "24px 28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: "16px" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
@@ -325,7 +325,7 @@ export default function HotelKeysPage() {
             </select>
             <input style={inputStyle} placeholder={t("Buscar llave, habitación, hotel…")} value={search} onChange={(e) => setSearch(e.target.value)} />
             <button onClick={loadData} disabled={loading} style={{
-              background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "10px", padding: "9px 16px",
+              background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "10px", padding: "9px 16px",
               color: loading ? SURFACE.textFaint : SURFACE.textSecondary, fontSize: "13px", fontWeight: 600,
               cursor: loading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: "6px",
             }}>
@@ -341,7 +341,7 @@ export default function HotelKeysPage() {
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         {kpiCards.map((card) => (
           <article key={card.label} style={{
-            background: SURFACE.card, border: "1px solid #e2e8f0",
+            background: SURFACE.card, border: `1px solid ${SURFACE.border}`,
             borderTop: `3px solid ${card.color}`, borderRadius: "20px",
             padding: "18px 20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)",
             transition: "transform 120ms ease",
@@ -368,7 +368,7 @@ export default function HotelKeysPage() {
       <section className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
 
         {/* Inventory list */}
-        <article style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "24px", padding: "22px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+        <article style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "24px", padding: "22px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
           <div style={{ marginBottom: "16px" }}>
             <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: SURFACE.textFaint }}>{t("Control de inventario")}</p>
             <h3 style={{ marginTop: "3px", fontWeight: 700, fontSize: "16px", color: SURFACE.text }}>{t("Inventario de llaves")}</h3>
@@ -376,7 +376,7 @@ export default function HotelKeysPage() {
           </div>
           <div className="space-y-3">
             {enrichedKeys.length === 0 ? (
-              <div style={{ borderRadius: "16px", border: "1px dashed #e2e8f0", background: SURFACE.bg, padding: "48px 24px", textAlign: "center", color: SURFACE.textFaint, fontSize: "14px" }}>
+              <div style={{ borderRadius: "16px", border: `1px dashed ${SURFACE.border}`, background: SURFACE.bg, padding: "48px 24px", textAlign: "center", color: SURFACE.textFaint, fontSize: "14px" }}>
                 {t("Sin llaves registradas para este filtro.")}
               </div>
             ) : (
@@ -461,7 +461,7 @@ export default function HotelKeysPage() {
         <div className="space-y-4">
 
           {/* Alta de llave */}
-          <article style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderTop: "3px solid #21D0B3", borderRadius: "24px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+          <article style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderTop: `3px solid ${BRAND.teal}`, borderRadius: "24px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
             <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: SURFACE.textFaint, marginBottom: "4px" }}>{t("Registrar")}</p>
             <h3 style={{ fontWeight: 700, fontSize: "16px", color: SURFACE.text, marginBottom: "14px" }}>{t("Alta de llave")}</h3>
             <form style={{ display: "flex", flexDirection: "column", gap: "10px" }} onSubmit={submitCreate}>
@@ -474,7 +474,7 @@ export default function HotelKeysPage() {
                 {filteredRooms.map((r) => <option key={r.id} value={r.id}>{t("Habitación")} {r.roomNumber || r.id}</option>)}
               </select>
               <input style={inputStyle} placeholder={t("Número de llave")} value={keyForm.keyNumber} onChange={(e) => setKeyForm((p) => ({ ...p, keyNumber: e.target.value }))} required />
-              <button type="submit" style={{ padding: "10px", borderRadius: "10px", background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: SURFACE.card, fontWeight: 700, fontSize: "13px", border: "none", cursor: "pointer", boxShadow: "0 2px 10px rgba(33,208,179,0.35)" }}>
+              <button type="submit" style={{ padding: "10px", borderRadius: "10px", background: `linear-gradient(135deg, ${BRAND.teal}, #14AE98)`, color: SURFACE.card, fontWeight: 700, fontSize: "13px", border: "none", cursor: "pointer", boxShadow: "0 2px 10px rgba(33,208,179,0.35)" }}>
                 {t("Registrar llave")}
               </button>
             </form>
@@ -482,7 +482,7 @@ export default function HotelKeysPage() {
 
           {/* Entrega */}
           {issueKeyId && (
-            <article style={{ background: SURFACE.card, border: "1px solid rgba(59,130,246,0.3)", borderTop: "3px solid #3b82f6", borderRadius: "24px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+            <article style={{ background: SURFACE.card, border: "1px solid rgba(59,130,246,0.3)", borderTop: `3px solid ${STATE.info}`, borderRadius: "24px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
               <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: STATE.info, marginBottom: "4px" }}>{t("Operación")}</p>
               <h3 style={{ fontWeight: 700, fontSize: "16px", color: SURFACE.text, marginBottom: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
                 <PercentIcon size={16} color={STATE.info} strokeWidth={2} />
@@ -497,11 +497,11 @@ export default function HotelKeysPage() {
                 <input style={inputStyle} placeholder={t("Operador que entrega")} value={issueForm.actorName} onChange={(e) => setIssueForm((p) => ({ ...p, actorName: e.target.value }))} required />
                 <textarea style={textareaStyle} placeholder={t("Observaciones (opcional)")} value={issueForm.notes} onChange={(e) => setIssueForm((p) => ({ ...p, notes: e.target.value }))} />
                 <div style={{ display: "flex", gap: "8px" }}>
-                  <button type="submit" style={{ flex: 1, padding: "10px", borderRadius: "10px", background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: SURFACE.card, fontWeight: 700, fontSize: "13px", border: "none", cursor: "pointer" }}>
+                  <button type="submit" style={{ flex: 1, padding: "10px", borderRadius: "10px", background: `linear-gradient(135deg, ${BRAND.teal}, #14AE98)`, color: SURFACE.card, fontWeight: 700, fontSize: "13px", border: "none", cursor: "pointer" }}>
                     {t("Confirmar entrega")}
                   </button>
                   <button type="button" onClick={() => { setIssueKeyId(null); setIssueForm(emptyIssueForm()); }}
-                    style={{ padding: "10px 16px", borderRadius: "10px", background: SURFACE.card, border: "1px solid #e2e8f0", color: SURFACE.textSecondary, fontWeight: 600, fontSize: "13px", cursor: "pointer" }}>
+                    style={{ padding: "10px 16px", borderRadius: "10px", background: SURFACE.card, border: `1px solid ${SURFACE.border}`, color: SURFACE.textSecondary, fontWeight: 600, fontSize: "13px", cursor: "pointer" }}>
                     {t("Cancelar")}
                   </button>
                 </div>
@@ -511,7 +511,7 @@ export default function HotelKeysPage() {
 
           {/* Devolución */}
           {returnKeyId && (
-            <article style={{ background: SURFACE.card, border: "1px solid rgba(16,185,129,0.3)", borderTop: "3px solid #10b981", borderRadius: "24px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+            <article style={{ background: SURFACE.card, border: "1px solid rgba(16,185,129,0.3)", borderTop: `3px solid ${STATE.success}`, borderRadius: "24px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
               <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: STATE.success, marginBottom: "4px" }}>{t("Operación")}</p>
               <h3 style={{ fontWeight: 700, fontSize: "16px", color: SURFACE.text, marginBottom: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
                 <CheckIcon size={16} color={STATE.success} strokeWidth={2.5} />
@@ -521,11 +521,11 @@ export default function HotelKeysPage() {
                 <input style={inputStyle} placeholder={t("Operador que recibe")} value={returnForm.actorName} onChange={(e) => setReturnForm((p) => ({ ...p, actorName: e.target.value }))} />
                 <textarea style={textareaStyle} placeholder={t("Observaciones de devolución")} value={returnForm.notes} onChange={(e) => setReturnForm((p) => ({ ...p, notes: e.target.value }))} />
                 <div style={{ display: "flex", gap: "8px" }}>
-                  <button type="submit" style={{ flex: 1, padding: "10px", borderRadius: "10px", background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: SURFACE.card, fontWeight: 700, fontSize: "13px", border: "none", cursor: "pointer" }}>
+                  <button type="submit" style={{ flex: 1, padding: "10px", borderRadius: "10px", background: `linear-gradient(135deg, ${BRAND.teal}, #14AE98)`, color: SURFACE.card, fontWeight: 700, fontSize: "13px", border: "none", cursor: "pointer" }}>
                     {t("Confirmar devolución")}
                   </button>
                   <button type="button" onClick={() => { setReturnKeyId(null); setReturnForm(emptyReturnForm()); }}
-                    style={{ padding: "10px 16px", borderRadius: "10px", background: SURFACE.card, border: "1px solid #e2e8f0", color: SURFACE.textSecondary, fontWeight: 600, fontSize: "13px", cursor: "pointer" }}>
+                    style={{ padding: "10px 16px", borderRadius: "10px", background: SURFACE.card, border: `1px solid ${SURFACE.border}`, color: SURFACE.textSecondary, fontWeight: 600, fontSize: "13px", cursor: "pointer" }}>
                     {t("Cancelar")}
                   </button>
                 </div>
@@ -534,7 +534,7 @@ export default function HotelKeysPage() {
           )}
 
           {/* Bitácora */}
-          <article style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "24px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+          <article style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "24px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
             <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: SURFACE.textFaint, marginBottom: "4px" }}>{t("Historial")}</p>
             <h3 style={{ fontWeight: 700, fontSize: "16px", color: SURFACE.text, marginBottom: "12px" }}>{t("Bitácora de movimientos")}</h3>
             {!selectedKey ? (
@@ -554,7 +554,7 @@ export default function HotelKeysPage() {
                       const action = mv.action || "";
                       const actionColor = action.includes("ISSUE") ? STATE.info : action.includes("RETURN") ? STATE.success : action.includes("LOST") ? STATE.danger : SURFACE.textFaint;
                       return (
-                        <div key={mv.id} style={{ background: SURFACE.bg, border: "1px solid #e2e8f0", borderLeft: `3px solid ${actionColor}`, borderRadius: "12px", padding: "10px 12px" }}>
+                        <div key={mv.id} style={{ background: SURFACE.bg, border: `1px solid ${SURFACE.border}`, borderLeft: `3px solid ${actionColor}`, borderRadius: "12px", padding: "10px 12px" }}>
                           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
                             <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: actionColor }}>{mv.action}</span>
                             <span style={{ fontSize: "11px", color: SURFACE.textFaint }}>{formatDateTime(mv.happenedAt || mv.createdAt)}</span>
@@ -589,11 +589,11 @@ export default function HotelKeysPage() {
               </p>
               <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
                 <button onClick={() => setDeleteKeyConfirm(null)}
-                  style={{ padding: "10px 24px", borderRadius: "10px", border: "1px solid #e2e8f0", background: SURFACE.card, color: SURFACE.textMuted, fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
+                  style={{ padding: "10px 24px", borderRadius: "10px", border: `1px solid ${SURFACE.border}`, background: SURFACE.card, color: SURFACE.textMuted, fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
                   {t("Cancelar")}
                 </button>
                 <button onClick={() => removeKey(deleteKeyConfirm)}
-                  style={{ padding: "10px 24px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #ef4444, #dc2626)", color: SURFACE.card, fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 10px rgba(239,68,68,0.3)" }}>
+                  style={{ padding: "10px 24px", borderRadius: "10px", border: "none", background: `linear-gradient(135deg, ${STATE.danger}, ${STATE.dangerText})`, color: SURFACE.card, fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 10px rgba(239,68,68,0.3)" }}>
                   {t("Sí, eliminar")}
                 </button>
               </div>

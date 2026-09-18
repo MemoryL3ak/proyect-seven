@@ -353,7 +353,7 @@ export default function TripMap(props: TripMapProps) {
             height: 36,
             borderRadius: 10,
             background: "rgba(255,255,255,0.95)",
-            border: "1px solid #e2e8f0",
+            border: `1px solid ${SURFACE.border}`,
             boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
             display: "flex",
             alignItems: "center",

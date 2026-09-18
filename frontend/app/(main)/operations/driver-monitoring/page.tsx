@@ -472,7 +472,7 @@ export default function DriverMonitoringPage() {
       background: gpsActive ? "#dcfce7" : SURFACE.borderMuted,
       color: gpsActive ? "#166534" : SURFACE.textFaint,
       border: `1px solid ${gpsActive ? "#86efac" : "#cbd5e1"}` }}>
-      <span style={{ width: 6, height: 6, borderRadius: "50%", background: gpsActive ? STATE.success : SURFACE.borderStrong, boxShadow: gpsActive ? "0 0 6px #10b981" : "none" }} />
+      <span style={{ width: 6, height: 6, borderRadius: "50%", background: gpsActive ? STATE.success : SURFACE.borderStrong, boxShadow: gpsActive ? `0 0 6px ${STATE.success}` : "none" }} />
       {gpsActive ? t("Reportando") : t("Sin señal")}
     </span>
   );
@@ -602,11 +602,11 @@ export default function DriverMonitoringPage() {
           className="rounded-2xl overflow-hidden"
           style={{
             background: SURFACE.card,
-            border: "1px solid #e2e8f0",
+            border: `1px solid ${SURFACE.border}`,
             boxShadow: "0 1px 4px rgba(15,23,42,0.04)",
           }}
         >
-          <div className="flex items-center justify-between p-4" style={{ borderBottom: "1px solid #f1f5f9" }}>
+          <div className="flex items-center justify-between p-4" style={{ borderBottom: `1px solid ${SURFACE.borderMuted}` }}>
             <h2 className="text-sm font-semibold uppercase tracking-wider" style={{ color: SURFACE.textSecondary }}>
               {t("Mapa de conductores")}
             </h2>
@@ -656,7 +656,7 @@ export default function DriverMonitoringPage() {
           className="rounded-2xl p-8 text-center"
           style={{
             background: SURFACE.card,
-            border: "1px dashed #e2e8f0",
+            border: `1px dashed ${SURFACE.border}`,
           }}
         >
           <p style={{ margin: "0 0 8px", color: SURFACE.borderStrong, display: "flex", justifyContent: "center" }}><SearchIcon size={32} /></p>
@@ -672,14 +672,14 @@ export default function DriverMonitoringPage() {
           className="rounded-2xl overflow-hidden"
           style={{
             background: SURFACE.card,
-            border: "1px solid #e2e8f0",
+            border: `1px solid ${SURFACE.border}`,
             boxShadow: "0 1px 4px rgba(15,23,42,0.04)",
           }}
         >
           {/* Table header bar */}
           <div
             className="flex items-center justify-between p-4"
-            style={{ borderBottom: "1px solid #f1f5f9" }}
+            style={{ borderBottom: `1px solid ${SURFACE.borderMuted}` }}
           >
             <h2
               className="text-sm font-semibold uppercase tracking-wider"
@@ -708,7 +708,7 @@ export default function DriverMonitoringPage() {
                     {/* Cabecera: avatar + nombre + estado */}
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <div style={{ width: 38, height: 38, borderRadius: "50%",
-                        background: d.online ? "linear-gradient(135deg, #21D0B3 0%, #15B09A 100%)" : "linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%)",
+                        background: d.online ? `linear-gradient(135deg, ${BRAND.teal} 0%, #15B09A 100%)` : `linear-gradient(135deg, ${SURFACE.borderStrong} 0%, ${SURFACE.textFaint} 100%)`,
                         color: SURFACE.card, fontSize: 12, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center",
                         letterSpacing: "0.04em", flexShrink: 0,
                         boxShadow: d.online ? "0 2px 8px rgba(33,208,179,0.35)" : "0 1px 3px rgba(15,23,42,0.1)" }}>
@@ -750,14 +750,14 @@ export default function DriverMonitoringPage() {
                           </span>
                         ))}
                         {(d.disciplines || []).length > 4 && (
-                          <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 6, fontWeight: 700, background: SURFACE.borderMuted, color: SURFACE.textSecondary, border: "1px solid #cbd5e1" }}>
+                          <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 6, fontWeight: 700, background: SURFACE.borderMuted, color: SURFACE.textSecondary, border: `1px solid ${SURFACE.borderStrong}` }}>
                             +{d.disciplines.length - 4}
                           </span>
                         )}
                       </div>
                     )}
                     {/* Última conexión · sesión */}
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 8, paddingTop: 8, borderTop: "1px dashed #f1f5f9" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 8, paddingTop: 8, borderTop: `1px dashed ${SURFACE.borderMuted}` }}>
                       <span style={{ fontSize: 11, color: SURFACE.textMuted }}>
                         {t("Última conexión")}: <b style={{ color: SURFACE.textStrong, fontWeight: 600 }}>{ago(d.secondsSinceSeen)}</b>
                       </span>
@@ -780,8 +780,8 @@ export default function DriverMonitoringPage() {
               <thead>
                 <tr
                   style={{
-                    background: "linear-gradient(135deg,#f8fafc 0%,#f1f5f9 100%)",
-                    borderBottom: "2px solid #e2e8f0",
+                    background: `linear-gradient(135deg,${SURFACE.bg} 0%,${SURFACE.borderMuted} 100%)`,
+                    borderBottom: `2px solid ${SURFACE.border}`,
                   }}
                 >
                   {[
@@ -821,7 +821,7 @@ export default function DriverMonitoringPage() {
                     <tr
                       key={d.driverId}
                       style={{
-                        borderBottom: i === visibleDrivers.length - 1 ? "none" : "1px solid #f1f5f9",
+                        borderBottom: i === visibleDrivers.length - 1 ? "none" : `1px solid ${SURFACE.borderMuted}`,
                         background: i % 2 === 0 ? SURFACE.card : "#fafbfc",
                         transition: "background 0.15s",
                       }}
@@ -841,8 +841,8 @@ export default function DriverMonitoringPage() {
                               height: 34,
                               borderRadius: "50%",
                               background: d.online
-                                ? "linear-gradient(135deg, #21D0B3 0%, #15B09A 100%)"
-                                : "linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%)",
+                                ? `linear-gradient(135deg, ${BRAND.teal} 0%, #15B09A 100%)`
+                                : `linear-gradient(135deg, ${SURFACE.borderStrong} 0%, ${SURFACE.textFaint} 100%)`,
                               color: SURFACE.card,
                               fontSize: 11,
                               fontWeight: 800,
@@ -949,7 +949,7 @@ export default function DriverMonitoringPage() {
                                   fontWeight: 700,
                                   background: SURFACE.borderMuted,
                                   color: SURFACE.textSecondary,
-                                  border: "1px solid #cbd5e1",
+                                  border: `1px solid ${SURFACE.borderStrong}`,
                                 }}
                               >
                                 +{d.disciplines.length - 3}
@@ -1152,7 +1152,7 @@ function FiltersBar(p: FiltersBarProps) {
               className="text-xs font-medium px-3 py-1.5 rounded-full transition-all inline-flex items-center gap-1.5"
               style={{
                 background: active
-                  ? "linear-gradient(135deg, #21D0B3 0%, #15B09A 100%)"
+                  ? `linear-gradient(135deg, ${BRAND.teal} 0%, #15B09A 100%)`
                   : "#eef1f6",
                 color: active ? SURFACE.card : SURFACE.textSecondary,
                 boxShadow: active ? "0 1px 4px rgba(33,208,179,0.3)" : "none",

@@ -164,7 +164,7 @@ export default function StyledSelect({
                   color: isSelected ? BRAND.teal : opt.disabled ? SURFACE.borderStrong : SURFACE.text,
                   fontWeight: isSelected ? 700 : 400,
                   background: isSelected ? "rgba(33,208,179,0.06)" : "transparent",
-                  borderBottom: i < options.length - 1 ? "1px solid #f1f5f9" : "none",
+                  borderBottom: i < options.length - 1 ? `1px solid ${SURFACE.borderMuted}` : "none",
                   transition: "background 100ms ease",
                   display: "flex",
                   alignItems: "center",

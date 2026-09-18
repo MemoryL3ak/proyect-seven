@@ -166,7 +166,7 @@ const ROLES: Array<{
     label: "Administrador general",
     desc: "Acceso total a la plataforma: eventos, usuarios, presupuestos y configuración.",
     color: "#5e3aab",
-    bgGradient: "linear-gradient(135deg, #f4f0fb 0%, #ffffff 60%)",
+    bgGradient: `linear-gradient(135deg, #f4f0fb 0%, ${SURFACE.card} 60%)`,
     iconBg: "linear-gradient(135deg, #7c5ec4 0%, #5e3aab 100%)",
     suggested: ["create_event", "import_athletes", "manage_users", "view_dashboard", "finance_panel"],
     icon: (
@@ -190,7 +190,7 @@ const ROLES: Array<{
     label: "Coordinador de transporte",
     desc: "Cronograma diario, asignación de conductores, tracking en tiempo real y panel de conductores.",
     color: "#1f4e8c",
-    bgGradient: "linear-gradient(135deg, #eef4fb 0%, #ffffff 60%)",
+    bgGradient: `linear-gradient(135deg, #eef4fb 0%, ${SURFACE.card} 60%)`,
     iconBg: "linear-gradient(135deg, #2d6aa8 0%, #1f4e8c 100%)",
     suggested: ["import_schedule", "auto_assign", "monitor_drivers", "tracking_realtime", "vip_monitoring", "finance_panel"],
     icon: (
@@ -212,7 +212,7 @@ const ROLES: Array<{
     label: "Coordinador de hotelería",
     desc: "Configuración de hoteles, asignación de habitaciones, gestión de llaves y servicios extras.",
     color: "#ec4899",
-    bgGradient: "linear-gradient(135deg, #fce7f3 0%, #ffffff 60%)",
+    bgGradient: `linear-gradient(135deg, #fce7f3 0%, ${SURFACE.card} 60%)`,
     iconBg: "linear-gradient(135deg, #f472b6 0%, #ec4899 100%)",
     suggested: ["setup_hotels", "assign_rooms", "manage_keys", "hotel_extras"],
     icon: (
@@ -235,8 +235,8 @@ const ROLES: Array<{
     label: "Encargado de acreditación",
     desc: "Generación de credenciales QR, escáner en puertas, control de tipos de acceso.",
     color: STATE.success,
-    bgGradient: "linear-gradient(135deg, #e7f5ec 0%, #ffffff 60%)",
-    iconBg: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
+    bgGradient: `linear-gradient(135deg, #e7f5ec 0%, ${SURFACE.card} 60%)`,
+    iconBg: `linear-gradient(135deg, #34d399 0%, ${STATE.success} 100%)`,
     suggested: ["generate_credentials", "qr_scanner", "manage_access"],
     icon: (
       <svg width="34" height="34" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
@@ -257,7 +257,7 @@ const ROLES: Array<{
     label: "Supervisor operativo",
     desc: "Vista panorámica de la operación, incidencias, premiaciones y workforce.",
     color: STATE.warning,
-    bgGradient: "linear-gradient(135deg, #fff4d6 0%, #ffffff 60%)",
+    bgGradient: `linear-gradient(135deg, #fff4d6 0%, ${SURFACE.card} 60%)`,
     iconBg: "linear-gradient(135deg, #fbbf24 0%, #d97706 100%)",
     suggested: ["view_dashboard", "monitor_incidents", "premiaciones", "workforce", "vip_monitoring", "departures_monitor", "salud"],
     icon: (
@@ -279,8 +279,8 @@ const ROLES: Array<{
     label: "Otro perfil",
     desc: "Quiero explorar libremente todos los módulos de la plataforma.",
     color: SURFACE.textMuted,
-    bgGradient: "linear-gradient(135deg, #f1f5f9 0%, #ffffff 60%)",
-    iconBg: "linear-gradient(135deg, #94a3b8 0%, #64748b 100%)",
+    bgGradient: `linear-gradient(135deg, ${SURFACE.borderMuted} 0%, ${SURFACE.card} 60%)`,
+    iconBg: `linear-gradient(135deg, ${SURFACE.textFaint} 0%, ${SURFACE.textMuted} 100%)`,
     suggested: ["view_dashboard", "coupons", "premiaciones", "workforce"],
     icon: (
       <svg width="34" height="34" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
@@ -430,9 +430,9 @@ function StepIndicator({ current, total, onJump }: { current: number; total: num
               width: active ? 32 : done ? 10 : 8,
               height: active ? 10 : done ? 10 : 8,
               background: done
-                ? "linear-gradient(135deg, #21D0B3 0%, #15B09A 100%)"
+                ? `linear-gradient(135deg, ${BRAND.teal} 0%, #15B09A 100%)`
                 : active
-                ? "linear-gradient(135deg, #34F3C6 0%, #21D0B3 100%)"
+                ? `linear-gradient(135deg, ${BRAND.tealLight} 0%, ${BRAND.teal} 100%)`
                 : "rgba(241,245,249,0.25)",
               boxShadow: active
                 ? "0 0 14px rgba(33,208,179,0.7), 0 2px 8px rgba(33,208,179,0.4)"
@@ -618,7 +618,7 @@ function GoalChip({
       className="inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-[12.5px] font-semibold transition-all"
       style={{
         background: selected
-          ? "linear-gradient(135deg, #21D0B3 0%, #15B09A 100%)"
+          ? `linear-gradient(135deg, ${BRAND.teal} 0%, #15B09A 100%)`
           : SURFACE.card,
         color: selected ? SURFACE.card : SURFACE.textStrong,
         border: `1.5px solid ${selected ? "#15B09A" : "#e2e8f0"}`,
@@ -664,7 +664,7 @@ function TaskRow({
       className="rounded-xl p-4 transition-all"
       style={{
         background: done
-          ? "linear-gradient(135deg, #f0fdfb 0%, #ffffff 70%)"
+          ? `linear-gradient(135deg, #f0fdfb 0%, ${SURFACE.card} 70%)`
           : SURFACE.card,
         border: `1px solid ${done ? "#34d39966" : "#e2e8f0"}`,
         opacity: done ? 0.85 : 1,
@@ -678,7 +678,7 @@ function TaskRow({
           style={{
             width: 24, height: 24, borderRadius: 8,
             background: done
-              ? "linear-gradient(135deg, #21D0B3 0%, #15B09A 100%)"
+              ? `linear-gradient(135deg, ${BRAND.teal} 0%, #15B09A 100%)`
               : "transparent",
             border: `2px solid ${done ? "#15B09A" : "#cbd5e1"}`,
             cursor: "pointer",
@@ -709,7 +709,7 @@ function TaskRow({
           href={task.href}
           className="flex-shrink-0 inline-flex items-center gap-1.5 text-xs font-bold rounded-lg px-3 py-2 transition-all"
           style={{
-            background: done ? "transparent" : "linear-gradient(135deg, #21D0B3 0%, #15B09A 100%)",
+            background: done ? "transparent" : `linear-gradient(135deg, ${BRAND.teal} 0%, #15B09A 100%)`,
             color: done ? "#1eb19a" : SURFACE.card,
             border: done ? "1px solid #34d39966" : "none",
             boxShadow: done ? "none" : "0 4px 14px rgba(33,208,179,0.32)",
@@ -820,7 +820,7 @@ export default function OnboardingPage() {
       <section
         className="rounded-3xl p-7 relative overflow-hidden anim-fade-up-soft"
         style={{
-          background: "linear-gradient(135deg, #020c18 0%, #062240 50%, #041a2e 100%)",
+          background: `linear-gradient(135deg, #020c18 0%, ${BRAND.navyLight} 50%, ${BRAND.navy} 100%)`,
           boxShadow: "0 20px 60px rgba(0,0,0,0.18)",
         }}
       >
@@ -864,7 +864,7 @@ export default function OnboardingPage() {
           <div className="min-w-0">
             <div className="inline-flex items-center gap-2"
               style={{ background: "rgba(33,208,179,0.12)", border: "1px solid rgba(33,208,179,0.28)", borderRadius: 99, padding: "4px 12px" }}>
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: BRAND.teal, boxShadow: "0 0 10px #21D0B3", animation: "pulse 2s infinite" }} />
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: BRAND.teal, boxShadow: `0 0 10px ${BRAND.teal}`, animation: "pulse 2s infinite" }} />
               <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: BRAND.teal }}>
                 {t("Inicio guiado")}
               </span>
@@ -916,9 +916,9 @@ export default function OnboardingPage() {
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 ob-stagger">
               {[
-                { icon: "zap", title: "3 minutos",        text: "Lo que dura este recorrido — adaptado a vos.",       accent: "#fbbf24", bg: "linear-gradient(135deg, #fff4d6 0%, #ffffff 70%)" },
-                { icon: "target", title: "Personalizado",    text: "Las recomendaciones cambian según tu rol y objetivos.", accent: BRAND.teal, bg: "linear-gradient(135deg, #f0fdfb 0%, #ffffff 70%)" },
-                { icon: "save", title: "Progreso guardado",text: "Cerrás y volvés cuando quieras — todo queda registrado.", accent: "#7c5ec4", bg: "linear-gradient(135deg, #f4f0fb 0%, #ffffff 70%)" },
+                { icon: "zap", title: "3 minutos",        text: "Lo que dura este recorrido — adaptado a vos.",       accent: "#fbbf24", bg: `linear-gradient(135deg, #fff4d6 0%, ${SURFACE.card} 70%)` },
+                { icon: "target", title: "Personalizado",    text: "Las recomendaciones cambian según tu rol y objetivos.", accent: BRAND.teal, bg: `linear-gradient(135deg, #f0fdfb 0%, ${SURFACE.card} 70%)` },
+                { icon: "save", title: "Progreso guardado",text: "Cerrás y volvés cuando quieras — todo queda registrado.", accent: "#7c5ec4", bg: `linear-gradient(135deg, #f4f0fb 0%, ${SURFACE.card} 70%)` },
               ].map((b) => (
                 <div key={b.title} className="ob-tilt rounded-2xl p-4 relative overflow-hidden"
                   style={{ background: b.bg, border: `1px solid ${b.accent}40`, boxShadow: `0 2px 8px ${b.accent}18` }}>
@@ -935,7 +935,7 @@ export default function OnboardingPage() {
 
             <div className="rounded-2xl p-4"
               style={{
-                background: "linear-gradient(135deg, #f0fdfb 0%, #ffffff 70%)",
+                background: `linear-gradient(135deg, #f0fdfb 0%, ${SURFACE.card} 70%)`,
                 border: "1px solid rgba(33,208,179,0.25)",
               }}>
               <label className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#1eb19a" }}>
@@ -948,7 +948,7 @@ export default function OnboardingPage() {
                 onChange={(e) => setState((s) => ({ ...s, name: e.target.value }))}
                 style={{
                   marginTop: 6, width: "100%", padding: "10px 14px",
-                  borderRadius: 10, border: "1px solid #cbd5e1", background: SURFACE.card,
+                  borderRadius: 10, border: `1px solid ${SURFACE.borderStrong}`, background: SURFACE.card,
                   fontSize: 14, color: SURFACE.text, outline: "none",
                 }}
               />
@@ -1062,7 +1062,7 @@ export default function OnboardingPage() {
             {/* Barra de progreso */}
             <div className="rounded-2xl p-4"
               style={{
-                background: "linear-gradient(135deg, #f0fdfb 0%, #ffffff 70%)",
+                background: `linear-gradient(135deg, #f0fdfb 0%, ${SURFACE.card} 70%)`,
                 border: "1px solid rgba(33,208,179,0.25)",
               }}>
               <div className="flex items-center justify-between mb-2">
@@ -1079,7 +1079,7 @@ export default function OnboardingPage() {
                   style={{
                     width: `${relevantTasks.length > 0 ? (progressTasks / relevantTasks.length) * 100 : 0}%`,
                     height: "100%",
-                    background: "linear-gradient(90deg, #34F3C6 0%, #21D0B3 100%)",
+                    background: `linear-gradient(90deg, ${BRAND.tealLight} 0%, ${BRAND.teal} 100%)`,
                     borderRadius: 999,
                     transition: "width 400ms cubic-bezier(0.4,0,0.2,1)",
                     boxShadow: "0 0 12px rgba(33,208,179,0.5)",
@@ -1128,8 +1128,8 @@ export default function OnboardingPage() {
                 {(TIPS_BY_ROLE[state.role || "other"] || []).map((tip, i) => (
                   <div key={i} className="rounded-2xl p-4"
                     style={{
-                      background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
-                      border: "1px solid #e2e8f0",
+                      background: `linear-gradient(135deg, ${SURFACE.card} 0%, ${SURFACE.bg} 100%)`,
+                      border: `1px solid ${SURFACE.border}`,
                     }}>
                     <span className="inline-flex flex-shrink-0" style={{ color: "var(--text-muted)" }}><Icon name={tip.icon} size={22} /></span>
                     <p className="text-[12.5px] mt-2 leading-relaxed" style={{ color: SURFACE.textStrong }}>
@@ -1151,7 +1151,7 @@ export default function OnboardingPage() {
                     <div className="rounded-2xl p-4 transition-all flex items-start gap-3"
                       style={{
                         background: SURFACE.card,
-                        border: "1px solid #e2e8f0",
+                        border: `1px solid ${SURFACE.border}`,
                       }}
                       onMouseEnter={(e) => {
                         (e.currentTarget as HTMLElement).style.borderColor = "rgba(33,208,179,0.5)";
@@ -1197,7 +1197,7 @@ export default function OnboardingPage() {
             <div className="inline-flex items-center justify-center mx-auto rounded-full"
               style={{
                 width: 96, height: 96,
-                background: "linear-gradient(135deg, #34F3C6 0%, #21D0B3 50%, #15B09A 100%)",
+                background: `linear-gradient(135deg, ${BRAND.tealLight} 0%, ${BRAND.teal} 50%, #15B09A 100%)`,
                 boxShadow: "0 12px 36px rgba(33,208,179,0.4), inset 0 2px 0 rgba(255,255,255,0.3)",
               }}>
               <CheckIcon size={48} color={SURFACE.card} strokeWidth={2.5} />

@@ -151,7 +151,7 @@ const pal = {
 
 const fieldStyle: React.CSSProperties = {
   width: "100%", padding: "8px 12px", borderRadius: "10px",
-  border: "1px solid #e2e8f0", background: SURFACE.bg,
+  border: `1px solid ${SURFACE.border}`, background: SURFACE.bg,
   fontSize: "14px", color: SURFACE.text, outline: "none",
 };
 
@@ -172,13 +172,13 @@ const CheckSquareIcon = ({ color, size = 20 }: { color: string; size?: number })
 );
 
 const ghostBtn: React.CSSProperties = {
-  padding: "7px 14px", borderRadius: "10px", border: "1px solid #e2e8f0",
+  padding: "7px 14px", borderRadius: "10px", border: `1px solid ${SURFACE.border}`,
   background: SURFACE.card, color: SURFACE.textMuted, fontWeight: 600, fontSize: "13px",
   cursor: "pointer",
 };
 const primaryBtn: React.CSSProperties = {
   padding: "9px 20px", borderRadius: "10px", border: "none",
-  background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: SURFACE.card,
+  background: `linear-gradient(135deg, ${BRAND.teal}, #14AE98)`, color: SURFACE.card,
   fontWeight: 700, fontSize: "13px", cursor: "pointer",
   boxShadow: "0 2px 8px rgba(33,208,179,0.3)",
 };
@@ -636,7 +636,7 @@ export default function DeportesPage() {
     <div className="min-w-0 space-y-5 overflow-x-hidden">
 
       {/* ── Header */}
-      <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "20px", padding: "24px 28px 22px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+      <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "20px", padding: "24px 28px 22px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
           <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: SURFACE.textFaint }}>{t("Deportes")}</span>
         </div>
@@ -661,7 +661,7 @@ export default function DeportesPage() {
                 padding: "7px 20px", borderRadius: "9px", fontSize: "13px", fontWeight: 700,
                 letterSpacing: "0.04em", border: "none", cursor: "pointer",
                 transition: "all 150ms ease",
-                background: tab === tabKey ? "linear-gradient(135deg, #21D0B3, #14AE98)" : "transparent",
+                background: tab === tabKey ? `linear-gradient(135deg, ${BRAND.teal}, #14AE98)` : "transparent",
                 color: tab === tabKey ? SURFACE.card : SURFACE.textMuted,
                 boxShadow: tab === tabKey ? "0 2px 8px rgba(33,208,179,0.3)" : "none",
               }}
@@ -720,7 +720,7 @@ export default function DeportesPage() {
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <button style={{ ...ghostBtn, opacity: page <= 1 ? 0.5 : 1 }} onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>{t("Anterior")}</button>
                 <span style={{
-                  background: SURFACE.bg, border: "1px solid #e2e8f0", borderRadius: "99px",
+                  background: SURFACE.bg, border: `1px solid ${SURFACE.border}`, borderRadius: "99px",
                   padding: "4px 14px", fontSize: "12px", fontWeight: 600, color: SURFACE.textMuted,
                 }}>{t("Página {p} de {total}").replace("{p}", String(page)).replace("{total}", String(totalPages))}</span>
                 <button style={{ ...ghostBtn, opacity: page >= totalPages ? 0.5 : 1 }} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>{t("Siguiente")}</button>
@@ -766,7 +766,7 @@ export default function DeportesPage() {
       {/* ── Cupos table */}
       {tab === "cupos" && (
         <section style={{
-          background: SURFACE.card, border: "1px solid #e2e8f0",
+          background: SURFACE.card, border: `1px solid ${SURFACE.border}`,
           borderRadius: "20px", overflow: "hidden", boxShadow: pal.cardShadow,
         }}>
           {loading ? (
@@ -782,7 +782,7 @@ export default function DeportesPage() {
                       <th key={h} style={{
                         padding: "13px 16px", textAlign: "left", fontSize: "10px",
                         fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase",
-                        color: SURFACE.textFaint, borderBottom: "1px solid #e2e8f0",
+                        color: SURFACE.textFaint, borderBottom: `1px solid ${SURFACE.border}`,
                         whiteSpace: "nowrap",
                       }}>{h}</th>
                     ))}
@@ -795,7 +795,7 @@ export default function DeportesPage() {
                     return (
                       <tr key={row.key} style={{
                         background: idx % 2 === 0 ? SURFACE.card : SURFACE.bg,
-                        borderBottom: "1px solid #e2e8f0", transition: "background 100ms ease",
+                        borderBottom: `1px solid ${SURFACE.border}`, transition: "background 100ms ease",
                       }}
                         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = SURFACE.borderMuted; }}
                         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = idx % 2 === 0 ? SURFACE.card : SURFACE.bg; }}
@@ -850,7 +850,7 @@ export default function DeportesPage() {
       {/* ── Pruebas tab */}
       {tab === "pruebas" && (
         <section style={{
-          background: SURFACE.card, border: "1px solid #e2e8f0",
+          background: SURFACE.card, border: `1px solid ${SURFACE.border}`,
           borderRadius: "20px", overflow: "hidden", boxShadow: pal.cardShadow,
         }}>
           <div style={{ overflowY: "auto", maxHeight: "560px" }}>
@@ -872,7 +872,7 @@ export default function DeportesPage() {
                 <div
                   key={discipline.id}
                   style={{
-                    borderBottom: idx < filteredDisciplines.length - 1 ? "1px solid #e2e8f0" : "none",
+                    borderBottom: idx < filteredDisciplines.length - 1 ? `1px solid ${SURFACE.border}` : "none",
                     ...(isFocused ? { background: "rgba(33,208,179,0.04)" } : {}),
                   }}
                 >
@@ -908,7 +908,7 @@ export default function DeportesPage() {
 
                   {/* Pruebas list */}
                   {isOpen && (
-                    <div style={{ borderTop: "1px solid #f1f5f9" }}>
+                    <div style={{ borderTop: `1px solid ${SURFACE.borderMuted}` }}>
                       {pruebas.length === 0 ? (
                         <p style={{ padding: "10px 56px", fontSize: "12px", color: SURFACE.borderStrong, fontStyle: "italic" }}>
                           {t("Sin pruebas. Haz clic en \"+ Prueba\" para agregar.")}
@@ -919,7 +919,7 @@ export default function DeportesPage() {
                             <div key={prueba.id} style={{
                               display: "flex", alignItems: "center", gap: "12px",
                               padding: "10px 56px",
-                              borderTop: pi > 0 ? "1px solid #f1f5f9" : "none",
+                              borderTop: pi > 0 ? `1px solid ${SURFACE.borderMuted}` : "none",
                             }}>
                               <svg style={{ width: "12px", height: "12px", color: SURFACE.borderStrong, flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
@@ -1083,7 +1083,7 @@ export default function DeportesPage() {
                 { label: "Sedes activas", value: kpiVenues, color: "#7c3aed", bg: "rgba(124,58,237,0.10)" },
               ].map(k => (
                 <div key={k.label} className="rounded-2xl p-4 relative overflow-hidden"
-                  style={{ background: SURFACE.card, border: "1px solid #e2e8f0", boxShadow: "0 1px 4px rgba(15,23,42,0.06)", borderLeft: `4px solid ${k.color}` }}>
+                  style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, boxShadow: "0 1px 4px rgba(15,23,42,0.06)", borderLeft: `4px solid ${k.color}` }}>
                   <div style={{ position: "absolute", top: -20, right: -20, width: 80, height: 80, borderRadius: "50%", background: k.bg, filter: "blur(20px)" }} />
                   <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: SURFACE.textMuted, position: "relative" }}>
                     {k.label}
@@ -1106,7 +1106,7 @@ export default function DeportesPage() {
                       <button key={v} type="button" onClick={() => setCalView(v)}
                         className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
                         style={{
-                          background: active ? "linear-gradient(135deg, #21D0B3, #1eb19a)" : "transparent",
+                          background: active ? `linear-gradient(135deg, ${BRAND.teal}, #1eb19a)` : "transparent",
                           color: active ? SURFACE.card : SURFACE.textSecondary,
                           boxShadow: active ? "0 2px 6px rgba(33,208,179,0.35)" : "none",
                         }}>
@@ -1154,7 +1154,7 @@ export default function DeportesPage() {
                     onClick={() => setCalVenueFilter("")}
                     className="text-xs font-bold px-3 py-1 rounded-full transition-all"
                     style={{
-                      background: !calVenueFilter ? "linear-gradient(135deg, #21D0B3, #1eb19a)" : "#eef1f6",
+                      background: !calVenueFilter ? `linear-gradient(135deg, ${BRAND.teal}, #1eb19a)` : "#eef1f6",
                       color: !calVenueFilter ? SURFACE.card : SURFACE.textSecondary,
                     }}>
                     Todas
@@ -1190,7 +1190,7 @@ export default function DeportesPage() {
                   <button type="button" onClick={() => setCalCategoryFilter("")}
                     className="text-xs font-bold px-3 py-1 rounded-full transition-all"
                     style={{
-                      background: !calCategoryFilter ? "linear-gradient(135deg, #21D0B3, #1eb19a)" : "#eef1f6",
+                      background: !calCategoryFilter ? `linear-gradient(135deg, ${BRAND.teal}, #1eb19a)` : "#eef1f6",
                       color: !calCategoryFilter ? SURFACE.card : SURFACE.textSecondary,
                     }}>
                     Todas
@@ -1303,7 +1303,7 @@ export default function DeportesPage() {
               const todayK = keyOf(new Date());
 
               return (
-                <section className="relative accent-strip-top animate-fade-up" style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: 20, padding: 16, boxShadow: pal.cardShadow }}>
+                <section className="relative accent-strip-top animate-fade-up" style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: 20, padding: 16, boxShadow: pal.cardShadow }}>
                   {/* Leyenda */}
                   <div className="flex flex-wrap gap-3 mb-3">
                     {(["CLASIFICATORIA", "FINAL", "TRAINING", "CEREMONY", "PRUEBA"] as GCat[]).map(cat => (
@@ -1315,20 +1315,20 @@ export default function DeportesPage() {
                   </div>
 
                   {rows.length === 0 ? (
-                    <div className="p-12 text-center rounded-2xl" style={{ background: "linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)", border: "1px dashed #e2e8f0" }}>
+                    <div className="p-12 text-center rounded-2xl" style={{ background: `linear-gradient(135deg, ${SURFACE.bg} 0%, ${SURFACE.card} 100%)`, border: `1px dashed ${SURFACE.border}` }}>
                       <p style={{ margin: 0, color: SURFACE.borderStrong, display: "flex", justifyContent: "center" }}><CalendarIcon size={34} /></p>
                       <p className="text-sm font-semibold mt-2" style={{ color: SURFACE.textSecondary }}>Sin pruebas en {monthStr}</p>
                       <p className="text-xs mt-1" style={{ color: SURFACE.textFaint }}>Usa las flechas para cambiar de mes o carga pruebas en la pestaña Pruebas.</p>
                     </div>
                   ) : (
-                    <div style={{ display: "flex", border: "1px solid #e2e8f0", borderRadius: 14, overflow: "hidden", background: SURFACE.card }}>
+                    <div style={{ display: "flex", border: `1px solid ${SURFACE.border}`, borderRadius: 14, overflow: "hidden", background: SURFACE.card }}>
                       {/* Columna de disciplinas */}
-                      <div style={{ flex: `0 0 ${NAME_W}px`, borderRight: "1px solid #e2e8f0", background: SURFACE.card }}>
-                        <div style={{ height: HEADER_H, display: "flex", alignItems: "center", padding: "0 14px", fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: SURFACE.textFaint, borderBottom: "1px solid #e2e8f0", background: SURFACE.bg }}>
+                      <div style={{ flex: `0 0 ${NAME_W}px`, borderRight: `1px solid ${SURFACE.border}`, background: SURFACE.card }}>
+                        <div style={{ height: HEADER_H, display: "flex", alignItems: "center", padding: "0 14px", fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: SURFACE.textFaint, borderBottom: `1px solid ${SURFACE.border}`, background: SURFACE.bg }}>
                           Disciplina
                         </div>
                         {rows.map((r, i) => (
-                          <div key={r.pid} style={{ height: rowH(r.lanes), display: "flex", alignItems: "center", gap: 8, padding: "0 12px", borderBottom: i < rows.length - 1 ? "1px solid #f1f5f9" : "none", background: i % 2 === 0 ? SURFACE.card : "#fafbfc" }}>
+                          <div key={r.pid} style={{ height: rowH(r.lanes), display: "flex", alignItems: "center", gap: 8, padding: "0 12px", borderBottom: i < rows.length - 1 ? `1px solid ${SURFACE.borderMuted}` : "none", background: i % 2 === 0 ? SURFACE.card : "#fafbfc" }}>
                             <span style={{ flexShrink: 0, width: 26, height: 26, borderRadius: "50%", background: `${r.color}14`, color: r.color, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600 }}>
                               {r.name.slice(0, 2).toUpperCase()}
                             </span>
@@ -1341,7 +1341,7 @@ export default function DeportesPage() {
                       {/* Grilla de días + barras */}
                       <div style={{ flex: 1, overflowX: "auto" }}>
                         <div style={{ minWidth: N * COL_MIN }}>
-                          <div style={{ height: HEADER_H, display: "grid", gridTemplateColumns: `repeat(${N}, minmax(${COL_MIN}px, 1fr))`, borderBottom: "1px solid #e2e8f0", background: SURFACE.bg }}>
+                          <div style={{ height: HEADER_H, display: "grid", gridTemplateColumns: `repeat(${N}, minmax(${COL_MIN}px, 1fr))`, borderBottom: `1px solid ${SURFACE.border}`, background: SURFACE.bg }}>
                             {days.map((d, i) => {
                               const k = keyOf(d);
                               const isToday = k === todayK;
@@ -1357,7 +1357,7 @@ export default function DeportesPage() {
                           {rows.map((r, ri) => {
                             const gridLines = `repeating-linear-gradient(to right, transparent 0, transparent calc(${100 / N}% - 1px), #eef2f7 calc(${100 / N}% - 1px), #eef2f7 ${100 / N}%)`;
                             return (
-                              <div key={r.pid} style={{ position: "relative", height: rowH(r.lanes), borderBottom: ri < rows.length - 1 ? "1px solid #f1f5f9" : "none", background: ri % 2 === 0 ? SURFACE.card : "#fafbfc", backgroundImage: gridLines, display: "grid", gridTemplateColumns: `repeat(${N}, minmax(${COL_MIN}px, 1fr))`, gridTemplateRows: `repeat(${r.lanes}, ${BAR_H}px)`, alignContent: "center", rowGap: LANE_GAP, padding: "8px 0" }}>
+                              <div key={r.pid} style={{ position: "relative", height: rowH(r.lanes), borderBottom: ri < rows.length - 1 ? `1px solid ${SURFACE.borderMuted}` : "none", background: ri % 2 === 0 ? SURFACE.card : "#fafbfc", backgroundImage: gridLines, display: "grid", gridTemplateColumns: `repeat(${N}, minmax(${COL_MIN}px, 1fr))`, gridTemplateRows: `repeat(${r.lanes}, ${BAR_H}px)`, alignContent: "center", rowGap: LANE_GAP, padding: "8px 0" }}>
                                 {r.bars.map((bar, bi) => {
                                   const meta = GCAT[bar.cat];
                                   return (
@@ -1382,11 +1382,11 @@ export default function DeportesPage() {
 
             {/* ── VISTA MES (celdas grandes con mini-cards color-coded) */}
             {calView === "month" && (
-              <section className="relative accent-strip-top animate-fade-up" style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: 20, overflow: "hidden", boxShadow: pal.cardShadow }}>
+              <section className="relative accent-strip-top animate-fade-up" style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: 20, overflow: "hidden", boxShadow: pal.cardShadow }}>
                 {/* En móvil el mes scrollea horizontal en vez de aplastar los 7 días. */}
                 <div style={{ overflowX: "auto" }}>
                 <div style={{ minWidth: "640px" }}>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", background: SURFACE.bg, borderBottom: "1px solid #e2e8f0", paddingTop: 4 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", background: SURFACE.bg, borderBottom: `1px solid ${SURFACE.border}`, paddingTop: 4 }}>
                   {WEEK.map(d => (
                     <div key={d} style={{ textAlign: "center", padding: "10px 0", fontSize: 11, fontWeight: 800, color: SURFACE.textSecondary, letterSpacing: "0.1em", textTransform: "uppercase" }}>{d}</div>
                   ))}
@@ -1405,7 +1405,7 @@ export default function DeportesPage() {
                         style={{
                           minHeight: 110, padding: 6, cursor: "pointer",
                           background: isSelected ? "linear-gradient(160deg,rgba(33,208,179,0.10),rgba(33,208,179,0.03))" : isToday ? "linear-gradient(160deg,rgba(31,205,255,0.08),#fff)" : SURFACE.card,
-                          border: "1px solid #f1f5f9",
+                          border: `1px solid ${SURFACE.borderMuted}`,
                           opacity: isCurrentMonth ? 1 : 0.4,
                         }}>
                         <div className="flex items-center justify-between">
@@ -1413,7 +1413,7 @@ export default function DeportesPage() {
                             display: "inline-flex", alignItems: "center", justifyContent: "center",
                             width: 22, height: 22, borderRadius: "50%",
                             fontSize: 11, fontWeight: isToday ? 800 : 600,
-                            background: isToday ? "linear-gradient(135deg, #21D0B3, #1eb19a)" : "transparent",
+                            background: isToday ? `linear-gradient(135deg, ${BRAND.teal}, #1eb19a)` : "transparent",
                             color: isToday ? SURFACE.card : isCurrentMonth ? SURFACE.text : SURFACE.textFaint,
                             boxShadow: isToday ? "0 2px 6px rgba(33,208,179,0.4)" : "none",
                           }}>{day.getDate()}</span>
@@ -1465,7 +1465,7 @@ export default function DeportesPage() {
 
             {/* ── VISTA SEMANA */}
             {calView === "week" && (
-              <section className="relative accent-strip-top animate-fade-up" style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: 20, overflow: "hidden", boxShadow: pal.cardShadow }}>
+              <section className="relative accent-strip-top animate-fade-up" style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: 20, overflow: "hidden", boxShadow: pal.cardShadow }}>
                 {/* En móvil la semana scrollea horizontal en vez de aplastar los 7 días. */}
                 <div style={{ overflowX: "auto" }}>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", minWidth: "640px", paddingTop: 4 }}>
@@ -1481,7 +1481,7 @@ export default function DeportesPage() {
                           minHeight: 360, padding: 10, cursor: "pointer",
                           background: isSelected ? "rgba(33,208,179,0.05)" : SURFACE.card,
                           borderLeft: `1px solid #f1f5f9`,
-                          borderTop: isToday ? "3px solid #21D0B3" : "1px solid #f1f5f9",
+                          borderTop: isToday ? `3px solid ${BRAND.teal}` : `1px solid ${SURFACE.borderMuted}`,
                         }}>
                         <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: isToday ? BRAND.teal : SURFACE.textFaint }}>
                           {WEEK[(day.getDay() + 6) % 7]}
@@ -1525,7 +1525,7 @@ export default function DeportesPage() {
 
             {/* ── VISTA DÍA (timeline horaria) */}
             {calView === "day" && (
-              <section className="relative accent-strip-top animate-fade-up" style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: 20, padding: 18, overflow: "hidden", boxShadow: pal.cardShadow }}>
+              <section className="relative accent-strip-top animate-fade-up" style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: 20, padding: 18, overflow: "hidden", boxShadow: pal.cardShadow }}>
                 {selectedItems.length === 0 ? (
                   <div style={{ padding: "48px 16px", textAlign: "center" }}>
                     <p style={{ marginBottom: 8, color: SURFACE.borderStrong, display: "flex", justifyContent: "center" }}><CalendarIcon size={48} /></p>
@@ -1538,10 +1538,10 @@ export default function DeportesPage() {
                       const items = selectedItems.filter(ev => new Date(ev.scheduledAt!).getHours() === h);
                       return (
                         <div key={h} style={{ display: "contents" }}>
-                          <div style={{ fontSize: 10, fontWeight: 700, color: SURFACE.textFaint, textAlign: "right", paddingRight: 8, paddingTop: 4, borderRight: "1px solid #f1f5f9" }}>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: SURFACE.textFaint, textAlign: "right", paddingRight: 8, paddingTop: 4, borderRight: `1px solid ${SURFACE.borderMuted}` }}>
                             {String(h).padStart(2, "0")}:00
                           </div>
-                          <div style={{ minHeight: 36, padding: "2px 0 4px", borderBottom: "1px solid #f8fafc" }}>
+                          <div style={{ minHeight: 36, padding: "2px 0 4px", borderBottom: `1px solid ${SURFACE.bg}` }}>
                             {items.length === 0 && <div style={{ height: 1, background: "#fafbfc" }} />}
                             {items.map(ev => {
                               const pal2 = venueColor(ev.venueName);
@@ -1583,7 +1583,7 @@ export default function DeportesPage() {
 
             {/* ── VISTA TABLA (estilo Excel) */}
             {calView === "table" && (
-              <section className="relative accent-strip-top animate-fade-up" style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: 20, overflow: "hidden", boxShadow: pal.cardShadow }}>
+              <section className="relative accent-strip-top animate-fade-up" style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: 20, overflow: "hidden", boxShadow: pal.cardShadow }}>
                 {calendarPruebas.length === 0 ? (
                   <div style={{ padding: 48, textAlign: "center" }}>
                     <p style={{ fontSize: 14, color: SURFACE.textFaint }}>Sin pruebas que coincidan con los filtros</p>
@@ -1592,7 +1592,7 @@ export default function DeportesPage() {
                   <div style={{ overflowX: "auto" }}>
                     <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                       <thead>
-                        <tr style={{ background: "linear-gradient(135deg, #0f172a, #1e293b)", color: SURFACE.card }}>
+                        <tr style={{ background: `linear-gradient(135deg, ${SURFACE.text}, #1e293b)`, color: SURFACE.card }}>
                           {["N°", "Día", "Hora", "Prueba", "Deporte", "Categoría", "Recinto"].map(h => (
                             <th key={h} style={{
                               padding: "10px 12px", textAlign: "left",
@@ -1615,7 +1615,7 @@ export default function DeportesPage() {
                               onClick={() => openEditPrueba(ev)}
                               style={{
                                 background: i % 2 === 0 ? SURFACE.card : "#fafbfc",
-                                borderBottom: "1px solid #f1f5f9",
+                                borderBottom: `1px solid ${SURFACE.borderMuted}`,
                                 cursor: "pointer",
                                 transition: "background 0.1s",
                               }}
@@ -1662,7 +1662,7 @@ export default function DeportesPage() {
 
             {/* Detalle del día (visible siempre que NO sea vista día/tabla) */}
             {(calView === "month" || calView === "week") && (
-              <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: 16, padding: 16, boxShadow: pal.cardShadow }}>
+              <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: 16, padding: 16, boxShadow: pal.cardShadow }}>
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div>
                     <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: BRAND.teal, margin: 0 }}>
@@ -1723,7 +1723,7 @@ export default function DeportesPage() {
                   style={{ width: "100%", maxWidth: 560, maxHeight: "88vh", display: "flex", flexDirection: "column", background: SURFACE.card, borderRadius: 20, overflow: "hidden", boxShadow: "0 24px 60px rgba(15,23,42,0.35)" }}
                 >
                   {/* Header */}
-                  <div style={{ position: "relative", padding: "18px 20px", background: "linear-gradient(135deg, #21D0B3 0%, #1FCDFF 100%)", overflow: "hidden" }}>
+                  <div style={{ position: "relative", padding: "18px 20px", background: `linear-gradient(135deg, ${BRAND.teal} 0%, ${BRAND.blue} 100%)`, overflow: "hidden" }}>
                     <div className="ambient-orb" style={{ width: 160, height: 160, top: -60, right: -40, background: "radial-gradient(circle, rgba(255,255,255,0.35) 0%, transparent 65%)" }} />
                     <div className="relative flex items-start justify-between gap-3">
                       <div style={{ minWidth: 0 }}>
@@ -1774,7 +1774,7 @@ export default function DeportesPage() {
                   </div>
 
                   {/* Footer */}
-                  <div style={{ padding: "12px 16px", borderTop: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", gap: 10, background: SURFACE.bg }}>
+                  <div style={{ padding: "12px 16px", borderTop: `1px solid ${SURFACE.border}`, display: "flex", justifyContent: "space-between", gap: 10, background: SURFACE.bg }}>
                     <button type="button" className="btn btn-ghost" onClick={() => setCalDayModalOpen(false)}>Cerrar</button>
                     {selectedItems.length > 0 && (
                       <button type="button" className="btn btn-primary" onClick={() => { setCalDayModalOpen(false); setCalView("day"); }}>
@@ -1849,7 +1849,7 @@ export default function DeportesPage() {
                   </div>
 
                   {/* Footer */}
-                  <div style={{ padding: "12px 16px", borderTop: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", gap: 10, background: SURFACE.bg, alignItems: "center" }}>
+                  <div style={{ padding: "12px 16px", borderTop: `1px solid ${SURFACE.border}`, display: "flex", justifyContent: "space-between", gap: 10, background: SURFACE.bg, alignItems: "center" }}>
                     <span style={{ fontSize: 11, color: SURFACE.textFaint }}>Toca una prueba para editarla</span>
                     <button type="button" className="btn btn-ghost" onClick={() => setGanttBar(null)}>Cerrar</button>
                   </div>
@@ -1863,7 +1863,7 @@ export default function DeportesPage() {
       {/* ── Prueba modal */}
       {pruebaModal && (
         <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(15,23,42,0.4)", backdropFilter: "blur(4px)", padding: "16px" }}>
-          <div style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "20px", padding: "24px", width: "100%", maxWidth: "560px", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 8px 40px rgba(15,23,42,0.15)" }}>
+          <div style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "20px", padding: "24px", width: "100%", maxWidth: "560px", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 8px 40px rgba(15,23,42,0.15)" }}>
             <h2 style={{ fontWeight: 700, fontSize: "18px", color: SURFACE.text, marginBottom: "4px" }}>
               {pruebaModal.editing ? t("Editar prueba") : t("Nueva prueba")}
             </h2>
@@ -1953,7 +1953,7 @@ export default function DeportesPage() {
               </label>
 
               {/* ───── Ceremonia de premiación ───── */}
-              <div style={{ borderTop: "1px dashed #e2e8f0", paddingTop: "12px", marginTop: "4px" }}>
+              <div style={{ borderTop: `1px dashed ${SURFACE.border}`, paddingTop: "12px", marginTop: "4px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                   <button
                     type="button"
@@ -1966,7 +1966,7 @@ export default function DeportesPage() {
                 </div>
 
                 {premiacion.enabled && (
-                  <div style={{ background: SURFACE.bg, border: "1px solid #e2e8f0", borderRadius: 12, padding: "12px", display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div style={{ background: SURFACE.bg, border: `1px solid ${SURFACE.border}`, borderRadius: 12, padding: "12px", display: "flex", flexDirection: "column", gap: 10 }}>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                       <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                         <span style={{ fontSize: 10, fontWeight: 600, color: SURFACE.textFaint, textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("Fecha y hora ceremonia")}</span>
@@ -1997,13 +1997,13 @@ export default function DeportesPage() {
                         <button
                           type="button"
                           onClick={() => setPremiacion(p => ({ ...p, awarders: [...p.awarders, { athleteId: "", role: "AWARDER" }] }))}
-                          style={{ fontSize: 11, padding: "4px 10px", borderRadius: 8, border: "1px solid #21D0B3", background: "rgba(33,208,179,0.08)", color: "#14b8a6", cursor: "pointer", fontWeight: 700 }}
+                          style={{ fontSize: 11, padding: "4px 10px", borderRadius: 8, border: `1px solid ${BRAND.teal}`, background: "rgba(33,208,179,0.08)", color: "#14b8a6", cursor: "pointer", fontWeight: 700 }}
                         >
                           + {t("Agregar VIP")}
                         </button>
                       </div>
                       {premiacion.awarders.length === 0 && (
-                        <p style={{ fontSize: 11, color: SURFACE.textFaint, padding: "8px", textAlign: "center", border: "1px dashed #e2e8f0", borderRadius: 8 }}>
+                        <p style={{ fontSize: 11, color: SURFACE.textFaint, padding: "8px", textAlign: "center", border: `1px dashed ${SURFACE.border}`, borderRadius: 8 }}>
                           {t("Sin VIPs asignados. Agrega al menos uno.")}
                         </p>
                       )}
@@ -2072,11 +2072,11 @@ export default function DeportesPage() {
             </p>
             <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
               <button onClick={() => setDeletePruebaConfirm(null)}
-                style={{ padding: "10px 24px", borderRadius: "10px", border: "1px solid #e2e8f0", background: SURFACE.card, color: SURFACE.textMuted, fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
+                style={{ padding: "10px 24px", borderRadius: "10px", border: `1px solid ${SURFACE.border}`, background: SURFACE.card, color: SURFACE.textMuted, fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
                 Cancelar
               </button>
               <button onClick={() => removePrueba(deletePruebaConfirm)}
-                style={{ padding: "10px 24px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #ef4444, #dc2626)", color: SURFACE.card, fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 10px rgba(239,68,68,0.3)" }}>
+                style={{ padding: "10px 24px", borderRadius: "10px", border: "none", background: `linear-gradient(135deg, ${STATE.danger}, ${STATE.dangerText})`, color: SURFACE.card, fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 10px rgba(239,68,68,0.3)" }}>
                 Sí, eliminar
               </button>
             </div>

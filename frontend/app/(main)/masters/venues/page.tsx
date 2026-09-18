@@ -402,7 +402,7 @@ export default function VenuesMasterPage() {
       </section>
 
       {/* Cards */}
-      <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "28px", padding: "28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+      <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "28px", padding: "28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
@@ -411,13 +411,13 @@ export default function VenuesMasterPage() {
             <h3 style={{ fontSize: "22px", fontWeight: 800, color: SURFACE.text, margin: 0 }}>{t("Sedes registradas")}</h3>
           </div>
           <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.25)", borderRadius: "99px", padding: "6px 14px" }}>
-            <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: BRAND.teal, boxShadow: "0 0 6px #21D0B3", flexShrink: 0 }} />
+            <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: BRAND.teal, boxShadow: `0 0 6px ${BRAND.teal}`, flexShrink: 0 }} />
             <span style={{ fontSize: "13px", fontWeight: 700, color: BRAND.teal }}>{venues.length} {t("sede(s)")}</span>
           </div>
         </div>
 
         {venues.length === 0 ? (
-          <div style={{ marginTop: "24px", borderRadius: "16px", border: "2px dashed #e2e8f0", background: SURFACE.bg, padding: "32px", textAlign: "center", fontSize: "13px", color: SURFACE.textFaint }}>
+          <div style={{ marginTop: "24px", borderRadius: "16px", border: `2px dashed ${SURFACE.border}`, background: SURFACE.bg, padding: "32px", textAlign: "center", fontSize: "13px", color: SURFACE.textFaint }}>
             {t("No hay sedes registradas todavía.")}
           </div>
         ) : (
@@ -468,9 +468,9 @@ function VenueCard({
   return (
     <article style={{
       overflow: "hidden", borderRadius: "24px",
-      border: "1px solid #e2e8f0", background: SURFACE.card,
+      border: `1px solid ${SURFACE.border}`, background: SURFACE.card,
       boxShadow: "0 2px 8px rgba(15,23,42,0.08)",
-      borderTop: hasPhoto ? undefined : "3px solid #21D0B3",
+      borderTop: hasPhoto ? undefined : `3px solid ${BRAND.teal}`,
       transition: "transform 120ms ease, box-shadow 120ms ease",
     }}
       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; (e.currentTarget as HTMLElement).style.boxShadow = "0 6px 20px rgba(15,23,42,0.12)"; }}
@@ -523,7 +523,7 @@ function VenueCard({
             </div>
             <div style={{ display: "flex", gap: "8px" }}>
               <button
-                style={{ borderRadius: "10px", border: "1px solid #e2e8f0", background: SURFACE.bg, padding: "6px 14px", fontSize: "12px", fontWeight: 600, color: SURFACE.textSecondary, cursor: "pointer" }}
+                style={{ borderRadius: "10px", border: `1px solid ${SURFACE.border}`, background: SURFACE.bg, padding: "6px 14px", fontSize: "12px", fontWeight: 600, color: SURFACE.textSecondary, cursor: "pointer" }}
                 type="button"
                 onClick={() => onEdit(venue)}
               >{t("Editar")}</button>
@@ -539,7 +539,7 @@ function VenueCard({
         <div className={`grid gap-3 ${embedUrl ? "sm:grid-cols-2" : ""} ${!hasPhoto ? "" : "mt-3"}`}>
           {/* Info */}
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            <div style={{ borderRadius: "14px", background: SURFACE.bg, border: "1px solid #e2e8f0", borderLeft: "3px solid #21D0B3", padding: "12px 14px" }}>
+            <div style={{ borderRadius: "14px", background: SURFACE.bg, border: `1px solid ${SURFACE.border}`, borderLeft: `3px solid ${BRAND.teal}`, padding: "12px 14px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: BRAND.teal, marginBottom: "6px" }}>
                 <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -549,7 +549,7 @@ function VenueCard({
               </div>
               <p style={{ fontSize: "13px", color: "#1e293b", fontWeight: 500, margin: 0 }}>{venue.address || "—"}</p>
             </div>
-            <div style={{ borderRadius: "14px", background: SURFACE.bg, border: "1px solid #e2e8f0", borderLeft: "3px solid #21D0B3", padding: "12px 14px" }}>
+            <div style={{ borderRadius: "14px", background: SURFACE.bg, border: `1px solid ${SURFACE.border}`, borderLeft: `3px solid ${BRAND.teal}`, padding: "12px 14px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: BRAND.teal, marginBottom: "6px" }}>
                 <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" />
@@ -564,7 +564,7 @@ function VenueCard({
 
           {/* Embedded map */}
           {embedUrl && (
-            <div style={{ overflow: "hidden", borderRadius: "14px", border: "1px solid #e2e8f0", background: SURFACE.borderMuted }}>
+            <div style={{ overflow: "hidden", borderRadius: "14px", border: `1px solid ${SURFACE.border}`, background: SURFACE.borderMuted }}>
               <iframe
                 src={embedUrl}
                 title={t("Mapa de {name}").replace("{name}", venue.name)}
@@ -576,7 +576,7 @@ function VenueCard({
           )}
         </div>
 
-        <div style={{ marginTop: "16px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "12px", borderTop: "1px solid #f1f5f9", paddingTop: "16px" }}>
+        <div style={{ marginTop: "16px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "12px", borderTop: `1px solid ${SURFACE.borderMuted}`, paddingTop: "16px" }}>
           <span style={{ fontSize: "11px", color: SURFACE.textFaint }}>{t("Actualizada: ")}{formatDate(venue.updatedAt)}</span>
           {openMapsUrl && (
             <Link

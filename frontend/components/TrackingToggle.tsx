@@ -173,14 +173,14 @@ export default function TrackingToggle({ driverId }: Props) {
       style={{
         background: SURFACE.card,
         borderRadius: 14,
-        border: "1px solid #e2e8f0",
+        border: `1px solid ${SURFACE.border}`,
         overflow: "hidden",
       }}
     >
       <div
         style={{
           padding: "12px 14px",
-          borderBottom: "1px solid #f1f5f9",
+          borderBottom: `1px solid ${SURFACE.borderMuted}`,
           display: "flex",
           alignItems: "center",
           gap: 8,
@@ -265,7 +265,7 @@ export default function TrackingToggle({ driverId }: Props) {
             background:
               isOn && !gpsOff
                 ? "#fee2e2"
-                : "linear-gradient(135deg,#21D0B3,#14AE98)",
+                : `linear-gradient(135deg,${BRAND.teal},#14AE98)`,
             color: isOn && !gpsOff ? "#b91c1c" : SURFACE.card,
             fontSize: 13,
             fontWeight: 700,

@@ -115,8 +115,8 @@ export default function AdminNotificacionesPage() {
           empujaba el compositor del push fuera de la pantalla. */}
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(320px,1fr)_1.4fr] gap-4 items-stretch">
         {/* ────── Recipients column ────── */}
-        <div style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: 14, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-          <div style={{ padding: "12px 14px", borderBottom: "1px solid #f1f5f9" }}>
+        <div style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: 14, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          <div style={{ padding: "12px 14px", borderBottom: `1px solid ${SURFACE.borderMuted}` }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
               <span style={{ fontSize: 13, fontWeight: 700, color: SURFACE.text }}>
                 Destinatarios ({recipients.length})
@@ -127,7 +127,7 @@ export default function AdminNotificacionesPage() {
                 disabled={loading}
                 style={{
                   fontSize: 11, fontWeight: 600, color: SURFACE.textMuted,
-                  background: SURFACE.bg, border: "1px solid #e2e8f0",
+                  background: SURFACE.bg, border: `1px solid ${SURFACE.border}`,
                   borderRadius: 8, padding: "4px 10px", cursor: loading ? "default" : "pointer",
                 }}
               >
@@ -141,7 +141,7 @@ export default function AdminNotificacionesPage() {
               onChange={(e) => setFilter(e.target.value)}
               style={{
                 marginTop: 8, width: "100%", padding: "8px 10px", fontSize: 13,
-                borderRadius: 8, border: "1px solid #e2e8f0", outline: "none",
+                borderRadius: 8, border: `1px solid ${SURFACE.border}`, outline: "none",
                 background: SURFACE.bg, color: SURFACE.text,
               }}
             />
@@ -172,7 +172,7 @@ export default function AdminNotificacionesPage() {
                   style={{
                     display: "flex", alignItems: "center", gap: 10,
                     width: "100%", padding: "10px 14px",
-                    border: "none", borderBottom: "1px solid #f8fafc",
+                    border: "none", borderBottom: `1px solid ${SURFACE.bg}`,
                     background: isSelected ? "rgba(33,208,179,0.08)" : SURFACE.card,
                     cursor: "pointer", textAlign: "left",
                   }}
@@ -206,7 +206,7 @@ export default function AdminNotificacionesPage() {
         </div>
 
         {/* ────── Compose column ────── */}
-        <div style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: 14, padding: 18 }}>
+        <div style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: 14, padding: 18 }}>
           <div style={{ marginBottom: 14 }}>
             <span style={{ fontSize: 12, color: SURFACE.textMuted, fontWeight: 600 }}>Para:</span>
             <p style={{ margin: "4px 0 0", fontSize: 14, color: selected ? SURFACE.text : SURFACE.textFaint }}>
@@ -231,7 +231,7 @@ export default function AdminNotificacionesPage() {
                   onClick={() => setEmoji(e)}
                   style={{
                     width: 36, height: 36, borderRadius: 8,
-                    border: emoji === e ? "2px solid #21D0B3" : "1px solid #e2e8f0",
+                    border: emoji === e ? `2px solid ${BRAND.teal}` : `1px solid ${SURFACE.border}`,
                     background: emoji === e ? "rgba(33,208,179,0.08)" : SURFACE.card,
                     fontSize: 18, cursor: "pointer",
                   }}
@@ -254,7 +254,7 @@ export default function AdminNotificacionesPage() {
               maxLength={80}
               style={{
                 width: "100%", padding: "9px 11px", fontSize: 13,
-                borderRadius: 8, border: "1px solid #e2e8f0", outline: "none",
+                borderRadius: 8, border: `1px solid ${SURFACE.border}`, outline: "none",
                 color: SURFACE.text,
               }}
             />
@@ -272,7 +272,7 @@ export default function AdminNotificacionesPage() {
               maxLength={300}
               style={{
                 width: "100%", padding: "9px 11px", fontSize: 13,
-                borderRadius: 8, border: "1px solid #e2e8f0", outline: "none",
+                borderRadius: 8, border: `1px solid ${SURFACE.border}`, outline: "none",
                 color: SURFACE.text, resize: "vertical", fontFamily: "inherit",
               }}
             />
@@ -310,7 +310,7 @@ export default function AdminNotificacionesPage() {
             disabled={!canSend}
             style={{
               width: "100%", padding: 12, borderRadius: 10, border: "none",
-              background: canSend ? "linear-gradient(135deg,#21D0B3,#14AE98)" : SURFACE.borderStrong,
+              background: canSend ? `linear-gradient(135deg,${BRAND.teal},#14AE98)` : SURFACE.borderStrong,
               color: SURFACE.card, fontSize: 13, fontWeight: 700,
               cursor: canSend ? "pointer" : "not-allowed",
             }}

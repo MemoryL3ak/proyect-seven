@@ -77,7 +77,7 @@ export default function TiposAlimentacionPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "64px 24px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", padding: "64px 24px", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", color: SURFACE.textFaint }}>
             <svg style={{ animation: "spin 1s linear infinite" }} width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
@@ -100,7 +100,7 @@ export default function TiposAlimentacionPage() {
           { label: t("Tipos distintos"), value: activeTypes.length, sub: null },
           { label: t("Delegaciones"), value: sortedDelegations.length, sub: null },
         ].map((kpi) => (
-          <div key={kpi.label} style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+          <div key={kpi.label} style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
             <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", color: SURFACE.textFaint }}>{kpi.label}</p>
             <p style={{ fontSize: "clamp(1.8rem, 8vw, 3rem)", fontWeight: 800, color: SURFACE.text, marginTop: "12px", lineHeight: 1 }}>{kpi.value}</p>
             {kpi.sub && <p style={{ fontSize: "11px", color: SURFACE.textFaint, marginTop: "4px" }}>{kpi.sub}</p>}
@@ -109,7 +109,7 @@ export default function TiposAlimentacionPage() {
       </div>
 
       {/* Dietary type cards — ALL 10 always shown */}
-      <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+      <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <h3 style={{ fontSize: "14px", fontWeight: 700, color: SURFACE.text, marginBottom: "16px" }}>{t("Distribución por tipo de alimentación")}</h3>
         <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
           {ALL_TYPES.map((dtype) => {
@@ -145,7 +145,7 @@ export default function TiposAlimentacionPage() {
 
       {/* Delegation breakdown — only if there's data */}
       {sortedDelegations.length > 0 && (
-        <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+        <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
           <h3 style={{ fontSize: "14px", fontWeight: 700, color: SURFACE.text, marginBottom: "16px" }}>{t("Desglose por delegación")}</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-separate border-spacing-0">
@@ -217,7 +217,7 @@ export default function TiposAlimentacionPage() {
       )}
 
       {total === 0 && (
-        <div style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "64px 24px", textAlign: "center", color: SURFACE.textFaint, fontSize: "13px" }}>
+        <div style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", padding: "64px 24px", textAlign: "center", color: SURFACE.textFaint, fontSize: "13px" }}>
           {t("No hay participantes registrados.")}
         </div>
       )}

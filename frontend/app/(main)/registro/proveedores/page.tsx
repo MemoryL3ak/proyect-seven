@@ -720,7 +720,7 @@ export default function ProveedoresPage() {
       {/* Header */}
       <section
         className="surface rounded-3xl p-6 flex flex-wrap items-center justify-between gap-4"
-        style={{ borderTop: "2px solid #21D0B3", boxShadow: "0 1px 6px rgba(15,23,42,0.06)" }}
+        style={{ borderTop: `2px solid ${BRAND.teal}`, boxShadow: "0 1px 6px rgba(15,23,42,0.06)" }}
       >
         <div>
           <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: BRAND.teal, marginBottom: "4px" }}>{t("Registro")}</p>
@@ -749,7 +749,7 @@ export default function ProveedoresPage() {
               fontWeight: 600,
               background: "none",
               border: "none",
-              borderBottom: activeTab === tab ? "2px solid #21D0B3" : "2px solid transparent",
+              borderBottom: activeTab === tab ? `2px solid ${BRAND.teal}` : "2px solid transparent",
               color: activeTab === tab ? BRAND.teal : "var(--text-muted)",
               cursor: "pointer",
               marginBottom: "-2px",
@@ -987,7 +987,7 @@ export default function ProveedoresPage() {
                                 <div style={{ padding: "8px 16px 12px", borderTop: `1px solid ${typeColor}15`, background: `${typeColor}05` }}>
                                   <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: typeColor, margin: "0 0 6px" }}>{t("Subproveedores")} ({subs.length})</p>
                                   {subs.map(sub => (
-                                    <div key={sub.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 8px", borderRadius: 6, background: SURFACE.card, border: "1px solid #f1f5f9", marginBottom: 3 }}>
+                                    <div key={sub.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 8px", borderRadius: 6, background: SURFACE.card, border: `1px solid ${SURFACE.borderMuted}`, marginBottom: 3 }}>
                                       <span style={{ fontSize: 12, fontWeight: 600, color: SURFACE.text }}>{sub.name}</span>
                                       <div style={{ display: "flex", gap: 4 }}>
                                         <button onClick={() => openEditProvider(sub)} style={{ padding: 3, borderRadius: 4, border: "none", background: "none", cursor: "pointer", color: SURFACE.textFaint }} title={t("Editar")}>
@@ -1142,7 +1142,7 @@ export default function ProveedoresPage() {
                   </div>
                 )}
                 <button onClick={() => setBulkPhotoResult(null)}
-                  style={{ padding: "10px 32px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: SURFACE.card, fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 10px rgba(33,208,179,0.3)" }}>
+                  style={{ padding: "10px 32px", borderRadius: "10px", border: "none", background: `linear-gradient(135deg, ${BRAND.teal}, #14AE98)`, color: SURFACE.card, fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 10px rgba(33,208,179,0.3)" }}>
                   {t("Entendido")}
                 </button>
               </div>
@@ -1175,7 +1175,7 @@ export default function ProveedoresPage() {
                     {(() => {
                       const photo = (p.metadata as any)?.photoUrl;
                       return photo && typeof photo === "string" && photo.startsWith("http") ? (
-                        <img src={photo} alt="" style={{ width:36, height:36, borderRadius:"50%", objectFit:"cover", flexShrink:0, border:"2px solid #21D0B3" }} />
+                        <img src={photo} alt="" style={{ width:36, height:36, borderRadius:"50%", objectFit:"cover", flexShrink:0, border:`2px solid ${BRAND.teal}` }} />
                       ) : (
                         <div style={{ width:36, height:36, borderRadius:"50%", flexShrink:0, background:"rgba(33,208,179,0.1)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"12px", fontWeight:700, color:BRAND.teal }}>
                           {(p.fullName || "?").split(" ").slice(0,2).map(w => w[0] ?? "").join("").toUpperCase()}
@@ -1337,7 +1337,7 @@ export default function ProveedoresPage() {
             style={{
               maxWidth: isTransporteProvider ? "820px" : "448px",
               maxHeight: "90vh",
-              borderTop: "2px solid #21D0B3",
+              borderTop: `2px solid ${BRAND.teal}`,
               boxShadow: "0 8px 32px rgba(15,23,42,0.18)",
             }}
           >
@@ -1358,7 +1358,7 @@ export default function ProveedoresPage() {
                     ? URL.createObjectURL(providerDocFiles.logo)
                     : typeof providerModal?.editing?.metadata?.logo === "string" ? (providerModal.editing.metadata.logo as string) : null;
                   return (
-                    <div style={{ width: "56px", height: "56px", borderRadius: "14px", border: "2px dashed #e2e8f0", background: SURFACE.bg, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
+                    <div style={{ width: "56px", height: "56px", borderRadius: "14px", border: `2px dashed ${SURFACE.border}`, background: SURFACE.bg, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
                       {logoUrl ? (
                         <img src={logoUrl} alt={t("Logo")} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                       ) : (
@@ -1508,7 +1508,7 @@ export default function ProveedoresPage() {
                             const service = SERVICE_TYPES.find((s) => s.value === rate.tripType);
                             const isFirstOfFleet = idx === 0 || providerRates[idx - 1].fleetType !== rate.fleetType;
                             return (
-                              <tr key={`${rate.fleetType}-${rate.tripType}`} style={{ borderBottom: "1px solid #f1f5f9", background: isFirstOfFleet ? "#fafbfc" : SURFACE.card }}>
+                              <tr key={`${rate.fleetType}-${rate.tripType}`} style={{ borderBottom: `1px solid ${SURFACE.borderMuted}`, background: isFirstOfFleet ? "#fafbfc" : SURFACE.card }}>
                                 <td style={{ padding: "6px 10px", fontWeight: isFirstOfFleet ? 700 : 400, color: SURFACE.text }}>
                                   {isFirstOfFleet ? t(fleet?.label || rate.fleetType) : ""}
                                 </td>
@@ -1522,7 +1522,7 @@ export default function ProveedoresPage() {
                                     const next = [...providerRates];
                                     next[idx] = { ...next[idx], clientPrice: Number(raw) || 0 };
                                     setProviderRates(next);
-                                  }} placeholder="$0" style={{ width: 95, padding: "4px 6px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 12, textAlign: "right" }} />
+                                  }} placeholder="$0" style={{ width: 95, padding: "4px 6px", borderRadius: 6, border: `1px solid ${SURFACE.border}`, fontSize: 12, textAlign: "right" }} />
                                 </td>
                                 <td style={{ padding: "4px 6px", textAlign: "right" }}>
                                   <input type="text" inputMode="numeric" value={Number(rate.providerPrice) ? `$${Number(rate.providerPrice).toLocaleString("es-CL")}` : ""} onChange={(e) => {
@@ -1530,7 +1530,7 @@ export default function ProveedoresPage() {
                                     const next = [...providerRates];
                                     next[idx] = { ...next[idx], providerPrice: Number(raw) || 0 };
                                     setProviderRates(next);
-                                  }} placeholder="$0" style={{ width: 95, padding: "4px 6px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 12, textAlign: "right" }} />
+                                  }} placeholder="$0" style={{ width: 95, padding: "4px 6px", borderRadius: 6, border: `1px solid ${SURFACE.border}`, fontSize: 12, textAlign: "right" }} />
                                 </td>
                               </tr>
                             );
@@ -1563,7 +1563,7 @@ export default function ProveedoresPage() {
             style={{
               maxWidth: isTransporteParticipant ? "720px" : "560px",
               maxHeight: "92vh",
-              borderTop: "2px solid #21D0B3",
+              borderTop: `2px solid ${BRAND.teal}`,
               boxShadow: "0 8px 32px rgba(15,23,42,0.18)",
             }}
           >
@@ -1595,7 +1595,7 @@ export default function ProveedoresPage() {
               {/* Foto */}
               <div style={{ display: "flex", alignItems: "center", gap: "14px", padding: "12px 0" }}>
                 {participantForm.photoDataUrl ? (
-                  <img src={participantForm.photoDataUrl} alt="" style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover", border: "3px solid #21D0B3" }} />
+                  <img src={participantForm.photoDataUrl} alt="" style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover", border: `3px solid ${BRAND.teal}` }} />
                 ) : (
                   <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(33,208,179,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", fontWeight: 700, color: BRAND.teal }}>
                     {(participantForm.fullName || "?").split(" ").slice(0, 2).map(w => w[0] ?? "").join("").toUpperCase()}
@@ -1604,7 +1604,7 @@ export default function ProveedoresPage() {
                 <div>
                   <label style={{
                     display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 16px", borderRadius: "10px",
-                    background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: SURFACE.card, fontSize: "12px", fontWeight: 700,
+                    background: `linear-gradient(135deg, ${BRAND.teal}, #14AE98)`, color: SURFACE.card, fontSize: "12px", fontWeight: 700,
                     cursor: "pointer", boxShadow: "0 2px 8px rgba(33,208,179,0.3)",
                   }}>
                     <CameraIcon size={12} strokeWidth={2.5} />

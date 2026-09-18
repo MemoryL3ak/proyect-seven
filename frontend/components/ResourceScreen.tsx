@@ -2859,7 +2859,7 @@ export default function ResourceScreen({
                           {phoneDropdownOpen && (
                             <>
                               <div style={{ position: "fixed", inset: 0, zIndex: 50 }} onClick={() => setPhoneDropdownOpen(false)} />
-                              <div style={{ position: "absolute", top: "100%", left: 0, marginTop: "4px", zIndex: 51, background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "12px", boxShadow: "0 8px 30px rgba(15,23,42,0.15)", maxHeight: "240px", overflowY: "auto", width: "220px" }}>
+                              <div style={{ position: "absolute", top: "100%", left: 0, marginTop: "4px", zIndex: 51, background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "12px", boxShadow: "0 8px 30px rgba(15,23,42,0.15)", maxHeight: "240px", overflowY: "auto", width: "220px" }}>
                                 {PHONE_CODES.map(pc => (
                                   <button
                                     key={pc.code}
@@ -2931,7 +2931,7 @@ export default function ResourceScreen({
                         }}
                       />
                       {/* Preview */}
-                      <label htmlFor={`file-${field.key}`} className="cursor-pointer" style={{ width: "52px", height: "52px", borderRadius: "12px", border: form[field.key] ? "2px solid #21D0B3" : "2px dashed #e2e8f0", background: SURFACE.bg, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0, transition: "border-color 0.15s" }}>
+                      <label htmlFor={`file-${field.key}`} className="cursor-pointer" style={{ width: "52px", height: "52px", borderRadius: "12px", border: form[field.key] ? `2px solid ${BRAND.teal}` : `2px dashed ${SURFACE.border}`, background: SURFACE.bg, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0, transition: "border-color 0.15s" }}>
                         {form[field.key] ? (
                           <img src={form[field.key] as string} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                         ) : (
@@ -2939,7 +2939,7 @@ export default function ResourceScreen({
                         )}
                       </label>
                       <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                        <label htmlFor={`file-${field.key}`} className="cursor-pointer" style={{ fontSize: "12px", fontWeight: 600, padding: "5px 14px", borderRadius: "8px", border: "none", color: SURFACE.card, background: form[field.key] ? SURFACE.textMuted : "linear-gradient(135deg, #21D0B3, #14AE98)", display: "inline-flex", alignItems: "center", gap: "5px", boxShadow: form[field.key] ? "none" : "0 2px 8px rgba(33,208,179,0.25)" }}>
+                        <label htmlFor={`file-${field.key}`} className="cursor-pointer" style={{ fontSize: "12px", fontWeight: 600, padding: "5px 14px", borderRadius: "8px", border: "none", color: SURFACE.card, background: form[field.key] ? SURFACE.textMuted : `linear-gradient(135deg, ${BRAND.teal}, #14AE98)`, display: "inline-flex", alignItems: "center", gap: "5px", boxShadow: form[field.key] ? "none" : "0 2px 8px rgba(33,208,179,0.25)" }}>
                           <UploadIcon size={12} strokeWidth={2.5} />
                           {form[field.key] ? "Cambiar foto" : "Subir foto"}
                         </label>
@@ -3408,7 +3408,7 @@ export default function ResourceScreen({
                     </div>
                   </section>
 
-                  <section className="surface md:col-span-2 p-5" style={{ borderTop: "2px solid #1FCDFF" }}>
+                  <section className="surface md:col-span-2 p-5" style={{ borderTop: `2px solid ${BRAND.blue}` }}>
                     <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                       <div>
                         <p className="section-label">
@@ -3497,7 +3497,7 @@ export default function ResourceScreen({
       ) : null}
 
       {viewMode !== "form" ? (
-      <section className="surface p-6" style={{ borderTop: "2px solid #1FCDFF" }}>
+      <section className="surface p-6" style={{ borderTop: `2px solid ${BRAND.blue}` }}>
         <div className="flex items-center justify-between mb-5">
           <div>
             <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: BRAND.blue, marginBottom: "3px" }}>

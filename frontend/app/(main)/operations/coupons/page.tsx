@@ -509,7 +509,7 @@ function CatalogTab({
               </Field>
               <Field label={t("Imagen referencial")} className="md:col-span-2">
                 <div className="flex items-start gap-3">
-                  <div style={{ width: 104, height: 78, borderRadius: 10, overflow: "hidden", background: SURFACE.borderMuted, border: "1px solid #e2e8f0", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <div style={{ width: 104, height: 78, borderRadius: 10, overflow: "hidden", background: SURFACE.borderMuted, border: `1px solid ${SURFACE.border}`, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
                     {form.imageUrl ? (
                       <img src={form.imageUrl} alt={t("Vista previa")}
                         style={{ width: "100%", height: "100%", objectFit: "cover" }} />

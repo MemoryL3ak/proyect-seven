@@ -193,7 +193,7 @@ export default function PartnerLoginPage() {
                   className="w-full px-4 py-3 rounded-xl text-lg font-mono uppercase text-center tracking-wider transition-all"
                   style={{
                     background: SURFACE.bg,
-                    border: "2px solid #e2e8f0",
+                    border: `2px solid ${SURFACE.border}`,
                     outline: "none",
                   }}
                   placeholder="MCDO-001"
@@ -223,7 +223,7 @@ export default function PartnerLoginPage() {
                   className="w-full px-4 py-3 rounded-xl text-2xl font-mono text-center tracking-[0.5em] transition-all"
                   style={{
                     background: SURFACE.bg,
-                    border: "2px solid #e2e8f0",
+                    border: `2px solid ${SURFACE.border}`,
                     outline: "none",
                   }}
                   placeholder="••••"

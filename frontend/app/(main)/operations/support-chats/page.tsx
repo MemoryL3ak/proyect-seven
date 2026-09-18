@@ -171,7 +171,7 @@ export default function SupportChatsPage() {
 
   return (
     <div className="space-y-4">
-      <section style={{ borderRadius: "20px", background: SURFACE.card, border: "1px solid #e2e8f0", padding: "20px 24px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+      <section style={{ borderRadius: "20px", background: SURFACE.card, border: `1px solid ${SURFACE.border}`, padding: "20px 24px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
           <div>
             <p style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: BRAND.teal }}>Asistencia</p>
@@ -197,8 +197,8 @@ export default function SupportChatsPage() {
 
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "380px 1fr", gap: "16px", height: "72vh" }}>
         {/* Inbox */}
-        <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", overflow: "hidden", display: isMobile && selectedId ? "none" : "flex", flexDirection: "column" }}>
-          <div style={{ padding: "10px 12px", borderBottom: "1px solid #e2e8f0", background: SURFACE.bg }}>
+        <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", overflow: "hidden", display: isMobile && selectedId ? "none" : "flex", flexDirection: "column" }}>
+          <div style={{ padding: "10px 12px", borderBottom: `1px solid ${SURFACE.border}`, background: SURFACE.bg }}>
             <p style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.15em", color: SURFACE.textMuted }}>Bandeja — {chats.length}</p>
           </div>
           <div style={{ flex: 1, overflowY: "auto" }}>
@@ -216,7 +216,7 @@ export default function SupportChatsPage() {
                   onClick={() => setSelectedId(c.id)}
                   style={{
                     width: "100%", textAlign: "left",
-                    padding: "12px 14px", borderBottom: "1px solid #f1f5f9",
+                    padding: "12px 14px", borderBottom: `1px solid ${SURFACE.borderMuted}`,
                     background: selected ? "#f0fdfa" : "transparent",
                     borderLeft: selected ? "3px solid #14b8a6" : "3px solid transparent",
                     cursor: "pointer", border: "none",
@@ -247,7 +247,7 @@ export default function SupportChatsPage() {
         </section>
 
         {/* Chat view */}
-        <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", overflow: "hidden", display: isMobile && !selectedId ? "none" : "flex", flexDirection: "column" }}>
+        <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", overflow: "hidden", display: isMobile && !selectedId ? "none" : "flex", flexDirection: "column" }}>
           {!selected ? (
             <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: SURFACE.textFaint, fontSize: "13px" }}>
               Selecciona una incidencia para atenderla.
@@ -255,14 +255,14 @@ export default function SupportChatsPage() {
           ) : (
             <>
               {/* Chat header */}
-              <div style={{ padding: "14px 18px", borderBottom: "1px solid #e2e8f0", background: SURFACE.bg, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
+              <div style={{ padding: "14px 18px", borderBottom: `1px solid ${SURFACE.border}`, background: SURFACE.bg, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
                   {isMobile && (
                     <button
                       type="button"
                       onClick={() => setSelectedId(null)}
                       aria-label="Volver a la bandeja"
-                      style={{ flexShrink: 0, width: "32px", height: "32px", borderRadius: "10px", border: "1px solid #e2e8f0", background: SURFACE.card, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: SURFACE.textSecondary }}
+                      style={{ flexShrink: 0, width: "32px", height: "32px", borderRadius: "10px", border: `1px solid ${SURFACE.border}`, background: SURFACE.card, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: SURFACE.textSecondary }}
                     >
                       <ChevronLeftIcon size={16} strokeWidth={2.5} />
                     </button>
@@ -284,7 +284,7 @@ export default function SupportChatsPage() {
                   <select
                     value={selected.status}
                     onChange={(e) => changeStatus(e.target.value)}
-                    style={{ padding: "6px 10px", borderRadius: "8px", border: "1px solid #e2e8f0", background: SURFACE.card, fontSize: "11px", fontWeight: 700 }}
+                    style={{ padding: "6px 10px", borderRadius: "8px", border: `1px solid ${SURFACE.border}`, background: SURFACE.card, fontSize: "11px", fontWeight: 700 }}
                   >
                     {STATUS_OPTIONS.map((s) => (<option key={s.value} value={s.value}>{s.label}</option>))}
                   </select>
@@ -304,7 +304,7 @@ export default function SupportChatsPage() {
                         maxWidth: "68%",
                         background: m.is_internal_note ? "#fef3c7" : isAgent ? BRAND.teal : SURFACE.card,
                         color: m.is_internal_note ? "#92400e" : isAgent ? SURFACE.card : SURFACE.text,
-                        border: m.is_internal_note ? "1px dashed #fbbf24" : !isAgent ? "1px solid #e2e8f0" : "none",
+                        border: m.is_internal_note ? "1px dashed #fbbf24" : !isAgent ? `1px solid ${SURFACE.border}` : "none",
                         padding: "10px 14px",
                         borderRadius: "14px",
                         fontSize: "13px",
@@ -324,7 +324,7 @@ export default function SupportChatsPage() {
               </div>
 
               {/* Composer */}
-              <div style={{ padding: "12px 16px", borderTop: "1px solid #e2e8f0", background: SURFACE.card }}>
+              <div style={{ padding: "12px 16px", borderTop: `1px solid ${SURFACE.border}`, background: SURFACE.card }}>
                 <div style={{ display: "flex", gap: "8px", alignItems: "flex-end" }}>
                   <textarea
                     value={draft}
@@ -339,7 +339,7 @@ export default function SupportChatsPage() {
                     placeholder={isNote ? "Nota interna (no visible al usuario)..." : "Responder al usuario..."}
                     style={{
                       flex: 1, padding: "10px 12px", borderRadius: "10px",
-                      border: isNote ? "1px dashed #f59e0b" : "1px solid #e2e8f0",
+                      border: isNote ? `1px dashed ${STATE.warning}` : `1px solid ${SURFACE.border}`,
                       background: isNote ? "#fffbeb" : SURFACE.card,
                       fontSize: "13px", resize: "none", outline: "none",
                     }}

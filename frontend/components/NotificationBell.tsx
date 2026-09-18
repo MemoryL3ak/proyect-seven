@@ -282,7 +282,7 @@ export default function NotificationBell({
         maxHeight: 320,
         borderRadius: 14,
         background: SURFACE.card,
-        border: "1px solid #e2e8f0",
+        border: `1px solid ${SURFACE.border}`,
         boxShadow: "0 12px 40px rgba(15,23,42,0.18), 0 4px 12px rgba(15,23,42,0.08)",
         overflow: "hidden",
         display: "flex",
@@ -297,7 +297,7 @@ export default function NotificationBell({
         alignItems: "center",
         justifyContent: "space-between",
         padding: "10px 12px 8px",
-        borderBottom: "1px solid #f1f5f9",
+        borderBottom: `1px solid ${SURFACE.borderMuted}`,
         flexShrink: 0,
       }}>
         <span style={{ fontSize: 13, fontWeight: 700, color: SURFACE.text }}>
@@ -323,7 +323,7 @@ export default function NotificationBell({
             style={{
               display: "flex", alignItems: "center", justifyContent: "center",
               width: 26, height: 26, borderRadius: 7,
-              border: "1px solid #e2e8f0", background: SURFACE.bg,
+              border: `1px solid ${SURFACE.border}`, background: SURFACE.bg,
               color: SURFACE.textFaint, cursor: "pointer", flexShrink: 0,
             }}
           >
@@ -355,7 +355,7 @@ export default function NotificationBell({
               style={{
                 display: "flex", alignItems: "center", gap: 10,
                 padding: "10px 12px",
-                borderBottom: "1px solid #f8fafc",
+                borderBottom: `1px solid ${SURFACE.bg}`,
                 background: n.read ? "transparent" : "rgba(33,208,179,0.04)",
                 cursor: n.href ? "pointer" : "default",
               }}
