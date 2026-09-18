@@ -555,10 +555,12 @@ export default function UserPortalPage() {
     ];
     if (isTA) return all.filter(t => ["actividades","calendario","sedes","alimentacion","cupones","documentos","cuenta"].includes(t.key));
     if (!isChief) return all.filter(t => ["actividades","calendario","premiaciones","sedes","alimentacion","cupones","documentos","cuenta"].includes(t.key));
-    // Jefe de Misión: sólo su trabajo — flota de su región, viajes de la
-    // delegación, incidencias, calendario, sedes, alimentación y cuaderno de
+    // Jefe de Misión: sólo su trabajo, y en el orden en que lo usa —
+    // actividades (viajes de su delegación) primero, después flota de su
+    // región, incidencias, calendario, sedes, alimentación y cuaderno de
     // cargo. Sin itinerario personal, premiaciones ni beneficios.
-    return all.filter(t => ["flota","actividades","incidencias","calendario","sedes","alimentacion","documentos","cuenta"].includes(t.key));
+    const ORDEN_JEFE: PortalTab[] = ["actividades","flota","incidencias","calendario","sedes","alimentacion","documentos","cuenta"];
+    return ORDEN_JEFE.map(key => all.find(t => t.key === key)).filter((t): t is typeof all[number] => Boolean(t));
   }, [isChief, isTA]);
 
   // La barra inferior muestra hasta 4 pestañas fijas + "Más"; el resto se agrupa
@@ -566,7 +568,7 @@ export default function UserPortalPage() {
   const { primaryTabs, overflowTabs } = useMemo(() => {
     const MAX_PRIMARY = 4;
     const PRIORITY = isChief
-      ? ["flota", "actividades", "incidencias", "calendario", "sedes", "alimentacion", "documentos", "cuenta"]
+      ? ["actividades", "flota", "incidencias", "calendario", "sedes", "alimentacion", "documentos", "cuenta"]
       : ["itinerario", "actividades", "calendario", "delegacion", "alimentacion", "sedes", "cuenta", "documentos", "premiaciones", "cupones"];
     if (portalTabs.length <= MAX_PRIMARY + 1) {
       return { primaryTabs: portalTabs, overflowTabs: [] as typeof portalTabs };
@@ -594,14 +596,14 @@ export default function UserPortalPage() {
   // Set default tab based on profile
   useEffect(() => {
     if (!athlete) return;
-    setActiveTab(isChief ? "flota" : "actividades");
+    setActiveTab("actividades");
   }, [athlete?.id, isChief]);
 
   // El jefe ya no tiene pestaña de premiaciones: si venía persistida de una
   // sesión anterior, volver al itinerario para no dejar la pantalla vacía.
   useEffect(() => {
     if (!athlete || !isChief) return;
-    if (!portalTabs.some((tab) => tab.key === activeTab)) setActiveTab("flota");
+    if (!portalTabs.some((tab) => tab.key === activeTab)) setActiveTab("actividades");
   }, [athlete?.id, isChief, activeTab, portalTabs]);
 
   const DAY_NAMES = ["L","M","M","J","V","S","D"];
