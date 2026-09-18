@@ -68,6 +68,7 @@ import GeneralCoordinatorCard from "@/components/portal/GeneralCoordinatorCard";
 import MissionCalendar from "@/components/portal/MissionCalendar";
 import MissionFleet from "@/components/portal/MissionFleet";
 import MissionIncidents from "@/components/portal/MissionIncidents";
+import MissionTrips from "@/components/portal/MissionTrips";
 import { openExternal, whatsappHref } from "@/lib/external-link";
 import EmergencyNumbersSection from "@/components/EmergencyNumbersSection";
 import PushTokenSync from "@/components/PushTokenSync";
@@ -345,10 +346,6 @@ export default function UserPortalPage() {
   const [healthRecord, setHealthRecord] = useState<Record<string, any> | null>(null);
   const [delegationMembers, setDelegationMembers] = useState<Athlete[]>([]);
   const [delegationTrips, setDelegationTrips] = useState<Trip[]>([]);
-  // Tarjeta de viaje expandida en Actividades; los conductores se cargan una
-  // sola vez al expandir la primera (el listado general no los trae).
-  const [expandedDelTrip, setExpandedDelTrip] = useState<string | null>(null);
-  const [portalDrivers, setPortalDrivers] = useState<Driver[] | null>(null);
   const [venues, setVenues] = useState<Venue[]>([]);
   const [allAccommodations, setAllAccommodations] = useState<Accommodation[]>([]);
   const [foodLocations, setFoodLocations] = useState<FoodLocation[]>([]);
@@ -557,15 +554,19 @@ export default function UserPortalPage() {
     ];
     if (isTA) return all.filter(t => ["actividades","calendario","sedes","alimentacion","cupones","documentos","cuenta"].includes(t.key));
     if (!isChief) return all.filter(t => ["actividades","calendario","premiaciones","sedes","alimentacion","cupones","documentos","cuenta"].includes(t.key));
-    // Jefe de Misión: vista completa (con flota e incidencias), sin premiaciones (no oficia como entregador).
-    return all.filter(t => t.key !== "premiaciones");
+    // Jefe de Misión: sólo su trabajo — flota de su región, viajes de la
+    // delegación, incidencias, calendario, sedes, alimentación y cuaderno de
+    // cargo. Sin itinerario personal, premiaciones ni beneficios.
+    return all.filter(t => ["flota","actividades","incidencias","calendario","sedes","alimentacion","documentos","cuenta"].includes(t.key));
   }, [isChief, isTA]);
 
   // La barra inferior muestra hasta 4 pestañas fijas + "Más"; el resto se agrupa
   // en una hoja inferior. Orden de prioridad para elegir cuáles quedan fijas.
   const { primaryTabs, overflowTabs } = useMemo(() => {
     const MAX_PRIMARY = 4;
-    const PRIORITY = ["itinerario", "flota", "incidencias", "actividades", "calendario", "delegacion", "alimentacion", "sedes", "cuenta", "documentos", "premiaciones", "cupones"];
+    const PRIORITY = isChief
+      ? ["flota", "actividades", "incidencias", "calendario", "sedes", "alimentacion", "documentos", "cuenta"]
+      : ["itinerario", "actividades", "calendario", "delegacion", "alimentacion", "sedes", "cuenta", "documentos", "premiaciones", "cupones"];
     if (portalTabs.length <= MAX_PRIMARY + 1) {
       return { primaryTabs: portalTabs, overflowTabs: [] as typeof portalTabs };
     }
@@ -575,7 +576,7 @@ export default function UserPortalPage() {
       primaryTabs: portalTabs.filter((t) => primaryKeys.has(t.key)),
       overflowTabs: portalTabs.filter((t) => !primaryKeys.has(t.key)),
     };
-  }, [portalTabs]);
+  }, [portalTabs, isChief]);
 
   // Restore session on mount
   useEffect(() => {
@@ -591,14 +592,16 @@ export default function UserPortalPage() {
 
   // Set default tab based on profile
   useEffect(() => {
-    if (athlete && !isChief) setActiveTab("actividades");
-  }, [athlete?.id]);
+    if (!athlete) return;
+    setActiveTab(isChief ? "flota" : "actividades");
+  }, [athlete?.id, isChief]);
 
   // El jefe ya no tiene pestaña de premiaciones: si venía persistida de una
   // sesión anterior, volver al itinerario para no dejar la pantalla vacía.
   useEffect(() => {
-    if (athlete && isChief && activeTab === "premiaciones") setActiveTab("itinerario");
-  }, [athlete?.id, isChief, activeTab]);
+    if (!athlete || !isChief) return;
+    if (!portalTabs.some((tab) => tab.key === activeTab)) setActiveTab("flota");
+  }, [athlete?.id, isChief, activeTab, portalTabs]);
 
   const DAY_NAMES = ["L","M","M","J","V","S","D"];
   function getMonthGrid(cursor: Date) {
@@ -1823,149 +1826,17 @@ export default function UserPortalPage() {
                 </div>
               ) : <p style={{ fontSize:13,color:SURFACE.textFaint,textAlign:"center",padding:20 }}>Sin viajes completados</p>;
             })()}
-            {/* Jefe de delegación: viajes de su disciplina / delegación */}
-            {isChief && (() => {
-              const memberIds = new Set([athlete.id, ...delegationMembers.map(m => m.id)]);
-              // Nombres de las disciplinas de la delegación (prueba y deporte
-              // padre) para hacer match con trips.discipline (texto libre).
-              const discNames = new Set<string>();
-              [athlete, ...delegationMembers].forEach(p => {
-                if (!p?.disciplineId) return;
-                const child = calendarEvents.find(c => c.id === p.disciplineId);
-                if (child?.name) discNames.add(child.name.trim().toLowerCase());
-                const parent = disciplineParents.find(pp => pp.id === (child?.parentId || p.disciplineId));
-                if (parent?.name) discNames.add(parent.name.trim().toLowerCase());
-              });
-              const relevant = delegationTrips
-                .filter(tr =>
-                  // Viaje de la delegación (equipo completo, sin pasajeros nominados).
-                  (tr.delegationId && tr.delegationId === athlete.delegationId) ||
-                  (tr.requesterAthleteId && memberIds.has(tr.requesterAthleteId)) ||
-                  (tr.athleteIds || []).some(id => memberIds.has(id)) ||
-                  (tr.discipline && discNames.has(tr.discipline.trim().toLowerCase())),
-                )
-                .sort((a, b) => new Date(b.scheduledAt || 0).getTime() - new Date(a.scheduledAt || 0).getTime());
-              return (
-                <div style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,overflow:"hidden" }}>
-                  <div style={{ padding:"12px 14px",borderBottom:`1px solid ${SURFACE.borderMuted}` }}>
-                    <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.teal,margin:0 }}>Viajes de mi delegación</p>
-                    <p style={{ fontSize:11,color:SURFACE.textFaint,margin:"3px 0 0" }}>Traslados asignados a tu delegación, sus disciplinas y sus miembros</p>
-                  </div>
-                  <div style={{ padding:"12px 14px",display:"flex",flexDirection:"column",gap:8 }}>
-                    {relevant.length === 0 && <p style={{ fontSize:13,color:SURFACE.textFaint,margin:0,textAlign:"center",padding:8 }}>Sin viajes registrados para tu delegación</p>}
-                    {relevant.slice(0, 30).map(tr => {
-                      const st = tripStatusMeta(tr.status);
-                      const passengers = (tr.athleteNames || []).filter(n => n);
-                      const open = expandedDelTrip === tr.id;
-                      const tripDriver = open && tr.driverId
-                        ? (portalDrivers || []).find(d => d.id === tr.driverId || d.userId === tr.driverId) ?? null
-                        : null;
-                      const toggle = () => {
-                        setExpandedDelTrip(prev => prev === tr.id ? null : tr.id);
-                        if (portalDrivers === null) {
-                          apiFetch<Driver[]>("/drivers")
-                            .then(d => setPortalDrivers(Array.isArray(d) ? d : []))
-                            .catch(() => setPortalDrivers([]));
-                        }
-                      };
-                      return (
-                        <div key={tr.id} onClick={toggle}
-                          style={{ padding:"10px 12px",borderRadius:10,background:open?SURFACE.card:SURFACE.bg,cursor:"pointer",
-                            border:`1px solid ${open?"rgba(33,208,179,0.35)":"#f1f5f9"}`,
-                            boxShadow:open?"0 2px 10px rgba(33,208,179,0.12)":"none",transition:"all 150ms ease" }}>
-                          <div style={{ display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:4 }}>
-                            <span style={{ padding:"2px 8px",borderRadius:20,fontSize:10,fontWeight:700,background:st.bg,color:st.color }}>{t(st.label)}</span>
-                            {tr.discipline && <span style={{ fontSize:10,fontWeight:600,padding:"1px 6px",borderRadius:4,background:"rgba(33,208,179,0.1)",color:BRAND.tealInk }}>{tr.discipline}</span>}
-                            <span style={{ marginLeft:"auto",display:"flex",alignItems:"center",color:SURFACE.textFaint,transform:open?"rotate(180deg)":"none",transition:"transform 150ms ease" }}>
-                              <ChevronDownIcon size={14} strokeWidth={2.2} />
-                            </span>
-                          </div>
-                          <p style={{ fontSize:13,fontWeight:700,color:SURFACE.text,margin:0,...(open?{}:{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}) }}>{tr.origin || "–"} → {tr.destination || "–"}</p>
-                          {tr.scheduledAt && <p style={{ fontSize:11,color:SURFACE.textMuted,margin:"2px 0 0" }}>{fmt(tr.scheduledAt)}</p>}
-                          {!open && passengers.length > 0 && (
-                            <p style={{ fontSize:11,color:SURFACE.textFaint,margin:"4px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
-                              {passengers.slice(0, 4).join(", ")}{passengers.length > 4 ? ` +${passengers.length - 4}` : ""}
-                            </p>
-                          )}
-                          {open && (
-                            <div style={{ marginTop:8,paddingTop:8,borderTop:`1px dashed ${SURFACE.border}`,display:"flex",flexDirection:"column",gap:6 }}>
-                              {/* Recorrido completo sin recorte */}
-                              <div style={{ display:"flex",flexDirection:"column",gap:3 }}>
-                                <div style={{ display:"flex",alignItems:"baseline",gap:6 }}>
-                                  <span style={{ fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:SURFACE.textFaint,flexShrink:0,width:52 }}>{t("ORIGEN")}</span>
-                                  <span style={{ fontSize:12,fontWeight:600,color:SURFACE.text }}>{tr.origin || "–"}</span>
-                                </div>
-                                <div style={{ display:"flex",alignItems:"baseline",gap:6 }}>
-                                  <span style={{ fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:SURFACE.textFaint,flexShrink:0,width:52 }}>{t("DESTINO")}</span>
-                                  <span style={{ fontSize:12,fontWeight:600,color:SURFACE.text }}>{tr.destination || "–"}</span>
-                                </div>
-                              </div>
-                              {/* Línea de tiempo del viaje */}
-                              {(tr.scheduledAt || tr.startedAt || tr.completedAt) && (
-                                <div style={{ display:"flex",flexDirection:"column",gap:2 }}>
-                                  {tr.scheduledAt && (
-                                    <div style={{ display:"flex",justifyContent:"space-between" }}>
-                                      <span style={{ fontSize:11,color:SURFACE.textMuted }}>{t("Programado")}</span>
-                                      <span style={{ fontSize:11,fontWeight:600,color:SURFACE.textStrong }}>{fmt(tr.scheduledAt)}</span>
-                                    </div>
-                                  )}
-                                  {tr.startedAt && (
-                                    <div style={{ display:"flex",justifyContent:"space-between" }}>
-                                      <span style={{ fontSize:11,color:SURFACE.textMuted }}>{t("Iniciado")}</span>
-                                      <span style={{ fontSize:11,fontWeight:600,color:SURFACE.textStrong }}>{fmt(tr.startedAt)}</span>
-                                    </div>
-                                  )}
-                                  {tr.completedAt && (
-                                    <div style={{ display:"flex",justifyContent:"space-between" }}>
-                                      <span style={{ fontSize:11,color:SURFACE.textMuted }}>{t("Completado")}</span>
-                                      <span style={{ fontSize:11,fontWeight:600,color:BRAND.tealInk }}>{fmt(tr.completedAt)}</span>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                              {/* Conductor (se resuelve al expandir) */}
-                              {tr.driverId && (
-                                <div style={{ display:"flex",justifyContent:"space-between" }}>
-                                  <span style={{ fontSize:11,color:SURFACE.textMuted }}>{t("Conductor")}</span>
-                                  <span style={{ fontSize:11,fontWeight:600,color:SURFACE.textStrong }}>
-                                    {portalDrivers === null ? "…" : tripDriver?.fullName || t("Sin información")}
-                                  </span>
-                                </div>
-                              )}
-                              {tr.tripType && (
-                                <div style={{ display:"flex",justifyContent:"space-between" }}>
-                                  <span style={{ fontSize:11,color:SURFACE.textMuted }}>{t("Tipo de viaje")}</span>
-                                  <span style={{ fontSize:11,fontWeight:600,color:SURFACE.textStrong }}>{tr.tripType}</span>
-                                </div>
-                              )}
-                              {/* Todos los pasajeros */}
-                              {passengers.length > 0 && (
-                                <div>
-                                  <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:SURFACE.textFaint,margin:"0 0 4px" }}>
-                                    {t("Pasajeros")} · {passengers.length}
-                                  </p>
-                                  <div style={{ display:"flex",flexWrap:"wrap",gap:4 }}>
-                                    {passengers.map(n => (
-                                      <span key={n} style={{ fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:5,background:"rgba(33,208,179,0.08)",color:BRAND.tealInk,border:"1px solid rgba(33,208,179,0.18)" }}>{n}</span>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                              {tr.notes && (
-                                <p style={{ fontSize:11,color:SURFACE.textMuted,margin:0,fontStyle:"italic" }}>{tr.notes}</p>
-                              )}
-                              {tr.driverRating ? (
-                                <p style={{ fontSize:11,color:STATE.warning,margin:0 }}><span style={{ display:"inline-flex",gap:1,verticalAlign:"-1px" }}>{Array.from({ length: tr.driverRating }, (_, k) => <StarIcon key={k} size={11} />)}</span>{tr.ratingComment ? ` "${tr.ratingComment}"` : ""}</p>
-                              ) : null}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })()}
+            {/* Jefe de Misión: viajes asignados a su delegación */}
+            {isChief && (
+              <MissionTrips
+                trips={delegationTrips}
+                delegationId={athlete.delegationId}
+                memberIds={[athlete.id, ...delegationMembers.map((m) => m.id)]}
+                disciplines={disciplineParents}
+                venues={venues}
+                accommodations={allAccommodations}
+              />
+            )}
           </div>
         )}
 

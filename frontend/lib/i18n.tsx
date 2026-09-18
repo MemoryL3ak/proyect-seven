@@ -13,6 +13,16 @@ type I18nContextValue = {
 const translations: Record<Locale, Record<string, string>> = {
   es: {},
   en: {
+    // Viajes de la delegación (portal del Jefe de Misión).
+    "Viajes de mi delegación": "My delegation's trips",
+    "traslado": "transfer",
+    "traslados": "transfers",
+    "por realizar": "upcoming",
+    "Terminados": "Finished",
+    "Tu delegación aún no tiene traslados asignados.": "Your delegation has no transfers assigned yet.",
+    "Ningún traslado coincide con el filtro.": "No transfer matches the filter.",
+    "Sin chofer": "No driver",
+    "Se muestran los 50 más próximos.": "Showing the 50 closest ones.",
     // Capacidad del vehículo en la ficha de chofer (Proveedores).
     "Capacidad (pasajeros)": "Capacity (passengers)",
     "Asientos disponibles para pasajeros. Con este dato el chofer aparece en los viajes según la cantidad de personas.": "Seats available for passengers. With this value the driver shows up in trips according to the number of people.",
@@ -2545,6 +2555,16 @@ const translations: Record<Locale, Record<string, string>> = {
     "Panel Financiero": "Financial Panel",
   },
   pt: {
+    // Viajes de la delegación (portal del Jefe de Misión).
+    "Viajes de mi delegación": "Viagens da minha delegação",
+    "traslado": "traslado",
+    "traslados": "traslados",
+    "por realizar": "a realizar",
+    "Terminados": "Finalizados",
+    "Tu delegación aún no tiene traslados asignados.": "A sua delegação ainda não tem traslados atribuídos.",
+    "Ningún traslado coincide con el filtro.": "Nenhum traslado corresponde ao filtro.",
+    "Sin chofer": "Sem motorista",
+    "Se muestran los 50 más próximos.": "Mostrando os 50 mais próximos.",
     // Capacidad del vehículo en la ficha de chofer (Proveedores).
     "Capacidad (pasajeros)": "Capacidade (passageiros)",
     "Asientos disponibles para pasajeros. Con este dato el chofer aparece en los viajes según la cantidad de personas.": "Assentos disponíveis para passageiros. Com este dado o motorista aparece nas viagens conforme a quantidade de pessoas.",
