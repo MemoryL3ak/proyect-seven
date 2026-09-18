@@ -31,6 +31,15 @@ export class CreateTripDto {
   @IsOptional()
   disciplineId?: string | null;
 
+  /** Sede u hotel de origen (el texto libre sigue en `origin`). */
+  @IsString()
+  @IsOptional()
+  originVenueId?: string | null;
+
+  @IsString()
+  @IsOptional()
+  originHotelId?: string | null;
+
   @IsString()
   @IsOptional()
   destinationVenueId?: string;

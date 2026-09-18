@@ -1535,6 +1535,8 @@ export default function ResourceScreen({
         // El reduce de arriba omite los campos vacíos, por lo que vaciar un
         // campo (quitar conductor, sede/hotel, observación o participantes)
         // nunca se guardaba. Se envían explícitos (null/[] = borrar).
+        finalPayload.originVenueId = (form.originVenueId as string) || null;
+        finalPayload.originHotelId = (form.originHotelId as string) || null;
         finalPayload.destinationVenueId = (form.destinationVenueId as string) || null;
         finalPayload.destinationHotelId = (form.destinationHotelId as string) || null;
         finalPayload.driverId = (form.driverId as string) || null;
@@ -1903,6 +1905,11 @@ export default function ResourceScreen({
       }
       if (Array.isArray(item.athleteIds)) {
         next.athleteIds = item.athleteIds;
+      }
+      if (item.originHotelId) {
+        next.originTypeFilter = "HOTEL";
+      } else if (item.originVenueId) {
+        next.originTypeFilter = "SEDE";
       }
       if (item.destinationHotelId) {
         next.destinationTypeFilter = "HOTEL";

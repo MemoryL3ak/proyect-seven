@@ -25,6 +25,8 @@ type TripRow = {
   requester_athlete_id: string | null;
   delegation_id: string | null;
   discipline_id: string | null;
+  origin_venue_id: string | null;
+  origin_hotel_id: string | null;
   destination_venue_id: string | null;
   destination_hotel_id: string | null;
   requested_vehicle_type: string | null;
@@ -170,6 +172,12 @@ export class TripsService {
     }
     if (dto.disciplineId !== undefined) {
       row.discipline_id = dto.disciplineId || null;
+    }
+    if (dto.originVenueId !== undefined) {
+      row.origin_venue_id = dto.originVenueId || null;
+    }
+    if (dto.originHotelId !== undefined) {
+      row.origin_hotel_id = dto.originHotelId || null;
     }
     if (dto.destinationVenueId !== undefined) {
       row.destination_venue_id = dto.destinationVenueId ?? null;
@@ -347,6 +355,8 @@ export class TripsService {
       travelTimeMinutes: row.travel_time_minutes,
       delegationId: row.delegation_id,
       disciplineId: row.discipline_id,
+      originVenueId: row.origin_venue_id,
+      originHotelId: row.origin_hotel_id,
       discipline: row.discipline,
       activity: row.activity,
       committeeValidated: row.committee_validated ?? false,
