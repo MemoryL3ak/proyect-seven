@@ -268,6 +268,39 @@ const fmt = (v?: string | null) =>
     ? new Date(v).toLocaleString("es-CL", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" })
     : null;
 
+/**
+ * Viaje que la tarjeta "En curso" debe mostrar entre los del participante.
+ *
+ * Antes se tomaba el viaje fijado en su ficha (transportTripId) o, si no
+ * había, el primero que devolviera la API — sin mirar estado ni hora. Por eso
+ * la tarjeta podía mostrar un traslado de las 23:00 mientras otro estaba En
+ * ruta y un tercero salía antes.
+ *
+ * El orden que espera quien lo mira: lo que está pasando ahora manda; si no
+ * hay nada en curso, el próximo que sale.
+ */
+const VIAJE_EN_CURSO = ["EN_ROUTE", "PICKED_UP"];
+const VIAJE_PENDIENTE = ["SCHEDULED", "REQUESTED"];
+
+function elegirViajeActual(candidatos: (Trip | null | undefined)[]): Trip | null {
+  // La ficha y el listado pueden traer el mismo viaje: se deduplica por id.
+  const porId = new Map<string, Trip>();
+  candidatos.forEach((t) => { if (t?.id) porId.set(t.id, t); });
+  const viajes = [...porId.values()];
+  if (!viajes.length) return null;
+
+  const porHora = (a: Trip, b: Trip) =>
+    new Date(a.scheduledAt ?? 0).getTime() - new Date(b.scheduledAt ?? 0).getTime();
+
+  const enCurso = viajes.filter((t) => VIAJE_EN_CURSO.includes(t.status ?? "")).sort(porHora);
+  if (enCurso.length) return enCurso[0];
+
+  const pendientes = viajes.filter((t) => VIAJE_PENDIENTE.includes(t.status ?? "")).sort(porHora);
+  if (pendientes.length) return pendientes[0];
+
+  return viajes[0];
+}
+
 const normalizeHA = (item: HotelAssignment) => ({
   id: item.id,
   participantId: item.participantId ?? item.participant_id ?? "",
@@ -706,7 +739,10 @@ export default function UserPortalPage() {
         data.hotelAccommodationId ? apiFetch<Hotel>(`/accommodations/${data.hotelAccommodationId}`) : Promise.resolve(null),
         data.transportVehicleId ? apiFetch<Vehicle>(`/transports/${data.transportVehicleId}`) : Promise.resolve(null),
         data.transportTripId ? apiFetch<Trip>(`/trips/${data.transportTripId}`) : Promise.resolve(null),
-        data.transportTripId ? Promise.resolve([]) : apiFetch<Trip[]>(`/trips?requesterAthleteId=${data.id}`),
+        // Siempre se pide la lista, también cuando la ficha trae un viaje
+        // fijado: ese puede ser antiguo y elegirlo a ciegas dejaba la tarjeta
+        // mostrando un traslado posterior mientras otro estaba en ruta.
+        apiFetch<Trip[]>(`/trips?requesterAthleteId=${data.id}`).catch(() => [] as Trip[]),
         data.eventId ? apiFetch<Event>(`/events/${data.eventId}`) : Promise.resolve(null),
         data.delegationId ? apiFetch<Delegation>(`/delegations/${data.delegationId}`) : Promise.resolve(null),
         apiFetch<HotelAssignment | null>(`/hotel-assignments/by-participant/${data.id}`)
@@ -721,7 +757,12 @@ export default function UserPortalPage() {
       }
       setHotel(resolvedHotel);
 
-      const inferredTrip = tripData ?? (tripsList || []).find((t) => t.requesterAthleteId === data.id || (t.athleteIds || []).includes(data.id)) ?? null;
+      const inferredTrip = elegirViajeActual([
+        tripData,
+        ...(tripsList || []).filter(
+          (t) => t.requesterAthleteId === data.id || (t.athleteIds || []).includes(data.id),
+        ),
+      ]);
       setTrip(inferredTrip);
 
       let resolvedVehicle = vehicleData;
