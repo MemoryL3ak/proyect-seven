@@ -5,6 +5,7 @@ import { CalendarIcon, CarIcon, ChevronDownIcon, UsersIcon } from "@/components/
 import { apiFetch } from "@/lib/api";
 import { BRAND, SURFACE, tripStatusMeta } from "@/lib/design";
 import { buildDisciplineLabelMap, type DisciplineLike } from "@/lib/discipline-filters";
+import TripMap from "@/components/TripMap";
 import { ChipFilter, SegmentedFilter } from "@/components/ui/FilterControls";
 import { useI18n } from "@/lib/i18n";
 
@@ -176,8 +177,8 @@ export default function MissionTrips({
             { value: "TODOS", label: t("Todos") },
           ]}
         />
-        {/* Disciplina: fichas desplazables, sólo si hay más de una. */}
-        {opcionesDisciplina.length > 1 && (
+        {/* Disciplina: fichas desplazables. */}
+        {opcionesDisciplina.length > 0 && (
           <ChipFilter
             style={{ marginTop: 8 }}
             value={disciplinaFiltro}
@@ -256,14 +257,20 @@ export default function MissionTrips({
                 </div>
 
                 {abiertaEsta && (
-                  <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px dashed ${SURFACE.border}`, display: "flex", flexDirection: "column", gap: 6 }}>
-                    <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                      <span style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: "0.08em", color: SURFACE.textFaint, width: 52, flexShrink: 0 }}>{t("ORIGEN")}</span>
-                      <span style={{ fontSize: 12, color: SURFACE.textStrong }}>{tr.origin || puntoOrigen(tr)}</span>
+                  <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px dashed ${SURFACE.border}`, display: "flex", flexDirection: "column", gap: 8 }}>
+                    {/* Mapa del recorrido: el jefe necesita ubicar el traslado. */}
+                    {(tr.origin || tr.destination) && (
+                      <div style={{ borderRadius: 10, overflow: "hidden" }} onClick={(e) => e.stopPropagation()}>
+                        <TripMap origin={tr.origin} destination={tr.destination} height={170} />
+                      </div>
+                    )}
+                    <div>
+                      <p style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: "0.08em", color: SURFACE.textFaint, margin: 0 }}>{t("ORIGEN")}</p>
+                      <p style={{ fontSize: 12, color: SURFACE.textStrong, margin: "1px 0 0" }}>{tr.origin || puntoOrigen(tr)}</p>
                     </div>
-                    <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                      <span style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: "0.08em", color: SURFACE.textFaint, width: 52, flexShrink: 0 }}>{t("DESTINO")}</span>
-                      <span style={{ fontSize: 12, color: SURFACE.textStrong }}>{tr.destination || puntoDestino(tr)}</span>
+                    <div>
+                      <p style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: "0.08em", color: SURFACE.textFaint, margin: 0 }}>{t("DESTINO")}</p>
+                      <p style={{ fontSize: 12, color: SURFACE.textStrong, margin: "1px 0 0" }}>{tr.destination || puntoDestino(tr)}</p>
                     </div>
                     {tr.completedAt && (
                       <div style={{ display: "flex", justifyContent: "space-between" }}>
