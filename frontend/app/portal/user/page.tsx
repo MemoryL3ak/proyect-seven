@@ -2192,7 +2192,9 @@ export default function UserPortalPage() {
                           return ks.length ? Math.min(min, ...ks) : min;
                         }, Infinity);
                         return (
-                          <div style={{ flex:1,overflowX:"auto",WebkitOverflowScrolling:"touch" as any }}
+                          // minWidth:0 — sin esto el flex item crece con la banda del mes
+                          // (31 días × 36 px) y descuadra toda la pantalla.
+                          <div style={{ flex:1,minWidth:0,overflowX:"auto",WebkitOverflowScrolling:"touch" as any }}
                             ref={(el) => {
                               if (!el) return;
                               const key = `${y}-${m}`;
