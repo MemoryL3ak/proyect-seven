@@ -81,6 +81,13 @@ const inputStyle: React.CSSProperties = {
 
 const emptyForm = () => ({ title: "", category: "OTRO", severity: "MEDIA", venueId: "", description: "" });
 
+/**
+ * Última lista cargada. Cambiar de pestaña desmonta el componente y la pedía
+ * de nuevo con la pantalla vacía; ahora se pinta lo último visto y la
+ * actualización llega por detrás.
+ */
+let ultimaLista: Incident[] | null = null;
+
 export default function MissionIncidents({
   eventId,
   delegationName,
@@ -91,8 +98,8 @@ export default function MissionIncidents({
   venues: Array<{ id: string; name?: string | null }>;
 }) {
   const { t } = useI18n();
-  const [incidents, setIncidents] = useState<Incident[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [incidents, setIncidents] = useState<Incident[]>(ultimaLista ?? []);
+  const [loading, setLoading] = useState(ultimaLista === null);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm());
@@ -104,7 +111,9 @@ export default function MissionIncidents({
     try {
       const q = eventId ? `?eventId=${encodeURIComponent(eventId)}` : "";
       const data = await apiFetch<Incident[]>(`/incidents${q}`);
-      setIncidents(Array.isArray(data) ? data : []);
+      const lista = Array.isArray(data) ? data : [];
+      ultimaLista = lista;
+      setIncidents(lista);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("No se pudieron cargar las incidencias."));

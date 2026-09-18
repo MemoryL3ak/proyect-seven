@@ -49,6 +49,8 @@ export function SegmentedFilter({
         borderRadius: 10,
         background: SURFACE.bg,
         border: `1px solid ${SURFACE.borderMuted}`,
+        minWidth: 0,
+        maxWidth: "100%",
         ...style,
       }}
     >
@@ -103,7 +105,9 @@ export function ChipFilter({
       <EstiloScroll />
       <div
         className={CLASE_SCROLL}
-        style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 2, ...style }}
+        // minWidth/maxWidth: sin esto el contenedor crece con las fichas y
+        // ensancha toda la pantalla (el calendario quedaba descuadrado).
+        style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 2, minWidth: 0, maxWidth: "100%", ...style }}
       >
         {fichas.map((option) => {
           const activo = option.value === value;
