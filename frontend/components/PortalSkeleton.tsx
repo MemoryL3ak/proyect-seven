@@ -1,4 +1,5 @@
 "use client";
+import { BRAND } from "@/lib/design";
 
 /**
  * Pantalla de carga de los portales.
@@ -44,7 +45,7 @@ export default function PortalSkeleton({
 
       <div className="ps-root" style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         {/* Banner superior */}
-        <div style={{ background: "#062240", padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ background: BRAND.navyLight, padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div className="ps-b" style={{ width: 108, height: 26, background: "rgba(255,255,255,0.12)" }} />
           <div className="ps-b" style={{ width: 64, height: 12, background: "rgba(255,255,255,0.12)" }} />
         </div>
@@ -79,7 +80,7 @@ export default function PortalSkeleton({
         </div>
 
         {/* Barra inferior */}
-        <div style={{ background: "#062240", padding: "10px 12px", display: "flex", justifyContent: "space-around", alignItems: "center" }}>
+        <div style={{ background: BRAND.navyLight, padding: "10px 12px", display: "flex", justifyContent: "space-around", alignItems: "center" }}>
           {Array.from({ length: tabs }).map((_, i) => (
             <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
               <div className="ps-b" style={{ width: 20, height: 20, borderRadius: 6, background: "rgba(255,255,255,0.12)" }} />

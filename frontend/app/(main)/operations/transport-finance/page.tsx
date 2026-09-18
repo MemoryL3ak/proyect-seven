@@ -9,7 +9,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import { DollarIcon, TruckIcon, UsersIcon, AlertIcon, RefreshIcon, ClipboardIcon } from "@/components/ui/Icons";
 import { CLIENT_TYPE_OPTIONS, clientTypeLabel } from "@/lib/clientTypes";
 import { downloadPDF } from "@/lib/reports";
-import { BRAND, TRIP_STATUS_META } from "@/lib/design";
+import { BRAND, TRIP_STATUS_META, STATE, SURFACE } from "@/lib/design";
 
 /* ────────────────────────────────────────────────────────────
    Panel Financiero de Transporte
@@ -551,7 +551,7 @@ export default function TransportFinancePage() {
                   className="px-3 py-1.5 rounded-md text-xs font-semibold transition-colors"
                   style={{
                     background: preset === valor ? `linear-gradient(135deg, ${BRAND.teal}, #1eb19a)` : "transparent",
-                    color: preset === valor ? "#ffffff" : "var(--text-muted)",
+                    color: preset === valor ? SURFACE.card : "var(--text-muted)",
                   }}
                 >
                   {t(etiqueta)}
@@ -821,7 +821,7 @@ function ComposicionIngreso({ t: tot }: { t: Resumen["totales"] }) {
   const filas = [
     { etiqueta: "Devengado (servicio entregado)", valor: tot.ingresoPrestado, color: "#16a34a" },
     { etiqueta: "Comprometido (programado)", valor: tot.ingresoComprometido, color: "#d97706" },
-    { etiqueta: "Anulado (cancelados)", valor: tot.ingresoAnulado, color: "#94a3b8" },
+    { etiqueta: "Anulado (cancelados)", valor: tot.ingresoAnulado, color: SURFACE.textFaint },
   ];
 
   return (
@@ -992,7 +992,7 @@ function TablaProveedores({ filas }: { filas: Resumen["porProveedor"] }) {
                           className="h-full rounded-full"
                           style={{
                             width: `${Math.min(100, f.pctConsumido)}%`,
-                            background: f.pctConsumido > 90 ? "#dc2626" : BRAND.teal,
+                            background: f.pctConsumido > 90 ? STATE.dangerText : BRAND.teal,
                           }}
                         />
                       </div>

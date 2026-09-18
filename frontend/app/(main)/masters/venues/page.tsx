@@ -7,6 +7,7 @@ import { clRegions } from "@clregions/data/object";
 import PageHeader from "@/components/PageHeader";
 import StyledSelect from "@/components/StyledSelect";
 import { apiFetch } from "@/lib/api";
+import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
 
 type EventItem = {
@@ -401,22 +402,22 @@ export default function VenuesMasterPage() {
       </section>
 
       {/* Cards */}
-      <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "28px", padding: "28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+      <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "28px", padding: "28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
-              <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#94a3b8" }}>{t("Registros")}</span>
+              <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: SURFACE.textFaint }}>{t("Registros")}</span>
             </div>
-            <h3 style={{ fontSize: "22px", fontWeight: 800, color: "#0f172a", margin: 0 }}>{t("Sedes registradas")}</h3>
+            <h3 style={{ fontSize: "22px", fontWeight: 800, color: SURFACE.text, margin: 0 }}>{t("Sedes registradas")}</h3>
           </div>
           <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.25)", borderRadius: "99px", padding: "6px 14px" }}>
-            <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#21D0B3", boxShadow: "0 0 6px #21D0B3", flexShrink: 0 }} />
-            <span style={{ fontSize: "13px", fontWeight: 700, color: "#21D0B3" }}>{venues.length} {t("sede(s)")}</span>
+            <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: BRAND.teal, boxShadow: "0 0 6px #21D0B3", flexShrink: 0 }} />
+            <span style={{ fontSize: "13px", fontWeight: 700, color: BRAND.teal }}>{venues.length} {t("sede(s)")}</span>
           </div>
         </div>
 
         {venues.length === 0 ? (
-          <div style={{ marginTop: "24px", borderRadius: "16px", border: "2px dashed #e2e8f0", background: "#f8fafc", padding: "32px", textAlign: "center", fontSize: "13px", color: "#94a3b8" }}>
+          <div style={{ marginTop: "24px", borderRadius: "16px", border: "2px dashed #e2e8f0", background: SURFACE.bg, padding: "32px", textAlign: "center", fontSize: "13px", color: SURFACE.textFaint }}>
             {t("No hay sedes registradas todavía.")}
           </div>
         ) : (
@@ -467,7 +468,7 @@ function VenueCard({
   return (
     <article style={{
       overflow: "hidden", borderRadius: "24px",
-      border: "1px solid #e2e8f0", background: "#ffffff",
+      border: "1px solid #e2e8f0", background: SURFACE.card,
       boxShadow: "0 2px 8px rgba(15,23,42,0.08)",
       borderTop: hasPhoto ? undefined : "3px solid #21D0B3",
       transition: "transform 120ms ease, box-shadow 120ms ease",
@@ -477,7 +478,7 @@ function VenueCard({
     >
       {/* Photo hero */}
       {hasPhoto && (
-        <div style={{ position: "relative", height: "210px", width: "100%", overflow: "hidden", background: "#f1f5f9" }}>
+        <div style={{ position: "relative", height: "210px", width: "100%", overflow: "hidden", background: SURFACE.borderMuted }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={venue.photoUrl!}
@@ -488,13 +489,13 @@ function VenueCard({
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.1) 50%, transparent 100%)" }} />
           <div style={{ position: "absolute", bottom: 0, left: 0, padding: "20px" }}>
             <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", background: "rgba(33,208,179,0.2)", border: "1px solid rgba(33,208,179,0.4)", borderRadius: "99px", padding: "2px 10px", marginBottom: "6px" }}>
-              <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "#21D0B3" }}>{eventName}</span>
+              <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: BRAND.teal }}>{eventName}</span>
             </span>
-            <h4 style={{ fontSize: "22px", fontWeight: 800, color: "#ffffff", margin: 0, textShadow: "0 1px 4px rgba(0,0,0,0.4)" }}>{venue.name}</h4>
+            <h4 style={{ fontSize: "22px", fontWeight: 800, color: SURFACE.card, margin: 0, textShadow: "0 1px 4px rgba(0,0,0,0.4)" }}>{venue.name}</h4>
           </div>
           <div style={{ position: "absolute", right: "16px", top: "16px", display: "flex", gap: "8px" }}>
             <button
-              style={{ borderRadius: "10px", background: "rgba(255,255,255,0.18)", border: "1px solid rgba(255,255,255,0.3)", padding: "6px 12px", fontSize: "12px", fontWeight: 600, color: "#ffffff", cursor: "pointer", backdropFilter: "blur(4px)" }}
+              style={{ borderRadius: "10px", background: "rgba(255,255,255,0.18)", border: "1px solid rgba(255,255,255,0.3)", padding: "6px 12px", fontSize: "12px", fontWeight: 600, color: SURFACE.card, cursor: "pointer", backdropFilter: "blur(4px)" }}
               type="button"
               onClick={() => onEdit(venue)}
             >
@@ -516,18 +517,18 @@ function VenueCard({
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", marginBottom: "16px" }}>
             <div>
               <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.2)", borderRadius: "99px", padding: "2px 10px", marginBottom: "6px" }}>
-                <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "#21D0B3" }}>{eventName}</span>
+                <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: BRAND.teal }}>{eventName}</span>
               </span>
-              <h4 style={{ fontSize: "18px", fontWeight: 800, color: "#0f172a", margin: 0 }}>{venue.name}</h4>
+              <h4 style={{ fontSize: "18px", fontWeight: 800, color: SURFACE.text, margin: 0 }}>{venue.name}</h4>
             </div>
             <div style={{ display: "flex", gap: "8px" }}>
               <button
-                style={{ borderRadius: "10px", border: "1px solid #e2e8f0", background: "#f8fafc", padding: "6px 14px", fontSize: "12px", fontWeight: 600, color: "#475569", cursor: "pointer" }}
+                style={{ borderRadius: "10px", border: "1px solid #e2e8f0", background: SURFACE.bg, padding: "6px 14px", fontSize: "12px", fontWeight: 600, color: SURFACE.textSecondary, cursor: "pointer" }}
                 type="button"
                 onClick={() => onEdit(venue)}
               >{t("Editar")}</button>
               <button
-                style={{ borderRadius: "10px", border: "1px solid #fecaca", background: "#fff1f2", padding: "6px 14px", fontSize: "12px", fontWeight: 600, color: "#ef4444", cursor: "pointer" }}
+                style={{ borderRadius: "10px", border: "1px solid #fecaca", background: "#fff1f2", padding: "6px 14px", fontSize: "12px", fontWeight: 600, color: STATE.danger, cursor: "pointer" }}
                 type="button"
                 onClick={() => onDelete(venue.id)}
               >{t("Eliminar")}</button>
@@ -538,8 +539,8 @@ function VenueCard({
         <div className={`grid gap-3 ${embedUrl ? "sm:grid-cols-2" : ""} ${!hasPhoto ? "" : "mt-3"}`}>
           {/* Info */}
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            <div style={{ borderRadius: "14px", background: "#f8fafc", border: "1px solid #e2e8f0", borderLeft: "3px solid #21D0B3", padding: "12px 14px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#21D0B3", marginBottom: "6px" }}>
+            <div style={{ borderRadius: "14px", background: SURFACE.bg, border: "1px solid #e2e8f0", borderLeft: "3px solid #21D0B3", padding: "12px 14px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: BRAND.teal, marginBottom: "6px" }}>
                 <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -548,8 +549,8 @@ function VenueCard({
               </div>
               <p style={{ fontSize: "13px", color: "#1e293b", fontWeight: 500, margin: 0 }}>{venue.address || "—"}</p>
             </div>
-            <div style={{ borderRadius: "14px", background: "#f8fafc", border: "1px solid #e2e8f0", borderLeft: "3px solid #21D0B3", padding: "12px 14px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#21D0B3", marginBottom: "6px" }}>
+            <div style={{ borderRadius: "14px", background: SURFACE.bg, border: "1px solid #e2e8f0", borderLeft: "3px solid #21D0B3", padding: "12px 14px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: BRAND.teal, marginBottom: "6px" }}>
                 <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" />
                 </svg>
@@ -563,7 +564,7 @@ function VenueCard({
 
           {/* Embedded map */}
           {embedUrl && (
-            <div style={{ overflow: "hidden", borderRadius: "14px", border: "1px solid #e2e8f0", background: "#f1f5f9" }}>
+            <div style={{ overflow: "hidden", borderRadius: "14px", border: "1px solid #e2e8f0", background: SURFACE.borderMuted }}>
               <iframe
                 src={embedUrl}
                 title={t("Mapa de {name}").replace("{name}", venue.name)}
@@ -576,13 +577,13 @@ function VenueCard({
         </div>
 
         <div style={{ marginTop: "16px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "12px", borderTop: "1px solid #f1f5f9", paddingTop: "16px" }}>
-          <span style={{ fontSize: "11px", color: "#94a3b8" }}>{t("Actualizada: ")}{formatDate(venue.updatedAt)}</span>
+          <span style={{ fontSize: "11px", color: SURFACE.textFaint }}>{t("Actualizada: ")}{formatDate(venue.updatedAt)}</span>
           {openMapsUrl && (
             <Link
               href={openMapsUrl}
               target="_blank"
               rel="noreferrer"
-              style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 700, color: "#21D0B3", textDecoration: "none" }}
+              style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 700, color: BRAND.teal, textDecoration: "none" }}
             >
               <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />

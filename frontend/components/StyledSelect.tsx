@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { BRAND } from "@/lib/design";
+import { BRAND, SURFACE } from "@/lib/design";
 import { ChevronDownIcon, CheckIcon } from "@/components/ui/Icons";
 
 type Option = { value: string; label: string; disabled?: boolean };
@@ -83,7 +83,7 @@ export default function StyledSelect({
   };
 
   const active = open || focused;
-  const borderColor = active ? BRAND.teal : "#e2e8f0";
+  const borderColor = active ? BRAND.teal : SURFACE.border;
   const shadow = open ? "0 0 0 3px rgba(33,208,179,0.12)" : "none";
 
   return (
@@ -110,10 +110,10 @@ export default function StyledSelect({
           borderRadius: open ? "10px 10px 0 0" : "10px",
           border: `1px solid ${borderColor}`,
           borderBottom: open ? `1px solid #e2e8f0` : `1px solid ${borderColor}`,
-          background: "#f8fafc",
+          background: SURFACE.bg,
           fontSize: "13px",
           lineHeight: "1.5",
-          color: selected?.value !== "" ? "#0f172a" : "#94a3b8",
+          color: selected?.value !== "" ? SURFACE.text : SURFACE.textFaint,
           cursor: disabled ? "not-allowed" : "pointer",
           outline: "none",
           transition: "border-color 150ms ease, box-shadow 150ms ease",
@@ -126,7 +126,7 @@ export default function StyledSelect({
         <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {selected?.label ?? ""}
         </span>
-        <ChevronDownIcon size={14} color={active ? BRAND.teal : "#94a3b8"} strokeWidth={2.5} style={{ flexShrink: 0, marginLeft: "8px", transition: "stroke 150ms ease, transform 150ms ease", transform: open ? "rotate(180deg)" : "rotate(0deg)" }} />
+        <ChevronDownIcon size={14} color={active ? BRAND.teal : SURFACE.textFaint} strokeWidth={2.5} style={{ flexShrink: 0, marginLeft: "8px", transition: "stroke 150ms ease, transform 150ms ease", transform: open ? "rotate(180deg)" : "rotate(0deg)" }} />
       </div>
 
       {/* Dropdown list */}
@@ -140,7 +140,7 @@ export default function StyledSelect({
             left: 0,
             right: 0,
             zIndex: 200,
-            background: "#ffffff",
+            background: SURFACE.card,
             border: `1px solid ${BRAND.teal}`,
             borderTop: "none",
             borderRadius: "0 0 10px 10px",
@@ -161,7 +161,7 @@ export default function StyledSelect({
                   padding: "7px 12px",
                   fontSize: "13px",
                   cursor: opt.disabled ? "default" : "pointer",
-                  color: isSelected ? BRAND.teal : opt.disabled ? "#cbd5e1" : "#0f172a",
+                  color: isSelected ? BRAND.teal : opt.disabled ? SURFACE.borderStrong : SURFACE.text,
                   fontWeight: isSelected ? 700 : 400,
                   background: isSelected ? "rgba(33,208,179,0.06)" : "transparent",
                   borderBottom: i < options.length - 1 ? "1px solid #f1f5f9" : "none",
@@ -170,7 +170,7 @@ export default function StyledSelect({
                   alignItems: "center",
                   justifyContent: "space-between",
                 }}
-                onMouseEnter={(e) => { if (!isSelected && !opt.disabled) (e.currentTarget as HTMLElement).style.background = "#f8fafc"; }}
+                onMouseEnter={(e) => { if (!isSelected && !opt.disabled) (e.currentTarget as HTMLElement).style.background = SURFACE.bg; }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = isSelected ? "rgba(33,208,179,0.06)" : "transparent"; }}
               >
                 {opt.label}

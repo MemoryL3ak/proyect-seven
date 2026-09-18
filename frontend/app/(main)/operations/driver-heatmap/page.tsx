@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { apiFetch } from "@/lib/api";
+import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { StarIcon, MedalIcon, RefreshIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 
@@ -42,13 +43,13 @@ const LOAD_MEDIUM = 5;
 const LOAD_HIGH = 9;
 
 function semaphore(count: number): { color: string; label: string } {
-  if (count >= LOAD_HIGH) return { color: "#ef4444", label: "Alta carga" };
-  if (count >= LOAD_MEDIUM) return { color: "#f59e0b", label: "Carga media" };
-  return { color: "#10b981", label: "Disponible" };
+  if (count >= LOAD_HIGH) return { color: STATE.danger, label: "Alta carga" };
+  if (count >= LOAD_MEDIUM) return { color: STATE.warning, label: "Carga media" };
+  return { color: STATE.success, label: "Disponible" };
 }
 
 function cellBg(count: number): string {
-  if (count === 0) return "#f1f5f9";
+  if (count === 0) return SURFACE.borderMuted;
   if (count === 1) return "rgba(33,208,179,0.18)";
   if (count === 2) return "rgba(33,208,179,0.40)";
   if (count === 3) return "rgba(33,208,179,0.60)";
@@ -56,7 +57,7 @@ function cellBg(count: number): string {
 }
 
 function cellText(count: number): string {
-  return count >= 3 ? "#fff" : "#0f172a";
+  return count >= 3 ? SURFACE.card : SURFACE.text;
 }
 
 function formatRating(val: number | null): string {
@@ -232,12 +233,12 @@ export default function DriverHeatmapPage() {
 
   /* ─── Palette ─── */
   const pal = {
-    pageBg: "#f8fafc",
-    cardBg: "#ffffff",
+    pageBg: SURFACE.bg,
+    cardBg: SURFACE.card,
     cardBorder: "#e8ecf1",
-    textPrimary: "#0f172a",
-    textMuted: "#64748b",
-    labelColor: "#94a3b8",
+    textPrimary: SURFACE.text,
+    textMuted: SURFACE.textMuted,
+    labelColor: SURFACE.textFaint,
     shadow: "0 1px 6px rgba(15,23,42,0.06)",
   };
 
@@ -254,7 +255,7 @@ export default function DriverHeatmapPage() {
       {/* ── Header ── */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
         <div>
-          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase", color: "#21D0B3", margin: "0 0 4px" }}>
+          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase", color: BRAND.teal, margin: "0 0 4px" }}>
             Panel de conductores
           </p>
           <h1 style={{ fontSize: "22px", fontWeight: 800, color: pal.textPrimary, margin: 0 }}>
@@ -279,15 +280,15 @@ export default function DriverHeatmapPage() {
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {[
           {
-            label: "Viajes del día", value: kpis.totalTrips, color: "#f59e0b",
+            label: "Viajes del día", value: kpis.totalTrips, color: STATE.warning,
             detail: kpis.cancelled > 0 ? `${kpis.cancelled} cancelado${kpis.cancelled === 1 ? "" : "s"}` : "sin cancelaciones",
           },
           {
-            label: "Completados", value: kpis.completed, color: "#10b981",
+            label: "Completados", value: kpis.completed, color: STATE.success,
             detail: kpis.totalTrips > 0 ? `${Math.round((kpis.completed / kpis.totalTrips) * 100)}% del día` : "—",
           },
           {
-            label: "Conductores activos", value: kpis.activeDrivers, color: "#3b82f6",
+            label: "Conductores activos", value: kpis.activeDrivers, color: STATE.info,
             detail: kpis.activeDrivers > 0 ? `${(kpis.totalTrips / kpis.activeDrivers).toFixed(1)} viajes por conductor` : "sin actividad",
           },
           {
@@ -311,7 +312,7 @@ export default function DriverHeatmapPage() {
       <div style={{ background: pal.cardBg, borderRadius: "20px", border: `1px solid ${pal.cardBorder}`, boxShadow: pal.shadow, overflow: "hidden" }}>
         <div style={{ padding: "18px 20px 12px", borderBottom: `1px solid ${pal.cardBorder}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
-            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "#21D0B3", margin: "0 0 4px" }}>Mapa de calor</p>
+            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: BRAND.teal, margin: "0 0 4px" }}>Mapa de calor</p>
             <p style={{ fontSize: "14px", fontWeight: 700, color: pal.textPrimary, margin: 0 }}>Actividad por conductor y hora</p>
           </div>
           <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
@@ -401,19 +402,19 @@ export default function DriverHeatmapPage() {
                           {isHovered && count > 0 && (
                             <div style={{
                               position: "absolute", bottom: "calc(100% + 6px)", left: "50%", transform: "translateX(-50%)",
-                              background: "#0f172a", color: "#fff", borderRadius: "10px", padding: "10px 14px",
+                              background: SURFACE.text, color: SURFACE.card, borderRadius: "10px", padding: "10px 14px",
                               fontSize: "11px", whiteSpace: "nowrap", zIndex: 20, boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
                               pointerEvents: "none",
                             }}>
-                              <p style={{ fontWeight: 700, margin: "0 0 4px", color: "#21D0B3" }}>
+                              <p style={{ fontWeight: 700, margin: "0 0 4px", color: BRAND.teal }}>
                                 {driver?.fullName} · {String(h).padStart(2, "0")}:00
                               </p>
                               {cellTrips.map((tr, i) => (
-                                <p key={i} style={{ margin: "2px 0", color: "#cbd5e1" }}>
+                                <p key={i} style={{ margin: "2px 0", color: SURFACE.borderStrong }}>
                                   {tr.origin?.split(",")[0] || "?"} → {tr.destination?.split(",")[0] || "?"} · {tr.passengerCount || 0} pax
                                 </p>
                               ))}
-                              <div style={{ position: "absolute", bottom: "-4px", left: "50%", transform: "translateX(-50%) rotate(45deg)", width: "8px", height: "8px", background: "#0f172a" }} />
+                              <div style={{ position: "absolute", bottom: "-4px", left: "50%", transform: "translateX(-50%) rotate(45deg)", width: "8px", height: "8px", background: SURFACE.text }} />
                             </div>
                           )}
                         </div>
@@ -443,8 +444,8 @@ export default function DriverHeatmapPage() {
                 <button key={tab.key} type="button" onClick={() => setRankTab(tab.key)}
                   style={{
                     padding: "6px 14px", borderRadius: "99px", border: "none", fontSize: "11px", fontWeight: 700, cursor: "pointer",
-                    background: rankTab === tab.key ? "linear-gradient(135deg,#6366f1,#4f46e5)" : "#f1f5f9",
-                    color: rankTab === tab.key ? "#fff" : pal.textMuted,
+                    background: rankTab === tab.key ? "linear-gradient(135deg,#6366f1,#4f46e5)" : SURFACE.borderMuted,
+                    color: rankTab === tab.key ? SURFACE.card : pal.textMuted,
                     boxShadow: rankTab === tab.key ? "0 2px 8px rgba(99,102,241,0.3)" : "none",
                   }}>
                   {tab.label}
@@ -458,7 +459,7 @@ export default function DriverHeatmapPage() {
             ) : (
               sortedRankings.map((r, i) => {
                 const sem = semaphore(r.todayTrips);
-                const medalColor = i === 0 ? "#f59e0b" : i === 1 ? "#94a3b8" : i === 2 ? "#b45309" : null;
+                const medalColor = i === 0 ? STATE.warning : i === 1 ? SURFACE.textFaint : i === 2 ? STATE.warningText : null;
                 return (
                   <div key={r.driverId} style={{
                     display: "grid", gridTemplateColumns: "40px 1fr 100px 50px",
@@ -476,11 +477,11 @@ export default function DriverHeatmapPage() {
                     <div style={{ textAlign: "right" }}>
                       {rankTab === "trips" && <span style={{ fontSize: "16px", fontWeight: 800, color: "#6366f1" }}>{r.totalTrips}</span>}
                       {rankTab === "rating" && (
-                        <span style={{ fontSize: "16px", fontWeight: 800, color: "#f59e0b" }}>
+                        <span style={{ fontSize: "16px", fontWeight: 800, color: STATE.warning }}>
                           {formatRating(r.avgRating)} <StarIcon size={11} className="inline" />
                         </span>
                       )}
-                      {rankTab === "idle" && <span style={{ fontSize: "16px", fontWeight: 800, color: "#ef4444" }}>{r.idleHours}h</span>}
+                      {rankTab === "idle" && <span style={{ fontSize: "16px", fontWeight: 800, color: STATE.danger }}>{r.idleHours}h</span>}
                     </div>
                     <div style={{ display: "flex", justifyContent: "center" }}>
                       <span style={{ width: 10, height: 10, borderRadius: "50%", background: sem.color, boxShadow: `0 0 6px ${sem.color}40` }} />
@@ -497,13 +498,13 @@ export default function DriverHeatmapPage() {
 
           {/* Semaphore legend */}
           <div style={{ background: pal.cardBg, borderRadius: "20px", border: `1px solid ${pal.cardBorder}`, boxShadow: pal.shadow, padding: "20px" }}>
-            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "#21D0B3", margin: "0 0 12px" }}>
+            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: BRAND.teal, margin: "0 0 12px" }}>
               Indicadores de carga
             </p>
             {[
-              { color: "#10b981", label: "Disponible", desc: `0–${LOAD_MEDIUM - 1} viajes en el día` },
-              { color: "#f59e0b", label: "Carga media", desc: `${LOAD_MEDIUM}–${LOAD_HIGH - 1} viajes en el día` },
-              { color: "#ef4444", label: "Alta carga", desc: `${LOAD_HIGH}+ viajes en el día` },
+              { color: STATE.success, label: "Disponible", desc: `0–${LOAD_MEDIUM - 1} viajes en el día` },
+              { color: STATE.warning, label: "Carga media", desc: `${LOAD_MEDIUM}–${LOAD_HIGH - 1} viajes en el día` },
+              { color: STATE.danger, label: "Alta carga", desc: `${LOAD_HIGH}+ viajes en el día` },
             ].map((s) => (
               <div key={s.label} style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
                 <span style={{ width: 14, height: 14, borderRadius: "50%", background: s.color, flexShrink: 0, boxShadow: `0 0 8px ${s.color}30` }} />
@@ -517,7 +518,7 @@ export default function DriverHeatmapPage() {
 
           {/* Top 3 rated */}
           <div style={{ background: pal.cardBg, borderRadius: "20px", border: `1px solid ${pal.cardBorder}`, boxShadow: pal.shadow, padding: "20px" }}>
-            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "#f59e0b", margin: "0 0 12px" }}>
+            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: STATE.warning, margin: "0 0 12px" }}>
               Mejor evaluados
             </p>
             {rankings
@@ -526,14 +527,14 @@ export default function DriverHeatmapPage() {
               .slice(0, 3)
               .map((r, i) => (
                 <div key={r.driverId} style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
-                  <MedalIcon size={18} color={i === 0 ? "#f59e0b" : i === 1 ? "#94a3b8" : "#b45309"} />
+                  <MedalIcon size={18} color={i === 0 ? STATE.warning : i === 1 ? SURFACE.textFaint : STATE.warningText} />
                   <div style={{ flex: 1 }}>
                     <p style={{ fontSize: "13px", fontWeight: 600, color: pal.textPrimary, margin: 0 }}>{r.name}</p>
                     <p style={{ fontSize: "10px", color: pal.labelColor, margin: 0 }}>{r.completedTrips} viajes completados</p>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                    <span style={{ fontSize: "18px", fontWeight: 800, color: "#f59e0b" }}>{formatRating(r.avgRating)}</span>
-                    <StarIcon size={14} color="#f59e0b" strokeWidth={1} fill="#f59e0b" />
+                    <span style={{ fontSize: "18px", fontWeight: 800, color: STATE.warning }}>{formatRating(r.avgRating)}</span>
+                    <StarIcon size={14} color={STATE.warning} strokeWidth={1} fill={STATE.warning} />
                   </div>
                 </div>
               ))}
@@ -544,7 +545,7 @@ export default function DriverHeatmapPage() {
 
           {/* Most active today */}
           <div style={{ background: pal.cardBg, borderRadius: "20px", border: `1px solid ${pal.cardBorder}`, boxShadow: pal.shadow, padding: "20px" }}>
-            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "#3b82f6", margin: "0 0 12px" }}>
+            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: STATE.info, margin: "0 0 12px" }}>
               Más activos hoy
             </p>
             {rankings
@@ -557,9 +558,9 @@ export default function DriverHeatmapPage() {
                   <div key={r.driverId} style={{ marginBottom: "10px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
                       <span style={{ fontSize: "12px", fontWeight: 600, color: pal.textPrimary }}>{r.name}</span>
-                      <span style={{ fontSize: "12px", fontWeight: 800, color: "#3b82f6" }}>{r.todayTrips}</span>
+                      <span style={{ fontSize: "12px", fontWeight: 800, color: STATE.info }}>{r.todayTrips}</span>
                     </div>
-                    <div style={{ height: "6px", borderRadius: "3px", background: "#f1f5f9", overflow: "hidden" }}>
+                    <div style={{ height: "6px", borderRadius: "3px", background: SURFACE.borderMuted, overflow: "hidden" }}>
                       <div style={{ height: "100%", borderRadius: "3px", background: "linear-gradient(90deg,#3b82f6,#6366f1)", width: `${pct}%`, transition: "width 0.5s" }} />
                     </div>
                   </div>

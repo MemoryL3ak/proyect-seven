@@ -16,13 +16,14 @@ import {
   Legend,
 } from "recharts";
 import { apiFetch, getTokens } from "@/lib/api";
+import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { DownloadIcon, UndoIcon, XIcon, CheckCircleIcon, AlertIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 import { useIsMobile } from "@/lib/useIsMobile";
 import { downloadCSV, downloadChartPng, slugify } from "@/lib/export";
 
 /* ── Sparkle icon ── */
-function SofiaBotIcon({ size = 24, eyeColor = "#21D0B3" }: { size?: number; eyeColor?: string }) {
+function SofiaBotIcon({ size = 24, eyeColor = BRAND.teal }: { size?: number; eyeColor?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
       <rect x="3" y="4" width="26" height="20" rx="10" fill="currentColor" />
@@ -274,11 +275,11 @@ function ChartArtifact({ artifact }: { artifact: SofiaArtifact }) {
     return <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12 }}>Sin datos para graficar.</p>;
   }
   const tooltipStyle = {
-    background: "#0f172a",
+    background: SURFACE.text,
     border: "1px solid rgba(255,255,255,0.12)",
     borderRadius: 8,
     fontSize: 11,
-    color: "#f1f5f9",
+    color: SURFACE.borderMuted,
   };
 
   return (
@@ -293,9 +294,9 @@ function ChartArtifact({ artifact }: { artifact: SofiaArtifact }) {
             <XAxis dataKey={xKey} tick={CHART_AXIS} stroke="rgba(255,255,255,0.2)" />
             <YAxis tick={CHART_AXIS} stroke="rgba(255,255,255,0.2)" allowDecimals={false} />
             <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(255,255,255,0.05)" }} />
-            <Legend wrapperStyle={{ fontSize: 10, color: "#cbd5e1" }} />
+            <Legend wrapperStyle={{ fontSize: 10, color: SURFACE.borderStrong }} />
             {series.map((s) => (
-              <Bar key={s.key} dataKey={s.key} name={s.label} fill={s.color || "#21D0B3"} stackId="a" radius={[2, 2, 0, 0]} />
+              <Bar key={s.key} dataKey={s.key} name={s.label} fill={s.color || BRAND.teal} stackId="a" radius={[2, 2, 0, 0]} />
             ))}
           </BarChart>
         ) : artifact.chartType === "area" ? (
@@ -304,14 +305,14 @@ function ChartArtifact({ artifact }: { artifact: SofiaArtifact }) {
             <XAxis dataKey={xKey} tick={CHART_AXIS} stroke="rgba(255,255,255,0.2)" />
             <YAxis tick={CHART_AXIS} stroke="rgba(255,255,255,0.2)" allowDecimals={false} />
             <Tooltip contentStyle={tooltipStyle} />
-            <Legend wrapperStyle={{ fontSize: 10, color: "#cbd5e1" }} />
+            <Legend wrapperStyle={{ fontSize: 10, color: SURFACE.borderStrong }} />
             {series.map((s) => (
               <Area
                 key={s.key}
                 dataKey={s.key}
                 name={s.label}
-                stroke={s.color || "#21D0B3"}
-                fill={s.color || "#21D0B3"}
+                stroke={s.color || BRAND.teal}
+                fill={s.color || BRAND.teal}
                 fillOpacity={0.18}
                 strokeWidth={2}
               />
@@ -323,13 +324,13 @@ function ChartArtifact({ artifact }: { artifact: SofiaArtifact }) {
             <XAxis dataKey={xKey} tick={CHART_AXIS} stroke="rgba(255,255,255,0.2)" />
             <YAxis tick={CHART_AXIS} stroke="rgba(255,255,255,0.2)" allowDecimals={false} />
             <Tooltip contentStyle={tooltipStyle} />
-            <Legend wrapperStyle={{ fontSize: 10, color: "#cbd5e1" }} />
+            <Legend wrapperStyle={{ fontSize: 10, color: SURFACE.borderStrong }} />
             {series.map((s) => (
               <Line
                 key={s.key}
                 dataKey={s.key}
                 name={s.label}
-                stroke={s.color || "#21D0B3"}
+                stroke={s.color || BRAND.teal}
                 strokeWidth={2}
                 dot={false}
                 connectNulls
@@ -344,7 +345,7 @@ function ChartArtifact({ artifact }: { artifact: SofiaArtifact }) {
 
 function KpiRow({ kpis }: { kpis: NonNullable<SofiaArtifact["kpis"]> }) {
   const toneColor = (tone?: string) =>
-    tone === "good" ? "#21D0B3" : tone === "warn" ? "#f59e0b" : "#e2e8f0";
+    tone === "good" ? BRAND.teal : tone === "warn" ? STATE.warning : SURFACE.border;
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
       {kpis.map((k, i) => (
@@ -388,8 +389,8 @@ function ActionCard({
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ display: "inline-flex", color: ok ? "#059669" : "#b45309" }}>{ok ? <CheckCircleIcon size={14} /> : <AlertIcon size={14} />}</span>
-        <span style={{ fontSize: 11.5, fontWeight: 800, color: ok ? "#21D0B3" : "#fb7185" }}>
+        <span style={{ display: "inline-flex", color: ok ? STATE.successText : STATE.warningText }}>{ok ? <CheckCircleIcon size={14} /> : <AlertIcon size={14} />}</span>
+        <span style={{ fontSize: 11.5, fontWeight: 800, color: ok ? BRAND.teal : "#fb7185" }}>
           {action.label}
         </span>
       </div>
@@ -445,13 +446,13 @@ function useLiveFeed<T>(feed: string, eventId: string | null | undefined, extrac
 
 function LiveBadge({ connected }: { connected: boolean }) {
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 9.5, color: connected ? "#21D0B3" : "rgba(255,255,255,0.4)" }}>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 9.5, color: connected ? BRAND.teal : "rgba(255,255,255,0.4)" }}>
       <span
         style={{
           width: 6,
           height: 6,
           borderRadius: "50%",
-          background: connected ? "#21D0B3" : "#64748b",
+          background: connected ? BRAND.teal : SURFACE.textMuted,
           boxShadow: connected ? "0 0 6px #21D0B3" : "none",
         }}
       />
@@ -531,13 +532,13 @@ function LiveMapPanel({ eventId }: { eventId: string | null | undefined }) {
       seen.add(d.driverId);
       bounds.extend({ lat: d.lat, lng: d.lng });
       hasBounds = true;
-      const color = d.stale ? "#f59e0b" : "#21D0B3";
+      const color = d.stale ? STATE.warning : BRAND.teal;
       const icon = {
         path: google.maps.SymbolPath.CIRCLE,
         scale: 8,
         fillColor: color,
         fillOpacity: 0.9,
-        strokeColor: "#ffffff",
+        strokeColor: SURFACE.card,
         strokeWeight: 2,
       };
       const title = `${d.name} · ${Math.round(d.speed)} km/h`;
@@ -574,7 +575,7 @@ function LiveMapPanel({ eventId }: { eventId: string | null | undefined }) {
       </div>
       <div
         ref={mapDivRef}
-        style={{ width: "100%", height: 210, borderRadius: 12, overflow: "hidden", background: "#0f172a" }}
+        style={{ width: "100%", height: 210, borderRadius: 12, overflow: "hidden", background: SURFACE.text }}
       />
     </div>
   );
@@ -582,9 +583,9 @@ function LiveMapPanel({ eventId }: { eventId: string | null | undefined }) {
 
 const TRIP_STATUS_COLOR: Record<string, string> = {
   SCHEDULED: "#6366f1",
-  IN_PROGRESS: "#21D0B3",
+  IN_PROGRESS: BRAND.teal,
   PICKED_UP: "#0ea5e9",
-  REQUESTED: "#f59e0b",
+  REQUESTED: STATE.warning,
 };
 
 function LiveTripsPanel({ eventId }: { eventId: string | null | undefined }) {
@@ -614,7 +615,7 @@ function LiveTripsPanel({ eventId }: { eventId: string | null | undefined }) {
                 style={{
                   fontSize: 9,
                   fontWeight: 800,
-                  color: TRIP_STATUS_COLOR[t.status] || "#94a3b8",
+                  color: TRIP_STATUS_COLOR[t.status] || SURFACE.textFaint,
                   whiteSpace: "nowrap",
                 }}
               >
@@ -658,13 +659,13 @@ function AlertsPanel({ eventId }: { eventId: string | null | undefined }) {
                 gap: 7,
               }}
             >
-              <span aria-hidden style={{ display: "inline-block", width: 8, height: 8, borderRadius: 99, background: high ? "#dc2626" : "#f59e0b" }} />
+              <span aria-hidden style={{ display: "inline-block", width: 8, height: 8, borderRadius: 99, background: high ? STATE.dangerText : STATE.warning }} />
               <span style={{ fontSize: 11, color: "rgba(255,255,255,0.8)", lineHeight: 1.45 }}>{a.message}</span>
             </div>
           );
         })}
         {data && data.length === 0 && (
-          <p style={{ fontSize: 11, color: "#21D0B3" }}>Sin alertas: operación en orden.</p>
+          <p style={{ fontSize: 11, color: BRAND.teal }}>Sin alertas: operación en orden.</p>
         )}
       </div>
     </div>
@@ -715,7 +716,7 @@ function PresencePanel({ eventId }: { eventId: string | null | undefined }) {
                   height: 7,
                   borderRadius: "50%",
                   flexShrink: 0,
-                  background: d.online ? "#21D0B3" : "#64748b",
+                  background: d.online ? BRAND.teal : SURFACE.textMuted,
                   boxShadow: d.online ? "0 0 6px #21D0B3" : "none",
                 }}
               />
@@ -1066,7 +1067,7 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
             maxWidth: 280,
             padding: "14px 18px",
             borderRadius: 16,
-            background: "#fff",
+            background: SURFACE.card,
             border: "1px solid #e2e8f0",
             boxShadow: "0 8px 32px rgba(15,23,42,0.15), 0 0 0 1px rgba(33,208,179,0.1)",
             cursor: "pointer",
@@ -1079,7 +1080,7 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
                 width: 32,
                 height: 32,
                 borderRadius: 10,
-                background: "#30455B",
+                background: BRAND.charcoal,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -1087,16 +1088,16 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
                 boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
               }}
             >
-              <div style={{ color: "#fff" }}>
-                <SofiaBotIcon size={20} eyeColor="#21D0B3" />
+              <div style={{ color: SURFACE.card }}>
+                <SofiaBotIcon size={20} eyeColor={BRAND.teal} />
               </div>
             </div>
             <div>
-              <span style={{ fontSize: 12, fontWeight: 800, color: "#0f172a" }}>Sof</span>
-              <span style={{ fontSize: 12, fontWeight: 800, color: "#21D0B3" }}> IA</span>
+              <span style={{ fontSize: 12, fontWeight: 800, color: SURFACE.text }}>Sof</span>
+              <span style={{ fontSize: 12, fontWeight: 800, color: BRAND.teal }}> IA</span>
             </div>
           </div>
-          <p style={{ fontSize: 12.5, color: "#475569", margin: 0, lineHeight: 1.5 }}>
+          <p style={{ fontSize: 12.5, color: SURFACE.textSecondary, margin: 0, lineHeight: 1.5 }}>
             Ahora ejecuto acciones, predigo demanda y muestro mapas en vivo. Toca para empezar.
           </p>
           <button
@@ -1111,7 +1112,7 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
               right: 10,
               background: "none",
               border: "none",
-              color: "#94a3b8",
+              color: SURFACE.textFaint,
               fontSize: 14,
               cursor: "pointer",
               padding: 2,
@@ -1164,7 +1165,7 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
             width: FAB_SIZE,
             height: FAB_SIZE,
             borderRadius: "50%",
-            background: open ? "linear-gradient(135deg, #e2e8f0, #f1f5f9)" : "#30455B",
+            background: open ? "linear-gradient(135deg, #e2e8f0, #f1f5f9)" : BRAND.charcoal,
             border: open ? "1px solid #cbd5e1" : "none",
             cursor: "grab",
             display: "flex",
@@ -1185,21 +1186,21 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
           }}
         >
           {open ? (
-            <XIcon size={22} color="#64748b" strokeWidth={2.2} />
+            <XIcon size={22} color={SURFACE.textMuted} strokeWidth={2.2} />
           ) : smallFab ? (
-            <div style={{ color: "#fff" }}>
-              <SofiaBotIcon size={30} eyeColor="#21D0B3" />
+            <div style={{ color: SURFACE.card }}>
+              <SofiaBotIcon size={30} eyeColor={BRAND.teal} />
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-              <div style={{ color: "#fff" }}>
-                <SofiaBotIcon size={44} eyeColor="#21D0B3" />
+              <div style={{ color: SURFACE.card }}>
+                <SofiaBotIcon size={44} eyeColor={BRAND.teal} />
               </div>
               <div style={{ display: "flex", alignItems: "baseline", gap: 2, marginTop: -1 }}>
                 <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.7)", letterSpacing: "0.04em", fontFamily: "system-ui" }}>
                   Sof
                 </span>
-                <span style={{ fontSize: 15, fontWeight: 900, color: "#21D0B3", letterSpacing: "0.02em" }}>IA</span>
+                <span style={{ fontSize: 15, fontWeight: 900, color: BRAND.teal, letterSpacing: "0.02em" }}>IA</span>
               </div>
             </div>
           )}
@@ -1294,21 +1295,21 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
                     width: 38,
                     height: 38,
                     borderRadius: 12,
-                    background: "#30455B",
+                    background: BRAND.charcoal,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     boxShadow: "0 2px 10px rgba(0,0,0,0.2)",
                   }}
                 >
-                  <div style={{ color: "#fff" }}>
-                    <SofiaBotIcon size={24} eyeColor="#21D0B3" />
+                  <div style={{ color: SURFACE.card }}>
+                    <SofiaBotIcon size={24} eyeColor={BRAND.teal} />
                   </div>
                 </div>
                 <div>
                   <div style={{ display: "flex", alignItems: "baseline", gap: 3 }}>
-                    <span style={{ color: "#f1f5f9", fontSize: 15, fontWeight: 800 }}>Sof</span>
-                    <span style={{ color: "#21D0B3", fontSize: 16, fontWeight: 900, textShadow: "0 0 8px rgba(33,208,179,0.4)" }}>
+                    <span style={{ color: SURFACE.borderMuted, fontSize: 15, fontWeight: 800 }}>Sof</span>
+                    <span style={{ color: BRAND.teal, fontSize: 16, fontWeight: 900, textShadow: "0 0 8px rgba(33,208,179,0.4)" }}>
                       IA
                     </span>
                   </div>
@@ -1334,7 +1335,7 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
                     border: "1px solid rgba(33,208,179,0.2)",
                     borderRadius: 8,
                     padding: "5px 10px",
-                    color: messages.length === 0 ? "rgba(255,255,255,0.25)" : "#21D0B3",
+                    color: messages.length === 0 ? "rgba(255,255,255,0.25)" : BRAND.teal,
                     fontSize: 12,
                     fontWeight: 600,
                     cursor: messages.length === 0 ? "not-allowed" : "pointer",
@@ -1413,11 +1414,11 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
                     }}
                   >
                     <div style={{ color: "rgba(255,255,255,0.6)" }}>
-                      <SofiaBotIcon size={18} eyeColor="#21D0B3" />
+                      <SofiaBotIcon size={18} eyeColor={BRAND.teal} />
                     </div>
                   </div>
                   <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 13, lineHeight: 1.6, margin: 0 }}>
-                    Consulto datos, <strong style={{ color: "#21D0B3" }}>ejecuto acciones</strong>, genero
+                    Consulto datos, <strong style={{ color: BRAND.teal }}>ejecuto acciones</strong>, genero
                     pronósticos y abro paneles en tiempo real. Prueba:
                   </p>
                 </div>
@@ -1472,7 +1473,7 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
                     }}
                   >
                     <div style={{ color: "rgba(255,255,255,0.6)" }}>
-                      <SofiaBotIcon size={16} eyeColor="#21D0B3" />
+                      <SofiaBotIcon size={16} eyeColor={BRAND.teal} />
                     </div>
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -1501,7 +1502,7 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
                     borderRadius: 14,
                     padding: "10px 14px",
                     marginLeft: 34,
-                    color: "#21D0B3",
+                    color: BRAND.teal,
                     fontSize: 13,
                     lineHeight: 1.5,
                   }}
@@ -1522,11 +1523,11 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
                   border: "1px solid rgba(33,208,179,0.12)",
                 }}
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21D0B3" strokeWidth="2">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2">
                   <circle cx="12" cy="12" r="3" />
                   <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" />
                 </svg>
-                <span style={{ color: "#21D0B3", fontSize: 11.5, fontWeight: 600 }}>{friendlyToolMessage(toolInfo)}</span>
+                <span style={{ color: BRAND.teal, fontSize: 11.5, fontWeight: 600 }}>{friendlyToolMessage(toolInfo)}</span>
               </div>
             )}
             {loading && !toolInfo && messages[messages.length - 1]?.content === "" && (
@@ -1538,7 +1539,7 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
                       width: 6,
                       height: 6,
                       borderRadius: "50%",
-                      background: "#21D0B3",
+                      background: BRAND.teal,
                       animation: `sofiaRing 1s ease-in-out infinite ${i * 0.2}s`,
                       display: "inline-block",
                     }}
@@ -1573,7 +1574,7 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
                   borderRadius: 12,
                   background: "rgba(255,255,255,0.06)",
                   border: "1px solid rgba(255,255,255,0.1)",
-                  color: "#f1f5f9",
+                  color: SURFACE.borderMuted,
                   // 16px en móvil: bajo ese tamaño iOS hace zoom al enfocar.
                   fontSize: isSmallScreen ? 16 : 13,
                   outline: "none",
@@ -1595,7 +1596,7 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
                   padding: "10px 18px",
                   borderRadius: 12,
                   background: loading ? "rgba(33,208,179,0.2)" : "linear-gradient(135deg, #21D0B3, #14AE98)",
-                  color: loading ? "#21D0B3" : "#fff",
+                  color: loading ? BRAND.teal : SURFACE.card,
                   fontWeight: 700,
                   fontSize: 13,
                   border: "none",

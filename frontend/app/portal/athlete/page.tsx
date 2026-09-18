@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
+import { SURFACE } from "@/lib/design";
 import { PlaneIcon, HotelIcon, ClipboardIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 
@@ -210,7 +211,7 @@ export default function AthletePortalPage() {
                 <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#22d3ee", boxShadow: "0 0 10px #22d3ee", display: "inline-block", animation: "pa-pulse 2s ease-in-out infinite" }} />
                 <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#22d3ee" }}>Portal de Atletas</span>
               </div>
-              <h1 style={{ fontSize: "clamp(28px,3vw,44px)", fontWeight: 800, lineHeight: 1.1, color: "#f8fafc", letterSpacing: "-0.02em", margin: 0 }}>
+              <h1 style={{ fontSize: "clamp(28px,3vw,44px)", fontWeight: 800, lineHeight: 1.1, color: SURFACE.bg, letterSpacing: "-0.02em", margin: 0 }}>
                 Tu itinerario<br />
                 <span style={{ background: "linear-gradient(90deg,#c9a84c 0%,#f0d070 40%,#c9a84c 80%)", backgroundSize: "200% auto", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", animation: "pa-shimmer 4s linear infinite" }}>completo</span>
               </h1>

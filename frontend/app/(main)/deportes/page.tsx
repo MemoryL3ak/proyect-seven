@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { BRAND, STATE, SURFACE } from "@/lib/design";
 import {
   CalendarIcon,
   ChevronLeftIcon,
@@ -140,18 +141,18 @@ const GENDER_COLORS: Record<string, string> = {
 const EMPTY_PRUEBA = { name: "", category: "", gender: "", scheduledAt: "", venueName: "", useDateRange: false, rangeStart: "", rangeEnd: "", rangeTime: "" };
 
 const pal = {
-  accent: "#21D0B3",
-  titleColor: "#0f172a",
-  subtitleColor: "#64748b",
+  accent: BRAND.teal,
+  titleColor: SURFACE.text,
+  subtitleColor: SURFACE.textMuted,
   cardShadow: "0 1px 4px rgba(15,23,42,0.06)",
-  labelColor: "#94a3b8",
-  kpi: ["#21D0B3", "#10b981", "#f59e0b"] as [string, string, string],
+  labelColor: SURFACE.textFaint,
+  kpi: [BRAND.teal, STATE.success, STATE.warning] as [string, string, string],
 };
 
 const fieldStyle: React.CSSProperties = {
   width: "100%", padding: "8px 12px", borderRadius: "10px",
-  border: "1px solid #e2e8f0", background: "#f8fafc",
-  fontSize: "14px", color: "#0f172a", outline: "none",
+  border: "1px solid #e2e8f0", background: SURFACE.bg,
+  fontSize: "14px", color: SURFACE.text, outline: "none",
 };
 
 // ── KPI icons
@@ -172,12 +173,12 @@ const CheckSquareIcon = ({ color, size = 20 }: { color: string; size?: number })
 
 const ghostBtn: React.CSSProperties = {
   padding: "7px 14px", borderRadius: "10px", border: "1px solid #e2e8f0",
-  background: "#ffffff", color: "#64748b", fontWeight: 600, fontSize: "13px",
+  background: SURFACE.card, color: SURFACE.textMuted, fontWeight: 600, fontSize: "13px",
   cursor: "pointer",
 };
 const primaryBtn: React.CSSProperties = {
   padding: "9px 20px", borderRadius: "10px", border: "none",
-  background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: "#ffffff",
+  background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: SURFACE.card,
   fontWeight: 700, fontSize: "13px", cursor: "pointer",
   boxShadow: "0 2px 8px rgba(33,208,179,0.3)",
 };
@@ -635,9 +636,9 @@ export default function DeportesPage() {
     <div className="min-w-0 space-y-5 overflow-x-hidden">
 
       {/* ── Header */}
-      <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "20px", padding: "24px 28px 22px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+      <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "20px", padding: "24px 28px 22px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
-          <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#94a3b8" }}>{t("Deportes")}</span>
+          <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: SURFACE.textFaint }}>{t("Deportes")}</span>
         </div>
         <h1 style={{ fontSize: "22px", fontWeight: 800, color: pal.titleColor, margin: "0 0 16px" }}>{t("Planificación deportiva")}</h1>
 
@@ -651,7 +652,7 @@ export default function DeportesPage() {
         </div>
 
         {/* Tabs */}
-        <div style={{ background: "#f1f5f9", borderRadius: "12px", padding: "4px", width: "fit-content", display: "flex", gap: "4px" }}>
+        <div style={{ background: SURFACE.borderMuted, borderRadius: "12px", padding: "4px", width: "fit-content", display: "flex", gap: "4px" }}>
           {([["cupos", t("Cupos")], ["pruebas", t("Pruebas")], ["calendario", t("Calendario")]] as const).map(([tabKey, label]) => (
             <button
               key={tabKey}
@@ -661,7 +662,7 @@ export default function DeportesPage() {
                 letterSpacing: "0.04em", border: "none", cursor: "pointer",
                 transition: "all 150ms ease",
                 background: tab === tabKey ? "linear-gradient(135deg, #21D0B3, #14AE98)" : "transparent",
-                color: tab === tabKey ? "#ffffff" : "#64748b",
+                color: tab === tabKey ? SURFACE.card : SURFACE.textMuted,
                 boxShadow: tab === tabKey ? "0 2px 8px rgba(33,208,179,0.3)" : "none",
               }}
             >
@@ -694,7 +695,7 @@ export default function DeportesPage() {
             <div className="grid gap-3 lg:grid-cols-3" style={{ marginTop: "18px" }}>
               {kpiCards.map((card) => (
                 <div key={card.label} style={{
-                  background: "#ffffff", border: `1px solid ${card.color}30`,
+                  background: SURFACE.card, border: `1px solid ${card.color}30`,
                   borderLeft: `3px solid ${card.color}`, borderRadius: "14px",
                   padding: "14px 18px", display: "flex", alignItems: "center", gap: "14px",
                   transition: "transform 120ms ease",
@@ -719,8 +720,8 @@ export default function DeportesPage() {
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <button style={{ ...ghostBtn, opacity: page <= 1 ? 0.5 : 1 }} onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>{t("Anterior")}</button>
                 <span style={{
-                  background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "99px",
-                  padding: "4px 14px", fontSize: "12px", fontWeight: 600, color: "#64748b",
+                  background: SURFACE.bg, border: "1px solid #e2e8f0", borderRadius: "99px",
+                  padding: "4px 14px", fontSize: "12px", fontWeight: 600, color: SURFACE.textMuted,
                 }}>{t("Página {p} de {total}").replace("{p}", String(page)).replace("{total}", String(totalPages))}</span>
                 <button style={{ ...ghostBtn, opacity: page >= totalPages ? 0.5 : 1 }} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>{t("Siguiente")}</button>
               </div>
@@ -729,8 +730,8 @@ export default function DeportesPage() {
               </button>
             </div>
 
-            {message ? <p style={{ marginTop: "10px", fontSize: "13px", color: "#21D0B3", fontWeight: 600 }}>{message}</p> : null}
-            {error ? <p style={{ marginTop: "10px", fontSize: "13px", color: "#ef4444" }}>{error}</p> : null}
+            {message ? <p style={{ marginTop: "10px", fontSize: "13px", color: BRAND.teal, fontWeight: 600 }}>{message}</p> : null}
+            {error ? <p style={{ marginTop: "10px", fontSize: "13px", color: STATE.danger }}>{error}</p> : null}
           </>
         )}
 
@@ -765,23 +766,23 @@ export default function DeportesPage() {
       {/* ── Cupos table */}
       {tab === "cupos" && (
         <section style={{
-          background: "#ffffff", border: "1px solid #e2e8f0",
+          background: SURFACE.card, border: "1px solid #e2e8f0",
           borderRadius: "20px", overflow: "hidden", boxShadow: pal.cardShadow,
         }}>
           {loading ? (
-            <p style={{ padding: "24px", fontSize: "13px", color: "#64748b" }}>{t("Cargando filas...")}</p>
+            <p style={{ padding: "24px", fontSize: "13px", color: SURFACE.textMuted }}>{t("Cargando filas...")}</p>
           ) : filteredRows.length === 0 ? (
-            <p style={{ padding: "24px", fontSize: "13px", color: "#94a3b8" }}>{t("No hay filas para los filtros seleccionados.")}</p>
+            <p style={{ padding: "24px", fontSize: "13px", color: SURFACE.textFaint }}>{t("No hay filas para los filtros seleccionados.")}</p>
           ) : (
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", minWidth: "960px", borderCollapse: "collapse", fontSize: "13px" }}>
                 <thead>
-                  <tr style={{ background: "#f8fafc" }}>
+                  <tr style={{ background: SURFACE.bg }}>
                     {[t("Delegación"), t("Disciplina"), t("Tipo"), t("Género"), "AND", t("Cupo esperado")].map((h) => (
                       <th key={h} style={{
                         padding: "13px 16px", textAlign: "left", fontSize: "10px",
                         fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase",
-                        color: "#94a3b8", borderBottom: "1px solid #e2e8f0",
+                        color: SURFACE.textFaint, borderBottom: "1px solid #e2e8f0",
                         whiteSpace: "nowrap",
                       }}>{h}</th>
                     ))}
@@ -789,17 +790,17 @@ export default function DeportesPage() {
                 </thead>
                 <tbody>
                   {pagedRows.map((row, idx) => {
-                    const catColor = CATEGORY_COLORS[row.category] ?? "#94a3b8";
-                    const genColor = GENDER_COLORS[row.gender.trim().toUpperCase()] ?? "#94a3b8";
+                    const catColor = CATEGORY_COLORS[row.category] ?? SURFACE.textFaint;
+                    const genColor = GENDER_COLORS[row.gender.trim().toUpperCase()] ?? SURFACE.textFaint;
                     return (
                       <tr key={row.key} style={{
-                        background: idx % 2 === 0 ? "#ffffff" : "#f8fafc",
+                        background: idx % 2 === 0 ? SURFACE.card : SURFACE.bg,
                         borderBottom: "1px solid #e2e8f0", transition: "background 100ms ease",
                       }}
-                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#f1f5f9"; }}
-                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = idx % 2 === 0 ? "#ffffff" : "#f8fafc"; }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = SURFACE.borderMuted; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = idx % 2 === 0 ? SURFACE.card : SURFACE.bg; }}
                       >
-                        <td style={{ padding: "11px 16px", fontWeight: 700, color: "#0f172a", letterSpacing: "0.04em" }}>{row.delegationCode}</td>
+                        <td style={{ padding: "11px 16px", fontWeight: 700, color: SURFACE.text, letterSpacing: "0.04em" }}>{row.delegationCode}</td>
                         <td style={{ padding: "11px 16px" }}>
                           <button
                             onClick={() => goToPruebas(row.disciplineId)}
@@ -827,7 +828,7 @@ export default function DeportesPage() {
                             fontSize: "11px", fontWeight: 700, color: genColor,
                           }}>{t(genderLabel(row.gender))}</span>
                         </td>
-                        <td style={{ padding: "11px 16px", color: "#0f172a", fontWeight: 600 }}>{row.andCount}</td>
+                        <td style={{ padding: "11px 16px", color: SURFACE.text, fontWeight: 600 }}>{row.andCount}</td>
                         <td style={{ padding: "8px 16px" }}>
                           <input
                             style={{ ...fieldStyle, maxWidth: "120px", textAlign: "right", fontWeight: 700 }}
@@ -849,12 +850,12 @@ export default function DeportesPage() {
       {/* ── Pruebas tab */}
       {tab === "pruebas" && (
         <section style={{
-          background: "#ffffff", border: "1px solid #e2e8f0",
+          background: SURFACE.card, border: "1px solid #e2e8f0",
           borderRadius: "20px", overflow: "hidden", boxShadow: pal.cardShadow,
         }}>
           <div style={{ overflowY: "auto", maxHeight: "560px" }}>
             {filteredDisciplines.length === 0 && (
-              <div style={{ padding: "32px", textAlign: "center", fontSize: "13px", color: "#94a3b8" }}>
+              <div style={{ padding: "32px", textAlign: "center", fontSize: "13px", color: SURFACE.textFaint }}>
                 {selectedEventId
                   ? pruebaSearch || pruebaFilterCategory || pruebaFilterGender
                     ? t("Sin resultados para los filtros aplicados.")
@@ -882,18 +883,18 @@ export default function DeportesPage() {
                       style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1, textAlign: "left", background: "none", border: "none", cursor: "pointer", minWidth: 0 }}
                     >
                       <svg
-                        style={{ width: "16px", height: "16px", flexShrink: 0, color: "#94a3b8", transition: "transform 150ms ease", transform: isOpen ? "rotate(90deg)" : "rotate(0deg)" }}
+                        style={{ width: "16px", height: "16px", flexShrink: 0, color: SURFACE.textFaint, transition: "transform 150ms ease", transform: isOpen ? "rotate(90deg)" : "rotate(0deg)" }}
                         fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
                       >
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                       </svg>
-                      <span style={{ fontWeight: 600, color: "#0f172a", fontSize: "14px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{discipline.name}</span>
+                      <span style={{ fontWeight: 600, color: SURFACE.text, fontSize: "14px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{discipline.name}</span>
                       {(discipline.category || discipline.gender) && (
-                        <span style={{ fontSize: "12px", color: "#94a3b8", flexShrink: 0 }}>
+                        <span style={{ fontSize: "12px", color: SURFACE.textFaint, flexShrink: 0 }}>
                           {[categoryLabel(discipline.category), genderLabel(discipline.gender)].filter(v => v !== "-").map(v => t(v)).join(" · ")}
                         </span>
                       )}
-                      <span style={{ marginLeft: "auto", fontSize: "12px", color: "#cbd5e1", flexShrink: 0, paddingRight: "8px" }}>
+                      <span style={{ marginLeft: "auto", fontSize: "12px", color: SURFACE.borderStrong, flexShrink: 0, paddingRight: "8px" }}>
                         {pruebas.length} {pruebas.length === 1 ? t("prueba") : t("pruebas")}
                       </span>
                     </button>
@@ -909,7 +910,7 @@ export default function DeportesPage() {
                   {isOpen && (
                     <div style={{ borderTop: "1px solid #f1f5f9" }}>
                       {pruebas.length === 0 ? (
-                        <p style={{ padding: "10px 56px", fontSize: "12px", color: "#cbd5e1", fontStyle: "italic" }}>
+                        <p style={{ padding: "10px 56px", fontSize: "12px", color: SURFACE.borderStrong, fontStyle: "italic" }}>
                           {t("Sin pruebas. Haz clic en \"+ Prueba\" para agregar.")}
                         </p>
                       ) : (
@@ -920,25 +921,25 @@ export default function DeportesPage() {
                               padding: "10px 56px",
                               borderTop: pi > 0 ? "1px solid #f1f5f9" : "none",
                             }}>
-                              <svg style={{ width: "12px", height: "12px", color: "#cbd5e1", flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <svg style={{ width: "12px", height: "12px", color: SURFACE.borderStrong, flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
                               </svg>
-                              <span style={{ fontSize: "13px", color: "#334155", flex: 1 }}>{prueba.name}</span>
+                              <span style={{ fontSize: "13px", color: SURFACE.textStrong, flex: 1 }}>{prueba.name}</span>
                               {(prueba.category || prueba.gender) && (
-                                <span style={{ fontSize: "12px", color: "#94a3b8" }}>
+                                <span style={{ fontSize: "12px", color: SURFACE.textFaint }}>
                                   {[categoryLabel(prueba.category), genderLabel(prueba.gender)].filter(v => v !== "-").map(v => t(v)).join(" · ")}
                                 </span>
                               )}
-                              <button onClick={() => openEditPrueba(prueba)} style={{ background: "none", border: "none", cursor: "pointer", color: "#cbd5e1", padding: "4px" }}
-                                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#64748b"; }}
-                                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#cbd5e1"; }}
+                              <button onClick={() => openEditPrueba(prueba)} style={{ background: "none", border: "none", cursor: "pointer", color: SURFACE.borderStrong, padding: "4px" }}
+                                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = SURFACE.textMuted; }}
+                                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = SURFACE.borderStrong; }}
                               >
                                 <svg style={{ width: "14px", height: "14px" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                 </svg>
                               </button>
                               <button onClick={() => setDeletePruebaConfirm(prueba)} style={{ background: "none", border: "none", cursor: "pointer", color: "#f87171", padding: "4px" }}
-                                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#ef4444"; }}
+                                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = STATE.danger; }}
                                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#f87171"; }}
                               >
                                 <svg style={{ width: "14px", height: "14px" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -990,10 +991,10 @@ export default function DeportesPage() {
 
         // Sedes únicas con paleta de colores estilo Excel
         const VENUE_PALETTE = [
-          { bg: "linear-gradient(135deg,#fecaca,#fda4af)", fg: "#7f1d1d", ring: "#dc2626" }, // rojo
+          { bg: "linear-gradient(135deg,#fecaca,#fda4af)", fg: "#7f1d1d", ring: STATE.dangerText }, // rojo
           { bg: "linear-gradient(135deg,#fde68a,#fcd34d)", fg: "#78350f", ring: "#d97706" }, // amarillo
           { bg: "linear-gradient(135deg,#bfdbfe,#93c5fd)", fg: "#1e3a8a", ring: "#1d4ed8" }, // azul
-          { bg: "linear-gradient(135deg,#a7f3d0,#6ee7b7)", fg: "#064e3b", ring: "#059669" }, // verde
+          { bg: "linear-gradient(135deg,#a7f3d0,#6ee7b7)", fg: "#064e3b", ring: STATE.successText }, // verde
           { bg: "linear-gradient(135deg,#ddd6fe,#c4b5fd)", fg: "#4c1d95", ring: "#7c3aed" }, // violeta
           { bg: "linear-gradient(135deg,#fbcfe8,#f9a8d4)", fg: "#831843", ring: "#db2777" }, // rosa
           { bg: "linear-gradient(135deg,#a5f3fc,#67e8f9)", fg: "#164e63", ring: "#0891b2" }, // cyan
@@ -1076,15 +1077,15 @@ export default function DeportesPage() {
             {/* KPIs */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {[
-                { label: "Pruebas totales", value: kpiTotal, color: "#21D0B3", bg: "rgba(33,208,179,0.10)" },
-                { label: "Hoy", value: kpiToday, color: "#1FCDFF", bg: "rgba(31,205,255,0.10)" },
-                { label: "Próximas 24h", value: kpiUpcoming, color: kpiUpcoming > 0 ? "#d97706" : "#94a3b8", bg: kpiUpcoming > 0 ? "rgba(245,158,11,0.10)" : "#f1f5f9" },
+                { label: "Pruebas totales", value: kpiTotal, color: BRAND.teal, bg: "rgba(33,208,179,0.10)" },
+                { label: "Hoy", value: kpiToday, color: BRAND.blue, bg: "rgba(31,205,255,0.10)" },
+                { label: "Próximas 24h", value: kpiUpcoming, color: kpiUpcoming > 0 ? "#d97706" : SURFACE.textFaint, bg: kpiUpcoming > 0 ? "rgba(245,158,11,0.10)" : SURFACE.borderMuted },
                 { label: "Sedes activas", value: kpiVenues, color: "#7c3aed", bg: "rgba(124,58,237,0.10)" },
               ].map(k => (
                 <div key={k.label} className="rounded-2xl p-4 relative overflow-hidden"
-                  style={{ background: "#fff", border: "1px solid #e2e8f0", boxShadow: "0 1px 4px rgba(15,23,42,0.06)", borderLeft: `4px solid ${k.color}` }}>
+                  style={{ background: SURFACE.card, border: "1px solid #e2e8f0", boxShadow: "0 1px 4px rgba(15,23,42,0.06)", borderLeft: `4px solid ${k.color}` }}>
                   <div style={{ position: "absolute", top: -20, right: -20, width: 80, height: 80, borderRadius: "50%", background: k.bg, filter: "blur(20px)" }} />
-                  <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: "#64748b", position: "relative" }}>
+                  <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: SURFACE.textMuted, position: "relative" }}>
                     {k.label}
                   </p>
                   <p style={{ fontSize: 28, fontWeight: 800, color: k.color, lineHeight: 1.1, marginTop: 4, position: "relative" }}>
@@ -1098,7 +1099,7 @@ export default function DeportesPage() {
             <section className="surface rounded-2xl p-4 space-y-3">
               <div className="flex flex-wrap items-center gap-3">
                 {/* Vista toggle */}
-                <div className="flex gap-1 p-1 rounded-xl" style={{ background: "#f1f5f9" }}>
+                <div className="flex gap-1 p-1 rounded-xl" style={{ background: SURFACE.borderMuted }}>
                   {(["gantt", "month", "week", "day", "table"] as const).map(v => {
                     const active = calView === v;
                     return (
@@ -1106,7 +1107,7 @@ export default function DeportesPage() {
                         className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
                         style={{
                           background: active ? "linear-gradient(135deg, #21D0B3, #1eb19a)" : "transparent",
-                          color: active ? "#fff" : "#475569",
+                          color: active ? SURFACE.card : SURFACE.textSecondary,
                           boxShadow: active ? "0 2px 6px rgba(33,208,179,0.35)" : "none",
                         }}>
                         {v === "gantt" ? "Gantt" : v === "month" ? "Mes" : v === "week" ? "Semana" : v === "day" ? "Día" : "Tabla"}
@@ -1121,7 +1122,7 @@ export default function DeportesPage() {
                   <button onClick={navNext} className="btn btn-ghost text-xs" aria-label="Siguiente"><ChevronRightIcon size={16} /></button>
                 </div>
 
-                <h3 style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", textTransform: "capitalize", flex: 1 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: SURFACE.text, textTransform: "capitalize", flex: 1 }}>
                   {calView === "gantt" ? monthStr
                     : calView === "month" ? monthStr
                     : calView === "week" ? `Sem. del ${week[0].toLocaleDateString("es-CL", { day: "2-digit", month: "short" })} al ${week[6].toLocaleDateString("es-CL", { day: "2-digit", month: "short" })}`
@@ -1148,13 +1149,13 @@ export default function DeportesPage() {
               {/* Chips: sedes (color-coded) */}
               {venueList.length > 0 && (
                 <div className="flex flex-wrap gap-2 items-center">
-                  <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#64748b", marginRight: 4 }}>Sede:</span>
+                  <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: SURFACE.textMuted, marginRight: 4 }}>Sede:</span>
                   <button type="button"
                     onClick={() => setCalVenueFilter("")}
                     className="text-xs font-bold px-3 py-1 rounded-full transition-all"
                     style={{
                       background: !calVenueFilter ? "linear-gradient(135deg, #21D0B3, #1eb19a)" : "#eef1f6",
-                      color: !calVenueFilter ? "#fff" : "#475569",
+                      color: !calVenueFilter ? SURFACE.card : SURFACE.textSecondary,
                     }}>
                     Todas
                   </button>
@@ -1167,7 +1168,7 @@ export default function DeportesPage() {
                         onClick={() => setCalVenueFilter(active ? "" : v)}
                         className="text-xs font-bold px-3 py-1 rounded-full transition-all inline-flex items-center gap-1.5"
                         style={{
-                          background: active ? pal.bg : "#fff",
+                          background: active ? pal.bg : SURFACE.card,
                           color: pal.fg,
                           border: `1.5px solid ${pal.ring}${active ? "" : "44"}`,
                           boxShadow: active ? `0 2px 8px ${pal.ring}55` : "none",
@@ -1185,17 +1186,17 @@ export default function DeportesPage() {
               {/* Chips: categoría */}
               {categoryList.length > 0 && (
                 <div className="flex flex-wrap gap-2 items-center">
-                  <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#64748b", marginRight: 4 }}>Categoría:</span>
+                  <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: SURFACE.textMuted, marginRight: 4 }}>Categoría:</span>
                   <button type="button" onClick={() => setCalCategoryFilter("")}
                     className="text-xs font-bold px-3 py-1 rounded-full transition-all"
                     style={{
                       background: !calCategoryFilter ? "linear-gradient(135deg, #21D0B3, #1eb19a)" : "#eef1f6",
-                      color: !calCategoryFilter ? "#fff" : "#475569",
+                      color: !calCategoryFilter ? SURFACE.card : SURFACE.textSecondary,
                     }}>
                     Todas
                   </button>
                   {categoryList.map(cat => {
-                    const color = CATEGORY_COLORS[cat] ?? "#64748b";
+                    const color = CATEGORY_COLORS[cat] ?? SURFACE.textMuted;
                     const active = calCategoryFilter === cat;
                     return (
                       <button key={cat} type="button"
@@ -1203,7 +1204,7 @@ export default function DeportesPage() {
                         className="text-xs font-bold px-3 py-1 rounded-full transition-all"
                         style={{
                           background: active ? color : `${color}15`,
-                          color: active ? "#fff" : color,
+                          color: active ? SURFACE.card : color,
                           border: `1.5px solid ${color}${active ? "" : "44"}`,
                           boxShadow: active ? `0 2px 8px ${color}55` : "none",
                         }}>
@@ -1219,9 +1220,9 @@ export default function DeportesPage() {
             {calView === "gantt" && (() => {
               type GCat = "CLASIFICATORIA" | "FINAL" | "TRAINING" | "CEREMONY" | "PRUEBA";
               const GCAT: Record<GCat, { label: string; bar: string; border: string; text: string; dot: string }> = {
-                CLASIFICATORIA: { label: "Clasificatorias", bar: "#dbeafe", border: "#3b82f6", text: "#1e3a8a", dot: "#3b82f6" },
+                CLASIFICATORIA: { label: "Clasificatorias", bar: "#dbeafe", border: STATE.info, text: "#1e3a8a", dot: STATE.info },
                 FINAL:          { label: "Finales",         bar: "#dcfce7", border: "#22c55e", text: "#14532d", dot: "#22c55e" },
-                TRAINING:       { label: "Entrenamientos",  bar: "#fef3c7", border: "#f59e0b", text: "#78350f", dot: "#f59e0b" },
+                TRAINING:       { label: "Entrenamientos",  bar: "#fef3c7", border: STATE.warning, text: "#78350f", dot: STATE.warning },
                 CEREMONY:       { label: "Ceremonias",      bar: "#f3e8ff", border: "#a855f7", text: "#581c87", dot: "#a855f7" },
                 PRUEBA:         { label: "Pruebas",         bar: "#ccfbf1", border: "#14b8a6", text: "#115e59", dot: "#14b8a6" },
               };
@@ -1243,7 +1244,7 @@ export default function DeportesPage() {
 
               // Filas por disciplina (parent), solo pruebas visibles del mes
               const DISC_PALETTE = [
-                "#dc2626", "#d97706", "#1d4ed8", "#059669", "#7c3aed", "#db2777", "#0891b2", "#65a30d",
+                STATE.dangerText, "#d97706", "#1d4ed8", STATE.successText, "#7c3aed", "#db2777", "#0891b2", "#65a30d",
               ];
               const rowMap = new Map<string, { name: string; evs: typeof calendarPruebas }>();
               calendarPruebas.forEach(d => {
@@ -1302,11 +1303,11 @@ export default function DeportesPage() {
               const todayK = keyOf(new Date());
 
               return (
-                <section className="relative accent-strip-top animate-fade-up" style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 20, padding: 16, boxShadow: pal.cardShadow }}>
+                <section className="relative accent-strip-top animate-fade-up" style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: 20, padding: 16, boxShadow: pal.cardShadow }}>
                   {/* Leyenda */}
                   <div className="flex flex-wrap gap-3 mb-3">
                     {(["CLASIFICATORIA", "FINAL", "TRAINING", "CEREMONY", "PRUEBA"] as GCat[]).map(cat => (
-                      <span key={cat} className="inline-flex items-center gap-1.5" style={{ fontSize: 11, fontWeight: 500, color: "#64748b" }}>
+                      <span key={cat} className="inline-flex items-center gap-1.5" style={{ fontSize: 11, fontWeight: 500, color: SURFACE.textMuted }}>
                         <span style={{ width: 10, height: 10, borderRadius: "50%", background: GCAT[cat].dot, display: "inline-block" }} />
                         {GCAT[cat].label}
                       </span>
@@ -1315,24 +1316,24 @@ export default function DeportesPage() {
 
                   {rows.length === 0 ? (
                     <div className="p-12 text-center rounded-2xl" style={{ background: "linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)", border: "1px dashed #e2e8f0" }}>
-                      <p style={{ margin: 0, color: "#cbd5e1", display: "flex", justifyContent: "center" }}><CalendarIcon size={34} /></p>
-                      <p className="text-sm font-semibold mt-2" style={{ color: "#475569" }}>Sin pruebas en {monthStr}</p>
-                      <p className="text-xs mt-1" style={{ color: "#94a3b8" }}>Usa las flechas para cambiar de mes o carga pruebas en la pestaña Pruebas.</p>
+                      <p style={{ margin: 0, color: SURFACE.borderStrong, display: "flex", justifyContent: "center" }}><CalendarIcon size={34} /></p>
+                      <p className="text-sm font-semibold mt-2" style={{ color: SURFACE.textSecondary }}>Sin pruebas en {monthStr}</p>
+                      <p className="text-xs mt-1" style={{ color: SURFACE.textFaint }}>Usa las flechas para cambiar de mes o carga pruebas en la pestaña Pruebas.</p>
                     </div>
                   ) : (
-                    <div style={{ display: "flex", border: "1px solid #e2e8f0", borderRadius: 14, overflow: "hidden", background: "#fff" }}>
+                    <div style={{ display: "flex", border: "1px solid #e2e8f0", borderRadius: 14, overflow: "hidden", background: SURFACE.card }}>
                       {/* Columna de disciplinas */}
-                      <div style={{ flex: `0 0 ${NAME_W}px`, borderRight: "1px solid #e2e8f0", background: "#fff" }}>
-                        <div style={{ height: HEADER_H, display: "flex", alignItems: "center", padding: "0 14px", fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "#94a3b8", borderBottom: "1px solid #e2e8f0", background: "#f8fafc" }}>
+                      <div style={{ flex: `0 0 ${NAME_W}px`, borderRight: "1px solid #e2e8f0", background: SURFACE.card }}>
+                        <div style={{ height: HEADER_H, display: "flex", alignItems: "center", padding: "0 14px", fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: SURFACE.textFaint, borderBottom: "1px solid #e2e8f0", background: SURFACE.bg }}>
                           Disciplina
                         </div>
                         {rows.map((r, i) => (
-                          <div key={r.pid} style={{ height: rowH(r.lanes), display: "flex", alignItems: "center", gap: 8, padding: "0 12px", borderBottom: i < rows.length - 1 ? "1px solid #f1f5f9" : "none", background: i % 2 === 0 ? "#fff" : "#fafbfc" }}>
+                          <div key={r.pid} style={{ height: rowH(r.lanes), display: "flex", alignItems: "center", gap: 8, padding: "0 12px", borderBottom: i < rows.length - 1 ? "1px solid #f1f5f9" : "none", background: i % 2 === 0 ? SURFACE.card : "#fafbfc" }}>
                             <span style={{ flexShrink: 0, width: 26, height: 26, borderRadius: "50%", background: `${r.color}14`, color: r.color, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600 }}>
                               {r.name.slice(0, 2).toUpperCase()}
                             </span>
-                            <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: "#334155", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</span>
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15 9 22 9.3 16.5 14 18.5 21 12 17 5.5 21 7.5 14 2 9.3 9 9" /></svg>
+                            <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: SURFACE.textStrong, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</span>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={SURFACE.borderStrong} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15 9 22 9.3 16.5 14 18.5 21 12 17 5.5 21 7.5 14 2 9.3 9 9" /></svg>
                           </div>
                         ))}
                       </div>
@@ -1340,15 +1341,15 @@ export default function DeportesPage() {
                       {/* Grilla de días + barras */}
                       <div style={{ flex: 1, overflowX: "auto" }}>
                         <div style={{ minWidth: N * COL_MIN }}>
-                          <div style={{ height: HEADER_H, display: "grid", gridTemplateColumns: `repeat(${N}, minmax(${COL_MIN}px, 1fr))`, borderBottom: "1px solid #e2e8f0", background: "#f8fafc" }}>
+                          <div style={{ height: HEADER_H, display: "grid", gridTemplateColumns: `repeat(${N}, minmax(${COL_MIN}px, 1fr))`, borderBottom: "1px solid #e2e8f0", background: SURFACE.bg }}>
                             {days.map((d, i) => {
                               const k = keyOf(d);
                               const isToday = k === todayK;
                               const isWeekend = d.getDay() === 0 || d.getDay() === 6;
                               return (
-                                <div key={k} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", borderLeft: i === 0 ? "none" : "1px solid #eef2f7", background: isToday ? "rgba(33,208,179,0.12)" : isWeekend ? "#f1f5f9" : "transparent" }}>
-                                  <span style={{ fontSize: 9, fontWeight: 500, letterSpacing: "0.04em", textTransform: "uppercase", color: isToday ? "#0e9384" : "#94a3b8" }}>{["DO", "LU", "MA", "MI", "JU", "VI", "SA"][d.getDay()]}</span>
-                                  <span style={{ fontSize: 13, fontWeight: 600, color: isToday ? "#0e9384" : "#334155" }}>{d.getDate()}</span>
+                                <div key={k} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", borderLeft: i === 0 ? "none" : "1px solid #eef2f7", background: isToday ? "rgba(33,208,179,0.12)" : isWeekend ? SURFACE.borderMuted : "transparent" }}>
+                                  <span style={{ fontSize: 9, fontWeight: 500, letterSpacing: "0.04em", textTransform: "uppercase", color: isToday ? "#0e9384" : SURFACE.textFaint }}>{["DO", "LU", "MA", "MI", "JU", "VI", "SA"][d.getDay()]}</span>
+                                  <span style={{ fontSize: 13, fontWeight: 600, color: isToday ? "#0e9384" : SURFACE.textStrong }}>{d.getDate()}</span>
                                 </div>
                               );
                             })}
@@ -1356,7 +1357,7 @@ export default function DeportesPage() {
                           {rows.map((r, ri) => {
                             const gridLines = `repeating-linear-gradient(to right, transparent 0, transparent calc(${100 / N}% - 1px), #eef2f7 calc(${100 / N}% - 1px), #eef2f7 ${100 / N}%)`;
                             return (
-                              <div key={r.pid} style={{ position: "relative", height: rowH(r.lanes), borderBottom: ri < rows.length - 1 ? "1px solid #f1f5f9" : "none", background: ri % 2 === 0 ? "#fff" : "#fafbfc", backgroundImage: gridLines, display: "grid", gridTemplateColumns: `repeat(${N}, minmax(${COL_MIN}px, 1fr))`, gridTemplateRows: `repeat(${r.lanes}, ${BAR_H}px)`, alignContent: "center", rowGap: LANE_GAP, padding: "8px 0" }}>
+                              <div key={r.pid} style={{ position: "relative", height: rowH(r.lanes), borderBottom: ri < rows.length - 1 ? "1px solid #f1f5f9" : "none", background: ri % 2 === 0 ? SURFACE.card : "#fafbfc", backgroundImage: gridLines, display: "grid", gridTemplateColumns: `repeat(${N}, minmax(${COL_MIN}px, 1fr))`, gridTemplateRows: `repeat(${r.lanes}, ${BAR_H}px)`, alignContent: "center", rowGap: LANE_GAP, padding: "8px 0" }}>
                                 {r.bars.map((bar, bi) => {
                                   const meta = GCAT[bar.cat];
                                   return (
@@ -1381,13 +1382,13 @@ export default function DeportesPage() {
 
             {/* ── VISTA MES (celdas grandes con mini-cards color-coded) */}
             {calView === "month" && (
-              <section className="relative accent-strip-top animate-fade-up" style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 20, overflow: "hidden", boxShadow: pal.cardShadow }}>
+              <section className="relative accent-strip-top animate-fade-up" style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: 20, overflow: "hidden", boxShadow: pal.cardShadow }}>
                 {/* En móvil el mes scrollea horizontal en vez de aplastar los 7 días. */}
                 <div style={{ overflowX: "auto" }}>
                 <div style={{ minWidth: "640px" }}>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", paddingTop: 4 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", background: SURFACE.bg, borderBottom: "1px solid #e2e8f0", paddingTop: 4 }}>
                   {WEEK.map(d => (
-                    <div key={d} style={{ textAlign: "center", padding: "10px 0", fontSize: 11, fontWeight: 800, color: "#475569", letterSpacing: "0.1em", textTransform: "uppercase" }}>{d}</div>
+                    <div key={d} style={{ textAlign: "center", padding: "10px 0", fontSize: 11, fontWeight: 800, color: SURFACE.textSecondary, letterSpacing: "0.1em", textTransform: "uppercase" }}>{d}</div>
                   ))}
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)" }}>
@@ -1403,7 +1404,7 @@ export default function DeportesPage() {
                         onClick={() => { setCalSelectedDay(new Date(day)); setCalDayModalOpen(true); }}
                         style={{
                           minHeight: 110, padding: 6, cursor: "pointer",
-                          background: isSelected ? "linear-gradient(160deg,rgba(33,208,179,0.10),rgba(33,208,179,0.03))" : isToday ? "linear-gradient(160deg,rgba(31,205,255,0.08),#fff)" : "#fff",
+                          background: isSelected ? "linear-gradient(160deg,rgba(33,208,179,0.10),rgba(33,208,179,0.03))" : isToday ? "linear-gradient(160deg,rgba(31,205,255,0.08),#fff)" : SURFACE.card,
                           border: "1px solid #f1f5f9",
                           opacity: isCurrentMonth ? 1 : 0.4,
                         }}>
@@ -1413,11 +1414,11 @@ export default function DeportesPage() {
                             width: 22, height: 22, borderRadius: "50%",
                             fontSize: 11, fontWeight: isToday ? 800 : 600,
                             background: isToday ? "linear-gradient(135deg, #21D0B3, #1eb19a)" : "transparent",
-                            color: isToday ? "#fff" : isCurrentMonth ? "#0f172a" : "#94a3b8",
+                            color: isToday ? SURFACE.card : isCurrentMonth ? SURFACE.text : SURFACE.textFaint,
                             boxShadow: isToday ? "0 2px 6px rgba(33,208,179,0.4)" : "none",
                           }}>{day.getDate()}</span>
                           {events.length > 0 && (
-                            <span style={{ fontSize: 9, fontWeight: 800, color: "#64748b" }}>
+                            <span style={{ fontSize: 9, fontWeight: 800, color: SURFACE.textMuted }}>
                               {events.length}
                             </span>
                           )}
@@ -1448,7 +1449,7 @@ export default function DeportesPage() {
                             );
                           })}
                           {events.length > 3 && (
-                            <p style={{ fontSize: 9, fontWeight: 700, color: "#94a3b8", textAlign: "center", paddingTop: 1 }}>
+                            <p style={{ fontSize: 9, fontWeight: 700, color: SURFACE.textFaint, textAlign: "center", paddingTop: 1 }}>
                               +{events.length - 3} más
                             </p>
                           )}
@@ -1464,7 +1465,7 @@ export default function DeportesPage() {
 
             {/* ── VISTA SEMANA */}
             {calView === "week" && (
-              <section className="relative accent-strip-top animate-fade-up" style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 20, overflow: "hidden", boxShadow: pal.cardShadow }}>
+              <section className="relative accent-strip-top animate-fade-up" style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: 20, overflow: "hidden", boxShadow: pal.cardShadow }}>
                 {/* En móvil la semana scrollea horizontal en vez de aplastar los 7 días. */}
                 <div style={{ overflowX: "auto" }}>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", minWidth: "640px", paddingTop: 4 }}>
@@ -1478,17 +1479,17 @@ export default function DeportesPage() {
                         onClick={() => { setCalSelectedDay(new Date(day)); setCalDayModalOpen(true); }}
                         style={{
                           minHeight: 360, padding: 10, cursor: "pointer",
-                          background: isSelected ? "rgba(33,208,179,0.05)" : "#fff",
+                          background: isSelected ? "rgba(33,208,179,0.05)" : SURFACE.card,
                           borderLeft: `1px solid #f1f5f9`,
                           borderTop: isToday ? "3px solid #21D0B3" : "1px solid #f1f5f9",
                         }}>
-                        <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: isToday ? "#21D0B3" : "#94a3b8" }}>
+                        <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: isToday ? BRAND.teal : SURFACE.textFaint }}>
                           {WEEK[(day.getDay() + 6) % 7]}
                         </p>
-                        <p style={{ fontSize: 24, fontWeight: 800, color: isToday ? "#21D0B3" : "#0f172a", lineHeight: 1 }}>
+                        <p style={{ fontSize: 24, fontWeight: 800, color: isToday ? BRAND.teal : SURFACE.text, lineHeight: 1 }}>
                           {day.getDate()}
                         </p>
-                        <p style={{ fontSize: 10, color: "#94a3b8" }}>
+                        <p style={{ fontSize: 10, color: SURFACE.textFaint }}>
                           {events.length} prueba{events.length !== 1 ? "s" : ""}
                         </p>
                         <div className="mt-3 space-y-1.5">
@@ -1524,12 +1525,12 @@ export default function DeportesPage() {
 
             {/* ── VISTA DÍA (timeline horaria) */}
             {calView === "day" && (
-              <section className="relative accent-strip-top animate-fade-up" style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 20, padding: 18, overflow: "hidden", boxShadow: pal.cardShadow }}>
+              <section className="relative accent-strip-top animate-fade-up" style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: 20, padding: 18, overflow: "hidden", boxShadow: pal.cardShadow }}>
                 {selectedItems.length === 0 ? (
                   <div style={{ padding: "48px 16px", textAlign: "center" }}>
-                    <p style={{ marginBottom: 8, color: "#cbd5e1", display: "flex", justifyContent: "center" }}><CalendarIcon size={48} /></p>
-                    <p style={{ fontSize: 14, fontWeight: 700, color: "#475569" }}>Sin pruebas para este día</p>
-                    <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>Prueba con otra fecha o saca los filtros.</p>
+                    <p style={{ marginBottom: 8, color: SURFACE.borderStrong, display: "flex", justifyContent: "center" }}><CalendarIcon size={48} /></p>
+                    <p style={{ fontSize: 14, fontWeight: 700, color: SURFACE.textSecondary }}>Sin pruebas para este día</p>
+                    <p style={{ fontSize: 12, color: SURFACE.textFaint, marginTop: 4 }}>Prueba con otra fecha o saca los filtros.</p>
                   </div>
                 ) : (
                   <div style={{ display: "grid", gridTemplateColumns: "60px 1fr", gap: 4 }}>
@@ -1537,7 +1538,7 @@ export default function DeportesPage() {
                       const items = selectedItems.filter(ev => new Date(ev.scheduledAt!).getHours() === h);
                       return (
                         <div key={h} style={{ display: "contents" }}>
-                          <div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textAlign: "right", paddingRight: 8, paddingTop: 4, borderRight: "1px solid #f1f5f9" }}>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: SURFACE.textFaint, textAlign: "right", paddingRight: 8, paddingTop: 4, borderRight: "1px solid #f1f5f9" }}>
                             {String(h).padStart(2, "0")}:00
                           </div>
                           <div style={{ minHeight: 36, padding: "2px 0 4px", borderBottom: "1px solid #f8fafc" }}>
@@ -1582,16 +1583,16 @@ export default function DeportesPage() {
 
             {/* ── VISTA TABLA (estilo Excel) */}
             {calView === "table" && (
-              <section className="relative accent-strip-top animate-fade-up" style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 20, overflow: "hidden", boxShadow: pal.cardShadow }}>
+              <section className="relative accent-strip-top animate-fade-up" style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: 20, overflow: "hidden", boxShadow: pal.cardShadow }}>
                 {calendarPruebas.length === 0 ? (
                   <div style={{ padding: 48, textAlign: "center" }}>
-                    <p style={{ fontSize: 14, color: "#94a3b8" }}>Sin pruebas que coincidan con los filtros</p>
+                    <p style={{ fontSize: 14, color: SURFACE.textFaint }}>Sin pruebas que coincidan con los filtros</p>
                   </div>
                 ) : (
                   <div style={{ overflowX: "auto" }}>
                     <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                       <thead>
-                        <tr style={{ background: "linear-gradient(135deg, #0f172a, #1e293b)", color: "#fff" }}>
+                        <tr style={{ background: "linear-gradient(135deg, #0f172a, #1e293b)", color: SURFACE.card }}>
                           {["N°", "Día", "Hora", "Prueba", "Deporte", "Categoría", "Recinto"].map(h => (
                             <th key={h} style={{
                               padding: "10px 12px", textAlign: "left",
@@ -1608,23 +1609,23 @@ export default function DeportesPage() {
                           const dt = new Date(ev.scheduledAt!);
                           const dateStr = dt.toLocaleDateString("es-CL", { day: "2-digit", month: "short" });
                           const time = dt.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
-                          const catColor = CATEGORY_COLORS[ev.category ?? ""] ?? "#64748b";
+                          const catColor = CATEGORY_COLORS[ev.category ?? ""] ?? SURFACE.textMuted;
                           return (
                             <tr key={ev.id}
                               onClick={() => openEditPrueba(ev)}
                               style={{
-                                background: i % 2 === 0 ? "#fff" : "#fafbfc",
+                                background: i % 2 === 0 ? SURFACE.card : "#fafbfc",
                                 borderBottom: "1px solid #f1f5f9",
                                 cursor: "pointer",
                                 transition: "background 0.1s",
                               }}
                               onMouseEnter={e => (e.currentTarget.style.background = "#f0fdfa")}
-                              onMouseLeave={e => (e.currentTarget.style.background = i % 2 === 0 ? "#fff" : "#fafbfc")}>
-                              <td style={{ padding: "10px 12px", fontWeight: 800, color: "#64748b", textAlign: "center", minWidth: 40 }}>{i + 1}</td>
-                              <td style={{ padding: "10px 12px", fontWeight: 700, color: "#0f172a" }}>{dateStr}</td>
-                              <td style={{ padding: "10px 12px", fontWeight: 800, color: "#21D0B3", fontFamily: "monospace" }}>{time}</td>
-                              <td style={{ padding: "10px 12px", fontWeight: 600, color: "#0f172a" }}>{ev.name}</td>
-                              <td style={{ padding: "10px 12px", color: "#64748b" }}>{parentMap.get(ev.parentId!) ?? "—"}</td>
+                              onMouseLeave={e => (e.currentTarget.style.background = i % 2 === 0 ? SURFACE.card : "#fafbfc")}>
+                              <td style={{ padding: "10px 12px", fontWeight: 800, color: SURFACE.textMuted, textAlign: "center", minWidth: 40 }}>{i + 1}</td>
+                              <td style={{ padding: "10px 12px", fontWeight: 700, color: SURFACE.text }}>{dateStr}</td>
+                              <td style={{ padding: "10px 12px", fontWeight: 800, color: BRAND.teal, fontFamily: "monospace" }}>{time}</td>
+                              <td style={{ padding: "10px 12px", fontWeight: 600, color: SURFACE.text }}>{ev.name}</td>
+                              <td style={{ padding: "10px 12px", color: SURFACE.textMuted }}>{parentMap.get(ev.parentId!) ?? "—"}</td>
                               <td style={{ padding: "10px 12px" }}>
                                 {ev.category ? (
                                   <span style={{
@@ -1633,7 +1634,7 @@ export default function DeportesPage() {
                                   }}>
                                     {categoryLabel(ev.category)}
                                   </span>
-                                ) : <span style={{ color: "#cbd5e1" }}>—</span>}
+                                ) : <span style={{ color: SURFACE.borderStrong }}>—</span>}
                               </td>
                               <td style={{ padding: "8px 12px" }}>
                                 {ev.venueName ? (
@@ -1647,7 +1648,7 @@ export default function DeportesPage() {
                                   }}>
                                     {ev.venueName}
                                   </span>
-                                ) : <span style={{ color: "#cbd5e1" }}>—</span>}
+                                ) : <span style={{ color: SURFACE.borderStrong }}>—</span>}
                               </td>
                             </tr>
                           );
@@ -1661,10 +1662,10 @@ export default function DeportesPage() {
 
             {/* Detalle del día (visible siempre que NO sea vista día/tabla) */}
             {(calView === "month" || calView === "week") && (
-              <section style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, padding: 16, boxShadow: pal.cardShadow }}>
+              <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: 16, padding: 16, boxShadow: pal.cardShadow }}>
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div>
-                    <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: "#21D0B3", margin: 0 }}>
+                    <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: BRAND.teal, margin: 0 }}>
                       {selectedDayLabel} · {selectedItems.length} prueba{selectedItems.length !== 1 ? "s" : ""}
                     </p>
                   </div>
@@ -1675,7 +1676,7 @@ export default function DeportesPage() {
                   )}
                 </div>
                 {selectedItems.length === 0 ? (
-                  <p style={{ fontSize: 12.5, color: "#94a3b8", marginTop: 8 }}>Sin pruebas este día</p>
+                  <p style={{ fontSize: 12.5, color: SURFACE.textFaint, marginTop: 8 }}>Sin pruebas este día</p>
                 ) : (
                   <div className="mt-3 grid gap-2 md:grid-cols-2">
                     {selectedItems.map(prueba => {
@@ -1719,7 +1720,7 @@ export default function DeportesPage() {
                 <div
                   className="anim-scale-pop"
                   onClick={(e) => e.stopPropagation()}
-                  style={{ width: "100%", maxWidth: 560, maxHeight: "88vh", display: "flex", flexDirection: "column", background: "#fff", borderRadius: 20, overflow: "hidden", boxShadow: "0 24px 60px rgba(15,23,42,0.35)" }}
+                  style={{ width: "100%", maxWidth: 560, maxHeight: "88vh", display: "flex", flexDirection: "column", background: SURFACE.card, borderRadius: 20, overflow: "hidden", boxShadow: "0 24px 60px rgba(15,23,42,0.35)" }}
                 >
                   {/* Header */}
                   <div style={{ position: "relative", padding: "18px 20px", background: "linear-gradient(135deg, #21D0B3 0%, #1FCDFF 100%)", overflow: "hidden" }}>
@@ -1727,13 +1728,13 @@ export default function DeportesPage() {
                     <div className="relative flex items-start justify-between gap-3">
                       <div style={{ minWidth: 0 }}>
                         <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.22em", textTransform: "uppercase", color: "rgba(255,255,255,0.85)" }}>Agenda del día</p>
-                        <h3 style={{ marginTop: 2, fontSize: 18, fontWeight: 800, color: "#fff", textTransform: "capitalize", lineHeight: 1.2 }}>{selectedDayLabel}</h3>
+                        <h3 style={{ marginTop: 2, fontSize: 18, fontWeight: 800, color: SURFACE.card, textTransform: "capitalize", lineHeight: 1.2 }}>{selectedDayLabel}</h3>
                         <p style={{ marginTop: 4, fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.9)" }}>
                           {selectedItems.length} {selectedItems.length === 1 ? "prueba" : "pruebas"}
                         </p>
                       </div>
                       <button type="button" onClick={() => setCalDayModalOpen(false)} aria-label="Cerrar"
-                        style={{ flexShrink: 0, width: 32, height: 32, borderRadius: 10, border: "none", cursor: "pointer", background: "rgba(255,255,255,0.2)", color: "#fff", fontSize: 18, fontWeight: 700, lineHeight: 1 }}>
+                        style={{ flexShrink: 0, width: 32, height: 32, borderRadius: 10, border: "none", cursor: "pointer", background: "rgba(255,255,255,0.2)", color: SURFACE.card, fontSize: 18, fontWeight: 700, lineHeight: 1 }}>
                         <XIcon size={14} />
                       </button>
                     </div>
@@ -1743,9 +1744,9 @@ export default function DeportesPage() {
                   <div className="stagger" style={{ padding: 16, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10 }}>
                     {selectedItems.length === 0 ? (
                       <div style={{ padding: "32px 16px", textAlign: "center" }}>
-                        <p style={{ marginBottom: 6, color: "#cbd5e1", display: "flex", justifyContent: "center" }}><CalendarIcon size={40} /></p>
-                        <p style={{ fontSize: 14, fontWeight: 700, color: "#475569" }}>Sin pruebas para este día</p>
-                        <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>Prueba con otra fecha o saca los filtros.</p>
+                        <p style={{ marginBottom: 6, color: SURFACE.borderStrong, display: "flex", justifyContent: "center" }}><CalendarIcon size={40} /></p>
+                        <p style={{ fontSize: 14, fontWeight: 700, color: SURFACE.textSecondary }}>Sin pruebas para este día</p>
+                        <p style={{ fontSize: 12, color: SURFACE.textFaint, marginTop: 4 }}>Prueba con otra fecha o saca los filtros.</p>
                       </div>
                     ) : selectedItems.map((prueba) => {
                       const pal2 = venueColor(prueba.venueName);
@@ -1773,7 +1774,7 @@ export default function DeportesPage() {
                   </div>
 
                   {/* Footer */}
-                  <div style={{ padding: "12px 16px", borderTop: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", gap: 10, background: "#f8fafc" }}>
+                  <div style={{ padding: "12px 16px", borderTop: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", gap: 10, background: SURFACE.bg }}>
                     <button type="button" className="btn btn-ghost" onClick={() => setCalDayModalOpen(false)}>Cerrar</button>
                     {selectedItems.length > 0 && (
                       <button type="button" className="btn btn-primary" onClick={() => { setCalDayModalOpen(false); setCalView("day"); }}>
@@ -1795,7 +1796,7 @@ export default function DeportesPage() {
                 <div
                   className="anim-scale-pop"
                   onClick={(e) => e.stopPropagation()}
-                  style={{ width: "100%", maxWidth: 560, maxHeight: "88vh", display: "flex", flexDirection: "column", background: "#fff", borderRadius: 20, overflow: "hidden", boxShadow: "0 24px 60px rgba(15,23,42,0.35)" }}
+                  style={{ width: "100%", maxWidth: 560, maxHeight: "88vh", display: "flex", flexDirection: "column", background: SURFACE.card, borderRadius: 20, overflow: "hidden", boxShadow: "0 24px 60px rgba(15,23,42,0.35)" }}
                 >
                   {/* Header */}
                   <div style={{ position: "relative", padding: "18px 20px", background: `linear-gradient(135deg, ${ganttBar.color} 0%, ${ganttBar.color}cc 100%)`, overflow: "hidden" }}>
@@ -1803,13 +1804,13 @@ export default function DeportesPage() {
                     <div className="relative flex items-start justify-between gap-3">
                       <div style={{ minWidth: 0 }}>
                         <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "rgba(255,255,255,0.85)" }}>{ganttBar.cat}</p>
-                        <h3 style={{ marginTop: 2, fontSize: 18, fontWeight: 700, color: "#fff", lineHeight: 1.2 }}>{ganttBar.title}</h3>
+                        <h3 style={{ marginTop: 2, fontSize: 18, fontWeight: 700, color: SURFACE.card, lineHeight: 1.2 }}>{ganttBar.title}</h3>
                         <p style={{ marginTop: 4, fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,0.9)" }}>
                           {ganttBar.events.length} {ganttBar.events.length === 1 ? "prueba" : "pruebas"}
                         </p>
                       </div>
                       <button type="button" onClick={() => setGanttBar(null)} aria-label="Cerrar"
-                        style={{ flexShrink: 0, width: 32, height: 32, borderRadius: 10, border: "none", cursor: "pointer", background: "rgba(255,255,255,0.2)", color: "#fff", fontSize: 18, fontWeight: 700, lineHeight: 1 }}>
+                        style={{ flexShrink: 0, width: 32, height: 32, borderRadius: 10, border: "none", cursor: "pointer", background: "rgba(255,255,255,0.2)", color: SURFACE.card, fontSize: 18, fontWeight: 700, lineHeight: 1 }}>
                         <XIcon size={14} />
                       </button>
                     </div>
@@ -1848,8 +1849,8 @@ export default function DeportesPage() {
                   </div>
 
                   {/* Footer */}
-                  <div style={{ padding: "12px 16px", borderTop: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", gap: 10, background: "#f8fafc", alignItems: "center" }}>
-                    <span style={{ fontSize: 11, color: "#94a3b8" }}>Toca una prueba para editarla</span>
+                  <div style={{ padding: "12px 16px", borderTop: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", gap: 10, background: SURFACE.bg, alignItems: "center" }}>
+                    <span style={{ fontSize: 11, color: SURFACE.textFaint }}>Toca una prueba para editarla</span>
                     <button type="button" className="btn btn-ghost" onClick={() => setGanttBar(null)}>Cerrar</button>
                   </div>
                 </div>
@@ -1862,17 +1863,17 @@ export default function DeportesPage() {
       {/* ── Prueba modal */}
       {pruebaModal && (
         <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(15,23,42,0.4)", backdropFilter: "blur(4px)", padding: "16px" }}>
-          <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "20px", padding: "24px", width: "100%", maxWidth: "560px", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 8px 40px rgba(15,23,42,0.15)" }}>
-            <h2 style={{ fontWeight: 700, fontSize: "18px", color: "#0f172a", marginBottom: "4px" }}>
+          <div style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "20px", padding: "24px", width: "100%", maxWidth: "560px", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 8px 40px rgba(15,23,42,0.15)" }}>
+            <h2 style={{ fontWeight: 700, fontSize: "18px", color: SURFACE.text, marginBottom: "4px" }}>
               {pruebaModal.editing ? t("Editar prueba") : t("Nueva prueba")}
             </h2>
-            <p style={{ fontSize: "12px", color: "#94a3b8", marginBottom: "20px" }}>
+            <p style={{ fontSize: "12px", color: SURFACE.textFaint, marginBottom: "20px" }}>
               {eventDisciplines.find(d => d.id === pruebaModal.parentId)?.name ?? ""}
             </p>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Nombre *")}</span>
+                <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Nombre *")}</span>
                 <input
                   style={fieldStyle}
                   value={pruebaForm.name}
@@ -1884,7 +1885,7 @@ export default function DeportesPage() {
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                  <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Categoría")}</span>
+                  <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Categoría")}</span>
                   <StyledSelect value={pruebaForm.category} onChange={e => setPruebaForm(f => ({ ...f, category: e.target.value }))}>
                     <option value="">—</option>
                     <option value="CONVENTIONAL">{t("Convencional")}</option>
@@ -1892,7 +1893,7 @@ export default function DeportesPage() {
                   </StyledSelect>
                 </label>
                 <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                  <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Género")}</span>
+                  <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Género")}</span>
                   <StyledSelect value={pruebaForm.gender} onChange={e => setPruebaForm(f => ({ ...f, gender: e.target.value }))}>
                     <option value="">—</option>
                     <option value="MALE">{t("Masculino")}</option>
@@ -1905,36 +1906,36 @@ export default function DeportesPage() {
               {/* Date range toggle */}
               <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
                 <button type="button" onClick={() => setPruebaForm(f => ({ ...f, useDateRange: !f.useDateRange }))}
-                  style={{ width: 38, height: 20, borderRadius: 10, border: "none", cursor: "pointer", position: "relative", background: pruebaForm.useDateRange ? "#21D0B3" : "#cbd5e1", transition: "background 0.2s" }}>
-                  <span style={{ position: "absolute", top: 2, left: pruebaForm.useDateRange ? 20 : 2, width: 16, height: 16, borderRadius: 8, background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.2)", transition: "left 0.2s" }} />
+                  style={{ width: 38, height: 20, borderRadius: 10, border: "none", cursor: "pointer", position: "relative", background: pruebaForm.useDateRange ? BRAND.teal : SURFACE.borderStrong, transition: "background 0.2s" }}>
+                  <span style={{ position: "absolute", top: 2, left: pruebaForm.useDateRange ? 20 : 2, width: 16, height: 16, borderRadius: 8, background: SURFACE.card, boxShadow: "0 1px 3px rgba(0,0,0,0.2)", transition: "left 0.2s" }} />
                 </button>
-                <span style={{ fontSize: 12, fontWeight: 600, color: "#0f172a" }}>{t("Rango de fechas (varios días, misma hora)")}</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: SURFACE.text }}>{t("Rango de fechas (varios días, misma hora)")}</span>
               </div>
 
               {pruebaForm.useDateRange ? (
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
                   <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                    <span style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Fecha inicio")}</span>
+                    <span style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Fecha inicio")}</span>
                     <input style={fieldStyle} type="date" value={pruebaForm.rangeStart} onChange={e => setPruebaForm(f => ({ ...f, rangeStart: e.target.value }))} />
                   </label>
                   <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                    <span style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Fecha fin")}</span>
+                    <span style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Fecha fin")}</span>
                     <input style={fieldStyle} type="date" value={pruebaForm.rangeEnd} onChange={e => setPruebaForm(f => ({ ...f, rangeEnd: e.target.value }))} />
                   </label>
                   <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                    <span style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Hora")}</span>
+                    <span style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Hora")}</span>
                     <input style={fieldStyle} type="time" value={pruebaForm.rangeTime} onChange={e => setPruebaForm(f => ({ ...f, rangeTime: e.target.value }))} />
                   </label>
                 </div>
               ) : (
                 <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                  <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Fecha y hora")}</span>
+                  <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Fecha y hora")}</span>
                   <input style={fieldStyle} type="datetime-local" value={pruebaForm.scheduledAt} onChange={e => setPruebaForm(f => ({ ...f, scheduledAt: e.target.value }))} />
                 </label>
               )}
 
               <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Recinto")}</span>
+                <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Recinto")}</span>
                 <select
                   style={fieldStyle}
                   value={pruebaForm.venueName}
@@ -1957,22 +1958,22 @@ export default function DeportesPage() {
                   <button
                     type="button"
                     onClick={() => setPremiacion(p => ({ ...p, enabled: !p.enabled }))}
-                    style={{ width: 38, height: 20, borderRadius: 10, border: "none", cursor: "pointer", position: "relative", background: premiacion.enabled ? "#21D0B3" : "#cbd5e1", transition: "background 0.2s" }}
+                    style={{ width: 38, height: 20, borderRadius: 10, border: "none", cursor: "pointer", position: "relative", background: premiacion.enabled ? BRAND.teal : SURFACE.borderStrong, transition: "background 0.2s" }}
                   >
-                    <span style={{ position: "absolute", top: 2, left: premiacion.enabled ? 20 : 2, width: 16, height: 16, borderRadius: 8, background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.2)", transition: "left 0.2s" }} />
+                    <span style={{ position: "absolute", top: 2, left: premiacion.enabled ? 20 : 2, width: 16, height: 16, borderRadius: 8, background: SURFACE.card, boxShadow: "0 1px 3px rgba(0,0,0,0.2)", transition: "left 0.2s" }} />
                   </button>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>{t("Esta prueba tiene ceremonia de premiación")}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: SURFACE.text }}>{t("Esta prueba tiene ceremonia de premiación")}</span>
                 </div>
 
                 {premiacion.enabled && (
-                  <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: "12px", display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div style={{ background: SURFACE.bg, border: "1px solid #e2e8f0", borderRadius: 12, padding: "12px", display: "flex", flexDirection: "column", gap: 10 }}>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                       <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                        <span style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("Fecha y hora ceremonia")}</span>
+                        <span style={{ fontSize: 10, fontWeight: 600, color: SURFACE.textFaint, textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("Fecha y hora ceremonia")}</span>
                         <input style={fieldStyle} type="datetime-local" value={premiacion.scheduledAt} onChange={e => setPremiacion(p => ({ ...p, scheduledAt: e.target.value }))} />
                       </label>
                       <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                        <span style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("Sede")}</span>
+                        <span style={{ fontSize: 10, fontWeight: 600, color: SURFACE.textFaint, textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("Sede")}</span>
                         <select style={fieldStyle} value={premiacion.venueName} onChange={e => setPremiacion(p => ({ ...p, venueName: e.target.value }))}>
                           <option value="">{t("Usa la misma de la prueba")}</option>
                           {venueOptions.map((v) => (
@@ -1982,17 +1983,17 @@ export default function DeportesPage() {
                       </label>
                     </div>
                     <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                      <span style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("Ubicación específica")}</span>
+                      <span style={{ fontSize: 10, fontWeight: 600, color: SURFACE.textFaint, textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("Ubicación específica")}</span>
                       <input style={fieldStyle} placeholder={t("Zona central — Tarima 1") as string} value={premiacion.locationDetail} onChange={e => setPremiacion(p => ({ ...p, locationDetail: e.target.value }))} />
                     </label>
                     <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                      <span style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("Notas")}</span>
+                      <span style={{ fontSize: 10, fontWeight: 600, color: SURFACE.textFaint, textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("Notas")}</span>
                       <textarea rows={2} style={{ ...fieldStyle, resize: "none" }} placeholder={t("Instrucciones para los premiadores") as string} value={premiacion.notes} onChange={e => setPremiacion(p => ({ ...p, notes: e.target.value }))} />
                     </label>
 
                     <div>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                        <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#64748b" }}>{t("Equipo de premiadores (VIP)")}</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: SURFACE.textMuted }}>{t("Equipo de premiadores (VIP)")}</span>
                         <button
                           type="button"
                           onClick={() => setPremiacion(p => ({ ...p, awarders: [...p.awarders, { athleteId: "", role: "AWARDER" }] }))}
@@ -2002,7 +2003,7 @@ export default function DeportesPage() {
                         </button>
                       </div>
                       {premiacion.awarders.length === 0 && (
-                        <p style={{ fontSize: 11, color: "#94a3b8", padding: "8px", textAlign: "center", border: "1px dashed #e2e8f0", borderRadius: 8 }}>
+                        <p style={{ fontSize: 11, color: SURFACE.textFaint, padding: "8px", textAlign: "center", border: "1px dashed #e2e8f0", borderRadius: 8 }}>
                           {t("Sin VIPs asignados. Agrega al menos uno.")}
                         </p>
                       )}
@@ -2036,7 +2037,7 @@ export default function DeportesPage() {
                           <button
                             type="button"
                             onClick={() => setPremiacion(p => ({ ...p, awarders: p.awarders.filter((_, j) => j !== i) }))}
-                            style={{ padding: "6px 10px", border: "none", background: "#fee2e2", color: "#ef4444", borderRadius: 6, cursor: "pointer", fontSize: 12 }}
+                            style={{ padding: "6px 10px", border: "none", background: "#fee2e2", color: STATE.danger, borderRadius: 6, cursor: "pointer", fontSize: 12 }}
                           >×</button>
                         </div>
                       ))}
@@ -2046,7 +2047,7 @@ export default function DeportesPage() {
               </div>
             </div>
 
-            {pruebaError && <p style={{ marginTop: "12px", fontSize: "13px", color: "#ef4444" }}>{pruebaError}</p>}
+            {pruebaError && <p style={{ marginTop: "12px", fontSize: "13px", color: STATE.danger }}>{pruebaError}</p>}
 
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", paddingTop: "20px" }}>
               <button style={ghostBtn} onClick={() => setPruebaModal(null)} disabled={pruebaSaving}>{t("Cancelar")}</button>
@@ -2061,21 +2062,21 @@ export default function DeportesPage() {
       {/* Delete prueba confirmation modal */}
       {deletePruebaConfirm && (
         <div style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(15,23,42,0.5)", backdropFilter: "blur(4px)", padding: "16px" }}>
-          <div style={{ background: "#fff", borderRadius: "20px", width: "100%", maxWidth: "380px", padding: "28px", boxShadow: "0 8px 40px rgba(15,23,42,0.2)", textAlign: "center" }}>
+          <div style={{ background: SURFACE.card, borderRadius: "20px", width: "100%", maxWidth: "380px", padding: "28px", boxShadow: "0 8px 40px rgba(15,23,42,0.2)", textAlign: "center" }}>
             <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "rgba(239,68,68,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-              <TrashIcon size={24} color="#ef4444" strokeWidth={2} />
+              <TrashIcon size={24} color={STATE.danger} strokeWidth={2} />
             </div>
-            <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#0f172a", margin: "0 0 6px" }}>Eliminar prueba</h3>
-            <p style={{ fontSize: "13px", color: "#64748b", margin: "0 0 20px" }}>
-              ¿Estás seguro de eliminar <b style={{ color: "#0f172a" }}>{deletePruebaConfirm.name}</b>? Esta acción no se puede deshacer.
+            <h3 style={{ fontSize: "16px", fontWeight: 700, color: SURFACE.text, margin: "0 0 6px" }}>Eliminar prueba</h3>
+            <p style={{ fontSize: "13px", color: SURFACE.textMuted, margin: "0 0 20px" }}>
+              ¿Estás seguro de eliminar <b style={{ color: SURFACE.text }}>{deletePruebaConfirm.name}</b>? Esta acción no se puede deshacer.
             </p>
             <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
               <button onClick={() => setDeletePruebaConfirm(null)}
-                style={{ padding: "10px 24px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
+                style={{ padding: "10px 24px", borderRadius: "10px", border: "1px solid #e2e8f0", background: SURFACE.card, color: SURFACE.textMuted, fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
                 Cancelar
               </button>
               <button onClick={() => removePrueba(deletePruebaConfirm)}
-                style={{ padding: "10px 24px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #ef4444, #dc2626)", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 10px rgba(239,68,68,0.3)" }}>
+                style={{ padding: "10px 24px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #ef4444, #dc2626)", color: SURFACE.card, fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 10px rgba(239,68,68,0.3)" }}>
                 Sí, eliminar
               </button>
             </div>

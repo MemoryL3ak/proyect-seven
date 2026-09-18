@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import clsx from "clsx";
 import { useI18n } from "@/lib/i18n";
 import { getStoredUser } from "@/lib/api";
+import { BRAND, SURFACE } from "@/lib/design";
 
 type NavItem = { href: string; label: string; icon: string };
 type NavGroup = { title: string; icon: string; items: NavItem[] };
@@ -198,11 +199,11 @@ function sectionHasActivePath(section: NavSection, pathname: string) {
   return false;
 }
 
-const TEAL = "#21D0B3";
-const TEAL_MID = "#34F3C6";
+const TEAL = BRAND.teal;
+const TEAL_MID = BRAND.tealLight;
 
 const activeItemStyle = {
-  color: "#ffffff",
+  color: SURFACE.card,
   background: "rgba(33,208,179,0.22)",
   borderLeft: `3px solid ${TEAL}`,
   fontWeight: 600,
@@ -419,7 +420,7 @@ export default function SideNav({ onClose }: { onClose?: () => void }) {
             transition: "background 150ms, color 150ms",
             ...(collapsed ? { marginTop: "0", position: "relative" } : {}),
           }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(33,208,179,0.15)"; (e.currentTarget as HTMLElement).style.color = "#21D0B3"; }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(33,208,179,0.15)"; (e.currentTarget as HTMLElement).style.color = BRAND.teal; }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.07)"; (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.45)"; }}
           title={collapsed ? "Expandir menú" : "Colapsar menú"}
         >

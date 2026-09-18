@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { apiFetch } from "@/lib/api";
 import { XIcon, MessageIcon, TruckIcon, UserIcon, ChevronDownIcon, CheckIcon } from "@/components/ui/Icons";
 import { REPORT_CATEGORY, REPORT_REASONS, reportReasonLabel } from "@/lib/chat-report";
-import { BRAND } from "@/lib/design";
+import { BRAND, STATE, SURFACE } from "@/lib/design";
 
 type ChatMessage = {
   id: string;
@@ -296,9 +296,9 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
       {/* ─── FAB ─── */}
       <button type="button" onClick={() => setOpen((v) => !v)} className="tripchat-fab">
         {open ? (
-          <XIcon size={20} color="#fff" strokeWidth={2.2} />
+          <XIcon size={20} color={SURFACE.card} strokeWidth={2.2} />
         ) : (
-          <MessageIcon size={22} color="#fff" strokeWidth={1.8} />
+          <MessageIcon size={22} color={SURFACE.card} strokeWidth={1.8} />
         )}
         {unread > 0 && !open && (
           <span className="tripchat-badge">{unread > 9 ? "9+" : unread}</span>
@@ -318,7 +318,7 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
                 }
               </div>
               <div>
-                <p style={{ color: "#fff", fontSize: 14, fontWeight: 700, margin: 0, lineHeight: 1.2 }}>
+                <p style={{ color: SURFACE.card, fontSize: 14, fontWeight: 700, margin: 0, lineHeight: 1.2 }}>
                   {otherLabel}
                 </p>
                 <p style={{ color: isFinished ? "rgba(255,255,255,0.4)" : "rgba(33,208,179,0.8)", fontSize: 11, fontWeight: 600, margin: 0 }}>
@@ -363,7 +363,7 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
             {visibleMessages.length === 0 && !blocked && (
               <div className="tripchat-empty">
                 <div className="tripchat-empty-icon">
-                  <MessageIcon size={28} color="#cbd5e1" strokeWidth={1.5} />
+                  <MessageIcon size={28} color={SURFACE.borderStrong} strokeWidth={1.5} />
                 </div>
                 Envía un mensaje para<br />comunicarte con {senderType === "PASSENGER" ? "tu conductor" : "el pasajero"}
               </div>
@@ -428,7 +428,7 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
           {/* Input */}
           {blocked ? (
             <div className="tripchat-blocked-bar">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b45309" strokeWidth="2" strokeLinecap="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={STATE.warningText} strokeWidth="2" strokeLinecap="round">
                 <circle cx="12" cy="12" r="9" /><line x1="5.6" y1="5.6" x2="18.4" y2="18.4" />
               </svg>
               <span style={{ flex: 1 }}>
@@ -440,7 +440,7 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
             </div>
           ) : isFinished ? (
             <div className="tripchat-finished-bar">
-              <CheckIcon size={14} color="#94a3b8" strokeWidth={2} />
+              <CheckIcon size={14} color={SURFACE.textFaint} strokeWidth={2} />
               Viaje finalizado — chat cerrado
             </div>
           ) : (
@@ -459,12 +459,12 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
                 disabled={sending || !input.trim()}
                 className="tripchat-send-btn"
                 style={{
-                  background: sending || !input.trim() ? "#e2e8f0" : `linear-gradient(135deg, ${BRAND.teal}, #14AE98)`,
+                  background: sending || !input.trim() ? SURFACE.border : `linear-gradient(135deg, ${BRAND.teal}, #14AE98)`,
                   cursor: sending || !input.trim() ? "not-allowed" : "pointer",
                   boxShadow: sending || !input.trim() ? "none" : "0 2px 8px rgba(33,208,179,0.3)",
                 }}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={sending || !input.trim() ? "#94a3b8" : "#fff"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={sending || !input.trim() ? SURFACE.textFaint : SURFACE.card} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="22" y1="2" x2="11" y2="13" />
                   <polygon points="22 2 15 22 11 13 2 9 22 2" />
                 </svg>

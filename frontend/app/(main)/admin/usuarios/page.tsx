@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { apiFetch } from "@/lib/api";
+import { BRAND, STATE, SURFACE } from "@/lib/design";
 import {
   AlertIcon,
   MailIcon,
@@ -104,15 +105,15 @@ const ROLE_PERMISSIONS: Record<Role, string[]> = {
   Visualizador: ALL_MODULES.filter((m) => ["Dashboard", "Registro"].includes(m.group)).map((m) => m.id),
 };
 
-const AVATAR_COLORS = ["#6366f1", "#ec4899", "#10b981", "#f59e0b", "#3b82f6", "#8b5cf6", "#ef4444", "#14b8a6"];
+const AVATAR_COLORS = ["#6366f1", "#ec4899", STATE.success, STATE.warning, STATE.info, "#8b5cf6", STATE.danger, "#14b8a6"];
 
 // ── Seed data ──────────────────────────────────────────────────────────────
 const SEED_USERS: AppUser[] = [
   { id: "1", fullName: "Carlos Rodríguez", email: "carlos@sevenarana.com", role: "Administrador", modules: ROLE_PERMISSIONS["Administrador"], status: "active", emailConfirmed: true, createdAt: "2024-01-15", lastLogin: "hace 2 horas", initials: "CR", color: "#6366f1" },
   { id: "2", fullName: "Ana González", email: "ana@sevenarana.com", role: "Supervisor", modules: ROLE_PERMISSIONS["Supervisor"], status: "active", emailConfirmed: true, createdAt: "2024-02-20", lastLogin: "hace 1 día", initials: "AG", color: "#ec4899" },
-  { id: "3", fullName: "Marco Silva", email: "marco@sevenarana.com", role: "Coordinador", modules: ROLE_PERMISSIONS["Coordinador"], status: "active", emailConfirmed: true, createdAt: "2024-03-10", lastLogin: "hace 3 días", initials: "MS", color: "#10b981" },
-  { id: "4", fullName: "Valentina Torres", email: "valen@sevenarana.com", role: "Operador", modules: ROLE_PERMISSIONS["Operador"], status: "active", emailConfirmed: true, createdAt: "2024-04-05", lastLogin: "hoy", initials: "VT", color: "#f59e0b" },
-  { id: "5", fullName: "Felipe Muñoz", email: "felipe@sevenarana.com", role: "Visualizador", modules: ROLE_PERMISSIONS["Visualizador"], status: "inactive", emailConfirmed: true, createdAt: "2024-05-12", lastLogin: "hace 2 semanas", initials: "FM", color: "#3b82f6" },
+  { id: "3", fullName: "Marco Silva", email: "marco@sevenarana.com", role: "Coordinador", modules: ROLE_PERMISSIONS["Coordinador"], status: "active", emailConfirmed: true, createdAt: "2024-03-10", lastLogin: "hace 3 días", initials: "MS", color: STATE.success },
+  { id: "4", fullName: "Valentina Torres", email: "valen@sevenarana.com", role: "Operador", modules: ROLE_PERMISSIONS["Operador"], status: "active", emailConfirmed: true, createdAt: "2024-04-05", lastLogin: "hoy", initials: "VT", color: STATE.warning },
+  { id: "5", fullName: "Felipe Muñoz", email: "felipe@sevenarana.com", role: "Visualizador", modules: ROLE_PERMISSIONS["Visualizador"], status: "inactive", emailConfirmed: true, createdAt: "2024-05-12", lastLogin: "hace 2 semanas", initials: "FM", color: STATE.info },
   { id: "6", fullName: "Daniela Pérez", email: "dani@sevenarana.com", role: "Operador", modules: ROLE_PERMISSIONS["Operador"], status: "pending", emailConfirmed: false, createdAt: "2024-06-01", initials: "DP", color: "#8b5cf6" },
 ];
 
@@ -240,18 +241,18 @@ export default function UsuariosPage() {
   const { t } = useI18n();
 
   const pal = {
-    accent: "#21D0B3",
+    accent: BRAND.teal,
     kpiGlow: "rgba(33,208,179,0.25)",
     rowHover: "rgba(33,208,179,0.04)",
-    tableBorder: "#e2e8f0",
-    headerBg: "#f8fafc",
-    modalBg: "#ffffff",
-    modalBorder: "#e2e8f0",
-    mText: "#0f172a",
-    mTextMuted: "#64748b",
-    mTextFaint: "#94a3b8",
-    mElevated: "#f8fafc",
-    mBorder: "#e2e8f0",
+    tableBorder: SURFACE.border,
+    headerBg: SURFACE.bg,
+    modalBg: SURFACE.card,
+    modalBorder: SURFACE.border,
+    mText: SURFACE.text,
+    mTextMuted: SURFACE.textMuted,
+    mTextFaint: SURFACE.textFaint,
+    mElevated: SURFACE.bg,
+    mBorder: SURFACE.border,
   };
 
   const selM: React.CSSProperties = { background: pal.mElevated, color: pal.mText, border: `1px solid ${pal.mBorder}` };
@@ -453,20 +454,20 @@ export default function UsuariosPage() {
 
   // ── Helpers ───────────────────────────────────────────────────────────
   function roleColor(role: Role) {
-    if (role === "Administrador") return { bg: "rgba(239,68,68,0.12)", border: "rgba(239,68,68,0.3)", color: "#ef4444" };
+    if (role === "Administrador") return { bg: "rgba(239,68,68,0.12)", border: "rgba(239,68,68,0.3)", color: STATE.danger };
     if (role === "Supervisor") return { bg: "rgba(249,115,22,0.12)", border: "rgba(249,115,22,0.3)", color: "#f97316" };
-    if (role === "Coordinador") return { bg: "rgba(16,185,129,0.12)", border: "rgba(16,185,129,0.3)", color: "#10b981" };
+    if (role === "Coordinador") return { bg: "rgba(16,185,129,0.12)", border: "rgba(16,185,129,0.3)", color: STATE.success };
     if (role === "Coordinador Bvan") return { bg: "rgba(33,208,179,0.12)", border: "rgba(33,208,179,0.32)", color: "#0f9e87" };
     if (role === "Coordinador Comité") return { bg: "rgba(139,92,246,0.12)", border: "rgba(139,92,246,0.3)", color: "#7c3aed" };
     if (role === "Comité Transporte") return { bg: "rgba(31,205,255,0.12)", border: "rgba(31,205,255,0.32)", color: "#0891b2" };
-    if (role === "Operador") return { bg: "rgba(59,130,246,0.12)", border: "rgba(59,130,246,0.3)", color: "#3b82f6" };
-    return { bg: "rgba(100,116,139,0.12)", border: "rgba(100,116,139,0.3)", color: "#64748b" };
+    if (role === "Operador") return { bg: "rgba(59,130,246,0.12)", border: "rgba(59,130,246,0.3)", color: STATE.info };
+    return { bg: "rgba(100,116,139,0.12)", border: "rgba(100,116,139,0.3)", color: SURFACE.textMuted };
   }
 
   function statusInfo(s: UserStatus) {
     if (s === "active") return { label: "Activo", color: "#22c55e", bg: "rgba(34,197,94,0.1)" };
-    if (s === "inactive") return { label: "Inactivo", color: "#94a3b8", bg: "rgba(148,163,184,0.1)" };
-    return { label: "Pendiente", color: "#f59e0b", bg: "rgba(245,158,11,0.1)" };
+    if (s === "inactive") return { label: "Inactivo", color: SURFACE.textFaint, bg: "rgba(148,163,184,0.1)" };
+    return { label: "Pendiente", color: STATE.warning, bg: "rgba(245,158,11,0.1)" };
   }
 
   // ═══════════════════════════════════════════════════════════════════════
@@ -474,20 +475,20 @@ export default function UsuariosPage() {
     <div className="space-y-5">
 
       {/* ── Header */}
-      <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "20px", padding: "24px 28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)", marginBottom: "24px" }}>
+      <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "20px", padding: "24px 28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)", marginBottom: "24px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
-          <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#94a3b8" }}>Seven Arena</span>
+          <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: SURFACE.textFaint }}>Seven Arena</span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.25)", borderRadius: "99px", padding: "2px 10px" }}>
-            <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#21D0B3", display: "inline-block", animation: "pulse 2s ease-in-out infinite" }} />
-            <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: "#21D0B3" }}>{t("ADMINISTRACIÓN")}</span>
+            <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: BRAND.teal, display: "inline-block", animation: "pulse 2s ease-in-out infinite" }} />
+            <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: BRAND.teal }}>{t("ADMINISTRACIÓN")}</span>
           </span>
         </div>
 
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "16px", marginBottom: "24px" }}>
-          <h1 style={{ fontSize: "24px", fontWeight: 800, color: "#0f172a", margin: 0 }}>{t("Gestión de Usuarios")}</h1>
+          <h1 style={{ fontSize: "24px", fontWeight: 800, color: SURFACE.text, margin: 0 }}>{t("Gestión de Usuarios")}</h1>
           <button
             onClick={openCreate}
-            style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 20px", background: "#21D0B3", color: "#ffffff", border: "none", borderRadius: "12px", fontSize: "14px", fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 14px rgba(33,208,179,0.3)", transition: "all 150ms ease", whiteSpace: "nowrap" }}
+            style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 20px", background: BRAND.teal, color: SURFACE.card, border: "none", borderRadius: "12px", fontSize: "14px", fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 14px rgba(33,208,179,0.3)", transition: "all 150ms ease", whiteSpace: "nowrap" }}
             onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 6px 20px rgba(33,208,179,0.4)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 14px rgba(33,208,179,0.3)"; }}
           >
@@ -500,13 +501,13 @@ export default function UsuariosPage() {
         <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
           {(
             [
-              { label: "Total Usuarios", value: kpis.total, Icon: UsersIcon, sub: "en el sistema", color: "#21D0B3" },
+              { label: "Total Usuarios", value: kpis.total, Icon: UsersIcon, sub: "en el sistema", color: BRAND.teal },
               { label: "Activos", value: kpis.active, Icon: ActiveIcon, sub: "usuarios activos", color: "#22c55e" },
-              { label: "Administradores", value: kpis.admins, Icon: ShieldIcon, sub: "con acceso total", color: "#ef4444" },
-              { label: "Pendientes", value: kpis.pending, Icon: ClockIcon, sub: "por confirmar", color: "#f59e0b" },
+              { label: "Administradores", value: kpis.admins, Icon: ShieldIcon, sub: "con acceso total", color: STATE.danger },
+              { label: "Pendientes", value: kpis.pending, Icon: ClockIcon, sub: "por confirmar", color: STATE.warning },
             ] as { label: string; value: number; Icon: (p: { color: string; size?: number }) => React.JSX.Element; sub: string; color: string }[]
           ).map((k) => (
-            <div key={k.label} style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderTop: `3px solid ${k.color}`, borderRadius: "16px", padding: "16px 18px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)", transition: "transform 120ms ease" }}
+            <div key={k.label} style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderTop: `3px solid ${k.color}`, borderRadius: "16px", padding: "16px 18px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)", transition: "transform 120ms ease" }}
               onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; }}
             >
@@ -517,7 +518,7 @@ export default function UsuariosPage() {
               <p style={{ fontSize: "2rem", fontWeight: 800, lineHeight: 1, color: k.color, margin: "0 0 8px" }}>{k.value}</p>
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                 <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: k.color, flexShrink: 0 }} />
-                <p style={{ fontSize: "11px", color: "#64748b", margin: 0 }}>{t(k.sub)}</p>
+                <p style={{ fontSize: "11px", color: SURFACE.textMuted, margin: 0 }}>{t(k.sub)}</p>
               </div>
             </div>
           ))}
@@ -537,7 +538,7 @@ export default function UsuariosPage() {
                 padding: "10px 20px",
                 background: "none", border: "none",
                 borderBottom: activeTab === tab ? `2px solid ${pal.accent}` : "2px solid transparent",
-                color: activeTab === tab ? pal.accent : "#64748b",
+                color: activeTab === tab ? pal.accent : SURFACE.textMuted,
                 fontSize: "14px", fontWeight: activeTab === tab ? 700 : 500,
                 cursor: "pointer", transition: "all 150ms", marginBottom: "-1px",
                 textTransform: "capitalize",
@@ -545,8 +546,8 @@ export default function UsuariosPage() {
             >
               <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
                 {tab === "usuarios"
-                  ? <><UsersIcon color={activeTab === tab ? pal.accent : "#64748b"} size={14} /> {t("Usuarios")}</>
-                  : <><KeyIcon color={activeTab === tab ? pal.accent : "#64748b"} size={14} /> {t("Roles y Permisos")}</>
+                  ? <><UsersIcon color={activeTab === tab ? pal.accent : SURFACE.textMuted} size={14} /> {t("Usuarios")}</>
+                  : <><KeyIcon color={activeTab === tab ? pal.accent : SURFACE.textMuted} size={14} /> {t("Roles y Permisos")}</>
                 }
               </span>
             </button>
@@ -560,7 +561,7 @@ export default function UsuariosPage() {
             <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginBottom: "20px", alignItems: "center" }}>
               {/* Search */}
               <div style={{ position: "relative", flex: "1", minWidth: "220px" }}>
-                <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8", pointerEvents: "none" }}>
+                <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: SURFACE.textFaint, pointerEvents: "none" }}>
                   <SearchIcon size={15} strokeWidth={2} />
                 </span>
                 <input
@@ -568,7 +569,7 @@ export default function UsuariosPage() {
                   placeholder={t("Buscar usuarios...")}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  style={{ background: "#f8fafc", color: "#0f172a", border: "1px solid #e2e8f0", padding: "10px 14px 10px 38px", borderRadius: "10px", fontSize: "13.5px", outline: "none", width: "100%" }}
+                  style={{ background: SURFACE.bg, color: SURFACE.text, border: "1px solid #e2e8f0", padding: "10px 14px 10px 38px", borderRadius: "10px", fontSize: "13.5px", outline: "none", width: "100%" }}
                 />
               </div>
 
@@ -594,7 +595,7 @@ export default function UsuariosPage() {
                 <option value="pending">{t("Pendientes")}</option>
               </StyledSelect>
 
-              <span style={{ fontSize: "13px", color: "#64748b", whiteSpace: "nowrap" }}>
+              <span style={{ fontSize: "13px", color: SURFACE.textMuted, whiteSpace: "nowrap" }}>
                 {filtered.length} {filtered.length !== 1 ? t("usuarios") : t("usuario")}
               </span>
             </div>
@@ -604,7 +605,7 @@ export default function UsuariosPage() {
               border: `1px solid ${pal.tableBorder}`,
               borderRadius: "16px",
               overflow: "hidden",
-              background: "#ffffff",
+              background: SURFACE.card,
             }}>
               {/* En móvil la tabla-grid de 6 columnas scrollea horizontal en
                   vez de recortarse bajo el overflow hidden del card. */}
@@ -620,16 +621,16 @@ export default function UsuariosPage() {
                 borderBottom: `1px solid ${pal.tableBorder}`,
               }}>
                 {["Usuario", "Email", "Rol", "Módulos", "Estado", ""].map((h) => (
-                  <span key={h} style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#94a3b8" }}>{h ? t(h) : ""}</span>
+                  <span key={h} style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: SURFACE.textFaint }}>{h ? t(h) : ""}</span>
                 ))}
               </div>
 
               {loadingUsers ? (
-                <div style={{ padding: "48px", textAlign: "center", color: "#64748b", fontSize: "14px" }}>
+                <div style={{ padding: "48px", textAlign: "center", color: SURFACE.textMuted, fontSize: "14px" }}>
                   {t("Cargando usuarios...")}
                 </div>
               ) : filtered.length === 0 ? (
-                <div style={{ padding: "48px", textAlign: "center", color: "#64748b", fontSize: "14px" }}>
+                <div style={{ padding: "48px", textAlign: "center", color: SURFACE.textMuted, fontSize: "14px" }}>
                   {t("No hay usuarios que coincidan con los filtros")}
                 </div>
               ) : (
@@ -658,32 +659,32 @@ export default function UsuariosPage() {
                           width: 38, height: 38, borderRadius: "50%",
                           background: user.color,
                           display: "flex", alignItems: "center", justifyContent: "center",
-                          fontSize: "13px", fontWeight: 700, color: "#fff",
+                          fontSize: "13px", fontWeight: 700, color: SURFACE.card,
                           flexShrink: 0,
                           boxShadow: `0 2px 8px ${user.color}60`,
                         }}>
                           {user.initials}
                         </div>
                         <div>
-                          <p style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a", margin: 0 }}>{user.fullName}</p>
-                          {user.lastLogin && <p style={{ fontSize: "11.5px", color: "#94a3b8", margin: "1px 0 0" }}>{t("Último:")} {user.lastLogin}</p>}
+                          <p style={{ fontSize: "14px", fontWeight: 600, color: SURFACE.text, margin: 0 }}>{user.fullName}</p>
+                          {user.lastLogin && <p style={{ fontSize: "11.5px", color: SURFACE.textFaint, margin: "1px 0 0" }}>{t("Último:")} {user.lastLogin}</p>}
                         </div>
                       </div>
 
                       {/* Email / Username */}
                       <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
                         {isUsernameUser(user.email) ? (
-                          <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "13px", color: "#64748b" }}>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "13px", color: SURFACE.textMuted }}>
                             <span style={{ fontSize: "10px", fontWeight: 700, padding: "1px 6px", borderRadius: "99px", background: "rgba(99,102,241,0.12)", color: "#818cf8", border: "1px solid rgba(99,102,241,0.25)" }}>{t("USUARIO")}</span>
                             {extractUsername(user.email)}
                           </span>
                         ) : (
-                          <p style={{ fontSize: "13px", color: "#64748b", margin: 0 }}>{user.email}</p>
+                          <p style={{ fontSize: "13px", color: SURFACE.textMuted, margin: 0 }}>{user.email}</p>
                         )}
                         {!user.emailConfirmed && !isUsernameUser(user.email) && (
                           <span style={{
                             fontSize: "10px", fontWeight: 700, padding: "1px 7px", borderRadius: "99px", width: "fit-content",
-                            background: "rgba(245,158,11,0.12)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.3)",
+                            background: "rgba(245,158,11,0.12)", color: STATE.warning, border: "1px solid rgba(245,158,11,0.3)",
                           }}>
                             <AlertIcon size={11} className="inline mr-1" />{t("Email no confirmado")}
                           </span>
@@ -711,7 +712,7 @@ export default function UsuariosPage() {
                         }}>
                           {user.modules.length}
                         </span>
-                        <span style={{ fontSize: "12px", color: "#94a3b8" }}>
+                        <span style={{ fontSize: "12px", color: SURFACE.textFaint }}>
                           / {ALL_MODULES.length}
                         </span>
                       </div>
@@ -724,7 +725,7 @@ export default function UsuariosPage() {
                           boxShadow: user.status === "active" ? `0 0 6px ${si.color}` : "none",
                           flexShrink: 0,
                         }} />
-                        <span style={{ fontSize: "12.5px", color: "#64748b", fontWeight: 500 }}>{t(si.label)}</span>
+                        <span style={{ fontSize: "12.5px", color: SURFACE.textMuted, fontWeight: 500 }}>{t(si.label)}</span>
                       </div>
 
                       {/* Actions */}
@@ -742,7 +743,7 @@ export default function UsuariosPage() {
                             style={{
                               background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.35)",
                               borderRadius: "8px", padding: "6px 8px",
-                              cursor: "pointer", color: "#f59e0b", fontSize: "11px", fontWeight: 700,
+                              cursor: "pointer", color: STATE.warning, fontSize: "11px", fontWeight: 700,
                               transition: "all 150ms", whiteSpace: "nowrap",
                             }}
                             title={t("Confirmar email para permitir acceso")}
@@ -753,34 +754,34 @@ export default function UsuariosPage() {
                         <button
                           onClick={() => openEdit(user)}
                           style={{
-                            background: "#f8fafc", border: "1px solid #e2e8f0",
+                            background: SURFACE.bg, border: "1px solid #e2e8f0",
                             borderRadius: "8px", padding: "6px",
-                            cursor: "pointer", color: "#64748b",
+                            cursor: "pointer", color: SURFACE.textMuted,
                             transition: "all 150ms",
                           }}
                           title={t("Editar")}
                           onMouseEnter={(e) => { e.currentTarget.style.color = pal.accent; e.currentTarget.style.borderColor = pal.accent; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.color = "#64748b"; e.currentTarget.style.borderColor = "#e2e8f0"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.color = SURFACE.textMuted; e.currentTarget.style.borderColor = SURFACE.border; }}
                         >
                           <PencilIcon size={14} strokeWidth={2} />
                         </button>
                         <button
                           onClick={() => setConfirmDelete(user)}
                           style={{
-                            background: "#f8fafc", border: "1px solid #e2e8f0",
+                            background: SURFACE.bg, border: "1px solid #e2e8f0",
                             borderRadius: "8px", padding: "6px",
                             cursor: "pointer",
-                            color: user.status === "active" ? "#64748b" : "#22c55e",
+                            color: user.status === "active" ? SURFACE.textMuted : "#22c55e",
                             transition: "all 150ms",
                           }}
                           title={user.status === "active" ? t("Deshabilitar acceso") : t("Habilitar acceso")}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.color = user.status === "active" ? "#ef4444" : "#22c55e";
-                            e.currentTarget.style.borderColor = user.status === "active" ? "#ef4444" : "#22c55e";
+                            e.currentTarget.style.color = user.status === "active" ? STATE.danger : "#22c55e";
+                            e.currentTarget.style.borderColor = user.status === "active" ? STATE.danger : "#22c55e";
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.color = user.status === "active" ? "#64748b" : "#22c55e";
-                            e.currentTarget.style.borderColor = "#e2e8f0";
+                            e.currentTarget.style.color = user.status === "active" ? SURFACE.textMuted : "#22c55e";
+                            e.currentTarget.style.borderColor = SURFACE.border;
                           }}
                         >
                           {user.status === "active" ? (
@@ -793,13 +794,13 @@ export default function UsuariosPage() {
                           type="button"
                           onClick={() => setDeleteConfirm(user)}
                           style={{
-                            background: "#f8fafc", border: "1px solid #e2e8f0",
+                            background: SURFACE.bg, border: "1px solid #e2e8f0",
                             borderRadius: "8px", padding: "6px",
-                            cursor: "pointer", color: "#94a3b8", transition: "all 150ms",
+                            cursor: "pointer", color: SURFACE.textFaint, transition: "all 150ms",
                           }}
                           title={t("Eliminar usuario")}
-                          onMouseEnter={(e) => { e.currentTarget.style.color = "#ef4444"; e.currentTarget.style.borderColor = "#ef4444"; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.color = "#94a3b8"; e.currentTarget.style.borderColor = "#e2e8f0"; }}
+                          onMouseEnter={(e) => { e.currentTarget.style.color = STATE.danger; e.currentTarget.style.borderColor = STATE.danger; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.color = SURFACE.textFaint; e.currentTarget.style.borderColor = SURFACE.border; }}
                         >
                           <TrashIcon size={14} strokeWidth={2} />
                         </button>
@@ -826,7 +827,7 @@ export default function UsuariosPage() {
                   border: `1px solid ${pal.tableBorder}`,
                   borderTop: `3px solid ${rc.color}`,
                   borderRadius: "16px",
-                  background: "#ffffff",
+                  background: SURFACE.card,
                   overflow: "hidden",
                   transition: "transform 200ms ease, box-shadow 200ms ease",
                 }}
@@ -843,12 +844,12 @@ export default function UsuariosPage() {
                         fontSize: "13px", fontWeight: 700, color: rc.color,
                       }}>{t(role)}</span>
                       <span style={{
-                        fontSize: "12px", color: "#94a3b8", fontWeight: 500,
+                        fontSize: "12px", color: SURFACE.textFaint, fontWeight: 500,
                       }}>
                         {roleUsers.length} {roleUsers.length !== 1 ? t("usuarios") : t("usuario")}
                       </span>
                     </div>
-                    <p style={{ fontSize: "12px", color: "#64748b", margin: 0 }}>
+                    <p style={{ fontSize: "12px", color: SURFACE.textMuted, margin: 0 }}>
                       {perms.length} {t("de")} {ALL_MODULES.length} {t("módulos habilitados")}
                     </p>
                   </div>
@@ -863,7 +864,7 @@ export default function UsuariosPage() {
                         <div key={group} style={{ marginBottom: "12px" }}>
                           <p style={{
                             fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em",
-                            textTransform: "uppercase", color: "#94a3b8",
+                            textTransform: "uppercase", color: SURFACE.textFaint,
                             margin: "0 0 6px",
                           }}>{t(group)}</p>
                           <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
@@ -874,7 +875,7 @@ export default function UsuariosPage() {
                                 background: `${rc.color}12`,
                                 border: `1px solid ${rc.color}25`,
                                 borderRadius: "100px",
-                                fontSize: "11px", color: "#64748b", fontWeight: 500,
+                                fontSize: "11px", color: SURFACE.textMuted, fontWeight: 500,
                               }}>
                                 <ModuleIcon module={m} color={rc.color} size={10} /> {t(m.label)}
                               </span>
@@ -897,7 +898,7 @@ export default function UsuariosPage() {
                               border: "2px solid #ffffff",
                               marginLeft: i > 0 ? "-8px" : "0",
                               display: "flex", alignItems: "center", justifyContent: "center",
-                              fontSize: "10px", fontWeight: 700, color: "#fff",
+                              fontSize: "10px", fontWeight: 700, color: SURFACE.card,
                               flexShrink: 0,
                             }}>
                               {u.initials}
@@ -905,7 +906,7 @@ export default function UsuariosPage() {
                           ))}
                         </div>
                         {roleUsers.length > 4 && (
-                          <span style={{ fontSize: "11px", color: "#94a3b8" }}>+{roleUsers.length - 4} {t("más")}</span>
+                          <span style={{ fontSize: "11px", color: SURFACE.textFaint }}>+{roleUsers.length - 4} {t("más")}</span>
                         )}
                       </div>
                     </div>
@@ -1081,7 +1082,7 @@ export default function UsuariosPage() {
                     </h3>
                     {editingUser && form.loginType !== "username" && (
                       <button type="button" onClick={() => setForm((f) => ({ ...f, passwordEditable: !f.passwordEditable, tempPassword: f.passwordEditable ? "" : generateTempPassword() }))}
-                        style={{ fontSize: "11px", fontWeight: 600, padding: "4px 12px", borderRadius: "8px", border: "none", cursor: "pointer", background: form.passwordEditable ? "rgba(239,68,68,0.1)" : "rgba(33,208,179,0.1)", color: form.passwordEditable ? "#ef4444" : "#21D0B3" }}>
+                        style={{ fontSize: "11px", fontWeight: 600, padding: "4px 12px", borderRadius: "8px", border: "none", cursor: "pointer", background: form.passwordEditable ? "rgba(239,68,68,0.1)" : "rgba(33,208,179,0.1)", color: form.passwordEditable ? STATE.danger : BRAND.teal }}>
                         {form.passwordEditable ? t("Cancelar cambio") : t("Cambiar contraseña")}
                       </button>
                     )}
@@ -1195,7 +1196,7 @@ export default function UsuariosPage() {
                                 cursor: "pointer", flexShrink: 0, transition: "all 150ms",
                               }}
                             >
-                              {allSelected && <CheckIcon size={10} color="#fff" strokeWidth={3} />}
+                              {allSelected && <CheckIcon size={10} color={SURFACE.card} strokeWidth={3} />}
                               {someSelected && !allSelected && <div style={{ width: 8, height: 2, background: pal.accent, borderRadius: "1px" }} />}
                             </div>
                             <span style={{ fontSize: "13.5px", fontWeight: 600, color: pal.mText }}>{t(group)}</span>
@@ -1240,9 +1241,9 @@ export default function UsuariosPage() {
                                     display: "flex", alignItems: "center", justifyContent: "center",
                                     flexShrink: 0, transition: "all 150ms",
                                   }}>
-                                    {checked && <CheckIcon size={9} color="#fff" strokeWidth={3.5} />}
+                                    {checked && <CheckIcon size={9} color={SURFACE.card} strokeWidth={3.5} />}
                                   </div>
-                                  <ModuleIcon module={m} color={checked ? pal.accent : "#94a3b8"} size={13} />
+                                  <ModuleIcon module={m} color={checked ? pal.accent : SURFACE.textFaint} size={13} />
                                   <span style={{ fontSize: "13px", color: checked ? pal.mText : pal.mTextMuted, fontWeight: checked ? 500 : 400, transition: "color 150ms" }}>
                                     {t(m.label)}
                                   </span>
@@ -1266,7 +1267,7 @@ export default function UsuariosPage() {
                 background: "rgba(239,68,68,0.1)",
                 border: "1px solid rgba(239,68,68,0.25)",
                 borderRadius: "10px",
-                color: "#ef4444",
+                color: STATE.danger,
                 fontSize: "13px",
               }}>
                 {saveError}
@@ -1298,7 +1299,7 @@ export default function UsuariosPage() {
                   background: (!form.fullName || (form.loginType === "username" ? !form.username : !form.email) || saving) ? "rgba(100,116,139,0.3)" : pal.accent,
                   border: "none",
                   borderRadius: "10px", fontSize: "14px", fontWeight: 700,
-                  color: (!form.fullName || (form.loginType === "username" ? !form.username : !form.email) || saving) ? "rgba(100,116,139,0.6)" : "#ffffff",
+                  color: (!form.fullName || (form.loginType === "username" ? !form.username : !form.email) || saving) ? "rgba(100,116,139,0.6)" : SURFACE.card,
                   cursor: (!form.fullName || (form.loginType === "username" ? !form.username : !form.email) || saving) ? "not-allowed" : "pointer",
                   transition: "all 150ms",
                   boxShadow: (!form.fullName || (form.loginType === "username" ? !form.username : !form.email) || saving) ? "none" : `0 4px 16px ${pal.kpiGlow}`,
@@ -1318,7 +1319,7 @@ export default function UsuariosPage() {
       {/* ── Confirm Delete Modal ─────────────────────────────────────── */}
       {confirmDelete && (() => {
         const isDisabling = confirmDelete.status === "active";
-        const actionColor = isDisabling ? "#ef4444" : "#22c55e";
+        const actionColor = isDisabling ? STATE.danger : "#22c55e";
         const actionColorLight = isDisabling ? "rgba(239,68,68,0.12)" : "rgba(34,197,94,0.12)";
         const actionColorBorder = isDisabling ? "rgba(239,68,68,0.25)" : "rgba(34,197,94,0.25)";
         const actionGlow = isDisabling ? "rgba(239,68,68,0.35)" : "rgba(34,197,94,0.35)";
@@ -1378,7 +1379,7 @@ export default function UsuariosPage() {
                   width: "36px", height: "36px", borderRadius: "10px",
                   background: confirmDelete.color, flexShrink: 0,
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: "13px", fontWeight: 700, color: "#fff",
+                  fontSize: "13px", fontWeight: 700, color: SURFACE.card,
                 }}>
                   {confirmDelete.initials}
                 </div>
@@ -1410,7 +1411,7 @@ export default function UsuariosPage() {
                     background: deleting ? `${actionColor}4d` : actionGradient,
                     border: "none",
                     borderRadius: "10px", fontSize: "14px", fontWeight: 700,
-                    color: "#fff", cursor: deleting ? "not-allowed" : "pointer",
+                    color: SURFACE.card, cursor: deleting ? "not-allowed" : "pointer",
                     boxShadow: deleting ? "none" : `0 4px 16px ${actionGlow}`,
                     display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
                   }}
@@ -1432,20 +1433,20 @@ export default function UsuariosPage() {
       {/* Delete user modal */}
       {deleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setDeleteConfirm(null)}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: "#fff", borderRadius: "20px", width: "100%", maxWidth: "400px", padding: "28px", boxShadow: "0 8px 40px rgba(15,23,42,0.2)", textAlign: "center" }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: SURFACE.card, borderRadius: "20px", width: "100%", maxWidth: "400px", padding: "28px", boxShadow: "0 8px 40px rgba(15,23,42,0.2)", textAlign: "center" }}>
             <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "rgba(239,68,68,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-              <TrashIcon size={24} color="#ef4444" strokeWidth={2} />
+              <TrashIcon size={24} color={STATE.danger} strokeWidth={2} />
             </div>
-            <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#0f172a", margin: "0 0 8px" }}>{t("Eliminar usuario")}</h3>
-            <p style={{ fontSize: "13px", color: "#64748b", lineHeight: 1.5, margin: "0 0 6px" }}>
-              {t("¿Estás seguro de eliminar a")} <strong style={{ color: "#0f172a" }}>{deleteConfirm.fullName}</strong>?
+            <h3 style={{ fontSize: "16px", fontWeight: 700, color: SURFACE.text, margin: "0 0 8px" }}>{t("Eliminar usuario")}</h3>
+            <p style={{ fontSize: "13px", color: SURFACE.textMuted, lineHeight: 1.5, margin: "0 0 6px" }}>
+              {t("¿Estás seguro de eliminar a")} <strong style={{ color: SURFACE.text }}>{deleteConfirm.fullName}</strong>?
             </p>
-            <p style={{ fontSize: "12px", color: "#ef4444", margin: "0 0 20px" }}>
+            <p style={{ fontSize: "12px", color: STATE.danger, margin: "0 0 20px" }}>
               {t("Esta acción es irreversible. El usuario será eliminado de Supabase Auth.")}
             </p>
             <div style={{ display: "flex", gap: "10px" }}>
               <button onClick={() => setDeleteConfirm(null)}
-                style={{ flex: 1, padding: "11px", borderRadius: "12px", border: "1px solid #e2e8f0", background: "#f8fafc", color: "#475569", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
+                style={{ flex: 1, padding: "11px", borderRadius: "12px", border: "1px solid #e2e8f0", background: SURFACE.bg, color: SURFACE.textSecondary, fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
                 {t("Cancelar")}
               </button>
               <button onClick={async () => {
@@ -1457,7 +1458,7 @@ export default function UsuariosPage() {
                   alert(e instanceof Error ? e.message : t("Error eliminando usuario"));
                 }
               }}
-                style={{ flex: 1, padding: "11px", borderRadius: "12px", border: "none", background: "linear-gradient(135deg,#ef4444,#dc2626)", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 10px rgba(239,68,68,0.3)" }}>
+                style={{ flex: 1, padding: "11px", borderRadius: "12px", border: "none", background: "linear-gradient(135deg,#ef4444,#dc2626)", color: SURFACE.card, fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 10px rgba(239,68,68,0.3)" }}>
                 {t("Sí, eliminar")}
               </button>
             </div>

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
 import PageHeader from "@/components/ui/PageHeader";
 import {
@@ -64,16 +65,16 @@ type Snapshot = {
 };
 
 const DRIVER_AVAILABILITY_META: Record<DriverAvailability["availability"], { label: string; color: string; bg: string; border: string }> = {
-  FREE:     { label: "Libre",      color: "#059669", bg: "#dcfce7", border: "#86efac" },
+  FREE:     { label: "Libre",      color: STATE.successText, bg: "#dcfce7", border: "#86efac" },
   ON_TRIP:  { label: "En viaje",   color: "#7c3aed", bg: "#ede9fe", border: "#c4b5fd" },
-  OFFLINE:  { label: "Offline",    color: "#64748b", bg: "#f1f5f9", border: "#cbd5e1" },
-  INACTIVE: { label: "Inactivo",   color: "#dc2626", bg: "#fee2e2", border: "#fca5a5" },
+  OFFLINE:  { label: "Offline",    color: SURFACE.textMuted, bg: SURFACE.borderMuted, border: SURFACE.borderStrong },
+  INACTIVE: { label: "Inactivo",   color: STATE.dangerText, bg: "#fee2e2", border: "#fca5a5" },
 };
 
 const VEHICLE_AVAILABILITY_META: Record<VehicleAvailability["availability"], { label: string; color: string; bg: string; border: string }> = {
-  FREE:           { label: "Disponible", color: "#059669", bg: "#dcfce7", border: "#86efac" },
+  FREE:           { label: "Disponible", color: STATE.successText, bg: "#dcfce7", border: "#86efac" },
   ON_TRIP:        { label: "En ruta",    color: "#7c3aed", bg: "#ede9fe", border: "#c4b5fd" },
-  OUT_OF_SERVICE: { label: "Fuera de servicio", color: "#dc2626", bg: "#fee2e2", border: "#fca5a5" },
+  OUT_OF_SERVICE: { label: "Fuera de servicio", color: STATE.dangerText, bg: "#fee2e2", border: "#fca5a5" },
 };
 
 function ago(seconds: number | null): string {
@@ -169,7 +170,7 @@ export default function FleetAvailabilityPage() {
             <span className="inline-flex items-center gap-2 text-xs font-semibold rounded-full px-3 py-1"
               style={{ background: "#e7f5ec", color: "#1eb19a" }}>
               <span style={{
-                width: 7, height: 7, borderRadius: "50%", background: "#21D0B3",
+                width: 7, height: 7, borderRadius: "50%", background: BRAND.teal,
                 boxShadow: "0 0 0 3px rgba(33,208,179,0.25)", animation: "pulse 1.8s infinite",
               }} />
               {t("En vivo · se actualiza cada 8 s")}
@@ -187,7 +188,7 @@ export default function FleetAvailabilityPage() {
 
       {/* Secciones */}
       <section className="surface rounded-2xl p-3">
-        <div className="flex gap-1 p-1 rounded-xl flex-wrap" style={{ background: "#f1f5f9" }}>
+        <div className="flex gap-1 p-1 rounded-xl flex-wrap" style={{ background: SURFACE.borderMuted }}>
           {([
             { v: "availability", label: "Disponibilidad", hint: "Vista en tiempo real" },
             { v: "drivers", label: "Conductores", hint: "Registro de conductores" },
@@ -199,7 +200,7 @@ export default function FleetAvailabilityPage() {
                 className="px-4 py-2 rounded-lg text-xs font-bold transition-all"
                 style={{
                   background: active ? "linear-gradient(135deg, #21D0B3, #1eb19a)" : "transparent",
-                  color: active ? "#fff" : "#475569",
+                  color: active ? SURFACE.card : SURFACE.textSecondary,
                   boxShadow: active ? "0 2px 6px rgba(33,208,179,0.35)" : "none",
                   textAlign: "left",
                   lineHeight: 1.2,
@@ -241,9 +242,9 @@ export default function FleetAvailabilityPage() {
           subtitle={`${sd.total} total · ${sd.free} libres · ${sd.onTrip} en viaje`}
           icon={<UsersIcon size={20} />}
           stats={[
-            { label: "Libres", value: sd.free, color: "#059669" },
+            { label: "Libres", value: sd.free, color: STATE.successText },
             { label: "En viaje", value: sd.onTrip, color: "#7c3aed" },
-            { label: "Offline", value: sd.offline, color: "#64748b" },
+            { label: "Offline", value: sd.offline, color: SURFACE.textMuted },
           ]}
         />
         <KpiTile
@@ -251,30 +252,30 @@ export default function FleetAvailabilityPage() {
           subtitle={`${sv.total} total · ${sv.free} disponibles · ${sv.onTrip} en ruta`}
           icon={<TruckIcon size={20} />}
           stats={[
-            { label: "Disponibles", value: sv.free, color: "#059669" },
+            { label: "Disponibles", value: sv.free, color: STATE.successText },
             { label: "En ruta", value: sv.onTrip, color: "#7c3aed" },
-            { label: "Fuera servicio", value: sv.outOfService, color: "#dc2626" },
+            { label: "Fuera servicio", value: sv.outOfService, color: STATE.dangerText },
           ]}
         />
         <article className="surface rounded-2xl p-4">
-          <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "#64748b" }}>
+          <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: SURFACE.textMuted }}>
             {t("Cobertura de viajes")}
           </p>
-          <p style={{ fontSize: "2rem", fontWeight: 800, color: "#21D0B3", lineHeight: 1.1, marginTop: 4 }}>
+          <p style={{ fontSize: "2rem", fontWeight: 800, color: BRAND.teal, lineHeight: 1.1, marginTop: 4 }}>
             {sd.onTrip + sv.onTrip > 0 ? `${sd.onTrip}/${sv.onTrip}` : "0/0"}
           </p>
-          <p style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>
+          <p style={{ fontSize: 11, color: SURFACE.textMuted, marginTop: 4 }}>
             {t("conductores en viaje / vehículos en ruta")}
           </p>
         </article>
         <article className="surface rounded-2xl p-4">
-          <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "#64748b" }}>
+          <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: SURFACE.textMuted }}>
             {t("Capacidad libre ahora")}
           </p>
-          <p style={{ fontSize: "2rem", fontWeight: 800, color: "#1FCDFF", lineHeight: 1.1, marginTop: 4 }}>
+          <p style={{ fontSize: "2rem", fontWeight: 800, color: BRAND.blue, lineHeight: 1.1, marginTop: 4 }}>
             {Math.min(sd.free, sv.free)}
           </p>
-          <p style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>
+          <p style={{ fontSize: 11, color: SURFACE.textMuted, marginTop: 4 }}>
             {t("asignaciones posibles (conductor + vehículo libre)")}
           </p>
         </article>
@@ -283,7 +284,7 @@ export default function FleetAvailabilityPage() {
       {/* Tabs + búsqueda */}
       <section className="surface rounded-2xl p-4 space-y-3">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex gap-1 p-1 rounded-xl" style={{ background: "#f1f5f9" }}>
+          <div className="flex gap-1 p-1 rounded-xl" style={{ background: SURFACE.borderMuted }}>
             {(["both", "drivers", "vehicles"] as const).map(tab => {
               const active = activeTab === tab;
               return (
@@ -291,7 +292,7 @@ export default function FleetAvailabilityPage() {
                   className="px-4 py-1.5 rounded-lg text-xs font-bold transition-all"
                   style={{
                     background: active ? "linear-gradient(135deg, #21D0B3, #1eb19a)" : "transparent",
-                    color: active ? "#fff" : "#475569",
+                    color: active ? SURFACE.card : SURFACE.textSecondary,
                     boxShadow: active ? "0 2px 6px rgba(33,208,179,0.35)" : "none",
                   }}>
                   {tab === "both" ? t("Ambos") : tab === "drivers" ? t("Solo conductores") : t("Solo vehículos")}
@@ -300,7 +301,7 @@ export default function FleetAvailabilityPage() {
             })}
           </div>
           <div className="flex-1 min-w-[200px] relative">
-            <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}>
+            <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: SURFACE.textFaint }}>
               <SearchIcon size={15} />
             </span>
             <input className="input" style={{ paddingLeft: 36 }}
@@ -517,8 +518,8 @@ function CrudSection({
         </section>
       ) : filtered.length === 0 ? (
         <section className="surface rounded-2xl p-12 text-center">
-          <p className="mb-2" style={{ color: "#cbd5e1", display: "flex", justifyContent: "center" }}>{section === "drivers" ? <UserIcon size={36} /> : <CarIcon size={36} />}</p>
-          <p className="text-sm font-bold" style={{ color: "#0f172a" }}>
+          <p className="mb-2" style={{ color: SURFACE.borderStrong, display: "flex", justifyContent: "center" }}>{section === "drivers" ? <UserIcon size={36} /> : <CarIcon size={36} />}</p>
+          <p className="text-sm font-bold" style={{ color: SURFACE.text }}>
             {section === "drivers" ? t("Sin conductores registrados") : t("Sin vehículos registrados")}
           </p>
           <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
@@ -529,7 +530,7 @@ function CrudSection({
         <section className="surface rounded-2xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
-              <thead style={{ background: "#f8fafc" }}>
+              <thead style={{ background: SURFACE.bg }}>
                 <tr>
                   {section === "drivers" ? (
                     <>
@@ -555,7 +556,7 @@ function CrudSection({
               </thead>
               <tbody>
                 {section === "drivers" && (filtered as DriverRow[]).map((d, i) => (
-                  <tr key={d.id} style={{ background: i % 2 === 0 ? "#fff" : "#fafbfc", borderBottom: "1px solid #f1f5f9" }}>
+                  <tr key={d.id} style={{ background: i % 2 === 0 ? SURFACE.card : "#fafbfc", borderBottom: "1px solid #f1f5f9" }}>
                     <td className="p-3 font-semibold">{d.fullName}</td>
                     <td className="p-3 font-mono text-[11px]">{d.rut}</td>
                     <td className="p-3" style={{ color: "var(--text-muted)" }}>
@@ -579,8 +580,8 @@ function CrudSection({
                     <td className="p-3">
                       <span className="text-[10px] px-2 py-0.5 rounded-full font-bold"
                         style={{
-                          background: d.status === "ACTIVE" ? "#dcfce7" : "#f1f5f9",
-                          color: d.status === "ACTIVE" ? "#166534" : "#64748b",
+                          background: d.status === "ACTIVE" ? "#dcfce7" : SURFACE.borderMuted,
+                          color: d.status === "ACTIVE" ? "#166534" : SURFACE.textMuted,
                         }}>
                         {d.status === "ACTIVE" ? t("Activo") : (d.status || "—")}
                       </span>
@@ -592,10 +593,10 @@ function CrudSection({
                   </tr>
                 ))}
                 {section === "vehicles" && (filtered as VehicleRow[]).map((v, i) => (
-                  <tr key={v.id} style={{ background: i % 2 === 0 ? "#fff" : "#fafbfc", borderBottom: "1px solid #f1f5f9" }}>
+                  <tr key={v.id} style={{ background: i % 2 === 0 ? SURFACE.card : "#fafbfc", borderBottom: "1px solid #f1f5f9" }}>
                     <td className="p-3">
                       <span style={{
-                        background: "#0f172a", color: "#fff",
+                        background: SURFACE.text, color: SURFACE.card,
                         fontFamily: "monospace", fontWeight: 800, fontSize: 12,
                         padding: "4px 10px", borderRadius: 5,
                         border: "2px solid #fde68a",
@@ -737,7 +738,7 @@ function DriverFormModal({ eventId, onClose, onSaved }: {
                     className="text-[11px] px-2.5 py-1 rounded-full font-bold transition"
                     style={{
                       background: sel ? "#1f4e8c" : "#eef1f6",
-                      color: sel ? "#fff" : "#1f4e8c",
+                      color: sel ? SURFACE.card : "#1f4e8c",
                     }}>
                     {sel ? <CheckIcon size={12} className="inline mr-1" /> : null}{t(o.label)}
                   </button>
@@ -758,8 +759,8 @@ function DriverFormModal({ eventId, onClose, onSaved }: {
                     onClick={() => toggleArray("accessTypes", o.value)}
                     className="text-[11px] px-2.5 py-1 rounded-full font-bold transition"
                     style={{
-                      background: sel ? "#21D0B3" : "#eef1f6",
-                      color: sel ? "#fff" : "#0a7a6b",
+                      background: sel ? BRAND.teal : "#eef1f6",
+                      color: sel ? SURFACE.card : BRAND.tealInk,
                     }}>
                     {sel ? <CheckIcon size={12} className="inline mr-1" /> : null}{t(o.label)}
                   </button>
@@ -896,14 +897,14 @@ function KpiTile({ title, subtitle, icon, stats }: {
       <div className="flex items-center gap-2 mb-2">
         <span style={{
           width: 30, height: 30, borderRadius: 8,
-          background: "rgba(33,208,179,0.12)", color: "#21D0B3",
+          background: "rgba(33,208,179,0.12)", color: BRAND.teal,
           display: "inline-flex", alignItems: "center", justifyContent: "center",
         }}>
           {icon}
         </span>
         <div>
-          <p style={{ fontSize: 13, fontWeight: 800, color: "#0f172a", lineHeight: 1 }}>{title}</p>
-          <p style={{ fontSize: 10, color: "#64748b", marginTop: 2 }}>{subtitle}</p>
+          <p style={{ fontSize: 13, fontWeight: 800, color: SURFACE.text, lineHeight: 1 }}>{title}</p>
+          <p style={{ fontSize: 10, color: SURFACE.textMuted, marginTop: 2 }}>{subtitle}</p>
         </div>
       </div>
       <div className="flex gap-3 mt-2">
@@ -912,7 +913,7 @@ function KpiTile({ title, subtitle, icon, stats }: {
             <p style={{ fontSize: 18, fontWeight: 800, color: s.color, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
               {s.value}
             </p>
-            <p style={{ fontSize: 9, color: "#94a3b8", marginTop: 2, fontWeight: 600 }}>
+            <p style={{ fontSize: 9, color: SURFACE.textFaint, marginTop: 2, fontWeight: 600 }}>
               {t(s.label)}
             </p>
           </div>
@@ -933,10 +934,10 @@ function DriverColumn({ drivers, filter, setFilter, counts }: {
     <section className="surface rounded-2xl overflow-hidden">
       <header className="p-4 border-b flex items-center justify-between flex-wrap gap-2" style={{ borderColor: "#eef1f6" }}>
         <div>
-          <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "#64748b" }}>
+          <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: SURFACE.textMuted }}>
             {t("Conductores")}
           </p>
-          <h2 style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", marginTop: 2 }}>
+          <h2 style={{ fontSize: 16, fontWeight: 800, color: SURFACE.text, marginTop: 2 }}>
             {drivers.length} {drivers.length === 1 ? t("conductor") : t("conductores")}
           </h2>
         </div>
@@ -952,11 +953,11 @@ function DriverColumn({ drivers, filter, setFilter, counts }: {
               <button key={v || "all"} type="button" onClick={() => setFilter(v as any)}
                 className="text-[11px] font-bold px-2.5 py-1 rounded-full transition-all inline-flex items-center gap-1.5"
                 style={{
-                  background: active ? "linear-gradient(135deg, #21D0B3, #1eb19a)" : "#f1f5f9",
-                  color: active ? "#fff" : "#475569",
+                  background: active ? "linear-gradient(135deg, #21D0B3, #1eb19a)" : SURFACE.borderMuted,
+                  color: active ? SURFACE.card : SURFACE.textSecondary,
                 }}>
                 {t(label)}
-                <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 99, background: active ? "rgba(255,255,255,0.25)" : "#fff", color: active ? "#fff" : "#64748b", fontWeight: 800 }}>{n}</span>
+                <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 99, background: active ? "rgba(255,255,255,0.25)" : SURFACE.card, color: active ? SURFACE.card : SURFACE.textMuted, fontWeight: 800 }}>{n}</span>
               </button>
             );
           })}
@@ -965,8 +966,8 @@ function DriverColumn({ drivers, filter, setFilter, counts }: {
       <div className="divide-y" style={{ borderColor: "#eef1f6", maxHeight: 600, overflowY: "auto" }}>
         {drivers.length === 0 ? (
           <div className="p-8 text-center">
-            <p className="text-sm font-semibold" style={{ color: "#475569" }}>{t("Sin conductores")}</p>
-            <p className="text-xs mt-1" style={{ color: "#94a3b8" }}>{t("Prueba quitando filtros")}</p>
+            <p className="text-sm font-semibold" style={{ color: SURFACE.textSecondary }}>{t("Sin conductores")}</p>
+            <p className="text-xs mt-1" style={{ color: SURFACE.textFaint }}>{t("Prueba quitando filtros")}</p>
           </div>
         ) : drivers.map(d => {
           const meta = DRIVER_AVAILABILITY_META[d.availability];
@@ -975,7 +976,7 @@ function DriverColumn({ drivers, filter, setFilter, counts }: {
               <div style={{
                 width: 38, height: 38, borderRadius: "50%",
                 background: d.online ? "linear-gradient(135deg, #21D0B3, #1eb19a)" : "linear-gradient(135deg, #cbd5e1, #94a3b8)",
-                color: "#fff", fontSize: 12, fontWeight: 800,
+                color: SURFACE.card, fontSize: 12, fontWeight: 800,
                 display: "flex", alignItems: "center", justifyContent: "center",
                 boxShadow: d.online ? "0 2px 6px rgba(33,208,179,0.3)" : "none",
                 flexShrink: 0,
@@ -983,8 +984,8 @@ function DriverColumn({ drivers, filter, setFilter, counts }: {
                 {initials(d.fullName)}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-sm truncate" style={{ color: "#0f172a" }}>{d.fullName}</p>
-                <p className="text-[11px] truncate" style={{ color: "#64748b" }}>
+                <p className="font-bold text-sm truncate" style={{ color: SURFACE.text }}>{d.fullName}</p>
+                <p className="text-[11px] truncate" style={{ color: SURFACE.textMuted }}>
                   {d.preferredVehiclePlate && <><CarIcon size={12} className="inline mr-1" />{d.preferredVehiclePlate} · </>}
                   {d.allowedClientTypes.length > 0 ? d.allowedClientTypes.join(", ") : t("Sin tipos asignados")}
                 </p>
@@ -994,7 +995,7 @@ function DriverColumn({ drivers, filter, setFilter, counts }: {
                   </p>
                 )}
                 {d.availability === "OFFLINE" && d.secondsSinceSeen !== null && (
-                  <p className="text-[10px] mt-0.5" style={{ color: "#94a3b8" }}>
+                  <p className="text-[10px] mt-0.5" style={{ color: SURFACE.textFaint }}>
                     {t("Última conexión hace")} {ago(d.secondsSinceSeen)}
                   </p>
                 )}
@@ -1025,10 +1026,10 @@ function VehicleColumn({ vehicles, filter, setFilter, counts }: {
     <section className="surface rounded-2xl overflow-hidden">
       <header className="p-4 border-b flex items-center justify-between flex-wrap gap-2" style={{ borderColor: "#eef1f6" }}>
         <div>
-          <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "#64748b" }}>
+          <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: SURFACE.textMuted }}>
             {t("Vehículos")}
           </p>
-          <h2 style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", marginTop: 2 }}>
+          <h2 style={{ fontSize: 16, fontWeight: 800, color: SURFACE.text, marginTop: 2 }}>
             {vehicles.length} {vehicles.length === 1 ? t("vehículo") : t("vehículos")}
           </h2>
         </div>
@@ -1044,11 +1045,11 @@ function VehicleColumn({ vehicles, filter, setFilter, counts }: {
               <button key={v || "all"} type="button" onClick={() => setFilter(v as any)}
                 className="text-[11px] font-bold px-2.5 py-1 rounded-full transition-all inline-flex items-center gap-1.5"
                 style={{
-                  background: active ? "linear-gradient(135deg, #21D0B3, #1eb19a)" : "#f1f5f9",
-                  color: active ? "#fff" : "#475569",
+                  background: active ? "linear-gradient(135deg, #21D0B3, #1eb19a)" : SURFACE.borderMuted,
+                  color: active ? SURFACE.card : SURFACE.textSecondary,
                 }}>
                 {t(label)}
-                <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 99, background: active ? "rgba(255,255,255,0.25)" : "#fff", color: active ? "#fff" : "#64748b", fontWeight: 800 }}>{n}</span>
+                <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 99, background: active ? "rgba(255,255,255,0.25)" : SURFACE.card, color: active ? SURFACE.card : SURFACE.textMuted, fontWeight: 800 }}>{n}</span>
               </button>
             );
           })}
@@ -1057,8 +1058,8 @@ function VehicleColumn({ vehicles, filter, setFilter, counts }: {
       <div className="divide-y" style={{ borderColor: "#eef1f6", maxHeight: 600, overflowY: "auto" }}>
         {vehicles.length === 0 ? (
           <div className="p-8 text-center">
-            <p className="text-sm font-semibold" style={{ color: "#475569" }}>{t("Sin vehículos")}</p>
-            <p className="text-xs mt-1" style={{ color: "#94a3b8" }}>{t("Prueba quitando filtros")}</p>
+            <p className="text-sm font-semibold" style={{ color: SURFACE.textSecondary }}>{t("Sin vehículos")}</p>
+            <p className="text-xs mt-1" style={{ color: SURFACE.textFaint }}>{t("Prueba quitando filtros")}</p>
           </div>
         ) : vehicles.map(v => {
           const meta = VEHICLE_AVAILABILITY_META[v.availability];
@@ -1067,7 +1068,7 @@ function VehicleColumn({ vehicles, filter, setFilter, counts }: {
               <div style={{
                 width: 50, height: 30, borderRadius: 6,
                 background: "linear-gradient(135deg, #0f172a, #1e293b)",
-                color: "#fff", fontSize: 11, fontWeight: 800,
+                color: SURFACE.card, fontSize: 11, fontWeight: 800,
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontFamily: "monospace", letterSpacing: "0.04em",
                 flexShrink: 0,
@@ -1076,10 +1077,10 @@ function VehicleColumn({ vehicles, filter, setFilter, counts }: {
                 {v.plate}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-sm truncate" style={{ color: "#0f172a" }}>
+                <p className="font-bold text-sm truncate" style={{ color: SURFACE.text }}>
                   {[v.brand, v.model].filter(Boolean).join(" ") || v.type}
                 </p>
-                <p className="text-[11px] truncate" style={{ color: "#64748b" }}>
+                <p className="text-[11px] truncate" style={{ color: SURFACE.textMuted }}>
                   {v.type} · <UsersIcon size={12} className="inline mr-1" />{v.capacity} pax
                 </p>
                 {v.availability === "ON_TRIP" && (

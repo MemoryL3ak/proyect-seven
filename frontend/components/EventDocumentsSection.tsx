@@ -12,6 +12,7 @@ import {
   isPdf,
 } from "@/lib/event-documents";
 import { FileTextIcon, DownloadIcon } from "@/components/ui/Icons";
+import { BRAND, STATE, SURFACE } from "@/lib/design";
 
 /**
  * Lista de documentos informativos del evento para los portales de usuario.
@@ -62,17 +63,17 @@ export default function EventDocumentsSection({
           (db-card / vr-card / dc-card), así que el componente no depende de
           ninguna y se ve igual en todos. */}
       <div style={{
-        background: "#fff",
+        background: SURFACE.card,
         border: "1px solid rgba(226,232,240,0.8)",
         borderRadius: 18,
         padding: 18,
         boxShadow: "0 2px 16px rgba(0,0,0,0.05)",
         marginBottom: 14,
       }}>
-        <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#21D0B3", marginBottom: 4 }}>
+        <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: BRAND.teal, marginBottom: 4 }}>
           {title}
         </p>
-        <p style={{ fontSize: 12, color: "#64748b", marginBottom: 14 }}>{subtitle}</p>
+        <p style={{ fontSize: 12, color: SURFACE.textMuted, marginBottom: 14 }}>{subtitle}</p>
 
         {docs === null && (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -83,7 +84,7 @@ export default function EventDocumentsSection({
         )}
 
         {docs?.length === 0 && (
-          <p style={{ fontSize: 13, color: "#94a3b8" }}>
+          <p style={{ fontSize: 13, color: SURFACE.textFaint }}>
             {error ?? "Aún no hay documentos publicados."}
           </p>
         )}
@@ -99,7 +100,7 @@ export default function EventDocumentsSection({
                   style={{
                     display: "flex", alignItems: "center", gap: 12,
                     padding: "12px 14px", borderRadius: 14,
-                    border: "1px solid #e2e8f0", background: "#f8fafc",
+                    border: "1px solid #e2e8f0", background: SURFACE.bg,
                   }}
                 >
                   <div style={{
@@ -107,19 +108,19 @@ export default function EventDocumentsSection({
                     display: "flex", alignItems: "center", justifyContent: "center",
                     background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)",
                   }}>
-                    <FileTextIcon size={18} color="#ef4444" strokeWidth={2} />
+                    <FileTextIcon size={18} color={STATE.danger} strokeWidth={2} />
                   </div>
 
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 13.5, fontWeight: 700, color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <p style={{ fontSize: 13.5, fontWeight: 700, color: SURFACE.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {doc.title}
                     </p>
                     {doc.description && (
-                      <p style={{ fontSize: 11.5, color: "#64748b", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <p style={{ fontSize: 11.5, color: SURFACE.textMuted, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {doc.description}
                       </p>
                     )}
-                    <p style={{ fontSize: 10, color: "#94a3b8", marginTop: 3 }}>
+                    <p style={{ fontSize: 10, color: SURFACE.textFaint, marginTop: 3 }}>
                       {[CATEGORY_LABELS[doc.category] ?? doc.category, size].filter(Boolean).join(" · ")}
                     </p>
                   </div>
@@ -132,7 +133,7 @@ export default function EventDocumentsSection({
                         style={{
                           padding: "8px 12px", borderRadius: 10, border: "none",
                           background: "linear-gradient(135deg,#21D0B3,#14AE98)",
-                          color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer",
+                          color: SURFACE.card, fontSize: 12, fontWeight: 700, cursor: "pointer",
                         }}
                       >
                         Ver
@@ -144,8 +145,8 @@ export default function EventDocumentsSection({
                       title="Descargar"
                       style={{
                         padding: "8px 12px", borderRadius: 10,
-                        border: "1px solid #e2e8f0", background: "#fff",
-                        color: "#475569", fontSize: 12, fontWeight: 700, cursor: "pointer",
+                        border: "1px solid #e2e8f0", background: SURFACE.card,
+                        color: SURFACE.textSecondary, fontSize: 12, fontWeight: 700, cursor: "pointer",
                       }}
                     >
                       <DownloadIcon size={14} strokeWidth={2} />

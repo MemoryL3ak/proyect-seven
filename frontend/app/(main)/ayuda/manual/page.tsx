@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
 import { DownloadIcon, Icon, type IconName } from "@/components/ui/Icons";
+import { SURFACE } from "@/lib/design";
 
 // ── Print styles injected via a style tag ────────────────────────────────────
 const PRINT_CSS = `
@@ -851,7 +852,7 @@ export default function ManualPage() {
           position: "sticky",
           top: 0,
           zIndex: 50,
-          background: "#fff",
+          background: SURFACE.card,
           borderBottom: "1px solid #e2e8f0",
           padding: "12px 16px",
           display: "flex",
@@ -866,7 +867,7 @@ export default function ManualPage() {
             href="/ayuda"
             style={{
               fontSize: 13,
-              color: "#64748b",
+              color: SURFACE.textMuted,
               textDecoration: "none",
               display: "flex",
               alignItems: "center",
@@ -875,8 +876,8 @@ export default function ManualPage() {
           >
             {t("← Volver a Ayuda")}
           </Link>
-          <span style={{ color: "#e2e8f0" }}>|</span>
-          <span style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>
+          <span style={{ color: SURFACE.border }}>|</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: SURFACE.text }}>
             {t("Manual de Usuario — Seven Arena")}
           </span>
         </div>
@@ -890,7 +891,7 @@ export default function ManualPage() {
             padding: "9px 20px",
             borderRadius: 8,
             background: "#1e4ed8",
-            color: "#fff",
+            color: SURFACE.card,
             border: "none",
             fontSize: 13,
             fontWeight: 600,
@@ -910,8 +911,8 @@ export default function ManualPage() {
           margin: "0 auto",
           padding: "40px 32px 80px",
           fontFamily: "Georgia, 'Times New Roman', serif",
-          color: "#0f172a",
-          background: "#fff",
+          color: SURFACE.text,
+          background: SURFACE.card,
           lineHeight: 1.7,
         }}
       >
@@ -937,7 +938,7 @@ export default function ManualPage() {
               margin: "0 0 8px",
               fontFamily: "system-ui, -apple-system, sans-serif",
               letterSpacing: "-0.02em",
-              color: "#0f172a",
+              color: SURFACE.text,
             }}
           >
             Seven Arena
@@ -953,10 +954,10 @@ export default function ManualPage() {
           >
             {t("Manual de Usuario")}
           </p>
-          <p style={{ fontSize: 13, color: "#64748b", margin: "12px 0 0", fontFamily: "system-ui, sans-serif" }}>
+          <p style={{ fontSize: 13, color: SURFACE.textMuted, margin: "12px 0 0", fontFamily: "system-ui, sans-serif" }}>
             {t("Plataforma de Gestión de Eventos Deportivos")}
           </p>
-          <p style={{ fontSize: 12, color: "#94a3b8", margin: "4px 0 0", fontFamily: "system-ui, sans-serif" }}>
+          <p style={{ fontSize: 12, color: SURFACE.textFaint, margin: "4px 0 0", fontFamily: "system-ui, sans-serif" }}>
             {t("Versión")} 1.0 · {new Date().toLocaleDateString(dateLocale, { year: "numeric", month: "long" })}
           </p>
         </div>
@@ -970,7 +971,7 @@ export default function ManualPage() {
               fontFamily: "system-ui, sans-serif",
               letterSpacing: "0.12em",
               textTransform: "uppercase",
-              color: "#64748b",
+              color: SURFACE.textMuted,
               marginBottom: 16,
               borderBottom: "1px solid #e2e8f0",
               paddingBottom: 8,
@@ -991,7 +992,7 @@ export default function ManualPage() {
                 }}
               >
                 <span style={{ color: "#1e4ed8", fontWeight: 700, minWidth: 28 }}>{s.num}.</span>
-                <span style={{ color: "#0f172a" }}>{s.title}</span>
+                <span style={{ color: SURFACE.text }}>{s.title}</span>
                 <span
                   style={{
                     flex: 1,
@@ -1001,7 +1002,7 @@ export default function ManualPage() {
                     minWidth: 20,
                   }}
                 />
-                <span style={{ color: "#64748b", display: "inline-flex" }}><Icon name={s.icon} size={12} /></span>
+                <span style={{ color: SURFACE.textMuted, display: "inline-flex" }}><Icon name={s.icon} size={12} /></span>
               </div>
             ))}
           </div>
@@ -1041,7 +1042,7 @@ export default function ManualPage() {
                     fontSize: 20,
                     fontWeight: 700,
                     fontFamily: "system-ui, sans-serif",
-                    color: "#0f172a",
+                    color: SURFACE.text,
                     margin: 0,
                     letterSpacing: "-0.01em",
                   }}
@@ -1056,7 +1057,7 @@ export default function ManualPage() {
               <p
                 style={{
                   fontSize: 13.5,
-                  color: "#334155",
+                  color: SURFACE.textStrong,
                   marginBottom: 20,
                   fontFamily: "Georgia, serif",
                   lineHeight: 1.75,
@@ -1074,7 +1075,7 @@ export default function ManualPage() {
                     fontSize: 14,
                     fontWeight: 700,
                     fontFamily: "system-ui, sans-serif",
-                    color: "#0f172a",
+                    color: SURFACE.text,
                     margin: "0 0 6px",
                     paddingLeft: 12,
                     borderLeft: "3px solid #1e4ed8",
@@ -1094,7 +1095,7 @@ export default function ManualPage() {
                       }}
                     >
                       <span style={{ color: "#1e4ed8", flexShrink: 0, fontFamily: "system-ui, sans-serif" }}>•</span>
-                      <span style={{ fontSize: 13, color: "#334155", fontFamily: "Georgia, serif", lineHeight: 1.65 }}>
+                      <span style={{ fontSize: 13, color: SURFACE.textStrong, fontFamily: "Georgia, serif", lineHeight: 1.65 }}>
                         {line.replace(/^•\s*/, "")}
                       </span>
                     </div>
@@ -1103,7 +1104,7 @@ export default function ManualPage() {
                       key={li}
                       style={{
                         fontSize: 13,
-                        color: "#334155",
+                        color: SURFACE.textStrong,
                         fontFamily: "Georgia, serif",
                         lineHeight: 1.75,
                         margin: "0 0 6px",
@@ -1130,10 +1131,10 @@ export default function ManualPage() {
             fontFamily: "system-ui, sans-serif",
           }}
         >
-          <p style={{ fontSize: 12, color: "#94a3b8", margin: "0 0 4px" }}>
+          <p style={{ fontSize: 12, color: SURFACE.textFaint, margin: "0 0 4px" }}>
             {t("Seven Arena · Manual de Usuario v1.0")}
           </p>
-          <p style={{ fontSize: 12, color: "#94a3b8", margin: 0 }}>
+          <p style={{ fontSize: 12, color: SURFACE.textFaint, margin: 0 }}>
             {t("Para soporte técnico contacta al equipo administrador de la plataforma.")}
           </p>
         </div>

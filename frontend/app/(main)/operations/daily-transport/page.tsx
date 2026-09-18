@@ -9,7 +9,7 @@ import EmptyStateBox from "@/components/ui/EmptyState";
 import KpiCard from "@/components/ui/KpiCard";
 import { clientTypeLabel } from "@/lib/clientTypes";
 import { useI18n } from "@/lib/i18n";
-import { BRAND, TRIP_STATUS_META } from "@/lib/design";
+import { BRAND, TRIP_STATUS_META, STATE, SURFACE } from "@/lib/design";
 import {
   TruckIcon,
   UploadIcon,
@@ -619,20 +619,20 @@ export default function DailyTransportPage() {
                   width: 34, height: 34, borderRadius: 10, flexShrink: 0,
                   display: "inline-flex", alignItems: "center", justifyContent: "center",
                   background: active ? "rgba(255,255,255,0.22)" : "rgba(33,208,179,0.1)",
-                  color: active ? "#fff" : "#1eb19a",
+                  color: active ? SURFACE.card : "#1eb19a",
                 }}>
                   {s.icon}
                 </span>
                 <span style={{ minWidth: 0, flex: 1 }}>
                   <span style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 10, fontWeight: 800, color: active ? "rgba(255,255,255,0.7)" : "#94a3b8", letterSpacing: "0.1em" }}>{t("PASO")} {s.n}</span>
+                    <span style={{ fontSize: 10, fontWeight: 800, color: active ? "rgba(255,255,255,0.7)" : SURFACE.textFaint, letterSpacing: "0.1em" }}>{t("PASO")} {s.n}</span>
                     {s.badge && (
-                      <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 7px", borderRadius: 99, background: active ? "rgba(255,255,255,0.25)" : "rgba(33,208,179,0.12)", color: active ? "#fff" : "#1eb19a", whiteSpace: "nowrap" }}>
+                      <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 7px", borderRadius: 99, background: active ? "rgba(255,255,255,0.25)" : "rgba(33,208,179,0.12)", color: active ? SURFACE.card : "#1eb19a", whiteSpace: "nowrap" }}>
                         {s.badge}
                       </span>
                     )}
                   </span>
-                  <span style={{ display: "block", fontSize: 13.5, fontWeight: 800, marginTop: 1, color: active ? "#fff" : "#0f172a" }}>{s.title}</span>
+                  <span style={{ display: "block", fontSize: 13.5, fontWeight: 800, marginTop: 1, color: active ? SURFACE.card : SURFACE.text }}>{s.title}</span>
                   <span style={{ display: "block", fontSize: 10.5, marginTop: 1, color: active ? "rgba(255,255,255,0.85)" : "var(--text-muted)" }}>{s.desc}</span>
                 </span>
               </button>
@@ -712,7 +712,7 @@ export default function DailyTransportPage() {
               style={{
                 padding: "10px 24px", borderRadius: 12, fontSize: 13.5, fontWeight: 800, border: "none",
                 background: rows.length && !importing ? `linear-gradient(135deg, ${BRAND.teal}, #1eb19a)` : "var(--border)",
-                color: rows.length && !importing ? "#fff" : "var(--text-muted)",
+                color: rows.length && !importing ? SURFACE.card : "var(--text-muted)",
                 boxShadow: rows.length && !importing ? "0 4px 14px rgba(33,208,179,0.4)" : "none",
                 cursor: rows.length && !importing ? "pointer" : "not-allowed",
               }}
@@ -778,7 +778,7 @@ export default function DailyTransportPage() {
               {(importResult.warnings ?? []).length > 0 && (
                 <div className="rounded-lg p-3 space-y-1" style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.3)" }}>
                   {(importResult.warnings ?? []).map((w, i) => (
-                    <p key={i} className="text-xs" style={{ color: "#b45309" }}><AlertIcon size={11} className="inline mr-1" />{w}</p>
+                    <p key={i} className="text-xs" style={{ color: STATE.warningText }}><AlertIcon size={11} className="inline mr-1" />{w}</p>
                   ))}
                 </div>
               )}
@@ -931,7 +931,7 @@ export default function DailyTransportPage() {
                 <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.2em", textTransform: "uppercase", color: BRAND.teal }}>
                   {t("Motor de asignación")}
                 </p>
-                <h3 style={{ marginTop: 4, fontSize: 16, fontWeight: 800, color: "#fff" }}>{t("Resumen de ejecución")}</h3>
+                <h3 style={{ marginTop: 4, fontSize: 16, fontWeight: 800, color: SURFACE.card }}>{t("Resumen de ejecución")}</h3>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {[
@@ -945,7 +945,7 @@ export default function DailyTransportPage() {
                 ].map(([k, v]) => (
                   <div key={k} style={{ display: "flex", justifyContent: "space-between", gap: 12, borderBottom: "1px solid rgba(255,255,255,0.08)", paddingBottom: 7 }}>
                     <span style={{ fontSize: 11, color: "rgba(255,255,255,0.55)" }}>{k}</span>
-                    <span style={{ fontSize: 11.5, fontWeight: 700, color: "#fff", textAlign: "right" }}>{v}</span>
+                    <span style={{ fontSize: 11.5, fontWeight: 700, color: SURFACE.card, textAlign: "right" }}>{v}</span>
                   </div>
                 ))}
               </div>
@@ -953,7 +953,7 @@ export default function DailyTransportPage() {
                 <button type="button" disabled={assigning} onClick={() => runAssign(true)}
                   style={{
                     width: "100%", padding: "10px 16px", borderRadius: 12, fontSize: 13, fontWeight: 700,
-                    background: "rgba(255,255,255,0.08)", color: "#fff", border: "1px solid rgba(255,255,255,0.22)",
+                    background: "rgba(255,255,255,0.08)", color: SURFACE.card, border: "1px solid rgba(255,255,255,0.22)",
                     cursor: assigning ? "default" : "pointer", opacity: assigning ? 0.6 : 1,
                   }}>
                   {t("Simular sin aplicar (dry-run)")}
@@ -961,7 +961,7 @@ export default function DailyTransportPage() {
                 <button type="button" disabled={assigning} onClick={() => runAssign(false)}
                   style={{
                     width: "100%", padding: "12px 16px", borderRadius: 12, fontSize: 13.5, fontWeight: 800,
-                    background: `linear-gradient(135deg, ${BRAND.teal}, #1eb19a)`, color: "#fff", border: "none",
+                    background: `linear-gradient(135deg, ${BRAND.teal}, #1eb19a)`, color: SURFACE.card, border: "none",
                     boxShadow: "0 4px 14px rgba(33,208,179,0.4)",
                     cursor: assigning ? "default" : "pointer", opacity: assigning ? 0.7 : 1,
                   }}>
@@ -980,7 +980,7 @@ export default function DailyTransportPage() {
                 <p className="font-bold text-sm mb-2 flex items-center gap-2" style={{ color: "var(--success)" }}>
                   <CheckIcon size={15} /> {t("Asignados")}
                   <span className="text-[11px] font-extrabold rounded-full px-2 py-0.5" style={{ background: "rgba(46,125,50,0.15)" }}>{assignResult.assignedCount}</span>
-                  {assignResult.dryRun && <span className="text-[10px] font-bold uppercase tracking-wide rounded px-1.5 py-0.5" style={{ background: "#fff", color: "var(--text-muted)" }}>{t("simulación")}</span>}
+                  {assignResult.dryRun && <span className="text-[10px] font-bold uppercase tracking-wide rounded px-1.5 py-0.5" style={{ background: SURFACE.card, color: "var(--text-muted)" }}>{t("simulación")}</span>}
                 </p>
                 <div className="max-h-64 overflow-auto text-xs">
                   {assignResult.assigned.map((a) => (
@@ -1139,7 +1139,7 @@ export default function DailyTransportPage() {
                               <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
                                 <span style={{
                                   width: 24, height: 24, borderRadius: "50%", flexShrink: 0,
-                                  background: `linear-gradient(135deg, ${BRAND.teal}, #1eb19a)`, color: "#fff",
+                                  background: `linear-gradient(135deg, ${BRAND.teal}, #1eb19a)`, color: SURFACE.card,
                                   fontSize: 9, fontWeight: 800, display: "inline-flex",
                                   alignItems: "center", justifyContent: "center", letterSpacing: "0.03em",
                                 }}>
@@ -1194,16 +1194,16 @@ function ToggleRow({ checked, onChange, label, hint }: {
       }}
     >
       <span style={{ minWidth: 0 }}>
-        <span style={{ display: "block", fontSize: 12.5, fontWeight: 700, color: "#0f172a" }}>{label}</span>
+        <span style={{ display: "block", fontSize: 12.5, fontWeight: 700, color: SURFACE.text }}>{label}</span>
         {hint && <span style={{ display: "block", fontSize: 10.5, color: "var(--text-muted)", marginTop: 2, lineHeight: 1.4 }}>{hint}</span>}
       </span>
       <span aria-hidden style={{
         width: 36, height: 20, borderRadius: 99, position: "relative", flexShrink: 0,
-        background: checked ? BRAND.teal : "#cbd5e1", transition: "background 150ms",
+        background: checked ? BRAND.teal : SURFACE.borderStrong, transition: "background 150ms",
       }}>
         <span style={{
           position: "absolute", top: 3, left: checked ? 19 : 3,
-          width: 14, height: 14, borderRadius: "50%", background: "#fff",
+          width: 14, height: 14, borderRadius: "50%", background: SURFACE.card,
           transition: "left 150ms", boxShadow: "0 1px 3px rgba(0,0,0,0.25)",
         }} />
       </span>

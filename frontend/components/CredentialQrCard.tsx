@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { MonitorIcon } from "@/components/ui/Icons";
+import { BRAND, SURFACE } from "@/lib/design";
 
 /**
  * Credencial digital para la sección "Cuenta" de los portales.
@@ -30,7 +31,7 @@ export default function CredentialQrCard({ qrData, name, roleLabel, code, countr
 
   useEffect(() => {
     let cancelled = false;
-    QRCode.toDataURL(qrData, { width: 260, margin: 1, color: { dark: "#062240", light: "#ffffff" } })
+    QRCode.toDataURL(qrData, { width: 260, margin: 1, color: { dark: BRAND.navyLight, light: SURFACE.card } })
       .then((url) => { if (!cancelled) setQrUrl(url); })
       .catch(() => { if (!cancelled) setQrUrl(null); });
     return () => { cancelled = true; };
@@ -90,10 +91,10 @@ export default function CredentialQrCard({ qrData, name, roleLabel, code, countr
         {/* Encabezado */}
         <div style={{ alignSelf: "stretch", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
           <div style={{ minWidth: 0 }}>
-            <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.22em", textTransform: "uppercase", color: "#34F3C6", margin: 0 }}>
+            <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.22em", textTransform: "uppercase", color: BRAND.tealLight, margin: 0 }}>
               Credencial digital
             </p>
-            <p style={{ fontSize: 15, fontWeight: 800, color: "#fff", margin: "3px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <p style={{ fontSize: 15, fontWeight: 800, color: SURFACE.card, margin: "3px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {name}
             </p>
             {eventName && (
@@ -104,7 +105,7 @@ export default function CredentialQrCard({ qrData, name, roleLabel, code, countr
           </div>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
             {roleLabel && (
-              <span style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", padding: "3px 9px", borderRadius: 99, background: "rgba(52,243,198,0.14)", color: "#34F3C6", border: "1px solid rgba(52,243,198,0.35)" }}>
+              <span style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", padding: "3px 9px", borderRadius: 99, background: "rgba(52,243,198,0.14)", color: BRAND.tealLight, border: "1px solid rgba(52,243,198,0.35)" }}>
                 {roleLabel}
               </span>
             )}
@@ -128,7 +129,7 @@ export default function CredentialQrCard({ qrData, name, roleLabel, code, countr
           ))}
           <div
             style={{
-              background: "#fff",
+              background: SURFACE.card,
               borderRadius: 14,
               padding: 10,
               boxShadow: "0 0 0 1px rgba(52,243,198,0.25), 0 8px 24px rgba(0,0,0,0.35), 0 0 32px rgba(33,208,179,0.18)",
@@ -137,7 +138,7 @@ export default function CredentialQrCard({ qrData, name, roleLabel, code, countr
             {qrUrl ? (
               <img src={qrUrl} alt={`Código QR de la credencial de ${name}`} style={{ width: 168, height: 168, display: "block" }} />
             ) : (
-              <div style={{ width: 168, height: 168, display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", fontSize: 11 }}>
+              <div style={{ width: 168, height: 168, display: "flex", alignItems: "center", justifyContent: "center", color: SURFACE.textFaint, fontSize: 11 }}>
                 Generando QR…
               </div>
             )}
@@ -148,7 +149,7 @@ export default function CredentialQrCard({ qrData, name, roleLabel, code, countr
         {code && (
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span aria-hidden style={{ width: 26, height: 1, background: "rgba(52,243,198,0.35)" }} />
-            <span style={{ fontSize: 15, fontWeight: 900, letterSpacing: "0.35em", color: "#34F3C6", fontVariantNumeric: "tabular-nums", textShadow: "0 0 12px rgba(52,243,198,0.5)" }}>
+            <span style={{ fontSize: 15, fontWeight: 900, letterSpacing: "0.35em", color: BRAND.tealLight, fontVariantNumeric: "tabular-nums", textShadow: "0 0 12px rgba(52,243,198,0.5)" }}>
               {code.toUpperCase()}
             </span>
             <span aria-hidden style={{ width: 26, height: 1, background: "rgba(52,243,198,0.35)" }} />
@@ -169,7 +170,7 @@ export default function CredentialQrCard({ qrData, name, roleLabel, code, countr
               borderRadius: 12,
               border: "1px solid rgba(52,243,198,0.4)",
               background: "rgba(33,208,179,0.12)",
-              color: "#34F3C6",
+              color: BRAND.tealLight,
               fontSize: 12.5,
               fontWeight: 700,
               cursor: "pointer",

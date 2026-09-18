@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { TruckIcon, HomeIcon, CoffeeIcon, XIcon, FileTextIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 import { CLIENT_TYPE_OPTIONS, clientTypeLabel } from "@/lib/clientTypes";
@@ -14,16 +15,16 @@ const formatCurrency = (value: number) =>
 type ProviderItem = { id: string; type?: string | null; bidAmount?: number | null; bidTripCount?: number | null };
 type TripItem = { id: string; tripCost?: number | null; status?: string | null; scheduledAt?: string | null; clientType?: string | null };
 
-const TEAL     = "#21D0B3";
-const BLUE     = "#1FCDFF";
-const CHARCOAL = "#30455B";
+const TEAL     = BRAND.teal;
+const BLUE     = BRAND.blue;
+const CHARCOAL = BRAND.charcoal;
 const ACCENTS  = [TEAL, BLUE, CHARCOAL, "#a78bfa", "#fb923c", "#f472b6"];
 
 function sem(pct: number, hasData: boolean) {
-  if (!hasData) return { color: "#94a3b8", bg: "#f8fafc", glow: "transparent" };
+  if (!hasData) return { color: SURFACE.textFaint, bg: SURFACE.bg, glow: "transparent" };
   if (pct < 60) return { color: "#22c55e", bg: "rgba(34,197,94,0.08)", glow: "rgba(34,197,94,0.25)" };
-  if (pct < 85) return { color: "#f59e0b", bg: "rgba(245,158,11,0.08)", glow: "rgba(245,158,11,0.25)" };
-  return { color: "#ef4444", bg: "rgba(239,68,68,0.08)", glow: "rgba(239,68,68,0.25)" };
+  if (pct < 85) return { color: STATE.warning, bg: "rgba(245,158,11,0.08)", glow: "rgba(245,158,11,0.25)" };
+  return { color: STATE.danger, bg: "rgba(239,68,68,0.08)", glow: "rgba(239,68,68,0.25)" };
 }
 
 const BUCKET_ICONS: Record<string, React.ReactNode> = {
@@ -130,8 +131,8 @@ export default function CommercialDashboardPage() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
         <div>
           <p style={{ fontSize: "11px", color: TEAL, textTransform: "uppercase", letterSpacing: "0.15em", fontWeight: 700 }}>{t("Control comercial")}</p>
-          <h1 style={{ fontSize: "1.6rem", fontWeight: 700, color: "#0f172a", marginTop: 4 }}>{t("Dashboard consumo operacional")}</h1>
-          <p style={{ fontSize: "13px", color: "#64748b", marginTop: 4 }}>{t("Presupuesto adjudicado, ejecución acumulada y proyección por servicio.")}</p>
+          <h1 style={{ fontSize: "1.6rem", fontWeight: 700, color: SURFACE.text, marginTop: 4 }}>{t("Dashboard consumo operacional")}</h1>
+          <p style={{ fontSize: "13px", color: SURFACE.textMuted, marginTop: 4 }}>{t("Presupuesto adjudicado, ejecución acumulada y proyección por servicio.")}</p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button type="button" onClick={() => downloadExcel("reporte_comercial", buildReportSections())}
@@ -144,7 +145,7 @@ export default function CommercialDashboardPage() {
           <button type="button" onClick={() => downloadPDF("reporte_comercial", "Reporte Comercial — Seven Arena", buildReportSections())}
             onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(239,68,68,0.25)"; }}
             onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 1px 4px rgba(239,68,68,0.1)"; }}
-            style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 10, border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.06)", fontSize: 12, fontWeight: 700, color: "#dc2626", cursor: "pointer", transition: "all 150ms ease", boxShadow: "0 1px 4px rgba(239,68,68,0.1)" }}>
+            style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 10, border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.06)", fontSize: 12, fontWeight: 700, color: STATE.dangerText, cursor: "pointer", transition: "all 150ms ease", boxShadow: "0 1px 4px rgba(239,68,68,0.1)" }}>
             <FileTextIcon size={16} />
             PDF
           </button>
@@ -164,12 +165,12 @@ export default function CommercialDashboardPage() {
             onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = `0 8px 24px ${kpi.color}20`; }}
             onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = `0 2px 8px ${kpi.color}10`; }}
             style={{
-              background: "#fff", border: `1px solid ${kpi.color}25`, borderRadius: 16,
+              background: SURFACE.card, border: `1px solid ${kpi.color}25`, borderRadius: 16,
               padding: "18px 16px", boxShadow: `0 2px 8px ${kpi.color}10`,
               transition: "all 200ms ease", cursor: "default",
               animation: "fadeInUp 0.4s ease both", animationDelay: `${i * 0.05}s`,
             }}>
-            <p style={{ fontSize: "10px", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 600 }}>{kpi.label}</p>
+            <p style={{ fontSize: "10px", color: SURFACE.textMuted, textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 600 }}>{kpi.label}</p>
             <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 8 }}>
               <p style={{ fontSize: "1.5rem", fontWeight: 800, color: kpi.color, lineHeight: 1, fontVariantNumeric: "tabular-nums", margin: 0 }}>{kpi.value}</p>
               {i === 4 && <span style={{ width: 10, height: 10, borderRadius: "50%", background: totalSem.color, display: "inline-block", boxShadow: `0 0 8px ${totalSem.glow}` }} />}
@@ -191,7 +192,7 @@ export default function CommercialDashboardPage() {
               onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = `0 12px 32px ${color}18`; }}
               onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 2px 8px rgba(15,23,42,0.06)"; }}
               style={{
-                background: "#fff", border: `1px solid ${color}20`, borderRadius: 18,
+                background: SURFACE.card, border: `1px solid ${color}20`, borderRadius: 18,
                 padding: "22px 20px", boxShadow: "0 2px 8px rgba(15,23,42,0.06)",
                 transition: "all 200ms ease", cursor: "default",
                 animation: "fadeInUp 0.4s ease both", animationDelay: `${i * 0.08}s`,
@@ -205,25 +206,25 @@ export default function CommercialDashboardPage() {
                   <div style={{ width: 40, height: 40, borderRadius: 12, background: `${color}12`, display: "flex", alignItems: "center", justifyContent: "center", color }}>
                     {BUCKET_ICONS[bucket.key]}
                   </div>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", margin: 0 }}>{t(bucket.label)}</p>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: SURFACE.text, margin: 0 }}>{t(bucket.label)}</p>
                 </div>
                 {has && <span style={{ width: 12, height: 12, borderRadius: "50%", background: hasCon ? s.color : "#22c55e", boxShadow: `0 0 8px ${hasCon ? s.glow : "rgba(34,197,94,0.25)"}` }} />}
               </div>
 
               {has ? (
                 <>
-                  <p style={{ fontSize: "1.5rem", fontWeight: 800, color: "#0f172a", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
+                  <p style={{ fontSize: "1.5rem", fontWeight: 800, color: SURFACE.text, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
                     {hasCon ? formatCurrency(bucket.consumed) : formatCurrency(bucket.awarded)}
                   </p>
-                  <p style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>
+                  <p style={{ fontSize: 11, color: SURFACE.textMuted, marginTop: 4 }}>
                     {hasCon ? `consumido de ${formatCurrency(bucket.awarded)}` : "adjudicado"}
                   </p>
                   <div style={{ marginTop: 16 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#64748b", marginBottom: 5 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: SURFACE.textMuted, marginBottom: 5 }}>
                       <span>% consumido</span>
                       <span style={{ fontWeight: 700, color: hasCon ? s.color : color }}>{pct}%</span>
                     </div>
-                    <div style={{ height: 8, background: "#f1f5f9", borderRadius: 99, overflow: "hidden", position: "relative" }}>
+                    <div style={{ height: 8, background: SURFACE.borderMuted, borderRadius: 99, overflow: "hidden", position: "relative" }}>
                       <div style={{ height: "100%", width: `${pct}%`, background: `linear-gradient(90deg, ${hasCon ? s.color : color}, ${hasCon ? s.color : color}bb)`, borderRadius: 99, transition: "width 1s cubic-bezier(0.4,0,0.2,1)", position: "relative", overflow: "hidden" }}>
                         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)", animation: "shimmer 2.5s ease-in-out infinite" }} />
                       </div>
@@ -231,9 +232,9 @@ export default function CommercialDashboardPage() {
                   </div>
                 </>
               ) : (
-                <div style={{ marginTop: 4, padding: 18, borderRadius: 12, background: "#f8fafc", border: "1px dashed #e2e8f0", textAlign: "center" }}>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: "#94a3b8", margin: 0 }}>Sin monto adjudicado</p>
-                  <p style={{ fontSize: 11, color: "#cbd5e1", margin: "4px 0 0" }}>Ingresa el monto licitado en el proveedor.</p>
+                <div style={{ marginTop: 4, padding: 18, borderRadius: 12, background: SURFACE.bg, border: "1px dashed #e2e8f0", textAlign: "center" }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: SURFACE.textFaint, margin: 0 }}>Sin monto adjudicado</p>
+                  <p style={{ fontSize: 11, color: SURFACE.borderStrong, margin: "4px 0 0" }}>Ingresa el monto licitado en el proveedor.</p>
                 </div>
               )}
             </div>
@@ -245,7 +246,7 @@ export default function CommercialDashboardPage() {
       <div className="grid gap-4 md:grid-cols-2">
 
         {/* Trips comparison */}
-        <div style={{ background: "#fff", border: `1px solid ${TEAL}20`, borderRadius: 18, padding: "22px 20px", boxShadow: "0 2px 8px rgba(15,23,42,0.06)", position: "relative", overflow: "hidden" }}>
+        <div style={{ background: SURFACE.card, border: `1px solid ${TEAL}20`, borderRadius: 18, padding: "22px 20px", boxShadow: "0 2px 8px rgba(15,23,42,0.06)", position: "relative", overflow: "hidden" }}>
           <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: `linear-gradient(90deg, ${TEAL}, ${BLUE})` }} />
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
             <p style={{ fontSize: 11, color: TEAL, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", margin: 0 }}>Viajes licitados vs consumidos</p>
@@ -253,23 +254,23 @@ export default function CommercialDashboardPage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {[
-              { label: "Licitados", value: tripCounts.bid > 0 ? tripCounts.bid.toLocaleString("es-CL") : "—", color: "#0f172a", bg: "#f8fafc" },
+              { label: "Licitados", value: tripCounts.bid > 0 ? tripCounts.bid.toLocaleString("es-CL") : "—", color: SURFACE.text, bg: SURFACE.bg },
               { label: "Completados", value: tripCounts.completed.toLocaleString("es-CL"), color: tripSem.color, bg: tripSem.bg },
               { label: "Total creados", value: tripCounts.total.toLocaleString("es-CL"), color: BLUE, bg: "rgba(31,205,255,0.06)" },
             ].map((item) => (
               <div key={item.label} style={{ background: item.bg, borderRadius: 12, padding: "14px 12px", textAlign: "center" }}>
-                <p style={{ fontSize: 10, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600, margin: 0 }}>{item.label}</p>
+                <p style={{ fontSize: 10, color: SURFACE.textFaint, textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600, margin: 0 }}>{item.label}</p>
                 <p style={{ fontSize: "1.4rem", fontWeight: 800, color: item.color, marginTop: 6, fontVariantNumeric: "tabular-nums", margin: "6px 0 0" }}>{item.value}</p>
               </div>
             ))}
           </div>
           {tripCounts.bid > 0 && (
             <div style={{ marginTop: 16 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#64748b", marginBottom: 5 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: SURFACE.textMuted, marginBottom: 5 }}>
                 <span>% viajes consumidos</span>
                 <span style={{ fontWeight: 700, color: tripSem.color }}>{tripPct}%</span>
               </div>
-              <div style={{ height: 8, background: "#f1f5f9", borderRadius: 99, overflow: "hidden" }}>
+              <div style={{ height: 8, background: SURFACE.borderMuted, borderRadius: 99, overflow: "hidden" }}>
                 <div style={{ height: "100%", width: `${tripPct}%`, background: `linear-gradient(90deg, ${tripSem.color}, ${tripSem.color}bb)`, borderRadius: 99, transition: "width 1s cubic-bezier(0.4,0,0.2,1)", position: "relative", overflow: "hidden" }}>
                   <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)", animation: "shimmer 2.5s ease-in-out infinite" }} />
                 </div>
@@ -279,7 +280,7 @@ export default function CommercialDashboardPage() {
         </div>
 
         {/* Client type breakdown */}
-        <div style={{ background: "#fff", border: `1px solid ${CHARCOAL}15`, borderRadius: 18, padding: "22px 20px", boxShadow: "0 2px 8px rgba(15,23,42,0.06)", position: "relative", overflow: "hidden" }}>
+        <div style={{ background: SURFACE.card, border: `1px solid ${CHARCOAL}15`, borderRadius: 18, padding: "22px 20px", boxShadow: "0 2px 8px rgba(15,23,42,0.06)", position: "relative", overflow: "hidden" }}>
           <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: `linear-gradient(90deg, ${CHARCOAL}, ${CHARCOAL}88)` }} />
           <p style={{ fontSize: 11, color: CHARCOAL, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", margin: "0 0 14px" }}>Detalle por tipo de cliente</p>
           {clientTypeBreakdown.length > 0 ? (
@@ -293,12 +294,12 @@ export default function CommercialDashboardPage() {
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, marginBottom: 4 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <span style={{ width: 10, height: 10, borderRadius: 3, background: c, flexShrink: 0 }} />
-                        <span style={{ fontWeight: 600, color: "#0f172a" }}>{clientTypeLabel(item.clientType)}</span>
-                        <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 700, padding: "2px 7px", borderRadius: 6, background: "#f1f5f9" }}>{item.count}</span>
+                        <span style={{ fontWeight: 600, color: SURFACE.text }}>{clientTypeLabel(item.clientType)}</span>
+                        <span style={{ fontSize: 10, color: SURFACE.textFaint, fontWeight: 700, padding: "2px 7px", borderRadius: 6, background: SURFACE.borderMuted }}>{item.count}</span>
                       </div>
-                      <span style={{ fontWeight: 800, color: "#0f172a", fontVariantNumeric: "tabular-nums", fontSize: 12 }}>{formatCurrency(item.cost)}</span>
+                      <span style={{ fontWeight: 800, color: SURFACE.text, fontVariantNumeric: "tabular-nums", fontSize: 12 }}>{formatCurrency(item.cost)}</span>
                     </div>
-                    <div style={{ height: 7, background: "#f1f5f9", borderRadius: 99, overflow: "hidden" }}>
+                    <div style={{ height: 7, background: SURFACE.borderMuted, borderRadius: 99, overflow: "hidden" }}>
                       <div style={{ height: "100%", width: `${barPct}%`, background: `linear-gradient(90deg, ${c}, ${c}bb)`, borderRadius: 99, transition: "width 1s cubic-bezier(0.4,0,0.2,1)", position: "relative", overflow: "hidden" }}>
                         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)", animation: "shimmer 2.5s ease-in-out infinite" }} />
                       </div>
@@ -308,8 +309,8 @@ export default function CommercialDashboardPage() {
               })}
             </div>
           ) : (
-            <div style={{ padding: 20, borderRadius: 12, background: "#f8fafc", border: "1px dashed #e2e8f0", textAlign: "center" }}>
-              <p style={{ fontSize: 13, fontWeight: 600, color: "#94a3b8", margin: 0 }}>Sin viajes completados aún</p>
+            <div style={{ padding: 20, borderRadius: 12, background: SURFACE.bg, border: "1px dashed #e2e8f0", textAlign: "center" }}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: SURFACE.textFaint, margin: 0 }}>Sin viajes completados aún</p>
             </div>
           )}
         </div>
@@ -320,10 +321,10 @@ export default function CommercialDashboardPage() {
         <div className="grid gap-4 md:grid-cols-2">
           {/* Daily trend area chart */}
           {dailySpend.length > 0 && (
-            <div style={{ background: "#fff", border: `1px solid ${TEAL}20`, borderRadius: 18, padding: "22px 20px", boxShadow: "0 2px 8px rgba(15,23,42,0.06)", position: "relative", overflow: "hidden" }}>
+            <div style={{ background: SURFACE.card, border: `1px solid ${TEAL}20`, borderRadius: 18, padding: "22px 20px", boxShadow: "0 2px 8px rgba(15,23,42,0.06)", position: "relative", overflow: "hidden" }}>
               <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: `linear-gradient(90deg, ${TEAL}, ${BLUE})` }} />
               <p style={{ fontSize: 11, color: TEAL, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", margin: "0 0 2px" }}>Consumo diario</p>
-              <p style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", margin: "0 0 16px" }}>Monto por día (últimos 14 días)</p>
+              <p style={{ fontSize: 14, fontWeight: 700, color: SURFACE.text, margin: "0 0 16px" }}>Monto por día (últimos 14 días)</p>
               <ResponsiveContainer width="100%" height={220}>
                 <AreaChart data={dailySpend}>
                   <defs>
@@ -332,14 +333,14 @@ export default function CommercialDashboardPage() {
                       <stop offset="100%" stopColor={TEAL} stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
-                  <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} tickLine={false} axisLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} width={50} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={SURFACE.borderMuted} />
+                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: SURFACE.textFaint }} tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: SURFACE.textFaint }} tickLine={false} axisLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} width={50} />
                   <Tooltip
                     contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", boxShadow: "0 4px 12px rgba(0,0,0,0.08)", fontSize: 12 }}
                     formatter={(value) => [formatCurrency(Number(value)), "Monto"]}
                   />
-                  <Area type="monotone" dataKey="amount" stroke={TEAL} strokeWidth={2.5} fill="url(#gradTeal)" dot={{ r: 3, fill: TEAL, strokeWidth: 0 }} activeDot={{ r: 5, fill: TEAL, stroke: "#fff", strokeWidth: 2 }} />
+                  <Area type="monotone" dataKey="amount" stroke={TEAL} strokeWidth={2.5} fill="url(#gradTeal)" dot={{ r: 3, fill: TEAL, strokeWidth: 0 }} activeDot={{ r: 5, fill: TEAL, stroke: SURFACE.card, strokeWidth: 2 }} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -347,10 +348,10 @@ export default function CommercialDashboardPage() {
 
           {/* Weekly bar chart */}
           {weeklySpend.length > 0 && (
-            <div style={{ background: "#fff", border: `1px solid ${BLUE}20`, borderRadius: 18, padding: "22px 20px", boxShadow: "0 2px 8px rgba(15,23,42,0.06)", position: "relative", overflow: "hidden" }}>
+            <div style={{ background: SURFACE.card, border: `1px solid ${BLUE}20`, borderRadius: 18, padding: "22px 20px", boxShadow: "0 2px 8px rgba(15,23,42,0.06)", position: "relative", overflow: "hidden" }}>
               <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: `linear-gradient(90deg, ${BLUE}, ${TEAL})` }} />
               <p style={{ fontSize: 11, color: BLUE, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", margin: "0 0 2px" }}>Consumo semanal</p>
-              <p style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", margin: "0 0 16px" }}>Monto acumulado por semana</p>
+              <p style={{ fontSize: 14, fontWeight: 700, color: SURFACE.text, margin: "0 0 16px" }}>Monto acumulado por semana</p>
               <ResponsiveContainer width="100%" height={220}>
                 <RBarChart data={weeklySpend}>
                   <defs>
@@ -359,9 +360,9 @@ export default function CommercialDashboardPage() {
                       <stop offset="100%" stopColor={TEAL} stopOpacity={0.7} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
-                  <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} tickLine={false} axisLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} width={50} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={SURFACE.borderMuted} />
+                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: SURFACE.textFaint }} tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: SURFACE.textFaint }} tickLine={false} axisLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} width={50} />
                   <Tooltip
                     contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", boxShadow: "0 4px 12px rgba(0,0,0,0.08)", fontSize: 12 }}
                     formatter={(value) => [formatCurrency(Number(value)), "Monto"]}
@@ -375,10 +376,10 @@ export default function CommercialDashboardPage() {
       )}
 
       {/* ── Executive summary ── */}
-      <div style={{ background: "#fff", border: `1px solid ${CHARCOAL}15`, borderRadius: 18, padding: "22px 20px", boxShadow: "0 2px 8px rgba(15,23,42,0.06)", position: "relative", overflow: "hidden" }}>
+      <div style={{ background: SURFACE.card, border: `1px solid ${CHARCOAL}15`, borderRadius: 18, padding: "22px 20px", boxShadow: "0 2px 8px rgba(15,23,42,0.06)", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: `linear-gradient(90deg, ${CHARCOAL}, ${TEAL})` }} />
         <p style={{ fontSize: 11, color: CHARCOAL, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", margin: "0 0 4px" }}>Lectura ejecutiva</p>
-        <p style={{ fontSize: 15, fontWeight: 600, color: "#0f172a", marginBottom: 18 }}>Estado general por servicio</p>
+        <p style={{ fontSize: 15, fontWeight: 600, color: SURFACE.text, marginBottom: 18 }}>Estado general por servicio</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {buckets.map((bucket) => {
             const has = bucket.awarded > 0;
@@ -387,19 +388,19 @@ export default function CommercialDashboardPage() {
             const s = sem(pct, has && hasCon);
             const color = ACCENTS[bucket.accentIndex];
             return (
-              <div key={bucket.key} style={{ padding: "14px 16px", borderRadius: 14, background: hasCon ? s.bg : "#f8fafc", border: `1px solid ${hasCon ? s.glow : "#e2e8f0"}`, transition: "all 200ms ease" }}>
+              <div key={bucket.key} style={{ padding: "14px 16px", borderRadius: 14, background: hasCon ? s.bg : SURFACE.bg, border: `1px solid ${hasCon ? s.glow : "#e2e8f0"}`, transition: "all 200ms ease" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <div style={{ width: 32, height: 32, borderRadius: 8, background: `${color}12`, display: "flex", alignItems: "center", justifyContent: "center", color }}>
                       {BUCKET_ICONS[bucket.key]}
                     </div>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>{bucket.label}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: SURFACE.text }}>{bucket.label}</span>
                   </div>
-                  <span style={{ width: 12, height: 12, borderRadius: "50%", background: hasCon ? s.color : (has ? "#22c55e" : "#94a3b8"), boxShadow: `0 0 8px ${hasCon ? s.glow : "transparent"}` }} />
+                  <span style={{ width: 12, height: 12, borderRadius: "50%", background: hasCon ? s.color : (has ? "#22c55e" : SURFACE.textFaint), boxShadow: `0 0 8px ${hasCon ? s.glow : "transparent"}` }} />
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", fontSize: 12, color: "#64748b", marginBottom: 6 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", fontSize: 12, color: SURFACE.textMuted, marginBottom: 6 }}>
                   <span>{hasCon ? `${formatCurrency(bucket.consumed)} consumido de ${formatCurrency(bucket.awarded)}` : has ? `${formatCurrency(bucket.awarded)} adjudicado` : "Sin monto adjudicado"}</span>
-                  <span style={{ fontWeight: 700, color: hasCon ? s.color : "#cbd5e1" }}>{pct}%</span>
+                  <span style={{ fontWeight: 700, color: hasCon ? s.color : SURFACE.borderStrong }}>{pct}%</span>
                 </div>
                 <div style={{ height: 7, background: "rgba(255,255,255,0.6)", borderRadius: 99, overflow: "hidden" }}>
                   <div style={{ height: "100%", width: `${has ? Math.max(hasCon ? pct : 0, 0) : 0}%`, background: `linear-gradient(90deg, ${hasCon ? s.color : "#e2e8f0"}, ${hasCon ? `${s.color}bb` : "#e2e8f0"})`, borderRadius: 99, transition: "width 1s cubic-bezier(0.4,0,0.2,1)" }} />

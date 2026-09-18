@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { UsersIcon, CheckIcon, ClockIcon, BuildingIcon, BedIcon, RefreshIcon } from "@/components/ui/Icons";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { useI18n } from "@/lib/i18n";
@@ -54,10 +55,10 @@ type EventItem = { id: string; name?: string | null };
 const formatPercent = (value: number) => `${Math.round(value)}%`;
 
 const pal = {
-  cardBg: "#ffffff", cardBorder: "#e2e8f0", cardShadow: "0 1px 4px rgba(15,23,42,0.06)",
-  textPrimary: "#0f172a", textMuted: "#64748b", labelColor: "#94a3b8",
-  progressTrack: "#f1f5f9",
-  kpi: ["#3b82f6", "#10b981", "#f59e0b", "#a855f7", "#6366f1", "#14b8a6"],
+  cardBg: SURFACE.card, cardBorder: SURFACE.border, cardShadow: "0 1px 4px rgba(15,23,42,0.06)",
+  textPrimary: SURFACE.text, textMuted: SURFACE.textMuted, labelColor: SURFACE.textFaint,
+  progressTrack: SURFACE.borderMuted,
+  kpi: [STATE.info, STATE.success, STATE.warning, "#a855f7", "#6366f1", "#14b8a6"],
 };
 
 const KPI_ICONS = [
@@ -231,7 +232,7 @@ export default function HotelTrackingPage() {
   const assignmentPct = overview.totalParticipants > 0
     ? Math.round((overview.assignedParticipants / overview.totalParticipants) * 100)
     : 0;
-  const assignmentColor = assignmentPct >= 80 ? "#10b981" : assignmentPct >= 40 ? "#f59e0b" : "#ef4444";
+  const assignmentColor = assignmentPct >= 80 ? STATE.success : assignmentPct >= 40 ? STATE.warning : STATE.danger;
 
   const kpiCards = [
     { label: "Participantes registrados", value: overview.totalParticipants, i: 0, sub: "Total en el evento" },
@@ -246,7 +247,7 @@ export default function HotelTrackingPage() {
     <div className="space-y-6">
       {/* ── Command panel */}
       <section style={{
-        background: "#ffffff",
+        background: SURFACE.card,
         border: "1px solid #e2e8f0",
         borderRadius: "20px",
         padding: "24px 28px",
@@ -255,23 +256,23 @@ export default function HotelTrackingPage() {
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
-              <p style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "#94a3b8" }}>Operaciones</p>
+              <p style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: SURFACE.textFaint }}>Operaciones</p>
               <span style={{ display: "flex", alignItems: "center", gap: "5px", background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.25)", borderRadius: "99px", padding: "2px 8px" }}>
-                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#10b981", display: "inline-block" }} />
-                <span style={{ fontSize: "10px", fontWeight: 700, color: "#10b981", letterSpacing: "0.08em" }}>EN VIVO</span>
+                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: STATE.success, display: "inline-block" }} />
+                <span style={{ fontSize: "10px", fontWeight: 700, color: STATE.success, letterSpacing: "0.08em" }}>EN VIVO</span>
               </span>
             </div>
-            <h1 style={{ fontSize: "22px", fontWeight: 800, color: "#0f172a", lineHeight: 1.2, marginBottom: "4px" }}>Tracking hotelería</h1>
-            <p style={{ fontSize: "13px", color: "#64748b" }}>
+            <h1 style={{ fontSize: "22px", fontWeight: 800, color: SURFACE.text, lineHeight: 1.2, marginBottom: "4px" }}>Tracking hotelería</h1>
+            <p style={{ fontSize: "13px", color: SURFACE.textMuted }}>
               {lastUpdated ? `Actualizado ${lastUpdated.toLocaleTimeString("es-CL")}` : "Disponibilidad en tiempo real"}
             </p>
           </div>
 
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "10px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <label style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#94a3b8" }}>Evento</label>
+              <label style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: SURFACE.textFaint }}>Evento</label>
               <select
-                style={{ minWidth: "220px", height: "38px", padding: "0 12px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "#ffffff", color: "#0f172a", fontSize: "13px", fontWeight: 500, outline: "none" }}
+                style={{ minWidth: "220px", height: "38px", padding: "0 12px", borderRadius: "10px", border: "1px solid #e2e8f0", background: SURFACE.card, color: SURFACE.text, fontSize: "13px", fontWeight: 500, outline: "none" }}
                 value={selectedEventId}
                 onChange={(e) => setSelectedEventId(e.target.value)}
               >
@@ -285,9 +286,9 @@ export default function HotelTrackingPage() {
               onClick={loadData}
               disabled={loading}
               style={{
-                background: "#ffffff", border: "1px solid #e2e8f0",
+                background: SURFACE.card, border: "1px solid #e2e8f0",
                 borderRadius: "10px", padding: "9px 18px",
-                color: loading ? "#94a3b8" : "#475569",
+                color: loading ? SURFACE.textFaint : SURFACE.textSecondary,
                 fontSize: "13px", fontWeight: 600,
                 cursor: loading ? "not-allowed" : "pointer",
                 display: "flex", alignItems: "center", gap: "7px",
@@ -298,16 +299,16 @@ export default function HotelTrackingPage() {
             </button>
           </div>
         </div>
-        {error && <p style={{ marginTop: "10px", fontSize: "13px", color: "#ef4444" }}>{error}</p>}
+        {error && <p style={{ marginTop: "10px", fontSize: "13px", color: STATE.danger }}>{error}</p>}
       </section>
 
       {/* ── KPI cards */}
       <section>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px", flexWrap: "wrap", gap: "8px" }}>
-          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#94a3b8" }}>Resumen operativo</p>
+          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: SURFACE.textFaint }}>Resumen operativo</p>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <span style={{ fontSize: "12px", fontWeight: 600, color: "#64748b" }}>Cobertura</span>
-            <div style={{ width: "120px", height: "6px", borderRadius: "99px", background: "#f1f5f9", overflow: "hidden" }}>
+            <span style={{ fontSize: "12px", fontWeight: 600, color: SURFACE.textMuted }}>Cobertura</span>
+            <div style={{ width: "120px", height: "6px", borderRadius: "99px", background: SURFACE.borderMuted, overflow: "hidden" }}>
               <div style={{ height: "100%", width: `${assignmentPct}%`, background: assignmentColor, borderRadius: "99px", transition: "width 400ms ease" }} />
             </div>
             <span style={{ fontSize: "13px", fontWeight: 800, color: assignmentColor }}>{assignmentPct}%</span>
@@ -316,7 +317,7 @@ export default function HotelTrackingPage() {
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {kpiCards.map((card) => {
-            const color = card.i === 2 && overview.unassignedParticipants > 0 ? "#f59e0b" : pal.kpi[card.i];
+            const color = card.i === 2 && overview.unassignedParticipants > 0 ? STATE.warning : pal.kpi[card.i];
             return (
               <article key={card.label} style={{
                 background: pal.cardBg,
@@ -348,20 +349,20 @@ export default function HotelTrackingPage() {
       </section>
 
       {/* ── Hotel table */}
-      <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "20px", padding: "24px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+      <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "20px", padding: "24px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div style={{ marginBottom: "16px" }}>
-          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#94a3b8" }}>Por propiedad</p>
-          <h2 style={{ fontSize: "16px", fontWeight: 700, color: "#0f172a", marginTop: "4px" }}>{t("Disponibilidad")}</h2>
+          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: SURFACE.textFaint }}>Por propiedad</p>
+          <h2 style={{ fontSize: "16px", fontWeight: 700, color: SURFACE.text, marginTop: "4px" }}>{t("Disponibilidad")}</h2>
         </div>
         {rows.length === 0 ? (
-          <p style={{ fontSize: "13px", color: "#94a3b8" }}>{t("Sin hoteles registrados.")}</p>
+          <p style={{ fontSize: "13px", color: SURFACE.textFaint }}>{t("Sin hoteles registrados.")}</p>
         ) : (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
                   {[t("Hotel"), t("Evento"), t("Dirección"), t("Capacidad"), t("Ocupadas"), t("Disponibles"), t("Habitaciones"), t("Camas"), t("Ocupación")].map((h) => (
-                    <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#94a3b8", whiteSpace: "nowrap" }}>{h}</th>
+                    <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: SURFACE.textFaint, whiteSpace: "nowrap" }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -371,19 +372,19 @@ export default function HotelTrackingPage() {
                   const occupancy = row.occupancy ?? 0;
                   return (
                     <tr key={row.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                      <td style={{ padding: "10px 12px", fontWeight: 600, color: "#0f172a" }}>{row.name || row.id}</td>
-                      <td style={{ padding: "10px 12px", color: "#64748b" }}>{eventName || row.eventId || "-"}</td>
-                      <td style={{ padding: "10px 12px", color: "#64748b" }}>{row.address || "-"}</td>
-                      <td style={{ padding: "10px 12px", color: "#64748b" }}>{row.totalCapacity ?? 0}</td>
-                      <td style={{ padding: "10px 12px", color: "#64748b" }}>{row.assigned}</td>
-                      <td style={{ padding: "10px 12px", color: "#64748b" }}>{row.available}</td>
+                      <td style={{ padding: "10px 12px", fontWeight: 600, color: SURFACE.text }}>{row.name || row.id}</td>
+                      <td style={{ padding: "10px 12px", color: SURFACE.textMuted }}>{eventName || row.eventId || "-"}</td>
+                      <td style={{ padding: "10px 12px", color: SURFACE.textMuted }}>{row.address || "-"}</td>
+                      <td style={{ padding: "10px 12px", color: SURFACE.textMuted }}>{row.totalCapacity ?? 0}</td>
+                      <td style={{ padding: "10px 12px", color: SURFACE.textMuted }}>{row.assigned}</td>
+                      <td style={{ padding: "10px 12px", color: SURFACE.textMuted }}>{row.available}</td>
                       <td style={{ padding: "10px 12px" }}>
                         {row.roomUsage.length === 0 ? (
-                          <span style={{ color: "#94a3b8" }}>-</span>
+                          <span style={{ color: SURFACE.textFaint }}>-</span>
                         ) : (
                           <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                             {row.roomUsage.map((room) => (
-                              <div key={room.type} style={{ fontSize: "12px", color: "#64748b" }}>
+                              <div key={room.type} style={{ fontSize: "12px", color: SURFACE.textMuted }}>
                                 {room.type}: {room.total}
                               </div>
                             ))}
@@ -392,22 +393,22 @@ export default function HotelTrackingPage() {
                       </td>
                       <td style={{ padding: "10px 12px" }}>
                         {row.totalHotelBeds === 0 ? (
-                          <span style={{ color: "#94a3b8" }}>-</span>
+                          <span style={{ color: SURFACE.textFaint }}>-</span>
                         ) : (
                           <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                            <div style={{ fontWeight: 700, color: "#0f172a", fontSize: "13px" }}>{row.totalHotelBeds}</div>
+                            <div style={{ fontWeight: 700, color: SURFACE.text, fontSize: "13px" }}>{row.totalHotelBeds}</div>
                             {row.roomUsage.filter((r) => r.beds > 0).map((r) => (
-                              <div key={r.type} style={{ fontSize: "12px", color: "#64748b" }}>{r.type}: {r.beds}</div>
+                              <div key={r.type} style={{ fontSize: "12px", color: SURFACE.textMuted }}>{r.type}: {r.beds}</div>
                             ))}
                           </div>
                         )}
                       </td>
                       <td style={{ padding: "10px 12px" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <div style={{ width: "80px", height: "6px", borderRadius: "99px", background: "#f1f5f9", overflow: "hidden" }}>
-                            <div style={{ height: "100%", width: `${Math.min(occupancy, 100)}%`, background: "#21D0B3", borderRadius: "99px" }} />
+                          <div style={{ width: "80px", height: "6px", borderRadius: "99px", background: SURFACE.borderMuted, overflow: "hidden" }}>
+                            <div style={{ height: "100%", width: `${Math.min(occupancy, 100)}%`, background: BRAND.teal, borderRadius: "99px" }} />
                           </div>
-                          <span style={{ fontSize: "12px", fontWeight: 600, color: "#64748b" }}>{formatPercent(occupancy)}</span>
+                          <span style={{ fontSize: "12px", fontWeight: 600, color: SURFACE.textMuted }}>{formatPercent(occupancy)}</span>
                         </div>
                       </td>
                     </tr>

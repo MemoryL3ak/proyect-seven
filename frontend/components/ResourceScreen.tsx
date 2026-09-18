@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import { apiFetch } from "@/lib/api";
+import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { AlertIcon, ChevronDownIcon, CameraIcon, UploadIcon, CheckIcon } from "@/components/ui/Icons";
 import { isAthletePersonalDataValidated } from "@/lib/athletes";
 import type { FieldDef, ResourceConfig } from "@/lib/resources";
@@ -2324,26 +2325,26 @@ export default function ResourceScreen({
   // Columnas cuyo valor se muestra como chip de estado con color.
   const STATUS_KEYS = new Set(["status", "estado", "state", "accreditationStatus", "paymentStatus"]);
   const STATUS_BADGE: Record<string, { bg: string; color: string }> = {
-    COMPLETED: { bg: "rgba(100,116,139,0.12)", color: "#475569" },
+    COMPLETED: { bg: "rgba(100,116,139,0.12)", color: SURFACE.textSecondary },
     DROPPED_OFF: { bg: "rgba(20,184,166,0.12)", color: "#0f766e" },
-    CANCELLED: { bg: "rgba(239,68,68,0.1)", color: "#dc2626" },
-    CANCELED: { bg: "rgba(239,68,68,0.1)", color: "#dc2626" },
-    SCHEDULED: { bg: "rgba(59,130,246,0.12)", color: "#2563eb" },
-    REQUESTED: { bg: "rgba(245,158,11,0.14)", color: "#b45309" },
-    EN_ROUTE: { bg: "rgba(16,185,129,0.12)", color: "#059669" },
+    CANCELLED: { bg: "rgba(239,68,68,0.1)", color: STATE.dangerText },
+    CANCELED: { bg: "rgba(239,68,68,0.1)", color: STATE.dangerText },
+    SCHEDULED: { bg: "rgba(59,130,246,0.12)", color: STATE.infoText },
+    REQUESTED: { bg: "rgba(245,158,11,0.14)", color: STATE.warningText },
+    EN_ROUTE: { bg: "rgba(16,185,129,0.12)", color: STATE.successText },
     PICKED_UP: { bg: "rgba(34,211,238,0.16)", color: "#0891b2" },
-    APPROVED: { bg: "rgba(16,185,129,0.12)", color: "#059669" },
-    CREDENTIAL_ISSUED: { bg: "rgba(16,185,129,0.12)", color: "#059669" },
-    PENDING: { bg: "rgba(245,158,11,0.14)", color: "#b45309" },
-    REJECTED: { bg: "rgba(239,68,68,0.1)", color: "#dc2626" },
-    ACTIVE: { bg: "rgba(16,185,129,0.12)", color: "#059669" },
-    INACTIVE: { bg: "rgba(148,163,184,0.16)", color: "#64748b" },
-    AVAILABLE: { bg: "rgba(16,185,129,0.12)", color: "#059669" },
-    ASSIGNED: { bg: "rgba(59,130,246,0.12)", color: "#2563eb" },
-    CONFIRMED: { bg: "rgba(16,185,129,0.12)", color: "#059669" },
+    APPROVED: { bg: "rgba(16,185,129,0.12)", color: STATE.successText },
+    CREDENTIAL_ISSUED: { bg: "rgba(16,185,129,0.12)", color: STATE.successText },
+    PENDING: { bg: "rgba(245,158,11,0.14)", color: STATE.warningText },
+    REJECTED: { bg: "rgba(239,68,68,0.1)", color: STATE.dangerText },
+    ACTIVE: { bg: "rgba(16,185,129,0.12)", color: STATE.successText },
+    INACTIVE: { bg: "rgba(148,163,184,0.16)", color: SURFACE.textMuted },
+    AVAILABLE: { bg: "rgba(16,185,129,0.12)", color: STATE.successText },
+    ASSIGNED: { bg: "rgba(59,130,246,0.12)", color: STATE.infoText },
+    CONFIRMED: { bg: "rgba(16,185,129,0.12)", color: STATE.successText },
   };
   const statusTone = (raw: string) =>
-    STATUS_BADGE[raw.toUpperCase()] ?? { bg: "rgba(148,163,184,0.14)", color: "#475569" };
+    STATUS_BADGE[raw.toUpperCase()] ?? { bg: "rgba(148,163,184,0.14)", color: SURFACE.textSecondary };
 
   const resolveDisplayValue = (fieldKey: string, item: Record<string, any>) => {
     const value = item[fieldKey];
@@ -2457,10 +2458,10 @@ export default function ResourceScreen({
         {/* Visa warning */}
         {config.endpoint === "/athletes" && (form.visaRequired as string) === "true" && (
           <div style={{ padding: "12px 16px", borderRadius: "12px", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)", display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
-            <span style={{ display: "inline-flex", color: "#b45309" }}><AlertIcon size={20} /></span>
+            <span style={{ display: "inline-flex", color: STATE.warningText }}><AlertIcon size={20} /></span>
             <div>
               <p style={{ fontSize: "13px", fontWeight: 700, color: "#92400e", margin: 0 }}>{t("Atención: Visa requerida")}</p>
-              <p style={{ fontSize: "12px", color: "#b45309", margin: "2px 0 0" }}>{t("Este participante requiere visa para ingresar al país. Asegúrate de gestionar la documentación correspondiente.")}</p>
+              <p style={{ fontSize: "12px", color: STATE.warningText, margin: "2px 0 0" }}>{t("Este participante requiere visa para ingresar al país. Asegúrate de gestionar la documentación correspondiente.")}</p>
             </div>
           </div>
         )}
@@ -2852,13 +2853,13 @@ export default function ResourceScreen({
                           >
                             <img src={`https://flagcdn.com/w40/${currentEntry.iso}.png`} alt={currentEntry.country} width={22} height={16} style={{ borderRadius: "3px", flexShrink: 0, objectFit: "cover" }} />
                             <span style={{ fontWeight: 600 }}>{currentEntry.code}</span>
-                            <ChevronDownIcon size={10} color="#94a3b8" strokeWidth={2.5} style={{ marginLeft: "auto", flexShrink: 0 }} />
+                            <ChevronDownIcon size={10} color={SURFACE.textFaint} strokeWidth={2.5} style={{ marginLeft: "auto", flexShrink: 0 }} />
                           </button>
                           {/* Dropdown list */}
                           {phoneDropdownOpen && (
                             <>
                               <div style={{ position: "fixed", inset: 0, zIndex: 50 }} onClick={() => setPhoneDropdownOpen(false)} />
-                              <div style={{ position: "absolute", top: "100%", left: 0, marginTop: "4px", zIndex: 51, background: "#fff", border: "1px solid #e2e8f0", borderRadius: "12px", boxShadow: "0 8px 30px rgba(15,23,42,0.15)", maxHeight: "240px", overflowY: "auto", width: "220px" }}>
+                              <div style={{ position: "absolute", top: "100%", left: 0, marginTop: "4px", zIndex: 51, background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "12px", boxShadow: "0 8px 30px rgba(15,23,42,0.15)", maxHeight: "240px", overflowY: "auto", width: "220px" }}>
                                 {PHONE_CODES.map(pc => (
                                   <button
                                     key={pc.code}
@@ -2867,13 +2868,13 @@ export default function ResourceScreen({
                                       setForm({ ...form, [field.key]: `${pc.code} ${currentNumber}` });
                                       setPhoneDropdownOpen(false);
                                     }}
-                                    style={{ width: "100%", display: "flex", alignItems: "center", gap: "8px", padding: "8px 12px", border: "none", background: pc.code === currentCode ? "rgba(33,208,179,0.08)" : "transparent", cursor: "pointer", fontSize: "13px", color: "#0f172a", textAlign: "left" }}
-                                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#f8fafc"; }}
+                                    style={{ width: "100%", display: "flex", alignItems: "center", gap: "8px", padding: "8px 12px", border: "none", background: pc.code === currentCode ? "rgba(33,208,179,0.08)" : "transparent", cursor: "pointer", fontSize: "13px", color: SURFACE.text, textAlign: "left" }}
+                                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = SURFACE.bg; }}
                                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = pc.code === currentCode ? "rgba(33,208,179,0.08)" : "transparent"; }}
                                   >
                                     <img src={`https://flagcdn.com/w40/${pc.iso}.png`} alt={pc.country} width={22} height={16} style={{ borderRadius: "3px", flexShrink: 0, objectFit: "cover" }} />
                                     <span style={{ flex: 1 }}>{pc.country}</span>
-                                    <span style={{ fontWeight: 600, color: "#64748b", fontSize: "12px" }}>{pc.code}</span>
+                                    <span style={{ fontWeight: 600, color: SURFACE.textMuted, fontSize: "12px" }}>{pc.code}</span>
                                   </button>
                                 ))}
                               </div>
@@ -2930,19 +2931,19 @@ export default function ResourceScreen({
                         }}
                       />
                       {/* Preview */}
-                      <label htmlFor={`file-${field.key}`} className="cursor-pointer" style={{ width: "52px", height: "52px", borderRadius: "12px", border: form[field.key] ? "2px solid #21D0B3" : "2px dashed #e2e8f0", background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0, transition: "border-color 0.15s" }}>
+                      <label htmlFor={`file-${field.key}`} className="cursor-pointer" style={{ width: "52px", height: "52px", borderRadius: "12px", border: form[field.key] ? "2px solid #21D0B3" : "2px dashed #e2e8f0", background: SURFACE.bg, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0, transition: "border-color 0.15s" }}>
                         {form[field.key] ? (
                           <img src={form[field.key] as string} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                         ) : (
-                          <CameraIcon size={18} color="#cbd5e1" strokeWidth={1.5} />
+                          <CameraIcon size={18} color={SURFACE.borderStrong} strokeWidth={1.5} />
                         )}
                       </label>
                       <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                        <label htmlFor={`file-${field.key}`} className="cursor-pointer" style={{ fontSize: "12px", fontWeight: 600, padding: "5px 14px", borderRadius: "8px", border: "none", color: "#fff", background: form[field.key] ? "#64748b" : "linear-gradient(135deg, #21D0B3, #14AE98)", display: "inline-flex", alignItems: "center", gap: "5px", boxShadow: form[field.key] ? "none" : "0 2px 8px rgba(33,208,179,0.25)" }}>
+                        <label htmlFor={`file-${field.key}`} className="cursor-pointer" style={{ fontSize: "12px", fontWeight: 600, padding: "5px 14px", borderRadius: "8px", border: "none", color: SURFACE.card, background: form[field.key] ? SURFACE.textMuted : "linear-gradient(135deg, #21D0B3, #14AE98)", display: "inline-flex", alignItems: "center", gap: "5px", boxShadow: form[field.key] ? "none" : "0 2px 8px rgba(33,208,179,0.25)" }}>
                           <UploadIcon size={12} strokeWidth={2.5} />
                           {form[field.key] ? "Cambiar foto" : "Subir foto"}
                         </label>
-                        <span style={{ fontSize: "10px", color: form[field.key] ? "#10b981" : "#94a3b8" }}>
+                        <span style={{ fontSize: "10px", color: form[field.key] ? STATE.success : SURFACE.textFaint }}>
                           {form[field.key] ? "Foto cargada" : "JPG, PNG — máx 5MB"}
                         </span>
                       </div>
@@ -3040,16 +3041,16 @@ export default function ResourceScreen({
                     if (!rutRaw || rutRaw.length < 2) return null;
                     const body = rutRaw.slice(0, -1);
                     const dv = rutRaw.slice(-1);
-                    if (!/^\d+$/.test(body)) return <span style={{ fontSize: "11px", color: "#ef4444" }}>RUT debe contener solo números y dígito verificador</span>;
+                    if (!/^\d+$/.test(body)) return <span style={{ fontSize: "11px", color: STATE.danger }}>RUT debe contener solo números y dígito verificador</span>;
                     let sum = 0, mul = 2;
                     for (let i = body.length - 1; i >= 0; i--) { sum += Number(body[i]) * mul; mul = mul === 7 ? 2 : mul + 1; }
                     const expected = 11 - (sum % 11);
                     const dvExpected = expected === 11 ? "0" : expected === 10 ? "K" : String(expected);
-                    if (dv !== dvExpected) return <span style={{ fontSize: "11px", color: "#ef4444", display: "flex", alignItems: "center", gap: "4px" }}>
+                    if (dv !== dvExpected) return <span style={{ fontSize: "11px", color: STATE.danger, display: "flex", alignItems: "center", gap: "4px" }}>
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
                       RUT inválido — dígito verificador incorrecto (esperado: {dvExpected})
                     </span>;
-                    return <span style={{ fontSize: "11px", color: "#10b981", display: "flex", alignItems: "center", gap: "4px" }}>
+                    return <span style={{ fontSize: "11px", color: STATE.success, display: "flex", alignItems: "center", gap: "4px" }}>
                       <CheckIcon size={12} strokeWidth={2.5} />
                       RUT válido
                     </span>;
@@ -3487,7 +3488,7 @@ export default function ResourceScreen({
         </form>
         {successMsg && (
           <div style={{ marginTop: "12px", padding: "10px 16px", borderRadius: "10px", background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.25)", display: "flex", alignItems: "center", gap: "8px", animation: "fadeIn 0.3s ease" }}>
-            <CheckIcon size={16} color="#10b981" strokeWidth={2.5} />
+            <CheckIcon size={16} color={STATE.success} strokeWidth={2.5} />
             <span style={{ fontSize: "13px", fontWeight: 600, color: "#065f46" }}>{successMsg}</span>
           </div>
         )}
@@ -3499,7 +3500,7 @@ export default function ResourceScreen({
       <section className="surface p-6" style={{ borderTop: "2px solid #1FCDFF" }}>
         <div className="flex items-center justify-between mb-5">
           <div>
-            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#1FCDFF", marginBottom: "3px" }}>
+            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: BRAND.blue, marginBottom: "3px" }}>
               {t("Base de datos")}
             </p>
             <h4 style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--text)", letterSpacing: "-0.01em" }}>{t("Registros")}</h4>
@@ -3543,7 +3544,7 @@ export default function ResourceScreen({
             <div>
               {/* Stats bar */}
               <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px", flexWrap: "wrap" }}>
-                <span style={{ fontSize: "12px", fontWeight: 600, color: "#21D0B3", background: "rgba(33,208,179,0.1)", borderRadius: "20px", padding: "3px 10px", border: "1px solid rgba(33,208,179,0.2)" }}>
+                <span style={{ fontSize: "12px", fontWeight: 600, color: BRAND.teal, background: "rgba(33,208,179,0.1)", borderRadius: "20px", padding: "3px 10px", border: "1px solid rgba(33,208,179,0.2)" }}>
                   {arrivalCount} {t("llegadas")}
                 </span>
                 <span style={{ fontSize: "12px", fontWeight: 600, color: "#a78bfa", background: "rgba(167,139,250,0.1)", borderRadius: "20px", padding: "3px 10px", border: "1px solid rgba(167,139,250,0.2)" }}>
@@ -3563,9 +3564,9 @@ export default function ResourceScreen({
                 {(["all", "ARRIVAL", "DEPARTURE"] as const).map((f) => (
                   <button key={f} type="button" onClick={() => setAndTripFilter(f)} style={{
                     fontSize: "12px", fontWeight: 600, padding: "5px 14px", borderRadius: "20px", cursor: "pointer", border: "1.5px solid",
-                    borderColor: andTripFilter === f ? (f === "ARRIVAL" ? "#21D0B3" : f === "DEPARTURE" ? "#a78bfa" : "#1FCDFF") : "var(--border)",
+                    borderColor: andTripFilter === f ? (f === "ARRIVAL" ? BRAND.teal : f === "DEPARTURE" ? "#a78bfa" : BRAND.blue) : "var(--border)",
                     background: andTripFilter === f ? (f === "ARRIVAL" ? "rgba(33,208,179,0.1)" : f === "DEPARTURE" ? "rgba(167,139,250,0.1)" : "rgba(31,205,255,0.1)") : "transparent",
-                    color: andTripFilter === f ? (f === "ARRIVAL" ? "#21D0B3" : f === "DEPARTURE" ? "#a78bfa" : "#1FCDFF") : "var(--text-muted)",
+                    color: andTripFilter === f ? (f === "ARRIVAL" ? BRAND.teal : f === "DEPARTURE" ? "#a78bfa" : BRAND.blue) : "var(--text-muted)",
                   }}>
                     {f === "all" ? t("Todos") : f === "ARRIVAL" ? t("Llegadas") : t("Salidas")}
                   </button>
@@ -3580,11 +3581,11 @@ export default function ResourceScreen({
                   const trip = (item.participantTripType ?? "").toUpperCase();
                   const isArrival = trip === "ARRIVAL";
                   const isDeparture = trip === "DEPARTURE";
-                  const borderColor = isArrival ? "#21D0B3" : isDeparture ? "#a78bfa" : "#cbd5e1";
+                  const borderColor = isArrival ? BRAND.teal : isDeparture ? "#a78bfa" : SURFACE.borderStrong;
                   const bgColor = isArrival ? "rgba(33,208,179,0.03)" : isDeparture ? "rgba(167,139,250,0.03)" : "#fafafa";
                   const initials = (item.participantFullName ?? "?").split(" ").slice(0, 2).map((w: string) => w[0] ?? "").join("").toUpperCase();
                   const avatarBg = isArrival ? "rgba(33,208,179,0.15)" : isDeparture ? "rgba(167,139,250,0.12)" : "rgba(148,163,184,0.12)";
-                  const avatarColor = isArrival ? "#059669" : isDeparture ? "#7c3aed" : "#64748b";
+                  const avatarColor = isArrival ? STATE.successText : isDeparture ? "#7c3aed" : SURFACE.textMuted;
                   const eventLabel = eventOptions.find((o) => o.value === item.eventId)?.label ?? null;
                   const disciplineLabel = disciplineOptions.find((o: any) => o.value === item.participantDisciplineId)?.label ?? null;
                   const userTypeLabel = USER_TYPE_LABELS[item.participantUserType ?? ""] ?? item.participantUserType ?? null;
@@ -3608,7 +3609,7 @@ export default function ResourceScreen({
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "4px" }}>
                           <span style={{ fontWeight: 700, fontSize: "14px", color: "var(--text)" }}>{item.participantFullName ?? "-"}</span>
                           {isLead && (
-                            <span style={{ fontSize: "10px", fontWeight: 700, padding: "2px 7px", borderRadius: "20px", background: "rgba(251,191,36,0.15)", color: "#b45309", border: "1px solid rgba(251,191,36,0.3)" }}>
+                            <span style={{ fontSize: "10px", fontWeight: 700, padding: "2px 7px", borderRadius: "20px", background: "rgba(251,191,36,0.15)", color: STATE.warningText, border: "1px solid rgba(251,191,36,0.3)" }}>
                               {t("Jefe delegación")}
                             </span>
                           )}
@@ -3616,7 +3617,7 @@ export default function ResourceScreen({
                             <span style={{
                               fontSize: "10px", fontWeight: 700, letterSpacing: "0.06em", padding: "2px 8px", borderRadius: "20px",
                               background: isArrival ? "rgba(33,208,179,0.12)" : isDeparture ? "rgba(167,139,250,0.12)" : "rgba(148,163,184,0.1)",
-                              color: isArrival ? "#21D0B3" : isDeparture ? "#a78bfa" : "var(--text-muted)",
+                              color: isArrival ? BRAND.teal : isDeparture ? "#a78bfa" : "var(--text-muted)",
                               border: `1px solid ${isArrival ? "rgba(33,208,179,0.25)" : isDeparture ? "rgba(167,139,250,0.25)" : "var(--border)"}`,
                             }}>
                               {isArrival ? t("LLEGADA") : isDeparture ? t("SALIDA") : trip}
@@ -3641,7 +3642,7 @@ export default function ResourceScreen({
                             </span>
                           )}
                           {visaRequired && (
-                            <span style={{ fontSize: "10px", fontWeight: 600, padding: "1px 7px", borderRadius: "4px", background: "rgba(245,158,11,0.1)", color: "#b45309", border: "1px solid rgba(245,158,11,0.2)" }}>
+                            <span style={{ fontSize: "10px", fontWeight: 600, padding: "1px 7px", borderRadius: "4px", background: "rgba(245,158,11,0.1)", color: STATE.warningText, border: "1px solid rgba(245,158,11,0.2)" }}>
                               {t("Visa requerida")}
                             </span>
                           )}
@@ -3669,7 +3670,7 @@ export default function ResourceScreen({
                           {t("Editar")}
                         </button>
                         {item.id && (
-                          <button className="btn btn-ghost" style={{ fontSize: "11px", padding: "4px 10px", color: "#ef4444" }} onClick={() => handleDelete(item.id)}>
+                          <button className="btn btn-ghost" style={{ fontSize: "11px", padding: "4px 10px", color: STATE.danger }} onClick={() => handleDelete(item.id)}>
                             {t("Eliminar")}
                           </button>
                         )}
@@ -3706,10 +3707,10 @@ export default function ResourceScreen({
             <div>
               {/* Stats bar */}
               <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px", flexWrap: "wrap" }}>
-                <span style={{ fontSize: "12px", fontWeight: 600, color: "#10b981", background: "rgba(16,185,129,0.1)", borderRadius: "20px", padding: "3px 10px", border: "1px solid rgba(16,185,129,0.2)" }}>
+                <span style={{ fontSize: "12px", fontWeight: 600, color: STATE.success, background: "rgba(16,185,129,0.1)", borderRadius: "20px", padding: "3px 10px", border: "1px solid rgba(16,185,129,0.2)" }}>
                   {validatedCount} {t("validados")}
                 </span>
-                <span style={{ fontSize: "12px", fontWeight: 600, color: "#f59e0b", background: "rgba(245,158,11,0.1)", borderRadius: "20px", padding: "3px 10px", border: "1px solid rgba(245,158,11,0.2)" }}>
+                <span style={{ fontSize: "12px", fontWeight: 600, color: STATE.warning, background: "rgba(245,158,11,0.1)", borderRadius: "20px", padding: "3px 10px", border: "1px solid rgba(245,158,11,0.2)" }}>
                   {pendingCount} {t("pendientes")}
                 </span>
                 <span style={{ fontSize: "12px", color: "var(--text-muted)", marginLeft: "4px" }}>
@@ -3732,9 +3733,9 @@ export default function ResourceScreen({
                     onClick={() => setAthleteStatusFilter(f)}
                     style={{
                       fontSize: "12px", fontWeight: 600, padding: "5px 14px", borderRadius: "20px", cursor: "pointer", border: "1.5px solid",
-                      borderColor: athleteStatusFilter === f ? (f === "validated" ? "#10b981" : f === "pending" ? "#f59e0b" : "#1FCDFF") : "var(--border)",
+                      borderColor: athleteStatusFilter === f ? (f === "validated" ? STATE.success : f === "pending" ? STATE.warning : BRAND.blue) : "var(--border)",
                       background: athleteStatusFilter === f ? (f === "validated" ? "rgba(16,185,129,0.1)" : f === "pending" ? "rgba(245,158,11,0.1)" : "rgba(31,205,255,0.1)") : "transparent",
-                      color: athleteStatusFilter === f ? (f === "validated" ? "#10b981" : f === "pending" ? "#f59e0b" : "#1FCDFF") : "var(--text-muted)",
+                      color: athleteStatusFilter === f ? (f === "validated" ? STATE.success : f === "pending" ? STATE.warning : BRAND.blue) : "var(--text-muted)",
                     }}
                   >
                     {f === "all" ? t("Todos") : f === "validated" ? t("Validados") : t("Pendientes")}
@@ -3778,7 +3779,7 @@ export default function ResourceScreen({
                             background: isVal ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.12)",
                             display: "flex", alignItems: "center", justifyContent: "center",
                             fontSize: "13px", fontWeight: 700,
-                            color: isVal ? "#059669" : "#b45309",
+                            color: isVal ? STATE.successText : STATE.warningText,
                           }}>
                             {initials}
                           </div>
@@ -3792,7 +3793,7 @@ export default function ResourceScreen({
                           <span style={{
                             fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", padding: "2px 8px", borderRadius: "20px",
                             background: isDeleted ? "rgba(239,68,68,0.12)" : isVal ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.12)",
-                            color: isDeleted ? "#dc2626" : isVal ? "#059669" : "#b45309",
+                            color: isDeleted ? STATE.dangerText : isVal ? STATE.successText : STATE.warningText,
                             border: `1px solid ${isDeleted ? "rgba(239,68,68,0.3)" : isVal ? "rgba(16,185,129,0.3)" : "rgba(245,158,11,0.3)"}`,
                           }}>
                             {isDeleted ? t("ELIMINADA") : isVal ? t("VALIDADO") : t("PENDIENTE")}
@@ -3801,7 +3802,7 @@ export default function ResourceScreen({
                           {!isVal && !isDeleted && missing.length > 0 && (
                             <span title={missing.map((f) => f.label).join(", ")} style={{
                               fontSize: "10px", fontWeight: 600, padding: "2px 8px", borderRadius: "20px",
-                              background: "rgba(239,68,68,0.1)", color: "#dc2626",
+                              background: "rgba(239,68,68,0.1)", color: STATE.dangerText,
                               border: "1px solid rgba(239,68,68,0.2)", cursor: "help",
                             }}>
                               {missing.length} {t("campos faltantes")}
@@ -3837,7 +3838,7 @@ export default function ResourceScreen({
                             <span
                               title={t("Código para iniciar sesión del participante en la app (clic para copiar)")}
                               onClick={(e) => { e.stopPropagation(); try { void navigator.clipboard?.writeText(String(item.id).slice(-6).toUpperCase()); } catch { /* noop */ } }}
-                              style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", padding: "2px 9px", borderRadius: "6px", background: "rgba(33,208,179,0.12)", color: "#0a7a6b", border: "1px solid rgba(33,208,179,0.3)", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "5px" }}
+                              style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", padding: "2px 9px", borderRadius: "6px", background: "rgba(33,208,179,0.12)", color: BRAND.tealInk, border: "1px solid rgba(33,208,179,0.3)", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "5px" }}
                             >
                               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3 21 2M18 5l2 2M15.5 7.5l2 2"/></svg>
                               {String(item.id).slice(-6).toUpperCase()}
@@ -3897,7 +3898,7 @@ export default function ResourceScreen({
                           {item.id && (
                             <button
                               className="btn btn-ghost"
-                              style={{ fontSize: "11px", padding: "4px 10px", color: "#ef4444" }}
+                              style={{ fontSize: "11px", padding: "4px 10px", color: STATE.danger }}
                               onClick={() => handleDelete(item.id)}
                             >
                               {t("Eliminar")}
@@ -3965,7 +3966,7 @@ export default function ResourceScreen({
                       {item.id && isAccountDeleted(item) && (
                         <button
                           className="btn btn-ghost"
-                          style={{ color: "#059669", fontWeight: 700 }}
+                          style={{ color: STATE.successText, fontWeight: 700 }}
                           onClick={() => handleReactivate(item.id)}
                         >
                           {t("Reactivar")}
@@ -3994,7 +3995,7 @@ export default function ResourceScreen({
         )}
         {successMsg && (
           <div style={{ marginTop: "12px", padding: "10px 16px", borderRadius: "10px", background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.25)", display: "flex", alignItems: "center", gap: "8px", animation: "fadeIn 0.3s ease" }}>
-            <CheckIcon size={16} color="#10b981" strokeWidth={2.5} />
+            <CheckIcon size={16} color={STATE.success} strokeWidth={2.5} />
             <span style={{ fontSize: "13px", fontWeight: 600, color: "#065f46" }}>{successMsg}</span>
           </div>
         )}

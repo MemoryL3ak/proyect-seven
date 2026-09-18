@@ -3,6 +3,7 @@
 import React, { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import { apiFetch } from "@/lib/api";
+import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { useI18n } from "@/lib/i18n";
 import StyledSelect from "@/components/StyledSelect";
@@ -508,12 +509,12 @@ export default function HealthPage() {
   const { t } = useI18n();
 
   const pal = {
-    panelBg: "#ffffff", panelBorder: "#e2e8f0", panelShadow: "0 1px 4px rgba(15,23,42,0.06)",
-    accent: "#21D0B3", titleColor: "#0f172a", subtitleColor: "#64748b",
-    cardBg: "#ffffff", cardBorder: "#e2e8f0", cardShadow: "0 1px 4px rgba(15,23,42,0.06)",
-    labelColor: "#94a3b8", textMuted: "#64748b",
-    rowBg: "#f8fafc", rowHover: "#f1f5f9",
-    universeBg: "#f1f5f9", universeBorder: "#e2e8f0",
+    panelBg: SURFACE.card, panelBorder: SURFACE.border, panelShadow: "0 1px 4px rgba(15,23,42,0.06)",
+    accent: BRAND.teal, titleColor: SURFACE.text, subtitleColor: SURFACE.textMuted,
+    cardBg: SURFACE.card, cardBorder: SURFACE.border, cardShadow: "0 1px 4px rgba(15,23,42,0.06)",
+    labelColor: SURFACE.textFaint, textMuted: SURFACE.textMuted,
+    rowBg: SURFACE.bg, rowHover: SURFACE.borderMuted,
+    universeBg: SURFACE.borderMuted, universeBorder: SURFACE.border,
   };
 
   const [events, setEvents] = useState<EventItem[]>([]);
@@ -1078,13 +1079,13 @@ export default function HealthPage() {
 
   const fieldStyle: React.CSSProperties = {
     width: "100%", padding: "8px 12px", borderRadius: "10px",
-    border: "1px solid #e2e8f0", background: "#f8fafc",
-    fontSize: "14px", color: "#0f172a", outline: "none",
+    border: "1px solid #e2e8f0", background: SURFACE.bg,
+    fontSize: "14px", color: SURFACE.text, outline: "none",
   };
 
   const yesNo = (label: string, value: YesNo, onChange: (value: YesNo) => void) => (
     <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-      <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{label}</span>
+      <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{label}</span>
       <StyledSelect value={value} onChange={(e) => onChange(e.target.value as YesNo)}>
         <option value="">{t("Selecciona")}</option>
         <option value="SI">Sí</option>
@@ -1096,12 +1097,12 @@ export default function HealthPage() {
   return (
     <div className="space-y-6">
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "flex-end", gap: "12px", marginBottom: "8px" }}>
-        <div style={{ borderRadius: "8px", padding: "6px 12px", fontSize: "13px", background: "#ffffff", border: "1px solid #e2e8f0", color: "#64748b" }}>
-          {activeSubsection === "record" ? <>{t("Avance ficha")}: <span style={{ fontWeight: 600, color: "#0f172a" }}>{completion}%</span></> : <>{t("Subsección")}: <span style={{ fontWeight: 600, color: "#0f172a" }}>{t(HEALTH_SUBSECTIONS.find((item) => item.id === activeSubsection)?.label ?? "")}</span></>}
+        <div style={{ borderRadius: "8px", padding: "6px 12px", fontSize: "13px", background: SURFACE.card, border: "1px solid #e2e8f0", color: SURFACE.textMuted }}>
+          {activeSubsection === "record" ? <>{t("Avance ficha")}: <span style={{ fontWeight: 600, color: SURFACE.text }}>{completion}%</span></> : <>{t("Subsección")}: <span style={{ fontWeight: 600, color: SURFACE.text }}>{t(HEALTH_SUBSECTIONS.find((item) => item.id === activeSubsection)?.label ?? "")}</span></>}
         </div>
       </div>
 
-      <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+      <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div className="grid gap-3 lg:grid-cols-12">
           <StyledSelect wrapperClassName="lg:col-span-4" value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)}>
             <option value="">{t("Selecciona evento")}</option>
@@ -1117,7 +1118,7 @@ export default function HealthPage() {
           </StyledSelect>
           <div className="relative lg:col-span-5">
             <input
-              style={{ width: "100%", paddingRight: "36px", padding: "8px 36px 8px 12px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "#f8fafc", fontSize: "14px", color: "#0f172a", outline: "none" }}
+              style={{ width: "100%", paddingRight: "36px", padding: "8px 36px 8px 12px", borderRadius: "10px", border: "1px solid #e2e8f0", background: SURFACE.bg, fontSize: "14px", color: SURFACE.text, outline: "none" }}
               value={athleteSearch}
               onFocus={() => setAthletePickerOpen(true)}
               onBlur={() => setTimeout(() => setAthletePickerOpen(false), 120)}
@@ -1134,7 +1135,7 @@ export default function HealthPage() {
             />
             <button
               type="button"
-              style={{ position: "absolute", inset: "0 8px 0 auto", background: "none", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: "12px" }}
+              style={{ position: "absolute", inset: "0 8px 0 auto", background: "none", border: "none", color: SURFACE.textFaint, cursor: "pointer", fontSize: "12px" }}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => setAthletePickerOpen((prev) => !prev)}
               aria-label="Mostrar participantes"
@@ -1142,16 +1143,16 @@ export default function HealthPage() {
               v
             </button>
             {athletePickerOpen ? (
-              <div style={{ position: "absolute", zIndex: 30, marginTop: "4px", maxHeight: "224px", width: "100%", overflowY: "auto", borderRadius: "12px", padding: "4px", boxShadow: "0 8px 24px rgba(15,23,42,0.12)", background: "#ffffff", border: "1px solid #e2e8f0" }}>
+              <div style={{ position: "absolute", zIndex: 30, marginTop: "4px", maxHeight: "224px", width: "100%", overflowY: "auto", borderRadius: "12px", padding: "4px", boxShadow: "0 8px 24px rgba(15,23,42,0.12)", background: SURFACE.card, border: "1px solid #e2e8f0" }}>
                 {searchableAthletes.length === 0 ? (
-                  <div style={{ padding: "8px 12px", fontSize: "14px", color: "#94a3b8" }}>{t("Sin resultados")}</div>
+                  <div style={{ padding: "8px 12px", fontSize: "14px", color: SURFACE.textFaint }}>{t("Sin resultados")}</div>
                 ) : (
                   searchableAthletes.slice(0, 60).map((item) => (
                     <button
                       key={item.id}
                       type="button"
-                      style={{ display: "block", width: "100%", borderRadius: "8px", padding: "8px 12px", textAlign: "left", fontSize: "14px", color: "#0f172a", background: "none", border: "none", cursor: "pointer" }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#f8fafc"; }}
+                      style={{ display: "block", width: "100%", borderRadius: "8px", padding: "8px 12px", textAlign: "left", fontSize: "14px", color: SURFACE.text, background: "none", border: "none", cursor: "pointer" }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = SURFACE.bg; }}
                       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "none"; }}
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => onPickAthlete(item.id)}
@@ -1164,11 +1165,11 @@ export default function HealthPage() {
             ) : null}
           </div>
         </div>
-        {loading ? <p style={{ marginTop: "12px", fontSize: "13px", color: "#94a3b8" }}>{t("Cargando...")}</p> : null}
+        {loading ? <p style={{ marginTop: "12px", fontSize: "13px", color: SURFACE.textFaint }}>{t("Cargando...")}</p> : null}
       </section>
 
-      <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "12px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
-        <div style={{ display: "inline-flex", flexWrap: "wrap", borderRadius: "12px", border: "1px solid #e2e8f0", background: "#f8fafc", padding: "4px" }}>
+      <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "12px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+        <div style={{ display: "inline-flex", flexWrap: "wrap", borderRadius: "12px", border: "1px solid #e2e8f0", background: SURFACE.bg, padding: "4px" }}>
           {HEALTH_SUBSECTIONS.map((item) => {
             const active = item.id === activeSubsection;
             return (
@@ -1179,7 +1180,7 @@ export default function HealthPage() {
                   minWidth: "132px", borderRadius: "10px", padding: "8px 16px",
                   fontSize: "14px", fontWeight: 600, border: "none", cursor: "pointer", transition: "all 150ms",
                   background: active ? "linear-gradient(135deg, #21D0B3, #14AE98)" : "transparent",
-                  color: active ? "#ffffff" : "#64748b",
+                  color: active ? SURFACE.card : SURFACE.textMuted,
                   boxShadow: active ? "0 2px 8px rgba(33,208,179,0.3)" : "none",
                 }}
                 onClick={() => setActiveSubsection(item.id)}
@@ -1204,8 +1205,8 @@ export default function HealthPage() {
                 <div className="flex items-center gap-2" style={{ marginBottom: "6px" }}>
                   <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: pal.labelColor }}>{t("Salud")}</span>
                   <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", background: "rgba(33,208,179,0.1)", border: "1px solid rgba(33,208,179,0.25)", borderRadius: "99px", padding: "2px 10px" }}>
-                    <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#21D0B3", display: "inline-block" }} />
-                    <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: "#21D0B3" }}>EN VIVO</span>
+                    <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: BRAND.teal, display: "inline-block" }} />
+                    <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: BRAND.teal }}>EN VIVO</span>
                   </span>
                 </div>
                 <h2 style={{ fontSize: "22px", fontWeight: 800, color: pal.titleColor, margin: 0 }}>{t("Inteligencia de salud")}</h2>
@@ -1224,9 +1225,9 @@ export default function HealthPage() {
             {/* ── Primary KPI cards */}
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
               {[
-                { label: t("Fichas cargadas"),     value: healthDashboard.savedRecords,    color: "#10b981", icon: "clipboard" as KpiIconType, sub: `${healthDashboard.missingRecords} ${t("participantes aún sin ficha")}`,    glow: "rgba(16,185,129,0.18)" },
-                { label: t("Alimentación especial"), value: healthDashboard.specialDietCount, color: "#f59e0b", icon: "utensils" as KpiIconType, sub: t("Requerimiento dietario declarado"),  glow: "rgba(245,158,11,0.15)" },
-                { label: t("Alergias"),             value: healthDashboard.allergicCount,  color: "#ef4444", icon: "alert" as KpiIconType, sub: t("Participantes con alergias activas"), glow: "rgba(239,68,68,0.15)"  },
+                { label: t("Fichas cargadas"),     value: healthDashboard.savedRecords,    color: STATE.success, icon: "clipboard" as KpiIconType, sub: `${healthDashboard.missingRecords} ${t("participantes aún sin ficha")}`,    glow: "rgba(16,185,129,0.18)" },
+                { label: t("Alimentación especial"), value: healthDashboard.specialDietCount, color: STATE.warning, icon: "utensils" as KpiIconType, sub: t("Requerimiento dietario declarado"),  glow: "rgba(245,158,11,0.15)" },
+                { label: t("Alergias"),             value: healthDashboard.allergicCount,  color: STATE.danger, icon: "alert" as KpiIconType, sub: t("Participantes con alergias activas"), glow: "rgba(239,68,68,0.15)"  },
                 { label: t("Enfermedad crónica"),   value: healthDashboard.chronicCount,   color: "#38bdf8", icon: "activity" as KpiIconType, sub: t("Patología crónica declarada"),        glow: "rgba(56,189,248,0.15)" },
               ].map((card) => (
                 <article key={card.label} style={{
@@ -1289,16 +1290,16 @@ export default function HealthPage() {
                   chipColor: "rgba(56,189,248,0.18)", chipText: "#38bdf8",
                 },
                 {
-                  label: t("Top alergias"), icon: "alert" as KpiIconType, color: "#ef4444",
+                  label: t("Top alergias"), icon: "alert" as KpiIconType, color: STATE.danger,
                   items: healthDashboard.topAllergies,
                   empty: t("Sin alergias detalladas."),
-                  chipColor: "rgba(239,68,68,0.18)", chipText: "#ef4444",
+                  chipColor: "rgba(239,68,68,0.18)", chipText: STATE.danger,
                 },
                 {
-                  label: t("Top dietas y restricciones"), icon: "utensils" as KpiIconType, color: "#f59e0b",
+                  label: t("Top dietas y restricciones"), icon: "utensils" as KpiIconType, color: STATE.warning,
                   items: healthDashboard.topDiets,
                   empty: t("Sin alimentación especial detallada."),
-                  chipColor: "rgba(245,158,11,0.18)", chipText: "#f59e0b",
+                  chipColor: "rgba(245,158,11,0.18)", chipText: STATE.warning,
                 },
               ].map((section) => (
                 <div key={section.label} style={{
@@ -1335,7 +1336,7 @@ export default function HealthPage() {
             <div style={{ marginTop: "20px", background: pal.cardBg, border: `1px solid ${pal.cardBorder}`, borderTop: "3px solid #21D0B3", borderRadius: "18px", padding: "18px", boxShadow: pal.cardShadow }}>
               <div className="flex flex-wrap items-center justify-between gap-3" style={{ marginBottom: "14px" }}>
                 <div className="flex items-center gap-2">
-                  <KpiIcon type="clipboard" color="#21D0B3" size={16} />
+                  <KpiIcon type="clipboard" color={BRAND.teal} size={16} />
                   <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "#0f9d84" }}>
                     {t("Estado de fichas por participante")}
                   </p>
@@ -1352,10 +1353,10 @@ export default function HealthPage() {
               {/* Chips de filtro con contadores */}
               <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "14px" }}>
                 {([
-                  { key: "all" as const, label: t("Todos"), count: healthDashboard.rows.length, color: "#64748b" },
-                  { key: "con" as const, label: t("Con ficha"), count: healthDashboard.savedRecords, color: "#10b981" },
-                  { key: "incompleta" as const, label: t("Fichas incompletas"), count: healthDashboard.rows.filter((r) => r.hasRecord && r.completion < 100).length, color: "#f59e0b" },
-                  { key: "sin" as const, label: t("Sin ficha"), count: healthDashboard.missingRecords, color: "#ef4444" },
+                  { key: "all" as const, label: t("Todos"), count: healthDashboard.rows.length, color: SURFACE.textMuted },
+                  { key: "con" as const, label: t("Con ficha"), count: healthDashboard.savedRecords, color: STATE.success },
+                  { key: "incompleta" as const, label: t("Fichas incompletas"), count: healthDashboard.rows.filter((r) => r.hasRecord && r.completion < 100).length, color: STATE.warning },
+                  { key: "sin" as const, label: t("Sin ficha"), count: healthDashboard.missingRecords, color: STATE.danger },
                 ]).map((chip) => {
                   const active = fichaFilter === chip.key;
                   return (
@@ -1364,11 +1365,11 @@ export default function HealthPage() {
                         display: "inline-flex", alignItems: "center", gap: 6,
                         padding: "6px 12px", borderRadius: "99px", fontSize: "12px", fontWeight: 700, cursor: "pointer",
                         border: `1px solid ${active ? chip.color : pal.cardBorder}`,
-                        background: active ? `${chip.color}18` : "#fff",
+                        background: active ? `${chip.color}18` : SURFACE.card,
                         color: active ? chip.color : pal.textMuted,
                       }}>
                       {chip.label}
-                      <span style={{ background: active ? chip.color : "#f1f5f9", color: active ? "#fff" : pal.textMuted, borderRadius: "99px", padding: "1px 8px", fontSize: "11px", fontWeight: 800 }}>
+                      <span style={{ background: active ? chip.color : SURFACE.borderMuted, color: active ? SURFACE.card : pal.textMuted, borderRadius: "99px", padding: "1px 8px", fontSize: "11px", fontWeight: 800 }}>
                         {chip.count}
                       </span>
                     </button>
@@ -1411,8 +1412,8 @@ export default function HealthPage() {
                             <td style={{ padding: "8px 12px", minWidth: 130 }}>
                               {row.hasRecord ? (
                                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                  <div style={{ flex: 1, height: 6, borderRadius: 99, background: "#f1f5f9", overflow: "hidden" }}>
-                                    <div style={{ width: `${row.completion}%`, height: "100%", borderRadius: 99, background: row.completion >= 100 ? "#10b981" : row.completion >= 50 ? "#f59e0b" : "#ef4444" }} />
+                                  <div style={{ flex: 1, height: 6, borderRadius: 99, background: SURFACE.borderMuted, overflow: "hidden" }}>
+                                    <div style={{ width: `${row.completion}%`, height: "100%", borderRadius: 99, background: row.completion >= 100 ? STATE.success : row.completion >= 50 ? STATE.warning : STATE.danger }} />
                                   </div>
                                   <span style={{ fontSize: "11px", fontWeight: 700, color: pal.textMuted, minWidth: 32, textAlign: "right" }}>{row.completion}%</span>
                                 </div>
@@ -1422,7 +1423,7 @@ export default function HealthPage() {
                             </td>
                             <td style={{ padding: "8px 12px", whiteSpace: "nowrap" }}>
                               {row.hasRecord ? (
-                                <span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 10px", borderRadius: "99px", background: row.completion >= 100 ? "rgba(16,185,129,0.12)" : "rgba(245,158,11,0.12)", color: row.completion >= 100 ? "#047857" : "#b45309", border: `1px solid ${row.completion >= 100 ? "rgba(16,185,129,0.4)" : "rgba(245,158,11,0.4)"}` }}>
+                                <span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 10px", borderRadius: "99px", background: row.completion >= 100 ? "rgba(16,185,129,0.12)" : "rgba(245,158,11,0.12)", color: row.completion >= 100 ? "#047857" : STATE.warningText, border: `1px solid ${row.completion >= 100 ? "rgba(16,185,129,0.4)" : "rgba(245,158,11,0.4)"}` }}>
                                   {row.completion >= 100 ? t("Completa") : t("Incompleta")}
                                 </span>
                               ) : (
@@ -1451,68 +1452,68 @@ export default function HealthPage() {
       ) : null}
 
       {activeSubsection === "bulk" ? (
-        <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+        <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: "16px" }}>
             <div>
-              <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "#94a3b8" }}>{t("Subsección Salud / Carga masiva")}</span>
-              <h2 style={{ marginTop: "4px", fontSize: "20px", fontWeight: 700, color: "#0f172a" }}>{t("Importar fichas de salud")}</h2>
-              <p style={{ marginTop: "4px", fontSize: "13px", color: "#64748b" }}>
+              <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: SURFACE.textFaint }}>{t("Subsección Salud / Carga masiva")}</span>
+              <h2 style={{ marginTop: "4px", fontSize: "20px", fontWeight: 700, color: SURFACE.text }}>{t("Importar fichas de salud")}</h2>
+              <p style={{ marginTop: "4px", fontSize: "13px", color: SURFACE.textMuted }}>
                 {t("Actualiza fichas por lote usando `athlete_id` o `passport_number`, respetando el filtro actual.")}
               </p>
             </div>
-            <button type="button" onClick={downloadHealthTemplate} style={{ padding: "8px 16px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "#ffffff", color: "#64748b", fontWeight: 600, fontSize: "13px", cursor: "pointer" }}>
+            <button type="button" onClick={downloadHealthTemplate} style={{ padding: "8px 16px", borderRadius: "10px", border: "1px solid #e2e8f0", background: SURFACE.card, color: SURFACE.textMuted, fontWeight: 600, fontSize: "13px", cursor: "pointer" }}>
               {t("Descargar template")}
             </button>
           </div>
 
           <div className="mt-5 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
-            <div style={{ borderRadius: "12px", border: "1px solid #e2e8f0", background: "#f8fafc", padding: "16px" }}>
-              <span style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a" }}>{t("Archivo Excel")}</span>
+            <div style={{ borderRadius: "12px", border: "1px solid #e2e8f0", background: SURFACE.bg, padding: "16px" }}>
+              <span style={{ fontSize: "14px", fontWeight: 600, color: SURFACE.text }}>{t("Archivo Excel")}</span>
               <input ref={bulkFileRef} id="health-bulk-file" className="sr-only" type="file" accept=".xlsx,.xls" onChange={onBulkFileChange} />
               <div style={{ marginTop: "8px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "12px" }}>
-                <label htmlFor="health-bulk-file" style={{ padding: "8px 16px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "#ffffff", color: "#64748b", fontWeight: 600, fontSize: "13px", cursor: "pointer" }}>
+                <label htmlFor="health-bulk-file" style={{ padding: "8px 16px", borderRadius: "10px", border: "1px solid #e2e8f0", background: SURFACE.card, color: SURFACE.textMuted, fontWeight: 600, fontSize: "13px", cursor: "pointer" }}>
                   {t("Seleccionar archivo")}
                 </label>
-                <span style={{ fontSize: "12px", color: "#94a3b8" }}>{bulkFileName ?? t("Sin archivo seleccionado")}</span>
+                <span style={{ fontSize: "12px", color: SURFACE.textFaint }}>{bulkFileName ?? t("Sin archivo seleccionado")}</span>
               </div>
-              <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "4px", fontSize: "13px", color: "#64748b" }}>
-                <p><strong style={{ color: "#0f172a" }}>{t("Filas detectadas:")}</strong> {bulkRows.length}</p>
-                <p><strong style={{ color: "#0f172a" }}>{t("Evento filtrado:")}</strong> {events.find((item) => item.id === selectedEventId)?.name || t("Sin filtro")}</p>
+              <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "4px", fontSize: "13px", color: SURFACE.textMuted }}>
+                <p><strong style={{ color: SURFACE.text }}>{t("Filas detectadas:")}</strong> {bulkRows.length}</p>
+                <p><strong style={{ color: SURFACE.text }}>{t("Evento filtrado:")}</strong> {events.find((item) => item.id === selectedEventId)?.name || t("Sin filtro")}</p>
               </div>
               <div style={{ marginTop: "16px", display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                <button type="button" onClick={runBulkImport} disabled={bulkLoading || bulkRows.length === 0} style={{ padding: "9px 18px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: "#ffffff", fontWeight: 700, fontSize: "13px", cursor: bulkLoading || bulkRows.length === 0 ? "not-allowed" : "pointer", opacity: bulkLoading || bulkRows.length === 0 ? 0.6 : 1, boxShadow: "0 2px 8px rgba(33,208,179,0.3)" }}>
+                <button type="button" onClick={runBulkImport} disabled={bulkLoading || bulkRows.length === 0} style={{ padding: "9px 18px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: SURFACE.card, fontWeight: 700, fontSize: "13px", cursor: bulkLoading || bulkRows.length === 0 ? "not-allowed" : "pointer", opacity: bulkLoading || bulkRows.length === 0 ? 0.6 : 1, boxShadow: "0 2px 8px rgba(33,208,179,0.3)" }}>
                   {bulkLoading ? t("Importando...") : t("Ejecutar carga")}
                 </button>
-                <button type="button" onClick={() => { setBulkRows([]); setBulkFileName(null); setBulkErrors([]); setBulkResult(null); if (bulkFileRef.current) bulkFileRef.current.value = ""; }} style={{ padding: "9px 16px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "#ffffff", color: "#64748b", fontWeight: 600, fontSize: "13px", cursor: "pointer" }}>
+                <button type="button" onClick={() => { setBulkRows([]); setBulkFileName(null); setBulkErrors([]); setBulkResult(null); if (bulkFileRef.current) bulkFileRef.current.value = ""; }} style={{ padding: "9px 16px", borderRadius: "10px", border: "1px solid #e2e8f0", background: SURFACE.card, color: SURFACE.textMuted, fontWeight: 600, fontSize: "13px", cursor: "pointer" }}>
                   {t("Limpiar")}
                 </button>
               </div>
-              {bulkResult ? <p style={{ marginTop: "12px", fontSize: "13px", fontWeight: 600, color: "#21D0B3" }}>{bulkResult}</p> : null}
+              {bulkResult ? <p style={{ marginTop: "12px", fontSize: "13px", fontWeight: 600, color: BRAND.teal }}>{bulkResult}</p> : null}
             </div>
 
-            <div style={{ borderRadius: "12px", border: "1px solid #e2e8f0", background: "#f8fafc", padding: "16px" }}>
-              <p style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "#94a3b8" }}>{t("Vista previa")}</p>
+            <div style={{ borderRadius: "12px", border: "1px solid #e2e8f0", background: SURFACE.bg, padding: "16px" }}>
+              <p style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: SURFACE.textFaint }}>{t("Vista previa")}</p>
               {bulkPreview.length === 0 ? (
-                <p style={{ marginTop: "12px", fontSize: "13px", color: "#94a3b8" }}>{t("Aún no hay archivo cargado.")}</p>
+                <p style={{ marginTop: "12px", fontSize: "13px", color: SURFACE.textFaint }}>{t("Aún no hay archivo cargado.")}</p>
               ) : (
                 <div style={{ marginTop: "12px", overflowX: "auto" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
                     <thead>
                       <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
                         {[t("Fila"), "Athlete ID", t("Pasaporte"), t("Nombre"), t("Dieta"), t("Crónico")].map((h) => (
-                          <th key={h} style={{ textAlign: "left", padding: "6px 10px", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#94a3b8" }}>{h}</th>
+                          <th key={h} style={{ textAlign: "left", padding: "6px 10px", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: SURFACE.textFaint }}>{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {bulkPreview.map((row, index) => (
-                        <tr key={`${row.athlete_id}-${index}`} style={{ background: index % 2 === 0 ? "#ffffff" : "#f8fafc" }}>
-                          <td style={{ padding: "6px 10px", color: "#0f172a" }}>{index + 2}</td>
-                          <td style={{ padding: "6px 10px", color: "#64748b" }}>{row.athlete_id || "-"}</td>
-                          <td style={{ padding: "6px 10px", color: "#64748b" }}>{row.passport_number || "-"}</td>
-                          <td style={{ padding: "6px 10px", color: "#0f172a" }}>{row.full_name || "-"}</td>
-                          <td style={{ padding: "6px 10px", color: "#64748b" }}>{row.special_diet_detail || row.special_diet || "-"}</td>
-                          <td style={{ padding: "6px 10px", color: "#64748b" }}>{row.chronic_detail || row.chronic_diseases || "-"}</td>
+                        <tr key={`${row.athlete_id}-${index}`} style={{ background: index % 2 === 0 ? SURFACE.card : SURFACE.bg }}>
+                          <td style={{ padding: "6px 10px", color: SURFACE.text }}>{index + 2}</td>
+                          <td style={{ padding: "6px 10px", color: SURFACE.textMuted }}>{row.athlete_id || "-"}</td>
+                          <td style={{ padding: "6px 10px", color: SURFACE.textMuted }}>{row.passport_number || "-"}</td>
+                          <td style={{ padding: "6px 10px", color: SURFACE.text }}>{row.full_name || "-"}</td>
+                          <td style={{ padding: "6px 10px", color: SURFACE.textMuted }}>{row.special_diet_detail || row.special_diet || "-"}</td>
+                          <td style={{ padding: "6px 10px", color: SURFACE.textMuted }}>{row.chronic_detail || row.chronic_diseases || "-"}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -1521,8 +1522,8 @@ export default function HealthPage() {
               )}
               {bulkErrors.length ? (
                 <div style={{ marginTop: "16px", borderRadius: "12px", border: "1px solid rgba(239,68,68,0.2)", background: "rgba(239,68,68,0.05)", padding: "16px" }}>
-                  <p style={{ fontSize: "13px", fontWeight: 600, color: "#ef4444" }}>{t("Errores detectados")}</p>
-                  <div style={{ marginTop: "8px", display: "flex", flexDirection: "column", gap: "4px", fontSize: "13px", color: "#ef4444" }}>
+                  <p style={{ fontSize: "13px", fontWeight: 600, color: STATE.danger }}>{t("Errores detectados")}</p>
+                  <div style={{ marginTop: "8px", display: "flex", flexDirection: "column", gap: "4px", fontSize: "13px", color: STATE.danger }}>
                     {bulkErrors.slice(0, 12).map((item, index) => (
                       <p key={`${item.row}-${item.field}-${index}`}>
                         {item.row > 0 ? `${t("Fila")} ${item.row}` : t("Sistema")}{item.field ? ` · ${item.field}` : ""}: {item.message}
@@ -1537,11 +1538,11 @@ export default function HealthPage() {
       ) : null}
 
       {activeSubsection === "record" ? <form onSubmit={save} className="space-y-4">
-        <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
-          <p style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "#94a3b8" }}>{t("Antecedentes personales")}</p>
+        <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+          <p style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: SURFACE.textFaint }}>{t("Antecedentes personales")}</p>
           <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-              <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Deporte")}</span>
+              <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Deporte")}</span>
               <StyledSelect
                 value={record.sport}
                 onChange={(e) => setRecord((p) => ({ ...p, sport: e.target.value }))}
@@ -1554,89 +1555,89 @@ export default function HealthPage() {
                 ))}
               </StyledSelect>
             </label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Nombre completo")}</span><input style={fieldStyle} value={record.personal.fullName} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, fullName: e.target.value } }))} /></label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Nombre social")}</span><input style={fieldStyle} value={record.personal.socialName} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, socialName: e.target.value } }))} /></label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Género con que te identificas")}</span><input style={fieldStyle} value={record.personal.genderIdentity} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, genderIdentity: e.target.value } }))} /></label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Género cédula")}</span><input style={fieldStyle} value={record.personal.idCardGender} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, idCardGender: e.target.value } }))} /></label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>RUT</span><input style={fieldStyle} value={record.personal.rut} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, rut: e.target.value } }))} /></label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Estatura")}</span><input style={fieldStyle} value={record.personal.height} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, height: e.target.value } }))} /></label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Peso corporal")}</span><input style={fieldStyle} value={record.personal.weight} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, weight: e.target.value } }))} /></label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Fecha nacimiento")}</span><input style={fieldStyle} type="date" value={record.personal.birthDate} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, birthDate: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Nombre completo")}</span><input style={fieldStyle} value={record.personal.fullName} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, fullName: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Nombre social")}</span><input style={fieldStyle} value={record.personal.socialName} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, socialName: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Género con que te identificas")}</span><input style={fieldStyle} value={record.personal.genderIdentity} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, genderIdentity: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Género cédula")}</span><input style={fieldStyle} value={record.personal.idCardGender} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, idCardGender: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>RUT</span><input style={fieldStyle} value={record.personal.rut} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, rut: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Estatura")}</span><input style={fieldStyle} value={record.personal.height} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, height: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Peso corporal")}</span><input style={fieldStyle} value={record.personal.weight} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, weight: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Fecha nacimiento")}</span><input style={fieldStyle} type="date" value={record.personal.birthDate} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, birthDate: e.target.value } }))} /></label>
             {yesNo(t("Alérgico"), record.personal.allergic, (value) => setRecord((p) => ({ ...p, personal: { ...p.personal, allergic: value } })))}
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Alérgico a")}</span><input style={fieldStyle} value={record.personal.allergicTo} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, allergicTo: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Alérgico a")}</span><input style={fieldStyle} value={record.personal.allergicTo} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, allergicTo: e.target.value } }))} /></label>
             {yesNo(t("Enfermedades crónicas"), record.personal.chronicDiseases, (value) => setRecord((p) => ({ ...p, personal: { ...p.personal, chronicDiseases: value } })))}
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }} className="md:col-span-2"><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Detalle crónico / medicamentos")}</span><input style={fieldStyle} value={record.personal.chronicDetail} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, chronicDetail: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }} className="md:col-span-2"><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Detalle crónico / medicamentos")}</span><input style={fieldStyle} value={record.personal.chronicDetail} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, chronicDetail: e.target.value } }))} /></label>
             {yesNo(t("Tratamiento psiquiátrico"), record.personal.psychiatricTreatment, (value) => setRecord((p) => ({ ...p, personal: { ...p.personal, psychiatricTreatment: value } })))}
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Detalle tratamiento")}</span><input style={fieldStyle} value={record.personal.psychiatricDetail} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, psychiatricDetail: e.target.value } }))} /></label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Diagnóstico psiquiátrico")}</span><input style={fieldStyle} value={record.personal.psychiatricDiagnosis} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, psychiatricDiagnosis: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Detalle tratamiento")}</span><input style={fieldStyle} value={record.personal.psychiatricDetail} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, psychiatricDetail: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Diagnóstico psiquiátrico")}</span><input style={fieldStyle} value={record.personal.psychiatricDiagnosis} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, psychiatricDiagnosis: e.target.value } }))} /></label>
             {yesNo(t("Medicamentos psiquiátricos"), record.personal.psychiatricMedications, (value) => setRecord((p) => ({ ...p, personal: { ...p.personal, psychiatricMedications: value } })))}
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Dosis y horarios")}</span><input style={fieldStyle} value={record.personal.psychiatricDoseSchedule} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, psychiatricDoseSchedule: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Dosis y horarios")}</span><input style={fieldStyle} value={record.personal.psychiatricDoseSchedule} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, psychiatricDoseSchedule: e.target.value } }))} /></label>
             {yesNo(t("Alimentación especial"), record.personal.specialDiet, (value) => setRecord((p) => ({ ...p, personal: { ...p.personal, specialDiet: value } })))}
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("¿Cuál?")}</span><input style={fieldStyle} value={record.personal.specialDietDetail} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, specialDietDetail: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("¿Cuál?")}</span><input style={fieldStyle} value={record.personal.specialDietDetail} onChange={(e) => setRecord((p) => ({ ...p, personal: { ...p.personal, specialDietDetail: e.target.value } }))} /></label>
           </div>
         </section>
 
-        <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
-          <p style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "#94a3b8" }}>{t("Contacto, representación y emergencia")}</p>
+        <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+          <p style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: SURFACE.textFaint }}>{t("Contacto, representación y emergencia")}</p>
           <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }} className="md:col-span-2"><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Dirección")}</span><input style={fieldStyle} value={record.contact.address} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, address: e.target.value } }))} /></label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Comuna")}</span><input style={fieldStyle} value={record.contact.commune} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, commune: e.target.value } }))} /></label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Ciudad")}</span><input style={fieldStyle} value={record.contact.city} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, city: e.target.value } }))} /></label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Región")}</span><input style={fieldStyle} value={record.contact.region} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, region: e.target.value } }))} /></label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Fono")}</span><input style={fieldStyle} value={record.contact.phone} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, phone: e.target.value } }))} /></label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>Email</span><input style={fieldStyle} value={record.contact.email} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, email: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }} className="md:col-span-2"><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Dirección")}</span><input style={fieldStyle} value={record.contact.address} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, address: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Comuna")}</span><input style={fieldStyle} value={record.contact.commune} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, commune: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Ciudad")}</span><input style={fieldStyle} value={record.contact.city} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, city: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Región")}</span><input style={fieldStyle} value={record.contact.region} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, region: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Fono")}</span><input style={fieldStyle} value={record.contact.phone} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, phone: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>Email</span><input style={fieldStyle} value={record.contact.email} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, email: e.target.value } }))} /></label>
             {yesNo(t("Pueblo originario"), record.contact.indigenous, (value) => setRecord((p) => ({ ...p, contact: { ...p.contact, indigenous: value } })))}
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("¿Cuál?")}</span><input style={fieldStyle} value={record.contact.indigenousDetail} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, indigenousDetail: e.target.value } }))} /></label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Talla ropa")}</span><StyledSelect value={record.contact.shirtSize} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, shirtSize: e.target.value } }))}><option value="">{t("Selecciona")}</option>{SHIRT_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}</StyledSelect></label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Dependencia establecimiento")}</span><StyledSelect value={record.representation.dependencyType} onChange={(e) => setRecord((p) => ({ ...p, representation: { ...p.representation, dependencyType: e.target.value } }))}><option value="">{t("Selecciona")}</option>{DEPENDENCY_OPTIONS.map((item) => <option key={item} value={item}>{t(item)}</option>)}</StyledSelect></label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }} className="md:col-span-2"><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Institución que representa")}</span><input style={fieldStyle} value={record.representation.institutionName} onChange={(e) => setRecord((p) => ({ ...p, representation: { ...p.representation, institutionName: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("¿Cuál?")}</span><input style={fieldStyle} value={record.contact.indigenousDetail} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, indigenousDetail: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Talla ropa")}</span><StyledSelect value={record.contact.shirtSize} onChange={(e) => setRecord((p) => ({ ...p, contact: { ...p.contact, shirtSize: e.target.value } }))}><option value="">{t("Selecciona")}</option>{SHIRT_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}</StyledSelect></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Dependencia establecimiento")}</span><StyledSelect value={record.representation.dependencyType} onChange={(e) => setRecord((p) => ({ ...p, representation: { ...p.representation, dependencyType: e.target.value } }))}><option value="">{t("Selecciona")}</option>{DEPENDENCY_OPTIONS.map((item) => <option key={item} value={item}>{t(item)}</option>)}</StyledSelect></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }} className="md:col-span-2"><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Institución que representa")}</span><input style={fieldStyle} value={record.representation.institutionName} onChange={(e) => setRecord((p) => ({ ...p, representation: { ...p.representation, institutionName: e.target.value } }))} /></label>
             {yesNo(t("Inscrito en club"), record.representation.enrolledClub, (value) => setRecord((p) => ({ ...p, representation: { ...p.representation, enrolledClub: value } })))}
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Nombre del club")}</span><input style={fieldStyle} value={record.representation.clubName} onChange={(e) => setRecord((p) => ({ ...p, representation: { ...p.representation, clubName: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Nombre del club")}</span><input style={fieldStyle} value={record.representation.clubName} onChange={(e) => setRecord((p) => ({ ...p, representation: { ...p.representation, clubName: e.target.value } }))} /></label>
             {yesNo(t("Promesas Chile"), record.representation.promesasChile, (value) => setRecord((p) => ({ ...p, representation: { ...p.representation, promesasChile: value } })))}
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Emergencia: nombre")}</span><input style={fieldStyle} value={record.emergency.name} onChange={(e) => setRecord((p) => ({ ...p, emergency: { ...p.emergency, name: e.target.value } }))} /></label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Emergencia: teléfono")}</span><input style={fieldStyle} value={record.emergency.phone} onChange={(e) => setRecord((p) => ({ ...p, emergency: { ...p.emergency, phone: e.target.value } }))} /></label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Emergencia: email")}</span><input style={fieldStyle} value={record.emergency.email} onChange={(e) => setRecord((p) => ({ ...p, emergency: { ...p.emergency, email: e.target.value } }))} /></label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }} className="md:col-span-2"><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Emergencia: dirección")}</span><input style={fieldStyle} value={record.emergency.address} onChange={(e) => setRecord((p) => ({ ...p, emergency: { ...p.emergency, address: e.target.value } }))} /></label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Parentesco/Relación")}</span><input style={fieldStyle} value={record.emergency.relation} onChange={(e) => setRecord((p) => ({ ...p, emergency: { ...p.emergency, relation: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Emergencia: nombre")}</span><input style={fieldStyle} value={record.emergency.name} onChange={(e) => setRecord((p) => ({ ...p, emergency: { ...p.emergency, name: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Emergencia: teléfono")}</span><input style={fieldStyle} value={record.emergency.phone} onChange={(e) => setRecord((p) => ({ ...p, emergency: { ...p.emergency, phone: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Emergencia: email")}</span><input style={fieldStyle} value={record.emergency.email} onChange={(e) => setRecord((p) => ({ ...p, emergency: { ...p.emergency, email: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }} className="md:col-span-2"><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Emergencia: dirección")}</span><input style={fieldStyle} value={record.emergency.address} onChange={(e) => setRecord((p) => ({ ...p, emergency: { ...p.emergency, address: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Parentesco/Relación")}</span><input style={fieldStyle} value={record.emergency.relation} onChange={(e) => setRecord((p) => ({ ...p, emergency: { ...p.emergency, relation: e.target.value } }))} /></label>
           </div>
         </section>
 
-        <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
-          <p style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "#94a3b8" }}>{t("Certificados y autorizaciones")}</p>
+        <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+          <p style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: SURFACE.textFaint }}>{t("Certificados y autorizaciones")}</p>
           <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Cert. salud: nombre deportista")}</span><input style={fieldStyle} value={record.healthCertificate.athleteName} onChange={(e) => setRecord((p) => ({ ...p, healthCertificate: { ...p.healthCertificate, athleteName: e.target.value } }))} /></label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Aptitud física")}</span><StyledSelect value={record.healthCertificate.fitness} onChange={(e) => setRecord((p) => ({ ...p, healthCertificate: { ...p.healthCertificate, fitness: e.target.value as "" | "APTO" | "NO_APTO" } }))}><option value="">{t("Selecciona")}</option><option value="APTO">{t("Apto(a)")}</option><option value="NO_APTO">{t("No apto(a)")}</option></StyledSelect></label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Médico: nombre")}</span><input style={fieldStyle} value={record.healthCertificate.doctorName} onChange={(e) => setRecord((p) => ({ ...p, healthCertificate: { ...p.healthCertificate, doctorName: e.target.value } }))} /></label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Médico: RUT")}</span><input style={fieldStyle} value={record.healthCertificate.doctorRut} onChange={(e) => setRecord((p) => ({ ...p, healthCertificate: { ...p.healthCertificate, doctorRut: e.target.value } }))} /></label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }} className="md:col-span-2"><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Firma y timbre médico")}</span><input style={fieldStyle} value={record.healthCertificate.signatureStamp} onChange={(e) => setRecord((p) => ({ ...p, healthCertificate: { ...p.healthCertificate, signatureStamp: e.target.value } }))} /></label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Apoderado(a): nombre")}</span><input style={fieldStyle} value={record.guardianAuthorization.guardianName} onChange={(e) => setRecord((p) => ({ ...p, guardianAuthorization: { ...p.guardianAuthorization, guardianName: e.target.value } }))} /></label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Apoderado(a): RUT")}</span><input style={fieldStyle} value={record.guardianAuthorization.guardianRut} onChange={(e) => setRecord((p) => ({ ...p, guardianAuthorization: { ...p.guardianAuthorization, guardianRut: e.target.value } }))} /></label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }} className="md:col-span-2"><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Firma apoderado(a)")}</span><input style={fieldStyle} value={record.guardianAuthorization.guardianSignature} onChange={(e) => setRecord((p) => ({ ...p, guardianAuthorization: { ...p.guardianAuthorization, guardianSignature: e.target.value } }))} /></label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }} className="md:col-span-2"><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Cert. escolar: establecimiento")}</span><input style={fieldStyle} value={record.schoolCertificate.establishmentName} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, establishmentName: e.target.value } }))} /></label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Alumno(a)")}</span><input style={fieldStyle} value={record.schoolCertificate.studentName} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, studentName: e.target.value } }))} /></label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("RUT alumno(a)")}</span><input style={fieldStyle} value={record.schoolCertificate.studentRut} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, studentRut: e.target.value } }))} /></label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Director(a): nombre")}</span><input style={fieldStyle} value={record.schoolCertificate.directorName} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, directorName: e.target.value } }))} /></label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Director(a): RUT")}</span><input style={fieldStyle} value={record.schoolCertificate.directorRut} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, directorRut: e.target.value } }))} /></label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Firma director(a)")}</span><input style={fieldStyle} value={record.schoolCertificate.directorSignature} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, directorSignature: e.target.value } }))} /></label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Timbre director(a)")}</span><input style={fieldStyle} value={record.schoolCertificate.directorStamp} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, directorStamp: e.target.value } }))} /></label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{t("Fecha certificado")}</span><input style={fieldStyle} type="date" value={record.schoolCertificate.certificateDate} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, certificateDate: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Cert. salud: nombre deportista")}</span><input style={fieldStyle} value={record.healthCertificate.athleteName} onChange={(e) => setRecord((p) => ({ ...p, healthCertificate: { ...p.healthCertificate, athleteName: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Aptitud física")}</span><StyledSelect value={record.healthCertificate.fitness} onChange={(e) => setRecord((p) => ({ ...p, healthCertificate: { ...p.healthCertificate, fitness: e.target.value as "" | "APTO" | "NO_APTO" } }))}><option value="">{t("Selecciona")}</option><option value="APTO">{t("Apto(a)")}</option><option value="NO_APTO">{t("No apto(a)")}</option></StyledSelect></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Médico: nombre")}</span><input style={fieldStyle} value={record.healthCertificate.doctorName} onChange={(e) => setRecord((p) => ({ ...p, healthCertificate: { ...p.healthCertificate, doctorName: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Médico: RUT")}</span><input style={fieldStyle} value={record.healthCertificate.doctorRut} onChange={(e) => setRecord((p) => ({ ...p, healthCertificate: { ...p.healthCertificate, doctorRut: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }} className="md:col-span-2"><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Firma y timbre médico")}</span><input style={fieldStyle} value={record.healthCertificate.signatureStamp} onChange={(e) => setRecord((p) => ({ ...p, healthCertificate: { ...p.healthCertificate, signatureStamp: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Apoderado(a): nombre")}</span><input style={fieldStyle} value={record.guardianAuthorization.guardianName} onChange={(e) => setRecord((p) => ({ ...p, guardianAuthorization: { ...p.guardianAuthorization, guardianName: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Apoderado(a): RUT")}</span><input style={fieldStyle} value={record.guardianAuthorization.guardianRut} onChange={(e) => setRecord((p) => ({ ...p, guardianAuthorization: { ...p.guardianAuthorization, guardianRut: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }} className="md:col-span-2"><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Firma apoderado(a)")}</span><input style={fieldStyle} value={record.guardianAuthorization.guardianSignature} onChange={(e) => setRecord((p) => ({ ...p, guardianAuthorization: { ...p.guardianAuthorization, guardianSignature: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }} className="md:col-span-2"><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Cert. escolar: establecimiento")}</span><input style={fieldStyle} value={record.schoolCertificate.establishmentName} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, establishmentName: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Alumno(a)")}</span><input style={fieldStyle} value={record.schoolCertificate.studentName} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, studentName: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("RUT alumno(a)")}</span><input style={fieldStyle} value={record.schoolCertificate.studentRut} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, studentRut: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Director(a): nombre")}</span><input style={fieldStyle} value={record.schoolCertificate.directorName} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, directorName: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Director(a): RUT")}</span><input style={fieldStyle} value={record.schoolCertificate.directorRut} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, directorRut: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Firma director(a)")}</span><input style={fieldStyle} value={record.schoolCertificate.directorSignature} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, directorSignature: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Timbre director(a)")}</span><input style={fieldStyle} value={record.schoolCertificate.directorStamp} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, directorStamp: e.target.value } }))} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}><span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Fecha certificado")}</span><input style={fieldStyle} type="date" value={record.schoolCertificate.certificateDate} onChange={(e) => setRecord((p) => ({ ...p, schoolCertificate: { ...p.schoolCertificate, certificateDate: e.target.value } }))} /></label>
           </div>
         </section>
 
-        <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+        <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
-            <div style={{ fontSize: "13px", color: "#64748b" }}>
+            <div style={{ fontSize: "13px", color: SURFACE.textMuted }}>
               {selectedAthlete ? `${t("Participante seleccionado:")} ${selectedAthlete.fullName || selectedAthlete.id}` : t("Selecciona un participante para guardar la ficha.")}
             </div>
-            <button style={{ padding: "9px 28px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: "#ffffff", fontWeight: 700, fontSize: "14px", cursor: !selectedAthleteId || saving ? "not-allowed" : "pointer", opacity: !selectedAthleteId || saving ? 0.6 : 1, boxShadow: "0 2px 8px rgba(33,208,179,0.3)" }} type="submit" disabled={!selectedAthleteId || saving}>
+            <button style={{ padding: "9px 28px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: SURFACE.card, fontWeight: 700, fontSize: "14px", cursor: !selectedAthleteId || saving ? "not-allowed" : "pointer", opacity: !selectedAthleteId || saving ? 0.6 : 1, boxShadow: "0 2px 8px rgba(33,208,179,0.3)" }} type="submit" disabled={!selectedAthleteId || saving}>
               {saving ? t("Guardando...") : t("Guardar ficha de salud")}
             </button>
-            <button style={{ padding: "9px 20px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "#ffffff", color: "#64748b", fontWeight: 600, fontSize: "14px", cursor: !selectedAthleteId ? "not-allowed" : "pointer", opacity: !selectedAthleteId ? 0.5 : 1 }} type="button" disabled={!selectedAthleteId} onClick={exportHealthSheet}>
+            <button style={{ padding: "9px 20px", borderRadius: "10px", border: "1px solid #e2e8f0", background: SURFACE.card, color: SURFACE.textMuted, fontWeight: 600, fontSize: "14px", cursor: !selectedAthleteId ? "not-allowed" : "pointer", opacity: !selectedAthleteId ? 0.5 : 1 }} type="button" disabled={!selectedAthleteId} onClick={exportHealthSheet}>
               {t("Exportar ficha (PDF)")}
             </button>
           </div>
-          {error ? <p style={{ marginTop: "12px", fontSize: "13px", color: "#ef4444" }}>{error}</p> : null}
-          {message ? <p style={{ marginTop: "12px", fontSize: "13px", color: "#21D0B3" }}>{message}</p> : null}
+          {error ? <p style={{ marginTop: "12px", fontSize: "13px", color: STATE.danger }}>{error}</p> : null}
+          {message ? <p style={{ marginTop: "12px", fontSize: "13px", color: BRAND.teal }}>{message}</p> : null}
         </section>
       </form> : null}
     </div>

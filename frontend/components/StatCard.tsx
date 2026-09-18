@@ -1,3 +1,4 @@
+import { SURFACE } from "@/lib/design";
 export default function StatCard({
   title,
   value,
@@ -27,7 +28,7 @@ export default function StatCard({
       <p className="text-xs uppercase tracking-[0.25em] text-white/40">{title}</p>
       <h3
         className="mt-2 font-sans font-bold text-3xl"
-        style={{ color: accent ? "#c9a84c" : "#ffffff" }}
+        style={{ color: accent ? "#c9a84c" : SURFACE.card }}
       >
         {value}
       </h3>

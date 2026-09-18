@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { ArrowLeftIcon, DownloadIcon } from "@/components/ui/Icons";
+import { BRAND, SURFACE } from "@/lib/design";
 
 // PDF.js pesa: se carga sólo cuando se abre un documento.
 const PdfCanvasViewer = dynamic(() => import("@/components/PdfCanvasViewer"), {
@@ -55,7 +56,7 @@ export default function PdfViewerOverlay({
             borderRadius: 10,
             border: "1px solid rgba(52,243,198,0.4)",
             background: "rgba(33,208,179,0.15)",
-            color: "#34F3C6",
+            color: BRAND.tealLight,
             fontSize: 14,
             fontWeight: 700,
             cursor: "pointer",
@@ -69,7 +70,7 @@ export default function PdfViewerOverlay({
           style={{
             fontSize: 13.5,
             fontWeight: 700,
-            color: "#fff",
+            color: SURFACE.card,
             margin: 0,
             flex: 1,
             minWidth: 0,
@@ -93,7 +94,7 @@ export default function PdfViewerOverlay({
               borderRadius: 10,
               border: "1px solid rgba(255,255,255,0.25)",
               background: "rgba(255,255,255,0.08)",
-              color: "#fff",
+              color: SURFACE.card,
               fontSize: 13,
               fontWeight: 700,
               cursor: "pointer",
@@ -109,7 +110,7 @@ export default function PdfViewerOverlay({
         <iframe
           srcDoc={srcDoc}
           title={title}
-          style={{ flex: 1, width: "100%", border: "none", background: "#fff" }}
+          style={{ flex: 1, width: "100%", border: "none", background: SURFACE.card }}
         />
       ) : (
         // Los PDF se dibujan con PDF.js: en un iframe iOS muestra sólo la

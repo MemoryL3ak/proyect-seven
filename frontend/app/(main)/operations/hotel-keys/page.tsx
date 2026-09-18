@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { PercentIcon, CheckIcon, WrenchIcon, AlertCircleIcon, RefreshIcon, TrashIcon } from "@/components/ui/Icons";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { useI18n } from "@/lib/i18n";
@@ -55,13 +56,13 @@ type IssueForm = {
 type ReturnForm = { actorName: string; notes: string };
 
 const STATUS_STYLES: Record<string, { accent: string; chipBg: string; chipBorder: string; label: string }> = {
-  AVAILABLE:   { accent: "#10b981", chipBg: "rgba(16,185,129,0.10)",  chipBorder: "rgba(16,185,129,0.28)",  label: "Disponible"    },
-  ASSIGNED:    { accent: "#3b82f6", chipBg: "rgba(59,130,246,0.10)",  chipBorder: "rgba(59,130,246,0.28)",  label: "Entregada"     },
-  MAINTENANCE: { accent: "#f59e0b", chipBg: "rgba(245,158,11,0.10)",  chipBorder: "rgba(245,158,11,0.28)",  label: "Mantenimiento" },
-  LOST:        { accent: "#ef4444", chipBg: "rgba(239,68,68,0.08)",   chipBorder: "rgba(239,68,68,0.25)",   label: "Perdida"       },
+  AVAILABLE:   { accent: STATE.success, chipBg: "rgba(16,185,129,0.10)",  chipBorder: "rgba(16,185,129,0.28)",  label: "Disponible"    },
+  ASSIGNED:    { accent: STATE.info, chipBg: "rgba(59,130,246,0.10)",  chipBorder: "rgba(59,130,246,0.28)",  label: "Entregada"     },
+  MAINTENANCE: { accent: STATE.warning, chipBg: "rgba(245,158,11,0.10)",  chipBorder: "rgba(245,158,11,0.28)",  label: "Mantenimiento" },
+  LOST:        { accent: STATE.danger, chipBg: "rgba(239,68,68,0.08)",   chipBorder: "rgba(239,68,68,0.25)",   label: "Perdida"       },
 };
 const getStatus = (s?: string | null) =>
-  STATUS_STYLES[s ?? ""] ?? { accent: "#94a3b8", chipBg: "rgba(148,163,184,0.10)", chipBorder: "rgba(148,163,184,0.22)", label: s || "-" };
+  STATUS_STYLES[s ?? ""] ?? { accent: SURFACE.textFaint, chipBg: "rgba(148,163,184,0.10)", chipBorder: "rgba(148,163,184,0.22)", label: s || "-" };
 
 const formatDateTime = (value?: string | null) => {
   if (!value) return "-";
@@ -76,12 +77,12 @@ const emptyReturnForm = (): ReturnForm => ({ actorName: "", notes: "" });
 
 const inputStyle: React.CSSProperties = {
   width: "100%", height: "38px", padding: "0 12px", borderRadius: "10px",
-  border: "1px solid #e2e8f0", background: "#ffffff", color: "#0f172a",
+  border: "1px solid #e2e8f0", background: SURFACE.card, color: SURFACE.text,
   fontSize: "13px", outline: "none",
 };
 const textareaStyle: React.CSSProperties = {
   width: "100%", padding: "10px 12px", borderRadius: "10px",
-  border: "1px solid #e2e8f0", background: "#ffffff", color: "#0f172a",
+  border: "1px solid #e2e8f0", background: SURFACE.card, color: SURFACE.text,
   fontSize: "13px", outline: "none", resize: "vertical" as const, minHeight: "80px",
 };
 const selectStyle: React.CSSProperties = { ...inputStyle };
@@ -280,28 +281,28 @@ export default function HotelKeysPage() {
   const assignedPct = stats.total > 0 ? Math.round((stats.assigned / stats.total) * 100) : 0;
 
   const kpiCards = [
-    { label: t("Total llaves"),  value: stats.total,       color: "#64748b", i: 0, sub: t("En inventario") },
-    { label: t("Disponibles"),   value: stats.available,   color: "#10b981", i: 1, sub: t("Listas para entrega") },
-    { label: t("Entregadas"),    value: stats.assigned,    color: "#3b82f6", i: 2, sub: `${assignedPct}${t("% del total")}` },
-    { label: t("Mantenimiento"), value: stats.maintenance, color: "#f59e0b", i: 3, sub: t("Fuera de servicio") },
-    { label: t("Perdidas"),      value: stats.lost,        color: "#ef4444", i: 4, sub: stats.lost > 0 ? t("¡Requiere atención!") : t("Sin incidencias") },
+    { label: t("Total llaves"),  value: stats.total,       color: SURFACE.textMuted, i: 0, sub: t("En inventario") },
+    { label: t("Disponibles"),   value: stats.available,   color: STATE.success, i: 1, sub: t("Listas para entrega") },
+    { label: t("Entregadas"),    value: stats.assigned,    color: STATE.info, i: 2, sub: `${assignedPct}${t("% del total")}` },
+    { label: t("Mantenimiento"), value: stats.maintenance, color: STATE.warning, i: 3, sub: t("Fuera de servicio") },
+    { label: t("Perdidas"),      value: stats.lost,        color: STATE.danger, i: 4, sub: stats.lost > 0 ? t("¡Requiere atención!") : t("Sin incidencias") },
   ];
 
   return (
     <div className="space-y-6">
       {/* ── Command panel */}
-      <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "20px", padding: "24px 28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+      <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "20px", padding: "24px 28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: "16px" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
-              <p style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "#94a3b8" }}>{t("Operaciones")}</p>
+              <p style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: SURFACE.textFaint }}>{t("Operaciones")}</p>
               <span style={{ display: "flex", alignItems: "center", gap: "5px", background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.25)", borderRadius: "99px", padding: "2px 8px" }}>
-                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#10b981", display: "inline-block" }} />
-                <span style={{ fontSize: "10px", fontWeight: 700, color: "#10b981", letterSpacing: "0.08em" }}>{t("EN VIVO")}</span>
+                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: STATE.success, display: "inline-block" }} />
+                <span style={{ fontSize: "10px", fontWeight: 700, color: STATE.success, letterSpacing: "0.08em" }}>{t("EN VIVO")}</span>
               </span>
             </div>
-            <h1 style={{ fontSize: "22px", fontWeight: 800, color: "#0f172a", lineHeight: 1.2, marginBottom: "4px" }}>{t("Gestión de llaves")}</h1>
-            <p style={{ fontSize: "13px", color: "#64748b" }}>
+            <h1 style={{ fontSize: "22px", fontWeight: 800, color: SURFACE.text, lineHeight: 1.2, marginBottom: "4px" }}>{t("Gestión de llaves")}</h1>
+            <p style={{ fontSize: "13px", color: SURFACE.textMuted }}>
               {lastUpdated ? `${t("Actualizado")} ${lastUpdated.toLocaleTimeString("es-CL")}` : t("Control operativo en tiempo real")}
             </p>
           </div>
@@ -324,8 +325,8 @@ export default function HotelKeysPage() {
             </select>
             <input style={inputStyle} placeholder={t("Buscar llave, habitación, hotel…")} value={search} onChange={(e) => setSearch(e.target.value)} />
             <button onClick={loadData} disabled={loading} style={{
-              background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "9px 16px",
-              color: loading ? "#94a3b8" : "#475569", fontSize: "13px", fontWeight: 600,
+              background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "10px", padding: "9px 16px",
+              color: loading ? SURFACE.textFaint : SURFACE.textSecondary, fontSize: "13px", fontWeight: 600,
               cursor: loading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: "6px",
             }}>
               <RefreshIcon size={14} strokeWidth={2.5} />
@@ -333,14 +334,14 @@ export default function HotelKeysPage() {
             </button>
           </div>
         </div>
-        {error && <p style={{ marginTop: "10px", fontSize: "13px", color: "#ef4444" }}>{error}</p>}
+        {error && <p style={{ marginTop: "10px", fontSize: "13px", color: STATE.danger }}>{error}</p>}
       </section>
 
       {/* ── KPI cards */}
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         {kpiCards.map((card) => (
           <article key={card.label} style={{
-            background: "#ffffff", border: "1px solid #e2e8f0",
+            background: SURFACE.card, border: "1px solid #e2e8f0",
             borderTop: `3px solid ${card.color}`, borderRadius: "20px",
             padding: "18px 20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)",
             transition: "transform 120ms ease",
@@ -351,14 +352,14 @@ export default function HotelKeysPage() {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
                 <span style={{ color: card.color, display: "flex" }}>{KPI_ICONS[card.i]}</span>
-                <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#94a3b8" }}>{card.label}</span>
+                <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: SURFACE.textFaint }}>{card.label}</span>
               </div>
               <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: card.color, display: "inline-block" }} />
             </div>
             <p style={{ fontSize: "2.4rem", fontWeight: 800, color: card.color, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
               {loading ? "—" : card.value}
             </p>
-            <p style={{ marginTop: "6px", fontSize: "12px", color: "#64748b" }}>{card.sub}</p>
+            <p style={{ marginTop: "6px", fontSize: "12px", color: SURFACE.textMuted }}>{card.sub}</p>
           </article>
         ))}
       </section>
@@ -367,15 +368,15 @@ export default function HotelKeysPage() {
       <section className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
 
         {/* Inventory list */}
-        <article style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "24px", padding: "22px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+        <article style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "24px", padding: "22px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
           <div style={{ marginBottom: "16px" }}>
-            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#94a3b8" }}>{t("Control de inventario")}</p>
-            <h3 style={{ marginTop: "3px", fontWeight: 700, fontSize: "16px", color: "#0f172a" }}>{t("Inventario de llaves")}</h3>
-            <p style={{ marginTop: "3px", fontSize: "13px", color: "#64748b" }}>{t("Selecciona una llave para ver su bitácora y operar entrega/devolución.")}</p>
+            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: SURFACE.textFaint }}>{t("Control de inventario")}</p>
+            <h3 style={{ marginTop: "3px", fontWeight: 700, fontSize: "16px", color: SURFACE.text }}>{t("Inventario de llaves")}</h3>
+            <p style={{ marginTop: "3px", fontSize: "13px", color: SURFACE.textMuted }}>{t("Selecciona una llave para ver su bitácora y operar entrega/devolución.")}</p>
           </div>
           <div className="space-y-3">
             {enrichedKeys.length === 0 ? (
-              <div style={{ borderRadius: "16px", border: "1px dashed #e2e8f0", background: "#f8fafc", padding: "48px 24px", textAlign: "center", color: "#94a3b8", fontSize: "14px" }}>
+              <div style={{ borderRadius: "16px", border: "1px dashed #e2e8f0", background: SURFACE.bg, padding: "48px 24px", textAlign: "center", color: SURFACE.textFaint, fontSize: "14px" }}>
                 {t("Sin llaves registradas para este filtro.")}
               </div>
             ) : (
@@ -384,7 +385,7 @@ export default function HotelKeysPage() {
                 const isSelected = selectedKeyId === key.id;
                 return (
                   <div key={key.id} style={{
-                    background: isSelected ? `${ss.accent}08` : "#f8fafc",
+                    background: isSelected ? `${ss.accent}08` : SURFACE.bg,
                     border: `1px solid ${isSelected ? ss.accent + "40" : "#e2e8f0"}`,
                     borderLeft: `4px solid ${ss.accent}`,
                     borderRadius: "16px", padding: "14px 16px",
@@ -397,48 +398,48 @@ export default function HotelKeysPage() {
                             {t(ss.label)}
                           </span>
                           <button type="button" onClick={() => setSelectedKeyId(key.id)}
-                            style={{ fontSize: "12px", fontWeight: 600, color: "#21D0B3", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                            style={{ fontSize: "12px", fontWeight: 600, color: BRAND.teal, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
                             {t("Ver bitácora →")}
                           </button>
                         </div>
-                        <h4 style={{ fontWeight: 800, fontSize: "18px", color: "#0f172a", marginBottom: "4px", display: "flex", alignItems: "center", gap: "6px" }}>
-                          <PercentIcon size={15} color="#94a3b8" strokeWidth={2} />
+                        <h4 style={{ fontWeight: 800, fontSize: "18px", color: SURFACE.text, marginBottom: "4px", display: "flex", alignItems: "center", gap: "6px" }}>
+                          <PercentIcon size={15} color={SURFACE.textFaint} strokeWidth={2} />
                           {key.keyNumber} · {t("Copia")} {key.copyNumber || 1}
                         </h4>
-                        <p style={{ fontSize: "13px", color: "#64748b" }}>
+                        <p style={{ fontSize: "13px", color: SURFACE.textMuted }}>
                           {key.hotelName} · {t("Hab.")} {key.roomNumber} · {t("Cama")} {key.bedLabel}
                         </p>
-                        <p style={{ marginTop: "4px", fontSize: "13px", color: "#64748b" }}>
-                          {t("Responsable:")} <span style={{ fontWeight: 700, color: "#0f172a" }}>{t(key.holderText)}</span>
+                        <p style={{ marginTop: "4px", fontSize: "13px", color: SURFACE.textMuted }}>
+                          {t("Responsable:")} <span style={{ fontWeight: 700, color: SURFACE.text }}>{t(key.holderText)}</span>
                         </p>
-                        <p style={{ marginTop: "3px", fontSize: "11px", color: "#94a3b8" }}>
+                        <p style={{ marginTop: "3px", fontSize: "11px", color: SURFACE.textFaint }}>
                           {t("Entrega:")} {formatDateTime(key.issuedAt)} · {t("Dev.:")} {formatDateTime(key.returnedAt)}
                         </p>
                       </div>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", alignItems: "flex-start" }}>
                         {key.status !== "ASSIGNED" && (
                           <button type="button" onClick={() => { setIssueKeyId(key.id); setIssueForm((p) => ({ ...p, holderName: key.holderName || "", holderType: key.holderType || "" })); setReturnKeyId(null); setSelectedKeyId(key.id); }}
-                            style={{ background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.25)", borderRadius: "99px", padding: "6px 14px", fontSize: "12px", fontWeight: 700, color: "#3b82f6", cursor: "pointer" }}>
+                            style={{ background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.25)", borderRadius: "99px", padding: "6px 14px", fontSize: "12px", fontWeight: 700, color: STATE.info, cursor: "pointer" }}>
                             {t("Entregar")}
                           </button>
                         )}
                         {key.status === "ASSIGNED" && (
                           <button type="button" onClick={() => { setReturnKeyId(key.id); setIssueKeyId(null); setSelectedKeyId(key.id); }}
-                            style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.25)", borderRadius: "99px", padding: "6px 14px", fontSize: "12px", fontWeight: 700, color: "#10b981", cursor: "pointer" }}>
+                            style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.25)", borderRadius: "99px", padding: "6px 14px", fontSize: "12px", fontWeight: 700, color: STATE.success, cursor: "pointer" }}>
                             {t("Registrar devolución")}
                           </button>
                         )}
                         <button type="button" onClick={() => changeStatus(key.id, "MAINTENANCE")}
-                          style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: "99px", padding: "6px 10px", fontSize: "12px", fontWeight: 600, color: "#f59e0b", cursor: "pointer", display: "flex", alignItems: "center" }}>
+                          style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: "99px", padding: "6px 10px", fontSize: "12px", fontWeight: 600, color: STATE.warning, cursor: "pointer", display: "flex", alignItems: "center" }}>
                           <WrenchIcon size={13} strokeWidth={2} />
                         </button>
                         <button type="button" onClick={() => changeStatus(key.id, "LOST")}
-                          style={{ background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.22)", borderRadius: "99px", padding: "6px 10px", fontSize: "12px", fontWeight: 600, color: "#ef4444", cursor: "pointer", display: "flex", alignItems: "center" }}>
+                          style={{ background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.22)", borderRadius: "99px", padding: "6px 10px", fontSize: "12px", fontWeight: 600, color: STATE.danger, cursor: "pointer", display: "flex", alignItems: "center" }}>
                           <AlertCircleIcon size={13} strokeWidth={2} />
                         </button>
                         {key.status !== "AVAILABLE" && (
                           <button type="button" onClick={() => changeStatus(key.id, "AVAILABLE")}
-                            style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.22)", borderRadius: "99px", padding: "6px 10px", fontSize: "12px", fontWeight: 600, color: "#10b981", cursor: "pointer", display: "flex", alignItems: "center" }}>
+                            style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.22)", borderRadius: "99px", padding: "6px 10px", fontSize: "12px", fontWeight: 600, color: STATE.success, cursor: "pointer", display: "flex", alignItems: "center" }}>
                             <CheckIcon size={13} strokeWidth={2.5} />
                           </button>
                         )}
@@ -460,9 +461,9 @@ export default function HotelKeysPage() {
         <div className="space-y-4">
 
           {/* Alta de llave */}
-          <article style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderTop: "3px solid #21D0B3", borderRadius: "24px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
-            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#94a3b8", marginBottom: "4px" }}>{t("Registrar")}</p>
-            <h3 style={{ fontWeight: 700, fontSize: "16px", color: "#0f172a", marginBottom: "14px" }}>{t("Alta de llave")}</h3>
+          <article style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderTop: "3px solid #21D0B3", borderRadius: "24px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: SURFACE.textFaint, marginBottom: "4px" }}>{t("Registrar")}</p>
+            <h3 style={{ fontWeight: 700, fontSize: "16px", color: SURFACE.text, marginBottom: "14px" }}>{t("Alta de llave")}</h3>
             <form style={{ display: "flex", flexDirection: "column", gap: "10px" }} onSubmit={submitCreate}>
               <select style={selectStyle} value={keyForm.hotelId} onChange={(e) => setKeyForm((p) => ({ ...p, hotelId: e.target.value, roomId: "", bedId: "" }))} required>
                 <option value="">{t("Selecciona hotel")}</option>
@@ -473,7 +474,7 @@ export default function HotelKeysPage() {
                 {filteredRooms.map((r) => <option key={r.id} value={r.id}>{t("Habitación")} {r.roomNumber || r.id}</option>)}
               </select>
               <input style={inputStyle} placeholder={t("Número de llave")} value={keyForm.keyNumber} onChange={(e) => setKeyForm((p) => ({ ...p, keyNumber: e.target.value }))} required />
-              <button type="submit" style={{ padding: "10px", borderRadius: "10px", background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: "#ffffff", fontWeight: 700, fontSize: "13px", border: "none", cursor: "pointer", boxShadow: "0 2px 10px rgba(33,208,179,0.35)" }}>
+              <button type="submit" style={{ padding: "10px", borderRadius: "10px", background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: SURFACE.card, fontWeight: 700, fontSize: "13px", border: "none", cursor: "pointer", boxShadow: "0 2px 10px rgba(33,208,179,0.35)" }}>
                 {t("Registrar llave")}
               </button>
             </form>
@@ -481,10 +482,10 @@ export default function HotelKeysPage() {
 
           {/* Entrega */}
           {issueKeyId && (
-            <article style={{ background: "#ffffff", border: "1px solid rgba(59,130,246,0.3)", borderTop: "3px solid #3b82f6", borderRadius: "24px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
-              <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#3b82f6", marginBottom: "4px" }}>{t("Operación")}</p>
-              <h3 style={{ fontWeight: 700, fontSize: "16px", color: "#0f172a", marginBottom: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
-                <PercentIcon size={16} color="#3b82f6" strokeWidth={2} />
+            <article style={{ background: SURFACE.card, border: "1px solid rgba(59,130,246,0.3)", borderTop: "3px solid #3b82f6", borderRadius: "24px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+              <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: STATE.info, marginBottom: "4px" }}>{t("Operación")}</p>
+              <h3 style={{ fontWeight: 700, fontSize: "16px", color: SURFACE.text, marginBottom: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
+                <PercentIcon size={16} color={STATE.info} strokeWidth={2} />
                 {t("Entrega de llave")}
               </h3>
               <form style={{ display: "flex", flexDirection: "column", gap: "10px" }} onSubmit={submitIssue}>
@@ -496,11 +497,11 @@ export default function HotelKeysPage() {
                 <input style={inputStyle} placeholder={t("Operador que entrega")} value={issueForm.actorName} onChange={(e) => setIssueForm((p) => ({ ...p, actorName: e.target.value }))} required />
                 <textarea style={textareaStyle} placeholder={t("Observaciones (opcional)")} value={issueForm.notes} onChange={(e) => setIssueForm((p) => ({ ...p, notes: e.target.value }))} />
                 <div style={{ display: "flex", gap: "8px" }}>
-                  <button type="submit" style={{ flex: 1, padding: "10px", borderRadius: "10px", background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: "#ffffff", fontWeight: 700, fontSize: "13px", border: "none", cursor: "pointer" }}>
+                  <button type="submit" style={{ flex: 1, padding: "10px", borderRadius: "10px", background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: SURFACE.card, fontWeight: 700, fontSize: "13px", border: "none", cursor: "pointer" }}>
                     {t("Confirmar entrega")}
                   </button>
                   <button type="button" onClick={() => { setIssueKeyId(null); setIssueForm(emptyIssueForm()); }}
-                    style={{ padding: "10px 16px", borderRadius: "10px", background: "#ffffff", border: "1px solid #e2e8f0", color: "#475569", fontWeight: 600, fontSize: "13px", cursor: "pointer" }}>
+                    style={{ padding: "10px 16px", borderRadius: "10px", background: SURFACE.card, border: "1px solid #e2e8f0", color: SURFACE.textSecondary, fontWeight: 600, fontSize: "13px", cursor: "pointer" }}>
                     {t("Cancelar")}
                   </button>
                 </div>
@@ -510,21 +511,21 @@ export default function HotelKeysPage() {
 
           {/* Devolución */}
           {returnKeyId && (
-            <article style={{ background: "#ffffff", border: "1px solid rgba(16,185,129,0.3)", borderTop: "3px solid #10b981", borderRadius: "24px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
-              <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#10b981", marginBottom: "4px" }}>{t("Operación")}</p>
-              <h3 style={{ fontWeight: 700, fontSize: "16px", color: "#0f172a", marginBottom: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
-                <CheckIcon size={16} color="#10b981" strokeWidth={2.5} />
+            <article style={{ background: SURFACE.card, border: "1px solid rgba(16,185,129,0.3)", borderTop: "3px solid #10b981", borderRadius: "24px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+              <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: STATE.success, marginBottom: "4px" }}>{t("Operación")}</p>
+              <h3 style={{ fontWeight: 700, fontSize: "16px", color: SURFACE.text, marginBottom: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
+                <CheckIcon size={16} color={STATE.success} strokeWidth={2.5} />
                 {t("Devolución de llave")}
               </h3>
               <form style={{ display: "flex", flexDirection: "column", gap: "10px" }} onSubmit={submitReturn}>
                 <input style={inputStyle} placeholder={t("Operador que recibe")} value={returnForm.actorName} onChange={(e) => setReturnForm((p) => ({ ...p, actorName: e.target.value }))} />
                 <textarea style={textareaStyle} placeholder={t("Observaciones de devolución")} value={returnForm.notes} onChange={(e) => setReturnForm((p) => ({ ...p, notes: e.target.value }))} />
                 <div style={{ display: "flex", gap: "8px" }}>
-                  <button type="submit" style={{ flex: 1, padding: "10px", borderRadius: "10px", background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: "#ffffff", fontWeight: 700, fontSize: "13px", border: "none", cursor: "pointer" }}>
+                  <button type="submit" style={{ flex: 1, padding: "10px", borderRadius: "10px", background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: SURFACE.card, fontWeight: 700, fontSize: "13px", border: "none", cursor: "pointer" }}>
                     {t("Confirmar devolución")}
                   </button>
                   <button type="button" onClick={() => { setReturnKeyId(null); setReturnForm(emptyReturnForm()); }}
-                    style={{ padding: "10px 16px", borderRadius: "10px", background: "#ffffff", border: "1px solid #e2e8f0", color: "#475569", fontWeight: 600, fontSize: "13px", cursor: "pointer" }}>
+                    style={{ padding: "10px 16px", borderRadius: "10px", background: SURFACE.card, border: "1px solid #e2e8f0", color: SURFACE.textSecondary, fontWeight: 600, fontSize: "13px", cursor: "pointer" }}>
                     {t("Cancelar")}
                   </button>
                 </div>
@@ -533,35 +534,35 @@ export default function HotelKeysPage() {
           )}
 
           {/* Bitácora */}
-          <article style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "24px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
-            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#94a3b8", marginBottom: "4px" }}>{t("Historial")}</p>
-            <h3 style={{ fontWeight: 700, fontSize: "16px", color: "#0f172a", marginBottom: "12px" }}>{t("Bitácora de movimientos")}</h3>
+          <article style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "24px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: SURFACE.textFaint, marginBottom: "4px" }}>{t("Historial")}</p>
+            <h3 style={{ fontWeight: 700, fontSize: "16px", color: SURFACE.text, marginBottom: "12px" }}>{t("Bitácora de movimientos")}</h3>
             {!selectedKey ? (
-              <p style={{ fontSize: "13px", color: "#94a3b8" }}>{t("Selecciona una llave para ver su historial.")}</p>
+              <p style={{ fontSize: "13px", color: SURFACE.textFaint }}>{t("Selecciona una llave para ver su historial.")}</p>
             ) : (
               <>
-                <p style={{ fontSize: "13px", color: "#64748b", marginBottom: "12px" }}>
-                  {t("Llave")} <span style={{ fontWeight: 700, color: "#0f172a" }}>{selectedKey.keyNumber}</span> · {t("Hab.")} <span style={{ fontWeight: 700, color: "#0f172a" }}>{selectedKey.roomNumber}</span>
+                <p style={{ fontSize: "13px", color: SURFACE.textMuted, marginBottom: "12px" }}>
+                  {t("Llave")} <span style={{ fontWeight: 700, color: SURFACE.text }}>{selectedKey.keyNumber}</span> · {t("Hab.")} <span style={{ fontWeight: 700, color: SURFACE.text }}>{selectedKey.roomNumber}</span>
                 </p>
                 <div style={{ maxHeight: "360px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "8px" }}>
                   {loadingMovements ? (
-                    <p style={{ fontSize: "13px", color: "#94a3b8" }}>{t("Cargando movimientos...")}</p>
+                    <p style={{ fontSize: "13px", color: SURFACE.textFaint }}>{t("Cargando movimientos...")}</p>
                   ) : selectedMovements.length === 0 ? (
-                    <p style={{ fontSize: "13px", color: "#94a3b8" }}>{t("Sin movimientos registrados.")}</p>
+                    <p style={{ fontSize: "13px", color: SURFACE.textFaint }}>{t("Sin movimientos registrados.")}</p>
                   ) : (
                     selectedMovements.map((mv) => {
                       const action = mv.action || "";
-                      const actionColor = action.includes("ISSUE") ? "#3b82f6" : action.includes("RETURN") ? "#10b981" : action.includes("LOST") ? "#ef4444" : "#94a3b8";
+                      const actionColor = action.includes("ISSUE") ? STATE.info : action.includes("RETURN") ? STATE.success : action.includes("LOST") ? STATE.danger : SURFACE.textFaint;
                       return (
-                        <div key={mv.id} style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderLeft: `3px solid ${actionColor}`, borderRadius: "12px", padding: "10px 12px" }}>
+                        <div key={mv.id} style={{ background: SURFACE.bg, border: "1px solid #e2e8f0", borderLeft: `3px solid ${actionColor}`, borderRadius: "12px", padding: "10px 12px" }}>
                           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
                             <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: actionColor }}>{mv.action}</span>
-                            <span style={{ fontSize: "11px", color: "#94a3b8" }}>{formatDateTime(mv.happenedAt || mv.createdAt)}</span>
+                            <span style={{ fontSize: "11px", color: SURFACE.textFaint }}>{formatDateTime(mv.happenedAt || mv.createdAt)}</span>
                           </div>
-                          <p style={{ marginTop: "4px", fontSize: "13px", fontWeight: 600, color: "#0f172a" }}>
+                          <p style={{ marginTop: "4px", fontSize: "13px", fontWeight: 600, color: SURFACE.text }}>
                             {mv.holderName || mv.actorName || t("Sin responsable informado")}
                           </p>
-                          {mv.notes && <p style={{ marginTop: "3px", fontSize: "11px", color: "#64748b" }}>{mv.notes}</p>}
+                          {mv.notes && <p style={{ marginTop: "3px", fontSize: "11px", color: SURFACE.textMuted }}>{mv.notes}</p>}
                         </div>
                       );
                     })
@@ -578,21 +579,21 @@ export default function HotelKeysPage() {
         const keyToDelete = enrichedKeys.find(k => k.id === deleteKeyConfirm);
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div style={{ background: "#fff", borderRadius: "20px", width: "100%", maxWidth: "380px", padding: "28px", boxShadow: "0 8px 40px rgba(15,23,42,0.2)", textAlign: "center" }}>
+            <div style={{ background: SURFACE.card, borderRadius: "20px", width: "100%", maxWidth: "380px", padding: "28px", boxShadow: "0 8px 40px rgba(15,23,42,0.2)", textAlign: "center" }}>
               <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "rgba(239,68,68,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-                <TrashIcon size={24} color="#ef4444" strokeWidth={2} />
+                <TrashIcon size={24} color={STATE.danger} strokeWidth={2} />
               </div>
-              <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#0f172a", margin: "0 0 6px" }}>{t("Eliminar llave")}</h3>
-              <p style={{ fontSize: "13px", color: "#64748b", margin: "0 0 20px" }}>
-                {t("¿Estás seguro de eliminar la llave")} <b style={{ color: "#0f172a" }}>{keyToDelete?.keyNumber || ""}</b>{keyToDelete?.hotelName ? ` ${t("del hotel")} ${keyToDelete.hotelName}` : ""}? {t("Esta acción no se puede deshacer.")}
+              <h3 style={{ fontSize: "16px", fontWeight: 700, color: SURFACE.text, margin: "0 0 6px" }}>{t("Eliminar llave")}</h3>
+              <p style={{ fontSize: "13px", color: SURFACE.textMuted, margin: "0 0 20px" }}>
+                {t("¿Estás seguro de eliminar la llave")} <b style={{ color: SURFACE.text }}>{keyToDelete?.keyNumber || ""}</b>{keyToDelete?.hotelName ? ` ${t("del hotel")} ${keyToDelete.hotelName}` : ""}? {t("Esta acción no se puede deshacer.")}
               </p>
               <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
                 <button onClick={() => setDeleteKeyConfirm(null)}
-                  style={{ padding: "10px 24px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
+                  style={{ padding: "10px 24px", borderRadius: "10px", border: "1px solid #e2e8f0", background: SURFACE.card, color: SURFACE.textMuted, fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
                   {t("Cancelar")}
                 </button>
                 <button onClick={() => removeKey(deleteKeyConfirm)}
-                  style={{ padding: "10px 24px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #ef4444, #dc2626)", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 10px rgba(239,68,68,0.3)" }}>
+                  style={{ padding: "10px 24px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #ef4444, #dc2626)", color: SURFACE.card, fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 10px rgba(239,68,68,0.3)" }}>
                   {t("Sí, eliminar")}
                 </button>
               </div>

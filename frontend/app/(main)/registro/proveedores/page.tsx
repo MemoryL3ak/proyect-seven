@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { BRAND, STATE, SURFACE } from "@/lib/design";
 import {
   CheckIcon,
   XIcon,
@@ -26,8 +27,8 @@ import { useI18n } from "@/lib/i18n";
 type TypeEntry = { label: string; subtypes: string[]; color: string; bg: string };
 
 const PROVIDER_TYPES: Record<string, TypeEntry> = {
-  TRANSPORTE:       { label: "Transporte",           subtypes: [],                                                                    color: "#1FCDFF", bg: "rgba(31,205,255,0.08)" },
-  LOGISTICA:        { label: "Logística",             subtypes: [],                                                                    color: "#21D0B3", bg: "rgba(33,208,179,0.08)" },
+  TRANSPORTE:       { label: "Transporte",           subtypes: [],                                                                    color: BRAND.blue, bg: "rgba(31,205,255,0.08)" },
+  LOGISTICA:        { label: "Logística",             subtypes: [],                                                                    color: BRAND.teal, bg: "rgba(33,208,179,0.08)" },
   HOTELERIA:        { label: "Hotelería",             subtypes: [],                                                                    color: "#a78bfa", bg: "rgba(167,139,250,0.08)" },
   ALIMENTACION:     { label: "Alimentación",          subtypes: [],                                                                    color: "#fb923c", bg: "rgba(251,146,60,0.08)"  },
   PRODUCTORA:       { label: "Productora",            subtypes: [],                                                                    color: "#f472b6", bg: "rgba(244,114,182,0.08)" },
@@ -37,11 +38,11 @@ const PROVIDER_TYPES: Record<string, TypeEntry> = {
   INFRAESTRUCTURA:  { label: "Infraestructura",       subtypes: ["Recintos"],                                                          color: "#fbbf24", bg: "rgba(251,191,36,0.08)"  },
   CONTROL_TECNICO:  { label: "Control Técnico",       subtypes: ["Jueces", "Mesa de Control"],                                         color: "#e879f9", bg: "rgba(232,121,249,0.08)" },
   SALUD:            { label: "Salud",                 subtypes: ["Antidopaje"],                                                        color: "#4ade80", bg: "rgba(74,222,128,0.08)"  },
-  BROADCAST:        { label: "Broadcast y Medios",    subtypes: [],                                                                    color: "#f59e0b", bg: "rgba(245,158,11,0.08)"  },
+  BROADCAST:        { label: "Broadcast y Medios",    subtypes: [],                                                                    color: STATE.warning, bg: "rgba(245,158,11,0.08)"  },
   MERCHANDISING:    { label: "Merchandising",         subtypes: ["Marketing", "Equipamiento Deportivo"],                               color: "#ec4899", bg: "rgba(236,72,153,0.08)"  },
   TECNOLOGIA:       { label: "Tecnología",            subtypes: [],                                                                    color: "#38bdf8", bg: "rgba(56,189,248,0.08)"  },
   RRHH:             { label: "Recursos Humanos",      subtypes: [],                                                                    color: "#a3e635", bg: "rgba(163,230,53,0.08)"  },
-  ASEO:             { label: "Aseo y Mantención",     subtypes: [],                                                                    color: "#94a3b8", bg: "rgba(148,163,184,0.08)" },
+  ASEO:             { label: "Aseo y Mantención",     subtypes: [],                                                                    color: SURFACE.textFaint, bg: "rgba(148,163,184,0.08)" },
   ACREDITACION:     { label: "Acreditación",          subtypes: [],                                                                    color: "#2dd4bf", bg: "rgba(45,212,191,0.08)"  },
 };
 
@@ -180,7 +181,7 @@ function DocRow({
     <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "7px 0", borderBottom: "1px solid var(--border)" }}>
       <span style={{ flex: 1, fontSize: "12px", color: "var(--text)", fontWeight: 500 }}>{label}</span>
       <span style={{ fontSize: "11px", maxWidth: "120px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-        color: hasNew ? "#21D0B3" : hasUploaded ? "#10b981" : "var(--text-faint)" }}>
+        color: hasNew ? BRAND.teal : hasUploaded ? STATE.success : "var(--text-faint)" }}>
         {hasNew ? file.name : hasUploaded ? t("Cargado") : "—"}
       </span>
       {hasUploaded && url && (
@@ -722,7 +723,7 @@ export default function ProveedoresPage() {
         style={{ borderTop: "2px solid #21D0B3", boxShadow: "0 1px 6px rgba(15,23,42,0.06)" }}
       >
         <div>
-          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#21D0B3", marginBottom: "4px" }}>{t("Registro")}</p>
+          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: BRAND.teal, marginBottom: "4px" }}>{t("Registro")}</p>
           <h1 style={{ fontSize: "1.75rem", fontWeight: 700, color: "var(--text)", lineHeight: 1.1 }}>{t("Proveedores")}</h1>
           <p style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "4px" }}>
             {t("Gestión de proveedores y sus participantes")}
@@ -749,7 +750,7 @@ export default function ProveedoresPage() {
               background: "none",
               border: "none",
               borderBottom: activeTab === tab ? "2px solid #21D0B3" : "2px solid transparent",
-              color: activeTab === tab ? "#21D0B3" : "var(--text-muted)",
+              color: activeTab === tab ? BRAND.teal : "var(--text-muted)",
               cursor: "pointer",
               marginBottom: "-2px",
               textTransform: "capitalize",
@@ -770,7 +771,7 @@ export default function ProveedoresPage() {
             <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
               <div className="surface rounded-2xl px-5 py-3 flex items-center gap-3" style={{ boxShadow: "0 1px 4px rgba(15,23,42,0.05)", minWidth: "130px" }}>
                 <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "rgba(33,208,179,0.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <BuildingIcon size={18} color="#21D0B3" strokeWidth={2} />
+                  <BuildingIcon size={18} color={BRAND.teal} strokeWidth={2} />
                 </div>
                 <div>
                   <p style={{ fontSize: "22px", fontWeight: 700, color: "var(--text)", lineHeight: 1 }}>{providers.length}</p>
@@ -795,7 +796,7 @@ export default function ProveedoresPage() {
                       onClick={() => setFilterType(filterType === type ? "" : type)}
                     >
                       <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: entry?.bg ?? "rgba(33,208,179,0.08)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        <span style={{ fontSize: "14px", fontWeight: 800, color: entry?.color ?? "#21D0B3" }}>{count}</span>
+                        <span style={{ fontSize: "14px", fontWeight: 800, color: entry?.color ?? BRAND.teal }}>{count}</span>
                       </div>
                       <div>
                         <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--text)", lineHeight: 1.2 }}>{t(entry?.label ?? type)}</p>
@@ -850,7 +851,7 @@ export default function ProveedoresPage() {
                 const items = groupedProviders[key];
                 const typeEntry = PROVIDER_TYPES[key];
                 const typeLabel = key === "__none__" ? t("Sin tipo asignado") : t(typeEntry?.label ?? key);
-                const typeColor = key === "__none__" ? "#94a3b8" : (typeEntry?.color ?? "#21D0B3");
+                const typeColor = key === "__none__" ? SURFACE.textFaint : (typeEntry?.color ?? BRAND.teal);
                 const typeBg = key === "__none__" ? "rgba(148,163,184,0.08)" : (typeEntry?.bg ?? "rgba(33,208,179,0.08)");
 
                 return (
@@ -933,7 +934,7 @@ export default function ProveedoresPage() {
                                 <button
                                   onClick={() => openEditProvider(p)}
                                   style={{ padding: "5px", borderRadius: "7px", background: "none", border: "none", cursor: "pointer", color: "var(--text-faint)", transition: "all 0.15s" }}
-                                  onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = "rgba(31,205,255,0.1)"; el.style.color = "#1FCDFF"; }}
+                                  onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = "rgba(31,205,255,0.1)"; el.style.color = BRAND.blue; }}
                                   onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = "none"; el.style.color = "var(--text-faint)"; }}
                                   title={t("Editar")}
                                 >
@@ -986,13 +987,13 @@ export default function ProveedoresPage() {
                                 <div style={{ padding: "8px 16px 12px", borderTop: `1px solid ${typeColor}15`, background: `${typeColor}05` }}>
                                   <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: typeColor, margin: "0 0 6px" }}>{t("Subproveedores")} ({subs.length})</p>
                                   {subs.map(sub => (
-                                    <div key={sub.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 8px", borderRadius: 6, background: "#fff", border: "1px solid #f1f5f9", marginBottom: 3 }}>
-                                      <span style={{ fontSize: 12, fontWeight: 600, color: "#0f172a" }}>{sub.name}</span>
+                                    <div key={sub.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 8px", borderRadius: 6, background: SURFACE.card, border: "1px solid #f1f5f9", marginBottom: 3 }}>
+                                      <span style={{ fontSize: 12, fontWeight: 600, color: SURFACE.text }}>{sub.name}</span>
                                       <div style={{ display: "flex", gap: 4 }}>
-                                        <button onClick={() => openEditProvider(sub)} style={{ padding: 3, borderRadius: 4, border: "none", background: "none", cursor: "pointer", color: "#94a3b8" }} title={t("Editar")}>
+                                        <button onClick={() => openEditProvider(sub)} style={{ padding: 3, borderRadius: 4, border: "none", background: "none", cursor: "pointer", color: SURFACE.textFaint }} title={t("Editar")}>
                                           <PencilIcon size={11} strokeWidth={2} />
                                         </button>
-                                        <button onClick={() => removeProvider(sub)} style={{ padding: 3, borderRadius: 4, border: "none", background: "none", cursor: "pointer", color: "#94a3b8" }} title={t("Eliminar")}>
+                                        <button onClick={() => removeProvider(sub)} style={{ padding: 3, borderRadius: 4, border: "none", background: "none", cursor: "pointer", color: SURFACE.textFaint }} title={t("Eliminar")}>
                                           <TrashIcon size={11} strokeWidth={2} />
                                         </button>
                                       </div>
@@ -1039,7 +1040,7 @@ export default function ProveedoresPage() {
                 onClick={() => setProviderFilter("")}
                 style={{ fontSize: "11px", padding: "4px 10px", borderRadius: "99px",
                   background: "rgba(33,208,179,0.1)", border: "1px solid rgba(33,208,179,0.3)",
-                  color: "#21D0B3", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
+                  color: BRAND.teal, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
               >
                 {activeFilterProvider.name} <XIcon size={11} className="inline ml-1" />
               </button>
@@ -1056,13 +1057,13 @@ export default function ProveedoresPage() {
                 <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#a78bfa", marginBottom: "4px" }}>
                   {t("Carga masiva de fotos")}
                 </p>
-                <p style={{ fontSize: "12px", color: "#64748b", margin: 0 }}>
+                <p style={{ fontSize: "12px", color: SURFACE.textMuted, margin: 0 }}>
                   {t("El nombre del archivo debe coincidir con el nombre completo del participante.")}
                 </p>
               </div>
               <label style={{
                 display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 16px", borderRadius: "12px",
-                background: "linear-gradient(135deg, #a78bfa, #7c3aed)", color: "#fff", fontSize: "12px", fontWeight: 700,
+                background: "linear-gradient(135deg, #a78bfa, #7c3aed)", color: SURFACE.card, fontSize: "12px", fontWeight: 700,
                 cursor: "pointer", boxShadow: "0 2px 10px rgba(167,139,250,0.35)",
               }}>
                 <UploadIcon size={14} strokeWidth={2.5} />
@@ -1112,36 +1113,36 @@ export default function ProveedoresPage() {
           {/* Bulk photo result modal */}
           {bulkPhotoResult && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-              <div style={{ background: "#fff", borderRadius: "20px", width: "100%", maxWidth: "400px", padding: "28px", boxShadow: "0 8px 40px rgba(15,23,42,0.2)", textAlign: "center" }}>
+              <div style={{ background: SURFACE.card, borderRadius: "20px", width: "100%", maxWidth: "400px", padding: "28px", boxShadow: "0 8px 40px rgba(15,23,42,0.2)", textAlign: "center" }}>
                 <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: bulkPhotoResult.matched > 0 ? "rgba(16,185,129,0.1)" : "rgba(245,158,11,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
                   {bulkPhotoResult.matched > 0 ? (
-                    <CheckIcon size={24} color="#10b981" strokeWidth={2.5} />
+                    <CheckIcon size={24} color={STATE.success} strokeWidth={2.5} />
                   ) : (
-                    <AlertCircleIcon size={24} color="#f59e0b" strokeWidth={2} />
+                    <AlertCircleIcon size={24} color={STATE.warning} strokeWidth={2} />
                   )}
                 </div>
                 <h3 style={{ fontSize: "16px", fontWeight: 700, margin: "0 0 6px" }}>{bulkPhotoResult.matched > 0 ? t("Carga completada") : t("Sin coincidencias")}</h3>
                 <div style={{ display: "flex", justifyContent: "center", gap: "16px", margin: "12px 0 16px" }}>
                   <div style={{ padding: "8px 16px", borderRadius: "10px", background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)" }}>
-                    <p style={{ fontSize: "20px", fontWeight: 800, color: "#10b981", margin: 0 }}>{bulkPhotoResult.matched}</p>
+                    <p style={{ fontSize: "20px", fontWeight: 800, color: STATE.success, margin: 0 }}>{bulkPhotoResult.matched}</p>
                     <p style={{ fontSize: "10px", fontWeight: 600, color: "#065f46", margin: 0 }}>{t("Exitosas")}</p>
                   </div>
                   <div style={{ padding: "8px 16px", borderRadius: "10px", background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)" }}>
-                    <p style={{ fontSize: "20px", fontWeight: 800, color: "#ef4444", margin: 0 }}>{bulkPhotoResult.notFound}</p>
+                    <p style={{ fontSize: "20px", fontWeight: 800, color: STATE.danger, margin: 0 }}>{bulkPhotoResult.notFound}</p>
                     <p style={{ fontSize: "10px", fontWeight: 600, color: "#991b1b", margin: 0 }}>{t("Sin match")}</p>
                   </div>
                 </div>
                 {bulkPhotoResult.names.length > 0 && (
-                  <div style={{ textAlign: "left", background: "#f8fafc", borderRadius: "10px", padding: "10px 14px", marginBottom: "16px", maxHeight: "120px", overflowY: "auto" }}>
-                    <p style={{ fontSize: "10px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 6px" }}>{t("Archivos sin coincidencia")}</p>
+                  <div style={{ textAlign: "left", background: SURFACE.bg, borderRadius: "10px", padding: "10px 14px", marginBottom: "16px", maxHeight: "120px", overflowY: "auto" }}>
+                    <p style={{ fontSize: "10px", fontWeight: 700, color: SURFACE.textFaint, textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 6px" }}>{t("Archivos sin coincidencia")}</p>
                     {bulkPhotoResult.names.slice(0, 10).map(name => (
-                      <p key={name} style={{ fontSize: "12px", color: "#64748b", margin: "2px 0" }}>{name}</p>
+                      <p key={name} style={{ fontSize: "12px", color: SURFACE.textMuted, margin: "2px 0" }}>{name}</p>
                     ))}
-                    {bulkPhotoResult.names.length > 10 && <p style={{ fontSize: "11px", color: "#94a3b8", margin: "4px 0 0" }}>+{bulkPhotoResult.names.length - 10} {t("más...")}</p>}
+                    {bulkPhotoResult.names.length > 10 && <p style={{ fontSize: "11px", color: SURFACE.textFaint, margin: "4px 0 0" }}>+{bulkPhotoResult.names.length - 10} {t("más...")}</p>}
                   </div>
                 )}
                 <button onClick={() => setBulkPhotoResult(null)}
-                  style={{ padding: "10px 32px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 10px rgba(33,208,179,0.3)" }}>
+                  style={{ padding: "10px 32px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: SURFACE.card, fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 10px rgba(33,208,179,0.3)" }}>
                   {t("Entendido")}
                 </button>
               </div>
@@ -1176,7 +1177,7 @@ export default function ProveedoresPage() {
                       return photo && typeof photo === "string" && photo.startsWith("http") ? (
                         <img src={photo} alt="" style={{ width:36, height:36, borderRadius:"50%", objectFit:"cover", flexShrink:0, border:"2px solid #21D0B3" }} />
                       ) : (
-                        <div style={{ width:36, height:36, borderRadius:"50%", flexShrink:0, background:"rgba(33,208,179,0.1)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"12px", fontWeight:700, color:"#21D0B3" }}>
+                        <div style={{ width:36, height:36, borderRadius:"50%", flexShrink:0, background:"rgba(33,208,179,0.1)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"12px", fontWeight:700, color:BRAND.teal }}>
                           {(p.fullName || "?").split(" ").slice(0,2).map(w => w[0] ?? "").join("").toUpperCase()}
                         </div>
                       );
@@ -1185,7 +1186,7 @@ export default function ProveedoresPage() {
                       <span className="block truncate" style={{ fontSize: "14px", fontWeight: 600, color: "var(--text)" }}>{p.fullName}</span>
                       <div style={{ display: "flex", gap: "8px", marginTop: "2px", flexWrap: "wrap" }}>
                         {provider && (
-                          <span style={{ fontSize: "11px", color: "#21D0B3", fontWeight: 500 }}>{provider.name}</span>
+                          <span style={{ fontSize: "11px", color: BRAND.teal, fontWeight: 500 }}>{provider.name}</span>
                         )}
                         {p.userType && (
                           <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>{p.userType}</span>
@@ -1202,7 +1203,7 @@ export default function ProveedoresPage() {
                             fontWeight: 700,
                             fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
                             letterSpacing: "0.06em",
-                            color: copiedId === p.id ? "#10b981" : "#21D0B3",
+                            color: copiedId === p.id ? STATE.success : BRAND.teal,
                             background: "rgba(33,208,179,0.08)",
                             border: "1px solid rgba(33,208,179,0.25)",
                             borderRadius: "6px",
@@ -1221,7 +1222,7 @@ export default function ProveedoresPage() {
                         fontSize: "10px", fontWeight: 700, padding: "2px 8px", borderRadius: "99px",
                         background: p.tripType === "ARRIVAL" ? "rgba(31,205,255,0.1)" : p.tripType === "DEPARTURE" ? "rgba(168,85,247,0.1)" : "rgba(33,208,179,0.1)",
                         border: `1px solid ${p.tripType === "ARRIVAL" ? "rgba(31,205,255,0.3)" : p.tripType === "DEPARTURE" ? "rgba(168,85,247,0.3)" : "rgba(33,208,179,0.3)"}`,
-                        color: p.tripType === "ARRIVAL" ? "#1FCDFF" : p.tripType === "DEPARTURE" ? "#a855f7" : "#21D0B3",
+                        color: p.tripType === "ARRIVAL" ? BRAND.blue : p.tripType === "DEPARTURE" ? "#a855f7" : BRAND.teal,
                         flexShrink: 0,
                       }}>
                         {t(TRIP_TYPE_LABELS[p.tripType] ?? p.tripType)}
@@ -1234,7 +1235,7 @@ export default function ProveedoresPage() {
                         padding: "2px 8px", borderRadius: "99px",
                         background: docCount === ALL_TRANSPORT_DOCS.length ? "rgba(16,185,129,0.1)" : "rgba(33,208,179,0.08)",
                         border: `1px solid ${docCount === ALL_TRANSPORT_DOCS.length ? "rgba(16,185,129,0.3)" : "rgba(33,208,179,0.25)"}`,
-                        color: docCount === ALL_TRANSPORT_DOCS.length ? "#10b981" : "#21D0B3",
+                        color: docCount === ALL_TRANSPORT_DOCS.length ? STATE.success : BRAND.teal,
                         flexShrink: 0,
                       }}>
                         {docCount}/{ALL_TRANSPORT_DOCS.length} {t("docs")}
@@ -1249,7 +1250,7 @@ export default function ProveedoresPage() {
                       <span style={{
                         fontSize: "10px", fontWeight: 700, letterSpacing: "0.06em", padding: "2px 8px",
                         borderRadius: "99px", background: "rgba(239,68,68,0.1)",
-                        border: "1px solid rgba(239,68,68,0.3)", color: "#dc2626", flexShrink: 0,
+                        border: "1px solid rgba(239,68,68,0.3)", color: STATE.dangerText, flexShrink: 0,
                       }}>
                         {t("ELIMINADA")}
                       </span>
@@ -1261,7 +1262,7 @@ export default function ProveedoresPage() {
                           onClick={() => void reactivateParticipant(p)}
                           className="transition-colors p-1.5"
                           style={{ color: "var(--text-faint)" }}
-                          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#10b981"; }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = STATE.success; }}
                           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-faint)"; }}
                           title={t("Reactivar cuenta")}
                         >
@@ -1275,7 +1276,7 @@ export default function ProveedoresPage() {
                         disabled={!p.email || sendingMailId === p.id}
                         className="transition-colors p-1.5"
                         style={{ color: "var(--text-faint)", opacity: !p.email || sendingMailId === p.id ? 0.4 : 1, cursor: !p.email ? "not-allowed" : "pointer" }}
-                        onMouseEnter={e => { if (p.email) (e.currentTarget as HTMLElement).style.color = "#21D0B3"; }}
+                        onMouseEnter={e => { if (p.email) (e.currentTarget as HTMLElement).style.color = BRAND.teal; }}
                         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-faint)"; }}
                         title={p.email ? t("Enviar código de acceso por correo") : t("Sin correo registrado")}
                       >
@@ -1287,7 +1288,7 @@ export default function ProveedoresPage() {
                         onClick={() => openEditParticipant(p)}
                         className="transition-colors p-1.5"
                         style={{ color: "var(--text-faint)" }}
-                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#1FCDFF"; }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = BRAND.blue; }}
                         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-faint)"; }}
                         title={t("Editar")}
                       >
@@ -1341,7 +1342,7 @@ export default function ProveedoresPage() {
             }}
           >
             <div className="px-6 pt-6 pb-4 flex-shrink-0">
-              <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#21D0B3", marginBottom: "4px" }}>
+              <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: BRAND.teal, marginBottom: "4px" }}>
                 {providerModal.editing ? t("Editar") : t("Nuevo")}
               </p>
               <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "var(--text)" }}>
@@ -1357,11 +1358,11 @@ export default function ProveedoresPage() {
                     ? URL.createObjectURL(providerDocFiles.logo)
                     : typeof providerModal?.editing?.metadata?.logo === "string" ? (providerModal.editing.metadata.logo as string) : null;
                   return (
-                    <div style={{ width: "56px", height: "56px", borderRadius: "14px", border: "2px dashed #e2e8f0", background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
+                    <div style={{ width: "56px", height: "56px", borderRadius: "14px", border: "2px dashed #e2e8f0", background: SURFACE.bg, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
                       {logoUrl ? (
                         <img src={logoUrl} alt={t("Logo")} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                       ) : (
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={SURFACE.borderStrong} strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
                       )}
                     </div>
                   );
@@ -1465,7 +1466,7 @@ export default function ProveedoresPage() {
               {isTransporteProvider && (
                 <div style={{ borderRadius: 14, border: "1px solid var(--border)", overflow: "hidden" }}>
                   <div style={{ padding: "10px 14px", background: "rgba(33,208,179,0.06)", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <p style={{ fontSize: 12, fontWeight: 700, color: "#0f172a", margin: 0 }}>{t("Tabla de tarifas")}</p>
+                    <p style={{ fontSize: 12, fontWeight: 700, color: SURFACE.text, margin: 0 }}>{t("Tabla de tarifas")}</p>
                     <button type="button" onClick={() => {
                       // Generate all combinations if empty
                       if (providerRates.length === 0) {
@@ -1484,7 +1485,7 @@ export default function ProveedoresPage() {
                         }
                         setProviderRates(generated);
                       }
-                    }} style={{ fontSize: 11, fontWeight: 600, color: "#21D0B3", background: "none", border: "1px solid rgba(33,208,179,0.3)", borderRadius: 8, padding: "4px 10px", cursor: "pointer" }}>
+                    }} style={{ fontSize: 11, fontWeight: 600, color: BRAND.teal, background: "none", border: "1px solid rgba(33,208,179,0.3)", borderRadius: 8, padding: "4px 10px", cursor: "pointer" }}>
                       {providerRates.length === 0 ? t("Generar tabla") : t("Regenerar")}
                     </button>
                   </div>
@@ -1493,12 +1494,12 @@ export default function ProveedoresPage() {
                     <div style={{ maxHeight: 320, overflowY: "auto" }}>
                       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                         <thead>
-                          <tr style={{ background: "#f8fafc", position: "sticky", top: 0, zIndex: 1 }}>
-                            <th style={{ padding: "8px 10px", textAlign: "left", fontWeight: 700, color: "#64748b", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", borderBottom: "1px solid var(--border)" }}>{t("Flota")}</th>
-                            <th style={{ padding: "8px 6px", textAlign: "center", fontWeight: 700, color: "#64748b", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", borderBottom: "1px solid var(--border)" }}>{t("Pax")}</th>
-                            <th style={{ padding: "8px 10px", textAlign: "left", fontWeight: 700, color: "#64748b", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", borderBottom: "1px solid var(--border)" }}>{t("Tipo servicio")}</th>
-                            <th style={{ padding: "8px 6px", textAlign: "right", fontWeight: 700, color: "#64748b", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", borderBottom: "1px solid var(--border)" }}>{t("Valor cliente")}</th>
-                            <th style={{ padding: "8px 6px", textAlign: "right", fontWeight: 700, color: "#64748b", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", borderBottom: "1px solid var(--border)" }}>{t("Valor proveedor")}</th>
+                          <tr style={{ background: SURFACE.bg, position: "sticky", top: 0, zIndex: 1 }}>
+                            <th style={{ padding: "8px 10px", textAlign: "left", fontWeight: 700, color: SURFACE.textMuted, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", borderBottom: "1px solid var(--border)" }}>{t("Flota")}</th>
+                            <th style={{ padding: "8px 6px", textAlign: "center", fontWeight: 700, color: SURFACE.textMuted, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", borderBottom: "1px solid var(--border)" }}>{t("Pax")}</th>
+                            <th style={{ padding: "8px 10px", textAlign: "left", fontWeight: 700, color: SURFACE.textMuted, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", borderBottom: "1px solid var(--border)" }}>{t("Tipo servicio")}</th>
+                            <th style={{ padding: "8px 6px", textAlign: "right", fontWeight: 700, color: SURFACE.textMuted, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", borderBottom: "1px solid var(--border)" }}>{t("Valor cliente")}</th>
+                            <th style={{ padding: "8px 6px", textAlign: "right", fontWeight: 700, color: SURFACE.textMuted, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", borderBottom: "1px solid var(--border)" }}>{t("Valor proveedor")}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1507,14 +1508,14 @@ export default function ProveedoresPage() {
                             const service = SERVICE_TYPES.find((s) => s.value === rate.tripType);
                             const isFirstOfFleet = idx === 0 || providerRates[idx - 1].fleetType !== rate.fleetType;
                             return (
-                              <tr key={`${rate.fleetType}-${rate.tripType}`} style={{ borderBottom: "1px solid #f1f5f9", background: isFirstOfFleet ? "#fafbfc" : "#fff" }}>
-                                <td style={{ padding: "6px 10px", fontWeight: isFirstOfFleet ? 700 : 400, color: "#0f172a" }}>
+                              <tr key={`${rate.fleetType}-${rate.tripType}`} style={{ borderBottom: "1px solid #f1f5f9", background: isFirstOfFleet ? "#fafbfc" : SURFACE.card }}>
+                                <td style={{ padding: "6px 10px", fontWeight: isFirstOfFleet ? 700 : 400, color: SURFACE.text }}>
                                   {isFirstOfFleet ? t(fleet?.label || rate.fleetType) : ""}
                                 </td>
-                                <td style={{ padding: "6px", textAlign: "center", color: "#64748b" }}>
+                                <td style={{ padding: "6px", textAlign: "center", color: SURFACE.textMuted }}>
                                   {isFirstOfFleet ? (fleet?.passengers || "-") : ""}
                                 </td>
-                                <td style={{ padding: "6px 10px", color: "#334155" }}>{t(service?.label || rate.tripType)}</td>
+                                <td style={{ padding: "6px 10px", color: SURFACE.textStrong }}>{t(service?.label || rate.tripType)}</td>
                                 <td style={{ padding: "4px 6px", textAlign: "right" }}>
                                   <input type="text" inputMode="numeric" value={Number(rate.clientPrice) ? `$${Number(rate.clientPrice).toLocaleString("es-CL")}` : ""} onChange={(e) => {
                                     const raw = e.target.value.replace(/[^0-9]/g, "");
@@ -1567,7 +1568,7 @@ export default function ProveedoresPage() {
             }}
           >
             <div className="px-6 pt-6 pb-4 flex-shrink-0">
-              <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#21D0B3", marginBottom: "4px" }}>
+              <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: BRAND.teal, marginBottom: "4px" }}>
                 {participantModal.editing ? t("Editar") : t("Nuevo")}
               </p>
               <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "var(--text)" }}>
@@ -1596,14 +1597,14 @@ export default function ProveedoresPage() {
                 {participantForm.photoDataUrl ? (
                   <img src={participantForm.photoDataUrl} alt="" style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover", border: "3px solid #21D0B3" }} />
                 ) : (
-                  <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(33,208,179,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", fontWeight: 700, color: "#21D0B3" }}>
+                  <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(33,208,179,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", fontWeight: 700, color: BRAND.teal }}>
                     {(participantForm.fullName || "?").split(" ").slice(0, 2).map(w => w[0] ?? "").join("").toUpperCase()}
                   </div>
                 )}
                 <div>
                   <label style={{
                     display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 16px", borderRadius: "10px",
-                    background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: "#fff", fontSize: "12px", fontWeight: 700,
+                    background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: SURFACE.card, fontSize: "12px", fontWeight: 700,
                     cursor: "pointer", boxShadow: "0 2px 8px rgba(33,208,179,0.3)",
                   }}>
                     <CameraIcon size={12} strokeWidth={2.5} />
@@ -1633,7 +1634,7 @@ export default function ProveedoresPage() {
                   </label>
                   {participantForm.photoDataUrl && (
                     <button type="button" onClick={() => setParticipantForm(f => ({ ...f, photoDataUrl: "" }))}
-                      style={{ marginLeft: "8px", fontSize: "11px", color: "#ef4444", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>
+                      style={{ marginLeft: "8px", fontSize: "11px", color: STATE.danger, background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>
                       {t("Quitar")}
                     </button>
                   )}
@@ -1726,24 +1727,24 @@ export default function ProveedoresPage() {
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={participantForm.isDriver ? "#21D0B3" : "var(--text-muted)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={participantForm.isDriver ? BRAND.teal : "var(--text-muted)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>
                       </svg>
-                      <span style={{ fontSize: "13px", fontWeight: 600, color: participantForm.isDriver ? "#21D0B3" : "var(--text-muted)" }}>
+                      <span style={{ fontSize: "13px", fontWeight: 600, color: participantForm.isDriver ? BRAND.teal : "var(--text-muted)" }}>
                         {t("Es conductor")}
                       </span>
                     </div>
                     {/* Toggle pill */}
                     <div style={{
                       width: "40px", height: "22px", borderRadius: "11px", position: "relative",
-                      background: participantForm.isDriver ? "#21D0B3" : "var(--border-strong)",
+                      background: participantForm.isDriver ? BRAND.teal : "var(--border-strong)",
                       transition: "background 0.2s", flexShrink: 0,
                     }}>
                       <div style={{
                         position: "absolute", top: "3px",
                         left: participantForm.isDriver ? "21px" : "3px",
                         width: "16px", height: "16px", borderRadius: "50%",
-                        background: "#fff", transition: "left 0.2s",
+                        background: SURFACE.card, transition: "left 0.2s",
                         boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
                       }} />
                     </div>
@@ -1774,8 +1775,8 @@ export default function ProveedoresPage() {
                               style={{
                                 fontSize: "11px", fontWeight: 700, padding: "5px 12px", borderRadius: "99px",
                                 cursor: "pointer", transition: "all 0.15s",
-                                background: sel ? "#21D0B3" : "var(--elevated)",
-                                color: sel ? "#fff" : "var(--text-muted)",
+                                background: sel ? BRAND.teal : "var(--elevated)",
+                                color: sel ? SURFACE.card : "var(--text-muted)",
                                 border: `1px solid ${sel ? "#21D0B3" : "var(--border)"}`,
                               }}
                             >
@@ -1785,7 +1786,7 @@ export default function ProveedoresPage() {
                         })}
                       </div>
                       {participantForm.allowedClientTypes.length === 0 && (
-                        <p style={{ fontSize: "11px", color: "#f59e0b", marginTop: "8px" }}>
+                        <p style={{ fontSize: "11px", color: STATE.warning, marginTop: "8px" }}>
                           <AlertIcon size={11} className="inline mr-1" />{t("Sin tipos seleccionados se guardará con TA (Deportista) por defecto.")}
                         </p>
                       )}
@@ -1802,13 +1803,13 @@ export default function ProveedoresPage() {
                           <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                             {t("Patente")}
                             {lookingUpPlate && (
-                              <span style={{ fontSize: "10px", color: "#21D0B3", fontWeight: 500, letterSpacing: "0.05em" }}>{t("Buscando…")}</span>
+                              <span style={{ fontSize: "10px", color: BRAND.teal, fontWeight: 500, letterSpacing: "0.05em" }}>{t("Buscando…")}</span>
                             )}
                             {!lookingUpPlate && plateError && (
                               <span style={{ fontSize: "10px", color: "#f87171", fontWeight: 500 }}>{plateError}</span>
                             )}
                             {!lookingUpPlate && !plateError && participantForm.vehicleMarca && (
-                              <span style={{ fontSize: "10px", color: "#21D0B3", fontWeight: 500 }}><CheckIcon size={10} className="inline mr-1" />{t("Datos encontrados")}</span>
+                              <span style={{ fontSize: "10px", color: BRAND.teal, fontWeight: 500 }}><CheckIcon size={10} className="inline mr-1" />{t("Datos encontrados")}</span>
                             )}
                           </span>
                           <input
@@ -1853,7 +1854,7 @@ export default function ProveedoresPage() {
 
                     {/* Documentación */}
                     <div style={{ marginTop: "20px" }}>
-                      <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#21D0B3", marginBottom: "2px" }}>
+                      <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: BRAND.teal, marginBottom: "2px" }}>
                         {t("Documentación requerida")}
                       </p>
                       <p style={{ fontSize: "12px", color: "var(--text-muted)", marginBottom: "12px" }}>

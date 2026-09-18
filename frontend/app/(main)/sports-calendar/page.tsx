@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import StyledSelect from "@/components/StyledSelect";
@@ -122,15 +123,15 @@ function scheduleTypeBadgeClass(value?: string | null) {
 // Paleta dinámica por tipo de actividad — gradientes, color de acento y texto
 type ScheduleTheme = { bg: string; fg: string; ring: string; soft: string };
 const SCHEDULE_TYPE_THEME: Record<string, ScheduleTheme> = {
-  ARRIVAL: { bg: "linear-gradient(135deg,#dbeafe,#bfdbfe)", fg: "#1e3a8a", ring: "#2563eb", soft: "rgba(37,99,235,0.12)" },
+  ARRIVAL: { bg: "linear-gradient(135deg,#dbeafe,#bfdbfe)", fg: "#1e3a8a", ring: STATE.infoText, soft: "rgba(37,99,235,0.12)" },
   TRAINING: { bg: "linear-gradient(135deg,#fef3c7,#fde68a)", fg: "#78350f", ring: "#d97706", soft: "rgba(217,119,6,0.12)" },
-  COMPETITION: { bg: "linear-gradient(135deg,#d1fae5,#a7f3d0)", fg: "#064e3b", ring: "#059669", soft: "rgba(5,150,105,0.12)" },
-  DEPARTURE: { bg: "linear-gradient(135deg,#fee2e2,#fecaca)", fg: "#7f1d1d", ring: "#dc2626", soft: "rgba(220,38,38,0.12)" },
+  COMPETITION: { bg: "linear-gradient(135deg,#d1fae5,#a7f3d0)", fg: "#064e3b", ring: STATE.successText, soft: "rgba(5,150,105,0.12)" },
+  DEPARTURE: { bg: "linear-gradient(135deg,#fee2e2,#fecaca)", fg: "#7f1d1d", ring: STATE.dangerText, soft: "rgba(220,38,38,0.12)" },
 };
 const SCHEDULE_THEME_FALLBACK: ScheduleTheme = {
   bg: "linear-gradient(135deg,#f1f5f9,#e2e8f0)",
-  fg: "#0f172a",
-  ring: "#94a3b8",
+  fg: SURFACE.text,
+  ring: SURFACE.textFaint,
   soft: "rgba(148,163,184,0.12)",
 };
 function scheduleTheme(value?: string | null): ScheduleTheme {
@@ -967,11 +968,11 @@ export default function SportsCalendarPage() {
   };
 
   const scheduleTypeChips: Array<{ value: "" | ScheduleType; label: string; color: string; bg: string }> = [
-    { value: "", label: "Todos", color: "#21D0B3", bg: "rgba(33,208,179,0.10)" },
-    { value: "ARRIVAL", label: "Llegadas", color: "#1FCDFF", bg: "rgba(31,205,255,0.10)" },
+    { value: "", label: "Todos", color: BRAND.teal, bg: "rgba(33,208,179,0.10)" },
+    { value: "ARRIVAL", label: "Llegadas", color: BRAND.blue, bg: "rgba(31,205,255,0.10)" },
     { value: "TRAINING", label: "Entrenamientos", color: "#d97706", bg: "rgba(245,158,11,0.12)" },
-    { value: "COMPETITION", label: "Pruebas", color: "#059669", bg: "rgba(16,185,129,0.12)" },
-    { value: "DEPARTURE", label: "Retiros", color: "#dc2626", bg: "rgba(220,38,38,0.10)" },
+    { value: "COMPETITION", label: "Pruebas", color: STATE.successText, bg: "rgba(16,185,129,0.12)" },
+    { value: "DEPARTURE", label: "Retiros", color: STATE.dangerText, bg: "rgba(220,38,38,0.10)" },
   ];
 
   return (
@@ -1017,7 +1018,7 @@ export default function SportsCalendarPage() {
         {/* Vista + búsqueda */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex bg-gray-50 rounded-xl p-1 gap-1"
-            style={{ background: "#f1f5f9" }}>
+            style={{ background: SURFACE.borderMuted }}>
             {(["month", "week", "day", "timeline"] as const).map((v) => {
               const active = view === v;
               return (
@@ -1025,7 +1026,7 @@ export default function SportsCalendarPage() {
                   className="px-4 py-1.5 rounded-lg text-xs font-bold transition-all"
                   style={{
                     background: active ? "linear-gradient(135deg, #21D0B3, #1eb19a)" : "transparent",
-                    color: active ? "#fff" : "#475569",
+                    color: active ? SURFACE.card : SURFACE.textSecondary,
                     boxShadow: active ? "0 2px 6px rgba(33,208,179,0.35)" : "none",
                   }}>
                   {v === "month" ? t("Mes") : v === "week" ? t("Semana") : v === "day" ? t("Día") : t("Línea de tiempo")}
@@ -1035,7 +1036,7 @@ export default function SportsCalendarPage() {
           </div>
 
           <div className="flex-1 min-w-[200px] relative">
-            <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8", pointerEvents: "none" }}>
+            <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: SURFACE.textFaint, pointerEvents: "none" }}>
               <SearchIcon size={15} />
             </span>
             <input
@@ -1078,7 +1079,7 @@ export default function SportsCalendarPage() {
                 className="text-xs font-bold px-3 py-1.5 rounded-full transition-all inline-flex items-center gap-1.5"
                 style={{
                   background: active ? chip.color : chip.bg,
-                  color: active ? "#fff" : chip.color,
+                  color: active ? SURFACE.card : chip.color,
                   border: `1.5px solid ${active ? chip.color : "transparent"}`,
                   boxShadow: active ? `0 3px 10px ${chip.color}55` : "none",
                 }}>
@@ -1087,8 +1088,8 @@ export default function SportsCalendarPage() {
                   fontSize: 10,
                   padding: "1px 7px",
                   borderRadius: 99,
-                  background: active ? "rgba(255,255,255,0.25)" : "#fff",
-                  color: active ? "#fff" : chip.color,
+                  background: active ? "rgba(255,255,255,0.25)" : SURFACE.card,
+                  color: active ? SURFACE.card : chip.color,
                   fontWeight: 800,
                 }}>
                   {count}
@@ -1133,14 +1134,14 @@ export default function SportsCalendarPage() {
         </details>
       </section>
 
-      <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+      <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
           <div>
-            <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#94a3b8" }}>{t("Agenda AND por delegacion")}</span>
-            <h2 style={{ marginTop: "4px", fontSize: "18px", fontWeight: 800, color: "#0f172a" }}>{t("Fechas por disciplina y delegacion")}</h2>
-            <p style={{ marginTop: "4px", fontSize: "13px", color: "#64748b" }}>{t("Llegada y retiro se obtienen desde AND. Entrenamientos y pruebas se completan en este calendario.")}</p>
+            <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: SURFACE.textFaint }}>{t("Agenda AND por delegacion")}</span>
+            <h2 style={{ marginTop: "4px", fontSize: "18px", fontWeight: 800, color: SURFACE.text }}>{t("Fechas por disciplina y delegacion")}</h2>
+            <p style={{ marginTop: "4px", fontSize: "13px", color: SURFACE.textMuted }}>{t("Llegada y retiro se obtienen desde AND. Entrenamientos y pruebas se completan en este calendario.")}</p>
           </div>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.2)", borderRadius: "10px", padding: "6px 12px", fontSize: "12px", fontWeight: 600, color: "#21D0B3" }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.2)", borderRadius: "10px", padding: "6px 12px", fontSize: "12px", fontWeight: 600, color: BRAND.teal }}>
             {selectedDelegationId ? t("Vista filtrada por delegacion") : t("Vista consolidada (todas las delegaciones)")}
           </div>
         </div>
@@ -1148,31 +1149,31 @@ export default function SportsCalendarPage() {
         <div style={{ marginTop: "16px", overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
             <thead>
-              <tr style={{ background: "#f8fafc" }}>
+              <tr style={{ background: SURFACE.bg }}>
                 {["Delegacion", "Personas", "Disciplinas", "Fecha de llegada (AND)", "Fechas de entrenamiento", "Fechas de pruebas", "Fecha de retiro (AND)"].map((h) => (
-                  <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#94a3b8", borderBottom: "1px solid #e2e8f0", whiteSpace: "nowrap" }}>{t(h)}</th>
+                  <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: SURFACE.textFaint, borderBottom: "1px solid #e2e8f0", whiteSpace: "nowrap" }}>{t(h)}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {andDelegationScheduleRows.map((row, idx) => (
-                <tr key={row.delegationId} style={{ borderBottom: "1px solid #f1f5f9", background: idx % 2 === 0 ? "#ffffff" : "#f8fafc" }}>
-                  <td style={{ padding: "10px 14px", fontWeight: 700, color: "#0f172a" }}>{row.delegationLabel}</td>
-                  <td style={{ padding: "10px 14px", color: "#475569" }}>{row.peopleCount}</td>
+                <tr key={row.delegationId} style={{ borderBottom: "1px solid #f1f5f9", background: idx % 2 === 0 ? SURFACE.card : SURFACE.bg }}>
+                  <td style={{ padding: "10px 14px", fontWeight: 700, color: SURFACE.text }}>{row.delegationLabel}</td>
+                  <td style={{ padding: "10px 14px", color: SURFACE.textSecondary }}>{row.peopleCount}</td>
                   <td style={{ padding: "10px 14px" }}>
                     {row.disciplines.length ? (
                       <div className="flex flex-wrap gap-1">
                         {row.disciplines.map((discipline) => (
-                          <span key={discipline.disciplineId} style={{ display: "inline-flex", borderRadius: "99px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.2)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: "#21D0B3" }}>
+                          <span key={discipline.disciplineId} style={{ display: "inline-flex", borderRadius: "99px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.2)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: BRAND.teal }}>
                             {discipline.disciplineName} · {discipline.athleteCount}
                           </span>
                         ))}
                       </div>
                     ) : (
-                      <span style={{ fontSize: "12px", color: "#94a3b8" }}>{t("Sin detalle")}</span>
+                      <span style={{ fontSize: "12px", color: SURFACE.textFaint }}>{t("Sin detalle")}</span>
                     )}
                   </td>
-                  <td style={{ padding: "10px 14px", color: "#475569", fontSize: "12px" }}>{formatDateTime(row.arrivalAt)}</td>
+                  <td style={{ padding: "10px 14px", color: SURFACE.textSecondary, fontSize: "12px" }}>{formatDateTime(row.arrivalAt)}</td>
                   <td style={{ padding: "10px 14px" }}>
                     {row.trainingDates.length ? (
                       <div className="flex flex-wrap gap-1">
@@ -1183,35 +1184,35 @@ export default function SportsCalendarPage() {
                         ))}
                       </div>
                     ) : (
-                      <span style={{ fontSize: "12px", color: "#94a3b8" }}>{t("Sin programar")}</span>
+                      <span style={{ fontSize: "12px", color: SURFACE.textFaint }}>{t("Sin programar")}</span>
                     )}
                   </td>
                   <td style={{ padding: "10px 14px" }}>
                     {row.competitionDates.length ? (
                       <div className="flex flex-wrap gap-1">
                         {row.competitionDates.map((value) => (
-                          <span key={value} style={{ display: "inline-flex", borderRadius: "99px", background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: "#059669" }}>
+                          <span key={value} style={{ display: "inline-flex", borderRadius: "99px", background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: STATE.successText }}>
                             {formatDateShort(value)}
                           </span>
                         ))}
                       </div>
                     ) : (
-                      <span style={{ fontSize: "12px", color: "#94a3b8" }}>{t("Sin programar")}</span>
+                      <span style={{ fontSize: "12px", color: SURFACE.textFaint }}>{t("Sin programar")}</span>
                     )}
                   </td>
-                  <td style={{ padding: "10px 14px", color: "#475569", fontSize: "12px" }}>{formatDateTime(row.departureAt)}</td>
+                  <td style={{ padding: "10px 14px", color: SURFACE.textSecondary, fontSize: "12px" }}>{formatDateTime(row.departureAt)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
           {andDelegationScheduleRows.length === 0 ? (
-            <p style={{ marginTop: "12px", fontSize: "13px", color: "#94a3b8" }}>{t("No hay datos para construir la agenda por delegacion con los filtros actuales.")}</p>
+            <p style={{ marginTop: "12px", fontSize: "13px", color: SURFACE.textFaint }}>{t("No hay datos para construir la agenda por delegacion con los filtros actuales.")}</p>
           ) : null}
         </div>
       </section>
 
       <section className={`grid gap-4 ${view === "timeline" ? "" : "xl:grid-cols-[2fr_1fr]"}`}>
-        <div className="relative accent-strip-top anim-fade-up-soft" style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px 16px 16px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)", overflow: "hidden" }}>
+        <div className="relative accent-strip-top anim-fade-up-soft" style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px 16px 16px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)", overflow: "hidden" }}>
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <button className="btn btn-ghost" type="button"
@@ -1228,7 +1229,7 @@ export default function SportsCalendarPage() {
                   else setSelectedDay((prev) => { const d = new Date(prev); d.setDate(d.getDate() + 1); return d; });
                 }}>{view === "month" || view === "timeline" ? t("Mes siguiente") : view === "week" ? t("Semana siguiente") : t("Día siguiente")} <ChevronRightIcon size={14} className="inline ml-1" /></button>
             </div>
-            <h2 style={{ fontSize: "18px", fontWeight: 800, color: "#0f172a", textTransform: "capitalize" }}>
+            <h2 style={{ fontSize: "18px", fontWeight: 800, color: SURFACE.text, textTransform: "capitalize" }}>
               {view === "month" || view === "timeline"
                 ? monthLabel(monthCursor)
                 : view === "week"
@@ -1254,25 +1255,25 @@ export default function SportsCalendarPage() {
                       borderRadius: 14,
                       padding: 10,
                       textAlign: "left",
-                      background: isSelected ? "linear-gradient(160deg,#eff6ff,#dbeafe)" : isToday ? "linear-gradient(160deg,#f0fdfa,#ffffff)" : "#ffffff",
+                      background: isSelected ? "linear-gradient(160deg,#eff6ff,#dbeafe)" : isToday ? "linear-gradient(160deg,#f0fdfa,#ffffff)" : SURFACE.card,
                       border: isSelected ? "2px solid #1e4ed8" : isToday ? "2px solid #21D0B3" : "1px solid #e2e8f0",
                       cursor: "pointer",
                       boxShadow: "0 1px 4px rgba(15,23,42,0.06)",
                     }}>
-                    <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: isToday ? "#21D0B3" : "#94a3b8" }}>
+                    <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: isToday ? BRAND.teal : SURFACE.textFaint }}>
                       {t(WEEK_LABELS[(day.getDay() + 6) % 7])}
                     </p>
                     <div className="flex items-center justify-between">
-                      <p style={{ fontSize: 22, fontWeight: 800, color: isToday ? "#21D0B3" : "#0f172a", lineHeight: 1 }}>
+                      <p style={{ fontSize: 22, fontWeight: 800, color: isToday ? BRAND.teal : SURFACE.text, lineHeight: 1 }}>
                         {day.getDate()}
                       </p>
                       {dayEntries.length > 0 ? (
-                        <span style={{ fontSize: 9, fontWeight: 800, color: "#475569", background: "rgba(15,23,42,0.06)", borderRadius: 99, padding: "1px 7px" }}>
+                        <span style={{ fontSize: 9, fontWeight: 800, color: SURFACE.textSecondary, background: "rgba(15,23,42,0.06)", borderRadius: 99, padding: "1px 7px" }}>
                           {dayEntries.length}
                         </span>
                       ) : null}
                     </div>
-                    <p style={{ fontSize: 10, color: "#64748b", marginTop: 1 }}>
+                    <p style={{ fontSize: 10, color: SURFACE.textMuted, marginTop: 1 }}>
                       {day.toLocaleDateString("es-CL", { month: "short" })}
                     </p>
                     <div className="mt-2 space-y-1">
@@ -1291,7 +1292,7 @@ export default function SportsCalendarPage() {
                         );
                       })}
                       {dayEntries.length > 5 && (
-                        <p className="text-[10px] font-semibold" style={{ color: "#94a3b8" }}>+{dayEntries.length - 5} {t("más")}</p>
+                        <p className="text-[10px] font-semibold" style={{ color: SURFACE.textFaint }}>+{dayEntries.length - 5} {t("más")}</p>
                       )}
                     </div>
                   </button>
@@ -1305,8 +1306,8 @@ export default function SportsCalendarPage() {
               {selectedDayEntries.length === 0 ? (
                 <div className="p-12 text-center rounded-2xl"
                   style={{ background: "linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)", border: "1px dashed #e2e8f0" }}>
-                  <CalendarIcon size={36} color="#cbd5e1" />
-                  <p className="text-sm font-semibold mt-3" style={{ color: "#475569" }}>
+                  <CalendarIcon size={36} color={SURFACE.borderStrong} />
+                  <p className="text-sm font-semibold mt-3" style={{ color: SURFACE.textSecondary }}>
                     {t("Sin actividades para este día")}
                   </p>
                   <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
@@ -1343,7 +1344,7 @@ export default function SportsCalendarPage() {
 
           {view === "month" && (<>
           <div className="grid grid-cols-7 gap-2 text-center text-xs uppercase tracking-[0.14em]"
-            style={{ color: "#94a3b8" }}>
+            style={{ color: SURFACE.textFaint }}>
             {WEEK_LABELS.map((label) => <div key={label}>{t(label)}</div>)}
           </div>
 
@@ -1382,7 +1383,7 @@ export default function SportsCalendarPage() {
                           ? "linear-gradient(160deg,#eff6ff,#dbeafe)"
                           : isToday
                             ? "linear-gradient(160deg,#f0fdfa,#ffffff)"
-                            : "#ffffff",
+                            : SURFACE.card,
                     border: isSelected
                       ? "2px solid #1e4ed8"
                       : isToday
@@ -1399,13 +1400,13 @@ export default function SportsCalendarPage() {
                       display: "inline-flex", alignItems: "center", justifyContent: "center",
                       width: 22, height: 22, borderRadius: "50%",
                       fontSize: "12px", fontWeight: isToday ? 800 : 600,
-                      color: isToday ? "#fff" : !inMonth || isPast ? "#94a3b8" : "#0f172a",
+                      color: isToday ? SURFACE.card : !inMonth || isPast ? SURFACE.textFaint : SURFACE.text,
                     }}
                       className={isToday ? "cal-today-badge" : undefined}
                     >{day.getDate()}</span>
                     {dayEntries.length > 0 ? (
                       <span style={{
-                        fontSize: 9, fontWeight: 800, color: "#475569",
+                        fontSize: 9, fontWeight: 800, color: SURFACE.textSecondary,
                         background: "rgba(15,23,42,0.06)", borderRadius: 99, padding: "1px 6px",
                       }}>{dayEntries.length}</span>
                     ) : null}
@@ -1433,7 +1434,7 @@ export default function SportsCalendarPage() {
                       );
                     })}
                     {dayEntries.length > 3 ? (
-                      <p className="text-[10px] font-semibold" style={{ color: "#94a3b8", textAlign: "center" }}>+{dayEntries.length - 3} {t("más")}</p>
+                      <p className="text-[10px] font-semibold" style={{ color: SURFACE.textFaint, textAlign: "center" }}>+{dayEntries.length - 3} {t("más")}</p>
                     ) : null}
                   </div>
                 </button>
@@ -1445,9 +1446,9 @@ export default function SportsCalendarPage() {
           {view === "timeline" && (() => {
             type TLCat = "TRAINING" | "CLASIFICATORIA" | "FINAL" | "CEREMONY" | "OTHER";
             const TL_CAT_META: Record<TLCat, { label: string; bar: string; border: string; text: string; dot: string }> = {
-              CLASIFICATORIA: { label: "Clasificatorias", bar: "#dbeafe", border: "#3b82f6", text: "#1e3a8a", dot: "#3b82f6" },
+              CLASIFICATORIA: { label: "Clasificatorias", bar: "#dbeafe", border: STATE.info, text: "#1e3a8a", dot: STATE.info },
               FINAL: { label: "Finales", bar: "#dcfce7", border: "#22c55e", text: "#14532d", dot: "#22c55e" },
-              TRAINING: { label: "Entrenamientos", bar: "#fef3c7", border: "#f59e0b", text: "#78350f", dot: "#f59e0b" },
+              TRAINING: { label: "Entrenamientos", bar: "#fef3c7", border: STATE.warning, text: "#78350f", dot: STATE.warning },
               CEREMONY: { label: "Ceremonias", bar: "#f3e8ff", border: "#a855f7", text: "#581c87", dot: "#a855f7" },
               OTHER: { label: "Otros", bar: "#e5e7eb", border: "#9ca3af", text: "#374151", dot: "#9ca3af" },
             };
@@ -1534,7 +1535,7 @@ export default function SportsCalendarPage() {
               <div style={{ marginTop: 4 }}>
                 <div className="flex flex-wrap gap-3 mb-3">
                   {(["CLASIFICATORIA", "FINAL", "TRAINING", "CEREMONY", "OTHER"] as TLCat[]).map((cat) => (
-                    <span key={cat} className="inline-flex items-center gap-1.5" style={{ fontSize: 11, fontWeight: 700, color: "#475569" }}>
+                    <span key={cat} className="inline-flex items-center gap-1.5" style={{ fontSize: 11, fontWeight: 700, color: SURFACE.textSecondary }}>
                       <span style={{ width: 10, height: 10, borderRadius: "50%", background: TL_CAT_META[cat].dot, display: "inline-block" }} />
                       {t(TL_CAT_META[cat].label)}
                     </span>
@@ -1543,40 +1544,40 @@ export default function SportsCalendarPage() {
 
                 {rows.length === 0 ? (
                   <div className="p-12 text-center rounded-2xl" style={{ background: "linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)", border: "1px dashed #e2e8f0" }}>
-                    <CalendarIcon size={36} color="#cbd5e1" />
-                    <p className="text-sm font-semibold mt-3" style={{ color: "#475569" }}>{t("Sin actividades para mostrar")}</p>
+                    <CalendarIcon size={36} color={SURFACE.borderStrong} />
+                    <p className="text-sm font-semibold mt-3" style={{ color: SURFACE.textSecondary }}>{t("Sin actividades para mostrar")}</p>
                     <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{t("Ajusta los filtros o carga actividades en el calendario.")}</p>
                   </div>
                 ) : (
-                  <div style={{ display: "flex", border: "1px solid #e2e8f0", borderRadius: 14, overflow: "hidden", background: "#fff" }}>
-                    <div style={{ flex: "0 0 190px", borderRight: "1px solid #e2e8f0", background: "#fff" }}>
-                      <div style={{ height: HEADER_H, display: "flex", alignItems: "center", padding: "0 14px", fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "#94a3b8", borderBottom: "1px solid #e2e8f0", background: "#f8fafc" }}>
+                  <div style={{ display: "flex", border: "1px solid #e2e8f0", borderRadius: 14, overflow: "hidden", background: SURFACE.card }}>
+                    <div style={{ flex: "0 0 190px", borderRight: "1px solid #e2e8f0", background: SURFACE.card }}>
+                      <div style={{ height: HEADER_H, display: "flex", alignItems: "center", padding: "0 14px", fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: SURFACE.textFaint, borderBottom: "1px solid #e2e8f0", background: SURFACE.bg }}>
                         {t("Disciplina")}
                       </div>
                       {rows.map((r, i) => (
-                        <div key={r.sport} style={{ height: rowHeight(r.lanes), display: "flex", alignItems: "center", padding: "0 14px", borderBottom: i < rows.length - 1 ? "1px solid #f1f5f9" : "none", background: i % 2 === 0 ? "#fff" : "#fafbfc" }}>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.sport}</span>
+                        <div key={r.sport} style={{ height: rowHeight(r.lanes), display: "flex", alignItems: "center", padding: "0 14px", borderBottom: i < rows.length - 1 ? "1px solid #f1f5f9" : "none", background: i % 2 === 0 ? SURFACE.card : "#fafbfc" }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: SURFACE.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.sport}</span>
                         </div>
                       ))}
                     </div>
 
                     <div style={{ flex: 1, overflowX: "auto" }}>
                       <div style={{ minWidth: N * COL_MIN }}>
-                        <div style={{ height: HEADER_H, display: "grid", gridTemplateColumns: `repeat(${N}, minmax(${COL_MIN}px, 1fr))`, borderBottom: "1px solid #e2e8f0", background: "#f8fafc" }}>
+                        <div style={{ height: HEADER_H, display: "grid", gridTemplateColumns: `repeat(${N}, minmax(${COL_MIN}px, 1fr))`, borderBottom: "1px solid #e2e8f0", background: SURFACE.bg }}>
                           {days.map((d, i) => {
                             const k = dayKeys[i];
                             const isToday = k === todayKey;
                             const isWeekend = d.getDay() === 0 || d.getDay() === 6;
                             return (
-                              <div key={k} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", borderLeft: i === 0 ? "none" : "1px solid #eef2f7", background: isToday ? "rgba(33,208,179,0.12)" : isWeekend ? "#f1f5f9" : "transparent" }}>
-                                <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: isToday ? "#0e9384" : "#94a3b8" }}>{t(WEEK_LABELS[(d.getDay() + 6) % 7])}</span>
-                                <span style={{ fontSize: 13, fontWeight: 800, color: isToday ? "#0e9384" : "#0f172a" }}>{d.getDate()}</span>
+                              <div key={k} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", borderLeft: i === 0 ? "none" : "1px solid #eef2f7", background: isToday ? "rgba(33,208,179,0.12)" : isWeekend ? SURFACE.borderMuted : "transparent" }}>
+                                <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: isToday ? "#0e9384" : SURFACE.textFaint }}>{t(WEEK_LABELS[(d.getDay() + 6) % 7])}</span>
+                                <span style={{ fontSize: 13, fontWeight: 800, color: isToday ? "#0e9384" : SURFACE.text }}>{d.getDate()}</span>
                               </div>
                             );
                           })}
                         </div>
                         {rows.map((r, ri) => (
-                          <div key={r.sport} style={{ position: "relative", height: rowHeight(r.lanes), borderBottom: ri < rows.length - 1 ? "1px solid #f1f5f9" : "none", background: ri % 2 === 0 ? "#fff" : "#fafbfc", backgroundImage: gridLines, display: "grid", gridTemplateColumns: `repeat(${N}, minmax(${COL_MIN}px, 1fr))`, gridTemplateRows: `repeat(${r.lanes}, ${BAR_H}px)`, alignContent: "center", rowGap: LANE_GAP, padding: "8px 0" }}>
+                          <div key={r.sport} style={{ position: "relative", height: rowHeight(r.lanes), borderBottom: ri < rows.length - 1 ? "1px solid #f1f5f9" : "none", background: ri % 2 === 0 ? SURFACE.card : "#fafbfc", backgroundImage: gridLines, display: "grid", gridTemplateColumns: `repeat(${N}, minmax(${COL_MIN}px, 1fr))`, gridTemplateRows: `repeat(${r.lanes}, ${BAR_H}px)`, alignContent: "center", rowGap: LANE_GAP, padding: "8px 0" }}>
                             {r.bars.map((bar, bi) => {
                               const meta = TL_CAT_META[bar.cat];
                               return (
@@ -1598,12 +1599,12 @@ export default function SportsCalendarPage() {
         </div>
 
         {view !== "timeline" && (<div className="space-y-4">
-          <form onSubmit={createEntry} style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "16px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
-            <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#21D0B3" }}>{t("Programar actividad")}</span>
-            <h3 style={{ marginTop: "2px", fontSize: "16px", fontWeight: 800, color: "#0f172a" }}>
+          <form onSubmit={createEntry} style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "16px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+            <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: BRAND.teal }}>{t("Programar actividad")}</span>
+            <h3 style={{ marginTop: "2px", fontSize: "16px", fontWeight: 800, color: SURFACE.text }}>
               {t(entryFormTitle(getMetaString(newEntry.metadata, "scheduleType"), Boolean(editingEntryId)))}
             </h3>
-            <p style={{ marginTop: "2px", fontSize: "12px", color: "#64748b" }}>{dayLabel(selectedDay)}</p>
+            <p style={{ marginTop: "2px", fontSize: "12px", color: SURFACE.textMuted }}>{dayLabel(selectedDay)}</p>
             <div className="mt-3 grid gap-2">
               <StyledSelect
                 value={selectedManualScheduleType}
@@ -1628,7 +1629,7 @@ export default function SportsCalendarPage() {
                   <option key={option.value} value={option.value}>{t(option.label)}</option>
                 ))}
               </StyledSelect>
-              <p style={{ fontSize: "11px", color: "#94a3b8" }}>
+              <p style={{ fontSize: "11px", color: SURFACE.textFaint }}>
                 {t("Llegada y retiro se calculan automaticamente desde AND (no se cargan manualmente aqui).")}
               </p>
               <div className="grid grid-cols-2 gap-2">
@@ -1746,23 +1747,23 @@ export default function SportsCalendarPage() {
               {/* Date range toggle */}
               <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
                 <button type="button" onClick={() => setNewEntry({ ...newEntry, metadata: { ...newEntry.metadata, useDateRange: !(newEntry.metadata as any)?.useDateRange } })}
-                  style={{ width: 38, height: 20, borderRadius: 10, border: "none", cursor: "pointer", position: "relative", background: (newEntry.metadata as any)?.useDateRange ? "#21D0B3" : "#cbd5e1", transition: "background 0.2s" }}>
-                  <span style={{ position: "absolute", top: 2, left: (newEntry.metadata as any)?.useDateRange ? 20 : 2, width: 16, height: 16, borderRadius: 8, background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.2)", transition: "left 0.2s" }} />
+                  style={{ width: 38, height: 20, borderRadius: 10, border: "none", cursor: "pointer", position: "relative", background: (newEntry.metadata as any)?.useDateRange ? BRAND.teal : SURFACE.borderStrong, transition: "background 0.2s" }}>
+                  <span style={{ position: "absolute", top: 2, left: (newEntry.metadata as any)?.useDateRange ? 20 : 2, width: 16, height: 16, borderRadius: 8, background: SURFACE.card, boxShadow: "0 1px 3px rgba(0,0,0,0.2)", transition: "left 0.2s" }} />
                 </button>
-                <span style={{ fontSize: 12, fontWeight: 600, color: "#0f172a" }}>{t("Rango de fechas (crear para varios días)")}</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: SURFACE.text }}>{t("Rango de fechas (crear para varios días)")}</span>
               </div>
               {(newEntry.metadata as any)?.useDateRange ? (
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <label style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", display: "block", marginBottom: 2 }}>{t("Fecha inicio")}</label>
+                    <label style={{ fontSize: 10, fontWeight: 600, color: SURFACE.textFaint, display: "block", marginBottom: 2 }}>{t("Fecha inicio")}</label>
                     <input className="input" type="date" value={(newEntry.metadata as any)?.rangeStart || ""} onChange={(e) => setNewEntry({ ...newEntry, metadata: { ...newEntry.metadata, rangeStart: e.target.value } })} required />
                   </div>
                   <div>
-                    <label style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", display: "block", marginBottom: 2 }}>{t("Fecha fin")}</label>
+                    <label style={{ fontSize: 10, fontWeight: 600, color: SURFACE.textFaint, display: "block", marginBottom: 2 }}>{t("Fecha fin")}</label>
                     <input className="input" type="date" value={(newEntry.metadata as any)?.rangeEnd || ""} onChange={(e) => setNewEntry({ ...newEntry, metadata: { ...newEntry.metadata, rangeEnd: e.target.value } })} required />
                   </div>
                   <div>
-                    <label style={{ fontSize: 10, fontWeight: 600, color: "#94a3b8", display: "block", marginBottom: 2 }}>{t("Hora (todos los días)")}</label>
+                    <label style={{ fontSize: 10, fontWeight: 600, color: SURFACE.textFaint, display: "block", marginBottom: 2 }}>{t("Hora (todos los días)")}</label>
                     <input className="input" type="time" value={(newEntry.metadata as any)?.rangeTime || ""} onChange={(e) => setNewEntry({ ...newEntry, metadata: { ...newEntry.metadata, rangeTime: e.target.value } })} required />
                   </div>
                 </div>
@@ -1799,11 +1800,11 @@ export default function SportsCalendarPage() {
             </div>
           </form>
 
-          <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "16px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+          <div style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "16px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
               <div>
-                <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#94a3b8" }}>{t("Actividades del dia")}</span>
-                <p style={{ marginTop: "2px", fontSize: "13px", fontWeight: 700, color: "#0f172a" }}>{dayLabel(selectedDay)}</p>
+                <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: SURFACE.textFaint }}>{t("Actividades del dia")}</span>
+                <p style={{ marginTop: "2px", fontSize: "13px", fontWeight: 700, color: SURFACE.text }}>{dayLabel(selectedDay)}</p>
               </div>
               <Link
                 href={`/sports-calendar/day/${selectedDayKey}?eventId=${encodeURIComponent(selectedEventId || "")}&delegationId=${encodeURIComponent(selectedDelegationId || "")}`}
@@ -1812,13 +1813,13 @@ export default function SportsCalendarPage() {
                 {t("Ver detalle del dia")}
               </Link>
             </div>
-            {loading ? <p style={{ marginTop: "8px", fontSize: "13px", color: "#94a3b8" }}>{t("Cargando...")}</p> : null}
-            {!loading && selectedDayEntries.length === 0 ? <p style={{ marginTop: "8px", fontSize: "13px", color: "#94a3b8" }}>{t("Sin actividades en esta fecha.")}</p> : null}
+            {loading ? <p style={{ marginTop: "8px", fontSize: "13px", color: SURFACE.textFaint }}>{t("Cargando...")}</p> : null}
+            {!loading && selectedDayEntries.length === 0 ? <p style={{ marginTop: "8px", fontSize: "13px", color: SURFACE.textFaint }}>{t("Sin actividades en esta fecha.")}</p> : null}
             <div className="mt-2 space-y-2">
               {selectedDayEntries.map((entry) => (
-                <div key={entry.id} style={{ borderRadius: "10px", border: "1px solid #e2e8f0", borderLeft: "3px solid #21D0B3", background: "#f8fafc", padding: "10px 12px" }}>
-                  <p style={{ fontSize: "11px", color: "#94a3b8" }}>{formatTime(entry.startAtUtc)} · {entry.sport} / {entry.league}</p>
-                  <p style={{ fontSize: "13px", fontWeight: 700, color: "#0f172a", marginTop: "2px" }}>{titleFromEvent(entry)}</p>
+                <div key={entry.id} style={{ borderRadius: "10px", border: "1px solid #e2e8f0", borderLeft: "3px solid #21D0B3", background: SURFACE.bg, padding: "10px 12px" }}>
+                  <p style={{ fontSize: "11px", color: SURFACE.textFaint }}>{formatTime(entry.startAtUtc)} · {entry.sport} / {entry.league}</p>
+                  <p style={{ fontSize: "13px", fontWeight: 700, color: SURFACE.text, marginTop: "2px" }}>{titleFromEvent(entry)}</p>
                   <div className="mt-1 flex flex-wrap gap-1.5">
                     <span className={`inline-flex rounded-full px-2 py-1 text-[10px] font-semibold ${scheduleTypeBadgeClass(getMetaString(entry.metadata, "scheduleType"))}`}>
                       {t(scheduleTypeLabel(getMetaString(entry.metadata, "scheduleType")))}
@@ -1829,7 +1830,7 @@ export default function SportsCalendarPage() {
                       </span>
                     ) : null}
                     {entry.source === "and-derived" && getMetaString(entry.metadata, "peopleCount") ? (
-                      <span style={{ display: "inline-flex", borderRadius: "99px", background: "rgba(33,208,179,0.08)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: "#21D0B3" }}>
+                      <span style={{ display: "inline-flex", borderRadius: "99px", background: "rgba(33,208,179,0.08)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: BRAND.teal }}>
                         {getMetaString(entry.metadata, "peopleCount")} {t("personas")}
                       </span>
                     ) : null}
@@ -1839,13 +1840,13 @@ export default function SportsCalendarPage() {
                       </span>
                     ) : null}
                   </div>
-                  <p style={{ fontSize: "11px", color: "#64748b", marginTop: "4px" }}>{venueLabelById(venueOptions, entry.venue) || t("Sede por confirmar")} · {entry.status ?? "SCHEDULED"}</p>
+                  <p style={{ fontSize: "11px", color: SURFACE.textMuted, marginTop: "4px" }}>{venueLabelById(venueOptions, entry.venue) || t("Sede por confirmar")} · {entry.status ?? "SCHEDULED"}</p>
                   {entry.source === "and-derived" && getMetaStringArray(entry.metadata, "disciplineNames").length ? (
                     <div style={{ marginTop: "8px" }}>
-                      <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#94a3b8" }}>{t("Detalle")}</p>
+                      <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: SURFACE.textFaint }}>{t("Detalle")}</p>
                       <div className="mt-1 flex flex-wrap gap-1">
                         {getMetaStringArray(entry.metadata, "disciplineNames").map((discipline) => (
-                          <span key={discipline} style={{ display: "inline-flex", borderRadius: "99px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.2)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: "#21D0B3" }}>
+                          <span key={discipline} style={{ display: "inline-flex", borderRadius: "99px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.2)", padding: "2px 8px", fontSize: "10px", fontWeight: 700, color: BRAND.teal }}>
                             {discipline}
                           </span>
                         ))}
@@ -1854,7 +1855,7 @@ export default function SportsCalendarPage() {
                   ) : null}
                   <div style={{ marginTop: "8px" }}>
                     {entry.source === "and-derived" ? (
-                      <p style={{ fontSize: "11px", fontWeight: 600, color: "#21D0B3" }}>{t("Hito AND (solo lectura)")}</p>
+                      <p style={{ fontSize: "11px", fontWeight: 600, color: BRAND.teal }}>{t("Hito AND (solo lectura)")}</p>
                     ) : (
                       <div className="flex gap-2">
                         <button className="btn btn-ghost" type="button" onClick={() => onEditEntry(entry)}>{t("Editar")}</button>
@@ -1883,7 +1884,7 @@ export default function SportsCalendarPage() {
             onClick={(e) => e.stopPropagation()}
             style={{
               width: "100%", maxWidth: 560, maxHeight: "88vh", display: "flex", flexDirection: "column",
-              background: "#ffffff", borderRadius: 20, overflow: "hidden",
+              background: SURFACE.card, borderRadius: 20, overflow: "hidden",
               boxShadow: "0 24px 60px rgba(15,23,42,0.35)",
             }}
           >
@@ -1893,7 +1894,7 @@ export default function SportsCalendarPage() {
               <div className="relative flex items-start justify-between gap-3">
                 <div style={{ minWidth: 0 }}>
                   <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.22em", textTransform: "uppercase", color: "rgba(255,255,255,0.85)" }}>{t("Agenda del día")}</p>
-                  <h3 style={{ marginTop: 2, fontSize: 18, fontWeight: 800, color: "#fff", textTransform: "capitalize", lineHeight: 1.2 }}>{dayLabel(selectedDay)}</h3>
+                  <h3 style={{ marginTop: 2, fontSize: 18, fontWeight: 800, color: SURFACE.card, textTransform: "capitalize", lineHeight: 1.2 }}>{dayLabel(selectedDay)}</h3>
                   <p style={{ marginTop: 4, fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.9)" }}>
                     {selectedDayEntries.length} {selectedDayEntries.length === 1 ? t("actividad") : t("actividades")}
                   </p>
@@ -1902,7 +1903,7 @@ export default function SportsCalendarPage() {
                   type="button"
                   onClick={() => setDayModalOpen(false)}
                   aria-label={t("Cerrar")}
-                  style={{ flexShrink: 0, width: 32, height: 32, borderRadius: 10, border: "none", cursor: "pointer", background: "rgba(255,255,255,0.2)", color: "#fff", fontSize: 18, fontWeight: 700, lineHeight: 1 }}
+                  style={{ flexShrink: 0, width: 32, height: 32, borderRadius: 10, border: "none", cursor: "pointer", background: "rgba(255,255,255,0.2)", color: SURFACE.card, fontSize: 18, fontWeight: 700, lineHeight: 1 }}
                 >
                   <XIcon size={14} />
                 </button>
@@ -1927,9 +1928,9 @@ export default function SportsCalendarPage() {
             <div className="stagger" style={{ padding: 16, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10 }}>
               {selectedDayEntries.length === 0 ? (
                 <div style={{ padding: "32px 16px", textAlign: "center" }}>
-                  <p style={{ marginBottom: 6, color: "#cbd5e1", display: "flex", justifyContent: "center" }}><CalendarIcon size={40} /></p>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: "#475569" }}>{t("Sin actividades para este día")}</p>
-                  <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>{t("Programá una desde el panel lateral.")}</p>
+                  <p style={{ marginBottom: 6, color: SURFACE.borderStrong, display: "flex", justifyContent: "center" }}><CalendarIcon size={40} /></p>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: SURFACE.textSecondary }}>{t("Sin actividades para este día")}</p>
+                  <p style={{ fontSize: 12, color: SURFACE.textFaint, marginTop: 4 }}>{t("Programá una desde el panel lateral.")}</p>
                 </div>
               ) : selectedDayEntries.map((entry) => {
                 const tipo = getMetaString(entry.metadata, "scheduleType");
@@ -1984,7 +1985,7 @@ export default function SportsCalendarPage() {
             </div>
 
             {/* Footer */}
-            <div style={{ padding: "12px 16px", borderTop: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", gap: 10, background: "#f8fafc" }}>
+            <div style={{ padding: "12px 16px", borderTop: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", gap: 10, background: SURFACE.bg }}>
               <button type="button" className="btn btn-ghost" onClick={() => setDayModalOpen(false)}>{t("Cerrar")}</button>
               <Link
                 href={`/sports-calendar/day/${selectedDayKey}?eventId=${encodeURIComponent(selectedEventId || "")}&delegationId=${encodeURIComponent(selectedDelegationId || "")}`}

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { SURFACE } from "@/lib/design";
 import { downloadCSV } from "@/lib/export";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiCard from "@/components/ui/KpiCard";
@@ -158,7 +159,7 @@ export default function SofiaActionsPage() {
         <div className="surface rounded-2xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
-              <thead style={{ backgroundColor: "#1f4e8c", color: "#fff" }}>
+              <thead style={{ backgroundColor: "#1f4e8c", color: SURFACE.card }}>
                 <tr>
                   <th className="p-3 text-left">Acción</th>
                   <th className="p-3 text-left">Detalle</th>

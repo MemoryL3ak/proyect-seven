@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { SURFACE } from "@/lib/design";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiCard from "@/components/ui/KpiCard";
 import Tabs from "@/components/ui/Tabs";
@@ -151,7 +152,7 @@ function CouponImage({ src, alt, color, bg }: { src?: string | null; alt: string
   const [failed, setFailed] = useState(false);
   const showImg = src && !failed;
   return (
-    <div style={{ height: 132, background: showImg ? "#f1f5f9" : `linear-gradient(135deg, ${bg}, #ffffff)`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+    <div style={{ height: 132, background: showImg ? SURFACE.borderMuted : `linear-gradient(135deg, ${bg}, #ffffff)`, display: "flex", alignItems: "center", justifyContent: "center" }}>
       {showImg ? (
         <img src={src as string} alt={alt} onError={() => setFailed(true)}
           style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
@@ -508,12 +509,12 @@ function CatalogTab({
               </Field>
               <Field label={t("Imagen referencial")} className="md:col-span-2">
                 <div className="flex items-start gap-3">
-                  <div style={{ width: 104, height: 78, borderRadius: 10, overflow: "hidden", background: "#f1f5f9", border: "1px solid #e2e8f0", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <div style={{ width: 104, height: 78, borderRadius: 10, overflow: "hidden", background: SURFACE.borderMuted, border: "1px solid #e2e8f0", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
                     {form.imageUrl ? (
                       <img src={form.imageUrl} alt={t("Vista previa")}
                         style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     ) : (
-                      <span style={{ fontSize: 10, color: "#94a3b8" }}>{t("Sin imagen")}</span>
+                      <span style={{ fontSize: 10, color: SURFACE.textFaint }}>{t("Sin imagen")}</span>
                     )}
                   </div>
                   <div className="flex-1 space-y-2 min-w-0">
@@ -578,7 +579,7 @@ function CatalogTab({
                         className="text-xs px-3 py-1.5 rounded-full font-medium transition"
                         style={{
                           backgroundColor: sel ? "#1f4e8c" : "#eef1f6",
-                          color: sel ? "#fff" : "#1f4e8c",
+                          color: sel ? SURFACE.card : "#1f4e8c",
                         }}
                         onClick={() => toggleAudience(a.value)}>
                         {sel ? <CheckIcon size={12} className="inline mr-1" /> : null}{t(a.label)}
@@ -818,8 +819,8 @@ function PartnersTab({
                       <button key={c.id} type="button"
                         className="text-[11px] px-2 py-1 rounded-full font-medium transition"
                         style={{
-                          backgroundColor: sel ? "#1f4e8c" : "#fff",
-                          color: sel ? "#fff" : "#1f4e8c",
+                          backgroundColor: sel ? "#1f4e8c" : SURFACE.card,
+                          color: sel ? SURFACE.card : "#1f4e8c",
                           border: sel ? "none" : "1px solid #d4dae2",
                         }}
                         onClick={() => toggleAllowed(c.id)}>
@@ -928,7 +929,7 @@ function ClaimsTab({
         <div className="surface rounded-2xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
-              <thead style={{ backgroundColor: "#1f4e8c", color: "#fff" }}>
+              <thead style={{ backgroundColor: "#1f4e8c", color: SURFACE.card }}>
                 <tr>
                   <th className="p-3 text-left">{t("Código")}</th>
                   <th className="p-3 text-left">{t("Beneficio")}</th>

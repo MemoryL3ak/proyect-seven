@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { STATE, SURFACE } from "@/lib/design";
 import { XIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 
@@ -30,9 +31,9 @@ type Athlete = {
 };
 
 const STATUS_COLORS: Record<string, { bg: string; border: string; text: string }> = {
-  PENDING:   { bg: "rgba(245,158,11,0.15)",  border: "rgba(245,158,11,0.4)",  text: "#f59e0b" },
-  APPROVED:  { bg: "rgba(16,185,129,0.15)",  border: "rgba(16,185,129,0.4)",  text: "#10b981" },
-  REJECTED:  { bg: "rgba(239,68,68,0.12)",   border: "rgba(239,68,68,0.35)",  text: "#ef4444" },
+  PENDING:   { bg: "rgba(245,158,11,0.15)",  border: "rgba(245,158,11,0.4)",  text: STATE.warning },
+  APPROVED:  { bg: "rgba(16,185,129,0.15)",  border: "rgba(16,185,129,0.4)",  text: STATE.success },
+  REJECTED:  { bg: "rgba(239,68,68,0.12)",   border: "rgba(239,68,68,0.35)",  text: STATE.danger },
   DELIVERED: { bg: "rgba(99,102,241,0.15)",  border: "rgba(99,102,241,0.4)",  text: "#818cf8" },
 };
 
@@ -343,7 +344,7 @@ export default function HotelExtraReservationsCalendar({
                       fontSize: "13px",
                       fontWeight: isToday ? 800 : 500,
                       background: isToday ? "var(--accent, #6366f1)" : "transparent",
-                      color: isToday ? "#fff" : "inherit",
+                      color: isToday ? SURFACE.card : "inherit",
                     }}
                   >
                     {day}
@@ -461,7 +462,7 @@ export default function HotelExtraReservationsCalendar({
                         <button
                           type="button"
                           className="btn btn-ghost"
-                          style={{ fontSize: "12px", padding: "4px 10px", color: "#ef4444" }}
+                          style={{ fontSize: "12px", padding: "4px 10px", color: STATE.danger }}
                           onClick={() => handleDelete(res.id)}
                         >
                           {t("Eliminar")}
@@ -524,7 +525,7 @@ export default function HotelExtraReservationsCalendar({
                         <button
                           type="button"
                           className="btn btn-ghost"
-                          style={{ fontSize: "12px", padding: "4px 10px", color: "#ef4444" }}
+                          style={{ fontSize: "12px", padding: "4px 10px", color: STATE.danger }}
                           onClick={() => handleDelete(res.id)}
                         >
                           {t("Eliminar")}
@@ -635,7 +636,7 @@ export default function HotelExtraReservationsCalendar({
               </div>
             </div>
 
-            {error && <p className="text-sm" style={{ color: "#ef4444" }}>{error}</p>}
+            {error && <p className="text-sm" style={{ color: STATE.danger }}>{error}</p>}
 
             <div className="flex gap-3 pt-2">
               <button type="button" className="btn btn-ghost flex-1" onClick={() => setShowForm(false)}>

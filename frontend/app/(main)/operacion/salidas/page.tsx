@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import EmptyState from "@/components/ui/EmptyState";
 import { CalendarIcon, AlertIcon, SearchIcon, RefreshIcon, PlaneIcon } from "@/components/ui/Icons";
@@ -255,15 +256,15 @@ export default function DepartureMonitoringPage() {
   return (
     <div className="p-4 md:p-6 space-y-5">
       {/* Header estilo Monitor de Vuelos */}
-      <section style={{ background: "#ffffff", borderRadius: "24px", padding: "28px 32px", boxShadow: "0 2px 12px rgba(15,23,42,0.06)", borderTop: "3px solid #21D0B3" }}>
+      <section style={{ background: SURFACE.card, borderRadius: "24px", padding: "28px 32px", boxShadow: "0 2px 12px rgba(15,23,42,0.06)", borderTop: "3px solid #21D0B3" }}>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
-              <PlaneIcon size={20} color="#21D0B3" strokeWidth={2} />
-              <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#21D0B3" }}>{t("Operaciones aéreas")}</p>
+              <PlaneIcon size={20} color={BRAND.teal} strokeWidth={2} />
+              <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: BRAND.teal }}>{t("Operaciones aéreas")}</p>
             </div>
-            <h1 style={{ fontSize: "1.75rem", fontWeight: 800, color: "#0f172a", lineHeight: 1.1 }}>{t("Monitoreo de Salidas")}</h1>
-            <p style={{ fontSize: "13px", color: "#64748b", marginTop: "4px" }}>{t("Participantes con vuelo de salida y viajes Transfer Out · Sólo participantes validados")}</p>
+            <h1 style={{ fontSize: "1.75rem", fontWeight: 800, color: SURFACE.text, lineHeight: 1.1 }}>{t("Monitoreo de Salidas")}</h1>
+            <p style={{ fontSize: "13px", color: SURFACE.textMuted, marginTop: "4px" }}>{t("Participantes con vuelo de salida y viajes Transfer Out · Sólo participantes validados")}</p>
           </div>
           <button className="btn btn-ghost" onClick={() => { setCargando(true); void cargar(); }}>
             <RefreshIcon /> {t("Actualizar")}
@@ -273,14 +274,14 @@ export default function DepartureMonitoringPage() {
         {/* KPI row */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "12px", marginTop: "20px" }}>
           {[
-            { label: "Total salidas", value: kpis.total, color: "#0f172a", accent: "#64748b" },
-            { label: "Salen hoy", value: kpis.salidasHoy, color: "#f59e0b", accent: "#f59e0b" },
-            { label: "Próximas", value: kpis.proximas, color: "#3b82f6", accent: "#3b82f6" },
-            { label: "Ya salieron", value: kpis.pasadas, color: "#64748b", accent: "#64748b" },
-            { label: "Sin vuelo", value: kpis.sinVuelo, color: kpis.sinVuelo > 0 ? "#ef4444" : "#0f172a", accent: "#ef4444" },
+            { label: "Total salidas", value: kpis.total, color: SURFACE.text, accent: SURFACE.textMuted },
+            { label: "Salen hoy", value: kpis.salidasHoy, color: STATE.warning, accent: STATE.warning },
+            { label: "Próximas", value: kpis.proximas, color: STATE.info, accent: STATE.info },
+            { label: "Ya salieron", value: kpis.pasadas, color: SURFACE.textMuted, accent: SURFACE.textMuted },
+            { label: "Sin vuelo", value: kpis.sinVuelo, color: kpis.sinVuelo > 0 ? STATE.danger : SURFACE.text, accent: STATE.danger },
           ].map(k => (
-            <div key={k.label} style={{ background: "#f8fafc", borderRadius: "14px", padding: "12px 14px", border: "1px solid #e2e8f0", borderTop: `2px solid ${k.accent}` }}>
-              <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#94a3b8" }}>{t(k.label)}</p>
+            <div key={k.label} style={{ background: SURFACE.bg, borderRadius: "14px", padding: "12px 14px", border: "1px solid #e2e8f0", borderTop: `2px solid ${k.accent}` }}>
+              <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: SURFACE.textFaint }}>{t(k.label)}</p>
               <p style={{ fontSize: "22px", fontWeight: 800, color: k.color, marginTop: "2px" }}>{k.value}</p>
             </div>
           ))}
@@ -348,7 +349,7 @@ export default function DepartureMonitoringPage() {
                 borderBottom: "1px solid var(--border)",
               }}
             >
-              <h2 className="text-sm font-bold capitalize" style={{ color: dia === hoy ? "#b45309" : "var(--text)" }}>
+              <h2 className="text-sm font-bold capitalize" style={{ color: dia === hoy ? STATE.warningText : "var(--text)" }}>
                 {dia === "sin-fecha" ? t("Sin fecha de salida") : fechaLarga(dia)}
                 {dia === hoy && ` · ${t("HOY")}`}
               </h2>

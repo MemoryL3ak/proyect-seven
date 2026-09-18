@@ -3,6 +3,7 @@
 import { useEffect, useId, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
 import { apiFetch } from "@/lib/api";
+import { BRAND } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
 
 type ImportType = "athletes" | "drivers" | "hospitality";
@@ -1087,7 +1088,7 @@ export default function BulkImportPanel({
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#21D0B3", marginBottom: "4px" }}>{t("Carga masiva")}</p>
+          <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: BRAND.teal, marginBottom: "4px" }}>{t("Carga masiva")}</p>
           <h2 style={{ fontSize: "1.4rem", fontWeight: 700, color: "var(--text)", lineHeight: 1.2 }}>
             {type === "athletes"
               ? athleteMode === "registration"
@@ -1160,7 +1161,7 @@ export default function BulkImportPanel({
       {previewRows.length > 0 && (
         <div style={{ borderRadius: "14px", border: "1px solid var(--border)", background: "var(--elevated)", padding: "16px" }}>
           <div className="mb-3">
-            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#21D0B3" }}>{t("Vista previa")}</p>
+            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: BRAND.teal }}>{t("Vista previa")}</p>
             <p style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "2px" }}>{t("Mostrando")} {previewRows.length} {t("de")} {normalizedRows.length} {t("fila(s).")}</p>
           </div>
           <div style={{ maxWidth: "100%", overflow: "hidden", borderRadius: "10px", border: "1px solid var(--border)" }}>
@@ -1171,7 +1172,7 @@ export default function BulkImportPanel({
                   {headers.map((header) => (
                     <th
                       key={header}
-                      style={{ whiteSpace: "nowrap", borderBottom: "2px solid rgba(31,205,255,0.25)", background: "linear-gradient(to bottom, #eaf4fb, #e8f0f8)", padding: "8px 12px", fontWeight: 700, fontSize: "10px", letterSpacing: "0.16em", textTransform: "uppercase", color: "#1FCDFF" }}
+                      style={{ whiteSpace: "nowrap", borderBottom: "2px solid rgba(31,205,255,0.25)", background: "linear-gradient(to bottom, #eaf4fb, #e8f0f8)", padding: "8px 12px", fontWeight: 700, fontSize: "10px", letterSpacing: "0.16em", textTransform: "uppercase", color: BRAND.blue }}
                     >
                       {header}
                     </th>

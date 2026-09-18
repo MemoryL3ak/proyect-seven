@@ -11,6 +11,7 @@ import {
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { apiFetch } from "@/lib/api";
+import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { CheckIcon, ChevronLeftIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 
@@ -466,7 +467,7 @@ function SignatureCanvas({
     const pos = getPos(e, canvas);
     ctx.lineWidth = 2.5;
     ctx.lineCap = "round";
-    ctx.strokeStyle = "#0f172a";
+    ctx.strokeStyle = SURFACE.text;
     ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
     setHasDrawn(true);
@@ -550,7 +551,7 @@ function YesNoField({
             style={
               value === opt
                 ? opt === "SI"
-                  ? { borderColor: "#10b981", background: "#ecfdf5", color: "#065f46" }
+                  ? { borderColor: STATE.success, background: "#ecfdf5", color: "#065f46" }
                   : { borderColor: "#f87171", background: "#fff1f2", color: "#be123c" }
                 : { borderColor: "var(--border-strong)", background: "var(--surface)", color: "var(--text-muted)" }
             }
@@ -577,9 +578,9 @@ function StepBar({ current }: { current: Step }) {
               className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-colors"
               style={
                 i < idx
-                  ? { background: "#10b981", color: "#fff" }
+                  ? { background: STATE.success, color: SURFACE.card }
                   : i === idx
-                  ? { background: "var(--brand)", color: "#fff" }
+                  ? { background: "var(--brand)", color: SURFACE.card }
                   : { background: "var(--elevated)", color: "var(--text-faint)" }
               }
             >
@@ -595,7 +596,7 @@ function StepBar({ current }: { current: Step }) {
           {i < STEPS.length - 1 && (
             <div
               className="mb-4 h-0.5 flex-1"
-              style={{ background: i < idx ? "#10b981" : "var(--border)" }}
+              style={{ background: i < idx ? STATE.success : "var(--border)" }}
             />
           )}
         </div>
@@ -778,7 +779,7 @@ function FichaSaludContent() {
     <div className="mx-auto max-w-2xl space-y-6 p-4 pb-16 md:p-8">
       {/* Back button */}
       <button type="button" onClick={() => window.history.back()}
-        style={{ display:"inline-flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",padding:0,color:"#21D0B3",fontSize:13,fontWeight:600 }}>
+        style={{ display:"inline-flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",padding:0,color:BRAND.teal,fontSize:13,fontWeight:600 }}>
         <ChevronLeftIcon size={16} strokeWidth={2} />
         {t("Volver al portal")}
       </button>
@@ -805,7 +806,7 @@ function FichaSaludContent() {
             solo se muestra un estado de carga, nunca el formulario de ID. */}
         {step === "identificacion" && cameWithId && !error && (
           <div className="surface rounded-2xl p-6 flex flex-col items-center gap-4 py-12">
-            <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid rgba(33,208,179,0.2)", borderTopColor: "#21D0B3", animation: "fs-spin 0.8s linear infinite" }} />
+            <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid rgba(33,208,179,0.2)", borderTopColor: BRAND.teal, animation: "fs-spin 0.8s linear infinite" }} />
             <style>{`@keyframes fs-spin{to{transform:rotate(360deg)}}`}</style>
             <p className="text-sm" style={{ color: "var(--text-muted)" }}>{t("Cargando tu ficha de salud…")}</p>
           </div>

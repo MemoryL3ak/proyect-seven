@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { changeTemporaryPassword, login } from "@/lib/api";
+import { BRAND, SURFACE } from "@/lib/design";
 import { LockIcon, EyeIcon } from "@/components/ui/Icons";
 
 type LoginResponse = {
@@ -113,7 +114,7 @@ export default function LoginPage() {
           style={{ height: 48, width: "auto", objectFit: "contain", flexShrink: 0 }}
         />
         <div>
-          <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#f1f5f9", margin: 0, lineHeight: 1.2 }}>
+          <h2 style={{ fontSize: "20px", fontWeight: 700, color: SURFACE.borderMuted, margin: 0, lineHeight: 1.2 }}>
             Iniciar sesión
           </h2>
           <p style={{ fontSize: "12.5px", color: "rgba(255,255,255,0.4)", margin: "3px 0 0" }}>
@@ -151,7 +152,7 @@ export default function LoginPage() {
                 borderRadius: "12px",
                 border: "1px solid rgba(255,255,255,0.12)",
                 background: "rgba(255,255,255,0.08)",
-                color: "#f1f5f9",
+                color: SURFACE.borderMuted,
                 // 16px mínimo: bajo eso, iOS hace auto-zoom al enfocar el input
                 // dentro del WebView y la vista queda ampliada tras el login.
                 fontSize: "16px",
@@ -187,7 +188,7 @@ export default function LoginPage() {
                 borderRadius: "12px",
                 border: "1px solid rgba(255,255,255,0.12)",
                 background: "rgba(255,255,255,0.08)",
-                color: "#f1f5f9",
+                color: SURFACE.borderMuted,
                 fontSize: "16px",
                 outline: "none",
                 fontWeight: 500,
@@ -230,7 +231,7 @@ export default function LoginPage() {
             flexDirection: "column",
             gap: "10px",
           }}>
-            <p style={{ color: "#34F3C6", fontSize: "12.5px", margin: 0 }}>
+            <p style={{ color: BRAND.tealLight, fontSize: "12.5px", margin: 0 }}>
               Debes cambiar la contraseña temporal para continuar.
             </p>
             <input
@@ -241,7 +242,7 @@ export default function LoginPage() {
               style={{
                 width: "100%", padding: "12px 14px", borderRadius: "10px",
                 border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.08)",
-                color: "#f1f5f9", fontSize: "16px", outline: "none", fontWeight: 500,
+                color: SURFACE.borderMuted, fontSize: "16px", outline: "none", fontWeight: 500,
               }}
             />
             <input
@@ -252,7 +253,7 @@ export default function LoginPage() {
               style={{
                 width: "100%", padding: "12px 14px", borderRadius: "10px",
                 border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.08)",
-                color: "#f1f5f9", fontSize: "16px", outline: "none", fontWeight: 500,
+                color: SURFACE.borderMuted, fontSize: "16px", outline: "none", fontWeight: 500,
               }}
             />
             <button

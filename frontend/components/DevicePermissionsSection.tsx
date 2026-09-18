@@ -11,6 +11,7 @@ import {
   type PermissionsStatus,
 } from "@/lib/device-permissions";
 import { BellIcon, PinIcon, CameraIcon, ImageIcon, SettingsIcon } from "@/components/ui/Icons";
+import { BRAND, STATE, SURFACE } from "@/lib/design";
 
 type ItemConfig = {
   kind: PermissionKind;
@@ -54,16 +55,16 @@ const STATE_LABEL: Record<PermissionState, string> = {
 };
 
 const STATE_COLOR: Record<PermissionState, string> = {
-  granted: "#0a7a6b",
+  granted: BRAND.tealInk,
   denied: "#92400E",
-  undetermined: "#475569",
+  undetermined: SURFACE.textSecondary,
   blocked: "#b91c1c",
 };
 
 const STATE_BG: Record<PermissionState, string> = {
   granted: "rgba(33,208,179,0.12)",
   denied: "#FEF3C7",
-  undetermined: "#f1f5f9",
+  undetermined: SURFACE.borderMuted,
   blocked: "#FEE2E2",
 };
 
@@ -115,7 +116,7 @@ export default function DevicePermissionsSection() {
   return (
     <div
       style={{
-        background: "#fff",
+        background: SURFACE.card,
         borderRadius: 14,
         border: "1px solid #e2e8f0",
         overflow: "hidden",
@@ -137,7 +138,7 @@ export default function DevicePermissionsSection() {
               margin: 0,
               fontSize: 13,
               fontWeight: 700,
-              color: "#0f172a",
+              color: SURFACE.text,
             }}
           >
             Permisos del dispositivo
@@ -146,7 +147,7 @@ export default function DevicePermissionsSection() {
             style={{
               margin: "2px 0 0",
               fontSize: 11.5,
-              color: "#64748b",
+              color: SURFACE.textMuted,
             }}
           >
             Controlá qué puede hacer la app
@@ -173,14 +174,14 @@ export default function DevicePermissionsSection() {
               gap: 10,
             }}
           >
-            <span style={{ display: "inline-flex", flexShrink: 0, color: "#0f172a" }}>{item.icon}</span>
+            <span style={{ display: "inline-flex", flexShrink: 0, color: SURFACE.text }}>{item.icon}</span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <p
                 style={{
                   margin: 0,
                   fontSize: 13,
                   fontWeight: 600,
-                  color: "#0f172a",
+                  color: SURFACE.text,
                 }}
               >
                 {item.title}
@@ -189,7 +190,7 @@ export default function DevicePermissionsSection() {
                 style={{
                   margin: "2px 0 0",
                   fontSize: 11.5,
-                  color: "#64748b",
+                  color: SURFACE.textMuted,
                   lineHeight: 1.35,
                 }}
               >
@@ -220,9 +221,9 @@ export default function DevicePermissionsSection() {
                 borderRadius: 9,
                 border: granted ? "1px solid #cbd5e1" : "none",
                 background: granted
-                  ? "#f8fafc"
+                  ? SURFACE.bg
                   : "linear-gradient(135deg,#21D0B3,#14AE98)",
-                color: granted ? "#475569" : "#fff",
+                color: granted ? SURFACE.textSecondary : SURFACE.card,
                 fontSize: 12,
                 fontWeight: 700,
                 cursor: granted ? "default" : "pointer",
@@ -306,7 +307,7 @@ export function DevicePermissionsBanner({
         gap: 10,
       }}
     >
-      <span style={{ display: "inline-flex", color: "#b45309" }}>{bannerIcon}</span>
+      <span style={{ display: "inline-flex", color: STATE.warningText }}>{bannerIcon}</span>
       <p
         style={{
           flex: 1,
@@ -328,7 +329,7 @@ export function DevicePermissionsBanner({
           borderRadius: 8,
           border: "none",
           background: "#92400E",
-          color: "#fff",
+          color: SURFACE.card,
           fontSize: 11.5,
           fontWeight: 700,
           cursor: "pointer",

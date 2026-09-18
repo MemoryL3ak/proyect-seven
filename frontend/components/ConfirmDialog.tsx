@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { BRAND } from "@/lib/design";
+import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { AlertCircleIcon } from "@/components/ui/Icons";
 
 type Props = {
@@ -64,7 +64,7 @@ export default function ConfirmDialog({
 
       <div
         style={{
-          background: "#fff",
+          background: SURFACE.card,
           borderRadius: "20px",
           boxShadow: "0 24px 64px rgba(0,0,0,0.28), 0 0 0 1px rgba(226,232,240,0.8)",
           padding: "32px 28px 24px",
@@ -91,7 +91,7 @@ export default function ConfirmDialog({
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
           {danger ? (
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={STATE.danger} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
             </svg>
           ) : (
@@ -100,13 +100,13 @@ export default function ConfirmDialog({
         </div>
 
         <h2 id="cd-title" style={{
-          fontSize: "17px", fontWeight: 700, color: "#0f172a",
+          fontSize: "17px", fontWeight: 700, color: SURFACE.text,
           margin: "0 0 8px", letterSpacing: "-0.01em",
         }}>
           {title}
         </h2>
         <p style={{
-          fontSize: "14px", color: "#64748b", margin: "0 0 24px", lineHeight: 1.6,
+          fontSize: "14px", color: SURFACE.textMuted, margin: "0 0 24px", lineHeight: 1.6,
         }}>
           {message}
         </p>
@@ -119,8 +119,8 @@ export default function ConfirmDialog({
             onClick={onCancel}
             style={{
               padding: "10px 20px", borderRadius: "12px",
-              border: "1px solid #e2e8f0", background: "#f8fafc",
-              color: "#475569", fontSize: "14px", fontWeight: 600,
+              border: "1px solid #e2e8f0", background: SURFACE.bg,
+              color: SURFACE.textSecondary, fontSize: "14px", fontWeight: 600,
               cursor: "pointer",
             }}
           >
@@ -135,7 +135,7 @@ export default function ConfirmDialog({
               background: danger
                 ? "linear-gradient(135deg,#ef4444,#dc2626)"
                 : `linear-gradient(135deg,${BRAND.teal},#17a68e)`,
-              color: "#fff", fontSize: "14px", fontWeight: 700,
+              color: SURFACE.card, fontSize: "14px", fontWeight: 700,
               cursor: "pointer",
               boxShadow: danger
                 ? "0 4px 16px rgba(239,68,68,0.35)"

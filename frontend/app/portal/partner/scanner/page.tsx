@@ -11,9 +11,10 @@ import {
 } from "@/lib/partnerAuth";
 import DeleteAccountSection from "@/components/DeleteAccountSection";
 import { CheckIcon, RefreshIcon, CameraIcon } from "@/components/ui/Icons";
+import { BRAND, STATE, SURFACE } from "@/lib/design";
 
-const TEAL = "#21D0B3";
-const TEAL_MID = "#34F3C6";
+const TEAL = BRAND.teal;
+const TEAL_MID = BRAND.tealLight;
 
 type ClaimPreview = {
   id: string;
@@ -318,7 +319,7 @@ export default function PartnerScannerPage() {
               <h1 className="text-sm font-bold truncate" style={{ color: "#0d1e3a" }}>
                 {partner?.name || "..."}
               </h1>
-              <p className="text-[10px] font-mono" style={{ color: "#64748b" }}>
+              <p className="text-[10px] font-mono" style={{ color: SURFACE.textMuted }}>
                 {partner?.code}
               </p>
             </div>
@@ -326,8 +327,8 @@ export default function PartnerScannerPage() {
           <button type="button"
             className="text-xs font-medium px-3 py-1.5 rounded-lg transition-all flex-shrink-0 btn-press"
             style={{
-              color: "#475569",
-              background: "#f1f5f9",
+              color: SURFACE.textSecondary,
+              background: SURFACE.borderMuted,
               border: "1px solid #e2e8f0",
             }}
             onMouseEnter={(e) => {
@@ -335,8 +336,8 @@ export default function PartnerScannerPage() {
               e.currentTarget.style.color = "#0d1e3a";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = "#f1f5f9";
-              e.currentTarget.style.color = "#475569";
+              e.currentTarget.style.background = SURFACE.borderMuted;
+              e.currentTarget.style.color = SURFACE.textSecondary;
             }}
             onClick={logout}>
             Salir
@@ -348,12 +349,12 @@ export default function PartnerScannerPage() {
 
         {/* Stats cards — siempre visibles (placeholders 0 si aún no cargó) */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <StatCard label="Canjes hoy" value={stats?.todayRedemptions ?? 0} color="#34F3C6" />
+          <StatCard label="Canjes hoy" value={stats?.todayRedemptions ?? 0} color={BRAND.tealLight} />
           <StatCard label="Total acumulado" value={stats?.totalRedemptions ?? 0} color="#a78bfa" />
           <StatCard
             label="Beneficios"
             value={stats?.eligibleCoupons ?? 0}
-            color="#1FCDFF"
+            color={BRAND.blue}
             hint="habilitados"
           />
           <StatCard
@@ -367,12 +368,12 @@ export default function PartnerScannerPage() {
             value={stats?.stockRemaining === null ? "∞" : (stats?.stockRemaining ?? 0)}
             color={
               !stats || stats.stockRemaining === null
-                ? "#21D0B3"
+                ? BRAND.teal
                 : stats.stockRemaining === 0
-                ? "#ef4444"
+                ? STATE.danger
                 : stats.stockRemaining < 10
-                ? "#f59e0b"
-                : "#21D0B3"
+                ? STATE.warning
+                : BRAND.teal
             }
             hint={
               stats?.stockRemaining === null
@@ -464,7 +465,7 @@ function StatCard({
   return (
     <div className="rounded-2xl p-4 relative overflow-hidden anim-fade-up transition-all hover:scale-[1.02]"
       style={{
-        background: "#ffffff",
+        background: SURFACE.card,
         border: "1px solid #e2e8f0",
         borderTop: `3px solid ${color}`,
         boxShadow: "0 1px 4px rgba(15,23,42,0.06)",
@@ -474,7 +475,7 @@ function StatCard({
         style={{ background: `${color}18`, filter: "blur(24px)" }} />
       <div className="relative z-10">
         <p className="text-[10px] uppercase tracking-widest font-bold"
-          style={{ color: "#64748b" }}>
+          style={{ color: SURFACE.textMuted }}>
           {label}
         </p>
         <p key={String(value)} className="text-3xl font-bold mt-1 anim-count" style={{ color }}>
@@ -482,7 +483,7 @@ function StatCard({
         </p>
         {hint && (
           <p className="text-[10px] mt-0.5"
-            style={{ color: "#94a3b8" }}>
+            style={{ color: SURFACE.textFaint }}>
             {hint}
           </p>
         )}
@@ -511,7 +512,7 @@ function IdleScreen({ onScan, onManual }: { onScan: () => void; onManual: () => 
           style={{
             background: `linear-gradient(135deg, ${TEAL} 0%, #1eb19a 100%)`,
           }}>
-          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#fff"
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke={SURFACE.card}
             strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <path d="M3 7V5a2 2 0 0 1 2-2h2" />
             <path d="M17 3h2a2 2 0 0 1 2 2v2" />
@@ -562,15 +563,15 @@ function IdleScreen({ onScan, onManual }: { onScan: () => void; onManual: () => 
           <button type="button" onClick={onManual}
             className="w-full py-3.5 rounded-2xl text-sm font-medium transition-all btn-press"
             style={{
-              background: "#f1f5f9",
+              background: SURFACE.borderMuted,
               color: "#0d1e3a",
               border: "1px solid #e2e8f0",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = "#e2e8f0";
+              e.currentTarget.style.background = SURFACE.border;
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = "#f1f5f9";
+              e.currentTarget.style.background = SURFACE.borderMuted;
             }}>
             Ingresar código manualmente
           </button>
@@ -607,7 +608,7 @@ function ScannerScreen({
         </div>
         <button type="button"
           className="text-sm font-medium px-3 py-1.5 rounded-lg"
-          style={{ background: "#f1f5f9", color: "#5e6b7a" }}
+          style={{ background: SURFACE.borderMuted, color: "#5e6b7a" }}
           onClick={onCancel}>
           Cancelar
         </button>
@@ -626,7 +627,7 @@ function ScannerScreen({
         <div className="absolute bottom-[10%] right-[10%] w-8 h-8 border-r-2 border-b-2 rounded-br-lg pointer-events-none"
           style={{ borderColor: TEAL }} />
       </div>
-      <div className="p-3.5 text-center" style={{ background: "#f8fafc" }}>
+      <div className="p-3.5 text-center" style={{ background: SURFACE.bg }}>
         <button type="button"
           className="text-xs font-medium underline"
           style={{ color: TEAL }}
@@ -670,7 +671,7 @@ function ManualScreen({
         type="text"
         className="w-full px-4 py-4 rounded-2xl text-2xl font-mono uppercase text-center tracking-wider transition-all"
         style={{
-          background: "#f8fafc",
+          background: SURFACE.bg,
           border: "2px solid #e2e8f0",
           outline: "none",
           color: "#0d1e3a",
@@ -678,8 +679,8 @@ function ManualScreen({
         placeholder="CPN-AB12CD"
         value={code}
         onChange={(e) => setCode(e.target.value.toUpperCase())}
-        onFocus={(e) => { e.target.style.borderColor = TEAL; e.target.style.background = "#fff"; }}
-        onBlur={(e) => { e.target.style.borderColor = "#e2e8f0"; e.target.style.background = "#f8fafc"; }}
+        onFocus={(e) => { e.target.style.borderColor = TEAL; e.target.style.background = SURFACE.card; }}
+        onBlur={(e) => { e.target.style.borderColor = SURFACE.border; e.target.style.background = SURFACE.bg; }}
         autoFocus
         onKeyDown={(e) => { if (e.key === "Enter" && code.trim()) onSubmit(); }}
       />
@@ -687,7 +688,7 @@ function ManualScreen({
       <div className="flex gap-2.5">
         <button type="button"
           className="flex-1 py-3.5 rounded-2xl text-sm font-medium transition-all"
-          style={{ background: "#f1f5f9", color: "#0d1e3a", border: "1px solid #e2e8f0" }}
+          style={{ background: SURFACE.borderMuted, color: "#0d1e3a", border: "1px solid #e2e8f0" }}
           onClick={onCancel}>
           Volver
         </button>
@@ -761,7 +762,7 @@ function PreviewScreen({
               Ver términos y condiciones
             </summary>
             <p className="mt-2 leading-relaxed p-3 rounded-lg"
-              style={{ color: "#5e6b7a", background: "#f8fafc" }}>
+              style={{ color: "#5e6b7a", background: SURFACE.bg }}>
               {preview.coupon.termsAndConditions}
             </p>
           </details>
@@ -775,7 +776,7 @@ function PreviewScreen({
           <input type="text"
             className="w-full px-3 py-2.5 rounded-xl text-sm transition-all"
             style={{
-              background: "#f8fafc",
+              background: SURFACE.bg,
               border: "2px solid #e2e8f0",
               outline: "none",
               color: "#0d1e3a",
@@ -783,8 +784,8 @@ function PreviewScreen({
             placeholder="Tu nombre"
             value={redeemedBy}
             onChange={(e) => setRedeemedBy(e.target.value)}
-            onFocus={(e) => { e.target.style.borderColor = TEAL; e.target.style.background = "#fff"; }}
-            onBlur={(e) => { e.target.style.borderColor = "#e2e8f0"; e.target.style.background = "#f8fafc"; }}
+            onFocus={(e) => { e.target.style.borderColor = TEAL; e.target.style.background = SURFACE.card; }}
+            onBlur={(e) => { e.target.style.borderColor = SURFACE.border; e.target.style.background = SURFACE.bg; }}
           />
         </label>
 
@@ -792,7 +793,7 @@ function PreviewScreen({
           <button type="button"
             disabled={redeeming}
             className="flex-1 py-3.5 rounded-2xl text-sm font-medium transition-all"
-            style={{ background: "#f1f5f9", color: "#0d1e3a", border: "1px solid #e2e8f0" }}
+            style={{ background: SURFACE.borderMuted, color: "#0d1e3a", border: "1px solid #e2e8f0" }}
             onClick={onCancel}>
             Cancelar
           </button>
@@ -847,7 +848,7 @@ function ResultScreen({
       <div className="relative z-10 space-y-5">
       <div className="w-24 h-24 rounded-full mx-auto flex items-center justify-center anim-scale-pop"
         style={{ background: grad, boxShadow: shadow }}>
-        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#fff"
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke={SURFACE.card}
           strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           {isSuccess
             ? <polyline points="20 6 9 17 4 12" />
@@ -929,7 +930,7 @@ function RecentRedemptionsCard({
         <button type="button"
           onClick={onRefresh}
           className="text-xs font-medium px-2.5 py-1.5 rounded-lg"
-          style={{ background: "#f1f5f9", color: "#475569" }}
+          style={{ background: SURFACE.borderMuted, color: SURFACE.textSecondary }}
           title="Refrescar">
           <RefreshIcon size={14} />
         </button>
@@ -960,7 +961,7 @@ function RecentRedemptionsCard({
                 <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
                   style={{
                     background: "linear-gradient(135deg, #2e7d32 0%, #4caf50 100%)",
-                    color: "#fff",
+                    color: SURFACE.card,
                   }}>
                   <CheckIcon size={16} strokeWidth={3} />
                 </div>
@@ -981,14 +982,14 @@ function RecentRedemptionsCard({
                   </p>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-[10px] font-mono px-1.5 py-0.5 rounded"
-                      style={{ background: "#eef1f6", color: "#475569" }}>
+                      style={{ background: "#eef1f6", color: SURFACE.textSecondary }}>
                       {r.uniqueCode}
                     </span>
-                    <span className="text-[10px]" style={{ color: "#94a3b8" }}>
+                    <span className="text-[10px]" style={{ color: SURFACE.textFaint }}>
                       {fmtRelative(r.redeemedAt)}
                     </span>
                     {r.redeemedBy && (
-                      <span className="text-[10px] italic" style={{ color: "#94a3b8" }}>
+                      <span className="text-[10px] italic" style={{ color: SURFACE.textFaint }}>
                         · por {r.redeemedBy}
                       </span>
                     )}

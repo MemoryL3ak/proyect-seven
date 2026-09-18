@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { UsersIcon, UserIcon } from "@/components/ui/Icons";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import StyledSelect from "@/components/StyledSelect";
@@ -26,24 +27,24 @@ const normalizeType = (value?: string | null) => {
   return cleaned.length > 0 ? cleaned : "SIN_TIPO";
 };
 
-const TYPE_COLORS = ["#38bdf8", "#10b981", "#f59e0b", "#a78bfa", "#f472b6", "#34d399", "#fb923c"];
+const TYPE_COLORS = ["#38bdf8", STATE.success, STATE.warning, "#a78bfa", "#f472b6", "#34d399", "#fb923c"];
 
 const pal = {
-  accent: "#21D0B3",
-  cardBg: "#ffffff",
-  cardBorder: "#e2e8f0",
+  accent: BRAND.teal,
+  cardBg: SURFACE.card,
+  cardBorder: SURFACE.border,
   cardShadow: "0 1px 4px rgba(15,23,42,0.06)",
-  textMuted: "#64748b",
-  tableBorder: "#e2e8f0",
-  tableHead: "#f8fafc",
+  textMuted: SURFACE.textMuted,
+  tableBorder: SURFACE.border,
+  tableHead: SURFACE.bg,
   tableText: "#1e293b",
-  tableMuted: "#64748b",
+  tableMuted: SURFACE.textMuted,
 };
 
 const fieldStyle: React.CSSProperties = {
   width: "100%", padding: "8px 12px", borderRadius: "10px",
-  border: "1px solid #e2e8f0", background: "#f8fafc",
-  fontSize: "14px", color: "#0f172a", outline: "none",
+  border: "1px solid #e2e8f0", background: SURFACE.bg,
+  fontSize: "14px", color: SURFACE.text, outline: "none",
 };
 
 export default function ClientesPage() {
@@ -119,15 +120,15 @@ export default function ClientesPage() {
     <div className="space-y-5">
 
       {/* ── Header */}
-      <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "20px", padding: "24px 28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+      <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "20px", padding: "24px 28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
-          <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#94a3b8" }}>Seven Arena</span>
+          <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: SURFACE.textFaint }}>Seven Arena</span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.25)", borderRadius: "99px", padding: "2px 10px" }}>
-            <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#21D0B3", display: "inline-block", animation: "pulse 2s ease-in-out infinite" }} />
-            <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: "#21D0B3" }}>EN VIVO</span>
+            <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: BRAND.teal, display: "inline-block", animation: "pulse 2s ease-in-out infinite" }} />
+            <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: BRAND.teal }}>EN VIVO</span>
           </span>
         </div>
-        <h1 style={{ fontSize: "24px", fontWeight: 800, color: "#0f172a", margin: "0 0 16px" }}>Clientes</h1>
+        <h1 style={{ fontSize: "24px", fontWeight: 800, color: SURFACE.text, margin: "0 0 16px" }}>Clientes</h1>
 
         <div className="grid gap-3 lg:grid-cols-4">
           <StyledSelect value={selectedType} onChange={(e) => setSelectedType(e.target.value)}>
@@ -146,7 +147,7 @@ export default function ClientesPage() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        {error ? <p style={{ marginTop: "8px", fontSize: "13px", color: "#ef4444" }}>{error}</p> : null}
+        {error ? <p style={{ marginTop: "8px", fontSize: "13px", color: STATE.danger }}>{error}</p> : null}
       </section>
 
       {/* ── KPI cards */}
@@ -209,7 +210,7 @@ export default function ClientesPage() {
                   <th key={h} style={{
                     padding: "13px 16px", textAlign: "left", fontSize: "10px",
                     fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase",
-                    color: "#94a3b8", borderBottom: `1px solid ${pal.tableBorder}`,
+                    color: SURFACE.textFaint, borderBottom: `1px solid ${pal.tableBorder}`,
                     whiteSpace: "nowrap",
                   }}>{h}</th>
                 ))}
@@ -221,12 +222,12 @@ export default function ClientesPage() {
                 const typeColor = TYPE_COLORS[typeOptions.indexOf(type) % TYPE_COLORS.length] ?? pal.accent;
                 return (
                   <tr key={item.id} style={{
-                    background: idx % 2 === 0 ? "#ffffff" : "#f8fafc",
+                    background: idx % 2 === 0 ? SURFACE.card : SURFACE.bg,
                     borderBottom: `1px solid ${pal.tableBorder}`,
                     transition: "background 120ms ease",
                   }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#f1f5f9"; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = idx % 2 === 0 ? "#ffffff" : "#f8fafc"; }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = SURFACE.borderMuted; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = idx % 2 === 0 ? SURFACE.card : SURFACE.bg; }}
                   >
                     <td style={{ padding: "11px 16px", fontWeight: 700, color: pal.tableText }}>{item.fullName || item.id}</td>
                     <td style={{ padding: "11px 16px" }}>

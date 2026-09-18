@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { isAvailable as isNativeBridge, send as nativeSend } from "@/lib/native-bridge";
 import { PinIcon, MaximizeIcon, ArrowLeftIcon } from "@/components/ui/Icons";
+import { BRAND, SURFACE } from "@/lib/design";
 
 /**
  * Mapa de sede/hotel para los portales.
@@ -63,7 +64,7 @@ export default function VenueMap({ title, query }: { title: string; query: strin
             style={{ width: "100%", height: 180, border: "none", pointerEvents: "none", display: "block" }}
           />
         ) : (
-          <div style={{ height: 120, display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8" }}>
+          <div style={{ height: 120, display: "flex", alignItems: "center", justifyContent: "center", color: SURFACE.textFaint }}>
             <PinIcon size={28} strokeWidth={1.8} />
           </div>
         )}
@@ -78,7 +79,7 @@ export default function VenueMap({ title, query }: { title: string; query: strin
             padding: "6px 12px",
             borderRadius: 999,
             background: "rgba(4,26,46,0.85)",
-            color: "#34F3C6",
+            color: BRAND.tealLight,
             fontSize: 11,
             fontWeight: 700,
             boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
@@ -91,7 +92,7 @@ export default function VenueMap({ title, query }: { title: string; query: strin
 
       {/* Mapa en pantalla completa con botón de volver */}
       {open && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 300, background: "#fff", display: "flex", flexDirection: "column" }}>
+        <div style={{ position: "fixed", inset: 0, zIndex: 300, background: SURFACE.card, display: "flex", flexDirection: "column" }}>
           <div
             style={{
               display: "flex",
@@ -113,7 +114,7 @@ export default function VenueMap({ title, query }: { title: string; query: strin
                 borderRadius: 10,
                 border: "1px solid rgba(52,243,198,0.4)",
                 background: "rgba(33,208,179,0.15)",
-                color: "#34F3C6",
+                color: BRAND.tealLight,
                 fontSize: 13,
                 fontWeight: 700,
                 cursor: "pointer",
@@ -127,7 +128,7 @@ export default function VenueMap({ title, query }: { title: string; query: strin
               style={{
                 fontSize: 14,
                 fontWeight: 700,
-                color: "#fff",
+                color: SURFACE.card,
                 margin: 0,
                 flex: 1,
                 minWidth: 0,
@@ -151,7 +152,7 @@ export default function VenueMap({ title, query }: { title: string; query: strin
                 borderRadius: 10,
                 border: "1px solid rgba(52,243,198,0.4)",
                 background: "rgba(33,208,179,0.15)",
-                color: "#34F3C6",
+                color: BRAND.tealLight,
                 fontSize: 12.5,
                 fontWeight: 700,
                 textDecoration: "none",
@@ -169,7 +170,7 @@ export default function VenueMap({ title, query }: { title: string; query: strin
             <iframe src={embedSrc} title={`Mapa de ${title}`} style={{ flex: 1, width: "100%", border: "none" }} allowFullScreen />
           ) : (
             <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 20 }}>
-              <p style={{ fontSize: 13, color: "#64748b", margin: 0, textAlign: "center" }}>{query}</p>
+              <p style={{ fontSize: 13, color: SURFACE.textMuted, margin: 0, textAlign: "center" }}>{query}</p>
               <a
                 href={externalHref}
                 target="_blank"
@@ -183,7 +184,7 @@ export default function VenueMap({ title, query }: { title: string; query: strin
                   borderRadius: 10,
                   background: "rgba(33,208,179,0.1)",
                   border: "1px solid rgba(33,208,179,0.3)",
-                  color: "#0a7a6b",
+                  color: BRAND.tealInk,
                   fontSize: 13,
                   fontWeight: 700,
                   textDecoration: "none",

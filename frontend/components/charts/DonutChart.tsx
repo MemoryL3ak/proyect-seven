@@ -1,4 +1,5 @@
 "use client";
+import { SURFACE } from "@/lib/design";
 
 export interface DonutSegment {
   value: number;
@@ -53,7 +54,7 @@ export default function DonutChart({
           <circle
             cx={cx} cy={cy} r={r}
             fill="none"
-            stroke="#f1f5f9"
+            stroke={SURFACE.borderMuted}
             strokeWidth={thickness}
           />
           {arcs.map((arc, i) => (
@@ -80,8 +81,8 @@ export default function DonutChart({
             alignItems: "center", justifyContent: "center",
             pointerEvents: "none",
           }}>
-            <span style={{ fontSize: size * 0.2, fontWeight: 800, color: "#0f172a", lineHeight: 1, letterSpacing: "-0.02em" }}>{label}</span>
-            {sublabel && <span style={{ fontSize: size * 0.1, color: "#94a3b8", marginTop: "3px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>{sublabel}</span>}
+            <span style={{ fontSize: size * 0.2, fontWeight: 800, color: SURFACE.text, lineHeight: 1, letterSpacing: "-0.02em" }}>{label}</span>
+            {sublabel && <span style={{ fontSize: size * 0.1, color: SURFACE.textFaint, marginTop: "3px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>{sublabel}</span>}
           </div>
         )}
       </div>
@@ -90,9 +91,9 @@ export default function DonutChart({
           {arcs.map((seg, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
               <span style={{ width: 10, height: 10, borderRadius: 3, background: seg.color, flexShrink: 0 }} />
-              <span style={{ fontSize: "11px", color: "#64748b", fontWeight: 500 }}>
+              <span style={{ fontSize: "11px", color: SURFACE.textMuted, fontWeight: 500 }}>
                 {seg.label}
-                <span style={{ fontWeight: 700, color: "#0f172a", marginLeft: 4 }}>{Math.round(seg.pct * 100)}%</span>
+                <span style={{ fontWeight: 700, color: SURFACE.text, marginLeft: 4 }}>{Math.round(seg.pct * 100)}%</span>
               </span>
             </div>
           ))}

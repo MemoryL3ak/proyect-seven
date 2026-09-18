@@ -4,6 +4,7 @@ import { ChangeEvent, FormEvent, useCallback, useEffect, useState } from "react"
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
 import StyledSelect from "@/components/StyledSelect";
 import { apiFetch } from "@/lib/api";
+import { STATE, SURFACE } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
 import {
   AUDIENCE_LABELS,
@@ -49,12 +50,12 @@ async function fileToDataUrl(file: File): Promise<string> {
 }
 
 const pal = {
-  cardBg: "#ffffff",
-  cardBorder: "#e2e8f0",
+  cardBg: SURFACE.card,
+  cardBorder: SURFACE.border,
   shadow: "0 1px 4px rgba(15,23,42,0.06)",
-  textPrimary: "#0f172a",
-  textMuted: "#64748b",
-  labelColor: "#94a3b8",
+  textPrimary: SURFACE.text,
+  textMuted: SURFACE.textMuted,
+  labelColor: SURFACE.textFaint,
 };
 
 export default function EventDocumentsPage() {
@@ -280,7 +281,7 @@ export default function EventDocumentsPage() {
                     style={{
                       padding: "7px 14px", borderRadius: 99, fontSize: 12, fontWeight: 700, cursor: "pointer",
                       border: `1px solid ${active ? "rgba(124,58,237,0.35)" : pal.cardBorder}`,
-                      background: active ? "rgba(167,139,250,0.14)" : "#fff",
+                      background: active ? "rgba(167,139,250,0.14)" : SURFACE.card,
                       color: active ? "#7c3aed" : pal.textMuted,
                     }}>
                     {t(AUDIENCE_LABELS[a])}
@@ -295,21 +296,21 @@ export default function EventDocumentsPage() {
             </div>
           </div>
 
-          {error && <p style={{ fontSize: 12.5, color: "#ef4444" }}>{error}</p>}
-          {message && <p style={{ fontSize: 12.5, color: "#059669" }}>{message}</p>}
+          {error && <p style={{ fontSize: 12.5, color: STATE.danger }}>{error}</p>}
+          {message && <p style={{ fontSize: 12.5, color: STATE.successText }}>{message}</p>}
 
           <div className="flex gap-2">
             <button type="submit" disabled={saving}
               style={{
                 padding: "10px 22px", borderRadius: 12, border: "none",
-                background: "linear-gradient(135deg,#a78bfa,#7c3aed)", color: "#fff",
+                background: "linear-gradient(135deg,#a78bfa,#7c3aed)", color: SURFACE.card,
                 fontSize: 13, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1,
               }}>
               {saving ? t("Guardando...") : editingId ? t("Guardar cambios") : t("Publicar documento")}
             </button>
             {editingId && (
               <button type="button" onClick={resetForm}
-                style={{ padding: "10px 18px", borderRadius: 12, border: `1px solid ${pal.cardBorder}`, background: "#fff", fontSize: 13, color: pal.textMuted, cursor: "pointer" }}>
+                style={{ padding: "10px 18px", borderRadius: 12, border: `1px solid ${pal.cardBorder}`, background: SURFACE.card, fontSize: 13, color: pal.textMuted, cursor: "pointer" }}>
                 {t("Cancelar")}
               </button>
             )}
@@ -370,8 +371,8 @@ export default function EventDocumentsPage() {
                           style={{
                             fontSize: 10, fontWeight: 700, padding: "3px 10px", borderRadius: 99, cursor: "pointer",
                             border: `1px solid ${doc.published ? "rgba(16,185,129,0.3)" : pal.cardBorder}`,
-                            background: doc.published ? "rgba(16,185,129,0.1)" : "#f1f5f9",
-                            color: doc.published ? "#059669" : pal.textMuted,
+                            background: doc.published ? "rgba(16,185,129,0.1)" : SURFACE.borderMuted,
+                            color: doc.published ? STATE.successText : pal.textMuted,
                           }}>
                           {doc.published ? t("Visible") : t("Oculto")}
                         </button>
@@ -380,16 +381,16 @@ export default function EventDocumentsPage() {
                         <div style={{ display: "flex", gap: 6 }}>
                           {isPdf(doc) && (
                             <button onClick={() => setViewing(doc)}
-                              style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: "linear-gradient(135deg,#21D0B3,#14AE98)", color: "#fff", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                              style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: "linear-gradient(135deg,#21D0B3,#14AE98)", color: SURFACE.card, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
                               {t("Ver")}
                             </button>
                           )}
                           <button onClick={() => startEdit(doc)}
-                            style={{ padding: "5px 12px", borderRadius: 8, border: `1px solid ${pal.cardBorder}`, background: "#fff", fontSize: 11, color: "#475569", cursor: "pointer" }}>
+                            style={{ padding: "5px 12px", borderRadius: 8, border: `1px solid ${pal.cardBorder}`, background: SURFACE.card, fontSize: 11, color: SURFACE.textSecondary, cursor: "pointer" }}>
                             {t("Editar")}
                           </button>
                           <button onClick={() => setDeleteConfirm(doc)}
-                            style={{ padding: "5px 12px", borderRadius: 8, border: "1px solid rgba(239,68,68,0.3)", background: "#fff", fontSize: 11, color: "#ef4444", cursor: "pointer" }}>
+                            style={{ padding: "5px 12px", borderRadius: 8, border: "1px solid rgba(239,68,68,0.3)", background: SURFACE.card, fontSize: 11, color: STATE.danger, cursor: "pointer" }}>
                             {t("Eliminar")}
                           </button>
                         </div>
@@ -413,18 +414,18 @@ export default function EventDocumentsPage() {
 
       {deleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div style={{ background: "#fff", borderRadius: 20, padding: 24, maxWidth: 400, width: "100%" }}>
+          <div style={{ background: SURFACE.card, borderRadius: 20, padding: 24, maxWidth: 400, width: "100%" }}>
             <h2 style={{ fontSize: 16, fontWeight: 800, color: pal.textPrimary }}>{t("Eliminar documento")}</h2>
             <p style={{ fontSize: 13, color: pal.textMuted, marginTop: 8 }}>
               {t("¿Seguro que quieres eliminar")} <b>{deleteConfirm.title}</b>? {t("Dejará de verse en los portales.")}
             </p>
             <div className="mt-5 flex justify-end gap-2">
               <button onClick={() => setDeleteConfirm(null)}
-                style={{ padding: "8px 16px", borderRadius: 10, border: `1px solid ${pal.cardBorder}`, background: "#fff", fontSize: 13, color: pal.textMuted, cursor: "pointer" }}>
+                style={{ padding: "8px 16px", borderRadius: 10, border: `1px solid ${pal.cardBorder}`, background: SURFACE.card, fontSize: 13, color: pal.textMuted, cursor: "pointer" }}>
                 {t("Cancelar")}
               </button>
               <button onClick={() => remove(deleteConfirm)}
-                style={{ padding: "8px 16px", borderRadius: 10, border: "none", background: "#ef4444", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                style={{ padding: "8px 16px", borderRadius: 10, border: "none", background: STATE.danger, color: SURFACE.card, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
                 {t("Eliminar")}
               </button>
             </div>

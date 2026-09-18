@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { apiFetch } from "@/lib/api";
+import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiCard from "@/components/ui/KpiCard";
@@ -51,14 +52,14 @@ const awarderState = (a: Awarder): AwarderState =>
   a.confirmedAt ? "CONFIRMED" : a.declinedAt ? "DECLINED" : "PENDING";
 
 const AWARDER_META: Record<AwarderState, { label: string; color: string; bg: string; icon: ReactNode }> = {
-  CONFIRMED: { label: "Confirmó", color: "#059669", bg: "#e7f5ec", icon: <CheckIcon size={11} /> },
-  DECLINED: { label: "Rechazó", color: "#dc2626", bg: "#fde2e2", icon: <XIcon size={11} /> },
-  PENDING: { label: "Pendiente", color: "#b45309", bg: "#fef3c7", icon: <ClockIcon size={11} /> },
+  CONFIRMED: { label: "Confirmó", color: STATE.successText, bg: "#e7f5ec", icon: <CheckIcon size={11} /> },
+  DECLINED: { label: "Rechazó", color: STATE.dangerText, bg: "#fde2e2", icon: <XIcon size={11} /> },
+  PENDING: { label: "Pendiente", color: STATE.warningText, bg: "#fef3c7", icon: <ClockIcon size={11} /> },
 };
 
 const STATUS_META: Record<string, { label: string; color: string; bg: string }> = {
   PROGRAMADA: { label: "Programada", color: "#1f4e8c", bg: "#e3edfa" },
-  REALIZADA: { label: "Realizada", color: "#059669", bg: "#e7f5ec" },
+  REALIZADA: { label: "Realizada", color: STATE.successText, bg: "#e7f5ec" },
 };
 
 function fmtDateTime(iso?: string | null) {
@@ -334,7 +335,7 @@ export default function PremiacionesPage() {
                 <StarIcon size={10} className="inline mr-1" />{t("PRÓXIMA CEREMONIA")}
               </span>
             )}
-            <p className="font-bold text-[15px] leading-tight" style={{ color: "#0f172a" }}>{p.title}</p>
+            <p className="font-bold text-[15px] leading-tight" style={{ color: SURFACE.text }}>{p.title}</p>
             {p.discipline && (
               <p className="text-xs mt-0.5" style={{ color: "#14b8a6", fontWeight: 600 }}>{p.discipline}</p>
             )}
@@ -350,12 +351,12 @@ export default function PremiacionesPage() {
         </div>
 
         {/* Datos */}
-        <div className="text-xs space-y-0.5" style={{ color: "#64748b" }}>
-          <p style={{ color: "#0f172a", fontWeight: 600 }}>
+        <div className="text-xs space-y-0.5" style={{ color: SURFACE.textMuted }}>
+          <p style={{ color: SURFACE.text, fontWeight: 600 }}>
             <CalendarIcon size={12} className="inline mr-1" />{fmtDateTime(p.scheduledAt)}
             {rel && (
               <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded"
-                style={{ background: rel === "Hoy" ? "#fef3c7" : "#eef1f6", color: rel === "Hoy" ? "#b45309" : "#64748b" }}>
+                style={{ background: rel === "Hoy" ? "#fef3c7" : "#eef1f6", color: rel === "Hoy" ? STATE.warningText : SURFACE.textMuted }}>
                 {t(rel)}
               </span>
             )}
@@ -363,22 +364,22 @@ export default function PremiacionesPage() {
           {(p.venueName || p.locationDetail) && (
             <p><PinIcon size={12} className="inline mr-1" />{[p.venueName, p.locationDetail].filter(Boolean).join(" · ")}</p>
           )}
-          {p.notes && <p style={{ color: "#94a3b8" }}><FileTextIcon size={12} className="inline mr-1" />{p.notes}</p>}
+          {p.notes && <p style={{ color: SURFACE.textFaint }}><FileTextIcon size={12} className="inline mr-1" />{p.notes}</p>}
         </div>
 
         {/* Entregadores + confirmación */}
-        <div className="rounded-xl p-3" style={{ background: "#f8fafc", border: "1px solid #eef1f6" }}>
+        <div className="rounded-xl p-3" style={{ background: SURFACE.bg, border: "1px solid #eef1f6" }}>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>
+            <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: SURFACE.textMuted }}>
               {t("Entregadores (VIP)")}
             </span>
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-              style={{ background: confirmed === awarders.length && awarders.length > 0 ? "#e7f5ec" : "#eef1f6", color: confirmed === awarders.length && awarders.length > 0 ? "#059669" : "#64748b" }}>
+              style={{ background: confirmed === awarders.length && awarders.length > 0 ? "#e7f5ec" : "#eef1f6", color: confirmed === awarders.length && awarders.length > 0 ? STATE.successText : SURFACE.textMuted }}>
               {confirmed}/{awarders.length} {t("confirmaron")}
             </span>
           </div>
           {awarders.length === 0 ? (
-            <p className="text-[11px]" style={{ color: "#94a3b8" }}>{t("Sin entregadores asignados.")}</p>
+            <p className="text-[11px]" style={{ color: SURFACE.textFaint }}>{t("Sin entregadores asignados.")}</p>
           ) : (
             <div className="flex flex-col gap-1.5">
               {awarders.map((a, i) => {
@@ -386,7 +387,7 @@ export default function PremiacionesPage() {
                 const meta = AWARDER_META[state];
                 return (
                   <div key={a.id || i} className="flex items-center justify-between gap-2">
-                    <span className="text-[12.5px] truncate" style={{ color: "#0f172a", fontWeight: 500 }}>
+                    <span className="text-[12.5px] truncate" style={{ color: SURFACE.text, fontWeight: 500 }}>
                       {athleteName(a.athleteId)}
                     </span>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1 flex-shrink-0"
@@ -451,7 +452,7 @@ export default function PremiacionesPage() {
       {/* Filtros */}
       <section className="surface rounded-2xl p-4 flex flex-wrap items-center gap-3">
         <div className="flex-1 min-w-[200px] relative">
-          <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8", pointerEvents: "none" }}>
+          <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: SURFACE.textFaint, pointerEvents: "none" }}>
             <SearchIcon size={15} />
           </span>
           <input className="input" style={{ paddingLeft: 36 }}
@@ -481,8 +482,8 @@ export default function PremiacionesPage() {
             <button key={v} type="button" onClick={() => setViewMode(v)}
               className="text-xs font-bold px-3 py-2"
               style={{
-                background: viewMode === v ? "#0f172a" : "#fff",
-                color: viewMode === v ? "#34F3C6" : "#64748b",
+                background: viewMode === v ? SURFACE.text : SURFACE.card,
+                color: viewMode === v ? BRAND.tealLight : SURFACE.textMuted,
                 border: "none", cursor: "pointer",
               }}>
               {t(label)}
@@ -495,25 +496,25 @@ export default function PremiacionesPage() {
 
       {/* Lista */}
       {loading ? (
-        <p className="text-sm" style={{ color: "#94a3b8" }}>{t("Cargando premiaciones…")}</p>
+        <p className="text-sm" style={{ color: SURFACE.textFaint }}>{t("Cargando premiaciones…")}</p>
       ) : totalVisible === 0 ? (
         <div className="p-12 text-center rounded-2xl" style={{ background: "linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)", border: "1px dashed #e2e8f0" }}>
-          <TrophyIcon size={36} color="#cbd5e1" />
-          <p className="text-sm font-semibold mt-3" style={{ color: "#475569" }}>{t("No hay premiaciones para mostrar")}</p>
-          <p className="text-xs mt-1" style={{ color: "#94a3b8" }}>
+          <TrophyIcon size={36} color={SURFACE.borderStrong} />
+          <p className="text-sm font-semibold mt-3" style={{ color: SURFACE.textSecondary }}>{t("No hay premiaciones para mostrar")}</p>
+          <p className="text-xs mt-1" style={{ color: SURFACE.textFaint }}>
             {t("Crea la primera con el botón")} <button type="button" onClick={openCreate} style={{ color: "#14b8a6", fontWeight: 600, cursor: "pointer" }}>+ {t("Nueva premiación")}</button>.
           </p>
         </div>
       ) : viewMode === "timeline" ? (
         /* Timeline operativa — tablero por columnas, mismo formato que el
            "Estado general de viajes" del módulo de tracking. */
-        <section style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, padding: 16, boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+        <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: 16, padding: 16, boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div>
-              <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase" as const, color: "#94a3b8" }}>{t("Timeline operativa")}</p>
-              <h3 style={{ marginTop: "3px", fontWeight: 700, fontSize: "16px", color: "#0f172a" }}>{t("Estado general de premiaciones")}</h3>
+              <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase" as const, color: SURFACE.textFaint }}>{t("Timeline operativa")}</p>
+              <h3 style={{ marginTop: "3px", fontWeight: 700, fontSize: "16px", color: SURFACE.text }}>{t("Estado general de premiaciones")}</h3>
             </div>
-            <span style={{ fontSize: "12px", fontWeight: 600, color: "#64748b", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "99px", padding: "4px 12px" }}>
+            <span style={{ fontSize: "12px", fontWeight: 600, color: SURFACE.textMuted, background: SURFACE.bg, border: "1px solid #e2e8f0", borderRadius: "99px", padding: "4px 12px" }}>
               {totalVisible} {t("premiaciones con los filtros actuales")}
             </span>
           </div>
@@ -526,22 +527,22 @@ export default function PremiacionesPage() {
               const when = (p: Premiacion) => new Date(p.scheduledAt).getTime();
               const columns: { key: string; label: string; accent: string; chipBg: string; chipBorder: string; items: Premiacion[]; empty: string }[] = [
                 {
-                  key: "hoy", label: "Hoy", accent: "#21D0B3", chipBg: "rgba(33,208,179,0.12)", chipBorder: "rgba(33,208,179,0.45)",
+                  key: "hoy", label: "Hoy", accent: BRAND.teal, chipBg: "rgba(33,208,179,0.12)", chipBorder: "rgba(33,208,179,0.45)",
                   items: all.filter((p) => p.status !== "REALIZADA" && when(p) >= todayStart && when(p) < tomorrowStart),
                   empty: "Sin ceremonias hoy.",
                 },
                 {
-                  key: "proximas", label: "Próximas", accent: "#2563eb", chipBg: "#dbeafe", chipBorder: "#93c5fd",
+                  key: "proximas", label: "Próximas", accent: STATE.infoText, chipBg: "#dbeafe", chipBorder: "#93c5fd",
                   items: all.filter((p) => p.status !== "REALIZADA" && when(p) >= tomorrowStart),
                   empty: "Sin ceremonias futuras.",
                 },
                 {
-                  key: "atrasadas", label: "Atrasadas", accent: "#f59e0b", chipBg: "#fef3c7", chipBorder: "#fcd34d",
+                  key: "atrasadas", label: "Atrasadas", accent: STATE.warning, chipBg: "#fef3c7", chipBorder: "#fcd34d",
                   items: all.filter((p) => p.status !== "REALIZADA" && when(p) < todayStart).sort((a, b) => when(b) - when(a)),
                   empty: "Nada pendiente de cerrar.",
                 },
                 {
-                  key: "realizadas", label: "Realizadas", accent: "#059669", chipBg: "#e7f5ec", chipBorder: "#86efac",
+                  key: "realizadas", label: "Realizadas", accent: STATE.successText, chipBg: "#e7f5ec", chipBorder: "#86efac",
                   items: all.filter((p) => p.status === "REALIZADA").sort((a, b) => when(b) - when(a)),
                   empty: "Aún sin ceremonias realizadas.",
                 },
@@ -549,7 +550,7 @@ export default function PremiacionesPage() {
               const nextId = upcoming.find((p) => p.status !== "REALIZADA")?.id ?? null;
               return columns.map((col) => (
                 <div key={col.key} style={{
-                  background: "#fff", border: "1px solid #e2e8f0", borderTop: `3px solid ${col.accent}`,
+                  background: SURFACE.card, border: "1px solid #e2e8f0", borderTop: `3px solid ${col.accent}`,
                   borderRadius: "16px", padding: "12px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)",
                 }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
@@ -559,8 +560,8 @@ export default function PremiacionesPage() {
                     <span style={{
                       minWidth: "22px", height: "22px", borderRadius: "99px", display: "inline-flex", alignItems: "center", justifyContent: "center",
                       fontSize: "11px", fontWeight: 800,
-                      background: col.items.length > 0 ? col.chipBg : "#f1f5f9",
-                      color: col.items.length > 0 ? col.accent : "#64748b",
+                      background: col.items.length > 0 ? col.chipBg : SURFACE.borderMuted,
+                      color: col.items.length > 0 ? col.accent : SURFACE.textMuted,
                       border: col.items.length > 0 ? `1px solid ${col.chipBorder}` : "1px solid #e2e8f0",
                     }}>
                       {col.items.length}
@@ -572,10 +573,10 @@ export default function PremiacionesPage() {
                       const confirmed = awarders.filter((a) => awarderState(a) === "CONFIRMED").length;
                       return (
                         <button key={p.id} type="button" onClick={() => openEdit(p)} style={{
-                          background: "#f8fafc", border: "1px solid #e2e8f0", borderLeft: `3px solid ${col.accent}`,
+                          background: SURFACE.bg, border: "1px solid #e2e8f0", borderLeft: `3px solid ${col.accent}`,
                           borderRadius: "10px", padding: "8px 10px", textAlign: "left", cursor: "pointer", width: "100%",
                         }}>
-                          <p style={{ fontSize: "12px", fontWeight: 700, color: "#0f172a" }}>
+                          <p style={{ fontSize: "12px", fontWeight: 700, color: SURFACE.text }}>
                             {p.title}
                             {p.id === nextId && (
                               <span className="ml-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full align-middle"
@@ -584,10 +585,10 @@ export default function PremiacionesPage() {
                               </span>
                             )}
                           </p>
-                          <p style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>
+                          <p style={{ fontSize: "11px", color: SURFACE.textMuted, marginTop: "2px" }}>
                             {fmtDateTime(p.scheduledAt)}{p.discipline ? ` · ${p.discipline}` : ""}
                           </p>
-                          <p style={{ fontSize: "11px", color: "#94a3b8" }}>
+                          <p style={{ fontSize: "11px", color: SURFACE.textFaint }}>
                             {[p.venueName, p.locationDetail].filter(Boolean).join(" · ") || t("Sin sede definida")}
                             {awarders.length > 0 && ` · ${confirmed}/${awarders.length} VIP`}
                           </p>
@@ -595,7 +596,7 @@ export default function PremiacionesPage() {
                       );
                     })}
                     {col.items.length === 0 && (
-                      <p style={{ fontSize: "12px", color: "#94a3b8", textAlign: "center", padding: "12px 0" }}>{t(col.empty)}</p>
+                      <p style={{ fontSize: "12px", color: SURFACE.textFaint, textAlign: "center", padding: "12px 0" }}>{t(col.empty)}</p>
                     )}
                     {col.items.length > 4 && (
                       <p style={{ fontSize: "11px", color: col.accent, textAlign: "center", fontWeight: 600 }}>+{col.items.length - 4} {t("más")}</p>
@@ -621,9 +622,9 @@ export default function PremiacionesPage() {
           )}
           {past.length > 0 && (
             <section className="space-y-3">
-              <h2 className="text-xs font-bold uppercase tracking-widest flex items-center gap-2" style={{ color: "#94a3b8" }}>
+              <h2 className="text-xs font-bold uppercase tracking-widest flex items-center gap-2" style={{ color: SURFACE.textFaint }}>
                 {t("Realizadas y pasadas")}
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "#eef1f6", color: "#64748b" }}>{past.length}</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "#eef1f6", color: SURFACE.textMuted }}>{past.length}</span>
               </h2>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                 {past.map((p) => renderCard(p, false))}
@@ -640,24 +641,24 @@ export default function PremiacionesPage() {
           <div className="surface rounded-2xl p-5 w-full max-w-lg space-y-4" style={{ maxHeight: "92vh", overflowY: "auto" }}
             onClick={(e) => e.stopPropagation()}>
             <div>
-              <h3 className="text-lg font-bold" style={{ color: "#0f172a" }}>
+              <h3 className="text-lg font-bold" style={{ color: SURFACE.text }}>
                 {formEditingId ? t("Editar premiación") : t("Nueva premiación")}
               </h3>
-              <p className="text-xs" style={{ color: "#94a3b8" }}>
+              <p className="text-xs" style={{ color: SURFACE.textFaint }}>
                 {formEditingId ? t("Modifica los datos de la ceremonia.") : t("Programa una ceremonia de premiación.")}
               </p>
             </div>
 
             <div className="space-y-3">
               <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>{t("Título")} *</label>
+                <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: SURFACE.textMuted }}>{t("Título")} *</label>
                 <input className="input" placeholder={t("Ej: Final 100m planos varones")}
                   value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>{t("Disciplina")}</label>
+                  <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: SURFACE.textMuted }}>{t("Disciplina")}</label>
                   <input className="input" placeholder={t("Ej: Atletismo")} list="premiacion-disciplinas"
                     value={form.discipline} onChange={(e) => setForm((f) => ({ ...f, discipline: e.target.value }))} />
                   <datalist id="premiacion-disciplinas">
@@ -665,7 +666,7 @@ export default function PremiacionesPage() {
                   </datalist>
                 </div>
                 <div>
-                  <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>{t("Fecha y hora")} *</label>
+                  <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: SURFACE.textMuted }}>{t("Fecha y hora")} *</label>
                   <input className="input" type="datetime-local"
                     value={form.scheduledAt} onChange={(e) => setForm((f) => ({ ...f, scheduledAt: e.target.value }))} />
                 </div>
@@ -674,7 +675,7 @@ export default function PremiacionesPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {events.length > 0 && (
                   <div>
-                    <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>{t("Evento")}</label>
+                    <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: SURFACE.textMuted }}>{t("Evento")}</label>
                     <StyledSelect value={form.eventId} onChange={(e) => setForm((f) => ({ ...f, eventId: e.target.value }))}>
                       <option value="">{t("Sin evento")}</option>
                       {events.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
@@ -682,7 +683,7 @@ export default function PremiacionesPage() {
                   </div>
                 )}
                 <div>
-                  <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>{t("Sede")}</label>
+                  <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: SURFACE.textMuted }}>{t("Sede")}</label>
                   <StyledSelect value={form.venueId} onChange={(e) => setForm((f) => ({ ...f, venueId: e.target.value }))}>
                     <option value="">{t("Sin sede")}</option>
                     {venues.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
@@ -692,12 +693,12 @@ export default function PremiacionesPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>{t("Detalle de ubicación")}</label>
+                  <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: SURFACE.textMuted }}>{t("Detalle de ubicación")}</label>
                   <input className="input" placeholder={t("Ej: Podio central, pista 1")}
                     value={form.locationDetail} onChange={(e) => setForm((f) => ({ ...f, locationDetail: e.target.value }))} />
                 </div>
                 <div>
-                  <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>{t("Estado")}</label>
+                  <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: SURFACE.textMuted }}>{t("Estado")}</label>
                   <StyledSelect value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}>
                     <option value="PROGRAMADA">{t("Programada")}</option>
                     <option value="REALIZADA">{t("Realizada")}</option>
@@ -706,29 +707,29 @@ export default function PremiacionesPage() {
               </div>
 
               <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>{t("Notas")}</label>
+                <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: SURFACE.textMuted }}>{t("Notas")}</label>
                 <textarea className="input" rows={2} placeholder={t("Notas internas de la ceremonia…")}
                   value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
               </div>
 
               {/* Entregadores */}
               <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#64748b" }}>{t("Entregadores VIP")}</label>
+                <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: SURFACE.textMuted }}>{t("Entregadores VIP")}</label>
                 <StyledSelect value={addAthleteId} onChange={(e) => addAwarder(e.target.value)}>
                   <option value="">{t("Agregar un VIP…")}</option>
                   {awarderCandidates
                     .filter((a) => !formAwarders.some((e) => e.athleteId === a.id))
                     .map((a) => <option key={a.id} value={a.id}>{a.fullName || a.id.slice(0, 8)}</option>)}
                 </StyledSelect>
-                <div className="rounded-xl p-3 space-y-1.5 mt-2" style={{ background: "#f8fafc", border: "1px solid #eef1f6", maxHeight: 200, overflowY: "auto" }}>
+                <div className="rounded-xl p-3 space-y-1.5 mt-2" style={{ background: SURFACE.bg, border: "1px solid #eef1f6", maxHeight: 200, overflowY: "auto" }}>
                   {formAwarders.length === 0 ? (
-                    <p className="text-[12px]" style={{ color: "#94a3b8" }}>{t("Sin entregadores asignados.")}</p>
+                    <p className="text-[12px]" style={{ color: SURFACE.textFaint }}>{t("Sin entregadores asignados.")}</p>
                   ) : formAwarders.map((a) => {
                     const state = awarderState(a);
                     const meta = AWARDER_META[state];
                     return (
                       <div key={a.athleteId} className="flex items-center justify-between gap-2">
-                        <span className="text-[13px] truncate" style={{ color: "#0f172a", fontWeight: 500 }}>
+                        <span className="text-[13px] truncate" style={{ color: SURFACE.text, fontWeight: 500 }}>
                           {athleteName(a.athleteId)}
                         </span>
                         <div className="flex items-center gap-2 flex-shrink-0">
@@ -739,7 +740,7 @@ export default function PremiacionesPage() {
                             </span>
                           )}
                           <button type="button" onClick={() => removeAwarder(a.athleteId)}
-                            className="text-[11px] font-bold" style={{ color: "#dc2626", cursor: "pointer" }} title={t("Quitar")}>
+                            className="text-[11px] font-bold" style={{ color: STATE.dangerText, cursor: "pointer" }} title={t("Quitar")}>
                             <XIcon size={14} />
                           </button>
                         </div>
@@ -747,7 +748,7 @@ export default function PremiacionesPage() {
                     );
                   })}
                 </div>
-                <p className="text-[11px] mt-1" style={{ color: "#94a3b8" }}>
+                <p className="text-[11px] mt-1" style={{ color: SURFACE.textFaint }}>
                   {t("Los entregadores nuevos reciben una notificación y empiezan como pendientes; las confirmaciones existentes se conservan.")}
                 </p>
               </div>
@@ -759,7 +760,7 @@ export default function PremiacionesPage() {
               {formEditingId ? (
                 <button type="button" onClick={deletePremiacion} disabled={savingForm || deleting}
                   className="text-xs font-semibold px-3 py-1.5 rounded-lg"
-                  style={{ background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", cursor: "pointer" }}>
+                  style={{ background: "#fef2f2", color: STATE.dangerText, border: "1px solid #fecaca", cursor: "pointer" }}>
                   {deleting ? t("Eliminando…") : t("Eliminar")}
                 </button>
               ) : <span />}

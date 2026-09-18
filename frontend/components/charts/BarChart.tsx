@@ -1,4 +1,5 @@
 "use client";
+import { SURFACE } from "@/lib/design";
 
 export interface BarData {
   label: string;
@@ -29,7 +30,7 @@ export default function BarChart({
             style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", height: "100%", justifyContent: "flex-end", gap: "5px" }}
           >
             {showValues && (
-              <span style={{ fontSize: "12px", fontWeight: 700, color: "#0f172a", minHeight: "16px", fontVariantNumeric: "tabular-nums" }}>
+              <span style={{ fontSize: "12px", fontWeight: 700, color: SURFACE.text, minHeight: "16px", fontVariantNumeric: "tabular-nums" }}>
                 {d.value > 0 ? d.value : ""}
               </span>
             )}
@@ -62,7 +63,7 @@ export default function BarChart({
               </div>
             </div>
             <span style={{
-              fontSize: "10px", fontWeight: 600, color: "#64748b",
+              fontSize: "10px", fontWeight: 600, color: SURFACE.textMuted,
               textAlign: "center", width: "100%",
               overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
             }}>

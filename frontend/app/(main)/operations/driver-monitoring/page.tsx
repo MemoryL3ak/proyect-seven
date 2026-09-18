@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { apiFetch } from "@/lib/api";
+import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
 import { useIsMobile } from "@/lib/useIsMobile";
 import { getSupabase } from "@/lib/supabase";
@@ -147,7 +148,7 @@ const CLIENT_TYPE_META: Record<string, { label: string; bg: string; color: strin
   TM: { label: "TM", bg: "#ede9fe", color: "#5b21b6", border: "#c4b5fd" },
   FAMILIA_PARAPAN: { label: "Familia Parapan", bg: "#fce7f3", color: "#9d174d", border: "#f9a8d4" },
   COMITE_ORGANIZADOR: { label: "Comité Org.", bg: "#e0f2fe", color: "#075985", border: "#7dd3fc" },
-  PROVEEDORES: { label: "Proveedores", bg: "#f1f5f9", color: "#334155", border: "#cbd5e1" },
+  PROVEEDORES: { label: "Proveedores", bg: SURFACE.borderMuted, color: SURFACE.textStrong, border: SURFACE.borderStrong },
   PRENSA: { label: "Prensa", bg: "#ede9fe", color: "#5b21b6", border: "#c4b5fd" },
   OFICIAL: { label: "Oficial", bg: "#fee2e2", color: "#991b1b", border: "#fca5a5" },
   STAFF: { label: "Staff", bg: "#e0f2fe", color: "#075985", border: "#7dd3fc" },
@@ -156,7 +157,7 @@ const CLIENT_TYPE_META: Record<string, { label: string; bg: string; color: strin
 
 function clientTypeChip(type: string) {
   const meta = CLIENT_TYPE_META[type.toUpperCase()] || {
-    label: type, bg: "#f1f5f9", color: "#475569", border: "#cbd5e1",
+    label: type, bg: SURFACE.borderMuted, color: SURFACE.textSecondary, border: SURFACE.borderStrong,
   };
   return meta;
 }
@@ -433,7 +434,7 @@ export default function DriverMonitoringPage() {
       background: online ? "linear-gradient(135deg,#dcfce7,#bbf7d0)" : "#eef1f6",
       color: online ? "#166534" : "#5e6b7a",
       border: `1px solid ${online ? "#86efac" : "#cbd5e1"}` }}>
-      <span style={{ width: 6, height: 6, borderRadius: "50%", background: online ? "#10b981" : "#94a3b8", animation: online ? "pulse 1.8s infinite" : "none" }} />
+      <span style={{ width: 6, height: 6, borderRadius: "50%", background: online ? STATE.success : SURFACE.textFaint, animation: online ? "pulse 1.8s infinite" : "none" }} />
       {online ? t("Conectado") : t("Desconectado")}
     </span>
   );
@@ -455,7 +456,7 @@ export default function DriverMonitoringPage() {
 
   const chipDayCount = (n: number) => (
     n === 0 ? (
-      <span style={{ color: "#cbd5e1", fontSize: 12, fontWeight: 600 }}>0</span>
+      <span style={{ color: SURFACE.borderStrong, fontSize: 12, fontWeight: 600 }}>0</span>
     ) : (
       <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11.5, padding: "3px 9px", borderRadius: 8, fontWeight: 800,
         background: n >= 5 ? "linear-gradient(135deg,#fef3c7,#fde68a)" : "linear-gradient(135deg,#dbeafe,#bfdbfe)",
@@ -468,10 +469,10 @@ export default function DriverMonitoringPage() {
 
   const pillGps = (gpsActive: boolean) => (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, padding: "3px 8px", borderRadius: 6, fontWeight: 700,
-      background: gpsActive ? "#dcfce7" : "#f1f5f9",
-      color: gpsActive ? "#166534" : "#94a3b8",
+      background: gpsActive ? "#dcfce7" : SURFACE.borderMuted,
+      color: gpsActive ? "#166534" : SURFACE.textFaint,
       border: `1px solid ${gpsActive ? "#86efac" : "#cbd5e1"}` }}>
-      <span style={{ width: 6, height: 6, borderRadius: "50%", background: gpsActive ? "#10b981" : "#cbd5e1", boxShadow: gpsActive ? "0 0 6px #10b981" : "none" }} />
+      <span style={{ width: 6, height: 6, borderRadius: "50%", background: gpsActive ? STATE.success : SURFACE.borderStrong, boxShadow: gpsActive ? "0 0 6px #10b981" : "none" }} />
       {gpsActive ? t("Reportando") : t("Sin señal")}
     </span>
   );
@@ -493,7 +494,7 @@ export default function DriverMonitoringPage() {
                   width: 7,
                   height: 7,
                   borderRadius: "50%",
-                  background: "#21D0B3",
+                  background: BRAND.teal,
                   boxShadow: "0 0 0 3px rgba(33,208,179,0.25)",
                   animation: "pulse 1.8s infinite",
                 }}
@@ -600,21 +601,21 @@ export default function DriverMonitoringPage() {
         <section
           className="rounded-2xl overflow-hidden"
           style={{
-            background: "#fff",
+            background: SURFACE.card,
             border: "1px solid #e2e8f0",
             boxShadow: "0 1px 4px rgba(15,23,42,0.04)",
           }}
         >
           <div className="flex items-center justify-between p-4" style={{ borderBottom: "1px solid #f1f5f9" }}>
-            <h2 className="text-sm font-semibold uppercase tracking-wider" style={{ color: "#475569" }}>
+            <h2 className="text-sm font-semibold uppercase tracking-wider" style={{ color: SURFACE.textSecondary }}>
               {t("Mapa de conductores")}
             </h2>
-            <span className="text-xs" style={{ color: "#94a3b8" }}>
+            <span className="text-xs" style={{ color: SURFACE.textFaint }}>
               {markers.length} {t("con señal GPS")}
               {onTripCount > 0 && (
                 <>
                   {" · "}
-                  <span style={{ color: "#059669", fontWeight: 700 }}>
+                  <span style={{ color: STATE.successText, fontWeight: 700 }}>
                     {onTripCount} {t("en viaje")}
                   </span>
                 </>
@@ -624,9 +625,9 @@ export default function DriverMonitoringPage() {
           {markers.length === 0 ? (
             <div
               className="rounded-xl flex items-center justify-center text-center px-4 m-4"
-              style={{ height: 280, background: "#f1f5f9" }}
+              style={{ height: 280, background: SURFACE.borderMuted }}
             >
-              <p className="text-sm" style={{ color: "#94a3b8" }}>
+              <p className="text-sm" style={{ color: SURFACE.textFaint }}>
                 {t("Ningún conductor tiene una posición GPS registrada todavía.")}
                 <br />
                 {t("El mapa se poblará cuando la app de un conductor reporte su ubicación.")}
@@ -654,15 +655,15 @@ export default function DriverMonitoringPage() {
         <section
           className="rounded-2xl p-8 text-center"
           style={{
-            background: "#fff",
+            background: SURFACE.card,
             border: "1px dashed #e2e8f0",
           }}
         >
-          <p style={{ margin: "0 0 8px", color: "#cbd5e1", display: "flex", justifyContent: "center" }}><SearchIcon size={32} /></p>
-          <p style={{ fontSize: 14, fontWeight: 600, color: "#475569", margin: 0 }}>
+          <p style={{ margin: "0 0 8px", color: SURFACE.borderStrong, display: "flex", justifyContent: "center" }}><SearchIcon size={32} /></p>
+          <p style={{ fontSize: 14, fontWeight: 600, color: SURFACE.textSecondary, margin: 0 }}>
             {t("No hay conductores que coincidan con los filtros")}
           </p>
-          <p style={{ fontSize: 12, color: "#94a3b8", margin: "6px 0 0" }}>
+          <p style={{ fontSize: 12, color: SURFACE.textFaint, margin: "6px 0 0" }}>
             {t("Prueba quitar algún filtro o cambiar los criterios de búsqueda.")}
           </p>
         </section>
@@ -670,7 +671,7 @@ export default function DriverMonitoringPage() {
         <div
           className="rounded-2xl overflow-hidden"
           style={{
-            background: "#fff",
+            background: SURFACE.card,
             border: "1px solid #e2e8f0",
             boxShadow: "0 1px 4px rgba(15,23,42,0.04)",
           }}
@@ -682,11 +683,11 @@ export default function DriverMonitoringPage() {
           >
             <h2
               className="text-sm font-semibold uppercase tracking-wider"
-              style={{ color: "#475569" }}
+              style={{ color: SURFACE.textSecondary }}
             >
               {t("Detalle de conductores")}
             </h2>
-            <span style={{ fontSize: 11.5, color: "#94a3b8", fontWeight: 500 }}>
+            <span style={{ fontSize: 11.5, color: SURFACE.textFaint, fontWeight: 500 }}>
               {visibleDrivers.length} {visibleDrivers.length === 1 ? t("conductor") : t("conductores")}
             </span>
           </div>
@@ -702,23 +703,23 @@ export default function DriverMonitoringPage() {
                 return (
                   <div key={d.driverId}
                     style={{ borderRadius: 12, border: `1px solid ${d.online ? "rgba(33,208,179,0.3)" : "#e2e8f0"}`,
-                      background: "#fff", padding: "12px 14px",
+                      background: SURFACE.card, padding: "12px 14px",
                       boxShadow: d.online ? "0 2px 10px rgba(33,208,179,0.08)" : "0 1px 4px rgba(15,23,42,0.04)" }}>
                     {/* Cabecera: avatar + nombre + estado */}
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <div style={{ width: 38, height: 38, borderRadius: "50%",
                         background: d.online ? "linear-gradient(135deg, #21D0B3 0%, #15B09A 100%)" : "linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%)",
-                        color: "#fff", fontSize: 12, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center",
+                        color: SURFACE.card, fontSize: 12, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center",
                         letterSpacing: "0.04em", flexShrink: 0,
                         boxShadow: d.online ? "0 2px 8px rgba(33,208,179,0.35)" : "0 1px 3px rgba(15,23,42,0.1)" }}>
                         {initials(d.fullName)}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", margin: 0, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <p style={{ fontSize: 14, fontWeight: 700, color: SURFACE.text, margin: 0, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {d.fullName}
                         </p>
                         {d.platform && (
-                          <p style={{ fontSize: 11, color: "#94a3b8", margin: "2px 0 0", textTransform: "capitalize" }}>{d.platform}</p>
+                          <p style={{ fontSize: 11, color: SURFACE.textFaint, margin: "2px 0 0", textTransform: "capitalize" }}>{d.platform}</p>
                         )}
                       </div>
                       {pillEstado(d.online)}
@@ -726,7 +727,7 @@ export default function DriverMonitoringPage() {
                     {/* Ocupación · viajes del día · GPS */}
                     <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
                       {pillOcupacion(isBusy, tripText, d.activeTrips)}
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, color: "#64748b", fontWeight: 600 }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, color: SURFACE.textMuted, fontWeight: 600 }}>
                         {isToday ? t("Viajes hoy") : t("Viajes del día")}: {chipDayCount(d.dayTripCount)}
                       </span>
                       <span style={{ marginLeft: "auto" }}>{pillGps(gpsActive)}</span>
@@ -749,7 +750,7 @@ export default function DriverMonitoringPage() {
                           </span>
                         ))}
                         {(d.disciplines || []).length > 4 && (
-                          <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 6, fontWeight: 700, background: "#f1f5f9", color: "#475569", border: "1px solid #cbd5e1" }}>
+                          <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 6, fontWeight: 700, background: SURFACE.borderMuted, color: SURFACE.textSecondary, border: "1px solid #cbd5e1" }}>
                             +{d.disciplines.length - 4}
                           </span>
                         )}
@@ -757,16 +758,16 @@ export default function DriverMonitoringPage() {
                     )}
                     {/* Última conexión · sesión */}
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 8, paddingTop: 8, borderTop: "1px dashed #f1f5f9" }}>
-                      <span style={{ fontSize: 11, color: "#64748b" }}>
-                        {t("Última conexión")}: <b style={{ color: "#334155", fontWeight: 600 }}>{ago(d.secondsSinceSeen)}</b>
+                      <span style={{ fontSize: 11, color: SURFACE.textMuted }}>
+                        {t("Última conexión")}: <b style={{ color: SURFACE.textStrong, fontWeight: 600 }}>{ago(d.secondsSinceSeen)}</b>
                       </span>
-                      <span style={{ fontSize: 11, color: "#64748b", textAlign: "right" }}>
+                      <span style={{ fontSize: 11, color: SURFACE.textMuted, textAlign: "right" }}>
                         {d.sessionStartedAt
                           ? <>
                               {new Date(d.sessionStartedAt).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })}
-                              <span style={{ color: "#94a3b8" }}> · {d.heartbeats ?? 0} {t("latidos")}</span>
+                              <span style={{ color: SURFACE.textFaint }}> · {d.heartbeats ?? 0} {t("latidos")}</span>
                             </>
-                          : <i style={{ color: "#94a3b8" }}>{t("Nunca usó la app")}</i>}
+                          : <i style={{ color: SURFACE.textFaint }}>{t("Nunca usó la app")}</i>}
                       </span>
                     </div>
                   </div>
@@ -802,7 +803,7 @@ export default function DriverMonitoringPage() {
                         fontWeight: 800,
                         letterSpacing: "0.08em",
                         textTransform: "uppercase",
-                        color: "#64748b",
+                        color: SURFACE.textMuted,
                         whiteSpace: "nowrap",
                       }}
                     >
@@ -821,14 +822,14 @@ export default function DriverMonitoringPage() {
                       key={d.driverId}
                       style={{
                         borderBottom: i === visibleDrivers.length - 1 ? "none" : "1px solid #f1f5f9",
-                        background: i % 2 === 0 ? "#fff" : "#fafbfc",
+                        background: i % 2 === 0 ? SURFACE.card : "#fafbfc",
                         transition: "background 0.15s",
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.background = "#f0fdf4";
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.background = i % 2 === 0 ? "#fff" : "#fafbfc";
+                        e.currentTarget.style.background = i % 2 === 0 ? SURFACE.card : "#fafbfc";
                       }}
                     >
                       {/* Conductor (avatar + nombre) */}
@@ -842,7 +843,7 @@ export default function DriverMonitoringPage() {
                               background: d.online
                                 ? "linear-gradient(135deg, #21D0B3 0%, #15B09A 100%)"
                                 : "linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%)",
-                              color: "#fff",
+                              color: SURFACE.card,
                               fontSize: 11,
                               fontWeight: 800,
                               display: "flex",
@@ -858,11 +859,11 @@ export default function DriverMonitoringPage() {
                             {initials(d.fullName)}
                           </div>
                           <div style={{ minWidth: 0 }}>
-                            <p style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", margin: 0, lineHeight: 1.2 }}>
+                            <p style={{ fontSize: 13, fontWeight: 700, color: SURFACE.text, margin: 0, lineHeight: 1.2 }}>
                               {d.fullName}
                             </p>
                             {d.platform && (
-                              <p style={{ fontSize: 10.5, color: "#94a3b8", margin: "2px 0 0", textTransform: "capitalize" }}>
+                              <p style={{ fontSize: 10.5, color: SURFACE.textFaint, margin: "2px 0 0", textTransform: "capitalize" }}>
                                 {d.platform}
                               </p>
                             )}
@@ -888,7 +889,7 @@ export default function DriverMonitoringPage() {
                       {/* Tipo cliente chips */}
                       <td className="p-3">
                         {(d.allowedClientTypes || []).length === 0 ? (
-                          <span style={{ color: "#cbd5e1", fontSize: 11 }}>—</span>
+                          <span style={{ color: SURFACE.borderStrong, fontSize: 11 }}>—</span>
                         ) : (
                           <div style={{ display: "flex", flexWrap: "wrap", gap: 4, maxWidth: 200 }}>
                             {d.allowedClientTypes.map((ct) => {
@@ -919,7 +920,7 @@ export default function DriverMonitoringPage() {
                       {/* Disciplinas */}
                       <td className="p-3">
                         {(d.disciplines || []).length === 0 ? (
-                          <span style={{ color: "#cbd5e1", fontSize: 11 }}>—</span>
+                          <span style={{ color: SURFACE.borderStrong, fontSize: 11 }}>—</span>
                         ) : (
                           <div style={{ display: "flex", flexWrap: "wrap", gap: 4, maxWidth: 220 }}>
                             {d.disciplines.slice(0, 3).map((dx) => (
@@ -946,8 +947,8 @@ export default function DriverMonitoringPage() {
                                   padding: "2px 7px",
                                   borderRadius: 6,
                                   fontWeight: 700,
-                                  background: "#f1f5f9",
-                                  color: "#475569",
+                                  background: SURFACE.borderMuted,
+                                  color: SURFACE.textSecondary,
                                   border: "1px solid #cbd5e1",
                                 }}
                               >
@@ -959,26 +960,26 @@ export default function DriverMonitoringPage() {
                       </td>
 
                       {/* Última conexión */}
-                      <td className="p-3" style={{ color: "#475569", whiteSpace: "nowrap", fontSize: 11.5 }}>
+                      <td className="p-3" style={{ color: SURFACE.textSecondary, whiteSpace: "nowrap", fontSize: 11.5 }}>
                         {ago(d.secondsSinceSeen)}
                       </td>
 
                       {/* Sesión */}
-                      <td className="p-3" style={{ color: "#475569", whiteSpace: "nowrap", fontSize: 11.5 }}>
+                      <td className="p-3" style={{ color: SURFACE.textSecondary, whiteSpace: "nowrap", fontSize: 11.5 }}>
                         {d.sessionStartedAt ? (
                           <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                            <span style={{ fontWeight: 600, color: "#334155" }}>
+                            <span style={{ fontWeight: 600, color: SURFACE.textStrong }}>
                               {new Date(d.sessionStartedAt).toLocaleTimeString("es-CL", {
                                 hour: "2-digit",
                                 minute: "2-digit",
                               })}
                             </span>
-                            <span style={{ fontSize: 10, color: "#94a3b8" }}>
+                            <span style={{ fontSize: 10, color: SURFACE.textFaint }}>
                               {d.heartbeats ?? 0} {t("latidos")}
                             </span>
                           </div>
                         ) : (
-                          <span style={{ color: "#94a3b8", fontStyle: "italic" }}>{t("Nunca usó la app")}</span>
+                          <span style={{ color: SURFACE.textFaint, fontStyle: "italic" }}>{t("Nunca usó la app")}</span>
                         )}
                       </td>
 
@@ -1153,7 +1154,7 @@ function FiltersBar(p: FiltersBarProps) {
                 background: active
                   ? "linear-gradient(135deg, #21D0B3 0%, #15B09A 100%)"
                   : "#eef1f6",
-                color: active ? "#fff" : "#475569",
+                color: active ? SURFACE.card : SURFACE.textSecondary,
                 boxShadow: active ? "0 1px 4px rgba(33,208,179,0.3)" : "none",
               }}
             >
@@ -1163,8 +1164,8 @@ function FiltersBar(p: FiltersBarProps) {
                   fontSize: 10,
                   padding: "1px 6px",
                   borderRadius: 10,
-                  background: active ? "rgba(255,255,255,0.25)" : "#fff",
-                  color: active ? "#fff" : "#64748b",
+                  background: active ? "rgba(255,255,255,0.25)" : SURFACE.card,
+                  color: active ? SURFACE.card : SURFACE.textMuted,
                   fontWeight: 700,
                 }}
               >
@@ -1183,7 +1184,7 @@ function FiltersBar(p: FiltersBarProps) {
               className="text-xs"
               style={{ color: "var(--text-muted)" }}
             >
-              <strong style={{ color: "#0f172a" }}>{p.visibleCount}</strong> {t("de")} {p.totalCount}
+              <strong style={{ color: SURFACE.text }}>{p.visibleCount}</strong> {t("de")} {p.totalCount}
             </span>
             <button
               type="button"

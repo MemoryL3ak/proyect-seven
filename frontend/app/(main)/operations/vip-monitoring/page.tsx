@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { apiFetch } from "@/lib/api";
+import { BRAND, SURFACE } from "@/lib/design";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiCard from "@/components/ui/KpiCard";
 import EmptyState from "@/components/ui/EmptyState";
@@ -273,7 +274,7 @@ export default function VipMonitoringPage() {
       {/* Filtros */}
       <section className="surface rounded-2xl p-4 flex flex-wrap items-center gap-3">
         <div className="flex-1 min-w-[200px] relative">
-          <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8", pointerEvents: "none" }}>
+          <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: SURFACE.textFaint, pointerEvents: "none" }}>
             <SearchIcon size={15} />
           </span>
           <input className="input" style={{ paddingLeft: 36 }} placeholder="Buscar VIP por nombre o teléfono…"
@@ -290,7 +291,7 @@ export default function VipMonitoringPage() {
           style={{
             border: `1px solid ${soloEnViaje ? "var(--brand)" : "var(--border)"}`,
             background: soloEnViaje ? "rgba(33,208,179,0.12)" : "transparent",
-            color: soloEnViaje ? "#0a7a6b" : "var(--text-muted)",
+            color: soloEnViaje ? BRAND.tealInk : "var(--text-muted)",
             cursor: "pointer",
           }}>
           Sólo en viaje
@@ -310,7 +311,7 @@ export default function VipMonitoringPage() {
         ) : (
           <div className="h-[280px] rounded-xl flex flex-col items-center justify-center gap-2"
             style={{ background: "var(--elevated)", border: "1px dashed var(--border)" }}>
-            <PinIcon size={28} color="#94a3b8" />
+            <PinIcon size={28} color={SURFACE.textFaint} />
             <p className="text-sm font-semibold" style={{ color: "var(--text-muted)" }}>Sin ubicaciones que mostrar</p>
             <p className="text-xs text-center" style={{ color: "var(--text-faint)", maxWidth: 420 }}>
               La ubicación aparece cuando el VIP abre su portal con permiso de ubicación

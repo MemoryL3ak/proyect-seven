@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { isAvailable as nativeAvailable, send as nativeSend } from "@/lib/native-bridge";
 import { AmbulanceIcon, FlameIcon, SirenIcon, FingerprintIcon, AnchorIcon, LifeBuoyIcon } from "@/components/ui/Icons";
+import { STATE, SURFACE } from "@/lib/design";
 
 /**
  * Números de emergencia para la sección "Cuenta" de los portales.
@@ -125,19 +126,19 @@ export default function EmergencyNumbersSection() {
   return (
     <div
       style={{
-        background: "#ffffff",
+        background: SURFACE.card,
         border: "1px solid #fecaca",
         borderRadius: 16,
         overflow: "hidden",
       }}
     >
       <div style={{ padding: "14px 16px 10px", display: "flex", alignItems: "center", gap: 10 }}>
-        <span aria-hidden style={{ display: "inline-flex", color: "#dc2626" }}><LifeBuoyIcon size={18} /></span>
+        <span aria-hidden style={{ display: "inline-flex", color: STATE.dangerText }}><LifeBuoyIcon size={18} /></span>
         <div>
-          <p style={{ fontSize: 13.5, fontWeight: 700, color: "#0f172a", margin: 0 }}>
+          <p style={{ fontSize: 13.5, fontWeight: 700, color: SURFACE.text, margin: 0 }}>
             Números de emergencia
           </p>
-          <p style={{ fontSize: 11.5, color: "#64748b", margin: 0 }}>
+          <p style={{ fontSize: 11.5, color: SURFACE.textMuted, margin: 0 }}>
             Toca un número para llamar
           </p>
         </div>
@@ -167,11 +168,11 @@ export default function EmergencyNumbersSection() {
             <span style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
               <span aria-hidden style={{ display: "inline-flex" }}>{n.emoji}</span>
               <span style={{ minWidth: 0 }}>
-                <span style={{ display: "block", fontSize: 12.5, fontWeight: 600, color: "#0f172a" }}>
+                <span style={{ display: "block", fontSize: 12.5, fontWeight: 600, color: SURFACE.text }}>
                   {n.label}
                 </span>
                 {n.detail && (
-                  <span style={{ display: "block", fontSize: 11, color: "#64748b" }}>{n.detail}</span>
+                  <span style={{ display: "block", fontSize: 11, color: SURFACE.textMuted }}>{n.detail}</span>
                 )}
               </span>
             </span>
@@ -207,7 +208,7 @@ export default function EmergencyNumbersSection() {
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
-              background: "#fff",
+              background: SURFACE.card,
               borderRadius: "20px 20px 0 0",
               width: "100%",
               maxWidth: 480,
@@ -215,7 +216,7 @@ export default function EmergencyNumbersSection() {
               textAlign: "center",
             }}
           >
-            <p style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", margin: 0 }}>
+            <p style={{ fontSize: 13, fontWeight: 700, color: SURFACE.text, margin: 0 }}>
               <span style={{ display: "inline-flex", verticalAlign: "-3px", marginRight: 6 }}>{fallback.emoji}</span>{fallback.label}
             </p>
             <p
@@ -230,7 +231,7 @@ export default function EmergencyNumbersSection() {
             >
               {fallback.number}
             </p>
-            <p style={{ fontSize: 12, color: "#64748b", margin: "0 0 14px" }}>
+            <p style={{ fontSize: 12, color: SURFACE.textMuted, margin: "0 0 14px" }}>
               Si la llamada no se abre sola, copia el número y márcalo desde el teléfono.
             </p>
             <div style={{ display: "grid", gap: 8 }}>
@@ -254,7 +255,7 @@ export default function EmergencyNumbersSection() {
                   borderRadius: 12,
                   border: "none",
                   background: "#b91c1c",
-                  color: "#fff",
+                  color: SURFACE.card,
                   fontSize: 14,
                   fontWeight: 800,
                   cursor: "pointer",
@@ -269,8 +270,8 @@ export default function EmergencyNumbersSection() {
                   padding: "12px 16px",
                   borderRadius: 12,
                   border: "1px solid #e2e8f0",
-                  background: "#f8fafc",
-                  color: "#0f172a",
+                  background: SURFACE.bg,
+                  color: SURFACE.text,
                   fontSize: 13.5,
                   fontWeight: 700,
                   cursor: "pointer",
@@ -286,7 +287,7 @@ export default function EmergencyNumbersSection() {
                   borderRadius: 12,
                   border: "none",
                   background: "transparent",
-                  color: "#64748b",
+                  color: SURFACE.textMuted,
                   fontSize: 13,
                   fontWeight: 600,
                   cursor: "pointer",

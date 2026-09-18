@@ -17,7 +17,7 @@ import {
   CalendarIcon,
   ChevronRightIcon,
 } from "@/components/ui/Icons";
-import { BRAND } from "@/lib/design";
+import { BRAND, STATE, SURFACE } from "@/lib/design";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -281,7 +281,7 @@ export default function NotificationBell({
         width: Math.min(300, window.innerWidth - 24),
         maxHeight: 320,
         borderRadius: 14,
-        background: "#ffffff",
+        background: SURFACE.card,
         border: "1px solid #e2e8f0",
         boxShadow: "0 12px 40px rgba(15,23,42,0.18), 0 4px 12px rgba(15,23,42,0.08)",
         overflow: "hidden",
@@ -300,7 +300,7 @@ export default function NotificationBell({
         borderBottom: "1px solid #f1f5f9",
         flexShrink: 0,
       }}>
-        <span style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>
+        <span style={{ fontSize: 13, fontWeight: 700, color: SURFACE.text }}>
           Notificaciones
         </span>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -309,7 +309,7 @@ export default function NotificationBell({
               type="button"
               onClick={onClear}
               style={{
-                fontSize: 11, fontWeight: 600, color: "#94a3b8",
+                fontSize: 11, fontWeight: 600, color: SURFACE.textFaint,
                 background: "none", border: "none", cursor: "pointer",
                 padding: "3px 6px", borderRadius: 4,
               }}
@@ -323,8 +323,8 @@ export default function NotificationBell({
             style={{
               display: "flex", alignItems: "center", justifyContent: "center",
               width: 26, height: 26, borderRadius: 7,
-              border: "1px solid #e2e8f0", background: "#f8fafc",
-              color: "#94a3b8", cursor: "pointer", flexShrink: 0,
+              border: "1px solid #e2e8f0", background: SURFACE.bg,
+              color: SURFACE.textFaint, cursor: "pointer", flexShrink: 0,
             }}
           >
             <XIcon size={12} strokeWidth={2.5} />
@@ -342,7 +342,7 @@ export default function NotificationBell({
             fontSize: 12.5,
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
           }}>
-            <BellIcon size={16} color="#cbd5e1" strokeWidth={1.8} />
+            <BellIcon size={16} color={SURFACE.borderStrong} strokeWidth={1.8} />
             Sin notificaciones
           </div>
         ) : (
@@ -377,25 +377,25 @@ export default function NotificationBell({
                 return (
                   <span style={{ flexShrink:0, width:30, height:30, borderRadius:8, background:bg, display:"flex", alignItems:"center", justifyContent:"center" }}>
                     {isError ? (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={STATE.danger} strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
                     ) : isSuccess ? (
-                      <CheckIcon size={14} color="#10b981" strokeWidth={2.5} />
+                      <CheckIcon size={14} color={STATE.success} strokeWidth={2.5} />
                     ) : isStar ? (
-                      <StarIcon size={14} color="#f59e0b" strokeWidth={1} fill="#f59e0b" />
+                      <StarIcon size={14} color={STATE.warning} strokeWidth={1} fill={STATE.warning} />
                     ) : isChat ? (
                       <MessageIcon size={14} color={BRAND.teal} strokeWidth={2} />
                     ) : isCar ? (
                       <TruckIcon size={14} color={BRAND.teal} strokeWidth={2} />
                     ) : isPin ? (
-                      <PinIcon size={14} color="#3b82f6" strokeWidth={2} />
+                      <PinIcon size={14} color={STATE.info} strokeWidth={2} />
                     ) : isWarning ? (
-                      <AlertIcon size={14} color="#f59e0b" strokeWidth={2} />
+                      <AlertIcon size={14} color={STATE.warning} strokeWidth={2} />
                     ) : isCamera ? (
-                      <CameraIcon size={14} color="#64748b" strokeWidth={2} />
+                      <CameraIcon size={14} color={SURFACE.textMuted} strokeWidth={2} />
                     ) : isCal ? (
                       <CalendarIcon size={14} color="#0ea5e9" strokeWidth={2} />
                     ) : isDoc ? (
-                      <FileTextIcon size={14} color="#64748b" />
+                      <FileTextIcon size={14} color={SURFACE.textMuted} />
                     ) : isSupport ? (
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><path d="M4.93 4.93l4.24 4.24M14.83 14.83l4.24 4.24M14.83 9.17l4.24-4.24M14.83 9.17l3.53-3.53M4.93 19.07l4.24-4.24"/></svg>
                     ) : (
@@ -411,7 +411,7 @@ export default function NotificationBell({
                 }}>
                   {n.message}
                 </p>
-                <p style={{ fontSize: 10, color: "#94a3b8", margin: "2px 0 0" }}>
+                <p style={{ fontSize: 10, color: SURFACE.textFaint, margin: "2px 0 0" }}>
                   {formatTime(n.timestamp)}
                 </p>
               </div>
@@ -423,7 +423,7 @@ export default function NotificationBell({
                 }} />
               )}
               {n.href && (
-                <ChevronRightIcon size={14} color="#cbd5e1" strokeWidth={2.5} style={{ flexShrink: 0 }} />
+                <ChevronRightIcon size={14} color={SURFACE.borderStrong} strokeWidth={2.5} style={{ flexShrink: 0 }} />
               )}
             </div>
           ))
@@ -463,7 +463,7 @@ export default function NotificationBell({
           <span style={{
             position: "absolute", top: -5, right: -5,
             minWidth: 16, height: 16, borderRadius: 8,
-            background: "#f43f5e", color: "#fff",
+            background: "#f43f5e", color: SURFACE.card,
             fontSize: 10, fontWeight: 800,
             display: "flex", alignItems: "center", justifyContent: "center",
             padding: "0 5px",

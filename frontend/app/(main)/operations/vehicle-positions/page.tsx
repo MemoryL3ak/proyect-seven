@@ -22,7 +22,7 @@ import {
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { getSupabase } from "@/lib/supabase";
 import { useI18n } from "@/lib/i18n";
-import { BRAND, TRIP_STATUS_META } from "@/lib/design";
+import { BRAND, TRIP_STATUS_META, STATE, SURFACE } from "@/lib/design";
 import { useIsMobile } from "@/lib/useIsMobile";
 import type {
   DestinationPin,
@@ -710,7 +710,7 @@ export default function VehiclePositionsPage() {
         const tripId = trip?.id ?? `driver-${driver.id}`;
         // Trail color follows the marker so the visual story stays
         // consistent: green while connected, red while in the no-signal state.
-        const accent = online ? "#10b981" : "#ef4444";
+        const accent = online ? STATE.success : STATE.danger;
         return { tripId, path, accent } satisfies TrailPath;
       })
       .filter((t): t is TrailPath => t !== null);
@@ -722,7 +722,7 @@ export default function VehiclePositionsPage() {
       // Connection status drives the marker color: green when actively
       // receiving GPS, red when we haven't heard from the driver in >15s.
       // This wins over the trip status color so a disconnection is obvious.
-      const accent = online ? "#10b981" : "#ef4444";
+      const accent = online ? STATE.success : STATE.danger;
       const vehicle = trip?.vehicleId ? vehicles[trip.vehicleId] : null;
       const venue = trip?.destinationVenueId ? venues[trip.destinationVenueId] : null;
       return {
@@ -842,16 +842,16 @@ export default function VehiclePositionsPage() {
 
   // Brand palette — matches app light design system
   const pal = {
-    panelBg: "#ffffff",
+    panelBg: SURFACE.card,
     panelBorder: "1px solid #e2e8f0",
     panelShadow: "0 1px 4px rgba(15,23,42,0.06)",
     orb1: "rgba(33,208,179,0.07)", orb2: "rgba(31,205,255,0.05)",
     accent: BRAND.teal,
-    titleColor: "#0f172a",
-    subtitleColor: "#64748b",
-    chipBg: "#f8fafc", chipBorder: "#e2e8f0", chipLabel: "#64748b",
-    btnBg: "#ffffff", btnBorder: "#e2e8f0", btnColor: "#475569",
-    kpi: [BRAND.teal, "#10b981", "#f59e0b", "#3b82f6", "#8b5cf6"],
+    titleColor: SURFACE.text,
+    subtitleColor: SURFACE.textMuted,
+    chipBg: SURFACE.bg, chipBorder: SURFACE.border, chipLabel: SURFACE.textMuted,
+    btnBg: SURFACE.card, btnBorder: SURFACE.border, btnColor: SURFACE.textSecondary,
+    kpi: [BRAND.teal, STATE.success, STATE.warning, STATE.info, "#8b5cf6"],
   };
 
   return (
@@ -877,8 +877,8 @@ export default function VehiclePositionsPage() {
                 Operaciones
               </p>
               <span style={{ display: "flex", alignItems: "center", gap: "5px", background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.28)", borderRadius: "99px", padding: "2px 8px" }}>
-                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#10b981", animation: "pulse 2s infinite", display: "inline-block" }} />
-                <span style={{ fontSize: "10px", fontWeight: 700, color: "#10b981", letterSpacing: "0.08em" }}>EN VIVO</span>
+                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: STATE.success, animation: "pulse 2s infinite", display: "inline-block" }} />
+                <span style={{ fontSize: "10px", fontWeight: 700, color: STATE.success, letterSpacing: "0.08em" }}>EN VIVO</span>
               </span>
             </div>
             <h1 style={{ fontSize: "22px", fontWeight: 800, color: pal.titleColor, lineHeight: 1.2, marginBottom: "4px" }}>
@@ -941,11 +941,11 @@ export default function VehiclePositionsPage() {
           ))}
         </div>
 
-        {error && <p className="mt-3 text-sm" style={{ color: "#ef4444" }}>{error}</p>}
+        {error && <p className="mt-3 text-sm" style={{ color: STATE.danger }}>{error}</p>}
       </section>
 
       {/* ── View tabs */}
-      <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "6px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+      <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "6px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div className="grid gap-2 grid-cols-2">
           {([
             { key: "live" as const, label: "Tracking en vivo", count: trackedDrivers.length },
@@ -964,11 +964,11 @@ export default function VehiclePositionsPage() {
                   border: "none", transition: "all 150ms",
                 }}
               >
-                <span style={{ fontSize: "13px", fontWeight: 700, color: selected ? "#ffffff" : "#0f172a" }}>{tab.label}</span>
+                <span style={{ fontSize: "13px", fontWeight: 700, color: selected ? SURFACE.card : SURFACE.text }}>{tab.label}</span>
                 <span style={{
                   minWidth: "28px", borderRadius: "99px", padding: "3px 8px", fontSize: "12px", fontWeight: 700,
-                  background: selected ? "rgba(255,255,255,0.25)" : "#f1f5f9",
-                  color: selected ? "#ffffff" : "#64748b",
+                  background: selected ? "rgba(255,255,255,0.25)" : SURFACE.borderMuted,
+                  color: selected ? SURFACE.card : SURFACE.textMuted,
                   border: selected ? "none" : "1px solid #e2e8f0",
                 }}>
                   {tab.count}
@@ -992,14 +992,14 @@ export default function VehiclePositionsPage() {
                   borderRadius: "14px", padding: "12px 18px", gap: "12px",
                 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    <span style={{ color: "#10b981", flexShrink: 0 }}>
+                    <span style={{ color: STATE.success, flexShrink: 0 }}>
                       <CheckCircleIcon size={20} strokeWidth={2} />
                     </span>
                     <div>
-                      <p style={{ fontSize: "13px", fontWeight: 700, color: "#10b981" }}>
+                      <p style={{ fontSize: "13px", fontWeight: 700, color: STATE.success }}>
                         Viaje completado — {alert.driverName}
                       </p>
-                      <p style={{ fontSize: "12px", color: "#64748b" }}>
+                      <p style={{ fontSize: "12px", color: SURFACE.textMuted }}>
                         Llegó a {alert.destination} · {alert.ts.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })}
                       </p>
                     </div>
@@ -1007,7 +1007,7 @@ export default function VehiclePositionsPage() {
                   <button
                     type="button"
                     onClick={() => setCompletedAlerts((prev) => prev.filter((_, j) => j !== i))}
-                    style={{ color: "#94a3b8", background: "none", border: "none", cursor: "pointer", padding: "4px 8px", lineHeight: 1 }}
+                    style={{ color: SURFACE.textFaint, background: "none", border: "none", cursor: "pointer", padding: "4px 8px", lineHeight: 1 }}
                   >
                     <XIcon size={14} strokeWidth={2.5} />
                   </button>
@@ -1035,8 +1035,8 @@ export default function VehiclePositionsPage() {
                   background: "rgba(0,0,0,0.6)", borderRadius: "99px", padding: "5px 12px",
                   backdropFilter: "blur(6px)",
                 }}>
-                  <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: connectedDrivers.length > 0 ? "#10b981" : "#94a3b8", animation: "pulse 1.5s infinite", display: "inline-block" }} />
-                  <span style={{ fontSize: "11px", fontWeight: 700, color: "#ffffff", letterSpacing: "0.1em" }}>
+                  <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: connectedDrivers.length > 0 ? STATE.success : SURFACE.textFaint, animation: "pulse 1.5s infinite", display: "inline-block" }} />
+                  <span style={{ fontSize: "11px", fontWeight: 700, color: SURFACE.card, letterSpacing: "0.1em" }}>
                     {connectedDrivers.length} en línea · {trackedDrivers.length - connectedDrivers.length} sin señal · {liveRoutes.length} con ruta
                   </span>
                 </span>
@@ -1049,8 +1049,8 @@ export default function VehiclePositionsPage() {
                   padding: "18px 22px", textAlign: "center" as const, maxWidth: "320px",
                   boxShadow: "0 8px 24px rgba(15,23,42,0.12)",
                 }}>
-                  <p style={{ fontWeight: 800, fontSize: "14px", color: "#0f172a" }}>Sin conductores enviando GPS ahora</p>
-                  <p style={{ fontSize: "12px", marginTop: "4px", color: "#64748b", lineHeight: 1.5 }}>
+                  <p style={{ fontWeight: 800, fontSize: "14px", color: SURFACE.text }}>Sin conductores enviando GPS ahora</p>
+                  <p style={{ fontSize: "12px", marginTop: "4px", color: SURFACE.textMuted, lineHeight: 1.5 }}>
                     Cuando un conductor entre y prenda el GPS, va a aparecer en el mapa.
                   </p>
                 </div>
@@ -1070,16 +1070,16 @@ export default function VehiclePositionsPage() {
             <div style={{ display: "flex", flexDirection: "column", gap: "10px", ...(isMobile ? {} : { maxHeight: "780px", overflowY: "auto" as const }), paddingRight: "2px" }}>
               {trackedDrivers.length === 0 && (
                 <div style={{
-                  borderRadius: "14px", border: "1px dashed #cbd5e1", background: "#ffffff",
+                  borderRadius: "14px", border: "1px dashed #cbd5e1", background: SURFACE.card,
                   padding: "20px 16px", textAlign: "center" as const,
-                  fontSize: "12px", color: "#64748b", lineHeight: 1.5,
+                  fontSize: "12px", color: SURFACE.textMuted, lineHeight: 1.5,
                 }}>
                   Esperando conductores. Al activar el GPS desde la app aparecerán aquí.
                 </div>
               )}
               {trackedDrivers.map(({ driver, position, ageMs, online }) => {
                 const trip = activeTripsForRoutes.find((t) => t.driverId === driver.id);
-                const accent = online ? "#10b981" : "#ef4444";
+                const accent = online ? STATE.success : STATE.danger;
                 const chipBg = online ? "rgba(16,185,129,0.14)" : "rgba(239,68,68,0.12)";
                 const chipBorder = online ? "rgba(16,185,129,0.3)" : "rgba(239,68,68,0.3)";
                 const vehicle = trip?.vehicleId ? vehicles[trip.vehicleId] : null;
@@ -1093,7 +1093,7 @@ export default function VehiclePositionsPage() {
 
                 return (
                   <div key={driver.id} style={{
-                    background: selectedTripId === markerId ? "#f0fdfa" : "#ffffff",
+                    background: selectedTripId === markerId ? "#f0fdfa" : SURFACE.card,
                     border: selectedTripId === markerId ? "2px solid #14b8a6" : "1px solid #e2e8f0",
                     borderLeft: `4px solid ${accent}`,
                     borderRadius: "14px",
@@ -1106,10 +1106,10 @@ export default function VehiclePositionsPage() {
                   >
                     <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "6px", marginBottom: "8px" }}>
                       <div style={{ minWidth: 0 }}>
-                        <p style={{ fontSize: "13px", fontWeight: 800, color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <p style={{ fontSize: "13px", fontWeight: 800, color: SURFACE.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {driver.fullName || "Conductor"}
                         </p>
-                        <p style={{ fontSize: "11px", color: "#64748b", marginTop: "1px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <p style={{ fontSize: "11px", color: SURFACE.textMuted, marginTop: "1px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {trip
                             ? (vehicle ? [vehicle.plate, vehicle.type].filter(Boolean).join(" · ") : (trip.vehiclePlate || "Sin vehículo"))
                             : online ? "Conectado · sin viaje" : "Sin señal · esperando reconexión"}
@@ -1126,17 +1126,17 @@ export default function VehiclePositionsPage() {
                             ? (trip ? (STATUS_LABEL[trip.status ?? ""] || trip.status || "En línea") : "En línea")
                             : "Sin señal"}
                         </span>
-                        <span style={{ fontSize: "10px", color: "#64748b" }}>{ageLabel}</span>
+                        <span style={{ fontSize: "10px", color: SURFACE.textMuted }}>{ageLabel}</span>
                       </div>
                     </div>
 
                     {trip && (
                       <>
-                        <div style={{ fontSize: "11px", color: "#64748b", lineHeight: 1.5, display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+                        <div style={{ fontSize: "11px", color: SURFACE.textMuted, lineHeight: 1.5, display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
                           <PinIcon size={10} color={BRAND.teal} strokeWidth={2.2} />
                           <span>{trip.origin || "Origen"}</span>
-                          <span style={{ color: "#cbd5e1", display: "inline-flex" }}><ArrowRightIcon size={12} /></span>
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h2M14 7h2M8 11h2M14 11h2"/></svg>
+                          <span style={{ color: SURFACE.borderStrong, display: "inline-flex" }}><ArrowRightIcon size={12} /></span>
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={SURFACE.textFaint} strokeWidth="2" strokeLinecap="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h2M14 7h2M8 11h2M14 11h2"/></svg>
                           <span>{venue?.name || trip.destination || "Destino"}</span>
                         </div>
                         {routeMeta && (
@@ -1148,7 +1148,7 @@ export default function VehiclePositionsPage() {
                       </>
                     )}
 
-                    <div style={{ marginTop: "6px", fontSize: "10px", color: "#94a3b8" }}>
+                    <div style={{ marginTop: "6px", fontSize: "10px", color: SURFACE.textFaint }}>
                       {position.lat.toFixed(5)}, {position.lng.toFixed(5)} · GPS {new Date(position.timestamp).toLocaleTimeString("es-CL")}
                     </div>
                   </div>
@@ -1161,10 +1161,10 @@ export default function VehiclePositionsPage() {
 
       {/* ── Table view */}
       {activeView === "table" && (
-        <section style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "24px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+        <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "24px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
-            <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#0f172a", margin: 0 }}>{t("Todos los viajes")}</h2>
-            <span style={{ fontSize: 12, fontWeight: 600, color: "#64748b", fontVariantNumeric: "tabular-nums" }}>
+            <h2 style={{ fontSize: "18px", fontWeight: 700, color: SURFACE.text, margin: 0 }}>{t("Todos los viajes")}</h2>
+            <span style={{ fontSize: 12, fontWeight: 600, color: SURFACE.textMuted, fontVariantNumeric: "tabular-nums" }}>
               {visibleTrips.length === trips.length ? `${trips.length} viajes` : `${visibleTrips.length} de ${trips.length}`}
             </span>
           </div>
@@ -1173,18 +1173,18 @@ export default function VehiclePositionsPage() {
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <div style={{ position: "relative", flex: 1, minWidth: 200 }}>
-                <SearchIcon size={15} color="#94a3b8" strokeWidth={2} style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
+                <SearchIcon size={15} color={SURFACE.textFaint} strokeWidth={2} style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
                 <input value={tableSearch} onChange={(e) => setTableSearch(e.target.value)} placeholder="Buscar origen, destino, conductor, patente…"
-                  style={{ width: "100%", padding: "9px 12px 9px 34px", fontSize: 13, borderRadius: 10, border: "1px solid #e2e8f0", outline: "none", background: "#f8fafc", color: "#0f172a", boxSizing: "border-box" }} />
+                  style={{ width: "100%", padding: "9px 12px 9px 34px", fontSize: 13, borderRadius: 10, border: "1px solid #e2e8f0", outline: "none", background: SURFACE.bg, color: SURFACE.text, boxSizing: "border-box" }} />
               </div>
               <select value={tableClient} onChange={(e) => setTableClient(e.target.value)}
-                style={{ padding: "9px 12px", fontSize: 13, borderRadius: 10, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#0f172a", cursor: "pointer" }}>
+                style={{ padding: "9px 12px", fontSize: 13, borderRadius: 10, border: "1px solid #e2e8f0", background: SURFACE.bg, color: SURFACE.text, cursor: "pointer" }}>
                 <option value="">Todos los clientes</option>
                 {tableClientOptions.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
               {(tableSearch || tableStatus || tableClient) && (
                 <button type="button" onClick={() => { setTableSearch(""); setTableStatus(""); setTableClient(""); }}
-                  style={{ padding: "9px 14px", fontSize: 12.5, fontWeight: 600, borderRadius: 10, border: "1px solid #e2e8f0", background: "#fff", color: "#ef4444", cursor: "pointer" }}>
+                  style={{ padding: "9px 14px", fontSize: 12.5, fontWeight: 600, borderRadius: 10, border: "1px solid #e2e8f0", background: SURFACE.card, color: STATE.danger, cursor: "pointer" }}>
                   Limpiar
                 </button>
               )}
@@ -1197,10 +1197,10 @@ export default function VehiclePositionsPage() {
                 return (
                   <button key={chip.key || "all"} type="button" onClick={() => setTableStatus(chip.key)}
                     style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 11px", borderRadius: 99, fontSize: 12, fontWeight: 700, cursor: "pointer",
-                      background: active ? chip.accent : "#f1f5f9", color: active ? "#fff" : "#475569", border: `1px solid ${active ? chip.accent : "#e2e8f0"}`, transition: "all .15s" }}>
+                      background: active ? chip.accent : SURFACE.borderMuted, color: active ? SURFACE.card : SURFACE.textSecondary, border: `1px solid ${active ? chip.accent : "#e2e8f0"}`, transition: "all .15s" }}>
                     {!active && <span style={{ width: 7, height: 7, borderRadius: "50%", background: chip.accent, display: "inline-block" }} />}
                     {chip.label}
-                    <span style={{ fontSize: 10.5, fontWeight: 800, padding: "1px 6px", borderRadius: 99, background: active ? "rgba(255,255,255,0.25)" : "#fff", color: active ? "#fff" : "#64748b" }}>{chip.count}</span>
+                    <span style={{ fontSize: 10.5, fontWeight: 800, padding: "1px 6px", borderRadius: 99, background: active ? "rgba(255,255,255,0.25)" : SURFACE.card, color: active ? SURFACE.card : SURFACE.textMuted }}>{chip.count}</span>
                   </button>
                 );
               })}
@@ -1208,10 +1208,10 @@ export default function VehiclePositionsPage() {
           </div>
 
           {trips.length === 0 ? (
-            <p style={{ fontSize: "14px", color: "#64748b" }}>{t("Sin viajes registrados.")}</p>
+            <p style={{ fontSize: "14px", color: SURFACE.textMuted }}>{t("Sin viajes registrados.")}</p>
           ) : visibleTrips.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "44px 20px", color: "#94a3b8" }}>
-              <SearchIcon size={30} color="#cbd5e1" strokeWidth={1.6} style={{ margin: "0 auto 10px", display: "block" }} />
+            <div style={{ textAlign: "center", padding: "44px 20px", color: SURFACE.textFaint }}>
+              <SearchIcon size={30} color={SURFACE.borderStrong} strokeWidth={1.6} style={{ margin: "0 auto 10px", display: "block" }} />
               <p style={{ fontSize: 13, margin: 0 }}>Ningún viaje coincide con los filtros.</p>
             </div>
           ) : (
@@ -1231,29 +1231,29 @@ export default function VehiclePositionsPage() {
                 ].filter(Boolean).join("  ·  ");
                 return (
                   <button key={trip.id} type="button" onClick={() => openTripDetail(trip)}
-                    style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", textAlign: "left", padding: "13px 16px", borderRadius: 14, border: "1px solid #e2e8f0", borderLeft: `4px solid ${sc.accent}`, background: "#fff", cursor: "pointer", transition: "all .15s" }}
-                    onMouseEnter={(e) => { const el = e.currentTarget as HTMLElement; el.style.background = "#f8fafc"; el.style.borderColor = "#cbd5e1"; el.style.borderLeftColor = sc.accent; el.style.transform = "translateX(2px)"; }}
-                    onMouseLeave={(e) => { const el = e.currentTarget as HTMLElement; el.style.background = "#fff"; el.style.borderColor = "#e2e8f0"; el.style.borderLeftColor = sc.accent; el.style.transform = ""; }}>
+                    style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", textAlign: "left", padding: "13px 16px", borderRadius: 14, border: "1px solid #e2e8f0", borderLeft: `4px solid ${sc.accent}`, background: SURFACE.card, cursor: "pointer", transition: "all .15s" }}
+                    onMouseEnter={(e) => { const el = e.currentTarget as HTMLElement; el.style.background = SURFACE.bg; el.style.borderColor = SURFACE.borderStrong; el.style.borderLeftColor = sc.accent; el.style.transform = "translateX(2px)"; }}
+                    onMouseLeave={(e) => { const el = e.currentTarget as HTMLElement; el.style.background = SURFACE.card; el.style.borderColor = SURFACE.border; el.style.borderLeftColor = sc.accent; el.style.transform = ""; }}>
                     <span style={{ flexShrink: 0, width: 10, height: 10, borderRadius: "50%", background: sc.accent, boxShadow: `0 0 0 4px ${sc.chipBg}` }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
-                          {originShort} <span style={{ color: "#94a3b8", display: "inline-flex", verticalAlign: "middle" }}><ArrowRightIcon size={12} /></span> {destShort}
+                        <span style={{ fontSize: 14, fontWeight: 700, color: SURFACE.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
+                          {originShort} <span style={{ color: SURFACE.textFaint, display: "inline-flex", verticalAlign: "middle" }}><ArrowRightIcon size={12} /></span> {destShort}
                         </span>
                         <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 99, background: sc.chipBg, border: `1px solid ${sc.chipBorder}`, color: sc.accent }}>
                           {STATUS_LABEL[trip.status || "SCHEDULED"] || trip.status}
                         </span>
                       </div>
-                      <p style={{ fontSize: 12, color: "#64748b", margin: "4px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{meta}</p>
+                      <p style={{ fontSize: 12, color: SURFACE.textMuted, margin: "4px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{meta}</p>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 14, flexShrink: 0 }}>
                       <div style={{ textAlign: "right" }}>
-                        <p style={{ fontSize: 11.5, color: "#475569", margin: 0, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{formatDate(when)}</p>
+                        <p style={{ fontSize: 11.5, color: SURFACE.textSecondary, margin: 0, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{formatDate(when)}</p>
                         {trip.tripCost != null && (
-                          <p style={{ fontSize: 12.5, fontWeight: 800, color: "#0a7a6b", margin: "2px 0 0" }}>${Number(trip.tripCost).toLocaleString("es-CL")}</p>
+                          <p style={{ fontSize: 12.5, fontWeight: 800, color: BRAND.tealInk, margin: "2px 0 0" }}>${Number(trip.tripCost).toLocaleString("es-CL")}</p>
                         )}
                       </div>
-                      <ChevronRightIcon size={16} color="#cbd5e1" strokeWidth={2} style={{ flexShrink: 0 }} />
+                      <ChevronRightIcon size={16} color={SURFACE.borderStrong} strokeWidth={2} style={{ flexShrink: 0 }} />
                     </div>
                   </button>
                 );
@@ -1282,25 +1282,25 @@ export default function VehiclePositionsPage() {
         ]));
         const sc = STATUS_COLORS[trip.status ?? "COMPLETED"] ?? STATUS_COLORS.COMPLETED;
         const close = () => { setDetailTrip(null); setDetailPositions([]); setRouteExpanded(false); };
-        const stat = (label: string, value: string, color = "#0f172a") => (
-          <div style={{ padding: "12px 8px", borderRadius: "14px", background: "#f8fafc", border: "1px solid #f1f5f9", textAlign: "center" }}>
-            <p style={{ fontSize: "9px", fontWeight: 700, color: "#94a3b8", margin: 0, textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</p>
+        const stat = (label: string, value: string, color = SURFACE.text) => (
+          <div style={{ padding: "12px 8px", borderRadius: "14px", background: SURFACE.bg, border: "1px solid #f1f5f9", textAlign: "center" }}>
+            <p style={{ fontSize: "9px", fontWeight: 700, color: SURFACE.textFaint, margin: 0, textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</p>
             <p style={{ fontSize: "18px", fontWeight: 800, color, margin: "4px 0 0", fontVariantNumeric: "tabular-nums" }}>{value}</p>
           </div>
         );
         const field = (label: string, value: string) => (
-          <div style={{ padding: "8px 10px", borderRadius: "10px", background: "#f8fafc", border: "1px solid #f1f5f9" }}>
-            <p style={{ fontSize: "9px", fontWeight: 700, color: "#94a3b8", margin: 0, textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</p>
-            <p style={{ fontSize: "12.5px", fontWeight: 600, color: "#0f172a", margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis" }}>{value}</p>
+          <div style={{ padding: "8px 10px", borderRadius: "10px", background: SURFACE.bg, border: "1px solid #f1f5f9" }}>
+            <p style={{ fontSize: "9px", fontWeight: 700, color: SURFACE.textFaint, margin: 0, textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</p>
+            <p style={{ fontSize: "12.5px", fontWeight: 600, color: SURFACE.text, margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis" }}>{value}</p>
           </div>
         );
         return (
           <div onClick={close}
             style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(15,23,42,0.5)", padding: "16px", backdropFilter: "blur(6px)" }}>
             <div onClick={(e) => e.stopPropagation()}
-              style={{ background: "#ffffff", width: "100%", maxWidth: "960px", maxHeight: "92vh", borderRadius: "22px", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 24px 72px rgba(15,23,42,0.28)" }}>
+              style={{ background: SURFACE.card, width: "100%", maxWidth: "960px", maxHeight: "92vh", borderRadius: "22px", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 24px 72px rgba(15,23,42,0.28)" }}>
               {/* Header */}
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", padding: "18px 22px 14px", background: "linear-gradient(135deg,#041a2e,#062240)", color: "#fff", flexShrink: 0 }}>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", padding: "18px 22px 14px", background: "linear-gradient(135deg,#041a2e,#062240)", color: SURFACE.card, flexShrink: 0 }}>
                 <div style={{ minWidth: 0 }}>
                   <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", color: BRAND.tealLight, margin: 0 }}>Detalle del viaje</p>
                   <h3 style={{ fontSize: "17px", fontWeight: 800, margin: "4px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -1311,7 +1311,7 @@ export default function VehiclePositionsPage() {
                   </span>
                 </div>
                 <button type="button" onClick={close}
-                  style={{ flexShrink: 0, width: 34, height: 34, borderRadius: "10px", border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.08)", color: "#fff", cursor: "pointer", fontSize: "20px", lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
+                  style={{ flexShrink: 0, width: 34, height: 34, borderRadius: "10px", border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.08)", color: SURFACE.card, cursor: "pointer", fontSize: "20px", lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
               </div>
 
               {/* Body */}
@@ -1326,15 +1326,15 @@ export default function VehiclePositionsPage() {
                       ) : dirEmbed ? (
                         <iframe title={`route-${trip.id}`} src={dirEmbed} style={{ width: "100%", height: 460, border: "none", display: "block" }} loading="lazy" />
                       ) : (
-                        <div style={{ height: 180, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 8, color: "#94a3b8", fontSize: "13px", textAlign: "center", padding: "0 20px" }}>
+                        <div style={{ height: 180, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 8, color: SURFACE.textFaint, fontSize: "13px", textAlign: "center", padding: "0 20px" }}>
                           {detailLoading ? (
                             <><div style={{ width: 26, height: 26, borderRadius: "50%", border: "3px solid rgba(33,208,179,0.25)", borderTopColor: BRAND.teal, animation: "vp-spin 0.8s linear infinite" }} /><span>Cargando recorrido…</span></>
                           ) : (
-                            <><PinIcon size={26} color="#cbd5e1" strokeWidth={1.8} /><span>Sin recorrido GPS registrado para este viaje.</span></>
+                            <><PinIcon size={26} color={SURFACE.borderStrong} strokeWidth={1.8} /><span>Sin recorrido GPS registrado para este viaje.</span></>
                           )}
                         </div>
                       )}
-                      <span style={{ position: "absolute", top: 8, left: 8, fontSize: "9px", fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "#0a7a6b", background: "rgba(255,255,255,0.92)", border: "1px solid rgba(33,208,179,0.3)", borderRadius: 8, padding: "3px 8px" }}>
+                      <span style={{ position: "absolute", top: 8, left: 8, fontSize: "9px", fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: BRAND.tealInk, background: "rgba(255,255,255,0.92)", border: "1px solid rgba(33,208,179,0.3)", borderRadius: 8, padding: "3px 8px" }}>
                         {hasGps ? "Ruta realizada" : "Ruta estimada"}
                       </span>
                       {(hasGps || dirEmbed) && (
@@ -1351,7 +1351,7 @@ export default function VehiclePositionsPage() {
                 {/* Stats */}
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "8px" }}>
                   {stat("Distancia", km != null ? `${km.toFixed(1)} km` : (detailLoading ? "…" : "—"))}
-                  {stat("Valor", trip.tripCost != null ? `$${Number(trip.tripCost).toLocaleString("es-CL")}` : "—", "#0a7a6b")}
+                  {stat("Valor", trip.tripCost != null ? `$${Number(trip.tripCost).toLocaleString("es-CL")}` : "—", BRAND.tealInk)}
                   {stat("Duración", formatDuration(trip.startedAt, trip.completedAt))}
                   {stat("Pasajeros", (paxNames.length || pax) ? String(paxNames.length || pax) : "—")}
                 </div>
@@ -1381,7 +1381,7 @@ export default function VehiclePositionsPage() {
                 {event?.name && field("Evento", event.name)}
                 {trip.driverRating ? (
                   <div style={{ padding: "10px 12px", borderRadius: "12px", background: "#FFFBEB", border: "1px solid #FDE68A", display: "flex", alignItems: "center", gap: "10px" }}>
-                    <span style={{ display: "inline-flex", gap: 2, color: "#f59e0b" }}>{Array.from({ length: trip.driverRating }, (_, k) => <StarIcon key={k} size={16} />)}</span>
+                    <span style={{ display: "inline-flex", gap: 2, color: STATE.warning }}>{Array.from({ length: trip.driverRating }, (_, k) => <StarIcon key={k} size={16} />)}</span>
                     {trip.ratingComment && <span style={{ fontSize: "12px", color: "#92400E", fontStyle: "italic", flex: 1 }}>&ldquo;{trip.ratingComment}&rdquo;</span>}
                   </div>
                 ) : null}
@@ -1393,12 +1393,12 @@ export default function VehiclePositionsPage() {
                 {detailPositions.length > 0 && (
                   <a href={buildGoogleMapsLink(detailPositions[detailPositions.length - 1].lat, detailPositions[detailPositions.length - 1].lng)}
                     target="_blank" rel="noreferrer"
-                    style={{ padding: "9px 16px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "#fff", color: "#475569", fontSize: "13px", fontWeight: 600, textDecoration: "none" }}>
+                    style={{ padding: "9px 16px", borderRadius: "10px", border: "1px solid #e2e8f0", background: SURFACE.card, color: SURFACE.textSecondary, fontSize: "13px", fontWeight: 600, textDecoration: "none" }}>
                     Ver en Google Maps
                   </a>
                 )}
                 <button type="button" onClick={close}
-                  style={{ padding: "9px 20px", borderRadius: "10px", border: "none", background: `linear-gradient(135deg,${BRAND.teal},#14AE98)`, color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
+                  style={{ padding: "9px 20px", borderRadius: "10px", border: "none", background: `linear-gradient(135deg,${BRAND.teal},#14AE98)`, color: SURFACE.card, fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
                   Cerrar
                 </button>
               </div>
@@ -1417,7 +1417,7 @@ export default function VehiclePositionsPage() {
                       <ArrowLeftIcon size={14} strokeWidth={2.5} />
                       Volver
                     </button>
-                    <p style={{ fontSize: 13.5, fontWeight: 700, color: "#fff", margin: 0, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <p style={{ fontSize: 13.5, fontWeight: 700, color: SURFACE.card, margin: 0, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {(trip.origin?.split(",")[0] || "—")} → {(venue?.name || trip.destination?.split(",")[0] || "—")}
                     </p>
                   </div>
@@ -1428,7 +1428,7 @@ export default function VehiclePositionsPage() {
                   ) : dirEmbed ? (
                     <iframe title={`route-full-${trip.id}`} src={dirEmbed} style={{ flex: 1, width: "100%", border: "none" }} loading="lazy" />
                   ) : (
-                    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", fontSize: 13 }}>
+                    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: SURFACE.textFaint, fontSize: 13 }}>
                       Sin recorrido disponible.
                     </div>
                   )}
@@ -1441,25 +1441,25 @@ export default function VehiclePositionsPage() {
 
       {mapPreview && (
         <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(15,23,42,0.4)", padding: "16px", backdropFilter: "blur(4px)" }}>
-          <div style={{ background: "#ffffff", width: "100%", maxWidth: "900px", borderRadius: "20px", padding: "20px", boxShadow: "0 24px 64px rgba(15,23,42,0.22)" }}>
+          <div style={{ background: SURFACE.card, width: "100%", maxWidth: "900px", borderRadius: "20px", padding: "20px", boxShadow: "0 24px 64px rgba(15,23,42,0.22)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
               <div>
                 <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", color: BRAND.teal }}>{t("Tracking de viajes")}</p>
-                <h3 style={{ fontSize: "18px", fontWeight: 700, color: "#0f172a" }}>{mapPreview.title}</h3>
+                <h3 style={{ fontSize: "18px", fontWeight: 700, color: SURFACE.text }}>{mapPreview.title}</h3>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <a
                   href={buildGoogleMapsLink(mapPreview.lat, mapPreview.lng)}
                   target="_blank"
                   rel="noreferrer"
-                  style={{ padding: "8px 16px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "#ffffff", color: "#475569", fontSize: "13px", fontWeight: 600, textDecoration: "none" }}
+                  style={{ padding: "8px 16px", borderRadius: "10px", border: "1px solid #e2e8f0", background: SURFACE.card, color: SURFACE.textSecondary, fontSize: "13px", fontWeight: 600, textDecoration: "none" }}
                 >
                   {t("Ver en Google Maps")}
                 </a>
                 <button
                   type="button"
                   onClick={() => setMapPreview(null)}
-                  style={{ padding: "8px 16px", borderRadius: "10px", border: "none", background: BRAND.teal, color: "#ffffff", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}
+                  style={{ padding: "8px 16px", borderRadius: "10px", border: "none", background: BRAND.teal, color: SURFACE.card, fontSize: "13px", fontWeight: 600, cursor: "pointer" }}
                 >
                   {t("Cerrar")}
                 </button>

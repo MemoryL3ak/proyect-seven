@@ -75,7 +75,7 @@ import SofiaWidget from "@/components/SofiaWidget";
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
 import QrFullscreenOverlay from "@/components/QrFullscreenOverlay";
 import QRCode from "qrcode";
-import { BRAND, tripStatusMeta } from "@/lib/design";
+import { BRAND, tripStatusMeta, STATE, SURFACE } from "@/lib/design";
 
 type Athlete = {
   id: string;
@@ -404,7 +404,7 @@ export default function UserPortalPage() {
   useEffect(() => {
     if (!athlete) { setMealQrDataUrl(""); return; }
     const qrData = `Participante: ${athlete.fullName}\nID: ${athlete.id.slice(-6)}\nDelegación: ${delegation?.countryCode || "—"}`;
-    QRCode.toDataURL(qrData, { width: 220, margin: 1, color: { dark: BRAND.navyLight, light: "#ffffff" } })
+    QRCode.toDataURL(qrData, { width: 220, margin: 1, color: { dark: BRAND.navyLight, light: SURFACE.card } })
       .then(setMealQrDataUrl)
       .catch(() => setMealQrDataUrl(""));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -869,7 +869,7 @@ export default function UserPortalPage() {
     QRCode.toDataURL(activeClaim.qrToken, {
       width: 320,
       margin: 2,
-      color: { dark: "#1f2937", light: "#ffffff" },
+      color: { dark: "#1f2937", light: SURFACE.card },
       errorCorrectionLevel: "M",
     }).then(setCouponQrDataUrl).catch(() => setCouponQrDataUrl(""));
   }, [activeClaim]);
@@ -1264,7 +1264,7 @@ export default function UserPortalPage() {
             <span style={{ width:7,height:7,borderRadius:"50%",background:BRAND.teal,boxShadow:`0 0 10px ${BRAND.teal}`,display:"inline-block",animation:"pu-pulse 2s ease-in-out infinite" }} />
             <span style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:BRAND.teal }}>Portal de Participantes</span>
           </div>
-          <h1 style={{ fontSize:"clamp(28px,3vw,44px)",fontWeight:800,lineHeight:1.1,color:"#f8fafc",letterSpacing:"-0.02em",margin:0 }}>
+          <h1 style={{ fontSize:"clamp(28px,3vw,44px)",fontWeight:800,lineHeight:1.1,color:SURFACE.bg,letterSpacing:"-0.02em",margin:0 }}>
             Tu itinerario<br />
             <span style={{ background:`linear-gradient(90deg,${BRAND.teal} 0%,${BRAND.tealLight} 40%,${BRAND.teal} 80%)`,backgroundSize:"200% auto",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",animation:"pu-shimmer 4s linear infinite" }}>en tiempo real</span>
           </h1>
@@ -1531,7 +1531,7 @@ export default function UserPortalPage() {
                   </span>
                 )}
                 {delegation && (
-                  <span style={{ fontSize:"11px",fontWeight:600,padding:"4px 12px",borderRadius:"20px",background:"#f1f5f9",color:"#334155",border:"1px solid #dde3ed",animation:"db-badge .4s cubic-bezier(0.16,1,0.3,1) both",animationDelay:".3s" }}>
+                  <span style={{ fontSize:"11px",fontWeight:600,padding:"4px 12px",borderRadius:"20px",background:SURFACE.borderMuted,color:SURFACE.textStrong,border:"1px solid #dde3ed",animation:"db-badge .4s cubic-bezier(0.16,1,0.3,1) both",animationDelay:".3s" }}>
                     {countryLabels[delegation.countryCode] || delegation.countryCode}
                   </span>
                 )}
@@ -1558,7 +1558,7 @@ export default function UserPortalPage() {
                 <p style={{ fontSize:9.5,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.tealLight,margin:0 }}>
                   {trip.status==="EN_ROUTE" ? "En ruta a recogerte" : `Rumbo a ${trip.destination || "tu destino"}`}
                 </p>
-                <p style={{ fontSize:14.5,fontWeight:800,color:"#fff",margin:"1px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                <p style={{ fontSize:14.5,fontWeight:800,color:SURFACE.card,margin:"1px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
                   {trip.status==="EN_ROUTE" ? "Tu conductor está en camino" : "Viaje en curso"}
                 </p>
                 {driverEta && (
@@ -1584,7 +1584,7 @@ export default function UserPortalPage() {
         {activeTab === "itinerario" && isChief && (
           <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
             {/* Flight info */}
-            <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+            <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
               <div style={{ padding:"12px 14px",borderBottom:"1px solid #f1f5f9",display:"flex",alignItems:"center",gap:10 }}>
                 <IcoPlane />
                 <span style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.teal }}>Vuelo</span>
@@ -1592,15 +1592,15 @@ export default function UserPortalPage() {
               <div style={{ padding:"12px 14px" }}>
                 {flightLabel ? (
                   <>
-                    <p style={{ fontSize:15,fontWeight:700,color:"#0f172a",margin:"0 0 4px" }}>{flightLabel}</p>
-                    {(athlete.arrivalTime || flight?.arrivalTime) && <p style={{ fontSize:12,color:"#64748b",margin:"0 0 2px" }}>Arribo: {fmt(athlete.arrivalTime || flight?.arrivalTime)}</p>}
-                    {athlete.origin && <p style={{ fontSize:12,color:"#64748b",margin:0 }}>Origen: {athlete.origin}</p>}
+                    <p style={{ fontSize:15,fontWeight:700,color:SURFACE.text,margin:"0 0 4px" }}>{flightLabel}</p>
+                    {(athlete.arrivalTime || flight?.arrivalTime) && <p style={{ fontSize:12,color:SURFACE.textMuted,margin:"0 0 2px" }}>Arribo: {fmt(athlete.arrivalTime || flight?.arrivalTime)}</p>}
+                    {athlete.origin && <p style={{ fontSize:12,color:SURFACE.textMuted,margin:0 }}>Origen: {athlete.origin}</p>}
                   </>
-                ) : <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>Sin vuelo asignado</p>}
+                ) : <p style={{ fontSize:13,color:SURFACE.textFaint,margin:0 }}>Sin vuelo asignado</p>}
               </div>
             </div>
             {/* Hotel info */}
-            <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+            <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
               <div style={{ padding:"12px 14px",borderBottom:"1px solid #f1f5f9",display:"flex",alignItems:"center",gap:10 }}>
                 <IcoHotel />
                 <span style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.tealDark }}>Hotel</span>
@@ -1608,41 +1608,41 @@ export default function UserPortalPage() {
               <div style={{ padding:"12px 14px" }}>
                 {hotel?.name ? (
                   <>
-                    <p style={{ fontSize:15,fontWeight:700,color:"#0f172a",margin:"0 0 6px" }}>{hotel.name}</p>
+                    <p style={{ fontSize:15,fontWeight:700,color:SURFACE.text,margin:"0 0 6px" }}>{hotel.name}</p>
                     <div style={{ display:"flex",flexWrap:"wrap",gap:4 }}>
                       {hotelRoom_ && <span style={{ fontSize:10,padding:"3px 8px",borderRadius:6,background:"#f0fdf8",color:BRAND.tealInk,border:"1px solid rgba(33,208,179,0.2)",fontWeight:600 }}>Hab. {hotelRoom_}</span>}
-                      {hotelBed_ && <span style={{ fontSize:10,padding:"3px 8px",borderRadius:6,background:"#f1f5f9",color:"#475569",border:"1px solid #e2e8f0" }}>Cama {hotelBed_}</span>}
+                      {hotelBed_ && <span style={{ fontSize:10,padding:"3px 8px",borderRadius:6,background:SURFACE.borderMuted,color:SURFACE.textSecondary,border:"1px solid #e2e8f0" }}>Cama {hotelBed_}</span>}
                     </div>
                     {/* Info de check-in / check-out */}
                     <div style={{ marginTop:10,display:"flex",flexDirection:"column",gap:4,borderTop:"1px solid #f1f5f9",paddingTop:8 }}>
                       <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between" }}>
-                        <span style={{ fontSize:11,color:"#64748b" }}>Check-in</span>
-                        <span style={{ fontSize:11.5,fontWeight:700,color: hotelAssignment?.checkinAt ? BRAND.tealInk : "#94a3b8" }}>{hotelAssignment?.checkinAt ? fmt(hotelAssignment.checkinAt) : "Pendiente"}</span>
+                        <span style={{ fontSize:11,color:SURFACE.textMuted }}>Check-in</span>
+                        <span style={{ fontSize:11.5,fontWeight:700,color: hotelAssignment?.checkinAt ? BRAND.tealInk : SURFACE.textFaint }}>{hotelAssignment?.checkinAt ? fmt(hotelAssignment.checkinAt) : "Pendiente"}</span>
                       </div>
                       <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between" }}>
-                        <span style={{ fontSize:11,color:"#64748b" }}>Check-out</span>
-                        <span style={{ fontSize:11.5,fontWeight:700,color: hotelAssignment?.checkoutAt ? "#d97706" : "#94a3b8" }}>
+                        <span style={{ fontSize:11,color:SURFACE.textMuted }}>Check-out</span>
+                        <span style={{ fontSize:11.5,fontWeight:700,color: hotelAssignment?.checkoutAt ? "#d97706" : SURFACE.textFaint }}>
                           {hotelAssignment?.checkoutAt ? fmt(hotelAssignment.checkoutAt) : "Pendiente"}
                         </span>
                       </div>
                     </div>
                   </>
-                ) : <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>Sin hotel asignado</p>}
+                ) : <p style={{ fontSize:13,color:SURFACE.textFaint,margin:0 }}>Sin hotel asignado</p>}
               </div>
             </div>
             {/* Check-ins */}
-            <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",padding:"12px 14px" }}>
-              <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"#475569",margin:"0 0 10px" }}>Check-ins · {checkinsDone}/{checkins.length}</p>
+            <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",padding:"12px 14px" }}>
+              <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:SURFACE.textSecondary,margin:"0 0 10px" }}>Check-ins · {checkinsDone}/{checkins.length}</p>
               <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
                 {checkins.map(({ label, ts }) => {
                   const done = !!fmt(ts);
                   return (
-                    <div key={label} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 10px",borderRadius:10,background:done?"rgba(33,208,179,0.04)":"#f8fafc",border:`1px solid ${done?"rgba(33,208,179,0.2)":"#f1f5f9"}` }}>
+                    <div key={label} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 10px",borderRadius:10,background:done?"rgba(33,208,179,0.04)":SURFACE.bg,border:`1px solid ${done?"rgba(33,208,179,0.2)":"#f1f5f9"}` }}>
                       <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-                        <div style={{ width:8,height:8,borderRadius:"50%",background:done?BRAND.teal:"#cbd5e1" }} />
-                        <span style={{ fontSize:12,color:done?"#0f172a":"#94a3b8",fontWeight:done?600:400 }}>{label}</span>
+                        <div style={{ width:8,height:8,borderRadius:"50%",background:done?BRAND.teal:SURFACE.borderStrong }} />
+                        <span style={{ fontSize:12,color:done?SURFACE.text:SURFACE.textFaint,fontWeight:done?600:400 }}>{label}</span>
                       </div>
-                      {done ? <CheckIcon size={14} color={BRAND.teal} strokeWidth={2.5} /> : <span style={{ fontSize:9,color:"#cbd5e1" }}>Pendiente</span>}
+                      {done ? <CheckIcon size={14} color={BRAND.teal} strokeWidth={2.5} /> : <span style={{ fontSize:9,color:SURFACE.borderStrong }}>Pendiente</span>}
                     </div>
                   );
                 })}
@@ -1667,17 +1667,17 @@ export default function UserPortalPage() {
               });
               const flights = Array.from(byFlight.values()).sort((a, b) => new Date(a.arrival || 0).getTime() - new Date(b.arrival || 0).getTime());
               return (
-                <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+                <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
                   <div style={{ padding:"12px 14px",borderBottom:"1px solid #f1f5f9",display:"flex",alignItems:"center",gap:10 }}>
                     <IcoPlane />
                     <span style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.teal }}>Vuelos de la delegación</span>
                   </div>
                   <div style={{ padding:"12px 14px",display:"flex",flexDirection:"column",gap:8 }}>
-                    {flights.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>Sin vuelos asignados a la delegación</p>}
+                    {flights.length === 0 && <p style={{ fontSize:13,color:SURFACE.textFaint,margin:0 }}>Sin vuelos asignados a la delegación</p>}
                     {flights.map(f => (
-                      <div key={f.label} style={{ padding:"10px 12px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                        <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0 }}>{f.label}</p>
-                        <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 6px" }}>
+                      <div key={f.label} style={{ padding:"10px 12px",borderRadius:10,background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
+                        <p style={{ fontSize:13,fontWeight:700,color:SURFACE.text,margin:0 }}>{f.label}</p>
+                        <p style={{ fontSize:11,color:SURFACE.textMuted,margin:"2px 0 6px" }}>
                           {f.arrival ? `Arribo: ${fmt(f.arrival)}` : "Sin horario"}{f.origin ? ` · Origen: ${f.origin}` : ""}
                         </p>
                         <div style={{ display:"flex",flexWrap:"wrap",gap:4 }}>
@@ -1686,7 +1686,7 @@ export default function UserPortalPage() {
                       </div>
                     ))}
                     {noFlight.length > 0 && (
-                      <p style={{ fontSize:11,color:"#94a3b8",margin:0 }}>Sin vuelo asignado: {noFlight.join(", ")}</p>
+                      <p style={{ fontSize:11,color:SURFACE.textFaint,margin:0 }}>Sin vuelo asignado: {noFlight.join(", ")}</p>
                     )}
                   </div>
                 </div>
@@ -1706,16 +1706,16 @@ export default function UserPortalPage() {
               });
               const hotels = Array.from(byHotel.values()).sort((a, b) => a.name.localeCompare(b.name));
               return (
-                <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+                <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
                   <div style={{ padding:"12px 14px",borderBottom:"1px solid #f1f5f9",display:"flex",alignItems:"center",gap:10 }}>
                     <IcoHotel />
                     <span style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.tealDark }}>Hoteles de la delegación</span>
                   </div>
                   <div style={{ padding:"12px 14px",display:"flex",flexDirection:"column",gap:8 }}>
-                    {hotels.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>Sin hoteles asignados a la delegación</p>}
+                    {hotels.length === 0 && <p style={{ fontSize:13,color:SURFACE.textFaint,margin:0 }}>Sin hoteles asignados a la delegación</p>}
                     {hotels.map(h => (
-                      <div key={h.name} style={{ padding:"10px 12px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9" }}>
-                        <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:"0 0 6px" }}>{h.name} <span style={{ fontSize:11,fontWeight:600,color:"#64748b" }}>· {h.members.length} persona(s)</span></p>
+                      <div key={h.name} style={{ padding:"10px 12px",borderRadius:10,background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
+                        <p style={{ fontSize:13,fontWeight:700,color:SURFACE.text,margin:"0 0 6px" }}>{h.name} <span style={{ fontSize:11,fontWeight:600,color:SURFACE.textMuted }}>· {h.members.length} persona(s)</span></p>
                         <div style={{ display:"flex",flexWrap:"wrap",gap:4 }}>
                           {h.members.map(mm => (
                             <span key={mm.name} style={{ fontSize:10,fontWeight:600,padding:"1px 6px",borderRadius:4,background:"#f0fdf8",color:BRAND.tealInk,border:"1px solid rgba(33,208,179,0.2)" }}>
@@ -1726,7 +1726,7 @@ export default function UserPortalPage() {
                       </div>
                     ))}
                     {noHotel.length > 0 && (
-                      <p style={{ fontSize:11,color:"#94a3b8",margin:0 }}>Sin hotel asignado: {noHotel.join(", ")}</p>
+                      <p style={{ fontSize:11,color:SURFACE.textFaint,margin:0 }}>Sin hotel asignado: {noHotel.join(", ")}</p>
                     )}
                   </div>
                 </div>
@@ -1744,8 +1744,8 @@ export default function UserPortalPage() {
                 {(["curso","historial"] as const).map(sub => (
                   <button key={sub} type="button" onClick={() => setActSubTab(sub)}
                     style={{ flex:1,padding:"8px 0",borderRadius:10,border:"none",fontSize:12,fontWeight:700,cursor:"pointer",
-                      background:actSubTab===sub?`linear-gradient(135deg,${BRAND.navy},${BRAND.navyLight})`:"#fff",
-                      color:actSubTab===sub?BRAND.teal:"#64748b",
+                      background:actSubTab===sub?`linear-gradient(135deg,${BRAND.navy},${BRAND.navyLight})`:SURFACE.card,
+                      color:actSubTab===sub?BRAND.teal:SURFACE.textMuted,
                       boxShadow:actSubTab===sub?"0 2px 8px rgba(33,208,179,0.2)":"0 1px 4px rgba(0,0,0,0.04)" }}>
                     {sub === "curso" ? "En curso" : "Historial"}
                   </button>
@@ -1754,7 +1754,7 @@ export default function UserPortalPage() {
             )}
             {(actSubTab === "curso" || isTA) && (
               trip && ["SCHEDULED","EN_ROUTE","PICKED_UP"].includes(trip.status ?? "") ? (
-                <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",padding:"14px",cursor:"pointer" }} onClick={() => setShowTripModal(true)}>
+                <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",padding:"14px",cursor:"pointer" }} onClick={() => setShowTripModal(true)}>
                   <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:10 }}>
                     {trip.status && <span style={{ padding:"3px 10px",borderRadius:20,fontSize:11,fontWeight:700,
                       background:tripStatusMeta(trip.status).bg,
@@ -1766,43 +1766,43 @@ export default function UserPortalPage() {
                       direcciones largas ya no llenan la tarjeta de texto. */}
                   <div style={{ display:"flex",flexDirection:"column",gap:3,margin:"0 0 6px" }}>
                     <div style={{ display:"flex",alignItems:"baseline",gap:6,minWidth:0 }}>
-                      <span style={{ fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:"#94a3b8",flexShrink:0,width:48 }}>ORIGEN</span>
-                      <span style={{ fontSize:13,fontWeight:700,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{trip.origin || "–"}</span>
+                      <span style={{ fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:SURFACE.textFaint,flexShrink:0,width:48 }}>ORIGEN</span>
+                      <span style={{ fontSize:13,fontWeight:700,color:SURFACE.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{trip.origin || "–"}</span>
                     </div>
                     <div style={{ display:"flex",alignItems:"baseline",gap:6,minWidth:0 }}>
-                      <span style={{ fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:"#94a3b8",flexShrink:0,width:48 }}>DESTINO</span>
-                      <span style={{ fontSize:13,fontWeight:700,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{trip.destination || "–"}</span>
+                      <span style={{ fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:SURFACE.textFaint,flexShrink:0,width:48 }}>DESTINO</span>
+                      <span style={{ fontSize:13,fontWeight:700,color:SURFACE.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{trip.destination || "–"}</span>
                     </div>
                   </div>
-                  {trip.scheduledAt && <p style={{ fontSize:12,color:"#64748b",margin:"0 0 6px" }}>Programado: {fmt(trip.scheduledAt)}</p>}
-                  {driver?.fullName && <p style={{ fontSize:12,color:"#334155",margin:0 }}>Conductor: {driver.fullName}</p>}
+                  {trip.scheduledAt && <p style={{ fontSize:12,color:SURFACE.textMuted,margin:"0 0 6px" }}>Programado: {fmt(trip.scheduledAt)}</p>}
+                  {driver?.fullName && <p style={{ fontSize:12,color:SURFACE.textStrong,margin:0 }}>Conductor: {driver.fullName}</p>}
                   {driverEta && trip.status === "EN_ROUTE" && <p style={{ fontSize:12,fontWeight:700,color:"#0ea5c8",margin:"4px 0 0" }}>~{driverEta.duration} · {driverEta.distance}</p>}
-                  <p style={{ fontSize:11,color:"#94a3b8",margin:"6px 0 0" }}>Toca para ver el detalle completo</p>
+                  <p style={{ fontSize:11,color:SURFACE.textFaint,margin:"6px 0 0" }}>Toca para ver el detalle completo</p>
                 </div>
-              ) : <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:20 }}>Sin viajes activos</p>
+              ) : <p style={{ fontSize:13,color:SURFACE.textFaint,textAlign:"center",padding:20 }}>Sin viajes activos</p>
             )}
             {!isTA && actSubTab === "historial" && (() => {
               const completed = trip && ["COMPLETED","DROPPED_OFF"].includes(trip.status ?? "") ? [trip] : [];
               return completed.length > 0 ? (
                 <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
                   {completed.map(t => (
-                    <div key={t.id} style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",padding:"12px 14px" }}>
+                    <div key={t.id} style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",padding:"12px 14px" }}>
                       <div style={{ display:"flex",flexDirection:"column",gap:2,margin:"0 0 4px" }}>
                         <div style={{ display:"flex",alignItems:"baseline",gap:6,minWidth:0 }}>
-                          <span style={{ fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:"#94a3b8",flexShrink:0,width:48 }}>ORIGEN</span>
-                          <span style={{ fontSize:12.5,fontWeight:700,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{t.origin || "–"}</span>
+                          <span style={{ fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:SURFACE.textFaint,flexShrink:0,width:48 }}>ORIGEN</span>
+                          <span style={{ fontSize:12.5,fontWeight:700,color:SURFACE.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{t.origin || "–"}</span>
                         </div>
                         <div style={{ display:"flex",alignItems:"baseline",gap:6,minWidth:0 }}>
-                          <span style={{ fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:"#94a3b8",flexShrink:0,width:48 }}>DESTINO</span>
-                          <span style={{ fontSize:12.5,fontWeight:700,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{t.destination || "–"}</span>
+                          <span style={{ fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:SURFACE.textFaint,flexShrink:0,width:48 }}>DESTINO</span>
+                          <span style={{ fontSize:12.5,fontWeight:700,color:SURFACE.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{t.destination || "–"}</span>
                         </div>
                       </div>
-                      <p style={{ fontSize:11,color:"#64748b",margin:"0 0 4px" }}>Completado: {fmt(t.completedAt)}</p>
-                      {t.driverRating && <p style={{ fontSize:11,color:"#f59e0b",margin:0 }}><span style={{ display:"inline-flex",gap:1,verticalAlign:"-1px" }}>{Array.from({ length: t.driverRating }, (_, k) => <StarIcon key={k} size={11} />)}</span> {t.ratingComment && `"${t.ratingComment}"`}</p>}
+                      <p style={{ fontSize:11,color:SURFACE.textMuted,margin:"0 0 4px" }}>Completado: {fmt(t.completedAt)}</p>
+                      {t.driverRating && <p style={{ fontSize:11,color:STATE.warning,margin:0 }}><span style={{ display:"inline-flex",gap:1,verticalAlign:"-1px" }}>{Array.from({ length: t.driverRating }, (_, k) => <StarIcon key={k} size={11} />)}</span> {t.ratingComment && `"${t.ratingComment}"`}</p>}
                     </div>
                   ))}
                 </div>
-              ) : <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:20 }}>Sin viajes completados</p>;
+              ) : <p style={{ fontSize:13,color:SURFACE.textFaint,textAlign:"center",padding:20 }}>Sin viajes completados</p>;
             })()}
             {/* Jefe de delegación: viajes de su disciplina / delegación */}
             {isChief && (() => {
@@ -1825,13 +1825,13 @@ export default function UserPortalPage() {
                 )
                 .sort((a, b) => new Date(b.scheduledAt || 0).getTime() - new Date(a.scheduledAt || 0).getTime());
               return (
-                <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+                <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
                   <div style={{ padding:"12px 14px",borderBottom:"1px solid #f1f5f9" }}>
                     <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.teal,margin:0 }}>Viajes de mi delegación</p>
-                    <p style={{ fontSize:11,color:"#94a3b8",margin:"3px 0 0" }}>Traslados de los miembros y disciplinas de tu delegación</p>
+                    <p style={{ fontSize:11,color:SURFACE.textFaint,margin:"3px 0 0" }}>Traslados de los miembros y disciplinas de tu delegación</p>
                   </div>
                   <div style={{ padding:"12px 14px",display:"flex",flexDirection:"column",gap:8 }}>
-                    {relevant.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",margin:0,textAlign:"center",padding:8 }}>Sin viajes registrados para tu delegación</p>}
+                    {relevant.length === 0 && <p style={{ fontSize:13,color:SURFACE.textFaint,margin:0,textAlign:"center",padding:8 }}>Sin viajes registrados para tu delegación</p>}
                     {relevant.slice(0, 30).map(tr => {
                       const st = tripStatusMeta(tr.status);
                       const passengers = (tr.athleteNames || []).filter(n => n);
@@ -1849,20 +1849,20 @@ export default function UserPortalPage() {
                       };
                       return (
                         <div key={tr.id} onClick={toggle}
-                          style={{ padding:"10px 12px",borderRadius:10,background:open?"#fff":"#f8fafc",cursor:"pointer",
+                          style={{ padding:"10px 12px",borderRadius:10,background:open?SURFACE.card:SURFACE.bg,cursor:"pointer",
                             border:`1px solid ${open?"rgba(33,208,179,0.35)":"#f1f5f9"}`,
                             boxShadow:open?"0 2px 10px rgba(33,208,179,0.12)":"none",transition:"all 150ms ease" }}>
                           <div style={{ display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:4 }}>
                             <span style={{ padding:"2px 8px",borderRadius:20,fontSize:10,fontWeight:700,background:st.bg,color:st.color }}>{t(st.label)}</span>
                             {tr.discipline && <span style={{ fontSize:10,fontWeight:600,padding:"1px 6px",borderRadius:4,background:"rgba(33,208,179,0.1)",color:BRAND.tealInk }}>{tr.discipline}</span>}
-                            <span style={{ marginLeft:"auto",display:"flex",alignItems:"center",color:"#94a3b8",transform:open?"rotate(180deg)":"none",transition:"transform 150ms ease" }}>
+                            <span style={{ marginLeft:"auto",display:"flex",alignItems:"center",color:SURFACE.textFaint,transform:open?"rotate(180deg)":"none",transition:"transform 150ms ease" }}>
                               <ChevronDownIcon size={14} strokeWidth={2.2} />
                             </span>
                           </div>
-                          <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0,...(open?{}:{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}) }}>{tr.origin || "–"} → {tr.destination || "–"}</p>
-                          {tr.scheduledAt && <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0" }}>{fmt(tr.scheduledAt)}</p>}
+                          <p style={{ fontSize:13,fontWeight:700,color:SURFACE.text,margin:0,...(open?{}:{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}) }}>{tr.origin || "–"} → {tr.destination || "–"}</p>
+                          {tr.scheduledAt && <p style={{ fontSize:11,color:SURFACE.textMuted,margin:"2px 0 0" }}>{fmt(tr.scheduledAt)}</p>}
                           {!open && passengers.length > 0 && (
-                            <p style={{ fontSize:11,color:"#94a3b8",margin:"4px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                            <p style={{ fontSize:11,color:SURFACE.textFaint,margin:"4px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
                               {passengers.slice(0, 4).join(", ")}{passengers.length > 4 ? ` +${passengers.length - 4}` : ""}
                             </p>
                           )}
@@ -1871,12 +1871,12 @@ export default function UserPortalPage() {
                               {/* Recorrido completo sin recorte */}
                               <div style={{ display:"flex",flexDirection:"column",gap:3 }}>
                                 <div style={{ display:"flex",alignItems:"baseline",gap:6 }}>
-                                  <span style={{ fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:"#94a3b8",flexShrink:0,width:52 }}>{t("ORIGEN")}</span>
-                                  <span style={{ fontSize:12,fontWeight:600,color:"#0f172a" }}>{tr.origin || "–"}</span>
+                                  <span style={{ fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:SURFACE.textFaint,flexShrink:0,width:52 }}>{t("ORIGEN")}</span>
+                                  <span style={{ fontSize:12,fontWeight:600,color:SURFACE.text }}>{tr.origin || "–"}</span>
                                 </div>
                                 <div style={{ display:"flex",alignItems:"baseline",gap:6 }}>
-                                  <span style={{ fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:"#94a3b8",flexShrink:0,width:52 }}>{t("DESTINO")}</span>
-                                  <span style={{ fontSize:12,fontWeight:600,color:"#0f172a" }}>{tr.destination || "–"}</span>
+                                  <span style={{ fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:SURFACE.textFaint,flexShrink:0,width:52 }}>{t("DESTINO")}</span>
+                                  <span style={{ fontSize:12,fontWeight:600,color:SURFACE.text }}>{tr.destination || "–"}</span>
                                 </div>
                               </div>
                               {/* Línea de tiempo del viaje */}
@@ -1884,19 +1884,19 @@ export default function UserPortalPage() {
                                 <div style={{ display:"flex",flexDirection:"column",gap:2 }}>
                                   {tr.scheduledAt && (
                                     <div style={{ display:"flex",justifyContent:"space-between" }}>
-                                      <span style={{ fontSize:11,color:"#64748b" }}>{t("Programado")}</span>
-                                      <span style={{ fontSize:11,fontWeight:600,color:"#334155" }}>{fmt(tr.scheduledAt)}</span>
+                                      <span style={{ fontSize:11,color:SURFACE.textMuted }}>{t("Programado")}</span>
+                                      <span style={{ fontSize:11,fontWeight:600,color:SURFACE.textStrong }}>{fmt(tr.scheduledAt)}</span>
                                     </div>
                                   )}
                                   {tr.startedAt && (
                                     <div style={{ display:"flex",justifyContent:"space-between" }}>
-                                      <span style={{ fontSize:11,color:"#64748b" }}>{t("Iniciado")}</span>
-                                      <span style={{ fontSize:11,fontWeight:600,color:"#334155" }}>{fmt(tr.startedAt)}</span>
+                                      <span style={{ fontSize:11,color:SURFACE.textMuted }}>{t("Iniciado")}</span>
+                                      <span style={{ fontSize:11,fontWeight:600,color:SURFACE.textStrong }}>{fmt(tr.startedAt)}</span>
                                     </div>
                                   )}
                                   {tr.completedAt && (
                                     <div style={{ display:"flex",justifyContent:"space-between" }}>
-                                      <span style={{ fontSize:11,color:"#64748b" }}>{t("Completado")}</span>
+                                      <span style={{ fontSize:11,color:SURFACE.textMuted }}>{t("Completado")}</span>
                                       <span style={{ fontSize:11,fontWeight:600,color:BRAND.tealInk }}>{fmt(tr.completedAt)}</span>
                                     </div>
                                   )}
@@ -1905,22 +1905,22 @@ export default function UserPortalPage() {
                               {/* Conductor (se resuelve al expandir) */}
                               {tr.driverId && (
                                 <div style={{ display:"flex",justifyContent:"space-between" }}>
-                                  <span style={{ fontSize:11,color:"#64748b" }}>{t("Conductor")}</span>
-                                  <span style={{ fontSize:11,fontWeight:600,color:"#334155" }}>
+                                  <span style={{ fontSize:11,color:SURFACE.textMuted }}>{t("Conductor")}</span>
+                                  <span style={{ fontSize:11,fontWeight:600,color:SURFACE.textStrong }}>
                                     {portalDrivers === null ? "…" : tripDriver?.fullName || t("Sin información")}
                                   </span>
                                 </div>
                               )}
                               {tr.tripType && (
                                 <div style={{ display:"flex",justifyContent:"space-between" }}>
-                                  <span style={{ fontSize:11,color:"#64748b" }}>{t("Tipo de viaje")}</span>
-                                  <span style={{ fontSize:11,fontWeight:600,color:"#334155" }}>{tr.tripType}</span>
+                                  <span style={{ fontSize:11,color:SURFACE.textMuted }}>{t("Tipo de viaje")}</span>
+                                  <span style={{ fontSize:11,fontWeight:600,color:SURFACE.textStrong }}>{tr.tripType}</span>
                                 </div>
                               )}
                               {/* Todos los pasajeros */}
                               {passengers.length > 0 && (
                                 <div>
-                                  <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:"#94a3b8",margin:"0 0 4px" }}>
+                                  <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:SURFACE.textFaint,margin:"0 0 4px" }}>
                                     {t("Pasajeros")} · {passengers.length}
                                   </p>
                                   <div style={{ display:"flex",flexWrap:"wrap",gap:4 }}>
@@ -1931,10 +1931,10 @@ export default function UserPortalPage() {
                                 </div>
                               )}
                               {tr.notes && (
-                                <p style={{ fontSize:11,color:"#64748b",margin:0,fontStyle:"italic" }}>{tr.notes}</p>
+                                <p style={{ fontSize:11,color:SURFACE.textMuted,margin:0,fontStyle:"italic" }}>{tr.notes}</p>
                               )}
                               {tr.driverRating ? (
-                                <p style={{ fontSize:11,color:"#f59e0b",margin:0 }}><span style={{ display:"inline-flex",gap:1,verticalAlign:"-1px" }}>{Array.from({ length: tr.driverRating }, (_, k) => <StarIcon key={k} size={11} />)}</span>{tr.ratingComment ? ` "${tr.ratingComment}"` : ""}</p>
+                                <p style={{ fontSize:11,color:STATE.warning,margin:0 }}><span style={{ display:"inline-flex",gap:1,verticalAlign:"-1px" }}>{Array.from({ length: tr.driverRating }, (_, k) => <StarIcon key={k} size={11} />)}</span>{tr.ratingComment ? ` "${tr.ratingComment}"` : ""}</p>
                               ) : null}
                             </div>
                           )}
@@ -1958,11 +1958,11 @@ export default function UserPortalPage() {
           type CalType = "ENTRENAMIENTO" | "COMPETENCIA" | "MEDICO" | "VIAJE" | "CEREMONIA" | "DESCANSO";
           const TYPE_CFG: Record<CalType,{ label:string; color:string; soft:string; icon:IconComponent }> = {
             ENTRENAMIENTO: { label:"Entrenamiento", color:"#16a34a", soft:"#dcfce7", icon:DumbbellIcon },
-            COMPETENCIA:   { label:"Competencia",   color:"#dc2626", soft:"#fee2e2", icon:MedalIcon },
+            COMPETENCIA:   { label:"Competencia",   color:STATE.dangerText, soft:"#fee2e2", icon:MedalIcon },
             MEDICO:        { label:"Médico",        color:"#7c3aed", soft:"#ede9fe", icon:HeartPulseIcon },
             VIAJE:         { label:"Viaje",         color:"#ea580c", soft:"#ffedd5", icon:PlaneIcon },
             CEREMONIA:     { label:"Ceremonia",     color:"#eab308", soft:"#fef9c3", icon:TrophyIcon },
-            DESCANSO:      { label:"Descanso",      color:"#2563eb", soft:"#dbeafe", icon:BedIcon },
+            DESCANSO:      { label:"Descanso",      color:STATE.infoText, soft:"#dbeafe", icon:BedIcon },
           };
           const classifyEvent = (name?: string | null): CalType => {
             const t = (name || "").toLowerCase();
@@ -2084,7 +2084,7 @@ export default function UserPortalPage() {
               {/* ════ Columna principal: agenda ════ */}
               <div style={{ flex:"1 1 340px",minWidth:0,display:"flex",flexDirection:"column",gap:12 }}>
                 {/* Barra de control: navegación mes + toggle vista */}
-                <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",padding:"12px 14px",display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"space-between",gap:10 }}>
+                <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",padding:"12px 14px",display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"space-between",gap:10 }}>
                   {(() => {
                     const dayWeek = calView==="semana" || calView==="dia";
                     const step = calView==="semana" ? 7 : 1;
@@ -2100,22 +2100,22 @@ export default function UserPortalPage() {
                         : cap1(calCursor.toLocaleDateString("es-CL",{weekday:"long",day:"2-digit",month:"long"}));
                     return (
                       <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-                        <button type="button" onClick={() => { const t=new Date(); goToDate(t); setCalSelectedDay(null); }} style={{ fontSize:12,fontWeight:700,color:"#0f172a",background:"#f1f5f9",border:"1px solid #e2e8f0",borderRadius:8,padding:"6px 12px",cursor:"pointer" }}>Hoy</button>
-                        <button type="button" onClick={() => { if(dayWeek){ shift(-1); } else { shiftMonth(-1); } }} style={{ background:"#fff",border:"1px solid #e2e8f0",borderRadius:8,cursor:"pointer",padding:6,display:"inline-flex" }}>
-                          <ChevronLeftIcon size={16} color="#64748b" strokeWidth={2} />
+                        <button type="button" onClick={() => { const t=new Date(); goToDate(t); setCalSelectedDay(null); }} style={{ fontSize:12,fontWeight:700,color:SURFACE.text,background:SURFACE.borderMuted,border:"1px solid #e2e8f0",borderRadius:8,padding:"6px 12px",cursor:"pointer" }}>Hoy</button>
+                        <button type="button" onClick={() => { if(dayWeek){ shift(-1); } else { shiftMonth(-1); } }} style={{ background:SURFACE.card,border:"1px solid #e2e8f0",borderRadius:8,cursor:"pointer",padding:6,display:"inline-flex" }}>
+                          <ChevronLeftIcon size={16} color={SURFACE.textMuted} strokeWidth={2} />
                         </button>
-                        <button type="button" onClick={() => { if(dayWeek){ shift(1); } else { shiftMonth(1); } }} style={{ background:"#fff",border:"1px solid #e2e8f0",borderRadius:8,cursor:"pointer",padding:6,display:"inline-flex" }}>
-                          <ChevronRightIcon size={16} color="#64748b" strokeWidth={2} />
+                        <button type="button" onClick={() => { if(dayWeek){ shift(1); } else { shiftMonth(1); } }} style={{ background:SURFACE.card,border:"1px solid #e2e8f0",borderRadius:8,cursor:"pointer",padding:6,display:"inline-flex" }}>
+                          <ChevronRightIcon size={16} color={SURFACE.textMuted} strokeWidth={2} />
                         </button>
-                        <span style={{ fontSize:14,fontWeight:800,color:"#0f172a" }}>{label}</span>
+                        <span style={{ fontSize:14,fontWeight:800,color:SURFACE.text }}>{label}</span>
                       </div>
                     );
                   })()}
-                  <div style={{ display:"flex",flexWrap:"wrap",background:"#f1f5f9",borderRadius:10,padding:3,gap:2 }}>
+                  <div style={{ display:"flex",flexWrap:"wrap",background:SURFACE.borderMuted,borderRadius:10,padding:3,gap:2 }}>
                     {([["gantt","Gantt"],["semana","Semana"],["dia","Día"],["agenda","Agenda"],["mes","Mes"]] as const).map(([v,label]) => (
                       <button key={v} type="button" onClick={() => setCalView(v)}
                         style={{ fontSize:12,fontWeight:700,padding:"5px 12px",borderRadius:8,border:"none",cursor:"pointer",
-                          background: calView===v ? BRAND.teal : "transparent", color: calView===v ? "#fff" : "#475569" }}>
+                          background: calView===v ? BRAND.teal : "transparent", color: calView===v ? SURFACE.card : SURFACE.textSecondary }}>
                         {label}
                       </button>
                     ))}
@@ -2124,9 +2124,9 @@ export default function UserPortalPage() {
 
                 {/* Vista MES: cuadrícula */}
                 {calView==="mes" && (
-                  <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",padding:"12px" }}>
+                  <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",padding:"12px" }}>
                     <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4,textAlign:"center" }}>
-                      {["L","M","M","J","V","S","D"].map((d,i) => <div key={i} style={{ fontSize:10,fontWeight:700,color:"#94a3b8",padding:4 }}>{d}</div>)}
+                      {["L","M","M","J","V","S","D"].map((d,i) => <div key={i} style={{ fontSize:10,fontWeight:700,color:SURFACE.textFaint,padding:4 }}>{d}</div>)}
                       {cells.map((day,i) => {
                         const dayItems = day ? inMonth.filter(it => it.date.getDate()===day) : [];
                         const isSel = day !== null && calSelectedDay===day;
@@ -2137,11 +2137,11 @@ export default function UserPortalPage() {
                             style={{ minHeight:64,padding:"4px",borderRadius:10,
                               border: isSel?`2px solid ${BRAND.teal}`:isTodayCell?`1px solid ${BRAND.teal}`:"1px solid #eef2f7",
                               cursor:day?"pointer":"default",
-                              background:isSel?"#f0fdfa":day?"#fff":"transparent",display:"flex",flexDirection:"column",alignItems:"flex-start",gap:3 }}>
-                            <span style={{ fontSize:12,fontWeight:(isSel||isTodayCell)?800:600,color:day?(isTodayCell?"#0e9384":"#0f172a"):"transparent" }}>{day||""}</span>
+                              background:isSel?"#f0fdfa":day?SURFACE.card:"transparent",display:"flex",flexDirection:"column",alignItems:"flex-start",gap:3 }}>
+                            <span style={{ fontSize:12,fontWeight:(isSel||isTodayCell)?800:600,color:day?(isTodayCell?"#0e9384":SURFACE.text):"transparent" }}>{day||""}</span>
                             <div style={{ display:"flex",flexWrap:"wrap",gap:2 }}>
                               {dayItems.slice(0,3).map(it => <span key={it.id} style={{ width:6,height:6,borderRadius:"50%",background:TYPE_CFG[it.type].color }} />)}
-                              {dayItems.length>3 && <span style={{ fontSize:8,fontWeight:800,color:"#94a3b8" }}>+{dayItems.length-3}</span>}
+                              {dayItems.length>3 && <span style={{ fontSize:8,fontWeight:800,color:SURFACE.textFaint }}>+{dayItems.length-3}</span>}
                             </div>
                           </button>
                         );
@@ -2156,13 +2156,13 @@ export default function UserPortalPage() {
                             {cap1(new Date(y,m,calSelectedDay).toLocaleDateString("es-CL",{weekday:"long",day:"2-digit",month:"long"}))}
                           </p>
                           {selItems.length===0 ? (
-                            <p style={{ fontSize:12,color:"#94a3b8",margin:0 }}>Sin actividades este día.</p>
+                            <p style={{ fontSize:12,color:SURFACE.textFaint,margin:0 }}>Sin actividades este día.</p>
                           ) : (
                             <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
                               {selItems.map(it=>{ const cfg=TYPE_CFG[it.type]; return (
-                                <div key={it.id} style={{ display:"flex",alignItems:"center",gap:8,background:"#f8fafc",border:"1px solid #eef2f7",borderLeft:`3px solid ${cfg.color}`,borderRadius:9,padding:"7px 10px" }}>
-                                  <span style={{ fontSize:11,fontWeight:800,color:"#0f172a",flexShrink:0,fontVariantNumeric:"tabular-nums" }}>{it.date.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})}</span>
-                                  <span style={{ flex:1,minWidth:0,fontSize:11.5,fontWeight:600,color:"#334155",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{it.title}{it.venue?` · ${it.venue}`:""}</span>
+                                <div key={it.id} style={{ display:"flex",alignItems:"center",gap:8,background:SURFACE.bg,border:"1px solid #eef2f7",borderLeft:`3px solid ${cfg.color}`,borderRadius:9,padding:"7px 10px" }}>
+                                  <span style={{ fontSize:11,fontWeight:800,color:SURFACE.text,flexShrink:0,fontVariantNumeric:"tabular-nums" }}>{it.date.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})}</span>
+                                  <span style={{ flex:1,minWidth:0,fontSize:11.5,fontWeight:600,color:SURFACE.textStrong,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{it.title}{it.venue?` · ${it.venue}`:""}</span>
                                   <span style={{ flexShrink:0,fontSize:10,fontWeight:800,padding:"2px 7px",borderRadius:99,background:cfg.soft,color:cfg.color }}>{cfg.label}</span>
                                 </div>
                               ); })}
@@ -2176,12 +2176,12 @@ export default function UserPortalPage() {
 
                 {/* Vista AGENDA: lista por día con chip de fecha */}
                 {calView==="agenda" && (
-                  <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden auto",maxHeight:"calc(100vh - 240px)" }}>
+                  <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden auto",maxHeight:"calc(100vh - 240px)" }}>
                     {agendaDays.length===0 ? (
                       <div style={{ padding:"40px 16px",textAlign:"center" }}>
-                        <p style={{ margin:0,color:"#cbd5e1",display:"flex",justifyContent:"center" }}><CalendarIcon size={34} /></p>
-                        <p style={{ fontSize:14,fontWeight:700,color:"#475569",margin:"8px 0 0" }}>Sin actividades {calSelectedDay?"este día":"este mes"}</p>
-                        <p style={{ fontSize:12,color:"#94a3b8",margin:"4px 0 0" }}>{calTypeFilter?"Prueba quitando el filtro de tipo.":"Navega entre los meses para ver más."}</p>
+                        <p style={{ margin:0,color:SURFACE.borderStrong,display:"flex",justifyContent:"center" }}><CalendarIcon size={34} /></p>
+                        <p style={{ fontSize:14,fontWeight:700,color:SURFACE.textSecondary,margin:"8px 0 0" }}>Sin actividades {calSelectedDay?"este día":"este mes"}</p>
+                        <p style={{ fontSize:12,color:SURFACE.textFaint,margin:"4px 0 0" }}>{calTypeFilter?"Prueba quitando el filtro de tipo.":"Navega entre los meses para ver más."}</p>
                       </div>
                     ) : agendaDays.map((dayNum, di) => {
                       const dayDate = new Date(y,m,dayNum);
@@ -2189,10 +2189,10 @@ export default function UserPortalPage() {
                       return (
                         <div key={dayNum} style={{ display:"flex",gap:0,borderTop: di===0?"none":"1px solid #f1f5f9" }}>
                           {/* Chip de fecha */}
-                          <div style={{ flex:"0 0 64px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-start",padding:"14px 0",background:isToday?"#f0fdfa":"#f8fafc",borderRight:"1px solid #f1f5f9" }}>
-                            <span style={{ fontSize:10,fontWeight:800,letterSpacing:"0.08em",color:isToday?"#0e9384":"#94a3b8" }}>{fmtDow(dayDate)}</span>
-                            <span style={{ fontSize:22,fontWeight:800,color:isToday?"#0e9384":"#0f172a",lineHeight:1.1 }}>{dayNum}</span>
-                            <span style={{ fontSize:9,fontWeight:700,color:"#94a3b8" }}>{fmtMon(dayDate)}</span>
+                          <div style={{ flex:"0 0 64px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-start",padding:"14px 0",background:isToday?"#f0fdfa":SURFACE.bg,borderRight:"1px solid #f1f5f9" }}>
+                            <span style={{ fontSize:10,fontWeight:800,letterSpacing:"0.08em",color:isToday?"#0e9384":SURFACE.textFaint }}>{fmtDow(dayDate)}</span>
+                            <span style={{ fontSize:22,fontWeight:800,color:isToday?"#0e9384":SURFACE.text,lineHeight:1.1 }}>{dayNum}</span>
+                            <span style={{ fontSize:9,fontWeight:700,color:SURFACE.textFaint }}>{fmtMon(dayDate)}</span>
                           </div>
                           {/* Actividades del día */}
                           <div style={{ flex:1,minWidth:0,display:"flex",flexDirection:"column" }}>
@@ -2200,12 +2200,12 @@ export default function UserPortalPage() {
                               const cfg = TYPE_CFG[it.type];
                               return (
                                 <div key={it.id} style={{ display:"flex",alignItems:"center",gap:10,padding:"12px 14px",borderTop: ii===0?"none":"1px solid #f8fafc" }}>
-                                  <span style={{ flexShrink:0,fontSize:12,fontWeight:700,color:"#64748b",width:42 }}>{it.date.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})}</span>
+                                  <span style={{ flexShrink:0,fontSize:12,fontWeight:700,color:SURFACE.textMuted,width:42 }}>{it.date.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})}</span>
                                   <span style={{ flexShrink:0,width:34,height:34,borderRadius:10,background:cfg.soft,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:16 }}><cfg.icon size={18} /></span>
                                   <div style={{ flex:1,minWidth:0 }}>
-                                    <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0,overflow:"hidden",
+                                    <p style={{ fontSize:13,fontWeight:700,color:SURFACE.text,margin:0,overflow:"hidden",
                                       display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical" as any,lineHeight:1.25 }}>{it.title}</p>
-                                    <p style={{ fontSize:11,color:"#94a3b8",margin:"1px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                                    <p style={{ fontSize:11,color:SURFACE.textFaint,margin:"1px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
                                       {it.subtitle ? it.subtitle : cfg.label}{it.venue ? ` · ${it.venue}` : ""}
                                     </p>
                                   </div>
@@ -2226,22 +2226,22 @@ export default function UserPortalPage() {
                 {/* Vista GANTT: disciplinas × días del mes */}
                 {calView==="gantt" && (
                   gRows.length===0 ? (
-                    <div style={{ background:"#fff",borderRadius:14,border:"1px dashed #e2e8f0",padding:"32px 16px",textAlign:"center" }}>
-                      <p style={{ margin:0,color:"#cbd5e1",display:"flex",justifyContent:"center" }}><CalendarIcon size={28} /></p>
-                      <p style={{ fontSize:13,fontWeight:700,color:"#475569",margin:"6px 0 0" }}>Sin actividades este mes</p>
+                    <div style={{ background:SURFACE.card,borderRadius:14,border:"1px dashed #e2e8f0",padding:"32px 16px",textAlign:"center" }}>
+                      <p style={{ margin:0,color:SURFACE.borderStrong,display:"flex",justifyContent:"center" }}><CalendarIcon size={28} /></p>
+                      <p style={{ fontSize:13,fontWeight:700,color:SURFACE.textSecondary,margin:"6px 0 0" }}>Sin actividades este mes</p>
                     </div>
                   ) : (
-                    <div style={{ display:"flex",background:"#fff",border:"1px solid #e2e8f0",borderRadius:14,overflow:"hidden" }}>
+                    <div style={{ display:"flex",background:SURFACE.card,border:"1px solid #e2e8f0",borderRadius:14,overflow:"hidden" }}>
                       <div style={{ flex:"0 0 128px",borderRight:"1px solid #e2e8f0",boxShadow:"2px 0 6px rgba(15,23,42,0.04)",zIndex:1 }}>
-                        <div style={{ height:40,borderBottom:"1px solid #e2e8f0",background:"#f8fafc",display:"flex",alignItems:"center",padding:"0 10px" }}>
-                          <span style={{ fontSize:9,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:"#94a3b8" }}>Disciplina</span>
+                        <div style={{ height:40,borderBottom:"1px solid #e2e8f0",background:SURFACE.bg,display:"flex",alignItems:"center",padding:"0 10px" }}>
+                          <span style={{ fontSize:9,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:SURFACE.textFaint }}>Disciplina</span>
                         </div>
                         {gRows.map((r,i)=>{
                           const total = Array.from(r.byDay.values()).reduce((a,evs)=>a+evs.length,0);
                           return (
                             <div key={i} style={{ height:44,display:"flex",alignItems:"center",gap:6,padding:"0 10px",borderBottom: i<gRows.length-1?"1px solid #f1f5f9":"none" }}>
-                              <span style={{ flex:1,minWidth:0,fontSize:11.5,fontWeight:700,color:"#334155",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{r.name}</span>
-                              <span style={{ flexShrink:0,fontSize:10,fontWeight:800,color:"#64748b",background:"#f1f5f9",borderRadius:99,padding:"2px 6px" }}>{total}</span>
+                              <span style={{ flex:1,minWidth:0,fontSize:11.5,fontWeight:700,color:SURFACE.textStrong,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{r.name}</span>
+                              <span style={{ flexShrink:0,fontSize:10,fontWeight:800,color:SURFACE.textMuted,background:SURFACE.borderMuted,borderRadius:99,padding:"2px 6px" }}>{total}</span>
                             </div>
                           );
                         })}
@@ -2263,13 +2263,13 @@ export default function UserPortalPage() {
                               if (Number.isFinite(firstActiveDay)) el.scrollLeft = Math.max(0, (firstActiveDay - 2) * CELL);
                             }}>
                             <div style={{ minWidth:gN*CELL }}>
-                              <div style={{ height:40,display:"grid",gridTemplateColumns:`repeat(${gN},${CELL}px)`,borderBottom:"1px solid #e2e8f0",background:"#f8fafc" }}>
+                              <div style={{ height:40,display:"grid",gridTemplateColumns:`repeat(${gN},${CELL}px)`,borderBottom:"1px solid #e2e8f0",background:SURFACE.bg }}>
                                 {gDays.map(d=>{ const isToday=keyOf(d)===keyOf(now); const wknd=d.getDay()===0||d.getDay()===6; return (
                                   <div key={d.getDate()} style={{ display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:1,
-                                    background:isToday?"rgba(33,208,179,0.14)":wknd?"#f1f5f9":"transparent",
+                                    background:isToday?"rgba(33,208,179,0.14)":wknd?SURFACE.borderMuted:"transparent",
                                     borderBottom:isToday?`2px solid ${BRAND.teal}`:"none" }}>
-                                    <span style={{ fontSize:8,fontWeight:700,color:isToday?"#0e9384":"#94a3b8" }}>{["DO","LU","MA","MI","JU","VI","SA"][d.getDay()]}</span>
-                                    <span style={{ fontSize:12,fontWeight:800,color:isToday?"#0e9384":"#334155" }}>{d.getDate()}</span>
+                                    <span style={{ fontSize:8,fontWeight:700,color:isToday?"#0e9384":SURFACE.textFaint }}>{["DO","LU","MA","MI","JU","VI","SA"][d.getDay()]}</span>
+                                    <span style={{ fontSize:12,fontWeight:800,color:isToday?"#0e9384":SURFACE.textStrong }}>{d.getDate()}</span>
                                   </div>
                                 ); })}
                               </div>
@@ -2286,7 +2286,7 @@ export default function UserPortalPage() {
                                           onClick={()=>{ setCalCursor(new Date(d)); setCalMonthCursor(new Date(d.getFullYear(),d.getMonth(),1)); setCalView("dia"); }}
                                           title={`${evs.length} actividad(es) · ${d.toLocaleDateString("es-CL",{day:"2-digit",month:"short"})}`}
                                           style={{ flex:1,height:28,margin:"0 3px",borderRadius:8,border:"none",cursor:"pointer",
-                                            background:`linear-gradient(135deg, ${cfg.color}, ${cfg.color}cc)`,color:"#fff",
+                                            background:`linear-gradient(135deg, ${cfg.color}, ${cfg.color}cc)`,color:SURFACE.card,
                                             fontSize:11,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",gap:2,padding:0,
                                             boxShadow:`0 2px 5px ${cfg.color}55` }}>
                                           {evs.length>1?evs.length:""}
@@ -2308,7 +2308,7 @@ export default function UserPortalPage() {
                 {/* Vista SEMANA: un solo contenedor; los días sin actividad quedan
                     como fila compacta en vez de tarjetas vacías con "—". */}
                 {calView==="semana" && (
-                  <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+                  <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
                     {weekDays.map(({day,events},di)=>{ const isToday=keyOf(day)===keyOf(now); return (
                       <div key={keyOf(day)} style={{ borderTop: di===0?"none":"1px solid #f1f5f9" }}>
                         <div style={{ display:"flex",alignItems:"center",gap:10,padding: events.length?"10px 14px 6px":"9px 14px",
@@ -2316,25 +2316,25 @@ export default function UserPortalPage() {
                           <span style={{
                             flexShrink:0,width:38,height:38,borderRadius:10,display:"inline-flex",flexDirection:"column",
                             alignItems:"center",justifyContent:"center",lineHeight:1.1,
-                            background:isToday?BRAND.teal:"#f8fafc",border:isToday?"none":"1px solid #eef2f7",
+                            background:isToday?BRAND.teal:SURFACE.bg,border:isToday?"none":"1px solid #eef2f7",
                           }}>
-                            <span style={{ fontSize:8,fontWeight:800,letterSpacing:"0.08em",color:isToday?"rgba(255,255,255,0.85)":"#94a3b8" }}>{fmtDow(day)}</span>
-                            <span style={{ fontSize:15,fontWeight:800,color:isToday?"#fff":"#0f172a" }}>{day.getDate()}</span>
+                            <span style={{ fontSize:8,fontWeight:800,letterSpacing:"0.08em",color:isToday?"rgba(255,255,255,0.85)":SURFACE.textFaint }}>{fmtDow(day)}</span>
+                            <span style={{ fontSize:15,fontWeight:800,color:isToday?SURFACE.card:SURFACE.text }}>{day.getDate()}</span>
                           </span>
-                          <span style={{ flex:1,fontSize:12.5,fontWeight:700,color:isToday?"#0e9384":"#0f172a" }}>
+                          <span style={{ flex:1,fontSize:12.5,fontWeight:700,color:isToday?"#0e9384":SURFACE.text }}>
                             {cap1(day.toLocaleDateString("es-CL",{weekday:"long"}))}
                             {isToday && <span style={{ marginLeft:6,fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:"#0e9384",background:"rgba(33,208,179,0.14)",borderRadius:99,padding:"2px 7px" }}>HOY</span>}
                           </span>
                           {events.length>0
                             ? <span style={{ fontSize:10,fontWeight:800,color:"#0e9384",background:"rgba(33,208,179,0.12)",borderRadius:20,padding:"2px 9px" }}>{events.length}</span>
-                            : <span style={{ fontSize:10.5,fontWeight:600,color:"#cbd5e1" }}>Sin actividades</span>}
+                            : <span style={{ fontSize:10.5,fontWeight:600,color:SURFACE.borderStrong }}>Sin actividades</span>}
                         </div>
                         {events.length>0 && (
                           <div style={{ padding:"0 14px 10px 62px",display:"flex",flexDirection:"column",gap:6 }}>
                             {events.map(it=>{ const cfg=TYPE_CFG[it.type]; return (
-                              <div key={it.id} style={{ display:"flex",alignItems:"center",gap:8,background:"#f8fafc",border:"1px solid #eef2f7",borderLeft:`3px solid ${cfg.color}`,borderRadius:9,padding:"7px 10px" }}>
-                                <span style={{ fontSize:11,fontWeight:800,color:"#0f172a",flexShrink:0,fontVariantNumeric:"tabular-nums" }}>{it.date.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})}</span>
-                                <span style={{ flex:1,minWidth:0,fontSize:11.5,fontWeight:600,color:"#334155",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{it.title}{it.subtitle?` · ${it.subtitle}`:""}</span>
+                              <div key={it.id} style={{ display:"flex",alignItems:"center",gap:8,background:SURFACE.bg,border:"1px solid #eef2f7",borderLeft:`3px solid ${cfg.color}`,borderRadius:9,padding:"7px 10px" }}>
+                                <span style={{ fontSize:11,fontWeight:800,color:SURFACE.text,flexShrink:0,fontVariantNumeric:"tabular-nums" }}>{it.date.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})}</span>
+                                <span style={{ flex:1,minWidth:0,fontSize:11.5,fontWeight:600,color:SURFACE.textStrong,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{it.title}{it.subtitle?` · ${it.subtitle}`:""}</span>
                                 <span style={{ flexShrink:0,fontSize:10,fontWeight:800,padding:"2px 7px",borderRadius:99,background:cfg.soft,color:cfg.color }}>{cfg.label}</span>
                               </div>
                             ); })}
@@ -2349,18 +2349,18 @@ export default function UserPortalPage() {
                 {calView==="dia" && (
                   <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
                     {cursorDayItems.length===0 ? (
-                      <div style={{ background:"#fff",borderRadius:14,border:"1px dashed #e2e8f0",padding:"28px 16px",textAlign:"center" }}>
-                        <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>Sin actividades este día</p>
+                      <div style={{ background:SURFACE.card,borderRadius:14,border:"1px dashed #e2e8f0",padding:"28px 16px",textAlign:"center" }}>
+                        <p style={{ fontSize:13,color:SURFACE.textFaint,margin:0 }}>Sin actividades este día</p>
                       </div>
                     ) : cursorDayItems.map(it=>{ const cfg=TYPE_CFG[it.type]; return (
-                      <div key={it.id} style={{ display:"flex",gap:10,padding:"10px 12px",borderRadius:12,background:"#fff",border:"1px solid #e2e8f0",borderLeft:`4px solid ${cfg.color}` }}>
+                      <div key={it.id} style={{ display:"flex",gap:10,padding:"10px 12px",borderRadius:12,background:SURFACE.card,border:"1px solid #e2e8f0",borderLeft:`4px solid ${cfg.color}` }}>
                         <div style={{ display:"flex",flexDirection:"column",alignItems:"center",flexShrink:0,minWidth:46 }}>
-                          <span style={{ fontSize:13,fontWeight:800,color:"#0f172a" }}>{it.date.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})}</span>
+                          <span style={{ fontSize:13,fontWeight:800,color:SURFACE.text }}>{it.date.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})}</span>
                           <span style={{ display:"inline-flex",marginTop:2 }}><cfg.icon size={15} /></span>
                         </div>
                         <div style={{ flex:1,minWidth:0 }}>
-                          <p style={{ fontSize:13,fontWeight:600,color:"#0f172a",margin:0 }}>{it.title}</p>
-                          {(it.subtitle||it.venue) && <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0" }}>{[it.subtitle,it.venue].filter(Boolean).join(" · ")}</p>}
+                          <p style={{ fontSize:13,fontWeight:600,color:SURFACE.text,margin:0 }}>{it.title}</p>
+                          {(it.subtitle||it.venue) && <p style={{ fontSize:11,color:SURFACE.textMuted,margin:"2px 0 0" }}>{[it.subtitle,it.venue].filter(Boolean).join(" · ")}</p>}
                           <span style={{ display:"inline-block",marginTop:4,fontSize:10,fontWeight:800,padding:"2px 8px",borderRadius:99,background:cfg.soft,color:cfg.color }}>{cfg.label}</span>
                         </div>
                       </div>
@@ -2375,27 +2375,27 @@ export default function UserPortalPage() {
                 {nextComp && (
                   <div style={{ background:"linear-gradient(135deg,#fff1f2,#ffffff)",borderRadius:14,border:"1px solid #fecdd3",padding:"14px" }}>
                     <p style={{ fontSize:10,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:"#e11d48",margin:0 }}>Próxima competencia</p>
-                    <p style={{ fontSize:14,fontWeight:800,color:"#0f172a",margin:"6px 0 2px" }}>{nextComp.title}</p>
-                    <p style={{ fontSize:12,color:"#64748b",margin:0 }}>
+                    <p style={{ fontSize:14,fontWeight:800,color:SURFACE.text,margin:"6px 0 2px" }}>{nextComp.title}</p>
+                    <p style={{ fontSize:12,color:SURFACE.textMuted,margin:0 }}>
                       {nextComp.date.toLocaleDateString("es-CL",{day:"2-digit",month:"long"})} · {nextComp.date.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})}
                     </p>
-                    {nextComp.venue && <p style={{ fontSize:12,color:"#64748b",margin:"2px 0 0" }}><PinIcon size={11} className="inline mr-1" />{nextComp.venue}</p>}
+                    {nextComp.venue && <p style={{ fontSize:12,color:SURFACE.textMuted,margin:"2px 0 0" }}><PinIcon size={11} className="inline mr-1" />{nextComp.venue}</p>}
                   </div>
                 )}
 
                 {/* Mini calendario — solo escritorio: en móvil duplica la vista Mes */}
-                <div className="hidden lg:block" style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",padding:"12px" }}>
+                <div className="hidden lg:block" style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",padding:"12px" }}>
                   <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8 }}>
                     <button type="button" onClick={() => { setCalMonthCursor(new Date(y,m-1,1)); setCalCursor(new Date(y,m-1,1)); setCalSelectedDay(null); }} style={{ background:"none",border:"none",cursor:"pointer",padding:2 }}>
-                      <ChevronLeftIcon size={15} color="#64748b" strokeWidth={2} />
+                      <ChevronLeftIcon size={15} color={SURFACE.textMuted} strokeWidth={2} />
                     </button>
-                    <span style={{ fontSize:13,fontWeight:700,color:"#0f172a" }}>{cap1(monthLabel)}</span>
+                    <span style={{ fontSize:13,fontWeight:700,color:SURFACE.text }}>{cap1(monthLabel)}</span>
                     <button type="button" onClick={() => { setCalMonthCursor(new Date(y,m+1,1)); setCalCursor(new Date(y,m+1,1)); setCalSelectedDay(null); }} style={{ background:"none",border:"none",cursor:"pointer",padding:2 }}>
-                      <ChevronRightIcon size={15} color="#64748b" strokeWidth={2} />
+                      <ChevronRightIcon size={15} color={SURFACE.textMuted} strokeWidth={2} />
                     </button>
                   </div>
                   <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,textAlign:"center" }}>
-                    {["L","M","M","J","V","S","D"].map((d,i) => <div key={i} style={{ fontSize:9,fontWeight:700,color:"#94a3b8",padding:3 }}>{d}</div>)}
+                    {["L","M","M","J","V","S","D"].map((d,i) => <div key={i} style={{ fontSize:9,fontWeight:700,color:SURFACE.textFaint,padding:3 }}>{d}</div>)}
                     {cells.map((day,i) => {
                       const isSel = day !== null && calSelectedDay===day;
                       const dayItems = day ? inMonth.filter(it => it.date.getDate()===day) : [];
@@ -2403,7 +2403,7 @@ export default function UserPortalPage() {
                         <button key={i} type="button" disabled={!day}
                           onClick={() => { if(!day) return; setCalSelectedDay(isSel?null:day); setCalCursor(new Date(y,m,day)); }}
                           style={{ padding:"5px 0",borderRadius:8,border:"none",cursor:day?"pointer":"default",fontSize:12,fontWeight:isSel?800:500,
-                            background:isSel?BRAND.teal:day?"#fff":"transparent",color:isSel?"#fff":day?"#0f172a":"transparent",position:"relative" }}>
+                            background:isSel?BRAND.teal:day?SURFACE.card:"transparent",color:isSel?SURFACE.card:day?SURFACE.text:"transparent",position:"relative" }}>
                           {day || ""}
                           {day && daysWithEvents.has(day) && !isSel && (
                             <div style={{ position:"absolute",bottom:1,left:"50%",transform:"translateX(-50%)",display:"flex",gap:1 }}>
@@ -2418,20 +2418,20 @@ export default function UserPortalPage() {
 
                 {/* Filtros — ocultos para TA: su calendario queda fijo en su disciplina */}
                 {!isTA && (
-                <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",padding:"12px 14px" }}>
-                  <p style={{ fontSize:10,fontWeight:800,letterSpacing:"0.14em",textTransform:"uppercase",color:"#94a3b8",margin:"0 0 8px" }}>Filtros</p>
-                  <label style={{ fontSize:11,fontWeight:600,color:"#64748b" }}>Tipo de evento</label>
+                <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",padding:"12px 14px" }}>
+                  <p style={{ fontSize:10,fontWeight:800,letterSpacing:"0.14em",textTransform:"uppercase",color:SURFACE.textFaint,margin:"0 0 8px" }}>Filtros</p>
+                  <label style={{ fontSize:11,fontWeight:600,color:SURFACE.textMuted }}>Tipo de evento</label>
                   <select value={calTypeFilter} onChange={(e)=>setCalTypeFilter(e.target.value)}
-                    style={{ width:"100%",marginTop:4,padding:"7px 10px",borderRadius:8,border:"1px solid #e2e8f0",fontSize:12,color:"#0f172a",background:"#fff" }}>
+                    style={{ width:"100%",marginTop:4,padding:"7px 10px",borderRadius:8,border:"1px solid #e2e8f0",fontSize:12,color:SURFACE.text,background:SURFACE.card }}>
                     <option value="">Todos</option>
                     {(Object.keys(TYPE_CFG) as CalType[]).map(tp => <option key={tp} value={tp}>{TYPE_CFG[tp].label}</option>)}
                   </select>
                   {/* TA: sin filtro de disciplina — el calendario queda fijo en la suya */}
                   {!isTA && discOptions.length > 0 && (
                     <>
-                      <label style={{ fontSize:11,fontWeight:600,color:"#64748b",display:"block",marginTop:10 }}>Disciplina</label>
+                      <label style={{ fontSize:11,fontWeight:600,color:SURFACE.textMuted,display:"block",marginTop:10 }}>Disciplina</label>
                       <select value={calDiscFilter} onChange={(e)=>setCalDiscFilter(e.target.value)}
-                        style={{ width:"100%",marginTop:4,padding:"7px 10px",borderRadius:8,border:"1px solid #e2e8f0",fontSize:12,color:"#0f172a",background:"#fff" }}>
+                        style={{ width:"100%",marginTop:4,padding:"7px 10px",borderRadius:8,border:"1px solid #e2e8f0",fontSize:12,color:SURFACE.text,background:SURFACE.card }}>
                         <option value="">Todas las disciplinas</option>
                         {discOptions.map(([id,name]) => <option key={id} value={id}>{name}</option>)}
                       </select>
@@ -2439,7 +2439,7 @@ export default function UserPortalPage() {
                   )}
                   {(calTypeFilter || calDiscFilter || calSelectedDay) && (
                     <button type="button" onClick={()=>{ setCalTypeFilter(""); setCalDiscFilter(""); setCalSelectedDay(null); }}
-                      style={{ marginTop:10,width:"100%",fontSize:11,fontWeight:700,color:"#dc2626",background:"#fef2f2",border:"1px solid #fecaca",borderRadius:8,padding:"6px",cursor:"pointer" }}>
+                      style={{ marginTop:10,width:"100%",fontSize:11,fontWeight:700,color:STATE.dangerText,background:"#fef2f2",border:"1px solid #fecaca",borderRadius:8,padding:"6px",cursor:"pointer" }}>
                       <XIcon size={12} className="inline mr-1" />Limpiar filtros
                     </button>
                   )}
@@ -2448,14 +2448,14 @@ export default function UserPortalPage() {
 
                 {/* Leyenda — oculta para TA junto con los filtros */}
                 {!isTA && (
-                <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",padding:"12px 14px" }}>
-                  <p style={{ fontSize:10,fontWeight:800,letterSpacing:"0.14em",textTransform:"uppercase",color:"#94a3b8",margin:"0 0 8px" }}>Leyenda</p>
+                <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",padding:"12px 14px" }}>
+                  <p style={{ fontSize:10,fontWeight:800,letterSpacing:"0.14em",textTransform:"uppercase",color:SURFACE.textFaint,margin:"0 0 8px" }}>Leyenda</p>
                   <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
                     {(Object.keys(TYPE_CFG) as CalType[]).map(tp => (
                       <button key={tp} type="button" onClick={()=>setCalTypeFilter(calTypeFilter===tp?"":tp)}
                         style={{ display:"flex",alignItems:"center",gap:8,background:"none",border:"none",cursor:"pointer",padding:0,opacity: calTypeFilter && calTypeFilter!==tp ? 0.4 : 1 }}>
                         <span style={{ width:10,height:10,borderRadius:"50%",background:TYPE_CFG[tp].color }} />
-                        <span style={{ fontSize:12,fontWeight:600,color:"#334155" }}>{TYPE_CFG[tp].label}</span>
+                        <span style={{ fontSize:12,fontWeight:600,color:SURFACE.textStrong }}>{TYPE_CFG[tp].label}</span>
                       </button>
                     ))}
                   </div>
@@ -2549,7 +2549,7 @@ export default function UserPortalPage() {
             const focused = p.id === premFocusId;
             return (
               <article key={p.id} id={`prem-${p.id}`}
-                style={{ background:isDone ? "#f8fafc" : "linear-gradient(135deg,#fffbeb 0%,#ffffff 70%)",
+                style={{ background:isDone ? SURFACE.bg : "linear-gradient(135deg,#fffbeb 0%,#ffffff 70%)",
                   borderRadius:14,border:`1px solid ${focused ? BRAND.teal : isDone?"#e2e8f0":"#f2d98a"}`,borderLeft:`4px solid ${focused ? BRAND.teal : isDone ? "#cbd5e1" : "#e3a808"}`,padding:"12px 14px",
                   boxShadow: focused ? "0 0 0 3px rgba(33,208,179,0.4), 0 8px 24px rgba(33,208,179,0.25)" : isDone ? undefined : "0 2px 10px rgba(199,140,0,0.14)",
                   opacity: isDone ? 0.82 : 1,transition:"box-shadow .4s,border-color .4s" }}>
@@ -2563,26 +2563,26 @@ export default function UserPortalPage() {
                     <TrophyIcon size={18} strokeWidth={2} />
                   </div>
                   <div style={{ flex:1,minWidth:0 }}>
-                    <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0,lineHeight:1.3 }}>{p.title}</p>
+                    <p style={{ fontSize:14,fontWeight:700,color:SURFACE.text,margin:0,lineHeight:1.3 }}>{p.title}</p>
                     <div style={{ display:"flex",flexWrap:"wrap",gap:"4px 10px",marginTop:4 }}>
-                      <span style={{ display:"inline-flex",alignItems:"center",gap:3,fontSize:11,color:"#334155",fontWeight:600 }}>
+                      <span style={{ display:"inline-flex",alignItems:"center",gap:3,fontSize:11,color:SURFACE.textStrong,fontWeight:600 }}>
                         <ClockIcon size={11} strokeWidth={2} />
                         {fmtTime(p.scheduledAt)}
                       </span>
                       {p.discipline && (
-                        <span style={{ display:"inline-flex",alignItems:"center",gap:3,fontSize:11,color:"#64748b" }}>
+                        <span style={{ display:"inline-flex",alignItems:"center",gap:3,fontSize:11,color:SURFACE.textMuted }}>
                           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9a6 6 0 0 0 12 0H6z"/><line x1="12" y1="15" x2="12" y2="21"/><line x1="8" y1="21" x2="16" y2="21"/></svg>
                           {p.discipline}
                         </span>
                       )}
                       {p.venueName && (
-                        <span style={{ display:"inline-flex",alignItems:"center",gap:3,fontSize:11,color:"#64748b" }}>
+                        <span style={{ display:"inline-flex",alignItems:"center",gap:3,fontSize:11,color:SURFACE.textMuted }}>
                           <PinIcon size={11} strokeWidth={2} />
                           {p.venueName}{p.locationDetail ? ` · ${p.locationDetail}` : ""}
                         </span>
                       )}
                     </div>
-                    {p.notes && <p style={{ fontSize:11,color:"#64748b",margin:"6px 0 0",fontStyle:"italic",lineHeight:1.4 }}>{p.notes}</p>}
+                    {p.notes && <p style={{ fontSize:11,color:SURFACE.textMuted,margin:"6px 0 0",fontStyle:"italic",lineHeight:1.4 }}>{p.notes}</p>}
                   </div>
                   <span style={{ flexShrink:0,display:"inline-flex",alignItems:"center",gap:5,fontSize:10,padding:"3px 9px",borderRadius:20,fontWeight:800,letterSpacing:"0.06em",textTransform:"uppercase",
                     background:isDone?"#e7f5ec":"#fff4d6",
@@ -2594,16 +2594,16 @@ export default function UserPortalPage() {
                 </div>
                 {cnt > 0 && (
                   <div style={{ marginTop:10,paddingTop:10,borderTop:"1px dashed #e2e8f0",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap" }}>
-                    <span style={{ fontSize:10,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:"#94a3b8" }}>Entregadores</span>
+                    <span style={{ fontSize:10,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:SURFACE.textFaint }}>Entregadores</span>
                     {(() => {
                       const counts: Record<string, number> = {};
                       (p.awarders||[]).forEach(a => { const r = String(a.role||"AWARDER").toUpperCase(); counts[r] = (counts[r]||0)+1; });
                       const roleMeta: Record<string,{label:string;color:string;bg:string}> = {
                         GOLD:{label:"Oro",color:"#7a4a00",bg:"#fef3c7"},
-                        SILVER:{label:"Plata",color:"#475569",bg:"#f1f5f9"},
+                        SILVER:{label:"Plata",color:SURFACE.textSecondary,bg:SURFACE.borderMuted},
                         BRONZE:{label:"Bronce",color:"#7c2d12",bg:"#fed7aa"},
                         AUTHORITY:{label:"Autoridad",color:"#1e40af",bg:"#dbeafe"},
-                        AWARDER:{label:"Entregador",color:"#475569",bg:"#f1f5f9"},
+                        AWARDER:{label:"Entregador",color:SURFACE.textSecondary,bg:SURFACE.borderMuted},
                       };
                       return Object.entries(counts).map(([r,n]) => {
                         const m = roleMeta[r] || roleMeta.AWARDER;
@@ -2621,18 +2621,18 @@ export default function UserPortalPage() {
                   if (mine.confirmedAt) {
                     return (
                       <div style={{ marginTop:10,paddingTop:10,borderTop:"1px dashed #e2e8f0",display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,flexWrap:"wrap" }}>
-                        <span style={{ fontSize:12.5,fontWeight:700,color:"#059669",display:"inline-flex",alignItems:"center",gap:6 }}><CheckIcon size={13} />Confirmaste tu asistencia</span>
+                        <span style={{ fontSize:12.5,fontWeight:700,color:STATE.successText,display:"inline-flex",alignItems:"center",gap:6 }}><CheckIcon size={13} />Confirmaste tu asistencia</span>
                         <button type="button" onClick={()=>confirmAwarder(p.id, mine.id!, "DECLINE")}
-                          style={{ fontSize:11,fontWeight:600,color:"#dc2626",background:"none",border:"none",cursor:"pointer",textDecoration:"underline",padding:0 }}>Ya no puedo asistir</button>
+                          style={{ fontSize:11,fontWeight:600,color:STATE.dangerText,background:"none",border:"none",cursor:"pointer",textDecoration:"underline",padding:0 }}>Ya no puedo asistir</button>
                       </div>
                     );
                   }
                   if (mine.declinedAt) {
                     return (
                       <div style={{ marginTop:10,paddingTop:10,borderTop:"1px dashed #e2e8f0",display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,flexWrap:"wrap" }}>
-                        <span style={{ fontSize:12.5,fontWeight:700,color:"#dc2626",display:"inline-flex",alignItems:"center",gap:6 }}><XIcon size={13} />Rechazaste la asistencia</span>
+                        <span style={{ fontSize:12.5,fontWeight:700,color:STATE.dangerText,display:"inline-flex",alignItems:"center",gap:6 }}><XIcon size={13} />Rechazaste la asistencia</span>
                         <button type="button" onClick={()=>confirmAwarder(p.id, mine.id!, "CONFIRM")}
-                          style={{ fontSize:11,fontWeight:600,color:"#059669",background:"none",border:"none",cursor:"pointer",textDecoration:"underline",padding:0 }}>Confirmar asistencia</button>
+                          style={{ fontSize:11,fontWeight:600,color:STATE.successText,background:"none",border:"none",cursor:"pointer",textDecoration:"underline",padding:0 }}>Confirmar asistencia</button>
                       </div>
                     );
                   }
@@ -2641,9 +2641,9 @@ export default function UserPortalPage() {
                       <span style={{ fontSize:10,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:"#a87800" }}>Confirma tu asistencia</span>
                       <div style={{ display:"flex",gap:8,marginTop:6 }}>
                         <button type="button" onClick={()=>confirmAwarder(p.id, mine.id!, "CONFIRM")}
-                          style={{ flex:1,padding:"9px",borderRadius:10,border:"none",cursor:"pointer",fontSize:13,fontWeight:700,color:"#fff",background:`linear-gradient(135deg,${BRAND.teal},#15B09A)` }}>Confirmar</button>
+                          style={{ flex:1,padding:"9px",borderRadius:10,border:"none",cursor:"pointer",fontSize:13,fontWeight:700,color:SURFACE.card,background:`linear-gradient(135deg,${BRAND.teal},#15B09A)` }}>Confirmar</button>
                         <button type="button" onClick={()=>confirmAwarder(p.id, mine.id!, "DECLINE")}
-                          style={{ flex:1,padding:"9px",borderRadius:10,border:"1px solid #fecaca",cursor:"pointer",fontSize:13,fontWeight:700,color:"#dc2626",background:"#fef2f2" }}>No puedo</button>
+                          style={{ flex:1,padding:"9px",borderRadius:10,border:"1px solid #fecaca",cursor:"pointer",fontSize:13,fontWeight:700,color:STATE.dangerText,background:"#fef2f2" }}>No puedo</button>
                       </div>
                     </div>
                   );
@@ -2655,7 +2655,7 @@ export default function UserPortalPage() {
           return (
             <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
               <div style={{ background:"linear-gradient(135deg,#fffbf2 0%,#ffffff 70%)",borderRadius:14,border:"1px solid #f0deb0",padding:"14px 16px",display:"flex",alignItems:"center",gap:12 }}>
-                <div style={{ width:42,height:42,borderRadius:12,background:"linear-gradient(135deg,#d4a017 0%,#f5c842 50%,#e3a808 100%)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",flexShrink:0,boxShadow:"0 4px 12px rgba(199,140,0,0.35)" }}>
+                <div style={{ width:42,height:42,borderRadius:12,background:"linear-gradient(135deg,#d4a017 0%,#f5c842 50%,#e3a808 100%)",display:"flex",alignItems:"center",justifyContent:"center",color:SURFACE.card,flexShrink:0,boxShadow:"0 4px 12px rgba(199,140,0,0.35)" }}>
                   <TrophyIcon size={22} strokeWidth={2} />
                 </div>
                 <div style={{ flex:1,minWidth:0 }}>
@@ -2664,9 +2664,9 @@ export default function UserPortalPage() {
                 </div>
               </div>
 
-              <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",padding:"10px",display:"flex",flexDirection:"column",gap:8 }}>
+              <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",padding:"10px",display:"flex",flexDirection:"column",gap:8 }}>
                 {/* View toggle */}
-                <div style={{ display:"flex",gap:0,background:"#f1f5f9",borderRadius:10,padding:3 }}>
+                <div style={{ display:"flex",gap:0,background:SURFACE.borderMuted,borderRadius:10,padding:3 }}>
                   {([
                     { v:"calendar" as const, label:"Calendario", icon:(
                       <CalendarIcon size={13} strokeWidth={2} />
@@ -2679,8 +2679,8 @@ export default function UserPortalPage() {
                     return (
                       <button key={opt.v} type="button" onClick={() => setPremView(opt.v)}
                         style={{ flex:1,padding:"7px 10px",borderRadius:8,border:"none",cursor:"pointer",
-                          background:active ? "#fff" : "transparent",
-                          color:active ? "#7a4a00" : "#64748b",
+                          background:active ? SURFACE.card : "transparent",
+                          color:active ? "#7a4a00" : SURFACE.textMuted,
                           fontSize:12,fontWeight:700,
                           boxShadow:active ? "0 1px 3px rgba(15,23,42,0.1)" : "none",
                           display:"inline-flex",alignItems:"center",justifyContent:"center",gap:6,
@@ -2692,9 +2692,9 @@ export default function UserPortalPage() {
                   })}
                 </div>
                 <div style={{ position:"relative" }}>
-                  <SearchIcon size={14} color="#94a3b8" strokeWidth={2} style={{ position:"absolute",top:"50%",left:10,transform:"translateY(-50%)",pointerEvents:"none" }} />
+                  <SearchIcon size={14} color={SURFACE.textFaint} strokeWidth={2} style={{ position:"absolute",top:"50%",left:10,transform:"translateY(-50%)",pointerEvents:"none" }} />
                   <input type="text" value={premSearchQuery} onChange={e => setPremSearchQuery(e.target.value)} placeholder="Buscar premiación, disciplina, sede..."
-                    style={{ width:"100%",padding:"9px 10px 9px 32px",borderRadius:10,border:"1px solid #e2e8f0",fontSize:13,outline:"none",background:"#f8fafc",boxSizing:"border-box" }} />
+                    style={{ width:"100%",padding:"9px 10px 9px 32px",borderRadius:10,border:"1px solid #e2e8f0",fontSize:13,outline:"none",background:SURFACE.bg,boxSizing:"border-box" }} />
                 </div>
                 <div style={{ display:"flex",gap:6,flexWrap:"wrap" }}>
                   {([
@@ -2708,11 +2708,11 @@ export default function UserPortalPage() {
                     return (
                       <button key={opt.v||"all"} type="button" onClick={() => setPremStatusFilter(opt.v)}
                         style={{ padding:"6px 11px",borderRadius:20,border:active ? `1px solid ${isDone?"#2e7d32":isProg?"#c78c00":BRAND.teal}` : "1px solid #e2e8f0",
-                          background:active ? (isDone?"#e7f5ec":isProg?"#fff4d6":"rgba(33,208,179,0.12)") : "#fff",
-                          color:active ? (isDone?"#1e5125":isProg?"#7a4a00":BRAND.tealInk) : "#475569",
+                          background:active ? (isDone?"#e7f5ec":isProg?"#fff4d6":"rgba(33,208,179,0.12)") : SURFACE.card,
+                          color:active ? (isDone?"#1e5125":isProg?"#7a4a00":BRAND.tealInk) : SURFACE.textSecondary,
                           fontSize:11,fontWeight:700,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6,letterSpacing:"0.02em" }}>
                         {opt.label}
-                        <span style={{ fontSize:10,padding:"1px 6px",borderRadius:10,background:active?"rgba(255,255,255,0.6)":"#f1f5f9",color:active ? (isDone?"#1e5125":isProg?"#7a4a00":BRAND.tealInk) : "#64748b" }}>{opt.count}</span>
+                        <span style={{ fontSize:10,padding:"1px 6px",borderRadius:10,background:active?"rgba(255,255,255,0.6)":SURFACE.borderMuted,color:active ? (isDone?"#1e5125":isProg?"#7a4a00":BRAND.tealInk) : SURFACE.textMuted }}>{opt.count}</span>
                       </button>
                     );
                   })}
@@ -2721,14 +2721,14 @@ export default function UserPortalPage() {
                   <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:6 }}>
                     {disciplineOpts.length > 0 && (
                       <select value={premDisciplineFilter} onChange={e => setPremDisciplineFilter(e.target.value)}
-                        style={{ padding:"8px 10px",borderRadius:10,border:"1px solid #e2e8f0",fontSize:12,background:"#f8fafc",color:"#0f172a",outline:"none",fontWeight:500 }}>
+                        style={{ padding:"8px 10px",borderRadius:10,border:"1px solid #e2e8f0",fontSize:12,background:SURFACE.bg,color:SURFACE.text,outline:"none",fontWeight:500 }}>
                         <option value="">Todas las disciplinas</option>
                         {disciplineOpts.map(d => <option key={d} value={d}>{d}</option>)}
                       </select>
                     )}
                     {venueOpts.length > 0 && (
                       <select value={premVenueFilter} onChange={e => setPremVenueFilter(e.target.value)}
-                        style={{ padding:"8px 10px",borderRadius:10,border:"1px solid #e2e8f0",fontSize:12,background:"#f8fafc",color:"#0f172a",outline:"none",fontWeight:500 }}>
+                        style={{ padding:"8px 10px",borderRadius:10,border:"1px solid #e2e8f0",fontSize:12,background:SURFACE.bg,color:SURFACE.text,outline:"none",fontWeight:500 }}>
                         <option value="">Todas las sedes</option>
                         {venueOpts.map(v => <option key={v} value={v}>{v}</option>)}
                       </select>
@@ -2746,7 +2746,7 @@ export default function UserPortalPage() {
               {/* Calendar view */}
               {premView === "calendar" && (
                 <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
-                  <div style={{ background:"#fff",borderRadius:14,border:"1px solid #f0deb0",padding:"12px",boxShadow:"0 1px 3px rgba(199,140,0,0.06)" }}>
+                  <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #f0deb0",padding:"12px",boxShadow:"0 1px 3px rgba(199,140,0,0.06)" }}>
                     <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10 }}>
                       <button type="button" onClick={() => { setPremCalCursor(new Date(calY, calM - 1, 1)); setPremCalSelectedKey(null); }}
                         style={{ width:30,height:30,borderRadius:8,border:"1px solid #f0deb0",background:"#fffbf2",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
@@ -2762,7 +2762,7 @@ export default function UserPortalPage() {
                       </button>
                     </div>
                     <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:3,textAlign:"center" }}>
-                      {calDayNames.map((dn,i) => <div key={i} style={{ fontSize:9,fontWeight:800,color:"#94a3b8",letterSpacing:"0.1em",padding:"4px 0" }}>{dn}</div>)}
+                      {calDayNames.map((dn,i) => <div key={i} style={{ fontSize:9,fontWeight:800,color:SURFACE.textFaint,letterSpacing:"0.1em",padding:"4px 0" }}>{dn}</div>)}
                       {calCells.map((dn,i) => {
                         if (!dn) return <div key={`empty-${i}`} />;
                         const dayKey = `${calY}-${String(calM+1).padStart(2,"0")}-${String(dn).padStart(2,"0")}`;
@@ -2777,8 +2777,8 @@ export default function UserPortalPage() {
                             style={{ aspectRatio:"1",borderRadius:8,border:isSelected ? "2px solid #d4a017" : isToday ? "1.5px solid #d4a017" : "1px solid transparent",
                               background:isSelected ? "linear-gradient(135deg,#d4a017 0%,#f5c842 100%)"
                                 : hasItems ? "linear-gradient(135deg,#fff4d6 0%,#fffbf2 100%)"
-                                : "#fff",
-                              color:isSelected ? "#fff" : isToday ? "#7a4a00" : hasItems ? "#0f172a" : "#0f172a",
+                                : SURFACE.card,
+                              color:isSelected ? SURFACE.card : isToday ? "#7a4a00" : hasItems ? SURFACE.text : SURFACE.text,
                               fontSize:12,fontWeight:isSelected||isToday?800:hasItems?700:500,cursor:"pointer",position:"relative",
                               boxShadow:isSelected ? "0 3px 8px rgba(199,140,0,0.35)" : hasItems ? "0 1px 2px rgba(199,140,0,0.1)" : "none",
                               transition:"all .15s",padding:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2 }}>
@@ -2791,7 +2791,7 @@ export default function UserPortalPage() {
                               </div>
                             )}
                             {isSelected && hasItems && (
-                              <span style={{ fontSize:8,fontWeight:800,padding:"1px 5px",borderRadius:8,background:"rgba(255,255,255,0.3)",color:"#fff" }}>{dayItems.length}</span>
+                              <span style={{ fontSize:8,fontWeight:800,padding:"1px 5px",borderRadius:8,background:"rgba(255,255,255,0.3)",color:SURFACE.card }}>{dayItems.length}</span>
                             )}
                           </button>
                         );
@@ -2807,7 +2807,7 @@ export default function UserPortalPage() {
                       </span>
                       {todayNum && (
                         <span style={{ display:"inline-flex",alignItems:"center",gap:5,fontSize:11,color:"#7a4a00",fontWeight:600 }}>
-                          <span style={{ width:8,height:8,borderRadius:4,border:"1.5px solid #d4a017",background:"#fff" }} />Hoy
+                          <span style={{ width:8,height:8,borderRadius:4,border:"1.5px solid #d4a017",background:SURFACE.card }} />Hoy
                         </span>
                       )}
                     </div>
@@ -2820,18 +2820,18 @@ export default function UserPortalPage() {
                         <div style={{ padding:"6px 10px",borderRadius:10,background:"linear-gradient(135deg,#fff4d6 0%,#fffbf2 100%)",display:"flex",alignItems:"center",gap:8,border:"1px solid #f0deb0" }}>
                           <div style={{ width:6,height:6,borderRadius:"50%",background:"#d4a017",boxShadow:"0 0 6px #d4a017" }} />
                           <p style={{ fontSize:11,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",color:"#7a4a00",margin:0 }}>{fmtDateLong(premCalSelectedKey!)}</p>
-                          <span style={{ marginLeft:"auto",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:"#fff",color:"#a87800",border:"1px solid #f0deb0" }}>{selectedItems.length}</span>
+                          <span style={{ marginLeft:"auto",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:SURFACE.card,color:"#a87800",border:"1px solid #f0deb0" }}>{selectedItems.length}</span>
                         </div>
                         {selectedItems.map(p => renderPremCard(p))}
                       </div>
                     ) : (
-                      <div style={{ background:"#fff",borderRadius:14,border:"1px dashed #e2e8f0",padding:"20px",textAlign:"center" }}>
-                        <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>Sin premiaciones este día</p>
+                      <div style={{ background:SURFACE.card,borderRadius:14,border:"1px dashed #e2e8f0",padding:"20px",textAlign:"center" }}>
+                        <p style={{ fontSize:13,color:SURFACE.textFaint,margin:0 }}>Sin premiaciones este día</p>
                       </div>
                     )
                   ) : (
-                    <div style={{ background:"#fff",borderRadius:14,border:"1px dashed #e2e8f0",padding:"20px",textAlign:"center" }}>
-                      <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>Selecciona un día para ver sus premiaciones</p>
+                    <div style={{ background:SURFACE.card,borderRadius:14,border:"1px dashed #e2e8f0",padding:"20px",textAlign:"center" }}>
+                      <p style={{ fontSize:13,color:SURFACE.textFaint,margin:0 }}>Selecciona un día para ver sus premiaciones</p>
                     </div>
                   )}
                 </div>
@@ -2840,9 +2840,9 @@ export default function UserPortalPage() {
               {/* List view */}
               {premView === "list" && (
                 visible.length === 0 ? (
-                  <div style={{ background:"#fff",borderRadius:14,border:"1px dashed #e2e8f0",padding:"28px 20px",textAlign:"center" }}>
-                    <p style={{ margin:"0 0 8px",color:"#cbd5e1",display:"flex",justifyContent:"center" }}><TrophyIcon size={32} /></p>
-                    <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>
+                  <div style={{ background:SURFACE.card,borderRadius:14,border:"1px dashed #e2e8f0",padding:"28px 20px",textAlign:"center" }}>
+                    <p style={{ margin:"0 0 8px",color:SURFACE.borderStrong,display:"flex",justifyContent:"center" }}><TrophyIcon size={32} /></p>
+                    <p style={{ fontSize:13,color:SURFACE.textFaint,margin:0 }}>
                       {hasFilters ? "No hay premiaciones con esos filtros" : "Sin premiaciones cargadas"}
                     </p>
                   </div>
@@ -2853,7 +2853,7 @@ export default function UserPortalPage() {
                         style={{ display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:12,background:"linear-gradient(135deg,#fff4d6 0%,#fffbeb 100%)",border:"1px solid #f2d98a",cursor:"pointer",width:"100%",textAlign:"left" }}>
                         <span style={{ width:8,height:8,borderRadius:"50%",background:"#e3a808",boxShadow:"0 0 8px #e3a808",flexShrink:0 }} />
                         <p style={{ fontSize:11.5,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:"#7a4a00",margin:0 }}>Por realizar</p>
-                        <span style={{ marginLeft:"auto",fontSize:10,fontWeight:800,padding:"2px 9px",borderRadius:99,background:"#fff",color:"#a87800",border:"1px solid #f0deb0" }}>
+                        <span style={{ marginLeft:"auto",fontSize:10,fontWeight:800,padding:"2px 9px",borderRadius:99,background:SURFACE.card,color:"#a87800",border:"1px solid #f0deb0" }}>
                           {pendingDays.reduce((s,[,items]) => s + items.length, 0)}
                         </span>
                         <ChevronDownIcon size={14} color="#a87800" strokeWidth={2.5} style={{ flexShrink:0,transform:premPendingOpen?"rotate(180deg)":"none",transition:"transform .2s" }} />
@@ -2864,28 +2864,28 @@ export default function UserPortalPage() {
                         <div style={{ position:"sticky",top:0,zIndex:2,background:"linear-gradient(180deg,#fffbeb 0%,rgba(255,251,235,0.92) 100%)",backdropFilter:"blur(6px)",padding:"6px 10px",borderRadius:10,display:"flex",alignItems:"center",gap:8,border:"1px solid #f2d98a" }}>
                           <div style={{ width:6,height:6,borderRadius:"50%",background:"#d4a017",boxShadow:"0 0 6px #d4a017" }} />
                           <p style={{ fontSize:11,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",color:"#7a4a00",margin:0 }}>{fmtDateLong(day)}</p>
-                          <span style={{ marginLeft:"auto",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:"#fff",color:"#a87800",border:"1px solid #f0deb0" }}>{items.length}</span>
+                          <span style={{ marginLeft:"auto",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:SURFACE.card,color:"#a87800",border:"1px solid #f0deb0" }}>{items.length}</span>
                         </div>
                         {items.map(p => renderPremCard(p))}
                       </div>
                     ))}
                     {doneDays.length > 0 && (
                       <button type="button" onClick={() => setPremDoneOpen(v => !v)}
-                        style={{ display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:12,background:"#f1f5f9",border:"1px solid #e2e8f0",marginTop: pendingDays.length > 0 ? 6 : 0,cursor:"pointer",width:"100%",textAlign:"left" }}>
+                        style={{ display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:12,background:SURFACE.borderMuted,border:"1px solid #e2e8f0",marginTop: pendingDays.length > 0 ? 6 : 0,cursor:"pointer",width:"100%",textAlign:"left" }}>
                         <span style={{ width:8,height:8,borderRadius:"50%",background:"#2e7d32",flexShrink:0 }} />
-                        <p style={{ fontSize:11.5,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:"#64748b",margin:0 }}>Realizadas</p>
-                        <span style={{ marginLeft:"auto",fontSize:10,fontWeight:800,padding:"2px 9px",borderRadius:99,background:"#fff",color:"#64748b",border:"1px solid #e2e8f0" }}>
+                        <p style={{ fontSize:11.5,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:SURFACE.textMuted,margin:0 }}>Realizadas</p>
+                        <span style={{ marginLeft:"auto",fontSize:10,fontWeight:800,padding:"2px 9px",borderRadius:99,background:SURFACE.card,color:SURFACE.textMuted,border:"1px solid #e2e8f0" }}>
                           {doneDays.reduce((s,[,items]) => s + items.length, 0)}
                         </span>
-                        <ChevronDownIcon size={14} color="#64748b" strokeWidth={2.5} style={{ flexShrink:0,transform:premDoneOpen?"rotate(180deg)":"none",transition:"transform .2s" }} />
+                        <ChevronDownIcon size={14} color={SURFACE.textMuted} strokeWidth={2.5} style={{ flexShrink:0,transform:premDoneOpen?"rotate(180deg)":"none",transition:"transform .2s" }} />
                       </button>
                     )}
                     {premDoneOpen && doneDays.map(([day, items]) => (
                       <div key={day} style={{ display:"flex",flexDirection:"column",gap:6 }}>
                         <div style={{ position:"sticky",top:0,zIndex:2,background:"linear-gradient(180deg,#f8fafc 0%,rgba(248,250,252,0.92) 100%)",backdropFilter:"blur(6px)",padding:"6px 10px",borderRadius:10,display:"flex",alignItems:"center",gap:8,border:"1px solid #e2e8f0" }}>
-                          <div style={{ width:6,height:6,borderRadius:"50%",background:"#94a3b8" }} />
-                          <p style={{ fontSize:11,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",color:"#64748b",margin:0 }}>{fmtDateLong(day)}</p>
-                          <span style={{ marginLeft:"auto",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:"#fff",color:"#64748b",border:"1px solid #e2e8f0" }}>{items.length}</span>
+                          <div style={{ width:6,height:6,borderRadius:"50%",background:SURFACE.textFaint }} />
+                          <p style={{ fontSize:11,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",color:SURFACE.textMuted,margin:0 }}>{fmtDateLong(day)}</p>
+                          <span style={{ marginLeft:"auto",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:SURFACE.card,color:SURFACE.textMuted,border:"1px solid #e2e8f0" }}>{items.length}</span>
                         </div>
                         {items.map(p => renderPremCard(p))}
                       </div>
@@ -2902,27 +2902,27 @@ export default function UserPortalPage() {
           <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
             {/* Sedes */}
             <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.teal,margin:0 }}>Sedes del evento</p>
-            {venues.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:20 }}>No hay sedes registradas</p>}
+            {venues.length === 0 && <p style={{ fontSize:13,color:SURFACE.textFaint,textAlign:"center",padding:20 }}>No hay sedes registradas</p>}
             {venues.map(v => {
               const isOpen = expandedItemId === `venue-${v.id}`;
               const addr = [v.address, v.commune, v.region].filter(Boolean).join(", ");
               return (
-                <div key={v.id} style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+                <div key={v.id} style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
                   <button type="button" onClick={() => setExpandedItemId(isOpen?null:`venue-${v.id}`)}
                     style={{ width:"100%",display:"flex",alignItems:"center",gap:10,padding:"12px 14px",background:"none",border:"none",cursor:"pointer",textAlign:"left" }}>
                     <PinIcon size={16} color={BRAND.teal} strokeWidth={2} />
                     <div style={{ flex:1,minWidth:0 }}>
-                      <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>{v.name || "–"}</p>
-                      {v.address && <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{v.address}</p>}
+                      <p style={{ fontSize:14,fontWeight:700,color:SURFACE.text,margin:0 }}>{v.name || "–"}</p>
+                      {v.address && <p style={{ fontSize:11,color:SURFACE.textMuted,margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{v.address}</p>}
                     </div>
-                    <ChevronDownIcon size={12} color="#94a3b8" strokeWidth={2} style={{ transition:"transform .15s",transform:isOpen?"rotate(180deg)":"rotate(0)",flexShrink:0 }} />
+                    <ChevronDownIcon size={12} color={SURFACE.textFaint} strokeWidth={2} style={{ transition:"transform .15s",transform:isOpen?"rotate(180deg)":"rotate(0)",flexShrink:0 }} />
                   </button>
                   {isOpen && (
                     <div style={{ padding:"0 14px 14px",display:"flex",flexDirection:"column",gap:8 }}>
                       {v.photoUrl && (
                         <img src={v.photoUrl} alt={v.name || "Sede"} style={{ width:"100%",height:140,objectFit:"cover",borderRadius:10 }} />
                       )}
-                      {addr && <p style={{ fontSize:12,color:"#334155",margin:0 }}>{addr}</p>}
+                      {addr && <p style={{ fontSize:12,color:SURFACE.textStrong,margin:0 }}>{addr}</p>}
                       {addr && <VenueMap title={v.name || "Sede"} query={addr} />}
                     </div>
                   )}
@@ -2931,31 +2931,31 @@ export default function UserPortalPage() {
             })}
             {/* Hoteles */}
             <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.tealDark,margin:"8px 0 0" }}>Hoteles</p>
-            {allAccommodations.length === 0 && <p style={{ fontSize:13,color:"#94a3b8",textAlign:"center",padding:20 }}>No hay hoteles registrados</p>}
+            {allAccommodations.length === 0 && <p style={{ fontSize:13,color:SURFACE.textFaint,textAlign:"center",padding:20 }}>No hay hoteles registrados</p>}
             {allAccommodations.map(h => {
               const isOpen = expandedItemId === `hotel-${h.id}`;
               const addr = [h.address, h.city, h.country].filter(Boolean).join(", ");
               return (
-                <div key={h.id} style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+                <div key={h.id} style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
                   <button type="button" onClick={() => setExpandedItemId(isOpen?null:`hotel-${h.id}`)}
                     style={{ width:"100%",display:"flex",alignItems:"center",gap:10,padding:"12px 14px",background:"none",border:"none",cursor:"pointer",textAlign:"left" }}>
                     <IcoHotel />
                     <div style={{ flex:1,minWidth:0 }}>
-                      <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>{h.name || "–"}</p>
-                      {addr && <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{addr}</p>}
+                      <p style={{ fontSize:14,fontWeight:700,color:SURFACE.text,margin:0 }}>{h.name || "–"}</p>
+                      {addr && <p style={{ fontSize:11,color:SURFACE.textMuted,margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{addr}</p>}
                     </div>
-                    <ChevronDownIcon size={12} color="#94a3b8" strokeWidth={2} style={{ transition:"transform .15s",transform:isOpen?"rotate(180deg)":"rotate(0)",flexShrink:0 }} />
+                    <ChevronDownIcon size={12} color={SURFACE.textFaint} strokeWidth={2} style={{ transition:"transform .15s",transform:isOpen?"rotate(180deg)":"rotate(0)",flexShrink:0 }} />
                   </button>
                   {isOpen && (
                     <div style={{ padding:"0 14px 14px",display:"flex",flexDirection:"column",gap:6 }}>
                       {h.photoUrl && (
                         <img src={h.photoUrl} alt={h.name || "Hotel"} style={{ width:"100%",height:140,objectFit:"cover",borderRadius:10 }} />
                       )}
-                      {addr && <p style={{ fontSize:12,color:"#334155",margin:0 }}>{addr}</p>}
-                      {h.checkIn && <p style={{ fontSize:11,color:"#64748b",margin:0 }}>Check-in: {new Date(h.checkIn).toLocaleDateString("es-CL")}</p>}
-                      {h.checkOut && <p style={{ fontSize:11,color:"#64748b",margin:0 }}>Check-out: {new Date(h.checkOut).toLocaleDateString("es-CL")}</p>}
-                      {h.roomType && <p style={{ fontSize:11,color:"#64748b",margin:0 }}>Tipo: {h.roomType}</p>}
-                      {h.contactPhone && <p style={{ fontSize:11,color:"#64748b",margin:0 }}>Teléfono: {h.contactPhone}</p>}
+                      {addr && <p style={{ fontSize:12,color:SURFACE.textStrong,margin:0 }}>{addr}</p>}
+                      {h.checkIn && <p style={{ fontSize:11,color:SURFACE.textMuted,margin:0 }}>Check-in: {new Date(h.checkIn).toLocaleDateString("es-CL")}</p>}
+                      {h.checkOut && <p style={{ fontSize:11,color:SURFACE.textMuted,margin:0 }}>Check-out: {new Date(h.checkOut).toLocaleDateString("es-CL")}</p>}
+                      {h.roomType && <p style={{ fontSize:11,color:SURFACE.textMuted,margin:0 }}>Tipo: {h.roomType}</p>}
+                      {h.contactPhone && <p style={{ fontSize:11,color:SURFACE.textMuted,margin:0 }}>Teléfono: {h.contactPhone}</p>}
                       {addr && <VenueMap title={h.name || "Hotel"} query={addr} />}
                     </div>
                   )}
@@ -2973,12 +2973,12 @@ export default function UserPortalPage() {
             {mealQrDataUrl && (
               <div style={{ background:`linear-gradient(135deg,${BRAND.navy},${BRAND.navyLight})`,borderRadius:16,padding:"16px",display:"flex",alignItems:"center",gap:14 }}>
                 <button type="button" onClick={() => setMealQrZoom(true)} title="Ver QR más grande"
-                  style={{ background:"#fff",borderRadius:12,padding:6,flexShrink:0,border:"none",cursor:"pointer" }}>
+                  style={{ background:SURFACE.card,borderRadius:12,padding:6,flexShrink:0,border:"none",cursor:"pointer" }}>
                   <img src={mealQrDataUrl} alt="QR credencial" style={{ width:96,height:96,display:"block" }} />
                 </button>
                 <div style={{ minWidth:0 }}>
                   <p style={{ fontSize:10,fontWeight:800,letterSpacing:"0.18em",textTransform:"uppercase",color:BRAND.tealLight,margin:0 }}>Tu credencial</p>
-                  <p style={{ fontSize:14,fontWeight:700,color:"#fff",margin:"4px 0 0",lineHeight:1.3 }}>
+                  <p style={{ fontSize:14,fontWeight:700,color:SURFACE.card,margin:"4px 0 0",lineHeight:1.3 }}>
                     Muestra este QR al ingresar al lugar de comida
                   </p>
                   <p style={{ fontSize:11.5,color:"rgba(255,255,255,0.65)",margin:"4px 0 0" }}>
@@ -3014,18 +3014,18 @@ export default function UserPortalPage() {
                 if (type === "DESAYUNO") return { bg: "#FEF3C7", color: "#92400E", border: "#FDE68A", icon: SunIcon, label: "Desayuno" };
                 if (type === "ALMUERZO") return { bg: "#DBEAFE", color: "#1E40AF", border: "#BFDBFE", icon: UtensilsIcon, label: "Almuerzo" };
                 if (type === "CENA") return { bg: "#E0E7FF", color: "#3730A3", border: "#C7D2FE", icon: MoonIcon, label: "Cena" };
-                return { bg: "#F1F5F9", color: "#475569", border: "#E2E8F0", icon: UtensilsCrossedIcon, label: type };
+                return { bg: SURFACE.borderMuted, color: SURFACE.textSecondary, border: SURFACE.border, icon: UtensilsCrossedIcon, label: type };
               };
               return (
-                <div style={{ background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)" }}>
+                <div style={{ background:SURFACE.card,borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)" }}>
                   <div style={{ padding:"14px 16px",background:"linear-gradient(135deg,rgba(33,208,179,0.08),rgba(33,208,179,0.02))",borderBottom:"1px solid #e2e8f0",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
                     <div style={{ display:"flex",alignItems:"center",gap:8 }}>
                       <div style={{ width:32,height:32,borderRadius:10,background:"rgba(33,208,179,0.12)",display:"flex",alignItems:"center",justifyContent:"center" }}>
                         <CoffeeIcon size={16} color={BRAND.teal} strokeWidth={2} />
                       </div>
                       <div>
-                        <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>Menú de hoy</p>
-                        <p style={{ fontSize:11,color:"#64748b",margin:0,textTransform:"capitalize" }}>{new Date().toLocaleDateString("es-CL",{weekday:"long",day:"numeric",month:"long"})}</p>
+                        <p style={{ fontSize:14,fontWeight:700,color:SURFACE.text,margin:0 }}>Menú de hoy</p>
+                        <p style={{ fontSize:11,color:SURFACE.textMuted,margin:0,textTransform:"capitalize" }}>{new Date().toLocaleDateString("es-CL",{weekday:"long",day:"numeric",month:"long"})}</p>
                       </div>
                     </div>
                   </div>
@@ -3043,15 +3043,15 @@ export default function UserPortalPage() {
                               <span style={{ fontSize:10,fontWeight:700,padding:"2px 7px",borderRadius:6,background:"#f0fdf4",color:"#166534",border:"1px solid #bbf7d0" }}>{fm.dietaryType}</span>
                             )}
                           </div>
-                          <p style={{ fontSize:15,fontWeight:700,color:"#0f172a",margin:"5px 0 0" }}>{fm.title}</p>
-                          {fm.description && <p style={{ fontSize:12,color:"#64748b",margin:"3px 0 0",lineHeight:1.4 }}>{fm.description}</p>}
-                          {fm.locationDetail && <p style={{ fontSize:11,color:"#94a3b8",margin:"3px 0 0" }}><PinIcon size={11} className="inline mr-1" />{fm.locationDetail}</p>}
+                          <p style={{ fontSize:15,fontWeight:700,color:SURFACE.text,margin:"5px 0 0" }}>{fm.title}</p>
+                          {fm.description && <p style={{ fontSize:12,color:SURFACE.textMuted,margin:"3px 0 0",lineHeight:1.4 }}>{fm.description}</p>}
+                          {fm.locationDetail && <p style={{ fontSize:11,color:SURFACE.textFaint,margin:"3px 0 0" }}><PinIcon size={11} className="inline mr-1" />{fm.locationDetail}</p>}
                         </div>
                       </div>
                     );
                   }) : (
                     <div style={{ padding:20,textAlign:"center" }}>
-                      <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>No hay menú programado para hoy</p>
+                      <p style={{ fontSize:13,color:SURFACE.textFaint,margin:0 }}>No hay menú programado para hoy</p>
                     </div>
                   )}
                 </div>
@@ -3074,15 +3074,15 @@ export default function UserPortalPage() {
                 if (type === "DESAYUNO") return { bg: "#FEF3C7", color: "#92400E", border: "#FDE68A", icon: SunIcon, label: "Desayuno" };
                 if (type === "ALMUERZO") return { bg: "#DBEAFE", color: "#1E40AF", border: "#BFDBFE", icon: UtensilsIcon, label: "Almuerzo" };
                 if (type === "CENA") return { bg: "#E0E7FF", color: "#3730A3", border: "#C7D2FE", icon: MoonIcon, label: "Cena" };
-                return { bg: "#F1F5F9", color: "#475569", border: "#E2E8F0", icon: UtensilsCrossedIcon, label: type };
+                return { bg: SURFACE.borderMuted, color: SURFACE.textSecondary, border: SURFACE.border, icon: UtensilsCrossedIcon, label: type };
               };
               return (
-                <div style={{ background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)",opacity:0.85 }}>
-                  <div style={{ padding:"12px 16px",background:"#f8fafc",borderBottom:"1px solid #e2e8f0",display:"flex",alignItems:"center",gap:8 }}>
-                    <CalendarIcon size={14} color="#64748b" strokeWidth={2} />
+                <div style={{ background:SURFACE.card,borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)",opacity:0.85 }}>
+                  <div style={{ padding:"12px 16px",background:SURFACE.bg,borderBottom:"1px solid #e2e8f0",display:"flex",alignItems:"center",gap:8 }}>
+                    <CalendarIcon size={14} color={SURFACE.textMuted} strokeWidth={2} />
                     <div>
-                      <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0 }}>Menú de mañana</p>
-                      <p style={{ fontSize:11,color:"#94a3b8",margin:0,textTransform:"capitalize" }}>{tomorrow.toLocaleDateString("es-CL",{weekday:"long",day:"numeric",month:"long"})}</p>
+                      <p style={{ fontSize:13,fontWeight:700,color:SURFACE.text,margin:0 }}>Menú de mañana</p>
+                      <p style={{ fontSize:11,color:SURFACE.textFaint,margin:0,textTransform:"capitalize" }}>{tomorrow.toLocaleDateString("es-CL",{weekday:"long",day:"numeric",month:"long"})}</p>
                     </div>
                   </div>
                   {sorted.length > 0 ? sorted.map((fm, i) => {
@@ -3094,15 +3094,15 @@ export default function UserPortalPage() {
                         </div>
                         <div style={{ flex:1,minWidth:0 }}>
                           <span style={{ fontSize:10,fontWeight:800,padding:"2px 7px",borderRadius:6,textTransform:"uppercase",letterSpacing:"0.05em",background:m.bg,color:m.color }}>{m.label}</span>
-                          <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:"4px 0 0" }}>{fm.title}</p>
-                          {fm.description && <p style={{ fontSize:12,color:"#64748b",margin:"2px 0 0",lineHeight:1.4 }}>{fm.description}</p>}
-                          {fm.locationDetail && <p style={{ fontSize:11,color:"#94a3b8",margin:"2px 0 0" }}><PinIcon size={11} className="inline mr-1" />{fm.locationDetail}</p>}
+                          <p style={{ fontSize:14,fontWeight:700,color:SURFACE.text,margin:"4px 0 0" }}>{fm.title}</p>
+                          {fm.description && <p style={{ fontSize:12,color:SURFACE.textMuted,margin:"2px 0 0",lineHeight:1.4 }}>{fm.description}</p>}
+                          {fm.locationDetail && <p style={{ fontSize:11,color:SURFACE.textFaint,margin:"2px 0 0" }}><PinIcon size={11} className="inline mr-1" />{fm.locationDetail}</p>}
                         </div>
                       </div>
                     );
                   }) : (
                     <div style={{ padding:16,textAlign:"center" }}>
-                      <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>Menú pendiente de programar</p>
+                      <p style={{ fontSize:13,color:SURFACE.textFaint,margin:0 }}>Menú pendiente de programar</p>
                     </div>
                   )}
                 </div>
@@ -3122,11 +3122,11 @@ export default function UserPortalPage() {
               return (
               <>
               {myLocations.length > 0 && (
-              <div style={{ background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)" }}>
+              <div style={{ background:SURFACE.card,borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)" }}>
                 <div style={{ padding:"14px 16px",background:"linear-gradient(135deg,rgba(33,208,179,0.06),rgba(31,205,255,0.04))",borderBottom:"1px solid #e2e8f0" }}>
                   <div style={{ display:"flex",alignItems:"center",gap:8 }}>
                     <PinIcon size={16} color={BRAND.teal} strokeWidth={2} />
-                    <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0 }}>Tus lugares de comida</p>
+                    <p style={{ fontSize:13,fontWeight:700,color:SURFACE.text,margin:0 }}>Tus lugares de comida</p>
                   </div>
                 </div>
                 {myLocations.map((fl, i) => {
@@ -3140,11 +3140,11 @@ export default function UserPortalPage() {
                         <CoffeeIcon size={16} color={BRAND.teal} strokeWidth={2} />
                       </div>
                       <div style={{ flex:1,minWidth:0 }}>
-                        <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>{fl.name}</p>
-                        {fl.description && <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0",lineHeight:1.3 }}>{fl.description}</p>}
-                        {acc?.address && <p style={{ fontSize:11,color:"#94a3b8",margin:"2px 0 0",lineHeight:1.3 }}><PinIcon size={11} className="inline mr-1" />{acc.address}</p>}
+                        <p style={{ fontSize:14,fontWeight:700,color:SURFACE.text,margin:0 }}>{fl.name}</p>
+                        {fl.description && <p style={{ fontSize:11,color:SURFACE.textMuted,margin:"2px 0 0",lineHeight:1.3 }}>{fl.description}</p>}
+                        {acc?.address && <p style={{ fontSize:11,color:SURFACE.textFaint,margin:"2px 0 0",lineHeight:1.3 }}><PinIcon size={11} className="inline mr-1" />{acc.address}</p>}
                       </div>
-                      {fl.capacity && <span style={{ fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:8,background:"#f1f5f9",color:"#475569",flexShrink:0 }}>{fl.capacity} pax</span>}
+                      {fl.capacity && <span style={{ fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:8,background:SURFACE.borderMuted,color:SURFACE.textSecondary,flexShrink:0 }}>{fl.capacity} pax</span>}
                       <button type="button" onClick={() => setExpandedItemId(isOpen ? null : `food-${fl.id}`)}
                         style={{ display:"inline-flex",alignItems:"center",gap:4,padding:"6px 10px",borderRadius:9,border:`1px solid ${isOpen ? BRAND.teal : "rgba(33,208,179,0.35)"}`,background:isOpen?"rgba(33,208,179,0.14)":"rgba(33,208,179,0.06)",color:BRAND.tealInk,fontSize:11,fontWeight:800,cursor:"pointer",flexShrink:0 }}>
                         <PinIcon size={12} strokeWidth={2} />
@@ -3162,9 +3162,9 @@ export default function UserPortalPage() {
               </div>
               )}
               {myLocations.length === 0 && (
-              <div style={{ background:"#fff",borderRadius:16,border:"1px dashed #e2e8f0",padding:24,textAlign:"center" }}>
-                <CoffeeIcon size={28} color="#cbd5e1" strokeWidth={1.5} style={{ margin:"0 auto 8px" }} />
-                <p style={{ fontSize:13,fontWeight:600,color:"#94a3b8",margin:0 }}>{loading ? "Cargando lugares de comida…" : "No hay lugares asignados a tu perfil"}</p>
+              <div style={{ background:SURFACE.card,borderRadius:16,border:"1px dashed #e2e8f0",padding:24,textAlign:"center" }}>
+                <CoffeeIcon size={28} color={SURFACE.borderStrong} strokeWidth={1.5} style={{ margin:"0 auto 8px" }} />
+                <p style={{ fontSize:13,fontWeight:600,color:SURFACE.textFaint,margin:0 }}>{loading ? "Cargando lugares de comida…" : "No hay lugares asignados a tu perfil"}</p>
               </div>
               )}
               </>
@@ -3177,14 +3177,14 @@ export default function UserPortalPage() {
         {/* ─── Mi Delegación tab ─── */}
         {activeTab === "delegacion" && isChief && (
           <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
-            <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",padding:"14px",borderLeft:"4px solid #f59e0b" }}>
-              <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:"#f59e0b",margin:"0 0 6px" }}>Mi Delegación</p>
-              <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0 }}>{delegation ? (countryLabels[delegation.countryCode] || delegation.countryCode) : "—"}</p>
-              <p style={{ fontSize:12,color:"#64748b",margin:"3px 0 0" }}>{delegationMembers.length} deportista(s) registrado(s)</p>
+            <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",padding:"14px",borderLeft:"4px solid #f59e0b" }}>
+              <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:STATE.warning,margin:"0 0 6px" }}>Mi Delegación</p>
+              <p style={{ fontSize:13,fontWeight:700,color:SURFACE.text,margin:0 }}>{delegation ? (countryLabels[delegation.countryCode] || delegation.countryCode) : "—"}</p>
+              <p style={{ fontSize:12,color:SURFACE.textMuted,margin:"3px 0 0" }}>{delegationMembers.length} deportista(s) registrado(s)</p>
             </div>
             {delegationMembers.length === 0 ? (
-              <div style={{ padding:20,textAlign:"center",background:"#fff",borderRadius:14,border:"1px solid #e2e8f0" }}>
-                <p style={{ fontSize:13,color:"#94a3b8",margin:0 }}>No hay otros participantes en tu delegación.</p>
+              <div style={{ padding:20,textAlign:"center",background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0" }}>
+                <p style={{ fontSize:13,color:SURFACE.textFaint,margin:0 }}>No hay otros participantes en tu delegación.</p>
               </div>
             ) : (
               <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
@@ -3199,25 +3199,25 @@ export default function UserPortalPage() {
                     : accreditation === "REJECTED" ? "Acreditación rechazada"
                     : accreditation ? "Acreditación pendiente" : null;
                   return (
-                    <div key={m.id} style={{ background:"#fff",borderRadius:12,border:"1px solid #e2e8f0",padding:"10px 14px",display:"flex",alignItems:"flex-start",gap:10 }}>
-                      <div style={{ width:36,height:36,borderRadius:"50%",background:"#f1f5f9",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:"#64748b",flexShrink:0 }}>
+                    <div key={m.id} style={{ background:SURFACE.card,borderRadius:12,border:"1px solid #e2e8f0",padding:"10px 14px",display:"flex",alignItems:"flex-start",gap:10 }}>
+                      <div style={{ width:36,height:36,borderRadius:"50%",background:SURFACE.borderMuted,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:SURFACE.textMuted,flexShrink:0 }}>
                         {(m.fullName || "?").split(" ").slice(0,2).map(w => w[0] || "").join("").toUpperCase()}
                       </div>
                       <div style={{ flex:1,minWidth:0 }}>
-                        <p style={{ fontSize:13,fontWeight:600,color:"#0f172a",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{m.fullName}</p>
+                        <p style={{ fontSize:13,fontWeight:600,color:SURFACE.text,margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{m.fullName}</p>
                         <div style={{ display:"flex",gap:4,flexWrap:"wrap",marginTop:3 }}>
-                          {m.userType && <span style={{ fontSize:10,fontWeight:600,padding:"1px 6px",borderRadius:4,background:"#f1f5f9",color:"#64748b" }}>{m.userType}</span>}
+                          {m.userType && <span style={{ fontSize:10,fontWeight:600,padding:"1px 6px",borderRadius:4,background:SURFACE.borderMuted,color:SURFACE.textMuted }}>{m.userType}</span>}
                           {discLabel && <span style={{ fontSize:10,fontWeight:600,padding:"1px 6px",borderRadius:4,background:"rgba(33,208,179,0.1)",color:BRAND.tealInk }}>{discLabel}</span>}
                           {m.countryCode && <span style={{ fontSize:10,fontWeight:600,padding:"1px 6px",borderRadius:4,background:"rgba(99,102,241,0.08)",color:"#6366f1" }}>{m.countryCode}</span>}
                           {accLabel && <span style={{ fontSize:10,fontWeight:600,padding:"1px 6px",borderRadius:4,
                             background: accLabel === "Acreditado" ? "rgba(16,185,129,0.1)" : accLabel === "Acreditación rechazada" ? "rgba(239,68,68,0.1)" : "#FEF3C7",
-                            color: accLabel === "Acreditado" ? "#059669" : accLabel === "Acreditación rechazada" ? "#dc2626" : "#92400E" }}>{accLabel}</span>}
+                            color: accLabel === "Acreditado" ? STATE.successText : accLabel === "Acreditación rechazada" ? STATE.dangerText : "#92400E" }}>{accLabel}</span>}
                         </div>
                         <div style={{ display:"flex",flexDirection:"column",gap:2,marginTop:6 }}>
-                          {m.email && <p style={{ fontSize:11,color:"#64748b",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}><MailIcon size={11} className="inline mr-1" />{m.email}</p>}
-                          {m.phone && <p style={{ fontSize:11,color:"#64748b",margin:0 }}><PhoneIcon size={11} className="inline mr-1" />{m.phone}</p>}
-                          {memberFlight && <p style={{ fontSize:11,color:"#64748b",margin:0 }}><PlaneIcon size={11} className="inline mr-1" />{memberFlight}{m.arrivalTime ? ` · ${fmt(m.arrivalTime)}` : ""}</p>}
-                          {memberHotel && <p style={{ fontSize:11,color:"#64748b",margin:0 }}><HotelIcon size={11} className="inline mr-1" />{memberHotel}{m.roomNumber ? ` · Hab. ${m.roomNumber}` : ""}</p>}
+                          {m.email && <p style={{ fontSize:11,color:SURFACE.textMuted,margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}><MailIcon size={11} className="inline mr-1" />{m.email}</p>}
+                          {m.phone && <p style={{ fontSize:11,color:SURFACE.textMuted,margin:0 }}><PhoneIcon size={11} className="inline mr-1" />{m.phone}</p>}
+                          {memberFlight && <p style={{ fontSize:11,color:SURFACE.textMuted,margin:0 }}><PlaneIcon size={11} className="inline mr-1" />{memberFlight}{m.arrivalTime ? ` · ${fmt(m.arrivalTime)}` : ""}</p>}
+                          {memberHotel && <p style={{ fontSize:11,color:SURFACE.textMuted,margin:0 }}><HotelIcon size={11} className="inline mr-1" />{memberHotel}{m.roomNumber ? ` · Hab. ${m.roomNumber}` : ""}</p>}
                         </div>
                       </div>
                     </div>
@@ -3232,20 +3232,20 @@ export default function UserPortalPage() {
         {activeTab === "cupones" && (
           <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
             {/* Sub-tabs */}
-            <div className="rounded-2xl p-1 flex gap-1" style={{ background:"#fff", border:"1px solid #e2e8f0", boxShadow:"0 1px 4px rgba(15,23,42,0.05)" }}>
+            <div className="rounded-2xl p-1 flex gap-1" style={{ background:SURFACE.card, border:"1px solid #e2e8f0", boxShadow:"0 1px 4px rgba(15,23,42,0.05)" }}>
               <button type="button" onClick={() => setCouponTab("available")}
                 className="flex-1 py-2.5 px-3 rounded-xl text-sm font-bold transition-all inline-flex items-center justify-center gap-2"
                 style={{
                   background: couponTab === "available" ? `linear-gradient(135deg,${BRAND.teal} 0%,#15B09A 100%)` : "transparent",
-                  color: couponTab === "available" ? "#fff" : "#64748b",
+                  color: couponTab === "available" ? SURFACE.card : SURFACE.textMuted,
                   boxShadow: couponTab === "available" ? "0 4px 14px rgba(33,208,179,0.32)" : "none",
                   border: "none", cursor: "pointer", letterSpacing: "0.01em",
                 }}>
                 Disponibles
                 <span className="text-[10px] rounded-full font-bold px-2 py-0.5"
                   style={{
-                    background: couponTab === "available" ? "rgba(255,255,255,0.25)" : "#f1f5f9",
-                    color: couponTab === "available" ? "#fff" : "#64748b",
+                    background: couponTab === "available" ? "rgba(255,255,255,0.25)" : SURFACE.borderMuted,
+                    color: couponTab === "available" ? SURFACE.card : SURFACE.textMuted,
                   }}>
                   {visibleCouponsAvailable.filter((c) => !c._exhausted).length}
                 </span>
@@ -3254,15 +3254,15 @@ export default function UserPortalPage() {
                 className="flex-1 py-2.5 px-3 rounded-xl text-sm font-bold transition-all inline-flex items-center justify-center gap-2"
                 style={{
                   background: couponTab === "mine" ? `linear-gradient(135deg,${BRAND.teal} 0%,#15B09A 100%)` : "transparent",
-                  color: couponTab === "mine" ? "#fff" : "#64748b",
+                  color: couponTab === "mine" ? SURFACE.card : SURFACE.textMuted,
                   boxShadow: couponTab === "mine" ? "0 4px 14px rgba(33,208,179,0.32)" : "none",
                   border: "none", cursor: "pointer", letterSpacing: "0.01em",
                 }}>
                 Mis beneficios
                 <span className="text-[10px] rounded-full font-bold px-2 py-0.5"
                   style={{
-                    background: couponTab === "mine" ? "rgba(255,255,255,0.25)" : "#f1f5f9",
-                    color: couponTab === "mine" ? "#fff" : "#64748b",
+                    background: couponTab === "mine" ? "rgba(255,255,255,0.25)" : SURFACE.borderMuted,
+                    color: couponTab === "mine" ? SURFACE.card : SURFACE.textMuted,
                   }}>
                   {couponClaims.filter((m) => m.status === "CLAIMED").length}
                 </span>
@@ -3277,9 +3277,9 @@ export default function UserPortalPage() {
 
             {couponTab === "available" ? (
               visibleCouponsAvailable.length === 0 ? (
-                <div style={{ padding:24, textAlign:"center", background:"#fff", borderRadius:14, border:"1px solid #e2e8f0" }}>
-                  <p style={{ fontSize:14, fontWeight:600, color:"#0f172a", margin:0 }}>No hay beneficios disponibles</p>
-                  <p style={{ fontSize:12, color:"#94a3b8", margin:"6px 0 0" }}>Vuelve a chequear más tarde, vamos a estar agregando beneficios durante el evento.</p>
+                <div style={{ padding:24, textAlign:"center", background:SURFACE.card, borderRadius:14, border:"1px solid #e2e8f0" }}>
+                  <p style={{ fontSize:14, fontWeight:600, color:SURFACE.text, margin:0 }}>No hay beneficios disponibles</p>
+                  <p style={{ fontSize:12, color:SURFACE.textFaint, margin:"6px 0 0" }}>Vuelve a chequear más tarde, vamos a estar agregando beneficios durante el evento.</p>
                 </div>
               ) : (
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))", gap:12 }}>
@@ -3289,7 +3289,7 @@ export default function UserPortalPage() {
                     return (
                       <article key={c.id}
                         style={{
-                          background:"#fff", borderRadius:18, overflow:"hidden",
+                          background:SURFACE.card, borderRadius:18, overflow:"hidden",
                           border:"1px solid rgba(15,23,42,0.06)",
                           boxShadow: exhausted ? "0 1px 4px rgba(15,23,42,0.06)" : "0 4px 16px rgba(15,23,42,0.08)",
                           opacity: exhausted ? 0.6 : 1,
@@ -3315,7 +3315,7 @@ export default function UserPortalPage() {
                           <div style={{
                             position:"absolute", top:10, right:10,
                             background:`linear-gradient(135deg, ${cat.color} 0%, ${cat.color}d0 100%)`,
-                            color:"#fff", padding:"6px 12px", borderRadius:14, fontSize:15, fontWeight:800,
+                            color:SURFACE.card, padding:"6px 12px", borderRadius:14, fontSize:15, fontWeight:800,
                             boxShadow:`0 6px 18px ${cat.color}66`,
                           }}>
                             {couponDiscountDisplay(c)}
@@ -3324,35 +3324,35 @@ export default function UserPortalPage() {
                             <div style={{ position:"absolute", bottom:10, left:10, right:10, display:"flex", alignItems:"center", gap:8 }}>
                               {c.partnerLogoUrl ? (
                                 <img src={c.partnerLogoUrl} alt={c.partnerName} loading="lazy"
-                                  style={{ width:28, height:28, borderRadius:"50%", background:"#fff", padding:2, border:"2px solid rgba(255,255,255,0.95)", boxShadow:"0 3px 8px rgba(0,0,0,0.22)", objectFit:"contain" }}
+                                  style={{ width:28, height:28, borderRadius:"50%", background:SURFACE.card, padding:2, border:"2px solid rgba(255,255,255,0.95)", boxShadow:"0 3px 8px rgba(0,0,0,0.22)", objectFit:"contain" }}
                                   onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
                               ) : (
-                                <div style={{ width:28, height:28, borderRadius:"50%", background:"#fff", color:cat.color, fontSize:10, fontWeight:800, display:"flex", alignItems:"center", justifyContent:"center", border:"2px solid rgba(255,255,255,0.95)", boxShadow:"0 3px 8px rgba(0,0,0,0.22)" }}>
+                                <div style={{ width:28, height:28, borderRadius:"50%", background:SURFACE.card, color:cat.color, fontSize:10, fontWeight:800, display:"flex", alignItems:"center", justifyContent:"center", border:"2px solid rgba(255,255,255,0.95)", boxShadow:"0 3px 8px rgba(0,0,0,0.22)" }}>
                                   {c.partnerName.slice(0,2).toUpperCase()}
                                 </div>
                               )}
-                              <span style={{ color:"#fff", fontWeight:700, fontSize:13, textShadow:"0 1px 3px rgba(0,0,0,0.55)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                              <span style={{ color:SURFACE.card, fontWeight:700, fontSize:13, textShadow:"0 1px 3px rgba(0,0,0,0.55)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                                 {c.partnerName}
                               </span>
                             </div>
                           )}
                         </div>
                         <div style={{ padding:"12px 14px 4px" }}>
-                          <p style={{ fontSize:14, fontWeight:700, color:"#0f172a", margin:0, lineHeight:1.25 }}>{c.title}</p>
+                          <p style={{ fontSize:14, fontWeight:700, color:SURFACE.text, margin:0, lineHeight:1.25 }}>{c.title}</p>
                           {c.description && (
-                            <p style={{ fontSize:11.5, color:"#64748b", margin:"6px 0 0", lineHeight:1.4, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" as any, overflow:"hidden" }}>
+                            <p style={{ fontSize:11.5, color:SURFACE.textMuted, margin:"6px 0 0", lineHeight:1.4, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" as any, overflow:"hidden" }}>
                               {c.description}
                             </p>
                           )}
                           <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginTop:8 }}>
                             {c.validUntil && (
-                              <span style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:10.5, color:"#64748b", fontWeight:500 }}>
+                              <span style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:10.5, color:SURFACE.textMuted, fontWeight:500 }}>
                                 <CalendarIcon size={11} strokeWidth={2} />
                                 Hasta {fmtCouponDate(c.validUntil)}
                               </span>
                             )}
                             {c.partnerAddress && (
-                              <span style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:10.5, color:"#64748b", fontWeight:500, maxWidth:170, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                              <span style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:10.5, color:SURFACE.textMuted, fontWeight:500, maxWidth:170, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                                 <PinIcon size={11} strokeWidth={2} />
                                 {c.partnerAddress}
                               </span>
@@ -3361,7 +3361,7 @@ export default function UserPortalPage() {
                         </div>
                         <button type="button" disabled={exhausted || couponClaiming === c.id} onClick={() => claimCoupon(c.id)}
                           style={{
-                            width:"100%", marginTop:10, padding:"12px 0", border:"none", fontSize:13, fontWeight:800, color:"#fff",
+                            width:"100%", marginTop:10, padding:"12px 0", border:"none", fontSize:13, fontWeight:800, color:SURFACE.card,
                             background: exhausted ? "linear-gradient(135deg,#94a3b8 0%,#64748b 100%)" : `linear-gradient(135deg, ${cat.color} 0%, ${cat.color}dd 100%)`,
                             cursor: exhausted ? "not-allowed" : "pointer", letterSpacing:"0.02em",
                             display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
@@ -3386,9 +3386,9 @@ export default function UserPortalPage() {
                 </div>
               )
             ) : couponClaims.length === 0 ? (
-              <div style={{ padding:24, textAlign:"center", background:"#fff", borderRadius:14, border:"1px solid #e2e8f0" }}>
-                <p style={{ fontSize:14, fontWeight:600, color:"#0f172a", margin:0 }}>Todavía no reclamaste ningún beneficio</p>
-                <p style={{ fontSize:12, color:"#94a3b8", margin:"6px 0 0" }}>Ve a la pestaña Disponibles y reclama los que quieras.</p>
+              <div style={{ padding:24, textAlign:"center", background:SURFACE.card, borderRadius:14, border:"1px solid #e2e8f0" }}>
+                <p style={{ fontSize:14, fontWeight:600, color:SURFACE.text, margin:0 }}>Todavía no reclamaste ningún beneficio</p>
+                <p style={{ fontSize:12, color:SURFACE.textFaint, margin:"6px 0 0" }}>Ve a la pestaña Disponibles y reclama los que quieras.</p>
               </div>
             ) : (
               <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
@@ -3397,7 +3397,7 @@ export default function UserPortalPage() {
                   const cat = coupon ? (COUPON_CATEGORIES[coupon.category] || COUPON_CATEGORIES.OTHER) : COUPON_CATEGORIES.OTHER;
                   const statusMeta = COUPON_STATUS_META[c.status];
                   return (
-                    <article key={c.id} style={{ background:"#fff", borderRadius:14, overflow:"hidden", border:"1px solid #e2e8f0", borderLeft:`5px solid ${cat.color}` }}>
+                    <article key={c.id} style={{ background:SURFACE.card, borderRadius:14, overflow:"hidden", border:"1px solid #e2e8f0", borderLeft:`5px solid ${cat.color}` }}>
                       <button type="button" onClick={() => c.status === "CLAIMED" && setActiveClaim(c)}
                         style={{ width:"100%", textAlign:"left", padding:"12px 14px", background:"none", border:"none", cursor: c.status === "CLAIMED" ? "pointer" : "default" }}>
                         <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:12 }}>
@@ -3407,11 +3407,11 @@ export default function UserPortalPage() {
                                 {statusMeta.label}
                               </span>
                               {coupon?.partnerName && (
-                                <span style={{ fontSize:11, color:"#64748b" }}>{coupon.partnerName}</span>
+                                <span style={{ fontSize:11, color:SURFACE.textMuted }}>{coupon.partnerName}</span>
                               )}
                             </div>
-                            <p style={{ fontSize:13.5, fontWeight:700, color:"#0f172a", margin:0, lineHeight:1.25 }}>{coupon?.title || "Beneficio"}</p>
-                            <p style={{ fontSize:11, fontFamily:"ui-monospace, SFMono-Regular, monospace", color:"#64748b", margin:"4px 0 0", letterSpacing:"0.04em" }}>
+                            <p style={{ fontSize:13.5, fontWeight:700, color:SURFACE.text, margin:0, lineHeight:1.25 }}>{coupon?.title || "Beneficio"}</p>
+                            <p style={{ fontSize:11, fontFamily:"ui-monospace, SFMono-Regular, monospace", color:SURFACE.textMuted, margin:"4px 0 0", letterSpacing:"0.04em" }}>
                               {c.uniqueCode}
                             </p>
                           </div>
@@ -3425,7 +3425,7 @@ export default function UserPortalPage() {
                               </p>
                             )}
                             {c.status === "REDEEMED" && c.redeemedAt && (
-                              <p style={{ fontSize:10.5, color:"#64748b", margin:"2px 0 0" }}>
+                              <p style={{ fontSize:10.5, color:SURFACE.textMuted, margin:"2px 0 0" }}>
                                 Canjeado {fmtCouponDate(c.redeemedAt)}
                               </p>
                             )}
@@ -3452,7 +3452,7 @@ export default function UserPortalPage() {
         {activeTab === "cuenta" && (
           <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
             {/* Info rows */}
-            <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+            <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
               {([
                 { icon:<UserIcon size={14} color={BRAND.teal} strokeWidth={2} />, label:"Nombre", value:athlete.fullName },
                 { icon:<MailIcon size={14} color={BRAND.teal} strokeWidth={2} />, label:"Correo", value:athlete.email || "—" },
@@ -3461,14 +3461,14 @@ export default function UserPortalPage() {
                 { icon:<GlobeIcon size={14} color={BRAND.teal} strokeWidth={2} />, label:"Delegación", value:delegation ? (countryLabels[delegation.countryCode]||delegation.countryCode) : "—" },
                 { icon:<ShieldIcon size={14} color={BRAND.teal} strokeWidth={2} />, label:"Tipo", value:athlete.userType || "—" },
                 { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>, label:"Disciplina", value: (() => { if (!athlete.disciplineId) return "—"; const disc = ([...disciplineParents, ...calendarEvents] as any[]).find((d: any) => d.id === athlete.disciplineId); if (!disc) return "—"; const parent = disc.parentId ? disciplineParents.find(p => p.id === disc.parentId) : null; return parent ? `${parent.name} — ${disc.name}` : (disc.name || "—"); })() },
-                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={athlete.isDelegationLead ? "#f59e0b" : BRAND.teal} strokeWidth="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>, label:"Rol", value:athlete.isDelegationLead ? "Jefe de Delegación" : "Participante" },
+                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={athlete.isDelegationLead ? STATE.warning : BRAND.teal} strokeWidth="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>, label:"Rol", value:athlete.isDelegationLead ? "Jefe de Delegación" : "Participante" },
                 { icon:<LockIcon size={14} color={BRAND.teal} strokeWidth={2} />, label:"ID", value:athlete.id.slice(-6).toUpperCase() },
               ]).map((r,i) => (
                 <div key={r.label} style={{ display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderTop:i>0?"1px solid #f1f5f9":"none" }}>
                   <span style={{ flexShrink:0 }}>{r.icon}</span>
                   <div style={{ flex:1,minWidth:0,display:"flex",alignItems:"baseline",gap:6 }}>
-                    <span style={{ fontSize:10,fontWeight:700,color:"#94a3b8",textTransform:"uppercase",flexShrink:0 }}>{r.label}</span>
-                    <span style={{ fontSize:13,fontWeight:600,color:"#0f172a",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{r.value}</span>
+                    <span style={{ fontSize:10,fontWeight:700,color:SURFACE.textFaint,textTransform:"uppercase",flexShrink:0 }}>{r.label}</span>
+                    <span style={{ fontSize:13,fontWeight:600,color:SURFACE.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{r.value}</span>
                   </div>
                 </div>
               ))}
@@ -3536,7 +3536,7 @@ export default function UserPortalPage() {
             />
             {/* Health form link */}
             <a href={`/portal/athlete/salud?id=${athlete.id}`}
-              style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:8,padding:14,borderRadius:12,background:"#fff",border:"1px solid #e2e8f0",color:"#0f172a",fontSize:13,fontWeight:700,textDecoration:"none" }}>
+              style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:8,padding:14,borderRadius:12,background:SURFACE.card,border:"1px solid #e2e8f0",color:SURFACE.text,fontSize:13,fontWeight:700,textDecoration:"none" }}>
               <ActivityIcon size={16} color={BRAND.teal} strokeWidth={2} />
               Ficha de salud
               {healthRecord ? <span style={{ fontSize:10,padding:"2px 8px",borderRadius:6,background:"rgba(33,208,179,0.1)",color:BRAND.tealInk }}>Completada</span> : <span style={{ fontSize:10,padding:"2px 8px",borderRadius:6,background:"#FEF3C7",color:"#92400E" }}>Pendiente</span>}
@@ -3549,7 +3549,7 @@ export default function UserPortalPage() {
             <DevicePermissionsSection />
             {/* Logout */}
             <button type="button" onClick={() => { if (athlete) clearPortalSession("athlete", athlete.id); setAthlete(null); setAthleteId(""); try { sessionStorage.removeItem("portal_user_id"); } catch {} clearPersistedTabs(); setActiveTab("itinerario"); }}
-              style={{ width:"100%",padding:12,borderRadius:12,border:"1px solid #e2e8f0",background:"#fff",color:"#ef4444",fontSize:13,fontWeight:600,cursor:"pointer" }}>
+              style={{ width:"100%",padding:12,borderRadius:12,border:"1px solid #e2e8f0",background:SURFACE.card,color:STATE.danger,fontSize:13,fontWeight:600,cursor:"pointer" }}>
               Cerrar sesión
             </button>
             {/* Eliminar cuenta */}
@@ -3568,11 +3568,11 @@ export default function UserPortalPage() {
         </div>{/* end tab content */}
 
         {/* ── Bottom tab bar ── */}
-        <div style={{ position:"fixed",bottom:0,left:0,right:0,display:"flex",background:"#fff",borderTop:"1px solid #e2e8f0",zIndex:100,paddingTop:6,paddingBottom:6,boxShadow:"0 -2px 12px rgba(0,0,0,0.06)" }}>
+        <div style={{ position:"fixed",bottom:0,left:0,right:0,display:"flex",background:SURFACE.card,borderTop:"1px solid #e2e8f0",zIndex:100,paddingTop:6,paddingBottom:6,boxShadow:"0 -2px 12px rgba(0,0,0,0.06)" }}>
           {primaryTabs.map(tab => (
             <button key={tab.key} type="button" onClick={() => setActiveTab(tab.key)}
               style={{ flex:1,padding:"4px 0 2px",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,
-                color:activeTab===tab.key?BRAND.teal:"#94a3b8" }}>
+                color:activeTab===tab.key?BRAND.teal:SURFACE.textFaint }}>
               <span style={{ display:"flex" }}>{tab.icon}</span>
               <span style={{ fontSize:9.5,fontWeight:activeTab===tab.key?700:500,letterSpacing:"-0.005em" }}>{tab.label}</span>
             </button>
@@ -3583,7 +3583,7 @@ export default function UserPortalPage() {
             return (
               <button type="button" onClick={() => setMoreOpen(true)}
                 style={{ flex:1,padding:"4px 0 2px",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,
-                  color: on ? BRAND.teal : "#94a3b8" }}>
+                  color: on ? BRAND.teal : SURFACE.textFaint }}>
                 <span style={{ display:"flex" }}>
                   {activeOverflow ? activeOverflow.icon : (
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
@@ -3600,22 +3600,22 @@ export default function UserPortalPage() {
           <div onClick={() => setMoreOpen(false)}
             style={{ position:"fixed",inset:0,zIndex:120,display:"flex",alignItems:"flex-end",background:"rgba(2,12,24,0.5)",backdropFilter:"blur(4px)" }}>
             <div onClick={(e) => e.stopPropagation()}
-              style={{ width:"100%",background:"#fff",borderRadius:"22px 22px 0 0",padding:"10px 16px calc(20px + env(safe-area-inset-bottom,0px))",boxShadow:"0 -10px 40px rgba(0,0,0,0.25)",animation:"pu-sheet .25s cubic-bezier(0.16,1,0.3,1) both" }}>
-              <div style={{ width:40,height:4,borderRadius:99,background:"#e2e8f0",margin:"0 auto 12px" }} />
-              <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:"#94a3b8",margin:"0 0 12px" }}>Más secciones</p>
+              style={{ width:"100%",background:SURFACE.card,borderRadius:"22px 22px 0 0",padding:"10px 16px calc(20px + env(safe-area-inset-bottom,0px))",boxShadow:"0 -10px 40px rgba(0,0,0,0.25)",animation:"pu-sheet .25s cubic-bezier(0.16,1,0.3,1) both" }}>
+              <div style={{ width:40,height:4,borderRadius:99,background:SURFACE.border,margin:"0 auto 12px" }} />
+              <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:SURFACE.textFaint,margin:"0 0 12px" }}>Más secciones</p>
               <div style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10 }}>
                 {overflowTabs.map(tab => {
                   const on = activeTab === tab.key;
                   return (
                     <button key={tab.key} type="button" onClick={() => { setActiveTab(tab.key); setMoreOpen(false); }}
                       style={{ display:"flex",flexDirection:"column",alignItems:"center",gap:8,padding:"16px 8px",borderRadius:16,cursor:"pointer",
-                        background: on ? "rgba(33,208,179,0.1)" : "#f8fafc",
+                        background: on ? "rgba(33,208,179,0.1)" : SURFACE.bg,
                         border:`1px solid ${on ? "rgba(33,208,179,0.4)" : "#eef2f7"}` }}>
                       <span style={{ width:44,height:44,borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",
-                        background: on ? `linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})` : "#fff",
-                        color: on ? "#fff" : "#64748b",
+                        background: on ? `linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})` : SURFACE.card,
+                        color: on ? SURFACE.card : SURFACE.textMuted,
                         border:`1px solid ${on ? "transparent" : "#e2e8f0"}` }}>{tab.icon}</span>
-                      <span style={{ fontSize:12,fontWeight: on ? 700 : 600,color: on ? BRAND.tealInk : "#334155" }}>{tab.label}</span>
+                      <span style={{ fontSize:12,fontWeight: on ? 700 : 600,color: on ? BRAND.tealInk : SURFACE.textStrong }}>{tab.label}</span>
                     </button>
                   );
                 })}
@@ -3640,16 +3640,16 @@ export default function UserPortalPage() {
             </div>
             {flightLabel ? (
               <>
-                <p className="db-card-title" style={{ fontSize:"17px",fontWeight:800,color:"#0f172a",margin:"0 0 8px",letterSpacing:"-0.01em" }}>{flightLabel}</p>
+                <p className="db-card-title" style={{ fontSize:"17px",fontWeight:800,color:SURFACE.text,margin:"0 0 8px",letterSpacing:"-0.01em" }}>{flightLabel}</p>
                 {(athlete.arrivalTime || flight?.arrivalTime) && (
-                  <p className="db-card-subtitle" style={{ fontSize:"12px",color:"#64748b",margin:"0 0 4px",display:"flex",alignItems:"center",gap:"5px" }}>
+                  <p className="db-card-subtitle" style={{ fontSize:"12px",color:SURFACE.textMuted,margin:"0 0 4px",display:"flex",alignItems:"center",gap:"5px" }}>
                     <span style={{ color:BRAND.teal,fontWeight:600 }}>Arribo</span> · {fmt(athlete.arrivalTime || flight?.arrivalTime)}
                   </p>
                 )}
-                {athlete.origin && <p className="db-card-subtitle" style={{ fontSize:"12px",color:"#64748b",margin:0 }}><span style={{ color:BRAND.teal,fontWeight:600 }}>Origen</span> · {athlete.origin}</p>}
+                {athlete.origin && <p className="db-card-subtitle" style={{ fontSize:"12px",color:SURFACE.textMuted,margin:0 }}><span style={{ color:BRAND.teal,fontWeight:600 }}>Origen</span> · {athlete.origin}</p>}
               </>
             ) : (
-              <p style={{ fontSize:"13px",color:"#94a3b8",margin:0,fontStyle:"italic" }}>Sin vuelo asignado</p>
+              <p style={{ fontSize:"13px",color:SURFACE.textFaint,margin:0,fontStyle:"italic" }}>Sin vuelo asignado</p>
             )}
           </div>
 
@@ -3664,15 +3664,15 @@ export default function UserPortalPage() {
             </div>
             {hotel?.name ? (
               <>
-                <p className="db-card-title" style={{ fontSize:"17px",fontWeight:800,color:"#0f172a",margin:"0 0 8px",letterSpacing:"-0.01em" }}>{hotel.name}</p>
+                <p className="db-card-title" style={{ fontSize:"17px",fontWeight:800,color:SURFACE.text,margin:"0 0 8px",letterSpacing:"-0.01em" }}>{hotel.name}</p>
                 <div style={{ display:"flex",flexWrap:"wrap",gap:"4px" }}>
                   {hotelRoom_ && <span style={{ fontSize:"10px",padding:"3px 8px",borderRadius:"6px",background:"#f0fdf8",color:BRAND.tealInk,border:"1px solid rgba(33,208,179,0.2)",fontWeight:600 }}>Hab. {hotelRoom_}</span>}
-                  {hotelBed_ && <span style={{ fontSize:"10px",padding:"3px 8px",borderRadius:"6px",background:"#f1f5f9",color:"#475569",border:"1px solid #e2e8f0",fontWeight:500 }}>Cama {hotelBed_}</span>}
-                  {luggage_ && <span style={{ display:"inline-flex",alignItems:"center",gap:"3px",fontSize:"10px",padding:"3px 8px",borderRadius:"6px",background:"#f1f5f9",color:"#475569",border:"1px solid #e2e8f0",fontWeight:500 }}><IcoBag />{luggage_}</span>}
+                  {hotelBed_ && <span style={{ fontSize:"10px",padding:"3px 8px",borderRadius:"6px",background:SURFACE.borderMuted,color:SURFACE.textSecondary,border:"1px solid #e2e8f0",fontWeight:500 }}>Cama {hotelBed_}</span>}
+                  {luggage_ && <span style={{ display:"inline-flex",alignItems:"center",gap:"3px",fontSize:"10px",padding:"3px 8px",borderRadius:"6px",background:SURFACE.borderMuted,color:SURFACE.textSecondary,border:"1px solid #e2e8f0",fontWeight:500 }}><IcoBag />{luggage_}</span>}
                 </div>
               </>
             ) : (
-              <p style={{ fontSize:"13px",color:"#94a3b8",margin:0,fontStyle:"italic" }}>Sin hotel asignado</p>
+              <p style={{ fontSize:"13px",color:SURFACE.textFaint,margin:0,fontStyle:"italic" }}>Sin hotel asignado</p>
             )}
           </div>
 
@@ -3697,12 +3697,12 @@ export default function UserPortalPage() {
               const tripStatusColors: Record<string, { bg: string; color: string; label: string }> = {
                 REQUESTED:  { bg:"rgba(251,191,36,0.12)",  color:"#d97706", label:"Solicitado" },
                 SCHEDULED:  { bg:"rgba(33,208,179,0.12)",  color:"#0f9e87", label:"Programado" },
-                EN_ROUTE:   { bg:"rgba(59,130,246,0.12)",  color:"#2563eb", label:"En ruta" },
+                EN_ROUTE:   { bg:"rgba(59,130,246,0.12)",  color:STATE.infoText, label:"En ruta" },
                 PICKED_UP:  { bg:"rgba(139,92,246,0.12)",  color:"#7c3aed", label:"En curso" },
                 DROPPED_OFF:{ bg:"rgba(33,208,179,0.12)",  color:"#0f9e87", label:"Llegado al destino" },
-                COMPLETED:  { bg:"rgba(100,116,139,0.1)",  color:"#475569", label:"Completado" },
+                COMPLETED:  { bg:"rgba(100,116,139,0.1)",  color:SURFACE.textSecondary, label:"Completado" },
               };
-              const statusInfo = trip.status ? (tripStatusColors[trip.status] ?? { bg:"rgba(100,116,139,0.1)", color:"#64748b", label: trip.status }) : null;
+              const statusInfo = trip.status ? (tripStatusColors[trip.status] ?? { bg:"rgba(100,116,139,0.1)", color:SURFACE.textMuted, label: trip.status }) : null;
               const scheduledFmt = trip.scheduledAt ? fmt(trip.scheduledAt) : null;
               return (
                 <>
@@ -3712,26 +3712,26 @@ export default function UserPortalPage() {
                     </span>
                   )}
                   {(trip.origin || trip.destination) && (
-                    <p style={{ fontSize:"13px",fontWeight:700,color:"#0f172a",margin:"0 0 10px",lineHeight:1.4,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:3,WebkitBoxOrient:"vertical" as any }}>
+                    <p style={{ fontSize:"13px",fontWeight:700,color:SURFACE.text,margin:"0 0 10px",lineHeight:1.4,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:3,WebkitBoxOrient:"vertical" as any }}>
                       {trip.origin || "–"} <span style={{ color:"#0ea5c8",display:"inline-flex",verticalAlign:"middle" }}><ArrowRightIcon size={12} /></span> {trip.destination || "–"}
                     </p>
                   )}
                   {scheduledFmt && (
-                    <p style={{ fontSize:"12px",color:"#64748b",margin:"0 0 10px",display:"flex",alignItems:"center",gap:"5px" }}>
+                    <p style={{ fontSize:"12px",color:SURFACE.textMuted,margin:"0 0 10px",display:"flex",alignItems:"center",gap:"5px" }}>
                       <ClockIcon size={12} strokeWidth={2} />
                       {scheduledFmt}
                     </p>
                   )}
                   <div style={{ borderTop:"1px solid #f1f5f9",paddingTop:"10px",display:"flex",flexDirection:"column",gap:"5px" }}>
                     {driver?.fullName && (
-                      <p style={{ fontSize:"13px",color:"#334155",margin:0,display:"flex",alignItems:"center",gap:"6px" }}>
+                      <p style={{ fontSize:"13px",color:SURFACE.textStrong,margin:0,display:"flex",alignItems:"center",gap:"6px" }}>
                         <UserIcon size={13} color="#0ea5c8" strokeWidth={2} />
                         <span style={{ fontWeight:600 }}>{driver.fullName}</span>
                       </p>
                     )}
                     {vehicleLabel && (
-                      <p style={{ fontSize:"12px",color:"#64748b",margin:0,display:"flex",alignItems:"center",gap:"6px" }}>
-                        <CarIcon size={12} color="#94a3b8" strokeWidth={2} />
+                      <p style={{ fontSize:"12px",color:SURFACE.textMuted,margin:0,display:"flex",alignItems:"center",gap:"6px" }}>
+                        <CarIcon size={12} color={SURFACE.textFaint} strokeWidth={2} />
                         {vehicleLabel.toUpperCase()}
                       </p>
                     )}
@@ -3745,7 +3745,7 @@ export default function UserPortalPage() {
                 </>
               );
             })() : (
-              <p style={{ fontSize:"14px",color:"#94a3b8",margin:0,fontStyle:"italic" }}>{t("Sin viaje asignado")}</p>
+              <p style={{ fontSize:"14px",color:SURFACE.textFaint,margin:0,fontStyle:"italic" }}>{t("Sin viaje asignado")}</p>
             )}
           </div>
 
@@ -3754,25 +3754,25 @@ export default function UserPortalPage() {
             <div style={{ position:"absolute",top:0,right:0,width:"120px",height:"120px",borderRadius:"50%",background:"radial-gradient(ellipse,rgba(33,208,179,0.05) 0%,transparent 70%)",transform:"translate(30px,-30px)",pointerEvents:"none" }} />
             <div className="db-card-header" style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"14px" }}>
               <div style={{ display:"flex",alignItems:"center",gap:"12px" }}>
-                <div className="db-card-icon" style={{ width:"40px",height:"40px",borderRadius:"12px",background:"linear-gradient(135deg,#f8fafc,#f1f5f9)",border:"1px solid #e2e8f0",display:"flex",alignItems:"center",justifyContent:"center",color:"#64748b",flexShrink:0 }}>
+                <div className="db-card-icon" style={{ width:"40px",height:"40px",borderRadius:"12px",background:"linear-gradient(135deg,#f8fafc,#f1f5f9)",border:"1px solid #e2e8f0",display:"flex",alignItems:"center",justifyContent:"center",color:SURFACE.textMuted,flexShrink:0 }}>
                   <IcoCheck />
                 </div>
-                <span style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:"#475569" }}>{t("Check-ins")}</span>
+                <span style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:SURFACE.textSecondary }}>{t("Check-ins")}</span>
               </div>
-              <span style={{ fontSize:"12px",fontWeight:700,color:checkinsDone===checkins.length?BRAND.teal:"#94a3b8" }}>{checkinsDone}/{checkins.length}</span>
+              <span style={{ fontSize:"12px",fontWeight:700,color:checkinsDone===checkins.length?BRAND.teal:SURFACE.textFaint }}>{checkinsDone}/{checkins.length}</span>
             </div>
             <div style={{ display:"flex",flexDirection:"column",gap:"8px" }}>
               {checkins.map(({ label, ts }) => {
                 const done = !!fmt(ts);
                 return (
-                  <div key={label} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",gap:"8px",padding:"8px 10px",borderRadius:"10px",background:done?"linear-gradient(135deg,rgba(33,208,179,0.06),rgba(33,208,179,0.02))":"#f8fafc",border:`1px solid ${done?"rgba(33,208,179,0.2)":"#f1f5f9"}`,transition:"all .3s" }}>
+                  <div key={label} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",gap:"8px",padding:"8px 10px",borderRadius:"10px",background:done?"linear-gradient(135deg,rgba(33,208,179,0.06),rgba(33,208,179,0.02))":SURFACE.bg,border:`1px solid ${done?"rgba(33,208,179,0.2)":"#f1f5f9"}`,transition:"all .3s" }}>
                     <div style={{ display:"flex",alignItems:"center",gap:"8px" }}>
-                      <div style={{ width:8,height:8,borderRadius:"50%",flexShrink:0,background:done?BRAND.teal:"#cbd5e1",boxShadow:done?"0 0 6px rgba(33,208,179,0.7)":"none",transition:"all .3s" }} />
-                      <span style={{ fontSize:"12px",color:done?"#0f172a":"#94a3b8",fontWeight:done?600:400 }}>{label}</span>
+                      <div style={{ width:8,height:8,borderRadius:"50%",flexShrink:0,background:done?BRAND.teal:SURFACE.borderStrong,boxShadow:done?"0 0 6px rgba(33,208,179,0.7)":"none",transition:"all .3s" }} />
+                      <span style={{ fontSize:"12px",color:done?SURFACE.text:SURFACE.textFaint,fontWeight:done?600:400 }}>{label}</span>
                     </div>
                     {done
                       ? <CheckIcon size={14} color={BRAND.teal} strokeWidth={2.5} />
-                      : <span style={{ fontSize:"9px",color:"#cbd5e1",fontWeight:500 }}>Pendiente</span>
+                      : <span style={{ fontSize:"9px",color:SURFACE.borderStrong,fontWeight:500 }}>Pendiente</span>
                     }
                   </div>
                 );
@@ -3785,7 +3785,7 @@ export default function UserPortalPage() {
         <div className="db-actions-card">
           {/* Subtle glow in corner */}
           <div style={{ position:"absolute",bottom:0,right:0,width:"220px",height:"220px",borderRadius:"50%",background:"radial-gradient(ellipse,rgba(33,208,179,0.06) 0%,transparent 65%)",transform:"translate(60px,60px)",pointerEvents:"none" }} />
-          <p style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:"#94a3b8",margin:"0 0 16px" }}>Acciones</p>
+          <p style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:SURFACE.textFaint,margin:"0 0 16px" }}>Acciones</p>
           <div className="db-actions-grid">
             {[
               {
@@ -3836,8 +3836,8 @@ export default function UserPortalPage() {
                         : "1.5px solid #dde3ed",
                     background: done
                       ? "linear-gradient(135deg,rgba(33,208,179,0.08),rgba(33,208,179,0.03))"
-                      : gradient ?? "#f8fafc",
-                    color: done ? BRAND.tealInk : gradient ? "#062B22" : "#475569",
+                      : gradient ?? SURFACE.bg,
+                    color: done ? BRAND.tealInk : gradient ? "#062B22" : SURFACE.textSecondary,
                     opacity: busy ? 0.7 : 1,
                     boxShadow: done ? doneGlow ?? "none" : glow ?? "0 2px 8px rgba(0,0,0,0.06)",
                     display:"flex",
@@ -3860,7 +3860,7 @@ export default function UserPortalPage() {
         </div>
 
         {error && (
-          <div style={{ color:"#dc2626",fontSize:"13px",textAlign:"center",background:"#fef2f2",border:"1px solid #fecaca",borderRadius:"14px",padding:"12px 20px",marginBottom:"16px" }}>{error}</div>
+          <div style={{ color:STATE.dangerText,fontSize:"13px",textAlign:"center",background:"#fef2f2",border:"1px solid #fecaca",borderRadius:"14px",padding:"12px 20px",marginBottom:"16px" }}>{error}</div>
         )}
 
         {/* ── Sports Calendar ── */}
@@ -3873,20 +3873,20 @@ export default function UserPortalPage() {
             <span style={{ fontSize:10,fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:BRAND.teal }}>Calendario deportivo</span>
           </div>
           {calendarEvents.length === 0 ? (
-            <p style={{ fontSize:12.5,color:"#94a3b8",margin:0,textAlign:"center",padding:"8px 0" }}>Sin actividades programadas</p>
+            <p style={{ fontSize:12.5,color:SURFACE.textFaint,margin:0,textAlign:"center",padding:"8px 0" }}>Sin actividades programadas</p>
           ) : (
             <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
               {calendarEvents.map((ce) => {
                 const parentName = ce.parentId ? (discLabelMap.get(ce.parentId) || "") : "";
                 const isPast = new Date(ce.scheduledAt!) < new Date();
                 return (
-                  <div key={ce.id} style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 10px",borderRadius:10,background:"#f8fafc",border:"1px solid #f1f5f9",opacity:isPast ? 0.5 : 1 }}>
-                    <span style={{ width:8,height:8,borderRadius:"50%",background:isPast ? "#94a3b8" : BRAND.teal,flexShrink:0 }} />
+                  <div key={ce.id} style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:"1px solid #f1f5f9",opacity:isPast ? 0.5 : 1 }}>
+                    <span style={{ width:8,height:8,borderRadius:"50%",background:isPast ? SURFACE.textFaint : BRAND.teal,flexShrink:0 }} />
                     <div style={{ flex:1,minWidth:0 }}>
-                      <p style={{ fontSize:12.5,fontWeight:600,color:"#0f172a",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                      <p style={{ fontSize:12.5,fontWeight:600,color:SURFACE.text,margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
                         {ce.name}{parentName ? ` · ${parentName}` : ""}
                       </p>
-                      <p style={{ fontSize:10.5,color:"#64748b",margin:"1px 0 0" }}>
+                      <p style={{ fontSize:10.5,color:SURFACE.textMuted,margin:"1px 0 0" }}>
                         {new Date(ce.scheduledAt!).toLocaleDateString("es-CL",{ weekday:"short",day:"2-digit",month:"short" })} · {new Date(ce.scheduledAt!).toLocaleTimeString("es-CL",{ hour:"2-digit",minute:"2-digit" })}
                         {ce.venueName ? ` · ${ce.venueName}` : ""}
                       </p>
@@ -3910,8 +3910,8 @@ export default function UserPortalPage() {
           {healthRecord?.participantSignature ? (
             <div>
               <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:10 }}>
-                <span style={{ width:8,height:8,borderRadius:"50%",background:"#10b981" }} />
-                <p style={{ fontSize:13,color:"#0f172a",margin:0,fontWeight:600 }}>Ficha completada y firmada</p>
+                <span style={{ width:8,height:8,borderRadius:"50%",background:STATE.success }} />
+                <p style={{ fontSize:13,color:SURFACE.text,margin:0,fontWeight:600 }}>Ficha completada y firmada</p>
               </div>
               <a href={`/portal/athlete/salud?id=${athlete.id}`}
                 style={{ display:"inline-flex",alignItems:"center",gap:6,fontSize:12,fontWeight:600,color:BRAND.teal,textDecoration:"none" }}>
@@ -3920,11 +3920,11 @@ export default function UserPortalPage() {
             </div>
           ) : (
             <>
-              <p style={{ fontSize:12.5,color:"#64748b",margin:"0 0 12px",lineHeight:1.5 }}>
+              <p style={{ fontSize:12.5,color:SURFACE.textMuted,margin:"0 0 12px",lineHeight:1.5 }}>
                 Completa tu ficha de salud con datos médicos, alergias, contacto de emergencia y firma digital.
               </p>
               <a href={`/portal/athlete/salud?id=${athlete.id}`}
-                style={{ display:"block",width:"100%",padding:12,borderRadius:12,border:"none",background:`linear-gradient(135deg,${BRAND.teal},#14AE98)`,color:"#fff",fontSize:13,fontWeight:700,textAlign:"center",textDecoration:"none",boxShadow:"0 2px 10px rgba(33,208,179,0.3)",boxSizing:"border-box" }}>
+                style={{ display:"block",width:"100%",padding:12,borderRadius:12,border:"none",background:`linear-gradient(135deg,${BRAND.teal},#14AE98)`,color:SURFACE.card,fontSize:13,fontWeight:700,textAlign:"center",textDecoration:"none",boxShadow:"0 2px 10px rgba(33,208,179,0.3)",boxSizing:"border-box" }}>
                 Completar ficha de salud
               </a>
             </>
@@ -3940,17 +3940,17 @@ export default function UserPortalPage() {
             style={{ position:"fixed",inset:0,background:"rgba(2,12,24,0.65)",zIndex:100,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(4px)" }}>
             <div
               onClick={(e) => e.stopPropagation()}
-              style={{ background:"#fff",borderRadius:"24px 24px 0 0",width:"100%",maxWidth:"680px",maxHeight:"90vh",overflowY:"auto",padding:"0 0 32px" }}>
+              style={{ background:SURFACE.card,borderRadius:"24px 24px 0 0",width:"100%",maxWidth:"680px",maxHeight:"90vh",overflowY:"auto",padding:"0 0 32px" }}>
               {/* Handle */}
               <div style={{ display:"flex",justifyContent:"center",padding:"12px 0 4px" }}>
-                <div style={{ width:40,height:4,borderRadius:4,background:"#e2e8f0" }} />
+                <div style={{ width:40,height:4,borderRadius:4,background:SURFACE.border }} />
               </div>
               {/* Header */}
               <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 24px 16px" }}>
                 <div>
                   <p style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:"#0ea5c8",margin:"0 0 4px" }}>Detalle del viaje</p>
                   {(trip.origin || trip.destination) && (
-                    <h2 style={{ fontSize:"20px",fontWeight:800,color:"#0f172a",margin:0,letterSpacing:"-0.02em" }}>
+                    <h2 style={{ fontSize:"20px",fontWeight:800,color:SURFACE.text,margin:0,letterSpacing:"-0.02em" }}>
                       {trip.origin || "–"} <span style={{ color:"#0ea5c8",display:"inline-flex",verticalAlign:"middle" }}><ArrowRightIcon size={12} /></span> {trip.destination || "–"}
                     </h2>
                   )}
@@ -3958,8 +3958,8 @@ export default function UserPortalPage() {
                 <button
                   type="button"
                   onClick={() => setShowTripModal(false)}
-                  style={{ width:36,height:36,borderRadius:"50%",border:"1px solid #e2e8f0",background:"#f8fafc",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0 }}>
-                  <XIcon size={16} color="#64748b" strokeWidth={2} />
+                  style={{ width:36,height:36,borderRadius:"50%",border:"1px solid #e2e8f0",background:SURFACE.bg,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0 }}>
+                  <XIcon size={16} color={SURFACE.textMuted} strokeWidth={2} />
                 </button>
               </div>
               {/* Map */}
@@ -3973,12 +3973,12 @@ export default function UserPortalPage() {
                   const tripStatusColors: Record<string, { bg: string; color: string; label: string }> = {
                     REQUESTED:  { bg:"rgba(251,191,36,0.12)",  color:"#d97706", label:"Solicitado" },
                     SCHEDULED:  { bg:"rgba(33,208,179,0.12)",  color:"#0f9e87", label:"Programado" },
-                    EN_ROUTE:   { bg:"rgba(59,130,246,0.12)",  color:"#2563eb", label:"En ruta" },
+                    EN_ROUTE:   { bg:"rgba(59,130,246,0.12)",  color:STATE.infoText, label:"En ruta" },
                     PICKED_UP:  { bg:"rgba(139,92,246,0.12)",  color:"#7c3aed", label:"En curso" },
                     DROPPED_OFF:{ bg:"rgba(33,208,179,0.12)",  color:"#0f9e87", label:"Llegado al destino" },
-                    COMPLETED:  { bg:"rgba(100,116,139,0.1)",  color:"#475569", label:"Completado" },
+                    COMPLETED:  { bg:"rgba(100,116,139,0.1)",  color:SURFACE.textSecondary, label:"Completado" },
                   };
-                  const s = trip.status ? (tripStatusColors[trip.status] ?? { bg:"rgba(100,116,139,0.1)", color:"#64748b", label: trip.status }) : null;
+                  const s = trip.status ? (tripStatusColors[trip.status] ?? { bg:"rgba(100,116,139,0.1)", color:SURFACE.textMuted, label: trip.status }) : null;
                   return s ? (
                     <div style={{ display:"flex",alignItems:"center",gap:"8px" }}>
                       <span style={{ padding:"4px 14px",borderRadius:"20px",background:s.bg,color:s.color,fontSize:"12px",fontWeight:700,letterSpacing:"0.06em" }}>{s.label}</span>
@@ -3987,9 +3987,9 @@ export default function UserPortalPage() {
                 })()}
                 {/* Scheduled */}
                 {trip.scheduledAt && fmt(trip.scheduledAt) && (
-                  <div style={{ display:"flex",alignItems:"center",gap:"8px",fontSize:"13px",color:"#475569" }}>
+                  <div style={{ display:"flex",alignItems:"center",gap:"8px",fontSize:"13px",color:SURFACE.textSecondary }}>
                     <ClockIcon size={14} color="#0ea5c8" strokeWidth={2} />
-                    <span><strong style={{ color:"#0f172a" }}>Hora programada:</strong> {fmt(trip.scheduledAt)}</span>
+                    <span><strong style={{ color:SURFACE.text }}>Hora programada:</strong> {fmt(trip.scheduledAt)}</span>
                   </div>
                 )}
                 {/* ETA */}
@@ -3997,27 +3997,27 @@ export default function UserPortalPage() {
                   <div style={{ display:"flex",alignItems:"center",gap:"8px",padding:"10px 16px",borderRadius:"12px",background:"rgba(14,165,200,0.08)",border:"1px solid rgba(14,165,200,0.2)" }}>
                     <ClockIcon size={16} color="#0ea5c8" strokeWidth={2} />
                     <span style={{ fontSize:"14px",fontWeight:700,color:"#0ea5c8" }}>~{driverEta.duration}</span>
-                    <span style={{ fontSize:"13px",color:"#475569" }}>· {driverEta.distance}</span>
+                    <span style={{ fontSize:"13px",color:SURFACE.textSecondary }}>· {driverEta.distance}</span>
                   </div>
                 )}
                 {/* Driver */}
                 {driver?.fullName && (
-                  <div style={{ display:"flex",alignItems:"center",gap:"8px",fontSize:"13px",color:"#475569" }}>
+                  <div style={{ display:"flex",alignItems:"center",gap:"8px",fontSize:"13px",color:SURFACE.textSecondary }}>
                     <UserIcon size={14} color="#0ea5c8" strokeWidth={2} />
-                    <span><strong style={{ color:"#0f172a" }}>Conductor:</strong> {driver.fullName}</span>
+                    <span><strong style={{ color:SURFACE.text }}>Conductor:</strong> {driver.fullName}</span>
                   </div>
                 )}
                 {/* Vehicle */}
                 {vehicleLabel && (
-                  <div style={{ display:"flex",alignItems:"center",gap:"8px",fontSize:"13px",color:"#475569" }}>
-                    <CarIcon size={14} color="#94a3b8" strokeWidth={2} />
-                    <span><strong style={{ color:"#0f172a" }}>Vehículo:</strong> {vehicleLabel.toUpperCase()}</span>
+                  <div style={{ display:"flex",alignItems:"center",gap:"8px",fontSize:"13px",color:SURFACE.textSecondary }}>
+                    <CarIcon size={14} color={SURFACE.textFaint} strokeWidth={2} />
+                    <span><strong style={{ color:SURFACE.text }}>Vehículo:</strong> {vehicleLabel.toUpperCase()}</span>
                   </div>
                 )}
                 {/* Notes */}
                 {trip.notes && (
-                  <div style={{ padding:"12px 16px",borderRadius:"12px",background:"#f8fafc",border:"1px solid #e2e8f0",fontSize:"13px",color:"#475569" }}>
-                    <strong style={{ color:"#0f172a" }}>Notas:</strong> {trip.notes}
+                  <div style={{ padding:"12px 16px",borderRadius:"12px",background:SURFACE.bg,border:"1px solid #e2e8f0",fontSize:"13px",color:SURFACE.textSecondary }}>
+                    <strong style={{ color:SURFACE.text }}>Notas:</strong> {trip.notes}
                   </div>
                 )}
               </div>
@@ -4032,18 +4032,18 @@ export default function UserPortalPage() {
             style={{ position:"fixed",inset:0,background:"rgba(2,12,24,0.7)",zIndex:150,display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(6px)",padding:16 }}>
             <div
               onClick={(e) => e.stopPropagation()}
-              style={{ background:"#fff",borderRadius:24,width:"100%",maxWidth:380,padding:"32px 24px",textAlign:"center",animation:"db-in .4s cubic-bezier(0.16,1,0.3,1) both",position:"relative" }}>
+              style={{ background:SURFACE.card,borderRadius:24,width:"100%",maxWidth:380,padding:"32px 24px",textAlign:"center",animation:"db-in .4s cubic-bezier(0.16,1,0.3,1) both",position:"relative" }}>
               {/* Close button */}
               <button type="button" onClick={() => { setShowRating(false); setRatingStars(0); setRatingComment(""); }}
-                style={{ position:"absolute",top:12,right:12,width:36,height:36,borderRadius:"50%",border:"none",background:"#f1f5f9",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
-                <XIcon size={16} color="#64748b" strokeWidth={2} />
+                style={{ position:"absolute",top:12,right:12,width:36,height:36,borderRadius:"50%",border:"none",background:SURFACE.borderMuted,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
+                <XIcon size={16} color={SURFACE.textMuted} strokeWidth={2} />
               </button>
               {/* Emoji */}
               <div style={{ marginBottom:12,display:"flex",justifyContent:"center" }}>
-                <StarIcon size={48} color={ratingStars === 0 ? "#cbd5e1" : "#f59e0b"} />
+                <StarIcon size={48} color={ratingStars === 0 ? SURFACE.borderStrong : STATE.warning} />
               </div>
-              <h3 style={{ fontSize:20,fontWeight:800,color:"#0f172a",margin:"0 0 4px" }}>¿Cómo fue tu viaje?</h3>
-              <p style={{ fontSize:13,color:"#64748b",margin:"0 0 20px" }}>Evalúa a tu conductor</p>
+              <h3 style={{ fontSize:20,fontWeight:800,color:SURFACE.text,margin:"0 0 4px" }}>¿Cómo fue tu viaje?</h3>
+              <p style={{ fontSize:13,color:SURFACE.textMuted,margin:"0 0 20px" }}>Evalúa a tu conductor</p>
               {/* Stars */}
               <div style={{ display:"flex",justifyContent:"center",gap:8,marginBottom:20 }}>
                 {[1, 2, 3, 4, 5].map((star) => (
@@ -4063,11 +4063,11 @@ export default function UserPortalPage() {
               />
               {/* Submit */}
               <button type="button" onClick={submitRating} disabled={ratingStars === 0 || ratingLoading}
-                style={{ width:"100%",padding:16,borderRadius:14,border:"none",background: ratingStars > 0 ? `linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})` : "#e2e8f0",color: ratingStars > 0 ? "#0d1b3e" : "#94a3b8",fontSize:16,fontWeight:700,cursor: ratingStars > 0 ? "pointer" : "not-allowed",opacity: ratingLoading ? 0.7 : 1 }}>
+                style={{ width:"100%",padding:16,borderRadius:14,border:"none",background: ratingStars > 0 ? `linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})` : SURFACE.border,color: ratingStars > 0 ? "#0d1b3e" : SURFACE.textFaint,fontSize:16,fontWeight:700,cursor: ratingStars > 0 ? "pointer" : "not-allowed",opacity: ratingLoading ? 0.7 : 1 }}>
                 {ratingLoading ? "Enviando..." : "Enviar evaluación"}
               </button>
               <button type="button" onClick={() => { setShowRating(false); setRatingStars(0); setRatingComment(""); }}
-                style={{ marginTop:8,background:"none",border:"none",color:"#94a3b8",fontSize:13,cursor:"pointer",padding:8 }}>
+                style={{ marginTop:8,background:"none",border:"none",color:SURFACE.textFaint,fontSize:13,cursor:"pointer",padding:8 }}>
                 Omitir
               </button>
             </div>
@@ -4078,38 +4078,38 @@ export default function UserPortalPage() {
         {activeClaim && (
           <div style={{ position:"fixed", inset:0, zIndex:150, display:"flex", alignItems:"flex-end", justifyContent:"center", padding:0, background:"rgba(0,0,0,0.65)" }}
             onClick={() => setActiveClaim(null)}>
-            <div style={{ background:"#fff", borderRadius:"24px 24px 0 0", width:"100%", maxWidth:480, maxHeight:"95vh", overflowY:"auto" }}
+            <div style={{ background:SURFACE.card, borderRadius:"24px 24px 0 0", width:"100%", maxWidth:480, maxHeight:"95vh", overflowY:"auto" }}
               onClick={(e) => e.stopPropagation()}>
               <div style={{ display:"flex", justifyContent:"center", padding:"12px 0 4px" }}>
-                <div style={{ width:40, height:4, borderRadius:4, background:"#e2e8f0" }} />
+                <div style={{ width:40, height:4, borderRadius:4, background:SURFACE.border }} />
               </div>
               <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", padding:"8px 20px 12px", borderBottom:"1px solid #f1f5f9" }}>
                 <div style={{ flex:1, minWidth:0 }}>
-                  <p style={{ fontSize:10, fontWeight:700, letterSpacing:"0.2em", textTransform:"uppercase", color:"#64748b", margin:0 }}>Tu beneficio</p>
-                  <h2 style={{ fontSize:18, fontWeight:800, color:"#0f172a", margin:"2px 0 0", lineHeight:1.2 }}>{activeClaim.coupon?.title}</h2>
+                  <p style={{ fontSize:10, fontWeight:700, letterSpacing:"0.2em", textTransform:"uppercase", color:SURFACE.textMuted, margin:0 }}>Tu beneficio</p>
+                  <h2 style={{ fontSize:18, fontWeight:800, color:SURFACE.text, margin:"2px 0 0", lineHeight:1.2 }}>{activeClaim.coupon?.title}</h2>
                   {activeClaim.coupon?.partnerName && (
-                    <p style={{ fontSize:12, color:"#64748b", margin:"3px 0 0" }}>{activeClaim.coupon.partnerName}</p>
+                    <p style={{ fontSize:12, color:SURFACE.textMuted, margin:"3px 0 0" }}>{activeClaim.coupon.partnerName}</p>
                   )}
                 </div>
                 <button type="button" onClick={() => setActiveClaim(null)}
-                  style={{ width:32, height:32, borderRadius:"50%", border:"1px solid #e2e8f0", background:"#f8fafc", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0, fontSize:18, lineHeight:1 }}>×</button>
+                  style={{ width:32, height:32, borderRadius:"50%", border:"1px solid #e2e8f0", background:SURFACE.bg, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0, fontSize:18, lineHeight:1 }}>×</button>
               </div>
               <div style={{ padding:20, display:"flex", flexDirection:"column", gap:16 }}>
                 <div style={{ display:"flex", justifyContent:"center" }}>
                   {couponQrDataUrl ? (
-                    <div style={{ padding:16, background:"#fff", borderRadius:16, boxShadow:"0 4px 20px rgba(0,0,0,0.08)" }}>
+                    <div style={{ padding:16, background:SURFACE.card, borderRadius:16, boxShadow:"0 4px 20px rgba(0,0,0,0.08)" }}>
                       <img src={couponQrDataUrl} alt="QR del beneficio" style={{ width:240, height:240 }} />
                     </div>
                   ) : (
-                    <div style={{ width:264, height:264, background:"#f1f5f9", borderRadius:16, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                      <span style={{ fontSize:13, color:"#94a3b8" }}>Generando QR…</span>
+                    <div style={{ width:264, height:264, background:SURFACE.borderMuted, borderRadius:16, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                      <span style={{ fontSize:13, color:SURFACE.textFaint }}>Generando QR…</span>
                     </div>
                   )}
                 </div>
                 <div style={{ textAlign:"center" }}>
-                  <p style={{ fontSize:11, textTransform:"uppercase", letterSpacing:"0.1em", color:"#64748b", margin:"0 0 4px" }}>Código de respaldo</p>
+                  <p style={{ fontSize:11, textTransform:"uppercase", letterSpacing:"0.1em", color:SURFACE.textMuted, margin:"0 0 4px" }}>Código de respaldo</p>
                   <p style={{ fontSize:22, fontFamily:"ui-monospace, SFMono-Regular, monospace", fontWeight:800, letterSpacing:"0.1em", color:"#1f4e8c", margin:0 }}>{activeClaim.uniqueCode}</p>
-                  <p style={{ fontSize:11, color:"#94a3b8", margin:"4px 0 0" }}>Si el QR no escanea, dictá este código al comercio.</p>
+                  <p style={{ fontSize:11, color:SURFACE.textFaint, margin:"4px 0 0" }}>Si el QR no escanea, dictá este código al comercio.</p>
                 </div>
                 <div style={{ padding:12, borderRadius:12, background:"linear-gradient(135deg,#fff8e1 0%,#fff4d6 100%)" }}>
                   <p style={{ fontSize:12, fontWeight:700, color:"#c78c00", margin:"0 0 4px" }}>Cómo canjearlo</p>
@@ -4119,7 +4119,7 @@ export default function UserPortalPage() {
                     <li>El comercio lo escaneará y aplicará el descuento.</li>
                   </ol>
                 </div>
-                <div style={{ fontSize:12, color:"#64748b", display:"flex", flexDirection:"column", gap:3 }}>
+                <div style={{ fontSize:12, color:SURFACE.textMuted, display:"flex", flexDirection:"column", gap:3 }}>
                   <p style={{ margin:0 }}><CalendarIcon size={11} className="inline mr-1" />Reclamado el {fmtCouponFull(activeClaim.claimedAt)}</p>
                   <p style={{ margin:0 }}><ClockIcon size={11} className="inline mr-1" />Expira el {fmtCouponFull(activeClaim.expiresAt)} <strong>({couponTimeLeft(activeClaim.expiresAt)} restantes)</strong></p>
                   {activeClaim.coupon?.partnerAddress && (
@@ -4128,8 +4128,8 @@ export default function UserPortalPage() {
                 </div>
                 {activeClaim.coupon?.termsAndConditions && (
                   <details style={{ fontSize:12 }}>
-                    <summary style={{ cursor:"pointer", fontWeight:600, color:"#64748b" }}>Términos y condiciones</summary>
-                    <p style={{ marginTop:6, lineHeight:1.5, color:"#64748b" }}>{activeClaim.coupon.termsAndConditions}</p>
+                    <summary style={{ cursor:"pointer", fontWeight:600, color:SURFACE.textMuted }}>Términos y condiciones</summary>
+                    <p style={{ marginTop:6, lineHeight:1.5, color:SURFACE.textMuted }}>{activeClaim.coupon.termsAndConditions}</p>
                   </details>
                 )}
               </div>
@@ -4142,8 +4142,8 @@ export default function UserPortalPage() {
           <div onClick={() => setCredentialHtml(null)}
             style={{ position:"fixed",inset:0,zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:16,background:"rgba(2,12,24,0.78)",backdropFilter:"blur(6px)" }}>
             <div onClick={(e) => e.stopPropagation()}
-              style={{ background:"#fff",borderRadius:20,width:"100%",maxWidth:480,maxHeight:"95vh",display:"flex",flexDirection:"column",overflow:"hidden",boxShadow:"0 24px 80px rgba(0,0,0,0.5)" }}>
-              <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",borderBottom:"1px solid #e2e8f0",background:`linear-gradient(135deg,${BRAND.navy},${BRAND.navyLight})`,color:"#fff" }}>
+              style={{ background:SURFACE.card,borderRadius:20,width:"100%",maxWidth:480,maxHeight:"95vh",display:"flex",flexDirection:"column",overflow:"hidden",boxShadow:"0 24px 80px rgba(0,0,0,0.5)" }}>
+              <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",borderBottom:"1px solid #e2e8f0",background:`linear-gradient(135deg,${BRAND.navy},${BRAND.navyLight})`,color:SURFACE.card }}>
                 <div>
                   <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:BRAND.teal,margin:0 }}>Credencial digital</p>
                   <p style={{ fontSize:14,fontWeight:700,margin:"2px 0 0" }}>{athlete?.fullName || "Participante"}</p>
@@ -4163,13 +4163,13 @@ export default function UserPortalPage() {
                     <DownloadIcon size={16} strokeWidth={2} />
                   </button>
                   <button type="button" onClick={() => setCredentialHtml(null)}
-                    style={{ height:34,padding:"0 12px",borderRadius:10,border:"1px solid rgba(255,255,255,0.25)",background:"rgba(255,255,255,0.08)",color:"#fff",cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6,fontSize:12.5,fontWeight:700,lineHeight:1 }}>
+                    style={{ height:34,padding:"0 12px",borderRadius:10,border:"1px solid rgba(255,255,255,0.25)",background:"rgba(255,255,255,0.08)",color:SURFACE.card,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6,fontSize:12.5,fontWeight:700,lineHeight:1 }}>
                     <XIcon size={15} /> Volver
                   </button>
                 </div>
               </div>
               <iframe srcDoc={credentialHtml} title="Credencial"
-                style={{ flex:1,width:"100%",minHeight:"60vh",border:"none",background:"#fff" }} />
+                style={{ flex:1,width:"100%",minHeight:"60vh",border:"none",background:SURFACE.card }} />
             </div>
           </div>
         )}

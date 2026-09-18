@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import { STATE, SURFACE } from "@/lib/design";
 
 type Props = {
   /** Llama a la API de baja de cuenta; debe lanzar (throw) si falla. */
@@ -51,8 +52,8 @@ export default function DeleteAccountSection({ onDelete, onDeleted, compact }: P
         padding: compact ? "8px 14px" : 12,
         borderRadius: compact ? 10 : 12,
         border: "1px solid #fecaca",
-        background: "#fff",
-        color: "#ef4444",
+        background: SURFACE.card,
+        color: STATE.danger,
         fontSize: compact ? 12 : 13,
         fontWeight: 600,
         cursor: busy ? "default" : "pointer",
@@ -64,7 +65,7 @@ export default function DeleteAccountSection({ onDelete, onDeleted, compact }: P
   );
 
   const errorLine = error ? (
-    <p style={{ margin: 0, fontSize: 12, color: "#ef4444", lineHeight: 1.4 }}>{error}</p>
+    <p style={{ margin: 0, fontSize: 12, color: STATE.danger, lineHeight: 1.4 }}>{error}</p>
   ) : null;
 
   return (
@@ -75,11 +76,11 @@ export default function DeleteAccountSection({ onDelete, onDeleted, compact }: P
           {errorLine}
         </div>
       ) : (
-        <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #fecaca", padding: 14, display: "flex", flexDirection: "column", gap: 8 }}>
-          <span style={{ fontSize: 10, fontWeight: 700, color: "#ef4444", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+        <div style={{ background: SURFACE.card, borderRadius: 14, border: "1px solid #fecaca", padding: 14, display: "flex", flexDirection: "column", gap: 8 }}>
+          <span style={{ fontSize: 10, fontWeight: 700, color: STATE.danger, textTransform: "uppercase", letterSpacing: "0.08em" }}>
             Eliminar cuenta
           </span>
-          <p style={{ margin: 0, fontSize: 12, color: "#64748b", lineHeight: 1.5 }}>
+          <p style={{ margin: 0, fontSize: 12, color: SURFACE.textMuted, lineHeight: 1.5 }}>
             Al eliminar tu cuenta pierdes el acceso al portal de forma permanente
             y se cierra tu sesión en todos los dispositivos.
           </p>
