@@ -13,6 +13,22 @@ type I18nContextValue = {
 const translations: Record<Locale, Record<string, string>> = {
   es: {},
   en: {
+    // Registro de delegaciones (pestaña de Inscripción de Participantes).
+    "Editar delegación": "Edit delegation",
+    "Nueva delegación": "New delegation",
+    "Cada delegación es una región asociada al evento con su Jefe de Delegación, que es un participante inscrito y entra al portal con su código. Choferes y vehículos se asignan a la región desde sus propios maestros; los hoteles se toman de la asignación hotelera de sus participantes.": "Each delegation is a region linked to the event with its Delegation Head, a registered participant who signs into the portal with their code. Drivers and vehicles are assigned to the region from their own masters; hotels come from the participants' hotel assignments.",
+    "No se pudieron cargar las delegaciones.": "Could not load the delegations.",
+    "No se pudo guardar la delegación.": "Could not save the delegation.",
+    "No se pudo eliminar la delegación.": "Could not delete the delegation.",
+    "Todas las regiones ya están registradas para este evento.": "Every region is already registered for this event.",
+    "Jefe de Delegación": "Delegation Head",
+    "sin delegación": "no delegation",
+    "Participante inscrito en el evento; queda como jefe y asociado a esta región.": "Participant registered in the event; becomes the head and is linked to this region.",
+    "Crear delegación": "Create delegation",
+    "Delegaciones del evento": "Event delegations",
+    "No hay delegaciones registradas para este evento.": "No delegations registered for this event.",
+    "Eliminar delegación": "Delete delegation",
+    "Los participantes asociados quedarán sin delegación.": "Its participants will be left without a delegation.",
     // Portal del Jefe de Misión: flota, incidencias, coordinadores y calendario de la región.
     "WhatsApp al Coordinador General": "WhatsApp the General Coordinator",
     "hace": "ago",
@@ -2526,6 +2542,22 @@ const translations: Record<Locale, Record<string, string>> = {
     "Panel Financiero": "Financial Panel",
   },
   pt: {
+    // Registro de delegaciones (pestaña de Inscripción de Participantes).
+    "Editar delegación": "Editar delegação",
+    "Nueva delegación": "Nova delegação",
+    "Cada delegación es una región asociada al evento con su Jefe de Delegación, que es un participante inscrito y entra al portal con su código. Choferes y vehículos se asignan a la región desde sus propios maestros; los hoteles se toman de la asignación hotelera de sus participantes.": "Cada delegação é uma região associada ao evento com o seu Chefe de Delegação, um participante inscrito que entra no portal com o seu código. Motoristas e veículos são atribuídos à região nos seus próprios cadastros; os hotéis vêm da atribuição hoteleira dos participantes.",
+    "No se pudieron cargar las delegaciones.": "Não foi possível carregar as delegações.",
+    "No se pudo guardar la delegación.": "Não foi possível salvar a delegação.",
+    "No se pudo eliminar la delegación.": "Não foi possível excluir a delegação.",
+    "Todas las regiones ya están registradas para este evento.": "Todas as regiões já estão registradas para este evento.",
+    "Jefe de Delegación": "Chefe de Delegação",
+    "sin delegación": "sem delegação",
+    "Participante inscrito en el evento; queda como jefe y asociado a esta región.": "Participante inscrito no evento; passa a ser chefe e fica associado a esta região.",
+    "Crear delegación": "Criar delegação",
+    "Delegaciones del evento": "Delegações do evento",
+    "No hay delegaciones registradas para este evento.": "Não há delegações registradas para este evento.",
+    "Eliminar delegación": "Excluir delegação",
+    "Los participantes asociados quedarán sin delegación.": "Os participantes associados ficarão sem delegação.",
     // Portal del Jefe de Misión: flota, incidencias, coordinadores y calendario de la región.
     "WhatsApp al Coordinador General": "WhatsApp ao Coordenador Geral",
     "hace": "há",

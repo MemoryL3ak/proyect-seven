@@ -62,7 +62,8 @@ export class FoodLocationsService {
 
   /**
    * @param delegationId Jefe de Misión: sólo los lugares de los hoteles de su
-   * delegación (core.delegation_accommodations) y los puntos generales sin hotel.
+   * delegación (vínculo explícito o donde se alojan sus participantes) y los
+   * puntos generales sin hotel.
    */
   async findAll(delegationId?: string | null) {
     try {
@@ -71,7 +72,15 @@ export class FoodLocationsService {
          where ($1::uuid is null
                 or accommodation_id is null
                 or accommodation_id in (
-                  select accommodation_id from core.delegation_accommodations where delegation_id = $1))
+                  select accommodation_id from core.delegation_accommodations where delegation_id = $1
+                  union
+                  select hotel_accommodation_id from core.athletes
+                   where delegation_id = $1 and hotel_accommodation_id is not null
+                     and status is distinct from 'DELETED'
+                  union
+                  select ha.hotel_id from logistics.hotel_assignments ha
+                    join core.athletes a on a.id = ha.participant_id
+                   where a.delegation_id = $1))
          order by created_at desc`,
         [delegationId ?? null],
       );
