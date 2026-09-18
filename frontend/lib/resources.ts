@@ -115,7 +115,8 @@ export const resources: Record<string, ResourceConfig> = {
         type: "select",
         options: [
           { label: "Masculino", value: "MALE" },
-          { label: "Femenino", value: "FEMALE" }
+          { label: "Femenino", value: "FEMALE" },
+          { label: "Mixto", value: "MIXED" }
         ]
       }
     ]
