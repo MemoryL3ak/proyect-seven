@@ -148,7 +148,7 @@ type CalendarEvent = {
   gender?: string | null;
 };
 type DisciplineParent = { id: string; name?: string | null; category?: string | null; gender?: string | null };
-type Venue = { id: string; eventId?: string | null; name?: string | null; address?: string | null; region?: string | null; commune?: string | null; photoUrl?: string | null; coordinatorName?: string | null; coordinatorPhone?: string | null };
+type Venue = { id: string; eventId?: string | null; name?: string | null; address?: string | null; region?: string | null; commune?: string | null; photoUrl?: string | null; coordinatorName?: string | null; coordinatorPhone?: string | null; venueType?: string | null };
 type Accommodation = { id: string; eventId?: string | null; name?: string | null; address?: string | null; city?: string | null; country?: string | null; checkIn?: string | null; checkOut?: string | null; roomType?: string | null; contactPhone?: string | null; photoUrl?: string | null };
 type FoodLocation = { id: string; accommodationId?: string | null; name: string; description?: string | null; capacity?: number | null; clientTypes: string[] };
 type FoodMenu = { id: string; date: string; mealType: string; title: string; description?: string | null; dietaryType?: string | null; accommodationId?: string | null; clientTypes?: string[] | null; locationDetail?: string | null };
@@ -349,7 +349,7 @@ export default function UserPortalPage() {
   const [delegationTrips, setDelegationTrips] = useState<Trip[]>([]);
   const [venues, setVenues] = useState<Venue[]>([]);
   // Sedes y hoteles son cosas distintas: se ven por separado, no en una lista.
-  const [sedesVista, setSedesVista] = useState<"sedes" | "hoteles">("sedes");
+  const [sedesVista, setSedesVista] = useState<"sedes" | "comedores" | "hoteles">("sedes");
   const [allAccommodations, setAllAccommodations] = useState<Accommodation[]>([]);
   const [foodLocations, setFoodLocations] = useState<FoodLocation[]>([]);
   const [foodMenus, setFoodMenus] = useState<FoodMenu[]>([]);
@@ -2807,18 +2807,29 @@ export default function UserPortalPage() {
         {activeTab === "sedes" && (
           <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
             {isChief && <GeneralCoordinatorCard />}
-            <SegmentedFilter
-              value={sedesVista}
-              onChange={(value) => setSedesVista(value as "sedes" | "hoteles")}
-              options={[
-                { value: "sedes", label: t("Sedes"), count: venues.length },
-                { value: "hoteles", label: t("Hoteles"), count: allAccommodations.length },
-              ]}
-            />
-            {sedesVista === "sedes" && venues.length === 0 && (
-              <p style={{ fontSize:13,color:SURFACE.textFaint,textAlign:"center",padding:20 }}>{t("No hay sedes registradas")}</p>
-            )}
-            {sedesVista === "sedes" && venues.map(v => {
+            {(() => {
+              // Sedes de competencia y comedores son recintos distintos.
+              const sedes = venues.filter(v => (v.venueType ?? "SEDE") !== "COMEDOR");
+              const comedores = venues.filter(v => (v.venueType ?? "SEDE") === "COMEDOR");
+              const visibles = sedesVista === "comedores" ? comedores : sedes;
+              return (
+                <>
+                  <SegmentedFilter
+                    value={sedesVista}
+                    onChange={(value) => setSedesVista(value as "sedes" | "comedores" | "hoteles")}
+                    options={[
+                      { value: "sedes", label: t("Sedes"), count: sedes.length },
+                      ...(comedores.length > 0 ? [{ value: "comedores", label: t("Comedores"), count: comedores.length }] : []),
+                      { value: "hoteles", label: t("Hoteles"), count: allAccommodations.length },
+                    ]}
+                  />
+                  {sedesVista !== "hoteles" && visibles.length === 0 && (
+                    <p style={{ fontSize:13,color:SURFACE.textFaint,textAlign:"center",padding:20 }}>
+                      {sedesVista === "comedores" ? t("No hay comedores registrados") : t("No hay sedes registradas")}
+                    </p>
+                  )}
+                  <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
+                  {sedesVista !== "hoteles" && visibles.map(v => {
               const isOpen = expandedItemId === `venue-${v.id}`;
               const addr = [v.address, v.commune, v.region].filter(Boolean).join(", ");
               return (
@@ -2859,6 +2870,10 @@ export default function UserPortalPage() {
                 </div>
               );
             })}
+                  </div>
+                </>
+              );
+            })()}
             {/* Hoteles: para el Jefe de Misión, sólo donde se aloja su delegación. */}
             {sedesVista === "hoteles" && isChief && allAccommodations.length > 0 && (
               <p style={{ fontSize:11.5,color:SURFACE.textMuted,margin:0,padding:"8px 12px",borderRadius:10,background:SURFACE.borderMuted }}>

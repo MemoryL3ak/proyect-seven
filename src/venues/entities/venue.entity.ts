@@ -20,6 +20,10 @@ export class Venue {
   @Column({ type: 'text', nullable: true })
   address?: string | null;
 
+  /** SEDE (competencia) o COMEDOR: cambia dónde se ofrece y cómo se lista. */
+  @Column({ name: 'venue_type', type: 'text', default: 'SEDE' })
+  venueType: string;
+
   @Column({ type: 'text', nullable: true })
   region?: string | null;
 

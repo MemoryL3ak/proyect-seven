@@ -41,6 +41,8 @@ export type FieldDef = {
   defaultValue?: string;
   /** Muestra este campo solo cuando el campo `field` tenga el valor `value` */
   showWhen?: { field: string; value: string };
+  /** Como showWhen, pero el campo aparece con cualquiera de estos valores. */
+  showWhenAny?: { field: string; values: string[] };
   /** Oculta este campo cuando el campo `field` tenga el valor `value` */
   hideWhen?: { field: string; value: string };
 };
@@ -635,6 +637,15 @@ export const resources: Record<string, ResourceConfig> = {
     fields: [
       { key: "eventId", label: "Evento", type: "select", required: true, optionsSource: "events" },
       { key: "name", label: "Sede", type: "text", required: true },
+      {
+        key: "venueType",
+        label: "Tipo de recinto",
+        type: "select",
+        options: [
+          { label: "Sede", value: "SEDE" },
+          { label: "Comedor", value: "COMEDOR" }
+        ]
+      },
       { key: "address", label: "Dirección", type: "places", required: true },
       { key: "region", label: "Región", type: "text" },
       { key: "commune", label: "Comuna", type: "text" },
@@ -1061,14 +1072,16 @@ export const resources: Record<string, ResourceConfig> = {
         options: [
           { label: "Sede", value: "SEDE" },
           { label: "Hotel", value: "HOTEL" },
+          { label: "Comedor", value: "COMEDOR" },
         ],
       },
       {
         key: "originVenueId",
-        label: "Sede origen",
+        label: "Recinto de origen",
         type: "select",
         optionsSource: "venues",
-        showWhen: { field: "originTypeFilter", value: "SEDE" },
+        // Sede y comedor son el mismo recinto en la base; cambia la lista.
+        showWhenAny: { field: "originTypeFilter", values: ["SEDE", "COMEDOR"] },
         hideWhen: { field: "tripType", value: "TRANSFER_IN" },
       },
       {
@@ -1088,14 +1101,15 @@ export const resources: Record<string, ResourceConfig> = {
         options: [
           { label: "Sede", value: "SEDE" },
           { label: "Hotel", value: "HOTEL" },
+          { label: "Comedor", value: "COMEDOR" },
         ],
       },
       {
         key: "destinationVenueId",
-        label: "Sede destino",
+        label: "Recinto de destino",
         type: "select",
         optionsSource: "venues",
-        showWhen: { field: "destinationTypeFilter", value: "SEDE" },
+        showWhenAny: { field: "destinationTypeFilter", values: ["SEDE", "COMEDOR"] },
         hideWhen: { field: "tripType", value: "TRANSFER_OUT" },
       },
       {

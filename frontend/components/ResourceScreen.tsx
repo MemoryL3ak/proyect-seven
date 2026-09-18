@@ -1218,6 +1218,10 @@ export default function ResourceScreen({
             const depValue = form[field.showWhen.field] as string | undefined;
             if ((depValue ?? "") !== field.showWhen.value) return false;
           }
+          if (field.showWhenAny) {
+            const depValue = form[field.showWhenAny.field] as string | undefined;
+            if (!field.showWhenAny.values.includes(depValue ?? "")) return false;
+          }
           if (field.hideWhen) {
             const depValue = form[field.hideWhen.field] as string | undefined;
             if ((depValue ?? "") === field.hideWhen.value) return false;
@@ -1953,7 +1957,9 @@ export default function ResourceScreen({
       const data = await apiFetch<Record<string, any>[]>("/venues");
       const options = (data || []).map((venue) => ({
         label: venue.name ? `${venue.name}${venue.address ? ` · ${venue.address}` : ""}` : venue.id,
-        value: venue.id
+        value: venue.id,
+        // SEDE o COMEDOR: el formulario de viajes ofrece uno u otro.
+        venueType: String(venue.venueType ?? "SEDE")
       }));
       setVenueOptions(options);
       setVenuesRaw(data || []);
@@ -2285,7 +2291,21 @@ export default function ResourceScreen({
       }
       return accommodationOptions;
     }
-    if (source === "venues") return venueOptions;
+    if (source === "venues") {
+      if (config.endpoint === "/trips") {
+        // El mismo campo sirve para sede y comedor: se ofrece lo elegido en
+        // "Tipo de origen" / "Tipo de destino".
+        const tipo = String(
+          field.key === "originVenueId" ? form.originTypeFilter ?? "" : form.destinationTypeFilter ?? "",
+        );
+        if (tipo === "SEDE" || tipo === "COMEDOR") {
+          return (venueOptions as Array<Option & { venueType?: string | null }>).filter(
+            (option) => (option.venueType ?? "SEDE") === tipo,
+          );
+        }
+      }
+      return venueOptions;
+    }
     if (source === "vehicles") return vehicleOptions;
     if (source === "drivers") return driverOptions;
     if (source === "driverUsers") {
@@ -2541,6 +2561,10 @@ export default function ResourceScreen({
               if (field.showWhen) {
                 const depValue = form[field.showWhen.field] as string | undefined;
                 if ((depValue ?? "") !== field.showWhen.value) return null;
+              }
+              if (field.showWhenAny) {
+                const depValue = form[field.showWhenAny.field] as string | undefined;
+                if (!field.showWhenAny.values.includes(depValue ?? "")) return null;
               }
               if (field.hideWhen) {
                 const depValue = form[field.hideWhen.field] as string | undefined;
