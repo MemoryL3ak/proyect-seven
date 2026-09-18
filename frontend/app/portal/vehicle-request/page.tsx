@@ -3,7 +3,40 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import PlacesAutocompleteInput from "@/components/PlacesAutocompleteInput";
 import { apiFetch } from "@/lib/api";
-import { AlertIcon, UserIcon, PinIcon, PhoneIcon, TrophyIcon, SearchIcon, TicketIcon, SunIcon, MoonIcon, UtensilsIcon, UtensilsCrossedIcon, CalendarIcon, XIcon, MedalIcon, StethoscopeIcon, ClockIcon } from "@/components/ui/Icons";
+import {
+  AlertIcon,
+  UserIcon,
+  PinIcon,
+  PhoneIcon,
+  TrophyIcon,
+  SearchIcon,
+  TicketIcon,
+  SunIcon,
+  MoonIcon,
+  UtensilsIcon,
+  UtensilsCrossedIcon,
+  CalendarIcon,
+  XIcon,
+  MedalIcon,
+  StethoscopeIcon,
+  ClockIcon,
+  TruckIcon,
+  ActivityIcon,
+  CoffeeIcon,
+  FileTextIcon,
+  ChevronDownIcon,
+  StarIcon,
+  HeadphonesIcon,
+  RefreshIcon,
+  LogOutIcon,
+  CheckIcon,
+  AlertCircleIcon,
+  ListIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ArrowRightIcon,
+  DownloadIcon,
+} from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 import { buildDisciplineLabelMap, categoryLabel, genderLabel, normalizeCategory, normalizeGender } from "@/lib/discipline-filters";
 import { getMobileSession, mobileAwareLogout } from "@/lib/mobile-auth";
@@ -461,16 +494,16 @@ export default function VehicleRequestPortalPage() {
   const [assistOpen, setAssistOpen] = useState(false);
   const { vipPrimary, vipOverflow } = useMemo(() => {
     const all = [
-      { key: "solicitud" as PortalTab, label: "Solicitud", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> },
-      { key: "actividades" as PortalTab, label: "Actividades", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> },
+      { key: "solicitud" as PortalTab, label: "Solicitud", icon: (c: string) => <TruckIcon size={18} color={c} strokeWidth={1.8} /> },
+      { key: "actividades" as PortalTab, label: "Actividades", icon: (c: string) => <ActivityIcon size={18} color={c} strokeWidth={1.8} /> },
       { key: "premiaciones" as PortalTab, label: "Premiaciones", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg> },
-      { key: "cupones" as PortalTab, label: "Beneficios", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v2a3 3 0 010 6v2a2 2 0 002 2h14a2 2 0 002-2v-2a3 3 0 010-6V7a2 2 0 00-2-2H5a2 2 0 00-2 2z"/><line x1="13" y1="5" x2="13" y2="7"/><line x1="13" y1="11" x2="13" y2="13"/><line x1="13" y1="17" x2="13" y2="19"/></svg> },
-      { key: "sedes" as PortalTab, label: "Sedes", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> },
+      { key: "cupones" as PortalTab, label: "Beneficios", icon: (c: string) => <TicketIcon size={18} color={c} strokeWidth={1.8} /> },
+      { key: "sedes" as PortalTab, label: "Sedes", icon: (c: string) => <PinIcon size={18} color={c} strokeWidth={1.8} /> },
       { key: "hoteles" as PortalTab, label: "Mi Hotel", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 22V8l9-6 9 6v14"/><path d="M9 22V12h6v10"/></svg> },
-      { key: "alimentacion" as PortalTab, label: "Alimentación", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg> },
-      { key: "calendario" as PortalTab, label: "Calendario", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> },
-      { key: "documentos" as PortalTab, label: "Documentos", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h8M8 17h5"/></svg> },
-      { key: "cuenta" as PortalTab, label: "Cuenta", icon: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
+      { key: "alimentacion" as PortalTab, label: "Alimentación", icon: (c: string) => <CoffeeIcon size={18} color={c} strokeWidth={1.8} /> },
+      { key: "calendario" as PortalTab, label: "Calendario", icon: (c: string) => <CalendarIcon size={18} color={c} strokeWidth={1.8} /> },
+      { key: "documentos" as PortalTab, label: "Documentos", icon: (c: string) => <FileTextIcon size={18} color={c} strokeWidth={1.8} /> },
+      { key: "cuenta" as PortalTab, label: "Cuenta", icon: (c: string) => <UserIcon size={18} color={c} strokeWidth={1.8} /> },
     ];
     const MAX_PRIMARY = 4;
     const PRIORITY = ["solicitud", "actividades", "calendario", "cuenta", "alimentacion", "sedes", "hoteles", "documentos", "premiaciones", "cupones"];
@@ -1470,9 +1503,7 @@ export default function VehicleRequestPortalPage() {
               {driver.fullName}
             </span>
           )}
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0,transition:"transform .2s",transform:isExpanded?"rotate(180deg)":"rotate(0)" }}>
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
+          <ChevronDownIcon size={16} color="#94a3b8" strokeWidth={2} style={{ flexShrink:0,transition:"transform .2s",transform:isExpanded?"rotate(180deg)":"rotate(0)" }} />
         </button>
 
         {/* Active trip banner */}
@@ -1505,9 +1536,7 @@ export default function VehicleRequestPortalPage() {
             <div style={{ display:"flex",gap:4 }}>
               {[1,2,3,4,5].map((star) => (
                 <button key={star} type="button" onClick={() => setRatingStars(star)} style={{ background:"none",border:"none",cursor:"pointer",padding:2 }}>
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill={ratingStars >= star ? "#FBBF24" : "none"} stroke={ratingStars >= star ? "#F59E0B" : "#CBD5E1"} strokeWidth="1.5">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                  </svg>
+                  <StarIcon size={32} />
                 </button>
               ))}
             </div>
@@ -1535,9 +1564,7 @@ export default function VehicleRequestPortalPage() {
         {trip.driverRating && !isExpanded && (
           <div style={{ padding:"0 14px 10px",display:"flex",alignItems:"center",gap:4 }}>
             {Array.from({ length: trip.driverRating }, (_, i) => (
-              <svg key={i} width="14" height="14" viewBox="0 0 24 24" fill="#FBBF24" stroke="#F59E0B" strokeWidth="1.5">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-              </svg>
+              <StarIcon key={i} size={14} color="#F59E0B" strokeWidth={1.5} fill="#FBBF24" />
             ))}
             <span style={{ fontSize:11,color:"#94a3b8",marginLeft:4 }}>{t("Evaluado")}</span>
           </div>
@@ -1677,9 +1704,7 @@ export default function VehicleRequestPortalPage() {
             {trip.driverRating && (
               <div style={{ display:"flex",alignItems:"center",gap:4,padding:"4px 0" }}>
                 {Array.from({ length: trip.driverRating }, (_, i) => (
-                  <svg key={i} width="16" height="16" viewBox="0 0 24 24" fill="#FBBF24" stroke="#F59E0B" strokeWidth="1.5">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                  </svg>
+                  <StarIcon key={i} size={16} color="#F59E0B" strokeWidth={1.5} fill="#FBBF24" />
                 ))}
                 <span style={{ fontSize:11,color:"#94a3b8",marginLeft:4 }}>{t("Tu evaluacion")}</span>
               </div>
@@ -1757,9 +1782,9 @@ export default function VehicleRequestPortalPage() {
               </p>
               <div className="hidden lg:flex flex-col" style={{ gap: "10px", marginTop: "8px" }}>
                 {([
-                  [<svg key="car" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(33,208,179,0.8)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>, "Solicita tu traslado"],
-                  [<svg key="clock" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(33,208,179,0.8)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>, "Seguimiento en tiempo real"],
-                  [<svg key="pin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(33,208,179,0.8)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>, "Hacia las sedes del evento"],
+                  [<TruckIcon key="car" size={16} color="rgba(33,208,179,0.8)" strokeWidth={1.8} />, "Solicita tu traslado"],
+                  [<ClockIcon key="clock" size={16} color="rgba(33,208,179,0.8)" strokeWidth={1.8} />, "Seguimiento en tiempo real"],
+                  [<PinIcon key="pin" size={16} color="rgba(33,208,179,0.8)" strokeWidth={1.8} />, "Hacia las sedes del evento"],
                 ] as [React.ReactNode, string][]).map(([icon, label]) => (
                   <div key={label} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                     <span style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>{icon}</span>
@@ -1879,21 +1904,15 @@ export default function VehicleRequestPortalPage() {
                 />
                 <button type="button" onClick={() => setAssistOpen((p) => !p)} title={t("Asistencia")}
                   style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:`1px solid ${assistOpen ? "rgba(52,243,198,0.7)" : "rgba(33,208,179,0.4)"}`,background: assistOpen ? "linear-gradient(135deg,rgba(52,243,198,0.28),rgba(33,208,179,0.18))" : "rgba(33,208,179,0.12)",cursor:"pointer",flexShrink:0,transition:"all .15s" }}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
-                  </svg>
+                  <HeadphonesIcon size={15} color={BRAND.teal} strokeWidth={2} />
                 </button>
                 <button type="button" onClick={() => window.location.reload()} disabled={loading} title={t("Actualizar")}
                   style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",cursor:"pointer",flexShrink:0,opacity:loading?0.5:1 }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
-                  </svg>
+                  <RefreshIcon size={14} color={BRAND.teal} strokeWidth={2} />
                 </button>
                 <button type="button" onClick={logout}
                   style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(255,255,255,0.15)",background:"rgba(255,255,255,0.08)",cursor:"pointer",flexShrink:0 }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-                  </svg>
+                  <LogOutIcon size={14} color="rgba(255,255,255,0.7)" strokeWidth={2} />
                 </button>
               </div>
             </div>
@@ -1924,7 +1943,7 @@ export default function VehicleRequestPortalPage() {
                       <div style={{ display:"flex",alignItems:"center",gap:12 }}>
                         <span style={{ position:"relative",flexShrink:0,width:40,height:40,borderRadius:12,background:"rgba(33,208,179,0.15)",display:"flex",alignItems:"center",justifyContent:"center" }}>
                           <span style={{ position:"absolute",top:6,right:6,width:8,height:8,borderRadius:"50%",background:BRAND.tealLight,boxShadow:`0 0 8px ${BRAND.tealLight}`,animation:"vrPulse 1.4s ease-in-out infinite" }} />
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={BRAND.tealLight} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                          <TruckIcon size={20} color={BRAND.tealLight} strokeWidth={1.8} />
                         </span>
                         <div style={{ flex:1,minWidth:0 }}>
                           <p style={{ fontSize:9.5,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.tealLight,margin:0 }}>
@@ -2081,7 +2100,7 @@ export default function VehicleRequestPortalPage() {
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
                 <div style={{ background:"#fff",borderRadius:"24px",width:"100%",maxWidth:"380px",padding:"32px 28px",boxShadow:"0 8px 40px rgba(15,23,42,0.2)",textAlign:"center" }}>
                   <div style={{ width:"56px",height:"56px",borderRadius:"50%",background:"rgba(33,208,179,0.12)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 18px" }}>
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+                    <CheckIcon size={28} color={BRAND.teal} strokeWidth={2.5} />
                   </div>
                   <h3 style={{ fontSize:"18px",fontWeight:800,color:"#0f172a",margin:"0 0 8px" }}>{t("Solicitud enviada")}</h3>
                   <p style={{ fontSize:"13px",color:"#64748b",lineHeight:1.5,margin:"0 0 24px" }}>
@@ -2143,7 +2162,7 @@ export default function VehicleRequestPortalPage() {
                       const vehicleLabel = VEHICLE_TYPES.find((v) => v.value === selectedVehicleType)?.label ?? "";
                       if (Number(passengerCount) > maxPax) return (
                         <div style={{ display:"flex",alignItems:"center",gap:6,padding:"8px 12px",borderRadius:10,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)" }}>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                          <AlertCircleIcon size={14} color="#ef4444" strokeWidth={2} />
                           <span style={{ fontSize:12,fontWeight:600,color:"#dc2626" }}>El vehículo {vehicleLabel.split("—")[0].trim()} permite máximo {maxPax} pasajeros</span>
                         </div>
                       );
@@ -2465,7 +2484,7 @@ export default function VehicleRequestPortalPage() {
                     <div style={{ position:"absolute",top:-40,right:-40,width:140,height:140,borderRadius:"50%",background:r.bg,opacity:0.25,pointerEvents:"none" }} />
                     <div style={{ position:"relative",display:"flex",alignItems:"flex-start",gap:12 }}>
                       <div style={{ width:42,height:42,borderRadius:12,flexShrink:0,background:r.bg,border:`1.5px solid ${r.ring}40`,display:"flex",alignItems:"center",justifyContent:"center",color:r.ring,boxShadow:`0 4px 12px ${r.ring}30` }}>
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg>
+                        <TrophyIcon size={22} strokeWidth={2} />
                       </div>
                       <div style={{ flex:1,minWidth:0 }}>
                         <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8 }}>
@@ -2475,12 +2494,12 @@ export default function VehicleRequestPortalPage() {
                         {p.discipline && <p style={{ fontSize:11.5,color:"#0ea5c8",margin:"2px 0 0",fontWeight:600 }}>{p.discipline}</p>}
                         <div style={{ display:"flex",flexWrap:"wrap",gap:"4px 12px",marginTop:6 }}>
                           <span style={{ display:"inline-flex",alignItems:"center",gap:4,fontSize:11.5,color:"#334155",fontWeight:600 }}>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            <ClockIcon size={12} strokeWidth={2} />
                             {fmtTime(p.scheduled_at)}
                           </span>
                           {(p.venue_name || p.location_detail) && (
                             <span style={{ display:"inline-flex",alignItems:"center",gap:4,fontSize:11,color:"#64748b" }}>
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                              <PinIcon size={12} strokeWidth={2} />
                               {[p.venue_name, p.location_detail].filter(Boolean).join(" — ")}
                             </span>
                           )}
@@ -2498,12 +2517,12 @@ export default function VehicleRequestPortalPage() {
                       <div style={{ position:"relative",marginTop:12,paddingTop:10,borderTop:"1px dashed #e2e8f0" }}>
                         {attendance === "CONFIRMED" ? (
                           <div style={{ display:"inline-flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:99,background:"linear-gradient(135deg,#dcfce7 0%,#bbf7d0 100%)",color:"#166534",fontSize:11.5,fontWeight:800,border:"1px solid #86efac" }}>
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <CheckIcon size={13} strokeWidth={2.5} />
                             {t("Asistencia confirmada")}
                           </div>
                         ) : attendance === "DECLINED" ? (
                           <div style={{ display:"inline-flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:99,background:"#fee2e2",color:"#991b1b",fontSize:11.5,fontWeight:800,border:"1px solid #fca5a5" }}>
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            <XIcon size={13} strokeWidth={2.5} />
                             {t("Declinaste")}
                           </div>
                         ) : (
@@ -2512,7 +2531,7 @@ export default function VehicleRequestPortalPage() {
                             <div style={{ display:"flex",gap:6,marginLeft:"auto" }}>
                               <button type="button" onClick={() => confirmAwarder(p.id, a.id, "CONFIRM")}
                                 style={{ padding:"7px 14px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#10b981 0%,#059669 100%)",color:"#fff",fontSize:11.5,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 8px rgba(16,185,129,0.3)",display:"inline-flex",alignItems:"center",gap:5 }}>
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                <CheckIcon size={12} strokeWidth={2.5} />
                                 {t("Confirmar")}
                               </button>
                               <button type="button" onClick={() => confirmAwarder(p.id, a.id, "DECLINE")}
@@ -2535,7 +2554,7 @@ export default function VehicleRequestPortalPage() {
                     <div style={{ position:"absolute",top:-30,right:-30,width:140,height:140,borderRadius:"50%",background:"radial-gradient(circle,rgba(245,200,66,0.25),transparent 70%)",pointerEvents:"none" }} />
                     <div style={{ position:"relative",display:"flex",alignItems:"center",gap:12 }}>
                       <div style={{ width:46,height:46,borderRadius:13,background:"linear-gradient(135deg,#d4a017 0%,#f5c842 50%,#e3a808 100%)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",flexShrink:0,boxShadow:"0 6px 16px rgba(199,140,0,0.4)" }}>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg>
+                        <TrophyIcon size={24} strokeWidth={2} />
                       </div>
                       <div style={{ flex:1,minWidth:0 }}>
                         <p style={{ fontSize:10,fontWeight:800,letterSpacing:"0.2em",textTransform:"uppercase",color:"#a87800",margin:0 }}>{t("Tus premiaciones")}</p>
@@ -2571,8 +2590,8 @@ export default function VehicleRequestPortalPage() {
                       <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",padding:"10px",display:"flex",flexDirection:"column",gap:8 }}>
                         <div style={{ display:"flex",gap:0,background:"#f1f5f9",borderRadius:10,padding:3 }}>
                           {([
-                            { v:"calendar" as const, label:"Calendario", icon:(<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>)},
-                            { v:"list" as const, label:"Lista", icon:(<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>)},
+                            { v:"calendar" as const, label:"Calendario", icon:(<CalendarIcon size={13} strokeWidth={2} />)},
+                            { v:"list" as const, label:"Lista", icon:(<ListIcon size={13} strokeWidth={2} />)},
                           ]).map(opt => {
                             const active = premView === opt.v;
                             return (
@@ -2592,10 +2611,7 @@ export default function VehicleRequestPortalPage() {
                         </div>
                         {/* Búsqueda */}
                         <div style={{ position:"relative" }}>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                            style={{ position:"absolute",left:10,top:"50%",transform:"translateY(-50%)" }}>
-                            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                          </svg>
+                          <SearchIcon size={14} color="#94a3b8" strokeWidth={2} style={{ position:"absolute",left:10,top:"50%",transform:"translateY(-50%)" }} />
                           <input
                             type="search"
                             value={premSearch}
@@ -2619,7 +2635,7 @@ export default function VehicleRequestPortalPage() {
                             <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10 }}>
                               <button type="button" onClick={() => { setPremCalCursor(new Date(calY, calM - 1, 1)); setPremCalSelectedKey(null); }}
                                 style={{ width:30,height:30,borderRadius:8,border:"1px solid #f0deb0",background:"#fffbf2",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a87800" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                                <ChevronLeftIcon size={14} color="#a87800" strokeWidth={2.5} />
                               </button>
                               <div style={{ display:"flex",flexDirection:"column",alignItems:"center" }}>
                                 <span style={{ fontSize:14,fontWeight:800,color:"#7a4a00",textTransform:"capitalize",letterSpacing:"-0.01em" }}>{monthLabel}</span>
@@ -2627,7 +2643,7 @@ export default function VehicleRequestPortalPage() {
                               </div>
                               <button type="button" onClick={() => { setPremCalCursor(new Date(calY, calM + 1, 1)); setPremCalSelectedKey(null); }}
                                 style={{ width:30,height:30,borderRadius:8,border:"1px solid #f0deb0",background:"#fffbf2",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a87800" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                                <ChevronRightIcon size={14} color="#a87800" strokeWidth={2.5} />
                               </button>
                             </div>
                             <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:3,textAlign:"center" }}>
@@ -2720,10 +2736,7 @@ export default function VehicleRequestPortalPage() {
                                 <span style={{ marginLeft:"auto",fontSize:10,fontWeight:800,padding:"2px 9px",borderRadius:99,background:"#fff",color:"#a87800",border:"1px solid #f0deb0" }}>
                                   {pendingDays.reduce((s,[,items]) => s + items.length, 0)}
                                 </span>
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a87800" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                                  style={{ flexShrink:0,transform:premPendingOpen?"rotate(180deg)":"none",transition:"transform .2s" }}>
-                                  <polyline points="6 9 12 15 18 9" />
-                                </svg>
+                                <ChevronDownIcon size={14} color="#a87800" strokeWidth={2.5} style={{ flexShrink:0,transform:premPendingOpen?"rotate(180deg)":"none",transition:"transform .2s" }} />
                               </button>
                             )}
                             {premPendingOpen && pendingDays.map(([day, items]) => (
@@ -2744,10 +2757,7 @@ export default function VehicleRequestPortalPage() {
                                 <span style={{ marginLeft:"auto",fontSize:10,fontWeight:800,padding:"2px 9px",borderRadius:99,background:"#fff",color:"#64748b",border:"1px solid #e2e8f0" }}>
                                   {doneDays.reduce((s,[,items]) => s + items.length, 0)}
                                 </span>
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                                  style={{ flexShrink:0,transform:premDoneOpen?"rotate(180deg)":"none",transition:"transform .2s" }}>
-                                  <polyline points="6 9 12 15 18 9" />
-                                </svg>
+                                <ChevronDownIcon size={14} color="#64748b" strokeWidth={2.5} style={{ flexShrink:0,transform:premDoneOpen?"rotate(180deg)":"none",transition:"transform .2s" }} />
                               </button>
                             )}
                             {premDoneOpen && doneDays.map(([day, items]) => (
@@ -2866,13 +2876,13 @@ export default function VehicleRequestPortalPage() {
                               <div style={{ display:"flex",flexWrap:"wrap",gap:8,marginTop:8 }}>
                                 {c.validUntil && (
                                   <span style={{ display:"inline-flex",alignItems:"center",gap:4,fontSize:11,color:"#64748b",fontWeight:500 }}>
-                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                    <CalendarIcon size={11} strokeWidth={2} />
                                     {t("Hasta")} {fmtCouponDate(c.validUntil)}
                                   </span>
                                 )}
                                 {c.partnerAddress && (
                                   <span style={{ display:"inline-flex",alignItems:"center",gap:4,fontSize:11,color:"#64748b",fontWeight:500,maxWidth:170,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
-                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                    <PinIcon size={11} strokeWidth={2} />
                                     {c.partnerAddress}
                                   </span>
                                 )}
@@ -2885,7 +2895,7 @@ export default function VehicleRequestPortalPage() {
                                 display:"inline-flex",alignItems:"center",justifyContent:"center",gap:8 }}>
                               {exhausted ? (
                                 <>
-                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                  <CheckIcon size={13} strokeWidth={2.5} />
                                   {t("Ya lo reclamaste")}
                                 </>
                               ) : couponClaiming === c.id ? (
@@ -2893,7 +2903,7 @@ export default function VehicleRequestPortalPage() {
                               ) : (
                                 <>
                                   {t("Reclamar beneficio")}
-                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                                  <ArrowRightIcon size={13} strokeWidth={2.5} />
                                 </>
                               )}
                             </button>
@@ -2974,16 +2984,12 @@ export default function VehicleRequestPortalPage() {
                         onClick={() => setExpandedItemId(isOpen ? null : `venue-${v.id}`)}
                         style={{ width:"100%",display:"flex",alignItems:"center",gap:10,padding:"12px 14px",background:"none",border:"none",cursor:"pointer",textAlign:"left" }}
                       >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}>
-                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
-                        </svg>
+                        <PinIcon size={16} color={BRAND.teal} strokeWidth={2} style={{ flexShrink:0 }} />
                         <div style={{ flex:1,minWidth:0 }}>
                           <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>{v.name}</p>
                           {v.address && <p style={{ fontSize:12,color:"#64748b",margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{v.address}</p>}
                         </div>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0,transition:"transform .2s",transform:isOpen?"rotate(180deg)":"rotate(0)" }}>
-                          <polyline points="6 9 12 15 18 9" />
-                        </svg>
+                        <ChevronDownIcon size={16} color="#94a3b8" strokeWidth={2} style={{ flexShrink:0,transition:"transform .2s",transform:isOpen?"rotate(180deg)":"rotate(0)" }} />
                       </button>
                       {isOpen && (
                         <div style={{ padding:"0 14px 14px",display:"flex",flexDirection:"column",gap:8 }}>
@@ -3042,9 +3048,7 @@ export default function VehicleRequestPortalPage() {
                           <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>{acc.name || t("Hotel")}</p>
                           {acc.city && <p style={{ fontSize:12,color:"#64748b",margin:"2px 0 0" }}>{[acc.city, acc.country].filter(Boolean).join(", ")}</p>}
                         </div>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0,transition:"transform .2s",transform:isOpen?"rotate(180deg)":"rotate(0)" }}>
-                          <polyline points="6 9 12 15 18 9" />
-                        </svg>
+                        <ChevronDownIcon size={16} color="#94a3b8" strokeWidth={2} style={{ flexShrink:0,transition:"transform .2s",transform:isOpen?"rotate(180deg)":"rotate(0)" }} />
                       </button>
                       {isOpen && (
                         <div style={{ padding:"0 14px 14px",display:"flex",flexDirection:"column",gap:8 }}>
@@ -3160,7 +3164,7 @@ export default function VehicleRequestPortalPage() {
                       <div style={{ padding:"14px 16px",background:"linear-gradient(135deg,rgba(33,208,179,0.08),rgba(33,208,179,0.02))",borderBottom:"1px solid #e2e8f0",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
                         <div style={{ display:"flex",alignItems:"center",gap:8 }}>
                           <div style={{ width:32,height:32,borderRadius:10,background:"rgba(33,208,179,0.12)",display:"flex",alignItems:"center",justifyContent:"center" }}>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2" strokeLinecap="round"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+                            <CoffeeIcon size={16} color={BRAND.teal} strokeWidth={2} />
                           </div>
                           <div>
                             <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>{t("Menú de hoy")}</p>
@@ -3216,7 +3220,7 @@ export default function VehicleRequestPortalPage() {
                   return (
                     <div style={{ background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)",opacity:0.85 }}>
                       <div style={{ padding:"12px 16px",background:"#f8fafc",borderBottom:"1px solid #e2e8f0",display:"flex",alignItems:"center",gap:8 }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        <CalendarIcon size={14} color="#64748b" strokeWidth={2} />
                         <div>
                           <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0 }}>{t("Menú de mañana")}</p>
                           <p style={{ fontSize:11,color:"#94a3b8",margin:0,textTransform:"capitalize" }}>{tomorrow.toLocaleDateString("es-CL",{weekday:"long",day:"numeric",month:"long"})}</p>
@@ -3255,7 +3259,7 @@ export default function VehicleRequestPortalPage() {
                   <div style={{ background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)" }}>
                     <div style={{ padding:"14px 16px",background:"linear-gradient(135deg,rgba(33,208,179,0.06),rgba(31,205,255,0.04))",borderBottom:"1px solid #e2e8f0" }}>
                       <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        <PinIcon size={16} color={BRAND.teal} strokeWidth={2} />
                         <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0 }}>{t("Tus lugares de comida")}</p>
                       </div>
                     </div>
@@ -3267,7 +3271,7 @@ export default function VehicleRequestPortalPage() {
                       <div key={fl.id} style={{ borderTop:i>0?"1px solid #f1f5f9":"none" }}>
                         <div style={{ padding:"12px 16px",display:"flex",alignItems:"center",gap:12 }}>
                           <div style={{ width:36,height:36,borderRadius:10,background:"rgba(33,208,179,0.08)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2" strokeLinecap="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+                            <CoffeeIcon size={16} color={BRAND.teal} strokeWidth={2} />
                           </div>
                           <div style={{ flex:1,minWidth:0 }}>
                             <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>{fl.name}</p>
@@ -3277,7 +3281,7 @@ export default function VehicleRequestPortalPage() {
                           {fl.capacity && <span style={{ fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:8,background:"#f1f5f9",color:"#475569",flexShrink:0 }}>{fl.capacity} pax</span>}
                           <button type="button" onClick={() => setFoodMapId(isOpen ? null : fl.id)}
                             style={{ display:"inline-flex",alignItems:"center",gap:4,padding:"6px 10px",borderRadius:9,border:`1px solid ${isOpen ? BRAND.teal : "rgba(33,208,179,0.35)"}`,background:isOpen?"rgba(33,208,179,0.14)":"rgba(33,208,179,0.06)",color:BRAND.tealInk,fontSize:11,fontWeight:800,cursor:"pointer",flexShrink:0 }}>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                            <PinIcon size={12} strokeWidth={2} />
                             {isOpen ? t("Cerrar") : t("Mapa")}
                           </button>
                         </div>
@@ -3292,7 +3296,7 @@ export default function VehicleRequestPortalPage() {
                   </div>
                 ) : (
                   <div style={{ background:"#fff",borderRadius:16,border:"1px dashed #e2e8f0",padding:24,textAlign:"center" }}>
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round" style={{ margin:"0 auto 8px" }}><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+                    <CoffeeIcon size={28} color="#cbd5e1" strokeWidth={1.5} style={{ margin:"0 auto 8px" }} />
                     <p style={{ fontSize:13,fontWeight:600,color:"#94a3b8",margin:0 }}>
                       {loading ? t("Cargando lugares de comida…") : t("No hay lugares de comida asignados a tu perfil")}
                     </p>
@@ -3363,19 +3367,19 @@ export default function VehicleRequestPortalPage() {
                   <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",background:"#fff",borderRadius:12,border:"1px solid #e2e8f0",padding:"10px 14px" }}>
                     <button type="button" onClick={() => setCalMonthCursor(new Date(calYear, calMonth - 1, 1))}
                       style={{ background:"none",border:"none",cursor:"pointer",padding:4,display:"flex",alignItems:"center" }}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0f172a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                      <ChevronLeftIcon size={18} color="#0f172a" strokeWidth={2} />
                     </button>
                     <span style={{ fontSize:14,fontWeight:700,color:"#0f172a",textTransform:"capitalize" }}>{calMonthLabel}</span>
                     <button type="button" onClick={() => setCalMonthCursor(new Date(calYear, calMonth + 1, 1))}
                       style={{ background:"none",border:"none",cursor:"pointer",padding:4,display:"flex",alignItems:"center" }}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0f172a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                      <ChevronRightIcon size={18} color="#0f172a" strokeWidth={2} />
                     </button>
                   </div>
                 ) : (
                   <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",background:"#fff",borderRadius:12,border:"1px solid #e2e8f0",padding:"10px 14px" }}>
                     <button type="button" onClick={() => setCalCursor((d) => { const x = new Date(d); x.setDate(x.getDate() - (calView === "week" ? 7 : 1)); return x; })}
                       style={{ background:"none",border:"none",cursor:"pointer",padding:4,display:"flex",alignItems:"center" }}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0f172a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                      <ChevronLeftIcon size={18} color="#0f172a" strokeWidth={2} />
                     </button>
                     <span style={{ fontSize:13.5,fontWeight:700,color:"#0f172a",textTransform:"capitalize",textAlign:"center" }}>
                       {calView === "week"
@@ -3384,7 +3388,7 @@ export default function VehicleRequestPortalPage() {
                     </span>
                     <button type="button" onClick={() => setCalCursor((d) => { const x = new Date(d); x.setDate(x.getDate() + (calView === "week" ? 7 : 1)); return x; })}
                       style={{ background:"none",border:"none",cursor:"pointer",padding:4,display:"flex",alignItems:"center" }}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0f172a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                      <ChevronRightIcon size={18} color="#0f172a" strokeWidth={2} />
                     </button>
                   </div>
                 )}
@@ -3606,7 +3610,7 @@ export default function VehicleRequestPortalPage() {
                                 <p style={{ fontSize:14.5,fontWeight:700,color:"#0f172a",margin:0,lineHeight:1.3 }}>{ce.name}</p>
                                 {ce.venueName && (
                                   <p style={{ fontSize:12,color:"#64748b",margin:"4px 0 0",display:"flex",alignItems:"center",gap:4 }}>
-                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                    <PinIcon size={11} strokeWidth={2} />
                                     {ce.venueName}
                                   </p>
                                 )}
@@ -3786,9 +3790,7 @@ export default function VehicleRequestPortalPage() {
                 {/* Logout button */}
                 <button type="button" onClick={logout}
                   style={{ width:"100%",padding:"14px",borderRadius:14,border:"1px solid #fecaca",background:"#fef2f2",color:"#dc2626",fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8 }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-                  </svg>
+                  <LogOutIcon size={16} strokeWidth={2} />
                   {t("Cerrar sesion")}
                 </button>
 
@@ -3906,9 +3908,7 @@ export default function VehicleRequestPortalPage() {
                 {[1,2,3,4,5].map((star) => (
                   <button key={star} type="button" onClick={() => setRatingStars(star)}
                     style={{ background:"none",border:"none",cursor:"pointer",padding:3,transition:"transform .15s",transform:ratingStars >= star ? "scale(1.15)" : "scale(1)" }}>
-                    <svg width="36" height="36" viewBox="0 0 24 24" fill={ratingStars >= star ? "#FBBF24" : "none"} stroke={ratingStars >= star ? "#F59E0B" : "#CBD5E1"} strokeWidth="1.5">
-                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                    </svg>
+                    <StarIcon size={36} />
                   </button>
                 ))}
               </div>
@@ -3972,7 +3972,7 @@ export default function VehicleRequestPortalPage() {
                 }}
                   title={t("Descargar PDF")}
                   style={{ width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",color:BRAND.teal,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  <DownloadIcon size={16} strokeWidth={2} />
                 </button>
                 <button type="button" onClick={() => setCredentialHtml(null)}
                   style={{ height:34,padding:"0 12px",borderRadius:10,border:"1px solid rgba(255,255,255,0.25)",background:"rgba(255,255,255,0.08)",color:"#fff",cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6,fontSize:12.5,fontWeight:700,lineHeight:1 }}>

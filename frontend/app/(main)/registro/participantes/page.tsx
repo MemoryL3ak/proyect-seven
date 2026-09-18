@@ -5,6 +5,7 @@ import BulkImportPanel from "@/components/BulkImportPanel";
 import ResourceScreen from "@/components/ResourceScreen";
 import { resources } from "@/lib/resources";
 import { apiFetch } from "@/lib/api";
+import { UploadIcon, CheckIcon, AlertCircleIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 
 type Athlete = {
@@ -99,7 +100,7 @@ export default function RegistroParticipantesPage() {
               background: "linear-gradient(135deg, #a78bfa, #7c3aed)", color: "#fff", fontSize: "13px", fontWeight: 700,
               cursor: "pointer", boxShadow: "0 2px 10px rgba(167,139,250,0.35)", transition: "opacity 0.15s",
             }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <UploadIcon size={14} strokeWidth={2.5} />
               Seleccionar fotos
               <input
                 type="file"
@@ -188,9 +189,9 @@ export default function RegistroParticipantesPage() {
           <div style={{ background: "#fff", borderRadius: "20px", width: "100%", maxWidth: "400px", padding: "28px", boxShadow: "0 8px 40px rgba(15,23,42,0.2)", textAlign: "center" }}>
             <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: photoResult.matched > 0 ? "rgba(16,185,129,0.1)" : "rgba(245,158,11,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
               {photoResult.matched > 0 ? (
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+                <CheckIcon size={24} color="#10b981" strokeWidth={2.5} />
               ) : (
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <AlertCircleIcon size={24} color="#f59e0b" strokeWidth={2} />
               )}
             </div>
             <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#0f172a", margin: "0 0 6px" }}>

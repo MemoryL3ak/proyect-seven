@@ -1,5 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
+import { ChevronDownIcon, SearchIcon } from "@/components/ui/Icons";
 
 const COUNTRIES = [
   { value: "AFG", label: "Afganistán" }, { value: "ALB", label: "Albania" },
@@ -172,12 +173,7 @@ export default function CountrySelect({ value, onChange, placeholder = "— Sele
             {selected.value}
           </span>
         )}
-        <svg
-          style={{ flexShrink: 0, transform: open ? "rotate(180deg)" : "none", transition: "transform 200ms ease", color: "var(--text-faint)" }}
-          width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-        >
-          <polyline points="6 9 12 15 18 9"/>
-        </svg>
+        <ChevronDownIcon size={13} strokeWidth={2.5} style={{ flexShrink: 0, transform: open ? "rotate(180deg)" : "none", transition: "transform 200ms ease", color: "var(--text-faint)" }} />
       </button>
 
       {/* Dropdown */}
@@ -197,10 +193,7 @@ export default function CountrySelect({ value, onChange, placeholder = "— Sele
           {/* Search */}
           <div style={{ padding: "8px", borderBottom: "1px solid var(--border)" }}>
             <div style={{ position: "relative" }}>
-              <svg style={{ position: "absolute", left: "9px", top: "50%", transform: "translateY(-50%)", color: "var(--text-faint)", pointerEvents: "none" }}
-                width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-              </svg>
+              <SearchIcon size={13} strokeWidth={2.5} style={{ position: "absolute", left: "9px", top: "50%", transform: "translateY(-50%)", color: "var(--text-faint)", pointerEvents: "none" }} />
               <input
                 ref={searchRef}
                 value={search}

@@ -2,7 +2,21 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
-import { CheckIcon, XIcon, AlertIcon } from "@/components/ui/Icons";
+import {
+  CheckIcon,
+  XIcon,
+  AlertIcon,
+  EyeIcon,
+  BuildingIcon,
+  SearchIcon,
+  FolderIcon,
+  PencilIcon,
+  TrashIcon,
+  PlusIcon,
+  UploadIcon,
+  AlertCircleIcon,
+  CameraIcon,
+} from "@/components/ui/Icons";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import CountrySelect from "@/components/CountrySelect";
 import { CLIENT_TYPE_OPTIONS } from "@/lib/clientTypes";
@@ -173,7 +187,7 @@ function DocRow({
         <a href={url} target="_blank" rel="noreferrer"
           style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, borderRadius: 6, border: "1px solid var(--border)", background: "var(--elevated)", cursor: "pointer", flexShrink: 0 }}
           title={t("Ver documento")}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          <EyeIcon size={12} color="var(--text-muted)" strokeWidth={2} />
         </a>
       )}
       <input
@@ -756,9 +770,7 @@ export default function ProveedoresPage() {
             <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
               <div className="surface rounded-2xl px-5 py-3 flex items-center gap-3" style={{ boxShadow: "0 1px 4px rgba(15,23,42,0.05)", minWidth: "130px" }}>
                 <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "rgba(33,208,179,0.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#21D0B3" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                  </svg>
+                  <BuildingIcon size={18} color="#21D0B3" strokeWidth={2} />
                 </div>
                 <div>
                   <p style={{ fontSize: "22px", fontWeight: 700, color: "var(--text)", lineHeight: 1 }}>{providers.length}</p>
@@ -798,9 +810,7 @@ export default function ProveedoresPage() {
           {/* Filters */}
           <section className="surface rounded-2xl p-4 flex flex-wrap gap-3 items-center" style={{ boxShadow: "0 1px 4px rgba(15,23,42,0.05)" }}>
             <div style={{ flex: 1, minWidth: "200px", position: "relative" }}>
-              <svg style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="var(--text-faint)" strokeWidth={2}>
-                <circle cx="11" cy="11" r="8" /><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35" />
-              </svg>
+              <SearchIcon size={14} color="var(--text-faint)" strokeWidth={2} style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
               <input
                 className="input"
                 style={{ paddingLeft: "32px" }}
@@ -826,9 +836,7 @@ export default function ProveedoresPage() {
             </div>
           ) : filteredProviders.length === 0 ? (
             <div className="surface rounded-2xl p-10 text-center" style={{ color: "var(--text-faint)" }}>
-              <svg style={{ margin: "0 auto 12px", opacity: 0.3 }} width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
+              <BuildingIcon size={40} strokeWidth={1.5} style={{ margin: "0 auto 12px", opacity: 0.3 }} />
               <p style={{ fontSize: "14px", fontWeight: 600 }}>
                 {providers.length === 0 ? t("No hay proveedores registrados") : t("Sin resultados")}
               </p>
@@ -904,9 +912,7 @@ export default function ProveedoresPage() {
                                   <div style={{ marginTop: "8px", display: "flex", gap: "12px", flexWrap: "wrap" }}>
                                     {p.email && (
                                       <span style={{ fontSize: "11px", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>
-                                        <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ flexShrink: 0 }}>
-                                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                        </svg>
+                                        <FolderIcon size={11} strokeWidth={2} style={{ flexShrink: 0 }} />
                                         {p.email}
                                       </span>
                                     )}
@@ -931,9 +937,7 @@ export default function ProveedoresPage() {
                                   onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = "none"; el.style.color = "var(--text-faint)"; }}
                                   title={t("Editar")}
                                 >
-                                  <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                  </svg>
+                                  <PencilIcon size={14} strokeWidth={2} />
                                 </button>
                                 <button
                                   onClick={() => removeProvider(p)}
@@ -942,9 +946,7 @@ export default function ProveedoresPage() {
                                   onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = "none"; el.style.color = "var(--text-faint)"; }}
                                   title={t("Eliminar")}
                                 >
-                                  <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                  </svg>
+                                  <TrashIcon size={14} strokeWidth={2} />
                                 </button>
                               </div>
                             </div>
@@ -970,7 +972,7 @@ export default function ProveedoresPage() {
                                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = typeBg; }}
                                   title={t("Crear subproveedor")}
                                 >
-                                  <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke={typeColor} strokeWidth={2}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                  <PlusIcon size={12} color={typeColor} strokeWidth={2} />
                                   <span style={{ fontSize: "10px", fontWeight: 600, color: typeColor }}>{t("Sub")}</span>
                                 </button>
                               )}
@@ -988,10 +990,10 @@ export default function ProveedoresPage() {
                                       <span style={{ fontSize: 12, fontWeight: 600, color: "#0f172a" }}>{sub.name}</span>
                                       <div style={{ display: "flex", gap: 4 }}>
                                         <button onClick={() => openEditProvider(sub)} style={{ padding: 3, borderRadius: 4, border: "none", background: "none", cursor: "pointer", color: "#94a3b8" }} title={t("Editar")}>
-                                          <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                          <PencilIcon size={11} strokeWidth={2} />
                                         </button>
                                         <button onClick={() => removeProvider(sub)} style={{ padding: 3, borderRadius: 4, border: "none", background: "none", cursor: "pointer", color: "#94a3b8" }} title={t("Eliminar")}>
-                                          <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                          <TrashIcon size={11} strokeWidth={2} />
                                         </button>
                                       </div>
                                     </div>
@@ -1063,7 +1065,7 @@ export default function ProveedoresPage() {
                 background: "linear-gradient(135deg, #a78bfa, #7c3aed)", color: "#fff", fontSize: "12px", fontWeight: 700,
                 cursor: "pointer", boxShadow: "0 2px 10px rgba(167,139,250,0.35)",
               }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <UploadIcon size={14} strokeWidth={2.5} />
                 {t("Seleccionar fotos")}
                 <input type="file" accept="image/*" multiple style={{ display: "none" }} onChange={async (e) => {
                   const files = Array.from(e.target.files || []);
@@ -1113,9 +1115,9 @@ export default function ProveedoresPage() {
               <div style={{ background: "#fff", borderRadius: "20px", width: "100%", maxWidth: "400px", padding: "28px", boxShadow: "0 8px 40px rgba(15,23,42,0.2)", textAlign: "center" }}>
                 <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: bulkPhotoResult.matched > 0 ? "rgba(16,185,129,0.1)" : "rgba(245,158,11,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
                   {bulkPhotoResult.matched > 0 ? (
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+                    <CheckIcon size={24} color="#10b981" strokeWidth={2.5} />
                   ) : (
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    <AlertCircleIcon size={24} color="#f59e0b" strokeWidth={2} />
                   )}
                 </div>
                 <h3 style={{ fontSize: "16px", fontWeight: 700, margin: "0 0 6px" }}>{bulkPhotoResult.matched > 0 ? t("Carga completada") : t("Sin coincidencias")}</h3>
@@ -1604,7 +1606,7 @@ export default function ProveedoresPage() {
                     background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: "#fff", fontSize: "12px", fontWeight: 700,
                     cursor: "pointer", boxShadow: "0 2px 8px rgba(33,208,179,0.3)",
                   }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    <CameraIcon size={12} strokeWidth={2.5} />
                     {participantForm.photoDataUrl ? t("Cambiar foto") : t("Subir foto")}
                     <input type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => {
                       const file = e.target.files?.[0];

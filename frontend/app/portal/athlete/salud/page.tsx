@@ -11,7 +11,7 @@ import {
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { apiFetch } from "@/lib/api";
-import { CheckIcon } from "@/components/ui/Icons";
+import { CheckIcon, ChevronLeftIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -779,7 +779,7 @@ function FichaSaludContent() {
       {/* Back button */}
       <button type="button" onClick={() => window.history.back()}
         style={{ display:"inline-flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",padding:0,color:"#21D0B3",fontSize:13,fontWeight:600 }}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+        <ChevronLeftIcon size={16} strokeWidth={2} />
         {t("Volver al portal")}
       </button>
 

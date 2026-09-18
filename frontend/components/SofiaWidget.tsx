@@ -1185,10 +1185,7 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
           }}
         >
           {open ? (
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.2" strokeLinecap="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
+            <XIcon size={22} color="#64748b" strokeWidth={2.2} />
           ) : smallFab ? (
             <div style={{ color: "#fff" }}>
               <SofiaBotIcon size={30} eyeColor="#21D0B3" />

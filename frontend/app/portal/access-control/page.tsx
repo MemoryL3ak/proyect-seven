@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { BuildingIcon, MonitorIcon, CheckCircleIcon, FileTextIcon, AlertCircleIcon, CheckIcon, XIcon, CameraIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 import { claimPortalSession, ensurePortalIdentity, portalLogin, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
 import DeleteAccountSection from "@/components/DeleteAccountSection";
@@ -65,9 +66,7 @@ const LOCATION_ICONS: Record<ScanLocation, JSX.Element> = {
     </svg>
   ),
   HOTEL: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 22V8l9-6 9 6v14" /><path d="M9 22V12h6v10" /><rect x="9" y="7" width="2" height="2" /><rect x="13" y="7" width="2" height="2" />
-    </svg>
+    <BuildingIcon size={18} strokeWidth={2} />
   ),
   GIMNASIO: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -75,9 +74,7 @@ const LOCATION_ICONS: Record<ScanLocation, JSX.Element> = {
     </svg>
   ),
   CASINO: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8" /><path d="M12 17v4" />
-    </svg>
+    <MonitorIcon size={18} strokeWidth={2} />
   ),
 };
 
@@ -433,8 +430,8 @@ export default function AccessControlPortalPage() {
             <div className="hidden lg:flex flex-col" style={{ gap: "10px", marginTop: "8px" }}>
               {([
                 [<svg key="qr" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(33,208,179,0.8)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><path d="M14 14h3M20 14v3M14 17v4M17 20h4" /></svg>, "Escaneo QR con cámara"],
-                [<svg key="ok" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(33,208,179,0.8)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>, "Validación en tiempo real"],
-                [<svg key="log" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(33,208,179,0.8)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>, "Trazabilidad completa"],
+                [<CheckCircleIcon key="ok" size={16} color="rgba(33,208,179,0.8)" strokeWidth={1.8} />, "Validación en tiempo real"],
+                [<FileTextIcon key="log" size={16} color="rgba(33,208,179,0.8)" strokeWidth={1.8} />, "Trazabilidad completa"],
               ] as [React.ReactNode, string][]).map(([icon, label]) => (
                 <div key={label} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                   <span style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>{icon}</span>
@@ -727,7 +724,7 @@ export default function AccessControlPortalPage() {
 
               {error && (
                 <div style={{ marginTop: "12px", borderRadius: "12px", border: "1px solid rgba(239,68,68,0.25)", background: "rgba(239,68,68,0.06)", padding: "10px 14px", fontSize: "13px", color: "#ef4444", display: "flex", alignItems: "center", gap: "8px" }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+                  <AlertCircleIcon size={14} strokeWidth={2} />
                   {error}
                 </div>
               )}
@@ -741,9 +738,7 @@ export default function AccessControlPortalPage() {
             {flashOk && (
               <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
                 <div style={{ background: "rgba(33,208,179,0.12)", border: `2px solid ${BRAND.teal}`, borderRadius: "50%", width: "160px", height: "160px", display: "flex", alignItems: "center", justifyContent: "center", animation: "successFlash 1.8s ease forwards", boxShadow: "0 0 60px rgba(33,208,179,0.4)" }}>
-                  <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M20 6L9 17l-5-5" />
-                  </svg>
+                  <CheckIcon size={64} color={BRAND.teal} strokeWidth={2.5} />
                 </div>
               </div>
             )}
@@ -752,9 +747,7 @@ export default function AccessControlPortalPage() {
             {flashDenied && (
               <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
                 <div style={{ background: "rgba(239,68,68,0.12)", border: "2px solid #ef4444", borderRadius: "50%", width: "160px", height: "160px", display: "flex", alignItems: "center", justifyContent: "center", animation: "successFlash 1.8s ease forwards", boxShadow: "0 0 60px rgba(239,68,68,0.4)" }}>
-                  <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
+                  <XIcon size={64} color="#ef4444" strokeWidth={2.5} />
                 </div>
               </div>
             )}
@@ -814,13 +807,9 @@ export default function AccessControlPortalPage() {
                           flexShrink: 0,
                         }}>
                           {currentScan.authorized ? (
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M20 6L9 17l-5-5" />
-                            </svg>
+                            <CheckIcon size={18} color={BRAND.teal} strokeWidth={2.5} />
                           ) : (
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                            </svg>
+                            <XIcon size={18} color="#ef4444" strokeWidth={2.5} />
                           )}
                         </div>
                       </div>
@@ -858,10 +847,7 @@ export default function AccessControlPortalPage() {
                 ) : (
                   <div style={{ borderRadius: "14px", border: "1px dashed #e2e8f0", background: "#f8fafc", padding: "40px 20px", textAlign: "center" }}>
                     <div style={{ display: "flex", justifyContent: "center", marginBottom: "12px", opacity: 0.3 }}>
-                      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round">
-                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                        <circle cx="12" cy="13" r="4" />
-                      </svg>
+                      <CameraIcon size={36} color="#94a3b8" strokeWidth={1.5} />
                     </div>
                     <p style={{ fontSize: "14px", color: "#94a3b8", lineHeight: 1.6 }}>{t("Aún no hay lecturas.")}<br />{t("Selecciona el lugar y escanea una credencial.")}</p>
                   </div>

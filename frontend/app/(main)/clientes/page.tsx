@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { UsersIcon, UserIcon } from "@/components/ui/Icons";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import StyledSelect from "@/components/StyledSelect";
 
@@ -44,22 +45,6 @@ const fieldStyle: React.CSSProperties = {
   border: "1px solid #e2e8f0", background: "#f8fafc",
   fontSize: "14px", color: "#0f172a", outline: "none",
 };
-
-const UsersIcon = ({ color, size = 20 }: { color: string; size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
-    <circle cx="9" cy="7" r="4"/>
-    <path d="M23 21v-2a4 4 0 00-3-3.87"/>
-    <path d="M16 3.13a4 4 0 010 7.75"/>
-  </svg>
-);
-
-const UserIcon = ({ color, size = 18 }: { color: string; size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-    <circle cx="12" cy="7" r="4"/>
-  </svg>
-);
 
 export default function ClientesPage() {
   const [athletes, setAthletes] = useState<Athlete[]>([]);

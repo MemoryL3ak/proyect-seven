@@ -18,6 +18,7 @@ import {
   UploadIcon,
   SearchIcon,
   ChevronLeftIcon,
+  CarIcon,
 } from "@/components/ui/Icons";
 import type { PresenceMarker } from "@/components/DriverPresenceMap";
 
@@ -441,7 +442,7 @@ export default function DriverMonitoringPage() {
     isBusy ? (
       <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 10.5, padding: "4px 10px", borderRadius: 99, fontWeight: 700,
         background: "linear-gradient(135deg,#ede9fe,#ddd6fe)", color: "#5b21b6", border: "1px solid #c4b5fd" }}>
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 17H3v-6l2.5-5h11L19 11v6h-2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg>
+        <CarIcon size={11} strokeWidth={2.5} />
         {tripText ? t(tripText) : `${activeTrips} ${activeTrips === 1 ? t("viaje") : t("viajes")}`}
       </span>
     ) : (

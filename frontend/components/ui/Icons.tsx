@@ -11,8 +11,27 @@
 // se importa lucide-react directamente: todo pasa por acá para que tamaño,
 // trazo y color se ajusten en un solo lugar.
 // All icons accept className and size, default stroke 1.8.
+import type { CSSProperties } from "react";
 import {
   Accessibility,
+  Activity,
+  ArrowLeft,
+  Ban,
+  ChevronDown,
+  CircleAlert,
+  Coffee,
+  Eye,
+  Folder,
+  Headphones,
+  Heart,
+  House,
+  List,
+  LoaderCircle,
+  LogOut,
+  Maximize2,
+  Percent,
+  Trash2,
+  Wrench,
   Ambulance,
   Anchor,
   Bell,
@@ -96,6 +115,10 @@ export type IconProps = {
   className?: string;
   color?: string;
   strokeWidth?: number;
+  /** Relleno; por defecto ninguno (iconos de trazo). Útil para una estrella llena. */
+  fill?: string;
+  /** Estilos inline: el panel y los portales posicionan iconos así (margen, alineación). */
+  style?: CSSProperties;
 };
 
 /**
@@ -109,14 +132,15 @@ const sw = (n?: number) => n ?? 1.8;
 
 function svg(
   children: React.ReactNode,
-  { size = 20, className, color = "currentColor", strokeWidth }: IconProps,
+  { size = 20, className, color = "currentColor", strokeWidth, fill = "none", style }: IconProps,
 ) {
   return (
     <svg
       width={size}
       height={size}
       viewBox="0 0 24 24"
-      fill="none"
+      fill={fill}
+      style={style}
       stroke={color}
       strokeWidth={sw(strokeWidth)}
       strokeLinecap="round"
@@ -312,8 +336,8 @@ export const TrophyIcon = (p: IconProps) =>
 // (20px, currentColor, trazo 1.8) para que un consumidor no note la diferencia.
 const fromLucide =
   (Glyph: typeof LayoutGrid) =>
-  ({ size = 20, className, color = "currentColor", strokeWidth }: IconProps) => (
-    <Glyph size={size} className={className} color={color} strokeWidth={sw(strokeWidth)} />
+  ({ size = 20, className, color = "currentColor", strokeWidth, fill, style }: IconProps) => (
+    <Glyph size={size} className={className} color={color} strokeWidth={sw(strokeWidth)} fill={fill ?? "none"} style={style} />
   );
 
 /** Vista "todos": cuadrícula. */
@@ -358,6 +382,25 @@ export const HardHatIcon = fromLucide(HardHat);
 export const ZapIcon = fromLucide(Zap);
 export const TargetIcon = fromLucide(Target);
 export const SaveIcon = fromLucide(Save);
+// Reemplazo de <svg> pegados a mano (feather / heroicons) en pantallas.
+export const ChevronDownIcon = fromLucide(ChevronDown);
+export const ArrowLeftIcon = fromLucide(ArrowLeft);
+export const TrashIcon = fromLucide(Trash2);
+export const CoffeeIcon = fromLucide(Coffee);
+export const LogOutIcon = fromLucide(LogOut);
+export const EyeIcon = fromLucide(Eye);
+export const PercentIcon = fromLucide(Percent);
+export const WrenchIcon = fromLucide(Wrench);
+export const HeadphonesIcon = fromLucide(Headphones);
+export const HeartIcon = fromLucide(Heart);
+export const BanIcon = fromLucide(Ban);
+export const LoaderIcon = fromLucide(LoaderCircle);
+export const HomeIcon = fromLucide(House);
+export const ActivityIcon = fromLucide(Activity);
+export const MaximizeIcon = fromLucide(Maximize2);
+export const FolderIcon = fromLucide(Folder);
+export const ListIcon = fromLucide(List);
+export const AlertCircleIcon = fromLucide(CircleAlert);
 // Números de emergencia.
 export const AmbulanceIcon = fromLucide(Ambulance);
 export const FlameIcon = fromLucide(Flame);

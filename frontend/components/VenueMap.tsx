@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { isAvailable as isNativeBridge, send as nativeSend } from "@/lib/native-bridge";
+import { PinIcon, MaximizeIcon, ArrowLeftIcon } from "@/components/ui/Icons";
 
 /**
  * Mapa de sede/hotel para los portales.
@@ -63,9 +64,7 @@ export default function VenueMap({ title, query }: { title: string; query: strin
           />
         ) : (
           <div style={{ height: 120, display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8" }}>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" />
-            </svg>
+            <PinIcon size={28} strokeWidth={1.8} />
           </div>
         )}
         <span
@@ -85,9 +84,7 @@ export default function VenueMap({ title, query }: { title: string; query: strin
             boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
           }}
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M15 3h6v6" /><path d="M9 21H3v-6" /><path d="M21 3l-7 7" /><path d="M3 21l7-7" />
-          </svg>
+          <MaximizeIcon size={12} strokeWidth={2} />
           Ver mapa
         </span>
       </button>
@@ -123,9 +120,7 @@ export default function VenueMap({ title, query }: { title: string; query: strin
                 flexShrink: 0,
               }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
-              </svg>
+              <ArrowLeftIcon size={14} strokeWidth={2.5} />
               Volver
             </button>
             <p

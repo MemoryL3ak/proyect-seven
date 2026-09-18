@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import { apiFetch } from "@/lib/api";
-import { AlertIcon } from "@/components/ui/Icons";
+import { AlertIcon, ChevronDownIcon, CameraIcon, UploadIcon, CheckIcon } from "@/components/ui/Icons";
 import { isAthletePersonalDataValidated } from "@/lib/athletes";
 import type { FieldDef, ResourceConfig } from "@/lib/resources";
 import { useI18n } from "@/lib/i18n";
@@ -2852,7 +2852,7 @@ export default function ResourceScreen({
                           >
                             <img src={`https://flagcdn.com/w40/${currentEntry.iso}.png`} alt={currentEntry.country} width={22} height={16} style={{ borderRadius: "3px", flexShrink: 0, objectFit: "cover" }} />
                             <span style={{ fontWeight: 600 }}>{currentEntry.code}</span>
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" style={{ marginLeft: "auto", flexShrink: 0 }}><polyline points="6 9 12 15 18 9"/></svg>
+                            <ChevronDownIcon size={10} color="#94a3b8" strokeWidth={2.5} style={{ marginLeft: "auto", flexShrink: 0 }} />
                           </button>
                           {/* Dropdown list */}
                           {phoneDropdownOpen && (
@@ -2934,12 +2934,12 @@ export default function ResourceScreen({
                         {form[field.key] ? (
                           <img src={form[field.key] as string} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                         ) : (
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                          <CameraIcon size={18} color="#cbd5e1" strokeWidth={1.5} />
                         )}
                       </label>
                       <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                         <label htmlFor={`file-${field.key}`} className="cursor-pointer" style={{ fontSize: "12px", fontWeight: 600, padding: "5px 14px", borderRadius: "8px", border: "none", color: "#fff", background: form[field.key] ? "#64748b" : "linear-gradient(135deg, #21D0B3, #14AE98)", display: "inline-flex", alignItems: "center", gap: "5px", boxShadow: form[field.key] ? "none" : "0 2px 8px rgba(33,208,179,0.25)" }}>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                          <UploadIcon size={12} strokeWidth={2.5} />
                           {form[field.key] ? "Cambiar foto" : "Subir foto"}
                         </label>
                         <span style={{ fontSize: "10px", color: form[field.key] ? "#10b981" : "#94a3b8" }}>
@@ -3050,7 +3050,7 @@ export default function ResourceScreen({
                       RUT inválido — dígito verificador incorrecto (esperado: {dvExpected})
                     </span>;
                     return <span style={{ fontSize: "11px", color: "#10b981", display: "flex", alignItems: "center", gap: "4px" }}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+                      <CheckIcon size={12} strokeWidth={2.5} />
                       RUT válido
                     </span>;
                   })()}
@@ -3487,7 +3487,7 @@ export default function ResourceScreen({
         </form>
         {successMsg && (
           <div style={{ marginTop: "12px", padding: "10px 16px", borderRadius: "10px", background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.25)", display: "flex", alignItems: "center", gap: "8px", animation: "fadeIn 0.3s ease" }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+            <CheckIcon size={16} color="#10b981" strokeWidth={2.5} />
             <span style={{ fontSize: "13px", fontWeight: 600, color: "#065f46" }}>{successMsg}</span>
           </div>
         )}
@@ -3994,7 +3994,7 @@ export default function ResourceScreen({
         )}
         {successMsg && (
           <div style={{ marginTop: "12px", padding: "10px 16px", borderRadius: "10px", background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.25)", display: "flex", alignItems: "center", gap: "8px", animation: "fadeIn 0.3s ease" }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+            <CheckIcon size={16} color="#10b981" strokeWidth={2.5} />
             <span style={{ fontSize: "13px", fontWeight: 600, color: "#065f46" }}>{successMsg}</span>
           </div>
         )}

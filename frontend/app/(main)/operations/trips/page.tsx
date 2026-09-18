@@ -12,7 +12,19 @@ import { filterValidatedAthletes } from "@/lib/athletes";
 import { resources } from "@/lib/resources";
 import { useI18n } from "@/lib/i18n";
 import { CLIENT_TYPE_OPTIONS, clientTypeLabel } from "@/lib/clientTypes";
-import { CrownIcon, FileSpreadsheetIcon, LayoutGridIcon, PenLineIcon, AlertIcon, UploadIcon } from "@/components/ui/Icons";
+import {
+  CrownIcon,
+  FileSpreadsheetIcon,
+  LayoutGridIcon,
+  PenLineIcon,
+  AlertIcon,
+  UploadIcon,
+  PinIcon,
+  TruckIcon,
+  UsersIcon,
+  ClockIcon,
+  FileTextIcon,
+} from "@/components/ui/Icons";
 
 // ── Trip bulk import ─────────────────────────────────────────────────────────
 const TRIP_IMPORT_HEADERS = [
@@ -876,10 +888,10 @@ export default function TripsPage() {
 
         <div className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-4">
           {[
-            { label: "Origen", value: safeText(trip.origin), sub: null, icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> },
-            { label: "Sede destino", value: venue?.name || safeText(trip.destination), sub: venue ? buildVenueAddress(venue) : null, icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg> },
-            { label: "Conductor / Vehículo", value: resolveDriver(trip), sub: resolveVehicle(trip), icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> },
-            { label: "Servicio", value: `${trip.passengerCount || 0} persona(s)`, sub: `Solicitado ${formatDateTime(trip.requestedAt)}${etaMinutes !== null ? ` · ${etaMinutes >= 0 ? `en ${etaMinutes} min` : `${Math.abs(etaMinutes)} min atrasado`}` : ""}`, icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg> },
+            { label: "Origen", value: safeText(trip.origin), sub: null, icon: <PinIcon size={11} color="#94a3b8" strokeWidth={2.5} /> },
+            { label: "Sede destino", value: venue?.name || safeText(trip.destination), sub: venue ? buildVenueAddress(venue) : null, icon: <LayoutGridIcon size={11} color="#94a3b8" strokeWidth={2.5} /> },
+            { label: "Conductor / Vehículo", value: resolveDriver(trip), sub: resolveVehicle(trip), icon: <TruckIcon size={11} color="#94a3b8" strokeWidth={2.5} /> },
+            { label: "Servicio", value: `${trip.passengerCount || 0} persona(s)`, sub: `Solicitado ${formatDateTime(trip.requestedAt)}${etaMinutes !== null ? ` · ${etaMinutes >= 0 ? `en ${etaMinutes} min` : `${Math.abs(etaMinutes)} min atrasado`}` : ""}`, icon: <UsersIcon size={11} color="#94a3b8" strokeWidth={2.5} /> },
           ].map((chip) => (
             <div key={chip.label} style={infoChipStyle}>
               <div style={{ display: "flex", alignItems: "center", gap: "5px", marginBottom: "6px" }}>
@@ -903,11 +915,11 @@ export default function TripsPage() {
                 <div key={child.id} className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
                   {[
                     { label: "Estado regreso", value: t(childTone.label), icon: <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: childSc.accent, display: "inline-block" }} /> },
-                    { label: "Programación regreso", value: formatDateTime(child.scheduledAt), icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> },
-                    { label: "Origen regreso", value: safeText(child.origin), icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> },
-                    { label: "Destino regreso", value: childVenue ? buildVenueAddress(childVenue) : safeText(child.destination), icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg> },
+                    { label: "Programación regreso", value: formatDateTime(child.scheduledAt), icon: <ClockIcon size={11} color="#94a3b8" strokeWidth={2.5} /> },
+                    { label: "Origen regreso", value: safeText(child.origin), icon: <PinIcon size={11} color="#94a3b8" strokeWidth={2.5} /> },
+                    { label: "Destino regreso", value: childVenue ? buildVenueAddress(childVenue) : safeText(child.destination), icon: <LayoutGridIcon size={11} color="#94a3b8" strokeWidth={2.5} /> },
                     { label: "Conductor regreso", value: child.driverId ? (drivers[child.driverId]?.fullName || "Asignado") : t("Por asignar"), icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg> },
-                    { label: "Vehículo regreso", value: child.vehicleId ? resolveVehicle(child) : t("Por asignar"), icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> },
+                    { label: "Vehículo regreso", value: child.vehicleId ? resolveVehicle(child) : t("Por asignar"), icon: <TruckIcon size={11} color="#94a3b8" strokeWidth={2.5} /> },
                   ].map((chip) => (
                     <div key={chip.label} style={{ background: pal.cardBg, border: `1px solid ${pal.cardBorder}`, borderRadius: "14px", padding: "10px 12px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "5px", marginBottom: "4px" }}>
@@ -1583,7 +1595,7 @@ export default function TripsPage() {
                         <span style={{ fontSize: "12px", color: pal.labelColor, fontVariantNumeric: "tabular-nums" }}>{formatDateTime(trip.completedAt || trip.updatedAt)}</span>
                         <button type="button" onClick={() => setLogTrip(trip)}
                           style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "5px 12px", borderRadius: "8px", border: "1px solid #e2e8f0", background: "#f8fafc", color: "#475569", fontSize: "11px", fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                          <FileTextIcon size={12} strokeWidth={2} />
                           Ver bitácora
                         </button>
                       </div>
@@ -1858,7 +1870,7 @@ export default function TripsPage() {
                 if (log.length === 0) {
                   return (
                     <div style={{ textAlign: "center", padding: "32px 0", color: "#94a3b8" }}>
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round" style={{ margin: "0 auto 8px", display: "block" }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      <FileTextIcon size={24} color="#cbd5e1" strokeWidth={1.5} style={{ margin: "0 auto 8px", display: "block" }} />
                       <p style={{ fontSize: "13px", margin: 0 }}>Sin registros en la bitácora</p>
                     </div>
                   );

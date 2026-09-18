@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { apiFetch } from "@/lib/api";
-import { StarIcon, MedalIcon } from "@/components/ui/Icons";
+import { StarIcon, MedalIcon, RefreshIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 
 /* ─── Types ─── */
@@ -270,7 +270,7 @@ export default function DriverHeatmapPage() {
           />
           <button type="button" onClick={() => loadData()} disabled={loading}
             style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 38, height: 38, borderRadius: 12, border: `1px solid ${pal.cardBorder}`, background: pal.cardBg, cursor: "pointer", opacity: loading ? 0.5 : 1 }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={pal.textMuted} strokeWidth="2" strokeLinecap="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+            <RefreshIcon size={14} color={pal.textMuted} strokeWidth={2} />
           </button>
         </div>
       </div>
@@ -533,7 +533,7 @@ export default function DriverHeatmapPage() {
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                     <span style={{ fontSize: "18px", fontWeight: 800, color: "#f59e0b" }}>{formatRating(r.avgRating)}</span>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" strokeWidth="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    <StarIcon size={14} color="#f59e0b" strokeWidth={1} fill="#f59e0b" />
                   </div>
                 </div>
               ))}

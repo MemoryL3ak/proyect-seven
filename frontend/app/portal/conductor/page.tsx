@@ -3,7 +3,33 @@
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { apiFetch } from "@/lib/api";
-import { PinIcon, AlertIcon, StarIcon, ChevronLeftIcon, RefreshIcon, CameraIcon, CompassIcon, XIcon } from "@/components/ui/Icons";
+import {
+  PinIcon,
+  AlertIcon,
+  StarIcon,
+  ChevronLeftIcon,
+  RefreshIcon,
+  CameraIcon,
+  CompassIcon,
+  XIcon,
+  CheckCircleIcon,
+  HeadphonesIcon,
+  LogOutIcon,
+  ChevronRightIcon,
+  MailIcon,
+  CarIcon,
+  BriefcaseIcon,
+  ChevronDownIcon,
+  CheckIcon,
+  PhoneIcon,
+  EyeIcon,
+  PlusIcon,
+  PlaneIcon,
+  BuildingIcon,
+  FileTextIcon,
+  UserIcon,
+  DownloadIcon,
+} from "@/components/ui/Icons";
 import { getMobileSession, mobileAwareLogout } from "@/lib/mobile-auth";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { useI18n } from "@/lib/i18n";
@@ -1573,8 +1599,8 @@ export default function DriverPortalPage() {
               <div className="hidden lg:flex flex-col" style={{ gap: "10px", marginTop: "8px" }}>
                 {([
                   [<svg key="map" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(33,208,179,0.8)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>, "Rutas y destinos asignados"],
-                  [<svg key="pin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(33,208,179,0.8)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>, "Seguimiento en tiempo real"],
-                  [<svg key="check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(33,208,179,0.8)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>, "Confirmación de pasajeros"],
+                  [<PinIcon key="pin" size={16} color="rgba(33,208,179,0.8)" strokeWidth={1.8} />, "Seguimiento en tiempo real"],
+                  [<CheckCircleIcon key="check" size={16} color="rgba(33,208,179,0.8)" strokeWidth={1.8} />, "Confirmación de pasajeros"],
                 ] as [React.ReactNode, string][]).map(([icon, label]) => (
                   <div key={label} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                     <span style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>{icon}</span>
@@ -1732,21 +1758,15 @@ export default function DriverPortalPage() {
                 />
                 <button type="button" onClick={() => setAssistOpen((p) => !p)} title="Asistencia"
                   style={{ position:"relative",display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:`1px solid ${assistOpen ? "rgba(52,243,198,0.7)" : "rgba(33,208,179,0.4)"}`,background: assistOpen ? "linear-gradient(135deg,rgba(52,243,198,0.28),rgba(33,208,179,0.18))" : "rgba(33,208,179,0.12)",cursor:"pointer",flexShrink:0,transition:"all .15s" }}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
-                  </svg>
+                  <HeadphonesIcon size={15} color={BRAND.teal} strokeWidth={2} />
                 </button>
                 <button type="button" onClick={() => window.location.reload()} disabled={loading} title="Actualizar"
                   style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",cursor:"pointer",flexShrink:0,opacity:loading?0.5:1 }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
-                  </svg>
+                  <RefreshIcon size={14} color={BRAND.teal} strokeWidth={2} />
                 </button>
                 <button type="button" onClick={async () => { try { sessionStorage.removeItem("portal_conductor_id"); } catch {} clearPersistedTabs(); setActiveTab("actividades"); if (driverProfile) await releasePortalSession("driver", driverProfile.id); mobileAwareLogout(); }}
                   style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(255,255,255,0.15)",background:"rgba(255,255,255,0.08)",cursor:"pointer",flexShrink:0 }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-                  </svg>
+                  <LogOutIcon size={14} color="rgba(255,255,255,0.7)" strokeWidth={2} />
                 </button>
               </div>
             </div>
@@ -1784,9 +1804,7 @@ export default function DriverPortalPage() {
                       {isDisposicion(enViaje) ? "Disposición 12h" : `${enViaje.origin?.split(",")[0] || "—"} → ${enViaje.destination?.split(",")[0] || "—"}`}
                     </span>
                   </span>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2" strokeLinecap="round" style={{ position:"relative",flexShrink:0 }}>
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
+                  <ChevronRightIcon size={18} color="rgba(255,255,255,0.6)" strokeWidth={2} style={{ position:"relative",flexShrink:0 }} />
                 </button>
               );
             })()}
@@ -1835,7 +1853,7 @@ export default function DriverPortalPage() {
                 <div style={{ position:"absolute",top:0,right:0,width:"110px",height:"110px",borderRadius:"50%",background:"radial-gradient(ellipse,rgba(33,208,179,0.09) 0%,transparent 70%)",transform:"translate(28px,-28px)",pointerEvents:"none" }} />
                 <div style={{ display:"flex",alignItems:"center",gap:"12px",marginBottom:"16px" }}>
                   <div style={{ width:"40px",height:"40px",borderRadius:"12px",background:"linear-gradient(135deg,rgba(33,208,179,0.18),rgba(33,208,179,0.06))",border:"1px solid rgba(33,208,179,0.25)",display:"flex",alignItems:"center",justifyContent:"center",color:BRAND.teal,flexShrink:0 }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                    <MailIcon size={18} strokeWidth={2} />
                   </div>
                   <span style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:BRAND.teal }}>{t("Correo")}</span>
                 </div>
@@ -1847,7 +1865,7 @@ export default function DriverPortalPage() {
                 <div style={{ position:"absolute",top:0,right:0,width:"110px",height:"110px",borderRadius:"50%",background:"radial-gradient(ellipse,rgba(52,243,198,0.08) 0%,transparent 70%)",transform:"translate(28px,-28px)",pointerEvents:"none" }} />
                 <div style={{ display:"flex",alignItems:"center",gap:"12px",marginBottom:"16px" }}>
                   <div style={{ width:"40px",height:"40px",borderRadius:"12px",background:"linear-gradient(135deg,rgba(52,243,198,0.18),rgba(52,243,198,0.06))",border:"1px solid rgba(52,243,198,0.25)",display:"flex",alignItems:"center",justifyContent:"center",color:BRAND.tealDark,flexShrink:0 }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 17H3v-6l2.5-5h11L19 11v6h-2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/><path d="M5 11h14"/></svg>
+                    <CarIcon size={18} strokeWidth={2} />
                   </div>
                   <span style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:BRAND.tealDark }}>{t("Vehículo")}</span>
                 </div>
@@ -1881,7 +1899,7 @@ export default function DriverPortalPage() {
                 <div style={{ position:"absolute",top:0,right:0,width:"110px",height:"110px",borderRadius:"50%",background:"radial-gradient(ellipse,rgba(31,205,255,0.07) 0%,transparent 70%)",transform:"translate(28px,-28px)",pointerEvents:"none" }} />
                 <div style={{ display:"flex",alignItems:"center",gap:"12px",marginBottom:"16px" }}>
                   <div style={{ width:"40px",height:"40px",borderRadius:"12px",background:"linear-gradient(135deg,rgba(31,205,255,0.15),rgba(31,205,255,0.05))",border:"1px solid rgba(31,205,255,0.22)",display:"flex",alignItems:"center",justifyContent:"center",color:"#0ea5c8",flexShrink:0 }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+                    <BriefcaseIcon size={18} strokeWidth={2} />
                   </div>
                   <span style={{ fontSize:"10px",fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:"#0ea5c8" }}>{t("Proveedor")}</span>
                 </div>
@@ -1909,7 +1927,7 @@ export default function DriverPortalPage() {
                   <>
                     {plate && (
                       <span className="dc-info-chip">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><path d="M5 17H3v-6l2.5-5h11L19 11v6h-2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg>
+                        <CarIcon size={12} color={BRAND.teal} strokeWidth={2} />
                         {plate.toUpperCase()}
                       </span>
                     )}
@@ -2037,9 +2055,7 @@ export default function DriverPortalPage() {
                             </p>
                           </div>
                           {/* Expand arrow */}
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0,transition:"transform .2s",transform:isSelected?"rotate(180deg)":"rotate(0)" }}>
-                            <polyline points="6 9 12 15 18 9" />
-                          </svg>
+                          <ChevronDownIcon size={14} color="#94a3b8" strokeWidth={2} style={{ flexShrink:0,transition:"transform .2s",transform:isSelected?"rotate(180deg)":"rotate(0)" }} />
                         </button>
 
                         {/* ── Expanded detail ── */}
@@ -2141,7 +2157,7 @@ export default function DriverPortalPage() {
                             {/* Action button */}
                             {isCompleted ? (
                               <div style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:10,borderRadius:12,background:"rgba(33,208,179,0.06)",border:"1px solid rgba(33,208,179,0.15)" }}>
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                <CheckIcon size={14} color={BRAND.teal} strokeWidth={2.5} />
                                 <span style={{ fontSize:12,fontWeight:700,color:BRAND.teal }}>{t("Completado")}</span>
                                 {trip.driverRating && <span style={{ display:"inline-flex",gap:1,color:"#f59e0b" }}>{Array.from({ length: trip.driverRating }, (_, k) => <StarIcon key={k} size={12} />)}</span>}
                               </div>
@@ -2328,16 +2344,14 @@ export default function DriverPortalPage() {
                               </div>
                               {trip.driverRating && (
                                 <div style={{ display:"flex",alignItems:"center",gap:2,flexShrink:0 }}>
-                                  <svg width="11" height="11" viewBox="0 0 24 24" fill="#FBBF24" stroke="#F59E0B" strokeWidth="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                  <StarIcon size={11} color="#F59E0B" strokeWidth={1.5} fill="#FBBF24" />
                                   <span style={{ fontSize:11,fontWeight:700,color:"#f59e0b" }}>{trip.driverRating}</span>
                                 </div>
                               )}
                               {trip.tripCost != null && (
                                 <span style={{ fontSize:11,fontWeight:700,color:BRAND.tealInk,flexShrink:0 }}>{formatCurrencyCLP(trip.tripCost)}</span>
                               )}
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="2" strokeLinecap="round" style={{ flexShrink:0 }}>
-                                <polyline points="9 18 15 12 9 6" />
-                              </svg>
+                              <ChevronRightIcon size={14} color="#cbd5e1" strokeWidth={2} style={{ flexShrink:0 }} />
                             </button>
                           );
                         })}
@@ -2403,7 +2417,7 @@ export default function DriverPortalPage() {
                       input.click();
                     }} disabled={uploadingPhoto}
                       style={{ position:"absolute",bottom:-2,right:-2,width:24,height:24,borderRadius:"50%",background:BRAND.teal,border:"2px solid #fff",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer" }}>
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                      <CameraIcon size={10} color="#fff" strokeWidth={2.5} />
                     </button>
                   </div>
                   <div style={{ flex:1,minWidth:0 }}>
@@ -2487,10 +2501,10 @@ export default function DriverPortalPage() {
                   const vehInfo = [veh?.type || meta.vehicleTipo, veh?.brand || meta.vehicleMarca, veh?.model || meta.vehicleModelo].filter(Boolean).join(" · ");
                   const prov = driverProfile.providerId ? providers[driverProfile.providerId] : null;
                   const rows: { icon: React.ReactNode; label: string; value: string; sub?: string }[] = [
-                    { icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>, label: "Correo", value: driverProfile.email || "—" },
-                    { icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>, label: "Teléfono", value: driverProfile.phone || "—" },
-                    { icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><path d="M5 17H3v-6l2.5-5h11L19 11v6h-2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg>, label: "Vehículo", value: plate?.toUpperCase() || "Sin asignar", sub: vehInfo || undefined },
-                    { icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>, label: "Proveedor", value: prov?.name || "Sin asignar", sub: prov?.rut ? `RUT: ${prov.rut}` : undefined },
+                    { icon: <MailIcon size={14} color={BRAND.teal} strokeWidth={2} />, label: "Correo", value: driverProfile.email || "—" },
+                    { icon: <PhoneIcon size={14} color={BRAND.teal} strokeWidth={2} />, label: "Teléfono", value: driverProfile.phone || "—" },
+                    { icon: <CarIcon size={14} color={BRAND.teal} strokeWidth={2} />, label: "Vehículo", value: plate?.toUpperCase() || "Sin asignar", sub: vehInfo || undefined },
+                    { icon: <BriefcaseIcon size={14} color={BRAND.teal} strokeWidth={2} />, label: "Proveedor", value: prov?.name || "Sin asignar", sub: prov?.rut ? `RUT: ${prov.rut}` : undefined },
                   ];
                   return (
                     <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
@@ -2540,7 +2554,7 @@ export default function DriverPortalPage() {
                             {uploaded && typeof docValue === "string" && (docValue.startsWith("http") || docValue.startsWith("data:")) && (
                               <a href={docValue} target="_blank" rel="noreferrer"
                                 style={{ display:"flex",alignItems:"center",justifyContent:"center",width:28,height:28,borderRadius:7,border:"1px solid #e2e8f0",background:"#fff",cursor:"pointer",flexShrink:0 }}>
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                <EyeIcon size={12} color="#64748b" strokeWidth={2} />
                               </a>
                             )}
                             <button type="button" disabled={isUploading} onClick={() => {
@@ -2586,12 +2600,12 @@ export default function DriverPortalPage() {
                                 <span>...</span>
                               ) : uploaded ? (
                                 <>
-                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                                  <CameraIcon size={10} strokeWidth={2} />
                                   Cambiar
                                 </>
                               ) : (
                                 <>
-                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                  <PlusIcon size={10} strokeWidth={2.5} />
                                   Subir
                                 </>
                               )}
@@ -2688,9 +2702,7 @@ export default function DriverPortalPage() {
               const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("es-CL", { weekday: "short", day: "2-digit", month: "short" });
               const FlightCard = ({ f, showDate }: { f: PassengerFlight; showDate?: boolean }) => (
                 <div style={{ background:"#fff",borderRadius:12,border:"1px solid #e2e8f0",padding:"10px 14px",display:"flex",alignItems:"center",gap:10 }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}>
-                    <path d="M17.8 19.2L16 11l3.5-3.5C21 6 21 4 19 2c-2-2-4-2-5.5-.5L10 5 1.8 6.2l2.4 2.4L9 9l-4.5 4.5L5 15l2-1 1 2-1 2 2 .5 4.5-4.5.8 4.7 2.4 2.5z"/>
-                  </svg>
+                  <PlaneIcon size={18} color={BRAND.teal} strokeWidth={1.8} style={{ flexShrink:0 }} />
                   <div style={{ flex:1,minWidth:0 }}>
                     <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0 }}>{f.airline ? `${f.airline} · ` : ""}{f.flightNumber}</p>
                     <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
@@ -2753,12 +2765,12 @@ export default function DriverPortalPage() {
                     <div key={v.id} style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
                       <button type="button" onClick={() => setExpandedSiteId(isOpen?null:`venue-${v.id}`)}
                         style={{ width:"100%",display:"flex",alignItems:"center",gap:10,padding:"12px 14px",background:"none",border:"none",cursor:"pointer",textAlign:"left" }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        <PinIcon size={16} color={BRAND.teal} strokeWidth={2} />
                         <div style={{ flex:1,minWidth:0 }}>
                           <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>{v.name || "–"}</p>
                           {v.address && <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{v.address}</p>}
                         </div>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" style={{ transition:"transform .15s",transform:isOpen?"rotate(180deg)":"rotate(0)",flexShrink:0 }}><polyline points="6 9 12 15 18 9"/></svg>
+                        <ChevronDownIcon size={12} color="#94a3b8" strokeWidth={2} style={{ transition:"transform .15s",transform:isOpen?"rotate(180deg)":"rotate(0)",flexShrink:0 }} />
                       </button>
                       {isOpen && (
                         <div style={{ padding:"0 14px 14px",display:"flex",flexDirection:"column",gap:8 }}>
@@ -2781,12 +2793,12 @@ export default function DriverPortalPage() {
                     <div key={h.id} style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
                       <button type="button" onClick={() => setExpandedSiteId(isOpen?null:`hotel-${h.id}`)}
                         style={{ width:"100%",display:"flex",alignItems:"center",gap:10,padding:"12px 14px",background:"none",border:"none",cursor:"pointer",textAlign:"left" }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND.tealDark} strokeWidth="1.8"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h2M14 7h2M8 11h2M14 11h2M8 15h2M14 15h2"/></svg>
+                        <BuildingIcon size={16} color={BRAND.tealDark} strokeWidth={1.8} />
                         <div style={{ flex:1,minWidth:0 }}>
                           <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>{h.name || "–"}</p>
                           {addr && <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{addr}</p>}
                         </div>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" style={{ transition:"transform .15s",transform:isOpen?"rotate(180deg)":"rotate(0)",flexShrink:0 }}><polyline points="6 9 12 15 18 9"/></svg>
+                        <ChevronDownIcon size={12} color="#94a3b8" strokeWidth={2} style={{ transition:"transform .15s",transform:isOpen?"rotate(180deg)":"rotate(0)",flexShrink:0 }} />
                       </button>
                       {isOpen && (
                         <div style={{ padding:"0 14px 14px",display:"flex",flexDirection:"column",gap:6 }}>
@@ -2809,11 +2821,11 @@ export default function DriverPortalPage() {
           {/* ─── Bottom Tab Bar ─── */}
           <div className="dc-bottom-tabs">
             {([
-              { key: "actividades" as const, label: "Actividades", icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M5 17H3v-6l2.5-5h11L19 11v6h-2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/><path d="M5 11h14"/></svg> },
-              { key: "vuelos" as const, label: "Vuelos", icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21 4 19 2c-2-2-4-2-5.5-.5L10 5 1.8 6.2l2.4 2.4L9 9l-4.5 4.5L5 15l2-1 1 2-1 2 2 .5 4.5-4.5.8 4.7 2.4 2.5z"/></svg> },
-              { key: "sedes" as const, label: "Sedes", icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg> },
-              { key: "reportes" as const, label: "Reportes", icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> },
-              { key: "cuenta" as const, label: "Cuenta", icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
+              { key: "actividades" as const, label: "Actividades", icon: <CarIcon size={20} strokeWidth={1.8} /> },
+              { key: "vuelos" as const, label: "Vuelos", icon: <PlaneIcon size={20} strokeWidth={1.8} /> },
+              { key: "sedes" as const, label: "Sedes", icon: <PinIcon size={20} strokeWidth={1.8} /> },
+              { key: "reportes" as const, label: "Reportes", icon: <FileTextIcon size={20} strokeWidth={1.8} /> },
+              { key: "cuenta" as const, label: "Cuenta", icon: <UserIcon size={20} strokeWidth={1.8} /> },
             ]).map((tab) => (
               <button key={tab.key} type="button" className="dc-tab-btn" onClick={() => setActiveTab(tab.key)}
                 style={{ color: activeTab === tab.key ? BRAND.teal : "#94a3b8" }}>
@@ -3088,7 +3100,7 @@ export default function DriverPortalPage() {
                 }}
                   title="Descargar PDF"
                   style={{ width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",color:BRAND.teal,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  <DownloadIcon size={16} strokeWidth={2} />
                 </button>
                 <button type="button" onClick={() => setCredentialHtml(null)}
                   style={{ height:34,padding:"0 12px",borderRadius:10,border:"1px solid rgba(255,255,255,0.25)",background:"rgba(255,255,255,0.08)",color:"#fff",cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6,fontSize:12.5,fontWeight:700,lineHeight:1 }}>

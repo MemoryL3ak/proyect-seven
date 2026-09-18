@@ -2,7 +2,34 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { apiFetch } from "@/lib/api";
-import { AlertIcon, MailIcon, UserIcon } from "@/components/ui/Icons";
+import {
+  AlertIcon,
+  MailIcon,
+  UserIcon,
+  UsersIcon,
+  CheckCircleIcon,
+  ShieldIcon,
+  ClockIcon,
+  KeyIcon,
+  BarChartIcon,
+  TruckIcon,
+  BedIcon,
+  HeartIcon,
+  TrophyIcon,
+  PinIcon,
+  CalendarIcon,
+  MedalIcon,
+  PlusIcon,
+  SearchIcon,
+  PencilIcon,
+  BanIcon,
+  TrashIcon,
+  XIcon,
+  CheckIcon,
+  RefreshIcon,
+  ChevronDownIcon,
+  LoaderIcon,
+} from "@/components/ui/Icons";
 import { ALL_MODULES, MODULE_GROUPS, type AppModule } from "@/lib/modules";
 import StyledSelect from "@/components/StyledSelect";
 import { useI18n } from "@/lib/i18n";
@@ -119,67 +146,21 @@ function extractUsername(email: string) {
 }
 
 // ── Icons ────────────────────────────────────────────────────────────────────
-function UsersIcon({ color, size = 18 }: { color: string; size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>
-    </svg>
-  );
-}
 function ActiveIcon({ color, size = 18 }: { color: string; size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
-    </svg>
-  );
-}
-function ShieldIcon({ color, size = 18 }: { color: string; size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-    </svg>
-  );
-}
-function ClockIcon({ color, size = 18 }: { color: string; size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-    </svg>
-  );
-}
-function KeyIcon({ color, size = 18 }: { color: string; size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
-    </svg>
+    <CheckCircleIcon size={size} color={color} strokeWidth={1.8} />
   );
 }
 
 function BarChart2Icon({ color, size = 18 }: { color: string; size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/>
-    </svg>
+    <BarChartIcon size={size} color={color} strokeWidth={1.8} />
   );
 }
 function ClipboardIcon({ color, size = 18 }: { color: string; size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
       <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
-    </svg>
-  );
-}
-function TruckIcon({ color, size = 18 }: { color: string; size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
-    </svg>
-  );
-}
-function BedIcon({ color, size = 18 }: { color: string; size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M2 4v16"/><path d="M2 8h18a2 2 0 012 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/>
     </svg>
   );
 }
@@ -190,39 +171,14 @@ function UtensilsIcon({ color, size = 18 }: { color: string; size?: number }) {
     </svg>
   );
 }
-function HeartIcon({ color, size = 18 }: { color: string; size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
-    </svg>
-  );
-}
-function TrophyIcon({ color, size = 18 }: { color: string; size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/>
-    </svg>
-  );
-}
 function MapPinIcon({ color, size = 18 }: { color: string; size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
-    </svg>
-  );
-}
-function CalendarIcon({ color, size = 18 }: { color: string; size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-    </svg>
+    <PinIcon size={size} color={color} strokeWidth={1.8} />
   );
 }
 function AwardIcon({ color, size = 18 }: { color: string; size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/>
-    </svg>
+    <MedalIcon size={size} color={color} strokeWidth={1.8} />
   );
 }
 function GlobeIcon({ color, size = 18 }: { color: string; size?: number }) {
@@ -535,9 +491,7 @@ export default function UsuariosPage() {
             onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 6px 20px rgba(33,208,179,0.4)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 14px rgba(33,208,179,0.3)"; }}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
+            <PlusIcon size={16} strokeWidth={2.5} />
             {t("Nuevo Usuario")}
           </button>
         </div>
@@ -607,9 +561,7 @@ export default function UsuariosPage() {
               {/* Search */}
               <div style={{ position: "relative", flex: "1", minWidth: "220px" }}>
                 <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8", pointerEvents: "none" }}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-                  </svg>
+                  <SearchIcon size={15} strokeWidth={2} />
                 </span>
                 <input
                   type="text"
@@ -810,10 +762,7 @@ export default function UsuariosPage() {
                           onMouseEnter={(e) => { e.currentTarget.style.color = pal.accent; e.currentTarget.style.borderColor = pal.accent; }}
                           onMouseLeave={(e) => { e.currentTarget.style.color = "#64748b"; e.currentTarget.style.borderColor = "#e2e8f0"; }}
                         >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                          </svg>
+                          <PencilIcon size={14} strokeWidth={2} />
                         </button>
                         <button
                           onClick={() => setConfirmDelete(user)}
@@ -835,13 +784,9 @@ export default function UsuariosPage() {
                           }}
                         >
                           {user.status === "active" ? (
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
-                            </svg>
+                            <BanIcon size={14} strokeWidth={2} />
                           ) : (
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
-                            </svg>
+                            <CheckCircleIcon size={14} strokeWidth={2} />
                           )}
                         </button>
                         <button
@@ -856,9 +801,7 @@ export default function UsuariosPage() {
                           onMouseEnter={(e) => { e.currentTarget.style.color = "#ef4444"; e.currentTarget.style.borderColor = "#ef4444"; }}
                           onMouseLeave={(e) => { e.currentTarget.style.color = "#94a3b8"; e.currentTarget.style.borderColor = "#e2e8f0"; }}
                         >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                            <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                          </svg>
+                          <TrashIcon size={14} strokeWidth={2} />
                         </button>
                       </div>
                     </div>
@@ -1018,9 +961,7 @@ export default function UsuariosPage() {
                 onMouseEnter={(e) => { e.currentTarget.style.color = pal.mText; }}
                 onMouseLeave={(e) => { e.currentTarget.style.color = pal.mTextMuted; }}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
+                <XIcon size={16} strokeWidth={2.5} />
               </button>
             </div>
 
@@ -1180,7 +1121,7 @@ export default function UsuariosPage() {
                         style={{ background: "none", border: "none", cursor: "pointer", color: copiedPwd ? "#22c55e" : pal.mTextMuted, padding: "2px", transition: "color 150ms" }}
                       >
                         {copiedPwd ? (
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                          <CheckIcon size={15} strokeWidth={2.5} />
                         ) : (
                           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                         )}
@@ -1193,9 +1134,7 @@ export default function UsuariosPage() {
                         onMouseEnter={(e) => e.currentTarget.style.color = pal.mText}
                         onMouseLeave={(e) => e.currentTarget.style.color = pal.mTextMuted}
                       >
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-                        </svg>
+                        <RefreshIcon size={15} strokeWidth={2} />
                       </button>
                     </div>
                   </div>
@@ -1256,7 +1195,7 @@ export default function UsuariosPage() {
                                 cursor: "pointer", flexShrink: 0, transition: "all 150ms",
                               }}
                             >
-                              {allSelected && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
+                              {allSelected && <CheckIcon size={10} color="#fff" strokeWidth={3} />}
                               {someSelected && !allSelected && <div style={{ width: 8, height: 2, background: pal.accent, borderRadius: "1px" }} />}
                             </div>
                             <span style={{ fontSize: "13.5px", fontWeight: 600, color: pal.mText }}>{t(group)}</span>
@@ -1271,12 +1210,7 @@ export default function UsuariosPage() {
                               {groupModules.filter((m) => form.modules.includes(m.id)).length}/{groupModules.length}
                             </span>
                           </div>
-                          <svg
-                            width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={pal.mTextFaint} strokeWidth="2"
-                            style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 200ms" }}
-                          >
-                            <polyline points="6 9 12 15 18 9"/>
-                          </svg>
+                          <ChevronDownIcon size={14} color={pal.mTextFaint} strokeWidth={2} style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 200ms" }} />
                         </div>
 
                         {/* Module items */}
@@ -1306,7 +1240,7 @@ export default function UsuariosPage() {
                                     display: "flex", alignItems: "center", justifyContent: "center",
                                     flexShrink: 0, transition: "all 150ms",
                                   }}>
-                                    {checked && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5"><polyline points="20 6 9 17 4 12"/></svg>}
+                                    {checked && <CheckIcon size={9} color="#fff" strokeWidth={3.5} />}
                                   </div>
                                   <ModuleIcon module={m} color={checked ? pal.accent : "#94a3b8"} size={13} />
                                   <span style={{ fontSize: "13px", color: checked ? pal.mText : pal.mTextMuted, fontWeight: checked ? 500 : 400, transition: "color 150ms" }}>
@@ -1372,9 +1306,7 @@ export default function UsuariosPage() {
                 }}
               >
                 {saving && (
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ animation: "spin-slow 0.8s linear infinite" }}>
-                    <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-                  </svg>
+                  <LoaderIcon size={14} strokeWidth={2.5} style={{ animation: "spin-slow 0.8s linear infinite" }} />
                 )}
                 {saving ? t("Creando...") : (editingUser ? t("Guardar cambios") : t("Crear usuario"))}
               </button>
@@ -1417,13 +1349,9 @@ export default function UsuariosPage() {
                   margin: "0 auto 16px",
                 }}>
                   {isDisabling ? (
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={actionColor} strokeWidth="2">
-                      <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
-                    </svg>
+                    <BanIcon size={22} color={actionColor} strokeWidth={2} />
                   ) : (
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={actionColor} strokeWidth="2">
-                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
-                    </svg>
+                    <CheckCircleIcon size={22} color={actionColor} strokeWidth={2} />
                   )}
                 </div>
                 <p style={{ fontSize: "17px", fontWeight: 700, color: pal.mText, margin: "0 0 8px" }}>
@@ -1488,9 +1416,7 @@ export default function UsuariosPage() {
                   }}
                 >
                   {deleting && (
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ animation: "spin-slow 0.8s linear infinite" }}>
-                      <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-                    </svg>
+                    <LoaderIcon size={13} strokeWidth={2.5} style={{ animation: "spin-slow 0.8s linear infinite" }} />
                   )}
                   {deleting
                     ? (isDisabling ? t("Deshabilitando...") : t("Habilitando..."))
@@ -1508,9 +1434,7 @@ export default function UsuariosPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setDeleteConfirm(null)}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: "#fff", borderRadius: "20px", width: "100%", maxWidth: "400px", padding: "28px", boxShadow: "0 8px 40px rgba(15,23,42,0.2)", textAlign: "center" }}>
             <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "rgba(239,68,68,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round">
-                <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-              </svg>
+              <TrashIcon size={24} color="#ef4444" strokeWidth={2} />
             </div>
             <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#0f172a", margin: "0 0 8px" }}>{t("Eliminar usuario")}</h3>
             <p style={{ fontSize: "13px", color: "#64748b", lineHeight: 1.5, margin: "0 0 6px" }}>

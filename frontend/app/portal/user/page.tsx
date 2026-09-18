@@ -2,7 +2,49 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { apiFetch } from "@/lib/api";
-import { type IconComponent, PinIcon, PhoneIcon, MailIcon, PlaneIcon, HotelIcon, CalendarIcon, ClockIcon, UserIcon, XIcon, CheckIcon, StarIcon, TrophyIcon, ArrowRightIcon, SunIcon, MoonIcon, UtensilsIcon, UtensilsCrossedIcon, DumbbellIcon, MedalIcon, HeartPulseIcon, BedIcon } from "@/components/ui/Icons";
+import {
+  type IconComponent,
+  PinIcon,
+  PhoneIcon,
+  MailIcon,
+  PlaneIcon,
+  HotelIcon,
+  CalendarIcon,
+  ClockIcon,
+  UserIcon,
+  XIcon,
+  CheckIcon,
+  StarIcon,
+  TrophyIcon,
+  ArrowRightIcon,
+  SunIcon,
+  MoonIcon,
+  UtensilsIcon,
+  UtensilsCrossedIcon,
+  DumbbellIcon,
+  MedalIcon,
+  HeartPulseIcon,
+  BedIcon,
+  CarIcon,
+  LogOutIcon,
+  TruckIcon,
+  CoffeeIcon,
+  UsersIcon,
+  TicketIcon,
+  FileTextIcon,
+  HeadphonesIcon,
+  RefreshIcon,
+  ChevronDownIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ListIcon,
+  SearchIcon,
+  GlobeIcon,
+  ShieldIcon,
+  LockIcon,
+  ActivityIcon,
+  DownloadIcon,
+} from "@/components/ui/Icons";
 import { buildDisciplineLabelMap } from "@/lib/discipline-filters";
 import { getMobileSession, mobileAwareLogout } from "@/lib/mobile-auth";
 import { filterValidatedAthletes } from "@/lib/athletes";
@@ -240,9 +282,7 @@ const IcoHotel = () => (
   </svg>
 );
 const IcoCar = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M5 17H3v-6l2.5-5h11L19 11v6h-2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/><path d="M5 11h14"/>
-  </svg>
+  <CarIcon size={20} strokeWidth={1.8} />
 );
 const IcoCheck = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -250,9 +290,7 @@ const IcoCheck = () => (
   </svg>
 );
 const IcoLogout = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-  </svg>
+  <LogOutIcon size={16} strokeWidth={1.8} />
 );
 const IcoBag = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -491,15 +529,15 @@ export default function UserPortalPage() {
   const portalTabs = useMemo(() => {
     const all: { key: PortalTab; label: string; icon: React.ReactNode }[] = [
       { key:"itinerario", label:"Itinerario", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="5" r="3"/><line x1="12" y1="8" x2="12" y2="16"/><circle cx="12" cy="19" r="3"/></svg> },
-      { key:"actividades", label:"Actividades", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> },
-      { key:"calendario", label:"Calendario", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> },
-      { key:"premiaciones", label:"Premiaciones", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg> },
-      { key:"sedes", label:"Sedes", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg> },
-      { key:"alimentacion", label:"Alimentación", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg> },
-      { key:"delegacion", label:"Delegación", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg> },
-      { key:"cupones", label:"Beneficios", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v2a3 3 0 010 6v2a2 2 0 002 2h14a2 2 0 002-2v-2a3 3 0 010-6V7a2 2 0 00-2-2H5a2 2 0 00-2 2z"/><line x1="13" y1="5" x2="13" y2="7"/><line x1="13" y1="11" x2="13" y2="13"/><line x1="13" y1="17" x2="13" y2="19"/></svg> },
-      { key:"documentos", label:"Documentos", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h8M8 17h5"/></svg> },
-      { key:"cuenta", label:"Cuenta", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
+      { key:"actividades", label:"Actividades", icon:<TruckIcon size={16} strokeWidth={1.8} /> },
+      { key:"calendario", label:"Calendario", icon:<CalendarIcon size={16} strokeWidth={1.8} /> },
+      { key:"premiaciones", label:"Premiaciones", icon:<TrophyIcon size={16} strokeWidth={1.8} /> },
+      { key:"sedes", label:"Sedes", icon:<PinIcon size={16} strokeWidth={1.8} /> },
+      { key:"alimentacion", label:"Alimentación", icon:<CoffeeIcon size={16} strokeWidth={1.8} /> },
+      { key:"delegacion", label:"Delegación", icon:<UsersIcon size={16} strokeWidth={1.8} /> },
+      { key:"cupones", label:"Beneficios", icon:<TicketIcon size={16} strokeWidth={1.8} /> },
+      { key:"documentos", label:"Documentos", icon:<FileTextIcon size={16} strokeWidth={1.8} /> },
+      { key:"cuenta", label:"Cuenta", icon:<UserIcon size={16} strokeWidth={1.8} /> },
     ];
     if (isTA) return all.filter(t => ["actividades","calendario","sedes","alimentacion","cupones","documentos","cuenta"].includes(t.key));
     if (!isChief) return all.filter(t => ["actividades","calendario","premiaciones","sedes","alimentacion","cupones","documentos","cuenta"].includes(t.key));
@@ -1451,22 +1489,16 @@ export default function UserPortalPage() {
             {!isTA && (
               <button type="button" onClick={() => setAssistOpen((p) => !p)} title="Asistencia"
                 style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:`1px solid ${assistOpen ? "rgba(52,243,198,0.7)" : "rgba(33,208,179,0.4)"}`,background: assistOpen ? "linear-gradient(135deg,rgba(52,243,198,0.28),rgba(33,208,179,0.18))" : "rgba(33,208,179,0.12)",cursor:"pointer",flexShrink:0,transition:"all .15s" }}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
-                </svg>
+                <HeadphonesIcon size={15} color={BRAND.teal} strokeWidth={2} />
               </button>
             )}
             <button type="button" onClick={() => window.location.reload()} disabled={loading} title="Actualizar"
               style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",cursor:"pointer",flexShrink:0,opacity:loading?0.5:1 }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
-              </svg>
+              <RefreshIcon size={14} color={BRAND.teal} strokeWidth={2} />
             </button>
             <button type="button" onClick={async () => { try { sessionStorage.removeItem("portal_user_id"); } catch {} clearPersistedTabs(); setActiveTab("itinerario"); if (athlete) await releasePortalSession("athlete", athlete.id); mobileAwareLogout(); }}
               style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(255,255,255,0.15)",background:"rgba(255,255,255,0.08)",cursor:"pointer",flexShrink:0 }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-              </svg>
+              <LogOutIcon size={14} color="rgba(255,255,255,0.7)" strokeWidth={2} />
             </button>
           </div>
         </div>
@@ -1520,7 +1552,7 @@ export default function UserPortalPage() {
             <div style={{ display:"flex",alignItems:"center",gap:12 }}>
               <span style={{ position:"relative",flexShrink:0,width:40,height:40,borderRadius:12,background:"rgba(33,208,179,0.15)",display:"flex",alignItems:"center",justifyContent:"center" }}>
                 <span style={{ position:"absolute",top:6,right:6,width:8,height:8,borderRadius:"50%",background:BRAND.tealLight,boxShadow:`0 0 8px ${BRAND.tealLight}` }} />
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={BRAND.tealLight} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                <TruckIcon size={20} color={BRAND.tealLight} strokeWidth={1.8} />
               </span>
               <div style={{ flex:1,minWidth:0 }}>
                 <p style={{ fontSize:9.5,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.tealLight,margin:0 }}>
@@ -1610,7 +1642,7 @@ export default function UserPortalPage() {
                         <div style={{ width:8,height:8,borderRadius:"50%",background:done?BRAND.teal:"#cbd5e1" }} />
                         <span style={{ fontSize:12,color:done?"#0f172a":"#94a3b8",fontWeight:done?600:400 }}>{label}</span>
                       </div>
-                      {done ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg> : <span style={{ fontSize:9,color:"#cbd5e1" }}>Pendiente</span>}
+                      {done ? <CheckIcon size={14} color={BRAND.teal} strokeWidth={2.5} /> : <span style={{ fontSize:9,color:"#cbd5e1" }}>Pendiente</span>}
                     </div>
                   );
                 })}
@@ -1824,7 +1856,7 @@ export default function UserPortalPage() {
                             <span style={{ padding:"2px 8px",borderRadius:20,fontSize:10,fontWeight:700,background:st.bg,color:st.color }}>{t(st.label)}</span>
                             {tr.discipline && <span style={{ fontSize:10,fontWeight:600,padding:"1px 6px",borderRadius:4,background:"rgba(33,208,179,0.1)",color:BRAND.tealInk }}>{tr.discipline}</span>}
                             <span style={{ marginLeft:"auto",display:"flex",alignItems:"center",color:"#94a3b8",transform:open?"rotate(180deg)":"none",transition:"transform 150ms ease" }}>
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                              <ChevronDownIcon size={14} strokeWidth={2.2} />
                             </span>
                           </div>
                           <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0,...(open?{}:{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}) }}>{tr.origin || "–"} → {tr.destination || "–"}</p>
@@ -2070,10 +2102,10 @@ export default function UserPortalPage() {
                       <div style={{ display:"flex",alignItems:"center",gap:8 }}>
                         <button type="button" onClick={() => { const t=new Date(); goToDate(t); setCalSelectedDay(null); }} style={{ fontSize:12,fontWeight:700,color:"#0f172a",background:"#f1f5f9",border:"1px solid #e2e8f0",borderRadius:8,padding:"6px 12px",cursor:"pointer" }}>Hoy</button>
                         <button type="button" onClick={() => { if(dayWeek){ shift(-1); } else { shiftMonth(-1); } }} style={{ background:"#fff",border:"1px solid #e2e8f0",borderRadius:8,cursor:"pointer",padding:6,display:"inline-flex" }}>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
+                          <ChevronLeftIcon size={16} color="#64748b" strokeWidth={2} />
                         </button>
                         <button type="button" onClick={() => { if(dayWeek){ shift(1); } else { shiftMonth(1); } }} style={{ background:"#fff",border:"1px solid #e2e8f0",borderRadius:8,cursor:"pointer",padding:6,display:"inline-flex" }}>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+                          <ChevronRightIcon size={16} color="#64748b" strokeWidth={2} />
                         </button>
                         <span style={{ fontSize:14,fontWeight:800,color:"#0f172a" }}>{label}</span>
                       </div>
@@ -2355,11 +2387,11 @@ export default function UserPortalPage() {
                 <div className="hidden lg:block" style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",padding:"12px" }}>
                   <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8 }}>
                     <button type="button" onClick={() => { setCalMonthCursor(new Date(y,m-1,1)); setCalCursor(new Date(y,m-1,1)); setCalSelectedDay(null); }} style={{ background:"none",border:"none",cursor:"pointer",padding:2 }}>
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
+                      <ChevronLeftIcon size={15} color="#64748b" strokeWidth={2} />
                     </button>
                     <span style={{ fontSize:13,fontWeight:700,color:"#0f172a" }}>{cap1(monthLabel)}</span>
                     <button type="button" onClick={() => { setCalMonthCursor(new Date(y,m+1,1)); setCalCursor(new Date(y,m+1,1)); setCalSelectedDay(null); }} style={{ background:"none",border:"none",cursor:"pointer",padding:2 }}>
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+                      <ChevronRightIcon size={15} color="#64748b" strokeWidth={2} />
                     </button>
                   </div>
                   <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,textAlign:"center" }}>
@@ -2528,13 +2560,13 @@ export default function UserPortalPage() {
                     border:`1px solid ${isDone?"#2e7d3233":"#c78c0033"}`,
                     display:"flex",alignItems:"center",justifyContent:"center",
                     boxShadow:`0 2px 8px ${isDone?"rgba(46,125,50,0.18)":"rgba(199,140,0,0.22)"}` }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg>
+                    <TrophyIcon size={18} strokeWidth={2} />
                   </div>
                   <div style={{ flex:1,minWidth:0 }}>
                     <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0,lineHeight:1.3 }}>{p.title}</p>
                     <div style={{ display:"flex",flexWrap:"wrap",gap:"4px 10px",marginTop:4 }}>
                       <span style={{ display:"inline-flex",alignItems:"center",gap:3,fontSize:11,color:"#334155",fontWeight:600 }}>
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        <ClockIcon size={11} strokeWidth={2} />
                         {fmtTime(p.scheduledAt)}
                       </span>
                       {p.discipline && (
@@ -2545,7 +2577,7 @@ export default function UserPortalPage() {
                       )}
                       {p.venueName && (
                         <span style={{ display:"inline-flex",alignItems:"center",gap:3,fontSize:11,color:"#64748b" }}>
-                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                          <PinIcon size={11} strokeWidth={2} />
                           {p.venueName}{p.locationDetail ? ` · ${p.locationDetail}` : ""}
                         </span>
                       )}
@@ -2624,7 +2656,7 @@ export default function UserPortalPage() {
             <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
               <div style={{ background:"linear-gradient(135deg,#fffbf2 0%,#ffffff 70%)",borderRadius:14,border:"1px solid #f0deb0",padding:"14px 16px",display:"flex",alignItems:"center",gap:12 }}>
                 <div style={{ width:42,height:42,borderRadius:12,background:"linear-gradient(135deg,#d4a017 0%,#f5c842 50%,#e3a808 100%)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",flexShrink:0,boxShadow:"0 4px 12px rgba(199,140,0,0.35)" }}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg>
+                  <TrophyIcon size={22} strokeWidth={2} />
                 </div>
                 <div style={{ flex:1,minWidth:0 }}>
                   <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:"#a87800",margin:0 }}>Premiaciones</p>
@@ -2637,10 +2669,10 @@ export default function UserPortalPage() {
                 <div style={{ display:"flex",gap:0,background:"#f1f5f9",borderRadius:10,padding:3 }}>
                   {([
                     { v:"calendar" as const, label:"Calendario", icon:(
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                      <CalendarIcon size={13} strokeWidth={2} />
                     )},
                     { v:"list" as const, label:"Lista", icon:(
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                      <ListIcon size={13} strokeWidth={2} />
                     )},
                   ]).map(opt => {
                     const active = premView === opt.v;
@@ -2660,7 +2692,7 @@ export default function UserPortalPage() {
                   })}
                 </div>
                 <div style={{ position:"relative" }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position:"absolute",top:"50%",left:10,transform:"translateY(-50%)",pointerEvents:"none" }}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <SearchIcon size={14} color="#94a3b8" strokeWidth={2} style={{ position:"absolute",top:"50%",left:10,transform:"translateY(-50%)",pointerEvents:"none" }} />
                   <input type="text" value={premSearchQuery} onChange={e => setPremSearchQuery(e.target.value)} placeholder="Buscar premiación, disciplina, sede..."
                     style={{ width:"100%",padding:"9px 10px 9px 32px",borderRadius:10,border:"1px solid #e2e8f0",fontSize:13,outline:"none",background:"#f8fafc",boxSizing:"border-box" }} />
                 </div>
@@ -2718,7 +2750,7 @@ export default function UserPortalPage() {
                     <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10 }}>
                       <button type="button" onClick={() => { setPremCalCursor(new Date(calY, calM - 1, 1)); setPremCalSelectedKey(null); }}
                         style={{ width:30,height:30,borderRadius:8,border:"1px solid #f0deb0",background:"#fffbf2",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a87800" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                        <ChevronLeftIcon size={14} color="#a87800" strokeWidth={2.5} />
                       </button>
                       <div style={{ display:"flex",flexDirection:"column",alignItems:"center" }}>
                         <span style={{ fontSize:14,fontWeight:800,color:"#7a4a00",textTransform:"capitalize",letterSpacing:"-0.01em" }}>{monthLabel}</span>
@@ -2726,7 +2758,7 @@ export default function UserPortalPage() {
                       </div>
                       <button type="button" onClick={() => { setPremCalCursor(new Date(calY, calM + 1, 1)); setPremCalSelectedKey(null); }}
                         style={{ width:30,height:30,borderRadius:8,border:"1px solid #f0deb0",background:"#fffbf2",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a87800" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                        <ChevronRightIcon size={14} color="#a87800" strokeWidth={2.5} />
                       </button>
                     </div>
                     <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:3,textAlign:"center" }}>
@@ -2824,10 +2856,7 @@ export default function UserPortalPage() {
                         <span style={{ marginLeft:"auto",fontSize:10,fontWeight:800,padding:"2px 9px",borderRadius:99,background:"#fff",color:"#a87800",border:"1px solid #f0deb0" }}>
                           {pendingDays.reduce((s,[,items]) => s + items.length, 0)}
                         </span>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a87800" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                          style={{ flexShrink:0,transform:premPendingOpen?"rotate(180deg)":"none",transition:"transform .2s" }}>
-                          <polyline points="6 9 12 15 18 9" />
-                        </svg>
+                        <ChevronDownIcon size={14} color="#a87800" strokeWidth={2.5} style={{ flexShrink:0,transform:premPendingOpen?"rotate(180deg)":"none",transition:"transform .2s" }} />
                       </button>
                     )}
                     {premPendingOpen && pendingDays.map(([day, items]) => (
@@ -2848,10 +2877,7 @@ export default function UserPortalPage() {
                         <span style={{ marginLeft:"auto",fontSize:10,fontWeight:800,padding:"2px 9px",borderRadius:99,background:"#fff",color:"#64748b",border:"1px solid #e2e8f0" }}>
                           {doneDays.reduce((s,[,items]) => s + items.length, 0)}
                         </span>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                          style={{ flexShrink:0,transform:premDoneOpen?"rotate(180deg)":"none",transition:"transform .2s" }}>
-                          <polyline points="6 9 12 15 18 9" />
-                        </svg>
+                        <ChevronDownIcon size={14} color="#64748b" strokeWidth={2.5} style={{ flexShrink:0,transform:premDoneOpen?"rotate(180deg)":"none",transition:"transform .2s" }} />
                       </button>
                     )}
                     {premDoneOpen && doneDays.map(([day, items]) => (
@@ -2884,12 +2910,12 @@ export default function UserPortalPage() {
                 <div key={v.id} style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
                   <button type="button" onClick={() => setExpandedItemId(isOpen?null:`venue-${v.id}`)}
                     style={{ width:"100%",display:"flex",alignItems:"center",gap:10,padding:"12px 14px",background:"none",border:"none",cursor:"pointer",textAlign:"left" }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    <PinIcon size={16} color={BRAND.teal} strokeWidth={2} />
                     <div style={{ flex:1,minWidth:0 }}>
                       <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>{v.name || "–"}</p>
                       {v.address && <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{v.address}</p>}
                     </div>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" style={{ transition:"transform .15s",transform:isOpen?"rotate(180deg)":"rotate(0)",flexShrink:0 }}><polyline points="6 9 12 15 18 9"/></svg>
+                    <ChevronDownIcon size={12} color="#94a3b8" strokeWidth={2} style={{ transition:"transform .15s",transform:isOpen?"rotate(180deg)":"rotate(0)",flexShrink:0 }} />
                   </button>
                   {isOpen && (
                     <div style={{ padding:"0 14px 14px",display:"flex",flexDirection:"column",gap:8 }}>
@@ -2918,7 +2944,7 @@ export default function UserPortalPage() {
                       <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>{h.name || "–"}</p>
                       {addr && <p style={{ fontSize:11,color:"#64748b",margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{addr}</p>}
                     </div>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" style={{ transition:"transform .15s",transform:isOpen?"rotate(180deg)":"rotate(0)",flexShrink:0 }}><polyline points="6 9 12 15 18 9"/></svg>
+                    <ChevronDownIcon size={12} color="#94a3b8" strokeWidth={2} style={{ transition:"transform .15s",transform:isOpen?"rotate(180deg)":"rotate(0)",flexShrink:0 }} />
                   </button>
                   {isOpen && (
                     <div style={{ padding:"0 14px 14px",display:"flex",flexDirection:"column",gap:6 }}>
@@ -2995,7 +3021,7 @@ export default function UserPortalPage() {
                   <div style={{ padding:"14px 16px",background:"linear-gradient(135deg,rgba(33,208,179,0.08),rgba(33,208,179,0.02))",borderBottom:"1px solid #e2e8f0",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
                     <div style={{ display:"flex",alignItems:"center",gap:8 }}>
                       <div style={{ width:32,height:32,borderRadius:10,background:"rgba(33,208,179,0.12)",display:"flex",alignItems:"center",justifyContent:"center" }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2" strokeLinecap="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+                        <CoffeeIcon size={16} color={BRAND.teal} strokeWidth={2} />
                       </div>
                       <div>
                         <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>Menú de hoy</p>
@@ -3053,7 +3079,7 @@ export default function UserPortalPage() {
               return (
                 <div style={{ background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)",opacity:0.85 }}>
                   <div style={{ padding:"12px 16px",background:"#f8fafc",borderBottom:"1px solid #e2e8f0",display:"flex",alignItems:"center",gap:8 }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    <CalendarIcon size={14} color="#64748b" strokeWidth={2} />
                     <div>
                       <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0 }}>Menú de mañana</p>
                       <p style={{ fontSize:11,color:"#94a3b8",margin:0,textTransform:"capitalize" }}>{tomorrow.toLocaleDateString("es-CL",{weekday:"long",day:"numeric",month:"long"})}</p>
@@ -3099,7 +3125,7 @@ export default function UserPortalPage() {
               <div style={{ background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)" }}>
                 <div style={{ padding:"14px 16px",background:"linear-gradient(135deg,rgba(33,208,179,0.06),rgba(31,205,255,0.04))",borderBottom:"1px solid #e2e8f0" }}>
                   <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    <PinIcon size={16} color={BRAND.teal} strokeWidth={2} />
                     <p style={{ fontSize:13,fontWeight:700,color:"#0f172a",margin:0 }}>Tus lugares de comida</p>
                   </div>
                 </div>
@@ -3111,7 +3137,7 @@ export default function UserPortalPage() {
                   <div key={fl.id} style={{ borderTop:i>0?"1px solid #f1f5f9":"none" }}>
                     <div style={{ padding:"12px 16px",display:"flex",alignItems:"center",gap:12 }}>
                       <div style={{ width:36,height:36,borderRadius:10,background:"rgba(33,208,179,0.08)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2" strokeLinecap="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+                        <CoffeeIcon size={16} color={BRAND.teal} strokeWidth={2} />
                       </div>
                       <div style={{ flex:1,minWidth:0 }}>
                         <p style={{ fontSize:14,fontWeight:700,color:"#0f172a",margin:0 }}>{fl.name}</p>
@@ -3121,7 +3147,7 @@ export default function UserPortalPage() {
                       {fl.capacity && <span style={{ fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:8,background:"#f1f5f9",color:"#475569",flexShrink:0 }}>{fl.capacity} pax</span>}
                       <button type="button" onClick={() => setExpandedItemId(isOpen ? null : `food-${fl.id}`)}
                         style={{ display:"inline-flex",alignItems:"center",gap:4,padding:"6px 10px",borderRadius:9,border:`1px solid ${isOpen ? BRAND.teal : "rgba(33,208,179,0.35)"}`,background:isOpen?"rgba(33,208,179,0.14)":"rgba(33,208,179,0.06)",color:BRAND.tealInk,fontSize:11,fontWeight:800,cursor:"pointer",flexShrink:0 }}>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        <PinIcon size={12} strokeWidth={2} />
                         {isOpen ? "Cerrar" : "Mapa"}
                       </button>
                     </div>
@@ -3137,7 +3163,7 @@ export default function UserPortalPage() {
               )}
               {myLocations.length === 0 && (
               <div style={{ background:"#fff",borderRadius:16,border:"1px dashed #e2e8f0",padding:24,textAlign:"center" }}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round" style={{ margin:"0 auto 8px" }}><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+                <CoffeeIcon size={28} color="#cbd5e1" strokeWidth={1.5} style={{ margin:"0 auto 8px" }} />
                 <p style={{ fontSize:13,fontWeight:600,color:"#94a3b8",margin:0 }}>{loading ? "Cargando lugares de comida…" : "No hay lugares asignados a tu perfil"}</p>
               </div>
               )}
@@ -3321,13 +3347,13 @@ export default function UserPortalPage() {
                           <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginTop:8 }}>
                             {c.validUntil && (
                               <span style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:10.5, color:"#64748b", fontWeight:500 }}>
-                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                <CalendarIcon size={11} strokeWidth={2} />
                                 Hasta {fmtCouponDate(c.validUntil)}
                               </span>
                             )}
                             {c.partnerAddress && (
                               <span style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:10.5, color:"#64748b", fontWeight:500, maxWidth:170, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                <PinIcon size={11} strokeWidth={2} />
                                 {c.partnerAddress}
                               </span>
                             )}
@@ -3342,7 +3368,7 @@ export default function UserPortalPage() {
                           }}>
                           {exhausted ? (
                             <>
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                              <CheckIcon size={13} strokeWidth={2.5} />
                               Ya lo reclamaste
                             </>
                           ) : couponClaiming === c.id ? (
@@ -3350,7 +3376,7 @@ export default function UserPortalPage() {
                           ) : (
                             <>
                               Reclamar beneficio
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                              <ArrowRightIcon size={13} strokeWidth={2.5} />
                             </>
                           )}
                         </button>
@@ -3428,15 +3454,15 @@ export default function UserPortalPage() {
             {/* Info rows */}
             <div style={{ background:"#fff",borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
               {([
-                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>, label:"Nombre", value:athlete.fullName },
-                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>, label:"Correo", value:athlete.email || "—" },
+                { icon:<UserIcon size={14} color={BRAND.teal} strokeWidth={2} />, label:"Nombre", value:athlete.fullName },
+                { icon:<MailIcon size={14} color={BRAND.teal} strokeWidth={2} />, label:"Correo", value:athlete.email || "—" },
                 { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.12.67.29 1.33.49 1.97"/></svg>, label:"Teléfono", value:athlete.phone || "—" },
                 { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>, label:"Evento", value:event?.name || "—" },
-                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>, label:"Delegación", value:delegation ? (countryLabels[delegation.countryCode]||delegation.countryCode) : "—" },
-                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>, label:"Tipo", value:athlete.userType || "—" },
+                { icon:<GlobeIcon size={14} color={BRAND.teal} strokeWidth={2} />, label:"Delegación", value:delegation ? (countryLabels[delegation.countryCode]||delegation.countryCode) : "—" },
+                { icon:<ShieldIcon size={14} color={BRAND.teal} strokeWidth={2} />, label:"Tipo", value:athlete.userType || "—" },
                 { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>, label:"Disciplina", value: (() => { if (!athlete.disciplineId) return "—"; const disc = ([...disciplineParents, ...calendarEvents] as any[]).find((d: any) => d.id === athlete.disciplineId); if (!disc) return "—"; const parent = disc.parentId ? disciplineParents.find(p => p.id === disc.parentId) : null; return parent ? `${parent.name} — ${disc.name}` : (disc.name || "—"); })() },
                 { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={athlete.isDelegationLead ? "#f59e0b" : BRAND.teal} strokeWidth="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>, label:"Rol", value:athlete.isDelegationLead ? "Jefe de Delegación" : "Participante" },
-                { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>, label:"ID", value:athlete.id.slice(-6).toUpperCase() },
+                { icon:<LockIcon size={14} color={BRAND.teal} strokeWidth={2} />, label:"ID", value:athlete.id.slice(-6).toUpperCase() },
               ]).map((r,i) => (
                 <div key={r.label} style={{ display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderTop:i>0?"1px solid #f1f5f9":"none" }}>
                   <span style={{ flexShrink:0 }}>{r.icon}</span>
@@ -3511,7 +3537,7 @@ export default function UserPortalPage() {
             {/* Health form link */}
             <a href={`/portal/athlete/salud?id=${athlete.id}`}
               style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:8,padding:14,borderRadius:12,background:"#fff",border:"1px solid #e2e8f0",color:"#0f172a",fontSize:13,fontWeight:700,textDecoration:"none" }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+              <ActivityIcon size={16} color={BRAND.teal} strokeWidth={2} />
               Ficha de salud
               {healthRecord ? <span style={{ fontSize:10,padding:"2px 8px",borderRadius:6,background:"rgba(33,208,179,0.1)",color:BRAND.tealInk }}>Completada</span> : <span style={{ fontSize:10,padding:"2px 8px",borderRadius:6,background:"#FEF3C7",color:"#92400E" }}>Pendiente</span>}
             </a>
@@ -3692,26 +3718,26 @@ export default function UserPortalPage() {
                   )}
                   {scheduledFmt && (
                     <p style={{ fontSize:"12px",color:"#64748b",margin:"0 0 10px",display:"flex",alignItems:"center",gap:"5px" }}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      <ClockIcon size={12} strokeWidth={2} />
                       {scheduledFmt}
                     </p>
                   )}
                   <div style={{ borderTop:"1px solid #f1f5f9",paddingTop:"10px",display:"flex",flexDirection:"column",gap:"5px" }}>
                     {driver?.fullName && (
                       <p style={{ fontSize:"13px",color:"#334155",margin:0,display:"flex",alignItems:"center",gap:"6px" }}>
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0ea5c8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        <UserIcon size={13} color="#0ea5c8" strokeWidth={2} />
                         <span style={{ fontWeight:600 }}>{driver.fullName}</span>
                       </p>
                     )}
                     {vehicleLabel && (
                       <p style={{ fontSize:"12px",color:"#64748b",margin:0,display:"flex",alignItems:"center",gap:"6px" }}>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 17H3v-6l2.5-5h11L19 11v6h-2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/><path d="M5 11h14"/></svg>
+                        <CarIcon size={12} color="#94a3b8" strokeWidth={2} />
                         {vehicleLabel.toUpperCase()}
                       </p>
                     )}
                     {driverEta && trip.status === "EN_ROUTE" && (
                       <p style={{ fontSize:"12px",fontWeight:700,color:"#0ea5c8",margin:0,display:"flex",alignItems:"center",gap:"6px" }}>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        <ClockIcon size={12} strokeWidth={2} />
                         ~{driverEta.duration} · {driverEta.distance}
                       </p>
                     )}
@@ -3745,7 +3771,7 @@ export default function UserPortalPage() {
                       <span style={{ fontSize:"12px",color:done?"#0f172a":"#94a3b8",fontWeight:done?600:400 }}>{label}</span>
                     </div>
                     {done
-                      ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND.teal} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                      ? <CheckIcon size={14} color={BRAND.teal} strokeWidth={2.5} />
                       : <span style={{ fontSize:"9px",color:"#cbd5e1",fontWeight:500 }}>Pendiente</span>
                     }
                   </div>
@@ -3822,7 +3848,7 @@ export default function UserPortalPage() {
                   }}>
                   <span style={{ opacity: done ? 0.8 : 1, display:"flex", alignItems:"center" }}>
                     {done
-                      ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                      ? <CheckIcon size={16} strokeWidth={2.5} />
                       : icon
                     }
                   </span>
@@ -3842,9 +3868,7 @@ export default function UserPortalPage() {
           <div style={{ position:"absolute",top:0,right:0,width:"120px",height:"120px",borderRadius:"50%",background:"radial-gradient(ellipse,rgba(33,208,179,0.09) 0%,transparent 70%)",transform:"translate(30px,-30px)",pointerEvents:"none" }} />
           <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:14 }}>
             <div style={{ width:40,height:40,borderRadius:12,background:"linear-gradient(135deg,rgba(33,208,179,0.18),rgba(33,208,179,0.06))",border:"1px solid rgba(33,208,179,0.25)",display:"flex",alignItems:"center",justifyContent:"center",color:BRAND.teal,flexShrink:0 }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-              </svg>
+              <CalendarIcon size={20} strokeWidth={1.8} />
             </div>
             <span style={{ fontSize:10,fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:BRAND.teal }}>Calendario deportivo</span>
           </div>
@@ -3879,9 +3903,7 @@ export default function UserPortalPage() {
           <div style={{ position:"absolute",top:0,right:0,width:"120px",height:"120px",borderRadius:"50%",background:"radial-gradient(ellipse,rgba(33,208,179,0.09) 0%,transparent 70%)",transform:"translate(30px,-30px)",pointerEvents:"none" }} />
           <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:14 }}>
             <div style={{ width:40,height:40,borderRadius:12,background:"linear-gradient(135deg,rgba(33,208,179,0.18),rgba(33,208,179,0.06))",border:"1px solid rgba(33,208,179,0.25)",display:"flex",alignItems:"center",justifyContent:"center",color:BRAND.teal,flexShrink:0 }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-              </svg>
+              <ActivityIcon size={20} strokeWidth={1.8} />
             </div>
             <span style={{ fontSize:10,fontWeight:700,letterSpacing:"0.22em",textTransform:"uppercase",color:BRAND.teal }}>Ficha de Salud</span>
           </div>
@@ -3937,7 +3959,7 @@ export default function UserPortalPage() {
                   type="button"
                   onClick={() => setShowTripModal(false)}
                   style={{ width:36,height:36,borderRadius:"50%",border:"1px solid #e2e8f0",background:"#f8fafc",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0 }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  <XIcon size={16} color="#64748b" strokeWidth={2} />
                 </button>
               </div>
               {/* Map */}
@@ -3966,14 +3988,14 @@ export default function UserPortalPage() {
                 {/* Scheduled */}
                 {trip.scheduledAt && fmt(trip.scheduledAt) && (
                   <div style={{ display:"flex",alignItems:"center",gap:"8px",fontSize:"13px",color:"#475569" }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0ea5c8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <ClockIcon size={14} color="#0ea5c8" strokeWidth={2} />
                     <span><strong style={{ color:"#0f172a" }}>Hora programada:</strong> {fmt(trip.scheduledAt)}</span>
                   </div>
                 )}
                 {/* ETA */}
                 {driverEta && trip.status === "EN_ROUTE" && (
                   <div style={{ display:"flex",alignItems:"center",gap:"8px",padding:"10px 16px",borderRadius:"12px",background:"rgba(14,165,200,0.08)",border:"1px solid rgba(14,165,200,0.2)" }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0ea5c8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <ClockIcon size={16} color="#0ea5c8" strokeWidth={2} />
                     <span style={{ fontSize:"14px",fontWeight:700,color:"#0ea5c8" }}>~{driverEta.duration}</span>
                     <span style={{ fontSize:"13px",color:"#475569" }}>· {driverEta.distance}</span>
                   </div>
@@ -3981,14 +4003,14 @@ export default function UserPortalPage() {
                 {/* Driver */}
                 {driver?.fullName && (
                   <div style={{ display:"flex",alignItems:"center",gap:"8px",fontSize:"13px",color:"#475569" }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0ea5c8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <UserIcon size={14} color="#0ea5c8" strokeWidth={2} />
                     <span><strong style={{ color:"#0f172a" }}>Conductor:</strong> {driver.fullName}</span>
                   </div>
                 )}
                 {/* Vehicle */}
                 {vehicleLabel && (
                   <div style={{ display:"flex",alignItems:"center",gap:"8px",fontSize:"13px",color:"#475569" }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 17H3v-6l2.5-5h11L19 11v6h-2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/><path d="M5 11h14"/></svg>
+                    <CarIcon size={14} color="#94a3b8" strokeWidth={2} />
                     <span><strong style={{ color:"#0f172a" }}>Vehículo:</strong> {vehicleLabel.toUpperCase()}</span>
                   </div>
                 )}
@@ -4014,7 +4036,7 @@ export default function UserPortalPage() {
               {/* Close button */}
               <button type="button" onClick={() => { setShowRating(false); setRatingStars(0); setRatingComment(""); }}
                 style={{ position:"absolute",top:12,right:12,width:36,height:36,borderRadius:"50%",border:"none",background:"#f1f5f9",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                <XIcon size={16} color="#64748b" strokeWidth={2} />
               </button>
               {/* Emoji */}
               <div style={{ marginBottom:12,display:"flex",justifyContent:"center" }}>
@@ -4027,9 +4049,7 @@ export default function UserPortalPage() {
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button key={star} type="button" onClick={() => setRatingStars(star)}
                     style={{ background:"none",border:"none",cursor:"pointer",padding:4,transition:"transform .15s",transform: ratingStars >= star ? "scale(1.15)" : "scale(1)" }}>
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill={ratingStars >= star ? "#FBBF24" : "none"} stroke={ratingStars >= star ? "#F59E0B" : "#CBD5E1"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                    </svg>
+                    <StarIcon size={40} />
                   </button>
                 ))}
               </div>
@@ -4140,7 +4160,7 @@ export default function UserPortalPage() {
                   }}
                     title="Descargar PDF"
                     style={{ width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",color:BRAND.teal,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <DownloadIcon size={16} strokeWidth={2} />
                   </button>
                   <button type="button" onClick={() => setCredentialHtml(null)}
                     style={{ height:34,padding:"0 12px",borderRadius:10,border:"1px solid rgba(255,255,255,0.25)",background:"rgba(255,255,255,0.08)",color:"#fff",cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6,fontSize:12.5,fontWeight:700,lineHeight:1 }}>

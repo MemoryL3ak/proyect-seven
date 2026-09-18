@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { apiFetch } from "@/lib/api";
-import { XIcon } from "@/components/ui/Icons";
+import { XIcon, PencilIcon, UsersIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -485,7 +485,7 @@ export default function SalonesPage() {
                     onClick={(e) => { e.stopPropagation(); openEditSalon(salon); }}
                     style={{ background: "transparent", border: "none", cursor: "pointer", color: "#94a3b8", padding: "2px 4px", display: "flex", alignItems: "center" }}
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    <PencilIcon size={14} strokeWidth={2} />
                   </button>
                 </div>
 
@@ -500,7 +500,7 @@ export default function SalonesPage() {
                   </span>
                   {salon.capacity > 0 && (
                     <span style={{ fontSize: "10px", color: "#94a3b8" }}>
-                      <svg style={{ display: "inline", marginRight: "3px", verticalAlign: "middle" }} width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                      <UsersIcon size={11} strokeWidth={2} style={{ display: "inline", marginRight: "3px", verticalAlign: "middle" }} />
                       {salon.capacity}
                     </span>
                   )}

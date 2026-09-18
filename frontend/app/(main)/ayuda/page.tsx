@@ -11,7 +11,29 @@ import {
   type CuadernoEntry,
   type CuadernoLocale,
 } from "@/lib/cuadernoCargo";
-import { Icon, type IconName } from "@/components/ui/Icons";
+import {
+  Icon,
+  type IconName,
+  ChevronDownIcon,
+  CalendarIcon,
+  UserIcon,
+  TruckIcon,
+  BedIcon,
+  BarChartIcon,
+  ShieldIcon,
+  GlobeIcon,
+  RefreshIcon,
+  DownloadIcon,
+  KeyIcon,
+  MedalIcon,
+  UsersIcon,
+  SearchIcon,
+  ZapIcon,
+  LayoutGridIcon,
+  MessageIcon,
+  BookOpenIcon,
+  FileTextIcon,
+} from "@/components/ui/Icons";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type Locale = "es" | "en" | "pt";
@@ -630,48 +652,45 @@ function SvgIcon({ d, size = 16, color = "currentColor", extra }: { d: string; s
 // Chevron (shared accordion arrow)
 function Chevron({ open, color = tFaint }: { open: boolean; color?: string }) {
   return (
-    <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
-      style={{ flexShrink: 0, transition: "transform 180ms ease", transform: open ? "rotate(180deg)" : "none" }}>
-      <polyline points="6 9 12 15 18 9" />
-    </svg>
+    <ChevronDownIcon size={12} color={color} strokeWidth={2.5} style={{ flexShrink: 0, transition: "transform 180ms ease", transform: open ? "rotate(180deg)" : "none" }} />
   );
 }
 
 // Step icons (1-6)
 const STEP_ICONS: Record<string, React.ReactNode> = {
-  "1": <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={acc} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
-  "2": <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={acc} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
-  "3": <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={acc} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>,
-  "4": <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={acc} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 012 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></svg>,
-  "5": <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={acc} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>,
-  "6": <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={acc} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+  "1": <CalendarIcon size={20} color={acc} strokeWidth={1.8} />,
+  "2": <UserIcon size={20} color={acc} strokeWidth={1.8} />,
+  "3": <TruckIcon size={20} color={acc} strokeWidth={1.8} />,
+  "4": <BedIcon size={20} color={acc} strokeWidth={1.8} />,
+  "5": <BarChartIcon size={20} color={acc} strokeWidth={1.8} />,
+  "6": <ShieldIcon size={20} color={acc} strokeWidth={1.8} />,
 };
 
 // Tip icons (index 0-5)
 const TIP_ICONS: React.ReactNode[] = [
   <svg key="0" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={acc} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>,
-  <svg key="1" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={acc} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>,
+  <GlobeIcon key="1" size={18} color={acc} strokeWidth={1.8} />,
   <svg key="2" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={acc} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>,
-  <svg key="3" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={acc} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>,
-  <svg key="4" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={acc} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
-  <svg key="5" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={acc} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>,
+  <RefreshIcon key="3" size={18} color={acc} strokeWidth={1.8} />,
+  <DownloadIcon key="4" size={18} color={acc} strokeWidth={1.8} />,
+  <KeyIcon key="5" size={18} color={acc} strokeWidth={1.8} />,
 ];
 
 // Module badge → SVG icon
 function ModBadgeIcon({ badge, color = tFaint, size = 20 }: { badge?: string; color?: string; size?: number }) {
   const sw = { strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
   if (badge === "Comercial" || badge === "Commercial" || badge === "Comércio" || badge === "Operacional" || badge === "Operational")
-    return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} {...sw}><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>;
+    return <BarChartIcon size={size} color={color} />;
   if (badge === "Registro" || badge === "Registration")
     return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} {...sw}><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>;
   if (badge === "Operación" || badge === "Operations" || badge === "Operação")
     return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} {...sw}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>;
   if (badge === "Acreditación" || badge === "Accreditation" || badge === "Acreditação")
-    return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} {...sw}><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>;
+    return <MedalIcon size={size} color={color} />;
   if (badge === "Planificación" || badge === "Planning" || badge === "Planejamento")
-    return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} {...sw}><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
+    return <CalendarIcon size={size} color={color} />;
   // Admin
-  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} {...sw}><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>;
+  return <UsersIcon size={size} color={color} />;
 }
 
 // ── Component ───────────────────────────────────────────────────────────────
@@ -755,7 +774,7 @@ export default function AyudaPage() {
         {/* Search */}
         <div style={{ position: "relative", marginBottom: search ? 0 : 16 }}>
           <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: tFaint, pointerEvents: "none", display: "flex" }}>
-            <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <SearchIcon size={15} strokeWidth={2} />
           </span>
           <input
             type="text"
@@ -771,23 +790,23 @@ export default function AyudaPage() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <TabBtn id="inicio" label={t("Inicio rápido")}
-                icon={<svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>}
+                icon={<ZapIcon size={13} strokeWidth={2} />}
               />
               <TabBtn id="modulos" label={t("Módulos")}
-                icon={<svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>}
+                icon={<LayoutGridIcon size={13} strokeWidth={2} />}
               />
               <TabBtn id="faq" label={t("Preguntas frecuentes")}
-                icon={<svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>}
+                icon={<MessageIcon size={13} strokeWidth={2} />}
               />
               <TabBtn id="cuaderno" label={t("Cuaderno de Cargo")}
-                icon={<svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>}
+                icon={<BookOpenIcon size={13} strokeWidth={2} />}
               />
             </div>
             <Link
               href="/ayuda/manual"
               style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 16px", borderRadius: 10, fontSize: 13, fontWeight: 600, background: acc, color: "#fff", textDecoration: "none", flexShrink: 0, boxShadow: "0 4px 14px rgba(33,208,179,0.3)" }}
             >
-              <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              <FileTextIcon size={13} strokeWidth={2} />
               {t("Manual de usuario (PDF)")}
             </Link>
           </div>
@@ -798,7 +817,7 @@ export default function AyudaPage() {
       {!search && activeSection === "inicio" && (
         <section style={{ background: cBg, border: `1px solid ${cBorder}`, borderRadius: "20px", padding: "24px 28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }}>
-            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={acc} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            <ZapIcon size={16} color={acc} strokeWidth={2} />
             <h2 style={{ fontSize: 15, fontWeight: 700, color: tPrim, margin: 0 }}>{t("Inicio rápido")}</h2>
           </div>
 
@@ -845,7 +864,7 @@ export default function AyudaPage() {
       {!search && activeSection === "modulos" && (
         <section style={{ background: cBg, border: `1px solid ${cBorder}`, borderRadius: "20px", padding: "24px 28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }}>
-            <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke={acc} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            <LayoutGridIcon size={15} color={acc} strokeWidth={2} />
             <h2 style={{ fontSize: 15, fontWeight: 700, color: tPrim, margin: 0 }}>{t("Módulos de la plataforma")}</h2>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 14 }}>
@@ -860,7 +879,7 @@ export default function AyudaPage() {
       {!search && activeSection === "faq" && (
         <section style={{ background: cBg, border: `1px solid ${cBorder}`, borderRadius: "20px", padding: "24px 28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }}>
-            <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke={acc} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            <MessageIcon size={15} color={acc} strokeWidth={2} />
             <h2 style={{ fontSize: 15, fontWeight: 700, color: tPrim, margin: 0 }}>{t("Preguntas frecuentes")}</h2>
           </div>
           <FaqSection faq={FAQ} open={openFaq} setOpen={setOpenFaq} />
@@ -904,7 +923,7 @@ export default function AyudaPage() {
           {filteredModules.length === 0 && filteredFaq.length === 0 && filteredCuaderno.length === 0 && (
             <div style={{ textAlign: "center", padding: "48px 0", color: tMuted }}>
               <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
-                <svg width={40} height={40} viewBox="0 0 24 24" fill="none" stroke={tFaint} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <SearchIcon size={40} color={tFaint} strokeWidth={1.5} />
               </div>
               <p style={{ fontSize: 15, margin: 0, fontWeight: 600, color: tPrim }}>{t("Sin resultados para")} &ldquo;{search}&rdquo;</p>
               <p style={{ fontSize: 13, margin: "6px 0 0" }}>{t("Intenta con otras palabras clave.")}</p>
@@ -1083,9 +1102,7 @@ function CuadernoSection({
       {/* Header */}
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 16 }}>
         <div style={{ width: 38, height: 38, borderRadius: 10, background: `${acc}15`, border: `1px solid ${acc}30`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <svg width={19} height={19} viewBox="0 0 24 24" fill="none" stroke={acc} strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round">
-            <path d="M4 19.5A2.5 2.5 0 016.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
-          </svg>
+          <BookOpenIcon size={19} color={acc} strokeWidth={1.9} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <h2 style={{ fontSize: 15, fontWeight: 700, color: tPrim, margin: "0 0 3px" }}>{CUADERNO_INFO.title}</h2>

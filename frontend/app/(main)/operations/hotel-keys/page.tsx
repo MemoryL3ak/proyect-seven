@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { PercentIcon, CheckIcon, WrenchIcon, AlertCircleIcon, RefreshIcon, TrashIcon } from "@/components/ui/Icons";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { useI18n } from "@/lib/i18n";
 
@@ -86,11 +87,11 @@ const textareaStyle: React.CSSProperties = {
 const selectStyle: React.CSSProperties = { ...inputStyle };
 
 const KPI_ICONS = [
-  <svg key="k" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="7" cy="17" r="3"/><path d="M10.83 14.17l6.44-6.43"/><path d="M14 8l2-2 4 4-2 2"/></svg>,
-  <svg key="a" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>,
+  <PercentIcon key="k" size={15} strokeWidth={2} />,
+  <CheckIcon key="a" size={15} strokeWidth={2} />,
   <svg key="e" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="7" cy="17" r="3"/><path d="M10.83 14.17l6.44-6.43"/><path d="M14 8l2-2 4 4-2 2"/><circle cx="17" cy="7" r="1" fill="currentColor"/></svg>,
-  <svg key="m" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>,
-  <svg key="l" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
+  <WrenchIcon key="m" size={15} strokeWidth={2} />,
+  <AlertCircleIcon key="l" size={15} strokeWidth={2} />,
 ];
 
 export default function HotelKeysPage() {
@@ -327,7 +328,7 @@ export default function HotelKeysPage() {
               color: loading ? "#94a3b8" : "#475569", fontSize: "13px", fontWeight: 600,
               cursor: loading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: "6px",
             }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              <RefreshIcon size={14} strokeWidth={2.5} />
               {loading ? t("Actualizando...") : t("Refrescar")}
             </button>
           </div>
@@ -401,7 +402,7 @@ export default function HotelKeysPage() {
                           </button>
                         </div>
                         <h4 style={{ fontWeight: 800, fontSize: "18px", color: "#0f172a", marginBottom: "4px", display: "flex", alignItems: "center", gap: "6px" }}>
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="7" cy="17" r="3"/><path d="M10.83 14.17l6.44-6.43"/><path d="M14 8l2-2 4 4-2 2"/></svg>
+                          <PercentIcon size={15} color="#94a3b8" strokeWidth={2} />
                           {key.keyNumber} · {t("Copia")} {key.copyNumber || 1}
                         </h4>
                         <p style={{ fontSize: "13px", color: "#64748b" }}>
@@ -429,22 +430,22 @@ export default function HotelKeysPage() {
                         )}
                         <button type="button" onClick={() => changeStatus(key.id, "MAINTENANCE")}
                           style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: "99px", padding: "6px 10px", fontSize: "12px", fontWeight: 600, color: "#f59e0b", cursor: "pointer", display: "flex", alignItems: "center" }}>
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                          <WrenchIcon size={13} strokeWidth={2} />
                         </button>
                         <button type="button" onClick={() => changeStatus(key.id, "LOST")}
                           style={{ background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.22)", borderRadius: "99px", padding: "6px 10px", fontSize: "12px", fontWeight: 600, color: "#ef4444", cursor: "pointer", display: "flex", alignItems: "center" }}>
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                          <AlertCircleIcon size={13} strokeWidth={2} />
                         </button>
                         {key.status !== "AVAILABLE" && (
                           <button type="button" onClick={() => changeStatus(key.id, "AVAILABLE")}
                             style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.22)", borderRadius: "99px", padding: "6px 10px", fontSize: "12px", fontWeight: 600, color: "#10b981", cursor: "pointer", display: "flex", alignItems: "center" }}>
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+                            <CheckIcon size={13} strokeWidth={2.5} />
                           </button>
                         )}
                         <button type="button" onClick={() => setDeleteKeyConfirm(key.id)}
                           style={{ background: "rgba(239,68,68,0.04)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: "99px", padding: "6px 10px", fontSize: "12px", fontWeight: 600, color: "#f43f5e", cursor: "pointer", display: "flex", alignItems: "center" }}
                           title={t("Eliminar llave")}>
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                          <TrashIcon size={13} strokeWidth={2} />
                         </button>
                       </div>
                     </div>
@@ -483,7 +484,7 @@ export default function HotelKeysPage() {
             <article style={{ background: "#ffffff", border: "1px solid rgba(59,130,246,0.3)", borderTop: "3px solid #3b82f6", borderRadius: "24px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
               <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#3b82f6", marginBottom: "4px" }}>{t("Operación")}</p>
               <h3 style={{ fontWeight: 700, fontSize: "16px", color: "#0f172a", marginBottom: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="7" cy="17" r="3"/><path d="M10.83 14.17l6.44-6.43"/><path d="M14 8l2-2 4 4-2 2"/></svg>
+                <PercentIcon size={16} color="#3b82f6" strokeWidth={2} />
                 {t("Entrega de llave")}
               </h3>
               <form style={{ display: "flex", flexDirection: "column", gap: "10px" }} onSubmit={submitIssue}>
@@ -512,7 +513,7 @@ export default function HotelKeysPage() {
             <article style={{ background: "#ffffff", border: "1px solid rgba(16,185,129,0.3)", borderTop: "3px solid #10b981", borderRadius: "24px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
               <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "#10b981", marginBottom: "4px" }}>{t("Operación")}</p>
               <h3 style={{ fontWeight: 700, fontSize: "16px", color: "#0f172a", marginBottom: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+                <CheckIcon size={16} color="#10b981" strokeWidth={2.5} />
                 {t("Devolución de llave")}
               </h3>
               <form style={{ display: "flex", flexDirection: "column", gap: "10px" }} onSubmit={submitReturn}>
@@ -579,7 +580,7 @@ export default function HotelKeysPage() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
             <div style={{ background: "#fff", borderRadius: "20px", width: "100%", maxWidth: "380px", padding: "28px", boxShadow: "0 8px 40px rgba(15,23,42,0.2)", textAlign: "center" }}>
               <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "rgba(239,68,68,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                <TrashIcon size={24} color="#ef4444" strokeWidth={2} />
               </div>
               <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#0f172a", margin: "0 0 6px" }}>{t("Eliminar llave")}</h3>
               <p style={{ fontSize: "13px", color: "#64748b", margin: "0 0 20px" }}>
