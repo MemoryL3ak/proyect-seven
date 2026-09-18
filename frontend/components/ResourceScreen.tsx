@@ -665,7 +665,11 @@ export default function ResourceScreen({
       const options = (data || []).map((delegation) => ({
         label: delegationLabel(delegation),
         value: delegation.id,
-        eventId: delegation.eventId
+        eventId: delegation.eventId,
+        // Disciplinas asignadas a la delegación: acotan la disciplina del viaje.
+        disciplineIds: Array.isArray(delegation.disciplineIds)
+          ? (delegation.disciplineIds as string[])
+          : []
       }));
       setDelegationOptions(options);
     } catch (err) {
@@ -2085,6 +2089,20 @@ export default function ResourceScreen({
       return providerOptions;
     }
     if (field.optionsSource === "disciplines") {
+      if (config.endpoint === "/trips") {
+        // Disciplinas de la delegación elegida; sin delegación, todas las del
+        // catálogo (un viaje puede no ser de un equipo).
+        const delegationId = form.delegationId as string | undefined;
+        const assigned = delegationId
+          ? (delegationOptions as Array<Option & { disciplineIds?: string[] }>).find(
+              (option) => option.value === delegationId,
+            )?.disciplineIds
+          : undefined;
+        if (assigned && assigned.length > 0) {
+          return disciplineOptions.filter((option) => assigned.includes(option.value));
+        }
+        return disciplineOptions;
+      }
       const category = normalizeCategory(form.disciplineCategory);
       const gender = normalizeGender(form.disciplineGender);
       const base = (disciplineOptions as any[]).filter((option) => {

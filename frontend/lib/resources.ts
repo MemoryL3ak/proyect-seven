@@ -1182,8 +1182,12 @@ export const resources: Record<string, ResourceConfig> = {
       { key: "scheduledAt", label: "Fecha programación", type: "datetime" },
       { key: "startedAt", label: "Inicio", type: "datetime", formHidden: true },
       { key: "completedAt", label: "Cierre", type: "datetime", formHidden: true },
-      { key: "delegationId", label: "Delegación", type: "select", optionsSource: "delegations", transient: true, hideWhen: { field: "clientType", value: "VIP" } },
-      { key: "athleteIds", label: "Participantes", type: "multiselect", optionsSource: "athletes" },
+      // El viaje se asigna a la delegación y a su disciplina: viaja el equipo
+      // completo, sin nominar pasajeros. Los participantes quedan opcionales
+      // (VIP y T1 siguen viajando por persona).
+      { key: "delegationId", label: "Delegación", type: "select", optionsSource: "delegations", hideWhen: { field: "clientType", value: "VIP" } },
+      { key: "disciplineId", label: "Disciplina", type: "select", optionsSource: "disciplines", hideWhen: { field: "clientType", value: "VIP" } },
+      { key: "athleteIds", label: "Participantes (opcional)", type: "multiselect", optionsSource: "athletes" },
       { key: "tripCost", label: "Costo de viaje", type: "text" }
     ]
   },

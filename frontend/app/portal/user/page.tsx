@@ -131,7 +131,7 @@ type HotelAssignment = {
 type HotelRoom = { id: string; roomNumber: string; roomType: string };
 type HotelBed = { id: string; bedType: string };
 type Vehicle = { id: string; plate: string; type: string };
-type Trip = { id: string; driverId: string; vehicleId?: string | null; athleteIds?: string[]; athleteNames?: string[]; requesterAthleteId?: string | null; clientType?: string | null; origin?: string | null; destination?: string | null; status?: string | null; scheduledAt?: string | null; startedAt?: string | null; completedAt?: string | null; tripType?: string | null; discipline?: string | null; notes?: string | null; driverRating?: number | null; ratingComment?: string | null; ratedAt?: string | null; passengerLat?: number | null; passengerLng?: number | null };
+type Trip = { id: string; driverId: string; delegationId?: string | null; disciplineId?: string | null; vehicleId?: string | null; athleteIds?: string[]; athleteNames?: string[]; requesterAthleteId?: string | null; clientType?: string | null; origin?: string | null; destination?: string | null; status?: string | null; scheduledAt?: string | null; startedAt?: string | null; completedAt?: string | null; tripType?: string | null; discipline?: string | null; notes?: string | null; driverRating?: number | null; ratingComment?: string | null; ratedAt?: string | null; passengerLat?: number | null; passengerLng?: number | null };
 type Driver = { id: string; fullName: string; userId?: string | null };
 type Event = { id: string; name: string };
 // name: las delegaciones de los Juegos Escolares son regiones con nombre visible.
@@ -762,7 +762,10 @@ export default function UserPortalPage() {
       setHealthRecord(hr);
 
       // Load delegation members for delegation leads
-      if (data.isDelegationLead && data.delegationId) {
+      const esJefe =
+        data.isDelegationLead === true ||
+        normalizeClientType(data.userType) === "JEFE_MISION";
+      if (esJefe && data.delegationId) {
         try {
           const allAthletes = await apiFetch<Athlete[]>("/athletes");
           setDelegationMembers((allAthletes || []).filter(a => a.delegationId === data.delegationId && a.id !== data.id));
@@ -1835,6 +1838,8 @@ export default function UserPortalPage() {
               });
               const relevant = delegationTrips
                 .filter(tr =>
+                  // Viaje de la delegación (equipo completo, sin pasajeros nominados).
+                  (tr.delegationId && tr.delegationId === athlete.delegationId) ||
                   (tr.requesterAthleteId && memberIds.has(tr.requesterAthleteId)) ||
                   (tr.athleteIds || []).some(id => memberIds.has(id)) ||
                   (tr.discipline && discNames.has(tr.discipline.trim().toLowerCase())),
@@ -1844,7 +1849,7 @@ export default function UserPortalPage() {
                 <div style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,overflow:"hidden" }}>
                   <div style={{ padding:"12px 14px",borderBottom:`1px solid ${SURFACE.borderMuted}` }}>
                     <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.teal,margin:0 }}>Viajes de mi delegación</p>
-                    <p style={{ fontSize:11,color:SURFACE.textFaint,margin:"3px 0 0" }}>Traslados de los miembros y disciplinas de tu delegación</p>
+                    <p style={{ fontSize:11,color:SURFACE.textFaint,margin:"3px 0 0" }}>Traslados asignados a tu delegación, sus disciplinas y sus miembros</p>
                   </div>
                   <div style={{ padding:"12px 14px",display:"flex",flexDirection:"column",gap:8 }}>
                     {relevant.length === 0 && <p style={{ fontSize:13,color:SURFACE.textFaint,margin:0,textAlign:"center",padding:8 }}>Sin viajes registrados para tu delegación</p>}

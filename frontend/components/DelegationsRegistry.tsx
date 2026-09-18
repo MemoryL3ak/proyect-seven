@@ -17,7 +17,8 @@ import { useI18n } from "@/lib/i18n";
  * región y jefe. La flota se asigna desde Conductores/Vehículos y los hoteles
  * se derivan de la asignación hotelera de los participantes.
  */
-type EventRow = { id: string; name: string };
+type EventRow = { id: string; name: string; disciplineIds?: string[] };
+type DisciplineRow = { id: string; name?: string | null; gender?: string | null; category?: string | null };
 type DelegationRow = {
   id: string;
   eventId: string;
@@ -27,6 +28,7 @@ type DelegationRow = {
   missionHeadId?: string | null;
   missionHeadName?: string | null;
   missionHeadPhone?: string | null;
+  disciplineIds?: string[];
 };
 type AthleteRow = {
   id: string;
@@ -37,8 +39,22 @@ type AthleteRow = {
   status?: string | null;
 };
 
-type Form = { id: string | null; eventId: string; countryCode: string; missionHeadId: string };
-const emptyForm = (eventId = ""): Form => ({ id: null, eventId, countryCode: "", missionHeadId: "" });
+type Form = {
+  id: string | null;
+  eventId: string;
+  countryCode: string;
+  missionHeadId: string;
+  /** Disciplinas con las que la región compite; acotan la disciplina del viaje. */
+  disciplineIds: string[];
+};
+const emptyForm = (eventId = ""): Form => ({ id: null, eventId, countryCode: "", missionHeadId: "", disciplineIds: [] });
+
+const GENERO: Record<string, string> = { MALE: "Masculino", FEMALE: "Femenino", MIXED: "Mixto" };
+/** "Atletismo · Femenino · Paralímpica": el mismo deporte existe por género y categoría. */
+const disciplinaLabel = (d: DisciplineRow) =>
+  [d.name ?? d.id, d.gender ? GENERO[d.gender] ?? d.gender : null, d.category === "PARALYMPIC" ? "Paralímpica" : null]
+    .filter(Boolean)
+    .join(" · ");
 
 const regionName = (code: string) => CHILE_REGIONS.find((r) => r.value === code)?.label ?? code;
 
@@ -47,6 +63,7 @@ export default function DelegationsRegistry({ refreshKey = 0, onChanged }: { ref
   const [events, setEvents] = useState<EventRow[]>([]);
   const [delegations, setDelegations] = useState<DelegationRow[]>([]);
   const [athletes, setAthletes] = useState<AthleteRow[]>([]);
+  const [disciplines, setDisciplines] = useState<DisciplineRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<Form>(emptyForm());
@@ -55,14 +72,16 @@ export default function DelegationsRegistry({ refreshKey = 0, onChanged }: { ref
 
   const load = useCallback(async () => {
     try {
-      const [ev, dl, at] = await Promise.all([
+      const [ev, dl, at, di] = await Promise.all([
         apiFetch<EventRow[]>("/events"),
         apiFetch<DelegationRow[]>("/delegations"),
         apiFetch<AthleteRow[]>("/athletes").catch(() => [] as AthleteRow[]),
+        apiFetch<DisciplineRow[]>("/disciplines").catch(() => [] as DisciplineRow[]),
       ]);
       setEvents(ev ?? []);
       setDelegations(dl ?? []);
       setAthletes((at ?? []).filter((a) => a.status !== "DELETED"));
+      setDisciplines(di ?? []);
       // El evento vigente es el más reciente (GET /events ordena por creación).
       setForm((f) => (f.eventId ? f : emptyForm(ev?.[0]?.id ?? "")));
       setError(null);
@@ -96,6 +115,15 @@ export default function DelegationsRegistry({ refreshKey = 0, onChanged }: { ref
     return CHILE_REGIONS.filter((r) => !taken.has(r.value));
   }, [delegations, form.eventId, form.id]);
 
+  // Sólo las disciplinas del evento elegido (core.event_disciplines).
+  const disciplineOptions = useMemo(() => {
+    const delEvento = events.find((e) => e.id === form.eventId)?.disciplineIds;
+    const permitidas = new Set(delEvento ?? []);
+    return disciplines
+      .filter((d) => permitidas.size === 0 || permitidas.has(d.id))
+      .sort((a, b) => disciplinaLabel(a).localeCompare(disciplinaLabel(b)));
+  }, [disciplines, events, form.eventId]);
+
   // Jefe: participantes del evento en esta delegación o aún sin delegación.
   const headOptions = useMemo(
     () =>
@@ -106,7 +134,13 @@ export default function DelegationsRegistry({ refreshKey = 0, onChanged }: { ref
   );
 
   const startEdit = (d: DelegationRow) => {
-    setForm({ id: d.id, eventId: d.eventId, countryCode: d.countryCode, missionHeadId: d.missionHeadId ?? "" });
+    setForm({
+      id: d.id,
+      eventId: d.eventId,
+      countryCode: d.countryCode,
+      missionHeadId: d.missionHeadId ?? "",
+      disciplineIds: d.disciplineIds ?? [],
+    });
     setError(null);
   };
   const cancel = () => setForm(emptyForm(form.eventId));
@@ -121,6 +155,7 @@ export default function DelegationsRegistry({ refreshKey = 0, onChanged }: { ref
         countryCode: form.countryCode,
         name: regionName(form.countryCode),
         missionHeadId: form.missionHeadId || null,
+        disciplineIds: form.disciplineIds,
       };
       await apiFetch(form.id ? `/delegations/${form.id}` : "/delegations", {
         method: form.id ? "PATCH" : "POST",
@@ -202,6 +237,50 @@ export default function DelegationsRegistry({ refreshKey = 0, onChanged }: { ref
               {t("Participante inscrito en el evento; queda como jefe y asociado a esta región.")}
             </span>
           </label>
+          <div className="md:col-span-3">
+            <span style={labelStyle}>{t("Disciplinas de la delegación")}</span>
+            {disciplineOptions.length === 0 ? (
+              <p style={{ fontSize: 12.5, color: SURFACE.textFaint, margin: 0 }}>
+                {t("El evento aún no tiene disciplinas cargadas.")}
+              </p>
+            ) : (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {disciplineOptions.map((d) => {
+                  const on = form.disciplineIds.includes(d.id);
+                  return (
+                    <button
+                      key={d.id}
+                      type="button"
+                      onClick={() =>
+                        setForm((f) => ({
+                          ...f,
+                          disciplineIds: on
+                            ? f.disciplineIds.filter((x) => x !== d.id)
+                            : [...f.disciplineIds, d.id],
+                        }))
+                      }
+                      style={{
+                        padding: "5px 11px",
+                        borderRadius: 999,
+                        fontSize: 12,
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        background: on ? BRAND.teal : SURFACE.card,
+                        color: on ? "#fff" : SURFACE.textStrong,
+                        border: `1px solid ${on ? BRAND.teal : SURFACE.border}`,
+                      }}
+                    >
+                      {on ? "✓ " : ""}
+                      {disciplinaLabel(d)}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            <span style={{ display: "block", fontSize: 11, color: SURFACE.textFaint, marginTop: 6 }}>
+              {t("Los viajes de esta delegación se asignan a una de estas disciplinas.")}
+            </span>
+          </div>
           <div className="md:col-span-3 flex gap-2">
             <button type="submit" className="btn btn-primary" disabled={saving || !form.eventId || !form.countryCode}>
               {saving ? t("Guardando…") : form.id ? t("Guardar cambios") : t("Crear delegación")}
@@ -230,6 +309,7 @@ export default function DelegationsRegistry({ refreshKey = 0, onChanged }: { ref
                 <tr style={{ textAlign: "left", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", color: SURFACE.textMuted }}>
                   <th style={{ padding: "8px 10px", borderBottom: `1px solid ${SURFACE.border}` }}>{t("Región")}</th>
                   <th style={{ padding: "8px 10px", borderBottom: `1px solid ${SURFACE.border}` }}>{t("Jefe de Delegación")}</th>
+                  <th style={{ padding: "8px 10px", borderBottom: `1px solid ${SURFACE.border}` }}>{t("Disciplinas")}</th>
                   <th style={{ padding: "8px 10px", borderBottom: `1px solid ${SURFACE.border}`, textAlign: "right" }}>{t("Participantes")}</th>
                   <th style={{ padding: "8px 10px", borderBottom: `1px solid ${SURFACE.border}` }} />
                 </tr>
@@ -244,6 +324,15 @@ export default function DelegationsRegistry({ refreshKey = 0, onChanged }: { ref
                     <td style={{ padding: "10px", borderBottom: `1px solid ${SURFACE.borderMuted}`, color: d.missionHeadName ? SURFACE.text : SURFACE.textFaint }}>
                       {d.missionHeadName ?? t("Sin asignar")}
                       {d.missionHeadPhone && <span style={{ display: "block", fontSize: 11, color: SURFACE.textMuted }}>{d.missionHeadPhone}</span>}
+                    </td>
+                    <td style={{ padding: "10px", borderBottom: `1px solid ${SURFACE.borderMuted}`, fontSize: 12, color: (d.disciplineIds?.length ?? 0) > 0 ? SURFACE.textStrong : SURFACE.textFaint }}>
+                      {(d.disciplineIds?.length ?? 0) > 0
+                        ? (d.disciplineIds ?? [])
+                            .map((id) => disciplines.find((x) => x.id === id))
+                            .filter((x): x is DisciplineRow => Boolean(x))
+                            .map((x) => disciplinaLabel(x))
+                            .join(", ")
+                        : t("Sin asignar")}
                     </td>
                     <td style={{ padding: "10px", borderBottom: `1px solid ${SURFACE.borderMuted}`, textAlign: "right", fontVariantNumeric: "tabular-nums", color: SURFACE.textStrong }}>
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><UsersIcon size={13} /> {membersOf.get(d.id) ?? 0}</span>

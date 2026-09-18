@@ -26,6 +26,17 @@ export class Trip {
   @Column({ name: 'requester_athlete_id', type: 'uuid', nullable: true })
   requesterAthleteId?: string | null;
 
+  /**
+   * Viaje de delegación: en los Juegos Escolares el traslado se asigna al
+   * grupo (región + disciplina) y no a un participante en particular. El Jefe
+   * de Misión de esa delegación ve todos estos viajes.
+   */
+  @Column({ name: 'delegation_id', type: 'uuid', nullable: true })
+  delegationId?: string | null;
+
+  @Column({ name: 'discipline_id', type: 'uuid', nullable: true })
+  disciplineId?: string | null;
+
   @Column({ name: 'destination_venue_id', type: 'uuid', nullable: true })
   destinationVenueId?: string | null;
 
