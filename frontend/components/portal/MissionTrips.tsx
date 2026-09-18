@@ -44,9 +44,9 @@ const ACTIVOS = new Set(["SCHEDULED", "REQUESTED", "EN_ROUTE", "PICKED_UP"]);
 const norm = (v?: string | null) => String(v ?? "").trim().toUpperCase();
 
 const fechaCorta = (iso?: string | null) =>
-  iso ? new Date(iso).toLocaleDateString("es-CL", { day: "2-digit", month: "short" }) : "—";
+  iso ? new Date(iso).toLocaleDateString("es-CL", { day: "2-digit", month: "short" }).replace(".", "") : "—";
 const hora = (iso?: string | null) =>
-  iso ? new Date(iso).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" }) : "--:--";
+  iso ? new Date(iso).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", hour12: false }) : "--:--";
 
 const chip = (bg: string, color: string): React.CSSProperties => ({
   padding: "2px 8px",
@@ -58,16 +58,35 @@ const chip = (bg: string, color: string): React.CSSProperties => ({
   whiteSpace: "nowrap",
 });
 
-const selectStyle: React.CSSProperties = {
+/** Ficha de filtro: activa en teal, inactiva en gris del sistema de diseño. */
+const ficha = (activa: boolean): React.CSSProperties => ({
+  padding: "6px 12px",
+  borderRadius: 999,
+  fontSize: 12,
+  fontWeight: 600,
+  whiteSpace: "nowrap",
+  cursor: "pointer",
+  border: `1px solid ${activa ? BRAND.teal : SURFACE.border}`,
+  background: activa ? BRAND.teal : SURFACE.card,
+  color: activa ? "#fff" : SURFACE.textStrong,
+  transition: "background 120ms ease, border-color 120ms ease",
+});
+
+/** Segmento del control de estado (un solo bloque con tres opciones). */
+const segmento = (activo: boolean): React.CSSProperties => ({
   flex: 1,
-  minWidth: 0,
-  padding: "8px 10px",
-  borderRadius: 10,
-  border: `1px solid ${SURFACE.border}`,
-  background: SURFACE.card,
-  color: SURFACE.text,
-  fontSize: 12.5,
-};
+  padding: "7px 4px",
+  fontSize: 12,
+  fontWeight: 700,
+  textAlign: "center",
+  cursor: "pointer",
+  border: "none",
+  borderRadius: 8,
+  background: activo ? SURFACE.card : "transparent",
+  color: activo ? BRAND.tealInk : SURFACE.textMuted,
+  boxShadow: activo ? "0 1px 3px rgba(15,23,42,0.12)" : "none",
+  transition: "background 120ms ease, color 120ms ease",
+});
 
 export default function MissionTrips({
   trips,
@@ -121,12 +140,15 @@ export default function MissionTrips({
 
   // Disciplinas presentes, para no ofrecer filtros vacíos.
   const opcionesDisciplina = useMemo(() => {
-    const vistas = new Map<string, string>();
+    const vistas = new Map<string, { label: string; total: number }>();
     for (const tr of propios) {
       const label = disciplinaDe(tr);
-      if (label) vistas.set(tr.disciplineId ?? label, label);
+      if (!label) continue;
+      const clave = tr.disciplineId ?? label;
+      const previo = vistas.get(clave);
+      vistas.set(clave, { label, total: (previo?.total ?? 0) + 1 });
     }
-    return [...vistas.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+    return [...vistas.entries()].sort((a, b) => a[1].label.localeCompare(b[1].label));
   }, [propios, labels]);
 
   const visibles = useMemo(() => {
@@ -165,6 +187,10 @@ export default function MissionTrips({
 
   return (
     <div style={{ background: SURFACE.card, borderRadius: 14, border: `1px solid ${SURFACE.border}`, overflow: "hidden" }}>
+      <style dangerouslySetInnerHTML={{ __html: `
+        .mt-fichas{scrollbar-width:none;-ms-overflow-style:none}
+        .mt-fichas::-webkit-scrollbar{display:none}
+      ` }} />
       <div style={{ padding: "12px 14px", borderBottom: `1px solid ${SURFACE.borderMuted}` }}>
         <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: BRAND.teal, margin: 0 }}>
           {t("Viajes de mi delegación")}
@@ -173,19 +199,32 @@ export default function MissionTrips({
           {visibles.length} {visibles.length === 1 ? t("traslado") : t("traslados")}
           {estadoFiltro === "ACTIVOS" ? ` · ${t("por realizar")}` : ""}
         </p>
-        <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-          <select style={selectStyle} value={disciplinaFiltro} onChange={(e) => setDisciplinaFiltro(e.target.value)}>
-            <option value="">{t("Todas las disciplinas")}</option>
-            {opcionesDisciplina.map(([value, label]) => (
-              <option key={value} value={value}>{label}</option>
-            ))}
-          </select>
-          <select style={selectStyle} value={estadoFiltro} onChange={(e) => setEstadoFiltro(e.target.value)}>
-            <option value="ACTIVOS">{t("Por realizar")}</option>
-            <option value="TERMINADOS">{t("Terminados")}</option>
-            <option value="TODOS">{t("Todos")}</option>
-          </select>
+        {/* Estado: control segmentado, como el conmutador de la cabecera. */}
+        <div style={{ display: "flex", gap: 2, marginTop: 10, padding: 3, borderRadius: 10, background: SURFACE.bg, border: `1px solid ${SURFACE.borderMuted}` }}>
+          {([
+            ["ACTIVOS", t("Por realizar")],
+            ["TERMINADOS", t("Terminados")],
+            ["TODOS", t("Todos")],
+          ] as Array<[string, string]>).map(([value, label]) => (
+            <button key={value} type="button" style={segmento(estadoFiltro === value)} onClick={() => setEstadoFiltro(value)}>
+              {label}
+            </button>
+          ))}
         </div>
+
+        {/* Disciplina: fichas desplazables, sólo si hay más de una. */}
+        {opcionesDisciplina.length > 1 && (
+          <div className="mt-fichas" style={{ display: "flex", gap: 6, marginTop: 8, overflowX: "auto", paddingBottom: 2 }}>
+            <button type="button" style={ficha(disciplinaFiltro === "")} onClick={() => setDisciplinaFiltro("")}>
+              {t("Todas")}
+            </button>
+            {opcionesDisciplina.map(([value, { label, total }]) => (
+              <button key={value} type="button" style={ficha(disciplinaFiltro === value)} onClick={() => setDisciplinaFiltro(value)}>
+                {label} · {total}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
