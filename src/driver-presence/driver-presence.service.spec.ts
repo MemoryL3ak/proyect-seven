@@ -39,3 +39,24 @@ describe('DriverPresenceService.heartbeat', () => {
     expect(inserts).toHaveLength(0);
   });
 });
+
+/**
+ * stats() compara "hoy" como rango sobre columnas indexadas. Con
+ * `columna::date = now()::date` Postgres no usa índices ni poda particiones y
+ * recorre todo el historial de cada chofer: 2,5 s de media y picos de 55 s en
+ * producción (89 % del tiempo de CPU de la base). Con el rango, < 1 ms.
+ */
+describe('DriverPresenceService.stats', () => {
+  it('no castea columnas de posiciones/sesiones a ::date', async () => {
+    const query = jest.fn<Promise<Array<Record<string, number>>>, [string]>(() =>
+      Promise.resolve([{ total_drivers: 8, online_now: 1, drivers_today: 3, sessions_today: 13 }]),
+    );
+    const service = new DriverPresenceService({ query } as unknown as DataSource);
+    const out = await service.stats();
+    expect(out).toEqual({ totalDrivers: 8, onlineNow: 1, driversToday: 3, sessionsToday: 13 });
+    const [sql] = query.mock.calls[0];
+    expect(sql).not.toMatch(/created_at::date|started_at::date/);
+    expect(sql).toMatch(/vp\.timestamp >= hoy\.desde/);
+    expect(sql).toMatch(/started_at >= hoy\.desde/);
+  });
+});
