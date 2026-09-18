@@ -6,6 +6,7 @@ import StyledSelect from "@/components/StyledSelect";
 import { PencilIcon, TrashIcon, UsersIcon } from "@/components/ui/Icons";
 import { apiFetch } from "@/lib/api";
 import { CHILE_REGIONS, delegationLabel } from "@/lib/delegations";
+import { buildDisciplineLabelMap } from "@/lib/discipline-filters";
 import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
 
@@ -49,12 +50,7 @@ type Form = {
 };
 const emptyForm = (eventId = ""): Form => ({ id: null, eventId, countryCode: "", missionHeadId: "", disciplineIds: [] });
 
-const GENERO: Record<string, string> = { MALE: "Masculino", FEMALE: "Femenino", MIXED: "Mixto" };
-/** "Atletismo · Femenino · Paralímpica": el mismo deporte existe por género y categoría. */
-const disciplinaLabel = (d: DisciplineRow) =>
-  [d.name ?? d.id, d.gender ? GENERO[d.gender] ?? d.gender : null, d.category === "PARALYMPIC" ? "Paralímpica" : null]
-    .filter(Boolean)
-    .join(" · ");
+
 
 const regionName = (code: string) => CHILE_REGIONS.find((r) => r.value === code)?.label ?? code;
 
@@ -114,6 +110,13 @@ export default function DelegationsRegistry({ refreshKey = 0, onChanged }: { ref
     const taken = new Set(delegations.filter((d) => d.eventId === form.eventId && d.id !== form.id).map((d) => d.countryCode));
     return CHILE_REGIONS.filter((r) => !taken.has(r.value));
   }, [delegations, form.eventId, form.id]);
+
+  // "Atletismo · Mixto · Paralímpica" sólo cuando el nombre se repite.
+  const disciplinaLabels = useMemo(() => buildDisciplineLabelMap(disciplines), [disciplines]);
+  const disciplinaLabel = useCallback(
+    (d: DisciplineRow) => disciplinaLabels.get(d.id) ?? d.name ?? d.id,
+    [disciplinaLabels],
+  );
 
   // Sólo las disciplinas del evento elegido (core.event_disciplines).
   const disciplineOptions = useMemo(() => {

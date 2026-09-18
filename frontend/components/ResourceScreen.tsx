@@ -11,10 +11,12 @@ import { useI18n } from "@/lib/i18n";
 import StyledSelect from "@/components/StyledSelect";
 import PlacesAutocompleteInput from "@/components/PlacesAutocompleteInput";
 import { delegationLabel } from "@/lib/delegations";
+import { buildDisciplineLabelMap } from "@/lib/discipline-filters";
 
 type Option = { label: string; value: string };
 
-type EventOption = Option;
+// disciplineIds: el selector de Disciplina de un viaje se acota a las del evento.
+type EventOption = Option & { disciplineIds?: string[] };
 
 type DisciplineOption = Option;
 
@@ -632,8 +634,9 @@ export default function ResourceScreen({
     try {
       const data = await apiFetch<Record<string, any>[]>("/events");
       const options = (data || []).map((event) => ({
-        label: event.name ?? event.id,
-        value: event.id
+        label: (event.name as string) ?? String(event.id),
+        value: String(event.id),
+        disciplineIds: Array.isArray(event.disciplineIds) ? (event.disciplineIds as string[]) : []
       }));
       setEventOptions(options);
     } catch (err) {
@@ -645,14 +648,23 @@ export default function ResourceScreen({
     try {
       const data = await apiFetch<Record<string, any>[]>("/disciplines");
       // Only show parent disciplines (not pruebas/children which have parentId)
-      const options = (data || [])
-        .filter((discipline) => !discipline.parentId)
-        .map((discipline) => ({
-          label: discipline.name ?? discipline.id,
-          value: discipline.id,
-          category: discipline.category,
-          gender: discipline.gender
-        }));
+      const parents = (data || []).filter((discipline) => !discipline.parentId);
+      // El mismo deporte existe una vez por género y categoría: sin desambiguar,
+      // el selector mostraba "Atletismo" y "Balonmano" repetidos.
+      const labels = buildDisciplineLabelMap(
+        parents.map((discipline) => ({
+          id: String(discipline.id),
+          name: discipline.name as string | null,
+          gender: discipline.gender as string | null,
+          category: discipline.category as string | null,
+        })),
+      );
+      const options = parents.map((discipline) => ({
+        label: labels.get(String(discipline.id)) ?? (discipline.name as string) ?? String(discipline.id),
+        value: discipline.id,
+        category: discipline.category,
+        gender: discipline.gender
+      }));
       setDisciplineOptions(options);
     } catch (err) {
       setDisciplineOptions([]);
@@ -2097,8 +2109,9 @@ export default function ResourceScreen({
     }
     if (field.optionsSource === "disciplines") {
       if (config.endpoint === "/trips") {
-        // Disciplinas de la delegación elegida; sin delegación, todas las del
-        // catálogo (un viaje puede no ser de un equipo).
+        // Primero las disciplinas de la delegación elegida; si no tiene
+        // ninguna cargada, las del evento del viaje. Sin ninguna de las dos,
+        // el catálogo completo (un viaje puede no ser de un equipo).
         const delegationId = form.delegationId as string | undefined;
         const assigned = delegationId
           ? (delegationOptions as Array<Option & { disciplineIds?: string[] }>).find(
@@ -2107,6 +2120,13 @@ export default function ResourceScreen({
           : undefined;
         if (assigned && assigned.length > 0) {
           return disciplineOptions.filter((option) => assigned.includes(option.value));
+        }
+        const eventId = form.eventId as string | undefined;
+        const ofEvent = eventId
+          ? eventOptions.find((option) => option.value === eventId)?.disciplineIds
+          : undefined;
+        if (ofEvent && ofEvent.length > 0) {
+          return disciplineOptions.filter((option) => ofEvent.includes(option.value));
         }
         return disciplineOptions;
       }
