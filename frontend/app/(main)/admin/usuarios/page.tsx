@@ -54,6 +54,7 @@ type Role =
   | "Coordinador"
   | "Coordinador Bvan"
   | "Coordinador Comité"
+  | "Coordinador General"
   | "Comité Transporte";
 type UserStatus = "active" | "inactive" | "pending";
 
@@ -61,6 +62,8 @@ type AppUser = {
   id: string;
   fullName: string;
   email: string;
+  /** Contacto. Con rol Coordinador General, los portales lo muestran para WhatsApp. */
+  phone?: string;
   role: Role;
   modules: string[];
   status: UserStatus;
@@ -79,6 +82,7 @@ const ROLES: Role[] = [
   "Coordinador",
   "Coordinador Bvan",
   "Coordinador Comité",
+  "Coordinador General",
   "Comité Transporte",
   "Operador",
   "Visualizador",
@@ -98,6 +102,9 @@ const ROLE_PERMISSIONS: Record<Role, string[]> = {
   // Coordinadores acotados: solo los módulos que realmente operan.
   "Coordinador Bvan": [...TRANSPORTE_MODULES, "sede", "calendario", "alimentacion.general"],
   "Coordinador Comité": [...TRANSPORTE_MODULES, "sede", "calendario", "dashboard.comercial", "dashboard.operacional"],
+  // Coordinador General: el contacto operativo que ven los portales (WhatsApp
+  // en vez de llamar al chofer). Ve toda la operación; no administra usuarios.
+  "Coordinador General": ALL_MODULES.filter((m) => m.group !== "Administración").map((m) => m.id),
   // Comité de transporte: operación y seguimiento, sin panel de proveedores
   // ni consumo real (Panel Financiero y Dashboard Comercial quedan fuera).
   "Comité Transporte": [...TRANSPORTE_OPERATIVO, "calendario"],
@@ -227,6 +234,7 @@ function emptyForm() {
     fullName: "",
     email: "",
     username: "",
+    phone: "",
     loginType: "email" as "email" | "username",
     role: "Operador" as Role,
     modules: ROLE_PERMISSIONS["Operador"],
@@ -285,6 +293,7 @@ export default function UsuariosPage() {
           id: u.id,
           fullName: u.user_metadata?.name || u.email?.split("@")[0] || "Sin nombre",
           email: u.email || "",
+          phone: typeof u.user_metadata?.phone === "string" ? u.user_metadata.phone : "",
           role: (u.user_metadata?.role as Role) || "Operador",
           modules: Array.isArray(u.user_metadata?.modules) ? u.user_metadata.modules : (ROLE_PERMISSIONS[(u.user_metadata?.role as Role) || "Operador"] || []),
           status: u.banned_until ? "inactive" : "active",
@@ -333,6 +342,7 @@ export default function UsuariosPage() {
       fullName: user.fullName,
       email: uType === "email" ? user.email : "",
       username: uType === "username" ? extractUsername(user.email) : "",
+      phone: user.phone || "",
       loginType: uType,
       role: user.role,
       modules: user.modules,
@@ -383,10 +393,11 @@ export default function UsuariosPage() {
             name: form.fullName,
             role: form.role,
             modules: form.modules,
+            phone: form.phone.trim(),
             ...(form.passwordEditable ? { password: form.tempPassword } : {}),
           }),
         });
-        setUsers((us) => us.map((u) => u.id === editingUser.id ? { ...u, fullName: form.fullName, role: form.role, modules: form.modules, status: form.status } : u));
+        setUsers((us) => us.map((u) => u.id === editingUser.id ? { ...u, fullName: form.fullName, phone: form.phone.trim(), role: form.role, modules: form.modules, status: form.status } : u));
       } else {
         // Create: register via backend → Supabase Auth
         const result = await apiFetch<{ user: SupabaseUser }>("/auth/register", {
@@ -399,6 +410,7 @@ export default function UsuariosPage() {
             role: form.role,
             modules: form.modules,
             isTemporaryPassword: !isUsername,
+            ...(form.phone.trim() ? { phone: form.phone.trim() } : {}),
           }),
         });
         const displayEmail = isUsername
@@ -408,6 +420,7 @@ export default function UsuariosPage() {
           id: result.user.id,
           fullName: form.fullName,
           email: displayEmail,
+          phone: form.phone.trim(),
           role: form.role,
           modules: form.modules,
           status: form.status,
@@ -459,6 +472,7 @@ export default function UsuariosPage() {
     if (role === "Coordinador") return { bg: "rgba(16,185,129,0.12)", border: "rgba(16,185,129,0.3)", color: STATE.success };
     if (role === "Coordinador Bvan") return { bg: "rgba(33,208,179,0.12)", border: "rgba(33,208,179,0.32)", color: BRAND.tealDark };
     if (role === "Coordinador Comité") return { bg: "rgba(139,92,246,0.12)", border: "rgba(139,92,246,0.3)", color: ACCENT.violet };
+    if (role === "Coordinador General") return { bg: "rgba(5,150,105,0.12)", border: "rgba(5,150,105,0.32)", color: STATE.successText };
     if (role === "Comité Transporte") return { bg: "rgba(31,205,255,0.12)", border: "rgba(31,205,255,0.32)", color: "#0891b2" };
     if (role === "Operador") return { bg: "rgba(59,130,246,0.12)", border: "rgba(59,130,246,0.3)", color: STATE.info };
     return { bg: "rgba(100,116,139,0.12)", border: "rgba(100,116,139,0.3)", color: SURFACE.textMuted };
@@ -1042,6 +1056,23 @@ export default function UsuariosPage() {
                       </>
                     )}
                   </div>
+                </div>
+                <div style={{ marginTop: "12px" }}>
+                  <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: pal.mTextMuted, marginBottom: "6px" }}>
+                    {t("Teléfono (WhatsApp)")}
+                  </label>
+                  <input
+                    type="tel"
+                    value={form.phone}
+                    onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                    placeholder="+56 9 1234 5678"
+                    style={{ ...selM, padding: "10px 14px", borderRadius: "10px", fontSize: "14px", outline: "none", width: "100%" }}
+                  />
+                  {form.role === "Coordinador General" && (
+                    <p style={{ fontSize: "11.5px", color: pal.mTextFaint, margin: "6px 0 0" }}>
+                      {t("Con rol Coordinador General, los pasajeros lo ven como contacto de WhatsApp.")}
+                    </p>
+                  )}
                 </div>
               </div>
 

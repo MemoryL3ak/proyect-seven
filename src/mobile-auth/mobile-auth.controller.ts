@@ -1,5 +1,5 @@
-import { Public } from '../auth/public.decorator';
-import { Body, Controller, Post } from '@nestjs/common';
+import { Protected, Public } from '../auth/public.decorator';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import {
   MobileAuthService,
   MobileLoginResult,
@@ -65,5 +65,17 @@ export class MobileAuthController {
   @Post('account/delete')
   deleteAccount(@Body() dto: MobileDeleteAccountDto) {
     return this.mobileAuthService.deleteAccount(dto);
+  }
+
+  /**
+   * Contacto del Coordinador General para los portales: nombre y teléfono
+   * de WhatsApp. Los pasajeros escriben ahí en vez de llamar al chofer.
+   * @Protected: la clase es pública (login), pero un teléfono no se entrega
+   * sin identidad; exige sesión de portal o de staff.
+   */
+  @Protected()
+  @Get('coordinator')
+  coordinator() {
+    return this.mobileAuthService.findGeneralCoordinator();
   }
 }

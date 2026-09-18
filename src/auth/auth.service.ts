@@ -32,6 +32,7 @@ export class AuthService {
     role,
     modules,
     isTemporaryPassword,
+    phone,
   }: CreateUserDto): Promise<{ user: User }> {
     const resolvedEmail = email
       ? String(email).trim().toLowerCase()
@@ -53,6 +54,7 @@ export class AuthService {
         // menú lateral le mostraba TODO el panel (sin módulos = acceso total).
         ...(Array.isArray(modules) && modules.length > 0 ? { modules } : {}),
         ...(username ? { username } : {}),
+        ...(phone?.trim() ? { phone: phone.trim() } : {}),
         forcePasswordChange: forceChange,
         force_password_change: forceChange,
       },
@@ -88,7 +90,7 @@ export class AuthService {
 
   async updateUser(
     id: string,
-    data: { name?: string; role?: string; password?: string; modules?: string[] },
+    data: { name?: string; role?: string; password?: string; modules?: string[]; phone?: string },
   ): Promise<{ user: User }> {
     const { data: result, error } = await this.supabase.auth.admin.updateUserById(id, {
       ...(data.password ? { password: data.password } : {}),
@@ -97,6 +99,8 @@ export class AuthService {
         ...(data.name ? { name: data.name } : {}),
         ...(data.role ? { role: data.role } : {}),
         ...(data.modules ? { modules: data.modules } : {}),
+        // Se guarda aunque venga vacio: es la forma de borrar un telefono.
+        ...(data.phone !== undefined ? { phone: data.phone.trim() } : {}),
         ...(data.password
           ? {
               forcePasswordChange: true,

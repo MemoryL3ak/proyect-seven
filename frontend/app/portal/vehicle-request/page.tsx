@@ -36,6 +36,7 @@ import {
   ChevronRightIcon,
   ArrowRightIcon,
   DownloadIcon,
+  MessageIcon,
 } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 import { buildDisciplineLabelMap, categoryLabel, genderLabel, normalizeCategory, normalizeGender } from "@/lib/discipline-filters";
@@ -60,7 +61,7 @@ import CredentialQrCard from "@/components/CredentialQrCard";
 import { buildCredentialHtml } from "@/lib/credential-template";
 import { downloadCredentialPdf, saveCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
 import { isAvailable as isNativeShell } from "@/lib/native-bridge";
-import { dialPhone, telHref } from "@/lib/dial";
+import { openExternal, whatsappHref } from "@/lib/external-link";
 import { clearPersistedTabs, persistTab, restoreOnReload, startTabHeartbeat } from "@/lib/portal-tab";
 import { claimPortalSession, clearPortalSession, ensurePortalIdentity, portalLogin, releasePortalSession, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
 import PortalSessionGuard from "@/components/PortalSessionGuard";
@@ -448,6 +449,17 @@ export default function VehicleRequestPortalPage() {
   const [foodMenus, setFoodMenus] = useState<FoodMenu[]>([]);
   const [trips, setTrips] = useState<Trip[]>([]);
   const [drivers, setDrivers] = useState<Record<string, Driver>>({});
+  // Coordinador General de la plataforma: es a quien el pasajero escribe por
+  // WhatsApp. Decisión de producto: no se llama directo al chofer.
+  const [coordinator, setCoordinator] = useState<{ name: string; phone: string } | null>(null);
+  // Mensaje prellenado: identifica al pasajero y el viaje. Va en español a
+  // propósito, lo lee el coordinador, no el pasajero.
+  const waCoordinator = (trip?: Trip | null) => {
+    if (!coordinator?.phone) return;
+    const who = athlete?.fullName ? `, soy ${athlete.fullName}` : "";
+    const ruta = trip ? ` sobre mi traslado ${trip.origin ?? "?"} → ${trip.destination ?? "?"}` : "";
+    openExternal(whatsappHref(coordinator.phone, `Hola ${coordinator.name}${who}. Tengo una consulta${ruta}.`));
+  };
   const [vehicles, setVehicles] = useState<Record<string, Vehicle>>({});
   const [accommodations, setAccommodations] = useState<Accommodation[]>([]);
   // Última posición del conductor por viaje activo (clave: trip.id).
@@ -584,7 +596,7 @@ export default function VehicleRequestPortalPage() {
   const ganttScrollKey = useRef("");
 
   const loadPortal = async (matchedAthlete: Athlete) => {
-    const [tripData, venueData, driverData, vehicleData, eventData, delegationData, accommodationData, foodLocData, foodMenuData] = await Promise.all([
+    const [tripData, venueData, driverData, vehicleData, eventData, delegationData, accommodationData, foodLocData, foodMenuData, coordinatorData] = await Promise.all([
       apiFetch<Trip[]>("/trips"),
       apiFetch<Venue[]>("/venues"),
       // /drivers une flota propia y choferes de proveedor: sin eso el pasajero
@@ -596,10 +608,13 @@ export default function VehicleRequestPortalPage() {
       apiFetch<Accommodation[]>("/accommodations").catch(() => [] as Accommodation[]),
       apiFetch<FoodLocation[]>("/food-locations").catch(() => [] as FoodLocation[]),
       apiFetch<FoodMenu[]>("/food-menus").catch(() => [] as FoodMenu[]),
+      // Sin coordinador configurado, el botón de WhatsApp simplemente no aparece.
+      apiFetch<{ name: string; phone: string } | null>("/m/auth/coordinator").catch(() => null),
     ]);
     // Alimentación visible para todos — sin filtrar por clientType
     setFoodLocations(foodLocData || []);
     setFoodMenus(foodMenuData || []);
+    setCoordinator(coordinatorData?.phone ? coordinatorData : null);
 
     setTrips(
       (tripData || [])
@@ -1962,13 +1977,13 @@ export default function VehicleRequestPortalPage() {
                             style={{ padding:"8px 14px",borderRadius:10,border:"none",cursor:"pointer",fontSize:12,fontWeight:700,background:`linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})`,color:BRAND.navyLight,whiteSpace:"nowrap" }}>
                             {t("Ver viaje")}
                           </button>
-                          {drv?.phone && (
-                            /* Dentro de la app el WebView no maneja tel:; el marcado va por el shell (lib/dial). */
-                            <a href={telHref(drv.phone)}
-                              onClick={(e) => { if (drv.phone && dialPhone(drv.phone)) e.preventDefault(); }}
-                              style={{ padding:"6px 14px",borderRadius:10,border:"1px solid rgba(52,243,198,0.4)",cursor:"pointer",fontSize:11.5,fontWeight:700,background:"rgba(33,208,179,0.12)",color:BRAND.tealLight,textAlign:"center",textDecoration:"none" }}>
-                              {t("Llamar")}
-                            </a>
+                          {/* Decisión de producto: no se llama al chofer; se escribe al Coordinador General. */}
+                          {coordinator?.phone && (
+                            <button type="button"
+                              onClick={() => waCoordinator(trip)}
+                              style={{ padding:"6px 14px",borderRadius:10,border:"1px solid rgba(52,243,198,0.4)",cursor:"pointer",fontSize:11.5,fontWeight:700,background:"rgba(33,208,179,0.12)",color:BRAND.tealLight,textAlign:"center",whiteSpace:"nowrap" }}>
+                              <MessageIcon size={12} className="inline mr-1" />{t("WhatsApp coordinador")}
+                            </button>
                           )}
                         </div>
                       </div>
@@ -2081,12 +2096,12 @@ export default function VehicleRequestPortalPage() {
 
                       {/* Acciones */}
                       <div style={{ display:"flex",gap:8,marginTop:2 }}>
-                        {drv?.phone && (
-                          <a href={telHref(drv.phone)}
-                            onClick={(e) => { if (drv.phone && dialPhone(drv.phone)) e.preventDefault(); }}
-                            style={{ flex:1,padding:"12px",borderRadius:12,textAlign:"center",textDecoration:"none",fontSize:13,fontWeight:700,background:`linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})`,color:BRAND.navyLight }}>
-                            <PhoneIcon size={11} className="inline mr-1" />{t("Llamar conductor")}
-                          </a>
+                        {coordinator?.phone && (
+                          <button type="button"
+                            onClick={() => waCoordinator(tm)}
+                            style={{ flex:1,padding:"12px",borderRadius:12,border:"none",cursor:"pointer",textAlign:"center",fontSize:13,fontWeight:700,background:`linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})`,color:BRAND.navyLight }}>
+                            <MessageIcon size={12} className="inline mr-1" />{t("WhatsApp coordinador")}
+                          </button>
                         )}
                         <button type="button" onClick={() => { setTripModal(null); setActiveTab("actividades"); setActividadesSubTab("en_curso"); }}
                           style={{ flex:1,padding:"12px",borderRadius:12,border:`1px solid ${SURFACE.border}`,background:SURFACE.card,color:SURFACE.textStrong,fontSize:13,fontWeight:700,cursor:"pointer" }}>
