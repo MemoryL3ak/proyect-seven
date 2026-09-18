@@ -224,10 +224,11 @@ const EMPTY_PROVIDER_FORM = { name: "", type: "", subtype: "", email: "", rut: "
 /**
  * Capacidad sugerida por tipo de vehículo. Es el valor que la app asumía
  * cuando la ficha no traía capacidad; ahora sólo se propone al elegir el tipo
- * y se puede corregir (un bus de 50 asientos dejaba de aparecer para 46 PAX).
+ * y se puede corregir: los buses de la flota son de 46, pero un bus de 50
+ * asientos dejaba de aparecer al pedir 46 pasajeros.
  */
 const CAPACIDAD_SUGERIDA: Record<string, number> = {
-  SEDAN: 4, SUV: 6, VAN_10: 10, VAN_15: 17, VAN_19: 19, MINIBUS: 33, BUS: 45,
+  SEDAN: 4, SUV: 6, VAN_10: 10, VAN_15: 17, VAN_19: 19, MINIBUS: 33, BUS: 46,
 };
 
 /** Capacidad guardada en la ficha, venga como número o como texto. */

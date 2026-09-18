@@ -277,7 +277,7 @@ const VEHICLE_TYPES = [
   { label: "Van 15-17 — 17 Pasajeros", value: "VAN_15", maxPax: 17 },
   { label: "Van 19 — 19 Pasajeros", value: "VAN_19", maxPax: 19 },
   { label: "Minibus — 33 Pasajeros", value: "MINIBUS", maxPax: 33 },
-  { label: "Bus — 45 Pasajeros", value: "BUS", maxPax: 45 },
+  { label: "Bus — 46 Pasajeros", value: "BUS", maxPax: 46 },
 ] as const;
 
 const statusMeta: Record<string, { label: string; tone: string; panel: string }> = {
