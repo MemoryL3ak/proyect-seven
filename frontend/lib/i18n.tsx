@@ -14,6 +14,12 @@ const translations: Record<Locale, Record<string, string>> = {
   es: {},
   en: {
     // Viajes de la delegación (portal del Jefe de Misión).
+    "Abiertas": "Open",
+    "Resueltas": "Resolved",
+    "Ninguna incidencia coincide con el filtro.": "No incident matches the filter.",
+    "Tipo de evento": "Event type",
+    "Todas las sedes": "All venues",
+    // Viajes de la delegación (portal del Jefe de Misión).
     "Tu presentación": "Your call time",
     // Viajes de la delegación (portal del Jefe de Misión).
     "Viajes de mi delegación": "My delegation's trips",
@@ -2557,6 +2563,12 @@ const translations: Record<Locale, Record<string, string>> = {
     "Panel Financiero": "Financial Panel",
   },
   pt: {
+    // Viajes de la delegación (portal del Jefe de Misión).
+    "Abiertas": "Abertas",
+    "Resueltas": "Resolvidas",
+    "Ninguna incidencia coincide con el filtro.": "Nenhum incidente corresponde ao filtro.",
+    "Tipo de evento": "Tipo de evento",
+    "Todas las sedes": "Todas as sedes",
     // Viajes de la delegación (portal del Jefe de Misión).
     "Tu presentación": "Sua apresentação",
     // Viajes de la delegación (portal del Jefe de Misión).

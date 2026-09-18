@@ -69,6 +69,7 @@ import MissionCalendar from "@/components/portal/MissionCalendar";
 import MissionFleet from "@/components/portal/MissionFleet";
 import MissionIncidents from "@/components/portal/MissionIncidents";
 import MissionTrips from "@/components/portal/MissionTrips";
+import { ChipFilter } from "@/components/ui/FilterControls";
 import { openExternal, whatsappHref } from "@/lib/external-link";
 import EmergencyNumbersSection from "@/components/EmergencyNumbersSection";
 import PushTokenSync from "@/components/PushTokenSync";
@@ -2315,21 +2316,25 @@ export default function UserPortalPage() {
                 {!isTA && (
                 <div style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,padding:"12px 14px" }}>
                   <p style={{ fontSize:10,fontWeight:800,letterSpacing:"0.14em",textTransform:"uppercase",color:SURFACE.textFaint,margin:"0 0 8px" }}>Filtros</p>
-                  <label style={{ fontSize:11,fontWeight:600,color:SURFACE.textMuted }}>Tipo de evento</label>
-                  <select value={calTypeFilter} onChange={(e)=>setCalTypeFilter(e.target.value)}
-                    style={{ width:"100%",marginTop:4,padding:"7px 10px",borderRadius:8,border:`1px solid ${SURFACE.border}`,fontSize:12,color:SURFACE.text,background:SURFACE.card }}>
-                    <option value="">Todos</option>
-                    {(Object.keys(TYPE_CFG) as CalType[]).map(tp => <option key={tp} value={tp}>{TYPE_CFG[tp].label}</option>)}
-                  </select>
+                  <label style={{ fontSize:11,fontWeight:600,color:SURFACE.textMuted }}>{t("Tipo de evento")}</label>
+                  <ChipFilter
+                    style={{ marginTop:6 }}
+                    value={calTypeFilter}
+                    onChange={setCalTypeFilter}
+                    allLabel={t("Todos")}
+                    options={(Object.keys(TYPE_CFG) as CalType[]).map(tp => ({ value: tp, label: TYPE_CFG[tp].label }))}
+                  />
                   {/* TA: sin filtro de disciplina — el calendario queda fijo en la suya */}
                   {!isTA && discOptions.length > 0 && (
                     <>
-                      <label style={{ fontSize:11,fontWeight:600,color:SURFACE.textMuted,display:"block",marginTop:10 }}>Disciplina</label>
-                      <select value={calDiscFilter} onChange={(e)=>setCalDiscFilter(e.target.value)}
-                        style={{ width:"100%",marginTop:4,padding:"7px 10px",borderRadius:8,border:`1px solid ${SURFACE.border}`,fontSize:12,color:SURFACE.text,background:SURFACE.card }}>
-                        <option value="">Todas las disciplinas</option>
-                        {discOptions.map(([id,name]) => <option key={id} value={id}>{name}</option>)}
-                      </select>
+                      <label style={{ fontSize:11,fontWeight:600,color:SURFACE.textMuted,display:"block",marginTop:10 }}>{t("Disciplina")}</label>
+                      <ChipFilter
+                        style={{ marginTop:6 }}
+                        value={calDiscFilter}
+                        onChange={setCalDiscFilter}
+                        allLabel={t("Todas")}
+                        options={discOptions.map(([id,name]) => ({ value: id, label: name }))}
+                      />
                     </>
                   )}
                   {(calTypeFilter || calDiscFilter || calSelectedDay) && (
@@ -2613,20 +2618,22 @@ export default function UserPortalPage() {
                   })}
                 </div>
                 {(disciplineOpts.length > 0 || venueOpts.length > 0) && (
-                  <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:6 }}>
+                  <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
                     {disciplineOpts.length > 0 && (
-                      <select value={premDisciplineFilter} onChange={e => setPremDisciplineFilter(e.target.value)}
-                        style={{ padding:"8px 10px",borderRadius:10,border:`1px solid ${SURFACE.border}`,fontSize:12,background:SURFACE.bg,color:SURFACE.text,outline:"none",fontWeight:500 }}>
-                        <option value="">Todas las disciplinas</option>
-                        {disciplineOpts.map(d => <option key={d} value={d}>{d}</option>)}
-                      </select>
+                      <ChipFilter
+                        value={premDisciplineFilter}
+                        onChange={setPremDisciplineFilter}
+                        allLabel={t("Todas las disciplinas")}
+                        options={disciplineOpts.map(d => ({ value: d, label: d }))}
+                      />
                     )}
                     {venueOpts.length > 0 && (
-                      <select value={premVenueFilter} onChange={e => setPremVenueFilter(e.target.value)}
-                        style={{ padding:"8px 10px",borderRadius:10,border:`1px solid ${SURFACE.border}`,fontSize:12,background:SURFACE.bg,color:SURFACE.text,outline:"none",fontWeight:500 }}>
-                        <option value="">Todas las sedes</option>
-                        {venueOpts.map(v => <option key={v} value={v}>{v}</option>)}
-                      </select>
+                      <ChipFilter
+                        value={premVenueFilter}
+                        onChange={setPremVenueFilter}
+                        allLabel={t("Todas las sedes")}
+                        options={venueOpts.map(v => ({ value: v, label: v }))}
+                      />
                     )}
                   </div>
                 )}

@@ -58,6 +58,7 @@ import { claimPortalSession, clearPortalSession, ensurePortalIdentity, getStored
 import { dlog } from "@/lib/native-debug";
 import PortalSessionGuard from "@/components/PortalSessionGuard";
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
+import { ChipFilter } from "@/components/ui/FilterControls";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 
 const TripMap = dynamic(() => import("@/components/TripMap"), {
@@ -1976,13 +1977,15 @@ export default function DriverPortalPage() {
                   </div>
                 </div>
                 <div className="dc-trips-filters" style={{ display:"flex",flexWrap:"wrap",gap:"8px",alignItems:"center" }}>
-                  <label style={{ display:"flex",alignItems:"center",gap:"8px",fontSize:"13px",color:SURFACE.textMuted }}>
-                    {t("Tipo")}
-                    <select className="input h-9 min-w-[140px] pr-10 !text-[12px] !leading-tight !pt-[0.4rem] !pb-[0.2rem]" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
-                      <option value="all">{t("Todos")}</option>
-                      {typeOptions.map((v) => <option key={v} value={v}>{v}</option>)}
-                    </select>
-                  </label>
+                  <div style={{ width:"100%" }}>
+                    <span style={{ display:"block",fontSize:"11px",fontWeight:700,color:SURFACE.textMuted,marginBottom:6 }}>{t("Tipo")}</span>
+                    <ChipFilter
+                      value={typeFilter === "all" ? "" : typeFilter}
+                      onChange={(value) => setTypeFilter(value || "all")}
+                      allLabel={t("Todos")}
+                      options={typeOptions.map((v) => ({ value: v, label: v }))}
+                    />
+                  </div>
                   <label style={{ display:"flex",alignItems:"center",gap:"8px",fontSize:"13px",color:SURFACE.textMuted }}>
                     {t("Destino")}
                     <input className="input h-9" value={destinationFilter} onChange={(e) => setDestinationFilter(e.target.value)} placeholder={t("Filtrar por destino")} />
@@ -2335,14 +2338,15 @@ export default function DriverPortalPage() {
                             style={{ flex:1,minWidth:0,padding:"7px 6px",borderRadius:8,border:`1px solid ${SURFACE.border}`,fontSize:12,color:SURFACE.text,background:SURFACE.bg,boxSizing:"border-box" }} />
                         </label>
                       </div>
-                      <label style={{ display:"flex",alignItems:"center",gap:6 }}>
-                        <span style={{ fontSize:11,fontWeight:700,color:SURFACE.textMuted,flexShrink:0 }}>Tipo</span>
-                        <select value={reportTypeFilter} onChange={(e) => setReportTypeFilter(e.target.value)}
-                          style={{ flex:1,padding:"7px 10px",borderRadius:8,border:`1px solid ${SURFACE.border}`,fontSize:12,color:SURFACE.text,background:SURFACE.bg,boxSizing:"border-box" }}>
-                          <option value="all">Todos</option>
-                          {tripTypes.map((tt) => <option key={tt} value={tt}>{tt}</option>)}
-                        </select>
-                      </label>
+                      <div>
+                        <span style={{ display:"block",fontSize:11,fontWeight:700,color:SURFACE.textMuted,marginBottom:6 }}>{t("Tipo")}</span>
+                        <ChipFilter
+                          value={reportTypeFilter === "all" ? "" : reportTypeFilter}
+                          onChange={(value) => setReportTypeFilter(value || "all")}
+                          allLabel={t("Todos")}
+                          options={tripTypes.map((tt) => ({ value: tt, label: tt }))}
+                        />
+                      </div>
                       {hasActiveFilters && (
                         <button type="button" onClick={() => { setReportDateFrom(""); setReportDateTo(""); setReportTypeFilter("all"); setReportRatingFilter("all"); }}
                           style={{ fontSize:12,color:STATE.danger,background:"none",border:"none",cursor:"pointer",fontWeight:600,padding:0,alignSelf:"flex-end" }}>

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { PlusIcon, SirenIcon } from "@/components/ui/Icons";
+import { SegmentedFilter } from "@/components/ui/FilterControls";
 import { apiFetch } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { BRAND, STATE, SURFACE } from "@/lib/design";
@@ -97,6 +98,7 @@ export default function MissionIncidents({
   const [form, setForm] = useState(emptyForm());
   const [saving, setSaving] = useState(false);
   const [resolving, setResolving] = useState<{ id: string; text: string } | null>(null);
+  const [filtro, setFiltro] = useState<"ABIERTAS" | "RESUELTAS" | "TODAS">("ABIERTAS");
 
   const load = useCallback(async () => {
     try {
@@ -152,7 +154,11 @@ export default function MissionIncidents({
     }
   };
 
-  const open = incidents.filter((i) => i.status === "ABIERTA" || i.status === "EN_CURSO");
+  const abierta = (i: Incident) => i.status === "ABIERTA" || i.status === "EN_CURSO";
+  const open = incidents.filter(abierta);
+  const visibles = incidents.filter((i) =>
+    filtro === "ABIERTAS" ? abierta(i) : filtro === "RESUELTAS" ? !abierta(i) : true,
+  );
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -162,6 +168,18 @@ export default function MissionIncidents({
         <p style={{ fontSize: 12, color: SURFACE.textMuted, margin: "3px 0 0" }}>
           {open.length} {t("abierta(s)")} · {incidents.length} {t("en total")}
         </p>
+        {incidents.length > 0 && (
+          <SegmentedFilter
+            style={{ marginTop: 10 }}
+            value={filtro}
+            onChange={(value) => setFiltro(value as "ABIERTAS" | "RESUELTAS" | "TODAS")}
+            options={[
+              { value: "ABIERTAS", label: t("Abiertas"), count: open.length },
+              { value: "RESUELTAS", label: t("Resueltas"), count: incidents.length - open.length },
+              { value: "TODAS", label: t("Todas") },
+            ]}
+          />
+        )}
       </div>
 
       {error && (
@@ -222,13 +240,17 @@ export default function MissionIncidents({
 
       {loading ? (
         <p style={{ fontSize: 13, color: SURFACE.textFaint, textAlign: "center", padding: 20 }}>{t("Cargando…")}</p>
-      ) : incidents.length === 0 ? (
+      ) : visibles.length === 0 ? (
         <div style={{ padding: 20, textAlign: "center", background: SURFACE.card, borderRadius: 14, border: `1px solid ${SURFACE.border}` }}>
           <SirenIcon size={22} color={SURFACE.textFaint} />
-          <p style={{ fontSize: 13, color: SURFACE.textFaint, margin: "6px 0 0" }}>{t("Sin incidencias reportadas para tu delegación.")}</p>
+          <p style={{ fontSize: 13, color: SURFACE.textFaint, margin: "6px 0 0" }}>
+            {incidents.length === 0
+              ? t("Sin incidencias reportadas para tu delegación.")
+              : t("Ninguna incidencia coincide con el filtro.")}
+          </p>
         </div>
       ) : (
-        incidents.map((i) => {
+        visibles.map((i) => {
           const isOpen = i.status === "ABIERTA" || i.status === "EN_CURSO";
           return (
             <div key={i.id} style={{ background: SURFACE.card, borderRadius: 12, border: `1px solid ${SURFACE.border}`, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
