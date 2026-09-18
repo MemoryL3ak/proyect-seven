@@ -57,6 +57,34 @@ function createCarIconUrl() {
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
+/**
+ * Amplía el encuadre para que el conductor entre en pantalla.
+ *
+ * El DirectionsRenderer ajusta el mapa a origen-destino, así que un conductor
+ * fuera de ese rectángulo quedaba dibujado pero invisible: el pasajero veía el
+ * mapa sin coche y concluía que no se estaba reportando. No hace falta que esté
+ * lejos — basta con que venga acercándose por fuera del tramo.
+ *
+ * Espera al evento `idle` cuando el mapa todavía no tiene límites: al abrir el
+ * viaje, la ruta se encuadra de forma asíncrona y llamarlo antes no hacía nada.
+ */
+function asegurarConductorVisible(map: any, pos: LatLng) {
+  const google = (window as any).google;
+  if (!google?.maps) return;
+
+  const ampliar = () => {
+    const bounds = map.getBounds();
+    if (!bounds || bounds.contains(pos)) return;
+    const ampliado = new google.maps.LatLngBounds();
+    ampliado.union(bounds);
+    ampliado.extend(pos);
+    map.fitBounds(ampliado, 48);
+  };
+
+  if (map.getBounds()) ampliar();
+  google.maps.event.addListenerOnce(map, "idle", ampliar);
+}
+
 function loadGoogleMaps(): Promise<void> {
   return new Promise((resolve, reject) => {
     if (typeof window === "undefined") return;
@@ -159,6 +187,10 @@ function MapCanvas({
             if (cancelled) return;
             if (status === "OK") {
               renderer.setDirections(result);
+              // El renderer reencuadra sobre la ruta y puede dejar al conductor
+              // fuera: se comprueba en cuanto el mapa termine de moverse.
+              const pos = driverPositionRef.current;
+              if (pos) asegurarConductorVisible(map, pos);
             } else {
               const geocoder = new google.maps.Geocoder();
               geocoder.geocode({ address: origin }, (results: any, st: string) => {
@@ -209,12 +241,14 @@ function MapCanvas({
     const google = (window as any).google;
     if (!google?.maps) return;
 
+    const map = mapRef.current;
+
     if (driverMarkerRef.current) {
       driverMarkerRef.current.setPosition(driverPosition);
     } else {
       driverMarkerRef.current = new google.maps.Marker({
         position: driverPosition,
-        map: mapRef.current,
+        map,
         icon: {
           url: createCarIconUrl(),
           scaledSize: new google.maps.Size(56, 56),
@@ -224,6 +258,8 @@ function MapCanvas({
         zIndex: 10,
       });
     }
+
+    asegurarConductorVisible(map, driverPosition);
   }, [driverPosition]);
 
   // Ruta en vivo conductor → punto de recogida mientras va a buscar al
