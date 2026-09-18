@@ -7,6 +7,7 @@
 import { ConfigService } from '@nestjs/config';
 import { createClient } from '@supabase/supabase-js';
 import { DataSource } from 'typeorm';
+import { delegationHotelsSql } from '../shared/delegation-hotels';
 import { CreateAccommodationDto } from './dto/create-accommodation.dto';
 import { UpdateAccommodationDto } from './dto/update-accommodation.dto';
 import { Accommodation } from './entities/accommodation.entity';
@@ -465,14 +466,20 @@ export class AccommodationsService {
     }
   }
 
-  async findAll() {
+  /**
+   * @param delegationId Jefe de Misión: sólo los hoteles donde se aloja su
+   * delegación; el resto de la operación ve todos.
+   */
+  async findAll(delegationId?: string | null) {
     try {
       const rows = (await this.dataSource.query(
         `
         select *
         from logistics.accommodations
+        where ($1::uuid is null or id in ${delegationHotelsSql('$1')})
         order by created_at desc
       `,
+        [delegationId ?? null],
       )) as AccommodationRow[];
       return rows.map((row) => this.toEntity(row));
     } catch (error) {

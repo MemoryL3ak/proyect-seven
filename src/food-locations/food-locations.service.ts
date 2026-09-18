@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { DataSource } from 'typeorm';
+import { delegationHotelsSql } from '../shared/delegation-hotels';
 import { CreateFoodLocationDto } from './dto/create-food-location.dto';
 import { UpdateFoodLocationDto } from './dto/update-food-location.dto';
 import { FoodLocation } from './entities/food-location.entity';
@@ -71,16 +72,7 @@ export class FoodLocationsService {
         `select * from logistics.food_locations
          where ($1::uuid is null
                 or accommodation_id is null
-                or accommodation_id in (
-                  select accommodation_id from core.delegation_accommodations where delegation_id = $1
-                  union
-                  select hotel_accommodation_id from core.athletes
-                   where delegation_id = $1 and hotel_accommodation_id is not null
-                     and status is distinct from 'DELETED'
-                  union
-                  select ha.hotel_id from logistics.hotel_assignments ha
-                    join core.athletes a on a.id = ha.participant_id
-                   where a.delegation_id = $1))
+                or accommodation_id in ${delegationHotelsSql('$1')})
          order by created_at desc`,
         [delegationId ?? null],
       );
