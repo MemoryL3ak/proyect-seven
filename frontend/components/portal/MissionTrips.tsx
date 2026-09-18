@@ -5,6 +5,7 @@ import { CalendarIcon, CarIcon, ChevronDownIcon, UsersIcon } from "@/components/
 import { apiFetch } from "@/lib/api";
 import { BRAND, SURFACE, tripStatusMeta } from "@/lib/design";
 import { buildDisciplineLabelMap, type DisciplineLike } from "@/lib/discipline-filters";
+import { ChipFilter, SegmentedFilter } from "@/components/ui/FilterControls";
 import { useI18n } from "@/lib/i18n";
 
 /**
@@ -56,36 +57,6 @@ const chip = (bg: string, color: string): React.CSSProperties => ({
   background: bg,
   color,
   whiteSpace: "nowrap",
-});
-
-/** Ficha de filtro: activa en teal, inactiva en gris del sistema de diseño. */
-const ficha = (activa: boolean): React.CSSProperties => ({
-  padding: "6px 12px",
-  borderRadius: 999,
-  fontSize: 12,
-  fontWeight: 600,
-  whiteSpace: "nowrap",
-  cursor: "pointer",
-  border: `1px solid ${activa ? BRAND.teal : SURFACE.border}`,
-  background: activa ? BRAND.teal : SURFACE.card,
-  color: activa ? "#fff" : SURFACE.textStrong,
-  transition: "background 120ms ease, border-color 120ms ease",
-});
-
-/** Segmento del control de estado (un solo bloque con tres opciones). */
-const segmento = (activo: boolean): React.CSSProperties => ({
-  flex: 1,
-  padding: "7px 4px",
-  fontSize: 12,
-  fontWeight: 700,
-  textAlign: "center",
-  cursor: "pointer",
-  border: "none",
-  borderRadius: 8,
-  background: activo ? SURFACE.card : "transparent",
-  color: activo ? BRAND.tealInk : SURFACE.textMuted,
-  boxShadow: activo ? "0 1px 3px rgba(15,23,42,0.12)" : "none",
-  transition: "background 120ms ease, color 120ms ease",
 });
 
 export default function MissionTrips({
@@ -187,10 +158,6 @@ export default function MissionTrips({
 
   return (
     <div style={{ background: SURFACE.card, borderRadius: 14, border: `1px solid ${SURFACE.border}`, overflow: "hidden" }}>
-      <style dangerouslySetInnerHTML={{ __html: `
-        .mt-fichas{scrollbar-width:none;-ms-overflow-style:none}
-        .mt-fichas::-webkit-scrollbar{display:none}
-      ` }} />
       <div style={{ padding: "12px 14px", borderBottom: `1px solid ${SURFACE.borderMuted}` }}>
         <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: BRAND.teal, margin: 0 }}>
           {t("Viajes de mi delegación")}
@@ -199,31 +166,25 @@ export default function MissionTrips({
           {visibles.length} {visibles.length === 1 ? t("traslado") : t("traslados")}
           {estadoFiltro === "ACTIVOS" ? ` · ${t("por realizar")}` : ""}
         </p>
-        {/* Estado: control segmentado, como el conmutador de la cabecera. */}
-        <div style={{ display: "flex", gap: 2, marginTop: 10, padding: 3, borderRadius: 10, background: SURFACE.bg, border: `1px solid ${SURFACE.borderMuted}` }}>
-          {([
-            ["ACTIVOS", t("Por realizar")],
-            ["TERMINADOS", t("Terminados")],
-            ["TODOS", t("Todos")],
-          ] as Array<[string, string]>).map(([value, label]) => (
-            <button key={value} type="button" style={segmento(estadoFiltro === value)} onClick={() => setEstadoFiltro(value)}>
-              {label}
-            </button>
-          ))}
-        </div>
-
+        <SegmentedFilter
+          style={{ marginTop: 10 }}
+          value={estadoFiltro}
+          onChange={setEstadoFiltro}
+          options={[
+            { value: "ACTIVOS", label: t("Por realizar") },
+            { value: "TERMINADOS", label: t("Terminados") },
+            { value: "TODOS", label: t("Todos") },
+          ]}
+        />
         {/* Disciplina: fichas desplazables, sólo si hay más de una. */}
         {opcionesDisciplina.length > 1 && (
-          <div className="mt-fichas" style={{ display: "flex", gap: 6, marginTop: 8, overflowX: "auto", paddingBottom: 2 }}>
-            <button type="button" style={ficha(disciplinaFiltro === "")} onClick={() => setDisciplinaFiltro("")}>
-              {t("Todas")}
-            </button>
-            {opcionesDisciplina.map(([value, { label, total }]) => (
-              <button key={value} type="button" style={ficha(disciplinaFiltro === value)} onClick={() => setDisciplinaFiltro(value)}>
-                {label} · {total}
-              </button>
-            ))}
-          </div>
+          <ChipFilter
+            style={{ marginTop: 8 }}
+            value={disciplinaFiltro}
+            onChange={setDisciplinaFiltro}
+            allLabel={t("Todas")}
+            options={opcionesDisciplina.map(([value, { label, total }]) => ({ value, label, count: total }))}
+          />
         )}
       </div>
 
