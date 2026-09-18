@@ -307,7 +307,7 @@ export default function AssistanceChat({
           }}
         >
           {/* Header */}
-          <div style={{ padding: "14px 18px", borderBottom: "1px solid #e2e8f0", background: `linear-gradient(135deg, ${BRAND.teal} 0%, #14b8a6 100%)`, color: SURFACE.card }}>
+          <div style={{ padding: "14px 18px", borderBottom: `1px solid ${SURFACE.border}`, background: `linear-gradient(135deg, ${BRAND.teal} 0%, #14b8a6 100%)`, color: SURFACE.card }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
                 <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", opacity: 0.9 }}>{t("Asistencia")}</p>
@@ -339,7 +339,7 @@ export default function AssistanceChat({
                 ) : chats.map((c) => {
                   const meta = STATUS_LABEL[c.status] || STATUS_LABEL.OPEN;
                   return (
-                    <button key={c.id} type="button" onClick={() => openChat(c.id)} style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", marginBottom: "8px", background: SURFACE.bg, border: "1px solid #e2e8f0", borderRadius: "10px", cursor: "pointer" }}>
+                    <button key={c.id} type="button" onClick={() => openChat(c.id)} style={{ display: "block", width: "100%", textAlign: "left", padding: "10px 12px", marginBottom: "8px", background: SURFACE.bg, border: `1px solid ${SURFACE.border}`, borderRadius: "10px", cursor: "pointer" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
                         <p style={{ fontSize: "13px", fontWeight: 700, color: SURFACE.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "220px" }}>
                           {c.subject || t(CATEGORY_LABELS[c.category] || c.category)}
@@ -352,7 +352,7 @@ export default function AssistanceChat({
                   );
                 })}
               </div>
-              <div style={{ padding: "10px 14px", borderTop: "1px solid #e2e8f0" }}>
+              <div style={{ padding: "10px 14px", borderTop: `1px solid ${SURFACE.border}` }}>
                 <button type="button" onClick={() => setView("new")} style={{ width: "100%", padding: "12px", borderRadius: "10px", background: BRAND.teal, color: SURFACE.card, border: "none", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
                   + {t("Abrir nueva incidencia")}
                 </button>
@@ -364,7 +364,7 @@ export default function AssistanceChat({
             <div style={{ padding: "14px", display: "flex", flexDirection: "column", gap: "10px", flex: 1 }}>
               <div>
                 <label style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: SURFACE.textMuted }}>{t("Categoría")}</label>
-                <select value={newCategory} onChange={(e) => setNewCategory(e.target.value)} style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "13px", marginTop: "4px" }}>
+                <select value={newCategory} onChange={(e) => setNewCategory(e.target.value)} style={{ width: "100%", padding: "10px", borderRadius: "8px", border: `1px solid ${SURFACE.border}`, fontSize: "13px", marginTop: "4px" }}>
                   {categoriesFor(originType).map((c) => (<option key={c.value} value={c.value}>{t(c.label)}</option>))}
                 </select>
               </div>
@@ -386,11 +386,11 @@ export default function AssistanceChat({
               )}
               <div>
                 <label style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: SURFACE.textMuted }}>{t("Asunto (opcional)")}</label>
-                <input value={newSubject} onChange={(e) => setNewSubject(e.target.value)} placeholder={t("Ej: Perdí mi acreditación")} style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "13px", marginTop: "4px" }} />
+                <input value={newSubject} onChange={(e) => setNewSubject(e.target.value)} placeholder={t("Ej: Perdí mi acreditación")} style={{ width: "100%", padding: "10px", borderRadius: "8px", border: `1px solid ${SURFACE.border}`, fontSize: "13px", marginTop: "4px" }} />
               </div>
               <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
                 <label style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: SURFACE.textMuted }}>{t("Describe la situación")}</label>
-                <textarea value={newMessage} onChange={(e) => setNewMessage(e.target.value)} rows={4} style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "13px", marginTop: "4px", resize: "none", flex: 1 }} />
+                <textarea value={newMessage} onChange={(e) => setNewMessage(e.target.value)} rows={4} style={{ width: "100%", padding: "10px", borderRadius: "8px", border: `1px solid ${SURFACE.border}`, fontSize: "13px", marginTop: "4px", resize: "none", flex: 1 }} />
               </div>
               <button type="button" onClick={createChat} disabled={creating || !newMessage.trim()} style={{ padding: "12px", borderRadius: "10px", background: creating ? SURFACE.borderStrong : BRAND.teal, color: SURFACE.card, border: "none", fontSize: "13px", fontWeight: 700, cursor: creating ? "not-allowed" : "pointer" }}>
                 {creating ? t("Abriendo...") : t("Abrir incidencia")}
@@ -400,7 +400,7 @@ export default function AssistanceChat({
 
           {view === "chat" && active && (
             <>
-              <div style={{ padding: "8px 14px", background: SURFACE.bg, borderBottom: "1px solid #e2e8f0" }}>
+              <div style={{ padding: "8px 14px", background: SURFACE.bg, borderBottom: `1px solid ${SURFACE.border}` }}>
                 <span style={{ fontSize: "10px", fontWeight: 700, padding: "2px 8px", borderRadius: "99px", background: `${(STATUS_LABEL[active.status] || STATUS_LABEL.OPEN).color}15`, color: (STATUS_LABEL[active.status] || STATUS_LABEL.OPEN).color }}>
                   {t((STATUS_LABEL[active.status] || STATUS_LABEL.OPEN).label)}
                 </span>
@@ -419,7 +419,7 @@ export default function AssistanceChat({
                         maxWidth: "76%",
                         background: mine ? BRAND.teal : SURFACE.card,
                         color: mine ? SURFACE.card : SURFACE.text,
-                        border: mine ? "none" : "1px solid #e2e8f0",
+                        border: mine ? "none" : `1px solid ${SURFACE.border}`,
                         padding: "8px 12px",
                         borderRadius: "12px",
                         fontSize: "13px",
@@ -453,14 +453,14 @@ export default function AssistanceChat({
                   {reportNotice}
                 </div>
               )}
-              <div style={{ padding: "10px 14px", borderTop: "1px solid #e2e8f0", background: SURFACE.card, display: "flex", gap: "6px" }}>
+              <div style={{ padding: "10px 14px", borderTop: `1px solid ${SURFACE.border}`, background: SURFACE.card, display: "flex", gap: "6px" }}>
                 <textarea
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void sendMessage(); } }}
                   rows={2}
                   placeholder={t("Escribe un mensaje...")}
-                  style={{ flex: 1, padding: "8px 10px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "13px", resize: "none", outline: "none" }}
+                  style={{ flex: 1, padding: "8px 10px", borderRadius: "8px", border: `1px solid ${SURFACE.border}`, fontSize: "13px", resize: "none", outline: "none" }}
                 />
                 <button type="button" onClick={sendMessage} disabled={sending || !draft.trim()} style={{ padding: "8px 14px", borderRadius: "8px", background: sending ? SURFACE.borderStrong : BRAND.teal, color: SURFACE.card, border: "none", fontSize: "12px", fontWeight: 700, cursor: sending ? "not-allowed" : "pointer" }}>
                   {t("Enviar")}
@@ -494,7 +494,7 @@ export default function AssistanceChat({
               id="assist-report-reason"
               value={reportReason}
               onChange={(e) => setReportReason(e.target.value)}
-              style={{ width: "100%", padding: "10px 12px", borderRadius: "12px", border: "1px solid #e2e8f0", background: SURFACE.bg, color: SURFACE.text, fontSize: "13px", marginBottom: "12px", fontFamily: "inherit" }}
+              style={{ width: "100%", padding: "10px 12px", borderRadius: "12px", border: `1px solid ${SURFACE.border}`, background: SURFACE.bg, color: SURFACE.text, fontSize: "13px", marginBottom: "12px", fontFamily: "inherit" }}
             >
               {REPORT_REASONS.map((r) => (<option key={r.value} value={r.value}>{t(r.label)}</option>))}
             </select>
@@ -507,12 +507,12 @@ export default function AssistanceChat({
               maxLength={500}
               rows={3}
               placeholder={t("Cuéntanos qué ocurrió")}
-              style={{ width: "100%", padding: "10px 12px", borderRadius: "12px", border: "1px solid #e2e8f0", background: SURFACE.bg, color: SURFACE.text, fontSize: "13px", marginBottom: "12px", resize: "vertical", fontFamily: "inherit" }}
+              style={{ width: "100%", padding: "10px 12px", borderRadius: "12px", border: `1px solid ${SURFACE.border}`, background: SURFACE.bg, color: SURFACE.text, fontSize: "13px", marginBottom: "12px", resize: "vertical", fontFamily: "inherit" }}
             />
 
             <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
               <button type="button" disabled={reportSending} onClick={() => setReportMsg(null)}
-                style={{ borderRadius: "12px", padding: "10px 16px", fontSize: "13px", fontWeight: 700, border: "1px solid #e2e8f0", background: SURFACE.card, color: SURFACE.textSecondary, cursor: reportSending ? "not-allowed" : "pointer", opacity: reportSending ? 0.6 : 1 }}>
+                style={{ borderRadius: "12px", padding: "10px 16px", fontSize: "13px", fontWeight: 700, border: `1px solid ${SURFACE.border}`, background: SURFACE.card, color: SURFACE.textSecondary, cursor: reportSending ? "not-allowed" : "pointer", opacity: reportSending ? 0.6 : 1 }}>
                 {t("Cancelar")}
               </button>
               <button type="button" disabled={reportSending} onClick={submitReport}

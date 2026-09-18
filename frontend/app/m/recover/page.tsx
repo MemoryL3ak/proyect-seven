@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { mobileRecover } from "@/lib/api";
-import { SURFACE } from "@/lib/design";
+import { SURFACE, BRAND } from "@/lib/design";
 
 export default function MobileRecoverPage() {
   const router = useRouter();
@@ -170,7 +170,7 @@ export default function MobileRecoverPage() {
                 padding: "16px",
                 borderRadius: "12px",
                 border: "none",
-                background: "linear-gradient(135deg, #34F3C6 0%, #21D0B3 50%, #15B09A 100%)",
+                background: `linear-gradient(135deg, ${BRAND.tealLight} 0%, ${BRAND.teal} 50%, #15B09A 100%)`,
                 color: "#0d1b3e",
                 fontSize: "16px",
                 fontWeight: 700,

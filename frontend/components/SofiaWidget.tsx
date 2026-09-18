@@ -453,7 +453,7 @@ function LiveBadge({ connected }: { connected: boolean }) {
           height: 6,
           borderRadius: "50%",
           background: connected ? BRAND.teal : SURFACE.textMuted,
-          boxShadow: connected ? "0 0 6px #21D0B3" : "none",
+          boxShadow: connected ? `0 0 6px ${BRAND.teal}` : "none",
         }}
       />
       {connected ? "EN VIVO" : "Conectando…"}
@@ -717,7 +717,7 @@ function PresencePanel({ eventId }: { eventId: string | null | undefined }) {
                   borderRadius: "50%",
                   flexShrink: 0,
                   background: d.online ? BRAND.teal : SURFACE.textMuted,
-                  boxShadow: d.online ? "0 0 6px #21D0B3" : "none",
+                  boxShadow: d.online ? `0 0 6px ${BRAND.teal}` : "none",
                 }}
               />
               <span style={{ fontSize: 11.5, color: "rgba(255,255,255,0.85)", fontWeight: 600 }}>{d.fullName}</span>
@@ -1068,7 +1068,7 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
             padding: "14px 18px",
             borderRadius: 16,
             background: SURFACE.card,
-            border: "1px solid #e2e8f0",
+            border: `1px solid ${SURFACE.border}`,
             boxShadow: "0 8px 32px rgba(15,23,42,0.15), 0 0 0 1px rgba(33,208,179,0.1)",
             cursor: "pointer",
             animation: "sofiaToastIn 0.5s cubic-bezier(0.16,1,0.3,1) both",
@@ -1165,8 +1165,8 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
             width: FAB_SIZE,
             height: FAB_SIZE,
             borderRadius: "50%",
-            background: open ? "linear-gradient(135deg, #e2e8f0, #f1f5f9)" : BRAND.charcoal,
-            border: open ? "1px solid #cbd5e1" : "none",
+            background: open ? `linear-gradient(135deg, ${SURFACE.border}, ${SURFACE.borderMuted})` : BRAND.charcoal,
+            border: open ? `1px solid ${SURFACE.borderStrong}` : "none",
             cursor: "grab",
             display: "flex",
             flexDirection: "column",
@@ -1600,7 +1600,7 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
                 style={{
                   padding: "10px 18px",
                   borderRadius: 12,
-                  background: loading ? "rgba(33,208,179,0.2)" : "linear-gradient(135deg, #21D0B3, #14AE98)",
+                  background: loading ? "rgba(33,208,179,0.2)" : `linear-gradient(135deg, ${BRAND.teal}, #14AE98)`,
                   color: loading ? BRAND.teal : SURFACE.card,
                   fontWeight: 700,
                   fontSize: 13,

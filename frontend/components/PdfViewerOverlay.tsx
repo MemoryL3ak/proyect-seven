@@ -41,7 +41,7 @@ export default function PdfViewerOverlay({
           alignItems: "center",
           gap: 10,
           padding: "12px 14px",
-          background: "linear-gradient(135deg,#041a2e,#062240)",
+          background: `linear-gradient(135deg,${BRAND.navy},${BRAND.navyLight})`,
           flexShrink: 0,
         }}
       >

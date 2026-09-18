@@ -1393,7 +1393,7 @@ export default function DriverPortalPage() {
       ? new Date(blocker.scheduledAt).toLocaleDateString("es-CL", { day: "2-digit", month: "2-digit" })
       : null;
     return (
-      <div style={{ padding:10,borderRadius:12,background:SURFACE.bg,border:"1px solid #e2e8f0",textAlign:"center" }}>
+      <div style={{ padding:10,borderRadius:12,background:SURFACE.bg,border:`1px solid ${SURFACE.border}`,textAlign:"center" }}>
         <p style={{ fontSize:11,color:SURFACE.textFaint,margin:0 }}>
           {kind === "servicio"
             ? t("Finaliza el servicio en curso para iniciar este")
@@ -1410,7 +1410,7 @@ export default function DriverPortalPage() {
             setStatusFilter("en_curso");
             if (trackingTripId) setSelectedTripId(trackingTripId);
           }}
-          style={{ marginTop:8,padding:"6px 10px",borderRadius:8,border:"1px solid #e2e8f0",background:SURFACE.card,color:SURFACE.textSecondary,fontSize:11,fontWeight:700,cursor:"pointer" }}
+          style={{ marginTop:8,padding:"6px 10px",borderRadius:8,border:`1px solid ${SURFACE.border}`,background:SURFACE.card,color:SURFACE.textSecondary,fontSize:11,fontWeight:700,cursor:"pointer" }}
         >
           {t("Ver el viaje en curso")}
         </button>
@@ -1886,8 +1886,8 @@ export default function DriverPortalPage() {
                       <p style={{ fontSize:"15px",fontWeight:700,color:SURFACE.text,margin:"0 0 8px" }}>{plate?.toUpperCase() || "-"}</p>
                       <div style={{ display:"flex",flexWrap:"wrap",gap:"6px" }}>
                         {type && <span style={{ fontSize:"11px",padding:"3px 9px",borderRadius:"8px",background:"#f0fdf8",color:BRAND.tealInk,border:"1px solid rgba(33,208,179,0.2)",fontWeight:600 }}>{type.toUpperCase()}</span>}
-                        {brand && <span style={{ fontSize:"11px",padding:"3px 9px",borderRadius:"8px",background:SURFACE.borderMuted,color:SURFACE.textSecondary,border:"1px solid #e2e8f0",fontWeight:500 }}>{brand.toUpperCase()}</span>}
-                        {model && <span style={{ fontSize:"11px",padding:"3px 9px",borderRadius:"8px",background:SURFACE.borderMuted,color:SURFACE.textSecondary,border:"1px solid #e2e8f0",fontWeight:500 }}>{model.toUpperCase()}</span>}
+                        {brand && <span style={{ fontSize:"11px",padding:"3px 9px",borderRadius:"8px",background:SURFACE.borderMuted,color:SURFACE.textSecondary,border:`1px solid ${SURFACE.border}`,fontWeight:500 }}>{brand.toUpperCase()}</span>}
+                        {model && <span style={{ fontSize:"11px",padding:"3px 9px",borderRadius:"8px",background:SURFACE.borderMuted,color:SURFACE.textSecondary,border:`1px solid ${SURFACE.border}`,fontWeight:500 }}>{model.toUpperCase()}</span>}
                       </div>
                     </>
                   );
@@ -2020,7 +2020,7 @@ export default function DriverPortalPage() {
                     return (
                       <div key={trip.id} style={{
                         borderRadius:14,
-                        border: isSelected ? "1px solid rgba(33,208,179,0.4)" : isNew ? "1px solid rgba(59,130,246,0.3)" : "1px solid #f1f5f9",
+                        border: isSelected ? "1px solid rgba(33,208,179,0.4)" : isNew ? "1px solid rgba(59,130,246,0.3)" : `1px solid ${SURFACE.borderMuted}`,
                         background: isNew ? "rgba(59,130,246,0.03)" : SURFACE.card,
                         overflow:"hidden",transition:"all .15s",
                       }}>
@@ -2088,7 +2088,7 @@ export default function DriverPortalPage() {
                                     href={target.waze}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    style={{ flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"10px 0",borderRadius:10,border:"1px solid #e2e8f0",background:SURFACE.card,textDecoration:"none",fontSize:12,fontWeight:700,color:"#33ccff" }}
+                                    style={{ flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"10px 0",borderRadius:10,border:`1px solid ${SURFACE.border}`,background:SURFACE.card,textDecoration:"none",fontSize:12,fontWeight:700,color:"#33ccff" }}
                                   >
                                     <img src="https://www.waze.com/favicon.ico" alt="Waze" width="20" height="20" style={{ borderRadius:4 }} />
                                     Waze
@@ -2097,7 +2097,7 @@ export default function DriverPortalPage() {
                                     href={target.gmaps}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    style={{ flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"10px 0",borderRadius:10,border:"1px solid #e2e8f0",background:SURFACE.card,textDecoration:"none",fontSize:12,fontWeight:700,color:"#4285F4" }}
+                                    style={{ flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"10px 0",borderRadius:10,border:`1px solid ${SURFACE.border}`,background:SURFACE.card,textDecoration:"none",fontSize:12,fontWeight:700,color:"#4285F4" }}
                                   >
                                     <img src="https://maps.google.com/favicon.ico" alt="Google Maps" width="20" height="20" style={{ borderRadius:4 }} />
                                     Google Maps
@@ -2130,7 +2130,7 @@ export default function DriverPortalPage() {
                             {/* Info chips */}
                             <div style={{ display:"flex",flexWrap:"wrap",gap:4,marginBottom:10 }}>
                               {tripVehicle?.plate && (
-                                <span style={{ fontSize:10,fontWeight:600,padding:"3px 8px",borderRadius:6,background:SURFACE.bg,border:"1px solid #e2e8f0",color:SURFACE.textStrong }}>
+                                <span style={{ fontSize:10,fontWeight:600,padding:"3px 8px",borderRadius:6,background:SURFACE.bg,border:`1px solid ${SURFACE.border}`,color:SURFACE.textStrong }}>
                                   {tripVehicle.plate.toUpperCase()}
                                 </span>
                               )}
@@ -2140,7 +2140,7 @@ export default function DriverPortalPage() {
                                 </span>
                               )}
                               {resolveDelegations(trip) !== "-" && (
-                                <span style={{ fontSize:10,fontWeight:600,padding:"3px 8px",borderRadius:6,background:SURFACE.bg,border:"1px solid #e2e8f0",color:SURFACE.textStrong }}>
+                                <span style={{ fontSize:10,fontWeight:600,padding:"3px 8px",borderRadius:6,background:SURFACE.bg,border:`1px solid ${SURFACE.border}`,color:SURFACE.textStrong }}>
                                   {resolveDelegations(trip)}
                                 </span>
                               )}
@@ -2148,7 +2148,7 @@ export default function DriverPortalPage() {
 
                             {/* Observación de la solicitud — visible y destacada para el conductor */}
                             {!isDisposicion(trip) && trip.notes && (
-                              <div style={{ padding:"10px 12px",borderRadius:10,background:"#fffbeb",border:"1px solid #fde68a",borderLeft:"4px solid #f59e0b",marginBottom:10 }}>
+                              <div style={{ padding:"10px 12px",borderRadius:10,background:"#fffbeb",border:"1px solid #fde68a",borderLeft:`4px solid ${STATE.warning}`,marginBottom:10 }}>
                                 <p style={{ fontSize:10,fontWeight:800,color:STATE.warningText,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}><AlertIcon size={10} className="inline mr-1" />Observación</p>
                                 <p style={{ fontSize:12.5,fontWeight:600,color:"#78350f",margin:"3px 0 0",lineHeight:1.4 }}>{trip.notes.replace(/^\[Portal\]\s*/, "")}</p>
                               </div>
@@ -2194,7 +2194,7 @@ export default function DriverPortalPage() {
                                   {isPortalRequest(trip) ? t("Pasajero recogido — En curso") : t("Pasajero recogido")}
                                 </button>
                                 <button type="button" onClick={() => updateTrip(trip.id, "SCHEDULED")} disabled={loading}
-                                  style={{ padding:8,borderRadius:8,border:"1px solid #e2e8f0",background:SURFACE.bg,color:SURFACE.textMuted,fontSize:11,fontWeight:600,cursor:"pointer" }}>
+                                  style={{ padding:8,borderRadius:8,border:`1px solid ${SURFACE.border}`,background:SURFACE.bg,color:SURFACE.textMuted,fontSize:11,fontWeight:600,cursor:"pointer" }}>
                                   <ChevronLeftIcon size={12} className="inline mr-1" />{t("Volver a Programado")}
                                 </button>
                               </div>
@@ -2260,15 +2260,15 @@ export default function DriverPortalPage() {
                 <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
                   {/* Summary stats */}
                   <div style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8 }}>
-                    <div style={{ padding:"12px 8px",borderRadius:12,background:SURFACE.card,border:"1px solid #e2e8f0",textAlign:"center" }}>
+                    <div style={{ padding:"12px 8px",borderRadius:12,background:SURFACE.card,border:`1px solid ${SURFACE.border}`,textAlign:"center" }}>
                       <p style={{ fontSize:9,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Viajes</p>
                       <p style={{ fontSize:22,fontWeight:800,color:SURFACE.text,margin:"4px 0 0" }}>{completed.length}</p>
                     </div>
-                    <div style={{ padding:"12px 8px",borderRadius:12,background:SURFACE.card,border:"1px solid #e2e8f0",textAlign:"center" }}>
+                    <div style={{ padding:"12px 8px",borderRadius:12,background:SURFACE.card,border:`1px solid ${SURFACE.border}`,textAlign:"center" }}>
                       <p style={{ fontSize:9,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Total</p>
                       <p style={{ fontSize:22,fontWeight:800,color:BRAND.teal,margin:"4px 0 0" }}>${totalCost.toLocaleString("es-CL")}</p>
                     </div>
-                    <div style={{ padding:"12px 8px",borderRadius:12,background:SURFACE.card,border:"1px solid #e2e8f0",textAlign:"center" }}>
+                    <div style={{ padding:"12px 8px",borderRadius:12,background:SURFACE.card,border:`1px solid ${SURFACE.border}`,textAlign:"center" }}>
                       <p style={{ fontSize:9,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>Rating</p>
                       <p style={{ fontSize:22,fontWeight:800,color:STATE.warning,margin:"4px 0 0" }}>{avgRating ? <>{avgRating} <StarIcon size={18} className="inline" /></> : "—"}</p>
                     </div>
@@ -2277,7 +2277,7 @@ export default function DriverPortalPage() {
                   {/* Filter toggle button */}
                   <button type="button" onClick={() => setShowReportFilters(!showReportFilters)}
                     style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"8px",borderRadius:10,
-                      background: hasActiveFilters ? BRAND.teal : SURFACE.card, border:"1px solid #e2e8f0",cursor:"pointer",width:"100%" }}>
+                      background: hasActiveFilters ? BRAND.teal : SURFACE.card, border:`1px solid ${SURFACE.border}`,cursor:"pointer",width:"100%" }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={hasActiveFilters ? SURFACE.card : SURFACE.textMuted} strokeWidth="2" strokeLinecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
                     <span style={{ fontSize:12,fontWeight:600,color: hasActiveFilters ? SURFACE.card : SURFACE.textMuted }}>
                       {showReportFilters ? "Ocultar filtros" : "Filtrar"}
@@ -2287,23 +2287,23 @@ export default function DriverPortalPage() {
 
                   {/* Collapsible filters */}
                   {showReportFilters && (
-                    <div style={{ background:SURFACE.card,borderRadius:12,border:"1px solid #e2e8f0",padding:"10px 14px",display:"flex",flexDirection:"column",gap:8 }}>
+                    <div style={{ background:SURFACE.card,borderRadius:12,border:`1px solid ${SURFACE.border}`,padding:"10px 14px",display:"flex",flexDirection:"column",gap:8 }}>
                       <div style={{ display:"flex",gap:10,alignItems:"center" }}>
                         <label style={{ display:"flex",alignItems:"center",gap:6,flex:1,minWidth:0 }}>
                           <span style={{ fontSize:11,fontWeight:700,color:SURFACE.textMuted,flexShrink:0 }}>Desde</span>
                           <input type="date" value={reportDateFrom} onChange={(e) => setReportDateFrom(e.target.value)}
-                            style={{ flex:1,minWidth:0,padding:"7px 6px",borderRadius:8,border:"1px solid #e2e8f0",fontSize:12,color:SURFACE.text,background:SURFACE.bg,boxSizing:"border-box" }} />
+                            style={{ flex:1,minWidth:0,padding:"7px 6px",borderRadius:8,border:`1px solid ${SURFACE.border}`,fontSize:12,color:SURFACE.text,background:SURFACE.bg,boxSizing:"border-box" }} />
                         </label>
                         <label style={{ display:"flex",alignItems:"center",gap:6,flex:1,minWidth:0 }}>
                           <span style={{ fontSize:11,fontWeight:700,color:SURFACE.textMuted,flexShrink:0 }}>Hasta</span>
                           <input type="date" value={reportDateTo} onChange={(e) => setReportDateTo(e.target.value)}
-                            style={{ flex:1,minWidth:0,padding:"7px 6px",borderRadius:8,border:"1px solid #e2e8f0",fontSize:12,color:SURFACE.text,background:SURFACE.bg,boxSizing:"border-box" }} />
+                            style={{ flex:1,minWidth:0,padding:"7px 6px",borderRadius:8,border:`1px solid ${SURFACE.border}`,fontSize:12,color:SURFACE.text,background:SURFACE.bg,boxSizing:"border-box" }} />
                         </label>
                       </div>
                       <label style={{ display:"flex",alignItems:"center",gap:6 }}>
                         <span style={{ fontSize:11,fontWeight:700,color:SURFACE.textMuted,flexShrink:0 }}>Tipo</span>
                         <select value={reportTypeFilter} onChange={(e) => setReportTypeFilter(e.target.value)}
-                          style={{ flex:1,padding:"7px 10px",borderRadius:8,border:"1px solid #e2e8f0",fontSize:12,color:SURFACE.text,background:SURFACE.bg,boxSizing:"border-box" }}>
+                          style={{ flex:1,padding:"7px 10px",borderRadius:8,border:`1px solid ${SURFACE.border}`,fontSize:12,color:SURFACE.text,background:SURFACE.bg,boxSizing:"border-box" }}>
                           <option value="all">Todos</option>
                           {tripTypes.map((tt) => <option key={tt} value={tt}>{tt}</option>)}
                         </select>
@@ -2318,7 +2318,7 @@ export default function DriverPortalPage() {
                   )}
 
                   {/* Trip list */}
-                  <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+                  <div style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,overflow:"hidden" }}>
                     <div style={{ padding:"12px 14px 8px" }}>
                       <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:BRAND.teal,margin:0 }}>Historial</p>
                     </div>
@@ -2330,7 +2330,7 @@ export default function DriverPortalPage() {
                           const completedDate = trip.completedAt || trip.startedAt;
                           return (
                             <button key={trip.id} type="button" onClick={() => openHistoryDetail(trip)}
-                              style={{ width:"100%",display:"flex",alignItems:"center",gap:8,padding:"11px 14px",background:"none",border:"none",borderTop:"1px solid #f1f5f9",cursor:"pointer",textAlign:"left",transition:"background .15s" }}
+                              style={{ width:"100%",display:"flex",alignItems:"center",gap:8,padding:"11px 14px",background:"none",border:"none",borderTop:`1px solid ${SURFACE.borderMuted}`,cursor:"pointer",textAlign:"left",transition:"background .15s" }}
                               onMouseEnter={(e)=>{(e.currentTarget as HTMLElement).style.background=SURFACE.bg;}}
                               onMouseLeave={(e)=>{(e.currentTarget as HTMLElement).style.background="transparent";}}>
                               <span style={{ width:8,height:8,borderRadius:"50%",background:BRAND.teal,flexShrink:0 }} />
@@ -2372,7 +2372,7 @@ export default function DriverPortalPage() {
                 />
 
                 {/* Profile + Photo */}
-                <div style={{ background:SURFACE.card,borderRadius:16,border:"1px solid #e2e8f0",padding:"16px 14px",display:"flex",alignItems:"center",gap:14 }}>
+                <div style={{ background:SURFACE.card,borderRadius:16,border:`1px solid ${SURFACE.border}`,padding:"16px 14px",display:"flex",alignItems:"center",gap:14 }}>
                   <div style={{ position:"relative",flexShrink:0 }}>
                     {(driverProfile.photoUrl || (driverProfile.metadata as any)?.photoUrl) ? (
                       <img src={driverProfile.photoUrl || (driverProfile.metadata as any)?.photoUrl} alt="" style={{ width:64,height:64,borderRadius:"50%",objectFit:"cover",border:`3px solid ${BRAND.teal}` }} />
@@ -2433,7 +2433,7 @@ export default function DriverPortalPage() {
                 </div>
 
                 {/* Credencial digital - generate from template */}
-                <div style={{ background:SURFACE.card,borderRadius:16,border:"1px solid #e2e8f0",padding:"14px",overflow:"hidden" }}>
+                <div style={{ background:SURFACE.card,borderRadius:16,border:`1px solid ${SURFACE.border}`,padding:"14px",overflow:"hidden" }}>
                   <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12 }}>
                     <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:BRAND.teal,margin:0 }}>Credencial</p>
                     <span style={{ fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:6,
@@ -2507,9 +2507,9 @@ export default function DriverPortalPage() {
                     { icon: <BriefcaseIcon size={14} color={BRAND.teal} strokeWidth={2} />, label: "Proveedor", value: prov?.name || "Sin asignar", sub: prov?.rut ? `RUT: ${prov.rut}` : undefined },
                   ];
                   return (
-                    <div style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+                    <div style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,overflow:"hidden" }}>
                       {rows.map((r, i) => (
-                        <div key={r.label} style={{ display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderTop: i > 0 ? "1px solid #f1f5f9" : "none" }}>
+                        <div key={r.label} style={{ display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderTop: i > 0 ? `1px solid ${SURFACE.borderMuted}` : "none" }}>
                           <span style={{ flexShrink:0 }}>{r.icon}</span>
                           <div style={{ flex:1,minWidth:0 }}>
                             <div style={{ display:"flex",alignItems:"baseline",gap:6 }}>
@@ -2525,7 +2525,7 @@ export default function DriverPortalPage() {
                 })()}
 
                 {/* Documents section */}
-                <div style={{ background:SURFACE.card,borderRadius:16,border:"1px solid #e2e8f0",padding:"14px",overflow:"hidden" }}>
+                <div style={{ background:SURFACE.card,borderRadius:16,border:`1px solid ${SURFACE.border}`,padding:"14px",overflow:"hidden" }}>
                   <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:BRAND.teal,margin:"0 0 4px" }}>Documentos</p>
                   <p style={{ fontSize:11,color:SURFACE.textFaint,margin:"0 0 10px" }}>Sube tus documentos desde el celular o galería</p>
                   <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
@@ -2545,7 +2545,7 @@ export default function DriverPortalPage() {
                       const uploaded = !!docValue;
                       const isUploading = uploadingDoc === doc.key;
                       return (
-                        <div key={doc.key} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:"1px solid #f1f5f9",gap:8 }}>
+                        <div key={doc.key} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}`,gap:8 }}>
                           <div style={{ display:"flex",alignItems:"center",gap:8,flex:1,minWidth:0 }}>
                             <span style={{ width:7,height:7,borderRadius:"50%",background:uploaded ? BRAND.teal : SURFACE.border,flexShrink:0 }} />
                             <span style={{ fontSize:12,fontWeight:500,color:uploaded ? SURFACE.text : SURFACE.textFaint,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{doc.label}</span>
@@ -2553,7 +2553,7 @@ export default function DriverPortalPage() {
                           <div style={{ display:"flex",gap:4,flexShrink:0 }}>
                             {uploaded && typeof docValue === "string" && (docValue.startsWith("http") || docValue.startsWith("data:")) && (
                               <a href={docValue} target="_blank" rel="noreferrer"
-                                style={{ display:"flex",alignItems:"center",justifyContent:"center",width:28,height:28,borderRadius:7,border:"1px solid #e2e8f0",background:SURFACE.card,cursor:"pointer",flexShrink:0 }}>
+                                style={{ display:"flex",alignItems:"center",justifyContent:"center",width:28,height:28,borderRadius:7,border:`1px solid ${SURFACE.border}`,background:SURFACE.card,cursor:"pointer",flexShrink:0 }}>
                                 <EyeIcon size={12} color={SURFACE.textMuted} strokeWidth={2} />
                               </a>
                             )}
@@ -2701,7 +2701,7 @@ export default function DriverPortalPage() {
               const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
               const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("es-CL", { weekday: "short", day: "2-digit", month: "short" });
               const FlightCard = ({ f, showDate }: { f: PassengerFlight; showDate?: boolean }) => (
-                <div style={{ background:SURFACE.card,borderRadius:12,border:"1px solid #e2e8f0",padding:"10px 14px",display:"flex",alignItems:"center",gap:10 }}>
+                <div style={{ background:SURFACE.card,borderRadius:12,border:`1px solid ${SURFACE.border}`,padding:"10px 14px",display:"flex",alignItems:"center",gap:10 }}>
                   <PlaneIcon size={18} color={BRAND.teal} strokeWidth={1.8} style={{ flexShrink:0 }} />
                   <div style={{ flex:1,minWidth:0 }}>
                     <p style={{ fontSize:13,fontWeight:700,color:SURFACE.text,margin:0 }}>{f.airline ? `${f.airline} · ` : ""}{f.flightNumber}</p>
@@ -2762,7 +2762,7 @@ export default function DriverPortalPage() {
                   const isOpen = expandedSiteId === `venue-${v.id}`;
                   const addr = [v.address, v.commune, v.region].filter(Boolean).join(", ");
                   return (
-                    <div key={v.id} style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+                    <div key={v.id} style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,overflow:"hidden" }}>
                       <button type="button" onClick={() => setExpandedSiteId(isOpen?null:`venue-${v.id}`)}
                         style={{ width:"100%",display:"flex",alignItems:"center",gap:10,padding:"12px 14px",background:"none",border:"none",cursor:"pointer",textAlign:"left" }}>
                         <PinIcon size={16} color={BRAND.teal} strokeWidth={2} />
@@ -2790,7 +2790,7 @@ export default function DriverPortalPage() {
                   const isOpen = expandedSiteId === `hotel-${h.id}`;
                   const addr = [h.address, h.city, h.country].filter(Boolean).join(", ");
                   return (
-                    <div key={h.id} style={{ background:SURFACE.card,borderRadius:14,border:"1px solid #e2e8f0",overflow:"hidden" }}>
+                    <div key={h.id} style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,overflow:"hidden" }}>
                       <button type="button" onClick={() => setExpandedSiteId(isOpen?null:`hotel-${h.id}`)}
                         style={{ width:"100%",display:"flex",alignItems:"center",gap:10,padding:"12px 14px",background:"none",border:"none",cursor:"pointer",textAlign:"left" }}>
                         <BuildingIcon size={16} color={BRAND.tealDark} strokeWidth={1.8} />
@@ -2891,7 +2891,7 @@ export default function DriverPortalPage() {
           ? (FLIGHT_STATUS_ES[trackInfo.flightStatus.toLowerCase()] ?? { label: trackInfo.flightStatus, color: SURFACE.textFaint })
           : null;
         const Row = ({ label, value }: { label: string; value?: string | null }) => (
-          <div style={{ display:"flex",justifyContent:"space-between",gap:10,padding:"5px 0",borderBottom:"1px solid #f1f5f9" }}>
+          <div style={{ display:"flex",justifyContent:"space-between",gap:10,padding:"5px 0",borderBottom:`1px solid ${SURFACE.borderMuted}` }}>
             <span style={{ fontSize:12,color:SURFACE.textMuted }}>{label}</span>
             <span style={{ fontSize:12,fontWeight:700,color:SURFACE.text,textAlign:"right" }}>{value || "—"}</span>
           </div>
@@ -2952,7 +2952,7 @@ export default function DriverPortalPage() {
                 <button
                   type="button"
                   onClick={() => { setTrackTarget(null); setTrackInfo(null); setTrackError(null); }}
-                  style={{ flex:1,padding:12,borderRadius:12,border:"1px solid #e2e8f0",background:SURFACE.bg,color:SURFACE.textSecondary,fontSize:13,fontWeight:700,cursor:"pointer" }}
+                  style={{ flex:1,padding:12,borderRadius:12,border:`1px solid ${SURFACE.border}`,background:SURFACE.bg,color:SURFACE.textSecondary,fontSize:13,fontWeight:700,cursor:"pointer" }}
                 >
                   Cerrar
                 </button>
@@ -2996,7 +2996,7 @@ export default function DriverPortalPage() {
               type="button"
               onClick={() => void skipJourneyPhoto()}
               disabled={journeyUploading}
-              style={{ marginTop:10,width:"100%",padding:12,borderRadius:12,border:"1px solid #e2e8f0",background:SURFACE.card,color:SURFACE.textMuted,fontSize:13,fontWeight:600,cursor:"pointer" }}
+              style={{ marginTop:10,width:"100%",padding:12,borderRadius:12,border:`1px solid ${SURFACE.border}`,background:SURFACE.card,color:SURFACE.textMuted,fontSize:13,fontWeight:600,cursor:"pointer" }}
             >
               Ahora no
             </button>
@@ -3035,7 +3035,7 @@ export default function DriverPortalPage() {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setNavPrompt(null)}
-                style={{ marginTop:8,display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",padding:13,borderRadius:14,border:"1px solid #e2e8f0",background:SURFACE.card,color:"#4285F4",fontSize:13,fontWeight:700,cursor:"pointer",textDecoration:"none",boxSizing:"border-box" }}
+                style={{ marginTop:8,display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",padding:13,borderRadius:14,border:`1px solid ${SURFACE.border}`,background:SURFACE.card,color:"#4285F4",fontSize:13,fontWeight:700,cursor:"pointer",textDecoration:"none",boxSizing:"border-box" }}
               >
                 <img src="https://maps.google.com/favicon.ico" alt="" width="18" height="18" style={{ borderRadius:4 }} />
                 Abrir en Google Maps
@@ -3083,7 +3083,7 @@ export default function DriverPortalPage() {
           style={{ position:"fixed",inset:0,zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:16,background:"rgba(2,12,24,0.78)",backdropFilter:"blur(6px)" }}>
           <div onClick={(e) => e.stopPropagation()}
             style={{ background:SURFACE.card,borderRadius:20,width:"100%",maxWidth:480,maxHeight:"95vh",display:"flex",flexDirection:"column",overflow:"hidden",boxShadow:"0 24px 80px rgba(0,0,0,0.5)" }}>
-            <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",borderBottom:"1px solid #e2e8f0",background:`linear-gradient(135deg,${BRAND.navy},${BRAND.navyLight})`,color:SURFACE.card }}>
+            <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",borderBottom:`1px solid ${SURFACE.border}`,background:`linear-gradient(135deg,${BRAND.navy},${BRAND.navyLight})`,color:SURFACE.card }}>
               <div>
                 <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:BRAND.teal,margin:0 }}>Credencial digital</p>
                 <p style={{ fontSize:14,fontWeight:700,margin:"2px 0 0" }}>{driverProfile?.fullName || "Conductor"}</p>
@@ -3132,7 +3132,7 @@ export default function DriverPortalPage() {
         const km = historyPositions.length >= 2 ? routeKm(historyPositions) : null;
         const close = () => { setHistoryTrip(null); setHistoryPositions([]); };
         const stat = (label: string, value: string, color = SURFACE.text) => (
-          <div style={{ padding:"10px 8px",borderRadius:12,background:SURFACE.bg,border:"1px solid #f1f5f9",textAlign:"center" }}>
+          <div style={{ padding:"10px 8px",borderRadius:12,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}`,textAlign:"center" }}>
             <p style={{ fontSize:8.5,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase",letterSpacing:"0.08em" }}>{label}</p>
             <p style={{ fontSize:15,fontWeight:800,color,margin:"3px 0 0" }}>{value}</p>
           </div>
@@ -3143,7 +3143,7 @@ export default function DriverPortalPage() {
             <div onClick={(e) => e.stopPropagation()}
               style={{ background:SURFACE.card,borderRadius:"24px 24px 0 0",width:"100%",maxWidth:520,maxHeight:"92vh",display:"flex",flexDirection:"column",overflow:"hidden",boxShadow:"0 -8px 60px rgba(0,0,0,0.5)",animation:"dc-in .3s cubic-bezier(0.16,1,0.3,1) both" }}>
               {/* Header */}
-              <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:10,padding:"16px 18px 12px",borderBottom:"1px solid #f1f5f9",background:`linear-gradient(135deg,${BRAND.navy},${BRAND.navyLight})`,color:SURFACE.card,flexShrink:0 }}>
+              <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:10,padding:"16px 18px 12px",borderBottom:`1px solid ${SURFACE.borderMuted}`,background:`linear-gradient(135deg,${BRAND.navy},${BRAND.navyLight})`,color:SURFACE.card,flexShrink:0 }}>
                 <div style={{ minWidth:0 }}>
                   <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.2em",textTransform:"uppercase",color:BRAND.tealLight,margin:0 }}>Viaje realizado</p>
                   <p style={{ fontSize:15,fontWeight:800,margin:"3px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
@@ -3160,7 +3160,7 @@ export default function DriverPortalPage() {
               {/* Body */}
               <div style={{ flex:1,overflowY:"auto",padding:"14px 16px 24px",display:"flex",flexDirection:"column",gap:12 }}>
                 {/* Mapa de la ruta */}
-                <div style={{ borderRadius:14,overflow:"hidden",border:"1px solid #e2e8f0",position:"relative" }}>
+                <div style={{ borderRadius:14,overflow:"hidden",border:`1px solid ${SURFACE.border}`,position:"relative" }}>
                   <TripMap origin={trip.origin} destination={trip.destination} height={200} />
                   <span style={{ position:"absolute",top:8,left:8,zIndex:5,fontSize:10,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:BRAND.tealInk,background:"rgba(255,255,255,0.9)",border:"1px solid rgba(33,208,179,0.3)",borderRadius:8,padding:"3px 8px" }}>Ruta del viaje</span>
                 </div>
@@ -3179,7 +3179,7 @@ export default function DriverPortalPage() {
                 )}
 
                 {/* Origen / Destino */}
-                <div style={{ display:"flex",gap:10,alignItems:"stretch",padding:"12px 14px",borderRadius:14,background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
+                <div style={{ display:"flex",gap:10,alignItems:"stretch",padding:"12px 14px",borderRadius:14,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}` }}>
                   <div style={{ display:"flex",flexDirection:"column",alignItems:"center",paddingTop:3 }}>
                     <span style={{ width:9,height:9,borderRadius:"50%",background:BRAND.teal,flexShrink:0 }} />
                     <div style={{ width:2,flex:1,background:`linear-gradient(180deg,${BRAND.teal},#ef4444)`,margin:"3px 0",opacity:0.35,borderRadius:1,minHeight:18 }} />
@@ -3199,19 +3199,19 @@ export default function DriverPortalPage() {
 
                 {/* Tiempos + vehículo + delegación */}
                 <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:8 }}>
-                  <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
+                  <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}` }}>
                     <p style={{ fontSize:9,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase" }}>Inicio</p>
                     <p style={{ fontSize:11.5,fontWeight:600,color:SURFACE.text,margin:"1px 0 0" }}>{trip.startedAt ? formatDate(trip.startedAt) : "—"}</p>
                   </div>
-                  <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
+                  <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}` }}>
                     <p style={{ fontSize:9,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase" }}>Fin</p>
                     <p style={{ fontSize:11.5,fontWeight:600,color:SURFACE.text,margin:"1px 0 0" }}>{trip.completedAt ? formatDate(trip.completedAt) : "—"}</p>
                   </div>
-                  <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
+                  <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}` }}>
                     <p style={{ fontSize:9,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase" }}>Vehículo</p>
                     <p style={{ fontSize:11.5,fontWeight:600,color:SURFACE.text,margin:"1px 0 0" }}>{veh?.plate?.toUpperCase() || "—"}</p>
                   </div>
-                  <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
+                  <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}` }}>
                     <p style={{ fontSize:9,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase" }}>Delegación</p>
                     <p style={{ fontSize:11.5,fontWeight:600,color:SURFACE.text,margin:"1px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{resolveDelegations(trip) !== "-" ? resolveDelegations(trip) : "—"}</p>
                   </div>
@@ -3229,7 +3229,7 @@ export default function DriverPortalPage() {
 
                 {/* Notas */}
                 {trip.notes && (
-                  <div style={{ padding:"8px 12px",borderRadius:10,background:SURFACE.bg,border:"1px solid #f1f5f9" }}>
+                  <div style={{ padding:"8px 12px",borderRadius:10,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}` }}>
                     <p style={{ fontSize:9,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase" }}>Notas</p>
                     <p style={{ fontSize:12,color:SURFACE.textStrong,margin:"2px 0 0",lineHeight:1.4 }}>{trip.notes}</p>
                   </div>
@@ -3261,7 +3261,7 @@ export default function DriverPortalPage() {
             </div>
             <div style={{ display:"flex",gap:"10px" }}>
               <button type="button" onClick={() => setShowLocationBlockedModal(false)}
-                style={{ flex:1,padding:"12px",borderRadius:"14px",border:"1px solid #e2e8f0",background:SURFACE.bg,color:SURFACE.textSecondary,fontSize:"13px",fontWeight:700,cursor:"pointer" }}>
+                style={{ flex:1,padding:"12px",borderRadius:"14px",border:`1px solid ${SURFACE.border}`,background:SURFACE.bg,color:SURFACE.textSecondary,fontSize:"13px",fontWeight:700,cursor:"pointer" }}>
                 Cerrar
               </button>
               <button type="button" onClick={() => { setShowLocationBlockedModal(false); window.location.reload(); }}

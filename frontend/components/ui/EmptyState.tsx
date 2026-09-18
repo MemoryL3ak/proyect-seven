@@ -66,7 +66,7 @@ export default function EmptyState({
       className="surface-premium mesh-bg p-14 text-center relative overflow-hidden anim-fade-up-soft"
       style={{
         minHeight: "420px",
-        background: "linear-gradient(135deg, #ffffff 0%, #fafdfc 50%, #ffffff 100%)",
+        background: `linear-gradient(135deg, ${SURFACE.card} 0%, #fafdfc 50%, ${SURFACE.card} 100%)`,
       }}
     >
       {/* Halo gigante */}

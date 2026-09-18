@@ -584,7 +584,7 @@ export default function AccreditationsPage() {
                 <h2 style={{ fontSize: "22px", fontWeight: 800, color: pal.titleColor, margin: 0, letterSpacing: "-0.01em" }}>{t("Cumplimiento de acreditación")}</h2>
                 <p style={{ fontSize: "13px", color: pal.subtitleColor, marginTop: "4px" }}>{t("Participantes registrados en AND vs. acreditados, por disciplina.")}</p>
               </div>
-              <button type="button" onClick={loadData} disabled={loading} style={{ flexShrink: 0, border: "1px solid #e2e8f0", borderRadius: "12px", padding: "8px 16px", fontSize: "13px", fontWeight: 600, color: SURFACE.textSecondary, background: SURFACE.card, cursor: loading ? "default" : "pointer", opacity: loading ? 0.6 : 1 }}>
+              <button type="button" onClick={loadData} disabled={loading} style={{ flexShrink: 0, border: `1px solid ${SURFACE.border}`, borderRadius: "12px", padding: "8px 16px", fontSize: "13px", fontWeight: 600, color: SURFACE.textSecondary, background: SURFACE.card, cursor: loading ? "default" : "pointer", opacity: loading ? 0.6 : 1 }}>
                 {loading ? t("Actualizando...") : t("Refrescar KPI")}
               </button>
             </div>
@@ -688,7 +688,7 @@ export default function AccreditationsPage() {
       </section>
 
       {/* ── Filter bar */}
-      <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "20px", padding: "18px 20px", boxShadow: pal.cardShadow }}>
+      <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "20px", padding: "18px 20px", boxShadow: pal.cardShadow }}>
         <div className="grid gap-3 lg:grid-cols-12">
           <select className="input rounded-xl lg:col-span-3" value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)}>
             <option value="">{t("Todos los eventos")}</option>
@@ -703,7 +703,7 @@ export default function AccreditationsPage() {
             {STATUS_OPTIONS.map((status) => <option key={status} value={status}>{t(statusFilterLabel(status))}</option>)}
           </select>
           <input className="input rounded-xl lg:col-span-3" placeholder={t("Buscar por nombre, ID o codigo credencial")} value={query} onChange={(e) => setQuery(e.target.value)} />
-          <button type="button" className="lg:col-span-2" onClick={loadData} disabled={loading} style={{ border: "1px solid #e2e8f0", borderRadius: "12px", padding: "8px 14px", fontSize: "13px", fontWeight: 600, color: SURFACE.textSecondary, background: SURFACE.card, cursor: loading ? "default" : "pointer", opacity: loading ? 0.6 : 1 }}>{loading ? t("Actualizando...") : t("Refrescar")}</button>
+          <button type="button" className="lg:col-span-2" onClick={loadData} disabled={loading} style={{ border: `1px solid ${SURFACE.border}`, borderRadius: "12px", padding: "8px 14px", fontSize: "13px", fontWeight: 600, color: SURFACE.textSecondary, background: SURFACE.card, cursor: loading ? "default" : "pointer", opacity: loading ? 0.6 : 1 }}>{loading ? t("Actualizando...") : t("Refrescar")}</button>
         </div>
         {(error || message) ? (
           <div className="mt-3 space-y-1">
@@ -717,7 +717,7 @@ export default function AccreditationsPage() {
       <section className="grid gap-4 xl:grid-cols-[1.35fr_1fr]">
 
         {/* Form */}
-        <form onSubmit={createAccreditation} style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderTop: `3px solid ${pal.accent}`, borderRadius: "20px", padding: "20px", boxShadow: pal.cardShadow }} className="xl:order-1">
+        <form onSubmit={createAccreditation} style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderTop: `3px solid ${pal.accent}`, borderRadius: "20px", padding: "20px", boxShadow: pal.cardShadow }} className="xl:order-1">
           <h3 style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: SURFACE.textFaint, marginBottom: "14px" }}>{t("Nueva acreditación")}</h3>
           <div className="space-y-3">
             <select className="input rounded-xl" value={newSubjectType} onChange={(e) => {
@@ -754,12 +754,12 @@ export default function AccreditationsPage() {
             )}
 
             {(selectedAthlete || selectedDriver) ? (
-              <div style={{ borderRadius: "14px", border: "1px solid #e2e8f0", background: SURFACE.bg, padding: "14px" }}>
+              <div style={{ borderRadius: "14px", border: `1px solid ${SURFACE.border}`, background: SURFACE.bg, padding: "14px" }}>
                 <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: SURFACE.textFaint, marginBottom: "10px" }}>{t("Ficha de validacion")}</p>
                 <div className="flex gap-3">
                   {selectedPhotoUrl
-                    ? <img src={selectedPhotoUrl} alt={t("Foto sujeto")} style={{ height: "96px", width: "80px", borderRadius: "10px", border: "1px solid #e2e8f0", objectFit: "cover" }} />
-                    : <div style={{ display: "grid", height: "96px", width: "80px", placeItems: "center", borderRadius: "10px", border: "1px solid #e2e8f0", background: SURFACE.card, fontSize: "14px", fontWeight: 700, color: SURFACE.text }}>{initials(selectedAthlete?.fullName || selectedDriver?.fullName)}</div>}
+                    ? <img src={selectedPhotoUrl} alt={t("Foto sujeto")} style={{ height: "96px", width: "80px", borderRadius: "10px", border: `1px solid ${SURFACE.border}`, objectFit: "cover" }} />
+                    : <div style={{ display: "grid", height: "96px", width: "80px", placeItems: "center", borderRadius: "10px", border: `1px solid ${SURFACE.border}`, background: SURFACE.card, fontSize: "14px", fontWeight: 700, color: SURFACE.text }}>{initials(selectedAthlete?.fullName || selectedDriver?.fullName)}</div>}
                   <div style={{ display: "grid", flex: 1, gap: "3px", fontSize: "12px", color: SURFACE.text }}>
                     {newSubjectType === "PARTICIPANT" && selectedAthlete ? <><p><span style={{ fontWeight: 600 }}>{t("Nombre:")}</span> {selectedAthlete.fullName || "-"}</p><p><span style={{ fontWeight: 600 }}>{t("Email:")}</span> {selectedAthlete.email || "-"}</p><p><span style={{ fontWeight: 600 }}>{t("Pais:")}</span> {selectedAthlete.countryCode || "-"}</p><p><span style={{ fontWeight: 600 }}>{t("Pasaporte:")}</span> {selectedAthlete.passportNumber || "-"}</p><p><span style={{ fontWeight: 600 }}>{t("Delegacion:")}</span> {selectedAthlete.delegationId ? delegationMap[selectedAthlete.delegationId]?.countryCode || selectedAthlete.delegationId : "-"}</p></> : null}
                     {newSubjectType === "DRIVER" && selectedDriver ? <><p><span style={{ fontWeight: 600 }}>{t("Nombre:")}</span> {selectedDriver.fullName || "-"}</p><p><span style={{ fontWeight: 600 }}>{t("RUT:")}</span> {selectedDriver.rut || "-"}</p><p><span style={{ fontWeight: 600 }}>{t("Email:")}</span> {selectedDriver.email || "-"}</p><p><span style={{ fontWeight: 600 }}>{t("Telefono:")}</span> {selectedDriver.phone || "-"}</p><p><span style={{ fontWeight: 600 }}>{t("Licencia:")}</span> {selectedDriver.licenseNumber || "-"}</p><p><span style={{ fontWeight: 600 }}>{t("Proveedor:")}</span> {selectedDriver.providerId ? providerMap[selectedDriver.providerId]?.name || selectedDriver.providerId : "-"}</p></> : null}
@@ -773,7 +773,7 @@ export default function AccreditationsPage() {
                       return (
                         <label key={option.code} style={{
                           display: "flex", alignItems: "center", gap: "10px",
-                          borderRadius: "12px", border: checked ? "1px solid rgba(33,208,179,0.35)" : "1px solid #e2e8f0",
+                          borderRadius: "12px", border: checked ? "1px solid rgba(33,208,179,0.35)" : `1px solid ${SURFACE.border}`,
                           background: checked ? "rgba(33,208,179,0.08)" : SURFACE.card,
                           padding: "8px 12px", fontSize: "13px", cursor: "pointer",
                           color: checked ? BRAND.teal : SURFACE.text,
@@ -795,7 +795,7 @@ export default function AccreditationsPage() {
             ) : null}
 
             <div className="flex justify-end pt-1">
-              <button type="submit" disabled={saving || !selectedEventId} style={{ padding: "10px 28px", borderRadius: "12px", background: (saving || !selectedEventId) ? "#a7f3ed" : "linear-gradient(135deg, #21D0B3, #14AE98)", color: (saving || !selectedEventId) ? "#0B7A6D" : SURFACE.card, fontSize: "13px", fontWeight: 700, border: "none", cursor: (saving || !selectedEventId) ? "not-allowed" : "pointer", boxShadow: (saving || !selectedEventId) ? "none" : "0 2px 10px rgba(33,208,179,0.35)" }}>
+              <button type="submit" disabled={saving || !selectedEventId} style={{ padding: "10px 28px", borderRadius: "12px", background: (saving || !selectedEventId) ? "#a7f3ed" : `linear-gradient(135deg, ${BRAND.teal}, #14AE98)`, color: (saving || !selectedEventId) ? "#0B7A6D" : SURFACE.card, fontSize: "13px", fontWeight: 700, border: "none", cursor: (saving || !selectedEventId) ? "not-allowed" : "pointer", boxShadow: (saving || !selectedEventId) ? "none" : "0 2px 10px rgba(33,208,179,0.35)" }}>
                 {saving ? t("Guardando...") : (selectedAccreditation ? (isAccredited(selectedAccreditation.status) ? t("Guardar accesos") : t("Guardar y acreditar")) : t("Acreditar"))}
               </button>
             </div>
@@ -803,7 +803,7 @@ export default function AccreditationsPage() {
         </form>
 
         {/* Participants / drivers cards */}
-        <div style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "20px", padding: "20px", boxShadow: pal.cardShadow, overflow: "hidden" }} className="xl:order-2">
+        <div style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "20px", padding: "20px", boxShadow: pal.cardShadow, overflow: "hidden" }} className="xl:order-2">
           {newSubjectType === "PARTICIPANT" ? (
             <>
               {/* Header bar */}
@@ -816,7 +816,7 @@ export default function AccreditationsPage() {
                   <span style={{ fontSize: "12px", fontWeight: 700, padding: "3px 12px", borderRadius: "99px", background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)", color: STATE.success }}>
                     {participantRows.filter(r => isAccredited(accByAthlete[r.id]?.status)).length} {t("acreditados")}
                   </span>
-                  <span style={{ fontSize: "12px", fontWeight: 700, padding: "3px 12px", borderRadius: "99px", background: SURFACE.borderMuted, border: "1px solid #e2e8f0", color: SURFACE.textMuted }}>
+                  <span style={{ fontSize: "12px", fontWeight: 700, padding: "3px 12px", borderRadius: "99px", background: SURFACE.borderMuted, border: `1px solid ${SURFACE.border}`, color: SURFACE.textMuted }}>
                     {participantRows.filter(r => !isAccredited(accByAthlete[r.id]?.status)).length} {t("pendientes")}
                   </span>
                 </div>
@@ -841,7 +841,7 @@ export default function AccreditationsPage() {
                     }}>
                       {/* Avatar */}
                       {photo
-                        ? <img src={photo} alt="" style={{ width: "42px", height: "42px", borderRadius: "10px", objectFit: "cover", flexShrink: 0, border: "1px solid #e2e8f0" }} />
+                        ? <img src={photo} alt="" style={{ width: "42px", height: "42px", borderRadius: "10px", objectFit: "cover", flexShrink: 0, border: `1px solid ${SURFACE.border}` }} />
                         : <div style={{ width: "42px", height: "42px", borderRadius: "10px", background: accredited ? "rgba(16,185,129,0.12)" : SURFACE.borderMuted, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: "13px", fontWeight: 800, color: accredited ? STATE.success : SURFACE.textFaint }}>
                             {initials(item.fullName)}
                           </div>
@@ -850,16 +850,16 @@ export default function AccreditationsPage() {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                           <p style={{ fontWeight: 700, fontSize: "13px", color: SURFACE.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "180px" }}>{item.fullName || item.id}</p>
-                          {delegCode && <span style={{ fontSize: "10px", fontWeight: 700, background: SURFACE.borderMuted, border: "1px solid #e2e8f0", borderRadius: "6px", padding: "1px 6px", color: SURFACE.textSecondary, flexShrink: 0 }}>{delegCode}</span>}
+                          {delegCode && <span style={{ fontSize: "10px", fontWeight: 700, background: SURFACE.borderMuted, border: `1px solid ${SURFACE.border}`, borderRadius: "6px", padding: "1px 6px", color: SURFACE.textSecondary, flexShrink: 0 }}>{delegCode}</span>}
                           {item.countryCode && <span style={{ fontSize: "10px", color: SURFACE.textFaint, flexShrink: 0 }}>{item.countryCode}</span>}
                         </div>
                         <div style={{ marginTop: "5px", display: "flex", flexWrap: "wrap", gap: "4px", alignItems: "center" }}>
                           {/* Status */}
-                          <span style={{ fontSize: "10px", fontWeight: 700, padding: "2px 8px", borderRadius: "99px", background: accredited ? "rgba(16,185,129,0.12)" : SURFACE.borderMuted, border: accredited ? "1px solid rgba(16,185,129,0.3)" : "1px solid #e2e8f0", color: accredited ? STATE.success : SURFACE.textMuted }}>
+                          <span style={{ fontSize: "10px", fontWeight: 700, padding: "2px 8px", borderRadius: "99px", background: accredited ? "rgba(16,185,129,0.12)" : SURFACE.borderMuted, border: accredited ? "1px solid rgba(16,185,129,0.3)" : `1px solid ${SURFACE.border}`, color: accredited ? STATE.success : SURFACE.textMuted }}>
                             {accredited ? t("Acreditado") : t("Pendiente")}
                           </span>
                           {/* Credential */}
-                          <span style={{ fontSize: "10px", fontWeight: 700, padding: "2px 8px", borderRadius: "99px", background: credIssued ? "rgba(33,208,179,0.1)" : SURFACE.bg, border: credIssued ? "1px solid rgba(33,208,179,0.25)" : "1px solid #e2e8f0", color: credIssued ? BRAND.teal : SURFACE.textFaint }}>
+                          <span style={{ fontSize: "10px", fontWeight: 700, padding: "2px 8px", borderRadius: "99px", background: credIssued ? "rgba(33,208,179,0.1)" : SURFACE.bg, border: credIssued ? "1px solid rgba(33,208,179,0.25)" : `1px solid ${SURFACE.border}`, color: credIssued ? BRAND.teal : SURFACE.textFaint }}>
                             {credIssued ? t("Credencial") : t("Sin credencial")}
                           </span>
                           {/* Access chips */}
@@ -868,12 +868,12 @@ export default function AccreditationsPage() {
                       </div>
                       {/* Actions */}
                       <div style={{ display: "flex", flexDirection: "column", gap: "5px", flexShrink: 0 }}>
-                        <button type="button" style={{ fontSize: "11px", padding: "5px 12px", borderRadius: "8px", border: "1px solid #e2e8f0", background: SURFACE.card, color: SURFACE.textSecondary, cursor: "pointer", fontWeight: 600 }}
+                        <button type="button" style={{ fontSize: "11px", padding: "5px 12px", borderRadius: "8px", border: `1px solid ${SURFACE.border}`, background: SURFACE.card, color: SURFACE.textSecondary, cursor: "pointer", fontWeight: 600 }}
                           onClick={() => { setNewSubjectType("PARTICIPANT"); setSelectedDelegationId(item.delegationId || ""); setSubjectSearch(item.fullName || ""); setNewAthleteId(item.id); setNewDriverId(""); }}>
                           {t("Editar")}
                         </button>
                         <button type="button"
-                          style={{ fontSize: "11px", padding: "5px 12px", borderRadius: "8px", border: "none", background: !accredited ? SURFACE.border : "linear-gradient(135deg, #21D0B3, #14AE98)", color: !accredited ? SURFACE.textFaint : SURFACE.card, cursor: !accredited ? "not-allowed" : "pointer", fontWeight: 700 }}
+                          style={{ fontSize: "11px", padding: "5px 12px", borderRadius: "8px", border: "none", background: !accredited ? SURFACE.border : `linear-gradient(135deg, ${BRAND.teal}, #14AE98)`, color: !accredited ? SURFACE.textFaint : SURFACE.card, cursor: !accredited ? "not-allowed" : "pointer", fontWeight: 700 }}
                           disabled={!accredited}
                           onClick={() => generateCredential("PARTICIPANT", item.id)}>
                           {t("Credencial")}
@@ -899,7 +899,7 @@ export default function AccreditationsPage() {
                   <span style={{ fontSize: "12px", fontWeight: 700, padding: "3px 12px", borderRadius: "99px", background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)", color: STATE.success }}>
                     {driverRows.filter(r => isAccredited(accByDriver[r.id]?.status)).length} {t("acreditados")}
                   </span>
-                  <span style={{ fontSize: "12px", fontWeight: 700, padding: "3px 12px", borderRadius: "99px", background: SURFACE.borderMuted, border: "1px solid #e2e8f0", color: SURFACE.textMuted }}>
+                  <span style={{ fontSize: "12px", fontWeight: 700, padding: "3px 12px", borderRadius: "99px", background: SURFACE.borderMuted, border: `1px solid ${SURFACE.border}`, color: SURFACE.textMuted }}>
                     {driverRows.filter(r => !isAccredited(accByDriver[r.id]?.status)).length} {t("pendientes")}
                   </span>
                 </div>
@@ -924,7 +924,7 @@ export default function AccreditationsPage() {
                     }}>
                       {/* Avatar */}
                       {photo
-                        ? <img src={photo} alt="" style={{ width: "42px", height: "42px", borderRadius: "10px", objectFit: "cover", flexShrink: 0, border: "1px solid #e2e8f0" }} />
+                        ? <img src={photo} alt="" style={{ width: "42px", height: "42px", borderRadius: "10px", objectFit: "cover", flexShrink: 0, border: `1px solid ${SURFACE.border}` }} />
                         : <div style={{ width: "42px", height: "42px", borderRadius: "10px", background: accredited ? "rgba(16,185,129,0.12)" : SURFACE.borderMuted, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: "13px", fontWeight: 800, color: accredited ? STATE.success : SURFACE.textFaint }}>
                             {initials(item.fullName)}
                           </div>
@@ -934,13 +934,13 @@ export default function AccreditationsPage() {
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                           <p style={{ fontWeight: 700, fontSize: "13px", color: SURFACE.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "180px" }}>{item.fullName || item.id}</p>
                           {item.rut && <span style={{ fontSize: "10px", color: SURFACE.textFaint, flexShrink: 0 }}>{item.rut}</span>}
-                          {provName && <span style={{ fontSize: "10px", fontWeight: 600, background: SURFACE.borderMuted, border: "1px solid #e2e8f0", borderRadius: "6px", padding: "1px 6px", color: SURFACE.textSecondary, flexShrink: 0 }}>{provName}</span>}
+                          {provName && <span style={{ fontSize: "10px", fontWeight: 600, background: SURFACE.borderMuted, border: `1px solid ${SURFACE.border}`, borderRadius: "6px", padding: "1px 6px", color: SURFACE.textSecondary, flexShrink: 0 }}>{provName}</span>}
                         </div>
                         <div style={{ marginTop: "5px", display: "flex", flexWrap: "wrap", gap: "4px", alignItems: "center" }}>
-                          <span style={{ fontSize: "10px", fontWeight: 700, padding: "2px 8px", borderRadius: "99px", background: accredited ? "rgba(16,185,129,0.12)" : SURFACE.borderMuted, border: accredited ? "1px solid rgba(16,185,129,0.3)" : "1px solid #e2e8f0", color: accredited ? STATE.success : SURFACE.textMuted }}>
+                          <span style={{ fontSize: "10px", fontWeight: 700, padding: "2px 8px", borderRadius: "99px", background: accredited ? "rgba(16,185,129,0.12)" : SURFACE.borderMuted, border: accredited ? "1px solid rgba(16,185,129,0.3)" : `1px solid ${SURFACE.border}`, color: accredited ? STATE.success : SURFACE.textMuted }}>
                             {accredited ? t("Acreditado") : t("Pendiente")}
                           </span>
-                          <span style={{ fontSize: "10px", fontWeight: 700, padding: "2px 8px", borderRadius: "99px", background: credIssued ? "rgba(33,208,179,0.1)" : SURFACE.bg, border: credIssued ? "1px solid rgba(33,208,179,0.25)" : "1px solid #e2e8f0", color: credIssued ? BRAND.teal : SURFACE.textFaint }}>
+                          <span style={{ fontSize: "10px", fontWeight: 700, padding: "2px 8px", borderRadius: "99px", background: credIssued ? "rgba(33,208,179,0.1)" : SURFACE.bg, border: credIssued ? "1px solid rgba(33,208,179,0.25)" : `1px solid ${SURFACE.border}`, color: credIssued ? BRAND.teal : SURFACE.textFaint }}>
                             {credIssued ? t("Credencial") : t("Sin credencial")}
                           </span>
                           {accessTypes.map(code => <span key={code} style={{ fontSize: "10px", fontWeight: 700, padding: "2px 7px", borderRadius: "99px", background: "rgba(33,208,179,0.1)", border: "1px solid rgba(33,208,179,0.2)", color: BRAND.teal }}>{code}</span>)}
@@ -948,12 +948,12 @@ export default function AccreditationsPage() {
                       </div>
                       {/* Actions */}
                       <div style={{ display: "flex", flexDirection: "column", gap: "5px", flexShrink: 0 }}>
-                        <button type="button" style={{ fontSize: "11px", padding: "5px 12px", borderRadius: "8px", border: "1px solid #e2e8f0", background: SURFACE.card, color: SURFACE.textSecondary, cursor: "pointer", fontWeight: 600 }}
+                        <button type="button" style={{ fontSize: "11px", padding: "5px 12px", borderRadius: "8px", border: `1px solid ${SURFACE.border}`, background: SURFACE.card, color: SURFACE.textSecondary, cursor: "pointer", fontWeight: 600 }}
                           onClick={() => { setNewSubjectType("DRIVER"); setSubjectSearch(item.fullName || ""); setNewAthleteId(""); setNewDriverId(item.id); }}>
                           {t("Editar")}
                         </button>
                         <button type="button"
-                          style={{ fontSize: "11px", padding: "5px 12px", borderRadius: "8px", border: "none", background: !accredited ? SURFACE.border : "linear-gradient(135deg, #21D0B3, #14AE98)", color: !accredited ? SURFACE.textFaint : SURFACE.card, cursor: !accredited ? "not-allowed" : "pointer", fontWeight: 700 }}
+                          style={{ fontSize: "11px", padding: "5px 12px", borderRadius: "8px", border: "none", background: !accredited ? SURFACE.border : `linear-gradient(135deg, ${BRAND.teal}, #14AE98)`, color: !accredited ? SURFACE.textFaint : SURFACE.card, cursor: !accredited ? "not-allowed" : "pointer", fontWeight: 700 }}
                           disabled={!accredited}
                           onClick={() => generateCredential("DRIVER", item.id)}>
                           {t("Credencial")}

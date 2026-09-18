@@ -427,7 +427,7 @@ export default function AndRegistrationKpi({
     : STATE.danger;
 
   return (
-    <section className="surface rounded-3xl p-5" style={{ border: "1px solid var(--border)", borderTop: "2px solid #21D0B3", boxShadow: "0 1px 6px rgba(15,23,42,0.06)" }}>
+    <section className="surface rounded-3xl p-5" style={{ border: "1px solid var(--border)", borderTop: `2px solid ${BRAND.teal}`, boxShadow: "0 1px 6px rgba(15,23,42,0.06)" }}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: BRAND.teal, marginBottom: "4px" }}>{eyebrow}</p>
@@ -522,7 +522,7 @@ export default function AndRegistrationKpi({
         })()}
 
         {/* Cobertura delegaciones */}
-        <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderTop: "2px solid #1FCDFF", borderRadius: "16px", padding: "18px", boxShadow: "0 1px 6px rgba(15,23,42,0.06)" }}>
+        <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderTop: `2px solid ${BRAND.blue}`, borderRadius: "16px", padding: "18px", boxShadow: "0 1px 6px rgba(15,23,42,0.06)" }}>
           <div className="flex items-center justify-between mb-3">
             <GlobeIcon size={18} color={BRAND.blue} strokeWidth={2.2} />
             <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: BRAND.blue, display: "inline-block" }} />

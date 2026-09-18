@@ -104,7 +104,7 @@ export default function TopBar({ onMenuOpen }: { onMenuOpen?: () => void }) {
 
   return (
     <header className="flex flex-wrap items-center justify-between gap-4 mb-6 pb-5" style={{
-      borderBottom: "1px solid #e2e8f0",
+      borderBottom: `1px solid ${SURFACE.border}`,
     }}>
       {/* Left: hamburger + logo + title */}
       <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
@@ -121,7 +121,7 @@ export default function TopBar({ onMenuOpen }: { onMenuOpen?: () => void }) {
             height: "36px",
             borderRadius: "8px",
             background: "#f0f3fa",
-            border: "1px solid #e2e8f0",
+            border: `1px solid ${SURFACE.border}`,
             cursor: "pointer",
             color: BRAND.charcoal,
             flexShrink: 0,
@@ -141,7 +141,7 @@ export default function TopBar({ onMenuOpen }: { onMenuOpen?: () => void }) {
             filter: "drop-shadow(0 2px 6px rgba(15,23,42,0.12))",
           }}
         />
-        <div style={{ width: "1px", height: "22px", background: "linear-gradient(to bottom, transparent, #cbd5e1, transparent)" }} />
+        <div style={{ width: "1px", height: "22px", background: `linear-gradient(to bottom, transparent, ${SURFACE.borderStrong}, transparent)` }} />
         <div>
           <h2 style={{ fontSize: "1.25rem", fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.1, color: SURFACE.text }}>
             {title}
@@ -157,7 +157,7 @@ export default function TopBar({ onMenuOpen }: { onMenuOpen?: () => void }) {
           alignItems: "center",
           gap: "10px",
           background: SURFACE.card,
-          border: "1px solid #e2e8f0",
+          border: `1px solid ${SURFACE.border}`,
           borderRadius: "12px",
           padding: "6px 10px",
           // Sin ancho mínimo fijo: en móvil (app staff) 188px + el botón de
@@ -219,7 +219,7 @@ export default function TopBar({ onMenuOpen }: { onMenuOpen?: () => void }) {
             height: "40px",
             padding: "0 14px",
             borderRadius: "12px",
-            border: "1px solid #e2e8f0",
+            border: `1px solid ${SURFACE.border}`,
             background: SURFACE.card,
             color: SURFACE.textSecondary,
             fontSize: "13px",

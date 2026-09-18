@@ -248,7 +248,7 @@ export default function HotelTrackingPage() {
       {/* ── Command panel */}
       <section style={{
         background: SURFACE.card,
-        border: "1px solid #e2e8f0",
+        border: `1px solid ${SURFACE.border}`,
         borderRadius: "20px",
         padding: "24px 28px",
         boxShadow: "0 1px 4px rgba(15,23,42,0.06)",
@@ -272,7 +272,7 @@ export default function HotelTrackingPage() {
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <label style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: SURFACE.textFaint }}>Evento</label>
               <select
-                style={{ minWidth: "220px", height: "38px", padding: "0 12px", borderRadius: "10px", border: "1px solid #e2e8f0", background: SURFACE.card, color: SURFACE.text, fontSize: "13px", fontWeight: 500, outline: "none" }}
+                style={{ minWidth: "220px", height: "38px", padding: "0 12px", borderRadius: "10px", border: `1px solid ${SURFACE.border}`, background: SURFACE.card, color: SURFACE.text, fontSize: "13px", fontWeight: 500, outline: "none" }}
                 value={selectedEventId}
                 onChange={(e) => setSelectedEventId(e.target.value)}
               >
@@ -286,7 +286,7 @@ export default function HotelTrackingPage() {
               onClick={loadData}
               disabled={loading}
               style={{
-                background: SURFACE.card, border: "1px solid #e2e8f0",
+                background: SURFACE.card, border: `1px solid ${SURFACE.border}`,
                 borderRadius: "10px", padding: "9px 18px",
                 color: loading ? SURFACE.textFaint : SURFACE.textSecondary,
                 fontSize: "13px", fontWeight: 600,
@@ -349,7 +349,7 @@ export default function HotelTrackingPage() {
       </section>
 
       {/* ── Hotel table */}
-      <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "20px", padding: "24px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+      <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "20px", padding: "24px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div style={{ marginBottom: "16px" }}>
           <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: SURFACE.textFaint }}>Por propiedad</p>
           <h2 style={{ fontSize: "16px", fontWeight: 700, color: SURFACE.text, marginTop: "4px" }}>{t("Disponibilidad")}</h2>
@@ -360,7 +360,7 @@ export default function HotelTrackingPage() {
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
               <thead>
-                <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
+                <tr style={{ borderBottom: `1px solid ${SURFACE.border}` }}>
                   {[t("Hotel"), t("Evento"), t("Dirección"), t("Capacidad"), t("Ocupadas"), t("Disponibles"), t("Habitaciones"), t("Camas"), t("Ocupación")].map((h) => (
                     <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: SURFACE.textFaint, whiteSpace: "nowrap" }}>{h}</th>
                   ))}
@@ -371,7 +371,7 @@ export default function HotelTrackingPage() {
                   const eventName = row.eventId ? events[row.eventId]?.name : "-";
                   const occupancy = row.occupancy ?? 0;
                   return (
-                    <tr key={row.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                    <tr key={row.id} style={{ borderBottom: `1px solid ${SURFACE.borderMuted}` }}>
                       <td style={{ padding: "10px 12px", fontWeight: 600, color: SURFACE.text }}>{row.name || row.id}</td>
                       <td style={{ padding: "10px 12px", color: SURFACE.textMuted }}>{eventName || row.eventId || "-"}</td>
                       <td style={{ padding: "10px 12px", color: SURFACE.textMuted }}>{row.address || "-"}</td>

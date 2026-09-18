@@ -14,7 +14,7 @@ type DetailRowProps = {
 /** Fila etiqueta/valor para paneles de detalle y resúmenes. */
 export default function DetailRow({ label, value, color, bold }: DetailRowProps) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "7px 0", borderBottom: "1px solid #f1f5f9" }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "7px 0", borderBottom: `1px solid ${SURFACE.borderMuted}` }}>
       <span style={{ fontSize: 12.5, color: SURFACE.textMuted, fontWeight: bold ? 700 : 500 }}>{label}</span>
       <span style={{ fontSize: 13, fontWeight: 700, color: color || SURFACE.text, fontVariantNumeric: "tabular-nums", textAlign: "right" }}>{value}</span>
     </div>

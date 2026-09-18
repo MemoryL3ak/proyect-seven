@@ -93,7 +93,7 @@ export default function RegistroParticipantesPage() {
             </p>
           </div>
           <div style={{ display: "flex", gap: "10px", alignItems: "center", flexShrink: 0 }}>
-            <span style={{ fontSize: "11px", color: SURFACE.textFaint, padding: "4px 10px", borderRadius: "8px", background: SURFACE.bg, border: "1px solid #e2e8f0" }}>
+            <span style={{ fontSize: "11px", color: SURFACE.textFaint, padding: "4px 10px", borderRadius: "8px", background: SURFACE.bg, border: `1px solid ${SURFACE.border}` }}>
               {athletes.length} participantes
             </span>
             <label style={{
@@ -147,7 +147,7 @@ export default function RegistroParticipantesPage() {
 
       <section
         className="surface"
-        style={{ borderRadius: "14px", padding: "14px 16px", borderTop: "2px solid #21D0B3", boxShadow: "0 1px 6px rgba(15,23,42,0.06)" }}
+        style={{ borderRadius: "14px", padding: "14px 16px", borderTop: `2px solid ${BRAND.teal}`, boxShadow: "0 1px 6px rgba(15,23,42,0.06)" }}
       >
         <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: BRAND.teal, marginBottom: "10px" }}>
           {t("Gestión de registros")}
@@ -220,7 +220,7 @@ export default function RegistroParticipantesPage() {
               </div>
             )}
             <button onClick={() => setPhotoResult(null)}
-              style={{ padding: "10px 32px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: SURFACE.card, fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 10px rgba(33,208,179,0.3)" }}>
+              style={{ padding: "10px 32px", borderRadius: "10px", border: "none", background: `linear-gradient(135deg, ${BRAND.teal}, #14AE98)`, color: SURFACE.card, fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 10px rgba(33,208,179,0.3)" }}>
               Entendido
             </button>
           </div>

@@ -232,7 +232,7 @@ export default function CommercialDashboardPage() {
                   </div>
                 </>
               ) : (
-                <div style={{ marginTop: 4, padding: 18, borderRadius: 12, background: SURFACE.bg, border: "1px dashed #e2e8f0", textAlign: "center" }}>
+                <div style={{ marginTop: 4, padding: 18, borderRadius: 12, background: SURFACE.bg, border: `1px dashed ${SURFACE.border}`, textAlign: "center" }}>
                   <p style={{ fontSize: 13, fontWeight: 600, color: SURFACE.textFaint, margin: 0 }}>Sin monto adjudicado</p>
                   <p style={{ fontSize: 11, color: SURFACE.borderStrong, margin: "4px 0 0" }}>Ingresa el monto licitado en el proveedor.</p>
                 </div>
@@ -309,7 +309,7 @@ export default function CommercialDashboardPage() {
               })}
             </div>
           ) : (
-            <div style={{ padding: 20, borderRadius: 12, background: SURFACE.bg, border: "1px dashed #e2e8f0", textAlign: "center" }}>
+            <div style={{ padding: 20, borderRadius: 12, background: SURFACE.bg, border: `1px dashed ${SURFACE.border}`, textAlign: "center" }}>
               <p style={{ fontSize: 13, fontWeight: 600, color: SURFACE.textFaint, margin: 0 }}>Sin viajes completados aún</p>
             </div>
           )}
@@ -337,7 +337,7 @@ export default function CommercialDashboardPage() {
                   <XAxis dataKey="date" tick={{ fontSize: 10, fill: SURFACE.textFaint }} tickLine={false} axisLine={false} />
                   <YAxis tick={{ fontSize: 10, fill: SURFACE.textFaint }} tickLine={false} axisLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} width={50} />
                   <Tooltip
-                    contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", boxShadow: "0 4px 12px rgba(0,0,0,0.08)", fontSize: 12 }}
+                    contentStyle={{ borderRadius: 12, border: `1px solid ${SURFACE.border}`, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", fontSize: 12 }}
                     formatter={(value) => [formatCurrency(Number(value)), "Monto"]}
                   />
                   <Area type="monotone" dataKey="amount" stroke={TEAL} strokeWidth={2.5} fill="url(#gradTeal)" dot={{ r: 3, fill: TEAL, strokeWidth: 0 }} activeDot={{ r: 5, fill: TEAL, stroke: SURFACE.card, strokeWidth: 2 }} />
@@ -364,7 +364,7 @@ export default function CommercialDashboardPage() {
                   <XAxis dataKey="label" tick={{ fontSize: 10, fill: SURFACE.textFaint }} tickLine={false} axisLine={false} />
                   <YAxis tick={{ fontSize: 10, fill: SURFACE.textFaint }} tickLine={false} axisLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} width={50} />
                   <Tooltip
-                    contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", boxShadow: "0 4px 12px rgba(0,0,0,0.08)", fontSize: 12 }}
+                    contentStyle={{ borderRadius: 12, border: `1px solid ${SURFACE.border}`, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", fontSize: 12 }}
                     formatter={(value) => [formatCurrency(Number(value)), "Monto"]}
                   />
                   <Bar dataKey="amount" fill="url(#gradBlue)" radius={[6, 6, 0, 0]} />

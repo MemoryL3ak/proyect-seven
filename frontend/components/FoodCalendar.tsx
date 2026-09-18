@@ -101,7 +101,7 @@ function MenuFormFields({
   onCancel: () => void;
   t: (s: string) => string;
 }) {
-  const fieldStyle: React.CSSProperties = { width: "100%", height: "36px", padding: "0 10px", borderRadius: "8px", border: "1px solid #e2e8f0", background: SURFACE.bg, color: SURFACE.text, fontSize: "13px", outline: "none" };
+  const fieldStyle: React.CSSProperties = { width: "100%", height: "36px", padding: "0 10px", borderRadius: "8px", border: `1px solid ${SURFACE.border}`, background: SURFACE.bg, color: SURFACE.text, fontSize: "13px", outline: "none" };
   const labelStyle: React.CSSProperties = { fontSize: "11px", fontWeight: 600, color: SURFACE.textFaint, textTransform: "uppercase", letterSpacing: "0.12em", display: "block", marginBottom: "4px" };
 
   return (
@@ -173,7 +173,7 @@ function MenuFormFields({
         <button type="button" style={{ flex: 1, padding: "8px", borderRadius: "8px", fontSize: "13px", fontWeight: 600, background: `linear-gradient(135deg, ${BRAND.teal}, #14AE98)`, color: SURFACE.card, border: "none", cursor: !form.title.trim() || saving ? "not-allowed" : "pointer", opacity: !form.title.trim() || saving ? 0.6 : 1 }} disabled={!form.title.trim() || saving} onClick={onSave}>
           {saving ? t("Guardando…") : editingId ? t("Guardar cambios") : t("Agregar plato")}
         </button>
-        <button type="button" style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "13px", fontWeight: 600, background: "transparent", border: "1px solid #e2e8f0", color: SURFACE.textMuted, cursor: "pointer" }} onClick={onCancel}>{t("Cancelar")}</button>
+        <button type="button" style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "13px", fontWeight: 600, background: "transparent", border: `1px solid ${SURFACE.border}`, color: SURFACE.textMuted, cursor: "pointer" }} onClick={onCancel}>{t("Cancelar")}</button>
       </div>
     </div>
   );
@@ -303,7 +303,7 @@ export default function FoodCalendar({ mealType }: { mealType: MealType }) {
     <div className="space-y-4">
 
       {/* TODAY BANNER */}
-      <div style={{ borderRadius: "20px", background: SURFACE.card, border: "1px solid #e2e8f0", padding: "24px 28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+      <div style={{ borderRadius: "20px", background: SURFACE.card, border: `1px solid ${SURFACE.border}`, padding: "24px 28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
           <div>
             <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.25)", borderRadius: "99px", padding: "3px 12px", fontSize: "10px", fontWeight: 700, letterSpacing: "0.25em", textTransform: "uppercase", color: BRAND.teal }}>
@@ -341,18 +341,18 @@ export default function FoodCalendar({ mealType }: { mealType: MealType }) {
       </div>
 
       {/* CALENDAR HEADER */}
-      <div style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "12px 16px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "12px" }}>
+      <div style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", padding: "12px 16px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "12px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-          <button type="button" onClick={() => { setCurrentDate(new Date(year, month - 1, 1)); setSelectedDay(null); }} style={{ width: "32px", height: "32px", borderRadius: "8px", border: "1px solid #e2e8f0", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: SURFACE.textMuted }}>
+          <button type="button" onClick={() => { setCurrentDate(new Date(year, month - 1, 1)); setSelectedDay(null); }} style={{ width: "32px", height: "32px", borderRadius: "8px", border: `1px solid ${SURFACE.border}`, background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: SURFACE.textMuted }}>
             <ChevronLeftIcon size={16} strokeWidth={2} />
           </button>
           <span style={{ fontSize: "17px", fontWeight: 700, color: SURFACE.text, width: "210px", textAlign: "center", userSelect: "none", textTransform: "capitalize" }}>{new Date(year, month, 1).toLocaleDateString(dateLocale, { month: "long" })} {year}</span>
-          <button type="button" onClick={() => { setCurrentDate(new Date(year, month + 1, 1)); setSelectedDay(null); }} style={{ width: "32px", height: "32px", borderRadius: "8px", border: "1px solid #e2e8f0", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: SURFACE.textMuted }}>
+          <button type="button" onClick={() => { setCurrentDate(new Date(year, month + 1, 1)); setSelectedDay(null); }} style={{ width: "32px", height: "32px", borderRadius: "8px", border: `1px solid ${SURFACE.border}`, background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: SURFACE.textMuted }}>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
           </button>
         </div>
         {accommodations.length > 0 && (
-          <select style={{ height: "36px", padding: "0 12px", borderRadius: "10px", border: "1px solid #e2e8f0", background: SURFACE.bg, color: SURFACE.text, fontSize: "13px", outline: "none", marginLeft: "auto" }} value={filterAccomm} onChange={(e) => setFilterAccomm(e.target.value)}>
+          <select style={{ height: "36px", padding: "0 12px", borderRadius: "10px", border: `1px solid ${SURFACE.border}`, background: SURFACE.bg, color: SURFACE.text, fontSize: "13px", outline: "none", marginLeft: "auto" }} value={filterAccomm} onChange={(e) => setFilterAccomm(e.target.value)}>
             <option value="">{t("Todos los hoteles")}</option>
             {accommodations.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
           </select>
@@ -363,8 +363,8 @@ export default function FoodCalendar({ mealType }: { mealType: MealType }) {
       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "16px", alignItems: "start" }}>
 
         {/* Calendar grid */}
-        <div style={{ gridColumn: "span 2", background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", overflow: "hidden" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", borderBottom: "1px solid #f1f5f9" }}>
+        <div style={{ gridColumn: "span 2", background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", overflow: "hidden" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", borderBottom: `1px solid ${SURFACE.borderMuted}` }}>
             {Array.from({ length: 7 }, (_, i) => {
               const d = new Date(2021, 0, 4 + i);
               return (
@@ -379,7 +379,7 @@ export default function FoodCalendar({ mealType }: { mealType: MealType }) {
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
               {cells.map((day, i) => {
-                if (!day) return <div key={i} style={{ minHeight: "88px", background: SURFACE.bg, borderRight: "1px solid #f1f5f9", borderBottom: "1px solid #f1f5f9" }} />;
+                if (!day) return <div key={i} style={{ minHeight: "88px", background: SURFACE.bg, borderRight: `1px solid ${SURFACE.borderMuted}`, borderBottom: `1px solid ${SURFACE.borderMuted}` }} />;
                 const ds = toISO(year, month, day);
                 const dayMenus = menusByDate[ds] ?? [];
                 const isSelected = selectedDay === ds;
@@ -392,8 +392,8 @@ export default function FoodCalendar({ mealType }: { mealType: MealType }) {
                       outline: isSelected ? `2px solid ${BRAND.teal}` : "none",
                       outlineOffset: "-2px",
                       border: "none",
-                      borderRight: "1px solid #f1f5f9",
-                      borderBottom: "1px solid #f1f5f9",
+                      borderRight: `1px solid ${SURFACE.borderMuted}`,
+                      borderBottom: `1px solid ${SURFACE.borderMuted}`,
                       transition: "background 120ms",
                     }}
                     onMouseEnter={(e) => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = SURFACE.bg; }}
@@ -422,7 +422,7 @@ export default function FoodCalendar({ mealType }: { mealType: MealType }) {
         </div>
 
         {/* Day detail panel */}
-        <div style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "16px", display: "flex", flexDirection: "column", gap: "16px", minHeight: "300px" }}>
+        <div style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", padding: "16px", display: "flex", flexDirection: "column", gap: "16px", minHeight: "300px" }}>
           {!selectedDay ? (
             <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "8px", textAlign: "center", padding: "40px 0" }}>
               <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke={SURFACE.border} strokeWidth="1.5">
@@ -451,7 +451,7 @@ export default function FoodCalendar({ mealType }: { mealType: MealType }) {
               {panelMenus.length > 0 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                   {panelMenus.map((m) => (
-                    <div key={m.id} style={{ borderRadius: "10px", padding: "12px", border: "1px solid #e2e8f0", background: SURFACE.bg }}>
+                    <div key={m.id} style={{ borderRadius: "10px", padding: "12px", border: `1px solid ${SURFACE.border}`, background: SURFACE.bg }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "4px" }}>
                         <div style={{ minWidth: 0 }}>
                           <p style={{ fontSize: "13px", fontWeight: 600, color: SURFACE.text }}>{m.title}</p>
@@ -477,7 +477,7 @@ export default function FoodCalendar({ mealType }: { mealType: MealType }) {
               )}
 
               {panelAdding && (
-                <div style={{ borderRadius: "10px", border: "1px solid #e2e8f0", background: SURFACE.card, padding: "16px" }}>
+                <div style={{ borderRadius: "10px", border: `1px solid ${SURFACE.border}`, background: SURFACE.card, padding: "16px" }}>
                   <p style={{ fontSize: "10px", fontWeight: 700, color: SURFACE.textFaint, textTransform: "uppercase", letterSpacing: "0.18em", marginBottom: "12px" }}>
                     {editingId ? t("Editar plato") : `${t("Nuevo plato")} — ${t(meta.label)}`}
                   </p>

@@ -406,7 +406,7 @@ export default function TripRequestsPage() {
             <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase", color: SURFACE.textFaint }}>{t("Timeline operativa")}</p>
             <h3 style={{ marginTop: "3px", fontWeight: 700, fontSize: "16px", color: SURFACE.text }}>{t("Estado general de solicitudes")}</h3>
           </div>
-          <span style={{ fontSize: "12px", fontWeight: 600, color: SURFACE.textMuted, background: SURFACE.bg, border: "1px solid #e2e8f0", borderRadius: "99px", padding: "4px 12px" }}>
+          <span style={{ fontSize: "12px", fontWeight: 600, color: SURFACE.textMuted, background: SURFACE.bg, border: `1px solid ${SURFACE.border}`, borderRadius: "99px", padding: "4px 12px" }}>
             {visible.length} {visible.length === 1 ? t("solicitud") : t("solicitudes")} {t("con los filtros actuales")}
           </span>
         </div>
@@ -418,7 +418,7 @@ export default function TripRequestsPage() {
             return (
               <div key={status} style={{
                 background: SURFACE.card,
-                border: "1px solid #e2e8f0",
+                border: `1px solid ${SURFACE.border}`,
                 borderTop: `3px solid ${meta.color}`,
                 borderRadius: "16px",
                 padding: "12px",
@@ -450,7 +450,7 @@ export default function TripRequestsPage() {
                         title={t("Ver detalle y bitácora")}
                         style={{
                           background: SURFACE.bg,
-                          border: "1px solid #e2e8f0",
+                          border: `1px solid ${SURFACE.border}`,
                           borderLeft: `3px solid ${meta.color}`,
                           borderRadius: "10px",
                           padding: "8px 10px",
@@ -640,7 +640,7 @@ export default function TripRequestsPage() {
                       onClick={() => { setListStatus(null); setDetail(r); }}
                       title={t("Ver detalle y bitácora")}
                       style={{
-                        background: SURFACE.bg, border: "1px solid #e2e8f0", borderLeft: `3px solid ${meta.color}`,
+                        background: SURFACE.bg, border: `1px solid ${SURFACE.border}`, borderLeft: `3px solid ${meta.color}`,
                         borderRadius: 10, padding: "8px 10px", width: "100%", textAlign: "left", cursor: "pointer", display: "block",
                       }}
                     >
@@ -731,7 +731,7 @@ export default function TripRequestsPage() {
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                     {(detail.athleteNames ?? []).map((name, i) => (
                       <span key={`${name}-${i}`} className="text-xs font-semibold"
-                        style={{ color: SURFACE.textStrong, background: SURFACE.bg, border: "1px solid #e2e8f0", borderRadius: 99, padding: "3px 10px" }}>
+                        style={{ color: SURFACE.textStrong, background: SURFACE.bg, border: `1px solid ${SURFACE.border}`, borderRadius: 99, padding: "3px 10px" }}>
                         {name}
                       </span>
                     ))}

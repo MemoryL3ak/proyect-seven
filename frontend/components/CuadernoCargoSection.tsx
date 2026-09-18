@@ -40,7 +40,7 @@ export default function CuadernoCargoSection() {
     <div
       style={{
         background: SURFACE.card,
-        border: "1px solid #e2e8f0",
+        border: `1px solid ${SURFACE.border}`,
         borderRadius: 16,
         overflow: "hidden",
       }}
@@ -78,7 +78,7 @@ export default function CuadernoCargoSection() {
       </button>
 
       {open && (
-        <div style={{ padding: "0 16px 16px", borderTop: "1px solid #f1f5f9" }}>
+        <div style={{ padding: "0 16px 16px", borderTop: `1px solid ${SURFACE.borderMuted}` }}>
           <p style={{ fontSize: 11.5, color: SURFACE.textMuted, margin: "12px 0" }}>{CUADERNO_INFO.desc.es}</p>
 
           <input
@@ -90,7 +90,7 @@ export default function CuadernoCargoSection() {
               width: "100%",
               padding: "9px 12px",
               borderRadius: 10,
-              border: "1px solid #e2e8f0",
+              border: `1px solid ${SURFACE.border}`,
               fontSize: 13,
               marginBottom: 10,
             }}
@@ -146,7 +146,7 @@ export default function CuadernoCargoSection() {
                 <div
                   key={`${e.category}-${e.term}-${i}`}
                   style={{
-                    border: "1px solid #f1f5f9",
+                    border: `1px solid ${SURFACE.borderMuted}`,
                     borderLeft: `3px solid ${colorDe(e.category)}`,
                     borderRadius: 10,
                     padding: "10px 12px",

@@ -853,7 +853,7 @@ export default function ManualPage() {
           top: 0,
           zIndex: 50,
           background: SURFACE.card,
-          borderBottom: "1px solid #e2e8f0",
+          borderBottom: `1px solid ${SURFACE.border}`,
           padding: "12px 16px",
           display: "flex",
           alignItems: "center",
@@ -973,7 +973,7 @@ export default function ManualPage() {
               textTransform: "uppercase",
               color: SURFACE.textMuted,
               marginBottom: 16,
-              borderBottom: "1px solid #e2e8f0",
+              borderBottom: `1px solid ${SURFACE.border}`,
               paddingBottom: 8,
             }}
           >
@@ -996,7 +996,7 @@ export default function ManualPage() {
                 <span
                   style={{
                     flex: 1,
-                    borderBottom: "1px dotted #cbd5e1",
+                    borderBottom: `1px dotted ${SURFACE.borderStrong}`,
                     margin: "0 8px",
                     alignSelf: "center",
                     minWidth: 20,
@@ -1125,7 +1125,7 @@ export default function ManualPage() {
         {/* ── Footer ─────────────────────────────────────────────────────── */}
         <div
           style={{
-            borderTop: "2px solid #e2e8f0",
+            borderTop: `2px solid ${SURFACE.border}`,
             paddingTop: 24,
             textAlign: "center",
             fontFamily: "system-ui, sans-serif",

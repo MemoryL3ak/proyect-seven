@@ -299,7 +299,7 @@ export default function PartnerScannerPage() {
       <header className="sticky top-0 z-20 backdrop-blur-md"
         style={{
           background: "rgba(255,255,255,0.9)",
-          borderBottom: "1px solid #e2e8f0",
+          borderBottom: `1px solid ${SURFACE.border}`,
         }}>
         {/* Shimmer line abajo del header */}
         <div className="absolute bottom-0 left-0 right-0 h-[1px] shimmer-line" />
@@ -329,7 +329,7 @@ export default function PartnerScannerPage() {
             style={{
               color: SURFACE.textSecondary,
               background: SURFACE.borderMuted,
-              border: "1px solid #e2e8f0",
+              border: `1px solid ${SURFACE.border}`,
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = "#e6ebf2";
@@ -466,7 +466,7 @@ function StatCard({
     <div className="rounded-2xl p-4 relative overflow-hidden anim-fade-up transition-all hover:scale-[1.02]"
       style={{
         background: SURFACE.card,
-        border: "1px solid #e2e8f0",
+        border: `1px solid ${SURFACE.border}`,
         borderTop: `3px solid ${color}`,
         boxShadow: "0 1px 4px rgba(15,23,42,0.06)",
         cursor: "default",
@@ -565,7 +565,7 @@ function IdleScreen({ onScan, onManual }: { onScan: () => void; onManual: () => 
             style={{
               background: SURFACE.borderMuted,
               color: "#0d1e3a",
-              border: "1px solid #e2e8f0",
+              border: `1px solid ${SURFACE.border}`,
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = SURFACE.border;
@@ -672,7 +672,7 @@ function ManualScreen({
         className="w-full px-4 py-4 rounded-2xl text-2xl font-mono uppercase text-center tracking-wider transition-all"
         style={{
           background: SURFACE.bg,
-          border: "2px solid #e2e8f0",
+          border: `2px solid ${SURFACE.border}`,
           outline: "none",
           color: "#0d1e3a",
         }}
@@ -688,7 +688,7 @@ function ManualScreen({
       <div className="flex gap-2.5">
         <button type="button"
           className="flex-1 py-3.5 rounded-2xl text-sm font-medium transition-all"
-          style={{ background: SURFACE.borderMuted, color: "#0d1e3a", border: "1px solid #e2e8f0" }}
+          style={{ background: SURFACE.borderMuted, color: "#0d1e3a", border: `1px solid ${SURFACE.border}` }}
           onClick={onCancel}>
           Volver
         </button>
@@ -777,7 +777,7 @@ function PreviewScreen({
             className="w-full px-3 py-2.5 rounded-xl text-sm transition-all"
             style={{
               background: SURFACE.bg,
-              border: "2px solid #e2e8f0",
+              border: `2px solid ${SURFACE.border}`,
               outline: "none",
               color: "#0d1e3a",
             }}
@@ -793,7 +793,7 @@ function PreviewScreen({
           <button type="button"
             disabled={redeeming}
             className="flex-1 py-3.5 rounded-2xl text-sm font-medium transition-all"
-            style={{ background: SURFACE.borderMuted, color: "#0d1e3a", border: "1px solid #e2e8f0" }}
+            style={{ background: SURFACE.borderMuted, color: "#0d1e3a", border: `1px solid ${SURFACE.border}` }}
             onClick={onCancel}>
             Cancelar
           </button>

@@ -79,7 +79,7 @@ export default function ConfirmDialog({
         <div style={{
           position: "absolute", top: 0, left: 0, right: 0, height: "3px",
           background: danger
-            ? "linear-gradient(90deg,#ef4444,#f87171,#ef4444)"
+            ? `linear-gradient(90deg,${STATE.danger},#f87171,${STATE.danger})`
             : `linear-gradient(90deg,${BRAND.teal},${BRAND.tealLight},${BRAND.teal})`,
         }} />
 
@@ -119,7 +119,7 @@ export default function ConfirmDialog({
             onClick={onCancel}
             style={{
               padding: "10px 20px", borderRadius: "12px",
-              border: "1px solid #e2e8f0", background: SURFACE.bg,
+              border: `1px solid ${SURFACE.border}`, background: SURFACE.bg,
               color: SURFACE.textSecondary, fontSize: "14px", fontWeight: 600,
               cursor: "pointer",
             }}
@@ -133,7 +133,7 @@ export default function ConfirmDialog({
             style={{
               padding: "10px 22px", borderRadius: "12px", border: "none",
               background: danger
-                ? "linear-gradient(135deg,#ef4444,#dc2626)"
+                ? `linear-gradient(135deg,${STATE.danger},${STATE.dangerText})`
                 : `linear-gradient(135deg,${BRAND.teal},#17a68e)`,
               color: SURFACE.card, fontSize: "14px", fontWeight: 700,
               cursor: "pointer",

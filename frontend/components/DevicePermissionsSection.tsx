@@ -118,14 +118,14 @@ export default function DevicePermissionsSection() {
       style={{
         background: SURFACE.card,
         borderRadius: 14,
-        border: "1px solid #e2e8f0",
+        border: `1px solid ${SURFACE.border}`,
         overflow: "hidden",
       }}
     >
       <div
         style={{
           padding: "12px 14px",
-          borderBottom: "1px solid #f1f5f9",
+          borderBottom: `1px solid ${SURFACE.borderMuted}`,
           display: "flex",
           alignItems: "center",
           gap: 8,
@@ -168,7 +168,7 @@ export default function DevicePermissionsSection() {
             key={item.kind}
             style={{
               padding: "12px 14px",
-              borderTop: index > 0 ? "1px solid #f1f5f9" : "none",
+              borderTop: index > 0 ? `1px solid ${SURFACE.borderMuted}` : "none",
               display: "flex",
               alignItems: "center",
               gap: 10,
@@ -219,10 +219,10 @@ export default function DevicePermissionsSection() {
                 flexShrink: 0,
                 padding: "8px 12px",
                 borderRadius: 9,
-                border: granted ? "1px solid #cbd5e1" : "none",
+                border: granted ? `1px solid ${SURFACE.borderStrong}` : "none",
                 background: granted
                   ? SURFACE.bg
-                  : "linear-gradient(135deg,#21D0B3,#14AE98)",
+                  : `linear-gradient(135deg,${BRAND.teal},#14AE98)`,
                 color: granted ? SURFACE.textSecondary : SURFACE.card,
                 fontSize: 12,
                 fontWeight: 700,

@@ -561,7 +561,7 @@ export default function DriverHeatmapPage() {
                       <span style={{ fontSize: "12px", fontWeight: 800, color: STATE.info }}>{r.todayTrips}</span>
                     </div>
                     <div style={{ height: "6px", borderRadius: "3px", background: SURFACE.borderMuted, overflow: "hidden" }}>
-                      <div style={{ height: "100%", borderRadius: "3px", background: "linear-gradient(90deg,#3b82f6,#6366f1)", width: `${pct}%`, transition: "width 0.5s" }} />
+                      <div style={{ height: "100%", borderRadius: "3px", background: `linear-gradient(90deg,${STATE.info},#6366f1)`, width: `${pct}%`, transition: "width 0.5s" }} />
                     </div>
                   </div>
                 );

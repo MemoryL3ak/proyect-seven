@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
-import { BRAND, SURFACE } from "@/lib/design";
+import { BRAND, SURFACE, STATE } from "@/lib/design";
 import { CheckIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 import { filterValidatedAthletes } from "@/lib/athletes";
@@ -427,7 +427,7 @@ export default function SportsCalendarDayDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "20px", padding: "20px 24px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)", marginBottom: "0" }}>
+      <div style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "20px", padding: "20px 24px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)", marginBottom: "0" }}>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
@@ -460,7 +460,7 @@ export default function SportsCalendarDayDetailPage() {
           { label: "Actividades", value: kpis.activities, color: BRAND.teal },
           { label: "Delegaciones activas", value: kpis.activeDelegations, color: "#a78bfa" },
         ].map((kpi) => (
-          <div key={kpi.label} style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderTop: `3px solid ${kpi.color}`, borderRadius: "16px", padding: "16px 20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)", transition: "transform 120ms ease" }}
+          <div key={kpi.label} style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderTop: `3px solid ${kpi.color}`, borderRadius: "16px", padding: "16px 20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)", transition: "transform 120ms ease" }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}
           >
@@ -486,7 +486,7 @@ export default function SportsCalendarDayDetailPage() {
 
       {/* ── Tab navigation ── */}
       {!loading && (
-        <div style={{ display: "flex", gap: 0, background: SURFACE.card, borderRadius: 14, border: "1px solid #e2e8f0", overflow: "hidden", boxShadow: "0 1px 4px rgba(15,23,42,0.04)" }}>
+        <div style={{ display: "flex", gap: 0, background: SURFACE.card, borderRadius: 14, border: `1px solid ${SURFACE.border}`, overflow: "hidden", boxShadow: "0 1px 4px rgba(15,23,42,0.04)" }}>
           {([
             { key: "terrestre" as const, label: "Op. Terrestre", count: transportAssignments.length, color: "#a78bfa" },
             { key: "llegadas" as const, label: "Llegadas", count: arrivals.length, color: "#38bdf8" },
@@ -514,7 +514,7 @@ export default function SportsCalendarDayDetailPage() {
         </div>
       )}
 
-      {loading ? <div style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "20px", padding: "32px", fontSize: "13px", color: SURFACE.textFaint }}>{t("Cargando detalle del dia...")}</div> : null}
+      {loading ? <div style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "20px", padding: "32px", fontSize: "13px", color: SURFACE.textFaint }}>{t("Cargando detalle del dia...")}</div> : null}
 
       {!loading ? (
         <section className="space-y-4">
@@ -523,7 +523,7 @@ export default function SportsCalendarDayDetailPage() {
           {dayTab === "terrestre" && (
             <div className="space-y-4">
               {/* Committee validation button */}
-              <div style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: 18, padding: "18px 20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+              <div style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: 18, padding: "18px 20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
                 <div>
                   <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: SURFACE.textFaint, margin: 0 }}>{t("Validación Comité Organizador")}</p>
                   <p style={{ fontSize: 13, color: SURFACE.textMuted, margin: "4px 0 0" }}>
@@ -556,7 +556,7 @@ export default function SportsCalendarDayDetailPage() {
                     padding: "12px 24px", borderRadius: 14, border: "none", cursor: transportAssignments.length === 0 ? "not-allowed" : "pointer",
                     background: transportAssignments.every((t: any) => t.committeeValidated)
                       ? "linear-gradient(135deg, #22c55e, #16a34a)"
-                      : "linear-gradient(135deg, #f59e0b, #d97706)",
+                      : `linear-gradient(135deg, ${STATE.warning}, #d97706)`,
                     color: SURFACE.card, fontSize: 13, fontWeight: 800,
                     boxShadow: transportAssignments.every((t: any) => t.committeeValidated)
                       ? "0 4px 16px rgba(34,197,94,0.3)"
@@ -573,7 +573,7 @@ export default function SportsCalendarDayDetailPage() {
               </div>
 
               {/* Transport cards */}
-              <div style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: 20, padding: 20, boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+              <div style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: 20, padding: 20, boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
                 <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: SURFACE.textFaint }}>{t("Operación terrestre")}</span>
                 <h2 style={{ marginTop: 4, fontSize: 20, fontWeight: 800, color: SURFACE.text }}>{t("Transportes asignados")}</h2>
                 <div className="mt-4 space-y-3">
@@ -607,7 +607,7 @@ export default function SportsCalendarDayDetailPage() {
                         ))}
                       </div>
                       {trip.linkedAthletes.length > 0 && (
-                        <div style={{ marginTop: 10, borderTop: "1px solid #e2e8f0", paddingTop: 10 }}>
+                        <div style={{ marginTop: 10, borderTop: `1px solid ${SURFACE.border}`, paddingTop: 10 }}>
                           <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: SURFACE.textFaint }}>{t("Pasajeros asociados")}</p>
                           <div style={{ marginTop: 6, display: "flex", flexWrap: "wrap", gap: 6 }}>
                             {trip.linkedAthletes.map((athlete) => (
@@ -625,7 +625,7 @@ export default function SportsCalendarDayDetailPage() {
 
           {/* ═══ TAB: Llegadas ═══ */}
           {dayTab === "llegadas" && (
-            <div style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "20px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+            <div style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "20px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
                 <div>
                   <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: SURFACE.textFaint }}>{t("Llegadas por delegación")}</span>
@@ -636,7 +636,7 @@ export default function SportsCalendarDayDetailPage() {
               <div className="mt-4 space-y-3">
                 {arrivalsByDelegation.length === 0 ? <p style={{ fontSize: "13px", color: SURFACE.textFaint }}>{t("No hay llegadas programadas para esta fecha.")}</p> : null}
                 {arrivalsByDelegation.map((group) => (
-                  <div key={group.delegationId} style={{ borderRadius: "14px", border: "1px solid #e2e8f0", borderLeft: "3px solid #38bdf8", background: SURFACE.bg, padding: "14px" }}>
+                  <div key={group.delegationId} style={{ borderRadius: "14px", border: `1px solid ${SURFACE.border}`, borderLeft: "3px solid #38bdf8", background: SURFACE.bg, padding: "14px" }}>
                     <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
                       <div>
                         <p style={{ fontSize: "16px", fontWeight: 800, color: SURFACE.text }}>{group.delegationLabel}</p>
@@ -652,7 +652,7 @@ export default function SportsCalendarDayDetailPage() {
                       {group.people.map((athlete) => {
                         const flight = athlete.arrivalFlightId ? flightMap[athlete.arrivalFlightId] : undefined;
                         return (
-                          <div key={athlete.id} style={{ borderRadius: "10px", border: "1px solid #e2e8f0", background: SURFACE.card, padding: "10px 12px" }}>
+                          <div key={athlete.id} style={{ borderRadius: "10px", border: `1px solid ${SURFACE.border}`, background: SURFACE.card, padding: "10px 12px" }}>
                             <p style={{ fontSize: "13px", fontWeight: 700, color: SURFACE.text }}>{athlete.fullName || athlete.id}</p>
                             <p style={{ marginTop: "2px", fontSize: "11px", color: SURFACE.textMuted }}>
                               {athlete.disciplineId ? (disciplineMap[athlete.disciplineId] || athlete.disciplineId) : t("Sin disciplina")}
@@ -675,13 +675,13 @@ export default function SportsCalendarDayDetailPage() {
 
           {/* ═══ TAB: Agenda Operativa ═══ */}
           {dayTab === "agenda" && (
-            <div style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "20px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+            <div style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "20px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
               <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: SURFACE.textFaint }}>{t("Agenda operativa")}</span>
               <h2 style={{ marginTop: "4px", fontSize: "20px", fontWeight: 800, color: SURFACE.text }}>{t("Cronograma del dia")}</h2>
               <div className="mt-4 space-y-3">
                 {dayEntries.length === 0 ? <p style={{ fontSize: "13px", color: SURFACE.textFaint }}>{t("No hay actividades registradas para este dia.")}</p> : null}
                 {dayEntries.map((entry) => (
-                  <article key={entry.id} style={{ borderRadius: "14px", border: "1px solid #e2e8f0", borderLeft: "3px solid #21D0B3", background: SURFACE.bg, padding: "14px" }}>
+                  <article key={entry.id} style={{ borderRadius: "14px", border: `1px solid ${SURFACE.border}`, borderLeft: `3px solid ${BRAND.teal}`, background: SURFACE.bg, padding: "14px" }}>
                     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
                       <div>
                         <p style={{ fontSize: "11px", color: SURFACE.textFaint }}>{formatDateTime(entry.startAtUtc)} · {entry.sport} / {entry.league}</p>
@@ -697,10 +697,10 @@ export default function SportsCalendarDayDetailPage() {
                           {delegationLabel(delegations, getMetaString(entry.metadata, "delegationId"))}
                         </span>
                       ) : null}
-                      <span style={{ borderRadius: "99px", background: SURFACE.borderMuted, border: "1px solid #e2e8f0", padding: "2px 8px", fontSize: "10px", fontWeight: 600, color: SURFACE.textMuted }}>
+                      <span style={{ borderRadius: "99px", background: SURFACE.borderMuted, border: `1px solid ${SURFACE.border}`, padding: "2px 8px", fontSize: "10px", fontWeight: 600, color: SURFACE.textMuted }}>
                         {entry.venue || t("Sede por confirmar")}
                       </span>
-                      <span style={{ borderRadius: "99px", background: SURFACE.borderMuted, border: "1px solid #e2e8f0", padding: "2px 8px", fontSize: "10px", fontWeight: 600, color: SURFACE.textMuted }}>
+                      <span style={{ borderRadius: "99px", background: SURFACE.borderMuted, border: `1px solid ${SURFACE.border}`, padding: "2px 8px", fontSize: "10px", fontWeight: 600, color: SURFACE.textMuted }}>
                         {entry.status || "SCHEDULED"}
                       </span>
                     </div>
@@ -734,13 +734,13 @@ export default function SportsCalendarDayDetailPage() {
 
           {/* ═══ TAB: Operación Aérea ═══ */}
           {dayTab === "aerea" && (
-            <div style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "20px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+            <div style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "20px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
               <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: SURFACE.textFaint }}>{t("Operación aérea")}</span>
               <h2 style={{ marginTop: "4px", fontSize: "20px", fontWeight: 800, color: SURFACE.text }}>{t("Vuelos del dia")}</h2>
               <div className="mt-4 space-y-3">
                 {flightsOfDay.length === 0 ? <p style={{ fontSize: "13px", color: SURFACE.textFaint }}>{t("No hay vuelos asociados a llegadas en esta fecha.")}</p> : null}
                 {flightsOfDay.map((flight) => (
-                  <div key={flight.key} style={{ borderRadius: "14px", border: "1px solid #e2e8f0", borderLeft: "3px solid #38bdf8", background: SURFACE.bg, padding: "14px" }}>
+                  <div key={flight.key} style={{ borderRadius: "14px", border: `1px solid ${SURFACE.border}`, borderLeft: "3px solid #38bdf8", background: SURFACE.bg, padding: "14px" }}>
                     <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
                       <div>
                         <p style={{ fontSize: "15px", fontWeight: 700, color: SURFACE.text }}>{flight.flightLabel}</p>
@@ -764,13 +764,13 @@ export default function SportsCalendarDayDetailPage() {
 
           {/* ═══ TAB: Retiros ═══ */}
           {dayTab === "retiros" && (
-            <div style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "20px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+            <div style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "20px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
               <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: SURFACE.textFaint }}>{t("Retiros")}</span>
               <h2 style={{ marginTop: "4px", fontSize: "20px", fontWeight: 800, color: SURFACE.text }}>{t("Salidas del dia")}</h2>
               <div className="mt-4 space-y-2">
                 {departures.length === 0 ? <p style={{ fontSize: "13px", color: SURFACE.textFaint }}>{t("No hay retiros programados para esta fecha.")}</p> : null}
                 {departures.map((athlete) => (
-                  <div key={athlete.id} style={{ borderRadius: "12px", border: "1px solid #e2e8f0", borderLeft: "3px solid #f472b6", background: SURFACE.bg, padding: "10px 14px" }}>
+                  <div key={athlete.id} style={{ borderRadius: "12px", border: `1px solid ${SURFACE.border}`, borderLeft: "3px solid #f472b6", background: SURFACE.bg, padding: "10px 14px" }}>
                     <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
                       <div>
                         <p style={{ fontSize: "13px", fontWeight: 700, color: SURFACE.text }}>{athlete.fullName || athlete.id}</p>

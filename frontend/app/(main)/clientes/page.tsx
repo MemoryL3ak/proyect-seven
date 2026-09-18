@@ -43,7 +43,7 @@ const pal = {
 
 const fieldStyle: React.CSSProperties = {
   width: "100%", padding: "8px 12px", borderRadius: "10px",
-  border: "1px solid #e2e8f0", background: SURFACE.bg,
+  border: `1px solid ${SURFACE.border}`, background: SURFACE.bg,
   fontSize: "14px", color: SURFACE.text, outline: "none",
 };
 
@@ -120,7 +120,7 @@ export default function ClientesPage() {
     <div className="space-y-5">
 
       {/* ── Header */}
-      <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "20px", padding: "24px 28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+      <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "20px", padding: "24px 28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
           <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: SURFACE.textFaint }}>Seven Arena</span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.25)", borderRadius: "99px", padding: "2px 10px" }}>

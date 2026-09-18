@@ -40,8 +40,8 @@ function Card({ children, accentColor, style }: { children: React.ReactNode; acc
   return (
     <div style={{
       background: SURFACE.card,
-      border: "1px solid #e2e8f0",
-      borderTop: accentColor ? `2px solid ${accentColor}` : "1px solid #e2e8f0",
+      border: `1px solid ${SURFACE.border}`,
+      borderTop: accentColor ? `2px solid ${accentColor}` : `1px solid ${SURFACE.border}`,
       borderRadius: "16px",
       padding: "20px",
       boxShadow: "0 1px 6px rgba(15,23,42,0.06)",
@@ -327,7 +327,7 @@ export default function Page() {
             <p style={{ fontSize: 12, color: SURFACE.textFaint, margin: "0 0 8px" }}>{t("Participantes validados por disciplina")}</p>
             {shown.length === 0 && <p style={{ fontSize: 13, color: SURFACE.textFaint }}>{t("Sin participantes registrados")}</p>}
             {shown.map(r => (
-              <div key={r.name} style={{ padding: "7px 0", borderBottom: "1px solid #f1f5f9" }}>
+              <div key={r.name} style={{ padding: "7px 0", borderBottom: `1px solid ${SURFACE.borderMuted}` }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                   <span style={{ fontSize: 12.5, color: SURFACE.textStrong, fontWeight: 600 }}>{r.name}</span>
                   <span style={{ fontSize: 12.5, fontWeight: 700, color: SURFACE.text, fontVariantNumeric: "tabular-nums" }}>
@@ -381,7 +381,7 @@ export default function Page() {
         return (
           <div>
             {seg.map(s => (
-              <div key={s.label} style={{ padding: "7px 0", borderBottom: "1px solid #f1f5f9" }}>
+              <div key={s.label} style={{ padding: "7px 0", borderBottom: `1px solid ${SURFACE.borderMuted}` }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                   <span style={{ fontSize: 12.5, color: SURFACE.textStrong, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
                     <span style={{ width: 8, height: 8, borderRadius: "50%", background: s.color, display: "inline-block" }} />
@@ -426,7 +426,7 @@ export default function Page() {
       case "ocupacion": {
         return (
           <div>
-            <div style={{ padding: "7px 0", borderBottom: "1px solid #f1f5f9" }}>
+            <div style={{ padding: "7px 0", borderBottom: `1px solid ${SURFACE.borderMuted}` }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                 <span style={{ fontSize: 12.5, color: SURFACE.textStrong, fontWeight: 600 }}>{t("Ocupación hotelera")}</span>
                 <span style={{ fontSize: 12.5, fontWeight: 700 }}>{occupancyPct}%</span>
@@ -653,15 +653,15 @@ export default function Page() {
             const semColor = fillPct >= 85 ? "#22c55e" : fillPct >= 60 ? STATE.warning : STATE.danger;
             return (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-                <div style={{ background: SURFACE.bg, border: "1px solid #e2e8f0", borderRadius: 12, padding: "12px 14px" }}>
+                <div style={{ background: SURFACE.bg, border: `1px solid ${SURFACE.border}`, borderRadius: 12, padding: "12px 14px" }}>
                   <p style={{ fontSize: "10px", color: SURFACE.textFaint, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 600 }}>Total cupos</p>
                   <p style={{ fontSize: "1.3rem", fontWeight: 800, color: CHARCOAL, marginTop: 4, fontVariantNumeric: "tabular-nums" }}>{fmt(totalCupos)}</p>
                 </div>
-                <div style={{ background: SURFACE.bg, border: "1px solid #e2e8f0", borderRadius: 12, padding: "12px 14px" }}>
+                <div style={{ background: SURFACE.bg, border: `1px solid ${SURFACE.border}`, borderRadius: 12, padding: "12px 14px" }}>
                   <p style={{ fontSize: "10px", color: SURFACE.textFaint, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 600 }}>Registrados AND</p>
                   <p style={{ fontSize: "1.3rem", fontWeight: 800, color: TEAL, marginTop: 4, fontVariantNumeric: "tabular-nums" }}>{fmt(totalRegistered)}</p>
                 </div>
-                <div style={{ background: SURFACE.bg, border: "1px solid #e2e8f0", borderRadius: 12, padding: "12px 14px" }}>
+                <div style={{ background: SURFACE.bg, border: `1px solid ${SURFACE.border}`, borderRadius: 12, padding: "12px 14px" }}>
                   <p style={{ fontSize: "10px", color: SURFACE.textFaint, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 600 }}>% cobertura</p>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
                     <span style={{ width: 10, height: 10, borderRadius: "50%", background: semColor, display: "inline-block", boxShadow: `0 0 6px ${semColor}40` }} />
@@ -674,7 +674,7 @@ export default function Page() {
 
           {/* Per-discipline bars */}
           {capacityByDiscipline.size === 0 ? (
-            <div style={{ padding: "20px", borderRadius: 10, background: SURFACE.bg, border: "1px dashed #e2e8f0", textAlign: "center" }}>
+            <div style={{ padding: "20px", borderRadius: 10, background: SURFACE.bg, border: `1px dashed ${SURFACE.border}`, textAlign: "center" }}>
               <p style={{ fontSize: "13px", fontWeight: 600, color: SURFACE.textFaint, margin: 0 }}>Sin cupos configurados</p>
               <p style={{ fontSize: "11px", color: SURFACE.borderStrong, margin: "4px 0 0" }}>Configura los cupos esperados en la sección de Deportes.</p>
             </div>
@@ -733,7 +733,7 @@ export default function Page() {
             { label: "Total camas",        value: fmt(bedStats.total),      color: SURFACE.text },
             { label: "Camas libres",       value: fmt(bedStats.available),  color: TEAL_LIGHT },
           ].map((item, i) => (
-            <div key={i} style={{ background: SURFACE.bg, border: "1px solid #e2e8f0", borderRadius: "12px", padding: "14px" }}>
+            <div key={i} style={{ background: SURFACE.bg, border: `1px solid ${SURFACE.border}`, borderRadius: "12px", padding: "14px" }}>
               <p style={{ fontSize: "10px", color: SURFACE.textFaint, textTransform: "uppercase", letterSpacing: "0.12em" }}>{item.label}</p>
               <p style={{ fontSize: "1.5rem", fontWeight: 700, color: item.color, marginTop: "4px", fontVariantNumeric: "tabular-nums" }}>
                 {hotelLoading ? "—" : item.value}

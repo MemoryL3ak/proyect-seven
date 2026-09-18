@@ -325,13 +325,13 @@ export default function WorkforcePage() {
             />
           </section>
           {/* Timeline operativa de entregas de kit (tablero por estado) */}
-          <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: 16, padding: 16, boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+          <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: 16, padding: 16, boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <div>
                 <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase" as const, color: SURFACE.textFaint }}>{t("Timeline operativa")}</p>
                 <h3 style={{ marginTop: "3px", fontWeight: 700, fontSize: "16px", color: SURFACE.text }}>{t("Estado de entregas de kit")}</h3>
               </div>
-              <span style={{ fontSize: "12px", fontWeight: 600, color: SURFACE.textMuted, background: SURFACE.bg, border: "1px solid #e2e8f0", borderRadius: "99px", padding: "4px 12px" }}>
+              <span style={{ fontSize: "12px", fontWeight: 600, color: SURFACE.textMuted, background: SURFACE.bg, border: `1px solid ${SURFACE.border}`, borderRadius: "99px", padding: "4px 12px" }}>
                 {deliveries.length} {t("entregas")} · {persons.length} {t("personas")}
               </span>
             </div>
@@ -373,7 +373,7 @@ export default function WorkforcePage() {
                 },
               ] as const).map((col) => (
                 <div key={col.key} style={{
-                  background: SURFACE.card, border: "1px solid #e2e8f0", borderTop: `3px solid ${col.accent}`,
+                  background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderTop: `3px solid ${col.accent}`,
                   borderRadius: "16px", padding: "12px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)",
                 }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
@@ -385,7 +385,7 @@ export default function WorkforcePage() {
                       fontSize: "11px", fontWeight: 800,
                       background: col.items.length > 0 ? col.chipBg : SURFACE.borderMuted,
                       color: col.items.length > 0 ? col.accent : SURFACE.textMuted,
-                      border: col.items.length > 0 ? `1px solid ${col.chipBorder}` : "1px solid #e2e8f0",
+                      border: col.items.length > 0 ? `1px solid ${col.chipBorder}` : `1px solid ${SURFACE.border}`,
                     }}>
                       {col.items.length}
                     </span>
@@ -393,7 +393,7 @@ export default function WorkforcePage() {
                   <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                     {col.items.slice(0, 4).map((item) => (
                       <div key={item.id} style={{
-                        background: SURFACE.bg, border: "1px solid #e2e8f0", borderLeft: `3px solid ${col.accent}`,
+                        background: SURFACE.bg, border: `1px solid ${SURFACE.border}`, borderLeft: `3px solid ${col.accent}`,
                         borderRadius: "10px", padding: "8px 10px",
                       }}>
                         <p style={{ fontSize: "12px", fontWeight: 700, color: SURFACE.text }}>{item.title}</p>
@@ -542,7 +542,7 @@ export default function WorkforcePage() {
                         <td className="p-3">
                           {p.rut ? (
                             <span className="font-mono text-[11px] px-2 py-0.5 rounded font-semibold"
-                              style={{ background: SURFACE.borderMuted, color: SURFACE.textStrong, border: "1px solid #e2e8f0" }}>
+                              style={{ background: SURFACE.borderMuted, color: SURFACE.textStrong, border: `1px solid ${SURFACE.border}` }}>
                               {p.rut}
                             </span>
                           ) : <span style={{ color: "var(--text-muted)" }}>—</span>}
@@ -725,7 +725,7 @@ export default function WorkforcePage() {
                         <td className="p-3">
                           {p.barcode ? (
                             <span className="inline-flex items-center gap-1.5">
-                              <span style={{ display: "inline-flex", alignItems: "center", gap: 1, height: 22, padding: "0 4px", background: SURFACE.bg, border: "1px solid #e2e8f0", borderRadius: 4 }}>
+                              <span style={{ display: "inline-flex", alignItems: "center", gap: 1, height: 22, padding: "0 4px", background: SURFACE.bg, border: `1px solid ${SURFACE.border}`, borderRadius: 4 }}>
                                 {p.barcode.split("").slice(0, 10).map((ch, j) => (
                                   <span key={j} style={{
                                     display: "inline-block",

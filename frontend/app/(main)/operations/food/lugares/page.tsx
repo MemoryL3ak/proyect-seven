@@ -55,7 +55,7 @@ const fieldStyle: React.CSSProperties = {
   width: "100%",
   padding: "8px 12px",
   borderRadius: "10px",
-  border: "1px solid #e2e8f0",
+  border: `1px solid ${SURFACE.border}`,
   background: SURFACE.bg,
   fontSize: "14px",
   color: SURFACE.text,
@@ -193,7 +193,7 @@ export default function FoodLocationsPage() {
   return (
     <div className="min-w-0 space-y-5 overflow-x-hidden">
       {/* Header */}
-      <div style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+      <div style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
           <div>
             <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.25)", borderRadius: "99px", padding: "3px 10px", fontSize: "11px", fontWeight: 700, color: BRAND.teal, letterSpacing: "0.06em", textTransform: "uppercase" }}>
@@ -205,7 +205,7 @@ export default function FoodLocationsPage() {
           <button
             type="button"
             onClick={openCreate}
-            style={{ background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: SURFACE.card, border: "none", borderRadius: "10px", padding: "9px 18px", fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 8px rgba(33,208,179,0.3)", whiteSpace: "nowrap" }}
+            style={{ background: `linear-gradient(135deg, ${BRAND.teal}, #14AE98)`, color: SURFACE.card, border: "none", borderRadius: "10px", padding: "9px 18px", fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 8px rgba(33,208,179,0.3)", whiteSpace: "nowrap" }}
           >
             + {t("Nuevo lugar")}
           </button>
@@ -221,7 +221,7 @@ export default function FoodLocationsPage() {
               padding: "6px 14px",
               fontSize: "12px",
               fontWeight: 700,
-              border: !selectedClientType ? "2px solid #21D0B3" : "1px solid #e2e8f0",
+              border: !selectedClientType ? `2px solid ${BRAND.teal}` : `1px solid ${SURFACE.border}`,
               background: !selectedClientType ? "rgba(33,208,179,0.1)" : "transparent",
               color: !selectedClientType ? BRAND.teal : SURFACE.textMuted,
               cursor: "pointer",
@@ -260,11 +260,11 @@ export default function FoodLocationsPage() {
 
       {/* Location cards */}
       {loading ? (
-        <div style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "64px 24px", textAlign: "center", color: SURFACE.textFaint, fontSize: "13px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+        <div style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", padding: "64px 24px", textAlign: "center", color: SURFACE.textFaint, fontSize: "13px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
           {t("Cargando…")}
         </div>
       ) : filtered.length === 0 ? (
-        <div style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "64px 24px", textAlign: "center", color: SURFACE.textFaint, fontSize: "13px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+        <div style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", padding: "64px 24px", textAlign: "center", color: SURFACE.textFaint, fontSize: "13px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
           {selectedClientType
             ? `${t("No hay lugares asignados a")} ${t(CLIENT_MAP[selectedClientType]?.label ?? selectedClientType)}.`
             : t("No hay lugares de comida registrados.")}
@@ -276,7 +276,7 @@ export default function FoodLocationsPage() {
             return (
               <article
                 key={loc.id}
-                style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", display: "flex", flexDirection: "column", gap: "12px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}
+                style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", padding: "20px", display: "flex", flexDirection: "column", gap: "12px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}
               >
                 <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "8px" }}>
                   <div style={{ minWidth: 0 }}>
@@ -343,7 +343,7 @@ export default function FoodLocationsPage() {
                   <button
                     type="button"
                     onClick={() => openEdit(loc)}
-                    style={{ flex: 1, fontSize: "12px", padding: "7px 10px", borderRadius: "8px", border: "1px solid #e2e8f0", background: SURFACE.card, color: SURFACE.text, fontWeight: 600, cursor: "pointer" }}
+                    style={{ flex: 1, fontSize: "12px", padding: "7px 10px", borderRadius: "8px", border: `1px solid ${SURFACE.border}`, background: SURFACE.card, color: SURFACE.text, fontWeight: 600, cursor: "pointer" }}
                   >
                     {t("Editar")}
                   </button>
@@ -373,14 +373,14 @@ export default function FoodLocationsPage() {
           onClick={(e) => { if (e.target === e.currentTarget) setShowForm(false); }}
         >
           <div
-            style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "16px", padding: "24px", width: "100%", maxWidth: "520px", maxHeight: "90vh", overflowY: "auto", display: "flex", flexDirection: "column", gap: "16px", boxShadow: "0 8px 32px rgba(15,23,42,0.15)" }}
+            style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", padding: "24px", width: "100%", maxWidth: "520px", maxHeight: "90vh", overflowY: "auto", display: "flex", flexDirection: "column", gap: "16px", boxShadow: "0 8px 32px rgba(15,23,42,0.15)" }}
           >
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <h2 style={{ fontWeight: 700, fontSize: "17px", color: SURFACE.text }}>{editingId ? t("Editar lugar") : t("Nuevo lugar de comida")}</h2>
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
-                style={{ fontSize: "16px", padding: "4px 10px", borderRadius: "8px", border: "1px solid #e2e8f0", background: SURFACE.card, color: SURFACE.textMuted, cursor: "pointer" }}
+                style={{ fontSize: "16px", padding: "4px 10px", borderRadius: "8px", border: `1px solid ${SURFACE.border}`, background: SURFACE.card, color: SURFACE.textMuted, cursor: "pointer" }}
               >
                 <XIcon size={14} />
               </button>
@@ -475,7 +475,7 @@ export default function FoodLocationsPage() {
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
-                style={{ flex: 1, padding: "9px 16px", borderRadius: "10px", border: "1px solid #e2e8f0", background: SURFACE.card, color: SURFACE.textMuted, fontWeight: 600, fontSize: "14px", cursor: "pointer" }}
+                style={{ flex: 1, padding: "9px 16px", borderRadius: "10px", border: `1px solid ${SURFACE.border}`, background: SURFACE.card, color: SURFACE.textMuted, fontWeight: 600, fontSize: "14px", cursor: "pointer" }}
               >
                 {t("Cancelar")}
               </button>
@@ -483,7 +483,7 @@ export default function FoodLocationsPage() {
                 type="button"
                 onClick={handleSave}
                 disabled={saving}
-                style={{ flex: 1, padding: "9px 16px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: SURFACE.card, fontWeight: 700, fontSize: "14px", cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1, boxShadow: "0 2px 8px rgba(33,208,179,0.3)" }}
+                style={{ flex: 1, padding: "9px 16px", borderRadius: "10px", border: "none", background: `linear-gradient(135deg, ${BRAND.teal}, #14AE98)`, color: SURFACE.card, fontWeight: 700, fontSize: "14px", cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1, boxShadow: "0 2px 8px rgba(33,208,179,0.3)" }}
               >
                 {saving ? t("Guardando…") : editingId ? t("Guardar cambios") : t("Crear lugar")}
               </button>

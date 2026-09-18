@@ -43,7 +43,7 @@ export default function CredentialQrCard({ qrData, name, roleLabel, code, countr
         position: "relative",
         borderRadius: 18,
         overflow: "hidden",
-        background: "linear-gradient(150deg,#041a2e 0%,#0a3356 55%,#062240 100%)",
+        background: `linear-gradient(150deg,${BRAND.navy} 0%,#0a3356 55%,${BRAND.navyLight} 100%)`,
         border: "1px solid rgba(52,243,198,0.25)",
         boxShadow: "0 10px 30px rgba(4,26,46,0.35)",
       }}
@@ -83,7 +83,7 @@ export default function CredentialQrCard({ qrData, name, roleLabel, code, countr
           left: 0,
           right: 0,
           height: 2,
-          background: "linear-gradient(90deg,transparent,#21D0B3 35%,#34F3C6 50%,#21D0B3 65%,transparent)",
+          background: `linear-gradient(90deg,transparent,${BRAND.teal} 35%,${BRAND.tealLight} 50%,${BRAND.teal} 65%,transparent)`,
         }}
       />
 
@@ -120,10 +120,10 @@ export default function CredentialQrCard({ qrData, name, roleLabel, code, countr
         {/* QR con esquinas de mira */}
         <div style={{ position: "relative", padding: 10 }}>
           {([
-            { top: 0, left: 0, borderTop: "3px solid #34F3C6", borderLeft: "3px solid #34F3C6", borderTopLeftRadius: 10 },
-            { top: 0, right: 0, borderTop: "3px solid #34F3C6", borderRight: "3px solid #34F3C6", borderTopRightRadius: 10 },
-            { bottom: 0, left: 0, borderBottom: "3px solid #34F3C6", borderLeft: "3px solid #34F3C6", borderBottomLeftRadius: 10 },
-            { bottom: 0, right: 0, borderBottom: "3px solid #34F3C6", borderRight: "3px solid #34F3C6", borderBottomRightRadius: 10 },
+            { top: 0, left: 0, borderTop: `3px solid ${BRAND.tealLight}`, borderLeft: `3px solid ${BRAND.tealLight}`, borderTopLeftRadius: 10 },
+            { top: 0, right: 0, borderTop: `3px solid ${BRAND.tealLight}`, borderRight: `3px solid ${BRAND.tealLight}`, borderTopRightRadius: 10 },
+            { bottom: 0, left: 0, borderBottom: `3px solid ${BRAND.tealLight}`, borderLeft: `3px solid ${BRAND.tealLight}`, borderBottomLeftRadius: 10 },
+            { bottom: 0, right: 0, borderBottom: `3px solid ${BRAND.tealLight}`, borderRight: `3px solid ${BRAND.tealLight}`, borderBottomRightRadius: 10 },
           ] as const).map((pos, i) => (
             <span key={i} aria-hidden style={{ position: "absolute", width: 22, height: 22, opacity: 0.9, ...pos }} />
           ))}

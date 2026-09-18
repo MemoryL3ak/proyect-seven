@@ -413,7 +413,7 @@ export default function SalonesPage() {
         <div style={{ display: "flex", gap: "8px" }}>
           <button onClick={openCreateSalon} style={{
             padding: "8px 16px", borderRadius: "10px", fontSize: "13px", fontWeight: 600,
-            background: SURFACE.card, border: "1px solid #e2e8f0", color: SURFACE.textMuted, cursor: "pointer",
+            background: SURFACE.card, border: `1px solid ${SURFACE.border}`, color: SURFACE.textMuted, cursor: "pointer",
           }}>
             {t("+ Nuevo salón")}
           </button>
@@ -422,7 +422,7 @@ export default function SalonesPage() {
             disabled={!selectedSalonId}
             style={{
               padding: "8px 18px", borderRadius: "10px", fontSize: "13px", fontWeight: 600,
-              background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: SURFACE.card, border: "none",
+              background: `linear-gradient(135deg, ${BRAND.teal}, #14AE98)`, color: SURFACE.card, border: "none",
               cursor: selectedSalonId ? "pointer" : "not-allowed", opacity: selectedSalonId ? 1 : 0.5,
               boxShadow: "0 2px 10px rgba(33,208,179,0.3)",
             }}
@@ -447,7 +447,7 @@ export default function SalonesPage() {
             <p style={{ color: pal.textFaint, fontSize: "13px" }}>{t("Cargando...")}</p>
           ) : salones.length === 0 ? (
             <div style={{
-              background: SURFACE.card, border: "1px dashed #e2e8f0",
+              background: SURFACE.card, border: `1px dashed ${SURFACE.border}`,
               borderRadius: "14px", padding: "24px", textAlign: "center",
             }}>
               <p style={{ color: SURFACE.textMuted, fontSize: "13px" }}>{t("Sin salones creados")}</p>
@@ -524,7 +524,7 @@ export default function SalonesPage() {
 
           {!selectedSalon ? (
             <div style={{
-              background: SURFACE.card, border: "1px dashed #e2e8f0",
+              background: SURFACE.card, border: `1px dashed ${SURFACE.border}`,
               borderRadius: "16px", padding: "60px 24px", textAlign: "center",
             }}>
               <p style={{ color: SURFACE.textMuted, fontSize: "15px", fontWeight: 600 }}>{t("Selecciona un salón")}</p>
@@ -566,7 +566,7 @@ export default function SalonesPage() {
                     }}>›</button>
                     <button onClick={() => openCreateRes()} style={{
                       padding: "5px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: 600,
-                      background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: SURFACE.card, border: "none", cursor: "pointer",
+                      background: `linear-gradient(135deg, ${BRAND.teal}, #14AE98)`, color: SURFACE.card, border: "none", cursor: "pointer",
                     }}>+ {t("Reserva")}</button>
                   </div>
                 </div>
@@ -900,7 +900,7 @@ export default function SalonesPage() {
               </button>
               <button onClick={saveSalon} disabled={saving} style={{
                 padding: "8px 20px", borderRadius: "9px", fontSize: "13px", fontWeight: 700,
-                background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: SURFACE.card, border: "none", cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1,
+                background: `linear-gradient(135deg, ${BRAND.teal}, #14AE98)`, color: SURFACE.card, border: "none", cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1,
               }}>
                 {saving ? t("Guardando...") : editingSalon ? t("Actualizar") : t("Crear salón")}
               </button>
@@ -1024,7 +1024,7 @@ export default function SalonesPage() {
               </button>
               <button onClick={saveReservation} disabled={saving} style={{
                 padding: "8px 20px", borderRadius: "9px", fontSize: "13px", fontWeight: 700,
-                background: "linear-gradient(135deg, #21D0B3, #14AE98)", color: SURFACE.card, border: "none", cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1,
+                background: `linear-gradient(135deg, ${BRAND.teal}, #14AE98)`, color: SURFACE.card, border: "none", cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1,
               }}>
                 {saving ? t("Guardando...") : editingRes ? t("Actualizar") : t("Crear reserva")}
               </button>

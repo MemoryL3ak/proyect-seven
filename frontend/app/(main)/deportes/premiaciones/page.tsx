@@ -477,7 +477,7 @@ export default function PremiacionesPage() {
           <option value="REALIZADA">{t("Realizadas")}</option>
         </StyledSelect>
         {/* Toggle de vista */}
-        <div className="flex rounded-lg overflow-hidden" style={{ border: "1px solid #e2e8f0" }}>
+        <div className="flex rounded-lg overflow-hidden" style={{ border: `1px solid ${SURFACE.border}` }}>
           {([["cards", "Tarjetas"], ["timeline", "Timeline"]] as const).map(([v, label]) => (
             <button key={v} type="button" onClick={() => setViewMode(v)}
               className="text-xs font-bold px-3 py-2"
@@ -498,7 +498,7 @@ export default function PremiacionesPage() {
       {loading ? (
         <p className="text-sm" style={{ color: SURFACE.textFaint }}>{t("Cargando premiaciones…")}</p>
       ) : totalVisible === 0 ? (
-        <div className="p-12 text-center rounded-2xl" style={{ background: "linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)", border: "1px dashed #e2e8f0" }}>
+        <div className="p-12 text-center rounded-2xl" style={{ background: `linear-gradient(135deg, ${SURFACE.bg} 0%, ${SURFACE.card} 100%)`, border: `1px dashed ${SURFACE.border}` }}>
           <TrophyIcon size={36} color={SURFACE.borderStrong} />
           <p className="text-sm font-semibold mt-3" style={{ color: SURFACE.textSecondary }}>{t("No hay premiaciones para mostrar")}</p>
           <p className="text-xs mt-1" style={{ color: SURFACE.textFaint }}>
@@ -508,13 +508,13 @@ export default function PremiacionesPage() {
       ) : viewMode === "timeline" ? (
         /* Timeline operativa — tablero por columnas, mismo formato que el
            "Estado general de viajes" del módulo de tracking. */
-        <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: 16, padding: 16, boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+        <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: 16, padding: 16, boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div>
               <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase" as const, color: SURFACE.textFaint }}>{t("Timeline operativa")}</p>
               <h3 style={{ marginTop: "3px", fontWeight: 700, fontSize: "16px", color: SURFACE.text }}>{t("Estado general de premiaciones")}</h3>
             </div>
-            <span style={{ fontSize: "12px", fontWeight: 600, color: SURFACE.textMuted, background: SURFACE.bg, border: "1px solid #e2e8f0", borderRadius: "99px", padding: "4px 12px" }}>
+            <span style={{ fontSize: "12px", fontWeight: 600, color: SURFACE.textMuted, background: SURFACE.bg, border: `1px solid ${SURFACE.border}`, borderRadius: "99px", padding: "4px 12px" }}>
               {totalVisible} {t("premiaciones con los filtros actuales")}
             </span>
           </div>
@@ -550,7 +550,7 @@ export default function PremiacionesPage() {
               const nextId = upcoming.find((p) => p.status !== "REALIZADA")?.id ?? null;
               return columns.map((col) => (
                 <div key={col.key} style={{
-                  background: SURFACE.card, border: "1px solid #e2e8f0", borderTop: `3px solid ${col.accent}`,
+                  background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderTop: `3px solid ${col.accent}`,
                   borderRadius: "16px", padding: "12px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)",
                 }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
@@ -562,7 +562,7 @@ export default function PremiacionesPage() {
                       fontSize: "11px", fontWeight: 800,
                       background: col.items.length > 0 ? col.chipBg : SURFACE.borderMuted,
                       color: col.items.length > 0 ? col.accent : SURFACE.textMuted,
-                      border: col.items.length > 0 ? `1px solid ${col.chipBorder}` : "1px solid #e2e8f0",
+                      border: col.items.length > 0 ? `1px solid ${col.chipBorder}` : `1px solid ${SURFACE.border}`,
                     }}>
                       {col.items.length}
                     </span>
@@ -573,7 +573,7 @@ export default function PremiacionesPage() {
                       const confirmed = awarders.filter((a) => awarderState(a) === "CONFIRMED").length;
                       return (
                         <button key={p.id} type="button" onClick={() => openEdit(p)} style={{
-                          background: SURFACE.bg, border: "1px solid #e2e8f0", borderLeft: `3px solid ${col.accent}`,
+                          background: SURFACE.bg, border: `1px solid ${SURFACE.border}`, borderLeft: `3px solid ${col.accent}`,
                           borderRadius: "10px", padding: "8px 10px", textAlign: "left", cursor: "pointer", width: "100%",
                         }}>
                           <p style={{ fontSize: "12px", fontWeight: 700, color: SURFACE.text }}>

@@ -39,7 +39,7 @@ export default function PageHeader({
     <section
       className={`surface-premium p-5 anim-fade-up-soft relative ${stripClass}`}
       style={{
-        background: "linear-gradient(135deg, #ffffff 0%, #f8fffe 100%)",
+        background: `linear-gradient(135deg, ${SURFACE.card} 0%, #f8fffe 100%)`,
         paddingTop: accentStrip === "none" ? undefined : "1.5rem",
       }}
     >

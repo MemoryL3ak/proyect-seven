@@ -475,7 +475,7 @@ export default function UsuariosPage() {
     <div className="space-y-5">
 
       {/* ── Header */}
-      <section style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderRadius: "20px", padding: "24px 28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)", marginBottom: "24px" }}>
+      <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "20px", padding: "24px 28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)", marginBottom: "24px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
           <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: SURFACE.textFaint }}>Seven Arena</span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.25)", borderRadius: "99px", padding: "2px 10px" }}>
@@ -507,7 +507,7 @@ export default function UsuariosPage() {
               { label: "Pendientes", value: kpis.pending, Icon: ClockIcon, sub: "por confirmar", color: STATE.warning },
             ] as { label: string; value: number; Icon: (p: { color: string; size?: number }) => React.JSX.Element; sub: string; color: string }[]
           ).map((k) => (
-            <div key={k.label} style={{ background: SURFACE.card, border: "1px solid #e2e8f0", borderTop: `3px solid ${k.color}`, borderRadius: "16px", padding: "16px 18px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)", transition: "transform 120ms ease" }}
+            <div key={k.label} style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderTop: `3px solid ${k.color}`, borderRadius: "16px", padding: "16px 18px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)", transition: "transform 120ms ease" }}
               onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; }}
             >
@@ -529,7 +529,7 @@ export default function UsuariosPage() {
       <div>
 
         {/* Tabs */}
-        <div style={{ display: "flex", gap: "4px", marginBottom: "24px", borderBottom: "1px solid #e2e8f0", paddingBottom: "0" }}>
+        <div style={{ display: "flex", gap: "4px", marginBottom: "24px", borderBottom: `1px solid ${SURFACE.border}`, paddingBottom: "0" }}>
           {(["usuarios", "roles"] as const).map((tab) => (
             <button
               key={tab}
@@ -569,7 +569,7 @@ export default function UsuariosPage() {
                   placeholder={t("Buscar usuarios...")}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  style={{ background: SURFACE.bg, color: SURFACE.text, border: "1px solid #e2e8f0", padding: "10px 14px 10px 38px", borderRadius: "10px", fontSize: "13.5px", outline: "none", width: "100%" }}
+                  style={{ background: SURFACE.bg, color: SURFACE.text, border: `1px solid ${SURFACE.border}`, padding: "10px 14px 10px 38px", borderRadius: "10px", fontSize: "13.5px", outline: "none", width: "100%" }}
                 />
               </div>
 
@@ -754,7 +754,7 @@ export default function UsuariosPage() {
                         <button
                           onClick={() => openEdit(user)}
                           style={{
-                            background: SURFACE.bg, border: "1px solid #e2e8f0",
+                            background: SURFACE.bg, border: `1px solid ${SURFACE.border}`,
                             borderRadius: "8px", padding: "6px",
                             cursor: "pointer", color: SURFACE.textMuted,
                             transition: "all 150ms",
@@ -768,7 +768,7 @@ export default function UsuariosPage() {
                         <button
                           onClick={() => setConfirmDelete(user)}
                           style={{
-                            background: SURFACE.bg, border: "1px solid #e2e8f0",
+                            background: SURFACE.bg, border: `1px solid ${SURFACE.border}`,
                             borderRadius: "8px", padding: "6px",
                             cursor: "pointer",
                             color: user.status === "active" ? SURFACE.textMuted : "#22c55e",
@@ -794,7 +794,7 @@ export default function UsuariosPage() {
                           type="button"
                           onClick={() => setDeleteConfirm(user)}
                           style={{
-                            background: SURFACE.bg, border: "1px solid #e2e8f0",
+                            background: SURFACE.bg, border: `1px solid ${SURFACE.border}`,
                             borderRadius: "8px", padding: "6px",
                             cursor: "pointer", color: SURFACE.textFaint, transition: "all 150ms",
                           }}
@@ -895,7 +895,7 @@ export default function UsuariosPage() {
                             <div key={u.id} style={{
                               width: 28, height: 28, borderRadius: "50%",
                               background: u.color,
-                              border: "2px solid #ffffff",
+                              border: `2px solid ${SURFACE.card}`,
                               marginLeft: i > 0 ? "-8px" : "0",
                               display: "flex", alignItems: "center", justifyContent: "center",
                               fontSize: "10px", fontWeight: 700, color: SURFACE.card,
@@ -1324,7 +1324,7 @@ export default function UsuariosPage() {
         const actionColorBorder = isDisabling ? "rgba(239,68,68,0.25)" : "rgba(34,197,94,0.25)";
         const actionGlow = isDisabling ? "rgba(239,68,68,0.35)" : "rgba(34,197,94,0.35)";
         const actionGradient = isDisabling
-          ? "linear-gradient(135deg, #ef4444, #dc2626)"
+          ? `linear-gradient(135deg, ${STATE.danger}, ${STATE.dangerText})`
           : "linear-gradient(135deg, #22c55e, #16a34a)";
         return (
           <div style={{
@@ -1446,7 +1446,7 @@ export default function UsuariosPage() {
             </p>
             <div style={{ display: "flex", gap: "10px" }}>
               <button onClick={() => setDeleteConfirm(null)}
-                style={{ flex: 1, padding: "11px", borderRadius: "12px", border: "1px solid #e2e8f0", background: SURFACE.bg, color: SURFACE.textSecondary, fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
+                style={{ flex: 1, padding: "11px", borderRadius: "12px", border: `1px solid ${SURFACE.border}`, background: SURFACE.bg, color: SURFACE.textSecondary, fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
                 {t("Cancelar")}
               </button>
               <button onClick={async () => {
@@ -1458,7 +1458,7 @@ export default function UsuariosPage() {
                   alert(e instanceof Error ? e.message : t("Error eliminando usuario"));
                 }
               }}
-                style={{ flex: 1, padding: "11px", borderRadius: "12px", border: "none", background: "linear-gradient(135deg,#ef4444,#dc2626)", color: SURFACE.card, fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 10px rgba(239,68,68,0.3)" }}>
+                style={{ flex: 1, padding: "11px", borderRadius: "12px", border: "none", background: `linear-gradient(135deg,${STATE.danger},${STATE.dangerText})`, color: SURFACE.card, fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 10px rgba(239,68,68,0.3)" }}>
                 {t("Sí, eliminar")}
               </button>
             </div>
