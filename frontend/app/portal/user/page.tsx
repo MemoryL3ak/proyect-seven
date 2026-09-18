@@ -69,7 +69,7 @@ import MissionCalendar from "@/components/portal/MissionCalendar";
 import MissionFleet from "@/components/portal/MissionFleet";
 import MissionIncidents from "@/components/portal/MissionIncidents";
 import MissionTrips from "@/components/portal/MissionTrips";
-import { ChipFilter } from "@/components/ui/FilterControls";
+import { ChipFilter, SegmentedFilter } from "@/components/ui/FilterControls";
 import { openExternal, whatsappHref } from "@/lib/external-link";
 import EmergencyNumbersSection from "@/components/EmergencyNumbersSection";
 import PushTokenSync from "@/components/PushTokenSync";
@@ -348,6 +348,8 @@ export default function UserPortalPage() {
   const [delegationMembers, setDelegationMembers] = useState<Athlete[]>([]);
   const [delegationTrips, setDelegationTrips] = useState<Trip[]>([]);
   const [venues, setVenues] = useState<Venue[]>([]);
+  // Sedes y hoteles son cosas distintas: se ven por separado, no en una lista.
+  const [sedesVista, setSedesVista] = useState<"sedes" | "hoteles">("sedes");
   const [allAccommodations, setAllAccommodations] = useState<Accommodation[]>([]);
   const [foodLocations, setFoodLocations] = useState<FoodLocation[]>([]);
   const [foodMenus, setFoodMenus] = useState<FoodMenu[]>([]);
@@ -2804,11 +2806,19 @@ export default function UserPortalPage() {
         {/* ─── Sedes tab ─── */}
         {activeTab === "sedes" && (
           <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
-            {/* Sedes */}
             {isChief && <GeneralCoordinatorCard />}
-            <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.teal,margin:0 }}>Sedes del evento</p>
-            {venues.length === 0 && <p style={{ fontSize:13,color:SURFACE.textFaint,textAlign:"center",padding:20 }}>No hay sedes registradas</p>}
-            {venues.map(v => {
+            <SegmentedFilter
+              value={sedesVista}
+              onChange={(value) => setSedesVista(value as "sedes" | "hoteles")}
+              options={[
+                { value: "sedes", label: t("Sedes"), count: venues.length },
+                { value: "hoteles", label: t("Hoteles"), count: allAccommodations.length },
+              ]}
+            />
+            {sedesVista === "sedes" && venues.length === 0 && (
+              <p style={{ fontSize:13,color:SURFACE.textFaint,textAlign:"center",padding:20 }}>{t("No hay sedes registradas")}</p>
+            )}
+            {sedesVista === "sedes" && venues.map(v => {
               const isOpen = expandedItemId === `venue-${v.id}`;
               const addr = [v.address, v.commune, v.region].filter(Boolean).join(", ");
               return (
@@ -2849,10 +2859,18 @@ export default function UserPortalPage() {
                 </div>
               );
             })}
-            {/* Hoteles */}
-            <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.tealDark,margin:"8px 0 0" }}>Hoteles</p>
-            {allAccommodations.length === 0 && <p style={{ fontSize:13,color:SURFACE.textFaint,textAlign:"center",padding:20 }}>No hay hoteles registrados</p>}
-            {allAccommodations.map(h => {
+            {/* Hoteles: para el Jefe de Misión, sólo donde se aloja su delegación. */}
+            {sedesVista === "hoteles" && isChief && allAccommodations.length > 0 && (
+              <p style={{ fontSize:11.5,color:SURFACE.textMuted,margin:0,padding:"8px 12px",borderRadius:10,background:SURFACE.borderMuted }}>
+                {t("Hoteles donde se aloja tu delegación.")}
+              </p>
+            )}
+            {sedesVista === "hoteles" && allAccommodations.length === 0 && (
+              <p style={{ fontSize:13,color:SURFACE.textFaint,textAlign:"center",padding:20 }}>
+                {isChief ? t("Tu delegación aún no tiene hotel asignado.") : t("No hay hoteles registrados")}
+              </p>
+            )}
+            {sedesVista === "hoteles" && allAccommodations.map(h => {
               const isOpen = expandedItemId === `hotel-${h.id}`;
               const addr = [h.address, h.city, h.country].filter(Boolean).join(", ");
               return (

@@ -1,11 +1,16 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Req } from '@nestjs/common';
 import { CreateAccommodationDto } from './dto/create-accommodation.dto';
 import { UpdateAccommodationDto } from './dto/update-accommodation.dto';
 import { AccommodationsService } from './accommodations.service';
+import type { ApiRequest } from '../auth/api-auth.guard';
+import { StaffScopeService } from '../auth/staff-scope.service';
 
 @Controller('accommodations')
 export class AccommodationsController {
-  constructor(private readonly accommodationsService: AccommodationsService) {}
+  constructor(
+    private readonly accommodationsService: AccommodationsService,
+    private readonly scope: StaffScopeService,
+  ) {}
 
   @Post()
   create(@Body() createAccommodationDto: CreateAccommodationDto) {
@@ -13,8 +18,11 @@ export class AccommodationsController {
   }
 
   @Get()
-  findAll() {
-    return this.accommodationsService.findAll();
+  async findAll(@Req() req: ApiRequest) {
+    // Jefe de Misión: sólo los hoteles de su delegación.
+    const scope = await this.scope.forRequest(req);
+    const delegationId = scope?.kind === 'mission_head' ? scope.delegationId : null;
+    return this.accommodationsService.findAll(delegationId);
   }
 
   @Get(':id')
