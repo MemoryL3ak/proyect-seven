@@ -69,7 +69,7 @@ export function SegmentedFilter({
               border: "none",
               borderRadius: 8,
               background: activo ? SURFACE.card : "transparent",
-              color: activo ? BRAND.tealInk : SURFACE.textMuted,
+              color: activo ? BRAND.tealInk : SURFACE.textSecondary,
               boxShadow: activo ? "0 1px 3px rgba(15,23,42,0.12)" : "none",
               transition: "background 120ms ease, color 120ms ease",
             }}
@@ -120,7 +120,7 @@ export function ChipFilter({
                 whiteSpace: "nowrap",
                 cursor: "pointer",
                 border: `1px solid ${activo ? BRAND.teal : SURFACE.border}`,
-                background: activo ? BRAND.teal : SURFACE.card,
+                background: activo ? BRAND.teal : SURFACE.bg,
                 color: activo ? "#fff" : SURFACE.textStrong,
                 transition: "background 120ms ease, border-color 120ms ease",
               }}
