@@ -55,7 +55,16 @@ export class DriverPresenceService {
     );
 
     // Intenta continuar una sesión activa.
-    const updated = (await this.dataSource.query(
+    //
+    // OJO con la forma del resultado: para UPDATE y DELETE, dataSource.query()
+    // del driver de Postgres NO devuelve las filas, devuelve [filas, cantidad].
+    // Leerlo como filas hacía que `updated.length` fuera siempre 2 —con sesión
+    // o sin ella— y el INSERT de abajo no corría nunca: transport.driver_sessions
+    // llevó meses vacía, cada conductor salía como "Nunca usó la app" y el
+    // portal recibía 201 igual, así que el catch de allá tampoco lo delataba.
+    // SELECT e INSERT sí devuelven filas planas. trip-proximity.service.ts
+    // maneja el mismo caso de la misma manera.
+    const [updatedRows] = (await this.dataSource.query(
       `update transport.driver_sessions
          set last_seen_at = now(),
              heartbeats = heartbeats + 1,
@@ -64,10 +73,10 @@ export class DriverPresenceService {
        where driver_id = $1 and ended_at is null
        returning id`,
       [dto.driverId, dto.appVersion ?? null, dto.platform ?? null],
-    )) as Array<{ id: string }>;
+    )) as [Array<{ id: string }>, number];
 
-    if (updated.length > 0) {
-      return { sessionId: updated[0].id, status: 'continued' };
+    if (updatedRows.length > 0) {
+      return { sessionId: updatedRows[0].id, status: 'continued' };
     }
 
     // No había sesión activa: abre una nueva.
