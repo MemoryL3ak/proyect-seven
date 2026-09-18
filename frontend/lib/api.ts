@@ -174,11 +174,16 @@ async function fetchWithBaseFallback(path: string, options: RequestInit) {
   ];
 
   const networkErrors: string[] = [];
+  const configuredBase = API_BASE ? normalizeBase(API_BASE) : null;
   for (const base of ordered) {
     const url = `${base}${path}`;
     try {
-      // Sin timeout en deploy (1 candidato); timeout corto en dev (varios candidatos)
-      const response = singleCandidate
+      // Sin timeout en deploy (1 candidato) ni para la base configurada en
+      // NEXT_PUBLIC_API_BASE: abortarla a los 4 s hacía que un listado pesado
+      // (varios en paralelo contra la base remota) "fallara" y se probara el
+      // protocolo opuesto (ERR_SSL_PROTOCOL_ERROR) dejando la lista vacía.
+      // El timeout corto queda sólo para los candidatos adivinados.
+      const response = singleCandidate || base === configuredBase
         ? await fetch(url, options)
         : await tryOne(url, options, FAILOVER_TIMEOUT_MS);
       // Rechazar HTML (significa que pegamos al frontend, no a la API)
