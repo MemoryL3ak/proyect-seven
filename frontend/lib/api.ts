@@ -336,7 +336,11 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
         errorMessage = Array.isArray(json.message) ? json.message.join(', ') : String(json.message);
       }
     } catch { /* not JSON, use raw text */ }
-    throw new Error(errorMessage || `Request failed (${base}${path})`);
+    const error = new Error(errorMessage || `Request failed (${base}${path})`);
+    // El código HTTP viaja con el error: quien llama puede distinguir una
+    // sesión caída (401) de cualquier otro fallo y reaccionar distinto.
+    (error as Error & { status?: number }).status = response.status;
+    throw error;
   }
 
   if (response.status === 204) {

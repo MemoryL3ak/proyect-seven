@@ -157,6 +157,25 @@ export async function portalLogin(code: string): Promise<PortalLoginResult> {
  * datos protegidos (auto-login por id: deep links, sesión de la app). Si ya
  * hay identidad para ese usuario no hace nada.
  */
+/**
+ * Deja activa la credencial que ya está guardada en este dispositivo, sin
+ * preguntarle nada al servidor. Devuelve false si no había ninguna.
+ *
+ * Preguntar "¿sigue viva?" antes de cada carga costaba una ida y vuelta
+ * entera de espera, y el servidor comprueba la sesión igual en la petición
+ * siguiente: si murió, esa responde 401 y ahí se reclama una nueva. El
+ * resultado es el mismo y se ahorra el viaje en el caso normal.
+ */
+export function usarIdentidadLocal(kind: PortalSessionKind, userId: string): boolean {
+  const actual = getPortalIdentity();
+  if (actual && actual.userId === userId && actual.kind === kind) return true;
+  let guardada: string | null = null;
+  try { guardada = localStorage.getItem(storageKey(kind, userId)); } catch {}
+  if (!guardada) return false;
+  setPortalIdentity({ kind, userId, sessionId: guardada });
+  return true;
+}
+
 export async function ensurePortalIdentity(kind: PortalSessionKind, userId: string): Promise<boolean> {
   const current = getPortalIdentity();
   if (current && current.userId === userId) {

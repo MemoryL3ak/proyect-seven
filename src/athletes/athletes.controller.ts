@@ -3,6 +3,7 @@ import type { ApiRequest } from '../auth/api-auth.guard';
 import { Public } from '../auth/public.decorator';
 import { Body, Controller, Delete, Get, Param, Patch, Post, Req, Query } from '@nestjs/common';
 import { AthletesService } from './athletes.service';
+import { StaffScopeService } from '../auth/staff-scope.service';
 import { CreateAthleteDto } from './dto/create-athlete.dto';
 import { RequestAthleteAccessDto } from './dto/request-athlete-access.dto';
 import { UpdateAthleteDto } from './dto/update-athlete.dto';
@@ -10,7 +11,10 @@ import { UploadHealthDocumentDto } from './dto/upload-health-document.dto';
 
 @Controller('athletes')
 export class AthletesController {
-  constructor(private readonly athletesService: AthletesService) {}
+  constructor(
+    private readonly athletesService: AthletesService,
+    private readonly scope: StaffScopeService,
+  ) {}
 
   @Post()
   create(@Body() createAthleteDto: CreateAthleteDto) {
@@ -31,12 +35,27 @@ export class AthletesController {
    */
   @Get()
   async findAll(
+    @Req() req: ApiRequest,
     @Query('delegationId') delegationId?: string,
     @Query('eventId') eventId?: string,
   ) {
     // Filtros del servidor: el portal del Jefe de Misión traía los ~2.400
     // participantes del evento sólo para quedarse con los de su región.
-    const athletes = await this.athletesService.findAll({ delegationId, eventId });
+    //
+    // Quien entra por el portal ve su delegación y sólo la suya. El
+    // parámetro llega del cliente: quedarse con lo que pida dejaba la nómina
+    // completa de cualquier otra región a un cambio de URL de distancia.
+    // El personal del panel sí necesita consultarlas todas.
+    const alcance = await this.scope.forRequest(req);
+    const acotado =
+      alcance?.kind === 'mission_head' ||
+      alcance?.kind === 'participant' ||
+      alcance?.kind === 'driver';
+    if (acotado && !alcance?.delegationId) return [];
+    const athletes = await this.athletesService.findAll({
+      delegationId: acotado ? alcance!.delegationId! : delegationId,
+      eventId,
+    });
     return athletes.map(({ credentialCode: _omit, ...rest }) => rest);
   }
 

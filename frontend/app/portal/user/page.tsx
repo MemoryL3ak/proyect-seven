@@ -79,7 +79,8 @@ import { buildCredentialHtml } from "@/lib/credential-template";
 import { downloadCredentialPdf, saveCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
 import { isAvailable as isNativeShell } from "@/lib/native-bridge";
 import { clearPersistedTabs, persistTab, restoreOnReload, startTabHeartbeat } from "@/lib/portal-tab";
-import { claimPortalSession, clearPortalSession, ensurePortalIdentity, portalLogin, releasePortalSession, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
+import { claimPortalSession, clearPortalSession, ensurePortalIdentity, portalLogin, releasePortalSession, usarIdentidadLocal, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
+import { guardarPerfil, leerPerfil } from "@/lib/portal-perfil";
 import PortalSessionGuard from "@/components/PortalSessionGuard";
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
 import QrFullscreenOverlay from "@/components/QrFullscreenOverlay";
@@ -688,17 +689,56 @@ export default function UserPortalPage() {
   const fallosRastreoRef = useRef(0);
   const [bootCheckDone, setBootCheckDone] = useState(false);
 
+  /**
+   * Todo lo que se puede pedir sabiendo sólo quién es el usuario, pedido de
+   * una vez. Antes esto salía en cascada: la ficha, y recién cuando llegaba,
+   * sus viajes; y recién cuando llegaban, los de su delegación. Tres esperas
+   * seguidas contra un servidor que está a 300 ms.
+   *
+   * Lo de la delegación se pide con lo que se recordaba de la vez anterior;
+   * si la ficha dice otra cosa, se descarta y se vuelve a pedir.
+   */
+  const pedirTandaInicial = (id: string) => {
+    const perfil = leerPerfil(id);
+    const comoJefe = perfil?.esJefe === true && !!perfil.delegationId;
+    const delegacionPedida = comoJefe ? perfil!.delegationId! : null;
+    return {
+      delegacionPedida,
+      ficha: apiFetch<Athlete>(`/athletes/${id}`),
+      viajes: apiFetch<Trip[]>(`/trips?requesterAthleteId=${id}`).catch(() => [] as Trip[]),
+      asignacion: apiFetch<HotelAssignment | null>(`/hotel-assignments/by-participant/${id}`).catch(() => null),
+      viajesDelegacion: delegacionPedida
+        ? apiFetch<Trip[]>("/trips").catch(() => [] as Trip[])
+        : Promise.resolve(null),
+      miembros: delegacionPedida
+        ? apiFetch<Athlete[]>(`/athletes?delegationId=${encodeURIComponent(delegacionPedida)}`).catch(() => [] as Athlete[])
+        : Promise.resolve(null),
+    };
+  };
+
   const loadAthlete = async (directId?: string) => {
     if (!directId && !athleteId) return;
     setLoading(true);
     setError(null);
     try {
       let data: Athlete;
+      let tanda: ReturnType<typeof pedirTandaInicial> | null = null;
       if (directId) {
-        // Auto-login por id (app / deep link): garantizar la identidad de
-        // portal antes de pedir datos protegidos.
-        await ensurePortalIdentity("athlete", directId);
-        data = await apiFetch<Athlete>(`/athletes/${directId}`);
+        // Auto-login por id (app / deep link). La credencial guardada se usa
+        // de inmediato y las peticiones salen todas juntas. Si la sesión
+        // había muerto, la primera respuesta es 401: ahí se reclama una
+        // nueva y se reintenta una vez.
+        const hayCredencial = usarIdentidadLocal("athlete", directId);
+        if (!hayCredencial) await ensurePortalIdentity("athlete", directId);
+        tanda = pedirTandaInicial(directId);
+        try {
+          data = await tanda.ficha;
+        } catch (err) {
+          if (!hayCredencial || (err as { status?: number })?.status !== 401) throw err;
+          await ensurePortalIdentity("athlete", directId);
+          tanda = pedirTandaInicial(directId);
+          data = await tanda.ficha;
+        }
         if (!data?.id) { setError("Sesión expirada."); return; }
       } else {
         const normalizedInput = athleteId.trim().toLowerCase();
@@ -753,8 +793,9 @@ export default function UserPortalPage() {
         // Siempre se pide la lista, también cuando la ficha trae un viaje
         // fijado: ese puede ser antiguo y elegirlo a ciegas dejaba la tarjeta
         // mostrando un traslado posterior mientras otro estaba en ruta.
-        apiFetch<Trip[]>(`/trips?requesterAthleteId=${data.id}`).catch(() => [] as Trip[]),
-        apiFetch<HotelAssignment | null>(`/hotel-assignments/by-participant/${data.id}`)
+        // Al entrar por id ya salieron con la ficha: aquí sólo se recogen.
+        tanda ? tanda.viajes : apiFetch<Trip[]>(`/trips?requesterAthleteId=${data.id}`).catch(() => [] as Trip[]),
+        tanda ? tanda.asignacion : apiFetch<HotelAssignment | null>(`/hotel-assignments/by-participant/${data.id}`)
       ]);
 
       const assignment = assignmentData ? normalizeHA(assignmentData) : null;
@@ -770,12 +811,6 @@ export default function UserPortalPage() {
           : null,
       );
 
-      let resolvedHotel = hotelData;
-      if (assignment?.hotelId && (!resolvedHotel || resolvedHotel.id !== assignment.hotelId)) {
-        try { resolvedHotel = await apiFetch<Hotel>(`/accommodations/${assignment.hotelId}`); } catch { resolvedHotel = resolvedHotel ?? null; }
-      }
-      setHotel(resolvedHotel);
-
       const inferredTrip = elegirViajeActual([
         tripData,
         ...(tripsList || []).filter(
@@ -784,33 +819,38 @@ export default function UserPortalPage() {
       ]);
       setTrip(inferredTrip);
 
-      let resolvedVehicle = vehicleData;
-      if (inferredTrip?.vehicleId && !vehicleData) {
-        try { resolvedVehicle = await apiFetch<Vehicle>(`/transports/${inferredTrip.vehicleId}`); } catch { resolvedVehicle = null; }
-      }
-      setVehicle(resolvedVehicle);
-
-      let resolvedDriver: Driver | null = null;
-      if (inferredTrip?.driverId) {
-        try {
-          // /drivers ya incluye a los choferes de proveedor: sobraba el
-          // segundo pedido y su busqueda de respaldo.
-          const drivers = await apiFetch<Driver[]>(`/drivers`);
-          resolvedDriver =
-            (drivers || []).find(
+      // Hotel, vehículo, conductor, habitación y cama se pedían uno detrás de
+      // otro: cinco esperas seguidas por datos que no dependen entre sí.
+      const [hotelPorAsignacion, vehiculoDelViaje, listaConductores, habitacion, cama] = await Promise.all([
+        assignment?.hotelId && (!hotelData || hotelData.id !== assignment.hotelId)
+          ? apiFetch<Hotel>(`/accommodations/${assignment.hotelId}`).catch(() => null)
+          : Promise.resolve(null),
+        inferredTrip?.vehicleId && !vehicleData
+          ? apiFetch<Vehicle>(`/transports/${inferredTrip.vehicleId}`).catch(() => null)
+          : Promise.resolve(null),
+        // /drivers ya incluye a los choferes de proveedor: sobraba el
+        // segundo pedido y su busqueda de respaldo.
+        inferredTrip?.driverId
+          ? apiFetch<Driver[]>(`/drivers`).catch(() => [] as Driver[])
+          : Promise.resolve([] as Driver[]),
+        assignment?.roomId
+          ? apiFetch<HotelRoom>(`/hotel-rooms/${assignment.roomId}`).catch(() => null)
+          : Promise.resolve(null),
+        assignment?.bedId
+          ? apiFetch<HotelBed>(`/hotel-beds/${assignment.bedId}`).catch(() => null)
+          : Promise.resolve(null),
+      ]);
+      setHotel(hotelPorAsignacion ?? hotelData);
+      setVehicle(vehiculoDelViaje ?? vehicleData);
+      setDriver(
+        inferredTrip?.driverId
+          ? (listaConductores || []).find(
               (d) => d.id === inferredTrip.driverId || d.userId === inferredTrip.driverId,
-            ) ?? null;
-        } catch { resolvedDriver = null; }
-      }
-      setDriver(resolvedDriver);
-
-      if (assignment?.roomId) {
-        try { setHotelRoom(await apiFetch<HotelRoom>(`/hotel-rooms/${assignment.roomId}`)); } catch { setHotelRoom(null); }
-      } else { setHotelRoom(null); }
-
-      if (assignment?.bedId) {
-        try { setHotelBed(await apiFetch<HotelBed>(`/hotel-beds/${assignment.bedId}`)); } catch { setHotelBed(null); }
-      } else { setHotelBed(null); }
+            ) ?? null
+          : null,
+      );
+      setHotelRoom(habitacion);
+      setHotelBed(cama);
 
       const esJefe =
         data.isDelegationLead === true ||
@@ -840,17 +880,27 @@ export default function UserPortalPage() {
       void catalogoConCache<FoodMenu[]>("food-menus", () => apiFetch<FoodMenu[]>("/food-menus"), (lista) =>
         setFoodMenus(lista || []));
 
+      // Para la próxima apertura: con esto, los viajes y la nómina de la
+      // delegación salen junto con la ficha en vez de esperarla.
+      guardarPerfil({ id: data.id, esJefe, delegationId: data.delegationId ?? null });
+
+      // Si la tanda inicial ya pidió lo de la delegación correcta, se recoge;
+      // si el usuario cambió de delegación desde la última vez, se descarta.
+      const sirveLoPedido = !!tanda && tanda.delegacionPedida === (data.delegationId ?? null);
+
       // Lo que sí es propio del usuario se espera: es lo que se ve primero.
       const [prems, miembros, viajesDelegacion] = await Promise.all([
         // Premiaciones: el Jefe de Misión no tiene esa pestaña.
         esJefe ? Promise.resolve([] as Premiacion[]) : apiFetch<Premiacion[]>("/premiaciones").catch(() => [] as Premiacion[]),
         // Sólo los participantes de su delegación, filtrados en el servidor.
         esJefe && data.delegationId
-          ? apiFetch<Athlete[]>(`/athletes?delegationId=${encodeURIComponent(data.delegationId)}`).catch(() => [] as Athlete[])
+          ? (sirveLoPedido && tanda
+              ? tanda.miembros
+              : apiFetch<Athlete[]>(`/athletes?delegationId=${encodeURIComponent(data.delegationId)}`).catch(() => [] as Athlete[]))
           : Promise.resolve([] as Athlete[]),
         // Viajes: el backend ya los acota a su delegación.
         esJefe && data.delegationId
-          ? apiFetch<Trip[]>("/trips").catch(() => [] as Trip[])
+          ? (sirveLoPedido && tanda ? tanda.viajesDelegacion : apiFetch<Trip[]>("/trips").catch(() => [] as Trip[]))
           : Promise.resolve([] as Trip[]),
       ]);
       setPremiaciones(Array.isArray(prems) ? prems : []);
