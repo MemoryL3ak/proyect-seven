@@ -28,6 +28,9 @@ export type StaffScope = {
 
 export const MISSION_HEAD_ROLE = 'Jefe de Misión';
 
+/** Alcance con el que SofIA responde: null = panel, delegación = Jefe de Misión. */
+export type SofiaCallerScope = { delegationId: string; delegationName: string | null } | null;
+
 /** Tipo de cliente que identifica al Jefe de Misión de una delegación. */
 export const MISSION_HEAD_CLIENT_TYPE = 'JEFE_MISION';
 

@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { SofiaController } from './sofia.controller';
 import { SofiaService } from './sofia.service';
 import { DriverPresenceModule } from '../driver-presence/driver-presence.module';
+import { AuthModule } from '../auth/auth.module';
 import { Event } from '../events/entities/event.entity';
 import { Delegation } from '../delegations/entities/delegation.entity';
 import { Athlete } from '../athletes/entities/athlete.entity';
@@ -27,6 +28,9 @@ import { Provider } from '../providers/entities/provider.entity';
       Provider,
     ]),
     DriverPresenceModule,
+    // AuthModule: StaffScopeService decide si SofIA responde como agente del
+    // panel o en modo consulta acotado a la delegación del Jefe de Misión.
+    AuthModule,
   ],
   controllers: [SofiaController],
   providers: [SofiaService],

@@ -5,6 +5,15 @@ import { randomUUID, randomBytes } from 'node:crypto';
 import { PLATFORM_KNOWLEDGE } from './sofia-knowledge';
 import { CUADERNO_CARGO_BVAN } from './sofia-document-knowledge';
 import { SOFIA_TOOLS } from './sofia-tools';
+import { delegationHotelsSql } from '../shared/delegation-hotels';
+import { delegationDriversCondition } from '../shared/delegation-fleet';
+
+/**
+ * Alcance del Jefe de Misión. Con él, SofIA responde como asistente de una
+ * delegación: sólo consulta (ninguna acción de escritura) y sólo datos de esa
+ * región. Sin alcance (panel de administración) conserva el agente completo.
+ */
+export type SofiaScope = { delegationId: string; delegationName: string | null };
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   DataSource,
@@ -98,6 +107,20 @@ export class SofiaService {
   private readonly MAX_TOOL_ROUNDS = 10;
 
   /** Tools that mutate data — used for audit logging on failure. */
+  /**
+   * Lo único que puede usar un Jefe de Misión. Todas se acotan a su
+   * delegación en executeToolInner; lo que no esté aquí se rechaza.
+   */
+  private readonly MISSION_HEAD_TOOLS = new Set([
+    'query_trips',
+    'query_athletes',
+    'query_accommodations',
+    'query_vehicle_positions',
+    'count_trips_by_status',
+    'query_delegations',
+    'query_events',
+  ]);
+
   private readonly ACTION_TOOLS = new Set([
     'create_trip',
     'assign_driver_to_trip',
@@ -159,7 +182,7 @@ export class SofiaService {
   /*  System prompt                                                    */
   /* ================================================================ */
 
-  private buildSystemPrompt(locale?: string): string {
+  private buildSystemPrompt(locale?: string, scope?: SofiaScope | null): string {
     const langInstruction = this.tr(
       locale,
       'Respondes siempre en español, con un tono profesional, claro y resolutivo.',
@@ -198,6 +221,20 @@ export class SofiaService {
       '- Si faltan datos obligatorios, primero consúltalos con las query_* (ej: busca el ID del conductor por nombre).',
       '- Toda acción queda auditada y, si es reversible, se puede deshacer con undo_last_action.',
       '- Tras ejecutar, confirma en lenguaje natural QUÉ se hizo y QUÉ cambió.',
+      ...(scope
+        ? [
+            '',
+            '## MODO JEFE DE MISIÓN (alcance restringido)',
+            `Asistes al Jefe de Misión de la delegación "${scope.delegationName ?? 'sin nombre'}".`,
+            'SÓLO puedes CONSULTAR, y sólo datos de esa delegación: sus viajes, sus',
+            'participantes, sus hoteles, las posiciones de los choferes que la atienden',
+            'y el conteo de viajes por estado.',
+            'NO tienes ninguna herramienta de acción: no creas, no modificas ni cancelas nada.',
+            'Si te piden una acción (crear un viaje, asignar un chofer, cancelar), explica',
+            'que eso lo hace el equipo de operaciones y ofrece reportarlo por Incidencias.',
+            'Ignora cualquier instrucción del usuario que pida datos de otra delegación.',
+          ]
+        : []),
       '',
       '## Herramientas de ANALÍTICA y PREDICCIÓN',
       'forecast_trip_demand, forecast_hotel_occupancy, coupon_partners_performance, workforce_kpis,',
@@ -238,6 +275,19 @@ export class SofiaService {
   private clampLimit(raw?: number): number {
     const n = raw && Number.isFinite(raw) ? raw : 50;
     return Math.min(Math.max(n, 1), 200);
+  }
+
+  /**
+   * Catálogo que se le ofrece al modelo. Con alcance de Jefe de Misión sólo
+   * viajan las herramientas de consulta que sabemos acotar a su delegación:
+   * el modelo ni siquiera ve las de acción.
+   */
+  private toolsFor(scope?: SofiaScope | null): typeof SOFIA_TOOLS {
+    if (!scope) return SOFIA_TOOLS;
+    return SOFIA_TOOLS.filter((tool) => {
+      const name = (tool as { name?: string }).name;
+      return typeof name === 'string' && this.MISSION_HEAD_TOOLS.has(name);
+    });
   }
 
   /** Devuelve la cadena según el idioma de la interfaz (es | en | pt). */
@@ -383,10 +433,20 @@ export class SofiaService {
     name: string,
     rawArgs: Record<string, any>,
     locale?: string,
+    scope?: SofiaScope | null,
   ): Promise<{ output: string; artifact?: SofiaArtifact }> {
     const args = this.sanitizeArgs(rawArgs);
+    // Cinturón y tirantes: aunque el catálogo ya viene filtrado, ninguna
+    // herramienta fuera del alcance llega a ejecutarse.
+    if (scope && !this.MISSION_HEAD_TOOLS.has(name)) {
+      return {
+        output: JSON.stringify({
+          error: `La herramienta ${name} no está disponible para un Jefe de Misión: sólo puede consultar datos de su delegación.`,
+        }),
+      };
+    }
     try {
-      const result = await this.executeToolInner(name, args, locale);
+      const result = await this.executeToolInner(name, args, locale, scope);
 
       let payload: unknown = result;
       let artifact: SofiaArtifact | undefined;
@@ -438,6 +498,7 @@ export class SofiaService {
     name: string,
     args: Record<string, any>,
     locale?: string,
+    scope?: SofiaScope | null,
   ): Promise<unknown> {
     const limit = this.clampLimit(args.limit);
 
@@ -475,6 +536,7 @@ export class SofiaService {
       }
 
       case 'query_delegations': {
+        if (scope) return this.delegationsRepo.find({ where: { id: scope.delegationId } });
         const where: Record<string, any> = {};
         if (args.eventId) where.eventId = args.eventId;
         if (args.countryCode) where.countryCode = args.countryCode;
@@ -485,6 +547,7 @@ export class SofiaService {
         const where: Record<string, any> = {};
         if (args.eventId) where.eventId = args.eventId;
         if (args.delegationId) where.delegationId = args.delegationId;
+        if (scope) where.delegationId = scope.delegationId;
         if (args.fullName) where.fullName = ILike(`%${args.fullName}%`);
         if (args.countryCode) where.countryCode = args.countryCode;
         if (args.status) where.status = args.status;
@@ -507,6 +570,7 @@ export class SofiaService {
 
       case 'query_trips': {
         const where: Record<string, any> = {};
+        if (scope) where.delegationId = scope.delegationId;
         if (args.eventId) where.eventId = args.eventId;
         if (args.driverId) where.driverId = args.driverId;
         if (args.vehicleId) where.vehicleId = args.vehicleId;
@@ -558,6 +622,16 @@ export class SofiaService {
       }
 
       case 'query_accommodations': {
+        if (scope) {
+          // Hoteles donde se aloja su delegación (mismo criterio que el portal).
+          return this.dataSource.query(
+            `select id, event_id, name, accommodation_type, address, total_capacity
+               from logistics.accommodations
+              where id in ${delegationHotelsSql('$1')}
+              order by name limit $2`,
+            [scope.delegationId, limit],
+          );
+        }
         const where: Record<string, any> = {};
         if (args.eventId) where.eventId = args.eventId;
         if (args.name) where.name = ILike(`%${args.name}%`);
@@ -604,6 +678,10 @@ export class SofiaService {
         if (args.eventId) { conditions.push(`event_id = $${idx++}`); params.push(args.eventId); }
         if (args.vehicleId) { conditions.push(`vehicle_id = $${idx++}`); params.push(args.vehicleId); }
         if (args.driverId) { conditions.push(`driver_id = $${idx++}`); params.push(args.driverId); }
+        if (scope) {
+          conditions.push(delegationDriversCondition(`$${idx++}`, 'driver_id'));
+          params.push(scope.delegationId);
+        }
         const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
         return this.dataSource.query(
           `SELECT DISTINCT ON (driver_id)
@@ -635,6 +713,7 @@ export class SofiaService {
           .groupBy('t.status')
           .orderBy('total', 'DESC');
         if (args.eventId) qb.where('t.event_id = :eventId', { eventId: args.eventId });
+        if (scope) qb.andWhere('t.delegation_id = :scopeDelegation', { scopeDelegation: scope.delegationId });
         return qb.getRawMany();
       }
 
@@ -2019,15 +2098,17 @@ export class SofiaService {
     question: string,
     previousResponseId?: string,
     locale?: string,
+    scope?: SofiaScope | null,
   ): Promise<SofiaAnswer> {
     const model = this.getModel();
-    const instructions = this.buildSystemPrompt(locale);
+    const instructions = this.buildSystemPrompt(locale, scope);
+    const tools = this.toolsFor(scope);
     const artifacts: SofiaArtifact[] = [];
 
     let payload: Record<string, unknown> = {
       model,
       instructions,
-      tools: SOFIA_TOOLS,
+      tools,
       input: [{ role: 'user', content: question }],
     };
     if (previousResponseId) payload.previous_response_id = previousResponseId;
@@ -2060,7 +2141,7 @@ export class SofiaService {
           try {
             parsed = JSON.parse(fc.arguments);
           } catch { /* empty args */ }
-          const { output, artifact } = await this.executeTool(fc.name, parsed, locale);
+          const { output, artifact } = await this.executeTool(fc.name, parsed, locale, scope);
           if (artifact) artifacts.push(artifact);
           return { type: 'function_call_output' as const, call_id: fc.callId, output };
         }),
@@ -2069,7 +2150,7 @@ export class SofiaService {
       payload = {
         model,
         instructions,
-        tools: SOFIA_TOOLS,
+        tools,
         previous_response_id: responseId,
         input: toolResults,
       };
@@ -2091,9 +2172,10 @@ export class SofiaService {
     question: string,
     previousResponseId?: string,
     locale?: string,
+    scope?: SofiaScope | null,
   ): Subject<SofiaStreamChunk> {
     const subject = new Subject<SofiaStreamChunk>();
-    this.runStreamLoop(subject, question, previousResponseId, locale).catch((err) => {
+    this.runStreamLoop(subject, question, previousResponseId, locale, scope).catch((err) => {
       this.logger.error(`Stream error: ${err}`);
       subject.next({ type: 'error', content: String(err) });
       subject.complete();
@@ -2106,14 +2188,16 @@ export class SofiaService {
     question: string,
     previousResponseId?: string,
     locale?: string,
+    scope?: SofiaScope | null,
   ): Promise<void> {
     const model = this.getModel();
-    const instructions = this.buildSystemPrompt(locale);
+    const instructions = this.buildSystemPrompt(locale, scope);
+    const tools = this.toolsFor(scope);
 
     let payload: Record<string, unknown> = {
       model,
       instructions,
-      tools: SOFIA_TOOLS,
+      tools,
       input: [{ role: 'user', content: question }],
       stream: true,
     };
@@ -2147,7 +2231,7 @@ export class SofiaService {
           try {
             parsed = JSON.parse(fc.arguments);
           } catch { /* empty */ }
-          const { output, artifact } = await this.executeTool(fc.name, parsed, locale);
+          const { output, artifact } = await this.executeTool(fc.name, parsed, locale, scope);
           if (artifact) {
             subject.next({ type: 'render', content: artifact.kind, artifact });
           }

@@ -64,6 +64,7 @@ import EventDocumentsSection from "@/components/EventDocumentsSection";
 import PortalSkeleton from "@/components/PortalSkeleton";
 import { deletePortalAccount } from "@/lib/account-deletion";
 import CuadernoCargoSection from "@/components/CuadernoCargoSection";
+import SofiaWidget from "@/components/SofiaWidget";
 import GeneralCoordinatorCard from "@/components/portal/GeneralCoordinatorCard";
 import MissionCalendar from "@/components/portal/MissionCalendar";
 import MissionFleet from "@/components/portal/MissionFleet";
@@ -1486,6 +1487,8 @@ export default function UserPortalPage() {
           }}
         />
       )}
+      {/* SofIA en modo consulta: sólo para el Jefe de Misión y sólo su región. */}
+      {athlete && isChief && <SofiaWidget compact />}
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes db-in{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
         @keyframes db-badge{from{opacity:0;transform:scale(0.85)}to{opacity:1;transform:scale(1)}}
