@@ -79,7 +79,6 @@ import { isAvailable as isNativeShell } from "@/lib/native-bridge";
 import { clearPersistedTabs, persistTab, restoreOnReload, startTabHeartbeat } from "@/lib/portal-tab";
 import { claimPortalSession, clearPortalSession, ensurePortalIdentity, portalLogin, releasePortalSession, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
 import PortalSessionGuard from "@/components/PortalSessionGuard";
-import SofiaWidget from "@/components/SofiaWidget";
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
 import QrFullscreenOverlay from "@/components/QrFullscreenOverlay";
 import QRCode from "qrcode";
@@ -1487,8 +1486,6 @@ export default function UserPortalPage() {
           }}
         />
       )}
-      {/* Asistente IA para el jefe de delegación */}
-      {athlete && isChief && <SofiaWidget compact />}
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes db-in{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
         @keyframes db-badge{from{opacity:0;transform:scale(0.85)}to{opacity:1;transform:scale(1)}}

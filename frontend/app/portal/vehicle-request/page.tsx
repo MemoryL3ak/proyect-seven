@@ -55,7 +55,6 @@ import CuadernoCargoSection from "@/components/CuadernoCargoSection";
 import EmergencyNumbersSection from "@/components/EmergencyNumbersSection";
 import PushTokenSync from "@/components/PushTokenSync";
 import VipLocationReporter from "@/components/VipLocationReporter";
-import SofiaWidget from "@/components/SofiaWidget";
 import VenueMap from "@/components/VenueMap";
 import CredentialQrCard from "@/components/CredentialQrCard";
 import { buildCredentialHtml } from "@/lib/credential-template";
@@ -3903,7 +3902,6 @@ export default function VehicleRequestPortalPage() {
               }}
             />
           )}
-          {athlete && <SofiaWidget compact />}
         </div>
       )}
 
