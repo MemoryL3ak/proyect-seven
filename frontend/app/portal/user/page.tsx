@@ -726,6 +726,7 @@ export default function UserPortalPage() {
   // Filtro de la lista de viajes de la delegación. Vive aquí porque el banner
   // "En curso ahora" lo cambia al tocar "ver los N en curso".
   const [filtroViajes, setFiltroViajes] = useState("ACTIVOS");
+  const listaViajesRef = useRef<HTMLDivElement | null>(null);
 
   /**
    * Todo lo que se puede pedir sabiendo sólo quién es el usuario, pedido de
@@ -1951,7 +1952,14 @@ export default function UserPortalPage() {
                 memberIds={[athlete.id, ...delegationMembers.map((m) => m.id)]}
                 venues={venues}
                 accommodations={allAccommodations}
-                onVerTodos={() => setFiltroViajes("EN_CURSO")}
+                onVerTodos={() => {
+                  setFiltroViajes("EN_CURSO");
+                  // Sin esto el botón parecía no hacer nada: cambiaba el
+                  // filtro de una lista que estaba fuera de la pantalla.
+                  requestAnimationFrame(() =>
+                    listaViajesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+                  );
+                }}
               />
             )}
             {/* TA: sólo viajes programados/en curso, sin historial */}
@@ -2066,6 +2074,7 @@ export default function UserPortalPage() {
             })()}
             {/* Jefe de Misión: viajes asignados a su delegación */}
             {isChief && (
+              <div ref={listaViajesRef}>
               <MissionTrips
                 estado={filtroViajes}
                 onEstado={setFiltroViajes}
@@ -2077,6 +2086,7 @@ export default function UserPortalPage() {
                 venues={venues}
                 accommodations={allAccommodations}
               />
+              </div>
             )}
           </div>
         )}
