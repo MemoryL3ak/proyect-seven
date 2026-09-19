@@ -386,7 +386,7 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
                     }
                   </div>
                 )}
-                <div style={{ maxWidth: "78%" }}>
+                <div style={{ minWidth: 0 }}>
                   {!isMine(msg) && isFirstInGroup && (
                     <span className="tripchat-sender-name">{msg.senderName}</span>
                   )}
@@ -613,8 +613,14 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
           margin: 0 auto 12px;
         }
 
+        /* El ancho máximo va AQUÍ, no en el contenedor de la burbuja. La fila
+           se encoge a su contenido (alignSelf la saca del estiramiento), así
+           que un "max-width: 78%" dentro de ella se resolvía contra un ancho
+           que aún no existía y la burbuja se venía abajo hasta el mínimo: un
+           "Hola" salía partido en tres líneas, una letra por línea. */
         .tripchat-msg-row {
           display: flex; align-items: flex-end; gap: 6px;
+          max-width: 78%;
         }
 
         .tripchat-msg-avatar {
@@ -642,7 +648,6 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
           overflow-wrap: break-word;
           word-break: normal;
           white-space: pre-wrap; /* respeta los saltos de línea que escribe el usuario */
-          max-width: 100%;
           box-shadow: 0 1px 4px rgba(33,208,179,0.2);
           animation: tripMsgIn .25s ease-out both;
         }
@@ -656,7 +661,6 @@ export default function TripChat({ tripId, senderType, senderName, tripStatus, p
           overflow-wrap: break-word;
           word-break: normal;
           white-space: pre-wrap; /* respeta los saltos de línea que escribe el usuario */
-          max-width: 100%;
           border: 1px solid #edf0f5;
           box-shadow: 0 1px 3px rgba(15,23,42,0.04);
           animation: tripMsgIn .25s ease-out both;
