@@ -70,7 +70,33 @@ const ordenDe = (d: Disciplina) => {
   return i === -1 ? ORDEN_PLANILLA.length : i;
 };
 
-/** "Región de Ñuble" se lee mejor como "Ñuble" en una tabla de 11 columnas. */
+/**
+ * Las regiones, de norte a sur y con el nombre corto: es como se listan en
+ * Chile y como están en la planilla de papel. El nombre oficial
+ * ("Región de Aysén del General Carlos Ibáñez del Campo") no cabe en una
+ * tabla de once columnas y empuja el resto fuera de la pantalla.
+ */
+const REGIONES: { codigo: string; corto: string }[] = [
+  { codigo: "CL-AP", corto: "Arica" },
+  { codigo: "CL-TA", corto: "Tarapacá" },
+  { codigo: "CL-AN", corto: "Antofagasta" },
+  { codigo: "CL-AT", corto: "Atacama" },
+  { codigo: "CL-CO", corto: "Coquimbo" },
+  { codigo: "CL-VS", corto: "Valparaíso" },
+  { codigo: "CL-RM", corto: "Metropolitana" },
+  { codigo: "CL-LI", corto: "O'Higgins" },
+  { codigo: "CL-ML", corto: "Maule" },
+  { codigo: "CL-NB", corto: "Ñuble" },
+  { codigo: "CL-BI", corto: "Biobío" },
+  { codigo: "CL-AR", corto: "Araucanía" },
+  { codigo: "CL-LR", corto: "Los Ríos" },
+  { codigo: "CL-LL", corto: "Los Lagos" },
+  { codigo: "CL-AI", corto: "Aysén" },
+  { codigo: "CL-MA", corto: "Magallanes" },
+];
+const ORDEN_REGION = new Map(REGIONES.map((r, i) => [r.codigo, i]));
+const CORTO_REGION = new Map(REGIONES.map((r) => [r.codigo, r.corto]));
+
 const nombreCorto = (v: string) => v.replace(/^regi[oó]n\s+(de\s+la\s+|del\s+|de\s+)?/i, "").trim() || v;
 
 export default function DistribucionHotelera() {
@@ -133,7 +159,11 @@ export default function DistribucionHotelera() {
     () =>
       delegaciones
         .filter((d) => !eventoId || d.eventId === eventoId)
-        .sort((a, b) => (a.name ?? a.countryCode ?? "").localeCompare(b.name ?? b.countryCode ?? "")),
+        .sort((a, b) => {
+          const ia = ORDEN_REGION.get(a.countryCode ?? "") ?? 99;
+          const ib = ORDEN_REGION.get(b.countryCode ?? "") ?? 99;
+          return ia - ib || (a.name ?? "").localeCompare(b.name ?? "");
+        }),
     [delegaciones, eventoId],
   );
 
@@ -229,7 +259,8 @@ export default function DistribucionHotelera() {
     }
   };
 
-  const nombreDelegacion = (d: Delegacion) => nombreCorto(d.name || d.countryCode || "—");
+  const nombreDelegacion = (d: Delegacion) =>
+    CORTO_REGION.get(d.countryCode ?? "") ?? nombreCorto(d.name || d.countryCode || "—");
 
   return (
     <section className="space-y-4">
@@ -295,20 +326,43 @@ export default function DistribucionHotelera() {
       ) : columnas.length === 0 ? (
         <p className="text-sm text-white/50">{t("Este evento todavía no tiene disciplinas cargadas.")}</p>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-white/10">
-          <table className="table text-xs">
+        <div style={{ overflowX: "auto", border: `1px solid var(--border)`, borderRadius: 12 }}>
+          <table className="table text-xs" style={{ borderCollapse: "separate", borderSpacing: 0 }}>
             <thead>
               <tr>
-                <th className="sticky left-0 z-10 bg-[#0b1b2b] text-left">{t("Región")}</th>
+                {/* La columna de región y la fila de deportes se quedan fijas:
+                    con once columnas se pierde la referencia al desplazarse. */}
+                <th
+                  style={{
+                    position: "sticky", left: 0, top: 0, zIndex: 3,
+                    background: "var(--surface)", textAlign: "left",
+                    minWidth: 132, borderRight: `1px solid var(--border)`,
+                  }}
+                >
+                  {t("Región")}
+                </th>
                 {columnas.map((d) => (
-                  <th key={d.id} className="whitespace-nowrap uppercase">{etiquetaDisciplina(d)}</th>
+                  <th
+                    key={d.id}
+                    className="whitespace-nowrap uppercase"
+                    style={{ position: "sticky", top: 0, zIndex: 2, background: "var(--surface)" }}
+                  >
+                    {etiquetaDisciplina(d)}
+                  </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {filas.map((del) => (
-                <tr key={del.id}>
-                  <th className="sticky left-0 z-10 bg-[#0b1b2b] whitespace-nowrap text-left font-semibold">
+              {filas.map((del, i) => (
+                <tr key={del.id} style={{ background: i % 2 ? "var(--bg)" : "transparent" }}>
+                  <th
+                    style={{
+                      position: "sticky", left: 0, zIndex: 1,
+                      background: i % 2 ? "var(--bg)" : "var(--surface)",
+                      whiteSpace: "nowrap", textAlign: "left", fontWeight: 600,
+                      minWidth: 132, borderRight: `1px solid var(--border)`,
+                    }}
+                  >
                     {nombreDelegacion(del)}
                   </th>
                   {columnas.map((disc) => {
@@ -318,10 +372,11 @@ export default function DistribucionHotelera() {
                       <td key={disc.id} className="p-1">
                         <select
                           className="input w-full text-xs"
-                          // Ancho mínimo para que quepa el nombre del hotel: la
-                          // tabla se desplaza en horizontal antes que apretar
-                          // las celdas hasta dejarlas ilegibles.
-                          style={{ minWidth: 132, ...(tocada ? { borderColor: "#fbbf24" } : {}) }}
+                          // "Bosques de Reñaca" y "Marina del Rey" tienen que
+                          // leerse enteros: recortados se confunden con
+                          // "Marina Dunas" y eso manda gente a otro hotel. La
+                          // tabla se desplaza en horizontal antes que apretar.
+                          style={{ minWidth: 186, ...(tocada ? { borderColor: "#fbbf24" } : {}) }}
                           value={valorDe(del.id, disc.id)}
                           onChange={(e) => cambiar(del.id, disc.id, e.target.value)}
                         >
