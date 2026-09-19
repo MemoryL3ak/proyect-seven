@@ -5,6 +5,7 @@ import { CarIcon, ChevronRightIcon, UsersIcon } from "@/components/ui/Icons";
 import { apiFetch } from "@/lib/api";
 import { BRAND, SURFACE, tripStatusMeta } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
+import { mapaDeLugares } from "@/lib/lugares";
 import type { MissionTrip } from "@/components/portal/MissionTrips";
 
 /**
@@ -31,7 +32,7 @@ const EN_CURSO = new Set(["EN_ROUTE", "PICKED_UP"]);
 const VISIBLES = 3;
 
 type DriverRow = { id: string; userId?: string | null; fullName?: string | null };
-type NamedPlace = { id: string; name?: string | null };
+type NamedPlace = { id: string; name?: string | null; venueType?: string | null };
 
 const hora = (iso?: string | null) =>
   iso ? new Date(iso).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", hour12: false }) : "--:--";
@@ -42,15 +43,18 @@ export default function MissionLiveTrips({
   memberIds,
   venues,
   accommodations,
-  onVerTodos,
+  onVerEnVivo,
 }: {
   trips: MissionTrip[];
   delegationId?: string | null;
   memberIds: string[];
   venues: NamedPlace[];
   accommodations: NamedPlace[];
-  /** Lleva a la lista de abajo, ya filtrada por "En curso". */
-  onVerTodos: () => void;
+  /**
+   * Abre el seguimiento en vivo. Con un traslado, centra el mapa en su bus;
+   * sin ninguno, muestra la flota entera.
+   */
+  onVerEnVivo: (tripId?: string | null) => void;
 }) {
   const { t } = useI18n();
   const [drivers, setDrivers] = useState<DriverRow[] | null>(null);
@@ -72,12 +76,8 @@ export default function MissionLiveTrips({
       });
   }, [trips, delegationId, miembros]);
 
-  const lugar = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const v of venues) if (v.id && v.name) map.set(v.id, v.name);
-    for (const a of accommodations) if (a.id && a.name) map.set(a.id, a.name);
-    return map;
-  }, [venues, accommodations]);
+  // "Comedor LRH (ex Gala)", "Sede Elías Figueroa", "Hotel Mahía".
+  const lugar = useMemo(() => mapaDeLugares(venues, accommodations), [venues, accommodations]);
 
   const origen = (tr: MissionTrip) =>
     lugar.get(tr.originVenueId ?? "") ?? lugar.get(tr.originHotelId ?? "") ?? tr.origin ?? "—";
@@ -163,15 +163,23 @@ export default function MissionLiveTrips({
           const st = tripStatusMeta(tr.status ?? "");
           const nombreChofer = chofer(tr);
           return (
-            <div
+            <button
               key={tr.id}
+              type="button"
+              onClick={() => onVerEnVivo(tr.id)}
               style={{
                 display: "flex",
                 gap: 10,
+                alignItems: "center",
                 padding: "8px 10px",
                 borderRadius: 10,
                 background: SURFACE.bg,
                 border: `1px solid ${SURFACE.borderMuted}`,
+                width: "100%",
+                textAlign: "left",
+                font: "inherit",
+                color: "inherit",
+                cursor: "pointer",
               }}
             >
               <div style={{ width: 46, flexShrink: 0, textAlign: "center" }}>
@@ -230,13 +238,16 @@ export default function MissionLiveTrips({
                   )}
                 </div>
               </div>
-            </div>
+              <span style={{ display: "flex", color: SURFACE.textFaint, flexShrink: 0 }}>
+                <ChevronRightIcon size={16} strokeWidth={2.2} />
+              </span>
+            </button>
           );
         })}
 
         <button
           type="button"
-          onClick={onVerTodos}
+          onClick={() => onVerEnVivo(null)}
           style={{
             display: "flex",
             alignItems: "center",
@@ -254,8 +265,8 @@ export default function MissionLiveTrips({
           }}
         >
           {resto > 0
-            ? `${t("Ver los")} ${enCurso.length} ${t("en curso")}`
-            : t("Ver en la lista")}
+            ? `${t("Ver los")} ${enCurso.length} ${t("en el mapa")}`
+            : t("Ver la flota en el mapa")}
           <ChevronRightIcon size={14} strokeWidth={2.2} />
         </button>
       </div>

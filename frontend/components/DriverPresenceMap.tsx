@@ -73,6 +73,12 @@ function markerStatusLabel(m: PresenceMarker): string {
 type Props = {
   markers: PresenceMarker[];
   height?: number;
+  /**
+   * Chofer al que centrar el mapa. Se usa cuando se llega desde el banner
+   * "Ahora mismo" tocando un traslado: sin esto, con ocho buses en pantalla,
+   * el jefe tenía que adivinar cuál era el que venía a mirar.
+   */
+  focoId?: string | null;
 };
 
 const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
@@ -127,9 +133,11 @@ function createPinIcon(initials: string, accent: string): string {
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
-export default function DriverPresenceMap({ markers, height = 420 }: Props) {
+export default function DriverPresenceMap({ markers, height = 420, focoId = null }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
+  // Último chofer al que se centró, para no repetir el movimiento en cada tic.
+  const focoAplicadoRef = useRef<string | null>(null);
   const gmMarkersRef = useRef<Record<string, any>>({});
   // Last accent applied per marker — drives icon regeneration only when the
   // online/offline color actually flips (the markers array re-renders every
@@ -306,6 +314,21 @@ export default function DriverPresenceMap({ markers, height = 420 }: Props) {
       }
     });
 
+    // Con un chofer señalado, el mapa va a él y se olvida del encuadre
+    // automático: es lo que la persona vino a ver.
+    if (focoId) {
+      const m = markers.find((x) => x.id === focoId);
+      if (m && focoAplicadoRef.current !== focoId) {
+        mapRef.current.panTo({ lat: m.lat, lng: m.lng });
+        mapRef.current.setZoom(15);
+        focoAplicadoRef.current = focoId;
+        didFitRef.current = true;
+        return;
+      }
+    } else {
+      focoAplicadoRef.current = null;
+    }
+
     if (markers.length > 0 && !didFitRef.current) {
       const bounds = new google.maps.LatLngBounds();
       markers.forEach((m) => bounds.extend({ lat: m.lat, lng: m.lng }));
@@ -317,7 +340,7 @@ export default function DriverPresenceMap({ markers, height = 420 }: Props) {
       }
       didFitRef.current = true;
     }
-  }, [markers]);
+  }, [markers, focoId]);
 
   return (
     <div ref={containerRef} style={{ width: "100%", height: `${height}px`, borderRadius: 12 }} />

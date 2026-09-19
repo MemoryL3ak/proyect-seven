@@ -7,6 +7,7 @@ import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { openExternal, whatsappHref } from "@/lib/external-link";
 import { useI18n } from "@/lib/i18n";
+import { mapaDeLugares } from "@/lib/lugares";
 import type { MissionTrip } from "@/components/portal/MissionTrips";
 
 /**
@@ -40,7 +41,7 @@ type Snapshot = {
   drivers: PresenceDriver[];
 };
 
-type NamedPlace = { id: string; name?: string | null };
+type NamedPlace = { id: string; name?: string | null; venueType?: string | null };
 
 const REFRESH_MS = 10_000;
 // Un chofer "en línea" transmite hace menos de un minuto; su marcador se
@@ -73,6 +74,7 @@ export default function MissionFleet({
   trips,
   venues,
   accommodations,
+  focoTripId = null,
 }: {
   eventId?: string | null;
   delegationName: string;
@@ -80,6 +82,11 @@ export default function MissionFleet({
   trips: MissionTrip[];
   venues: NamedPlace[];
   accommodations: NamedPlace[];
+  /**
+   * Traslado que se vino a mirar, elegido en el banner "Ahora mismo". El mapa
+   * se centra en su chofer y su ficha queda destacada y la primera.
+   */
+  focoTripId?: string | null;
 }) {
   const { t } = useI18n();
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
@@ -111,25 +118,32 @@ export default function MissionFleet({
   }, [eventId, t]);
 
   // Nombre del recinto, para no mostrar direcciones largas.
-  const lugar = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const v of venues) if (v.id && v.name) map.set(v.id, v.name);
-    for (const a of accommodations) if (a.id && a.name) map.set(a.id, a.name);
-    return map;
-  }, [venues, accommodations]);
+  // "Comedor LRH (ex Gala)", "Sede Elías Figueroa", "Hotel Mahía".
+  const lugar = useMemo(() => mapaDeLugares(venues, accommodations), [venues, accommodations]);
   const punto = (tr: MissionTrip, extremo: "origin" | "destination") => {
     const id = extremo === "origin" ? (tr.originVenueId ?? tr.originHotelId) : (tr.destinationVenueId ?? tr.destinationHotelId);
     return (id ? lugar.get(id) : null) ?? (extremo === "origin" ? tr.origin : tr.destination) ?? "—";
   };
 
+  const focoDriverIdBase = useMemo(
+    () => (focoTripId ? trips.find((tr) => tr.id === focoTripId)?.driverId ?? null : null),
+    [focoTripId, trips],
+  );
+
   const drivers = useMemo(() => {
     const list = snapshot?.drivers ?? [];
+    const foco = focoDriverIdBase ?? list.find((d) => d.activeTripId === focoTripId)?.driverId ?? null;
     return [...list].sort((a, b) => {
+      // El chofer que se vino a mirar, primero de todos.
+      if (foco) {
+        if (a.driverId === foco) return -1;
+        if (b.driverId === foco) return 1;
+      }
       const ra = a.activeTrips > 0 ? 0 : a.online ? 1 : 2;
       const rb = b.activeTrips > 0 ? 0 : b.online ? 1 : 2;
       return ra - rb || a.fullName.localeCompare(b.fullName);
     });
-  }, [snapshot]);
+  }, [snapshot, focoDriverIdBase, focoTripId]);
 
   const nombreChofer = (driverId?: string | null) =>
     driverId ? drivers.find((d) => d.driverId === driverId)?.fullName ?? null : null;
@@ -181,6 +195,14 @@ export default function MissionFleet({
     </div>
   );
 
+  // Chofer del traslado que se vino a mirar: el mapa se centra en él y su
+  // ficha sube al principio de la lista.
+  const focoDriverId = useMemo(() => {
+    if (!focoTripId) return null;
+    if (focoDriverIdBase) return focoDriverIdBase;
+    return snapshot?.drivers.find((d) => d.activeTripId === focoTripId)?.driverId ?? null;
+  }, [focoTripId, focoDriverIdBase, snapshot]);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ background: SURFACE.card, borderRadius: 14, border: `1px solid ${SURFACE.border}`, padding: 14, borderLeft: `4px solid ${BRAND.teal}` }}>
@@ -207,7 +229,7 @@ export default function MissionFleet({
       {/* Mapa en vivo: los choferes que están transmitiendo ahora. */}
       {markers.length > 0 ? (
         <div style={{ borderRadius: 14, overflow: "hidden", border: `1px solid ${SURFACE.border}` }}>
-          <DriverPresenceMap markers={markers} height={260} />
+          <DriverPresenceMap markers={markers} height={260} focoId={focoDriverId} />
         </div>
       ) : (
         <div style={{ padding: 16, textAlign: "center", background: SURFACE.card, borderRadius: 14, border: `1px dashed ${SURFACE.border}` }}>
@@ -264,7 +286,7 @@ export default function MissionFleet({
             ? { bg: STATE.infoSoft, fg: STATE.infoText, border: STATE.infoBorder, text: t("En línea") }
             : { bg: SURFACE.borderMuted, fg: SURFACE.textMuted, border: SURFACE.border, text: t("Sin señal") };
         return (
-          <div key={d.driverId} style={{ background: SURFACE.card, borderRadius: 12, border: `1px solid ${SURFACE.border}`, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10 }}>
+          <div key={d.driverId} style={{ background: SURFACE.card, borderRadius: 12, border: `1px solid ${d.driverId === focoDriverId ? BRAND.teal : SURFACE.border}`, boxShadow: d.driverId === focoDriverId ? "0 0 0 3px rgba(33,208,179,0.18)" : "none", padding: "10px 14px", display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                 <p style={{ fontSize: 13, fontWeight: 700, color: SURFACE.text, margin: 0 }}>{d.fullName}</p>

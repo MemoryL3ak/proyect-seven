@@ -7,6 +7,7 @@ import { BRAND, SURFACE, tripStatusMeta } from "@/lib/design";
 import { buildDisciplineLabelMap, type DisciplineLike } from "@/lib/discipline-filters";
 import TripMap from "@/components/TripMap";
 import { ChipFilter, SegmentedFilter } from "@/components/ui/FilterControls";
+import { mapaDeLugares } from "@/lib/lugares";
 import { useI18n } from "@/lib/i18n";
 
 /**
@@ -39,7 +40,7 @@ export type MissionTrip = {
   notes?: string | null;
 };
 
-type NamedPlace = { id: string; name?: string | null };
+type NamedPlace = { id: string; name?: string | null; venueType?: string | null };
 type DriverRow = { id: string; userId?: string | null; fullName?: string | null; phone?: string | null };
 
 const ACTIVOS = new Set(["SCHEDULED", "REQUESTED", "EN_ROUTE", "PICKED_UP"]);
@@ -102,12 +103,8 @@ export default function MissionTrips({
   const [drivers, setDrivers] = useState<DriverRow[] | null>(null);
 
   const labels = useMemo(() => buildDisciplineLabelMap(disciplines), [disciplines]);
-  const lugar = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const v of venues) if (v.id && v.name) map.set(v.id, v.name);
-    for (const a of accommodations) if (a.id && a.name) map.set(a.id, a.name);
-    return map;
-  }, [venues, accommodations]);
+  // "Comedor LRH (ex Gala)", "Sede Elías Figueroa", "Hotel Mahía".
+  const lugar = useMemo(() => mapaDeLugares(venues, accommodations), [venues, accommodations]);
 
   // Nombre del recinto cuando el viaje lo tiene asignado; si no, la dirección.
   const puntoOrigen = (tr: MissionTrip) =>

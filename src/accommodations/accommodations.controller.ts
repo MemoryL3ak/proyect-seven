@@ -25,6 +25,12 @@ export class AccommodationsController {
     return this.accommodationsService.findAll(delegationId);
   }
 
+  /** Antes de ':id' a propósito: si no, 'names' se tomaría por un id. */
+  @Get('names')
+  findNames() {
+    return this.accommodationsService.findNames();
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.accommodationsService.findOne(id);

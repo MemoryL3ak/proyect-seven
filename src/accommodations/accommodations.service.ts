@@ -470,6 +470,27 @@ export class AccommodationsService {
    * @param delegationId Jefe de Misión: sólo los hoteles donde se aloja su
    * delegación; el resto de la operación ve todos.
    */
+  /**
+   * Sólo id y nombre de cada hotel. El listado completo está acotado a los
+   * hoteles de la delegación del Jefe de Misión, y por eso en sus tarjetas de
+   * viaje el destino aparecía como una dirección suelta ("2 Norte 65") en vez
+   * de "Hotel Bordeplaza": el hotel al que va el bus no tiene por qué ser uno
+   * de los suyos. El nombre no descubre nada que la tarjeta no diga ya.
+   */
+  async findNames() {
+    try {
+      const filas: { id: string; name: string | null }[] =
+        await this.dataSource.query(
+          `select id, name from logistics.accommodations order by name`,
+        );
+      return filas;
+    } catch (error) {
+      throw new InternalServerErrorException(
+        error instanceof Error ? error.message : 'Error fetching accommodation names',
+      );
+    }
+  }
+
   async findAll(delegationId?: string | null) {
     try {
       const rows = (await this.dataSource.query(

@@ -51,6 +51,7 @@ import { getMobileSession, mobileAwareLogout } from "@/lib/mobile-auth";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { normalizeClientType } from "@/lib/clientTypes";
 import { catalogoConCache } from "@/lib/catalog-cache";
+import { mapaDeLugares } from "@/lib/lugares";
 import VenueMap from "@/components/VenueMap";
 import CredentialQrCard from "@/components/CredentialQrCard";
 import { useI18n } from "@/lib/i18n";
@@ -416,6 +417,10 @@ export default function UserPortalPage() {
   // Sedes y hoteles son cosas distintas: se ven por separado, no en una lista.
   const [sedesVista, setSedesVista] = useState<"sedes" | "comedores" | "hoteles">("sedes");
   const [allAccommodations, setAllAccommodations] = useState<Accommodation[]>([]);
+  // Nombre de TODOS los hoteles del evento. El listado de arriba viene acotado
+  // a los de la delegación, así que el hotel al que va un bus de otra región
+  // aparecía como una dirección suelta.
+  const [nombresHoteles, setNombresHoteles] = useState<{ id: string; name?: string | null }[]>([]);
   const [foodLocations, setFoodLocations] = useState<FoodLocation[]>([]);
   const [foodMenus, setFoodMenus] = useState<FoodMenu[]>([]);
   // El home del portal es siempre Itinerario; sólo un refresh (F5) restaura
@@ -596,14 +601,13 @@ export default function UserPortalPage() {
 
   // Jefe de Misión: por tipo de cliente (JEFE_MISION) o por estar designado
   // como encargado de su delegación en Registro → Delegaciones.
-  // Nombre del recinto de un viaje: "Bordeplaza", "Elías Figueroa (Martillo)".
-  // Sin recinto asignado sólo queda la dirección escrita a mano.
-  const nombreRecinto = useMemo(() => {
-    const mapa = new Map<string, string>();
-    for (const v of venues) if (v.id && v.name) mapa.set(v.id, v.name);
-    for (const a of allAccommodations) if (a.id && a.name) mapa.set(a.id, a.name);
-    return mapa;
-  }, [venues, allAccommodations]);
+  // Nombre del recinto de un viaje, con lo que es delante: "Comedor LRH (ex
+  // Gala)", "Sede Elías Figueroa (Martillo)", "Hotel Mahía". Sin recinto
+  // asignado sólo queda la dirección escrita a mano.
+  const nombreRecinto = useMemo(
+    () => mapaDeLugares(venues, nombresHoteles.length ? nombresHoteles : allAccommodations),
+    [venues, nombresHoteles, allAccommodations],
+  );
   const puntoViaje = (
     t: { originVenueId?: string | null; originHotelId?: string | null; destinationVenueId?: string | null; destinationHotelId?: string | null; origin?: string | null; destination?: string | null },
     extremo: "origin" | "destination",
@@ -727,6 +731,8 @@ export default function UserPortalPage() {
   // "En curso ahora" lo cambia al tocar "ver los N en curso".
   const [filtroViajes, setFiltroViajes] = useState("ACTIVOS");
   const listaViajesRef = useRef<HTMLDivElement | null>(null);
+  // Traslado que el jefe fue a mirar en vivo desde el banner "Ahora mismo".
+  const [focoViajeId, setFocoViajeId] = useState<string | null>(null);
 
   /**
    * Todo lo que se puede pedir sabiendo sólo quién es el usuario, pedido de
@@ -920,6 +926,11 @@ export default function UserPortalPage() {
         setVenues((lista || []).filter(v => !data.eventId || v.eventId === data.eventId)));
       void catalogoConCache<Accommodation[]>("accommodations", () => apiFetch<Accommodation[]>("/accommodations"), (lista) =>
         setAllAccommodations(lista || []));
+      void catalogoConCache<{ id: string; name?: string | null }[]>(
+        "accommodation-names",
+        () => apiFetch<{ id: string; name?: string | null }[]>("/accommodations/names"),
+        (lista) => setNombresHoteles(lista || []),
+      );
       // Alimentación visible para todos — sin filtrar por clientType
       void catalogoConCache<FoodLocation[]>("food-locations", () => apiFetch<FoodLocation[]>("/food-locations"), (lista) =>
         setFoodLocations(lista || []));
@@ -1747,8 +1758,13 @@ export default function UserPortalPage() {
         {/* ── TAB CONTENT ── */}
         <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
 
-        {/* ═══ Banner de viaje en curso ═══ */}
-        {trip && ["EN_ROUTE","PICKED_UP"].includes(trip.status ?? "") && (
+        {/* ═══ Banner de viaje en curso ═══
+            Sólo para quien viaja: dice "tu conductor está en camino" y muestra
+            UN traslado. Al jefe de misión no le corresponde — los viajes son de
+            su delegación, él figura como quien los pide, y con varios buses
+            andando este banner elegía uno y callaba el resto. Lo suyo es el
+            bloque "Ahora mismo", que dice cuántos hay y lleva al mapa. */}
+        {!isChief && trip && ["EN_ROUTE","PICKED_UP"].includes(trip.status ?? "") && (
           <div style={{ position:"relative",overflow:"hidden",borderRadius:16,padding:"14px 16px",
             background:`linear-gradient(135deg,${BRAND.navyLight} 0%,#0a3356 55%,${BRAND.navyLight} 100%)`,
             border:"1px solid rgba(33,208,179,0.35)",boxShadow:"0 6px 24px rgba(6,34,64,0.35)" }}>
@@ -1951,14 +1967,12 @@ export default function UserPortalPage() {
                 delegationId={athlete.delegationId}
                 memberIds={[athlete.id, ...delegationMembers.map((m) => m.id)]}
                 venues={venues}
-                accommodations={allAccommodations}
-                onVerTodos={() => {
-                  setFiltroViajes("EN_CURSO");
-                  // Sin esto el botón parecía no hacer nada: cambiaba el
-                  // filtro de una lista que estaba fuera de la pantalla.
-                  requestAnimationFrame(() =>
-                    listaViajesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
-                  );
+                accommodations={nombresHoteles.length ? nombresHoteles : allAccommodations}
+                onVerEnVivo={(tripId) => {
+                  // Lo que quiere ver es el bus moviéndose, no una lista
+                  // filtrada: se va a Flota, con el mapa puesto en ese bus.
+                  setFocoViajeId(tripId ?? null);
+                  setActiveTab("flota");
                 }}
               />
             )}
@@ -2084,7 +2098,7 @@ export default function UserPortalPage() {
                 memberIds={[athlete.id, ...delegationMembers.map((m) => m.id)]}
                 disciplines={disciplineParents}
                 venues={venues}
-                accommodations={allAccommodations}
+                accommodations={nombresHoteles.length ? nombresHoteles : allAccommodations}
               />
               </div>
             )}
@@ -3460,11 +3474,12 @@ export default function UserPortalPage() {
         {/* ─── Flota (Jefe de Misión) ─── */}
         {activeTab === "flota" && isChief && (
           <MissionFleet
+            focoTripId={focoViajeId}
             eventId={athlete.eventId}
             delegationName={delegationName}
             trips={delegationTrips.filter((tr) => tr.delegationId && tr.delegationId === athlete.delegationId)}
             venues={venues}
-            accommodations={allAccommodations}
+            accommodations={nombresHoteles.length ? nombresHoteles : allAccommodations}
           />
         )}
 
