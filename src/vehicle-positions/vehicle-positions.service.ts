@@ -10,6 +10,7 @@ import { Repository } from 'typeorm';
 import { CreateVehiclePositionDto } from './dto/create-vehicle-position.dto';
 import { UpdateVehiclePositionDto } from './dto/update-vehicle-position.dto';
 import { VehiclePosition } from './entities/vehicle-position.entity';
+import { delegationDriversCondition } from '../shared/delegation-fleet';
 import { TripProximityService } from './trip-proximity.service';
 
 type VehiclePositionRow = {
@@ -283,9 +284,7 @@ export class VehiclePositionsService {
            created_at
          FROM telemetry.vehicle_positions
          WHERE created_at > NOW() - INTERVAL '30 minutes'
-           AND ($1::uuid IS NULL OR driver_id IN (
-             SELECT id FROM core.provider_participants WHERE delegation_id = $1
-           ))
+           AND ($1::uuid IS NULL OR ${delegationDriversCondition('$1', 'driver_id')})
          ORDER BY driver_id, "timestamp" DESC`,
         [delegationId ?? null],
       );

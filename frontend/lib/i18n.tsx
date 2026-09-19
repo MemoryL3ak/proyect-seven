@@ -14,6 +14,11 @@ const translations: Record<Locale, Record<string, string>> = {
   es: {},
   en: {
     // Viajes de la delegación (portal del Jefe de Misión).
+    "Choferes en línea": "Drivers online",
+    "Viajes en curso": "Trips in progress",
+    "Ningún viaje de tu delegación está en ruta en este momento.": "No trip of your delegation is on the road right now.",
+    "Aún no hay choferes asignados a los viajes de tu delegación.": "No drivers assigned to your delegation trips yet.",
+    // Viajes de la delegación (portal del Jefe de Misión).
     "Filtros": "Filters",
     // Viajes de la delegación (portal del Jefe de Misión).
     "Comedores": "Dining halls",
@@ -2592,6 +2597,11 @@ const translations: Record<Locale, Record<string, string>> = {
     "Los viajes de esta delegación se asignan a una de estas disciplinas.": "This delegation's trips are assigned to one of these disciplines.",
   },
   pt: {
+    // Viajes de la delegación (portal del Jefe de Misión).
+    "Choferes en línea": "Motoristas online",
+    "Viajes en curso": "Viagens em andamento",
+    "Ningún viaje de tu delegación está en ruta en este momento.": "Nenhuma viagem da sua delegação está a caminho neste momento.",
+    "Aún no hay choferes asignados a los viajes de tu delegación.": "Ainda não há motoristas atribuídos às viagens da sua delegação.",
     // Viajes de la delegación (portal del Jefe de Misión).
     "Filtros": "Filtros",
     // Viajes de la delegación (portal del Jefe de Misión).

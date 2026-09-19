@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { Subject } from 'rxjs';
 import { HeartbeatDto } from './dto/heartbeat.dto';
+import { delegationDriversCondition } from '../shared/delegation-fleet';
 
 /**
  * Ventana de inactividad tras la cual una sesión se considera offline /
@@ -213,8 +214,9 @@ export class DriverPresenceService {
        ) disc on true
        where d.metadata->>'isDriver' = 'true'
          and ($1::uuid is null or g.event_id = $1)
-         -- Jefe de Misión: sólo la flota fija de su delegación.
-         and ($3::uuid is null or d.delegation_id = $3)
+         -- Jefe de Misión: los choferes de su región y los que conducen
+         -- viajes de su delegación (la asignación diaria es por viaje).
+         and ($3::uuid is null or ${delegationDriversCondition('$3', 'd.id')})
        order by online desc nulls last, s.last_seen_at desc nulls last, d.full_name asc`,
       [eventId ?? null, safeDate, delegationId ?? null],
     )) as Array<Record<string, any>>;
@@ -265,11 +267,11 @@ export class DriverPresenceService {
        select
          (select count(*)::int from core.provider_participants
             where metadata->>'isDriver' = 'true'
-              and ($1::uuid is null or delegation_id = $1)) as total_drivers,
+              and ($1::uuid is null or ${delegationDriversCondition('$1', 'id')})) as total_drivers,
          -- Online = fresh heartbeat OR fresh GPS fix (see list()).
          (select count(*)::int from core.provider_participants d
             where d.metadata->>'isDriver' = 'true'
-              and ($1::uuid is null or d.delegation_id = $1)
+              and ($1::uuid is null or ${delegationDriversCondition('$1', 'd.id')})
               and (
                 exists (select 1 from transport.driver_sessions ds
                          where ds.driver_id = d.id and ds.ended_at is null
@@ -281,7 +283,7 @@ export class DriverPresenceService {
          -- Active today = opened the app (session) or sent a fix today.
          (select count(*)::int from core.provider_participants d
             where d.metadata->>'isDriver' = 'true'
-              and ($1::uuid is null or d.delegation_id = $1)
+              and ($1::uuid is null or ${delegationDriversCondition('$1', 'd.id')})
               and (
                 exists (select 1 from transport.driver_sessions ds, hoy
                          where ds.driver_id = d.id and ds.started_at >= hoy.desde)
@@ -290,8 +292,7 @@ export class DriverPresenceService {
               )) as drivers_today,
          (select count(*)::int from transport.driver_sessions, hoy
             where started_at >= hoy.desde
-              and ($1::uuid is null or driver_id in (
-                select id from core.provider_participants where delegation_id = $1))) as sessions_today`,
+              and ($1::uuid is null or ${delegationDriversCondition('$1', 'driver_id')})) as sessions_today`,
       [delegationId ?? null],
     )) as Array<Record<string, any>>;
     const r = rows[0] || {};

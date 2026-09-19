@@ -1955,7 +1955,7 @@ export default function UserPortalPage() {
         {activeTab === "calendario" && isChief && (
           <MissionCalendar eventId={athlete.eventId} delegationName={delegationName} />
         )}
-        {activeTab === "calendario" && (() => {
+        {activeTab === "calendario" && !isChief && (() => {
           const y = calMonthCursor.getFullYear(), m = calMonthCursor.getMonth();
           const cells = getMonthGrid(calMonthCursor);
           const monthLabel = calMonthCursor.toLocaleDateString("es-CL",{month:"long",year:"numeric"});
@@ -3296,7 +3296,13 @@ export default function UserPortalPage() {
 
         {/* ─── Flota (Jefe de Misión) ─── */}
         {activeTab === "flota" && isChief && (
-          <MissionFleet eventId={athlete.eventId} delegationName={delegationName} />
+          <MissionFleet
+            eventId={athlete.eventId}
+            delegationName={delegationName}
+            trips={delegationTrips.filter((tr) => tr.delegationId && tr.delegationId === athlete.delegationId)}
+            venues={venues}
+            accommodations={allAccommodations}
+          />
         )}
 
         {/* ─── Incidencias (Jefe de Misión) ─── */}

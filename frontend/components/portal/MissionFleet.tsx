@@ -4,15 +4,18 @@ import { useEffect, useMemo, useState } from "react";
 import DriverPresenceMap, { type PresenceMarker } from "@/components/DriverPresenceMap";
 import { MessageIcon, RefreshIcon } from "@/components/ui/Icons";
 import { apiFetch } from "@/lib/api";
-import { useI18n } from "@/lib/i18n";
 import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { openExternal, whatsappHref } from "@/lib/external-link";
+import { useI18n } from "@/lib/i18n";
+import type { MissionTrip } from "@/components/portal/MissionTrips";
 
 /**
- * Monitoreo de flota para el Jefe de Misión (portal). El backend ya acota el
- * snapshot a la flota fija de su delegación (StaffScopeService), así que acá
- * sólo se muestra: KPIs, mapa con las últimas posiciones y la lista de
- * choferes con su estado. Se refresca cada 10 s mientras la pestaña está abierta.
+ * Flota de la delegación para el Jefe de Misión: qué viajes van en curso ahora,
+ * dónde está cada chofer en el mapa y cómo contactarlo.
+ *
+ * El alcance lo aplica el backend: entran los choferes asignados a su región y
+ * los que conducen viajes de su delegación, porque en la operación diaria el
+ * chofer se asigna viaje a viaje.
  */
 type PresenceDriver = {
   driverId: string;
@@ -22,6 +25,7 @@ type PresenceDriver = {
   secondsSinceSeen: number | null;
   activeTrips: number;
   dayTripCount: number;
+  activeTripId: string | null;
   activeTripStatus: string | null;
   gpsAgeSeconds: number | null;
   lat: number | null;
@@ -36,11 +40,14 @@ type Snapshot = {
   drivers: PresenceDriver[];
 };
 
+type NamedPlace = { id: string; name?: string | null };
+
 const REFRESH_MS = 10_000;
 // Un chofer "en línea" transmite hace menos de un minuto; su marcador se
 // conserva hasta 10 minutos después del último fix.
 const LIVE_WINDOW_S = 60;
 const SHOW_WINDOW_S = 10 * 60;
+const EN_CURSO = new Set(["EN_ROUTE", "PICKED_UP"]);
 
 function ago(seconds: number | null, t: (s: string) => string): string {
   if (seconds == null) return "—";
@@ -57,7 +64,23 @@ function tripLabel(status: string | null, activeTrips: number): string | null {
   return null;
 }
 
-export default function MissionFleet({ eventId, delegationName }: { eventId?: string | null; delegationName: string }) {
+const hora = (iso?: string | null) =>
+  iso ? new Date(iso).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", hour12: false }) : "--:--";
+
+export default function MissionFleet({
+  eventId,
+  delegationName,
+  trips,
+  venues,
+  accommodations,
+}: {
+  eventId?: string | null;
+  delegationName: string;
+  /** Viajes de la delegación, ya acotados por el backend. */
+  trips: MissionTrip[];
+  venues: NamedPlace[];
+  accommodations: NamedPlace[];
+}) {
   const { t } = useI18n();
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -87,15 +110,37 @@ export default function MissionFleet({ eventId, delegationName }: { eventId?: st
     };
   }, [eventId, t]);
 
+  // Nombre del recinto, para no mostrar direcciones largas.
+  const lugar = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const v of venues) if (v.id && v.name) map.set(v.id, v.name);
+    for (const a of accommodations) if (a.id && a.name) map.set(a.id, a.name);
+    return map;
+  }, [venues, accommodations]);
+  const punto = (tr: MissionTrip, extremo: "origin" | "destination") => {
+    const id = extremo === "origin" ? (tr.originVenueId ?? tr.originHotelId) : (tr.destinationVenueId ?? tr.destinationHotelId);
+    return (id ? lugar.get(id) : null) ?? (extremo === "origin" ? tr.origin : tr.destination) ?? "—";
+  };
+
   const drivers = useMemo(() => {
     const list = snapshot?.drivers ?? [];
-    // Primero los que van en viaje, luego los conectados, luego el resto.
     return [...list].sort((a, b) => {
-      const ra = (a.activeTrips > 0 ? 0 : a.online ? 1 : 2);
-      const rb = (b.activeTrips > 0 ? 0 : b.online ? 1 : 2);
+      const ra = a.activeTrips > 0 ? 0 : a.online ? 1 : 2;
+      const rb = b.activeTrips > 0 ? 0 : b.online ? 1 : 2;
       return ra - rb || a.fullName.localeCompare(b.fullName);
     });
   }, [snapshot]);
+
+  const nombreChofer = (driverId?: string | null) =>
+    driverId ? drivers.find((d) => d.driverId === driverId)?.fullName ?? null : null;
+
+  // Viajes en curso y los de hoy, para los indicadores de arriba.
+  const hoyKey = new Date().toDateString();
+  const enCurso = useMemo(() => trips.filter((tr) => EN_CURSO.has(String(tr.status ?? "").toUpperCase())), [trips]);
+  const deHoy = useMemo(
+    () => trips.filter((tr) => tr.scheduledAt && new Date(tr.scheduledAt).toDateString() === hoyKey),
+    [trips, hoyKey],
+  );
 
   const markers = useMemo<PresenceMarker[]>(
     () =>
@@ -104,6 +149,8 @@ export default function MissionFleet({ eventId, delegationName }: { eventId?: st
         .map((d) => {
           const reporting = (d.gpsAgeSeconds ?? Infinity) < LIVE_WINDOW_S;
           const label = tripLabel(d.activeTripStatus, d.activeTrips);
+          // Si va en un viaje de la delegación, el popup dice cuál.
+          const viaje = d.activeTripId ? trips.find((tr) => tr.id === d.activeTripId) : undefined;
           return {
             id: d.driverId,
             lat: d.lat as number,
@@ -119,12 +166,14 @@ export default function MissionFleet({ eventId, delegationName }: { eventId?: st
             activeTrips: d.activeTrips,
             platform: d.platform,
             clientTypes: [],
+            detailRows: viaje
+              ? [{ label: t("Viaje"), value: `${punto(viaje, "origin")} → ${punto(viaje, "destination")}` }]
+              : undefined,
           };
         }),
-    [drivers, t],
+    [drivers, trips, t, lugar],
   );
 
-  const onTrip = drivers.filter((d) => d.activeTrips > 0).length;
   const kpi = (label: string, value: number, color: string) => (
     <div style={{ flex: 1, background: SURFACE.card, borderRadius: 12, border: `1px solid ${SURFACE.border}`, padding: "10px 12px" }}>
       <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: SURFACE.textMuted, margin: 0 }}>{label}</p>
@@ -139,7 +188,7 @@ export default function MissionFleet({ eventId, delegationName }: { eventId?: st
         <p style={{ fontSize: 13, fontWeight: 700, color: SURFACE.text, margin: 0 }}>{delegationName || "—"}</p>
         <p style={{ fontSize: 11.5, color: SURFACE.textMuted, margin: "3px 0 0", display: "flex", alignItems: "center", gap: 6 }}>
           <RefreshIcon size={11} style={refreshing ? { animation: "spin 1s linear infinite" } : undefined} />
-          {snapshot ? `${t("Actualizado")} ${new Date(snapshot.ts).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}` : t("Cargando…")}
+          {snapshot ? `${t("Actualizado")} ${new Date(snapshot.ts).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false })}` : t("Cargando…")}
         </p>
       </div>
 
@@ -150,11 +199,12 @@ export default function MissionFleet({ eventId, delegationName }: { eventId?: st
       )}
 
       <div style={{ display: "flex", gap: 8 }}>
-        {kpi(t("Choferes"), snapshot?.stats.totalDrivers ?? 0, SURFACE.text)}
-        {kpi(t("En línea"), snapshot?.stats.onlineNow ?? 0, STATE.successText)}
-        {kpi(t("En viaje"), onTrip, BRAND.tealInk)}
+        {kpi(t("En curso"), enCurso.length, BRAND.tealInk)}
+        {kpi(t("Viajes hoy"), deHoy.length, SURFACE.text)}
+        {kpi(t("Choferes en línea"), snapshot?.stats.onlineNow ?? 0, STATE.successText)}
       </div>
 
+      {/* Mapa en vivo: los choferes que están transmitiendo ahora. */}
       {markers.length > 0 ? (
         <div style={{ borderRadius: 14, overflow: "hidden", border: `1px solid ${SURFACE.border}` }}>
           <DriverPresenceMap markers={markers} height={260} />
@@ -165,9 +215,44 @@ export default function MissionFleet({ eventId, delegationName }: { eventId?: st
         </div>
       )}
 
+      {/* Viajes en curso */}
+      <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: BRAND.teal, margin: "4px 0 0" }}>
+        {t("Viajes en curso")}
+      </p>
+      {enCurso.length === 0 ? (
+        <div style={{ padding: 14, textAlign: "center", background: SURFACE.card, borderRadius: 12, border: `1px solid ${SURFACE.border}` }}>
+          <p style={{ fontSize: 12.5, color: SURFACE.textFaint, margin: 0 }}>{t("Ningún viaje de tu delegación está en ruta en este momento.")}</p>
+        </div>
+      ) : (
+        enCurso.map((tr) => {
+          const estado = String(tr.status ?? "").toUpperCase() === "PICKED_UP" ? t("Pasajero a bordo") : t("Va en camino");
+          return (
+            <div key={tr.id} style={{ background: SURFACE.card, borderRadius: 12, border: `1px solid ${SURFACE.border}`, borderLeft: `3px solid ${STATE.success}`, padding: "10px 14px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 10, fontWeight: 700, background: STATE.successSoft, color: STATE.successText }}>{estado}</span>
+                <span style={{ fontSize: 11.5, color: SURFACE.textMuted }}>{hora(tr.scheduledAt)}</span>
+              </div>
+              <p style={{ fontSize: 13, fontWeight: 700, color: SURFACE.text, margin: "4px 0 0" }}>
+                {punto(tr, "origin")} → {punto(tr, "destination")}
+              </p>
+              <p style={{ fontSize: 11.5, color: SURFACE.textMuted, margin: "2px 0 0" }}>
+                {nombreChofer(tr.driverId) ?? t("Sin chofer")}
+                {tr.vehiclePlate ? ` · ${tr.vehiclePlate}` : ""}
+              </p>
+            </div>
+          );
+        })
+      )}
+
+      {/* Choferes */}
+      <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: BRAND.teal, margin: "6px 0 0" }}>
+        {t("Choferes")}
+      </p>
       {drivers.length === 0 && !error && (
-        <div style={{ padding: 20, textAlign: "center", background: SURFACE.card, borderRadius: 14, border: `1px solid ${SURFACE.border}` }}>
-          <p style={{ fontSize: 13, color: SURFACE.textFaint, margin: 0 }}>{t("Tu delegación aún no tiene choferes asignados. Operaciones los asigna en el maestro de Delegaciones.")}</p>
+        <div style={{ padding: 16, textAlign: "center", background: SURFACE.card, borderRadius: 12, border: `1px solid ${SURFACE.border}` }}>
+          <p style={{ fontSize: 12.5, color: SURFACE.textFaint, margin: 0 }}>
+            {t("Aún no hay choferes asignados a los viajes de tu delegación.")}
+          </p>
         </div>
       )}
 
