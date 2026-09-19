@@ -67,7 +67,6 @@ import { deletePortalAccount } from "@/lib/account-deletion";
 import CuadernoCargoSection from "@/components/CuadernoCargoSection";
 import SofiaWidget from "@/components/SofiaWidget";
 import GeneralCoordinatorCard from "@/components/portal/GeneralCoordinatorCard";
-import MissionCalendar from "@/components/portal/MissionCalendar";
 import MissionFleet from "@/components/portal/MissionFleet";
 import MissionIncidents from "@/components/portal/MissionIncidents";
 import MissionTrips from "@/components/portal/MissionTrips";
@@ -151,6 +150,7 @@ type AthleteConNombres = Athlete & {
 type CalendarEvent = {
   id: string;
   name?: string | null;
+  eventId?: string | null;
   parentId?: string | null;
   scheduledAt?: string | null;
   venueName?: string | null;
@@ -400,6 +400,11 @@ export default function UserPortalPage() {
   const [rastreoCaido, setRastreoCaido] = useState(false);
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [disciplineParents, setDisciplineParents] = useState<DisciplineParent[]>([]);
+  // Todas las disciplinas del evento, con hora o sin ella. Hace falta para
+  // saber de qué deporte cuelga la prueba de cada participante: calendarEvents
+  // sólo guarda las pruebas CON hora, así que resolver el padre por ahí fallaba
+  // para casi todas y el calendario del jefe salía vacío.
+  const [disciplinasTodas, setDisciplinasTodas] = useState<CalendarEvent[]>([]);
   // Etiquetas desambiguadas por variante ("Atletismo · Femenino"): el mismo
   // deporte existe una vez por género/categoría y mostrar solo `name`
   // producía opciones y filas duplicadas en el calendario.
@@ -895,9 +900,16 @@ export default function UserPortalPage() {
       // refrescan por detrás. No bloquean la apertura de la app.
       const aplicarDisciplinas = (lista: CalendarEvent[]) => {
         const todas = Array.isArray(lista) ? lista : [];
-        setDisciplineParents(todas.filter((d) => !d.parentId));
+        // Sin filtrar: hace falta para saber cómo se llama la disciplina de un
+        // participante aunque esté registrada en otro evento (pasa: hay
+        // deportes repetidos entre eventos y fichas que apuntan al de al lado).
+        setDisciplinasTodas(todas);
+        // El calendario es el de SU evento. El listado trae las disciplinas de
+        // todos los eventos de la plataforma y se colaban actividades ajenas.
+        const suyas = todas.filter((d) => !data.eventId || d.eventId === data.eventId);
+        setDisciplineParents(suyas.filter((d) => !d.parentId));
         setCalendarEvents(
-          todas
+          suyas
             .filter((d) => d.parentId && d.scheduledAt)
             .sort((a, b) => new Date(a.scheduledAt!).getTime() - new Date(b.scheduledAt!).getTime()),
         );
@@ -2070,10 +2082,13 @@ export default function UserPortalPage() {
         )}
 
         {/* ─── Calendario tab (chief only) ─── */}
-        {activeTab === "calendario" && isChief && (
-          <MissionCalendar eventId={athlete.eventId} delegationName={delegationName} />
-        )}
-        {activeTab === "calendario" && !isChief && (() => {
+        {/* El calendario es el mismo para todos: Gantt, Semana, Día, Agenda y
+            Mes. Al jefe de misión se le había puesto en su lugar una lista
+            simple del calendario deportivo, que además muestra lo mismo (esas
+            filas se generan desde las pruebas: external_id "prueba:<id>"), y
+            perdió las cinco vistas. El propio calendario ya acota al jefe a
+            las disciplinas en las que compite su delegación. */}
+        {activeTab === "calendario" && (() => {
           const y = calMonthCursor.getFullYear(), m = calMonthCursor.getMonth();
           const cells = getMonthGrid(calMonthCursor);
           const monthLabel = calMonthCursor.toLocaleDateString("es-CL",{month:"long",year:"numeric"});
@@ -2130,23 +2145,43 @@ export default function UserPortalPage() {
           // las que compite su delegación — antes veía el calendario global
           // del evento completo. Se resuelve el padre de la prueba de cada
           // miembro (member.disciplineId suele ser la prueba/hija).
-          const chiefDiscIds = (() => {
+          /**
+           * Deportes en los que compite la delegación. Se guardan el id y el
+           * NOMBRE porque los deportes están repetidos entre eventos (hay seis
+           * filas "Atletismo") y la ficha de un participante puede apuntar a
+           * la copia de otro evento. Comparando sólo por id, el calendario del
+           * jefe salía vacío teniendo actividades.
+           */
+          const norma = (v?: string | null) => String(v ?? "").trim().toLowerCase();
+          const chiefDisc = (() => {
             if (!isChief) return null;
             const ids = new Set<string>();
+            const nombres = new Set<string>();
             [athlete, ...delegationMembers].forEach(p => {
               if (!p?.disciplineId) return;
-              const child = calendarEvents.find(c => c.id === p.disciplineId);
-              ids.add(child?.parentId || p.disciplineId);
+              // Contra TODAS las disciplinas, no sólo las que tienen hora.
+              const suya = disciplinasTodas.find(c => c.id === p.disciplineId);
+              const padreId = suya?.parentId || p.disciplineId;
+              ids.add(padreId);
+              const padre = disciplinasTodas.find(c => c.id === padreId);
+              if (padre?.name) nombres.add(norma(padre.name));
             });
-            return ids.size > 0 ? ids : null;
+            return ids.size > 0 ? { ids, nombres } : null;
           })();
+          const esDeLaDelegacion = (discId?: string | null) => {
+            if (!chiefDisc) return true;
+            if (!discId) return true; // ceremonias generales
+            if (chiefDisc.ids.has(discId)) return true;
+            const nombre = norma(disciplineParents.find(p => p.id === discId)?.name);
+            return nombre ? chiefDisc.nombres.has(nombre) : false;
+          };
 
           // Opciones de disciplina (deportes con actividades) para el filtro
           const discOptions = Array.from(
             new Map(
               items
                 .filter(i => i.discId)
-                .filter(i => !chiefDiscIds || chiefDiscIds.has(i.discId as string))
+                .filter(i => esDeLaDelegacion(i.discId))
                 .map(i => {
                   const name = discLabelMap.get(i.discId as string)
                     || calendarEvents.find(c => c.id===i.discId)?.name
@@ -2161,7 +2196,7 @@ export default function UserPortalPage() {
             (!calDiscFilter || i.discId===calDiscFilter) &&
             // Jefe: solo actividades de las disciplinas de su delegación (las
             // sin disciplina —ceremonias generales— se mantienen visibles).
-            (!chiefDiscIds || !i.discId || chiefDiscIds.has(i.discId)),
+            esDeLaDelegacion(i.discId),
           );
           const inMonth = typed.filter(i => i.date.getFullYear()===y && i.date.getMonth()===m);
           const daysWithEvents = new Set(inMonth.map(i => i.date.getDate()));
@@ -2496,7 +2531,7 @@ export default function UserPortalPage() {
               </div>
 
               {/* ════ Columna lateral ════ */}
-              <div style={{ flex:"0 1 260px",minWidth:230,display:"flex",flexDirection:"column",gap:12 }}>
+              <div className="cal-lateral" style={{ flex:"0 1 260px",minWidth:230,display:"flex",flexDirection:"column",gap:12 }}>
                 {/* Próxima competencia — lo más valioso, primero (clave en móvil) */}
                 {nextComp && (
                   <div style={{ background:`linear-gradient(135deg,#fff1f2,${SURFACE.card})`,borderRadius:14,border:"1px solid #fecdd3",padding:"14px" }}>

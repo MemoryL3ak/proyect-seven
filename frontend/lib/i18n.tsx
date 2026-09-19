@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 type Locale = "es" | "en" | "pt";
 
@@ -5197,31 +5197,57 @@ const translations: Record<Locale, Record<string, string>> = {
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
+/**
+ * Idioma ELEGIDO por la persona. Clave nueva a propósito: la anterior
+ * ("seven.locale") la escribía sola la app con el idioma del teléfono, así
+ * que en un teléfono en inglés quedaba "en" guardado sin que nadie lo pidiera.
+ * Leer esa clave dejaba el portal en inglés para siempre, incluso después de
+ * dejar de mirar el idioma del sistema.
+ */
+const CLAVE_IDIOMA = "seven.idioma.elegido";
+const CLAVE_ANTIGUA = "seven.locale";
+
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocale] = useState<Locale>("es");
+  const [locale, setLocaleState] = useState<Locale>("es");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     /**
      * El idioma lo elige la persona, no su teléfono.
      *
-     * Antes se seguía el idioma del sistema. Como la plataforma está escrita
-     * en español y los diccionarios no cubren cada frase, un teléfono en
-     * inglés mostraba las dos lenguas mezcladas en la misma pantalla:
-     * "ORIGIN" encima de una dirección en español, "MY DELEGATION'S TRIPS"
-     * junto a "Programado". Se entra en español, que es el idioma del evento,
-     * y quien quiera otro lo elige en Cuenta (portales) o en el menú lateral
-     * (panel). La elección se recuerda, también dentro de la app.
+     * La plataforma está escrita en español y los diccionarios no cubren cada
+     * frase, así que seguir el idioma del sistema mezclaba las dos lenguas en
+     * la misma pantalla: "ORIGIN" encima de una dirección en español, "MY
+     * REGION'S CALENDAR" junto a "Jueves, 24 de septiembre". Se entra en
+     * español, que es el idioma del evento, y quien quiera otro lo elige en
+     * Cuenta (portales) o en el menú lateral (panel).
      */
-    const stored = window.localStorage.getItem("seven.locale");
-    if (stored === "es" || stored === "en" || stored === "pt") {
-      setLocale(stored);
+    try {
+      const elegido = window.localStorage.getItem(CLAVE_IDIOMA);
+      if (elegido === "es" || elegido === "en" || elegido === "pt") {
+        setLocaleState(elegido);
+      }
+      // La clave vieja guardaba lo que dijera el teléfono: se borra para que
+      // no quede rondando en los aparatos que ya la tenían escrita.
+      window.localStorage.removeItem(CLAVE_ANTIGUA);
+    } catch {
+      // Sin acceso al almacenamiento: se queda en español.
+    }
+  }, []);
+
+  /** Sólo una elección explícita se guarda. */
+  const setLocale = useCallback((valor: Locale) => {
+    setLocaleState(valor);
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(CLAVE_IDIOMA, valor);
+    } catch {
+      // Sin permiso para escribir: vale para esta sesión.
     }
   }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    window.localStorage.setItem("seven.locale", locale);
     document.documentElement.lang = locale;
   }, [locale]);
 
@@ -5231,7 +5257,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       setLocale,
       t: (value: string) => translations[locale]?.[value] ?? value
     };
-  }, [locale]);
+  }, [locale, setLocale]);
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }

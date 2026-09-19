@@ -1363,3 +1363,12 @@ input[type="number"]::-webkit-outer-spin-button {
   color: #fff;
   box-shadow: 0 2px 8px rgba(33,208,179,0.45);
 }
+
+/* Calendario del portal: las dos columnas se envuelven en el teléfono y la
+   lateral (próxima competencia, filtros, leyenda) se quedaba en 260 px, a
+   media pantalla, con el hueco a la derecha. Sola en su línea, ocupa todo. */
+@media (max-width: 720px) {
+  .cal-lateral {
+    flex: 1 1 100% !important;
+  }
+}
