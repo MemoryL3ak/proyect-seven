@@ -698,7 +698,7 @@ export default function ResourceScreen({
         const label = type === "VILLA" && tower
           ? `${hotel.name ?? hotel.id} – Torre ${tower}`
           : (hotel.name ?? hotel.id);
-        return { label, value: hotel.id, accommodationType: type, tower };
+        return { label, value: hotel.id, accommodationType: type, tower, eventId: hotel.eventId ?? null };
       });
       setAccommodationOptions(options);
       setAccommodationsRaw(data || []);
@@ -837,6 +837,7 @@ export default function ResourceScreen({
       const options = (data || []).map((athlete) => ({
         label: athlete.fullName ?? athlete.id,
         value: athlete.id,
+        eventId: athlete.eventId ?? null,
         delegationId: athlete.delegationId,
         isDelegationLead: athlete.isDelegationLead,
         userType: String(athlete.userType ?? "").trim().toUpperCase()
@@ -2282,9 +2283,11 @@ export default function ResourceScreen({
     }
     if (source === "accommodations") {
       if (config.endpoint === "/hotel-assignments") {
+        const eventFilter = (form.eventFilter as string | undefined) ?? "";
         const typeFilter = (form.accommodationTypeFilter as string | undefined) ?? "";
         const towerFilter = (form.towerFilter as string | undefined) ?? "";
         let opts = accommodationOptions as any[];
+        if (eventFilter) opts = opts.filter((opt) => opt.eventId === eventFilter);
         if (typeFilter) opts = opts.filter((opt) => opt.accommodationType === typeFilter.toUpperCase());
         if (towerFilter) opts = opts.filter((opt) => opt.tower === towerFilter);
         return opts;
@@ -2350,12 +2353,14 @@ export default function ResourceScreen({
         }
       }
       if (config.endpoint === "/hotel-assignments") {
+        const eventFilter = (form.eventFilter as string | undefined) ?? "";
         const clientTypeFilter = (form.clientTypeFilter as string | undefined) ?? "";
+        let opts = athleteOptions as any[];
+        if (eventFilter) opts = opts.filter((option) => option.eventId === eventFilter);
         if (clientTypeFilter) {
-          return (athleteOptions as any[]).filter(
-            (option) => option.userType === clientTypeFilter.toUpperCase()
-          );
+          opts = opts.filter((option) => option.userType === clientTypeFilter.toUpperCase());
         }
+        return opts;
       }
       return athleteOptions;
     }
