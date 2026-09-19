@@ -643,16 +643,28 @@ export default function UserPortalPage() {
     };
   }, [portalTabs, isChief]);
 
-  // Restore session on mount
+  /**
+   * Un solo arranque. Habia dos efectos que cargaban al participante por su
+   * cuenta: uno con la sesion guardada en la pestana y otro con la sesion de
+   * la app. Dentro de la app los dos daban en el blanco y toda la apertura se
+   * pedia por duplicado.
+   */
+  const arranqueHecho = useRef(false);
   useEffect(() => {
+    if (arranqueHecho.current) return;
+    arranqueHecho.current = true;
+    const listo = () => { setSessionChecked(true); setBootCheckDone(true); };
+    let id: string | null = null;
     try {
-      const saved = sessionStorage.getItem("portal_user_id");
-      if (saved && !athlete) {
-        loadAthlete(saved).finally(() => setSessionChecked(true));
-      } else {
-        setSessionChecked(true);
-      }
-    } catch { setSessionChecked(true); }
+      // La sesion de la app manda sobre la de la pestana.
+      const sesionApp = getMobileSession();
+      id =
+        sesionApp?.kind === "athlete" && sesionApp.athleteId
+          ? sesionApp.athleteId
+          : sessionStorage.getItem("portal_user_id");
+    } catch { id = null; }
+    if (!id || athlete) { listo(); return; }
+    void loadAthlete(id).finally(listo);
   }, []);
 
   // Set default tab based on profile
@@ -1166,22 +1178,6 @@ export default function UserPortalPage() {
       setDriverEta(null);
     }
   };
-
-  // Mobile-app auto-login: skip code gate when a mobile session is present.
-  // While we're checking, we hide the gate UI to avoid the flash before the dashboard renders.
-  useEffect(() => {
-    if (athlete) {
-      setBootCheckDone(true);
-      return;
-    }
-    const session = getMobileSession();
-    if (session?.kind === "athlete" && session.athleteId) {
-      void loadAthlete(session.athleteId).finally(() => setBootCheckDone(true));
-    } else {
-      setBootCheckDone(true);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Show rating when trip completes (outside polling, catches any missed state)
   useEffect(() => {

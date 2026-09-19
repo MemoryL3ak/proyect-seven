@@ -66,6 +66,11 @@ async function bootstrap() {
     ],
     exposedHeaders: ['Authorization', 'x-refresh-token'],
     credentials: true,
+    // Sin esto el navegador vuelve a preguntar "¿me dejas?" antes de CADA
+    // peticion (las cabeceras x-portal-* obligan a consultar primero). Desde
+    // Chile eso es un viaje entero de ida y vuelta de mas por peticion, o
+    // sea el doble de espera. Con el permiso guardado, se pregunta una vez.
+    maxAge: 86400,
   });
   const port = Number(process.env.PORT) || 3000;
   await app.listen(port, '0.0.0.0');
