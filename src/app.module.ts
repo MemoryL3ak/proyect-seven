@@ -16,6 +16,7 @@ import { TripsModule } from './trips/trips.module';
 import { DriversModule } from './drivers/drivers.module';
 import { FlightsModule } from './flights/flights.module';
 import { AccommodationsModule } from './accommodations/accommodations.module';
+import { DelegationHotelsModule } from './delegation-hotels/delegation-hotels.module';
 import { EventDocumentsModule } from './event-documents/event-documents.module';
 import { EventsModule } from './events/events.module';
 import { DelegationsModule } from './delegations/delegations.module';
@@ -82,6 +83,7 @@ import { VipMonitoringModule } from './vip-monitoring/vip-monitoring.module';
     DriversModule,
     FlightsModule,
     AccommodationsModule,
+    DelegationHotelsModule,
     EventsModule,
     EventDocumentsModule,
     DelegationsModule,

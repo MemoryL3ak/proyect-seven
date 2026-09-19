@@ -6,6 +6,7 @@ import ResourceScreen from "@/components/ResourceScreen";
 import { apiFetch } from "@/lib/api";
 import { resources } from "@/lib/resources";
 import { useI18n } from "@/lib/i18n";
+import DistribucionHotelera from "@/components/operations/DistribucionHotelera";
 
 type BulkRow = { participant_id: string; hotel_id: string; room_number?: string; checkin_at?: string; checkout_at?: string };
 type BulkResult = { participantId: string; status: "created" | "error"; message?: string };
@@ -21,7 +22,7 @@ type CapacityRow = {
 
 export default function HotelAssignmentsPage() {
   const { t } = useI18n();
-  const [tab, setTab] = useState<"manual" | "auto">("manual");
+  const [tab, setTab] = useState<"manual" | "auto" | "distribucion">("manual");
   const [hotels, setHotels] = useState<Hotel[]>([]);
   const [accommodationTypeFilter, setAccommodationTypeFilter] = useState("");
   const [selectedHotelId, setSelectedHotelId] = useState("");
@@ -221,6 +222,15 @@ const [bulkRows, setBulkRows] = useState<BulkRow[]>([]);
           >
             {t("Asignación automática")}
           </button>
+          {/* La distribución del evento se decide por región y deporte, no
+              persona por persona: esta pestaña es esa planilla. */}
+          <button
+            className={`btn ${tab === "distribucion" ? "btn-primary" : "btn-ghost"}`}
+            onClick={() => setTab("distribucion")}
+            type="button"
+          >
+            {t("Por delegación y disciplina")}
+          </button>
         </div>
       </section>
 
@@ -305,6 +315,10 @@ const [bulkRows, setBulkRows] = useState<BulkRow[]>([]);
             onDataChanged={() => setRefreshKey((value) => value + 1)}
           />
         </>
+      ) : tab === "distribucion" ? (
+        <section className="surface rounded-2xl p-5">
+          <DistribucionHotelera />
+        </section>
       ) : (
         <section className="surface rounded-3xl p-6 space-y-4">
           <div className="grid gap-3 lg:grid-cols-4">
