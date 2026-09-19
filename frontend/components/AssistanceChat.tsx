@@ -18,6 +18,12 @@ type AssistanceChatProps = {
   /** Modo controlado: si se pasa, el estado abierto/cerrado lo maneja el padre. */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  /**
+   * Apertura dirigida: al abrirse, salta al formulario con esta categoría ya
+   * elegida en vez de mostrar la lista. Lo usa el banner del jefe de
+   * delegación para que contactar al coordinador sea un solo toque.
+   */
+  initialCategory?: string | null;
 };
 
 type Chat = {
@@ -97,7 +103,7 @@ const timeShort = (iso: string) => {
 
 export default function AssistanceChat({
   originType, originId, originName, eventId, label = "Asistencia",
-  showLauncher = true, open: openProp, onOpenChange,
+  showLauncher = true, open: openProp, onOpenChange, initialCategory = null,
 }: AssistanceChatProps) {
   const { t } = useI18n();
   const [openInternal, setOpenInternal] = useState(false);
@@ -158,6 +164,15 @@ export default function AssistanceChat({
   useEffect(() => {
     if (activeChatId) loadMessages(activeChatId);
   }, [activeChatId]);
+
+  // Apertura dirigida: quien abre la sala con una categoría ya decidida (el
+  // banner del coordinador) entra directo al formulario, no a la lista.
+  useEffect(() => {
+    if (!open || !initialCategory) return;
+    setNewCategory(initialCategory);
+    setActiveChatId(null);
+    setView("new");
+  }, [open, initialCategory]);
 
   const openChat = (id: string) => {
     setActiveChatId(id);
@@ -264,6 +279,10 @@ export default function AssistanceChat({
   };
 
   const active = chats.find((c) => c.id === activeChatId) || null;
+  // Contactar al coordinador no es "abrir una incidencia": la sala y el flujo
+  // son los mismos, pero el encabezado, el ejemplo y el botón se redactan como
+  // lo que la persona cree que está haciendo — mandar un mensaje.
+  const esContacto = newCategory === "COORDINATOR_CONTACT";
 
   return (
     <>
@@ -314,7 +333,7 @@ export default function AssistanceChat({
               <div>
                 <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", opacity: 0.9 }}>{t("Asistencia")}</p>
                 <p style={{ fontSize: "15px", fontWeight: 700 }}>
-                  {view === "chat" ? (active?.subject || t("Conversación")) : view === "new" ? t("Nueva incidencia") : t("Mis incidencias")}
+                  {view === "chat" ? (active?.subject || t("Conversación")) : view === "new" ? (esContacto ? t("Contactar al coordinador") : t("Nueva incidencia")) : t("Mis incidencias")}
                 </p>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -388,14 +407,14 @@ export default function AssistanceChat({
               )}
               <div>
                 <label style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: SURFACE.textMuted }}>{t("Asunto (opcional)")}</label>
-                <input value={newSubject} onChange={(e) => setNewSubject(e.target.value)} placeholder={t("Ej: Perdí mi acreditación")} style={{ width: "100%", padding: "10px", borderRadius: "8px", border: `1px solid ${SURFACE.border}`, fontSize: "13px", marginTop: "4px" }} />
+                <input value={newSubject} onChange={(e) => setNewSubject(e.target.value)} placeholder={esContacto ? t("Ej: Coordinación de los traslados de mañana") : t("Ej: Perdí mi acreditación")} style={{ width: "100%", padding: "10px", borderRadius: "8px", border: `1px solid ${SURFACE.border}`, fontSize: "13px", marginTop: "4px" }} />
               </div>
               <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-                <label style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: SURFACE.textMuted }}>{t("Describe la situación")}</label>
+                <label style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: SURFACE.textMuted }}>{esContacto ? t("Escribe tu mensaje") : t("Describe la situación")}</label>
                 <textarea value={newMessage} onChange={(e) => setNewMessage(e.target.value)} rows={4} style={{ width: "100%", padding: "10px", borderRadius: "8px", border: `1px solid ${SURFACE.border}`, fontSize: "13px", marginTop: "4px", resize: "none", flex: 1 }} />
               </div>
               <button type="button" onClick={createChat} disabled={creating || !newMessage.trim()} style={{ padding: "12px", borderRadius: "10px", background: creating ? SURFACE.borderStrong : BRAND.teal, color: SURFACE.card, border: "none", fontSize: "13px", fontWeight: 700, cursor: creating ? "not-allowed" : "pointer" }}>
-                {creating ? t("Abriendo...") : t("Abrir incidencia")}
+                {creating ? t("Abriendo...") : esContacto ? t("Enviar mensaje") : t("Abrir incidencia")}
               </button>
             </div>
           )}

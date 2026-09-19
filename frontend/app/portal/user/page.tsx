@@ -69,7 +69,6 @@ import CuadernoCargoSection from "@/components/CuadernoCargoSection";
 import SofiaWidget from "@/components/SofiaWidget";
 import GeneralCoordinatorCard from "@/components/portal/GeneralCoordinatorCard";
 import MissionFleet from "@/components/portal/MissionFleet";
-import MissionIncidents from "@/components/portal/MissionIncidents";
 import MissionTrips from "@/components/portal/MissionTrips";
 import MissionLiveTrips from "@/components/portal/MissionLiveTrips";
 import MissionLiveMap from "@/components/portal/MissionLiveMap";
@@ -185,8 +184,8 @@ type Premiacion = {
   notes?: string | null;
   awarders?: PremAwarder[] | null;
 };
-// flota / incidencias: sólo para el Jefe de Misión (participante encargado de su delegación).
-type PortalTab = "itinerario" | "flota" | "incidencias" | "actividades" | "calendario" | "premiaciones" | "sedes" | "hoteles" | "alimentacion" | "delegacion" | "cupones" | "documentos" | "cuenta";
+// flota: sólo para el Jefe de Misión (participante encargado de su delegación).
+type PortalTab = "itinerario" | "flota" | "actividades" | "calendario" | "premiaciones" | "sedes" | "hoteles" | "alimentacion" | "delegacion" | "cupones" | "documentos" | "cuenta";
 
 type Coupon = {
   id: string;
@@ -436,7 +435,7 @@ export default function UserPortalPage() {
   const [activeTab, setActiveTab] = useState<PortalTab>(() =>
     restoreOnReload<PortalTab>(
       "portal_user_tab",
-      ["itinerario", "flota", "incidencias", "actividades", "calendario", "premiaciones", "sedes", "hoteles", "alimentacion", "delegacion", "cupones", "documentos", "cuenta"],
+      ["itinerario", "flota", "actividades", "calendario", "premiaciones", "sedes", "hoteles", "alimentacion", "delegacion", "cupones", "documentos", "cuenta"],
       "itinerario",
     ),
   );
@@ -448,6 +447,10 @@ export default function UserPortalPage() {
   useEffect(() => startTabHeartbeat(), []);
   const [moreOpen, setMoreOpen] = useState(false);
   const [assistOpen, setAssistOpen] = useState(false);
+  // Categoría con la que se abre la sala de asistencia. El botón de auriculares
+  // la deja en null (el usuario elige); el banner del jefe la fija para que
+  // contactar al coordinador sea un solo toque.
+  const [assistCategoria, setAssistCategoria] = useState<string | null>(null);
   const [actSubTab, setActSubTab] = useState<"curso" | "historial">("curso");
   const [calMonthCursor, setCalMonthCursor] = useState(() => new Date());
   const [calSelectedDay, setCalSelectedDay] = useState<number | null>(null);
@@ -644,14 +647,6 @@ export default function UserPortalPage() {
     setCalDiscFilter(comiteDisciplina);
   }, [isComite, comiteDisciplina]);
 
-  /** Buses de la delegación que van en ruta ahora, del que sale antes al último. */
-  const viajesEnRuta = useMemo(
-    () =>
-      delegationTrips
-        .filter((tr) => ["EN_ROUTE", "PICKED_UP"].includes(String(tr.status ?? "").toUpperCase()))
-        .sort((a, b) => new Date(a.scheduledAt ?? 0).getTime() - new Date(b.scheduledAt ?? 0).getTime()),
-    [delegationTrips],
-  );
   // Nombre visible de la delegación: región ("Región de Valparaíso") o país.
   const delegationName = delegation ? (delegation.name || countryLabels[delegation.countryCode] || delegation.countryCode) : "";
   // TA (deportistas): vista simplificada — sin premiaciones, sin asistencia,
@@ -662,7 +657,6 @@ export default function UserPortalPage() {
     const all: { key: PortalTab; label: string; icon: React.ReactNode }[] = [
       { key:"itinerario", label:"Itinerario", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="5" r="3"/><line x1="12" y1="8" x2="12" y2="16"/><circle cx="12" cy="19" r="3"/></svg> },
       { key:"flota", label:"Flota", icon:<CarIcon size={16} strokeWidth={1.8} /> },
-      { key:"incidencias", label:"Incidencias", icon:<ShieldIcon size={16} strokeWidth={1.8} /> },
       { key:"actividades", label:"Actividades", icon:<TruckIcon size={16} strokeWidth={1.8} /> },
       { key:"calendario", label:"Calendario", icon:<CalendarIcon size={16} strokeWidth={1.8} /> },
       { key:"premiaciones", label:"Premiaciones", icon:<TrophyIcon size={16} strokeWidth={1.8} /> },
@@ -682,9 +676,9 @@ export default function UserPortalPage() {
     if (!isChief) return all.filter(t => ["actividades","calendario","premiaciones","sedes","alimentacion","cupones","documentos","cuenta"].includes(t.key));
     // Jefe de Misión: sólo su trabajo, y en el orden en que lo usa —
     // actividades (viajes de su delegación) primero, después flota de su
-    // región, incidencias, calendario, sedes, alimentación y cuaderno de
+    // región, calendario, sedes, alimentación y cuaderno de
     // cargo. Sin itinerario personal, premiaciones ni beneficios.
-    const ORDEN_JEFE: PortalTab[] = ["actividades","flota","incidencias","calendario","sedes","alimentacion","documentos","cuenta"];
+    const ORDEN_JEFE: PortalTab[] = ["actividades","flota","calendario","sedes","alimentacion","documentos","cuenta"];
     return ORDEN_JEFE.map(key => all.find(t => t.key === key)).filter((t): t is typeof all[number] => Boolean(t));
   }, [isChief, isTA, isComite]);
 
@@ -695,7 +689,7 @@ export default function UserPortalPage() {
     const PRIORITY = isComite
       ? ["actividades", "calendario", "sedes", "hoteles", "cuenta"]
       : isChief
-      ? ["actividades", "flota", "incidencias", "calendario", "sedes", "alimentacion", "documentos", "cuenta"]
+      ? ["actividades", "flota", "calendario", "sedes", "alimentacion", "documentos", "cuenta"]
       : ["itinerario", "actividades", "calendario", "delegacion", "alimentacion", "sedes", "cuenta", "documentos", "premiaciones", "cupones"];
     if (portalTabs.length <= MAX_PRIMARY + 1) {
       return { primaryTabs: portalTabs, overflowTabs: [] as typeof portalTabs };
@@ -1648,7 +1642,9 @@ export default function UserPortalPage() {
         />
       )}
       {/* SofIA en modo consulta: sólo para el Jefe de Misión y sólo su región. */}
-      {athlete && isChief && <SofiaWidget compact />}
+      {/* Un solo soporte flotante a la vez: con la sala de asistencia abierta
+          la burbuja de SofIA quedaba encima del botón de enviar. */}
+      {athlete && isChief && !assistOpen && <SofiaWidget compact />}
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes db-in{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
         @keyframes db-badge{from{opacity:0;transform:scale(0.85)}to{opacity:1;transform:scale(1)}}
@@ -1759,7 +1755,7 @@ export default function UserPortalPage() {
               onClear={notify.clear}
             />
             {!isTA && (
-              <button type="button" onClick={() => setAssistOpen((p) => !p)} title="Asistencia"
+              <button type="button" onClick={() => { setAssistCategoria(null); setAssistOpen((p) => !p); }} title="Asistencia"
                 style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:`1px solid ${assistOpen ? "rgba(52,243,198,0.7)" : "rgba(33,208,179,0.4)"}`,background: assistOpen ? "linear-gradient(135deg,rgba(52,243,198,0.28),rgba(33,208,179,0.18))" : "rgba(33,208,179,0.12)",cursor:"pointer",flexShrink:0,transition:"all .15s" }}>
                 <HeadphonesIcon size={15} color={BRAND.teal} strokeWidth={2} />
               </button>
@@ -1816,12 +1812,11 @@ export default function UserPortalPage() {
         <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
 
         {/* ═══ Banner de viaje en curso ═══
-            Para quien viaja dice lo de siempre: su conductor va en camino.
-            Para el jefe de misión el mismo banner cuenta lo de su delegación
-            —cuántos buses van en ruta y cuál sale antes— porque los traslados
-            son de la región y él figura como quien los pide. El botón abre el
-            mapa aquí mismo, sin mandarlo a otro módulo. */}
-        {(isChief ? viajesEnRuta.length > 0 : !!trip && ["EN_ROUTE","PICKED_UP"].includes(trip.status ?? "")) && (
+            Sólo para quien viaja en un traslado propio: su conductor va en
+            camino. El jefe de delegación no lo ve —sus buses en ruta ya los
+            lista "Ahora mismo" dentro de Actividades, con su propio mapa—, y
+            en su lugar arriba tiene el acceso al coordinador general. */}
+        {!isChief && !!trip && ["EN_ROUTE","PICKED_UP"].includes(trip.status ?? "") && (
           <div style={{ position:"relative",overflow:"hidden",borderRadius:16,padding:"14px 16px",
             background:`linear-gradient(135deg,${BRAND.navyLight} 0%,#0a3356 55%,${BRAND.navyLight} 100%)`,
             border:"1px solid rgba(33,208,179,0.35)",boxShadow:"0 6px 24px rgba(6,34,64,0.35)" }}>
@@ -1833,59 +1828,29 @@ export default function UserPortalPage() {
               </span>
               <div style={{ flex:1,minWidth:0 }}>
                 <p style={{ fontSize:9.5,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.tealLight,margin:0 }}>
-                  {isChief
-                    ? (viajesEnRuta.length > 1 ? `${viajesEnRuta.length} buses en ruta` : "Bus en ruta")
-                    : (trip?.status==="EN_ROUTE" ? "En ruta a recogerte" : `Rumbo a ${trip?.destination || "tu destino"}`)}
+                  {trip?.status==="EN_ROUTE" ? "En ruta a recogerte" : `Rumbo a ${trip?.destination || "tu destino"}`}
                 </p>
                 <p style={{ fontSize:14.5,fontWeight:800,color:SURFACE.card,margin:"1px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
-                  {isChief
-                    ? `${puntoViaje(viajesEnRuta[0], "origin").nombre || puntoViaje(viajesEnRuta[0], "origin").direccion || "—"} → ${puntoViaje(viajesEnRuta[0], "destination").nombre || puntoViaje(viajesEnRuta[0], "destination").direccion || "—"}`
-                    : (trip?.status==="EN_ROUTE" ? "Tu conductor está en camino" : "Viaje en curso")}
+                  {trip?.status==="EN_ROUTE" ? "Tu conductor está en camino" : "Viaje en curso"}
                 </p>
-                {isChief ? (
-                  <p style={{ fontSize:11.5,color:"rgba(255,255,255,0.7)",margin:"3px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
-                    {horaViaje(viajesEnRuta[0]?.scheduledAt)}
-                    {viajesEnRuta[0]?.vehiclePlate ? ` · ${viajesEnRuta[0].vehiclePlate}` : ""}
-                    {viajesEnRuta.length > 1 ? ` · ${viajesEnRuta.length - 1} más en ruta` : ""}
+                {driverEta && (
+                  <p style={{ fontSize:12,fontWeight:700,color:BRAND.tealLight,margin:"3px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                    {trip?.status==="EN_ROUTE" ? "Llega en" : "Llegas en"} ~{driverEta.duration} · {driverEta.distance}
                   </p>
-                ) : (
-                  <>
-                    {driverEta && (
-                      <p style={{ fontSize:12,fontWeight:700,color:BRAND.tealLight,margin:"3px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
-                        {trip?.status==="EN_ROUTE" ? "Llega en" : "Llegas en"} ~{driverEta.duration} · {driverEta.distance}
-                      </p>
-                    )}
-                    {driver && (
-                      <p style={{ fontSize:11.5,color:"rgba(255,255,255,0.7)",margin:"3px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
-                        <UserIcon size={12} className="inline mr-1" />{driver.fullName || "Conductor"}
-                      </p>
-                    )}
-                  </>
+                )}
+                {driver && (
+                  <p style={{ fontSize:11.5,color:"rgba(255,255,255,0.7)",margin:"3px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                    <UserIcon size={12} className="inline mr-1" />{driver.fullName || "Conductor"}
+                  </p>
                 )}
               </div>
               <button
                 type="button"
-                onClick={() => {
-                  if (!isChief) { setShowTripModal(true); return; }
-                  // El jefe quiere el mapa, no otra pantalla: se abre aquí.
-                  setMapaVivo((v) => (v.abierto ? { abierto: false, tripId: null } : { abierto: true, tripId: viajesEnRuta[0]?.id ?? null }));
-                }}
+                onClick={() => setShowTripModal(true)}
                 style={{ flexShrink:0,padding:"9px 16px",borderRadius:10,border:"none",cursor:"pointer",fontSize:12,fontWeight:700,background:`linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})`,color:BRAND.navyLight,whiteSpace:"nowrap" }}>
-                {isChief ? (mapaVivo.abierto ? "Ocultar mapa" : "Ver en el mapa") : "Ver viaje"}
+                Ver viaje
               </button>
             </div>
-            {/* El mapa, dentro del propio banner. */}
-            {isChief && mapaVivo.abierto && (
-              <div ref={mapaVivoRef} style={{ marginTop:12 }}>
-                <MissionLiveMap
-                  eventId={athlete.eventId}
-                  trips={delegationTrips}
-                  focoTripId={mapaVivo.tripId}
-                  venues={venues}
-                  accommodations={nombresHoteles.length ? nombresHoteles : allAccommodations}
-                />
-              </div>
-            )}
           </div>
         )}
 
@@ -2047,6 +2012,53 @@ export default function UserPortalPage() {
         {/* ─── Actividades tab (chief only) ─── */}
         {activeTab === "actividades" && (
           <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+            {/* ═══ Contacto con el coordinador general (Jefe de Delegación) ═══
+                Ocupa el lugar del banner de "bus en ruta": el estado de los
+                buses ya lo cuenta "Ahora mismo" aquí abajo, con su propio
+                mapa, así que arriba va lo que de verdad necesita a mano —una
+                vía inmediata con quien resuelve—. Abre la sala de asistencia
+                directamente en la categoría correcta, sin pasar por el menú. */}
+            {isChief && (
+              <button
+                type="button"
+                onClick={() => { setAssistCategoria("COORDINATOR_CONTACT"); setAssistOpen(true); }}
+                style={{ position:"relative",overflow:"hidden",width:"100%",textAlign:"left",cursor:"pointer",
+                  display:"flex",flexDirection:"column",gap:12,
+                  borderRadius:16,padding:"15px 16px",
+                  background:`linear-gradient(135deg,${BRAND.tealInk} 0%,${BRAND.tealDark} 52%,${BRAND.tealInk} 100%)`,
+                  border:"1px solid rgba(52,243,198,0.45)",
+                  boxShadow:"0 6px 24px rgba(10,122,107,0.35)" }}>
+                {/* Resplandor de esquina */}
+                <span style={{ position:"absolute",top:0,right:0,width:180,height:180,borderRadius:"50%",background:"radial-gradient(ellipse,rgba(52,243,198,0.22) 0%,transparent 65%)",transform:"translate(55px,-70px)",pointerEvents:"none" }} />
+                {/* Hairline inferior con barrido, como el resto de banners */}
+                <span style={{ position:"absolute",bottom:0,left:0,right:0,height:2,pointerEvents:"none",
+                  background:`linear-gradient(90deg,transparent,${BRAND.tealLight} 40%,${SURFACE.card} 50%,${BRAND.tealLight} 60%,transparent)`,
+                  backgroundSize:"200% 100%",animation:"shimmerLine 3.5s linear infinite" }} />
+                <span style={{ display:"flex",alignItems:"center",gap:13,position:"relative" }}>
+                  <span style={{ position:"relative",flexShrink:0,width:44,height:44,borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",
+                    background:"rgba(255,255,255,0.16)",border:"1px solid rgba(255,255,255,0.25)" }}>
+                    <HeadphonesIcon size={21} color={SURFACE.card} strokeWidth={1.9} />
+                    <span style={{ position:"absolute",top:4,right:4,width:8,height:8,borderRadius:"50%",background:BRAND.tealLight,boxShadow:`0 0 8px ${BRAND.tealLight}`,animation:"pulseDot 1.8s ease-in-out infinite" }} />
+                  </span>
+                  <span style={{ flex:1,minWidth:0 }}>
+                    <span style={{ display:"block",fontSize:9.5,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.85)" }}>
+                      Soporte directo
+                    </span>
+                    <span style={{ display:"block",fontSize:15,fontWeight:800,color:SURFACE.card,margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                      Coordinador general
+                    </span>
+                    <span style={{ display:"block",fontSize:11.5,color:"rgba(255,255,255,0.78)",margin:"3px 0 0" }}>
+                      Cualquier tema de tu delegación, directo a quien resuelve
+                    </span>
+                  </span>
+                </span>
+                <span style={{ position:"relative",display:"block",textAlign:"center",padding:"11px 16px",borderRadius:11,
+                  fontSize:12.5,fontWeight:800,letterSpacing:"0.02em",background:SURFACE.card,color:BRAND.tealInk,
+                  boxShadow:"0 3px 12px rgba(0,0,0,0.18)" }}>
+                  Generar contacto
+                </span>
+              </button>
+            )}
             {/* Coordinador de Comité: los filtros mandan sobre el módulo. */}
             {isComite && (
               <FiltrosComite
@@ -2088,7 +2100,7 @@ export default function UserPortalPage() {
                 venues={venues}
                 accommodations={nombresHoteles.length ? nombresHoteles : allAccommodations}
                 onVerEnVivo={(tripId) => {
-                  // El mapa se abre en el banner de arriba, centrado en ese
+                  // El mapa se abre aquí mismo, justo debajo, centrado en ese
                   // bus. Antes esto saltaba al módulo Flota y sacaba a la
                   // persona de la pantalla donde estaba mirando.
                   setMapaVivo({ abierto: true, tripId: tripId ?? null });
@@ -2098,6 +2110,25 @@ export default function UserPortalPage() {
                   );
                 }}
               />
+            )}
+            {/* Mapa en vivo del jefe. Vivía dentro del banner de "bus en ruta";
+                al retirarlo se queda aquí, que es donde nace el "Ver en vivo"
+                de cada traslado, con su propio botón para cerrarlo. */}
+            {isChief && mapaVivo.abierto && (
+              <div ref={mapaVivoRef} style={{ position:"relative" }}>
+                <MissionLiveMap
+                  eventId={athlete.eventId}
+                  trips={delegationTrips}
+                  focoTripId={mapaVivo.tripId}
+                  venues={venues}
+                  accommodations={nombresHoteles.length ? nombresHoteles : allAccommodations}
+                />
+                <button type="button" onClick={() => setMapaVivo({ abierto:false, tripId:null })}
+                  style={{ position:"absolute",top:8,right:8,zIndex:2,padding:"6px 11px",borderRadius:9,border:"none",cursor:"pointer",
+                    fontSize:11,fontWeight:700,background:BRAND.navyLight,color:BRAND.tealLight,boxShadow:"0 2px 8px rgba(0,0,0,0.25)" }}>
+                  Ocultar mapa
+                </button>
+              </div>
             )}
             {/* TA: sólo viajes programados/en curso, sin historial */}
             {!isTA && !isChief && !isComite && (
@@ -3657,11 +3688,6 @@ export default function UserPortalPage() {
           />
         )}
 
-        {/* ─── Incidencias (Jefe de Misión) ─── */}
-        {activeTab === "incidencias" && isChief && (
-          <MissionIncidents eventId={athlete.eventId} delegationName={delegationName} venues={venues} />
-        )}
-
         {/* ─── Cupones tab ─── */}
         {activeTab === "cupones" && (
           <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
@@ -4665,7 +4691,8 @@ export default function UserPortalPage() {
             eventId={athlete.eventId || null}
             showLauncher={false}
             open={assistOpen}
-            onOpenChange={setAssistOpen}
+            initialCategory={assistCategoria}
+            onOpenChange={(v) => { setAssistOpen(v); if (!v) setAssistCategoria(null); }}
           />
         )}
 
