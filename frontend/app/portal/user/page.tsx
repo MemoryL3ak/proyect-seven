@@ -736,12 +736,15 @@ export default function UserPortalPage() {
   // Nada de forzar la pestaña al cargar: al actualizar, portal-tab restaura
   // el módulo donde estaba el usuario. Sólo se corrige si no le corresponde.
 
-  // El jefe ya no tiene pestaña de premiaciones: si venía persistida de una
-  // sesión anterior, volver al itinerario para no dejar la pantalla vacía.
+  // Cada rol tiene su propia barra, y la pestaña recordada puede no existir en
+  // ella: el jefe no tiene premiaciones, el Coordinador de Comité sólo tiene
+  // cuatro módulos, y el valor inicial ("itinerario") no está en ninguna. Sin
+  // esto la entrada quedaba en una pantalla en blanco. La primera pestaña de
+  // la barra es el inicio del rol — actividades en todos ellos.
   useEffect(() => {
-    if (!athlete || !isChief) return;
-    if (!portalTabs.some((tab) => tab.key === activeTab)) setActiveTab("actividades");
-  }, [athlete?.id, isChief, activeTab, portalTabs]);
+    if (!athlete || portalTabs.length === 0) return;
+    if (!portalTabs.some((tab) => tab.key === activeTab)) setActiveTab(portalTabs[0].key);
+  }, [athlete?.id, activeTab, portalTabs]);
 
   const DAY_NAMES = ["L","M","M","J","V","S","D"];
   function getMonthGrid(cursor: Date) {
