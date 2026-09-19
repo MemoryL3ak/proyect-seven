@@ -36,6 +36,8 @@ const translations: Record<Locale, Record<string, string>> = {
     "Todas las sedes": "All venues",
     // Viajes de la delegación (portal del Jefe de Misión).
     "Tu presentación": "Your call time",
+    // Selector de idioma en Cuenta.
+    "IDIOMA": "LANGUAGE",
     // Viajes de la delegación (portal del Jefe de Misión).
     "Viajes de mi delegación": "My delegation's trips",
     "traslado": "transfer",
@@ -2621,6 +2623,8 @@ const translations: Record<Locale, Record<string, string>> = {
     // Viajes de la delegación (portal del Jefe de Misión).
     "Tu presentación": "Sua apresentação",
     // Viajes de la delegación (portal del Jefe de Misión).
+    // Selector de idioma en Cuenta.
+    "IDIOMA": "IDIOMA",
     "Viajes de mi delegación": "Viagens da minha delegação",
     "traslado": "traslado",
     "traslados": "traslados",
@@ -5181,38 +5185,25 @@ const translations: Record<Locale, Record<string, string>> = {
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
-/** Idioma del sistema del dispositivo, si es uno de los soportados. */
-function detectDeviceLocale(): Locale | null {
-  if (typeof navigator === "undefined") return null;
-  const candidates = navigator.languages?.length ? navigator.languages : [navigator.language];
-  for (const raw of candidates || []) {
-    const code = String(raw || "").slice(0, 2).toLowerCase();
-    if (code === "es" || code === "en" || code === "pt") return code as Locale;
-  }
-  return null;
-}
-
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocale] = useState<Locale>("es");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const isNativeShell = Boolean(
-      (window as unknown as { ReactNativeWebView?: unknown }).ReactNativeWebView,
-    );
-    if (isNativeShell) {
-      // Dentro de la app nativa el idioma NO se elige en la app: sigue la
-      // configuración del sistema del teléfono (iOS/Android), como exige Apple.
-      setLocale(detectDeviceLocale() ?? "es");
-      return;
-    }
+    /**
+     * El idioma lo elige la persona, no su teléfono.
+     *
+     * Antes se seguía el idioma del sistema. Como la plataforma está escrita
+     * en español y los diccionarios no cubren cada frase, un teléfono en
+     * inglés mostraba las dos lenguas mezcladas en la misma pantalla:
+     * "ORIGIN" encima de una dirección en español, "MY DELEGATION'S TRIPS"
+     * junto a "Programado". Se entra en español, que es el idioma del evento,
+     * y quien quiera otro lo elige en Cuenta (portales) o en el menú lateral
+     * (panel). La elección se recuerda, también dentro de la app.
+     */
     const stored = window.localStorage.getItem("seven.locale");
     if (stored === "es" || stored === "en" || stored === "pt") {
       setLocale(stored);
-    } else {
-      // Primera visita en navegador: parte con el idioma del sistema.
-      const detected = detectDeviceLocale();
-      if (detected) setLocale(detected);
     }
   }, []);
 

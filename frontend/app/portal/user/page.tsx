@@ -74,6 +74,7 @@ import MissionTrips from "@/components/portal/MissionTrips";
 import { ChipFilter, SegmentedFilter } from "@/components/ui/FilterControls";
 import { openExternal, whatsappHref } from "@/lib/external-link";
 import EmergencyNumbersSection from "@/components/EmergencyNumbersSection";
+import LanguageSection from "@/components/LanguageSection";
 import PushTokenSync from "@/components/PushTokenSync";
 import { buildCredentialHtml } from "@/lib/credential-template";
 import { downloadCredentialPdf, saveCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
@@ -1939,7 +1940,7 @@ export default function UserPortalPage() {
                       const punto = puntoViaje(trip, extremo);
                       return (
                         <div key={extremo} style={{ display:"flex",alignItems:"baseline",gap:6,minWidth:0 }}>
-                          <span style={{ fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:SURFACE.textFaint,flexShrink:0,width:48 }}>{extremo === "origin" ? t("ORIGEN") : t("DESTINO")}</span>
+                          <span style={{ fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:SURFACE.textFaint,flexShrink:0,minWidth:48 }}>{extremo === "origin" ? t("ORIGEN") : t("DESTINO")}</span>
                           <span style={{ minWidth:0 }}>
                             <span style={{ display:"block",fontSize:13,fontWeight:700,color:SURFACE.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
                               {punto.nombre || punto.direccion || "–"}
@@ -1972,7 +1973,7 @@ export default function UserPortalPage() {
                           const punto = puntoViaje(t, extremo);
                           return (
                             <div key={extremo} style={{ display:"flex",alignItems:"baseline",gap:6,minWidth:0 }}>
-                              <span style={{ fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:SURFACE.textFaint,flexShrink:0,width:48 }}>{extremo === "origin" ? "ORIGEN" : "DESTINO"}</span>
+                              <span style={{ fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:SURFACE.textFaint,flexShrink:0,minWidth:48 }}>{extremo === "origin" ? "ORIGEN" : "DESTINO"}</span>
                               <span style={{ minWidth:0 }}>
                                 <span style={{ display:"block",fontSize:12.5,fontWeight:700,color:SURFACE.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
                                   {punto.nombre || punto.direccion || "–"}
@@ -3690,6 +3691,8 @@ export default function UserPortalPage() {
             <CuadernoCargoSection />
             {/* Device permissions (only visible inside the mobile app) */}
             <DevicePermissionsSection />
+            {/* Idioma: se entra en español y aquí se cambia si hace falta. */}
+            <LanguageSection />
             {/* Logout */}
             <button type="button" onClick={() => { if (athlete) clearPortalSession("athlete", athlete.id); setAthlete(null); setAthleteId(""); try { sessionStorage.removeItem("portal_user_id"); } catch {} clearPersistedTabs(); setActiveTab("itinerario"); }}
               style={{ width:"100%",padding:12,borderRadius:12,border:`1px solid ${SURFACE.border}`,background:SURFACE.card,color:STATE.danger,fontSize:13,fontWeight:600,cursor:"pointer" }}>
