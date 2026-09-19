@@ -283,9 +283,15 @@
   }
 
   .pasos { counter-reset: paso; display: flex; flex-direction: column; gap: 14px; margin: 0 0 18px; padding: 0; list-style: none; max-width: 64ch; }
-  .pasos li { counter-increment: paso; display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 12px; align-items: start; }
+  /* El número va posicionado, no como celda de una rejilla: con la rejilla,
+     cada <b> del texto se convertía en su propia celda y la frase se partía
+     en columnas superpuestas. */
+  .pasos li { counter-increment: paso; position: relative; padding-left: 38px; min-height: 26px; }
   .pasos li::before {
     content: counter(paso);
+    position: absolute;
+    left: 0;
+    top: .05em;
     font-family: var(--mono);
     font-size: 12px;
     font-weight: 600;
@@ -359,6 +365,74 @@
     justify-content: space-between;
   }
   footer.cierre span { font-family: var(--mono); font-size: 12px; letter-spacing: .07em; text-transform: uppercase; }
+
+
+  /* ── Impresión / PDF ─────────────────────────────────────
+     El manual también se entrega en papel en la reunión de jefes: hoja A4,
+     un módulo por página, fondo blanco y sin el índice pegajoso. */
+  @media print {
+    :root {
+      --paper: #ffffff;
+      --surface: #ffffff;
+      --ink: #0e1b2a;
+      --ink-2: #2f4256;
+      --muted: #56687a;
+      --line: #ccd8e2;
+      --line-soft: #e4ecf2;
+      --est-prog: #0b7f6d;
+      --est-ruta: #1d4ed8;
+      --est-curso: #6d28d9;
+      --est-fin: #4b5b6b;
+      --sombra: none;
+    }
+    @page { size: A4; margin: 16mm 14mm 15mm; }
+    body { background: #fff; font-size: 10.5pt; line-height: 1.52; }
+    .hoja { max-width: none; padding: 0; }
+
+    .portada {
+      border-radius: 0;
+      margin: 0 0 0;
+      padding: 30mm 12mm 22mm;
+      break-after: page;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .portada h1 { font-size: 34pt; max-width: 18ch; }
+    .portada p.bajada { font-size: 12pt; }
+    .meta-portada { font-size: 8.5pt; }
+
+    .cuerpo { display: block; }
+    .indice {
+      position: static;
+      background: none;
+      border: 0;
+      padding: 0;
+      margin: 0;
+      break-after: page;
+    }
+    .indice h2 { font-size: 9pt; margin-bottom: 10px; }
+    .indice ol { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 18px; }
+    .indice a { font-size: 10.5pt; padding: 3px 0; }
+
+    section.modulo { break-before: page; border-top: 0; padding: 0 0 6mm; }
+    section.modulo:first-of-type { break-before: avoid; }
+    h2.mod { font-size: 20pt; break-after: avoid; }
+    .texto h3 { break-after: avoid; margin-top: 16px; }
+    p.sumario { font-size: 11pt; }
+
+    .par { grid-template-columns: minmax(0, 1fr) 56mm; gap: 8mm; }
+    .par.dos-fotos { grid-template-columns: 56mm 56mm; justify-content: start; }
+    .par.dos-fotos > .texto { grid-column: 1 / -1; }
+    figure.tel, .aviso, .qa, .ficha, tr { break-inside: avoid; }
+    .marco { box-shadow: none; padding: 4px; border-radius: 12px; }
+    .marco img { border-radius: 9px; }
+    figcaption { font-size: 7.5pt; }
+
+    table { font-size: 10pt; min-width: 0; }
+    .tabla-envoltura { overflow: visible; }
+    a { color: inherit; text-decoration: none; }
+    footer.cierre { break-before: avoid; }
+  }
 
   @media (prefers-reduced-motion: reduce) {
     * { animation: none !important; transition: none !important; }
