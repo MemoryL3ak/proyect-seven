@@ -223,7 +223,7 @@ export default function MissionFleet({
       <div style={{ display: "flex", gap: 8 }}>
         {kpi(t("En curso"), enCurso.length, BRAND.tealInk)}
         {kpi(t("Viajes hoy"), deHoy.length, SURFACE.text)}
-        {kpi(t("Choferes en línea"), snapshot?.stats.onlineNow ?? 0, STATE.successText)}
+        {kpi(t("Conductores en línea"), snapshot?.stats.onlineNow ?? 0, STATE.successText)}
       </div>
 
       {/* Mapa en vivo: los choferes que están transmitiendo ahora. */}
@@ -266,14 +266,14 @@ export default function MissionFleet({
         })
       )}
 
-      {/* Choferes */}
+      {/* Conductores */}
       <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: BRAND.teal, margin: "6px 0 0" }}>
-        {t("Choferes")}
+        {t("Conductores")}
       </p>
       {drivers.length === 0 && !error && (
         <div style={{ padding: 16, textAlign: "center", background: SURFACE.card, borderRadius: 12, border: `1px solid ${SURFACE.border}` }}>
           <p style={{ fontSize: 12.5, color: SURFACE.textFaint, margin: 0 }}>
-            {t("Aún no hay choferes asignados a los viajes de tu delegación.")}
+            {t("Aún no hay conductores asignados a los viajes de tu delegación.")}
           </p>
         </div>
       )}

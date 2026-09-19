@@ -58,8 +58,9 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 // Las categorías dependen del origen: el conductor no gestiona cambios de
-// vuelo (eso es del participante); en su lugar puede pedir contacto directo
-// con su coordinador de transporte.
+// vuelo (eso es del participante). El contacto con el coordinador, en cambio,
+// lo abre cualquiera: es la vía general para hablar con quien coordina, y para
+// el jefe de delegación reemplaza al chat directo con el conductor.
 const categoriesFor = (originType: AssistanceChatProps["originType"]) =>
   originType === "driver"
     ? [
@@ -72,6 +73,7 @@ const categoriesFor = (originType: AssistanceChatProps["originType"]) =>
       ]
     : [
         { value: "QUERY", label: "Consulta general" },
+        { value: "COORDINATOR_CONTACT", label: "Contacto con coordinador" },
         { value: "INCIDENT", label: "Incidencia" },
         { value: "FLIGHT_CHANGE", label: "Cambio de vuelo" },
         { value: "LOST_ITEM", label: "Objeto perdido" },

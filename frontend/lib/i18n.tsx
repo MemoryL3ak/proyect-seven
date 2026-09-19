@@ -14,10 +14,10 @@ const translations: Record<Locale, Record<string, string>> = {
   es: {},
   en: {
     // Viajes de la delegación (portal del Jefe de Misión).
-    "Choferes en línea": "Drivers online",
+    "Conductores en línea": "Drivers online",
     "Viajes en curso": "Trips in progress",
     "Ningún viaje de tu delegación está en ruta en este momento.": "No trip of your delegation is on the road right now.",
-    "Aún no hay choferes asignados a los viajes de tu delegación.": "No drivers assigned to your delegation trips yet.",
+    "Aún no hay conductores asignados a los viajes de tu delegación.": "No drivers assigned to your delegation trips yet.",
     // Viajes de la delegación (portal del Jefe de Misión).
     "Filtros": "Filters",
     // Viajes de la delegación (portal del Jefe de Misión).
@@ -84,8 +84,17 @@ const translations: Record<Locale, Record<string, string>> = {
     "En viaje": "On a trip",
     "No se pudo cargar la flota.": "Could not load the fleet.",
     "Flota de mi delegación": "My delegation's fleet",
-    "Choferes": "Drivers",
     "En línea": "Online",
+    // Categorías de la sala de asistencia. Se renderizan con t(c.label) desde
+    // un arreglo, así que la auditoría de literales no las veía y quedaban en
+    // español para todos los idiomas.
+    "Consulta general": "General enquiry",
+    "Contacto con coordinador": "Contact coordinator",
+    "Incidencia": "Incident",
+    "Cambio de vuelo": "Flight change",
+    "Objeto perdido": "Lost item",
+    "Emergencia": "Emergency",
+    "Denuncia": "Report",
     "Ningún chofer de tu delegación está transmitiendo su posición ahora.": "No driver of your delegation is transmitting their position right now.",
     "Tu delegación aún no tiene choferes asignados. Operaciones los asigna en el maestro de Delegaciones.": "Your delegation has no drivers assigned yet. Operations assigns them in the Delegations master.",
     "Última señal": "Last signal",
@@ -2609,10 +2618,10 @@ const translations: Record<Locale, Record<string, string>> = {
   },
   pt: {
     // Viajes de la delegación (portal del Jefe de Misión).
-    "Choferes en línea": "Motoristas online",
+    "Conductores en línea": "Motoristas online",
     "Viajes en curso": "Viagens em andamento",
     "Ningún viaje de tu delegación está en ruta en este momento.": "Nenhuma viagem da sua delegação está a caminho neste momento.",
-    "Aún no hay choferes asignados a los viajes de tu delegación.": "Ainda não há motoristas atribuídos às viagens da sua delegação.",
+    "Aún no hay conductores asignados a los viajes de tu delegación.": "Ainda não há motoristas atribuídos às viagens da sua delegação.",
     // Viajes de la delegación (portal del Jefe de Misión).
     "Filtros": "Filtros",
     // Viajes de la delegación (portal del Jefe de Misión).
@@ -2679,8 +2688,14 @@ const translations: Record<Locale, Record<string, string>> = {
     "En viaje": "Em viagem",
     "No se pudo cargar la flota.": "Não foi possível carregar a frota.",
     "Flota de mi delegación": "Frota da minha delegação",
-    "Choferes": "Motoristas",
     "En línea": "Online",
+    "Consulta general": "Consulta geral",
+    "Contacto con coordinador": "Contato com o coordenador",
+    "Incidencia": "Incidente",
+    "Cambio de vuelo": "Alteração de voo",
+    "Objeto perdido": "Objeto perdido",
+    "Emergencia": "Emergência",
+    "Denuncia": "Denúncia",
     "Ningún chofer de tu delegación está transmitiendo su posición ahora.": "Nenhum motorista da sua delegação está transmitindo a posição agora.",
     "Tu delegación aún no tiene choferes asignados. Operaciones los asigna en el maestro de Delegaciones.": "A sua delegação ainda não tem motoristas atribuídos. A operação os atribui no cadastro de Delegações.",
     "Última señal": "Último sinal",

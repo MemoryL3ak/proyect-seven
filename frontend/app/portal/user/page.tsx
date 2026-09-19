@@ -4640,8 +4640,11 @@ export default function UserPortalPage() {
           />
         )}
 
-        {/* ── Trip Chat (active trips only) ── */}
-        {trip && ["EN_ROUTE", "PICKED_UP"].includes(trip.status ?? "") && (
+        {/* ── Trip Chat (active trips only) ──
+            El jefe de delegación no habla con el conductor: coordina por la
+            sala de asistencia con su coordinador, que es quien resuelve. Para
+            el resto de pasajeros el chat del traslado sigue igual. */}
+        {!isChief && trip && ["EN_ROUTE", "PICKED_UP"].includes(trip.status ?? "") && (
           <TripChat
             tripId={trip.id}
             senderType="PASSENGER"
