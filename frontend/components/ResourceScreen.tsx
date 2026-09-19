@@ -1548,6 +1548,17 @@ export default function ResourceScreen({
       }
 
       let finalPayload = { ...payload };
+      if (
+        config.endpoint === "/athletes" &&
+        String(form.userType ?? "").trim().toUpperCase() === "COORDINADOR_COMITE"
+      ) {
+        // Explícitos en null: el payload omite los campos vacíos, así que al
+        // cambiarle el tipo a alguien que ya tenía región o deporte, los
+        // valores viejos se quedaban guardados y lo acotaban en el portal.
+        finalPayload.delegationId = null;
+        finalPayload.disciplineId = null;
+        finalPayload.isDelegationLead = false;
+      }
       if (config.endpoint === "/trips") {
         // El reduce de arriba omite los campos vacíos, por lo que vaciar un
         // campo (quitar conductor, sede/hotel, observación o participantes)
@@ -3333,6 +3344,19 @@ export default function ResourceScreen({
                     hotelFieldOrder.indexOf(a.key) - hotelFieldOrder.indexOf(b.key)
                 );
               const athleteCountry = (form.countryCode as string | undefined) ?? "";
+              // El Coordinador de Comité no pertenece a una región ni a un
+              // deporte: coordina el evento completo. Pedirle delegación,
+              // categoría, género o disciplina invita a acotarlo por error,
+              // que es justo lo contrario de lo que hace su portal.
+              const esCoordinadorComite =
+                String(form.userType ?? "").trim().toUpperCase() === "COORDINADOR_COMITE";
+              const noAplicaAlComite = new Set([
+                "delegationId",
+                "disciplineCategory",
+                "disciplineGender",
+                "disciplineId",
+                "isDelegationLead",
+              ]);
               const personalKeys = new Set([
                 "eventId",
                 "delegationId",
@@ -3368,6 +3392,7 @@ export default function ResourceScreen({
               ]);
               const personalFields = fields.filter((field) => {
                 if (!personalKeys.has(field.key)) return false;
+                if (esCoordinadorComite && noAplicaAlComite.has(field.key)) return false;
                 if (field.key === "region") return athleteCountry === "CHL";
                 return true;
               });
