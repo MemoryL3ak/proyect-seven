@@ -15,6 +15,10 @@ export const CLIENT_TYPES = [
   // Jefe de Misión de una delegación (región): participante con acceso
   // operativo acotado a su región en el portal.
   'JEFE_MISION',
+  // Coordinador de Comité: participante que coordina el evento completo.
+  // Su portal muestra actividades, calendario, sedes y hoteles de todas las
+  // delegaciones, con filtros por región y deporte.
+  'COORDINADOR_COMITE',
   'COMITE_ORGANIZADOR',
   'PROVEEDORES',
 ] as const;

@@ -1,4 +1,14 @@
-﻿import { CHILE_REGIONS } from "./delegations";
+﻿import { CLIENT_TYPE_OPTIONS } from "./clientTypes";
+import { CHILE_REGIONS } from "./delegations";
+
+/**
+ * Tipos de cliente para los <select> de estas fichas.
+ *
+ * Salen del catálogo de `clientTypes.ts` en vez de repetirse aquí: había cinco
+ * copias a mano y se desincronizaron -- la ficha de participante se quedó sin
+ * "T1" y sin "Coordinador Comité" aunque el catálogo ya los tenía.
+ */
+const OPCIONES_TIPO_CLIENTE = CLIENT_TYPE_OPTIONS.map((o) => ({ label: o.label, value: o.value }));
 
 export type FieldType =
   | "text"
@@ -544,17 +554,7 @@ export const resources: Record<string, ResourceConfig> = {
         key: "allowedClientTypes",
         label: "Tipos de cliente permitidos",
         type: "multiselect",
-        options: [
-          { label: "TF — Oficiales Técnicos", value: "TF" },
-          { label: "TM — Medios / Prensa", value: "TM" },
-          { label: "TA — Team Atleta", value: "TA" },
-          { label: "VIP", value: "VIP" },
-          { label: "T1", value: "T1" },
-          { label: "Familia Parapan", value: "FAMILIA_PARAPAN" },
-          { label: "Jefe de Misión", value: "JEFE_MISION" },
-          { label: "Comité Organizador", value: "COMITE_ORGANIZADOR" },
-          { label: "Proveedores", value: "PROVEEDORES" }
-        ]
+        options: OPCIONES_TIPO_CLIENTE
       },
       { key: "phone", label: "Teléfono", type: "text" },
       { key: "vehiclePlate", label: "Patente", type: "text", required: true },
@@ -706,16 +706,7 @@ export const resources: Record<string, ResourceConfig> = {
         key: "userType",
         label: "Tipo de cliente",
         type: "select",
-        options: [
-          { label: "VIP", value: "VIP" },
-          { label: "Familia Parapan", value: "FAMILIA_PARAPAN" },
-          { label: "TA (Deportista)", value: "TA" },
-          { label: "TF (Oficiales Técnicos)", value: "TF" },
-          { label: "TM (Prensa)", value: "TM" },
-          { label: "Jefe de Misión", value: "JEFE_MISION" },
-          { label: "Comité Organizador", value: "COMITE_ORGANIZADOR" },
-          { label: "Proveedores", value: "PROVEEDORES" }
-        ]
+        options: OPCIONES_TIPO_CLIENTE
       },
       {
         key: "countryCode",
@@ -908,18 +899,7 @@ export const resources: Record<string, ResourceConfig> = {
         label: "Filtrar por tipo de cliente",
         type: "select",
         transient: true,
-        options: [
-          { label: "Todos", value: "" },
-          { label: "VIP", value: "VIP" },
-          { label: "T1", value: "T1" },
-          { label: "Familia Parapan", value: "FAMILIA_PARAPAN" },
-          { label: "TA", value: "TA" },
-          { label: "TF", value: "TF" },
-          { label: "TM", value: "TM" },
-          { label: "Jefe de Misión", value: "JEFE_MISION" },
-          { label: "Comité Organizador", value: "COMITE_ORGANIZADOR" },
-          { label: "Proveedores", value: "PROVEEDORES" },
-        ]
+        options: [{ label: "Todos", value: "" }, ...OPCIONES_TIPO_CLIENTE]
       },
       { key: "participantId", label: "Participante", type: "select", required: true, optionsSource: "athletes" },
       {
@@ -1153,16 +1133,7 @@ export const resources: Record<string, ResourceConfig> = {
         key: "clientType",
         label: "Tipo de cliente",
         type: "select",
-        options: [
-          { label: "VIP", value: "VIP" },
-          { label: "Familia Parapan", value: "FAMILIA_PARAPAN" },
-          { label: "TA (Deportista)", value: "TA" },
-          { label: "TF (Oficiales Técnicos)", value: "TF" },
-          { label: "TM (Prensa)", value: "TM" },
-          { label: "Jefe de Misión", value: "JEFE_MISION" },
-          { label: "Comité Organizador", value: "COMITE_ORGANIZADOR" },
-          { label: "Proveedores", value: "PROVEEDORES" }
-        ]
+        options: OPCIONES_TIPO_CLIENTE
       },
       { key: "origin", label: "Origen", type: "places", placeholder: "Ej: Aeropuerto Internacional de Santiago" },
       { key: "destination", label: "Destino", type: "places", placeholder: "Ej: Hotel Sheraton, Santiago" },
@@ -1254,17 +1225,7 @@ export const resources: Record<string, ResourceConfig> = {
         key: "clientTypes",
         label: "Tipos de cliente",
         type: "multiselect",
-        options: [
-          { label: "VIP", value: "VIP" },
-          { label: "T1", value: "T1" },
-          { label: "Familia Parapan", value: "FAMILIA_PARAPAN" },
-          { label: "TA (Deportista)", value: "TA" },
-          { label: "TF (Oficiales Técnicos)", value: "TF" },
-          { label: "TM (Prensa)", value: "TM" },
-          { label: "Jefe de Misión", value: "JEFE_MISION" },
-          { label: "Comité Organizador", value: "COMITE_ORGANIZADOR" },
-          { label: "Proveedores", value: "PROVEEDORES" }
-        ]
+        options: OPCIONES_TIPO_CLIENTE
       }
     ]
   },
