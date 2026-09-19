@@ -24,6 +24,8 @@ export type StaffScope = {
   role: string | null;
   /** Delegación (región) a la que está acotado; null = sin restricción. */
   delegationId: string | null;
+  /** Nombre visible de esa delegación ("Región de Ñuble"). */
+  delegationName: string | null;
 };
 
 export const MISSION_HEAD_ROLE = 'Jefe de Misión';
@@ -38,6 +40,8 @@ const CACHE_TTL_MS = 60_000;
 
 const asString = (value: unknown): string | null =>
   typeof value === 'string' && value.trim() ? value.trim() : null;
+
+type DelegationNameRow = { name: string | null; country_code: string | null };
 
 type AthleteScopeRow = {
   id: string;
@@ -74,7 +78,22 @@ export class StaffScopeService {
       name: null,
       role: null,
       delegationId: null,
+      delegationName: null,
     };
+  }
+
+  /** Nombre visible de una delegación, para saludar y para el prompt de SofIA. */
+  private async delegationNameOf(delegationId: string | null): Promise<string | null> {
+    if (!delegationId) return null;
+    try {
+      const rows = await this.dataSource.query<DelegationNameRow[]>(
+        `select metadata->>'name' as name, country_code from core.delegations where id = $1`,
+        [delegationId],
+      );
+      return asString(rows[0]?.name) ?? asString(rows[0]?.country_code);
+    } catch {
+      return null;
+    }
   }
 
   /** Usuario del panel (Supabase Auth). */
@@ -86,12 +105,14 @@ export class StaffScopeService {
       const { data, error } = await this.supabase.auth.admin.getUserById(userId);
       if (error || !data?.user) return null;
       const meta = (data.user.user_metadata ?? {}) as Record<string, unknown>;
+      const delegationId = asString(meta.delegationId);
       const scope: StaffScope = {
         kind: 'staff',
         userId,
         name: asString(meta.name),
         role: asString(meta.role),
-        delegationId: asString(meta.delegationId),
+        delegationId,
+        delegationName: asString(meta.delegationLabel) ?? (await this.delegationNameOf(delegationId)),
       };
       this.cache.set(key, { at: Date.now(), scope });
       return scope;
@@ -126,6 +147,7 @@ export class StaffScopeService {
         name: asString(row.full_name),
         role: isHead ? MISSION_HEAD_ROLE : 'Participante',
         delegationId: isHead ? row.delegation_id : null,
+        delegationName: isHead ? await this.delegationNameOf(row.delegation_id) : null,
       };
       this.cache.set(key, { at: Date.now(), scope });
       return scope;

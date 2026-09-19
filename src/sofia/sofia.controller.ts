@@ -35,7 +35,7 @@ export class SofiaController {
   private async scopeOf(req: ApiRequest): Promise<SofiaCallerScope> {
     const caller = await this.scope.requireOperator(req);
     return caller.kind === 'mission_head' && caller.delegationId
-      ? { delegationId: caller.delegationId, delegationName: caller.name ?? null }
+      ? { delegationId: caller.delegationId, delegationName: caller.delegationName }
       : null;
   }
 
