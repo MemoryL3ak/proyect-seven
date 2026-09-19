@@ -50,6 +50,7 @@ import { buildDisciplineLabelMap } from "@/lib/discipline-filters";
 import { getMobileSession, mobileAwareLogout } from "@/lib/mobile-auth";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { normalizeClientType } from "@/lib/clientTypes";
+import { catalogoConCache } from "@/lib/catalog-cache";
 import VenueMap from "@/components/VenueMap";
 import CredentialQrCard from "@/components/CredentialQrCard";
 import { useI18n } from "@/lib/i18n";
@@ -819,38 +820,42 @@ export default function UserPortalPage() {
 
       // Todo el resto de la pantalla en una sola tanda: en cascada eran seis
       // idas y vueltas más, que en el teléfono se notan al abrir la app.
-      const [discData, prems, venueData, accomData, foodLocData, foodMenuData, miembros, viajesDelegacion] =
-        await Promise.all([
-          apiFetch<CalendarEvent[]>("/disciplines").catch(() => [] as CalendarEvent[]),
-          // Premiaciones: el Jefe de Misión no tiene esa pestaña.
-          esJefe ? Promise.resolve([] as Premiacion[]) : apiFetch<Premiacion[]>("/premiaciones").catch(() => [] as Premiacion[]),
-          apiFetch<Venue[]>("/venues").catch(() => [] as Venue[]),
-          apiFetch<Accommodation[]>("/accommodations").catch(() => [] as Accommodation[]),
-          apiFetch<FoodLocation[]>("/food-locations").catch(() => [] as FoodLocation[]),
-          apiFetch<FoodMenu[]>("/food-menus").catch(() => [] as FoodMenu[]),
-          // Sólo los participantes de su delegación, filtrados en el servidor.
-          esJefe && data.delegationId
-            ? apiFetch<Athlete[]>(`/athletes?delegationId=${encodeURIComponent(data.delegationId)}`).catch(() => [] as Athlete[])
-            : Promise.resolve([] as Athlete[]),
-          // Viajes: el backend ya los acota a su delegación.
-          esJefe && data.delegationId
-            ? apiFetch<Trip[]>("/trips").catch(() => [] as Trip[])
-            : Promise.resolve([] as Trip[]),
-        ]);
-
-      const allDiscs = Array.isArray(discData) ? discData : [];
-      setDisciplineParents(allDiscs.filter((d) => !d.parentId));
-      setCalendarEvents(
-        allDiscs
-          .filter((d) => d.parentId && d.scheduledAt)
-          .sort((a, b) => new Date(a.scheduledAt!).getTime() - new Date(b.scheduledAt!).getTime()),
-      );
-      setPremiaciones(Array.isArray(prems) ? prems : []);
-      setVenues((venueData || []).filter(v => !data.eventId || v.eventId === data.eventId));
-      setAllAccommodations(accomData || []);
+      // Catálogos del evento: se pintan con lo último que se vio y se
+      // refrescan por detrás. No bloquean la apertura de la app.
+      const aplicarDisciplinas = (lista: CalendarEvent[]) => {
+        const todas = Array.isArray(lista) ? lista : [];
+        setDisciplineParents(todas.filter((d) => !d.parentId));
+        setCalendarEvents(
+          todas
+            .filter((d) => d.parentId && d.scheduledAt)
+            .sort((a, b) => new Date(a.scheduledAt!).getTime() - new Date(b.scheduledAt!).getTime()),
+        );
+      };
+      void catalogoConCache<CalendarEvent[]>("disciplines", () => apiFetch<CalendarEvent[]>("/disciplines"), aplicarDisciplinas);
+      void catalogoConCache<Venue[]>("venues", () => apiFetch<Venue[]>("/venues"), (lista) =>
+        setVenues((lista || []).filter(v => !data.eventId || v.eventId === data.eventId)));
+      void catalogoConCache<Accommodation[]>("accommodations", () => apiFetch<Accommodation[]>("/accommodations"), (lista) =>
+        setAllAccommodations(lista || []));
       // Alimentación visible para todos — sin filtrar por clientType
-      setFoodLocations(foodLocData || []);
-      setFoodMenus(foodMenuData || []);
+      void catalogoConCache<FoodLocation[]>("food-locations", () => apiFetch<FoodLocation[]>("/food-locations"), (lista) =>
+        setFoodLocations(lista || []));
+      void catalogoConCache<FoodMenu[]>("food-menus", () => apiFetch<FoodMenu[]>("/food-menus"), (lista) =>
+        setFoodMenus(lista || []));
+
+      // Lo que sí es propio del usuario se espera: es lo que se ve primero.
+      const [prems, miembros, viajesDelegacion] = await Promise.all([
+        // Premiaciones: el Jefe de Misión no tiene esa pestaña.
+        esJefe ? Promise.resolve([] as Premiacion[]) : apiFetch<Premiacion[]>("/premiaciones").catch(() => [] as Premiacion[]),
+        // Sólo los participantes de su delegación, filtrados en el servidor.
+        esJefe && data.delegationId
+          ? apiFetch<Athlete[]>(`/athletes?delegationId=${encodeURIComponent(data.delegationId)}`).catch(() => [] as Athlete[])
+          : Promise.resolve([] as Athlete[]),
+        // Viajes: el backend ya los acota a su delegación.
+        esJefe && data.delegationId
+          ? apiFetch<Trip[]>("/trips").catch(() => [] as Trip[])
+          : Promise.resolve([] as Trip[]),
+      ]);
+      setPremiaciones(Array.isArray(prems) ? prems : []);
       setDelegationMembers((miembros || []).filter(a => a.id !== data.id));
       setDelegationTrips(Array.isArray(viajesDelegacion) ? viajesDelegacion : []);
 

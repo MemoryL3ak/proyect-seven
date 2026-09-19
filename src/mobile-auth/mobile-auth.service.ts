@@ -93,6 +93,26 @@ export class MobileAuthService {
    * recursos (SA-BACKEND-02), no para mantener sesiones vivas. A diferencia
    * de validateSession(), un dato incompleto o no coincidente es rechazo.
    */
+  /**
+   * Sesiones de portal validadas hace poco. El guard valida en CADA petición y
+   * abrir el portal dispara una decena: sin esto, otras tantas consultas a la
+   * base sólo para repetir la misma respuesta. Se guarda un momento; al
+   * reclamar o liberar una sesión la entrada se descarta.
+   */
+  private readonly sesionesValidas = new Map<string, number>();
+  private static readonly SESSION_CACHE_MS = 15_000;
+
+  private static sessionKey(kind: string, userId: string, sessionId: string) {
+    return `${kind}:${userId}:${sessionId}`;
+  }
+
+  /** Olvida lo recordado de un usuario (cambió su sesión activa). */
+  private forgetSessions(userId: string) {
+    for (const key of this.sesionesValidas.keys()) {
+      if (key.includes(`:${userId}:`)) this.sesionesValidas.delete(key);
+    }
+  }
+
   async validateSessionStrict(
     kind: string,
     userId: string,
@@ -101,6 +121,10 @@ export class MobileAuthService {
     if (!userId || !sessionId || !['athlete', 'driver', 'staff'].includes(kind)) {
       return false;
     }
+    const cacheKey = MobileAuthService.sessionKey(kind, userId, sessionId);
+    const validaHasta = this.sesionesValidas.get(cacheKey);
+    if (validaHasta && validaHasta > Date.now()) return true;
+
     const target = await this.sessionTable(kind, userId);
     if (!target) return false;
     try {
@@ -112,11 +136,14 @@ export class MobileAuthService {
         .maybeSingle();
       if (!row || row.status === 'DELETED') return false;
       const meta = (row.metadata as Record<string, unknown> | null) ?? {};
-      return (
+      const valida =
         typeof meta.portalSessionId === 'string' &&
         meta.portalSessionId.length > 0 &&
-        meta.portalSessionId === sessionId
-      );
+        meta.portalSessionId === sessionId;
+      if (valida) {
+        this.sesionesValidas.set(cacheKey, Date.now() + MobileAuthService.SESSION_CACHE_MS);
+      }
+      return valida;
     } catch {
       return false;
     }
@@ -403,6 +430,7 @@ export class MobileAuthService {
       // validación) en vez de rechazarse. No se devuelve ACTIVE_ELSEWHERE.
       // Mismo dispositivo (re-login) conserva su sessionId; si no, uno nuevo.
       const sessionId = existing && existing === currentSessionId ? existing : randomUUID();
+      this.forgetSessions(userId);
       const metadata = {
         ...meta,
         portalSessionId: sessionId,
@@ -470,6 +498,7 @@ export class MobileAuthService {
 
   /** Libera la sesión al cerrar sesión, para que otro dispositivo pueda entrar. */
   async releaseSession(input: { kind?: string; userId?: string; sessionId?: string }) {
+    this.forgetSessions(String(input.userId || ''));
     const kind = String(input.kind || '');
     const userId = String(input.userId || '');
     const sessionId = String(input.sessionId || '');
@@ -513,6 +542,7 @@ export class MobileAuthService {
   // autenticación que usa el login de los portales.
 
   async deleteAccount(input: { kind?: string; userId?: string; code?: string }) {
+    this.forgetSessions(String(input.userId || ''));
     const kind = String(input.kind || '');
     const userId = String(input.userId || '').trim();
     const code = String(input.code || '').trim().toLowerCase();
